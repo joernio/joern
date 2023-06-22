@@ -1,7 +1,7 @@
 package io.joern.joerncli
 
 import better.files.File
-import io.joern.dataflowengineoss.slicing._
+import io.joern.dataflowengineoss.slicing.{ObservedCallWithArgPos, _}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.{Languages, Operators}
 import org.scalatest.matchers.should.Matchers
@@ -34,12 +34,12 @@ class JoernSliceJS1 extends AnyWordSpec with Matchers with AbstractJoernCliTest 
 
       val List(arg1, arg2) = slice.argToCalls
 
-      arg1.position shouldBe Left(1)
+      arg1.position shouldBe Right(1)
       arg1.callName shouldBe "log"
       arg1.paramTypes shouldBe List("ANY")
       arg1.returnType shouldBe "ANY"
 
-      arg2.position shouldBe Left(1)
+      arg2.position shouldBe Right(1)
       arg2.callName shouldBe "debug"
       arg2.paramTypes shouldBe List("ANY")
       arg2.returnType shouldBe "ANY"
@@ -55,7 +55,7 @@ class JoernSliceJS1 extends AnyWordSpec with Matchers with AbstractJoernCliTest 
 
     "extract 'Car' object instantiation" in {
       val Some(slice) = programSlice.objectSlices.get("main.js::program:carTest").flatMap(_.slices.headOption)
-      slice.definedBy shouldBe Some(CallDef("new Car", "ANY"))
+      slice.definedBy shouldBe Some(CallDef("new Car", "main.js::program:Car", Option("main.js::program:Car")))
       slice.targetObj shouldBe LocalDef("c", "main.js::program:Car")
 
       val List(inv1) = slice.invokedCalls
@@ -65,10 +65,10 @@ class JoernSliceJS1 extends AnyWordSpec with Matchers with AbstractJoernCliTest 
 
       val List(arg1: ObservedCallWithArgPos) = slice.argToCalls
 
-      arg1.position shouldBe Left(1)
+      arg1.position shouldBe Right(1)
       arg1.callName shouldBe "Car"
       arg1.paramTypes shouldBe List("__ecma.String", "__ecma.Number")
-      arg1.returnType shouldBe "ANY"
+      arg1.returnType shouldBe "main.js::program:Car"
     }
   }
 }
@@ -82,9 +82,41 @@ class JoernSliceJS2 extends AnyWordSpec with Matchers with AbstractJoernCliTest 
         .calculateUsageSlice(cpg, UsagesConfig(excludeOperatorCalls = true))
         .asInstanceOf[ProgramUsageSlice]
 
-    "blah" in {
-      val slices = programSlice.objectSlices
-      slices.size shouldBe 2
+    "extract 'y' local variable" in {
+      val Some(slice) = programSlice.objectSlices.get("main.js::program:bar").flatMap(_.slices.headOption)
+      slice.targetObj shouldBe ParamDef("y", "ANY", 1)
+      slice.definedBy shouldBe Option(ParamDef("y", "ANY", 1))
+
+      val List(inv1) = slice.invokedCalls
+
+      inv1.callName shouldBe "getA"
+      inv1.resolvedMethod shouldBe Some("main.js::program:Foo:getA")
+      inv1.paramTypes shouldBe List.empty
+      inv1.returnType shouldBe "ANY"
+    }
+
+    "extract 'x' local variable" in {
+      val Some(slice) = programSlice.objectSlices.get("main.js::program").flatMap(_.slices.headOption)
+      slice.targetObj shouldBe LocalDef("x", "main.js::program:Foo")
+      slice.definedBy shouldBe Option(CallDef("new Foo", "main.js::program:Foo", Some("main.js::program:Foo")))
+
+      val List(arg1, arg2) = slice.argToCalls
+
+      arg1 shouldBe ObservedCallWithArgPos(
+        "Foo",
+        Some("main.js::program:Foo"),
+        List("__ecma.Number", "__ecma.Number"),
+        "main.js::program:Foo",
+        Right(1)
+      )
+
+      arg2 shouldBe ObservedCallWithArgPos(
+        "bar",
+        Some("main.js::program:bar"),
+        List("main.js::program:Foo"),
+        "ANY",
+        Right(1)
+      )
     }
   }
 
@@ -107,7 +139,7 @@ class JoernSliceTS1 extends AnyWordSpec with Matchers with AbstractJoernCliTest 
 
       val List(_, _, arg1) = slice.argToCalls
 
-      arg1.position shouldBe Left(2)
+      arg1.position shouldBe Right(2)
       arg1.callName shouldBe Operators.formatString
       arg1.paramTypes shouldBe List("__ecma.String", "__ecma.String", "__ecma.String")
       arg1.returnType shouldBe "ANY"
@@ -115,14 +147,14 @@ class JoernSliceTS1 extends AnyWordSpec with Matchers with AbstractJoernCliTest 
 
     "extract 'loader' object slice from the main program" in {
       val Some(slice) = programSlice.objectSlices.get("main.ts::program").flatMap(_.slices.headOption)
-      slice.definedBy shouldBe Some(CallDef("new Loader", "ANY"))
+      slice.definedBy shouldBe Some(CallDef("new Loader", "Loader", Option("Loader")))
       slice.targetObj shouldBe LocalDef("loader", "loader:Loader")
 
       val List(arg1) = slice.argToCalls
 
-      arg1.position shouldBe Left(1)
+      arg1.position shouldBe Right(1)
       arg1.callName shouldBe "Loader"
-      arg1.returnType shouldBe "ANY"
+      arg1.returnType shouldBe "Loader"
     }
 
     "extract 'time' parameter slice from the lambda in 'loop'" in {
@@ -133,7 +165,7 @@ class JoernSliceTS1 extends AnyWordSpec with Matchers with AbstractJoernCliTest 
 
       val List(arg1) = slice.argToCalls
 
-      arg1.position shouldBe Left(1)
+      arg1.position shouldBe Right(1)
       arg1.callName shouldBe "loop"
       arg1.paramTypes shouldBe List("DOMHighResTimeStamp")
       arg1.returnType shouldBe "ANY"

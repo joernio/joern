@@ -229,16 +229,12 @@ object UsageSlicing {
     private def partitionInvolvementInCalls: (List[ObservedCall], List[ObservedCallWithArgPos]) = {
       val (invokedCalls, argToCalls) = getInCallsForReferencedIdentifiers(tgt)
         .sortBy(f => (f.lineNumber, f.columnNumber))
-        .flatMap(c => c.argument.find(p => p.code.equals(tgt.name)))
-        .map { x =>
-          if (x.argumentIndex == -1 && x.argumentName.isDefined) (x, Left(x.argumentName.get))
-          else (x, Right(x.argumentIndex))
-        //          x.argumentName match {
-        //            case Some(argName) => (x, Left(argName))
-        //            case None          => (x, Right(x.argumentIndex))
-        //          }
+        .flatMap(c => c.argument.find(p => p.code == tgt.name).map(f => (c, f)).headOption)
+        .map { case (c, arg) =>
+          if (arg.argumentName.isDefined) (c, arg, Left(arg.argumentName.get))
+          else (c, arg, Right(arg.argumentIndex))
         }
-        .partition { case (_, argIdx) =>
+        .partition { case (_, _, argIdx) =>
           argIdx match {
             case Left(_)       => false // receivers/bases are never named
             case Right(argIdx) => argIdx == 0
@@ -247,15 +243,8 @@ object UsageSlicing {
       (
         invokedCalls.map(_._1).isCall.flatMap(exprToObservedCall).toList,
         argToCalls
-          .collect {
-            case (i: Identifier, argAt) => (i.inCall, argAt)
-            case (c: Call, argAt)       => (c, argAt)
-          }
-          .flatMap {
-            case (c: Call, argAt: Either[String, Int]) =>
-              exprToObservedCall(c).map(oc => ObservedCallWithArgPos.fromObservedCall(oc, argAt))
-            case (i: Identifier, argArt: Either[String, Int]) =>
-              Set()
+          .flatMap { case (c: Call, _, argAt: Either[String, Int]) =>
+            exprToObservedCall(c).map(oc => ObservedCallWithArgPos.fromObservedCall(oc, argAt))
           }
       )
     }
@@ -264,14 +253,16 @@ object UsageSlicing {
       */
     private def createDefComponent(node: AstNode) = DefComponent.fromNode(node, typeMap.toMap)
 
+    // TODO: Slicing may run before post-processing so we cannot assume a call graph
+    //  implement this in a next step to combine slices
     private def linkSlices(slices: Map[String, Set[ObjectUsageSlice]]): Unit = {
       slices.foreach { case (_, usageSlices) =>
         usageSlices.foreach { slice =>
           slice.definedBy match {
-            case Some(CallDef(name, typeFullName, Some(resolvedMethod), label)) =>
+            case Some(CallDef(_, _, Some(resolvedMethod), _)) =>
               slices.get(resolvedMethod) match {
-                case Some(value) => println(s"Backward $value matched!") // todo traverse slice map for param defs
-                case None        =>                                      // println("No match for backward slice")
+                case Some(_) => // TODO: Handle match
+                case None        => // No match
               }
             case _ =>
           }
@@ -298,32 +289,30 @@ object UsageSlicing {
               case _ => None
             }
             .foreach { s =>
-              println(
-                s"${slice.targetObj} is the same as ${s.targetObj}. Total invoked calls is ${slice.invokedCalls.size + s.invokedCalls.size}"
-              )
+              // todo: Handle slice linking
             }
         }
       }
     }
+  }
 
-    private def getInCallsForReferencedIdentifiers(decl: Declaration): List[Call] = {
-      // Cross closure boundaries
-      val capturedVars = decl.capturedByMethodRef.referencedMethod.ast.isIdentifier.nameExact(decl.name)
-      decl
-        .flatMap {
-          case local: Local             => local.referencingIdentifiers ++ capturedVars
-          case param: MethodParameterIn => param.referencingIdentifiers ++ capturedVars
-          case _                        => Seq()
-        }
-        .inCall
-        .flatMap {
-          case c if c.name.startsWith(Operators.assignment) && c.ast.isCall.name(Operators.alloc).nonEmpty => Some(c)
-          case c if excludeOperatorCalls.get() && c.name.startsWith("<operator>")                          => None
-          case c                                                                                           => Some(c)
-        }
-        .dedup
-        .toList
-    }
+  private def getInCallsForReferencedIdentifiers(decl: Declaration): List[Call] = {
+    // Cross closure boundaries
+    val capturedVars = decl.capturedByMethodRef.referencedMethod.ast.isIdentifier.nameExact(decl.name)
+    decl
+      .flatMap {
+        case local: Local             => local.referencingIdentifiers ++ capturedVars
+        case param: MethodParameterIn => param.referencingIdentifiers ++ capturedVars
+        case _                        => Seq()
+      }
+      .inCall
+      .flatMap {
+        case c if c.name.startsWith(Operators.assignment) && c.ast.isCall.name(Operators.alloc).nonEmpty => Some(c)
+        case c if excludeOperatorCalls.get() && c.name.startsWith("<operator")                           => None
+        case c                                                                                           => Some(c)
+      }
+      .dedup
+      .toList
   }
 
   /** Returns true if the given declaration is found to have at least n non-operator calls within its referenced
