@@ -255,7 +255,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Data flow through yield with argument" ignore {
+  "Data flow through yield with argument" should {
     val cpg = code("""
         |def yield_with_arguments
         |  a = "something"
@@ -778,7 +778,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     "find flows to the sink" in {
       val source = cpg.identifier.name("x").l
       val sink   = cpg.call.name("puts").l
-      sink.reachableByFlows(source).l.size shouldBe 2
+      sink.reachableByFlows(source).l.size shouldBe 1
     }
   }
 }
