@@ -40,7 +40,6 @@ class AstCreator(filename: String, global: Global)
 
   protected val methodAliases = mutable.HashMap[String, String]()
   protected val methodNames   = mutable.HashSet[String]()
-  protected val blockMethods  = ListBuffer[Ast]()
 
   protected val methodNamesWithYield = mutable.HashSet[String]()
 
@@ -80,7 +79,7 @@ class AstCreator(filename: String, global: Global)
     val statementCtx = programCtx.compoundStatement().statements()
     scope.pushNewScope(())
     val statementAsts = if (statementCtx != null) {
-      astForStatementsContext(statementCtx) ++ blockMethods
+      astForStatementsContext(statementCtx)
     } else {
       List[Ast](Ast())
     }
@@ -581,8 +580,9 @@ class AstCreator(filename: String, global: Global)
         .asInstanceOf[NewCall]
         .name
       val blockMethodName = blockName + terminalNode.getSymbol.getLine
+      val blockMethodAsts = astForBlockContext(ctx.block(), Some(blockMethodName))
       val blockMethodNode =
-        astForBlockContext(ctx.block(), Some(blockMethodName)).head.nodes.head
+        blockMethodAsts.head.nodes.head
           .asInstanceOf[NewMethod]
 
       val callNode = NewCall()
@@ -600,7 +600,7 @@ class AstCreator(filename: String, global: Global)
         .lineNumber(blockMethodNode.lineNumber)
         .columnNumber(blockMethodNode.columnNumber)
 
-      Seq(callAst(callNode, Seq(Ast(methodRefNode)), baseAst.headOption))
+      Seq(callAst(callNode, Seq(Ast(methodRefNode)), baseAst.headOption)) ++ blockMethodAsts
     } else {
       val callNode = methodNameAst.head.nodes
         .filter(node => node.isInstanceOf[NewCall])
@@ -984,7 +984,6 @@ class AstCreator(filename: String, global: Global)
        * This is a yield block. Create a fake method out of it. The yield call will be a call to the yield block
        */
       astForBlockContext(ctx.block(), Some(blockName))
-      Seq(Ast())
     } else {
       val blockAst = astForBlockContext(ctx.block())
       blockAst ++ methodIdAst
@@ -1767,7 +1766,6 @@ class AstCreator(filename: String, global: Global)
       methodRetNode,
       Seq[NewModifier](publicModifier)
     )
-    blockMethods.addOne(methAst)
     Seq(methAst)
   }
 
