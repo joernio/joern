@@ -4,7 +4,7 @@ import better.files.File
 import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.preprocessing.EjsPreprocessor
 import io.joern.x2cpg.SourceFiles
-import io.joern.x2cpg.utils.ExternalCommand
+import io.joern.x2cpg.utils.{Environment, ExternalCommand}
 import io.shiftleft.utils.IOUtils
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
