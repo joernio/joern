@@ -44,6 +44,7 @@ class AstCreator(filename: String, global: Global)
 
   protected val methodNamesWithYield = mutable.HashSet[String]()
   private val YIELD_SUFFIX           = "_yield"
+  private val UNRESOLVED_YIELD       = "unresolved_yield"
 
   protected def createIdentifierWithScope(
     ctx: ParserRuleContext,
@@ -1399,7 +1400,7 @@ class AstCreator(filename: String, global: Global)
       .flatMap(ast =>
         ast.nodes
           .filter(_.isInstanceOf[NewCall])
-          .filter(_.asInstanceOf[NewCall].name == "yield")
+          .filter(_.asInstanceOf[NewCall].name == UNRESOLVED_YIELD)
       )
       .foreach(node => {
         val yieldCallNode  = node.asInstanceOf[NewCall]
@@ -2005,9 +2006,9 @@ class AstCreator(filename: String, global: Global)
       val argsAst = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
 
       val callNode = NewCall()
-        .name("yield")
+        .name(UNRESOLVED_YIELD)
         .code(ctx.getText)
-        .methodFullName("yield")
+        .methodFullName(UNRESOLVED_YIELD)
         .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .typeFullName(Defines.Any)
@@ -2087,9 +2088,9 @@ class AstCreator(filename: String, global: Global)
     val argsAst = astForArgumentsContext(ctx.arguments())
 
     val callNode = NewCall()
-      .name("yield")
+      .name(UNRESOLVED_YIELD)
       .code(ctx.getText)
-      .methodFullName("yield")
+      .methodFullName(UNRESOLVED_YIELD)
       .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .typeFullName(Defines.Any)
