@@ -13,7 +13,8 @@ final case class Config(
   delombokJavaHome: Option[String] = None,
   delombokMode: Option[String] = None,
   enableTypeRecovery: Boolean = false,
-  disableDummyTypes: Boolean = false
+  disableDummyTypes: Boolean = false,
+  jdkPath: Option[String] = None
 ) extends X2CpgConfig[Config] {
   def withInferenceJarPaths(paths: Set[String]): Config = {
     copy(inferenceJarPaths = paths).withInheritedFields(this)
@@ -42,6 +43,10 @@ final case class Config(
   def withDisableDummyTypes(value: Boolean): Config = {
     copy(disableDummyTypes = value).withInheritedFields(this)
   }
+
+  def withJdkPath(path: String): Config = {
+    copy(jdkPath = Some(path)).withInheritedFields(this)
+  }
 }
 
 private object Frontend {
@@ -64,7 +69,7 @@ private object Frontend {
         .action((path, c) => c.withDelombokJavaHome(path)),
       opt[String]("delombok-mode")
         .text("""Specifies how delombok should be executed. Options are
-				| no-delombok => to not run delombok under any circumstances.
+                 | no-delombok => to not run delombok under any circumstances.
                  | default => run delombok if a lombok dependency is found and analyse delomboked code.
                  | types-only => to run delombok, but use it for type information only
                  | run-delombok => to force run delombok and analyse delomboked code.""".stripMargin)
@@ -76,7 +81,10 @@ private object Frontend {
       opt[Unit]("no-dummyTypes")
         .hidden()
         .action((_, c) => c.withDisableDummyTypes(true))
-        .text("disable generation of dummy types during type recovery")
+        .text("disable generation of dummy types during type recovery"),
+      opt[String]("jdk-path")
+        .action((path, c) => c.withJdkPath(path))
+        .text("JDK used for resolving builtin Java types. If not set, current classpath will be used")
     )
   }
 }

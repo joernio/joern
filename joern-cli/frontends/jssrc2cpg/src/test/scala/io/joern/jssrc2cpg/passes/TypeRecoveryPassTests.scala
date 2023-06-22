@@ -1,6 +1,7 @@
 package io.joern.jssrc2cpg.passes
 
 import io.joern.jssrc2cpg.testfixtures.DataFlowCodeToCpgSuite
+import io.joern.x2cpg.passes.frontend.ImportsPass._
 import io.shiftleft.semanticcpg.language._
 
 class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
@@ -54,6 +55,15 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         |""".stripMargin,
       "Test1.ts"
     ).cpg
+
+    "resolve correct imports via tag nodes" in {
+      val List(a: UnknownMethod, b: UnknownTypeDecl, x: UnknownMethod, y: UnknownTypeDecl) =
+        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList
+      a.fullName shouldBe "slack_sdk:WebClient"
+      b.fullName shouldBe "slack_sdk:WebClient"
+      x.fullName shouldBe "sendgrid:SendGridAPIClient"
+      y.fullName shouldBe "sendgrid:SendGridAPIClient"
+    }
 
     "resolve 'sg' identifier types from import information" in {
       val List(sg1, sg2, sg3) = cpg.identifier.nameExact("sg").l
@@ -129,6 +139,19 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         |""".stripMargin,
       "Bar.ts"
     ).cpg
+
+    "resolve correct imports via tag nodes" in {
+      val List(a: ResolvedMember, b: ResolvedMember, c: ResolvedMember, d: UnknownMethod, e: UnknownTypeDecl) =
+        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList
+      a.basePath shouldBe "Foo.ts::program"
+      a.memberName shouldBe "x"
+      b.basePath shouldBe "Foo.ts::program"
+      b.memberName shouldBe "y"
+      c.basePath shouldBe "Foo.ts::program"
+      c.memberName shouldBe "db"
+      d.fullName shouldBe "flask_sqlalchemy:SQLAlchemy"
+      e.fullName shouldBe "flask_sqlalchemy:SQLAlchemy"
+    }
 
     "resolve 'x' and 'y' locally under foo.py" in {
       val Some(x) = cpg.file.name(".*Foo.*").ast.isIdentifier.nameExact("x").headOption
@@ -214,6 +237,11 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
       "foo.js"
     )
 
+    "resolve correct imports via tag nodes" in {
+      val List(x: ResolvedMethod) = cpg.call.where(_.referencedImports).tag.toResolvedImport.toList
+      x.fullName shouldBe "util.js::program:getIncrementalInteger"
+    }
+
     "resolve the method full name off of an aliased 'this'" in {
       val Some(x) = cpg.file("util.js").ast.isCall.nameExact("getIncrementalInteger").headOption
       x.methodFullName shouldBe "util.js::program:getIncrementalInteger"
@@ -237,6 +265,12 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         |const driveObj = google.drive({ version: 'v3', auth });
         |""".stripMargin)
 
+    "resolve correct imports via tag nodes" in {
+      val List(x: UnknownMethod, y: UnknownTypeDecl) = cpg.call.where(_.referencedImports).tag.toResolvedImport.toList
+      x.fullName shouldBe "googleapis"
+      y.fullName shouldBe "googleapis"
+    }
+
     "be propagated to `methodFullName` of call" in {
       val List(methodFullName) = cpg.call.code("google.drive\\(.*").methodFullName.l
       methodFullName shouldBe "googleapis:drive"
@@ -251,6 +285,14 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         |const { google } = require('googleapis');
         |const driveObj = google.drive({ version: 'v3', auth });
         |""".stripMargin)
+
+    "resolve correct imports via tag nodes" in {
+      val List(x: UnknownMethod, y: UnknownTypeDecl, z: UnknownMethod) =
+        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList
+      x.fullName shouldBe "googleapis"
+      y.fullName shouldBe "googleapis"
+      z.fullName shouldBe "googleapis"
+    }
 
     "be propagated to `methodFullName` of call" in {
       val List(methodFullName) = cpg.call.code("google.drive\\(.*").methodFullName.l
@@ -342,6 +384,17 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         |""".stripMargin,
       "bar.js"
     )
+
+    "resolve correct imports via tag nodes" in {
+      val List(a: ResolvedTypeDecl, b: ResolvedMethod, c: ResolvedMethod, d: UnknownMethod, e: UnknownTypeDecl) =
+        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList
+      a.fullName shouldBe "foo.js::program"
+      b.fullName shouldBe "foo.js::program:literalFunction"
+      c.fullName shouldBe "foo.js::program:get"
+      d.fullName shouldBe "axios"
+      e.fullName shouldBe "axios"
+
+    }
 
     "propagate literal types to the method return" in {
       val Some(literalMethod) = cpg.method.nameExact("literalFunction").headOption
