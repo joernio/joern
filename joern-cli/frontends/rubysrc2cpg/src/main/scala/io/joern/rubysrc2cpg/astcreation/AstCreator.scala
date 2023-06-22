@@ -962,38 +962,22 @@ class AstCreator(filename: String, global: Global)
       .asInstanceOf[NewCall]
       .name
 
-    if (blockName == "loop") {
+    val isYieldMethod = if (blockName.endsWith(YIELD_SUFFIX)) {
+      val lookupMethodName = blockName.take(blockName.length - YIELD_SUFFIX.length)
+      methodNamesWithYield.contains(lookupMethodName)
+    } else {
+      false
+    }
+
+    if (isYieldMethod) {
       /*
-       * This block is for a do-while loop equivalent in Ruby
-       * NOT using a doWhileAst() here since this is not a real doWhile loop. Ruby does not have one
-       * This is more of a exit controlled loop block
+       * This is a yield block
        */
+      astForBlockContext(ctx.block(), Some(blockName))
+      Seq(Ast())
+    } else {
       val blockAst = astForBlockContext(ctx.block())
       blockAst ++ methodIdAst
-    } else {
-      /*
-       * This is a standalone block like a yield block
-       */
-      val blockMethodNode =
-        astForBlockContext(ctx.block(), Some(blockName)).head.nodes.head
-          .asInstanceOf[NewMethod]
-
-      val callNode = NewCall()
-        .name(blockName)
-        .methodFullName(blockMethodNode.fullName)
-        .typeFullName(DynamicCallUnknownFullName)
-        .code(blockMethodNode.code)
-        .lineNumber(blockMethodNode.lineNumber)
-        .columnNumber(blockMethodNode.columnNumber)
-
-      val methodRefNode = NewMethodRef()
-        .methodFullName(blockMethodNode.fullName)
-        .typeFullName(DynamicCallUnknownFullName)
-        .code(blockMethodNode.code)
-        .lineNumber(blockMethodNode.lineNumber)
-        .columnNumber(blockMethodNode.columnNumber)
-
-      Seq(callAst(callNode, Seq(Ast(methodRefNode))))
     }
   }
 
@@ -2018,7 +2002,18 @@ class AstCreator(filename: String, global: Global)
       astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
     } else if (ctx.YIELD() != null) {
       // ctx.primary() is expected to be null
-      astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
+      val argsAst = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
+
+      val callNode = NewCall()
+        .name("yield")
+        .code(ctx.getText)
+        .methodFullName("yield")
+        .signature("")
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .typeFullName(Defines.Any)
+        .lineNumber(ctx.YIELD().getSymbol().getLine())
+        .columnNumber(ctx.YIELD().getSymbol().getCharPositionInLine())
+      Seq(callAst(callNode, argsAst))
     } else if (ctx.methodIdentifier() != null) {
       val methodIdentifierAsts = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText)
       methodNameAsIdentifierStack.push(methodIdentifierAsts.head)
