@@ -249,7 +249,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
 
     "have correct structure for an identifier symbol literal used in an `undef` statement" in {
-      val cpg = code("undef :symbolName")
+      val cpg           = code("undef :symbolName")
       val List(literal) = cpg.literal.l
       literal.typeFullName shouldBe Defines.Symbol
       literal.code shouldBe ":symbolName"
