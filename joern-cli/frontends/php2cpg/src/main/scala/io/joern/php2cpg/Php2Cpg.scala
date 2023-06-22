@@ -50,7 +50,7 @@ class Php2Cpg extends X2CpgFrontend[Config] {
       withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
         new MetaDataPass(cpg, Languages.PHP, config.inputPath).createAndApply()
         new AstCreationPass(config, cpg, parser.get).createAndApply()
-        new TypeNodePass(Nil, cpg, getTypesFromCpg = true).createAndApply()
+        TypeNodePass.withTypesFromCpg(cpg).createAndApply()
         LocalCreationPass.allLocalCreationPasses(cpg).foreach(_.createAndApply())
         new ClosureRefPass(cpg).createAndApply()
       }

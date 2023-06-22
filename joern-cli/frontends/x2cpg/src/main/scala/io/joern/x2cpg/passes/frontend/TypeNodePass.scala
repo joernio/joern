@@ -15,12 +15,8 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
   * Alternatively, set `getTypesFromCpg = true`. If this is set, the `registeredTypes` argument will be ignored.
   * Instead, type nodes will be created for every unique `TYPE_FULL_NAME` value in the CPG.
   */
-class TypeNodePass(
-  registeredTypes: List[String],
-  cpg: Cpg,
-  keyPool: Option[KeyPool] = None,
-  getTypesFromCpg: Boolean = false
-) extends CpgPass(cpg, "types", keyPool) {
+class TypeNodePass private (registeredTypes: List[String], cpg: Cpg, keyPool: Option[KeyPool], getTypesFromCpg: Boolean)
+    extends CpgPass(cpg, "types", keyPool) {
 
   private def getTypeDeclTypes(): mutable.Set[String] = {
     val typeDeclTypes = mutable.Set[String]()
@@ -74,6 +70,14 @@ object TypeNodePass {
   // so this regex works by greedily matching the package and class names
   // at the start and cutting off the matched group before the signature.
   private val lambdaTypeRegex = raw".*\.(.*):.*\(.*\)".r
+
+  def withTypesFromCpg(cpg: Cpg, keyPool: Option[KeyPool] = None): TypeNodePass = {
+    new TypeNodePass(Nil, cpg, keyPool, getTypesFromCpg = true)
+  }
+
+  def withRegisteredTypes(registeredTypes: List[String], cpg: Cpg, keyPool: Option[KeyPool] = None): TypeNodePass = {
+    new TypeNodePass(registeredTypes, cpg, keyPool, getTypesFromCpg = false)
+  }
 
   def fullToShortName(typeName: String): String = {
     typeName match {
