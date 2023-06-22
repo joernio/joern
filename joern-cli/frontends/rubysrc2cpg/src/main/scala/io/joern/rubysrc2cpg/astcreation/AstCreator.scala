@@ -964,7 +964,9 @@ class AstCreator(filename: String, global: Global)
 
     if (blockName == "loop") {
       /*
-       * This block is for a do-while loop
+       * This block is for a do-while loop equivalent in Ruby
+       * NOT using a doWhileAst() here since this is not a real doWhile loop. Ruby does not have one
+       * This is more of a exit controlled loop block
        */
       val blockAst = astForBlockContext(ctx.block())
       blockAst ++ methodIdAst

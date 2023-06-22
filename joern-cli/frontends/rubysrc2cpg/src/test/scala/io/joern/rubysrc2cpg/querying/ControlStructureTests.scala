@@ -87,7 +87,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
 
     "recognise all method nodes" in {
       cpg.method.name("yield_with_args_method").size shouldBe 2
-      // TODO add checks for method ref and call nodes
+      cpg.methodRef.methodFullName(".*yield_with_args_method").size shouldBe 1
     }
   }
 
