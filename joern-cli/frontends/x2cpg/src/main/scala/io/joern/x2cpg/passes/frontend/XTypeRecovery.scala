@@ -207,14 +207,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       .foreach(prepopulateSymbolTableEntry)
   }
 
-  protected def getTypes(node: AstNode): Set[String] =
-    (node.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty) :+ node.property(
-      PropertyNames.TYPE_FULL_NAME,
-      "ANY"
-    )).filterNot(_.toUpperCase.matches("(UNKNOWN|ANY)")).toSet
-
   protected def prepopulateSymbolTableEntry(x: AstNode): Unit = x match {
-    case x @ (_: Identifier | _: Local | _: MethodParameterIn) => symbolTable.put(x, getTypes(x))
+    case x @ (_: Identifier | _: Local | _: MethodParameterIn) => symbolTable.put(x, x.getKnownTypes)
     case x: Call => symbolTable.put(x, (x.methodFullName +: x.dynamicTypeHintFullName).toSet)
     case _       =>
   }
@@ -222,9 +216,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def hasTypes(node: AstNode): Boolean = node match {
     case x: Call if !x.methodFullName.startsWith("<operator>") =>
       !x.methodFullName.toLowerCase().matches("(<unknownfullname>|any)")
-    case x =>
-      x.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty)
-        .nonEmpty || !x.property(PropertyNames.TYPE_FULL_NAME, "ANY").toUpperCase.matches("(UNKNOWN|ANY)")
+    case x => x.getKnownTypes.nonEmpty
   }
 
   protected def assignments: Traversal[Assignment] =
@@ -281,12 +273,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         val matchingMembers     = cpg.typeDecl.fullNameExact(basePath).member
         val memberTypes = (matchingMembers ++ matchingIdentifiers)
           .nameExact(memberName)
-          .flatMap(x =>
-            x.property(PropertyNames.TYPE_FULL_NAME, "ANY") +:
-              x.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty)
-          )
-          .filterNot(_ == "ANY")
-          .toSet
+          .getKnownTypes
         symbolTable.append(LocalVar(alias), memberTypes)
       case UnknownMethod(fullName, alias, receiver, _) =>
         symbolTable.append(CallAlias(alias, receiver), fullName)
@@ -823,6 +810,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         symbolTable
           .get(head.argumentOut.head)
           .map(t => Seq(t, head.name, XTypeRecovery.DummyReturnType).mkString(pathSep.toString))
+      case ::(identifier: Identifier, Nil) if symbolTable.contains(identifier) =>
+        symbolTable.get(identifier)
       case ::(head: Call, Nil) =>
         extractTypes(head.argument.l)
       case _ => Set.empty
@@ -1092,10 +1081,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       )
     }
 
-  protected def nodeExistingTypes(storedNode: StoredNode): Seq[String] = (storedNode.property(
-    PropertyNames.TYPE_FULL_NAME,
-    "ANY"
-  ) +: storedNode.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty)).filterNot(_ == "ANY")
+  protected def nodeExistingTypes(storedNode: StoredNode): Seq[String] = storedNode.allTypes.filterNot(_ == "ANY").toSeq
 
   /** Allows one to modify the types assigned to identifiers.
     */
@@ -1126,5 +1112,24 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** Allows an implementation to perform an operation once type persistence is complete.
     */
   protected def postSetTypeInformation(): Unit = {}
+
+  // The below are convenience calls for accessing type properties, one day when this pass uses `Tag` nodes instead of
+  // the symbol table then perhaps this would work out better
+  implicit class AllNodeTypesFromNodeExt(x: StoredNode) {
+    def allTypes: Iterator[String] = (x.property(PropertyNames.TYPE_FULL_NAME, "ANY") +: x.property(
+      PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
+      Seq.empty
+    )).iterator
+
+    def getKnownTypes: Set[String] =
+      x.allTypes.filterNot(_.toUpperCase.matches("(UNKNOWN|ANY)")).toSet
+  }
+
+  implicit class AllNodeTypesFromTraversalExt(x: Traversal[StoredNode]) {
+    def allTypes: Iterator[String] = x.flatMap(_.allTypes)
+
+    def getKnownTypes: Set[String] =
+      x.allTypes.filterNot(_.toUpperCase.matches("(UNKNOWN|ANY)")).toSet
+  }
 
 }

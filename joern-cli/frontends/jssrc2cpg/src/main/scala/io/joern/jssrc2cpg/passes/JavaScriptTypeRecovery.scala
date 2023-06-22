@@ -53,11 +53,11 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
       val resolvedTypeHints =
         if (typeHints.nonEmpty) symbolTable.put(x, typeHints)
         else if (cpgTypeFullName.nonEmpty) symbolTable.put(x, cpgTypeFullName)
-        else symbolTable.put(x, getTypes(x))
+        else symbolTable.put(x, x.getKnownTypes)
       if (!resolvedTypeHints.contains(typeFullName) && resolvedTypeHints.sizeIs == 1)
         builder.setNodeProperty(x, PropertyNames.TYPE_FULL_NAME, resolvedTypeHints.head)
     case x @ (_: Identifier | _: Local | _: MethodParameterIn) =>
-      symbolTable.put(x, getTypes(x))
+      symbolTable.put(x, x.getKnownTypes)
     case x: Call => symbolTable.put(x, (x.methodFullName +: x.dynamicTypeHintFullName).toSet)
     case _       =>
   }
@@ -66,7 +66,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
     super.prepopulateSymbolTable()
     cu.ast.isMethod.foreach(f => symbolTable.put(CallAlias(f.name, Option("this")), Set(f.fullName)))
     (cu.ast.isParameter.whereNot(_.nameExact("this")) ++ cu.ast.isMethod.methodReturn).filter(hasTypes).foreach { p =>
-      val resolvedHints = getTypes(p)
+      val resolvedHints = p.getKnownTypes
         .map { t =>
           t.split("\\.").headOption match {
             case Some(base) if symbolTable.contains(LocalVar(base)) =>
