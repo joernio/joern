@@ -1,7 +1,7 @@
 package io.joern.php2cpg
 
 import io.joern.php2cpg.parser.PhpParser
-import io.joern.php2cpg.passes.{AstCreationPass, LocalCreationPass}
+import io.joern.php2cpg.passes.{AnyTypePass, AstCreationPass, AstParentInfoPass, ClosureRefPass, LocalCreationPass}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
@@ -13,7 +13,6 @@ import org.slf4j.LoggerFactory
 import scala.collection.mutable
 import scala.util.{Failure, Try, Success}
 import scala.util.matching.Regex
-import io.joern.php2cpg.passes.ClosureRefPass
 
 class Php2Cpg extends X2CpgFrontend[Config] {
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -51,6 +50,8 @@ class Php2Cpg extends X2CpgFrontend[Config] {
         new MetaDataPass(cpg, Languages.PHP, config.inputPath).createAndApply()
         val astCreationPass = new AstCreationPass(config, cpg, parser.get)
         astCreationPass.createAndApply()
+        new AstParentInfoPass(cpg).createAndApply()
+        new AnyTypePass(cpg).createAndApply()
         new TypeNodePass(astCreationPass.allUsedTypes, cpg).createAndApply()
         LocalCreationPass.allLocalCreationPasses(cpg).foreach(_.createAndApply())
         new ClosureRefPass(cpg).createAndApply()
