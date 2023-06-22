@@ -106,4 +106,12 @@ trait AstForExpressionsCreator { this: AstCreator =>
     callAst(call, argsAst.toList)
   }
 
+  protected def astForLiteralPrimaryExpression(ctx: LiteralPrimaryContext): Ast = ctx.literal() match {
+    case ctx: NumericLiteralLiteralContext     => astForNumericLiteral(ctx.numericLiteral())
+    case ctx: SymbolLiteralContext             => astForSymbolLiteral(ctx.symbol())
+    case ctx: SingleQuotedStringLiteralContext => astForSingleQuotedStringLiteral(ctx)
+    case ctx: DoubleQuotedStringLiteralContext => astForDoubleQuotedStringLiteral(ctx)
+    case ctx: RegularExpressionLiteralContext  => astForRegularExpressionLiteral(ctx)
+  }
+
 }
