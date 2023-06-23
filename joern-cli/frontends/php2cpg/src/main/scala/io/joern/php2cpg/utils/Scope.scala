@@ -69,6 +69,9 @@ class Scope extends X2CpgScope[String, NewNode, PhpScopeElement] {
   def getEnclosingTypeDeclTypeName: Option[String] =
     stack.map(_.scopeNode.node).collectFirst { case td: NewTypeDecl => td }.map(_.name)
 
+  def getEnclosingTypeDeclTypeFullName: Option[String] =
+    stack.map(_.scopeNode.node).collectFirst { case td: NewTypeDecl => td }.map(_.fullName)
+
   def addConstOrStaticInitToScope(ast: Ast): Unit = {
     addInitToScope(ast, constAndStaticInits)
   }

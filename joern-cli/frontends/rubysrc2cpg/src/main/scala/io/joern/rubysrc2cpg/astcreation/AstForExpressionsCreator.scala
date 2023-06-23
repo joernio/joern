@@ -2,7 +2,7 @@ package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.parser.RubyParser._
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
@@ -91,6 +91,35 @@ trait AstForExpressionsCreator { this: AstCreator =>
     val argsAst = ctx.expression().asScala.flatMap(astForExpressionContext)
     val call    = callNode(ctx, ctx.getText, Operators.modulo, Operators.modulo, DispatchTypes.STATIC_DISPATCH)
     callAst(call, argsAst.toList)
+  }
+
+  protected def astForIsDefinedExpression(ctx: IsDefinedExpressionContext): Ast = {
+    val argsAst = astForExpressionContext(ctx.expression())
+    val call = callNode(ctx, ctx.getText, RubyOperators.defined, RubyOperators.defined, DispatchTypes.STATIC_DISPATCH)
+    callAst(call, argsAst.toList)
+  }
+
+  // TODO: Maybe merge (in RubyParser.g4) isDefinedExpression with isDefinedPrimaryExpression?
+  protected def astForIsDefinedPrimaryExpression(ctx: IsDefinedPrimaryContext): Ast = {
+    val argsAst = astForExpressionOrCommand(ctx.expressionOrCommand())
+    val call = callNode(ctx, ctx.getText, RubyOperators.defined, RubyOperators.defined, DispatchTypes.STATIC_DISPATCH)
+    callAst(call, argsAst.toList)
+  }
+
+  protected def astForLiteralPrimaryExpression(ctx: LiteralPrimaryContext): Ast = ctx.literal() match {
+    case ctx: NumericLiteralLiteralContext     => astForNumericLiteral(ctx.numericLiteral())
+    case ctx: SymbolLiteralContext             => astForSymbolLiteral(ctx.symbol())
+    case ctx: SingleQuotedStringLiteralContext => astForSingleQuotedStringLiteral(ctx)
+    case ctx: DoubleQuotedStringLiteralContext => astForDoubleQuotedStringLiteral(ctx)
+    case ctx: RegularExpressionLiteralContext  => astForRegularExpressionLiteral(ctx)
+  }
+
+  protected def astForTernaryConditionalOperator(ctx: ConditionalOperatorExpressionContext): Ast = {
+    val testAst = astForExpressionContext(ctx.expression(0))
+    val thenAst = astForExpressionContext(ctx.expression(1))
+    val elseAst = astForExpressionContext(ctx.expression(2))
+    val ifNode  = controlStructureNode(ctx, ControlStructureTypes.IF, ctx.getText)
+    controlStructureAst(ifNode, testAst.headOption, thenAst ++ elseAst)
   }
 
 }
