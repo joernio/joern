@@ -711,19 +711,5 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       identifierNode2.lineNumber shouldBe Some(3)
       identifierNode2.columnNumber shouldBe Some(0)
     }
-
-    "temp yield" in {
-      val cpg = code("")
-
-      val List(identifierNode1) = cpg.identifier.name("identifier1").l
-      identifierNode1.code shouldBe "identifier1"
-      identifierNode1.lineNumber shouldBe Some(2)
-      identifierNode1.columnNumber shouldBe Some(0)
-
-      val List(identifierNode2) = cpg.identifier.name("identifier2").l
-      identifierNode2.code shouldBe "identifier2"
-      identifierNode2.lineNumber shouldBe Some(3)
-      identifierNode2.columnNumber shouldBe Some(0)
-    }
   }
 }
