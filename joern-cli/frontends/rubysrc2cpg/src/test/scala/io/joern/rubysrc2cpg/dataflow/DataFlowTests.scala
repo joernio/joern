@@ -272,20 +272,22 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Data flow through yield with argument without parenthesis" should {
+  "Data flow through yield with argument without parenthesis and multiple yield blocks" should {
     val cpg = code("""
         |def yield_with_arguments
-        |  a = "something"
-        |  yield a
+        |  x = "something"
+        |  y = "something_else"
+        |  yield(x,y)
         |end
         |
-        |yield_with_arguments { |arg| puts "Argument is #{arg}" }
+        |yield_with_arguments { |arg1, arg2| puts "Yield block 1 #{arg1} and #{arg2}" }
+        |yield_with_arguments { |arg1, arg2| puts "Yield block 2 #{arg2} and #{arg1}" }
         |""".stripMargin)
 
     "be found" in {
-      val src  = cpg.identifier.name("a").l
+      val src  = cpg.identifier.name("x").l
       val sink = cpg.call.name("puts").l
-      sink.reachableByFlows(src).l.size shouldBe 2
+      sink.reachableByFlows(src).l.size shouldBe 4
     }
   }
 
