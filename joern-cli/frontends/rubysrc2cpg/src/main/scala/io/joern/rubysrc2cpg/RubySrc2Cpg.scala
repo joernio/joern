@@ -27,7 +27,7 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
       val packageTableInfo = new PackageTable()
       new MetaDataPass(cpg, Languages.RUBYSRC, config.inputPath).createAndApply()
       new ConfigPass(cpg, config.inputPath).createAndApply()
-      if (config.enableDependencyDownload && !sys.props.getOrElse("os.name", "").toLowerCase.contains("win")) {
+      if (config.enableDependencyDownload && !scala.util.Properties.isWin) {
         val tempDir = File.newTemporaryDirectory()
         try {
           downloadDependency(config.inputPath, tempDir.toString())

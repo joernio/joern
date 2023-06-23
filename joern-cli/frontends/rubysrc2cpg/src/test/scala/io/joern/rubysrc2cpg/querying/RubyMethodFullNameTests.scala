@@ -39,7 +39,7 @@ class RubyMethodFullNameTests extends RubyCode2CpgFixture(true) with BeforeAndAf
     }
 
     "recognise methodFullName for call Node" in {
-      if (!sys.props.getOrElse("os.name", "").toLowerCase.contains("win")) {
+      if (!scala.util.Properties.isWin) {
         cpg.call.name("first_fun").head.methodFullName should equal(
           "dummy_logger.Main_module.Main_outer_class.first_fun:<unresolvedSignature>"
         )
@@ -79,7 +79,7 @@ class RubyMethodFullNameTests extends RubyCode2CpgFixture(true) with BeforeAndAf
     }
 
     "recognise method full name for call node" in {
-      if (!sys.props.getOrElse("os.name", "").toLowerCase.contains("win")) {
+      if (!scala.util.Properties.isWin) {
         cpg.call
           .name("printValue")
           .head
