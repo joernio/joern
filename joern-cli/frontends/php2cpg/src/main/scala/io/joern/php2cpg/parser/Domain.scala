@@ -1390,7 +1390,8 @@ object Domain {
     }
   }
 
-  /** One of Identifier, Name, or Complex Type (Nullable, Intersection, or Union) */
+  /** One of Identifier, Name, or Complex Type (Nullable, Intersection, or Union)
+    */
   private def readType(json: Value): PhpNameExpr = {
     json match {
       case Obj(value) if value.get("nodeType").map(_.str).contains("NullableType") =>

@@ -134,8 +134,7 @@ class AstCreator(filename: String, phpAst: PhpFile)
       case foreachStmt: PhpForeachStmt     => astForForeachStmt(foreachStmt) :: Nil
       case traitUseStmt: PhpTraitUseStmt   => astforTraitUseStmt(traitUseStmt) :: Nil
       case enumCase: PhpEnumCaseStmt       => astForEnumCase(enumCase) :: Nil
-      // TODO Figure out if this is breaking any assumptions that will cause issues later.
-      case staticStmt: PhpStaticStmt => astsForStaticStmt(staticStmt)
+      case staticStmt: PhpStaticStmt       => astsForStaticStmt(staticStmt)
       case unhandled =>
         logger.error(s"Unhandled stmt $unhandled in $filename")
         ???
