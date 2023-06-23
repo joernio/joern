@@ -678,11 +678,13 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
 
     "literal to captured closure" in {
       val literalSource = cpg.literal.codeExact("\"https://test-api-service.com\"").l
+      literalSource.size shouldBe 1
       sink.reachableBy(literalSource).isEmpty shouldBe false
     }
 
     "identifiers to captured closure" in {
       val identifierSource = cpg.identifier.nameExact("API_Endpoint").lineNumber(5).l
+      identifierSource.size shouldBe 1
       sink.reachableBy(identifierSource).isEmpty shouldBe false
     }
 

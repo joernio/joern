@@ -173,23 +173,16 @@ class DdgGenerator(semantics: Semantics) {
         method._identifierViaContainsOut
           .flatMap { identifier =>
             val firstAndLastUsageByMethod = identifierToFirstUsages(identifier).groupBy(_.method)
-            firstAndLastUsageByMethod.values.flatMap { usage =>
-              if (usage.nonEmpty) {
-                val firstUsage = usage.head // First usage of identifier
-                val lastUsage  = usage.last // Last usage of identifier
-                if (
-                  identifier.lineNumber.isDefined && firstUsage.lineNumber.isDefined && (identifier.lineNumber.get <= firstUsage.lineNumber.get)
-                )
-                  Some(identifier, firstUsage)
-                else if (
-                  identifier.lineNumber.isDefined && lastUsage.lineNumber.isDefined && (identifier.lineNumber.get >= lastUsage.lineNumber.get)
-                )
-                  Some(lastUsage, identifier)
-                else
-                  None
-              } else
-                None
-            }
+            firstAndLastUsageByMethod.values
+              .filter(_.nonEmpty)
+              .map(x => (x.head, x.last))
+              .flatMap { case (firstUsage, lastUsage) =>
+                (identifier.lineNumber, firstUsage.lineNumber, lastUsage.lineNumber) match {
+                  case (Some(iNo), Some(fNo), _) if iNo <= fNo => Some(identifier, firstUsage)
+                  case (Some(iNo), _, Some(lNo)) if iNo >= lNo => Some(lastUsage, identifier)
+                  case _                                       => None
+                }
+              }
           }
           .toSet
           .l
