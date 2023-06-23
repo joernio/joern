@@ -280,14 +280,17 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         |  yield(x,y)
         |end
         |
-        |yield_with_arguments { |arg1, arg2| puts "Yield block 1 #{arg1} and #{arg2}" }
-        |yield_with_arguments { |arg1, arg2| puts "Yield block 2 #{arg2} and #{arg1}" }
+        |yield_with_arguments { |arg1, arg2| puts1 "Yield block 1 #{arg1} and #{arg2}" }
+        |yield_with_arguments { |arg1, arg2| puts2 "Yield block 2 #{arg2} and #{arg1}" }
         |""".stripMargin)
 
     "be found" in {
       val src  = cpg.identifier.name("x").l
-      val sink = cpg.call.name("puts").l
-      sink.reachableByFlows(src).l.size shouldBe 4
+      val sink1 = cpg.call.name("puts1").l
+      sink1.reachableByFlows(src).l.size shouldBe 2
+
+      val sink2 = cpg.call.name("puts2").l
+      sink2.reachableByFlows(src).l.size shouldBe 2
     }
   }
 
