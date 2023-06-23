@@ -6,6 +6,7 @@ import io.joern.pysrc2cpg.PySrc2CpgFixture
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Literal, Member, Method}
 import io.shiftleft.semanticcpg.language._
+import org.scalatest.Ignore
 
 import java.io.File
 
@@ -545,6 +546,47 @@ class RegexDefinedFlowsDataFlowTests
       val snk = cpg.call("sink2").l
       snk.reachableByFlows(src).size shouldBe 1
     }
+  }
+
+  "Exception block flow sample one" in {
+    val cpg: Cpg = code("""
+        |import logging
+        |tmp = logging.getLogger(__name__)
+        |
+        |class AccountDetailsFetcherUtility:
+        |    def getAccountDetails(cls, accountId):
+        |        try:
+        |            someProcessing()
+        |            tmp.debug(f"Debug : {accountId}")
+        |        except Exception as e:
+        |            tmp.error(f"Failure: {accountId}")
+        |            return None
+        |""".stripMargin)
+    val sources = cpg.identifier(".*account.*").lineNumber(6).l
+    val sinks   = cpg.call.methodFullName(".*log.*(debug|info|error).*").l
+    val flows   = sinks.reachableByFlows(sources).l
+    flows.size shouldBe 2
+  }
+
+  // TODO: Need to fix this scenario. This use case is not working across the frontend. Had tested it for Java as well.
+  "Exception block flow sample two" ignore {
+    val cpg: Cpg = code("""
+        |import logging
+        |tmp = logging.getLogger(__name__)
+        |
+        |class AccountDetailsFetcherUtility:
+        |    def getAccountDetails(cls, accountId):
+        |        try:
+        |            tmp.debug(f"Debug : {accountId}")
+        |            return None
+        |        except Exception as e:
+        |            tmp.error(f"Failure: {accountId}")
+        |            return None
+        |""".stripMargin)
+    val sources = cpg.identifier(".*account.*").lineNumber(6).l
+    val sinks   = cpg.call.methodFullName(".*log.*(debug|info|error).*").l
+    val flows   = sinks.reachableByFlows(sources).l
+    flows.size shouldBe 2
   }
 
 }
