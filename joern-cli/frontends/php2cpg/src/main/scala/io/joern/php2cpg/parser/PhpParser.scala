@@ -93,7 +93,7 @@ object PhpParser {
 
     val fixedDir = new java.io.File(dir.substring(0, dir.indexOf("php2cpg"))).toString
 
-    Paths.get(fixedDir, "php2cpg", "bin", "php-parser.phar").toAbsolutePath.toString
+    Paths.get(fixedDir, "php2cpg", "bin", "php-parser", "php-parser.php").toAbsolutePath.toString
   }
 
   private def configOverrideOrDefaultPath(
