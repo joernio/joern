@@ -1429,20 +1429,11 @@ class AstCreator(filename: String, global: Global)
     val rhsAsts      = astForMultipleRightHandSideContext(ctx.multipleRightHandSide())
     val operatorName = getOperatorName(ctx.EQ().getSymbol)
 
-    /* If we get anything other than Identifier or Literal, we should ignore and
-     * rebuild  the ASTs
-     * TODO: Model function calls also so we can capture their return in this
-     */
-    val reshapedRhsAsts = rhsAsts
-      .map(x => x.nodes.filter(n => n.isInstanceOf[NewIdentifier] || n.isInstanceOf[NewLiteral]))
-      .filter(_.nonEmpty)
-      .flatMap(nodes => nodes.map(n => Ast(n)))
-
     /* Since we have multiple LHS and RHS elements here, we will now create synthetic assignment
      * call nodes to model how ruby assigns values from RHS elements to LHS elements. We create
      * tuples for each assignment and then pass them to the assignment calls nodes
      */
-    val assigns = lhsAsts.zip(reshapedRhsAsts)
+    val assigns = lhsAsts.zip(rhsAsts)
     assigns.map { argPair =>
       val lhsCode = argPair._1.nodes.headOption match {
         case Some(id: NewIdentifier) => id.code

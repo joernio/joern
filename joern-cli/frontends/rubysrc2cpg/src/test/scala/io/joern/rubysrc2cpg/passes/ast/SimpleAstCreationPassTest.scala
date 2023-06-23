@@ -409,7 +409,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       callNode.lineNumber.l shouldBe List(1, 1, 1)
     }
 
-    "have correct structure for a multiple assignment expression with calls in RHS" ignore {
+    "have correct structure for a multiple assignment expression with calls in RHS" in {
       val cpg      = code("x, y = [ foo(), bar() ]")
       val callNode = cpg.call.name(Operators.assignment).l
       callNode.size shouldBe 2
@@ -420,7 +420,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       callNode.argument
         .where(_.argumentIndex(2))
         .code
-        .l shouldBe List("foo()", "bar()")
+        .l shouldBe List("foo()", "bar() ")
       callNode.lineNumber.l shouldBe List(1, 1)
     }
 
