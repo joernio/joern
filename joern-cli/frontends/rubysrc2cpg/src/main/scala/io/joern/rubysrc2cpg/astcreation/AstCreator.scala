@@ -67,7 +67,7 @@ class AstCreator(filename: String, global: Global)
     val statementCtx = programCtx.compoundStatement().statements()
     scope.pushNewScope(())
     val statementAsts = if (statementCtx != null) {
-      astForStatementsContext(statementCtx) ++ blockMethods
+      astForStatements(statementCtx) ++ blockMethods
     } else {
       List[Ast](Ast())
     }
@@ -306,7 +306,7 @@ class AstCreator(filename: String, global: Global)
       .interpolatedStringSequence()
       .asScala
       .flatMap(inter => {
-        astForStatementsContext(inter.compoundStatement().statements())
+        astForStatements(inter.compoundStatement().statements())
       })
       .toSeq
 
@@ -347,9 +347,9 @@ class AstCreator(filename: String, global: Global)
       astForChainedScopedConstantReferencePrimaryContext(ctx)
     case ctx: ArrayConstructorPrimaryContext          => astForArrayConstructorPrimaryContext(ctx)
     case ctx: HashConstructorPrimaryContext           => astForHashConstructorPrimaryContext(ctx)
-    case ctx: LiteralPrimaryContext                   => Seq(astForLiteralPrimaryContext(ctx))
+    case ctx: LiteralPrimaryContext                   => Seq(astForLiteralPrimaryExpression(ctx))
     case ctx: StringInterpolationPrimaryContext       => astForStringInterpolationPrimaryContext(ctx)
-    case ctx: IsDefinedPrimaryContext                 => astForIsDefinedPrimaryContext(ctx)
+    case ctx: IsDefinedPrimaryContext                 => Seq(astForIsDefinedPrimaryExpression(ctx))
     case ctx: SuperExpressionPrimaryContext           => astForSuperExpressionPrimaryContext(ctx)
     case ctx: IndexingExpressionPrimaryContext        => astForIndexingExpressionPrimaryContext(ctx)
     case ctx: MethodOnlyIdentifierPrimaryContext      => astForMethodOnlyIdentifierPrimaryContext(ctx)
@@ -378,30 +378,13 @@ class AstCreator(filename: String, global: Global)
     case ctx: OperatorAndExpressionContext         => Seq(astForAndExpression(ctx))
     case ctx: OperatorOrExpressionContext          => Seq(astForOrExpression(ctx))
     case ctx: RangeExpressionContext               => astForRangeExpressionContext(ctx)
-    case ctx: ConditionalOperatorExpressionContext => astForConditionalOperatorExpressionContext(ctx)
+    case ctx: ConditionalOperatorExpressionContext => Seq(astForTernaryConditionalOperator(ctx))
     case ctx: SingleAssignmentExpressionContext    => astForSingleAssignmentExpressionContext(ctx)
     case ctx: MultipleAssignmentExpressionContext  => astForMultipleAssignmentExpressionContext(ctx)
-    case ctx: IsDefinedExpressionContext           => astForIsDefinedExpressionContext(ctx)
+    case ctx: IsDefinedExpressionContext           => Seq(astForIsDefinedExpression(ctx))
     case _ =>
       logger.error("astForExpressionContext() All contexts mismatched.")
       Seq(Ast())
-  }
-
-  def astForSymbolContext(ctx: SymbolContext): Seq[Ast] = {
-    val text =
-      if (ctx.SYMBOL_LITERAL() != null) {
-        ctx.getText
-      } else if (ctx.SINGLE_QUOTED_STRING_LITERAL() != null) {
-        ctx.getText
-      } else {
-        return Seq(Ast())
-      }
-
-    val node = NewLiteral()
-      .code(text)
-      .typeFullName(Defines.String)
-      .dynamicTypeHintFullName(List(Defines.String))
-    Seq(Ast(node))
   }
 
   def astForDefinedMethodNameOrSymbolContext(ctx: DefinedMethodNameOrSymbolContext): Seq[Ast] = {
@@ -410,20 +393,8 @@ class AstCreator(filename: String, global: Global)
     if (ctx.definedMethodName() != null) {
       astForDefinedMethodNameContext(ctx.definedMethodName())
     } else {
-      astForSymbolContext(ctx.symbol())
+      Seq(astForSymbolLiteral(ctx.symbol()))
     }
-  }
-
-  def astForStatementsContext(ctx: StatementsContext): Seq[Ast] = {
-    if (ctx == null) return Seq(Ast())
-    ctx
-      .statement()
-      .asScala
-      .flatMap(st => {
-        val asts = astForStatement(st)
-        asts
-      })
-      .toSeq
   }
 
   def astForIndexingArgumentsContext(ctx: IndexingArgumentsContext): Seq[Ast] = ctx match {
@@ -729,20 +700,6 @@ class AstCreator(filename: String, global: Global)
     }
   }
 
-  def astForConditionalOperatorExpressionContext(ctx: ConditionalOperatorExpressionContext): Seq[Ast] = {
-    val conditionAst = astForExpressionContext(ctx.expression().get(0))
-    val thenAst      = astForExpressionContext(ctx.expression().get(1))
-    val elseAst      = astForExpressionContext(ctx.expression().get(2))
-
-    val ifNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.IF)
-      .code(ctx.getText)
-      .lineNumber(ctx.QMARK().getSymbol.getLine)
-      .columnNumber(ctx.QMARK().getSymbol.getCharPositionInLine)
-
-    Seq(controlStructureAst(ifNode, conditionAst.headOption, List(thenAst ++ elseAst).flatten))
-  }
-
   def astForEqualityExpressionContext(ctx: EqualityExpressionContext): Seq[Ast] = {
     astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op, ctx.getText)
   }
@@ -814,7 +771,7 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForGroupingExpressionPrimaryContext(ctx: GroupingExpressionPrimaryContext): Seq[Ast] = {
-    astForStatementsContext(ctx.compoundStatement().statements())
+    astForCompoundStatement(ctx.compoundStatement())
   }
 
   def astForHashConstructorPrimaryContext(ctx: HashConstructorPrimaryContext): Seq[Ast] = {
@@ -823,7 +780,7 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForThenClauseContext(ctx: ThenClauseContext): Seq[Ast] = {
-    astForStatementsContext(ctx.compoundStatement().statements())
+    astForCompoundStatement(ctx.compoundStatement())
   }
 
   def astForElsifClauseContext(ctx: util.List[ElsifClauseContext]): Seq[Ast] = {
@@ -854,7 +811,7 @@ class AstCreator(filename: String, global: Global)
         .lineNumber(ctx.ELSE().getSymbol.getLine)
         .columnNumber(ctx.ELSE().getSymbol.getCharPositionInLine)
 
-    val stmtsAsts = astForStatementsContext(ctx.compoundStatement().statements())
+    val stmtsAsts = astForCompoundStatement(ctx.compoundStatement())
     Seq(Ast(elseNode)) ++ stmtsAsts
   }
 
@@ -974,24 +931,6 @@ class AstCreator(filename: String, global: Global)
     }
   }
 
-  def astForIsDefinedExpressionContext(ctx: IsDefinedExpressionContext): Seq[Ast] = {
-    val exprAst = astForExpressionContext(ctx.expression())
-    val callNode = NewCall()
-      .name(RubyOperators.defined)
-      .code(ctx.getText)
-      .methodFullName(RubyOperators.defined)
-      .signature("")
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .typeFullName(Defines.Any)
-      .lineNumber(ctx.IS_DEFINED().getSymbol().getLine())
-      .columnNumber(ctx.IS_DEFINED().getSymbol().getCharPositionInLine())
-    Seq(callAst(callNode, exprAst))
-  }
-
-  def astForIsDefinedPrimaryContext(ctx: IsDefinedPrimaryContext): Seq[Ast] = {
-    astForExpressionOrCommand(ctx.expressionOrCommand())
-  }
-
   def astForJumpExpressionPrimaryContext(ctx: JumpExpressionPrimaryContext): Seq[Ast] = {
     if (ctx.jumpExpression().RETURN() != null) {
       val retNode = NewReturn()
@@ -1031,15 +970,6 @@ class AstCreator(filename: String, global: Global)
       Seq(Ast())
     }
   }
-
-  def astForLiteralPrimaryContext(ctx: LiteralPrimaryContext): Ast =
-    ctx.literal() match {
-      case ctx: NumericLiteralLiteralContext     => astForNumericLiteral(ctx.numericLiteral)
-      case ctx: SymbolLiteralContext             => astForSymbolLiteral(ctx.symbol())
-      case ctx: SingleQuotedStringLiteralContext => astForSingleQuotedStringLiteral(ctx)
-      case ctx: DoubleQuotedStringLiteralContext => astForDoubleQuotedStringLiteral(ctx)
-      case ctx: RegularExpressionLiteralContext  => astForRegularExpressionLiteral(ctx)
-    }
 
   def astForSimpleMethodNamePartContext(ctx: SimpleMethodNamePartContext): Seq[Ast] = {
     astForDefinedMethodNameContext(ctx.definedMethodName())
@@ -1289,7 +1219,7 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForBodyStatementContext(ctx: BodyStatementContext, addReturnNode: Boolean = false): Seq[Ast] = {
-    val compoundStatementAsts = astForStatementsContext(ctx.compoundStatement().statements())
+    val compoundStatementAsts = astForCompoundStatement(ctx.compoundStatement())
 
     val compoundStatementAstsWithReturn =
       if (addReturnNode && compoundStatementAsts.size > 0) {
@@ -1320,7 +1250,7 @@ class AstCreator(filename: String, global: Global)
       }
 
     val mainBodyAsts = if (ctx.ensureClause() != null) {
-      val ensureAsts = astForStatementsContext(ctx.ensureClause().compoundStatement().statements())
+      val ensureAsts = astForCompoundStatement(ctx.ensureClause().compoundStatement())
       compoundStatementAstsWithReturn ++ ensureAsts
     } else {
       compoundStatementAstsWithReturn
@@ -1656,7 +1586,7 @@ class AstCreator(filename: String, global: Global)
     }
 
     scope.pushNewScope(())
-    val astBody = astForStatementsContext(ctxStmt)
+    val astBody = astForStatements(ctxStmt)
     scope.popScope()
 
     val methodNode = NewMethod()
@@ -1724,7 +1654,7 @@ class AstCreator(filename: String, global: Global)
       case Some(blockMethodName) =>
         astForBlockMethod(ctxStmt, ctxParam, blockMethodName, lineStart, lineEnd, colStart, colEnd)
       case None =>
-        val stmtAsts  = astForStatementsContext(ctxStmt)
+        val stmtAsts  = astForStatements(ctxStmt)
         val blockNode = NewBlock().typeFullName(Defines.Any)
         val retAst = if (ctxParam != null) {
           val bpAsts = astForBlockParameterContext(ctxParam)
@@ -1858,7 +1788,7 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForDoClauseContext(ctx: DoClauseContext): Seq[Ast] = {
-    astForStatementsContext(ctx.compoundStatement().statements())
+    astForCompoundStatement(ctx.compoundStatement())
   }
 
   def astForWhileExpressionContext(ctx: WhileExpressionContext): Seq[Ast] = {

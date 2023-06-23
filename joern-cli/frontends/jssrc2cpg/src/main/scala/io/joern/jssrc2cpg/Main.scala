@@ -1,7 +1,7 @@
 package io.joern.jssrc2cpg
 
 import io.joern.jssrc2cpg.Frontend._
-import io.joern.jssrc2cpg.utils.Environment
+import io.joern.x2cpg.utils.Environment
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
 import scopt.OParser
 
