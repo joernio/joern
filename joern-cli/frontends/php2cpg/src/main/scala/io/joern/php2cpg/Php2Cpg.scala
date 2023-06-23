@@ -18,8 +18,8 @@ class Php2Cpg extends X2CpgFrontend[Config] {
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   private def isPhpVersionSupported: Boolean = {
-    // PHP 8.1.0 and above is required by Composer, which is used by PHP Parser
-    val phpVersionRegex = new Regex("^PHP (8\\.[1-9]\\.[0-9]|[9-9]\\d\\.\\d\\.\\d)")
+    // PHP 7.1.0 and above is required by Composer, which is used by PHP Parser
+    val phpVersionRegex = new Regex("^PHP ([78]\\.[1-9]\\.[0-9]|[9-9]\\d\\.\\d\\.\\d)")
     val result          = ExternalCommand.run("php --version", ".")
     result match {
       case Success(listString) =>
@@ -42,7 +42,7 @@ class Php2Cpg extends X2CpgFrontend[Config] {
       errorMessages.append("Could not initialize PhpParser")
     }
     if (!isPhpVersionSupported) {
-      errorMessages.append("PHP version not supported. Is PHP 8.1.0 or above installed and available on your path?")
+      errorMessages.append("PHP version not supported. Is PHP 7.1.0 or above installed and available on your path?")
     }
 
     if (errorMessages.isEmpty) {
