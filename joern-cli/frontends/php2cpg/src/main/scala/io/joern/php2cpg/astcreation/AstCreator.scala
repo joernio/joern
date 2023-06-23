@@ -106,36 +106,36 @@ class AstCreator(filename: String, phpAst: PhpFile)
     Ast(globalNamespace).withChild(globalTypeDeclAst)
   }
 
-  private def astForStmt(stmt: PhpStmt): Ast = {
+  private def astsForStmt(stmt: PhpStmt): List[Ast] = {
     stmt match {
-      case echoStmt: PhpEchoStmt           => astForEchoStmt(echoStmt)
-      case methodDecl: PhpMethodDecl       => astForMethodDecl(methodDecl)
-      case expr: PhpExpr                   => astForExpr(expr)
-      case breakStmt: PhpBreakStmt         => astForBreakStmt(breakStmt)
-      case contStmt: PhpContinueStmt       => astForContinueStmt(contStmt)
-      case whileStmt: PhpWhileStmt         => astForWhileStmt(whileStmt)
-      case doStmt: PhpDoStmt               => astForDoStmt(doStmt)
-      case forStmt: PhpForStmt             => astForForStmt(forStmt)
-      case ifStmt: PhpIfStmt               => astForIfStmt(ifStmt)
-      case switchStmt: PhpSwitchStmt       => astForSwitchStmt(switchStmt)
-      case tryStmt: PhpTryStmt             => astForTryStmt(tryStmt)
-      case returnStmt: PhpReturnStmt       => astForReturnStmt(returnStmt)
-      case classLikeStmt: PhpClassLikeStmt => astForClassLikeStmt(classLikeStmt)
-      case gotoStmt: PhpGotoStmt           => astForGotoStmt(gotoStmt)
-      case labelStmt: PhpLabelStmt         => astForLabelStmt(labelStmt)
-      case namespace: PhpNamespaceStmt     => astForNamespaceStmt(namespace)
-      case declareStmt: PhpDeclareStmt     => astForDeclareStmt(declareStmt)
-      case _: NopStmt                      => Ast() // TODO This'll need to be updated when comments are added.
-      case haltStmt: PhpHaltCompilerStmt   => astForHaltCompilerStmt(haltStmt)
-      case unsetStmt: PhpUnsetStmt         => astForUnsetStmt(unsetStmt)
-      case globalStmt: PhpGlobalStmt       => astForGlobalStmt(globalStmt)
-      case useStmt: PhpUseStmt             => astForUseStmt(useStmt)
-      case groupUseStmt: PhpGroupUseStmt   => astForGroupUseStmt(groupUseStmt)
-      case foreachStmt: PhpForeachStmt     => astForForeachStmt(foreachStmt)
-      case traitUseStmt: PhpTraitUseStmt   => astforTraitUseStmt(traitUseStmt)
-      case enumCase: PhpEnumCaseStmt       => astForEnumCase(enumCase)
+      case echoStmt: PhpEchoStmt           => astForEchoStmt(echoStmt) :: Nil
+      case methodDecl: PhpMethodDecl       => astForMethodDecl(methodDecl) :: Nil
+      case expr: PhpExpr                   => astForExpr(expr) :: Nil
+      case breakStmt: PhpBreakStmt         => astForBreakStmt(breakStmt) :: Nil
+      case contStmt: PhpContinueStmt       => astForContinueStmt(contStmt) :: Nil
+      case whileStmt: PhpWhileStmt         => astForWhileStmt(whileStmt) :: Nil
+      case doStmt: PhpDoStmt               => astForDoStmt(doStmt) :: Nil
+      case forStmt: PhpForStmt             => astForForStmt(forStmt) :: Nil
+      case ifStmt: PhpIfStmt               => astForIfStmt(ifStmt) :: Nil
+      case switchStmt: PhpSwitchStmt       => astForSwitchStmt(switchStmt) :: Nil
+      case tryStmt: PhpTryStmt             => astForTryStmt(tryStmt) :: Nil
+      case returnStmt: PhpReturnStmt       => astForReturnStmt(returnStmt) :: Nil
+      case classLikeStmt: PhpClassLikeStmt => astForClassLikeStmt(classLikeStmt) :: Nil
+      case gotoStmt: PhpGotoStmt           => astForGotoStmt(gotoStmt) :: Nil
+      case labelStmt: PhpLabelStmt         => astForLabelStmt(labelStmt) :: Nil
+      case namespace: PhpNamespaceStmt     => astForNamespaceStmt(namespace) :: Nil
+      case declareStmt: PhpDeclareStmt     => astForDeclareStmt(declareStmt) :: Nil
+      case _: NopStmt                      => Nil // TODO This'll need to be updated when comments are added.
+      case haltStmt: PhpHaltCompilerStmt   => astForHaltCompilerStmt(haltStmt) :: Nil
+      case unsetStmt: PhpUnsetStmt         => astForUnsetStmt(unsetStmt) :: Nil
+      case globalStmt: PhpGlobalStmt       => astForGlobalStmt(globalStmt) :: Nil
+      case useStmt: PhpUseStmt             => astForUseStmt(useStmt) :: Nil
+      case groupUseStmt: PhpGroupUseStmt   => astForGroupUseStmt(groupUseStmt) :: Nil
+      case foreachStmt: PhpForeachStmt     => astForForeachStmt(foreachStmt) :: Nil
+      case traitUseStmt: PhpTraitUseStmt   => astforTraitUseStmt(traitUseStmt) :: Nil
+      case enumCase: PhpEnumCaseStmt       => astForEnumCase(enumCase) :: Nil
       // TODO Figure out if this is breaking any assumptions that will cause issues later.
-      case staticStmt: PhpStaticStmt => Ast().withChildren(astsForStaticStmt(staticStmt))
+      case staticStmt: PhpStaticStmt => astsForStaticStmt(staticStmt)
       case unhandled =>
         logger.error(s"Unhandled stmt $unhandled in $filename")
         ???
@@ -238,11 +238,8 @@ class AstCreator(filename: String, phpAst: PhpFile)
 
     val returnType = decl.returnType.map(_.name).getOrElse(TypeConstants.Any)
 
-    val methodBodyStmts = bodyPrefixAsts ++ decl.stmts.flatMap {
-      case staticStmt: PhpStaticStmt => astsForStaticStmt(staticStmt)
-      case stmt                      => astForStmt(stmt) :: Nil
-    }
-    val methodReturn = newMethodReturnNode(returnType, line = line(decl), column = None)
+    val methodBodyStmts = bodyPrefixAsts ++ decl.stmts.flatMap(astsForStmt)
+    val methodReturn    = newMethodReturnNode(returnType, line = line(decl), column = None)
 
     val methodBody = blockAst(blockNode(decl), methodBodyStmts)
 
@@ -252,7 +249,7 @@ class AstCreator(filename: String, phpAst: PhpFile)
 
   private def stmtBodyBlockAst(stmt: PhpStmtWithBody): Ast = {
     val bodyBlock    = blockNode(stmt)
-    val bodyStmtAsts = stmt.stmts.map(astForStmt)
+    val bodyStmtAsts = stmt.stmts.flatMap(astsForStmt)
     Ast(bodyBlock).withChildren(bodyStmtAsts)
   }
 
@@ -480,7 +477,7 @@ class AstCreator(filename: String, phpAst: PhpFile)
 
     stmt.stmts match {
       case Some(stmtList) =>
-        val stmtAsts = stmtList.map(astForStmt)
+        val stmtAsts = stmtList.flatMap(astsForStmt)
         Ast(blockNode(stmt))
           .withChild(declareAst)
           .withChildren(stmtAsts)
@@ -774,15 +771,15 @@ class AstCreator(filename: String, phpAst: PhpFile)
       explicitConstructorAst.orElse(Option.when(createDefaultConstructor)(defaultConstructorAst(classLike)))
 
     val otherBodyStmts = bodyStmts.flatMap {
-      case _: PhpConstStmt => None // Handled above
+      case _: PhpConstStmt => Nil // Handled above
 
-      case _: PhpPropertyStmt => None // Handled above
+      case _: PhpPropertyStmt => Nil // Handled above
 
-      case method: PhpMethodDecl if method.name.name == ConstructorMethodName => None // Handled above
+      case method: PhpMethodDecl if method.name.name == ConstructorMethodName => Nil // Handled above
 
       // Not all statements are supported in class bodies, but since this is re-used for namespaces
       // we allow that here.
-      case stmt => Some(astForStmt(stmt))
+      case stmt => astsForStmt(stmt)
     }
 
     val clinitAst           = astForStaticAndConstInits
@@ -916,7 +913,7 @@ class AstCreator(filename: String, phpAst: PhpFile)
     }
     jumpTarget.lineNumber(line(caseStmt))
 
-    val stmtAsts = caseStmt.stmts.map(astForStmt)
+    val stmtAsts = caseStmt.stmts.flatMap(astsForStmt)
 
     Ast(jumpTarget) :: stmtAsts
   }
