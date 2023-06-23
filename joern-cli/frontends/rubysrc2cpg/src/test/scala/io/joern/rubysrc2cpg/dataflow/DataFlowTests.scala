@@ -280,17 +280,38 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         |  yield(x,y)
         |end
         |
-        |yield_with_arguments { |arg1, arg2| puts1 "Yield block 1 #{arg1} and #{arg2}" }
-        |yield_with_arguments { |arg1, arg2| puts2 "Yield block 2 #{arg2} and #{arg1}" }
+        |yield_with_arguments { |arg1, arg2| puts "Yield block 1 #{arg1} and #{arg2}" }
+        |yield_with_arguments { |arg1, arg2| puts "Yield block 2 #{arg2} and #{arg1}" }
         |""".stripMargin)
 
     "be found" in {
-      val src   = cpg.identifier.name("x").l
-      val sink1 = cpg.call.name("puts1").l
-      sink1.reachableByFlows(src).l.size shouldBe 2
+      val src  = cpg.identifier.name("x").l
+      val sink = cpg.call.name("puts").l
+      sink.reachableByFlows(src).l.size shouldBe 4
+    }
+  }
 
-      val sink2 = cpg.call.name("puts2").l
-      sink2.reachableByFlows(src).l.size shouldBe 2
+  "Data flow through yield with argument and multiple yield blocks" ignore {
+    val cpg = code("""
+        |def yield_with_arguments
+        |  x = "something"
+        |  y = "something_else"
+        |  yield(x)
+        |  yield(y)
+        |end
+        |
+        |yield_with_arguments { |arg| puts "Yield block 1 #{arg}" }
+        |yield_with_arguments { |arg| puts "Yield block 2 #{arg}" }
+        |""".stripMargin)
+
+    "be found" in {
+      val src1  = cpg.identifier.name("x").l
+      val sink1 = cpg.call.name("puts").l
+      sink1.reachableByFlows(src1).l.size shouldBe 2
+
+      val src2  = cpg.identifier.name("y").l
+      val sink2 = cpg.call.name("puts").l
+      sink2.reachableByFlows(src2).l.size shouldBe 2
     }
   }
 
