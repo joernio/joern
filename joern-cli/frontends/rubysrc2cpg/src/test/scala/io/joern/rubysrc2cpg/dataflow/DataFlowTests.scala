@@ -285,7 +285,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         |""".stripMargin)
 
     "be found" in {
-      val src  = cpg.identifier.name("x").l
+      val src   = cpg.identifier.name("x").l
       val sink1 = cpg.call.name("puts1").l
       sink1.reachableByFlows(src).l.size shouldBe 2
 
