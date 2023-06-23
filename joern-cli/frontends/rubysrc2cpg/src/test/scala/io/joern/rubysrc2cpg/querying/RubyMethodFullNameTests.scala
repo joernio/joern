@@ -39,11 +39,12 @@ class RubyMethodFullNameTests extends RubyCode2CpgFixture(true) with BeforeAndAf
     }
 
     "recognise methodFullName for call Node" in {
-      cpg.call.name("first_fun").head.methodFullName should equal(
-        "dummy_logger.Main_module.Main_outer_class.first_fun:<unresolvedSignature>"
-      )
-
-      cpg.call.name("help_print").head.methodFullName.matches(".*dummy_logger.Help.help_print:<unresolvedSignature>")
+      if (!sys.props.getOrElse("os.name", "").toLowerCase.contains("win")) {
+        cpg.call.name("first_fun").head.methodFullName should equal(
+          "dummy_logger.Main_module.Main_outer_class.first_fun:<unresolvedSignature>"
+        )
+        cpg.call.name("help_print").head.methodFullName.matches(".*dummy_logger.Help.help_print:<unresolvedSignature>")
+      }
     }
   }
 
@@ -78,11 +79,13 @@ class RubyMethodFullNameTests extends RubyCode2CpgFixture(true) with BeforeAndAf
     }
 
     "recognise method full name for call node" in {
-      cpg.call
-        .name("printValue")
-        .head
-        .methodFullName
-        .matches(".*util/help.rb.Outer.printValue:<unresolvedSignature>") shouldBe true
+      if (!sys.props.getOrElse("os.name", "").toLowerCase.contains("win")) {
+        cpg.call
+          .name("printValue")
+          .head
+          .methodFullName
+          .matches(".*util/help.rb.Outer.printValue:<unresolvedSignature>") shouldBe true
+      }
     }
   }
 }

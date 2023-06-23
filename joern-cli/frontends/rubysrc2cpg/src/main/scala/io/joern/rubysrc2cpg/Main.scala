@@ -23,7 +23,7 @@ private object Frontend {
       opt[Unit]("enableDependencyDownload")
         .hidden()
         .action((_, c) => c.withEnableDependencyDownload(false))
-        .text("enable dependency download of gemfile")
+        .text("enable dependency download for Unix System only")
     )
   }
 }
