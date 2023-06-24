@@ -2,7 +2,8 @@ package io.joern.rubysrc2cpg.passes.ast
 
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.Identifier
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.semanticcpg.language._
 
 class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
@@ -246,6 +247,15 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.code shouldBe ":'someSymbolName'"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for an identifier symbol literal used in an `undef` statement" in {
+      val cpg           = code("undef :symbolName")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Symbol
+      literal.code shouldBe ":symbolName"
+      literal.lineNumber shouldBe Some(1)
+      literal.columnNumber shouldBe Some(6)
     }
 
     "have correct structure for a single-line regular expression literal" in {
@@ -590,7 +600,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       callNodes.head.columnNumber shouldBe Some(16)
     }
 
-    "have correct structure for defined expression" in {
+    "have correct structure for defined? command" in {
       val cpg = code("defined? x")
 
       val List(callNode) = cpg.call.name("<operator>.defined").l
@@ -604,13 +614,27 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       identifierNode.columnNumber shouldBe Some(9)
     }
 
+    "have correct structure for defined? call" in {
+      val cpg = code("defined?(x)")
+
+      val List(callNode) = cpg.call.name("<operator>.defined").l
+      callNode.code shouldBe "defined?(x)"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(0)
+
+      val List(identifierNode) = cpg.identifier.name("x").l
+      identifierNode.code shouldBe "x"
+      identifierNode.lineNumber shouldBe Some(1)
+      identifierNode.columnNumber shouldBe Some(9)
+    }
+
     "have correct structure for chainedInvocationWithoutArgumentsPrimary" in {
       val cpg = code("object::foo do\nputs \"right here\"\nend")
 
       val List(callNode1) = cpg.call.name("foo").l
-      callNode1.code shouldBe "object::foo do\nputs \"right here\"\nend"
+      callNode1.code shouldBe "puts \"right here\""
       callNode1.lineNumber shouldBe Some(1)
-      callNode1.columnNumber shouldBe Some(6)
+      callNode1.columnNumber shouldBe Some(3)
 
       val List(callNode2) = cpg.call.name("puts").l
       callNode2.code shouldBe "puts \"right here\""
@@ -645,6 +669,33 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       callNode.code shouldBe "undef method1,method2"
       callNode.lineNumber shouldBe Some(1)
       callNode.columnNumber shouldBe Some(0)
+    }
+
+    "have correct structure for ternary if expression" in {
+      val cpg               = code("a ? b : c")
+      val List(controlNode) = cpg.controlStructure.l
+
+      controlNode.controlStructureType shouldBe ControlStructureTypes.IF
+      controlNode.code shouldBe "a ? b : c"
+      controlNode.lineNumber shouldBe Some(1)
+      controlNode.columnNumber shouldBe Some(0)
+
+      val List(a: Identifier) = controlNode.condition.l
+      a.code shouldBe "a"
+      a.name shouldBe "a"
+      a.lineNumber shouldBe Some(1)
+      a.columnNumber shouldBe Some(0)
+
+      val List(_, b: Identifier, c: Identifier) = controlNode.astChildren.l
+      b.code shouldBe "b"
+      b.name shouldBe "b"
+      b.lineNumber shouldBe Some(1)
+      b.columnNumber shouldBe Some(4)
+
+      c.code shouldBe "c"
+      c.name shouldBe "c"
+      c.lineNumber shouldBe Some(1)
+      c.columnNumber shouldBe Some(8)
     }
 
     "have correct structure for class definition with body having only identifiers" in {

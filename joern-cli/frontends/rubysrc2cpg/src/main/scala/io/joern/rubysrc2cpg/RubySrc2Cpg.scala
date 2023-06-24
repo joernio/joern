@@ -38,7 +38,7 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
       }
       val astCreationPass = new AstCreationPass(config.inputPath, cpg, global, packageTableInfo)
       astCreationPass.createAndApply()
-      new TypeNodePass(astCreationPass.allUsedTypes(), cpg).createAndApply()
+      TypeNodePass.withRegisteredTypes(astCreationPass.allUsedTypes(), cpg).createAndApply()
     }
   }
 

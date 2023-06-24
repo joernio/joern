@@ -13,10 +13,11 @@ class NewMemberTests extends JavaSrcCode2CpgFixture {
         |  Foo x = new Foo() {
         |    @Override
         |    void foo() {}
-        |  }
+        |  };
         |
         |  void foo() {}
         |}""".stripMargin)
+    cpg.member.size shouldBe 1
     cpg.member.name("x").astChildren.size shouldBe 0
   }
 
@@ -55,12 +56,13 @@ class NewMemberTests extends JavaSrcCode2CpgFixture {
         |  X(12) {
         |    @Override
         |    void foo() {}
-        |  }
+        |  };
         |
         |  private Foo(int x) {}
         |
         |  void foo() {}
         |}""".stripMargin)
+    cpg.member.size shouldBe 1
     cpg.member.name("x").astChildren.size shouldBe 0
   }
 

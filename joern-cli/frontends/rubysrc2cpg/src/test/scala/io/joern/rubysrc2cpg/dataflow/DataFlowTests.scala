@@ -171,12 +171,12 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Data flow through multiple assignments" ignore {
+  "Data flow through multiple assignments" should {
     // TODO test a lot more multiple assignments
     val cpg = code("""
         |a = 1
         |b = 2
-        |c,d=a,b
+        |c, d = a, b
         |puts c
         |""".stripMargin)
 
@@ -187,7 +187,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Data flow through class method" ignore {
+  "Data flow through class method" should {
     val cpg = code("""
         |class MyClass
         |  def print(text)
@@ -202,13 +202,40 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         |""".stripMargin)
 
     "be found" in {
-      val src  = cpg.identifier.name("a").l
+      val src  = cpg.identifier.name("x").l
       val sink = cpg.call.name("puts").l
       sink.reachableByFlows(src).l.size shouldBe 2
     }
   }
 
-  "Data flow through module method" ignore {
+  "Data flow through class member" ignore {
+    val cpg = code("""
+        |class MyClass
+        | @instanceVariable
+        |
+        | def initialize(value)
+        |        @instanceVariable = value
+        | end
+        |
+        | def getValue()
+        |        @instanceVariable
+        | end
+        |end
+        |
+        |x = 12345
+        |inst = MyClass.new(x)
+        |y = inst.getValue
+        |puts y
+        |""".stripMargin)
+
+    "be found" in {
+      val src  = cpg.identifier.name("x").l
+      val sink = cpg.call.name("puts").l
+      sink.reachableByFlows(src).l.size shouldBe 2
+    }
+  }
+
+  "Data flow through module method" should {
     val cpg = code("""
         |module MyModule
         |  def MyModule.print(text)
@@ -222,13 +249,13 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         |""".stripMargin)
 
     "be found" in {
-      val src  = cpg.identifier.name("a").l
+      val src  = cpg.identifier.name("x").l
       val sink = cpg.call.name("puts").l
       sink.reachableByFlows(src).l.size shouldBe 2
     }
   }
 
-  "Data flow through yield with argument" ignore {
+  "Data flow through yield with argument having parenthesis" should {
     val cpg = code("""
         |def yield_with_arguments
         |  a = "something"
@@ -242,6 +269,49 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
       val src  = cpg.identifier.name("a").l
       val sink = cpg.call.name("puts").l
       sink.reachableByFlows(src).l.size shouldBe 2
+    }
+  }
+
+  "Data flow through yield with argument without parenthesis and multiple yield blocks" should {
+    val cpg = code("""
+        |def yield_with_arguments
+        |  x = "something"
+        |  y = "something_else"
+        |  yield(x,y)
+        |end
+        |
+        |yield_with_arguments { |arg1, arg2| puts "Yield block 1 #{arg1} and #{arg2}" }
+        |yield_with_arguments { |arg1, arg2| puts "Yield block 2 #{arg2} and #{arg1}" }
+        |""".stripMargin)
+
+    "be found" in {
+      val src  = cpg.identifier.name("x").l
+      val sink = cpg.call.name("puts").l
+      sink.reachableByFlows(src).l.size shouldBe 4
+    }
+  }
+
+  "Data flow through yield with argument and multiple yield blocks" ignore {
+    val cpg = code("""
+        |def yield_with_arguments
+        |  x = "something"
+        |  y = "something_else"
+        |  yield(x)
+        |  yield(y)
+        |end
+        |
+        |yield_with_arguments { |arg| puts "Yield block 1 #{arg}" }
+        |yield_with_arguments { |arg| puts "Yield block 2 #{arg}" }
+        |""".stripMargin)
+
+    "be found" in {
+      val src1  = cpg.identifier.name("x").l
+      val sink1 = cpg.call.name("puts").l
+      sink1.reachableByFlows(src1).l.size shouldBe 2
+
+      val src2  = cpg.identifier.name("y").l
+      val sink2 = cpg.call.name("puts").l
+      sink2.reachableByFlows(src2).l.size shouldBe 2
     }
   }
 
@@ -302,7 +372,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Data flow through case statement" ignore {
+  "Data flow through case statement" should {
     val cpg = code("""
         |x = 2
         |b = x
@@ -323,7 +393,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     "find flows to the sink" in {
       val source = cpg.identifier.name("x").l
       val sink   = cpg.call.name("puts").l
-      sink.reachableByFlows(source).l.size shouldBe 2
+      sink.reachableByFlows(source).l.size shouldBe 8
     }
   }
 
@@ -348,7 +418,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Data flow through for loop" ignore {
+  "Data flow through for loop" should {
     val cpg = code("""
           |x = 0
           |arr = [1,2,3,4,5]
@@ -404,7 +474,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Data flow through for and next BEFORE statement" ignore {
+  "Data flow through for and next BEFORE statement" should {
     val cpg = code("""
         |x = 0
         |arr = [1,2,3,4,5]
@@ -442,7 +512,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Data flow through for and redo BEFORE statement" ignore {
+  "Data flow through for and redo BEFORE statement" should {
     val cpg = code("""
         |x = 0
         |arr = [1,2,3,4,5]
@@ -480,7 +550,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Data flow through for and retry BEFORE statement" ignore {
+  "Data flow through for and retry BEFORE statement" should {
     val cpg = code("""
         |x = 0
         |arr = [1,2,3,4,5]
@@ -625,7 +695,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     "find flows to the sink" in {
       val source = cpg.identifier.name("x").l
       val sink   = cpg.call.name("puts").l
-      sink.reachableByFlows(source).l.size shouldBe 3
+      sink.reachableByFlows(source).l.size shouldBe 2
     }
   }
 
@@ -689,13 +759,30 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Data flow through chainedInvocationPrimary usage" ignore {
+  "Data flow through chainedInvocationPrimary usage" should {
     val cpg = code("""
         |x = 1
         |
         |[x, x+1].each do |number|
         |  puts "#{number} was passed to the block"
         |end
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).l.size shouldBe 2
+    }
+  }
+
+  "Data flow coming out of chainedInvocationPrimary usage" ignore {
+    val cpg = code("""
+        |x = 1
+        |y = 10
+        |[x, x+1].each do |number|
+        |  y += x
+        |end
+        |puts y
         |""".stripMargin)
 
     "find flows to the sink" in {
@@ -712,6 +799,23 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         |[1,2,3].each do
         |  puts "Right here #{x}"
         |end
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).l.size shouldBe 1
+    }
+  }
+
+  "Data flow through invocationWithBlockOnlyPrimary usage" should {
+    val cpg = code("""
+        |def hello(&block)
+        |  block.call
+        |end
+        |
+        |x = "hello"
+        |hello { puts x }
         |""".stripMargin)
 
     "find flows to the sink" in {

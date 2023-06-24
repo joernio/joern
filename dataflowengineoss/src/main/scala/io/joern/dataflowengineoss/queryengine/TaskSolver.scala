@@ -190,6 +190,8 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
             && !arg.inCall.headOption.exists(x => isArgOrRetOfMethodWeCameFrom(x, path)) =>
         createPartialResultForOutputArgOrRet()
 
+      case _: MethodRef => createPartialResultForOutputArgOrRet()
+
       // All other cases: expand into parents
       case _ =>
         computeResultsForParents()

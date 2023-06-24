@@ -114,7 +114,8 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
         loadClassesIntoSoot(sourceFileNames)
         val astCreator = new AstCreationPass(sourceFileNames, cpg)
         astCreator.createAndApply()
-        new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg)
+        TypeNodePass
+          .withRegisteredTypes(astCreator.global.usedTypes.keys().asScala.toList, cpg)
           .createAndApply()
       } else {
         val ext = config.inputPath.split("\\.").lastOption.getOrElse("")
@@ -133,7 +134,8 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
         logger.info(s"Loaded ${Scene.v().getApplicationClasses().size()} classes")
         val astCreator = new SootAstCreationPass(cpg)
         astCreator.createAndApply()
-        new TypeNodePass(astCreator.global.usedTypes.keys().asScala.toList, cpg)
+        TypeNodePass
+          .withRegisteredTypes(astCreator.global.usedTypes.keys().asScala.toList, cpg)
           .createAndApply()
       }
 

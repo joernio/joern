@@ -6,6 +6,9 @@ import io.joern.pysrc2cpg.PySrc2CpgFixture
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Literal, Member, Method}
 import io.shiftleft.semanticcpg.language._
+import org.scalatest.Ignore
+
+import java.io.File
 
 class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
 
@@ -336,9 +339,9 @@ class RegexDefinedFlowsDataFlowTests
         FlowSemantic
           .from(
             "requests.py:<module>.post",
-            List((0, 0), (1, 1), ("url", -1), ("body", -1), ("url", "url"), ("body", "body"))
+            List((0, 0), (1, "url", -1), (2, "body", -1), (1, "url", 1, "url"), (2, "body", 2, "body"))
           ),
-        FlowSemantic.from("cross_taint.py:<module>.go", List((0, 0), (1, 1), ("a", "b")))
+        FlowSemantic.from("cross_taint.py:<module>.go", List((0, 0), (1, 1), (1, "a", 2, "b")))
       )
     ) {
 
@@ -472,6 +475,118 @@ class RegexDefinedFlowsDataFlowTests
       val snk = cpg.call("print").l
       snk.reachableByFlows(src).size shouldBe 2
     }
+  }
+  "Import statement with method ref sample four" in {
+    val controller =
+      """
+        |from django.contrib import admin
+        |from django.urls import path
+        |from django.conf.urls import url
+        |from .views import all_page
+        |
+        |urlpatterns = [
+        |    url(r'allPage', all_page)
+        |]
+        |""".stripMargin
+    val views =
+      """
+        |def all_page(request):
+        |	print("All pages")
+        |""".stripMargin
+    val cpg = code(controller, Seq("controller", "urls.py").mkString(File.separator))
+      .moreCode(views, Seq("controller", "views.py").mkString(File.separator))
+
+    val args = cpg.call.methodFullName("django.*[.](path|url)").l.head.argument.l
+    args.size shouldBe 3
+  }
+
+  "Import statement with method ref sample five" in {
+    val controller =
+      """
+        |from django.contrib import admin
+        |from django.urls import path
+        |from django.conf.urls import url
+        |from student.views import all_page
+        |
+        |urlpatterns = [
+        |    url(r'allPage', all_page)
+        |]
+        |""".stripMargin
+    val views =
+      """
+        |def all_page(request):
+        |	print("All pages")
+        |""".stripMargin
+    val cpg = code(controller, Seq("controller", "urls.py").mkString(File.separator))
+      .moreCode(views, Seq("student", "views.py").mkString(File.separator))
+
+    val args = cpg.call.methodFullName("django.*[.](path|url)").l.head.argument.l
+    args.size shouldBe 3
+  }
+
+  "flows via tuple literal" should {
+    val cpg = code("""
+        |a = 1
+        |b = 2
+        |c = 3
+        |
+        |x = (a, b, c)
+        |
+        |sink1(b)
+        |sink2(x)
+        |""".stripMargin)
+    "not cross-taint due to 'pass through' semantics" in {
+      val src = cpg.literal("1").l
+      val snk = cpg.call("sink1").l
+      snk.reachableByFlows(src).size shouldBe 0
+    }
+
+    "taint the return value due to 'pass through' semantics" in {
+      val src = cpg.call.nameExact("<operator>.tupleLiteral").l
+      val snk = cpg.call("sink2").l
+      snk.reachableByFlows(src).size shouldBe 1
+    }
+  }
+
+  "Exception block flow sample one" in {
+    val cpg: Cpg = code("""
+        |import logging
+        |tmp = logging.getLogger(__name__)
+        |
+        |class AccountDetailsFetcherUtility:
+        |    def getAccountDetails(cls, accountId):
+        |        try:
+        |            someProcessing()
+        |            tmp.debug(f"Debug : {accountId}")
+        |        except Exception as e:
+        |            tmp.error(f"Failure: {accountId}")
+        |            return None
+        |""".stripMargin)
+    val sources = cpg.identifier(".*account.*").lineNumber(6).l
+    val sinks   = cpg.call.methodFullName(".*log.*(debug|info|error).*").l
+    val flows   = sinks.reachableByFlows(sources).l
+    flows.size shouldBe 2
+  }
+
+  // TODO: Need to fix this scenario. This use case is not working across the frontend. Had tested it for Java as well.
+  "Exception block flow sample two" ignore {
+    val cpg: Cpg = code("""
+        |import logging
+        |tmp = logging.getLogger(__name__)
+        |
+        |class AccountDetailsFetcherUtility:
+        |    def getAccountDetails(cls, accountId):
+        |        try:
+        |            tmp.debug(f"Debug : {accountId}")
+        |            return None
+        |        except Exception as e:
+        |            tmp.error(f"Failure: {accountId}")
+        |            return None
+        |""".stripMargin)
+    val sources = cpg.identifier(".*account.*").lineNumber(6).l
+    val sinks   = cpg.call.methodFullName(".*log.*(debug|info|error).*").l
+    val flows   = sinks.reachableByFlows(sources).l
+    flows.size shouldBe 2
   }
 
 }
