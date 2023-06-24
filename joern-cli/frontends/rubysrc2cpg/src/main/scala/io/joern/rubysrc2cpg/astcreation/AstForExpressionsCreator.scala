@@ -39,6 +39,12 @@ trait AstForExpressionsCreator { this: AstCreator =>
     callAst(call, argsAst)
   }
 
+  protected def astForUnaryMinusExpression(ctx: UnaryMinusExpressionContext): Ast = {
+    val argsAst = astForExpressionContext(ctx.expression())
+    val call    = callNode(ctx, ctx.getText, Operators.minus, Operators.minus, DispatchTypes.STATIC_DISPATCH)
+    callAst(call, argsAst)
+  }
+
   protected def astForUnaryTildeExpression(ctx: UnaryExpressionContext): Ast = {
     val argsAst = astForExpressionContext(ctx.expression())
     val call    = callNode(ctx, ctx.getText, Operators.not, Operators.not, DispatchTypes.STATIC_DISPATCH)
@@ -120,6 +126,16 @@ trait AstForExpressionsCreator { this: AstCreator =>
     val elseAst = astForExpressionContext(ctx.expression(2))
     val ifNode  = controlStructureNode(ctx, ControlStructureTypes.IF, ctx.getText)
     controlStructureAst(ifNode, testAst.headOption, thenAst ++ elseAst)
+  }
+
+  // TODO: Handle the optional block.
+  // NOTE: `super` is quite complicated semantically speaking. We'll need
+  //       to revisit how to represent them.
+  protected def astForSuperExpression(ctx: SuperExpressionPrimaryContext): Ast = {
+    val argsAst = astForArgumentsWithParenthesesContext(ctx.argumentsWithParentheses)
+    val call =
+      callNode(ctx, ctx.getText, RubyOperators.superKeyword, RubyOperators.superKeyword, DispatchTypes.STATIC_DISPATCH)
+    callAst(call, argsAst.toList)
   }
 
 }

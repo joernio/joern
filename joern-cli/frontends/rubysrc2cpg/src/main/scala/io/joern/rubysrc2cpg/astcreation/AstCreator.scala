@@ -127,6 +127,7 @@ class AstCreator(filename: String, global: Global)
     val keyValueAssociation     = "<operator>.keyValueAssociation"
     val activeRecordAssociation = "<operator>.activeRecordAssociation"
     val undef                   = "<operator>.undef"
+    val superKeyword            = "<operator>.super"
   }
   private def getOperatorName(token: Token): String = token.getType match {
     case AMP                 => Operators.logicalAnd
@@ -361,7 +362,7 @@ class AstCreator(filename: String, global: Global)
     case ctx: LiteralPrimaryContext                   => Seq(astForLiteralPrimaryExpression(ctx))
     case ctx: StringInterpolationPrimaryContext       => astForStringInterpolationPrimaryContext(ctx)
     case ctx: IsDefinedPrimaryContext                 => Seq(astForIsDefinedPrimaryExpression(ctx))
-    case ctx: SuperExpressionPrimaryContext           => astForSuperExpressionPrimaryContext(ctx)
+    case ctx: SuperExpressionPrimaryContext           => Seq(astForSuperExpression(ctx))
     case ctx: IndexingExpressionPrimaryContext        => astForIndexingExpressionPrimaryContext(ctx)
     case ctx: MethodOnlyIdentifierPrimaryContext      => astForMethodOnlyIdentifierPrimaryContext(ctx)
     case ctx: InvocationWithBlockOnlyPrimaryContext   => astForInvocationWithBlockOnlyPrimaryContext(ctx)
@@ -378,7 +379,7 @@ class AstCreator(filename: String, global: Global)
     case ctx: PrimaryExpressionContext             => astForPrimaryContext(ctx.primary())
     case ctx: UnaryExpressionContext               => Seq(astForUnaryExpression(ctx))
     case ctx: PowerExpressionContext               => Seq(astForPowerExpression(ctx))
-    case ctx: UnaryMinusExpressionContext          => astForUnaryMinusExpressionContext(ctx)
+    case ctx: UnaryMinusExpressionContext          => Seq(astForUnaryMinusExpression(ctx))
     case ctx: MultiplicativeExpressionContext      => Seq(astForMultiplicativeExpression(ctx))
     case ctx: AdditiveExpressionContext            => Seq(astForAdditiveExpression(ctx))
     case ctx: BitwiseShiftExpressionContext        => astForBitwiseShiftExpressionContext(ctx)
@@ -1502,15 +1503,6 @@ class AstCreator(filename: String, global: Global)
 
   }
 
-  def astForSuperExpressionPrimaryContext(ctx: SuperExpressionPrimaryContext): Seq[Ast] = {
-    val argAsts = astForArgumentsWithParenthesesContext(ctx.argumentsWithParentheses())
-    if (ctx.block() != null) {
-      argAsts ++ astForBlockContext(ctx.block())
-    } else {
-      argAsts
-    }
-  }
-
   def astForCommandWithDoBlockContext(ctx: CommandWithDoBlockContext): Seq[Ast] = ctx match {
     case ctx: ArgsAndDoBlockCommandWithDoBlockContext =>
       val argsAsts   = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
@@ -1722,65 +1714,6 @@ class AstCreator(filename: String, global: Global)
       astForBraceBlockContext(ctx.braceBlock(), blockMethodName)
     } else {
       Seq(Ast())
-    }
-  }
-
-  def astForUnaryMinusExpressionContext(ctx: UnaryMinusExpressionContext): Seq[Ast] = {
-    val expressionAst = astForExpressionContext(ctx.expression())
-    if (methodNameAsIdentifierStack.size > 0) {
-      /*
-       * This is incorrectly identified as a unary expression since the parser identifies the LHS as methodIdentifier
-       * MINUS is to be interpreted as a binary operator
-       */
-
-      val queuedAst = methodNameAsIdentifierStack.pop()
-      val lhsAst =
-        queuedAst.nodes
-          .filter(node => node.isInstanceOf[NewCall])
-          .headOption match {
-          case Some(node) =>
-            /*
-             * IDENTIFIER node incorrectly created as a call node since a binary subtraction operation
-             * was identifier as unary - due to parser limitations
-             */
-            val incorrectCallNode = node.asInstanceOf[NewCall]
-            val identifierNode =
-              createIdentifierWithScope(ctx, incorrectCallNode.name, incorrectCallNode.name, Defines.Any, Seq())
-            Ast(identifierNode)
-          case None =>
-            queuedAst
-        }
-
-      val lhsCode = lhsAst.nodes
-        .filter(node => node.isInstanceOf[NewIdentifier])
-        .head
-        .asInstanceOf[NewIdentifier]
-        .code
-
-      val operatorName = Operators.subtraction
-      val callNode = NewCall()
-        .name(operatorName)
-        .code(lhsCode + ctx.getText.filterNot(_.isWhitespace))
-        .methodFullName(operatorName)
-        .signature("")
-        .dispatchType(DispatchTypes.STATIC_DISPATCH)
-        .typeFullName(Defines.Any)
-        .lineNumber(ctx.MINUS().getSymbol.getLine())
-        .columnNumber(ctx.MINUS().getSymbol.getCharPositionInLine())
-
-      Seq(callAst(callNode, Seq(lhsAst) ++ expressionAst))
-    } else {
-      val operatorName = Operators.minus
-      val callNode = NewCall()
-        .name(operatorName)
-        .code(ctx.getText)
-        .methodFullName(operatorName)
-        .signature("")
-        .dispatchType(DispatchTypes.STATIC_DISPATCH)
-        .typeFullName(Defines.Any)
-        .lineNumber(ctx.MINUS().getSymbol().getLine())
-        .columnNumber(ctx.MINUS().getSymbol().getCharPositionInLine())
-      Seq(callAst(callNode, expressionAst))
     }
   }
 
