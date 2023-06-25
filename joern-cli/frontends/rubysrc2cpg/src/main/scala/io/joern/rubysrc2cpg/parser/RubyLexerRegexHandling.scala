@@ -56,17 +56,17 @@ trait RubyLexerRegexHandling { this: RubyLexerBase =>
   /** To be invoked when encountering `/`, deciding if it should emit a `REGULAR_EXPRESSION_START` token. */
   protected def isStartOfRegex: Boolean =
     regexTogglingTokens.contains(previousNonWsToken.map(_.getType).orNull) || isInCommandArgumentPosition
-  
-  /** Decides if the current `/` is being used as an argument to a command, based on the observation
-    * that such literals may not start with a WS. E.g. `puts /x/` is valid, but `puts / x/` is not. 
+
+  /** Decides if the current `/` is being used as an argument to a command, based on the observation that such literals
+    * may not start with a WS. E.g. `puts /x/` is valid, but `puts / x/` is not.
     */
   private def isInCommandArgumentPosition: Boolean = {
     val previousNonWsIsIdentifier = previousNonWsToken.map(_.getType).getOrElse(EOF) == LOCAL_VARIABLE_IDENTIFIER
-    val previousIsWs = previousToken.map(_.getType).getOrElse(EOF) == WS
-    val nextIsWs  = _input.LA(1) == ' '
+    val previousIsWs              = previousToken.map(_.getType).getOrElse(EOF) == WS
+    val nextIsWs                  = _input.LA(1) == ' '
     previousNonWsIsIdentifier && previousIsWs && !nextIsWs
   }
-  
+
   /** To be invoked when in `DEFAULT_MODE`, to check if we are in the context of a regular expression interpolation. */
   protected def isInRegularExpressionInterpolationMode: Boolean =
     _modeStack.size > 1 && _modeStack.peek == REGULAR_EXPRESSION_MODE

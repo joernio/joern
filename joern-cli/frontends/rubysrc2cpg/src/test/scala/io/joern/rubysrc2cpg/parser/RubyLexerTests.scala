@@ -338,9 +338,16 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     val code = "x / y"
     tokenize(code) shouldBe Seq(LOCAL_VARIABLE_IDENTIFIER, WS, SLASH, WS, LOCAL_VARIABLE_IDENTIFIER, EOF)
   }
-  
+
   "Invocation of command with regex literal" should "not be confused with binary division" in {
     val code = "puts /x/"
-    tokenize(code) shouldBe Seq(LOCAL_VARIABLE_IDENTIFIER, WS, REGULAR_EXPRESSION_START, REGULAR_EXPRESSION_BODY, REGULAR_EXPRESSION_END, EOF)
+    tokenize(code) shouldBe Seq(
+      LOCAL_VARIABLE_IDENTIFIER,
+      WS,
+      REGULAR_EXPRESSION_START,
+      REGULAR_EXPRESSION_BODY,
+      REGULAR_EXPRESSION_END,
+      EOF
+    )
   }
 }

@@ -11,8 +11,8 @@ abstract class RubyLexerBase(input: CharStream)
 
   /** The previously (non-WS) emitted token (in DEFAULT_CHANNEL.) */
   protected var previousNonWsToken: Option[Token] = None
-  
-  /** The previously emitted token (in DEFAULT_CHANNEL.)  */
+
+  /** The previously emitted token (in DEFAULT_CHANNEL.) */
   protected var previousToken: Option[Token] = None
 
   // Same original behaviour, just updating `previous{NonWs}Token`.

@@ -38,7 +38,7 @@ class RegexTests extends RubyParserAbstractTest {
             |        /""".stripMargin
       }
     }
-    
+
     "as the argument to a `puts` command" should {
       val code = "puts //"
 
@@ -153,7 +153,7 @@ class RegexTests extends RubyParserAbstractTest {
             |        /""".stripMargin
       }
     }
-    
+
     "as the argument to a `puts` command" should {
       val code = "puts /(eu|us)/"
 
@@ -267,7 +267,7 @@ class RegexTests extends RubyParserAbstractTest {
             |        /""".stripMargin
       }
     }
-    
+
     "as the argument to a `puts` command" should {
       val code = "puts /x#{1}y/"
 
