@@ -289,7 +289,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literalArg.typeFullName shouldBe Defines.Regexp
       literalArg.code shouldBe "/x/"
       literalArg.lineNumber shouldBe Some(1)
-
     }
 
     "have correct structure for a single left had side call" in {
