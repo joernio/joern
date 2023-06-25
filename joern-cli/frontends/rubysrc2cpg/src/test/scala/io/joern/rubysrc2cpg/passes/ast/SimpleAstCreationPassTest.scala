@@ -2,7 +2,7 @@ package io.joern.rubysrc2cpg.passes.ast
 
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.Identifier
+import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.semanticcpg.language._
 
@@ -755,6 +755,36 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       identifierNode2.code shouldBe "identifier2"
       identifierNode2.lineNumber shouldBe Some(3)
       identifierNode2.columnNumber shouldBe Some(0)
+    }
+
+    // NOTE: The representation for `super` may change, in order to accommodate its meaning.
+    //       But until then, modelling it as a call seems the appropriate thing to do.
+    "have correct structure for `super` expression call without block" in {
+      val cpg = code("super(1)")
+
+      val List(callNode) = cpg.call.l
+      callNode.code shouldBe "super(1)"
+      callNode.name shouldBe "<operator>.super"
+      callNode.lineNumber shouldBe Some(1)
+
+      val List(literalArg: Literal) = callNode.argument.l
+      literalArg.argumentIndex shouldBe 1
+      literalArg.code shouldBe "1"
+      literalArg.lineNumber shouldBe Some(1)
+    }
+
+    "have correct structure for `super` command call without block" in {
+      val cpg = code("super 1")
+
+      val List(callNode) = cpg.call.l
+      callNode.code shouldBe "super 1"
+      callNode.name shouldBe "<operator>.super"
+      callNode.lineNumber shouldBe Some(1)
+
+      val List(literalArg: Literal) = callNode.argument.l
+      literalArg.argumentIndex shouldBe 1
+      literalArg.code shouldBe "1"
+      literalArg.lineNumber shouldBe Some(1)
     }
   }
 }

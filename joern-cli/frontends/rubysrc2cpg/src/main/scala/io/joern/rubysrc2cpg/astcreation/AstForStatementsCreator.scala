@@ -151,9 +151,8 @@ trait AstForStatementsCreator { this: AstCreator =>
     callAst(call, argsAst.toList)
   }
 
-  protected def astForSuperCommand(ctx: SuperCommandContext): Seq[Ast] = {
-    astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
-  }
+  protected def astForSuperCommand(ctx: SuperCommandContext): Ast =
+    astForSuperCall(ctx, astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses))
 
   protected def astForYieldCommand(ctx: YieldCommandContext): Seq[Ast] = {
     val argsAst = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
@@ -224,7 +223,7 @@ trait AstForStatementsCreator { this: AstCreator =>
 
   protected def astForCommand(ctx: CommandContext): Seq[Ast] = ctx match {
     case ctx: YieldCommandContext        => astForYieldCommand(ctx)
-    case ctx: SuperCommandContext        => astForSuperCommand(ctx)
+    case ctx: SuperCommandContext        => Seq(astForSuperCommand(ctx))
     case ctx: SimpleMethodCommandContext => astForSimpleMethodCommand(ctx)
     case ctx: MemberAccessCommandContext => astForMemberAccessCommand(ctx)
   }
