@@ -3,8 +3,9 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.parser.RubyParser._
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
+import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewControlStructure, NewIdentifier}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewControlStructure, NewIdentifier, NewLiteral}
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
@@ -143,5 +144,82 @@ trait AstForStatementsCreator { this: AstCreator =>
     val call    = callNode(ctx, ctx.getText, Operators.and, Operators.and, DispatchTypes.STATIC_DISPATCH)
     callAst(call, argsAst.toList)
   }
+  
+  protected def astForSuperCommand(ctx: SuperCommandContext): Seq[Ast] = {
+    astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
+  }
+  
+  protected def astForYieldCommand(ctx: YieldCommandContext): Seq[Ast] = {
+    val argsAst = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
 
+    val callNode = NewCall()
+      .name(UNRESOLVED_YIELD)
+      .code(ctx.getText)
+      .methodFullName(UNRESOLVED_YIELD)
+      .signature("")
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .typeFullName(Defines.Any)
+      .lineNumber(ctx.YIELD().getSymbol().getLine())
+      .columnNumber(ctx.YIELD().getSymbol().getCharPositionInLine())
+    Seq(callAst(callNode, argsAst))
+  }
+  
+  protected def astForSimpleMethodCommand(ctx: SimpleMethodCommandContext): Seq[Ast] = {
+    val methodIdentifierAsts = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText)
+    methodNameAsIdentifierStack.push(methodIdentifierAsts.head)
+    val argsAsts = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
+
+    val callNodes = methodIdentifierAsts.head.nodes.filter(node => node.isInstanceOf[NewCall])
+    if (callNodes.size == 1) {
+      val callNode = callNodes.head.asInstanceOf[NewCall]
+      if (
+        callNode.name == "require" ||
+          callNode.name == "require_once" ||
+          callNode.name == "load"
+      ) {
+        val literalImports = argsAsts.head.nodes
+          .filter(node => node.isInstanceOf[NewLiteral])
+
+        if (literalImports.size == 1) {
+          val importedFile =
+            literalImports.head
+              .asInstanceOf[NewLiteral]
+              .code
+          println(s"AST to be created for imported file ${importedFile}")
+        } else {
+          println(
+            s"Cannot process import since it is determined on the fly. Just creating a call node for later processing"
+          )
+          Seq(callAst(callNode, argsAsts))
+        }
+      }
+      Seq(callAst(callNode, argsAsts))
+    } else {
+      argsAsts
+    }
+  }
+  
+  protected def astForMemberAccessCommand(ctx: MemberAccessCommandContext): Seq[Ast] = {
+    val argsAst = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
+    val primaryAst = astForPrimaryContext(ctx.primary())
+    val methodCallNode = astForMethodNameContext(ctx.methodName()).head.nodes.head
+      .asInstanceOf[NewCall]
+    val callNode = NewCall()
+      .name(getActualMethodName(methodCallNode.name))
+      .code(ctx.getText)
+      .methodFullName(DynamicCallUnknownFullName)
+      .signature("")
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .typeFullName(Defines.Any)
+      .lineNumber(methodCallNode.lineNumber)
+      .columnNumber(methodCallNode.columnNumber)
+    Seq(callAst(callNode, primaryAst ++ argsAst))
+  }
+  
+  protected def astForCommand(ctx: CommandContext): Seq[Ast] = ctx match {
+    case ctx: YieldCommandContext => astForYieldCommand(ctx)
+    case ctx: SuperCommandContext => astForSuperCommand(ctx)
+    case ctx: SimpleMethodCommandContext => astForSimpleMethodCommand(ctx)
+    case ctx: MemberAccessCommandContext => astForMemberAccessCommand(ctx)
+  }
 }

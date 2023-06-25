@@ -46,13 +46,13 @@ class AstCreator(filename: String, global: Global)
   /*
    *Fake methods created from yield blocks and their yield calls will have this suffix in their names
    */
-  private val YIELD_SUFFIX = "_yield"
+  protected val YIELD_SUFFIX = "_yield"
 
   /*
    * This is used to mark call nodes created due to yield calls. This is set in their names at creation.
    * The appropriate name wrt the names of their actual methods is set later in them.
    */
-  private val UNRESOLVED_YIELD = "unresolved_yield"
+  protected val UNRESOLVED_YIELD = "unresolved_yield"
 
   protected def createIdentifierWithScope(
     ctx: ParserRuleContext,
@@ -66,7 +66,7 @@ class AstCreator(filename: String, global: Global)
     newNode
   }
 
-  private def getActualMethodName(name: String): String = {
+  protected def getActualMethodName(name: String): String = {
     methodAliases.getOrElse(name, name)
   }
   override def createAst(): BatchedUpdate.DiffGraphBuilder = {
@@ -410,7 +410,7 @@ class AstCreator(filename: String, global: Global)
 
   def astForIndexingArgumentsContext(ctx: IndexingArgumentsContext): Seq[Ast] = ctx match {
     case ctx: RubyParser.CommandOnlyIndexingArgumentsContext =>
-      astForCommandContext(ctx.command())
+      astForCommand(ctx.command())
     case ctx: RubyParser.ExpressionsOnlyIndexingArgumentsContext =>
       ctx
         .expressions()
@@ -882,7 +882,7 @@ class AstCreator(filename: String, global: Global)
   }
 
   def astForInvocationWithoutParenthesesContext(ctx: InvocationWithoutParenthesesContext): Seq[Ast] = ctx match {
-    case ctx: SingleCommandOnlyInvocationWithoutParenthesesContext => astForCommandContext(ctx.command())
+    case ctx: SingleCommandOnlyInvocationWithoutParenthesesContext => astForCommand(ctx.command())
     case ctx: ChainedCommandDoBlockInvocationWithoutParenthesesContext =>
       astForChainedCommandWithDoBlockContext(ctx.chainedCommandWithDoBlock())
     case ctx: ChainedCommandDoBlockDorCol2mNameArgsInvocationWithoutParenthesesContext =>
@@ -1942,78 +1942,8 @@ class AstCreator(filename: String, global: Global)
     astForArgumentsContext(ctx.arguments())
   }
 
-  def astForCommandContext(ctx: CommandContext): Seq[Ast] = {
-    if (ctx.SUPER() != null) {
-      astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
-    } else if (ctx.YIELD() != null) {
-      // ctx.primary() is expected to be null
-      val argsAst = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
-
-      val callNode = NewCall()
-        .name(UNRESOLVED_YIELD)
-        .code(ctx.getText)
-        .methodFullName(UNRESOLVED_YIELD)
-        .signature("")
-        .dispatchType(DispatchTypes.STATIC_DISPATCH)
-        .typeFullName(Defines.Any)
-        .lineNumber(ctx.YIELD().getSymbol().getLine())
-        .columnNumber(ctx.YIELD().getSymbol().getCharPositionInLine())
-      Seq(callAst(callNode, argsAst))
-    } else if (ctx.methodIdentifier() != null) {
-      val methodIdentifierAsts = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText)
-      methodNameAsIdentifierStack.push(methodIdentifierAsts.head)
-      val argsAsts = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
-
-      val callNodes = methodIdentifierAsts.head.nodes.filter(node => node.isInstanceOf[NewCall])
-      if (callNodes.size == 1) {
-        val callNode = callNodes.head.asInstanceOf[NewCall]
-        if (
-          callNode.name == "require" ||
-          callNode.name == "require_once" ||
-          callNode.name == "load"
-        ) {
-          val literalImports = argsAsts.head.nodes
-            .filter(node => node.isInstanceOf[NewLiteral])
-
-          if (literalImports.size == 1) {
-            val importedFile =
-              literalImports.head
-                .asInstanceOf[NewLiteral]
-                .code
-            println(s"AST to be created for imported file ${importedFile}")
-          } else {
-            println(
-              s"Cannot process import since it is determined on the fly. Just creating a call node for later processing"
-            )
-            Seq(callAst(callNode, argsAsts))
-          }
-        }
-        Seq(callAst(callNode, argsAsts))
-      } else {
-        argsAsts
-      }
-    } else if (ctx.primary() != null) {
-      val argsAst    = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
-      val primaryAst = astForPrimaryContext(ctx.primary())
-      val methodCallNode = astForMethodNameContext(ctx.methodName()).head.nodes.head
-        .asInstanceOf[NewCall]
-      val callNode = NewCall()
-        .name(getActualMethodName(methodCallNode.name))
-        .code(ctx.getText)
-        .methodFullName(DynamicCallUnknownFullName)
-        .signature("")
-        .dispatchType(DispatchTypes.STATIC_DISPATCH)
-        .typeFullName(Defines.Any)
-        .lineNumber(methodCallNode.lineNumber)
-        .columnNumber(methodCallNode.columnNumber)
-      Seq(callAst(callNode, primaryAst ++ argsAst))
-    } else {
-      Seq(Ast())
-    }
-  }
-
   def astForCommandTypeArgumentsContext(ctx: CommandTypeArgumentsContext): Seq[Ast] = {
-    astForCommandContext(ctx.command())
+    astForCommand(ctx.command())
   }
 
   def astForArgumentsContext(ctx: ArgumentsContext): Seq[Ast] = ctx match {
