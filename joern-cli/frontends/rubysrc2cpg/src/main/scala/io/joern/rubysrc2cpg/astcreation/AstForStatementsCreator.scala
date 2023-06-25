@@ -5,7 +5,13 @@ import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewControlStructure, NewIdentifier, NewLiteral}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewBlock,
+  NewCall,
+  NewControlStructure,
+  NewIdentifier,
+  NewLiteral
+}
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
@@ -144,11 +150,11 @@ trait AstForStatementsCreator { this: AstCreator =>
     val call    = callNode(ctx, ctx.getText, Operators.and, Operators.and, DispatchTypes.STATIC_DISPATCH)
     callAst(call, argsAst.toList)
   }
-  
+
   protected def astForSuperCommand(ctx: SuperCommandContext): Seq[Ast] = {
     astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
   }
-  
+
   protected def astForYieldCommand(ctx: YieldCommandContext): Seq[Ast] = {
     val argsAst = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
 
@@ -163,7 +169,7 @@ trait AstForStatementsCreator { this: AstCreator =>
       .columnNumber(ctx.YIELD().getSymbol().getCharPositionInLine())
     Seq(callAst(callNode, argsAst))
   }
-  
+
   protected def astForSimpleMethodCommand(ctx: SimpleMethodCommandContext): Seq[Ast] = {
     val methodIdentifierAsts = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText)
     methodNameAsIdentifierStack.push(methodIdentifierAsts.head)
@@ -174,8 +180,8 @@ trait AstForStatementsCreator { this: AstCreator =>
       val callNode = callNodes.head.asInstanceOf[NewCall]
       if (
         callNode.name == "require" ||
-          callNode.name == "require_once" ||
-          callNode.name == "load"
+        callNode.name == "require_once" ||
+        callNode.name == "load"
       ) {
         val literalImports = argsAsts.head.nodes
           .filter(node => node.isInstanceOf[NewLiteral])
@@ -198,9 +204,9 @@ trait AstForStatementsCreator { this: AstCreator =>
       argsAsts
     }
   }
-  
+
   protected def astForMemberAccessCommand(ctx: MemberAccessCommandContext): Seq[Ast] = {
-    val argsAst = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
+    val argsAst    = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
     val primaryAst = astForPrimaryContext(ctx.primary())
     val methodCallNode = astForMethodNameContext(ctx.methodName()).head.nodes.head
       .asInstanceOf[NewCall]
@@ -215,10 +221,10 @@ trait AstForStatementsCreator { this: AstCreator =>
       .columnNumber(methodCallNode.columnNumber)
     Seq(callAst(callNode, primaryAst ++ argsAst))
   }
-  
+
   protected def astForCommand(ctx: CommandContext): Seq[Ast] = ctx match {
-    case ctx: YieldCommandContext => astForYieldCommand(ctx)
-    case ctx: SuperCommandContext => astForSuperCommand(ctx)
+    case ctx: YieldCommandContext        => astForYieldCommand(ctx)
+    case ctx: SuperCommandContext        => astForSuperCommand(ctx)
     case ctx: SimpleMethodCommandContext => astForSimpleMethodCommand(ctx)
     case ctx: MemberAccessCommandContext => astForMemberAccessCommand(ctx)
   }
