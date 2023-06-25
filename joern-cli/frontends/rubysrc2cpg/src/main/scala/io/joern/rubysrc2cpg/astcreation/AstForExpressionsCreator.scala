@@ -128,15 +128,16 @@ trait AstForExpressionsCreator { this: AstCreator =>
     val ifNode  = controlStructureNode(ctx, ControlStructureTypes.IF, ctx.getText)
     controlStructureAst(ifNode, testAst.headOption, thenAst ++ elseAst)
   }
-  
+
   protected def astForSuperExpression(ctx: SuperExpressionPrimaryContext): Ast =
     astForSuperCall(ctx, astForArgumentsWithParenthesesContext(ctx.argumentsWithParentheses))
 
   // TODO: Handle the optional block.
   // NOTE: `super` is quite complicated semantically speaking. We'll need
   //       to revisit how to represent them.
-  protected def astForSuperCall(ctx: ParserRuleContext, arguments: Seq[Ast]) : Ast = {
-    val call = callNode(ctx, ctx.getText, RubyOperators.superKeyword, RubyOperators.superKeyword, DispatchTypes.STATIC_DISPATCH)
+  protected def astForSuperCall(ctx: ParserRuleContext, arguments: Seq[Ast]): Ast = {
+    val call =
+      callNode(ctx, ctx.getText, RubyOperators.superKeyword, RubyOperators.superKeyword, DispatchTypes.STATIC_DISPATCH)
     callAst(call, arguments.toList)
   }
 
