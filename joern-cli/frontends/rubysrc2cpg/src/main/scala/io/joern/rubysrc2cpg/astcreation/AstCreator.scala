@@ -1009,24 +1009,22 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
     astForDefinedMethodNameContext(ctx.definedMethodName())
   }
 
-
-  def astForCallNode(localIdentifier: TerminalNode, code: String): Seq[Ast] = {
-    val column                       = localIdentifier.getSymbol().getCharPositionInLine()
-    val line                         = localIdentifier.getSymbol().getLine()
+  def astForCallNode(localIdentifier: TerminalNode, code: String, isYieldBlock: Boolean = false): Seq[Ast] = {
+    val column = localIdentifier.getSymbol().getCharPositionInLine()
+    val line   = localIdentifier.getSymbol().getLine()
     val nameSuffix =
       if (isYieldBlock) {
         YIELD_SUFFIX
       } else {
         ""
       }
-    val name                         = s"${getActualMethodName(localIdentifier.getText)}$nameSuffix"
-    val methodFullName = packageContext
-      .packageTable
+    val name = s"${getActualMethodName(localIdentifier.getText)}$nameSuffix"
+    val methodFullName = packageContext.packageTable
       .getMethodFullNameUsingName(packageStack.toList, name)
       .headOption match {
-        case Some(externalDependencyResolution) => externalDependencyResolution
-        case None                               => s"$filename:$name"
-      }
+      case Some(externalDependencyResolution) => externalDependencyResolution
+      case None                               => s"$filename:$name"
+    }
 
     val callNode = NewCall()
       .name(name)
