@@ -275,6 +275,22 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(8)
     }
+    
+    "have correct structure for a single-line regular expression literal passed as argument to a command" in {
+      val cpg = code("puts /x/")
+      
+      val List(callNode) = cpg.call.l
+      callNode.code shouldBe "puts /x/"
+      callNode.name shouldBe "puts"
+      callNode.lineNumber shouldBe Some(1)
+
+      val List(literalArg: Literal) = callNode.argument.l
+      literalArg.argumentIndex shouldBe 1
+      literalArg.typeFullName shouldBe Defines.Regexp
+      literalArg.code shouldBe "/x/"
+      literalArg.lineNumber shouldBe Some(1)
+      
+    }
 
     "have correct structure for a single left had side call" in {
       val cpg            = code("array[n] = 10")
