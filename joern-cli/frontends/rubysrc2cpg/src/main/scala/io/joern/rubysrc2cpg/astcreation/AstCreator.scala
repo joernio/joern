@@ -19,9 +19,8 @@ import scala.collection.immutable.Seq
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters._
-import better.files.File
 
-class AstCreator(filename: String, global: Global, packageContext: PackageContext)
+class AstCreator(protected val filename: String, global: Global, packageContext: PackageContext)
     extends AstCreatorBase(filename)
     with AstNodeBuilder[ParserRuleContext, AstCreator]
     with AstForPrimitivesCreator
@@ -34,7 +33,7 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
 
   private val classStack = mutable.Stack[String]()
 
-  private val packageStack = mutable.Stack[String]()
+  protected val packageStack = mutable.Stack[String]()
 
   /*
    * Stack of variable identifiers incorrectly identified as method identifiers
@@ -1911,48 +1910,5 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
 
   def astForYieldWithOptionalArgumentPrimaryContext(ctx: YieldWithOptionalArgumentPrimaryContext): Seq[Ast] = {
     astForYieldWithOptionalArgumentContext(ctx.yieldWithOptionalArgument())
-  }
-
-  private def resolveRequireOrLoadPath(argsAst: Seq[Ast], callNode: NewCall): Seq[Ast] = {
-    val importedNode = argsAst.head.nodes.collect { case x: NewLiteral => x }
-    if (importedNode.size == 1) {
-      val node      = importedNode.head
-      val pathValue = node.code.replaceAll("'", "").replaceAll("\"", "")
-      val result = pathValue match {
-        case path if File(path).exists =>
-          path
-        case path if File(s"$path.rb").exists =>
-          s"${path}.rb"
-        case _ =>
-          pathValue
-      }
-      packageStack.append(result)
-      astForImportNode(node.code)
-    } else {
-      Seq(callAst(callNode, argsAst))
-    }
-  }
-
-  private def resolveRelativePath(currentFile: String, argsAst: Seq[Ast], callNode: NewCall): Seq[Ast] = {
-    val importedNode = argsAst.head.nodes.collect { case x: NewLiteral => x }
-    if (importedNode.size == 1) {
-      val node        = importedNode.head
-      val pathValue   = node.code.replaceAll("'", "").replaceAll("\"", "")
-      val updatedPath = if (pathValue.endsWith(".rb")) pathValue else s"$pathValue.rb"
-
-      val currentDirectory = File(currentFile).parent
-      val file             = File(currentDirectory, updatedPath)
-      packageStack.append(file.pathAsString)
-      astForImportNode(node.code)
-    } else {
-      Seq(callAst(callNode, argsAst))
-    }
-  }
-
-  private def astForImportNode(code: String): Seq[Ast] = {
-    // fully implemented later
-    val importNode = NewImport()
-      .code(code)
-    Seq(Ast(importNode))
   }
 }
