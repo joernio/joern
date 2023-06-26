@@ -970,16 +970,16 @@ class AstCreator(filename: String, phpAst: PhpFile)
       case Some(nameExpr: PhpNameExpr) if call.isStatic =>
         s"${nameExpr.name}${StaticMethodDelimiter}$name"
 
+      case Some(expr) =>
+        s"$UnresolvedNamespace\\$codePrefix"         
+
       case None if PhpBuiltins.FuncNames.contains(name) =>
         // No signature/namespace for MFN for builtin functions to ensure stable names as type info improves.
         name
 
       // Function call
-      case None if !PhpBuiltins.FuncNames.contains(name) =>
+      case None =>
         composeMethodFullName(name, call.isStatic)
-
-      // Other method calls. Need more type info for these.
-      case _ => PropertyDefaults.MethodFullName
     }
 
     // Use method signature for methods that can be linked to avoid varargs issue.
