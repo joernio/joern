@@ -50,13 +50,13 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
   /*
    *Fake methods created from yield blocks and their yield calls will have this suffix in their names
    */
-  private val YIELD_SUFFIX = "_yield"
+  protected val YIELD_SUFFIX = "_yield"
 
   /*
    * This is used to mark call nodes created due to yield calls. This is set in their names at creation.
    * The appropriate name wrt the names of their actual methods is set later in them.
    */
-  private val UNRESOLVED_YIELD = "unresolved_yield"
+  protected val UNRESOLVED_YIELD = "unresolved_yield"
 
   protected def createIdentifierWithScope(
     ctx: ParserRuleContext,
@@ -70,7 +70,7 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
     newNode
   }
 
-  private def getActualMethodName(name: String): String = {
+  protected def getActualMethodName(name: String): String = {
     methodAliases.getOrElse(name, name)
   }
   override def createAst(): BatchedUpdate.DiffGraphBuilder = {
@@ -131,6 +131,7 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
     val keyValueAssociation     = "<operator>.keyValueAssociation"
     val activeRecordAssociation = "<operator>.activeRecordAssociation"
     val undef                   = "<operator>.undef"
+    val superKeyword            = "<operator>.super"
   }
   private def getOperatorName(token: Token): String = token.getType match {
     case AMP                 => Operators.logicalAnd
@@ -365,7 +366,7 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
     case ctx: LiteralPrimaryContext                   => Seq(astForLiteralPrimaryExpression(ctx))
     case ctx: StringInterpolationPrimaryContext       => astForStringInterpolationPrimaryContext(ctx)
     case ctx: IsDefinedPrimaryContext                 => Seq(astForIsDefinedPrimaryExpression(ctx))
-    case ctx: SuperExpressionPrimaryContext           => astForSuperExpressionPrimaryContext(ctx)
+    case ctx: SuperExpressionPrimaryContext           => Seq(astForSuperExpression(ctx))
     case ctx: IndexingExpressionPrimaryContext        => astForIndexingExpressionPrimaryContext(ctx)
     case ctx: MethodOnlyIdentifierPrimaryContext      => astForMethodOnlyIdentifierPrimaryContext(ctx)
     case ctx: InvocationWithBlockOnlyPrimaryContext   => astForInvocationWithBlockOnlyPrimaryContext(ctx)
@@ -382,7 +383,7 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
     case ctx: PrimaryExpressionContext             => astForPrimaryContext(ctx.primary())
     case ctx: UnaryExpressionContext               => Seq(astForUnaryExpression(ctx))
     case ctx: PowerExpressionContext               => Seq(astForPowerExpression(ctx))
-    case ctx: UnaryMinusExpressionContext          => astForUnaryMinusExpressionContext(ctx)
+    case ctx: UnaryMinusExpressionContext          => Seq(astForUnaryMinusExpression(ctx))
     case ctx: MultiplicativeExpressionContext      => Seq(astForMultiplicativeExpression(ctx))
     case ctx: AdditiveExpressionContext            => Seq(astForAdditiveExpression(ctx))
     case ctx: BitwiseShiftExpressionContext        => astForBitwiseShiftExpressionContext(ctx)
@@ -414,7 +415,7 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
 
   def astForIndexingArgumentsContext(ctx: IndexingArgumentsContext): Seq[Ast] = ctx match {
     case ctx: RubyParser.CommandOnlyIndexingArgumentsContext =>
-      astForCommandContext(ctx.command())
+      astForCommand(ctx.command())
     case ctx: RubyParser.ExpressionsOnlyIndexingArgumentsContext =>
       ctx
         .expressions()
@@ -886,7 +887,7 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
   }
 
   def astForInvocationWithoutParenthesesContext(ctx: InvocationWithoutParenthesesContext): Seq[Ast] = ctx match {
-    case ctx: SingleCommandOnlyInvocationWithoutParenthesesContext => astForCommandContext(ctx.command())
+    case ctx: SingleCommandOnlyInvocationWithoutParenthesesContext => astForCommand(ctx.command())
     case ctx: ChainedCommandDoBlockInvocationWithoutParenthesesContext =>
       astForChainedCommandWithDoBlockContext(ctx.chainedCommandWithDoBlock())
     case ctx: ChainedCommandDoBlockDorCol2mNameArgsInvocationWithoutParenthesesContext =>
@@ -1430,20 +1431,11 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
     val rhsAsts      = astForMultipleRightHandSideContext(ctx.multipleRightHandSide())
     val operatorName = getOperatorName(ctx.EQ().getSymbol)
 
-    /* If we get anything other than Identifier or Literal, we should ignore and
-     * rebuild  the ASTs
-     * TODO: Model function calls also so we can capture their return in this
-     */
-    val reshapedRhsAsts = rhsAsts
-      .map(x => x.nodes.filter(n => n.isInstanceOf[NewIdentifier] || n.isInstanceOf[NewLiteral]))
-      .filter(_.nonEmpty)
-      .flatMap(nodes => nodes.map(n => Ast(n)))
-
     /* Since we have multiple LHS and RHS elements here, we will now create synthetic assignment
      * call nodes to model how ruby assigns values from RHS elements to LHS elements. We create
      * tuples for each assignment and then pass them to the assignment calls nodes
      */
-    val assigns = lhsAsts.zip(reshapedRhsAsts)
+    val assigns = lhsAsts.zip(rhsAsts)
     assigns.map { argPair =>
       val lhsCode = argPair._1.nodes.headOption match {
         case Some(id: NewIdentifier) => id.code
@@ -1521,15 +1513,6 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
 
     Seq(callAst(callNode, Seq(Ast(node))))
 
-  }
-
-  def astForSuperExpressionPrimaryContext(ctx: SuperExpressionPrimaryContext): Seq[Ast] = {
-    val argAsts = astForArgumentsWithParenthesesContext(ctx.argumentsWithParentheses())
-    if (ctx.block() != null) {
-      argAsts ++ astForBlockContext(ctx.block())
-    } else {
-      argAsts
-    }
   }
 
   def astForCommandWithDoBlockContext(ctx: CommandWithDoBlockContext): Seq[Ast] = ctx match {
@@ -1746,65 +1729,6 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
     }
   }
 
-  def astForUnaryMinusExpressionContext(ctx: UnaryMinusExpressionContext): Seq[Ast] = {
-    val expressionAst = astForExpressionContext(ctx.expression())
-    if (methodNameAsIdentifierStack.size > 0) {
-      /*
-       * This is incorrectly identified as a unary expression since the parser identifies the LHS as methodIdentifier
-       * MINUS is to be interpreted as a binary operator
-       */
-
-      val queuedAst = methodNameAsIdentifierStack.pop()
-      val lhsAst =
-        queuedAst.nodes
-          .filter(node => node.isInstanceOf[NewCall])
-          .headOption match {
-          case Some(node) =>
-            /*
-             * IDENTIFIER node incorrectly created as a call node since a binary subtraction operation
-             * was identifier as unary - due to parser limitations
-             */
-            val incorrectCallNode = node.asInstanceOf[NewCall]
-            val identifierNode =
-              createIdentifierWithScope(ctx, incorrectCallNode.name, incorrectCallNode.name, Defines.Any, Seq())
-            Ast(identifierNode)
-          case None =>
-            queuedAst
-        }
-
-      val lhsCode = lhsAst.nodes
-        .filter(node => node.isInstanceOf[NewIdentifier])
-        .head
-        .asInstanceOf[NewIdentifier]
-        .code
-
-      val operatorName = Operators.subtraction
-      val callNode = NewCall()
-        .name(operatorName)
-        .code(lhsCode + ctx.getText.filterNot(_.isWhitespace))
-        .methodFullName(operatorName)
-        .signature("")
-        .dispatchType(DispatchTypes.STATIC_DISPATCH)
-        .typeFullName(Defines.Any)
-        .lineNumber(ctx.MINUS().getSymbol.getLine())
-        .columnNumber(ctx.MINUS().getSymbol.getCharPositionInLine())
-
-      Seq(callAst(callNode, Seq(lhsAst) ++ expressionAst))
-    } else {
-      val operatorName = Operators.minus
-      val callNode = NewCall()
-        .name(operatorName)
-        .code(ctx.getText)
-        .methodFullName(operatorName)
-        .signature("")
-        .dispatchType(DispatchTypes.STATIC_DISPATCH)
-        .typeFullName(Defines.Any)
-        .lineNumber(ctx.MINUS().getSymbol().getLine())
-        .columnNumber(ctx.MINUS().getSymbol().getCharPositionInLine())
-      Seq(callAst(callNode, expressionAst))
-    }
-  }
-
   def astForUnlessExpressionPrimaryContext(ctx: UnlessExpressionPrimaryContext): Seq[Ast] = {
     val conditionAsts = astForExpressionOrCommand(ctx.unlessExpression().expressionOrCommand())
     val thenAsts      = astForThenClauseContext(ctx.unlessExpression().thenClause())
@@ -2010,7 +1934,7 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
   }
 
   def astForCommandTypeArgumentsContext(ctx: CommandTypeArgumentsContext): Seq[Ast] = {
-    astForCommandContext(ctx.command())
+    astForCommand(ctx.command())
   }
 
   def astForArgumentsContext(ctx: ArgumentsContext): Seq[Ast] = ctx match {

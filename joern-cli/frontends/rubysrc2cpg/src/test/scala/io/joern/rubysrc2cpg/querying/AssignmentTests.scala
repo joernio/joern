@@ -54,6 +54,7 @@ class AssignmentTests extends RubyCode2CpgFixture {
         |a, b, c = [1, 2, 3]
         |a, b, c = b, c, a
         |str1, str2 = ["hello", "world"]
+        |p, q = [foo(), bar()]
         |""".stripMargin)
 
     "recognise all identifier nodes" in {
@@ -62,6 +63,8 @@ class AssignmentTests extends RubyCode2CpgFixture {
       cpg.identifier.name("c").size shouldBe 3
       cpg.identifier.name("str1").size shouldBe 1
       cpg.identifier.name("str2").size shouldBe 1
+      cpg.identifier.name("p").size shouldBe 1
+      cpg.identifier.name("q").size shouldBe 1
     }
 
     "recognise all literal nodes" in {
@@ -72,9 +75,14 @@ class AssignmentTests extends RubyCode2CpgFixture {
       cpg.literal.code("\"world\"").size shouldBe 1
     }
 
+    "recognize call nodes in RHS" in {
+      cpg.call.codeExact("foo()").size shouldBe 1
+      cpg.call.codeExact("bar()").size shouldBe 1
+    }
+
     "recognise all assignment call nodes" in {
       /* here we are also checking the synthetic assignment nodes for each element on both sides */
-      cpg.call.name(Operators.assignment).size shouldBe 8
+      cpg.call.name(Operators.assignment).size shouldBe 10
     }
   }
 }

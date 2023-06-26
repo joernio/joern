@@ -159,10 +159,10 @@ invocationWithoutParentheses
     ;
 
 command
-    :   SUPER argumentsWithoutParentheses
-    |   YIELD argumentsWithoutParentheses
-    |   methodIdentifier argumentsWithoutParentheses
-    |   primary WS* (DOT | COLON2) wsOrNl* methodName argumentsWithoutParentheses
+    :   SUPER argumentsWithoutParentheses                                                                                       # superCommand
+    |   YIELD argumentsWithoutParentheses                                                                                       # yieldCommand
+    |   methodIdentifier argumentsWithoutParentheses                                                                            # simpleMethodCommand
+    |   primary WS* (DOT | COLON2) wsOrNl* methodName argumentsWithoutParentheses                                               # memberAccessCommand
     ;
 
 chainedCommandWithDoBlock
