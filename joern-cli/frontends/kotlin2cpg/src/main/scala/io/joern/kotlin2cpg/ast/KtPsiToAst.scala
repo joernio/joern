@@ -98,9 +98,11 @@ trait KtPsiToAst {
 
   def astsForDeclaration(decl: KtDeclaration)(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
     decl match {
-      case c: KtClass                => astsForClassOrObject(c)
-      case o: KtObjectDeclaration    => astsForClassOrObject(o)
-      case n: KtNamedFunction        => astsForMethod(n)
+      case c: KtClass             => astsForClassOrObject(c)
+      case o: KtObjectDeclaration => astsForClassOrObject(o)
+      case n: KtNamedFunction =>
+        val isExtensionFn = typeInfoProvider.isExtensionFn(n)
+        astsForMethod(n, isExtensionFn)
       case t: KtTypeAlias            => Seq(astForTypeAlias(t))
       case s: KtSecondaryConstructor => Seq(astForUnknown(s, None))
       case p: KtProperty             => Seq(astForUnknown(p, None)) // TODO: these are globals, represent them correctly

@@ -113,4 +113,20 @@ class ExtensionTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
   }
 
+  "CPG for code with extension fn using `this` parameter" should {
+    val cpg = code("""
+        |package mypkg
+        |open class AClass(val p1: String)
+        |fun AClass.doSomething() {
+        |    println(this.p1)
+        |}
+        |""".stripMargin)
+    implicit val resolver = NoResolve
+
+    "contain a CALL node with the correct METHOD_FULLNAME set" in {
+      val List(p1) = cpg.method.nameExact("doSomething").parameter.l
+      p1.typeFullName shouldBe "mypkg.AClass"
+    }
+  }
+
 }
