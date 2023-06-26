@@ -119,7 +119,12 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
   def containingTypeDeclFullName(ktFn: KtNamedFunction, defaultValue: String): String = {
     val mapForEntity = bindingsForEntity(bindingContext, ktFn)
     Option(mapForEntity.get(BindingContext.FUNCTION.getKey))
-      .map { fnDesc => TypeRenderer.renderFqNameForDesc(fnDesc.getContainingDeclaration) }
+      .map { fnDesc =>
+        if (DescriptorUtils.isExtension(fnDesc))
+          TypeRenderer.render(fnDesc.getExtensionReceiverParameter.getType)
+        else
+          TypeRenderer.renderFqNameForDesc(fnDesc.getContainingDeclaration)
+      }
       .getOrElse(defaultValue)
   }
 
@@ -508,6 +513,12 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
         else CallKinds.DynamicCall
       }
       .getOrElse(CallKinds.Unknown)
+  }
+
+  def isExtensionFn(fn: KtNamedFunction): Boolean = {
+    Option(bindingContext.get(BindingContext.FUNCTION, fn))
+      .map(DescriptorUtils.isExtension(_))
+      .getOrElse(false)
   }
 
   private def renderTypeForParameterDesc(p: ValueParameterDescriptor): String = {
