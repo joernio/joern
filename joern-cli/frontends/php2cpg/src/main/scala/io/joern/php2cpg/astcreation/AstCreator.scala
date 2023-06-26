@@ -1651,29 +1651,53 @@ class AstCreator(filename: String, phpAst: PhpFile)
     callAst(callNode, args :: Nil)
   }
 
+  private def astForMagicClassConstant(expr: PhpClassConstFetchExpr): Ast = {
+    val classAst = astForExpr(expr.className)
+    val typeFullName = expr.className match {
+      case nameExpr: PhpNameExpr =>
+        scope
+          .lookupVariable(nameExpr.name)
+          .flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME).map(_.toString))
+          .getOrElse(nameExpr.name)
+
+      case expr =>
+        classAst.rootType.orElse(classAst.rootName).getOrElse(UnresolvedNamespace)
+    }
+
+    Ast(typeRefNode(expr, classAst.rootCodeOrEmpty, typeFullName))
+  }
+
   private def astForClassConstFetchExpr(expr: PhpClassConstFetchExpr): Ast = {
-    val target              = astForExpr(expr.className)
-    val fieldIdentifierName = expr.constantName.map(_.name).getOrElse(NameConstants.Unknown)
+    expr.constantName match {
+      // Foo::class should be a TypeRef and not a field access
+      case Some(constNameExpr) if constNameExpr.name == NameConstants.Class =>
+        astForMagicClassConstant(expr)
 
-    val fieldIdentifier = newFieldIdentifierNode(fieldIdentifierName, line(expr))
-
-    val fieldAccessCode = s"${target.rootCodeOrEmpty}::${fieldIdentifier.code}"
-
-    val fieldAccessCall = newOperatorCallNode(Operators.fieldAccess, fieldAccessCode, line = line(expr))
-
-    callAst(fieldAccessCall, List(target, Ast(fieldIdentifier)))
+      case _ =>
+        val targetAst           = astForExpr(expr.className)
+        val fieldIdentifierName = expr.constantName.map(_.name).getOrElse(NameConstants.Unknown)
+        val fieldIdentifier     = newFieldIdentifierNode(fieldIdentifierName, line(expr))
+        val fieldAccessCode     = s"${targetAst.rootCodeOrEmpty}::${fieldIdentifier.code}"
+        val fieldAccessCall     = newOperatorCallNode(Operators.fieldAccess, fieldAccessCode, line = line(expr))
+        callAst(fieldAccessCall, List(targetAst, Ast(fieldIdentifier)))
+    }
   }
 
   private def astForConstFetchExpr(expr: PhpConstFetchExpr): Ast = {
+    val constName = expr.name.name
 
-    val identifier =
-      identifierNode(expr, NamespaceTraversal.globalNamespaceName, NamespaceTraversal.globalNamespaceName, "ANY")
-    val fieldIdentifier = newFieldIdentifierNode(expr.name.name, line = line(expr))
+    if (NameConstants.isBoolean(constName)) {
+      Ast(literalNode(expr, constName, TypeConstants.Bool))
+    } else {
+      val namespaceName   = NamespaceTraversal.globalNamespaceName
+      val identifier      = identifierNode(expr, namespaceName, namespaceName, "ANY")
+      val fieldIdentifier = newFieldIdentifierNode(constName, line = line(expr))
 
-    val fieldAccessNode = newOperatorCallNode(Operators.fieldAccess, code = expr.name.name, line = line(expr))
-    val args            = List(identifier, fieldIdentifier).map(Ast(_))
+      val fieldAccessNode = newOperatorCallNode(Operators.fieldAccess, code = constName, line = line(expr))
+      val args            = List(identifier, fieldIdentifier).map(Ast(_))
 
-    callAst(fieldAccessNode, args)
+      callAst(fieldAccessNode, args)
+    }
   }
 
   protected def line(phpNode: PhpNode): Option[Integer]      = phpNode.attributes.lineNumber
@@ -1700,6 +1724,12 @@ object AstCreator {
     val This: String         = "this"
     val Unknown: String      = "UNKNOWN"
     val Closure: String      = "__closure"
+    val Class: String        = "class"
+
+    def isBoolean(name: String): Boolean = {
+      List("true", "false").contains(name)
+    }
+
   }
 
   val operatorSymbols: Map[String, String] = Map(
