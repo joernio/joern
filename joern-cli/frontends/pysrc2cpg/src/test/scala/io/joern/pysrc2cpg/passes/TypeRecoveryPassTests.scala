@@ -6,6 +6,8 @@ import io.shiftleft.semanticcpg.language._
 
 import java.io.File
 import io.joern.x2cpg.passes.frontend.ImportsPass._
+
+import scala.collection.immutable.Seq
 class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
   "literals declared from built-in types" should {
@@ -1053,6 +1055,69 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         File.separator
       )
     }
+  }
+
+  "Type instantiation via caller" should {
+    lazy val cpg = code(
+      """
+        |from oauth2 import Token
+        |
+        |class FlickrAuth(ConsumerBasedOAuth):
+        |   def access_token(token):
+        |       response = self.fetch_response(request)
+        |       token = Token.from_string(response)
+        |""".stripMargin,
+      Seq("social_auth", "backends", "contrib", "flickr.py").mkString(File.separator)
+    )
+      .moreCode(
+        """
+        |class Token(object):
+        |
+        |    key = None
+        |    secret = None
+        |
+        |    def __init__(self, key, secret):
+        |        self.key = key
+        |        self.secret = secret
+        |
+        |    @staticmethod
+        |    def from_string(s):
+        |        if not len(s):
+        |            raise ValueError("Invalid parameter string.")
+        |
+        |        params = parse_qs(u(s), keep_blank_values=False)
+        |        if not len(params):
+        |            raise ValueError("Invalid parameter string.")
+        |
+        |        try:
+        |            key = params['oauth_token'][0]
+        |        except Exception:
+        |            raise ValueError("'oauth_token' not found in OAuth request.")
+        |
+        |        try:
+        |            secret = params['oauth_token_secret'][0]
+        |        except Exception:
+        |            raise ValueError("'oauth_token_secret' not found in "
+        |                "OAuth request.")
+        |
+        |        token = Token(key, secret)
+        |        return token
+        |""".stripMargin,
+        Seq("oauth2", "__init__.py").mkString(File.separator)
+      )
+
+    "instantiate the return value correctly under `from_string`" in {
+      val Some(token) = cpg.method("from_string").ast.isIdentifier.nameExact("token").headOption
+      token.typeFullName shouldBe Seq("oauth2", "__init__.py:<module>.Token").mkString(File.separator)
+      val Some(fromString) = cpg.method("from_string").methodReturn.headOption
+      fromString.typeFullName shouldBe Seq("oauth2", "__init__.py:<module>.Token").mkString(File.separator)
+    }
+
+    "propagate the type in the return value" in {
+      val Some(token) = cpg.method("access_token").ast.isIdentifier.nameExact("token").headOption
+      token.typeFullName shouldBe Seq("oauth2", "__init__.py:<module>.Token").mkString(File.separator)
+    }
+
   }
 
 }

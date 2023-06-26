@@ -45,6 +45,7 @@ class LambdaTests extends JavaSrcCode2CpgFixture(withOssDataflow = true) {
         |		List<String> userPayload = new ArrayList<>();
         |		List<String> userNamesList = userPayload.stream.map(item -> {
         |           sink2(myValue);
+        |           sink3(userPayload);
         |           return item + myValue;
         |       });
         |		sink1(userNamesList);
@@ -68,6 +69,14 @@ class LambdaTests extends JavaSrcCode2CpgFixture(withOssDataflow = true) {
 
       sink.reachableByFlows(source).isEmpty shouldBe false
     }
+
+    "be found for case 3" in {
+      def source = cpg.identifier("userPayload").head
+
+      def sink = cpg.call("sink3")
+
+      sink.reachableByFlows(source).isEmpty shouldBe false
+    }
   }
 
   "dataflow around lambda in foreach" should {
@@ -84,6 +93,8 @@ class LambdaTests extends JavaSrcCode2CpgFixture(withOssDataflow = true) {
         |       userPayload.forEach(item -> {
         |           userNamesList.add(item + myValue);
         |           sink2(myValue);
+        |           sink3(userNamesList);
+        |           sink4(userPayload);
         |       });
         |       sink1(userNamesList);
         |       return;
@@ -91,7 +102,7 @@ class LambdaTests extends JavaSrcCode2CpgFixture(withOssDataflow = true) {
         |}
         |""".stripMargin)
 
-    "be found for case 1" ignore {
+    "be found for case 1" in {
       def source = cpg.identifier("item")
 
       def sink = cpg.call("sink1")
@@ -103,6 +114,22 @@ class LambdaTests extends JavaSrcCode2CpgFixture(withOssDataflow = true) {
       def source = cpg.identifier("myValue").head
 
       def sink = cpg.call("sink2")
+
+      sink.reachableByFlows(source).isEmpty shouldBe false
+    }
+
+    "be found for case 3" in {
+      def source = cpg.identifier("userNamesList").head
+
+      def sink = cpg.call("sink3")
+
+      sink.reachableByFlows(source).isEmpty shouldBe false
+    }
+
+    "be found for case 4" in {
+      def source = cpg.identifier("userPayload").head
+
+      def sink = cpg.call("sink4")
 
       sink.reachableByFlows(source).isEmpty shouldBe false
     }

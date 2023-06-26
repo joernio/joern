@@ -170,12 +170,19 @@ class DdgGenerator(semantics: Semantics) {
 
     def addEdgesToCapturedIdentifiersAndParameters(): Unit = {
       val identifierDestPairs =
-        method._identifierViaContainsOut
-          .flatMap { identifier =>
-            identifierToFirstUsages(identifier).map(usage => (identifier, usage))
-          }
-          .l
-          .distinctBy(_._2.method)
+        method._identifierViaContainsOut.flatMap { identifier =>
+          val firstAndLastUsageByMethod = identifierToFirstUsages(identifier).groupBy(_.method)
+          firstAndLastUsageByMethod.values
+            .filter(_.nonEmpty)
+            .map(x => (x.head, x.last))
+            .flatMap { case (firstUsage, lastUsage) =>
+              (identifier.lineNumber, firstUsage.lineNumber, lastUsage.lineNumber) match {
+                case (Some(iNo), Some(fNo), _) if iNo <= fNo => Some(identifier, firstUsage)
+                case (Some(iNo), _, Some(lNo)) if iNo >= lNo => Some(lastUsage, identifier)
+                case _                                       => None
+              }
+            }
+        }.distinct
 
       identifierDestPairs
         .foreach { case (src, dst) =>
