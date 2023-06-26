@@ -34,4 +34,9 @@ null
 /woo.c
 /cpg_*.bin.zip
 .DS_Store
+**/goastgen-windows.exe
+**/goastgen-linux
+**/goastgen-linux-arm64
+**/goastgen-macos
+**/goastgen-macos-arm64
 slices.json
