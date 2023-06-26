@@ -22,12 +22,11 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
       new ConfigPass(cpg, config.inputPath).createAndApply()
       val astCreationPass = new AstCreationPass(config.inputPath, cpg)
       astCreationPass.createAndApply()
-
       TypeNodePass.withRegisteredTypes(astCreationPass.allUsedTypes(), cpg).createAndApply()
+
       val context = new LayerCreatorContext(cpg)
       val options = new OssDataFlowOptions()
       new OssDataFlow(options).run(context)
-
     }
   }
 }
