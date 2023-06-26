@@ -51,8 +51,6 @@ variable calls and what calls it forms an argument of.
 Accompanying this slice, there is an optional source code property. With these details one can generate a useful LLM
 prompts, for example.
 
-*TODO*: Clean up schema
-
 ```
 Command: usages [options]
 
@@ -72,12 +70,32 @@ case class ObjectUsageSlice(
                              targetObj: DefComponent,
                              definedBy: Option[DefComponent],
                              invokedCalls: List[ObservedCall],
-                             argToCalls: List[(ObservedCall, Int)]
+                             argToCalls: List[ObservedCallWithArgPos]
                            )
 
-case class DefComponent(name: String, typeFullName: String, literal: Boolean = false)
+sealed trait DefComponent {
+  def name: String
 
-case class ObservedCall(callName: String, paramTypes: List[String], returnType: String)
+  def typeFullName: String
+
+  def label: String
+}
+// ^ See the LocalDef, LiteralDef, ParamDef, CallDef, and UnknownDef under `io.joern.dataflowengineoss.slicing.package`
+
+case class ObservedCall(
+  callName: String,
+  resolvedMethod: Option[String],
+  paramTypes: List[String],
+  returnType: String
+)
+
+case class ObservedCallWithArgPos(
+  callName: String,
+  resolvedMethod: Option[String],
+  paramTypes: List[String],
+  returnType: String,
+  position: Either[String, Int]
+)
 
 case class UserDefinedType(name: String, fields: List[DefComponent], procedures: List[ObservedCall])
 ```
