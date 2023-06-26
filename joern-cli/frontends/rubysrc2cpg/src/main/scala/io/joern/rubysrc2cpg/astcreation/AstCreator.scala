@@ -1878,61 +1878,6 @@ class AstCreator(filename: String, global: Global, packageContext: PackageContex
     astForArgumentsContext(ctx.arguments())
   }
 
-  def astForCommandContext(ctx: CommandContext): Seq[Ast] = {
-    if (ctx.SUPER() != null) {
-      astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
-    } else if (ctx.YIELD() != null) {
-      // ctx.primary() is expected to be null
-      val argsAst = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
-
-      val callNode = NewCall()
-        .name(UNRESOLVED_YIELD)
-        .code(ctx.getText)
-        .methodFullName(UNRESOLVED_YIELD)
-        .signature("")
-        .dispatchType(DispatchTypes.STATIC_DISPATCH)
-        .typeFullName(Defines.Any)
-        .lineNumber(ctx.YIELD().getSymbol().getLine())
-        .columnNumber(ctx.YIELD().getSymbol().getCharPositionInLine())
-      Seq(callAst(callNode, argsAst))
-    } else if (ctx.methodIdentifier() != null) {
-      val methodIdentifierAsts = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText)
-      methodNameAsIdentifierStack.push(methodIdentifierAsts.head)
-      val argsAsts = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
-
-      val callNodes = methodIdentifierAsts.head.nodes.collect { case x: NewCall => x }
-      if (callNodes.size == 1) {
-        val callNode = callNodes.head
-        if (callNode.name == "require" || callNode.name == "load") {
-          resolveRequireOrLoadPath(argsAsts, callNode)
-        } else if (callNode.name == "require_relative") {
-          resolveRelativePath(filename, argsAsts, callNode)
-        } else {
-          Seq(callAst(callNode, argsAsts))
-        }
-      } else {
-        argsAsts
-      }
-    } else if (ctx.primary() != null) {
-      val argsAst    = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
-      val primaryAst = astForPrimaryContext(ctx.primary())
-      val methodCallNode = astForMethodNameContext(ctx.methodName()).head.nodes.head
-        .asInstanceOf[NewCall]
-      val callNode = NewCall()
-        .name(getActualMethodName(methodCallNode.name))
-        .code(ctx.getText)
-        .methodFullName(DynamicCallUnknownFullName)
-        .signature("")
-        .dispatchType(DispatchTypes.STATIC_DISPATCH)
-        .typeFullName(Defines.Any)
-        .lineNumber(methodCallNode.lineNumber)
-        .columnNumber(methodCallNode.columnNumber)
-      Seq(callAst(callNode, primaryAst ++ argsAst))
-    } else {
-      Seq(Ast())
-    }
-  }
-
   def astForCommandTypeArgumentsContext(ctx: CommandTypeArgumentsContext): Seq[Ast] = {
     astForCommand(ctx.command())
   }
