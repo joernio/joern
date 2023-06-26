@@ -9,22 +9,17 @@ import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 import java.io.File
 
 trait RubyFrontend extends LanguageFrontend {
-  protected val withDependencyDownload: Boolean
-
   override val fileSuffix: String = ".rb"
 
   override def execute(sourceCodeFile: File): Cpg = {
-    implicit val defaultConfig: Config = Config(enableDependencyDownload = withDependencyDownload)
+    implicit val defaultConfig: Config = Config()
     new RubySrc2Cpg().createCpg(sourceCodeFile.getAbsolutePath).get
   }
 }
 
-class DefaultTestCpgWithRuby(override protected val withDependencyDownload: Boolean)
-    extends DefaultTestCpg
-    with RubyFrontend
+class DefaultTestCpgWithRuby extends DefaultTestCpg with RubyFrontend
 
-class RubyCode2CpgFixture(withDependencyDownload: Boolean = false)
-    extends Code2CpgFixture(() => new DefaultTestCpgWithRuby(withDependencyDownload)) {
+class RubyCode2CpgFixture extends Code2CpgFixture(() => new DefaultTestCpgWithRuby) {
   implicit val resolver: ICallResolver           = NoResolve
   implicit lazy val engineContext: EngineContext = EngineContext()
 }
