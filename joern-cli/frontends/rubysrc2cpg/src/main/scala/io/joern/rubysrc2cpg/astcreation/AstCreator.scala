@@ -134,36 +134,11 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
     val superKeyword            = "<operator>.super"
   }
   private def getOperatorName(token: Token): String = token.getType match {
-    case AMP                 => Operators.logicalAnd
-    case AMP2                => Operators.and
     case ASSIGNMENT_OPERATOR => Operators.assignment
-    case BAR                 => Operators.logicalOr
-    case BAR2                => Operators.or
-    case CARET               => Operators.logicalOr
     case DOT2                => Operators.range
     case DOT3                => Operators.range
     case EMARK               => Operators.not
-    case EMARKEQ             => Operators.notEquals
-    case EMARKTILDE          => RubyOperators.notPatternMatch
     case EQ                  => Operators.assignment
-    case EQ2                 => Operators.equals
-    case EQ3                 => Operators.is
-    case EQTILDE             => RubyOperators.patternMatch
-    case GT                  => Operators.greaterThan
-    case GT2                 => Operators.logicalShiftRight
-    case GTEQ                => Operators.greaterEqualsThan
-    case LT                  => Operators.lessThan
-    case LT2                 => Operators.shiftLeft
-    case LTEQ                => Operators.lessEqualsThan
-    case LTEQGT              => Operators.compare
-    case MINUS               => Operators.subtraction
-    case PERCENT             => Operators.modulo
-    case PLUS                => Operators.addition
-    case SLASH               => Operators.division
-    case STAR                => Operators.multiplication
-    case TILDE               => Operators.not
-    case NOT                 => Operators.not
-    case STAR2               => Operators.exponentiation
     case COLON2              => RubyOperators.scopeResolution
     case DOT                 => Operators.fieldAccess
     case EQGT                => RubyOperators.keyValueAssociation
@@ -176,12 +151,6 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
   protected def lineEnd(ctx: ParserRuleContext): Option[Integer]   = Option(ctx.getStop.getLine)
   protected def columnEnd(ctx: ParserRuleContext): Option[Integer] = Option(ctx.getStop.getCharPositionInLine)
 
-  private def registerType(typ: String): String = {
-    if (typ != Defines.Any) {
-      global.usedTypes.putIfAbsent(typ, true)
-    }
-    typ
-  }
   def astForVariableIdentifierContext(
     ctx: VariableIdentifierContext,
     definitelyIdentifier: Boolean = false
@@ -386,11 +355,11 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
     case ctx: UnaryMinusExpressionContext          => Seq(astForUnaryMinusExpression(ctx))
     case ctx: MultiplicativeExpressionContext      => Seq(astForMultiplicativeExpression(ctx))
     case ctx: AdditiveExpressionContext            => Seq(astForAdditiveExpression(ctx))
-    case ctx: BitwiseShiftExpressionContext        => astForBitwiseShiftExpressionContext(ctx)
-    case ctx: BitwiseAndExpressionContext          => astForBitwiseAndExpressionContext(ctx)
-    case ctx: BitwiseOrExpressionContext           => astForBitwiseOrExpressionContext(ctx)
-    case ctx: RelationalExpressionContext          => astForRelationalExpressionContext(ctx)
-    case ctx: EqualityExpressionContext            => astForEqualityExpressionContext(ctx)
+    case ctx: BitwiseShiftExpressionContext        => Seq(astForBitwiseShiftExpression(ctx))
+    case ctx: BitwiseAndExpressionContext          => Seq(astForBitwiseAndExpression(ctx))
+    case ctx: BitwiseOrExpressionContext           => Seq(astForBitwiseOrExpression(ctx))
+    case ctx: RelationalExpressionContext          => Seq(astForRelationalExpression(ctx))
+    case ctx: EqualityExpressionContext            => Seq(astForEqualityExpression(ctx))
     case ctx: OperatorAndExpressionContext         => Seq(astForAndExpression(ctx))
     case ctx: OperatorOrExpressionContext          => Seq(astForOrExpression(ctx))
     case ctx: RangeExpressionContext               => astForRangeExpressionContext(ctx)
@@ -460,18 +429,6 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
 
   def astForBeginExpressionPrimaryContext(ctx: BeginExpressionPrimaryContext): Seq[Ast] = {
     astForBodyStatementContext(ctx.beginExpression().bodyStatement())
-  }
-
-  def astForBitwiseAndExpressionContext(ctx: BitwiseAndExpressionContext): Seq[Ast] = {
-    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op, ctx.getText)
-  }
-
-  def astForBitwiseOrExpressionContext(ctx: BitwiseOrExpressionContext): Seq[Ast] = {
-    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op, ctx.getText)
-  }
-
-  def astForBitwiseShiftExpressionContext(ctx: BitwiseShiftExpressionContext): Seq[Ast] = {
-    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op, ctx.getText)
   }
 
   def astForWhenArgumentContext(ctx: WhenArgumentContext): Seq[Ast] = {
@@ -715,10 +672,6 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
       val bodyBlockAst = blockAst(blockNode, astBodyStatement.toList)
       astExprOfCommand ++ Seq(bodyBlockAst)
     }
-  }
-
-  def astForEqualityExpressionContext(ctx: EqualityExpressionContext): Seq[Ast] = {
-    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op, ctx.getText)
   }
 
   def astForGroupedLeftHandSideContext(ctx: GroupedLeftHandSideContext): Seq[Ast] = {
@@ -1460,39 +1413,6 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
 
       callAst(syntheticCallNode, Seq(argPair._1, argPair._2))
     }
-  }
-
-  def astForRangeExpressionContext(ctx: RangeExpressionContext): Seq[Ast] = {
-    if (ctx.expression().size() == 2) {
-      astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op, ctx.getText)
-    } else {
-      Seq(Ast())
-    }
-  }
-
-  def astForRelationalExpressionContext(ctx: RelationalExpressionContext): Seq[Ast] = {
-    astForBinaryExpression(ctx.expression(0), ctx.expression(1), ctx.op, ctx.getText)
-  }
-
-  def astForBinaryExpression(
-    lhs: ExpressionContext,
-    rhs: ExpressionContext,
-    operatorToken: Token,
-    code: String
-  ): Seq[Ast] = {
-    val lhsExpressionAsts = astForExpressionContext(lhs)
-    val rhsExpressionAsts = astForExpressionContext(rhs)
-    val operatorName      = getOperatorName(operatorToken)
-    val callNode = NewCall()
-      .name(operatorName)
-      .code(code)
-      .methodFullName(operatorName)
-      .signature("")
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .typeFullName(Defines.Any)
-      .lineNumber(operatorToken.getLine())
-      .columnNumber(operatorToken.getCharPositionInLine())
-    Seq(callAst(callNode, lhsExpressionAsts ++ rhsExpressionAsts))
   }
 
   def astForSimpleScopedConstantReferencePrimaryContext(ctx: SimpleScopedConstantReferencePrimaryContext): Seq[Ast] = {

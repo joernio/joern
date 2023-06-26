@@ -328,7 +328,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.range).l
       callNode.code shouldBe "1..10"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a non-inclusive range expression" in {
@@ -336,7 +336,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.range).l
       callNode.code shouldBe "1...10"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a relational expression" in {
@@ -344,7 +344,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.lessThan).l
       callNode.code shouldBe "x<y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a unary exclamation expression" in {
@@ -392,7 +392,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.logicalAnd).l
       callNode.code shouldBe "x & y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(2)
+      callNode.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a logical or with bar expression" in {
@@ -400,7 +400,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.logicalOr).l
       callNode.code shouldBe "x | y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(2)
+      callNode.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a logical or with carat expression" in {
@@ -408,7 +408,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.logicalOr).l
       callNode.code shouldBe "x ^ y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(2)
+      callNode.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a assignment expression" in {
@@ -469,7 +469,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.equals).l
       callNode.code shouldBe "x == y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(2)
+      callNode.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a division expression" in {
@@ -493,7 +493,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.logicalShiftRight).l
       callNode.code shouldBe "x >> y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(2)
+      callNode.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a shift left expression" in {
@@ -501,7 +501,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.shiftLeft).l
       callNode.code shouldBe "x << y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(2)
+      callNode.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a compare expression" in {
@@ -509,7 +509,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.name(Operators.compare).l
       callNode.code shouldBe "x <=> y"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(2)
+      callNode.columnNumber shouldBe Some(0)
     }
 
     "have correct structure for a indexing expression" in {
