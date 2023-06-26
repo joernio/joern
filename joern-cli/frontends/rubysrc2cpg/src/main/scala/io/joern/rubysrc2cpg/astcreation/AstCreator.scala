@@ -25,7 +25,8 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
     with AstNodeBuilder[ParserRuleContext, AstCreator]
     with AstForPrimitivesCreator
     with AstForStatementsCreator
-    with AstForExpressionsCreator {
+    with AstForExpressionsCreator 
+    with AstForDeclarationsCreator {
 
   protected val scope: Scope[String, NewIdentifier, Unit] = new Scope()
 
@@ -212,7 +213,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
       astForVariableIdentifierContext(ctx.variableIdentifier(), true)
     case ctx: PrimaryInsideBracketsSingleLeftHandSideContext =>
       val primaryAsts = astForPrimaryContext(ctx.primary())
-      val argsAsts    = astForArgumentsContext(ctx.arguments())
+      val argsAsts    = astForArguments(ctx.arguments())
       val callNode = NewCall()
         .name(Operators.indexAccess)
         .code(ctx.getText)
@@ -892,14 +893,14 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
     case ctx: ChainedCommandDoBlockDorCol2mNameArgsInvocationWithoutParenthesesContext =>
       val cmdDoBlockAst  = astForChainedCommandWithDoBlockContext(ctx.chainedCommandWithDoBlock())
       val methodNameAst  = astForMethodNameContext(ctx.methodName())
-      val argsWOParenAst = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
+      val argsWOParenAst = astForArguments(ctx.argumentsWithoutParentheses().arguments())
       cmdDoBlockAst ++ methodNameAst ++ argsWOParenAst
     case ctx: ReturnArgsInvocationWithoutParenthesesContext =>
       val retNode = NewReturn()
         .code(ctx.getText)
         .lineNumber(ctx.RETURN().getSymbol().getLine)
         .columnNumber(ctx.RETURN().getSymbol().getCharPositionInLine)
-      val argAst = astForArgumentsContext(ctx.arguments())
+      val argAst = astForArguments(ctx.arguments())
       Seq(returnAst(retNode, argAst))
     case ctx: BreakArgsInvocationWithoutParenthesesContext =>
       val node = NewControlStructure()
@@ -909,10 +910,10 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
         .code(ctx.getText)
       Seq(
         Ast(node)
-          .withChildren(astForArgumentsContext(ctx.arguments()))
+          .withChildren(astForArguments(ctx.arguments()))
       )
     case ctx: NextArgsInvocationWithoutParenthesesContext =>
-      astForArgumentsContext(ctx.arguments())
+      astForArguments(ctx.arguments())
       val node = NewControlStructure()
         .controlStructureType(ControlStructureTypes.CONTINUE)
         .lineNumber(ctx.NEXT().getSymbol.getLine)
@@ -920,7 +921,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
         .code(Defines.ModifierNext)
       Seq(
         Ast(node)
-          .withChildren(astForArgumentsContext(ctx.arguments()))
+          .withChildren(astForArguments(ctx.arguments()))
       )
     case _ =>
       logger.error("astForInvocationWithoutParenthesesContext() All contexts mismatched.")
@@ -1516,16 +1517,16 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
 
   def astForCommandWithDoBlockContext(ctx: CommandWithDoBlockContext): Seq[Ast] = ctx match {
     case ctx: ArgsAndDoBlockCommandWithDoBlockContext =>
-      val argsAsts   = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
+      val argsAsts   = astForArguments(ctx.argumentsWithoutParentheses().arguments())
       val doBlockAst = astForDoBlockContext(ctx.doBlock())
       argsAsts ++ doBlockAst
     case ctx: RubyParser.ArgsAndDoBlockAndMethodIdCommandWithDoBlockContext =>
-      val argsAsts     = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
+      val argsAsts     = astForArguments(ctx.argumentsWithoutParentheses().arguments())
       val doBlockAsts  = astForDoBlockContext(ctx.doBlock())
       val methodIdAsts = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText, true)
       methodIdAsts ++ argsAsts ++ doBlockAsts
     case ctx: RubyParser.PrimaryMethodArgsDoBlockCommandWithDoBlockContext =>
-      val argsAsts       = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
+      val argsAsts       = astForArguments(ctx.argumentsWithoutParentheses().arguments())
       val doBlockAsts    = astForDoBlockContext(ctx.doBlock())
       val methodNameAsts = astForMethodNameContext(ctx.methodName())
       val primaryAsts    = astForPrimaryContext(ctx.primary())
@@ -1550,7 +1551,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
 
   def astForArgumentsWithParenthesesContext(ctx: ArgumentsWithParenthesesContext): Seq[Ast] = ctx match {
     case ctx: BlankArgsArgumentsWithParenthesesContext => Seq(Ast())
-    case ctx: ArgsOnlyArgumentsWithParenthesesContext  => astForArgumentsContext(ctx.arguments())
+    case ctx: ArgsOnlyArgumentsWithParenthesesContext  => astForArguments(ctx.arguments())
     case ctx: ExpressionsAndChainedCommandWithDoBlockArgumentsWithParenthesesContext =>
       val expAsts = ctx
         .expressions()
@@ -1872,29 +1873,10 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
 
     listAsts.toSeq
   }
-
-  def astForArgumentsWithoutParenthesesContext(ctx: ArgumentsWithoutParenthesesContext): Seq[Ast] = {
-    astForArgumentsContext(ctx.arguments())
-  }
-
-  def astForCommandTypeArgumentsContext(ctx: CommandTypeArgumentsContext): Seq[Ast] = {
-    astForCommand(ctx.command())
-  }
-
-  def astForArgumentsContext(ctx: ArgumentsContext): Seq[Ast] = ctx match {
-    case ctx: BlockArgumentTypeArgumentsContext           => astForBlockArgumentTypeArgumentsContext(ctx)
-    case ctx: BlockSplattingTypeArgumentsContext          => astForBlockSplattingTypeArgumentsContext(ctx)
-    case ctx: BlockSplattingExprAssocTypeArgumentsContext => astForBlockSplattingExprAssocTypeArgumentsContext(ctx)
-    case ctx: BlockExprAssocTypeArgumentsContext          => astForBlockExprAssocTypeArgumentsContext(ctx)
-    case ctx: CommandTypeArgumentsContext                 => astForCommandTypeArgumentsContext(ctx)
-    case _ =>
-      logger.error("astForArgumentsContext() All contexts mismatched.")
-      Seq(Ast())
-  }
-
+  
   def astForYieldWithOptionalArgumentContext(ctx: YieldWithOptionalArgumentContext): Seq[Ast] = {
     if (ctx.arguments() == null) return Seq(Ast())
-    val argsAst = astForArgumentsContext(ctx.arguments())
+    val argsAst = astForArguments(ctx.arguments())
 
     val callNode = NewCall()
       .name(UNRESOLVED_YIELD)

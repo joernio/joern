@@ -10,7 +10,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewBlock,
   NewCall,
   NewControlStructure,
-  NewIdentifier,
   NewImport,
   NewLiteral
 }
@@ -154,10 +153,10 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   protected def astForSuperCommand(ctx: SuperCommandContext): Ast =
-    astForSuperCall(ctx, astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses))
+    astForSuperCall(ctx, astForArguments(ctx.argumentsWithoutParentheses().arguments()))
 
   protected def astForYieldCommand(ctx: YieldCommandContext): Seq[Ast] = {
-    val argsAst = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
+    val argsAst = astForArguments(ctx.argumentsWithoutParentheses().arguments())
 
     val callNode = NewCall()
       .name(UNRESOLVED_YIELD)
@@ -174,7 +173,7 @@ trait AstForStatementsCreator { this: AstCreator =>
   protected def astForSimpleMethodCommand(ctx: SimpleMethodCommandContext): Seq[Ast] = {
     val methodIdentifierAsts = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText)
     methodNameAsIdentifierStack.push(methodIdentifierAsts.head)
-    val argsAsts = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
+    val argsAsts = astForArguments(ctx.argumentsWithoutParentheses().arguments())
 
     val callNodes = methodIdentifierAsts.head.nodes.collect { case x: NewCall => x }
     if (callNodes.size == 1) {
@@ -192,7 +191,7 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   protected def astForMemberAccessCommand(ctx: MemberAccessCommandContext): Seq[Ast] = {
-    val argsAst    = astForArgumentsWithoutParenthesesContext(ctx.argumentsWithoutParentheses())
+    val argsAst    = astForArguments(ctx.argumentsWithoutParentheses().arguments)
     val primaryAst = astForPrimaryContext(ctx.primary())
     val methodCallNode = astForMethodNameContext(ctx.methodName()).head.nodes.head
       .asInstanceOf[NewCall]
