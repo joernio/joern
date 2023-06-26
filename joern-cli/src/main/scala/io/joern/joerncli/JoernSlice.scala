@@ -61,6 +61,36 @@ object JoernSlice {
           case _                 => SliceConfig(fileFilter = Option(x))
         }
       )
+    opt[String]("method-name-filter")
+      .text(s"filters in slices that go through specific methods by names. Uses regex.")
+      .action((x, c) =>
+        c match {
+          case c: SliceConfig    => c.copy(methodNameFilter = Option(x))
+          case c: DataFlowConfig => c.copy(methodNameFilter = Option(x))
+          case c: UsagesConfig   => c.copy(methodNameFilter = Option(x))
+          case _                 => SliceConfig(methodNameFilter = Option(x))
+        }
+      )
+    opt[String]("method-parameter-filter")
+      .text(s"filters in slices that go through methods with specific types on the method parameters. Uses regex.")
+      .action((x, c) =>
+        c match {
+          case c: SliceConfig    => c.copy(methodParamTypeFilter = Option(x))
+          case c: DataFlowConfig => c.copy(methodParamTypeFilter = Option(x))
+          case c: UsagesConfig   => c.copy(methodParamTypeFilter = Option(x))
+          case _                 => SliceConfig(methodParamTypeFilter = Option(x))
+        }
+      )
+    opt[String]("method-annotation-filter")
+      .text(s"filters in slices that go through methods with specific annotations on the methods. Uses regex.")
+      .action((x, c) =>
+        c match {
+          case c: SliceConfig    => c.copy(methodAnnotationFilter = Option(x))
+          case c: DataFlowConfig => c.copy(methodAnnotationFilter = Option(x))
+          case c: UsagesConfig   => c.copy(methodAnnotationFilter = Option(x))
+          case _                 => SliceConfig(methodAnnotationFilter = Option(x))
+        }
+      )
     cmd("data-flow")
       .action((_, c) => DataFlowConfig(c.inputPath, c.outFile, c.dummyTypesEnabled))
       .children(
@@ -69,6 +99,22 @@ object JoernSlice {
           .action((x, c) =>
             c match {
               case c: DataFlowConfig => c.copy(sliceDepth = x)
+              case _                 => c
+            }
+          ),
+        opt[String]("sink-filter")
+          .text(s"filters on the sink's `code` property. Uses regex.")
+          .action((x, c) =>
+            c match {
+              case c: DataFlowConfig => c.copy(sinkPatternFilter = Option(x))
+              case _                 => c
+            }
+          ),
+        opt[Unit]("end-at-external-method")
+          .text(s"all slices must end at an external method - defaults to false.")
+          .action((_, c) =>
+            c match {
+              case c: DataFlowConfig => c.copy(mustEndAtExternalMethod = true)
               case _                 => c
             }
           )

@@ -27,35 +27,20 @@ object UsageSlicing {
     *   a set of object slices.
     */
   def calculateUsageSlice(cpg: Cpg, config: UsagesConfig): ProgramSlice = {
+    implicit val implicitConfig: UsagesConfig = config
     excludeOperatorCalls.set(config.excludeOperatorCalls)
 
-    def getAssignmentDecl: Traversal[Declaration] = (config.fileFilter match {
-      case Some(fileName) => cpg.file.nameExact(fileName).assignment
-      case None           => cpg.assignment
-    }).argument(1).isIdentifier.refsTo
-
-    def getParameterDecl: Traversal[MethodParameterIn] = config.fileFilter match {
-      case Some(fileName) => cpg.file.nameExact(fileName).ast.isParameter
-      case None           => cpg.parameter
-    }
-
-    def getDeclIdentifiers: Traversal[Declaration] = getAssignmentDecl ++ getParameterDecl
+    def getDeclarations: Traversal[Declaration] = (config.fileFilter match {
+      case Some(fileName) => cpg.file.nameExact(fileName).method
+      case None           => cpg.method
+    }).withMethodNameFilter.withMethodParameterFilter.withMethodAnnotationFilter.declaration
 
     def typeMap = TrieMap.from(cpg.typeDecl.map(f => (f.name, f.fullName)).toMap)
 
     val fjp = ForkJoinPool.commonPool()
 
     try {
-      val slices = usageSlices(
-        fjp,
-        cpg,
-        cpg.metaData.root.headOption,
-        cpg.metaData.language.headOption,
-        config.excludeMethodSource,
-        () => getDeclIdentifiers,
-        typeMap,
-        config.minNumCalls
-      )
+      val slices       = usageSlices(fjp, cpg, () => getDeclarations, typeMap)
       val userDefTypes = userDefinedTypes(cpg)
       ProgramUsageSlice(slices, userDefTypes)
     } finally {
@@ -68,33 +53,34 @@ object UsageSlicing {
   private def usageSlices(
     fjp: ForkJoinPool,
     cpg: Cpg,
-    root: Option[String],
-    language: Option[String],
-    excludeMethodSource: Boolean,
     getDeclIdentifiers: () => Traversal[Declaration],
-    typeMap: TrieMap[String, String],
-    minNumCalls: Int = 1
-  ): Map[String, MethodUsageSlice] = getDeclIdentifiers()
-    .to(LazyList)
-    .filter(a => atLeastNCalls(a, minNumCalls) && !a.name.startsWith("_tmp_"))
-    .map(a => fjp.submit(new TrackUsageTask(cpg, a, typeMap)))
-    .flatMap(_.get())
-    .groupBy { case (scope, _) => scope }
-    .view
-    .map { case (method, slices) =>
-      method.fullName -> MethodUsageSlice(
-        source =
-          if (excludeMethodSource) ""
-          else dump(method.location, language, root, highlight = false).replaceFirst(" +/\\* <=== \\*/", ""),
-        slices = slices.iterator.map(_._2).toSet
-      )
-    }
-    .toMap
-    .iterator
-    .toMap
+    typeMap: TrieMap[String, String]
+  )(implicit config: UsagesConfig): Map[String, MethodUsageSlice] = {
+    val language = cpg.metaData.language.headOption
+    val root     = cpg.metaData.root.headOption
+    getDeclIdentifiers()
+      .to(LazyList)
+      .filter(a => atLeastNCalls(a, config.minNumCalls) && !a.name.startsWith("_tmp_"))
+      .map(a => fjp.submit(new TrackUsageTask(cpg, a, typeMap)))
+      .flatMap(_.get())
+      .groupBy { case (scope, _) => scope }
+      .view
+      .map { case (method, slices) =>
+        method.fullName -> MethodUsageSlice(
+          source =
+            if (config.excludeMethodSource) ""
+            else dump(method.location, language, root, highlight = false, withArrow = false),
+          slices = slices.iterator.map(_._2).toSet
+        )
+      }
+      .toMap
+      .iterator
+      .toMap
+  }
 
-  private class TrackUsageTask(cpg: Cpg, tgt: Declaration, typeMap: TrieMap[String, String])
-      extends RecursiveTask[Option[(Method, ObjectUsageSlice)]] {
+  private class TrackUsageTask(cpg: Cpg, tgt: Declaration, typeMap: TrieMap[String, String])(implicit
+    config: UsagesConfig
+  ) extends RecursiveTask[Option[(Method, ObjectUsageSlice)]] {
 
     override def compute(): Option[(Method, ObjectUsageSlice)] = {
       val defNode = tgt match {
@@ -226,7 +212,9 @@ object UsageSlicing {
       Option(ObservedCall(callName.get, resolvedMethod, params, returnType))
     }
 
-    private def partitionInvolvementInCalls: (List[ObservedCall], List[ObservedCallWithArgPos]) = {
+    private def partitionInvolvementInCalls(implicit
+      config: UsagesConfig
+    ): (List[ObservedCall], List[ObservedCallWithArgPos]) = {
       val (invokedCalls, argToCalls) = getInCallsForReferencedIdentifiers(tgt)
         .sortBy(f => (f.lineNumber, f.columnNumber))
         .flatMap(c => c.argument.find(p => p.code == tgt.name).map(f => (c, f)).headOption)
@@ -359,6 +347,13 @@ object UsageSlicing {
       .map(generateUDT)
       .filter(udt => udt.fields.nonEmpty || udt.procedures.nonEmpty)
       .l
+  }
+
+  /** Adds extensions to extract all assignments from method bodies.
+    */
+  implicit class MethodDataSourceExt(trav: Iterator[Method]) {
+    def declaration: Iterator[Declaration] = trav.ast.collectAll[Declaration]
+
   }
 
 }

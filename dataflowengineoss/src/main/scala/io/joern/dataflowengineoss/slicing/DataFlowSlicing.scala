@@ -8,22 +8,34 @@ import io.shiftleft.semanticcpg.language._
 
 object DataFlowSlicing {
 
+  implicit val resolver: ICallResolver = NoResolve
+
   def calculateDataFlowSlice(cpg: Cpg, config: DataFlowConfig): Option[DataFlowSlice] = {
+    implicit val implicitConfig: BaseConfig = config
+
     (config.fileFilter match {
       case Some(fileName) => cpg.file.nameExact(fileName).ast.isCall
       case None           => cpg.call
-    }).toBuffer
-      .map { (c: Call) =>
-        val sinks = c.argument.l
-
-        val sliceNodes = sinks.iterator.repeat(_.ddgIn)(_.maxDepth(config.sliceDepth).emit).dedup.l
-        val sliceEdges = sliceNodes
+    }).iterator.method.withMethodNameFilter.withMethodParameterFilter.withMethodAnnotationFilter.ast.isCall
+      .flatMap { c =>
+        val sinks           = config.sinkPatternFilter.map(filter => c.argument.code(filter).l).getOrElse(c.argument.l)
+        val sliceNodes      = sinks.iterator.repeat(_.ddgIn)(_.maxDepth(config.sliceDepth).emit).dedup.l
+        val sliceNodesIdSet = sliceNodes.id.toSet
+        // Lazily set up the rest if the filters are satisfied
+        lazy val sliceEdges = sliceNodes
           .flatMap(_.outE)
-          .filter(x => sliceNodes.contains(x.inNode()))
+          .filter(x => sliceNodesIdSet.contains(x.inNode().id()))
           .map { e => SliceEdge(e.outNode().id(), e.inNode().id(), e.label()) }
           .toSet
-        val methodToNodes = sliceNodes.groupBy(_.method).map { case (m, ns) => m.fullName -> ns.map(_.id()).toSet }
-        DataFlowSlice(sliceNodes.map(cfgNodeToSliceNode).toSet, sliceEdges, methodToNodes)
+        lazy val methodToNodes = sliceNodes.groupBy(_.method).map { case (m, ns) => m.fullName -> ns.map(_.id()).toSet }
+        lazy val slice = Option(DataFlowSlice(sliceNodes.map(cfgNodeToSliceNode).toSet, sliceEdges, methodToNodes))
+
+        // Filtering
+        sliceNodes match {
+          case Nil                                                                     => None
+          case _ if config.mustEndAtExternalMethod && !sinksEndAtExternalMethod(sinks) => None
+          case _                                                                       => slice
+        }
       }
       .reduceOption { (a, b) =>
         val methodToChildNode = (a.methodToChildNode.keys ++ b.methodToChildNode.keys)
@@ -31,6 +43,11 @@ object DataFlowSlicing {
         DataFlowSlice(a.nodes ++ b.nodes, a.edges ++ b.edges, methodToChildNode.toMap)
       }
   }
+
+  /** True if the sinks are either calls to external methods or are in external method stubs.
+    */
+  private def sinksEndAtExternalMethod(sinks: List[Expression]) =
+    sinks.isCall.callee.isExternal.nonEmpty || sinks.method.isExternal.nonEmpty
 
   private def cfgNodeToSliceNode(cfgNode: CfgNode): SliceNode = {
     val sliceNode = SliceNode(

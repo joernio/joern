@@ -29,7 +29,13 @@ object CodeDumper {
 
   /** Dump string representation of code at given `location`.
     */
-  def dump(location: NewLocation, language: Option[String], rootPath: Option[String], highlight: Boolean): String = {
+  def dump(
+    location: NewLocation,
+    language: Option[String],
+    rootPath: Option[String],
+    highlight: Boolean,
+    withArrow: Boolean = true
+  ): String = {
     (location.node, language) match {
       case (None, _) =>
         logger.warn("Empty `location.node` encountered")
@@ -54,9 +60,9 @@ object CodeDumper {
                 val lines = m.code.split("\n")
                 lines.zipWithIndex
                   .map { case (line, lineNo) =>
-                    if (lineNo == 0)
+                    if (lineNo == 0 && withArrow) {
                       s"$line ${arrow(Option(m.fullName))}"
-                    else
+                    } else
                       line
                   }
                   .mkString("\n")

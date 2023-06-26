@@ -4,6 +4,7 @@ import better.files.File
 import io.circe.{Decoder, Encoder, HCursor, Json}
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
 import java.util.regex.Pattern
@@ -15,7 +16,8 @@ package object slicing {
   import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
   import io.circe.syntax.EncoderOps
 
-  sealed trait BaseConfig {
+  trait BaseConfig {
+
     def inputPath: File = File("cpg.bin")
 
     def outFile: File = File("slices")
@@ -23,13 +25,23 @@ package object slicing {
     def dummyTypesEnabled: Boolean = false
 
     def fileFilter: Option[String] = None
+
+    def methodNameFilter: Option[String] = None
+
+    def methodParamTypeFilter: Option[String] = None
+
+    def methodAnnotationFilter: Option[String] = None
+
   }
 
   case class SliceConfig(
     override val inputPath: File = File("cpg.bin"),
     override val outFile: File = File("slices"),
     override val dummyTypesEnabled: Boolean = false,
-    override val fileFilter: Option[String] = None
+    override val fileFilter: Option[String] = None,
+    override val methodNameFilter: Option[String] = None,
+    override val methodParamTypeFilter: Option[String] = None,
+    override val methodAnnotationFilter: Option[String] = None
   ) extends BaseConfig
 
   case class DataFlowConfig(
@@ -37,6 +49,11 @@ package object slicing {
     override val outFile: File = File("slices"),
     override val dummyTypesEnabled: Boolean = false,
     override val fileFilter: Option[String] = None,
+    override val methodNameFilter: Option[String] = None,
+    override val methodParamTypeFilter: Option[String] = None,
+    override val methodAnnotationFilter: Option[String] = None,
+    sinkPatternFilter: Option[String] = None,
+    mustEndAtExternalMethod: Boolean = false,
     sliceDepth: Int = 20
   ) extends BaseConfig
 
@@ -45,10 +62,35 @@ package object slicing {
     override val outFile: File = File("slices"),
     override val dummyTypesEnabled: Boolean = false,
     override val fileFilter: Option[String] = None,
+    override val methodNameFilter: Option[String] = None,
+    override val methodParamTypeFilter: Option[String] = None,
+    override val methodAnnotationFilter: Option[String] = None,
     minNumCalls: Int = 1,
     excludeOperatorCalls: Boolean = false,
     excludeMethodSource: Boolean = false
   ) extends BaseConfig
+
+  /** Adds extensions to modify a method traversal based on config options
+    */
+  implicit class MethodFilterExt(trav: Iterator[Method]) {
+
+    def withMethodNameFilter(implicit config: BaseConfig): Iterator[Method] = config.methodNameFilter match {
+      case Some(filter) => trav.name(filter)
+      case None         => trav
+    }
+
+    def withMethodParameterFilter(implicit config: BaseConfig): Iterator[Method] = config.methodParamTypeFilter match {
+      case Some(filter) => trav.where(_.parameter.evalType(filter))
+      case None         => trav
+    }
+
+    def withMethodAnnotationFilter(implicit config: BaseConfig): Iterator[Method] =
+      config.methodAnnotationFilter match {
+        case Some(filter) => trav.where(_.annotation.code(filter))
+        case None         => trav
+      }
+
+  }
 
   /** A trait for all objects that represent a 1:1 relationship between the CPG and all the slices extracted.
     */
