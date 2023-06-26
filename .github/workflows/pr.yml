@@ -16,6 +16,12 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '19'
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 2.7
+      - name: Install Bundler
+        run: gem install bundler
       - name: Compile and run tests
         run: sbt clean +test
   formatting:
