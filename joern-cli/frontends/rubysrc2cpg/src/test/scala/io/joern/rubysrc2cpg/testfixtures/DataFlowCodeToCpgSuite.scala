@@ -7,11 +7,7 @@ import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, TestCpg}
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
-class DataFlowTestCpg(
-  override protected
-  val withDependencyDownload: Boolean
-) extends TestCpg
-    with RubyFrontend {
+class DataFlowTestCpg extends TestCpg with RubyFrontend {
 
   override protected def applyPasses(): Unit = {
     X2Cpg.applyDefaultOverlays(this)
@@ -22,8 +18,7 @@ class DataFlowTestCpg(
   }
 }
 
-class DataFlowCodeToCpgSuite(withDependencyDownload: Boolean = false)
-    extends Code2CpgFixture(() => new DataFlowTestCpg(withDependencyDownload)) {
+class DataFlowCodeToCpgSuite extends Code2CpgFixture(() => new DataFlowTestCpg()) {
 
   protected implicit val context: EngineContext = EngineContext()
 
