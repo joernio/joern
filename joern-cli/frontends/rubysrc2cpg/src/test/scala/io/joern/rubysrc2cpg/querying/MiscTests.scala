@@ -170,8 +170,8 @@ class MiscTests extends RubyCode2CpgFixture {
         |  puts "In begin"
         |rescue SomeException
         |  puts "SomeException occurred"
-        |rescue => SomeOtherException
-        |  puts "SomeOtherException occurred"
+        |rescue => exceptionVar
+        |  puts "Caught exception in variable #{exceptionVar}"
         |rescue
         |  puts "Catch-all block"
         |end
@@ -186,9 +186,6 @@ class MiscTests extends RubyCode2CpgFixture {
         .code("\"SomeException occurred\"")
         .size shouldBe 1
       cpg.literal
-        .code("\"SomeOtherException occurred\"")
-        .size shouldBe 1
-      cpg.literal
         .code("\"Catch-all block\"")
         .size shouldBe 1
     }
@@ -197,6 +194,12 @@ class MiscTests extends RubyCode2CpgFixture {
       cpg.call
         .name("puts")
         .size shouldBe 4
+    }
+
+    "recognise all identifier nodes" in {
+      cpg.identifier
+        .name("exceptionVar")
+        .size shouldBe 2
     }
   }
 
