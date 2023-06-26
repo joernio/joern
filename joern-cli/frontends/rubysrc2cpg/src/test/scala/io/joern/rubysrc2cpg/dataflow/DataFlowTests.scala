@@ -824,4 +824,161 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
       sink.reachableByFlows(source).l.size shouldBe 2
     }
   }
+
+  "Data flow for begin/rescue with sink in begin" should {
+    val cpg = code("""
+        |x = 1
+        |begin
+        |  puts x
+        |rescue SomeException
+        |  puts "SomeException occurred"
+        |rescue => exceptionVar
+        |  puts "Caught exception in variable #{exceptionVar}"
+        |rescue
+        |  puts "Catch-all block"
+        |end
+        |
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).l.size shouldBe 2
+    }
+  }
+
+  "Data flow for begin/rescue with sink in rescue" should {
+    val cpg = code("""
+        |x = 1
+        |begin
+        |  puts "in begin"
+        |rescue SomeException
+        |  puts x
+        |rescue => exceptionVar
+        |  puts "Caught exception in variable #{exceptionVar}"
+        |rescue
+        |  puts "Catch-all block"
+        |end
+        |
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).l.size shouldBe 2
+    }
+  }
+
+  "Data flow for begin/rescue with sink in rescue with exception var" should {
+    val cpg = code("""
+        |begin
+        |  puts "in begin"
+        |rescue SomeException
+        |  puts "SomeException occurred"
+        |rescue => x
+        |  y = x
+        |  puts "Caught exception in variable #{y}"
+        |rescue
+        |  puts "Catch-all block"
+        |end
+        |
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).size shouldBe 1
+    }
+  }
+
+  "Data flow for begin/rescue with sink in catch-all rescue" should {
+    val cpg = code("""
+        |x = 1
+        |begin
+        |  puts "in begin"
+        |rescue SomeException
+        |   puts "SomeException occurred"
+        |rescue => exceptionVar
+        |  puts "Caught exception in variable #{exceptionVar}"
+        |rescue
+        |  puts x
+        |end
+        |
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).l.size shouldBe 2
+    }
+  }
+
+  "Data flow for begin/rescue with sink in function without begin" ignore {
+    val cpg = code("""
+        |def foo(arg)
+        |  puts "in begin"
+        |rescue SomeException
+        |  return arg
+        |rescue => exvar
+        |  puts "Caught exception in variable #{exvar}"
+        |rescue
+        |  puts "Catch-all block"
+        |end
+        |
+        |x = 1
+        |y = foo x
+        |puts y
+        |
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).l.size shouldBe 2
+    }
+  }
+
+  "Data flow for begin/rescue with sink in function without begin and sink in rescue with exception" ignore {
+    val cpg = code("""
+        |def foo(arg)
+        |  puts "in begin"
+        |rescue SomeException
+        |  puts "SomeException occurred #{arg}"
+        |rescue => exvar
+        |  puts "Caught exception in variable #{exvar}"
+        |rescue
+        |  puts "Catch-all block"
+        |end
+        |
+        |x = 1
+        |foo x
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).l.size shouldBe 2
+    }
+  }
+
+  "Data flow for begin/rescue with sink in function without begin and sink in catch-call rescue" ignore {
+    val cpg = code("""
+        |def foo(arg)
+        |  puts "in begin"
+        |  raise "This is an exception"
+        |rescue
+        |  puts "Catch-all block. Arg is #{arg}"
+        |end
+        |
+        |x = 1
+        |foo x
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).l.size shouldBe 2
+    }
+  }
+
 }
