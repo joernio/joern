@@ -971,7 +971,7 @@ class AstCreator(filename: String, phpAst: PhpFile)
         s"${nameExpr.name}${StaticMethodDelimiter}$name"
 
       case Some(expr) =>
-        s"$UnresolvedNamespace\\$codePrefix"         
+        s"$UnresolvedNamespace\\$codePrefix"
 
       case None if PhpBuiltins.FuncNames.contains(name) =>
         // No signature/namespace for MFN for builtin functions to ensure stable names as type info improves.
