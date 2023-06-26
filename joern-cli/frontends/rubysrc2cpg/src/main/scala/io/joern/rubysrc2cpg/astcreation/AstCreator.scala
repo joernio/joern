@@ -25,7 +25,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
     with AstNodeBuilder[ParserRuleContext, AstCreator]
     with AstForPrimitivesCreator
     with AstForStatementsCreator
-    with AstForExpressionsCreator 
+    with AstForExpressionsCreator
     with AstForDeclarationsCreator {
 
   protected val scope: Scope[String, NewIdentifier, Unit] = new Scope()
@@ -1873,7 +1873,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
 
     listAsts.toSeq
   }
-  
+
   def astForYieldWithOptionalArgumentContext(ctx: YieldWithOptionalArgumentContext): Seq[Ast] = {
     if (ctx.arguments() == null) return Seq(Ast())
     val argsAst = astForArguments(ctx.arguments())

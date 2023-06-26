@@ -6,13 +6,7 @@ import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  NewBlock,
-  NewCall,
-  NewControlStructure,
-  NewImport,
-  NewLiteral
-}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewControlStructure, NewImport, NewLiteral}
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
