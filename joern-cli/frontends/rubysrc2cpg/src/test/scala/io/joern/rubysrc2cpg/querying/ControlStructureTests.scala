@@ -26,8 +26,6 @@ class ControlStructureTests extends RubyCode2CpgFixture {
   "CPG for code with doBlock iterating over a constant array and multiple params" should {
     val cpg = code("""
           |[1, 2, "three"].each do |n, m|
-          |
-          |
           |  expect {
           |  someObject.someMethod(n)
           |  someObject.someMethod(m)
@@ -87,7 +85,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
 
     "recognise all method nodes" in {
       cpg.method.name("yield_with_args_method").size shouldBe 1
-      // TODO need to figure out how yield block should be connected to the method
+      cpg.method.name("yield_with_args_method_yield").size shouldBe 1
     }
   }
 

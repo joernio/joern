@@ -1390,10 +1390,12 @@ object Domain {
     }
   }
 
+  /** One of Identifier, Name, or Complex Type (Nullable, Intersection, or Union)
+    */
   private def readType(json: Value): PhpNameExpr = {
     json match {
       case Obj(value) if value.get("nodeType").map(_.str).contains("NullableType") =>
-        val containedName = readName(value("type")).name
+        val containedName = readType(value("type")).name
         PhpNameExpr(s"?$containedName", attributes = PhpAttributes(json))
 
       case Obj(value) if value.get("nodeType").map(_.str).contains("IntersectionType") =>
@@ -1401,7 +1403,7 @@ object Domain {
         PhpNameExpr(names.mkString("&"), PhpAttributes(json))
 
       case Obj(value) if value.get("nodeType").map(_.str).contains("UnionType") =>
-        val names = value("types").arr.map(readName).map(_.name)
+        val names = value("types").arr.map(readType).map(_.name)
         PhpNameExpr(names.mkString("|"), PhpAttributes(json))
 
       case other => readName(other)
