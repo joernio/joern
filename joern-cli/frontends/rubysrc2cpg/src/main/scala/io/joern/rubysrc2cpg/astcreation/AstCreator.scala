@@ -2,8 +2,9 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.parser.RubyParser._
 import io.joern.rubysrc2cpg.parser.{RubyLexer, RubyParser}
 import io.joern.rubysrc2cpg.passes.Defines
+import io.joern.rubysrc2cpg.utils.{PackageContext, PackageTable}
 import io.joern.x2cpg.Ast.storeInDiffGraph
-import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
+import io.joern.x2cpg.Defines.{DynamicCallUnknownFullName, UnresolvedSignature}
 import io.joern.x2cpg.datastructures.{Global, Scope}
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder}
 import io.shiftleft.codepropertygraph.generated.nodes._
@@ -19,7 +20,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters._
 
-class AstCreator(filename: String, global: Global)
+class AstCreator(protected val filename: String, global: Global, packageContext: PackageContext)
     extends AstCreatorBase(filename)
     with AstNodeBuilder[ParserRuleContext, AstCreator]
     with AstForPrimitivesCreator
@@ -31,6 +32,8 @@ class AstCreator(filename: String, global: Global)
   private val logger = LoggerFactory.getLogger(this.getClass)
 
   private val classStack = mutable.Stack[String]()
+
+  protected val packageStack = mutable.Stack[String]()
 
   /*
    * Stack of variable identifiers incorrectly identified as method identifiers
@@ -1015,8 +1018,13 @@ class AstCreator(filename: String, global: Global)
       } else {
         ""
       }
-    val name           = getActualMethodName(localIdentifier.getText) + nameSuffix
-    val methodFullName = s"$filename:$name"
+    val name = s"${getActualMethodName(localIdentifier.getText)}$nameSuffix"
+    val methodFullName = packageContext.packageTable
+      .getMethodFullNameUsingName(packageStack.toList, name)
+      .headOption match {
+      case Some(externalDependencyResolution) => externalDependencyResolution
+      case None                               => s"$filename:$name"
+    }
 
     val callNode = NewCall()
       .name(name)
@@ -1323,7 +1331,7 @@ class AstCreator(filename: String, global: Global)
      * we will discard the call node since it is of no further use to us
      */
 
-    val classPath = classStack.toList.mkString(".") + "."
+    val classPath = classStack.reverse.toList.mkString(".") + "."
     val methodNode = NewMethod()
       .code(ctx.getText)
       .name(callNode.name)
@@ -1333,6 +1341,9 @@ class AstCreator(filename: String, global: Global)
       .lineNumberEnd(ctx.END().getSymbol.getLine)
       .filename(filename)
     callNode.methodFullName(classPath + callNode.name)
+
+    val classType = if (classStack.isEmpty) "Standalone" else classStack.top
+    packageContext.packageTable.addPackageMethod(packageContext.moduleName, callNode.name, classPath, classType)
 
     // process yield calls.
     astBody

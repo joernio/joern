@@ -39,3 +39,4 @@ null
 **/goastgen-linux-arm64
 **/goastgen-macos
 **/goastgen-macos-arm64
+slices.json
