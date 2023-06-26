@@ -3,6 +3,7 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.parser.RubyParser._
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
+import org.antlr.v4.runtime.ParserRuleContext
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
@@ -36,6 +37,12 @@ trait AstForExpressionsCreator { this: AstCreator =>
   protected def astForUnaryPlusExpression(ctx: UnaryExpressionContext): Ast = {
     val argsAst = astForExpressionContext(ctx.expression())
     val call    = callNode(ctx, ctx.getText, Operators.plus, Operators.plus, DispatchTypes.STATIC_DISPATCH)
+    callAst(call, argsAst)
+  }
+
+  protected def astForUnaryMinusExpression(ctx: UnaryMinusExpressionContext): Ast = {
+    val argsAst = astForExpressionContext(ctx.expression())
+    val call    = callNode(ctx, ctx.getText, Operators.minus, Operators.minus, DispatchTypes.STATIC_DISPATCH)
     callAst(call, argsAst)
   }
 
@@ -120,6 +127,18 @@ trait AstForExpressionsCreator { this: AstCreator =>
     val elseAst = astForExpressionContext(ctx.expression(2))
     val ifNode  = controlStructureNode(ctx, ControlStructureTypes.IF, ctx.getText)
     controlStructureAst(ifNode, testAst.headOption, thenAst ++ elseAst)
+  }
+
+  protected def astForSuperExpression(ctx: SuperExpressionPrimaryContext): Ast =
+    astForSuperCall(ctx, astForArgumentsWithParenthesesContext(ctx.argumentsWithParentheses))
+
+  // TODO: Handle the optional block.
+  // NOTE: `super` is quite complicated semantically speaking. We'll need
+  //       to revisit how to represent them.
+  protected def astForSuperCall(ctx: ParserRuleContext, arguments: Seq[Ast]): Ast = {
+    val call =
+      callNode(ctx, ctx.getText, RubyOperators.superKeyword, RubyOperators.superKeyword, DispatchTypes.STATIC_DISPATCH)
+    callAst(call, arguments.toList)
   }
 
 }

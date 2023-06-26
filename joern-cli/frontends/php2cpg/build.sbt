@@ -1,14 +1,16 @@
 import scala.sys.process._
 import scala.util.Properties.isWin
+import better.files.File
 
 name := "php2cpg"
 
 scalaVersion       := "2.13.8"
 crossScalaVersions := Seq("2.13.8", "3.3.0")
 
-val phpParserVersion = "4.15.6"
-val phpParserBinName = "php-parser.phar"
-val phpParserDlUrl   = s"https://github.com/joernio/PHP-Parser/releases/download/v$phpParserVersion/$phpParserBinName"
+val phpParserVersion = "4.15.7"
+val upstreamParserBinName = "php-parser.phar"
+val versionedParserBinName = s"php-parser-$phpParserVersion.phar"
+val phpParserDlUrl   = s"https://github.com/joernio/PHP-Parser/releases/download/v$phpParserVersion/$upstreamParserBinName"
 dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test")
 
 libraryDependencies ++= Seq(
@@ -25,14 +27,17 @@ scalacOptions ++= Seq(
 
 lazy val phpParseInstallTask = taskKey[Unit]("Install PHP-Parse using PHP Composer")
 phpParseInstallTask := {
-  val phpBinDir = baseDirectory.value / "bin"
-  if (!(phpBinDir / phpParserBinName).exists) {
+  val phpBinDir = baseDirectory.value / "bin" / "php-parser"
+  if (!(phpBinDir / versionedParserBinName).exists) {
     IO.createDirectory(phpBinDir)
     val downloadedFile = SimpleCache.downloadMaybe(phpParserDlUrl)
-    IO.copyFile(downloadedFile, phpBinDir / phpParserBinName)
+    IO.copyFile(downloadedFile, phpBinDir / versionedParserBinName)
+    File((phpBinDir / "php-parser.php").getPath)
+      .createFileIfNotExists()
+      .overwrite(s"<?php\nrequire('$versionedParserBinName');?>")
   }
 
-  val distDir = (Universal / stagingDirectory).value / "bin"
+  val distDir = (Universal / stagingDirectory).value / "bin" / "php-parser"
   distDir.mkdirs()
   IO.copyDirectory(phpBinDir, distDir)
 }
@@ -40,9 +45,11 @@ phpParseInstallTask := {
 cleanFiles ++= Seq(
   // left to clean legacy representation
   baseDirectory.value / "bin" / "PHP-Parser",
-  baseDirectory.value / "bin" / phpParserBinName,
+  baseDirectory.value / "bin" / upstreamParserBinName,
+  baseDirectory.value / "bin" / "php-parser",
   (Universal / stagingDirectory).value / "bin" / "PHP-Parser",
-  (Universal / stagingDirectory).value / "bin" / phpParserBinName
+  (Universal / stagingDirectory).value / "bin" / upstreamParserBinName,
+  (Universal / stagingDirectory).value / "bin" / "php-parser"
 )
 
 Compile / compile := ((Compile / compile) dependsOn phpParseInstallTask).value
