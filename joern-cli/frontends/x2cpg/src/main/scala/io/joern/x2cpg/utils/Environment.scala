@@ -1,6 +1,7 @@
-package io.joern.jssrc2cpg.utils
+package io.joern.x2cpg.utils
 
 import org.slf4j.LoggerFactory
+
 import java.nio.file.Paths
 
 object Environment {
