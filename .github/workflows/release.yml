@@ -22,6 +22,12 @@ jobs:
       - run: echo $PGP_SECRET | base64 --decode | gpg --batch --import
         env:
           PGP_SECRET: ${{ secrets.PGP_SECRET }}
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 2.7
+      - name: Install Bundler
+        run: gem install bundler
       - run: sbt scalafmtCheck +test
       - run: ./testDistro.sh
       - run: |
