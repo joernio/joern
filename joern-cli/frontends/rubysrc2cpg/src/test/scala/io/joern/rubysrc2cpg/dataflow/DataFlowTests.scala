@@ -268,7 +268,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     "be found" in {
       val src  = cpg.identifier.name("a").l
       val sink = cpg.call.name("puts").l
-      sink.reachableByFlows(src).l.size shouldBe 2
+      sink.reachableByFlows(src).size shouldBe 2
     }
   }
 
@@ -287,7 +287,23 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     "be found" in {
       val src  = cpg.identifier.name("x").l
       val sink = cpg.call.name("puts").l
-      sink.reachableByFlows(src).l.size shouldBe 4
+      sink.reachableByFlows(src).size shouldBe 4
+    }
+  }
+
+  "Data flow through yield without argument" should {
+    val cpg = code("""
+        |x = 1
+        |def yield_method
+        |  yield
+        |end
+        |yield_method { puts x }
+        |""".stripMargin)
+
+    "be found" in {
+      val src  = cpg.identifier.name("x").l
+      val sink = cpg.call.name("puts").l
+      sink.reachableByFlows(src).size shouldBe 2
     }
   }
 
@@ -307,11 +323,11 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     "be found" in {
       val src1  = cpg.identifier.name("x").l
       val sink1 = cpg.call.name("puts").l
-      sink1.reachableByFlows(src1).l.size shouldBe 2
+      sink1.reachableByFlows(src1).size shouldBe 2
 
       val src2  = cpg.identifier.name("y").l
       val sink2 = cpg.call.name("puts").l
-      sink2.reachableByFlows(src2).l.size shouldBe 2
+      sink2.reachableByFlows(src2).size shouldBe 2
     }
   }
 

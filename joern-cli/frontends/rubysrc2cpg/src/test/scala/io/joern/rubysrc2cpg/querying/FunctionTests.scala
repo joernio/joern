@@ -154,4 +154,55 @@ class FunctionTests extends RubyCode2CpgFixture {
 
     }
   }
+
+  "CPG for code with multiple yields" should {
+    val cpg = code("""
+        |def yield_with_arguments
+        |  x = "something"
+        |  y = "something_else"
+        |  yield(x,y)
+        |end
+        |
+        |yield_with_arguments { |arg1, arg2| puts "Yield block 1 #{arg1} and #{arg2}" }
+        |yield_with_arguments { |arg1, arg2| puts "Yield block 2 #{arg2} and #{arg1}" }
+        |
+        |""".stripMargin)
+
+    "recognise all method nodes" in {
+      cpg.method
+        .name("yield_with_arguments")
+        .size shouldBe 1
+      cpg.method
+        .name("yield_with_arguments_yield")
+        .size shouldBe 2
+    }
+
+    "recognise all call nodes" in {
+      cpg.call
+        .name("yield_with_arguments_yield")
+        .size shouldBe 1
+
+      cpg.call
+        .name("puts")
+        .size shouldBe 2
+    }
+
+    "recognise all identifier nodes" in {
+      cpg.identifier
+        .name("arg1")
+        .size shouldBe 2
+
+      cpg.identifier
+        .name("arg2")
+        .size shouldBe 2
+
+      cpg.identifier
+        .name("x")
+        .size shouldBe 2
+
+      cpg.identifier
+        .name("y")
+        .size shouldBe 2
+    }
+  }
 }
