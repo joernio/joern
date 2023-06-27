@@ -242,21 +242,33 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     val cpg = code("""
         |x = 10
         |until x == 0
-        |  x = x - 1
         |  puts "In the loop"
+        |  x = x - 1
         |end
         |""".stripMargin)
 
     "recognise all method nodes" in {
-      cpg.identifier
-        .name("x")
-        .size shouldBe 4 // FIXME this shows as 3 when the puts is the first loop statemnt. Find why
+      cpg.identifier.name("x").size shouldBe 4
       cpg.literal.code("\"In the loop\"").size shouldBe 1
     }
 
     "recognise all call nodes" in {
       cpg.call.name("puts").size shouldBe 1
     }
+    
+    "recognise `until` as a `while` control structure" in {
+      val List(controlStructure) = cpg.whileBlock.l
+      controlStructure.lineNumber shouldBe Some(3)
+      
+      val List(condition, puts, assignment) = controlStructure.astChildren.l
+      condition.code shouldBe "x == 0"
+      condition.lineNumber shouldBe Some(3)
+      puts.code shouldBe "puts \"In the loop\""
+      puts.lineNumber shouldBe Some(4)
+      assignment.lineNumber shouldBe Some(5)
+      assignment.assignment.size shouldBe 1
+    }
+    
   }
 
   "CPG for code with a for loop" should {
