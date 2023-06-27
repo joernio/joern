@@ -149,20 +149,8 @@ trait AstForStatementsCreator { this: AstCreator =>
   protected def astForSuperCommand(ctx: SuperCommandContext): Ast =
     astForSuperCall(ctx, astForArguments(ctx.argumentsWithoutParentheses().arguments()))
 
-  protected def astForYieldCommand(ctx: YieldCommandContext): Seq[Ast] = {
-    val argsAst = astForArguments(ctx.argumentsWithoutParentheses().arguments())
-
-    val callNode = NewCall()
-      .name(UNRESOLVED_YIELD)
-      .code(ctx.getText)
-      .methodFullName(UNRESOLVED_YIELD)
-      .signature("")
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .typeFullName(Defines.Any)
-      .lineNumber(ctx.YIELD().getSymbol().getLine())
-      .columnNumber(ctx.YIELD().getSymbol().getCharPositionInLine())
-    Seq(callAst(callNode, argsAst))
-  }
+  protected def astForYieldCommand(ctx: YieldCommandContext): Ast =
+    astForYieldCall(ctx, Option(ctx.argumentsWithoutParentheses().arguments()))
 
   protected def astForSimpleMethodCommand(ctx: SimpleMethodCommandContext): Seq[Ast] = {
     val methodIdentifierAsts = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText)
@@ -202,7 +190,7 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   protected def astForCommand(ctx: CommandContext): Seq[Ast] = ctx match {
-    case ctx: YieldCommandContext        => astForYieldCommand(ctx)
+    case ctx: YieldCommandContext        => Seq(astForYieldCommand(ctx))
     case ctx: SuperCommandContext        => Seq(astForSuperCommand(ctx))
     case ctx: SimpleMethodCommandContext => astForSimpleMethodCommand(ctx)
     case ctx: MemberAccessCommandContext => astForMemberAccessCommand(ctx)

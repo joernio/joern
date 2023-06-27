@@ -314,20 +314,21 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
   }
 
   def astForPrimaryContext(ctx: PrimaryContext): Seq[Ast] = ctx match {
-    case ctx: ClassDefinitionPrimaryContext           => astForClassDefinitionPrimaryContext(ctx)
-    case ctx: ModuleDefinitionPrimaryContext          => astForModuleDefinitionPrimaryContext(ctx)
-    case ctx: MethodDefinitionPrimaryContext          => astForMethodDefinitionContext(ctx.methodDefinition())
-    case ctx: YieldWithOptionalArgumentPrimaryContext => astForYieldWithOptionalArgumentPrimaryContext(ctx)
-    case ctx: IfExpressionPrimaryContext              => astForIfExpressionPrimaryContext(ctx)
-    case ctx: UnlessExpressionPrimaryContext          => astForUnlessExpressionPrimaryContext(ctx)
-    case ctx: CaseExpressionPrimaryContext            => astForCaseExpressionPrimaryContext(ctx)
-    case ctx: WhileExpressionPrimaryContext           => astForWhileExpressionContext(ctx.whileExpression())
-    case ctx: UntilExpressionPrimaryContext           => astForUntilExpressionContext(ctx.untilExpression())
-    case ctx: ForExpressionPrimaryContext             => astForForExpressionContext(ctx.forExpression())
-    case ctx: JumpExpressionPrimaryContext            => astForJumpExpressionPrimaryContext(ctx)
-    case ctx: BeginExpressionPrimaryContext           => astForBeginExpressionPrimaryContext(ctx)
-    case ctx: GroupingExpressionPrimaryContext        => astForGroupingExpressionPrimaryContext(ctx)
-    case ctx: VariableReferencePrimaryContext         => astForVariableReferencePrimaryContext(ctx)
+    case ctx: ClassDefinitionPrimaryContext  => astForClassDefinitionPrimaryContext(ctx)
+    case ctx: ModuleDefinitionPrimaryContext => astForModuleDefinitionPrimaryContext(ctx)
+    case ctx: MethodDefinitionPrimaryContext => astForMethodDefinitionContext(ctx.methodDefinition())
+    case ctx: YieldWithOptionalArgumentPrimaryContext =>
+      Seq(astForYieldCall(ctx, Option(ctx.yieldWithOptionalArgument().arguments())))
+    case ctx: IfExpressionPrimaryContext       => astForIfExpressionPrimaryContext(ctx)
+    case ctx: UnlessExpressionPrimaryContext   => astForUnlessExpressionPrimaryContext(ctx)
+    case ctx: CaseExpressionPrimaryContext     => astForCaseExpressionPrimaryContext(ctx)
+    case ctx: WhileExpressionPrimaryContext    => astForWhileExpressionContext(ctx.whileExpression())
+    case ctx: UntilExpressionPrimaryContext    => astForUntilExpressionContext(ctx.untilExpression())
+    case ctx: ForExpressionPrimaryContext      => astForForExpressionContext(ctx.forExpression())
+    case ctx: JumpExpressionPrimaryContext     => astForJumpExpressionPrimaryContext(ctx)
+    case ctx: BeginExpressionPrimaryContext    => astForBeginExpressionPrimaryContext(ctx)
+    case ctx: GroupingExpressionPrimaryContext => astForGroupingExpressionPrimaryContext(ctx)
+    case ctx: VariableReferencePrimaryContext  => astForVariableReferencePrimaryContext(ctx)
     case ctx: SimpleScopedConstantReferencePrimaryContext =>
       astForSimpleScopedConstantReferencePrimaryContext(ctx)
     case ctx: ChainedScopedConstantReferencePrimaryContext =>
@@ -1798,23 +1799,4 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
     listAsts.toSeq
   }
 
-  def astForYieldWithOptionalArgumentContext(ctx: YieldWithOptionalArgumentContext): Seq[Ast] = {
-    if (ctx.arguments() == null) return Seq(Ast())
-    val argsAst = astForArguments(ctx.arguments())
-
-    val callNode = NewCall()
-      .name(UNRESOLVED_YIELD)
-      .code(ctx.getText)
-      .methodFullName(UNRESOLVED_YIELD)
-      .signature("")
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .typeFullName(Defines.Any)
-      .lineNumber(ctx.YIELD().getSymbol().getLine())
-      .columnNumber(ctx.YIELD().getSymbol().getCharPositionInLine())
-    Seq(callAst(callNode, argsAst))
-  }
-
-  def astForYieldWithOptionalArgumentPrimaryContext(ctx: YieldWithOptionalArgumentPrimaryContext): Seq[Ast] = {
-    astForYieldWithOptionalArgumentContext(ctx.yieldWithOptionalArgument())
-  }
 }
