@@ -370,11 +370,11 @@ unlessExpression
     ;
 
 caseExpression
-    :   CASE (wsOrNl* expressionOrCommand)? separators? whenClause+ elseClause? END
+    :   CASE (wsOrNl* expressionOrCommand)? separators? (WS* whenClause WS*)+ elseClause? wsOrNl* END
     ;
 
 whenClause
-    :   WHEN wsOrNl* whenArgument thenClause
+    :   WHEN wsOrNl* whenArgument WS* thenClause
     ;
 
 whenArgument
