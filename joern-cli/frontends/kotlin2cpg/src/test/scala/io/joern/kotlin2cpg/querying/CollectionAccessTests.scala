@@ -37,10 +37,8 @@ class CollectionAccessTests extends KotlinCode2CpgFixture(withOssDataflow = fals
         |}
         |""".stripMargin)
 
-    "should contain correct number of calls" in {
-      cpg.call.size should not be 0
+    "should contain a CALL to `indexAccess`" in {
+      cpg.call.methodFullNameExact(Operators.indexAccess).size should not be 0
     }
-
-    // TODO: handle this case
   }
 }
