@@ -7,6 +7,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewControlStructure,
   NewFieldIdentifier,
   NewIdentifier,
+  NewImport,
   NewLiteral,
   NewLocal,
   NewMember,
@@ -70,6 +71,15 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
       .dynamicTypeHintFullName(dynamicTypeHints)
       .lineNumber(line(node))
       .columnNumber(column(node))
+  }
+
+  protected def newImportNode(code: String, importedEntity: String, importedAs: String, include: Node): NewImport = {
+    NewImport()
+      .code(code)
+      .importedEntity(importedEntity)
+      .importedAs(importedAs)
+      .lineNumber(line(include))
+      .columnNumber(column(include))
   }
 
   protected def literalNode(

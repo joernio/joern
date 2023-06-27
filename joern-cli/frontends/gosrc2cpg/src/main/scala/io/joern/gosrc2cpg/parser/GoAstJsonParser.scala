@@ -12,7 +12,7 @@ object GoAstJsonParser {
   def readFile(file: Path): ParserResult = {
     val jsonContent       = IOUtils.readLinesInFile(file).mkString
     val json              = ujson.read(jsonContent)
-    val fullFilePath      = json("node_filename").str
+    val fullFilePath      = json(ParserKeys.NodeFileName).str
     val filePath          = Paths.get(fullFilePath)
     val sourceFileContent = IOUtils.readEntireFile(filePath)
     ParserResult(filePath.getFileName.toString, fullFilePath, json, sourceFileContent)
