@@ -1,11 +1,11 @@
 package io.joern.rubysrc2cpg.parser
 
 class CaseConditionTests extends RubyParserAbstractTest {
-  
+
   "A case expression" should {
-    
+
     "be parsed as a primary expression" when {
-      
+
       "it contains just one `when` branch" in {
         val code =
           """case something
@@ -13,7 +13,7 @@ class CaseConditionTests extends RubyParserAbstractTest {
             |   puts 2
             |end
             |""".stripMargin
-            
+
         printAst(_.primary(), code) shouldBe
           """CaseExpressionPrimary
             | CaseExpression
@@ -62,7 +62,7 @@ class CaseConditionTests extends RubyParserAbstractTest {
             |      Separator
             |  end""".stripMargin
       }
-      
+
       "it contains both an empty `when` and `else` branch" in {
         val code =
           """case something
@@ -70,7 +70,7 @@ class CaseConditionTests extends RubyParserAbstractTest {
             | else
             | end
             |""".stripMargin
-        
+
         printAst(_.primary(), code) shouldBe
           """CaseExpressionPrimary
             | CaseExpression
@@ -106,14 +106,14 @@ class CaseConditionTests extends RubyParserAbstractTest {
             |   CompoundStatement
             |  end""".stripMargin
       }
-      
+
       "it uses `then` as separator for `when`" in {
         val code =
           """case something
             | when 1 then
             | end
             |""".stripMargin
-            
+
         printAst(_.primary(), code) shouldBe
           """CaseExpressionPrimary
             | CaseExpression
@@ -145,7 +145,7 @@ class CaseConditionTests extends RubyParserAbstractTest {
             |    CompoundStatement
             |  end""".stripMargin
       }
-      
+
       "it contains two single-line `when-then` branches" in {
         val code =
           """case x
@@ -153,7 +153,7 @@ class CaseConditionTests extends RubyParserAbstractTest {
             | when 2 then 3
             | end
             |""".stripMargin
-            
+
         printAst(_.primary(), code) shouldBe
           """CaseExpressionPrimary
             | CaseExpression
