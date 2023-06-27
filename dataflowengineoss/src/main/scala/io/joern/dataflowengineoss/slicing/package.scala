@@ -2,6 +2,7 @@ package io.joern.dataflowengineoss
 
 import better.files.File
 import io.circe.{Decoder, Encoder, HCursor, Json}
+import io.joern.x2cpg.X2CpgConfig
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
@@ -19,53 +20,66 @@ package object slicing {
 
   trait BaseConfig {
 
-    def inputPath: File = File("cpg.bin")
+    var inputPath: File = File("cpg.bin")
 
-    def outFile: File = File("slices")
+    var outputSliceFile: File = File("slices")
 
-    def dummyTypesEnabled: Boolean = false
+    var dummyTypesEnabled: Boolean = false
 
-    def fileFilter: Option[String] = None
+    var fileFilter: Option[String] = None
 
-    def methodNameFilter: Option[String] = None
+    var methodNameFilter: Option[String] = None
 
-    def methodParamTypeFilter: Option[String] = None
+    var methodParamTypeFilter: Option[String] = None
 
-    def methodAnnotationFilter: Option[String] = None
+    var methodAnnotationFilter: Option[String] = None
+
+    def withInputPath(x: File): BaseConfig = {
+      this.inputPath = x
+      this
+    }
+
+    def withOutputSliceFile(x: File): BaseConfig = {
+      this.outputSliceFile = x
+      this
+    }
+
+    def withDummyTypesEnabled(x: Boolean): BaseConfig = {
+      this.dummyTypesEnabled = x
+      this
+    }
+
+    def withFileFilter(x: Option[String]): BaseConfig = {
+      this.fileFilter = x
+      this
+    }
+
+    def withMethodNameFilter(x: Option[String]): BaseConfig = {
+      this.methodNameFilter = x
+      this
+    }
+
+    def withMethodParamTypeFilter(x: Option[String]): BaseConfig = {
+      this.methodParamTypeFilter = x
+      this
+    }
+
+    def withMethodAnnotationFilter(x: Option[String]): BaseConfig = {
+      this.methodParamTypeFilter = x
+      this
+    }
 
   }
 
-  case class SliceConfig(
-    override val inputPath: File = File("cpg.bin"),
-    override val outFile: File = File("slices"),
-    override val dummyTypesEnabled: Boolean = false,
-    override val fileFilter: Option[String] = None,
-    override val methodNameFilter: Option[String] = None,
-    override val methodParamTypeFilter: Option[String] = None,
-    override val methodAnnotationFilter: Option[String] = None
-  ) extends BaseConfig
+  case class DefaultSliceConfig() extends BaseConfig
 
   case class DataFlowConfig(
-    override val inputPath: File = File("cpg.bin"),
-    override val outFile: File = File("slices"),
-    override val dummyTypesEnabled: Boolean = false,
-    override val fileFilter: Option[String] = None,
-    override val methodNameFilter: Option[String] = None,
-    override val methodParamTypeFilter: Option[String] = None,
-    override val methodAnnotationFilter: Option[String] = None,
     sinkPatternFilter: Option[String] = None,
     mustEndAtExternalMethod: Boolean = false,
     sliceDepth: Int = 20
   ) extends BaseConfig
 
   case class UsagesConfig(
-    override val inputPath: File = File("cpg.bin"),
-    override val outFile: File = File("slices"),
-    override val dummyTypesEnabled: Boolean = false,
-    override val fileFilter: Option[String] = None,
-    override val methodNameFilter: Option[String] = None,
-    override val methodParamTypeFilter: Option[String] = None,
-    override val methodAnnotationFilter: Option[String] = None,
     minNumCalls: Int = 1,
     excludeOperatorCalls: Boolean = false,
     excludeMethodSource: Boolean = false
