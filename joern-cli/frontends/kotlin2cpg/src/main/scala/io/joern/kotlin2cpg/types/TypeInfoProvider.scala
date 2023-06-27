@@ -73,8 +73,6 @@ trait TypeInfoProvider {
 
   def bindingKind(expr: KtQualifiedExpression): CallKinds.CallKind
 
-  def isReferencingMember(expr: KtNameReferenceExpression): Boolean
-
   def fullNameWithSignature(expr: KtQualifiedExpression, or: (String, String)): (String, String)
 
   def fullNameWithSignature(call: KtCallExpression, or: (String, String)): (String, String)
