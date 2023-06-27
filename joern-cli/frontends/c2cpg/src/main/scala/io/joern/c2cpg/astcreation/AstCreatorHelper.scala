@@ -312,21 +312,19 @@ trait AstCreatorHelper { this: AstCreator =>
         s"${fullName(namespace.getParent)}.${ASTStringUtil.getSimpleName(namespace.getName)}"
       case namespace: ICPPASTNamespaceDefinition if ASTStringUtil.getSimpleName(namespace.getName).isEmpty =>
         s"${fullName(namespace.getParent)}.${uniqueName("namespace", "", "")._1}"
-      case cppClass: ICPPASTCompositeTypeSpecifier if ASTStringUtil.getSimpleName(cppClass.getName).nonEmpty =>
-        s"${fullName(cppClass.getParent)}.${ASTStringUtil.getSimpleName(cppClass.getName)}"
-      case cppClass: ICPPASTCompositeTypeSpecifier if ASTStringUtil.getSimpleName(cppClass.getName).isEmpty =>
-        val name = cppClass.getParent match {
+      case compType: IASTCompositeTypeSpecifier if ASTStringUtil.getSimpleName(compType.getName).nonEmpty =>
+        s"${fullName(compType.getParent)}.${ASTStringUtil.getSimpleName(compType.getName)}"
+      case compType: IASTCompositeTypeSpecifier if ASTStringUtil.getSimpleName(compType.getName).isEmpty =>
+        val name = compType.getParent match {
           case decl: IASTSimpleDeclaration =>
             decl.getDeclarators.headOption
               .map(n => ASTStringUtil.getSimpleName(n.getName))
               .getOrElse(uniqueName("composite_type", "", "")._1)
           case _ => uniqueName("composite_type", "", "")._1
         }
-        s"${fullName(cppClass.getParent)}.$name"
+        s"${fullName(compType.getParent)}.$name"
       case enumSpecifier: IASTEnumerationSpecifier =>
         s"${fullName(enumSpecifier.getParent)}.${ASTStringUtil.getSimpleName(enumSpecifier.getName)}"
-      case c: IASTCompositeTypeSpecifier =>
-        s"${fullName(c.getParent)}.${ASTStringUtil.getSimpleName(c.getName)}"
       case f: ICPPASTLambdaExpression =>
         s"${fullName(f.getParent)}."
       case f: IASTFunctionDeclarator
@@ -377,10 +375,14 @@ trait AstCreatorHelper { this: AstCreator =>
           case other =>
             other.getName
         }
-      case d: IASTIdExpression           => lastNameOfQualifiedName(ASTStringUtil.getSimpleName(d.getName))
-      case u: IASTUnaryExpression        => shortName(u.getOperand)
-      case c: IASTFunctionCallExpression => shortName(c.getFunctionNameExpression)
-      case other                         => notHandledYet(other); ""
+      case d: IASTIdExpression            => lastNameOfQualifiedName(ASTStringUtil.getSimpleName(d.getName))
+      case u: IASTUnaryExpression         => shortName(u.getOperand)
+      case c: IASTFunctionCallExpression  => shortName(c.getFunctionNameExpression)
+      case s: IASTSimpleDeclSpecifier     => s.getRawSignature
+      case e: IASTEnumerationSpecifier    => ASTStringUtil.getSimpleName(e.getName)
+      case c: IASTCompositeTypeSpecifier  => ASTStringUtil.getSimpleName(c.getName)
+      case e: IASTElaboratedTypeSpecifier => ASTStringUtil.getSimpleName(e.getName)
+      case other                          => notHandledYet(other); ""
     }
     name
   }

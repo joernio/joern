@@ -1005,7 +1005,7 @@ class AstCreationPassTests extends AbstractPassTest {
         |typedef struct foo {
         |} abc;
       """.stripMargin) { cpg =>
-      cpg.typeDecl.name("abc").aliasTypeFullName("foo").size shouldBe 1
+      cpg.typeDecl.name("foo").aliasTypeFullName("abc").size shouldBe 1
     }
 
     "be correct for struct with local" in AstFixture("""
@@ -1067,7 +1067,7 @@ class AstCreationPassTests extends AbstractPassTest {
         |typedef enum foo {
         |} abc;
       """.stripMargin) { cpg =>
-      cpg.typeDecl.name("abc").aliasTypeFullName("foo").size shouldBe 1
+      cpg.typeDecl.name("foo").aliasTypeFullName("abc").size shouldBe 1
     }
 
     "be correct for classes with friends" in AstFixture(

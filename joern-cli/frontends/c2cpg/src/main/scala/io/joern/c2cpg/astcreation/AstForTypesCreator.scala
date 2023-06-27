@@ -66,7 +66,7 @@ trait AstForTypesCreator { this: AstCreator =>
   protected def astForDeclarator(declaration: IASTSimpleDeclaration, declarator: IASTDeclarator, index: Int): Ast = {
     val name = ASTStringUtil.getSimpleName(declarator.getName)
     declaration match {
-      case d if isTypeDef(d) =>
+      case d if isTypeDef(d) && shortName(d.getDeclSpecifier).nonEmpty =>
         val filename = fileName(declaration)
         val tpe      = registerType(typeFor(declarator))
         Ast(typeDeclNode(declarator, name, registerType(name), filename, nodeSignature(d), alias = Option(tpe)))
@@ -234,28 +234,25 @@ trait AstForTypesCreator { this: AstCreator =>
       astForDeclarator(typeSpecifier.getParent.asInstanceOf[IASTSimpleDeclaration], d, i)
     }
 
-    val lineNumber             = line(typeSpecifier)
-    val columnNumber           = column(typeSpecifier)
-    val name                   = ASTStringUtil.getSimpleName(typeSpecifier.getName)
-    val fullname               = registerType(cleanType(fullName(typeSpecifier)))
+    val lineNumber   = line(typeSpecifier)
+    val columnNumber = column(typeSpecifier)
+    val fullname     = registerType(cleanType(fullName(typeSpecifier)))
+    val name = ASTStringUtil.getSimpleName(typeSpecifier.getName) match {
+      case n if n.isEmpty => lastNameOfQualifiedName(fullname)
+      case other          => other
+    }
     val code                   = nodeSignature(typeSpecifier)
+    val nameAlias              = decls.headOption.map(d => registerType(shortName(d))).filter(_.nonEmpty)
     val nameWithTemplateParams = templateParameters(typeSpecifier).map(t => registerType(s"$fullname$t"))
+    val alias                  = (nameAlias.toList ++ nameWithTemplateParams.toList).headOption
 
     val typeDecl = typeSpecifier match {
       case cppClass: ICPPASTCompositeTypeSpecifier =>
         val baseClassList =
           cppClass.getBaseSpecifiers.toSeq.map(s => registerType(s.getNameSpecifier.toString))
-        typeDeclNode(
-          typeSpecifier,
-          name,
-          fullname,
-          filename,
-          code,
-          inherits = baseClassList,
-          alias = nameWithTemplateParams
-        )
+        typeDeclNode(typeSpecifier, name, fullname, filename, code, inherits = baseClassList, alias = alias)
       case _ =>
-        typeDeclNode(typeSpecifier, name, fullname, filename, code, alias = nameWithTemplateParams)
+        typeDeclNode(typeSpecifier, name, fullname, filename, code, alias = alias)
     }
 
     methodAstParentStack.push(typeDecl)
@@ -294,17 +291,12 @@ trait AstForTypesCreator { this: AstCreator =>
 
     val name                   = ASTStringUtil.getSimpleName(typeSpecifier.getName)
     val fullname               = registerType(cleanType(fullName(typeSpecifier)))
+    val nameAlias              = decls.headOption.map(d => registerType(shortName(d))).filter(_.nonEmpty)
     val nameWithTemplateParams = templateParameters(typeSpecifier).map(t => registerType(s"$fullname$t"))
+    val alias                  = (nameAlias.toList ++ nameWithTemplateParams.toList).headOption
 
     val typeDecl =
-      typeDeclNode(
-        typeSpecifier,
-        name,
-        fullname,
-        filename,
-        nodeSignature(typeSpecifier),
-        alias = nameWithTemplateParams
-      )
+      typeDeclNode(typeSpecifier, name, fullname, filename, nodeSignature(typeSpecifier), alias = alias)
 
     Ast(typeDecl) +: declAsts
   }
@@ -345,7 +337,9 @@ trait AstForTypesCreator { this: AstCreator =>
     val columnNumber = column(typeSpecifier)
     val (name, fullname) =
       uniqueName("enum", ASTStringUtil.getSimpleName(typeSpecifier.getName), fullName(typeSpecifier))
-    val typeDecl = typeDeclNode(typeSpecifier, name, registerType(fullname), filename, nodeSignature(typeSpecifier))
+    val alias = decls.headOption.map(d => registerType(shortName(d))).filter(_.nonEmpty)
+    val typeDecl =
+      typeDeclNode(typeSpecifier, name, registerType(fullname), filename, nodeSignature(typeSpecifier), alias = alias)
     methodAstParentStack.push(typeDecl)
     scope.pushNewScope(typeDecl)
 
