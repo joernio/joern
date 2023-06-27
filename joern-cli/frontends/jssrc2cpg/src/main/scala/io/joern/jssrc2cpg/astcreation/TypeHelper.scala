@@ -50,7 +50,7 @@ trait TypeHelper { this: AstCreator =>
     case NullLiteralTypeAnnotation    => code(flowType.json)
     case StringLiteralTypeAnnotation  => code(flowType.json)
     case GenericTypeAnnotation        => code(flowType.json("id"))
-    case ThisTypeAnnotation           => typeHintForThisExpression(Option(flowType)).headOption.getOrElse(Defines.Any);
+    case ThisTypeAnnotation           => dynamicInstanceTypeStack.headOption.getOrElse(Defines.Any)
     case NullableTypeAnnotation       => typeForTypeAnnotation(createBabelNodeInfo(flowType.json(TypeAnnotationKey)))
     case _                            => Defines.Any
   }
@@ -70,7 +70,7 @@ trait TypeHelper { this: AstCreator =>
     case TSIntrinsicKeyword  => code(tsType.json)
     case TSTypeReference     => code(tsType.json)
     case TSArrayType         => code(tsType.json)
-    case TSThisType          => typeHintForThisExpression(Option(tsType)).headOption.getOrElse(Defines.Any)
+    case TSThisType          => dynamicInstanceTypeStack.headOption.getOrElse(Defines.Any)
     case TSOptionalType      => typeForTypeAnnotation(createBabelNodeInfo(tsType.json(TypeAnnotationKey)))
     case TSRestType          => typeForTypeAnnotation(createBabelNodeInfo(tsType.json(TypeAnnotationKey)))
     case TSParenthesizedType => typeForTypeAnnotation(createBabelNodeInfo(tsType.json(TypeAnnotationKey)))
@@ -125,18 +125,6 @@ trait TypeHelper { this: AstCreator =>
     }
     registerType(tpe, tpe)
     tpe
-  }
-
-  protected def typeHintForThisExpression(node: Option[BabelNodeInfo] = None): Seq[String] = {
-    dynamicInstanceTypeStack.headOption match {
-      case Some(tpe) => Seq(tpe)
-      case None if node.isDefined =>
-        typeFor(node.get) match {
-          case t if t != Defines.Any && t != "this" => Seq(t)
-          case _                                    => rootTypeDecl.map(_.fullName).toSeq
-        }
-      case None => rootTypeDecl.map(_.fullName).toSeq
-    }
   }
 
 }

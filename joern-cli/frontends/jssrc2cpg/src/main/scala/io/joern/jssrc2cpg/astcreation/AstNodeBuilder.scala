@@ -210,7 +210,7 @@ trait AstNodeBuilder { this: AstCreator =>
 
   protected def identifierNode(node: BabelNodeInfo, name: String): NewIdentifier = {
     val dynamicInstanceTypeOption = name match {
-      case "this"    => typeHintForThisExpression(Option(node)).headOption
+      case "this"    => dynamicInstanceTypeStack.headOption
       case "console" => Option(Defines.Console)
       case "Math"    => Option(Defines.Math)
       case _         => None

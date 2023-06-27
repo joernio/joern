@@ -488,8 +488,6 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       param1.index shouldBe 0
       param1.name shouldBe "this"
       param1.code shouldBe "this"
-      param1.typeFullName shouldBe Defines.Any
-      param1.dynamicTypeHintFullName shouldBe Seq("code.js::program")
 
       param2.index shouldBe 1
       param2.name shouldBe "param1_0"
@@ -511,8 +509,6 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       param1.index shouldBe 0
       param1.name shouldBe "this"
       param1.code shouldBe "this"
-      param1.typeFullName shouldBe Defines.Any
-      param1.dynamicTypeHintFullName shouldBe Seq("code.js::program")
 
       param2.index shouldBe 1
       param2.name shouldBe "param1_0"
@@ -565,8 +561,6 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       thisIdentifier.name shouldBe "this"
       thisIdentifier.code shouldBe "this"
       thisIdentifier.argumentIndex shouldBe 1
-      thisIdentifier.typeFullName shouldBe Defines.Any
-      thisIdentifier.dynamicTypeHintFullName shouldBe Seq("code.js::program")
 
       val List(thisParameter) = cpg.method.name("foo").parameter.l
       thisParameter.name shouldBe "this"
@@ -749,8 +743,6 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
         val List(t, x, args) = method.parameter.l
         t.index shouldBe 0
         t.name shouldBe "this"
-        t.typeFullName shouldBe Defines.Any
-        t.dynamicTypeHintFullName shouldBe Seq("code.js::program")
         x.index shouldBe 1
         x.name shouldBe "x"
         x.typeFullName shouldBe Defines.Any
@@ -768,8 +760,6 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(t, x) = method.parameter.l
       t.index shouldBe 0
       t.name shouldBe "this"
-      t.typeFullName shouldBe Defines.Any
-      t.dynamicTypeHintFullName shouldBe Seq("code.js::program")
       x.index shouldBe 1
       x.name shouldBe "x"
       x.typeFullName shouldBe Defines.Any
@@ -791,8 +781,6 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(t, x) = method.parameter.l
       t.index shouldBe 0
       t.name shouldBe "this"
-      t.typeFullName shouldBe Defines.Any
-      t.dynamicTypeHintFullName shouldBe Seq("code.js::program")
       x.index shouldBe 1
       x.name shouldBe "x"
       x.typeFullName shouldBe Defines.Any
@@ -815,8 +803,6 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(t, x, y) = method.parameter.l
       t.index shouldBe 0
       t.name shouldBe "this"
-      t.typeFullName shouldBe Defines.Any
-      t.dynamicTypeHintFullName shouldBe Seq("code.js::program")
       x.index shouldBe 1
       x.name shouldBe "x"
       x.typeFullName shouldBe Defines.Any

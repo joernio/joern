@@ -108,9 +108,7 @@ class AstCreator(
     scope.pushNewMethodScope(fullName, name, blockNode, None)
     localAstParentStack.push(blockNode)
 
-    val thisParam =
-      parameterInNode(astNodeInfo, "this", "this", 0, false, EvaluationStrategies.BY_VALUE)
-        .dynamicTypeHintFullName(typeHintForThisExpression())
+    val thisParam = parameterInNode(astNodeInfo, "this", "this", 0, isVariadic = false, EvaluationStrategies.BY_VALUE)
     scope.addVariable("this", thisParam, MethodScope)
 
     val methodChildren = astsForFile(astNodeInfo)

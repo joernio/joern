@@ -58,13 +58,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
           val base   = createBabelNodeInfo(callee.json("object"))
           val member = createBabelNodeInfo(callee.json("property"))
           base.node match {
-            case ThisExpression =>
-              val receiverAst = astForNodeWithFunctionReference(callee.json)
-              val baseNode = identifierNode(base, base.code)
-                .dynamicTypeHintFullName(this.rootTypeDecl.map(_.fullName).toSeq)
-              scope.addVariableReference(base.code, baseNode)
-              (receiverAst, baseNode, member.code)
-            case Identifier =>
+            case Identifier | ThisExpression =>
               val receiverAst = astForNodeWithFunctionReference(callee.json)
               val baseNode    = identifierNode(base, base.code)
               scope.addVariableReference(base.code, baseNode)
@@ -87,7 +81,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
           }
         case _ =>
           val receiverAst = astForNodeWithFunctionReference(callee.json)
-          val thisNode    = identifierNode(callee, "this").dynamicTypeHintFullName(typeHintForThisExpression())
+          val thisNode    = identifierNode(callee, "this")
           scope.addVariableReference(thisNode.name, thisNode)
           (receiverAst, thisNode, calleeCode)
       }
@@ -96,8 +90,15 @@ trait AstForExpressionsCreator { this: AstCreator =>
   }
 
   protected def astForThisExpression(thisExpr: BabelNodeInfo): Ast = {
-    val dynamicTypeOption = typeHintForThisExpression(Option(thisExpr)).headOption
-    val thisNode          = identifierNode(thisExpr, thisExpr.code, dynamicTypeOption.toList)
+    val dynamicTypeOption = dynamicInstanceTypeStack.headOption match {
+      case Some(tpe) => Option(tpe)
+      case None =>
+        typeFor(thisExpr) match {
+          case t if t != Defines.Any => Option(t)
+          case _                     => None
+        }
+    }
+    val thisNode = identifierNode(thisExpr, thisExpr.code, dynamicTypeOption.toSeq)
     scope.addVariableReference(thisExpr.code, thisNode)
     Ast(thisNode)
   }

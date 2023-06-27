@@ -65,7 +65,15 @@ trait AstForFunctionsCreator { this: AstCreator =>
             val localNode = newLocalNode(paramName, tpe).order(0)
             diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
           }
-          parameterInNode(nodeInfo, paramName, nodeInfo.code, index, true, EvaluationStrategies.BY_VALUE, Option(tpe))
+          parameterInNode(
+            nodeInfo,
+            paramName,
+            nodeInfo.code,
+            index,
+            isVariadic = true,
+            EvaluationStrategies.BY_VALUE,
+            Option(tpe)
+          )
         case AssignmentPattern =>
           val lhsElement  = nodeInfo.json("left")
           val rhsElement  = nodeInfo.json("right")
@@ -96,7 +104,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
                 lhsNodeInfo.code,
                 nodeInfo.code,
                 index,
-                false,
+                isVariadic = false,
                 EvaluationStrategies.BY_VALUE,
                 Option(tpe)
               )
@@ -214,7 +222,15 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
           val name = nodeInfo.json("name").str
           val node =
-            parameterInNode(nodeInfo, name, nodeInfo.code, index, false, EvaluationStrategies.BY_VALUE, Option(tpe))
+            parameterInNode(
+              nodeInfo,
+              name,
+              nodeInfo.code,
+              index,
+              isVariadic = false,
+              EvaluationStrategies.BY_VALUE,
+              Option(tpe)
+            )
           scope.addVariable(name, node, MethodScope)
           node
         case TSParameterProperty =>
@@ -222,7 +238,15 @@ trait AstForFunctionsCreator { this: AstCreator =>
           val tpe           = typeFor(unpackedParam)
           val name          = unpackedParam.json("name").str
           val node =
-            parameterInNode(nodeInfo, name, nodeInfo.code, index, false, EvaluationStrategies.BY_VALUE, Option(tpe))
+            parameterInNode(
+              nodeInfo,
+              name,
+              nodeInfo.code,
+              index,
+              isVariadic = false,
+              EvaluationStrategies.BY_VALUE,
+              Option(tpe)
+            )
           scope.addVariable(name, node, MethodScope)
           node
         case _ =>
@@ -296,9 +320,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val virtualModifierNode = NewModifier().modifierType(ModifierTypes.VIRTUAL)
     methodAstParentStack.push(methodNode_)
 
-    val thisNode =
-      parameterInNode(func, "this", "this", 0, false, EvaluationStrategies.BY_VALUE)
-        .dynamicTypeHintFullName(typeHintForThisExpression())
+    val thisNode = parameterInNode(func, "this", "this", 0, isVariadic = false, EvaluationStrategies.BY_VALUE)
     scope.addVariable("this", thisNode, MethodScope)
 
     val paramNodes = if (hasKey(func.json, "parameters")) {
@@ -385,9 +407,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     scope.pushNewMethodScope(methodFullName, methodName, blockNode, capturingRefNode)
     localAstParentStack.push(blockNode)
 
-    val thisNode =
-      parameterInNode(func, "this", "this", 0, false, EvaluationStrategies.BY_VALUE)
-        .dynamicTypeHintFullName(typeHintForThisExpression())
+    val thisNode = parameterInNode(func, "this", "this", 0, isVariadic = false, EvaluationStrategies.BY_VALUE)
     scope.addVariable("this", thisNode, MethodScope)
 
     val paramNodes = handleParameters(func.json("params").arr.toSeq, additionalBlockStatements)
