@@ -37,15 +37,11 @@ class NamespaceBlockTests extends KotlinCode2CpgFixture(withOssDataflow = false)
     }
 
     "should allow traversing from namespace block to type declaration" in {
-      cpg.namespaceBlock.filename(".*kt").typeDecl.name.l shouldBe List("ClassFoo")
+      cpg.namespaceBlock.filename(".*kt").typeDecl.name.l shouldBe List("<global>")
     }
 
     "should allow traversing from namespace block to file" in {
       cpg.namespaceBlock.filename(".*kt").file.size shouldBe 1
-    }
-
-    "should allow traversing from namespace block to method" in {
-      cpg.namespaceBlock.filename(".*kt").method.size shouldBe 1
     }
 
   }

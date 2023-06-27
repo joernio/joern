@@ -55,15 +55,36 @@ trait KtPsiToAst {
         val name = packageName.split("\\.").lastOption.getOrElse("")
         namespaceBlockNode(name, packageName, relativizedPath)
       }
-
     methodAstParentStack.push(node)
+
+    val name     = NamespaceTraversal.globalNamespaceName
+    val fullName = node.fullName
+    val fakeGlobalTypeDecl =
+      typeDeclNode(ktFile, name, fullName, relativizedPath, name, NodeTypes.NAMESPACE_BLOCK, fullName)
+    methodAstParentStack.push(fakeGlobalTypeDecl)
+
+    val fakeGlobalMethod =
+      methodNode(ktFile, name, name, fullName, None, relativizedPath, Option(NodeTypes.TYPE_DECL), Option(fullName))
+    methodAstParentStack.push(fakeGlobalMethod)
+    scope.pushNewScope(fakeGlobalMethod)
+
+    val blockNode_   = blockNode(ktFile, "<empty>", registerType(TypeConstants.any))
+    val methodReturn = newMethodReturnNode(TypeConstants.any, None, None, None)
+
     val declarationsAsts = ktFile.getDeclarations.asScala.flatMap(astsForDeclaration)
     val fileNode         = NewFile().name(fileWithMeta.relativizedPath)
     val lambdaTypeDecls =
       lambdaBindingInfoQueue.flatMap(_.edgeMeta.collect { case (node: NewTypeDecl, _, _) => Ast(node) })
     methodAstParentStack.pop()
 
-    val namespaceBlockAst = Ast(node).withChildren(importAsts ++ declarationsAsts ++ lambdaAstQueue ++ lambdaTypeDecls)
+    val allDeclarationAsts = declarationsAsts ++ lambdaAstQueue ++ lambdaTypeDecls
+    val fakeTypeDeclAst =
+      Ast(fakeGlobalTypeDecl)
+        .withChild(
+          methodAst(fakeGlobalMethod, Seq.empty, blockAst(blockNode_, allDeclarationAsts.toList), methodReturn)
+        )
+    val namespaceBlockAst =
+      Ast(node).withChildren(importAsts).withChild(fakeTypeDeclAst)
     Ast(fileNode).withChildren(namespaceBlockAst :: namespaceBlocksForImports)
   }
 
@@ -105,7 +126,7 @@ trait KtPsiToAst {
         astsForMethod(n, isExtensionFn)
       case t: KtTypeAlias            => Seq(astForTypeAlias(t))
       case s: KtSecondaryConstructor => Seq(astForUnknown(s, None))
-      case p: KtProperty             => Seq(astForUnknown(p, None)) // TODO: these are globals, represent them correctly
+      case p: KtProperty             => astsForProperty(p)
       case unhandled =>
         logger.error(
           s"Unknown declaration type encountered with text `${unhandled.getText}` and class `${unhandled.getClass}`!"
@@ -273,7 +294,9 @@ trait KtPsiToAst {
     val membersFromPrimaryCtorAsts = ktClass.getPrimaryConstructorParameters.asScala.toList.collect {
       case param if param.hasValOrVar =>
         val typeFullName = registerType(typeInfoProvider.parameterType(param, TypeConstants.any))
-        Ast(memberNode(param, param.getName, param.getName, typeFullName))
+        val memberNode_  = memberNode(param, param.getName, param.getName, typeFullName)
+        scope.addToScope(param.getName, memberNode_)
+        Ast(memberNode_)
     }
 
     val primaryCtorCall =
@@ -1859,8 +1882,14 @@ trait KtPsiToAst {
   def astForNameReference(expr: KtNameReferenceExpression, argIdx: Option[Int], argName: Option[String])(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
+    val isReferencingMember =
+      scope.lookupVariable(expr.getIdentifier.getText) match {
+        case Some(_: NewMember) => true
+        case _                  => false
+      }
+
     if (typeInfoProvider.isReferenceToClass(expr)) astForNameReferenceToType(expr, argIdx)
-    else if (typeInfoProvider.isReferencingMember(expr)) {
+    else if (isReferencingMember) {
       astForNameReferenceToMember(expr, argIdx)
     } else {
       astForNonSpecialNameReference(expr, argIdx, argName)

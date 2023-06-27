@@ -20,7 +20,7 @@ class JoernSliceJS1 extends AnyWordSpec with Matchers with AbstractJoernCliTest 
 
     "extract 'express.js' slice" in {
       val Some(slice) = programSlice.objectSlices.get("main.js::program").flatMap(_.slices.headOption)
-      slice.definedBy shouldBe Some(CallDef("express", "ANY", Option("express")))
+      slice.definedBy shouldBe Some(CallDef("express", "ANY", Option("express"), Option(2), Option(12)))
       slice.targetObj shouldBe LocalDef("app", "ANY")
 
       val List(inv1, inv2) = slice.invokedCalls
@@ -55,7 +55,9 @@ class JoernSliceJS1 extends AnyWordSpec with Matchers with AbstractJoernCliTest 
 
     "extract 'Car' object instantiation" in {
       val Some(slice) = programSlice.objectSlices.get("main.js::program:carTest").flatMap(_.slices.headOption)
-      slice.definedBy shouldBe Some(CallDef("new Car", "main.js::program:Car", Option("main.js::program:Car")))
+      slice.definedBy shouldBe Some(
+        CallDef("new Car", "main.js::program:Car", Option("main.js::program:Car"), Some(32), Some(14))
+      )
       slice.targetObj shouldBe LocalDef("c", "main.js::program:Car")
 
       val List(inv1) = slice.invokedCalls
@@ -84,8 +86,8 @@ class JoernSliceJS2 extends AnyWordSpec with Matchers with AbstractJoernCliTest 
 
     "extract 'y' local variable" in {
       val Some(slice) = programSlice.objectSlices.get("main.js::program:bar").flatMap(_.slices.headOption)
-      slice.targetObj shouldBe ParamDef("y", "ANY", 1)
-      slice.definedBy shouldBe Option(ParamDef("y", "ANY", 1))
+      slice.targetObj shouldBe ParamDef("y", "ANY", 1, Some(14), Some(13))
+      slice.definedBy shouldBe Option(ParamDef("y", "ANY", 1, Some(14), Some(13)))
 
       val List(inv1) = slice.invokedCalls
 
@@ -98,7 +100,9 @@ class JoernSliceJS2 extends AnyWordSpec with Matchers with AbstractJoernCliTest 
     "extract 'x' local variable" in {
       val Some(slice) = programSlice.objectSlices.get("main.js::program").flatMap(_.slices.headOption)
       slice.targetObj shouldBe LocalDef("x", "main.js::program:Foo")
-      slice.definedBy shouldBe Option(CallDef("new Foo", "main.js::program:Foo", Some("main.js::program:Foo")))
+      slice.definedBy shouldBe Option(
+        CallDef("new Foo", "main.js::program:Foo", Some("main.js::program:Foo"), Some(17), Some(10))
+      )
 
       val List(arg1, arg2) = slice.argToCalls
 
@@ -134,8 +138,8 @@ class JoernSliceTS1 extends AnyWordSpec with Matchers with AbstractJoernCliTest 
 
     "extract 'name' parameter slice from 'startScene'" in {
       val Some(slice) = programSlice.objectSlices.get("main.ts::program:Game:startScene").flatMap(_.slices.headOption)
-      slice.definedBy shouldBe Some(ParamDef("name", "__ecma.String", 1))
-      slice.targetObj shouldBe ParamDef("name", "__ecma.String", 1)
+      slice.definedBy shouldBe Some(ParamDef("name", "__ecma.String", 1, Some(56), Some(22)))
+      slice.targetObj shouldBe ParamDef("name", "__ecma.String", 1, Some(56), Some(22))
 
       val List(_, _, arg1) = slice.argToCalls
 
@@ -147,7 +151,7 @@ class JoernSliceTS1 extends AnyWordSpec with Matchers with AbstractJoernCliTest 
 
     "extract 'loader' object slice from the main program" in {
       val Some(slice) = programSlice.objectSlices.get("main.ts::program").flatMap(_.slices.headOption)
-      slice.definedBy shouldBe Some(CallDef("new Loader", "Loader", Option("Loader")))
+      slice.definedBy shouldBe Some(CallDef("new Loader", "Loader", Option("Loader"), Some(24), Some(21)))
       slice.targetObj shouldBe LocalDef("loader", "loader:Loader")
 
       val List(arg1) = slice.argToCalls
@@ -160,8 +164,8 @@ class JoernSliceTS1 extends AnyWordSpec with Matchers with AbstractJoernCliTest 
     "extract 'time' parameter slice from the lambda in 'loop'" in {
       val Some(slice) =
         programSlice.objectSlices.get("main.ts::program:Game:loop:anonymous").flatMap(_.slices.headOption)
-      slice.definedBy shouldBe Some(ParamDef("time", "__ecma.Number", 1))
-      slice.targetObj shouldBe ParamDef("time", "__ecma.Number", 1)
+      slice.definedBy shouldBe Some(ParamDef("time", "__ecma.Number", 1, Some(68), Some(31)))
+      slice.targetObj shouldBe ParamDef("time", "__ecma.Number", 1, Some(68), Some(31))
 
       val List(arg1) = slice.argToCalls
 

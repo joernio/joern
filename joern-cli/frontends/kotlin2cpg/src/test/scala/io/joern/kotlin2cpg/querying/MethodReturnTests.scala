@@ -22,7 +22,7 @@ class MethodReturnTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
 
     "should allow traversing to method" in {
-      cpg.methodReturn.method.isExternal(false).name.l shouldBe List("foo")
+      cpg.methodReturn.method.isExternal(false).name.l shouldBe List("foo", "<global>")
     }
   }
 }

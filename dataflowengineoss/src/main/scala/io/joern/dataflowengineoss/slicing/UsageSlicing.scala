@@ -212,9 +212,7 @@ object UsageSlicing {
       Option(ObservedCall(callName.get, resolvedMethod, params, returnType))
     }
 
-    private def partitionInvolvementInCalls(implicit
-      config: UsagesConfig
-    ): (List[ObservedCall], List[ObservedCallWithArgPos]) = {
+    private def partitionInvolvementInCalls: (List[ObservedCall], List[ObservedCallWithArgPos]) = {
       val (invokedCalls, argToCalls) = getInCallsForReferencedIdentifiers(tgt)
         .sortBy(f => (f.lineNumber, f.columnNumber))
         .flatMap(c => c.argument.find(p => p.code == tgt.name).map(f => (c, f)).headOption)
@@ -247,7 +245,7 @@ object UsageSlicing {
       slices.foreach { case (_, usageSlices) =>
         usageSlices.foreach { slice =>
           slice.definedBy match {
-            case Some(CallDef(_, _, Some(resolvedMethod), _)) =>
+            case Some(CallDef(_, _, Some(resolvedMethod), _, _, _)) =>
               slices.get(resolvedMethod) match {
                 case Some(_) => // TODO: Handle match
                 case None    => // No match
