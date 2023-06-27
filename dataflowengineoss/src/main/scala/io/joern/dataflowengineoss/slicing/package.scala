@@ -2,10 +2,12 @@ package io.joern.dataflowengineoss
 
 import better.files.File
 import io.circe.{Decoder, Encoder, HCursor, Json}
+import io.joern.x2cpg.X2CpgConfig
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
+import overflowdb.PropertyKey
 
 import java.util.regex.Pattern
 
@@ -18,53 +20,66 @@ package object slicing {
 
   trait BaseConfig {
 
-    def inputPath: File = File("cpg.bin")
+    var inputPath: File = File("cpg.bin")
 
-    def outFile: File = File("slices")
+    var outputSliceFile: File = File("slices")
 
-    def dummyTypesEnabled: Boolean = false
+    var dummyTypesEnabled: Boolean = false
 
-    def fileFilter: Option[String] = None
+    var fileFilter: Option[String] = None
 
-    def methodNameFilter: Option[String] = None
+    var methodNameFilter: Option[String] = None
 
-    def methodParamTypeFilter: Option[String] = None
+    var methodParamTypeFilter: Option[String] = None
 
-    def methodAnnotationFilter: Option[String] = None
+    var methodAnnotationFilter: Option[String] = None
+
+    def withInputPath(x: File): BaseConfig = {
+      this.inputPath = x
+      this
+    }
+
+    def withOutputSliceFile(x: File): BaseConfig = {
+      this.outputSliceFile = x
+      this
+    }
+
+    def withDummyTypesEnabled(x: Boolean): BaseConfig = {
+      this.dummyTypesEnabled = x
+      this
+    }
+
+    def withFileFilter(x: Option[String]): BaseConfig = {
+      this.fileFilter = x
+      this
+    }
+
+    def withMethodNameFilter(x: Option[String]): BaseConfig = {
+      this.methodNameFilter = x
+      this
+    }
+
+    def withMethodParamTypeFilter(x: Option[String]): BaseConfig = {
+      this.methodParamTypeFilter = x
+      this
+    }
+
+    def withMethodAnnotationFilter(x: Option[String]): BaseConfig = {
+      this.methodParamTypeFilter = x
+      this
+    }
 
   }
 
-  case class SliceConfig(
-    override val inputPath: File = File("cpg.bin"),
-    override val outFile: File = File("slices"),
-    override val dummyTypesEnabled: Boolean = false,
-    override val fileFilter: Option[String] = None,
-    override val methodNameFilter: Option[String] = None,
-    override val methodParamTypeFilter: Option[String] = None,
-    override val methodAnnotationFilter: Option[String] = None
-  ) extends BaseConfig
+  case class DefaultSliceConfig() extends BaseConfig
 
   case class DataFlowConfig(
-    override val inputPath: File = File("cpg.bin"),
-    override val outFile: File = File("slices"),
-    override val dummyTypesEnabled: Boolean = false,
-    override val fileFilter: Option[String] = None,
-    override val methodNameFilter: Option[String] = None,
-    override val methodParamTypeFilter: Option[String] = None,
-    override val methodAnnotationFilter: Option[String] = None,
     sinkPatternFilter: Option[String] = None,
     mustEndAtExternalMethod: Boolean = false,
     sliceDepth: Int = 20
   ) extends BaseConfig
 
   case class UsagesConfig(
-    override val inputPath: File = File("cpg.bin"),
-    override val outFile: File = File("slices"),
-    override val dummyTypesEnabled: Boolean = false,
-    override val fileFilter: Option[String] = None,
-    override val methodNameFilter: Option[String] = None,
-    override val methodParamTypeFilter: Option[String] = None,
-    override val methodAnnotationFilter: Option[String] = None,
     minNumCalls: Int = 1,
     excludeOperatorCalls: Boolean = false,
     excludeMethodSource: Boolean = false
@@ -129,8 +144,8 @@ package object slicing {
     name: String = "",
     code: String,
     typeFullName: String = "",
-    lineNumber: Integer = -1,
-    columnNumber: Integer = -1
+    lineNumber: Option[Integer] = None,
+    columnNumber: Option[Integer] = None
   )
 
   implicit val encodeSliceNode: Encoder[SliceNode] = Encoder.instance {
@@ -223,30 +238,36 @@ package object slicing {
 
     def label: String
 
+    def lineNumber: Option[Int]
+
+    def columnNumber: Option[Int]
+
     override def toString: String = s"[$label] $name" + (if (typeFullName.nonEmpty) s": $typeFullName" else "")
 
   }
 
   /** Represents a local transfer of data via aliasing. The data defined is via some alias.
     */
-  case class LocalDef(name: String, typeFullName: String, label: String = "LOCAL") extends DefComponent
+  case class LocalDef(
+    name: String,
+    typeFullName: String,
+    lineNumber: Option[Int] = None,
+    columnNumber: Option[Int] = None,
+    label: String = "LOCAL"
+  ) extends DefComponent
 
-  implicit val localDefDecoder: Decoder[LocalDef] = (c: HCursor) =>
-    for {
-      x <- c.downField("name").as[String]
-      p <- c.downField("typeFullName").as[String]
-      r <- c.downField("label").as[String]
-    } yield {
-      LocalDef(x, p, r)
-    }
-  implicit val localDefEncoder: Encoder[LocalDef] =
-    Encoder.instance { case LocalDef(c, p, r) =>
-      Json.obj("name" -> c.asJson, "typeFullName" -> p.asJson, "label" -> r.asJson)
-    }
+  implicit val localDefDecoder: Decoder[LocalDef] = deriveDecoder[LocalDef]
+  implicit val localDefEncoder: Encoder[LocalDef] = deriveEncoder[LocalDef]
 
   /** Represents a literal.
     */
-  case class LiteralDef(name: String, typeFullName: String, label: String = "LITERAL") extends DefComponent
+  case class LiteralDef(
+    name: String,
+    typeFullName: String,
+    lineNumber: Option[Int] = None,
+    columnNumber: Option[Int] = None,
+    label: String = "LITERAL"
+  ) extends DefComponent
 
   implicit val literalDefDecoder: Decoder[LiteralDef] = deriveDecoder[LiteralDef]
   implicit val literalDefEncoder: Encoder[LiteralDef] = deriveEncoder[LiteralDef]
@@ -256,8 +277,14 @@ package object slicing {
     * @param position
     *   the index of the parameter.
     */
-  case class ParamDef(name: String, typeFullName: String, position: Integer, label: String = "PARAM")
-      extends DefComponent {
+  case class ParamDef(
+    name: String,
+    typeFullName: String,
+    position: Integer,
+    lineNumber: Option[Int] = None,
+    columnNumber: Option[Int] = None,
+    label: String = "PARAM"
+  ) extends DefComponent {
     override def toString: String = super.toString + s" @ pos #$position"
   }
 
@@ -269,8 +296,14 @@ package object slicing {
     * @param resolvedMethod
     *   the full method path if resolved.
     */
-  case class CallDef(name: String, typeFullName: String, resolvedMethod: Option[String] = None, label: String = "CALL")
-      extends DefComponent {
+  case class CallDef(
+    name: String,
+    typeFullName: String,
+    resolvedMethod: Option[String] = None,
+    lineNumber: Option[Int] = None,
+    columnNumber: Option[Int] = None,
+    label: String = "CALL"
+  ) extends DefComponent {
     override def toString: String = super.toString + resolvedMethod.map(s => s" @ $s").getOrElse("")
   }
 
@@ -279,7 +312,13 @@ package object slicing {
 
   /** Representds data introduced by an unhandled data structure.
     */
-  case class UnknownDef(name: String, typeFullName: String, label: String = "UNKNOWN") extends DefComponent
+  case class UnknownDef(
+    name: String,
+    typeFullName: String,
+    lineNumber: Option[Int] = None,
+    columnNumber: Option[Int] = None,
+    label: String = "UNKNOWN"
+  ) extends DefComponent
 
   implicit val unknownDefDecoder: Decoder[UnknownDef] = deriveDecoder[UnknownDef]
   implicit val unknownDefEncoder: Encoder[UnknownDef] = deriveEncoder[UnknownDef]
@@ -288,11 +327,11 @@ package object slicing {
   // is just { properties }. This makes it less automatically serializable but we have `label` to encode classes.
 
   implicit val encodeDefComponent: Encoder[DefComponent] = Encoder.instance {
-    case local @ LocalDef(_, _, _)     => local.asJson
-    case literal @ LiteralDef(_, _, _) => literal.asJson
-    case call @ CallDef(_, _, _, _)    => call.asJson
-    case param @ ParamDef(_, _, _, _)  => param.asJson
-    case unknown @ UnknownDef(_, _, _) => unknown.asJson
+    case local @ LocalDef(_, _, _, _, _)     => local.asJson
+    case literal @ LiteralDef(_, _, _, _, _) => literal.asJson
+    case call @ CallDef(_, _, _, _, _, _)    => call.asJson
+    case param @ ParamDef(_, _, _, _, _, _)  => param.asJson
+    case unknown @ UnknownDef(_, _, _, _, _) => unknown.asJson
   }
 
   implicit val decodeDefComponent: Decoder[DefComponent] =
@@ -323,21 +362,30 @@ package object slicing {
         Seq.empty[String]
       )).filterNot(_.matches("(ANY|UNKNOWN)")).headOption.getOrElse("ANY")
       val typeFullName = typeMap.getOrElse(nodeType, nodeType)
+      val lineNumber   = Option(node.property(new PropertyKey[Integer](PropertyNames.LINE_NUMBER))).map(_.toInt)
+      val columnNumber = Option(node.property(new PropertyKey[Integer](PropertyNames.COLUMN_NUMBER))).map(_.toInt)
       node match {
-        case x: MethodParameterIn => ParamDef(x.name, typeFullName, x.index)
+        case x: MethodParameterIn => ParamDef(x.name, typeFullName, x.index, lineNumber, columnNumber)
         case x: Call if x.code.startsWith("new ") =>
           val typeName = x.code.stripPrefix("new ").takeWhile(!_.equals('('))
-          CallDef(x.code.takeWhile(_ != '('), typeMap.getOrElse(typeName, x.typeFullName), typeMap.get(typeName))
+          CallDef(
+            x.code.takeWhile(_ != '('),
+            typeMap.getOrElse(typeName, x.typeFullName),
+            typeMap.get(typeName),
+            lineNumber,
+            columnNumber
+          )
         case x: Call if unresolvedCallPattern.matcher(x.methodFullName).matches() =>
           CallDef(x.code.takeWhile(_ != '('), typeFullName)
-        case x: Call       => CallDef(x.code.takeWhile(_ != '('), typeFullName, Option(x.methodFullName))
-        case x: Identifier => LocalDef(x.name, typeFullName)
-        case x: Local      => LocalDef(x.name, typeFullName)
-        case x: Literal    => LiteralDef(x.code, typeFullName)
-        case x: Member     => LocalDef(x.name, typeFullName)
+        case x: Call =>
+          CallDef(x.code.takeWhile(_ != '('), typeFullName, Option(x.methodFullName), lineNumber, columnNumber)
+        case x: Identifier => LocalDef(x.name, typeFullName, lineNumber, columnNumber)
+        case x: Local      => LocalDef(x.name, typeFullName, lineNumber, columnNumber)
+        case x: Literal    => LiteralDef(x.code, typeFullName, lineNumber, columnNumber)
+        case x: Member     => LocalDef(x.name, typeFullName, lineNumber, columnNumber)
         case x: AstNode =>
           logger.warn(s"Unhandled conversion from node type ${x.label} to DefComponent")
-          UnknownDef(x.code, typeFullName)
+          UnknownDef(x.code, typeFullName, lineNumber, columnNumber)
       }
     }
   }

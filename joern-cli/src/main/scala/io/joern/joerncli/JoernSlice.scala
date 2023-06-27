@@ -21,78 +21,32 @@ object JoernSlice {
     arg[String]("cpg")
       .text("input CPG file name - defaults to `cpg.bin`")
       .optional()
-      .action { (x, c) =>
+      .action((x, c) => c.withInputPath(File(x)))
+      .validate { x =>
         val path = File(x)
-        if (!path.isRegularFile) failure(s"File at '$x' not found or not regular, e.g. a directory.")
-        c match {
-          case x: SliceConfig    => x.copy(inputPath = path)
-          case x: DataFlowConfig => x.copy(inputPath = path)
-          case x: UsagesConfig   => x.copy(inputPath = path)
-          case _                 => SliceConfig(inputPath = path)
-        }
+        if (path.isRegularFile || path.isDirectory) success
+        else failure(s"File at '$x' not found or not regular, e.g. a directory or source file.")
       }
     opt[String]('o', "out")
       .text("the output file to write slices to - defaults to `slices`. The file is suffixed based on the mode.")
-      .action((x, c) =>
-        c match {
-          case c: SliceConfig    => c.copy(outFile = File(x))
-          case c: DataFlowConfig => c.copy(outFile = File(x))
-          case c: UsagesConfig   => c.copy(outFile = File(x))
-          case _                 => SliceConfig(outFile = File(x))
-        }
-      )
+      .action((x, c) => c.withOutputSliceFile(File(x)))
     opt[Unit]("dummy-types")
       .text(s"for generating CPGs that use type recovery, enables the use of dummy types - defaults to false.")
-      .action((_, c) =>
-        c match {
-          case c: SliceConfig    => c.copy(dummyTypesEnabled = true)
-          case c: DataFlowConfig => c.copy(dummyTypesEnabled = true)
-          case c: UsagesConfig   => c.copy(dummyTypesEnabled = true)
-          case _                 => SliceConfig(dummyTypesEnabled = true)
-        }
-      )
+      .action((_, c) => c.withDummyTypesEnabled(true))
     opt[String]("file-filter")
       .text(s"the name of the source file to generate slices from.")
-      .action((x, c) =>
-        c match {
-          case c: SliceConfig    => c.copy(fileFilter = Option(x))
-          case c: DataFlowConfig => c.copy(fileFilter = Option(x))
-          case c: UsagesConfig   => c.copy(fileFilter = Option(x))
-          case _                 => SliceConfig(fileFilter = Option(x))
-        }
-      )
+      .action((x, c) => c.withFileFilter(Option(x)))
     opt[String]("method-name-filter")
       .text(s"filters in slices that go through specific methods by names. Uses regex.")
-      .action((x, c) =>
-        c match {
-          case c: SliceConfig    => c.copy(methodNameFilter = Option(x))
-          case c: DataFlowConfig => c.copy(methodNameFilter = Option(x))
-          case c: UsagesConfig   => c.copy(methodNameFilter = Option(x))
-          case _                 => SliceConfig(methodNameFilter = Option(x))
-        }
-      )
+      .action((x, c) => c.withMethodNameFilter(Option(x)))
     opt[String]("method-parameter-filter")
       .text(s"filters in slices that go through methods with specific types on the method parameters. Uses regex.")
-      .action((x, c) =>
-        c match {
-          case c: SliceConfig    => c.copy(methodParamTypeFilter = Option(x))
-          case c: DataFlowConfig => c.copy(methodParamTypeFilter = Option(x))
-          case c: UsagesConfig   => c.copy(methodParamTypeFilter = Option(x))
-          case _                 => SliceConfig(methodParamTypeFilter = Option(x))
-        }
-      )
+      .action((x, c) => c.withMethodParamTypeFilter(Option(x)))
     opt[String]("method-annotation-filter")
       .text(s"filters in slices that go through methods with specific annotations on the methods. Uses regex.")
-      .action((x, c) =>
-        c match {
-          case c: SliceConfig    => c.copy(methodAnnotationFilter = Option(x))
-          case c: DataFlowConfig => c.copy(methodAnnotationFilter = Option(x))
-          case c: UsagesConfig   => c.copy(methodAnnotationFilter = Option(x))
-          case _                 => SliceConfig(methodAnnotationFilter = Option(x))
-        }
-      )
+      .action((x, c) => c.withMethodAnnotationFilter(Option(x)))
     cmd("data-flow")
-      .action((_, c) => DataFlowConfig(c.inputPath, c.outFile, c.dummyTypesEnabled))
+      .action((_, _) => DataFlowConfig())
       .children(
         opt[Int]("slice-depth")
           .text(s"the max depth to traverse the DDG for the data-flow slice - defaults to 20.")
@@ -120,7 +74,7 @@ object JoernSlice {
           )
       )
     cmd("usages")
-      .action((_, c) => UsagesConfig(c.inputPath, c.outFile, c.dummyTypesEnabled))
+      .action((_, _) => UsagesConfig())
       .children(
         opt[Int]("min-num-calls")
           .text(s"the minimum number of calls required for a usage slice - defaults to 1.")
@@ -151,7 +105,7 @@ object JoernSlice {
 
   def main(args: Array[String]): Unit = {
     parseConfig(args).foreach { config =>
-      if (config.isInstanceOf[SliceConfig]) {
+      if (config.isInstanceOf[DefaultSliceConfig]) {
         configParser.reportError("No command specified! Use --help for more information.")
       } else {
         val inputCpgPath =
@@ -172,7 +126,7 @@ object JoernSlice {
             case x: UsagesConfig   => Option(UsageSlicing.calculateUsageSlice(cpg, x))
             case _                 => None
           }) match {
-            case Some(programSlice: ProgramSlice) => saveSlice(config.outFile, programSlice)
+            case Some(programSlice: ProgramSlice) => saveSlice(config.outputSliceFile, programSlice)
             case None                             => println("Empty slice, no file generated.")
           }
         }
@@ -211,7 +165,7 @@ object JoernSlice {
   }
 
   private def parseConfig(args: Array[String]): Option[BaseConfig] =
-    configParser.parse(args, SliceConfig())
+    configParser.parse(args, DefaultSliceConfig())
 
   private def saveSlice(outFile: File, programSlice: ProgramSlice): Unit = {
 
