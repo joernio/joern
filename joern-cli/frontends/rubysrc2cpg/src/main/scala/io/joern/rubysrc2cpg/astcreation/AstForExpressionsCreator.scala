@@ -127,4 +127,10 @@ trait AstForExpressionsCreator { this: AstCreator =>
     callAst(call, arguments.toList)
   }
 
+  protected def astForYieldCall(ctx: ParserRuleContext, argumentsCtx: Option[ArgumentsContext]): Ast = {
+    val args = argumentsCtx.map(astForArguments).getOrElse(Seq())
+    val call = callNode(ctx, ctx.getText, UNRESOLVED_YIELD, UNRESOLVED_YIELD, DispatchTypes.STATIC_DISPATCH)
+    callAst(call, args)
+  }
+
 }
