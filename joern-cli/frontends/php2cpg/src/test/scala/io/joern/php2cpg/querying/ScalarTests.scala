@@ -75,4 +75,13 @@ class ScalarTests extends PhpCode2CpgFixture {
       falseBool.typeFullName shouldBe "bool"
     }
   }
+  "null should be represented as a literal" in {
+    val cpg = code("<?php\nNULL;")
+
+    inside(cpg.literal.l) { case List(nullLiteral) =>
+      nullLiteral.code shouldBe "NULL"
+      nullLiteral.lineNumber shouldBe Some(2)
+      nullLiteral.typeFullName shouldBe "null"
+    }
+  }
 }

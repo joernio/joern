@@ -1688,6 +1688,8 @@ class AstCreator(filename: String, phpAst: PhpFile)
 
     if (NameConstants.isBoolean(constName)) {
       Ast(literalNode(expr, constName, TypeConstants.Bool))
+    } else if (NameConstants.isNull(constName)) {
+      Ast(literalNode(expr, constName, TypeConstants.NullType))
     } else {
       val namespaceName   = NamespaceTraversal.globalNamespaceName
       val identifier      = identifierNode(expr, namespaceName, namespaceName, "ANY")
@@ -1715,6 +1717,7 @@ object AstCreator {
     val Void: String                = "void"
     val Any: String                 = "ANY"
     val Array: String               = "array"
+    val NullType: String            = "null"
     val VariadicPlaceholder: String = "PhpVariadicPlaceholder"
   }
 
@@ -1725,11 +1728,17 @@ object AstCreator {
     val Unknown: String      = "UNKNOWN"
     val Closure: String      = "__closure"
     val Class: String        = "class"
+    val True: String         = "true";
+    val False: String        = "false";
+    val NullName: String     = "null";
 
     def isBoolean(name: String): Boolean = {
-      List("true", "false").contains(name)
+      List(True, False).contains(name)
     }
 
+    def isNull(name: String): Boolean = {
+      name.toLowerCase == NullName
+    }
   }
 
   val operatorSymbols: Map[String, String] = Map(
