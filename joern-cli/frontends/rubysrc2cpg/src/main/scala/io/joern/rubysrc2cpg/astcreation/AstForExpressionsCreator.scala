@@ -133,4 +133,11 @@ trait AstForExpressionsCreator { this: AstCreator =>
     callAst(call, args)
   }
 
+  protected def astForUntilExpression(ctx: UntilExpressionContext): Ast = {
+    val testAst = astForExpressionOrCommand(ctx.expressionOrCommand()).headOption
+    val bodyAst = astForCompoundStatement(ctx.doClause().compoundStatement())
+    // TODO: testAst should be negated if it's going to be modelled as a while stmt.
+    whileAst(testAst, bodyAst, Some(ctx.getText), line(ctx), column(ctx))
+  }
+
 }

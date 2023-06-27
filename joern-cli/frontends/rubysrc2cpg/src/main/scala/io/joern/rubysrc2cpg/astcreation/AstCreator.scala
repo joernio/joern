@@ -323,7 +323,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
     case ctx: UnlessExpressionPrimaryContext   => astForUnlessExpressionPrimaryContext(ctx)
     case ctx: CaseExpressionPrimaryContext     => astForCaseExpressionPrimaryContext(ctx)
     case ctx: WhileExpressionPrimaryContext    => astForWhileExpressionContext(ctx.whileExpression())
-    case ctx: UntilExpressionPrimaryContext    => astForUntilExpressionContext(ctx.untilExpression())
+    case ctx: UntilExpressionPrimaryContext    => Seq(astForUntilExpression(ctx.untilExpression()))
     case ctx: ForExpressionPrimaryContext      => astForForExpressionContext(ctx.forExpression())
     case ctx: JumpExpressionPrimaryContext     => astForJumpExpressionPrimaryContext(ctx)
     case ctx: BeginExpressionPrimaryContext    => astForBeginExpressionPrimaryContext(ctx)
@@ -1667,21 +1667,6 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
       .columnNumber(ctx.unlessExpression().UNLESS().getSymbol.getCharPositionInLine)
 
     Seq(controlStructureAst(unlessNode, conditionAsts.headOption, List(thenAsts ++ elseAsts).flatten))
-  }
-
-  def astForUntilExpressionContext(ctx: UntilExpressionContext): Seq[Ast] = {
-    // until will be modelled as a while
-    val untilCondAst = astForExpressionOrCommand(ctx.expressionOrCommand()).headOption
-    val doClauseAsts = astForDoClauseContext(ctx.doClause())
-
-    val ast = whileAst(
-      untilCondAst,
-      doClauseAsts,
-      Some(ctx.getText),
-      Some(ctx.UNTIL().getSymbol.getLine),
-      Some(ctx.UNTIL().getSymbol.getCharPositionInLine)
-    )
-    Seq(ast)
   }
 
   private def astForPseudoVariableIdentifierContext(ctx: PseudoVariableIdentifierContext): Ast = ctx match {
