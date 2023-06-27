@@ -57,7 +57,7 @@ class EnumTypeTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
         case List(color, c) =>
           color.name shouldBe "color"
           color.code should startWith("typedef enum color")
-          color.aliasTypeFullName shouldBe None
+          color.aliasTypeFullName shouldBe Some("C")
           c.name shouldBe "C"
           c.aliasTypeFullName shouldBe Some("color")
           inside(color.astChildren.isMember.l) { case List(red, yellow, green, blue) =>
