@@ -255,11 +255,11 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     "recognise all call nodes" in {
       cpg.call.name("puts").size shouldBe 1
     }
-    
+
     "recognise `until` as a `while` control structure" in {
       val List(controlStructure) = cpg.whileBlock.l
       controlStructure.lineNumber shouldBe Some(3)
-      
+
       val List(condition, puts, assignment) = controlStructure.astChildren.l
       condition.code shouldBe "x == 0"
       condition.lineNumber shouldBe Some(3)
@@ -268,7 +268,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
       assignment.lineNumber shouldBe Some(5)
       assignment.assignment.size shouldBe 1
     }
-    
+
   }
 
   "CPG for code with a for loop" should {

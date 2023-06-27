@@ -132,7 +132,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     val call = callNode(ctx, ctx.getText, UNRESOLVED_YIELD, UNRESOLVED_YIELD, DispatchTypes.STATIC_DISPATCH)
     callAst(call, args)
   }
-  
+
   protected def astForUntilExpression(ctx: UntilExpressionContext): Ast = {
     val testAst = astForExpressionOrCommand(ctx.expressionOrCommand()).headOption
     val bodyAst = astForCompoundStatement(ctx.doClause().compoundStatement())

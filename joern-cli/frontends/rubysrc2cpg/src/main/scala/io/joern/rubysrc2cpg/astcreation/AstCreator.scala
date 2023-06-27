@@ -1668,7 +1668,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
 
     Seq(controlStructureAst(unlessNode, conditionAsts.headOption, List(thenAsts ++ elseAsts).flatten))
   }
-  
+
   private def astForPseudoVariableIdentifierContext(ctx: PseudoVariableIdentifierContext): Ast = ctx match {
     case ctx: NilPseudoVariableIdentifierContext      => astForNilLiteral(ctx)
     case ctx: TruePseudoVariableIdentifierContext     => astForTrueLiteral(ctx)
