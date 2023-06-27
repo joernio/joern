@@ -232,4 +232,32 @@ class MiscTests extends RubyCode2CpgFixture {
         .size shouldBe 1
     }
   }
+
+  "CPG for code with chained constants as argument" should {
+    val cpg = code("""
+        |SomeFramework.someMethod SomeModule::SomeSubModule::submoduleMethod do
+        |puts "nothing important"
+        |end
+        |""".stripMargin)
+
+    "recognise all method nodes" in {
+      cpg.method
+        .name("submoduleMethod2")
+        .size shouldBe 1
+    }
+
+    "recognise all call nodes" in {
+      cpg.call
+        .name("submoduleMethod")
+        .size shouldBe 1
+
+      cpg.call
+        .name("puts")
+        .size shouldBe 1
+
+      cpg.call
+        .name("<operator>.scopeResolution")
+        .size shouldBe 1
+    }
+  }
 }

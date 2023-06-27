@@ -58,6 +58,8 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
    */
   protected val UNRESOLVED_YIELD = "unresolved_yield"
 
+  protected val blockMethods = ListBuffer[Ast]()
+
   protected def createIdentifierWithScope(
     ctx: ParserRuleContext,
     name: String,
@@ -83,7 +85,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
     val statementCtx = programCtx.compoundStatement().statements()
     scope.pushNewScope(())
     val statementAsts = if (statementCtx != null) {
-      astForStatements(statementCtx)
+      astForStatements(statementCtx) ++ blockMethods
     } else {
       List[Ast](Ast())
     }
@@ -518,6 +520,8 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
         blockMethodAsts.head.nodes.head
           .asInstanceOf[NewMethod]
 
+      blockMethods.addOne(blockMethodAsts.head)
+
       val callNode = NewCall()
         .name(blockName)
         .methodFullName(blockMethodNode.fullName)
@@ -533,7 +537,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
         .lineNumber(blockMethodNode.lineNumber)
         .columnNumber(blockMethodNode.columnNumber)
 
-      Seq(callAst(callNode, Seq(Ast(methodRefNode)), baseAst.headOption)) ++ blockMethodAsts
+      Seq(callAst(callNode, Seq(Ast(methodRefNode)), baseAst.headOption))
     } else {
       val callNode = methodNameAst.head.nodes
         .filter(node => node.isInstanceOf[NewCall])
