@@ -54,8 +54,8 @@ object DataFlowSlicing {
       cfgNode.id(),
       cfgNode.label,
       code = cfgNode.code,
-      lineNumber = cfgNode.lineNumber.getOrElse(-1),
-      columnNumber = cfgNode.columnNumber.getOrElse(-1)
+      lineNumber = cfgNode.lineNumber,
+      columnNumber = cfgNode.columnNumber
     )
     cfgNode match {
       case n: Method    => sliceNode.copy(name = n.name, typeFullName = n.methodReturn.typeFullName)
