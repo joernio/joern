@@ -1,4 +1,4 @@
-package io.joern.jssrc2cpg.utils
+package io.joern.x2cpg.utils
 
 import org.slf4j.LoggerFactory
 
@@ -26,7 +26,7 @@ object Report {
 
 class Report {
 
-  import io.joern.jssrc2cpg.utils.Report._
+  import Report._
 
   private val reports: Reports = TrieMap.empty
 

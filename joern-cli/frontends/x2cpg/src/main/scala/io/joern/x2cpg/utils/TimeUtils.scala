@@ -1,4 +1,4 @@
-package io.joern.jssrc2cpg.utils
+package io.joern.x2cpg.utils
 
 import java.util.Locale
 import scala.concurrent.duration._
