@@ -31,7 +31,7 @@ class ObjectExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = fals
         |""".stripMargin)
 
     "should contain two TYPE_DECL nodes with the correct props set" in {
-      val List(firstTd: TypeDecl, secondTd: TypeDecl) = cpg.typeDecl.isExternal(false).l
+      val List(firstTd: TypeDecl, secondTd: TypeDecl) = cpg.typeDecl.isExternal(false).nameNot("<global>").l
       firstTd.fullName shouldBe "mypkg.foo$object$1"
       secondTd.fullName shouldBe "mypkg.foo$object$2"
     }
@@ -81,7 +81,7 @@ class ObjectExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = fals
     }
 
     "contain a TYPE_DECL node with the correct props set" in {
-      val List(_: TypeDecl, secondTd: TypeDecl) = cpg.typeDecl.isExternal(false).l
+      val List(_: TypeDecl, secondTd: TypeDecl) = cpg.typeDecl.isExternal(false).nameNot("<global>").l
       secondTd.name shouldBe "anonymous_obj"
       secondTd.fullName shouldBe "mypkg.foo$object$1"
       secondTd.inheritsFromTypeFullName shouldBe Seq("mypkg.AnInterface")

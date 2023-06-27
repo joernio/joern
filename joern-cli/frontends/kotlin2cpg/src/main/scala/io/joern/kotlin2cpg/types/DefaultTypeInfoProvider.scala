@@ -876,12 +876,6 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       .getOrElse(defaultValue)
   }
 
-  def isReferencingMember(expr: KtNameReferenceExpression): Boolean = {
-    descriptorForNameReference(expr)
-      .collect { case _: PropertyDescriptorImpl => true }
-      .getOrElse(false)
-  }
-
   def nameReferenceKind(expr: KtNameReferenceExpression): NameReferenceKinds.NameReferenceKind = {
     descriptorForNameReference(expr)
       .collect {

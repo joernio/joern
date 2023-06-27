@@ -16,8 +16,8 @@ class MethodTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
        |}
        |""".stripMargin)
 
-    "should contain exactly two non-external methods" in {
-      cpg.method.isExternal(false).size shouldBe 2
+    "should contain exactly three non-external methods" in {
+      cpg.method.isExternal(false).size shouldBe 3
     }
 
     "should contain method nodes with the correct fields" in {
