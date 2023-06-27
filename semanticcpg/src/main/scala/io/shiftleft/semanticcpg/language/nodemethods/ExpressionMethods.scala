@@ -59,13 +59,17 @@ class ExpressionMethods(val node: Expression) extends AnyVal with NodeExtension 
       case _             => Iterator.empty
     }
 
-  def parameter(implicit callResolver: ICallResolver): Traversal[MethodParameterIn] =
+  def parameter(implicit callResolver: ICallResolver): Traversal[MethodParameterIn] = {
+    // Expressions can have incoming argument edges not just from CallRepr nodes but also
+    // from Return nodes for which an expansion to parameter makes no sense. So we filter
+    // for CallRepr.
     for {
-      call          <- node._argumentIn
+      call          <- node._argumentIn if call.isInstanceOf[CallRepr]
       calledMethods <- callResolver.getCalledMethods(call.asInstanceOf[CallRepr])
       paramIn       <- calledMethods._astOut.collectAll[MethodParameterIn]
       if paramIn.index == node.argumentIndex
     } yield paramIn
+  }
 
   def typ: Traversal[Type] =
     node._evalTypeOut.cast[Type]
