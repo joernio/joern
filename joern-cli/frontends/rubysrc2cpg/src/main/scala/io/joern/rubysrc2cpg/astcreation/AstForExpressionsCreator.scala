@@ -145,7 +145,8 @@ trait AstForExpressionsCreator { this: AstCreator =>
     val forExprAst = astForExpressionOrCommand(ctx.expressionOrCommand())
     val forBodyAst = astForCompoundStatement(ctx.doClause().compoundStatement())
     // TODO: for X in Y is not properly modelled by while Y
-    whileAst(forExprAst.headOption, forBodyAst, Some(ctx.getText), line(ctx), column(ctx)).withChild(forVarAst.head)
+    val forRootAst = whileAst(forExprAst.headOption, forBodyAst, Some(ctx.getText), line(ctx), column(ctx))
+    forVarAst.headOption.map(forRootAst.withChild).getOrElse(forRootAst)
   }
 
 }
