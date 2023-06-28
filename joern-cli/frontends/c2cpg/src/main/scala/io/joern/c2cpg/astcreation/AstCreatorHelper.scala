@@ -406,7 +406,7 @@ trait AstCreatorHelper { this: AstCreator =>
     allIncludes.foreach { include =>
       val name            = include.getName.toString
       val _dependencyNode = newDependencyNode(name, name, IncludeKeyword)
-      val importNode      = newImportNode(nodeSignature(include), name, include)
+      val importNode      = newImportNode(nodeSignature(include), name, name, include)
       diffGraph.addNode(_dependencyNode)
       diffGraph.addEdge(importNode, _dependencyNode, EdgeTypes.IMPORTS)
     }
