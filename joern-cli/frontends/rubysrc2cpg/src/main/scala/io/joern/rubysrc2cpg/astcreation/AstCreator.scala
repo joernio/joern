@@ -323,10 +323,10 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
     case ctx: CaseExpressionPrimaryContext     => astForCaseExpressionPrimaryContext(ctx)
     case ctx: WhileExpressionPrimaryContext    => astForWhileExpressionContext(ctx.whileExpression())
     case ctx: UntilExpressionPrimaryContext    => Seq(astForUntilExpression(ctx.untilExpression()))
-    case ctx: ForExpressionPrimaryContext      => astForForExpressionContext(ctx.forExpression())
+    case ctx: ForExpressionPrimaryContext      => Seq(astForForExpression(ctx.forExpression()))
     case ctx: JumpExpressionPrimaryContext     => astForJumpExpressionPrimaryContext(ctx)
     case ctx: BeginExpressionPrimaryContext    => astForBeginExpressionPrimaryContext(ctx)
-    case ctx: GroupingExpressionPrimaryContext => astForGroupingExpressionPrimaryContext(ctx)
+    case ctx: GroupingExpressionPrimaryContext => astForCompoundStatement(ctx.compoundStatement())
     case ctx: VariableReferencePrimaryContext  => astForVariableReferencePrimaryContext(ctx)
     case ctx: SimpleScopedConstantReferencePrimaryContext =>
       astForSimpleScopedConstantReferencePrimaryContext(ctx)
@@ -728,26 +728,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
       Seq(Ast())
     }
   }
-
-  def astForForExpressionContext(ctx: ForExpressionContext): Seq[Ast] = {
-    val initAst    = astForForVariableContext(ctx.forVariable())
-    val forCondAst = astForExpressionOrCommand(ctx.expressionOrCommand())
-    val bodyAsts   = astForDoClauseContext(ctx.doClause())
-
-    val ast = whileAst(
-      Some(forCondAst.head),
-      bodyAsts,
-      Some(ctx.getText),
-      Some(ctx.FOR().getSymbol.getLine),
-      Some(ctx.FOR().getSymbol.getCharPositionInLine)
-    ).withChild(initAst.head)
-    Seq(ast)
-  }
-
-  def astForGroupingExpressionPrimaryContext(ctx: GroupingExpressionPrimaryContext): Seq[Ast] = {
-    astForCompoundStatement(ctx.compoundStatement())
-  }
-
+  
   def astForHashConstructorPrimaryContext(ctx: HashConstructorPrimaryContext): Seq[Ast] = {
     if (ctx.hashConstructor().associations() == null) return Seq(Ast())
     astForAssociationsContext(ctx.hashConstructor().associations())
