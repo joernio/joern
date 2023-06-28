@@ -232,14 +232,6 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
 
   }
 
-  def astForExpressionOrCommandsContext(ctx: ExpressionOrCommandsContext): Seq[Ast] = {
-    ctx
-      .expressionOrCommand()
-      .asScala
-      .flatMap(ec => astForExpressionOrCommand(ec))
-      .toSeq
-  }
-
   def astForSplattingArgumentContext(ctx: SplattingArgumentContext): Seq[Ast] = {
     if (ctx == null) return Seq(Ast())
     astForExpressionOrCommand(ctx.expressionOrCommand())
@@ -248,7 +240,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
   def astForMultipleRightHandSideContext(ctx: MultipleRightHandSideContext): Seq[Ast] = {
     if (ctx == null) return Seq(Ast())
 
-    val exprAsts = astForExpressionOrCommandsContext(ctx.expressionOrCommands())
+    val exprAsts = ctx.expressionOrCommands().expressionOrCommand().asScala.flatMap(astForExpressionOrCommand).toSeq
 
     val paramAsts = if (ctx.splattingArgument() != null) {
       val splattingAsts = astForSplattingArgumentContext(ctx.splattingArgument())
