@@ -733,24 +733,20 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
     if (ctx.hashConstructor().associations() == null) return Seq(Ast())
     astForAssociationsContext(ctx.hashConstructor().associations())
   }
-  
-  def astForElsifClauseContext(ctx: util.List[ElsifClauseContext]): Seq[Ast] = {
-    if (ctx == null) return Seq()
 
-    ctx.asScala
-      .map(elif => {
-        val elifNode = NewControlStructure()
-          .controlStructureType(ControlStructureTypes.IF)
-          .code(elif.getText())
-          .lineNumber(elif.ELSIF().getSymbol.getLine)
-          .columnNumber(elif.ELSIF().getSymbol.getCharPositionInLine)
+  def astForElsifClauseContext(ctx: util.List[ElsifClauseContext]): Seq[Ast] = ctx.asScala
+    .map(elifCtx => {
+      val ifNode = NewControlStructure()
+        .controlStructureType(ControlStructureTypes.IF)
+        .code(elifCtx.getText)
+        .lineNumber(line(elifCtx))
+        .columnNumber(column(elifCtx))
 
-        val conditionAst = astForExpressionOrCommand(elif.expressionOrCommand())
-        val thenAsts     = astForCompoundStatement(elif.thenClause().compoundStatement())
-        controlStructureAst(elifNode, conditionAst.headOption, thenAsts)
-      })
-      .toSeq
-  }
+      val testAst  = astForExpressionOrCommand(elifCtx.expressionOrCommand())
+      val bodyAsts = astForCompoundStatement(elifCtx.thenClause().compoundStatement())
+      controlStructureAst(ifNode, testAst.headOption, bodyAsts)
+    })
+    .toSeq
 
   def astForElseClauseContext(ctx: ElseClauseContext): Seq[Ast] = {
     if (ctx == null) return Seq(Ast())
