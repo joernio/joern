@@ -14,7 +14,6 @@ import org.antlr.v4.runtime.{CharStreams, CommonTokenStream, ParserRuleContext, 
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
-import java.util
 import scala.collection.immutable.Seq
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -318,7 +317,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
     case ctx: MethodDefinitionPrimaryContext => astForMethodDefinitionContext(ctx.methodDefinition())
     case ctx: YieldWithOptionalArgumentPrimaryContext =>
       Seq(astForYieldCall(ctx, Option(ctx.yieldWithOptionalArgument().arguments())))
-    case ctx: IfExpressionPrimaryContext       => astForIfExpressionPrimaryContext(ctx)
+    case ctx: IfExpressionPrimaryContext       => Seq(astForIfExpression(ctx.ifExpression()))
     case ctx: UnlessExpressionPrimaryContext   => astForUnlessExpressionPrimaryContext(ctx)
     case ctx: CaseExpressionPrimaryContext     => astForCaseExpressionPrimaryContext(ctx)
     case ctx: WhileExpressionPrimaryContext    => astForWhileExpressionContext(ctx.whileExpression())
@@ -475,22 +474,15 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
           .columnNumber(wh.WHEN().getSymbol.getCharPositionInLine)
 
         val whenACondAsts = astForWhenArgumentContext(wh.whenArgument())
-        val thenAsts = astForThenClauseContext(wh.thenClause()) ++ Seq(
+        val thenAsts = astForCompoundStatement(wh.thenClause().compoundStatement()) ++ Seq(
           Ast(NewControlStructure().controlStructureType(ControlStructureTypes.BREAK))
         )
         Seq(Ast(whenNode)) ++ whenACondAsts ++ thenAsts
       })
       .toList
 
-    val stmtAsts =
-      if (ctx.caseExpression().elseClause() != null) {
-        val elseAst = astForElseClauseContext(ctx.caseExpression().elseClause())
-        whenThenAstsList ++ elseAst
-      } else {
-        whenThenAstsList
-      }
-
-    val block = blockNode(ctx.caseExpression())
+    val stmtAsts = whenThenAstsList ++ Option(ctx.caseExpression().elseClause()).map(astForElseClause).getOrElse(Seq())
+    val block    = blockNode(ctx.caseExpression())
     Seq(controlStructureAst(switchNode, conditionAst, Seq(Ast(block).withChildren(stmtAsts))))
   }
 
@@ -732,61 +724,6 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
   def astForHashConstructorPrimaryContext(ctx: HashConstructorPrimaryContext): Seq[Ast] = {
     if (ctx.hashConstructor().associations() == null) return Seq(Ast())
     astForAssociationsContext(ctx.hashConstructor().associations())
-  }
-
-  def astForThenClauseContext(ctx: ThenClauseContext): Seq[Ast] = {
-    astForCompoundStatement(ctx.compoundStatement())
-  }
-
-  def astForElsifClauseContext(ctx: util.List[ElsifClauseContext]): Seq[Ast] = {
-    if (ctx == null) return Seq()
-
-    ctx.asScala
-      .map(elif => {
-        val elifNode = NewControlStructure()
-          .controlStructureType(ControlStructureTypes.IF)
-          .code(elif.getText())
-          .lineNumber(elif.ELSIF().getSymbol.getLine)
-          .columnNumber(elif.ELSIF().getSymbol.getCharPositionInLine)
-
-        val conditionAst = astForExpressionOrCommand(elif.expressionOrCommand())
-        val thenAsts     = astForThenClauseContext(elif.thenClause())
-        controlStructureAst(elifNode, conditionAst.headOption, thenAsts)
-      })
-      .toSeq
-  }
-
-  def astForElseClauseContext(ctx: ElseClauseContext): Seq[Ast] = {
-    if (ctx == null) return Seq(Ast())
-    val elseNode =
-      NewJumpTarget()
-        .parserTypeName(ctx.getClass.getSimpleName)
-        .name("default")
-        .code(ctx.getText)
-        .lineNumber(ctx.ELSE().getSymbol.getLine)
-        .columnNumber(ctx.ELSE().getSymbol.getCharPositionInLine)
-
-    val stmtsAsts = astForCompoundStatement(ctx.compoundStatement())
-    Seq(Ast(elseNode)) ++ stmtsAsts
-  }
-
-  def astForIfExpressionContext(ctx: IfExpressionContext): Seq[Ast] = {
-    val conditionAsts = astForExpressionOrCommand(ctx.expressionOrCommand())
-    val thenAsts      = astForThenClauseContext(ctx.thenClause())
-    val elseifAsts    = astForElsifClauseContext(ctx.elsifClause())
-    val elseAst       = astForElseClauseContext(ctx.elseClause())
-
-    val ifNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.IF)
-      .code(ctx.getText)
-      .lineNumber(ctx.IF().getSymbol.getLine)
-      .columnNumber(ctx.IF().getSymbol.getCharPositionInLine)
-
-    Seq(controlStructureAst(ifNode, conditionAsts.headOption, List(thenAsts ++ elseifAsts ++ elseAst).flatten))
-  }
-
-  def astForIfExpressionPrimaryContext(ctx: IfExpressionPrimaryContext): Seq[Ast] = {
-    astForIfExpressionContext(ctx.ifExpression())
   }
 
   def astForIndexingExpressionPrimaryContext(ctx: IndexingExpressionPrimaryContext): Seq[Ast] = {
@@ -1194,7 +1131,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
       asts.addAll(astForSingleLeftHandSideContext(ctx.exceptionVariableAssignment().singleLeftHandSide()))
     }
 
-    asts.addAll(astForThenClauseContext(ctx.thenClause()))
+    asts.addAll(astForCompoundStatement(ctx.thenClause().compoundStatement()))
     val blockNode = NewBlock()
       .code(ctx.getText)
       .lineNumber(ctx.RESCUE().getSymbol.getLine)
@@ -1247,7 +1184,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
       .toSeq
 
     if (ctx.elseClause() != null) {
-      val elseClauseAsts = astForElseClauseContext(ctx.elseClause())
+      val elseClauseAsts = astForElseClause(ctx.elseClause())
       mainBodyAsts ++ rescueAsts ++ elseClauseAsts
     } else {
       mainBodyAsts ++ rescueAsts
@@ -1666,8 +1603,8 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
 
   def astForUnlessExpressionPrimaryContext(ctx: UnlessExpressionPrimaryContext): Seq[Ast] = {
     val conditionAsts = astForExpressionOrCommand(ctx.unlessExpression().expressionOrCommand())
-    val thenAsts      = astForThenClauseContext(ctx.unlessExpression().thenClause())
-    val elseAsts      = astForElseClauseContext(ctx.unlessExpression().elseClause())
+    val thenAsts      = astForCompoundStatement(ctx.unlessExpression().thenClause().compoundStatement())
+    val elseAsts      = astForElseClause(ctx.unlessExpression().elseClause())
 
     // unless will be modelled as IF since there is no difference from a static analysis POV
     val unlessNode = NewControlStructure()

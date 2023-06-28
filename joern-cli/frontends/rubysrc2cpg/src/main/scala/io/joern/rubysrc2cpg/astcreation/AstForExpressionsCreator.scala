@@ -2,6 +2,7 @@ package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.parser.RubyParser._
 import io.joern.x2cpg.Ast
+import io.shiftleft.codepropertygraph.generated.nodes.NewJumpTarget
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import org.antlr.v4.runtime.ParserRuleContext
 
@@ -147,6 +148,36 @@ trait AstForExpressionsCreator { this: AstCreator =>
     // TODO: for X in Y is not properly modelled by while Y
     val forRootAst = whileAst(forExprAst.headOption, forBodyAst, Some(ctx.getText), line(ctx), column(ctx))
     forVarAst.headOption.map(forRootAst.withChild).getOrElse(forRootAst)
+  }
+
+  protected def astForIfExpression(ctx: IfExpressionContext): Ast = {
+    val testAst   = astForExpressionOrCommand(ctx.expressionOrCommand())
+    val thenAst   = astForCompoundStatement(ctx.thenClause().compoundStatement())
+    val elsifAsts = Option(ctx.elsifClause()).map(_.asScala).getOrElse(Seq()).map(astForElsifClause)
+    val elseAst   = Option(ctx.elseClause()).map(astForElseClause).getOrElse(Seq())
+    val ifNode    = controlStructureNode(ctx, ControlStructureTypes.IF, ctx.getText)
+    controlStructureAst(ifNode, testAst.headOption)
+      .withChildren(thenAst)
+      .withChildren(elsifAsts.toSeq)
+      .withChildren(elseAst)
+  }
+
+  protected def astForElsifClause(ctx: ElsifClauseContext): Ast = {
+    val ifNode  = controlStructureNode(ctx, ControlStructureTypes.IF, ctx.getText)
+    val testAst = astForExpressionOrCommand(ctx.expressionOrCommand())
+    val bodyAst = astForCompoundStatement(ctx.thenClause().compoundStatement())
+    controlStructureAst(ifNode, testAst.headOption, bodyAst)
+  }
+
+  // TODO: Rewrite this (and if expressions as a whole) to look similar to PHP's
+  protected def astForElseClause(ctx: ElseClauseContext): Seq[Ast] = {
+    val elseNode = NewJumpTarget()
+      .name("default")
+      .code(ctx.getText)
+      .lineNumber(line(ctx))
+      .columnNumber(column(ctx))
+
+    Ast(elseNode) +: astForCompoundStatement(ctx.compoundStatement())
   }
 
 }
