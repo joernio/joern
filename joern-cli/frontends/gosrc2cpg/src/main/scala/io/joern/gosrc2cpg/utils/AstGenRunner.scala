@@ -14,6 +14,7 @@ import scala.util.{Failure, Success, Try}
 object AstGenRunner {
   private val logger = LoggerFactory.getLogger(getClass)
   case class AstGenRunnerResult(
+    parsedModFile: (String, String) = ("", ""),
     parsedFiles: List[(String, String)] = List.empty,
     skippedFiles: List[(String, String)] = List.empty
   )
@@ -118,7 +119,17 @@ class AstGenRunner(config: Config) {
     files.filter { file =>
       file.stripSuffix(".json").replace(out.pathAsString, config.inputPath) match {
         case filePath if isIgnoredByUserConfig(filePath) => false
+        case filePath if filePath.endsWith(".mod")       => false
         case _                                           => true
+      }
+    }
+  }
+
+  private def filterModFile(files: List[String], out: File): List[String] = {
+    files.filter { file =>
+      file.stripSuffix(".json").replace(out.pathAsString, config.inputPath) match {
+        case filePath if filePath.endsWith(".mod") => true
+        case _                                     => false
       }
     }
   }
@@ -131,9 +142,15 @@ class AstGenRunner(config: Config) {
     logger.info(s"Running goastgen in '$config.inputPath' ...")
     runAstGenNative(config.inputPath, out) match {
       case Success(result) =>
-        val parsed  = filterFiles(SourceFiles.determine(out.toString(), Set(".json")), out)
-        val skipped = skippedFiles(in, result.toList)
-        AstGenRunnerResult(parsed.map((in.toString(), _)), skipped.map((in.toString(), _)))
+        val srcFiles      = SourceFiles.determine(out.toString(), Set(".json"))
+        val parsedModFile = filterModFile(srcFiles, out)
+        val parsed        = filterFiles(srcFiles, out)
+        val skipped       = skippedFiles(in, result.toList)
+        AstGenRunnerResult(
+          (in.toString(), parsedModFile.headOption.getOrElse("")),
+          parsed.map((in.toString(), _)),
+          skipped.map((in.toString(), _))
+        )
       case Failure(f) =>
         logger.error("\t- running astgen failed!", f)
         AstGenRunnerResult()
