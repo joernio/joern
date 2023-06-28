@@ -728,7 +728,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
       Seq(Ast())
     }
   }
-  
+
   def astForHashConstructorPrimaryContext(ctx: HashConstructorPrimaryContext): Seq[Ast] = {
     if (ctx.hashConstructor().associations() == null) return Seq(Ast())
     astForAssociationsContext(ctx.hashConstructor().associations())

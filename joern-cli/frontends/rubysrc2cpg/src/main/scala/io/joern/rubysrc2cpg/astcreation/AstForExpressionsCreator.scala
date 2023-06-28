@@ -139,9 +139,9 @@ trait AstForExpressionsCreator { this: AstCreator =>
     // TODO: testAst should be negated if it's going to be modelled as a while stmt.
     whileAst(testAst, bodyAst, Some(ctx.getText), line(ctx), column(ctx))
   }
-  
+
   protected def astForForExpression(ctx: ForExpressionContext): Ast = {
-    val forVarAst = astForForVariableContext(ctx.forVariable())
+    val forVarAst  = astForForVariableContext(ctx.forVariable())
     val forExprAst = astForExpressionOrCommand(ctx.expressionOrCommand())
     val forBodyAst = astForCompoundStatement(ctx.doClause().compoundStatement())
     // TODO: for X in Y is not properly modelled by while Y
