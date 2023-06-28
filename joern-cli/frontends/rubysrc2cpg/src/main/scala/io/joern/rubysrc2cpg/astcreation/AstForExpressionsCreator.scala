@@ -6,7 +6,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewJumpTarget
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import org.antlr.v4.runtime.ParserRuleContext
 
-import scala.::
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 trait AstForExpressionsCreator { this: AstCreator =>

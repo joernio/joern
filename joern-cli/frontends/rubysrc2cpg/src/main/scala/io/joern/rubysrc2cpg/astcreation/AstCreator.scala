@@ -14,7 +14,6 @@ import org.antlr.v4.runtime.{CharStreams, CommonTokenStream, ParserRuleContext, 
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
-import java.util
 import scala.collection.immutable.Seq
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
