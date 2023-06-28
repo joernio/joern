@@ -746,7 +746,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     "find flows to the sink" in {
       val source = cpg.identifier.name("x").l
       val sink   = cpg.call.name("puts").l
-      sink.reachableByFlows(source).l.size shouldBe 2
+      sink.reachableByFlows(source).l.size shouldBe 3
     }
   }
 
@@ -1145,7 +1145,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Data flow through packing left hand side through beyond the first identifier" ignore {
+  "Data flow through packing left hand side through beyond the first identifier" should {
     val cpg = code("""
         |x = 1
         |y = 2
@@ -1161,7 +1161,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Data flow through single LHS and multiple RHS" ignore {
+  "Data flow through single LHS and multiple RHS" should {
     val cpg = code("""
         |x = 1
         |y = 2
