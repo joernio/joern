@@ -140,4 +140,13 @@ trait AstForExpressionsCreator { this: AstCreator =>
     whileAst(testAst, bodyAst, Some(ctx.getText), line(ctx), column(ctx))
   }
 
+  protected def astForForExpression(ctx: ForExpressionContext): Ast = {
+    val forVarAst  = astForForVariableContext(ctx.forVariable())
+    val forExprAst = astForExpressionOrCommand(ctx.expressionOrCommand())
+    val forBodyAst = astForCompoundStatement(ctx.doClause().compoundStatement())
+    // TODO: for X in Y is not properly modelled by while Y
+    val forRootAst = whileAst(forExprAst.headOption, forBodyAst, Some(ctx.getText), line(ctx), column(ctx))
+    forVarAst.headOption.map(forRootAst.withChild).getOrElse(forRootAst)
+  }
+
 }
