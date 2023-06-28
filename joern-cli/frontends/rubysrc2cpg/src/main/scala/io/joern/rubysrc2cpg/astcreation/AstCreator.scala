@@ -475,7 +475,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
           .columnNumber(wh.WHEN().getSymbol.getCharPositionInLine)
 
         val whenACondAsts = astForWhenArgumentContext(wh.whenArgument())
-        val thenAsts = astForThenClauseContext(wh.thenClause()) ++ Seq(
+        val thenAsts = astForCompoundStatement(wh.thenClause().compoundStatement()) ++ Seq(
           Ast(NewControlStructure().controlStructureType(ControlStructureTypes.BREAK))
         )
         Seq(Ast(whenNode)) ++ whenACondAsts ++ thenAsts
@@ -733,11 +733,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
     if (ctx.hashConstructor().associations() == null) return Seq(Ast())
     astForAssociationsContext(ctx.hashConstructor().associations())
   }
-
-  def astForThenClauseContext(ctx: ThenClauseContext): Seq[Ast] = {
-    astForCompoundStatement(ctx.compoundStatement())
-  }
-
+  
   def astForElsifClauseContext(ctx: util.List[ElsifClauseContext]): Seq[Ast] = {
     if (ctx == null) return Seq()
 
@@ -750,7 +746,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
           .columnNumber(elif.ELSIF().getSymbol.getCharPositionInLine)
 
         val conditionAst = astForExpressionOrCommand(elif.expressionOrCommand())
-        val thenAsts     = astForThenClauseContext(elif.thenClause())
+        val thenAsts     = astForCompoundStatement(elif.thenClause().compoundStatement())
         controlStructureAst(elifNode, conditionAst.headOption, thenAsts)
       })
       .toSeq
@@ -772,7 +768,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
 
   def astForIfExpressionContext(ctx: IfExpressionContext): Seq[Ast] = {
     val conditionAsts = astForExpressionOrCommand(ctx.expressionOrCommand())
-    val thenAsts      = astForThenClauseContext(ctx.thenClause())
+    val thenAsts      = astForCompoundStatement(ctx.thenClause().compoundStatement())
     val elseifAsts    = astForElsifClauseContext(ctx.elsifClause())
     val elseAst       = astForElseClauseContext(ctx.elseClause())
 
@@ -1194,7 +1190,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
       asts.addAll(astForSingleLeftHandSideContext(ctx.exceptionVariableAssignment().singleLeftHandSide()))
     }
 
-    asts.addAll(astForThenClauseContext(ctx.thenClause()))
+    asts.addAll(astForCompoundStatement(ctx.thenClause().compoundStatement()))
     val blockNode = NewBlock()
       .code(ctx.getText)
       .lineNumber(ctx.RESCUE().getSymbol.getLine)
@@ -1666,7 +1662,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
 
   def astForUnlessExpressionPrimaryContext(ctx: UnlessExpressionPrimaryContext): Seq[Ast] = {
     val conditionAsts = astForExpressionOrCommand(ctx.unlessExpression().expressionOrCommand())
-    val thenAsts      = astForThenClauseContext(ctx.unlessExpression().thenClause())
+    val thenAsts      = astForCompoundStatement(ctx.unlessExpression().thenClause().compoundStatement())
     val elseAsts      = astForElseClauseContext(ctx.unlessExpression().elseClause())
 
     // unless will be modelled as IF since there is no difference from a static analysis POV
