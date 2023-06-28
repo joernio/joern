@@ -808,13 +808,25 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Data flow through chainedInvocationWithoutArgumentsPrimary usage" should {
+  "Data flow through chainedInvocationPrimary without arguments to block usage" should {
     val cpg = code("""
         |x = 1
         |
         |[1,2,3].each do
         |  puts "Right here #{x}"
         |end
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).l.size shouldBe 1
+    }
+  }
+
+  "Data flow through chainedInvocationWithoutArgumentsPrimary" should {
+    val cpg = code("""
+        |
         |""".stripMargin)
 
     "find flows to the sink" in {
@@ -1023,4 +1035,75 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
+  "Data flow through array assignments" should {
+    val cpg = code("""
+        |x = 10
+        |array = [0, 1]
+        |array[0] = x
+        |puts array
+        |
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).size shouldBe 2
+    }
+  }
+
+  "Data flow through chained scoped constant reference" should {
+    val cpg = code("""
+        |module SomeModule
+        |SomeConstant = 1
+        |end
+        |
+        |x = 1
+        |y = SomeModule::SomeConstant * x
+        |puts y
+        |
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).size shouldBe 2
+    }
+  }
+
+  "Data flow through scopedConstantAccessSingleLeftHandSide" should {
+    val cpg = code("""
+        |SomeConstant = 1
+        |
+        |x = 1
+        |::SomeConstant = x
+        |y = ::SomeConstant + 10
+        |puts y
+        |
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).size shouldBe 2
+    }
+  }
+
+  "Data flow through xdotySingleLeftHandSide" should {
+    val cpg = code("""
+        |module SomeModule
+        |SomeConstant = 100
+        |end
+        |
+        |x = 2
+        |SomeModule::SomeConstant = x
+        |y = SomeModule::SomeConstant
+        |puts y
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).size shouldBe 2
+    }
+  }
 }
