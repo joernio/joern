@@ -174,14 +174,49 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
   "Data flow through multiple assignments" should {
     // TODO test a lot more multiple assignments
     val cpg = code("""
-        |a = 1
-        |b = 2
-        |c, d = a, b
+        |x = 1
+        |y = 2
+        |c, d = x, y
         |puts c
         |""".stripMargin)
 
     "be found" in {
-      val src  = cpg.identifier.name("a").l
+      val src  = cpg.identifier.name("x").l
+      val sink = cpg.call.name("puts").l
+      sink.reachableByFlows(src).l.size shouldBe 2
+    }
+  }
+
+  "Data flow through multiple assignments with grouping" should {
+    val cpg = code("""
+        |x = 1
+        |y = 2
+        |(c, d) = x, y
+        |puts c
+        |""".stripMargin)
+
+    "be found" in {
+      val src  = cpg.identifier.name("x").l
+      val sink = cpg.call.name("puts").l
+      sink.reachableByFlows(src).l.size shouldBe 2
+    }
+  }
+
+  "Data flow through multiple assignments with grouping and method in RHS" should {
+    val cpg = code("""
+        |def foo()
+        |x = 1
+        |return x
+        |end
+        |
+        |b = 2
+        |(c, d) = foo, b
+        |puts c
+        |
+        |""".stripMargin)
+
+    "be found" in {
+      val src  = cpg.identifier.name("x").l
       val sink = cpg.call.name("puts").l
       sink.reachableByFlows(src).l.size shouldBe 2
     }
@@ -815,18 +850,6 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         |[1,2,3].each do
         |  puts "Right here #{x}"
         |end
-        |""".stripMargin)
-
-    "find flows to the sink" in {
-      val source = cpg.identifier.name("x").l
-      val sink   = cpg.call.name("puts").l
-      sink.reachableByFlows(source).l.size shouldBe 1
-    }
-  }
-
-  "Data flow through chainedInvocationWithoutArgumentsPrimary" should {
-    val cpg = code("""
-        |
         |""".stripMargin)
 
     "find flows to the sink" in {
