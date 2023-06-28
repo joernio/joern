@@ -267,7 +267,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
     if (leftAst.size == 1 && rightAst.size > 1) {
       /*
        * This is multiple RHS packed into a single LHS. That is, packing left hand side.
-       * This is as good as multiple RHS concatenated and put into a single LHS
+       * This is as good as multiple RHS packed into an array and put into a single LHS
        */
       val callNode = NewCall()
         .name(operatorName)
@@ -278,8 +278,8 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
         .lineNumber(ctx.EQ().getSymbol().getLine())
         .columnNumber(ctx.EQ().getSymbol().getCharPositionInLine())
 
-      val concatRHSAst = getConcatAST(rightAst)
-      Seq(callAst(callNode, leftAst ++ concatRHSAst))
+      val packedRHS = getPackedRHS(rightAst)
+      Seq(callAst(callNode, leftAst ++ packedRHS))
     } else {
       val callNode = NewCall()
         .name(operatorName)
@@ -1391,7 +1391,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
     Seq(referenceAsts.head.withChildren(bodyAstSansModifiers))
   }
 
-  def getConcatAST(astsToConcat: Seq[Ast]) = {
+  def getPackedRHS(astsToConcat: Seq[Ast]) = {
     val callNode = NewCall()
       .name(Operators.arrayInitializer)
       .methodFullName(Operators.arrayInitializer)
@@ -1409,7 +1409,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
     if (lhsAsts.size == 1 && rhsAsts.size > 1) {
       /*
        * This is multiple RHS packed into a single LHS. That is, packing left hand side.
-       * This is as good as multiple RHS concatenated and put into a single LHS
+       * This is as good as multiple RHS packed into an array and put into a single LHS
        */
       val callNode = NewCall()
         .name(operatorName)
@@ -1420,8 +1420,8 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
         .lineNumber(ctx.EQ().getSymbol().getLine())
         .columnNumber(ctx.EQ().getSymbol().getCharPositionInLine())
 
-      val concatRHSAst = getConcatAST(rhsAsts)
-      Seq(callAst(callNode, lhsAsts ++ concatRHSAst))
+      val packedRHS = getPackedRHS(rhsAsts)
+      Seq(callAst(callNode, lhsAsts ++ packedRHS))
     } else {
       /*
        * This is multiple LHS and multiple RHS
