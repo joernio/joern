@@ -726,7 +726,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
     if (ctx.hashConstructor().associations() == null) return Seq(Ast())
     astForAssociationsContext(ctx.hashConstructor().associations())
   }
-  
+
   def astForIndexingExpressionPrimaryContext(ctx: IndexingExpressionPrimaryContext): Seq[Ast] = {
     val lhsExpressionAst = astForPrimaryContext(ctx.primary())
     val rhsExpressionAst = astForIndexingArgumentsContext(ctx.indexingArguments())
