@@ -174,14 +174,49 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
   "Data flow through multiple assignments" should {
     // TODO test a lot more multiple assignments
     val cpg = code("""
-        |a = 1
-        |b = 2
-        |c, d = a, b
+        |x = 1
+        |y = 2
+        |c, d = x, y
         |puts c
         |""".stripMargin)
 
     "be found" in {
-      val src  = cpg.identifier.name("a").l
+      val src  = cpg.identifier.name("x").l
+      val sink = cpg.call.name("puts").l
+      sink.reachableByFlows(src).l.size shouldBe 2
+    }
+  }
+
+  "Data flow through multiple assignments with grouping" should {
+    val cpg = code("""
+        |x = 1
+        |y = 2
+        |(c, d) = x, y
+        |puts c
+        |""".stripMargin)
+
+    "be found" in {
+      val src  = cpg.identifier.name("x").l
+      val sink = cpg.call.name("puts").l
+      sink.reachableByFlows(src).l.size shouldBe 2
+    }
+  }
+
+  "Data flow through multiple assignments with grouping and method in RHS" should {
+    val cpg = code("""
+        |def foo()
+        |x = 1
+        |return x
+        |end
+        |
+        |b = 2
+        |(c, d) = foo, b
+        |puts c
+        |
+        |""".stripMargin)
+
+    "be found" in {
+      val src  = cpg.identifier.name("x").l
       val sink = cpg.call.name("puts").l
       sink.reachableByFlows(src).l.size shouldBe 2
     }
@@ -711,7 +746,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     "find flows to the sink" in {
       val source = cpg.identifier.name("x").l
       val sink   = cpg.call.name("puts").l
-      sink.reachableByFlows(source).l.size shouldBe 2
+      sink.reachableByFlows(source).l.size shouldBe 3
     }
   }
 
@@ -808,7 +843,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Data flow through chainedInvocationWithoutArgumentsPrimary usage" should {
+  "Data flow through chainedInvocationPrimary without arguments to block usage" should {
     val cpg = code("""
         |x = 1
         |
@@ -1023,4 +1058,122 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
+  "Data flow through array assignments" should {
+    val cpg = code("""
+        |x = 10
+        |array = [0, 1]
+        |array[0] = x
+        |puts array
+        |
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).size shouldBe 2
+    }
+  }
+
+  "Data flow through chained scoped constant reference" should {
+    val cpg = code("""
+        |module SomeModule
+        |SomeConstant = 1
+        |end
+        |
+        |x = 1
+        |y = SomeModule::SomeConstant * x
+        |puts y
+        |
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).size shouldBe 2
+    }
+  }
+
+  "Data flow through scopedConstantAccessSingleLeftHandSide" should {
+    val cpg = code("""
+        |SomeConstant = 1
+        |
+        |x = 1
+        |::SomeConstant = x
+        |y = ::SomeConstant + 10
+        |puts y
+        |
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).size shouldBe 2
+    }
+  }
+
+  "Data flow through xdotySingleLeftHandSide" should {
+    val cpg = code("""
+        |module SomeModule
+        |SomeConstant = 100
+        |end
+        |
+        |x = 2
+        |SomeModule::SomeConstant = x
+        |y = SomeModule::SomeConstant
+        |puts y
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).size shouldBe 2
+    }
+  }
+
+  "Data flow through packing left hand side through the first identifier" should {
+    val cpg = code("""
+        |x = 1
+        |p = 2
+        |*y = x,p
+        |puts y
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).size shouldBe 2
+    }
+  }
+
+  "Data flow through packing left hand side through beyond the first identifier" should {
+    val cpg = code("""
+        |x = 1
+        |y = 2
+        |z = 3
+        |*a = z,y,x
+        |puts a
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).size shouldBe 2
+    }
+  }
+
+  "Data flow through single LHS and multiple RHS" should {
+    val cpg = code("""
+        |x = 1
+        |y = 2
+        |z = 3
+        |a = z,y,x
+        |puts a
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).size shouldBe 2
+    }
+  }
 }

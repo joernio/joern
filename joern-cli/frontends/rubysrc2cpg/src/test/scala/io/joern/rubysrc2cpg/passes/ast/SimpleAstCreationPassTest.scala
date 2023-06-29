@@ -450,18 +450,23 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
 
     "have correct structure for a single assignment expression with array in RHS" in {
-      val cpg            = code("x = [a, b, c]")
-      val List(callNode) = cpg.call.name(Operators.assignment).l
-      callNode.size shouldBe 1
-      callNode.argument
+      val cpg                      = code("x = [a, b, c]")
+      val List(assignmentCallNode) = cpg.call.name(Operators.assignment).l
+      assignmentCallNode.size shouldBe 1
+      val List(arrayCallNode) = cpg.call.name(Operators.arrayInitializer).l
+      arrayCallNode.size shouldBe 1
+      arrayCallNode.argument
         .where(_.argumentIndex(1))
         .code
-        .l shouldBe List("x")
-      callNode.argument
-        .whereNot(_.argumentIndex(1))
+        .l shouldBe List("a")
+      arrayCallNode.argument
+        .where(_.argumentIndex(2))
         .code
-        .l shouldBe List("a", "b", "c")
-      callNode.lineNumber.l shouldBe List(1)
+        .l shouldBe List("b")
+      arrayCallNode.argument
+        .where(_.argumentIndex(3))
+        .code
+        .l shouldBe List("c")
     }
 
     "have correct structure for a equals expression" in {
@@ -576,11 +581,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
           |::SomeConstant = param
           |end
           |""".stripMargin)
-
-      val List(callNode) = cpg.call.name("<operator>.scopeResolution").l
-      callNode.code shouldBe "::SomeConstant"
-      callNode.lineNumber shouldBe Some(3)
-      callNode.columnNumber shouldBe Some(0)
 
       val List(identifierNode) = cpg.identifier.name("SomeConstant").l
       identifierNode.code shouldBe "SomeConstant"

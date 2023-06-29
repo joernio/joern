@@ -11,19 +11,6 @@ trait AstNodeBuilder { this: AstCreator =>
     NewComment().code(code).filename(filename).lineNumber(line(node)).columnNumber(column(node))
   }
 
-  protected def newImportNode(
-    code: String,
-    importedEntity: String,
-    include: IASTPreprocessorIncludeStatement
-  ): NewImport = {
-    NewImport()
-      .code(code)
-      .importedEntity(importedEntity)
-      .importedAs(importedEntity)
-      .lineNumber(line(include))
-      .columnNumber(column(include))
-  }
-
   protected def newNamespaceBlockNode(
     node: IASTNode,
     name: String,

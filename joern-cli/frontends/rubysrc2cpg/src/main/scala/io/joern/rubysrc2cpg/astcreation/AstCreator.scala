@@ -239,30 +239,11 @@ class AstCreator(
       val localVar  = ctx.CONSTANT_IDENTIFIER()
       val varSymbol = localVar.getSymbol()
       val node = createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
-      val constAst     = Ast(node)
-      val operatorName = getOperatorName(ctx.COLON2().getSymbol)
-      val callNode = NewCall()
-        .name(operatorName)
-        .code(ctx.getText)
-        .methodFullName(operatorName)
-        .signature("")
-        .dispatchType(DispatchTypes.STATIC_DISPATCH)
-        .typeFullName(Defines.Any)
-        .lineNumber(ctx.COLON2().getSymbol().getLine())
-        .columnNumber(ctx.COLON2().getSymbol().getCharPositionInLine())
-      Seq(callAst(callNode, Seq(constAst)))
+      Seq(Ast(node))
     case _ =>
       logger.error("astForSingleLeftHandSideContext() All contexts mismatched.")
       Seq(Ast())
 
-  }
-
-  def astForExpressionOrCommandsContext(ctx: ExpressionOrCommandsContext): Seq[Ast] = {
-    ctx
-      .expressionOrCommand()
-      .asScala
-      .flatMap(ec => astForExpressionOrCommand(ec))
-      .toSeq
   }
 
   def astForSplattingArgumentContext(ctx: SplattingArgumentContext): Seq[Ast] = {
@@ -273,7 +254,7 @@ class AstCreator(
   def astForMultipleRightHandSideContext(ctx: MultipleRightHandSideContext): Seq[Ast] = {
     if (ctx == null) return Seq(Ast())
 
-    val exprAsts = astForExpressionOrCommandsContext(ctx.expressionOrCommands())
+    val exprAsts = ctx.expressionOrCommands().expressionOrCommand().asScala.flatMap(astForExpressionOrCommand).toSeq
 
     val paramAsts = if (ctx.splattingArgument() != null) {
       val splattingAsts = astForSplattingArgumentContext(ctx.splattingArgument())
@@ -289,16 +270,34 @@ class AstCreator(
     val rightAst     = astForMultipleRightHandSideContext(ctx.multipleRightHandSide())
     val leftAst      = astForSingleLeftHandSideContext(ctx.singleLeftHandSide())
     val operatorName = getOperatorName(ctx.op)
-    val callNode = NewCall()
-      .name(operatorName)
-      .code(ctx.op.getText)
-      .methodFullName(operatorName)
-      .signature("")
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .typeFullName(Defines.Any)
-      .lineNumber(ctx.op.getLine())
-      .columnNumber(ctx.op.getCharPositionInLine())
-    Seq(callAst(callNode, leftAst ++ rightAst))
+    if (leftAst.size == 1 && rightAst.size > 1) {
+      /*
+       * This is multiple RHS packed into a single LHS. That is, packing left hand side.
+       * This is as good as multiple RHS packed into an array and put into a single LHS
+       */
+      val callNode = NewCall()
+        .name(operatorName)
+        .code(ctx.getText)
+        .methodFullName(operatorName)
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .typeFullName(Defines.Any)
+        .lineNumber(ctx.EQ().getSymbol().getLine())
+        .columnNumber(ctx.EQ().getSymbol().getCharPositionInLine())
+
+      val packedRHS = getPackedRHS(rightAst)
+      Seq(callAst(callNode, leftAst ++ packedRHS))
+    } else {
+      val callNode = NewCall()
+        .name(operatorName)
+        .code(ctx.op.getText)
+        .methodFullName(operatorName)
+        .signature("")
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .typeFullName(Defines.Any)
+        .lineNumber(ctx.op.getLine())
+        .columnNumber(ctx.op.getCharPositionInLine())
+      Seq(callAst(callNode, leftAst ++ rightAst))
+    }
   }
 
   def astForStringInterpolationPrimaryContext(ctx: StringInterpolationPrimaryContext): Seq[Ast] = {
@@ -334,15 +333,15 @@ class AstCreator(
     case ctx: MethodDefinitionPrimaryContext => astForMethodDefinitionContext(ctx.methodDefinition())
     case ctx: YieldWithOptionalArgumentPrimaryContext =>
       Seq(astForYieldCall(ctx, Option(ctx.yieldWithOptionalArgument().arguments())))
-    case ctx: IfExpressionPrimaryContext       => astForIfExpressionPrimaryContext(ctx)
+    case ctx: IfExpressionPrimaryContext       => Seq(astForIfExpression(ctx.ifExpression()))
     case ctx: UnlessExpressionPrimaryContext   => astForUnlessExpressionPrimaryContext(ctx)
     case ctx: CaseExpressionPrimaryContext     => astForCaseExpressionPrimaryContext(ctx)
     case ctx: WhileExpressionPrimaryContext    => astForWhileExpressionContext(ctx.whileExpression())
     case ctx: UntilExpressionPrimaryContext    => Seq(astForUntilExpression(ctx.untilExpression()))
-    case ctx: ForExpressionPrimaryContext      => astForForExpressionContext(ctx.forExpression())
+    case ctx: ForExpressionPrimaryContext      => Seq(astForForExpression(ctx.forExpression()))
     case ctx: JumpExpressionPrimaryContext     => astForJumpExpressionPrimaryContext(ctx)
     case ctx: BeginExpressionPrimaryContext    => astForBeginExpressionPrimaryContext(ctx)
-    case ctx: GroupingExpressionPrimaryContext => astForGroupingExpressionPrimaryContext(ctx)
+    case ctx: GroupingExpressionPrimaryContext => astForCompoundStatement(ctx.compoundStatement())
     case ctx: VariableReferencePrimaryContext  => astForVariableReferencePrimaryContext(ctx)
     case ctx: SimpleScopedConstantReferencePrimaryContext =>
       astForSimpleScopedConstantReferencePrimaryContext(ctx)
@@ -491,22 +490,15 @@ class AstCreator(
           .columnNumber(wh.WHEN().getSymbol.getCharPositionInLine)
 
         val whenACondAsts = astForWhenArgumentContext(wh.whenArgument())
-        val thenAsts = astForThenClauseContext(wh.thenClause()) ++ Seq(
+        val thenAsts = astForCompoundStatement(wh.thenClause().compoundStatement()) ++ Seq(
           Ast(NewControlStructure().controlStructureType(ControlStructureTypes.BREAK))
         )
         Seq(Ast(whenNode)) ++ whenACondAsts ++ thenAsts
       })
       .toList
 
-    val stmtAsts =
-      if (ctx.caseExpression().elseClause() != null) {
-        val elseAst = astForElseClauseContext(ctx.caseExpression().elseClause())
-        whenThenAstsList ++ elseAst
-      } else {
-        whenThenAstsList
-      }
-
-    val block = blockNode(ctx.caseExpression())
+    val stmtAsts = whenThenAstsList ++ Option(ctx.caseExpression().elseClause()).map(astForElseClause).getOrElse(Seq())
+    val block    = blockNode(ctx.caseExpression())
     Seq(controlStructureAst(switchNode, conditionAst, Seq(Ast(block).withChildren(stmtAsts))))
   }
 
@@ -659,83 +651,9 @@ class AstCreator(
     }
   }
 
-  def astForForExpressionContext(ctx: ForExpressionContext): Seq[Ast] = {
-    val initAst    = astForForVariableContext(ctx.forVariable())
-    val forCondAst = astForExpressionOrCommand(ctx.expressionOrCommand())
-    val bodyAsts   = astForDoClauseContext(ctx.doClause())
-
-    val ast = whileAst(
-      Some(forCondAst.head),
-      bodyAsts,
-      Some(ctx.getText),
-      Some(ctx.FOR().getSymbol.getLine),
-      Some(ctx.FOR().getSymbol.getCharPositionInLine)
-    ).withChild(initAst.head)
-    Seq(ast)
-  }
-
-  def astForGroupingExpressionPrimaryContext(ctx: GroupingExpressionPrimaryContext): Seq[Ast] = {
-    astForCompoundStatement(ctx.compoundStatement())
-  }
-
   def astForHashConstructorPrimaryContext(ctx: HashConstructorPrimaryContext): Seq[Ast] = {
     if (ctx.hashConstructor().associations() == null) return Seq(Ast())
     astForAssociationsContext(ctx.hashConstructor().associations())
-  }
-
-  def astForThenClauseContext(ctx: ThenClauseContext): Seq[Ast] = {
-    astForCompoundStatement(ctx.compoundStatement())
-  }
-
-  def astForElsifClauseContext(ctx: util.List[ElsifClauseContext]): Seq[Ast] = {
-    if (ctx == null) return Seq()
-
-    ctx.asScala
-      .map(elif => {
-        val elifNode = NewControlStructure()
-          .controlStructureType(ControlStructureTypes.IF)
-          .code(elif.getText())
-          .lineNumber(elif.ELSIF().getSymbol.getLine)
-          .columnNumber(elif.ELSIF().getSymbol.getCharPositionInLine)
-
-        val conditionAst = astForExpressionOrCommand(elif.expressionOrCommand())
-        val thenAsts     = astForThenClauseContext(elif.thenClause())
-        controlStructureAst(elifNode, conditionAst.headOption, thenAsts)
-      })
-      .toSeq
-  }
-
-  def astForElseClauseContext(ctx: ElseClauseContext): Seq[Ast] = {
-    if (ctx == null) return Seq(Ast())
-    val elseNode =
-      NewJumpTarget()
-        .parserTypeName(ctx.getClass.getSimpleName)
-        .name("default")
-        .code(ctx.getText)
-        .lineNumber(ctx.ELSE().getSymbol.getLine)
-        .columnNumber(ctx.ELSE().getSymbol.getCharPositionInLine)
-
-    val stmtsAsts = astForCompoundStatement(ctx.compoundStatement())
-    Seq(Ast(elseNode)) ++ stmtsAsts
-  }
-
-  def astForIfExpressionContext(ctx: IfExpressionContext): Seq[Ast] = {
-    val conditionAsts = astForExpressionOrCommand(ctx.expressionOrCommand())
-    val thenAsts      = astForThenClauseContext(ctx.thenClause())
-    val elseifAsts    = astForElsifClauseContext(ctx.elsifClause())
-    val elseAst       = astForElseClauseContext(ctx.elseClause())
-
-    val ifNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.IF)
-      .code(ctx.getText)
-      .lineNumber(ctx.IF().getSymbol.getLine)
-      .columnNumber(ctx.IF().getSymbol.getCharPositionInLine)
-
-    Seq(controlStructureAst(ifNode, conditionAsts.headOption, List(thenAsts ++ elseifAsts ++ elseAst).flatten))
-  }
-
-  def astForIfExpressionPrimaryContext(ctx: IfExpressionPrimaryContext): Seq[Ast] = {
-    astForIfExpressionContext(ctx.ifExpression())
   }
 
   def astForIndexingExpressionPrimaryContext(ctx: IndexingExpressionPrimaryContext): Seq[Ast] = {
@@ -1143,7 +1061,7 @@ class AstCreator(
       asts.addAll(astForSingleLeftHandSideContext(ctx.exceptionVariableAssignment().singleLeftHandSide()))
     }
 
-    asts.addAll(astForThenClauseContext(ctx.thenClause()))
+    asts.addAll(astForCompoundStatement(ctx.thenClause().compoundStatement()))
     val blockNode = NewBlock()
       .code(ctx.getText)
       .lineNumber(ctx.RESCUE().getSymbol.getLine)
@@ -1196,7 +1114,7 @@ class AstCreator(
       .toSeq
 
     if (ctx.elseClause() != null) {
-      val elseClauseAsts = astForElseClauseContext(ctx.elseClause())
+      val elseClauseAsts = astForElseClause(ctx.elseClause())
       mainBodyAsts ++ rescueAsts ++ elseClauseAsts
     } else {
       mainBodyAsts ++ rescueAsts
@@ -1314,39 +1232,69 @@ class AstCreator(
     Seq(referenceAsts.head.withChildren(bodyAstSansModifiers))
   }
 
+  def getPackedRHS(astsToConcat: Seq[Ast]) = {
+    val callNode = NewCall()
+      .name(Operators.arrayInitializer)
+      .methodFullName(Operators.arrayInitializer)
+      .signature(Operators.arrayInitializer)
+      .typeFullName(DynamicCallUnknownFullName)
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+    Seq(callAst(callNode, astsToConcat))
+  }
+
   def astForMultipleAssignmentExpressionContext(ctx: MultipleAssignmentExpressionContext): Seq[Ast] = {
-    val lhsAsts      = astForMultipleLeftHandSideContext(ctx.multipleLeftHandSide())
     val rhsAsts      = astForMultipleRightHandSideContext(ctx.multipleRightHandSide())
+    val lhsAsts      = astForMultipleLeftHandSideContext(ctx.multipleLeftHandSide())
     val operatorName = getOperatorName(ctx.EQ().getSymbol)
 
-    /* Since we have multiple LHS and RHS elements here, we will now create synthetic assignment
-     * call nodes to model how ruby assigns values from RHS elements to LHS elements. We create
-     * tuples for each assignment and then pass them to the assignment calls nodes
-     */
-    val assigns = lhsAsts.zip(rhsAsts)
-    assigns.map { argPair =>
-      val lhsCode = argPair._1.nodes.headOption match {
-        case Some(id: NewIdentifier) => id.code
-        case Some(lit: NewLiteral)   => lit.code
-        case _                       => ""
-      }
-
-      val rhsCode = argPair._2.nodes.headOption match {
-        case Some(id: NewIdentifier) => id.code
-        case Some(lit: NewLiteral)   => lit.code
-        case _                       => ""
-      }
-
-      val syntheticCallNode = NewCall()
+    if (lhsAsts.size == 1 && rhsAsts.size > 1) {
+      /*
+       * This is multiple RHS packed into a single LHS. That is, packing left hand side.
+       * This is as good as multiple RHS packed into an array and put into a single LHS
+       */
+      val callNode = NewCall()
         .name(operatorName)
-        .code(lhsCode + " = " + rhsCode)
+        .code(ctx.getText)
         .methodFullName(operatorName)
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .typeFullName(Defines.Any)
         .lineNumber(ctx.EQ().getSymbol().getLine())
         .columnNumber(ctx.EQ().getSymbol().getCharPositionInLine())
 
-      callAst(syntheticCallNode, Seq(argPair._1, argPair._2))
+      val packedRHS = getPackedRHS(rhsAsts)
+      Seq(callAst(callNode, lhsAsts ++ packedRHS))
+    } else {
+      /*
+       * This is multiple LHS and multiple RHS
+       *Since we have multiple LHS and RHS elements here, we will now create synthetic assignment
+       * call nodes to model how ruby assigns values from RHS elements to LHS elements. We create
+       * tuples for each assignment and then pass them to the assignment calls nodes
+       */
+      val assigns = lhsAsts.zip(rhsAsts)
+      assigns.map { argPair =>
+        val lhsCode = argPair._1.nodes.headOption match {
+          case Some(id: NewIdentifier) => id.code
+          case Some(lit: NewLiteral)   => lit.code
+          case _                       => ""
+        }
+
+        val rhsCode = argPair._2.nodes.headOption match {
+          case Some(id: NewIdentifier) => id.code
+          case Some(lit: NewLiteral)   => lit.code
+          case _                       => ""
+        }
+
+        val syntheticCallNode = NewCall()
+          .name(operatorName)
+          .code(lhsCode + " = " + rhsCode)
+          .methodFullName(operatorName)
+          .dispatchType(DispatchTypes.STATIC_DISPATCH)
+          .typeFullName(Defines.Any)
+          .lineNumber(ctx.EQ().getSymbol().getLine())
+          .columnNumber(ctx.EQ().getSymbol().getCharPositionInLine())
+
+        callAst(syntheticCallNode, Seq(argPair._1, argPair._2))
+      }
     }
   }
 
@@ -1587,8 +1535,8 @@ class AstCreator(
 
   def astForUnlessExpressionPrimaryContext(ctx: UnlessExpressionPrimaryContext): Seq[Ast] = {
     val conditionAsts = astForExpressionOrCommand(ctx.unlessExpression().expressionOrCommand())
-    val thenAsts      = astForThenClauseContext(ctx.unlessExpression().thenClause())
-    val elseAsts      = astForElseClauseContext(ctx.unlessExpression().elseClause())
+    val thenAsts      = astForCompoundStatement(ctx.unlessExpression().thenClause().compoundStatement())
+    val elseAsts      = astForElseClause(ctx.unlessExpression().elseClause())
 
     // unless will be modelled as IF since there is no difference from a static analysis POV
     val unlessNode = NewControlStructure()
