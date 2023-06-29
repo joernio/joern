@@ -8,12 +8,16 @@ import java.io.File
 import scala.collection.mutable.ListBuffer
 
 object GoMod {
-  var meta: GoMod             = null
-  var config: Config          = null
-  def getModMetaData(): GoMod = meta
+
+  import java.util.regex.Pattern
+
+  val fileSeparateorPattern           = Pattern.quote(File.separator)
+  var meta: Option[GoMod]             = None
+  var config: Option[Config]          = None
+  def getModMetaData(): Option[GoMod] = meta
   def getNameSpace(compilationUnitFilePath: String, pkg: String): String = {
 
-    if (meta == null || compilationUnitFilePath == null || compilationUnitFilePath.isEmpty) {
+    if (meta.isEmpty || compilationUnitFilePath == null || compilationUnitFilePath.isEmpty) {
       // When there no go.mod file, we don't have the information about the module prefix
       // In this case we will use package name as a namespace
       return pkg
@@ -28,17 +32,9 @@ object GoMod {
       // 1. if there is go file inside <root project path>/first/second/test.go (package main) => '/first/second/main'
       // 2. <root project path>/test.go (package main) => 'main'
 
-      val remainingpath = compilationUnitFilePath.stripPrefix(config.inputPath)
-      import java.util.regex.Pattern
-      val pattern                    = Pattern.quote(System.getProperty("file.separator"))
-      val pathTokens                 = remainingpath.split(pattern)
-      val tokens: ListBuffer[String] = ListBuffer.empty[String]
-      for (i <- 0 until pathTokens.length - 1) {
-        if (pathTokens(i) != null && !pathTokens(i).trim.isEmpty) {
-          tokens += pathTokens(i)
-        }
-      }
-      tokens += pkg
+      val remainingpath = compilationUnitFilePath.stripPrefix(config.get.inputPath)
+      val pathTokens    = remainingpath.split(fileSeparateorPattern)
+      val tokens        = pathTokens.dropRight(1).filterNot(x => x == null || x.trim.isEmpty) :+ pkg
       return tokens.mkString("/")
     }
 
@@ -46,21 +42,14 @@ object GoMod {
     // go.mod (module jorn.io/trial) and <root project path>/foo.go (package foo) => jorn.io/trial>foo
     // go.mod (module jorn.io/trial) and <root project path>/first/foo.go (package first) => jorn.io/trial/first
     // go.mod (module jorn.io/trial) and <root project path>/first/foo.go (package bar) => jorn.io/trial/first>bar
-    val remainingpath              = compilationUnitFilePath.stripPrefix(config.inputPath)
-    val pathTokens                 = remainingpath.split(File.separator)
-    val tokens: ListBuffer[String] = ListBuffer.empty[String]
+    val remainingpath = compilationUnitFilePath.stripPrefix(config.get.inputPath)
+    val pathTokens    = remainingpath.split(fileSeparateorPattern)
     // prefixing module name i.e. jorn.io/trial
-    tokens += meta.module.name
-    for (i <- 0 until pathTokens.length - 1) {
-      // Generating tokens for intermediate path except the last token of file name
-      if (pathTokens(i) != null && !pathTokens(i).trim.isEmpty) {
-        tokens += pathTokens(i)
-      }
-    }
+    val tokens    = meta.get.module.name +: pathTokens.dropRight(1).filterNot(x => x == null || x.trim.isEmpty)
     var nameSpace = tokens.mkString("/")
     // check if last token of path is matching with package name if it is matching, we have formed the namespace.
     // If it is not matching we need to append the package name as alias.
-    val moduleTokens = meta.module.name.split("/")
+    val moduleTokens = meta.get.module.name.split("/")
     if ((tokens.length > 1 && tokens.last != pkg) || (tokens.length == 1 && moduleTokens.last != pkg))
       nameSpace = nameSpace + ">" + pkg
     nameSpace
@@ -68,14 +57,20 @@ object GoMod {
 }
 
 case class GoMod(fileFullPath: String, module: GoModModule, dependencies: List[GoModDependency])
-case class GoModModule(name: String, lineNo: Int = 0, colNo: Int = 0, endLineNo: Int = 0, endColNo: Int = 0)
+case class GoModModule(
+  name: String,
+  lineNo: Option[Int] = None,
+  colNo: Option[Int] = None,
+  endLineNo: Option[Int] = None,
+  endColNo: Option[Int] = None
+)
 case class GoModDependency(
   module: String,
   version: String,
-  lineNo: Int = 0,
-  colNo: Int = 0,
-  endLineNo: Int = 0,
-  endColNo: Int = 0
+  lineNo: Option[Int] = None,
+  colNo: Option[Int] = None,
+  endLineNo: Option[Int] = None,
+  endColNo: Option[Int] = None
 )
 
 object CirceEnDe {
@@ -89,10 +84,10 @@ object CirceEnDe {
       Right(
         GoModModule(
           name = name.getOrElse(""),
-          lineNo = lineNo.getOrElse(0),
-          colNo = colNo.getOrElse(0),
-          endLineNo = endLineNo.getOrElse(0),
-          endColNo = endColNo.getOrElse(0)
+          lineNo = lineNo.toOption,
+          colNo = colNo.toOption,
+          endLineNo = endLineNo.toOption,
+          endColNo = endColNo.toOption
         )
       )
     }
@@ -109,10 +104,10 @@ object CirceEnDe {
         GoModDependency(
           module = module.getOrElse(""),
           version = version.getOrElse(""),
-          lineNo = lineNo.getOrElse(0),
-          colNo = colNo.getOrElse(0),
-          endLineNo = endLineNo.getOrElse(0),
-          endColNo = endColNo.getOrElse(0)
+          lineNo = lineNo.toOption,
+          colNo = colNo.toOption,
+          endLineNo = endLineNo.toOption,
+          endColNo = endColNo.toOption
         )
       )
     }

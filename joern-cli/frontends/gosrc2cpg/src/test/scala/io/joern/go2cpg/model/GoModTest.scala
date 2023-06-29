@@ -1,12 +1,15 @@
 package io.joern.go2cpg.model;
 
+import better.files.File
 import io.joern.gosrc2cpg.Config
 import io.joern.gosrc2cpg.model.{GoMod, GoModDependency, GoModModule}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import java.io.{File => JFile}
 import java.nio.file.Paths
+import scala.language.postfixOps
 
 class GoModTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
   "go project without .mod file" in {
@@ -15,12 +18,14 @@ class GoModTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
   }
   "invalid compilation file unit with main pkg" in {
     val config = Config()
-    config.inputPath = Paths.get("").toAbsolutePath.toString
-    GoMod.config = config
-    GoMod.meta = GoMod(
-      fileFullPath = Paths.get(config.inputPath, "go.mod").toAbsolutePath.toString,
-      module = GoModModule("joern.io/trial"),
-      dependencies = List[GoModDependency]()
+    config.inputPath = File.currentWorkingDirectory.toString()
+    GoMod.config = Some(config)
+    GoMod.meta = Some(
+      GoMod(
+        fileFullPath = File(config.inputPath) / "go.mod" pathAsString,
+        module = GoModModule("joern.io/trial"),
+        dependencies = List[GoModDependency]()
+      )
     )
     var namespace =
       GoMod.getNameSpace(null, "main")
@@ -31,99 +36,113 @@ class GoModTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
   }
   "with .mod file and main pkg 1 use case" in {
     val config = Config()
-    config.inputPath = Paths.get("").toAbsolutePath.toString
-    GoMod.config = config
-    GoMod.meta = GoMod(
-      fileFullPath = Paths.get(config.inputPath, "go.mod").toAbsolutePath.toString,
-      module = GoModModule("joern.io/trial"),
-      dependencies = List[GoModDependency]()
+    config.inputPath = File.currentWorkingDirectory.toString()
+    GoMod.config = Some(config)
+    GoMod.meta = Some(
+      GoMod(
+        fileFullPath = File(config.inputPath) / "go.mod" pathAsString,
+        module = GoModModule("joern.io/trial"),
+        dependencies = List[GoModDependency]()
+      )
     )
     val namespace =
-      GoMod.getNameSpace(Paths.get(config.inputPath, "first", "second", "test.go").toAbsolutePath.toString, "main")
+      GoMod.getNameSpace(File(config.inputPath) / "first" / "second" / "test.go" pathAsString, "main")
     namespace shouldBe "first/second/main"
   }
 
   "with .mod file and main pkg 2 use case" in {
     val config = Config()
-    config.inputPath = Paths.get("").toAbsolutePath.toString + "/"
-    GoMod.config = config
-    GoMod.meta = GoMod(
-      fileFullPath = Paths.get(config.inputPath, "go.mod").toAbsolutePath.toString,
-      module = GoModModule("joern.io/trial"),
-      dependencies = List[GoModDependency]()
+    config.inputPath = File.currentWorkingDirectory.toString() + JFile.separator
+    GoMod.config = Some(config)
+    GoMod.meta = Some(
+      GoMod(
+        fileFullPath = File(config.inputPath) / "go.mod" pathAsString,
+        module = GoModModule("joern.io/trial"),
+        dependencies = List[GoModDependency]()
+      )
     )
     val namespace =
-      GoMod.getNameSpace(Paths.get(config.inputPath, "first", "second", "test.go").toAbsolutePath.toString, "main")
+      GoMod.getNameSpace(File(config.inputPath) / "first" / "second" / "test.go" pathAsString, "main")
     namespace shouldBe "first/second/main"
   }
 
   "with .mod file and main pkg 3 use case" in {
     val config = Config()
-    config.inputPath = Paths.get("").toAbsolutePath.toString
-    GoMod.config = config
-    GoMod.meta = GoMod(
-      fileFullPath = Paths.get(config.inputPath, "go.mod").toAbsolutePath.toString,
-      module = GoModModule("joern.io/trial"),
-      dependencies = List[GoModDependency]()
+    config.inputPath = File.currentWorkingDirectory.toString()
+    GoMod.config = Some(config)
+    GoMod.meta = Some(
+      GoMod(
+        fileFullPath = File(config.inputPath) / "go.mod" pathAsString,
+        module = GoModModule("joern.io/trial"),
+        dependencies = List[GoModDependency]()
+      )
     )
     val namespace =
-      GoMod.getNameSpace(Paths.get(config.inputPath, "test.go").toAbsolutePath.toString, "main")
+      GoMod.getNameSpace(File(config.inputPath) / "test.go" pathAsString, "main")
     namespace shouldBe "main"
   }
 
   "with .mod file and pkg other than main matching with folder" in {
     val config = Config()
-    config.inputPath = Paths.get("").toAbsolutePath.toString
-    GoMod.config = config
-    GoMod.meta = GoMod(
-      fileFullPath = Paths.get(config.inputPath, "go.mod").toAbsolutePath.toString,
-      module = GoModModule("joern.io/trial"),
-      dependencies = List[GoModDependency]()
+    config.inputPath = File.currentWorkingDirectory.toString()
+    GoMod.config = Some(config)
+    GoMod.meta = Some(
+      GoMod(
+        fileFullPath = File(config.inputPath) / "go.mod" pathAsString,
+        module = GoModModule("joern.io/trial"),
+        dependencies = List[GoModDependency]()
+      )
     )
     val namespace =
-      GoMod.getNameSpace(Paths.get(config.inputPath, "test.go").toAbsolutePath.toString, "trial")
+      GoMod.getNameSpace(File(config.inputPath) / "test.go" pathAsString, "trial")
     namespace shouldBe "joern.io/trial"
   }
 
   "with .mod file, pkg other than main, one level child folder, and package matching with last folder" in {
     val config = Config()
-    config.inputPath = Paths.get("").toAbsolutePath.toString
-    GoMod.config = config
-    GoMod.meta = GoMod(
-      fileFullPath = Paths.get(config.inputPath, "go.mod").toAbsolutePath.toString,
-      module = GoModModule("joern.io/trial"),
-      dependencies = List[GoModDependency]()
+    config.inputPath = File.currentWorkingDirectory.toString()
+    GoMod.config = Some(config)
+    GoMod.meta = Some(
+      GoMod(
+        fileFullPath = File(config.inputPath) / "go.mod" pathAsString,
+        module = GoModModule("joern.io/trial"),
+        dependencies = List[GoModDependency]()
+      )
     )
     val namespace =
-      GoMod.getNameSpace(Paths.get(config.inputPath, "first", "test.go").toAbsolutePath.toString, "first")
+      GoMod.getNameSpace(File(config.inputPath) / "first" / "test.go" pathAsString, "first")
     namespace shouldBe "joern.io/trial/first"
   }
 
   "with .mod file and pkg other than main and not matching with folder" in {
     val config = Config()
-    config.inputPath = Paths.get("").toAbsolutePath.toString
-    GoMod.config = config
-    GoMod.meta = GoMod(
-      fileFullPath = Paths.get(config.inputPath, "go.mod").toAbsolutePath.toString,
-      module = GoModModule("joern.io/trial"),
-      dependencies = List[GoModDependency]()
+    config.inputPath = File.currentWorkingDirectory.toString()
+    GoMod.config = Some(config)
+    GoMod.meta = Some(
+      GoMod(
+        fileFullPath = File(config.inputPath) / "go.mod" pathAsString,
+        module = GoModModule("joern.io/trial"),
+        dependencies = List[GoModDependency]()
+      )
     )
     val namespace =
-      GoMod.getNameSpace(Paths.get(config.inputPath, "test.go").toAbsolutePath.toString, "foo")
+      GoMod.getNameSpace(File(config.inputPath) / "test.go" pathAsString, "foo")
     namespace shouldBe "joern.io/trial>foo"
   }
 
   "with .mod file, pkg other than main, one level child folder, and package not matching with last folder" in {
     val config = Config()
-    config.inputPath = Paths.get("").toAbsolutePath.toString
-    GoMod.config = config
-    GoMod.meta = GoMod(
-      fileFullPath = Paths.get(config.inputPath, "go.mod").toAbsolutePath.toString,
-      module = GoModModule("joern.io/trial"),
-      dependencies = List[GoModDependency]()
+    config.inputPath = File.currentWorkingDirectory.toString()
+    GoMod.config = Some(config)
+    GoMod.meta = Some(
+      GoMod(
+        fileFullPath = File(config.inputPath) / "go.mod" pathAsString,
+        module = GoModModule("joern.io/trial"),
+        dependencies = List[GoModDependency]()
+      )
     )
     val namespace =
-      GoMod.getNameSpace(Paths.get(config.inputPath, "first", "test.go").toAbsolutePath.toString, "bar")
+      GoMod.getNameSpace(File(config.inputPath) / "first" / "test.go" pathAsString, "bar")
     namespace shouldBe "joern.io/trial/first>bar"
   }
 }

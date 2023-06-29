@@ -14,6 +14,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewMethod,
   NewMethodParameterIn,
   NewMethodRef,
+  NewMethodReturn,
   NewReturn,
   NewTypeDecl,
   NewTypeRef,
@@ -21,7 +22,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
 }
 import io.shiftleft.codepropertygraph.generated.nodes.Block.{PropertyDefaults => BlockDefaults}
 import org.apache.commons.lang.StringUtils
-
+import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
   protected def line(node: Node): Option[Integer]
   protected def column(node: Node): Option[Integer]
@@ -292,5 +293,9 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
         .columnNumberEnd(columnEnd(node))
     signature.foreach { s => node_.signature(StringUtils.normalizeSpace(s)) }
     node_
+  }
+
+  protected def methodReturnNode(node: Node, typeFullName: String): NewMethodReturn = {
+    newMethodReturnNode(typeFullName, None, line(node), column(node))
   }
 }

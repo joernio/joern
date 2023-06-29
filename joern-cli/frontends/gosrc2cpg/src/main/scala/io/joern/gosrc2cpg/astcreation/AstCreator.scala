@@ -1,17 +1,18 @@
 package io.joern.gosrc2cpg.astcreation
 
-import io.joern.gosrc2cpg.Config
+import io.joern.gosrc2cpg.model.GoMod
 import io.joern.gosrc2cpg.parser.GoAstJsonParser.ParserResult
 import io.joern.gosrc2cpg.parser.ParserAst._
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder => X2CpgAstNodeBuilder}
-import io.shiftleft.codepropertygraph.generated.nodes.NewFile
+import io.shiftleft.codepropertygraph.generated.NodeTypes
+import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewNamespaceBlock}
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import ujson.Value
 
-class AstCreator(val config: Config, val parserResult: ParserResult)
-    extends AstCreatorBase(parserResult.filename)
+class AstCreator(val relPathFileName: String, val parserResult: ParserResult)
+    extends AstCreatorBase(relPathFileName)
     with AstForDeclarationCreator
     with AstForPrimitivesCreator
     with AstCreatorHelper
@@ -21,12 +22,42 @@ class AstCreator(val config: Config, val parserResult: ParserResult)
 
   override def createAst(): DiffGraphBuilder = {
 
-    val fileNode = NewFile().name(parserResult.filename).order(1)
-
-    val astForDeclaration = parserResult.json(ParserKeys.Decls).arr.map(item => astForNode(item))
-    val ast               = Ast(fileNode).withChildren(astForDeclaration)
+//    val fileNode = NewFile().name(parserResult.filename).order(1)
+    val rootNode = createParserNodeInfo(parserResult.json)
+    val ast      = astForTranslationUnit(rootNode)
     Ast.storeInDiffGraph(ast, diffGraph)
     diffGraph
+  }
+
+  private def astForTranslationUnit(rootNode: ParserNodeInfo): Ast = {
+    val fullQualifiedPackage =
+      GoMod.getNameSpace(parserResult.filename, parserResult.json(ParserKeys.Name)(ParserKeys.Name).str)
+    val namespaceBlock = NewNamespaceBlock()
+      .name(fullQualifiedPackage)
+      .fullName(s"$relPathFileName:${fullQualifiedPackage}")
+      .filename(relPathFileName)
+    Ast(namespaceBlock).withChild(
+      astInFakeMethod(fullQualifiedPackage, namespaceBlock.fullName, relPathFileName, rootNode)
+    )
+  }
+
+  /** Creates an AST of all declarations found in the translation unit - wrapped in a fake method.
+    */
+  private def astInFakeMethod(name: String, fullName: String, path: String, rootNode: ParserNodeInfo): Ast = {
+
+    val fakeGlobalTypeDecl =
+      typeDeclNode(rootNode, name, fullName, relPathFileName, name, NodeTypes.NAMESPACE_BLOCK, fullName)
+
+    val fakeGlobalMethod =
+      methodNode(rootNode, name, name, fullName, None, path, Option(NodeTypes.TYPE_DECL), Option(fullName))
+
+    val blockNode_ = blockNode(rootNode, Defines.empty, Defines.anyTypeName)
+
+    val methodReturn = methodReturnNode(rootNode, Defines.anyTypeName)
+    val declsAsts    = rootNode.json(ParserKeys.Decls).arr.map(item => astForNode(item)).toList
+    Ast(fakeGlobalTypeDecl).withChild(
+      methodAst(fakeGlobalMethod, Seq.empty, blockAst(blockNode_, declsAsts), methodReturn)
+    )
   }
 
   protected def astForNode(json: Value) = {

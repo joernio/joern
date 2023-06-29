@@ -9,6 +9,8 @@ import io.circe.parser._
 import io.joern.gosrc2cpg.model.CirceEnDe.decoderModMetadata
 import org.slf4j.LoggerFactory
 
+import scala.util.Try
+
 object GoAstJsonParser {
   private val logger = LoggerFactory.getLogger(getClass)
   case class ParserResult(filename: String, fullPath: String, json: Value, fileContent: String)
@@ -22,14 +24,14 @@ object GoAstJsonParser {
     ParserResult(filePath.getFileName.toString, fullFilePath, json, sourceFileContent)
   }
 
-  def readModFile(file: Path): GoMod = {
+  def readModFile(file: Path): Option[GoMod] = {
     val jsonContent = IOUtils.readLinesInFile(file).mkString
-    decode[GoMod](jsonContent) match {
-      case Right(myData) =>
-        myData
+    val t = decode[GoMod](jsonContent) match {
       case Left(error) =>
         logger.warn(s"Error decoding JSON - '${file.toString}': $error")
-        null
+        Left(error)
+      case x => x
     }
+    t.toOption
   }
 }

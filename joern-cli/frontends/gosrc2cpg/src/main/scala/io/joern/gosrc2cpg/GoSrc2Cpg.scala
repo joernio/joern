@@ -1,6 +1,7 @@
 package io.joern.gosrc2cpg
 
 import better.files.File
+import io.joern.gosrc2cpg.model.GoMod
 import io.joern.gosrc2cpg.parser.GoAstJsonParser
 import io.joern.gosrc2cpg.passes.AstCreationPass
 import io.joern.gosrc2cpg.utils.AstGenRunner
@@ -23,10 +24,13 @@ class GoSrc2Cpg extends X2CpgFrontend[Config] {
       File.usingTemporaryDirectory("gosrc2cpgOut") { tmpDir =>
         new MetaDataPass(cpg, Languages.GOLANG, config.inputPath).createAndApply()
         val astGenResult = new AstGenRunner(config).execute(tmpDir)
-        val modMetadata =
-          if (!astGenResult.parsedModFile._2.isEmpty)
-            Some(GoAstJsonParser.readModFile(Paths.get(astGenResult.parsedModFile._2)))
-          else None
+        GoMod.config = Some(config)
+        (if (!astGenResult.parsedModFile.isEmpty)
+           GoAstJsonParser.readModFile(Paths.get(astGenResult.parsedModFile.get))
+         else None) match {
+          case x =>
+            GoMod.meta = x
+        }
         new AstCreationPass(cpg, astGenResult, config, report).createAndApply()
         report.print()
       }

@@ -14,9 +14,9 @@ import scala.util.{Failure, Success, Try}
 object AstGenRunner {
   private val logger = LoggerFactory.getLogger(getClass)
   case class AstGenRunnerResult(
-    parsedModFile: (String, String) = ("", ""),
-    parsedFiles: List[(String, String)] = List.empty,
-    skippedFiles: List[(String, String)] = List.empty
+    parsedModFile: Option[String] = None,
+    parsedFiles: List[String] = List.empty,
+    skippedFiles: List[String] = List.empty
   )
   lazy val GoAstgenWin      = "goastgen-windows.exe"
   lazy val GoAstgenLinux    = "goastgen-linux"
@@ -146,11 +146,7 @@ class AstGenRunner(config: Config) {
         val parsedModFile = filterModFile(srcFiles, out)
         val parsed        = filterFiles(srcFiles, out)
         val skipped       = skippedFiles(in, result.toList)
-        AstGenRunnerResult(
-          (in.toString(), parsedModFile.headOption.getOrElse("")),
-          parsed.map((in.toString(), _)),
-          skipped.map((in.toString(), _))
-        )
+        AstGenRunnerResult(parsedModFile.headOption, parsed, skipped)
       case Failure(f) =>
         logger.error("\t- running astgen failed!", f)
         AstGenRunnerResult()
