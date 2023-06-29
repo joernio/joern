@@ -1140,7 +1140,6 @@ class AstCreator(
      * TODO Dave: ^ This seems like it needs a re-design, it is confusing
      */
 
-    val classPath      = classStack.reverse.mkString(".")
     val methodFullName = classStack.reverse :+ callNode.name mkString ":"
     val methodNode = NewMethod()
       .code(ctx.getText)
@@ -1153,6 +1152,10 @@ class AstCreator(
     callNode.methodFullName(methodFullName)
 
     val classType = if (classStack.isEmpty) "Standalone" else classStack.top
+    val classPath = classStack.reverse.toList match {
+      case head :: xs => xs.mkString(":")
+      case _          => ""
+    }
     packageContext.packageTable.addPackageMethod(packageContext.moduleName, callNode.name, classPath, classType)
 
     // process yield calls.

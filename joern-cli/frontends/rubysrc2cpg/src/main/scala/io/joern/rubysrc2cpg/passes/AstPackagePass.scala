@@ -15,11 +15,6 @@ class AstPackagePass(cpg: Cpg, tempExtDir: String, global: Global, packageTable:
     getRubyDependenciesFile(inputPath) ++ getRubyDependenciesFile(tempExtDir)
 
   override def runOnPart(diffGraph: DiffGraphBuilder, filePath: String): Unit = {
-    println(filePath)
-    println(tempExtDir)
-    println(inputPath)
-    import io.shiftleft.semanticcpg.language._
-    println(cpg.metaData.root.headOption)
     Try(
       new AstCreator(
         filePath,
