@@ -1032,7 +1032,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
        * node wrt the statement being processed. Create a call node
        * 2. If an identifier with the variable name exists within the scope, create a identifier node
        * 3. Otherwise default to call node creation since there is no reason (point 2) to create a identifier node
-       * 4. Applied for CONSTANT_IDENTIFIER as well
+       * 4. Applied to CONSTANT_IDENTIFIER as well
        */
 
       if (scope.lookupVariable(varSymbol.getText).isDefined && !definitelyMethod) {
