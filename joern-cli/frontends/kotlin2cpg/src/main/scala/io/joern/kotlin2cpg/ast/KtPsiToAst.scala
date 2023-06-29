@@ -276,7 +276,7 @@ trait KtPsiToAst {
       .getOrElse(List())
 
     val memberInitializerSetCalls =
-      classDeclarations.collectAll[KtProperty].map { decl =>
+      classDeclarations.collectAll[KtProperty].filter(_.getInitializer != null).map { decl =>
         val initializerAsts = astsForExpression(decl.getInitializer, None)
         val rhsAst =
           if (initializerAsts.size == 1) initializerAsts.head
