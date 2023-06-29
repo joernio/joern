@@ -11,4 +11,20 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     Ast(literalNode(stringLiteral, code, code.trim))
   }
 
+  protected def astForIdentifier(ident: ParserNodeInfo) = {
+    val identifierName = ident.json(ParserKeys.Name).str
+
+    val variableOption = scope.lookupVariable(identifierName)
+    val identifierType = variableOption match {
+      case Some((_, variableTypeName)) => variableTypeName
+      case _                           => ""
+    }
+    val node = identifierNode(ident, identifierName, ident.json(ParserKeys.Name).str, identifierType)
+    variableOption match {
+      case Some((variable, _)) =>
+        Ast(node).withRefEdge(node, variable)
+      case None => Ast(node)
+    }
+  }
+
 }
