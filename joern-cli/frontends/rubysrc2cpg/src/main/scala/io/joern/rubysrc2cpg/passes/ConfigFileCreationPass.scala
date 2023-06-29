@@ -7,8 +7,7 @@ import io.shiftleft.semanticcpg.language._
 
 import scala.util.Try
 
-/** Creates the CONFIGURATION layer from any existing `Gemfile` or `Gemfile.lock` files found in `inputPath` at root
-  * level.
+/** Creates the CONFIGURATION layer from any existing `Gemfile` or `Gemfile.lock` files found at root level.
   */
 class ConfigFileCreationPass(cpg: Cpg) extends XConfigFileCreationPass(cpg) {
 
