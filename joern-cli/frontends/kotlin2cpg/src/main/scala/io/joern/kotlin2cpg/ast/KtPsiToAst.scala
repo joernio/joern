@@ -271,6 +271,30 @@ trait KtPsiToAst {
         memberSetCallAst(ctorParam, classFullName)
     }
 
+    val classDeclarations = Option(ktClass.getBody)
+      .map(_.getDeclarations.asScala.filterNot(_.isInstanceOf[KtNamedFunction]))
+      .getOrElse(List())
+
+    val memberInitializerSetCalls =
+      classDeclarations.collectAll[KtProperty].map { decl =>
+        val initializerAsts = astsForExpression(decl.getInitializer, None)
+        val rhsAst =
+          if (initializerAsts.size == 1) initializerAsts.head
+          else Ast(unknownNode(decl, "<empty>"))
+
+        val thisIdentifier = newIdentifierNode(Constants.this_, classFullName, Seq(classFullName))
+        val thisAst        = astWithRefEdgeMaybe(Constants.this_, thisIdentifier)
+
+        val fieldIdentifier = fieldIdentifierNode(decl, decl.getName, decl.getName)
+        val fieldAccessCall =
+          operatorCallNode(Operators.fieldAccess, s"${Constants.this_}.${fieldIdentifier.canonicalName}", None)
+        val fieldAccessCallAst = callAst(fieldAccessCall, List(thisAst, Ast(fieldIdentifier)))
+
+        val assignmentNode =
+          operatorCallNode(Operators.assignment, s"${fieldAccessCall.code} = ${decl.getInitializer.getText}")
+        callAst(assignmentNode, List(fieldAccessCallAst, rhsAst))
+      }
+
     val anonymousInitExpressions = ktClass.getAnonymousInitializers.asScala
     val anonymousInitAsts        = anonymousInitExpressions.flatMap(astsForExpression(_, None))
 
@@ -283,7 +307,10 @@ trait KtPsiToAst {
     val constructorAst = methodAst(
       primaryCtorMethodNode,
       constructorParamsAsts,
-      blockAst(blockNode(ktClass, "", TypeConstants.void), memberSetCalls ++ anonymousInitAsts),
+      blockAst(
+        blockNode(ktClass, "", TypeConstants.void),
+        memberSetCalls ++ memberInitializerSetCalls ++ anonymousInitAsts
+      ),
       constructorMethodReturn
     )
     val node =
@@ -322,9 +349,6 @@ trait KtPsiToAst {
       BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, methodNode, EdgeTypes.REF)))
     }
 
-    val classDeclarations = Option(ktClass.getBody)
-      .map(_.getDeclarations.asScala.filterNot(_.isInstanceOf[KtNamedFunction]))
-      .getOrElse(List())
     val memberAsts = classDeclarations.toSeq.map(astForMember)
     val innerTypeDeclAsts =
       classDeclarations.toSeq
