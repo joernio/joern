@@ -17,5 +17,5 @@ class ConfigFileCreationPass(cpg: Cpg) extends XConfigFileCreationPass(cpg) {
     case None           => Seq()
   }
 
-  override protected val configFileFilters: List[File => Boolean] = List(validGemfilePaths.contains(_))
+  override protected val configFileFilters: List[File => Boolean] = List(validGemfilePaths.contains)
 }
