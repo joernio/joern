@@ -86,7 +86,7 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
              |      ;
              |  end""".stripMargin
       }
-      
+
       "it contains two parameters, the last of which a &-parameter" in {
         val code = "def foo(x, &y); end"
         printAst(_.primary(), code) shouldEqual
