@@ -318,7 +318,7 @@ methodParameterPart
     ;
 
 parameters
-    :   mandatoryParameters (COMMA wsOrNl* optionalParameters)? (COMMA arrayParameter)? (COMMA procParameter)?
+    :   mandatoryParameters (COMMA wsOrNl* optionalParameters)? (COMMA WS* arrayParameter)? (COMMA WS* procParameter)?
     |   optionalParameters (COMMA wsOrNl* arrayParameter)? (COMMA wsOrNl* procParameter)?
     |   arrayParameter (COMMA wsOrNl* procParameter)?
     |   procParameter

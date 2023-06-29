@@ -11,7 +11,8 @@ import org.slf4j.LoggerFactory
 import java.nio.file.Paths
 import scala.util.{Failure, Success, Try}
 
-/** Scans for and inserts configuration files into the CPG.
+/** Scans for and inserts configuration files into the CPG. Relies on the MetaData's `ROOT` property to provide the path
+  * to scan.
   */
 abstract class XConfigFileCreationPass(cpg: Cpg) extends ConcurrentWriterCpgPass[File](cpg) {
 

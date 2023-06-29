@@ -378,4 +378,24 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       td.inheritsFromTypeFullName shouldBe List("another.made.up.pkg.SomeClass")
     }
   }
+
+  "CPG for code with class with call to fn member initializer" should {
+    val cpg = code("""
+        |package mypkg
+        |fun addB(a: String): String {
+        |    return a + "b"
+        |}
+        |class MyClass(val x: String) {
+        |    var m: String = addB(x)
+        |    fun printM() = println(this.m)
+        |}
+        |""".stripMargin)
+
+    "should contain CALL nodes for the member initializer" in {
+      val List(lhs: Call, rhs: Call) = cpg.call.code("this.*addB.*").argument.l
+      lhs.code shouldBe "this.m"
+      rhs.code shouldBe "addB(x)"
+      rhs.methodFullName shouldBe "mypkg.addB:java.lang.String(java.lang.String)"
+    }
+  }
 }
