@@ -3,6 +3,7 @@ package io.joern.rubysrc2cpg.testfixtures
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
+import io.joern.rubysrc2cpg.RubySrc2Cpg
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, TestCpg}
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
@@ -15,7 +16,7 @@ class DataFlowTestCpg(
 
   override protected def applyPasses(): Unit = {
     X2Cpg.applyDefaultOverlays(this)
-
+    RubySrc2Cpg.postProcessingPasses(this)
     val context = new LayerCreatorContext(this)
     val options = new OssDataFlowOptions()
     new OssDataFlow(options).run(context)

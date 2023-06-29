@@ -2,37 +2,43 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.parser.RubyParser._
 import io.joern.rubysrc2cpg.parser.{RubyLexer, RubyParser}
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.rubysrc2cpg.utils.{PackageContext, PackageTable}
+import io.joern.rubysrc2cpg.utils.PackageContext
 import io.joern.x2cpg.Ast.storeInDiffGraph
-import io.joern.x2cpg.Defines.{DynamicCallUnknownFullName, UnresolvedSignature}
+import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
 import io.joern.x2cpg.datastructures.{Global, Scope}
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder}
-import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated._
+import io.shiftleft.codepropertygraph.generated.nodes._
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.antlr.v4.runtime.{CharStreams, CommonTokenStream, ParserRuleContext, Token}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
+import java.io.{File => JFile}
 import java.util
 import scala.collection.immutable.Seq
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters._
 
-class AstCreator(protected val filename: String, global: Global, packageContext: PackageContext)
-    extends AstCreatorBase(filename)
+class AstCreator(
+  protected val filename: String,
+  global: Global,
+  packageContext: PackageContext,
+  projectRoot: Option[String] = None
+) extends AstCreatorBase(filename)
     with AstNodeBuilder[ParserRuleContext, AstCreator]
     with AstForPrimitivesCreator
     with AstForStatementsCreator
     with AstForExpressionsCreator
-    with AstForDeclarationsCreator {
+    with AstForDeclarationsCreator
+    with AstForTypesCreator {
 
   protected val scope: Scope[String, NewIdentifier, Unit] = new Scope()
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  private val classStack = mutable.Stack[String]()
+  protected val classStack = mutable.Stack[String]()
 
   protected val packageStack = mutable.Stack[String]()
 
@@ -60,6 +66,9 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
 
   protected val blockMethods = ListBuffer[Ast]()
 
+  protected val relativeFilename: String =
+    projectRoot.map(filename.stripPrefix).map(_.stripPrefix(JFile.separator)).getOrElse(filename)
+
   protected def createIdentifierWithScope(
     ctx: ParserRuleContext,
     name: String,
@@ -82,6 +91,20 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
     val parser      = new RubyParser(tokenStream)
     val programCtx  = parser.program()
 
+    val name     = ":program"
+    val fullName = s"$relativeFilename:$name"
+    val programMethod =
+      NewMethod()
+        .order(1)
+        .name(name)
+        .code(name)
+        .fullName(fullName)
+        .filename(filename)
+        .astParentType(NodeTypes.TYPE_DECL)
+        .astParentFullName(fullName)
+
+    classStack.push(fullName)
+
     val statementCtx = programCtx.compoundStatement().statements()
     scope.pushNewScope(())
     val statementAsts = if (statementCtx != null) {
@@ -90,17 +113,6 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
       List[Ast](Ast())
     }
     scope.popScope()
-
-    val name = ":program"
-    val programMethod =
-      NewMethod()
-        .order(1)
-        .name(name)
-        .code(name)
-        .fullName(filename)
-        .filename(filename)
-        .astParentType(NodeTypes.TYPE_DECL)
-        .astParentFullName(filename)
 
     val thisParam = NewMethodParameterIn()
       .name("this")
@@ -119,6 +131,8 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
     val fileNode       = NewFile().name(filename).order(1)
     val namespaceBlock = globalNamespaceBlock()
     val ast            = Ast(fileNode).withChild(Ast(namespaceBlock).withChild(programAst))
+
+    classStack.popAll()
 
     storeInDiffGraph(ast, diffGraph)
     diffGraph
@@ -314,8 +328,9 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
   }
 
   def astForPrimaryContext(ctx: PrimaryContext): Seq[Ast] = ctx match {
-    case ctx: ClassDefinitionPrimaryContext  => astForClassDefinitionPrimaryContext(ctx)
-    case ctx: ModuleDefinitionPrimaryContext => astForModuleDefinitionPrimaryContext(ctx)
+    case ctx: ClassDefinitionPrimaryContext if ctx.hasClassDefinition => astForClassDeclaration(ctx)
+    case ctx: ClassDefinitionPrimaryContext                           => astForClassExpression(ctx)
+    case ctx: ModuleDefinitionPrimaryContext                          => astForModuleDefinitionPrimaryContext(ctx)
     case ctx: MethodDefinitionPrimaryContext => astForMethodDefinitionContext(ctx.methodDefinition())
     case ctx: YieldWithOptionalArgumentPrimaryContext =>
       Seq(astForYieldCall(ctx, Option(ctx.yieldWithOptionalArgument().arguments())))
@@ -526,14 +541,14 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
       val callNode = NewCall()
         .name(blockName)
         .methodFullName(blockMethodNode.fullName)
-        .typeFullName(DynamicCallUnknownFullName)
+        .typeFullName(Defines.Any)
         .code(blockMethodNode.code)
         .lineNumber(blockMethodNode.lineNumber)
         .columnNumber(blockMethodNode.columnNumber)
 
       val methodRefNode = NewMethodRef()
         .methodFullName(blockMethodNode.fullName)
-        .typeFullName(DynamicCallUnknownFullName)
+        .typeFullName(Defines.Any)
         .code(blockMethodNode.code)
         .lineNumber(blockMethodNode.lineNumber)
         .columnNumber(blockMethodNode.columnNumber)
@@ -591,92 +606,6 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
       .lineNumber(ctx.COLON2().getSymbol().getLine())
       .columnNumber(ctx.COLON2().getSymbol().getCharPositionInLine())
     Seq(callAst(callNode, primaryAst ++ Seq(constAst)))
-  }
-
-  private def getClassNameScopedConstantReferenceContext(ctx: ScopedConstantReferenceContext): String = {
-    val classTerminalNode = ctx.CONSTANT_IDENTIFIER()
-
-    if (ctx.primary() != null) {
-      val primaryAst = astForPrimaryContext(ctx.primary())
-      val moduleNameNode = primaryAst.head.nodes
-        .filter(node => node.isInstanceOf[NewIdentifier])
-        .head
-        .asInstanceOf[NewIdentifier]
-      val moduleName = moduleNameNode.name
-      moduleName + "." + classTerminalNode.getText
-    } else {
-      classTerminalNode.getText
-    }
-  }
-
-  def astForClassOrModuleReferenceContext(
-    ctx: ClassOrModuleReferenceContext,
-    baseClassName: Option[String] = None
-  ): Seq[Ast] = {
-    val className = if (ctx.scopedConstantReference() != null) {
-      getClassNameScopedConstantReferenceContext(ctx.scopedConstantReference())
-    } else if (ctx.CONSTANT_IDENTIFIER() != null) {
-      baseClassName match {
-        case Some(value) => value + "." + ctx.CONSTANT_IDENTIFIER().getText
-        case None        => ctx.CONSTANT_IDENTIFIER().getText
-      }
-    } else {
-      Defines.Any
-    }
-
-    if (className != Defines.Any) {
-      classStack.push(className)
-    }
-    Seq(Ast())
-  }
-
-  def astForClassDefinitionPrimaryContext(ctx: ClassDefinitionPrimaryContext): Seq[Ast] = {
-    if (ctx.classDefinition().classOrModuleReference() != null) {
-      val baseClassName = if (ctx.classDefinition().expressionOrCommand() != null) {
-        val parentClassNameAst = astForExpressionOrCommand(ctx.classDefinition().expressionOrCommand())
-        val nameNode = parentClassNameAst.head.nodes
-          .filter(node => node.isInstanceOf[NewIdentifier])
-          .head
-          .asInstanceOf[NewIdentifier]
-        Some(nameNode.name)
-      } else {
-        None
-      }
-
-      val classOrModuleRefAst =
-        astForClassOrModuleReferenceContext(ctx.classDefinition().classOrModuleReference(), baseClassName)
-      val bodyAst = astForBodyStatementContext(ctx.classDefinition().bodyStatement())
-      val bodyAstSansModifiers = bodyAst
-        .filterNot(ast => {
-          val nodes = ast.nodes
-            .filter(_.isInstanceOf[NewIdentifier])
-
-          if (nodes.size == 1) {
-            val varName = nodes
-              .map(_.asInstanceOf[NewIdentifier].name)
-              .head
-            varName == "public" || varName == "protected" || varName == "private"
-          } else {
-            false
-          }
-        })
-
-      if (classStack.size > 0) {
-        classStack.pop()
-      }
-      val blockNode = NewBlock()
-        .code(ctx.getText)
-      val bodyBlockAst = blockAst(blockNode, bodyAstSansModifiers.toList)
-      Seq(classOrModuleRefAst.head.withChild(bodyBlockAst))
-    } else {
-      // TODO test for this is pending due to lack of understanding to generate an example
-      val astExprOfCommand = astForExpressionOrCommand(ctx.classDefinition().expressionOrCommand())
-      val astBodyStatement = astForBodyStatementContext(ctx.classDefinition().bodyStatement())
-      val blockNode = NewBlock()
-        .code(ctx.getText)
-      val bodyBlockAst = blockAst(blockNode, astBodyStatement.toList)
-      astExprOfCommand ++ Seq(bodyBlockAst)
-    }
   }
 
   def astForGroupedLeftHandSideContext(ctx: GroupedLeftHandSideContext): Seq[Ast] = {
@@ -969,8 +898,8 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
   }
 
   def astForCallNode(localIdentifier: TerminalNode, code: String, isYieldBlock: Boolean = false): Seq[Ast] = {
-    val column = localIdentifier.getSymbol().getCharPositionInLine()
-    val line   = localIdentifier.getSymbol().getLine()
+    val column = localIdentifier.getSymbol.getCharPositionInLine
+    val line   = localIdentifier.getSymbol.getLine
     val nameSuffix =
       if (isYieldBlock) {
         YIELD_SUFFIX
@@ -982,14 +911,14 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
       .getMethodFullNameUsingName(packageStack.toList, name)
       .headOption match {
       case Some(externalDependencyResolution) => externalDependencyResolution
-      case None                               => s"$filename:$name"
+      case None                               => DynamicCallUnknownFullName
     }
 
     val callNode = NewCall()
       .name(name)
       .methodFullName(methodFullName)
-      .signature(localIdentifier.getText())
-      .typeFullName(DynamicCallUnknownFullName)
+      .signature(localIdentifier.getText)
+      .typeFullName(Defines.Any)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .code(code)
       .lineNumber(line)
@@ -1017,7 +946,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
       astForMethodOnlyIdentifier(ctx.methodOnlyIdentifier())
     } else if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
       val localVar  = ctx.LOCAL_VARIABLE_IDENTIFIER()
-      val varSymbol = localVar.getSymbol()
+      val varSymbol = localVar.getSymbol
 
       /*
        * Preferences
@@ -1036,7 +965,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
       }
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
       val localVar  = ctx.CONSTANT_IDENTIFIER()
-      val varSymbol = localVar.getSymbol()
+      val varSymbol = localVar.getSymbol
       if (scope.lookupVariable(varSymbol.getText).isDefined) {
         val node =
           createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
@@ -1058,7 +987,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
       .asInstanceOf[TerminalNode]
 
     val name           = ctx.getText
-    val methodFullName = s"$filename:$name"
+    val methodFullName = classStack.reverse :+ name mkString ":"
 
     val callNode = NewCall()
       .name(name)
@@ -1280,7 +1209,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
     val astMethodName  = astForMethodNamePartContext(ctx.methodNamePart())
     val callNode       = astMethodName.head.nodes.filter(node => node.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
     // there can be only one call node
-    val astBody = astForBodyStatementContext(ctx.bodyStatement(), true)
+    val astBody = astForBodyStatementContext(ctx.bodyStatement(), addReturnNode = true)
     scope.popScope()
 
     /*
@@ -1290,16 +1219,17 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
      * we will discard the call node since it is of no further use to us
      */
 
-    val classPath = classStack.reverse.toList.mkString(".") + "."
+    val classPath      = classStack.reverse.mkString(".")
+    val methodFullName = classStack.reverse :+ callNode.name mkString ":"
     val methodNode = NewMethod()
       .code(ctx.getText)
       .name(callNode.name)
-      .fullName(s"$filename:${callNode.name}")
+      .fullName(methodFullName)
       .columnNumber(callNode.columnNumber)
       .lineNumber(callNode.lineNumber)
       .lineNumberEnd(ctx.END().getSymbol.getLine)
       .filename(filename)
-    callNode.methodFullName(classPath + callNode.name)
+    callNode.methodFullName(methodFullName)
 
     val classType = if (classStack.isEmpty) "Standalone" else classStack.top
     packageContext.packageTable.addPackageMethod(packageContext.moduleName, callNode.name, classPath, classType)
@@ -1314,7 +1244,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
       .foreach(node => {
         val yieldCallNode  = node.asInstanceOf[NewCall]
         val name           = methodNode.name
-        val methodFullName = s"$filename:$name"
+        val methodFullName = classStack.reverse :+ callNode.name mkString ":"
         yieldCallNode.name(name + YIELD_SUFFIX)
         yieldCallNode.methodFullName(methodFullName + YIELD_SUFFIX)
         methodNamesWithYield.add(methodNode.name)
@@ -1568,10 +1498,11 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
     val astBody = astForStatements(ctxStmt)
     scope.popScope()
 
+    val methodFullName = classStack.reverse :+ blockMethodName mkString ":"
     val methodNode = NewMethod()
       .code(ctxStmt.getText)
       .name(blockMethodName)
-      .fullName(s"$filename:${blockMethodName}")
+      .fullName(methodFullName)
       .filename(filename)
       .lineNumber(lineStart)
       .lineNumberEnd(lineEnd)

@@ -19,7 +19,7 @@ class CallGraphTests extends RubyCode2CpgFixture {
   "should identify call from `foo` to `bar`" in {
     val List(callToBar) = cpg.call("bar").l
     callToBar.name shouldBe "bar"
-    callToBar.methodFullName.matches(".*Test.*.rb:bar") shouldBe true
+    callToBar.methodFullName shouldBe "Test0.rb::program:bar"
     callToBar.lineNumber shouldBe Some(7)
     val List(bar: Method) = cpg.method("bar").internal.l
     bar.fullName shouldBe callToBar.methodFullName

@@ -530,6 +530,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
           |""".stripMargin)
 
       val List(methodNode) = cpg.method.name("\\[]").l
+      methodNode.fullName shouldBe "Test0.rb::program:MyClass:[]"
       methodNode.code shouldBe "def [](key)\n  @member_hash[key]\nend"
       methodNode.lineNumber shouldBe Some(3)
       methodNode.lineNumberEnd shouldBe Some(5)
@@ -546,6 +547,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
           |""".stripMargin)
 
       val List(methodNode) = cpg.method.name("==").l
+      methodNode.fullName shouldBe "Test0.rb::program:MyClass:=="
       methodNode.code shouldBe "def ==(other)\n  @my_member==other\nend"
       methodNode.lineNumber shouldBe Some(3)
       methodNode.lineNumberEnd shouldBe Some(5)
@@ -561,6 +563,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
           |""".stripMargin)
 
       val List(methodNode) = cpg.method.name("some_method").l
+      methodNode.fullName shouldBe "Test0.rb::program:MyClass:some_method"
       methodNode.code shouldBe "def some_method(param)\nend"
       methodNode.lineNumber shouldBe Some(3)
       methodNode.lineNumberEnd shouldBe Some(4)
