@@ -14,9 +14,9 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         |
         |if a > 2
         |    b = a + 3
-        |elseif a > 4
+        |elsif a > 4
         |    b = a + 5
-        |elseif a > 8
+        |elsif a > 8
         |    b = a + 5
         |else
         |    b = a + 9
@@ -1168,6 +1168,26 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         |z = 3
         |a = z,y,x
         |puts a
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).size shouldBe 2
+    }
+  }
+
+  "Data flow through argsAndDoBlockAndMethodIdCommandWithDoBlock" should {
+    val cpg = code("""
+        |def foo (blockArg,&block)
+        |block.call(blockArg)
+        |end
+        |
+        |x = 10
+        |foo :a_symbol do |arg|
+        |  y = x + arg.length
+        |  puts y
+        |end
         |""".stripMargin)
 
     "find flows to the sink" in {
