@@ -1,11 +1,11 @@
 package io.joern.rubysrc2cpg.passes
 
+import better.files.File
 import io.joern.rubysrc2cpg.astcreation.AstCreator
 import io.joern.rubysrc2cpg.utils.{PackageContext, PackageTable}
 import io.joern.x2cpg.datastructures.Global
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
-import better.files.File
 
 import scala.util.Try
 
@@ -15,7 +15,14 @@ class AstPackagePass(cpg: Cpg, tempExtDir: String, global: Global, packageTable:
     getRubyDependenciesFile(inputPath) ++ getRubyDependenciesFile(tempExtDir)
 
   override def runOnPart(diffGraph: DiffGraphBuilder, filePath: String): Unit = {
-    Try(new AstCreator(filePath, global, PackageContext(resolveModuleNameFromPath(filePath), packageTable)).createAst())
+    Try(
+      new AstCreator(
+        filePath,
+        global,
+        PackageContext(resolveModuleNameFromPath(filePath), packageTable),
+        Option(tempExtDir)
+      ).createAst()
+    )
   }
 
   private def getRubyDependenciesFile(inputPath: String): Array[String] = {
