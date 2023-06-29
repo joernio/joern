@@ -14,17 +14,13 @@ import java.nio.file.Path
   * level.
   */
 class ConfigFileCreationPass(cpg: Cpg, inputPath: String) extends XConfigFileCreationPass(cpg) {
-  
-  private val logger = LoggerFactory.getLogger(this.getClass)
 
-  override protected val configFileFilters: List[File => Boolean] = List(
-    isRootLevelGemfile
-  )
-  
+  override protected val configFileFilters: List[File => Boolean] = List(isRootLevelGemfile)
+
   private def isRootLevelGemfile(file: File): Boolean = {
-    val rootPath = File(inputPath)
+    val rootPath               = File(inputPath)
     val acceptableGemfilePaths = Set("Gemfile", "Gemfile.lock").map(rootPath / _)
     acceptableGemfilePaths.contains(file)
   }
-  
+
 }
