@@ -28,8 +28,10 @@ object GoMod {
       // 1. if there is go file inside <root project path>/first/second/test.go (package main) => '/first/second/main'
       // 2. <root project path>/test.go (package main) => 'main'
 
-      val remainingpath              = compilationUnitFilePath.stripPrefix(config.inputPath)
-      val pathTokens                 = remainingpath.split(File.separator)
+      val remainingpath = compilationUnitFilePath.stripPrefix(config.inputPath)
+      import java.util.regex.Pattern
+      val pattern                    = Pattern.quote(System.getProperty("file.separator"))
+      val pathTokens                 = remainingpath.split(pattern)
       val tokens: ListBuffer[String] = ListBuffer.empty[String]
       for (i <- 0 until pathTokens.length - 1) {
         if (pathTokens(i) != null && !pathTokens(i).trim.isEmpty) {
