@@ -3,24 +3,19 @@ package io.joern.rubysrc2cpg.passes
 import better.files.File
 import io.joern.x2cpg.passes.frontend.XConfigFileCreationPass
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.NewConfigFile
-import io.shiftleft.passes.ConcurrentWriterCpgPass
-import io.shiftleft.utils.IOUtils
-import org.slf4j.LoggerFactory
+import io.shiftleft.semanticcpg.language._
 
-import java.nio.file.Path
+import scala.util.Try
 
 /** Creates the CONFIGURATION layer from any existing `Gemfile` or `Gemfile.lock` files found in `inputPath` at root
   * level.
   */
-class ConfigFileCreationPass(cpg: Cpg, inputPath: String) extends XConfigFileCreationPass(cpg) {
+class ConfigFileCreationPass(cpg: Cpg) extends XConfigFileCreationPass(cpg) {
 
-  override protected val configFileFilters: List[File => Boolean] = List(isRootLevelGemfile)
-
-  private def isRootLevelGemfile(file: File): Boolean = {
-    val rootPath               = File(inputPath)
-    val acceptableGemfilePaths = Set("Gemfile", "Gemfile.lock").map(rootPath / _)
-    acceptableGemfilePaths.contains(file)
+  private val validGemfilePaths = Try(File(cpg.metaData.root.headOption.getOrElse(""))).toOption match {
+    case Some(rootPath) => Seq("Gemfile", "Gemfile.lock").map(rootPath / _)
+    case None           => Seq()
   }
 
+  override protected val configFileFilters: List[File => Boolean] = List(validGemfilePaths.contains(_))
 }
