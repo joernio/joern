@@ -1,12 +1,14 @@
 package io.joern.rubysrc2cpg.passes
 
 import better.files.File
+import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-class ConfigPassTest extends AnyWordSpec with Matchers {
+class ConfigFileCreationPassTest extends AnyWordSpec with Matchers {
 
   "ConfigPass for Gemfile files" should {
 
@@ -21,7 +23,8 @@ class ConfigPassTest extends AnyWordSpec with Matchers {
         gemFileName.write(gemfileContents)
 
         val cpg = Cpg.emptyCpg
-        new ConfigPass(cpg, dir.pathAsString).createAndApply()
+        new MetaDataPass(cpg, Languages.RUBYSRC, dir.pathAsString).createAndApply()
+        new ConfigFileCreationPass(cpg, dir.pathAsString).createAndApply()
         val List(configFile) = cpg.configFile.l
         configFile.name shouldBe "Gemfile"
         configFile.content shouldBe gemfileContents
@@ -37,7 +40,8 @@ class ConfigPassTest extends AnyWordSpec with Matchers {
         gemFileName.write(gemFileContents)
 
         val cpg = Cpg.emptyCpg
-        new ConfigPass(cpg, dir.pathAsString).createAndApply()
+        new MetaDataPass(cpg, Languages.RUBYSRC, dir.pathAsString).createAndApply()
+        new ConfigFileCreationPass(cpg, dir.pathAsString).createAndApply()
         cpg.configFile.size shouldBe 0
       }
     }
@@ -64,7 +68,8 @@ class ConfigPassTest extends AnyWordSpec with Matchers {
         gemFileName.write(gemFileContents)
 
         val cpg = Cpg.emptyCpg
-        new ConfigPass(cpg, dir.pathAsString).createAndApply()
+        new MetaDataPass(cpg, Languages.RUBYSRC, dir.pathAsString).createAndApply()
+        new ConfigFileCreationPass(cpg, dir.pathAsString).createAndApply()
         val List(configFile) = cpg.configFile.l
         configFile.name shouldBe "Gemfile.lock"
         configFile.content shouldBe gemFileContents
@@ -80,7 +85,8 @@ class ConfigPassTest extends AnyWordSpec with Matchers {
 
         gemFileName.write(gemFileContents)
         val cpg = Cpg.emptyCpg
-        new ConfigPass(cpg, dir.pathAsString).createAndApply()
+        new MetaDataPass(cpg, Languages.RUBYSRC, dir.pathAsString).createAndApply()
+        new ConfigFileCreationPass(cpg, dir.pathAsString).createAndApply()
         cpg.configFile.size shouldBe 0
       }
     }
