@@ -25,7 +25,7 @@ class PackageTable() {
         methodTableMap(module)
           .filter(_.methodName == methodName)
           .foreach(method => {
-            finalMethodName.addOne(s"$module.${method.parentClassPath}$methodName:${Defines.UnresolvedSignature}")
+            finalMethodName.addOne(s"$module::program:${method.parentClassPath}$methodName:${Defines.UnresolvedSignature}")
           })
       }
     })

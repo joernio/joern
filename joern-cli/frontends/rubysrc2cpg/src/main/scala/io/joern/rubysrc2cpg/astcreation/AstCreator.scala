@@ -1153,8 +1153,8 @@ class AstCreator(
 
     val classType = if (classStack.isEmpty) "Standalone" else classStack.top
     val classPath = classStack.reverse.toList match {
-      case head :: xs => xs.mkString(":")
-      case _          => ""
+      case _ :: xs => xs.mkString(":") + ":"
+      case _       => ""
     }
     packageContext.packageTable.addPackageMethod(packageContext.moduleName, callNode.name, classPath, classType)
 
