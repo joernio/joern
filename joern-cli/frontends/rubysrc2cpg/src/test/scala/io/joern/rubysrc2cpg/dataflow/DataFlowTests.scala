@@ -1195,5 +1195,55 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
       val sink   = cpg.call.name("puts").l
       sink.reachableByFlows(source).size shouldBe 2
     }
+
+    "Data flow through primaryMethodArgsDoBlockCommandWithDoBlock" should {
+      val cpg = code("""
+          |module FooModule
+          |def foo (blockArg,&block)
+          |block.call(blockArg)
+          |end
+          |end
+          |
+          |x = 10
+          |FooModule.foo :a_symbol do |arg|
+          |  y = x + arg.length
+          |  puts y
+          |end
+          |""".stripMargin)
+
+      "find flows to the sink" in {
+        val source = cpg.identifier.name("x").l
+        val sink   = cpg.call.name("puts").l
+        sink.reachableByFlows(source).size shouldBe 2
+      }
+    }
+
+    "Data flow with super usage" should {
+      val cpg = code("""
+          |class BaseClass
+          |  def doSomething(arg)
+          |    return arg + 10
+          |  end
+          |end
+          |
+          |class DerivedClass < BaseClass
+          |  def doSomething(arg)
+          |    super(arg)
+          |  end
+          |end
+          |
+          |x = 1
+          |object = DerivedClass.new
+          |y = object.doSomething(x)
+          |puts y
+          |
+          |""".stripMargin)
+
+      "find flows to the sink" in {
+        val source = cpg.identifier.name("x").l
+        val sink   = cpg.call.name("puts").l
+        sink.reachableByFlows(source).size shouldBe 2
+      }
+    }
   }
 }
