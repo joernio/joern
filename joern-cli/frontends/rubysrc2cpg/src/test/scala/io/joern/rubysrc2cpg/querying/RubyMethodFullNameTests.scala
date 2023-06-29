@@ -1,6 +1,5 @@
 package io.joern.rubysrc2cpg.querying
 
-import better.files.File
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.BeforeAndAfterAll

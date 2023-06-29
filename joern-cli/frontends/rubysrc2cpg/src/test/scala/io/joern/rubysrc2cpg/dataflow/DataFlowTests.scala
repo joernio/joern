@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.dataflow
 
-import io.joern.rubysrc2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.joern.dataflowengineoss.language._
+import io.joern.rubysrc2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.shiftleft.semanticcpg.language._
 
 class DataFlowTests extends DataFlowCodeToCpgSuite {

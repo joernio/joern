@@ -16,7 +16,6 @@ class DataFlowTestCpg(
 
   override protected def applyPasses(): Unit = {
     X2Cpg.applyDefaultOverlays(this)
-    RubySrc2Cpg.postProcessingPasses(this)
     val context = new LayerCreatorContext(this)
     val options = new OssDataFlowOptions()
     new OssDataFlow(options).run(context)

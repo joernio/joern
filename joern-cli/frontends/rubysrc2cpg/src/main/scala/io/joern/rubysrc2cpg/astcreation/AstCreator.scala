@@ -15,7 +15,6 @@ import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
 import java.io.{File => JFile}
-import java.util
 import scala.collection.immutable.Seq
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -32,7 +31,8 @@ class AstCreator(
     with AstForStatementsCreator
     with AstForExpressionsCreator
     with AstForDeclarationsCreator
-    with AstForTypesCreator {
+    with AstForTypesCreator
+    with AstCreatorHelper {
 
   protected val scope: Scope[String, NewIdentifier, Unit] = new Scope()
 
@@ -425,7 +425,7 @@ class AstCreator(
         .name(ctx.COMMA().getText)
         .methodFullName(Operators.arrayInitializer)
         .signature(Operators.arrayInitializer)
-        .typeFullName(DynamicCallUnknownFullName)
+        .typeFullName(Defines.Any)
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .code(ctx.getText)
         .lineNumber(ctx.COMMA().getSymbol.getLine)
@@ -828,6 +828,7 @@ class AstCreator(
     val methodFullName = packageContext.packageTable
       .getMethodFullNameUsingName(packageStack.toList, name)
       .headOption match {
+      case None if isBuiltin(name)            => prefixAsBuiltin(name) // TODO: Probably not super precise
       case Some(externalDependencyResolution) => externalDependencyResolution
       case None                               => DynamicCallUnknownFullName
     }
@@ -1135,6 +1136,8 @@ class AstCreator(
      * This is because it has been called from several places some of which need a call node.
      * We will use fields from the call node to construct the method node. Post that,
      * we will discard the call node since it is of no further use to us
+     *
+     * TODO Dave: ^ This seems like it needs a re-design, it is confusing
      */
 
     val classPath      = classStack.reverse.mkString(".")
@@ -1237,7 +1240,7 @@ class AstCreator(
       .name(Operators.arrayInitializer)
       .methodFullName(Operators.arrayInitializer)
       .signature(Operators.arrayInitializer)
-      .typeFullName(DynamicCallUnknownFullName)
+      .typeFullName(Defines.Any)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
     Seq(callAst(callNode, astsToConcat))
   }

@@ -17,8 +17,13 @@ trait RubyFrontend extends LanguageFrontend {
     implicit val defaultConfig: Config = Config(enableDependencyDownload = withDependencyDownload)
     new RubySrc2Cpg()
       .createCpg(sourceCodeFile.getAbsolutePath)
-      .map { cpg => RubySrc2Cpg.postProcessingPasses(cpg).foreach(_.createAndApply()); cpg }
+      .map(applyPostProcessingPasses)
       .get
+  }
+
+  private def applyPostProcessingPasses(cpg: Cpg): Cpg = {
+    RubySrc2Cpg.postProcessingPasses(cpg).foreach(_.createAndApply())
+    cpg
   }
 }
 
