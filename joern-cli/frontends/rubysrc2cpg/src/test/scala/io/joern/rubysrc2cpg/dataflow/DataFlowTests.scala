@@ -876,6 +876,23 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
+  "Data flow through invocationWithBlockOnlyPrimary and method name starting with capital usage" should {
+    val cpg = code("""
+        |def Hello(&block)
+        | block.call
+        |end
+        |x = "hello"
+        |Hello = "this should not be used"
+        |Hello { puts x }
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).l.size shouldBe 2
+    }
+  }
+
   "Data flow for begin/rescue with sink in begin" should {
     val cpg = code("""
         |x = 1
