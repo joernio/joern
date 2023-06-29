@@ -43,7 +43,8 @@ class ObjectExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = fals
     }
 
     "should contain two correctly-lowered representations of the assignments" in {
-      val List(firstAssignment: Call, secondAssignment: Call) = cpg.call.methodFullNameExact("<operator>.assignment").l
+      val List(firstAssignment: Call, secondAssignment: Call) =
+        cpg.method.nameExact("foo").call.methodFullNameExact("<operator>.assignment").l
       val List(firstAssignmentLHS: Identifier, firstAssignmentRHS: Call) = firstAssignment.argument.l
       firstAssignmentLHS.typeFullName shouldBe "mypkg.foo$object$1"
       firstAssignmentRHS.methodFullName shouldBe "<operator>.alloc"
