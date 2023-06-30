@@ -789,6 +789,17 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       tmpReturnIdentifier.name shouldBe "_tmp_0"
     }
 
+    "have correct edges (destructing parameter)" in AstFixture("""
+        |class Foo {
+        |  bar(param1, { param2_a, param2_b }) {}
+        |}
+        """.stripMargin) { cpg =>
+      val List(param2_a) = cpg.identifier.nameExact("param2_a").l
+      param2_a.astIn should not be empty
+      val List(param2_b) = cpg.identifier.nameExact("param2_b").l
+      param2_b.astIn should not be empty
+    }
+
     "have correct ref edge (destructing parameter)" in AstFixture("""
         |const WindowOpen = ({ value }) => {
         |  return (

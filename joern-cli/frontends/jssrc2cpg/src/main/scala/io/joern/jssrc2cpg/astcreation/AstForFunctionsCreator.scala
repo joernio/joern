@@ -154,9 +154,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
           param
         case ObjectPattern =>
           val paramName = generateUnusedVariableName(usedVariableNames, s"param$index")
-          // Handle de-structured parameters declared as `{ username: string; password: string; }`
-          val typeDecl = astForTypeAlias(nodeInfo)
-          val tpe      = typeDecl.root.collect { case t: NewTypeDecl => t.fullName }.getOrElse(typeFor(nodeInfo))
+          val tpe       = typeFor(nodeInfo)
           val param = parameterInNode(
             nodeInfo,
             paramName,
