@@ -1316,5 +1316,27 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         sink.reachableByFlows(source).size shouldBe 2
       }
     }
+
+    "Data flow through blockSplattingTypeArguments without block" should {
+      val cpg = code("""
+          |def foo (blockArg,&block)
+          |block.call(blockArg)
+          |end
+          |
+          |x = 10
+          |foo(*x do |arg|
+          |  y = x + arg
+          |  puts y
+          |end
+          |)
+          |
+          |""".stripMargin)
+
+      "find flows to the sink" in {
+        val source = cpg.identifier.name("x").l
+        val sink   = cpg.call.name("puts").l
+        sink.reachableByFlows(source).size shouldBe 2
+      }
+    }
   }
 }
