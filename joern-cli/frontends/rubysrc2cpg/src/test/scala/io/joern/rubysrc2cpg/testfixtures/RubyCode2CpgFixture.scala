@@ -15,7 +15,15 @@ trait RubyFrontend extends LanguageFrontend {
 
   override def execute(sourceCodeFile: File): Cpg = {
     implicit val defaultConfig: Config = Config(enableDependencyDownload = withDependencyDownload)
-    new RubySrc2Cpg().createCpg(sourceCodeFile.getAbsolutePath).get
+    new RubySrc2Cpg()
+      .createCpg(sourceCodeFile.getAbsolutePath)
+      .map(applyPostProcessingPasses)
+      .get
+  }
+
+  private def applyPostProcessingPasses(cpg: Cpg): Cpg = {
+    RubySrc2Cpg.postProcessingPasses(cpg).foreach(_.createAndApply())
+    cpg
   }
 }
 
