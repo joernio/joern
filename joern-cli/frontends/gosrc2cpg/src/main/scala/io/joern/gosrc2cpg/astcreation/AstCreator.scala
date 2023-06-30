@@ -14,11 +14,12 @@ import ujson.Value
 
 class AstCreator(val relPathFileName: String, val parserResult: ParserResult)
     extends AstCreatorBase(relPathFileName)
-    with AstForDeclarationCreator
-    with AstForPrimitivesCreator
-    with AstForFunctionsCreator
-    with AstForStatementsCreator
     with AstCreatorHelper
+    with AstForDeclarationCreator
+    with AstForExpressionCreator
+    with AstForFunctionsCreator
+    with AstForPrimitivesCreator
+    with AstForStatementsCreator
     with X2CpgAstNodeBuilder[ParserNodeInfo, AstCreator] {
 
   protected val logger: Logger = LoggerFactory.getLogger(classOf[AstCreator])
@@ -72,6 +73,7 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)
       case BasicLit                                 => astForLiteral(nodeInfo)
       case Ident                                    => astForIdentifier(nodeInfo)
       case FuncDecl                                 => astForFuncDecl(nodeInfo)
+      case _: BaseExprStmt                          => astForExpression(nodeInfo)
       case _                                        => Ast()
     }
     output
