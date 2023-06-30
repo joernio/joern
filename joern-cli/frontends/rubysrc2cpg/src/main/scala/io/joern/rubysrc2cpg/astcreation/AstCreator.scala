@@ -873,6 +873,7 @@ class AstCreator(
        * node wrt the statement being processed. Create a call node
        * 2. If an identifier with the variable name exists within the scope, create a identifier node
        * 3. Otherwise default to call node creation since there is no reason (point 2) to create a identifier node
+       * 4. Applies to CONSTANT_IDENTIFIER as well
        */
 
       if (scope.lookupVariable(varSymbol.getText).isDefined && !definitelyMethod) {
@@ -885,7 +886,7 @@ class AstCreator(
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
       val localVar  = ctx.CONSTANT_IDENTIFIER()
       val varSymbol = localVar.getSymbol
-      if (scope.lookupVariable(varSymbol.getText).isDefined) {
+      if (scope.lookupVariable(varSymbol.getText).isDefined && !definitelyMethod) {
         val node =
           createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
         Seq(Ast(node))
