@@ -45,8 +45,7 @@ class RubyMethodFullNameTests extends RubyCode2CpgFixture(true) with BeforeAndAf
         cpg.call
           .name("help_print")
           .head
-          .methodFullName
-          .matches(".*dummy_logger::program:Help:help_print:<unresolvedSignature>")
+          .methodFullName shouldBe "dummy_logger::program:Help:help_print:<unresolvedSignature>"
       }
     }
   }
@@ -86,8 +85,7 @@ class RubyMethodFullNameTests extends RubyCode2CpgFixture(true) with BeforeAndAf
         cpg.call
           .name("printValue")
           .head
-          .methodFullName
-          .matches(".*util/help.rb::program:Outer:printValue:<unresolvedSignature>") shouldBe true
+          .methodFullName shouldBe "util/help.rb::program:Outer:printValue:<unresolvedSignature>"
       }
     }
   }
