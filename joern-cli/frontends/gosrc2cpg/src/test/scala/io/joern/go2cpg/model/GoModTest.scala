@@ -13,7 +13,9 @@ import scala.language.postfixOps
 
 class GoModTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
   "go project without .mod file" in {
-    val namespace = GoMod.getNameSpace(Paths.get("").toAbsolutePath.toString, "main")
+    GoMod.meta = None
+    GoMod.config = None
+    val namespace = GoMod.getNameSpace(File.currentWorkingDirectory.toString(), "main")
     namespace shouldBe "main"
   }
   "invalid compilation file unit with main pkg" in {
