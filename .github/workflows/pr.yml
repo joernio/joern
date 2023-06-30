@@ -24,6 +24,7 @@ jobs:
         run: gem install bundler
       - name: Compile and run tests
         run: sbt clean +test
+        shell: ${{ matrix.os == 'windows-2022' && 'pwsh' || 'bash' }}
   formatting:
     runs-on: ubuntu-22.04
     steps:
