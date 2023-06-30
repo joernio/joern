@@ -41,4 +41,64 @@ class NamespaceBlockTests extends GoCodeToCpgSuite {
       .l
       .sorted shouldBe List(s"Test0.go:main")
   }
+
+  "should allow traversing from namespace block to namespace" in {
+    cpg.namespaceBlock.filenameNot(FileTraversal.UNKNOWN).namespace.name.l shouldBe List("main")
+  }
+
+  "create one NamespaceBlock per file" in {
+    val cpg = code(
+      """
+        |package main
+        |func foo() {}
+        |""".stripMargin,
+      "foo.go"
+    ).moreCode(
+      """
+        |package main
+        |func woo() {}
+        |""".stripMargin,
+      "woo.go"
+    )
+    val expectedFilenames          = Seq("foo.go", "woo.go")
+    val expectedNamespaceFullNames = expectedFilenames.map(f => s"$f:main")
+    val allNamespaceBlockFullNames = cpg.namespaceBlock.fullNameNot(NamespaceTraversal.globalNamespaceName).fullName.l
+    allNamespaceBlockFullNames.zip(expectedNamespaceFullNames).foreach { case (actual, expected) =>
+      actual should endWith(expected)
+    }
+  }
+
+  "Simple sample with go.mod and main package" in {
+    val cpg = code(
+      """
+        |module joern.io/sample
+        |go 1.18
+        |""".stripMargin,
+      "go.mod"
+    ).moreCode(
+      """
+        |package main
+        |func woo() {}
+        |""".stripMargin,
+      "woo.go"
+    )
+    cpg.namespaceBlock.filenameNot(FileTraversal.UNKNOWN).namespace.name.l shouldBe List("main")
+  }
+
+  "Simple sample with go.mod and matching package" in {
+    val cpg = code(
+      """
+        |module joern.io/sample
+        |go 1.18
+        |""".stripMargin,
+      "go.mod"
+    ).moreCode(
+      """
+        |package sample
+        |func woo() {}
+        |""".stripMargin,
+      "woo.go"
+    )
+    cpg.namespaceBlock.filenameNot(FileTraversal.UNKNOWN).namespace.name.l shouldBe List("joern.io/sample")
+  }
 }
