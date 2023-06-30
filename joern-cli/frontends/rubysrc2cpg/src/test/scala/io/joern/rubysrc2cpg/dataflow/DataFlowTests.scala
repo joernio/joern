@@ -1351,7 +1351,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
           |
           |
           |x = 10
-          |foo_wrap :x do |arg|
+          |foo_wrap x do |arg|
           |  y = x + arg
           |  puts y
           |end
