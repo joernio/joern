@@ -1339,7 +1339,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
       }
     }
 
-    "Data flow through blockExprAssocTypeArguments with block" should {
+    "Data flow through blockExprAssocTypeArguments with block argument in the wrapper function" should {
       val cpg = code("""
           |def foo (blockArg,&block)
           |block.call(blockArg)
@@ -1351,8 +1351,8 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
           |
           |
           |x = 10
-          |foo_wrap :a_symbol do |arg|
-          |  y = x + arg.length
+          |foo_wrap :x do |arg|
+          |  y = x + arg
           |  puts y
           |end
           |
