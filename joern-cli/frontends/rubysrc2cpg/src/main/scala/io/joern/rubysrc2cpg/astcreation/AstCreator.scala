@@ -2,37 +2,43 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.parser.RubyParser._
 import io.joern.rubysrc2cpg.parser.{RubyLexer, RubyParser}
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.rubysrc2cpg.utils.{PackageContext, PackageTable}
+import io.joern.rubysrc2cpg.utils.PackageContext
 import io.joern.x2cpg.Ast.storeInDiffGraph
-import io.joern.x2cpg.Defines.{DynamicCallUnknownFullName, UnresolvedSignature}
+import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
 import io.joern.x2cpg.datastructures.{Global, Scope}
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder}
-import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated._
+import io.shiftleft.codepropertygraph.generated.nodes._
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.antlr.v4.runtime.{CharStreams, CommonTokenStream, ParserRuleContext, Token}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
-import java.util
+import java.io.{File => JFile}
 import scala.collection.immutable.Seq
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters._
 
-class AstCreator(protected val filename: String, global: Global, packageContext: PackageContext)
-    extends AstCreatorBase(filename)
+class AstCreator(
+  protected val filename: String,
+  global: Global,
+  packageContext: PackageContext,
+  projectRoot: Option[String] = None
+) extends AstCreatorBase(filename)
     with AstNodeBuilder[ParserRuleContext, AstCreator]
     with AstForPrimitivesCreator
     with AstForStatementsCreator
     with AstForExpressionsCreator
-    with AstForDeclarationsCreator {
+    with AstForDeclarationsCreator
+    with AstForTypesCreator
+    with AstCreatorHelper {
 
   protected val scope: Scope[String, NewIdentifier, Unit] = new Scope()
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  private val classStack = mutable.Stack[String]()
+  protected val classStack = mutable.Stack[String]()
 
   protected val packageStack = mutable.Stack[String]()
 
@@ -60,6 +66,9 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
 
   protected val blockMethods = ListBuffer[Ast]()
 
+  protected val relativeFilename: String =
+    projectRoot.map(filename.stripPrefix).map(_.stripPrefix(JFile.separator)).getOrElse(filename)
+
   protected def createIdentifierWithScope(
     ctx: ParserRuleContext,
     name: String,
@@ -82,6 +91,20 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
     val parser      = new RubyParser(tokenStream)
     val programCtx  = parser.program()
 
+    val name     = ":program"
+    val fullName = s"$relativeFilename:$name"
+    val programMethod =
+      NewMethod()
+        .order(1)
+        .name(name)
+        .code(name)
+        .fullName(fullName)
+        .filename(filename)
+        .astParentType(NodeTypes.TYPE_DECL)
+        .astParentFullName(fullName)
+
+    classStack.push(fullName)
+
     val statementCtx = programCtx.compoundStatement().statements()
     scope.pushNewScope(())
     val statementAsts = if (statementCtx != null) {
@@ -90,17 +113,6 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
       List[Ast](Ast())
     }
     scope.popScope()
-
-    val name = ":program"
-    val programMethod =
-      NewMethod()
-        .order(1)
-        .name(name)
-        .code(name)
-        .fullName(filename)
-        .filename(filename)
-        .astParentType(NodeTypes.TYPE_DECL)
-        .astParentFullName(filename)
 
     val thisParam = NewMethodParameterIn()
       .name("this")
@@ -119,6 +131,8 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
     val fileNode       = NewFile().name(filename).order(1)
     val namespaceBlock = globalNamespaceBlock()
     val ast            = Ast(fileNode).withChild(Ast(namespaceBlock).withChild(programAst))
+
+    classStack.popAll()
 
     storeInDiffGraph(ast, diffGraph)
     diffGraph
@@ -232,14 +246,6 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
 
   }
 
-  def astForExpressionOrCommandsContext(ctx: ExpressionOrCommandsContext): Seq[Ast] = {
-    ctx
-      .expressionOrCommand()
-      .asScala
-      .flatMap(ec => astForExpressionOrCommand(ec))
-      .toSeq
-  }
-
   def astForSplattingArgumentContext(ctx: SplattingArgumentContext): Seq[Ast] = {
     if (ctx == null) return Seq(Ast())
     astForExpressionOrCommand(ctx.expressionOrCommand())
@@ -248,7 +254,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
   def astForMultipleRightHandSideContext(ctx: MultipleRightHandSideContext): Seq[Ast] = {
     if (ctx == null) return Seq(Ast())
 
-    val exprAsts = astForExpressionOrCommandsContext(ctx.expressionOrCommands())
+    val exprAsts = ctx.expressionOrCommands().expressionOrCommand().asScala.flatMap(astForExpressionOrCommand).toSeq
 
     val paramAsts = if (ctx.splattingArgument() != null) {
       val splattingAsts = astForSplattingArgumentContext(ctx.splattingArgument())
@@ -321,20 +327,21 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
   }
 
   def astForPrimaryContext(ctx: PrimaryContext): Seq[Ast] = ctx match {
-    case ctx: ClassDefinitionPrimaryContext  => astForClassDefinitionPrimaryContext(ctx)
-    case ctx: ModuleDefinitionPrimaryContext => astForModuleDefinitionPrimaryContext(ctx)
+    case ctx: ClassDefinitionPrimaryContext if ctx.hasClassDefinition => astForClassDeclaration(ctx)
+    case ctx: ClassDefinitionPrimaryContext                           => astForClassExpression(ctx)
+    case ctx: ModuleDefinitionPrimaryContext                          => astForModuleDefinitionPrimaryContext(ctx)
     case ctx: MethodDefinitionPrimaryContext => astForMethodDefinitionContext(ctx.methodDefinition())
     case ctx: YieldWithOptionalArgumentPrimaryContext =>
       Seq(astForYieldCall(ctx, Option(ctx.yieldWithOptionalArgument().arguments())))
-    case ctx: IfExpressionPrimaryContext       => astForIfExpressionPrimaryContext(ctx)
+    case ctx: IfExpressionPrimaryContext       => Seq(astForIfExpression(ctx.ifExpression()))
     case ctx: UnlessExpressionPrimaryContext   => astForUnlessExpressionPrimaryContext(ctx)
     case ctx: CaseExpressionPrimaryContext     => astForCaseExpressionPrimaryContext(ctx)
     case ctx: WhileExpressionPrimaryContext    => astForWhileExpressionContext(ctx.whileExpression())
     case ctx: UntilExpressionPrimaryContext    => Seq(astForUntilExpression(ctx.untilExpression()))
-    case ctx: ForExpressionPrimaryContext      => astForForExpressionContext(ctx.forExpression())
+    case ctx: ForExpressionPrimaryContext      => Seq(astForForExpression(ctx.forExpression()))
     case ctx: JumpExpressionPrimaryContext     => astForJumpExpressionPrimaryContext(ctx)
     case ctx: BeginExpressionPrimaryContext    => astForBeginExpressionPrimaryContext(ctx)
-    case ctx: GroupingExpressionPrimaryContext => astForGroupingExpressionPrimaryContext(ctx)
+    case ctx: GroupingExpressionPrimaryContext => astForCompoundStatement(ctx.compoundStatement())
     case ctx: VariableReferencePrimaryContext  => astForVariableReferencePrimaryContext(ctx)
     case ctx: SimpleScopedConstantReferencePrimaryContext =>
       astForSimpleScopedConstantReferencePrimaryContext(ctx)
@@ -418,7 +425,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
         .name(ctx.COMMA().getText)
         .methodFullName(Operators.arrayInitializer)
         .signature(Operators.arrayInitializer)
-        .typeFullName(DynamicCallUnknownFullName)
+        .typeFullName(Defines.Any)
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .code(ctx.getText)
         .lineNumber(ctx.COMMA().getSymbol.getLine)
@@ -483,22 +490,15 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
           .columnNumber(wh.WHEN().getSymbol.getCharPositionInLine)
 
         val whenACondAsts = astForWhenArgumentContext(wh.whenArgument())
-        val thenAsts = astForThenClauseContext(wh.thenClause()) ++ Seq(
+        val thenAsts = astForCompoundStatement(wh.thenClause().compoundStatement()) ++ Seq(
           Ast(NewControlStructure().controlStructureType(ControlStructureTypes.BREAK))
         )
         Seq(Ast(whenNode)) ++ whenACondAsts ++ thenAsts
       })
       .toList
 
-    val stmtAsts =
-      if (ctx.caseExpression().elseClause() != null) {
-        val elseAst = astForElseClauseContext(ctx.caseExpression().elseClause())
-        whenThenAstsList ++ elseAst
-      } else {
-        whenThenAstsList
-      }
-
-    val block = blockNode(ctx.caseExpression())
+    val stmtAsts = whenThenAstsList ++ Option(ctx.caseExpression().elseClause()).map(astForElseClause).getOrElse(Seq())
+    val block    = blockNode(ctx.caseExpression())
     Seq(controlStructureAst(switchNode, conditionAst, Seq(Ast(block).withChildren(stmtAsts))))
   }
 
@@ -533,14 +533,14 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
       val callNode = NewCall()
         .name(blockName)
         .methodFullName(blockMethodNode.fullName)
-        .typeFullName(DynamicCallUnknownFullName)
+        .typeFullName(Defines.Any)
         .code(blockMethodNode.code)
         .lineNumber(blockMethodNode.lineNumber)
         .columnNumber(blockMethodNode.columnNumber)
 
       val methodRefNode = NewMethodRef()
         .methodFullName(blockMethodNode.fullName)
-        .typeFullName(DynamicCallUnknownFullName)
+        .typeFullName(Defines.Any)
         .code(blockMethodNode.code)
         .lineNumber(blockMethodNode.lineNumber)
         .columnNumber(blockMethodNode.columnNumber)
@@ -600,92 +600,6 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
     Seq(callAst(callNode, primaryAst ++ Seq(constAst)))
   }
 
-  private def getClassNameScopedConstantReferenceContext(ctx: ScopedConstantReferenceContext): String = {
-    val classTerminalNode = ctx.CONSTANT_IDENTIFIER()
-
-    if (ctx.primary() != null) {
-      val primaryAst = astForPrimaryContext(ctx.primary())
-      val moduleNameNode = primaryAst.head.nodes
-        .filter(node => node.isInstanceOf[NewIdentifier])
-        .head
-        .asInstanceOf[NewIdentifier]
-      val moduleName = moduleNameNode.name
-      moduleName + "." + classTerminalNode.getText
-    } else {
-      classTerminalNode.getText
-    }
-  }
-
-  def astForClassOrModuleReferenceContext(
-    ctx: ClassOrModuleReferenceContext,
-    baseClassName: Option[String] = None
-  ): Seq[Ast] = {
-    val className = if (ctx.scopedConstantReference() != null) {
-      getClassNameScopedConstantReferenceContext(ctx.scopedConstantReference())
-    } else if (ctx.CONSTANT_IDENTIFIER() != null) {
-      baseClassName match {
-        case Some(value) => value + "." + ctx.CONSTANT_IDENTIFIER().getText
-        case None        => ctx.CONSTANT_IDENTIFIER().getText
-      }
-    } else {
-      Defines.Any
-    }
-
-    if (className != Defines.Any) {
-      classStack.push(className)
-    }
-    Seq(Ast())
-  }
-
-  def astForClassDefinitionPrimaryContext(ctx: ClassDefinitionPrimaryContext): Seq[Ast] = {
-    if (ctx.classDefinition().classOrModuleReference() != null) {
-      val baseClassName = if (ctx.classDefinition().expressionOrCommand() != null) {
-        val parentClassNameAst = astForExpressionOrCommand(ctx.classDefinition().expressionOrCommand())
-        val nameNode = parentClassNameAst.head.nodes
-          .filter(node => node.isInstanceOf[NewIdentifier])
-          .head
-          .asInstanceOf[NewIdentifier]
-        Some(nameNode.name)
-      } else {
-        None
-      }
-
-      val classOrModuleRefAst =
-        astForClassOrModuleReferenceContext(ctx.classDefinition().classOrModuleReference(), baseClassName)
-      val bodyAst = astForBodyStatementContext(ctx.classDefinition().bodyStatement())
-      val bodyAstSansModifiers = bodyAst
-        .filterNot(ast => {
-          val nodes = ast.nodes
-            .filter(_.isInstanceOf[NewIdentifier])
-
-          if (nodes.size == 1) {
-            val varName = nodes
-              .map(_.asInstanceOf[NewIdentifier].name)
-              .head
-            varName == "public" || varName == "protected" || varName == "private"
-          } else {
-            false
-          }
-        })
-
-      if (classStack.size > 0) {
-        classStack.pop()
-      }
-      val blockNode = NewBlock()
-        .code(ctx.getText)
-      val bodyBlockAst = blockAst(blockNode, bodyAstSansModifiers.toList)
-      Seq(classOrModuleRefAst.head.withChild(bodyBlockAst))
-    } else {
-      // TODO test for this is pending due to lack of understanding to generate an example
-      val astExprOfCommand = astForExpressionOrCommand(ctx.classDefinition().expressionOrCommand())
-      val astBodyStatement = astForBodyStatementContext(ctx.classDefinition().bodyStatement())
-      val blockNode = NewBlock()
-        .code(ctx.getText)
-      val bodyBlockAst = blockAst(blockNode, astBodyStatement.toList)
-      astExprOfCommand ++ Seq(bodyBlockAst)
-    }
-  }
-
   def astForGroupedLeftHandSideContext(ctx: GroupedLeftHandSideContext): Seq[Ast] = {
     astForMultipleLeftHandSideContext(ctx.multipleLeftHandSide())
   }
@@ -737,83 +651,9 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
     }
   }
 
-  def astForForExpressionContext(ctx: ForExpressionContext): Seq[Ast] = {
-    val initAst    = astForForVariableContext(ctx.forVariable())
-    val forCondAst = astForExpressionOrCommand(ctx.expressionOrCommand())
-    val bodyAsts   = astForDoClauseContext(ctx.doClause())
-
-    val ast = whileAst(
-      Some(forCondAst.head),
-      bodyAsts,
-      Some(ctx.getText),
-      Some(ctx.FOR().getSymbol.getLine),
-      Some(ctx.FOR().getSymbol.getCharPositionInLine)
-    ).withChild(initAst.head)
-    Seq(ast)
-  }
-
-  def astForGroupingExpressionPrimaryContext(ctx: GroupingExpressionPrimaryContext): Seq[Ast] = {
-    astForCompoundStatement(ctx.compoundStatement())
-  }
-
   def astForHashConstructorPrimaryContext(ctx: HashConstructorPrimaryContext): Seq[Ast] = {
     if (ctx.hashConstructor().associations() == null) return Seq(Ast())
     astForAssociationsContext(ctx.hashConstructor().associations())
-  }
-
-  def astForThenClauseContext(ctx: ThenClauseContext): Seq[Ast] = {
-    astForCompoundStatement(ctx.compoundStatement())
-  }
-
-  def astForElsifClauseContext(ctx: util.List[ElsifClauseContext]): Seq[Ast] = {
-    if (ctx == null) return Seq()
-
-    ctx.asScala
-      .map(elif => {
-        val elifNode = NewControlStructure()
-          .controlStructureType(ControlStructureTypes.IF)
-          .code(elif.getText())
-          .lineNumber(elif.ELSIF().getSymbol.getLine)
-          .columnNumber(elif.ELSIF().getSymbol.getCharPositionInLine)
-
-        val conditionAst = astForExpressionOrCommand(elif.expressionOrCommand())
-        val thenAsts     = astForThenClauseContext(elif.thenClause())
-        controlStructureAst(elifNode, conditionAst.headOption, thenAsts)
-      })
-      .toSeq
-  }
-
-  def astForElseClauseContext(ctx: ElseClauseContext): Seq[Ast] = {
-    if (ctx == null) return Seq(Ast())
-    val elseNode =
-      NewJumpTarget()
-        .parserTypeName(ctx.getClass.getSimpleName)
-        .name("default")
-        .code(ctx.getText)
-        .lineNumber(ctx.ELSE().getSymbol.getLine)
-        .columnNumber(ctx.ELSE().getSymbol.getCharPositionInLine)
-
-    val stmtsAsts = astForCompoundStatement(ctx.compoundStatement())
-    Seq(Ast(elseNode)) ++ stmtsAsts
-  }
-
-  def astForIfExpressionContext(ctx: IfExpressionContext): Seq[Ast] = {
-    val conditionAsts = astForExpressionOrCommand(ctx.expressionOrCommand())
-    val thenAsts      = astForThenClauseContext(ctx.thenClause())
-    val elseifAsts    = astForElsifClauseContext(ctx.elsifClause())
-    val elseAst       = astForElseClauseContext(ctx.elseClause())
-
-    val ifNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.IF)
-      .code(ctx.getText)
-      .lineNumber(ctx.IF().getSymbol.getLine)
-      .columnNumber(ctx.IF().getSymbol.getCharPositionInLine)
-
-    Seq(controlStructureAst(ifNode, conditionAsts.headOption, List(thenAsts ++ elseifAsts ++ elseAst).flatten))
-  }
-
-  def astForIfExpressionPrimaryContext(ctx: IfExpressionPrimaryContext): Seq[Ast] = {
-    astForIfExpressionContext(ctx.ifExpression())
   }
 
   def astForIndexingExpressionPrimaryContext(ctx: IndexingExpressionPrimaryContext): Seq[Ast] = {
@@ -976,8 +816,8 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
   }
 
   def astForCallNode(localIdentifier: TerminalNode, code: String, isYieldBlock: Boolean = false): Seq[Ast] = {
-    val column = localIdentifier.getSymbol().getCharPositionInLine()
-    val line   = localIdentifier.getSymbol().getLine()
+    val column = localIdentifier.getSymbol.getCharPositionInLine
+    val line   = localIdentifier.getSymbol.getLine
     val nameSuffix =
       if (isYieldBlock) {
         YIELD_SUFFIX
@@ -988,15 +828,16 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
     val methodFullName = packageContext.packageTable
       .getMethodFullNameUsingName(packageStack.toList, name)
       .headOption match {
+      case None if isBuiltin(name)            => prefixAsBuiltin(name) // TODO: Probably not super precise
       case Some(externalDependencyResolution) => externalDependencyResolution
-      case None                               => s"$filename:$name"
+      case None                               => DynamicCallUnknownFullName
     }
 
     val callNode = NewCall()
       .name(name)
       .methodFullName(methodFullName)
-      .signature(localIdentifier.getText())
-      .typeFullName(DynamicCallUnknownFullName)
+      .signature(localIdentifier.getText)
+      .typeFullName(Defines.Any)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .code(code)
       .lineNumber(line)
@@ -1024,7 +865,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
       astForMethodOnlyIdentifier(ctx.methodOnlyIdentifier())
     } else if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
       val localVar  = ctx.LOCAL_VARIABLE_IDENTIFIER()
-      val varSymbol = localVar.getSymbol()
+      val varSymbol = localVar.getSymbol
 
       /*
        * Preferences
@@ -1044,7 +885,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
       }
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
       val localVar  = ctx.CONSTANT_IDENTIFIER()
-      val varSymbol = localVar.getSymbol()
+      val varSymbol = localVar.getSymbol
       if (scope.lookupVariable(varSymbol.getText).isDefined && !definitelyMethod) {
         val node =
           createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
@@ -1066,7 +907,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
       .asInstanceOf[TerminalNode]
 
     val name           = ctx.getText
-    val methodFullName = s"$filename:$name"
+    val methodFullName = classStack.reverse :+ name mkString ":"
 
     val callNode = NewCall()
       .name(name)
@@ -1222,7 +1063,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
       asts.addAll(astForSingleLeftHandSideContext(ctx.exceptionVariableAssignment().singleLeftHandSide()))
     }
 
-    asts.addAll(astForThenClauseContext(ctx.thenClause()))
+    asts.addAll(astForCompoundStatement(ctx.thenClause().compoundStatement()))
     val blockNode = NewBlock()
       .code(ctx.getText)
       .lineNumber(ctx.RESCUE().getSymbol.getLine)
@@ -1275,7 +1116,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
       .toSeq
 
     if (ctx.elseClause() != null) {
-      val elseClauseAsts = astForElseClauseContext(ctx.elseClause())
+      val elseClauseAsts = astForElseClause(ctx.elseClause())
       mainBodyAsts ++ rescueAsts ++ elseClauseAsts
     } else {
       mainBodyAsts ++ rescueAsts
@@ -1288,7 +1129,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
     val astMethodName  = astForMethodNamePartContext(ctx.methodNamePart())
     val callNode       = astMethodName.head.nodes.filter(node => node.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
     // there can be only one call node
-    val astBody = astForBodyStatementContext(ctx.bodyStatement(), true)
+    val astBody = astForBodyStatementContext(ctx.bodyStatement(), addReturnNode = true)
     scope.popScope()
 
     /*
@@ -1296,20 +1137,26 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
      * This is because it has been called from several places some of which need a call node.
      * We will use fields from the call node to construct the method node. Post that,
      * we will discard the call node since it is of no further use to us
+     *
+     * TODO Dave: ^ This seems like it needs a re-design, it is confusing
      */
 
-    val classPath = classStack.reverse.toList.mkString(".") + "."
+    val methodFullName = classStack.reverse :+ callNode.name mkString ":"
     val methodNode = NewMethod()
       .code(ctx.getText)
       .name(callNode.name)
-      .fullName(s"$filename:${callNode.name}")
+      .fullName(methodFullName)
       .columnNumber(callNode.columnNumber)
       .lineNumber(callNode.lineNumber)
       .lineNumberEnd(ctx.END().getSymbol.getLine)
       .filename(filename)
-    callNode.methodFullName(classPath + callNode.name)
+    callNode.methodFullName(methodFullName)
 
     val classType = if (classStack.isEmpty) "Standalone" else classStack.top
+    val classPath = classStack.reverse.toList match {
+      case _ :: xs => xs.mkString(":") + ":"
+      case _       => ""
+    }
     packageContext.packageTable.addPackageMethod(packageContext.moduleName, callNode.name, classPath, classType)
 
     // process yield calls.
@@ -1322,7 +1169,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
       .foreach(node => {
         val yieldCallNode  = node.asInstanceOf[NewCall]
         val name           = methodNode.name
-        val methodFullName = s"$filename:$name"
+        val methodFullName = classStack.reverse :+ callNode.name mkString ":"
         yieldCallNode.name(name + YIELD_SUFFIX)
         yieldCallNode.methodFullName(methodFullName + YIELD_SUFFIX)
         methodNamesWithYield.add(methodNode.name)
@@ -1397,7 +1244,7 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
       .name(Operators.arrayInitializer)
       .methodFullName(Operators.arrayInitializer)
       .signature(Operators.arrayInitializer)
-      .typeFullName(DynamicCallUnknownFullName)
+      .typeFullName(Defines.Any)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
     Seq(callAst(callNode, astsToConcat))
   }
@@ -1606,10 +1453,11 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
     val astBody = astForStatements(ctxStmt)
     scope.popScope()
 
+    val methodFullName = classStack.reverse :+ blockMethodName mkString ":"
     val methodNode = NewMethod()
       .code(ctxStmt.getText)
       .name(blockMethodName)
-      .fullName(s"$filename:${blockMethodName}")
+      .fullName(methodFullName)
       .filename(filename)
       .lineNumber(lineStart)
       .lineNumberEnd(lineEnd)
@@ -1694,8 +1542,8 @@ class AstCreator(protected val filename: String, global: Global, packageContext:
 
   def astForUnlessExpressionPrimaryContext(ctx: UnlessExpressionPrimaryContext): Seq[Ast] = {
     val conditionAsts = astForExpressionOrCommand(ctx.unlessExpression().expressionOrCommand())
-    val thenAsts      = astForThenClauseContext(ctx.unlessExpression().thenClause())
-    val elseAsts      = astForElseClauseContext(ctx.unlessExpression().elseClause())
+    val thenAsts      = astForCompoundStatement(ctx.unlessExpression().thenClause().compoundStatement())
+    val elseAsts      = astForElseClause(ctx.unlessExpression().elseClause())
 
     // unless will be modelled as IF since there is no difference from a static analysis POV
     val unlessNode = NewControlStructure()

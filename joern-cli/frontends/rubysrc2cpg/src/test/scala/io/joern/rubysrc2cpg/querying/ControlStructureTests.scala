@@ -279,9 +279,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "recognise all literal nodes" in {
-      cpg.identifier
-        .name("x")
-        .size shouldBe 2
+      cpg.identifier.name("x").size shouldBe 2
       cpg.literal.code("1").size shouldBe 1
       cpg.literal.code("10").size shouldBe 1
 
@@ -310,15 +308,9 @@ class ControlStructureTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "recognise all identifier nodes" in {
-      cpg.identifier
-        .name("i")
-        .size shouldBe 8
-      cpg.identifier
-        .name("value1")
-        .size shouldBe 3
-      cpg.identifier
-        .name("value2")
-        .size shouldBe 3
+      cpg.identifier.name("i").size shouldBe 8
+      cpg.identifier.name("value1").size shouldBe 3
+      cpg.identifier.name("value2").size shouldBe 3
     }
 
     "recognize all literal nodes" in {

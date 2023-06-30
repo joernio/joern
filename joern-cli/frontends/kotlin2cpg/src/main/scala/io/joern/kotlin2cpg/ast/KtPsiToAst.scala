@@ -271,6 +271,30 @@ trait KtPsiToAst {
         memberSetCallAst(ctorParam, classFullName)
     }
 
+    val classDeclarations = Option(ktClass.getBody)
+      .map(_.getDeclarations.asScala.filterNot(_.isInstanceOf[KtNamedFunction]))
+      .getOrElse(List())
+
+    val memberInitializerSetCalls =
+      classDeclarations.collectAll[KtProperty].filter(_.getInitializer != null).map { decl =>
+        val initializerAsts = astsForExpression(decl.getInitializer, None)
+        val rhsAst =
+          if (initializerAsts.size == 1) initializerAsts.head
+          else Ast(unknownNode(decl, "<empty>"))
+
+        val thisIdentifier = newIdentifierNode(Constants.this_, classFullName, Seq(classFullName))
+        val thisAst        = astWithRefEdgeMaybe(Constants.this_, thisIdentifier)
+
+        val fieldIdentifier = fieldIdentifierNode(decl, decl.getName, decl.getName)
+        val fieldAccessCall =
+          operatorCallNode(Operators.fieldAccess, s"${Constants.this_}.${fieldIdentifier.canonicalName}", None)
+        val fieldAccessCallAst = callAst(fieldAccessCall, List(thisAst, Ast(fieldIdentifier)))
+
+        val assignmentNode =
+          operatorCallNode(Operators.assignment, s"${fieldAccessCall.code} = ${decl.getInitializer.getText}")
+        callAst(assignmentNode, List(fieldAccessCallAst, rhsAst))
+      }
+
     val anonymousInitExpressions = ktClass.getAnonymousInitializers.asScala
     val anonymousInitAsts        = anonymousInitExpressions.flatMap(astsForExpression(_, None))
 
@@ -283,7 +307,10 @@ trait KtPsiToAst {
     val constructorAst = methodAst(
       primaryCtorMethodNode,
       constructorParamsAsts,
-      blockAst(blockNode(ktClass, "", TypeConstants.void), memberSetCalls ++ anonymousInitAsts),
+      blockAst(
+        blockNode(ktClass, "", TypeConstants.void),
+        memberSetCalls ++ memberInitializerSetCalls ++ anonymousInitAsts
+      ),
       constructorMethodReturn
     )
     val node =
@@ -322,9 +349,6 @@ trait KtPsiToAst {
       BindingInfo(node, List((typeDecl, node, EdgeTypes.BINDS), (node, methodNode, EdgeTypes.REF)))
     }
 
-    val classDeclarations = Option(ktClass.getBody)
-      .map(_.getDeclarations.asScala.filterNot(_.isInstanceOf[KtNamedFunction]))
-      .getOrElse(List())
     val memberAsts = classDeclarations.toSeq.map(astForMember)
     val innerTypeDeclAsts =
       classDeclarations.toSeq
@@ -1212,10 +1236,7 @@ trait KtPsiToAst {
       callNode(expr, expr.getText, methodName, fullName, dispatchType, Some(signature), Some(retType)),
       argIdx
     )
-    Ast(node)
-      .withChild(receiverAst)
-      .withChildren(argAsts)
-      .withArgEdges(node, argAsts.map(_.root.get))
+    callAst(node, receiverAst :: argAsts)
   }
 
   private def astForQualifiedExpressionWithReceiverEdge(
@@ -1224,17 +1245,15 @@ trait KtPsiToAst {
     argIdx: Option[Int]
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val isDynamicCall = callKind == CallKinds.DynamicCall
-    val isStaticCall  = callKind == CallKinds.StaticCall
+    val dispatchType =
+      if (isDynamicCall) DispatchTypes.DYNAMIC_DISPATCH
+      else DispatchTypes.STATIC_DISPATCH
     val argIdxForReceiver =
       if (isDynamicCall) 0
-      else if (isStaticCall) 1
       else 1
-    val dispatchType =
-      if (callKind == CallKinds.DynamicCall) DispatchTypes.DYNAMIC_DISPATCH
-      else DispatchTypes.STATIC_DISPATCH
 
-    val receiverAst = astsForExpression(expr.getReceiverExpression, Some(argIdxForReceiver)).head
-    val argAsts     = selectorExpressionArgAsts(expr)
+    val lhsAst  = astsForExpression(expr.getReceiverExpression, Some(argIdxForReceiver)).head
+    val argAsts = selectorExpressionArgAsts(expr)
 
     val (astDerivedMethodFullName, astDerivedSignature) = astDerivedFullNameWithSignature(expr, argAsts)
     val (fullName, signature) =
@@ -1249,10 +1268,10 @@ trait KtPsiToAst {
     )
     val receiverNode =
       if (argAsts.sizeIs == 1 && argAsts.head.root.get.isInstanceOf[NewMethodRef]) argAsts.head.root.get
-      else receiverAst.root.get
+      else lhsAst.root.get
 
     Ast(node)
-      .withChild(receiverAst)
+      .withChild(lhsAst)
       .withArgEdge(node, receiverNode)
       .withChildren(argAsts)
       .withArgEdges(node, argAsts.map(_.root.get))

@@ -1,19 +1,20 @@
 package io.joern.rubysrc2cpg
 
 import better.files.File
-import io.joern.rubysrc2cpg.passes.{AstCreationPass, AstPackagePass, ConfigPass}
+import io.joern.rubysrc2cpg.passes.{AstCreationPass, AstPackagePass, ConfigFileCreationPass}
 import io.joern.rubysrc2cpg.utils.PackageTable
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.datastructures.Global
+import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.utils.ExternalCommand
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
+import io.shiftleft.passes.CpgPassBase
 import org.slf4j.LoggerFactory
 
 import java.nio.file.{Files, Paths}
-import scala.sys.process._
 import scala.util.{Failure, Success, Try}
 
 class RubySrc2Cpg extends X2CpgFrontend[Config] {
@@ -26,7 +27,7 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
     withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
       val packageTableInfo = new PackageTable()
       new MetaDataPass(cpg, Languages.RUBYSRC, config.inputPath).createAndApply()
-      new ConfigPass(cpg, config.inputPath).createAndApply()
+      new ConfigFileCreationPass(cpg).createAndApply()
       if (config.enableDependencyDownload && !scala.util.Properties.isWin) {
         val tempDir = File.newTemporaryDirectory()
         try {
@@ -59,4 +60,10 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
       }
     }
   }
+}
+
+object RubySrc2Cpg {
+
+  def postProcessingPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] = List(new NaiveCallLinker(cpg))
+
 }
