@@ -15,7 +15,7 @@ import ujson.Value
 class AstCreator(val relPathFileName: String, val parserResult: ParserResult)
     extends AstCreatorBase(relPathFileName)
     with AstCreatorHelper
-    with AstForDeclarationCreator
+    with AstForGenDeclarationCreator
     with AstForExpressionCreator
     with AstForFunctionsCreator
     with AstForPrimitivesCreator
@@ -43,13 +43,18 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)
       .fullName(s"$relPathFileName:${fullQualifiedPackage}")
       .filename(relPathFileName)
     Ast(namespaceBlock).withChild(
-      astInFakeMethod(fullQualifiedPackage, namespaceBlock.fullName, relPathFileName, rootNode)
+      astForFakeMethodEnclosingFile(fullQualifiedPackage, namespaceBlock.fullName, relPathFileName, rootNode)
     )
   }
 
   /** Creates an AST of all declarations found in the translation unit - wrapped in a fake method.
     */
-  private def astInFakeMethod(name: String, fullName: String, path: String, rootNode: ParserNodeInfo): Ast = {
+  private def astForFakeMethodEnclosingFile(
+    name: String,
+    fullName: String,
+    path: String,
+    rootNode: ParserNodeInfo
+  ): Ast = {
 
     val fakeGlobalTypeDecl =
       typeDeclNode(rootNode, name, fullName, relPathFileName, name, NodeTypes.NAMESPACE_BLOCK, fullName)
@@ -60,23 +65,22 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)
     val blockNode_ = blockNode(rootNode, Defines.empty, Defines.anyTypeName)
 
     val methodReturn = methodReturnNode(rootNode, Defines.anyTypeName)
-    val declsAsts    = rootNode.json(ParserKeys.Decls).arr.map(item => astForNode(item)).toList
+    val declsAsts    = rootNode.json(ParserKeys.Decls).arr.flatMap(item => astForNode(item)).toList
     Ast(fakeGlobalTypeDecl).withChild(
       methodAst(fakeGlobalMethod, Seq.empty, blockAst(blockNode_, declsAsts), methodReturn)
     )
   }
 
-  protected def astForNode(json: Value): Ast = {
+  protected def astForNode(json: Value): Seq[Ast] = {
     val nodeInfo = createParserNodeInfo(json)
-    val output = nodeInfo.node match {
-      case GenDecl if isImportDeclaration(nodeInfo) => astForImport(nodeInfo)
-      case BasicLit                                 => astForLiteral(nodeInfo)
-      case Ident                                    => astForIdentifier(nodeInfo)
-      case FuncDecl                                 => astForFuncDecl(nodeInfo)
-      case _: BaseExprStmt                          => astForExpression(nodeInfo)
-      case _                                        => Ast()
+    nodeInfo.node match {
+      case GenDecl         => astForGenDecl(nodeInfo)
+      case BasicLit        => astForLiteral(nodeInfo)
+      case Ident           => astForIdentifier(nodeInfo)
+      case FuncDecl        => astForFuncDecl(nodeInfo)
+      case _: BaseExprStmt => astForExpression(nodeInfo)
+      case _               => Seq()
     }
-    output
   }
   override protected def line(node: ParserNodeInfo): Option[Integer] = node.lineNumber
 
