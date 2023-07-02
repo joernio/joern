@@ -7,10 +7,11 @@ name := "php2cpg"
 scalaVersion       := "2.13.8"
 crossScalaVersions := Seq("2.13.8", "3.3.0")
 
-val phpParserVersion = "4.15.7"
-val upstreamParserBinName = "php-parser.phar"
+val phpParserVersion       = "4.15.7"
+val upstreamParserBinName  = "php-parser.phar"
 val versionedParserBinName = s"php-parser-$phpParserVersion.phar"
-val phpParserDlUrl   = s"https://github.com/joernio/PHP-Parser/releases/download/v$phpParserVersion/$upstreamParserBinName"
+val phpParserDlUrl =
+  s"https://github.com/joernio/PHP-Parser/releases/download/v$phpParserVersion/$upstreamParserBinName"
 dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test")
 
 libraryDependencies ++= Seq(

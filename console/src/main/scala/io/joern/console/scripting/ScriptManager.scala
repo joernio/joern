@@ -25,12 +25,7 @@ object ScriptManager {
   *
   * Scripts should be grouped inside folders placed within the application's `resources/scripts` directory, for example:
   *
-  * resources
-  * -- scripts
-  * ---- java
-  * ------ my-java-script.sc
-  * ---- go
-  * ---- csharp
+  * resources -- scripts ---- java ------ my-java-script.sc ---- go ---- csharp
   *
   * To run `my-java-script.sc` you would run: `runScript("java/my-java-script.sc", cpg)`
   *
