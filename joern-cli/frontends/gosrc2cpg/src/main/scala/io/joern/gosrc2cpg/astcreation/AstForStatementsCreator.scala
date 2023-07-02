@@ -29,19 +29,7 @@ trait AstForStatementsCreator { this: AstCreator =>
   private def astForDeclStatement(declStmt: ParserNodeInfo): Seq[Ast] = {
     val nodeInfo = createParserNodeInfo(declStmt.json(ParserKeys.Decl))
     nodeInfo.node match {
-      // TODO: use AstForGenDeclarationCreator and move ValueSpec handling inside there.
-      case GenDecl =>
-        nodeInfo
-          .json(ParserKeys.Specs)
-          .arr
-          .map(createParserNodeInfo)
-          .flatMap { parserNode =>
-            parserNode.node match {
-              case ValueSpec => astForValueSpec(parserNode)
-              case _         => Seq()
-            }
-          }
-          .toList
+      case GenDecl => astForGenDecl(nodeInfo)
     }
   }
 
@@ -99,37 +87,6 @@ trait AstForStatementsCreator { this: AstCreator =>
         node
       }
     Seq(Ast(localNodes))
-  }
-
-  private def astForValueSpec(valueSpec: ParserNodeInfo): Seq[Ast] = {
-
-    val localNodes = valueSpec.json(ParserKeys.Names).arr.map { parserNode =>
-      val localParserNode = createParserNodeInfo(parserNode)
-
-      val name = parserNode(ParserKeys.Name).str
-      val typ  = valueSpec.json(ParserKeys.Type).obj(ParserKeys.Name).str
-      val node = localNode(localParserNode, name, localParserNode.code, typ)
-      scope.addToScope(name, (node, typ))
-      Ast(node)
-    }
-
-    if (!valueSpec.json(ParserKeys.Values).isNull) {
-      val callNodes = (valueSpec.json(ParserKeys.Names).arr.toList zip valueSpec.json(ParserKeys.Values).arr.toList)
-        .map { case (lhs, rhs) => (createParserNodeInfo(lhs), createParserNodeInfo(rhs)) }
-        .map { case (lhsParserNode, rhsParserNode) =>
-          val cNode = callNode(
-            rhsParserNode,
-            lhsParserNode.code + rhsParserNode.code,
-            Operators.assignment,
-            Operators.assignment,
-            DispatchTypes.STATIC_DISPATCH
-          )
-          val arguments = astForNode(lhsParserNode.json) ++: astForNode(rhsParserNode.json)
-          callAst(cNode, arguments)
-        }
-      localNodes.toList ::: callNodes
-    } else
-      localNodes.toList
   }
 
 }
