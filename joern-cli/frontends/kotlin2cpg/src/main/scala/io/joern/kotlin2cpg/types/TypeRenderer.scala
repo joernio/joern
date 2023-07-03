@@ -4,8 +4,7 @@ import io.joern.kotlin2cpg.psi.PsiUtils
 import io.joern.x2cpg.Defines
 import org.jetbrains.kotlin.descriptors.{ClassDescriptor, DeclarationDescriptor, SimpleFunctionDescriptor}
 import org.jetbrains.kotlin.resolve.{DescriptorToSourceUtils, DescriptorUtils}
-import org.jetbrains.kotlin.types.{ErrorUtils, KotlinType, TypeProjection, TypeUtils}
-import org.jetbrains.kotlin.types.error.ErrorType
+import org.jetbrains.kotlin.types.{ErrorUtils, ErrorType, KotlinType, TypeProjection, TypeUtils}
 import org.jetbrains.kotlin.builtins.jvm.JavaToKotlinClassMap
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.renderer.{DescriptorRenderer, DescriptorRendererImpl, DescriptorRendererOptionsImpl}
@@ -170,11 +169,6 @@ object TypeRenderer {
       }
     }
 
-    stripTypeParams(
-      stripOptionality(stripDebugInfo(stripOut(typeName)))
-        .trim()
-        .replaceAll(" ", "")
-    )
-      .replaceAll("`", "")
+    stripTypeParams(stripOptionality(stripDebugInfo(stripOut(typeName))).trim().replaceAll(" ", ""))
   }
 }
