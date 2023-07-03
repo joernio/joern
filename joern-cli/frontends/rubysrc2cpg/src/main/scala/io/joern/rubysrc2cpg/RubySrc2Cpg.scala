@@ -12,6 +12,7 @@ import io.joern.x2cpg.utils.ExternalCommand
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.passes.CpgPassBase
+import org.jruby.embed.{LocalContextScope, ScriptingContainer}
 import org.slf4j.LoggerFactory
 
 import java.nio.file.{Files, Paths}
@@ -28,15 +29,19 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
       val packageTableInfo = new PackageTable()
       new MetaDataPass(cpg, Languages.RUBYSRC, config.inputPath).createAndApply()
       new ConfigFileCreationPass(cpg).createAndApply()
-      if (config.enableDependencyDownload && !scala.util.Properties.isWin) {
+      //if (config.enableDependencyDownload && !scala.util.Properties.isWin) {
         val tempDir = File.newTemporaryDirectory()
         try {
           downloadDependency(config.inputPath, tempDir.toString())
+          // download(config.inputPath, tempDir.toString())
           new AstPackagePass(cpg, tempDir.toString(), global, packageTableInfo, config.inputPath).createAndApply()
+        } catch {
+          case ex: Exception =>
+            println(s"Error while parsing dependency: ${ex.getMessage}")
         } finally {
           tempDir.delete()
         }
-      }
+      //}
       val astCreationPass = new AstCreationPass(config.inputPath, cpg, global, packageTableInfo)
       astCreationPass.createAndApply()
       TypeNodePass.withRegisteredTypes(astCreationPass.allUsedTypes(), cpg).createAndApply()
@@ -60,6 +65,20 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
       }
     }
   }
+
+//  private def download(inputPath: String, tempPath: String): Unit = {
+//
+//    val container = new ScriptingContainer(LocalContextScope.SINGLETHREAD)
+//    container.getLoadPaths.add(inputPath)
+//    container.runScriptlet(s"require 'rubygems'")
+//    container.runScriptlet(s"require 'bundler'")
+//
+//    val bundlerScript = "require 'bundler'; Bundler.setup"
+//
+//    val gemfileContent = scala.io.Source.fromFile(inputPath).mkString
+//
+//    container.runScriptlet(bundlerScript, gemfileContent)
+//  }
 }
 
 object RubySrc2Cpg {

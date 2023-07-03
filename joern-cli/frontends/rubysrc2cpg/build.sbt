@@ -8,7 +8,8 @@ dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->t
 libraryDependencies ++= Seq(
   "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
   "org.scalatest" %% "scalatest"         % Versions.scalatest % Test,
-  "org.antlr"      % "antlr4-runtime"    % Versions.antlr
+  "org.antlr"      % "antlr4-runtime"    % Versions.antlr,
+  "org.jruby"      % "jruby-complete"    % "9.2.20.0"
 )
 
 scalacOptions ++= Seq(

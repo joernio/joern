@@ -831,6 +831,9 @@ class AstCreator(
       case None if isBuiltin(name)            => prefixAsBuiltin(name) // TODO: Probably not super precise
       case Some(externalDependencyResolution) => externalDependencyResolution
       case None                               => DynamicCallUnknownFullName
+      .getMethodFullNameUsingName(packageStack.toList, name) match {
+      case externalDependencyResolution if externalDependencyResolution.nonEmpty => externalDependencyResolution
+      case _                              => s"$filename:$name"
     }
 
     val callNode = NewCall()
@@ -1152,12 +1155,8 @@ class AstCreator(
       .filename(filename)
     callNode.methodFullName(methodFullName)
 
-    val classType = if (classStack.isEmpty) "Standalone" else classStack.top
-    val classPath = classStack.reverse.toList match {
-      case _ :: xs => xs.mkString(":") + ":"
-      case _       => ""
-    }
-    packageContext.packageTable.addPackageMethod(packageContext.moduleName, callNode.name, classPath, classType)
+//    val classType = if (classStack.isEmpty) "Standalone" else classStack.top
+//    packageContext.packageTable.addPackageMethod(packageContext.moduleName, callNode.name, classPath, classType)
 
     // process yield calls.
     astBody
