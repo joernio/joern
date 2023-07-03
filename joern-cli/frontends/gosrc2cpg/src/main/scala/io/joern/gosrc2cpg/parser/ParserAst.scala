@@ -13,6 +13,7 @@ object ParserAst {
     override def toString: String = this.getClass.getSimpleName.stripSuffix("$")
   }
 
+  object File       extends ParserNode
   object GenDecl    extends ParserNode
   object ImportSpec extends ParserNode
   object BasicLit   extends ParserNode
