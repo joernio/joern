@@ -99,11 +99,15 @@ trait AstForStatementsCreator { this: AstCreator =>
     controlStructureAst(throwNode, rhs.headOption, lhs)
   }
 
-  protected def astForCompoundStatement(ctx: CompoundStatementContext): Seq[Ast] =
-    Option(ctx.statements()).map(astForStatements).getOrElse(Seq())
+  protected def astForCompoundStatement(ctx: CompoundStatementContext): Seq[Ast] = {
+    val stmtAsts   = Option(ctx.statements()).map(astForStatements).getOrElse(Seq())
+    val blockNode_ = blockNode(ctx)
+    Seq(Ast(blockNode_).withChildren(stmtAsts))
+  }
 
-  protected def astForStatements(ctx: StatementsContext): Seq[Ast] =
+  protected def astForStatements(ctx: StatementsContext): Seq[Ast] = {
     Option(ctx.statement()).map(_.asScala).getOrElse(Seq()).flatMap(astForStatement).toSeq
+  }
 
   // TODO: return Ast instead of Seq[Ast].
   protected def astForStatement(ctx: StatementContext): Seq[Ast] = ctx match {
