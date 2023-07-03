@@ -25,10 +25,9 @@ class GoSrc2Cpg extends X2CpgFrontend[Config] {
         new MetaDataPass(cpg, Languages.GOLANG, config.inputPath).createAndApply()
         val astGenResult = new AstGenRunner(config).execute(tmpDir)
         GoMod.config = Some(config)
-        GoMod.meta =
-          if (!astGenResult.parsedModFile.isEmpty)
-            GoAstJsonParser.readModFile(Paths.get(astGenResult.parsedModFile.get))
-          else None
+        astGenResult.parsedModFile.foreach(modFile =>
+          GoAstJsonParser.readModFile(Paths.get(modFile)).foreach(x => GoMod.meta = Some(x))
+        )
         new AstCreationPass(cpg, astGenResult, config, report).createAndApply()
         report.print()
       }
