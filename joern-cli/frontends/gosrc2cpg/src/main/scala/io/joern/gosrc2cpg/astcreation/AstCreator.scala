@@ -7,18 +7,20 @@ import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.datastructures.Scope
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder => X2CpgAstNodeBuilder}
 import io.shiftleft.codepropertygraph.generated.NodeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewNode, NewNamespaceBlock}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewNamespaceBlock, NewNode}
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import ujson.Value
 
 class AstCreator(val relPathFileName: String, val parserResult: ParserResult)
     extends AstCreatorBase(relPathFileName)
-    with AstForDeclarationCreator
-    with AstForPrimitivesCreator
-    with AstForFunctionsCreator
-    with AstForStatementsCreator
     with AstCreatorHelper
+    with AstForDeclarationCreator
+    with AstForExpressionCreator
+    with AstForFunctionsCreator
+    with AstForPrimitivesCreator
+    with AstForStatementsCreator
     with X2CpgAstNodeBuilder[ParserNodeInfo, AstCreator] {
 
   protected val logger: Logger = LoggerFactory.getLogger(classOf[AstCreator])
@@ -40,7 +42,12 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)
       .fullName(s"$relPathFileName:${fullyQualifiedPackage}")
       .filename(relPathFileName)
     Ast(namespaceBlock).withChild(
-      astInFakeMethod(fullyQualifiedPackage, namespaceBlock.fullName, relPathFileName, rootNode)
+      astInFakeMethod(
+        fullyQualifiedPackage + "." + NamespaceTraversal.globalNamespaceName,
+        namespaceBlock.fullName,
+        relPathFileName,
+        rootNode
+      )
     )
   }
 
@@ -70,6 +77,7 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)
       case BasicLit                                 => astForLiteral(nodeInfo)
       case Ident                                    => astForIdentifier(nodeInfo)
       case FuncDecl                                 => astForFuncDecl(nodeInfo)
+      case _: BaseExprStmt                          => astForExpression(nodeInfo)
       case _                                        => Ast()
     }
     output
