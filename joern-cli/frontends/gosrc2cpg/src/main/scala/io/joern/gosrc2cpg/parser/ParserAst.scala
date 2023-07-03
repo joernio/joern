@@ -14,6 +14,7 @@ object ParserAst {
   }
   sealed trait BaseExprStmt extends ParserNode
 
+  object File       extends ParserNode
   object GenDecl    extends ParserNode
   object ImportSpec extends ParserNode
   object BasicLit   extends ParserNode

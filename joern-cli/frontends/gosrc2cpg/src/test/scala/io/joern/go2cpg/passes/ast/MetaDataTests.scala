@@ -7,7 +7,10 @@ import io.shiftleft.semanticcpg.language._
 
 class MetaDataTests extends GoCodeToCpgSuite {
 
-  private val cpg = code("")
+  private val cpg = code("""
+      |package main
+      |func foo() {}
+      |""".stripMargin)
 
   "should contain exactly one node with all mandatory fields set" in {
     val List(x) = cpg.metaData.l
