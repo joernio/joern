@@ -14,7 +14,7 @@ trait AstCreatorHelper { this: AstCreator =>
   private val MinCodeLength: Int = 50
 
   protected def createParserNodeInfo(json: Value): ParserNodeInfo = {
-    val c     = shortenCode(code(json))
+    val c     = shortenCode(code(json).toOption.getOrElse(""))
     val ln    = line(json)
     val cn    = column(json)
     val lnEnd = lineEndNo(json)
@@ -24,7 +24,7 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   private def nodeType(node: Value): ParserNode = fromString(node(ParserKeys.NodeType).str)
-  protected def code(node: Value): String = {
+  protected def code(node: Value): Try[String] = Try {
 
     val lineNumber    = line(node).get
     val colNumber     = column(node).get - 1
