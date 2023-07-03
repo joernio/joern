@@ -7,7 +7,8 @@ import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.datastructures.Scope
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder => X2CpgAstNodeBuilder}
 import io.shiftleft.codepropertygraph.generated.NodeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewNode, NewNamespaceBlock}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewNamespaceBlock, NewNode}
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import ujson.Value
@@ -41,7 +42,12 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)
       .fullName(s"$relPathFileName:${fullyQualifiedPackage}")
       .filename(relPathFileName)
     Ast(namespaceBlock).withChild(
-      astInFakeMethod(fullyQualifiedPackage, namespaceBlock.fullName, relPathFileName, rootNode)
+      astInFakeMethod(
+        fullyQualifiedPackage + "." + NamespaceTraversal.globalNamespaceName,
+        namespaceBlock.fullName,
+        relPathFileName,
+        rootNode
+      )
     )
   }
 
