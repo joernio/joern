@@ -8,9 +8,9 @@ import org.scalatest.Ignore
 
 @Ignore
 class ClassLoaderTypeTests extends JavaSrcCode2CpgFixture {
-  private val jdk17Home = sys.env.get("JAVA_17_HOME").get
-  private val jdk11Home = sys.env.get("JAVA_11_HOME").get
-  private val jdk8Home  = sys.env.get("JAVA_8_HOME").get
+  private lazy val jdk17Home = sys.env.get("JAVA_17_HOME").get
+  private lazy val jdk11Home = sys.env.get("JAVA_11_HOME").get
+  private lazy val jdk8Home  = sys.env.get("JAVA_8_HOME").get
 
   "types with java 17 exclusive features" should {
     val testCode =
