@@ -99,7 +99,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
 
   def usedAsExpression(expr: KtExpression): Option[Boolean] = {
     val mapForEntity = bindingsForEntity(bindingContext, expr)
-    Option(mapForEntity.get(BindingContext.USED_AS_EXPRESSION.getKey))
+    Option(mapForEntity.get(BindingContext.USED_AS_EXPRESSION.getKey)).map(_.booleanValue())
   }
 
   def fullName(expr: KtTypeAlias, defaultValue: String): String = {

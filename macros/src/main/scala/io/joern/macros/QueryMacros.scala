@@ -10,13 +10,14 @@ import scala.quoted.{Expr, Quotes}
 object QueryMacros {
 
   inline def withStrRep(inline traversal: Cpg => Traversal[_ <: StoredNode]): TraversalWithStrRep =
-    ${withStrRepImpl('{traversal})}
+    ${ withStrRepImpl('{ traversal }) }
 
-  private def withStrRepImpl(travExpr: Expr[Cpg => Traversal[_ <: StoredNode]])
-                            (using quotes: Quotes): Expr[TraversalWithStrRep] = {
+  private def withStrRepImpl(
+    travExpr: Expr[Cpg => Traversal[_ <: StoredNode]]
+  )(using quotes: Quotes): Expr[TraversalWithStrRep] = {
     import quotes.reflect._
-    val pos = travExpr.asTerm.pos
+    val pos  = travExpr.asTerm.pos
     val code = Position(pos.sourceFile, pos.start, pos.end).sourceCode.getOrElse("N/A")
-    '{TraversalWithStrRep(${travExpr}, ${Expr(code)})}
+    '{ TraversalWithStrRep(${ travExpr }, ${ Expr(code) }) }
   }
 }

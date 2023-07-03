@@ -4,13 +4,11 @@ import better.files.File
 
 name := "php2cpg"
 
-scalaVersion       := "2.13.8"
-crossScalaVersions := Seq("2.13.8", "3.3.0")
-
 val phpParserVersion = "4.15.7"
 val upstreamParserBinName = "php-parser.phar"
 val versionedParserBinName = s"php-parser-$phpParserVersion.phar"
 val phpParserDlUrl   = s"https://github.com/joernio/PHP-Parser/releases/download/v$phpParserVersion/$upstreamParserBinName"
+
 dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test")
 
 libraryDependencies ++= Seq(
@@ -19,10 +17,6 @@ libraryDependencies ++= Seq(
   "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
   "org.scalatest" %% "scalatest"         % Versions.scalatest % Test,
   "io.circe"      %% "circe-core"        % "0.15.0-M1"
-)
-
-scalacOptions ++= Seq(
-  "-deprecation" // Emit warning and location for usages of deprecated APIs.
 )
 
 lazy val phpParseInstallTask = taskKey[Unit]("Install PHP-Parse using PHP Composer")

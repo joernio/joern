@@ -59,19 +59,17 @@ object Help {
     val membersCode = DocFinder
       .findDocumentedMethodsOf(clazz)
       .map { case StepDoc(_, funcName, doc) =>
-        s"val $funcName : String = ${Help.format(doc.longInfo)}"
+        s"    val $funcName: String = ${Help.format(doc.longInfo)}"
       }
       .mkString("\n")
 
     val overview = Help.overview(clazz)
     s"""
        | class Helper() {
+       |   def run: String = Help.runLongHelp
+       |   override def toString: String = \"\"\"$overview\"\"\"
        |
-       | $membersCode
-       |
-       | def run : String = Help.runLongHelp
-       |
-       |  override def toString : String = \"\"\"$overview\"\"\"
+       |  $membersCode
        | }
        |
        | val help = new Helper

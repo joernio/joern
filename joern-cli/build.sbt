@@ -88,7 +88,7 @@ generateScaladocs := {
 
   /* extract sources-jar dependencies */
   List("codepropertygraph", "semanticcpg").foreach { projectName =>
-    val jar = SbtHelper.findJar(s"${projectName}_2.13", updateReport, SbtHelper.JarClassifier.Sources)
+    val jar = SbtHelper.findJar(s"${projectName}_3", updateReport, SbtHelper.JarClassifier.Sources)
     new ZipFile(jar).extractAll(inputFiles.pathAsString)
   }
 
