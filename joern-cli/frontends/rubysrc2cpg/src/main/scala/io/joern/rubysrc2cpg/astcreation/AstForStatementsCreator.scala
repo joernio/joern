@@ -100,9 +100,8 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   protected def astForCompoundStatement(ctx: CompoundStatementContext): Seq[Ast] = {
-    val stmtAsts   = Option(ctx.statements()).map(astForStatements).getOrElse(Seq())
-    val blockNode_ = blockNode(ctx)
-    Seq(Ast(blockNode_).withChildren(stmtAsts))
+    val stmtAsts = Option(ctx.statements()).map(astForStatements).getOrElse(Seq())
+    Seq(blockAst(blockNode(ctx), stmtAsts.toList))
   }
 
   protected def astForStatements(ctx: StatementsContext): Seq[Ast] = {
