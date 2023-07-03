@@ -5,7 +5,6 @@ import ujson.Value
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.Ast
 import org.apache.commons.lang.StringUtils
-
 import scala.util.Try
 
 trait AstCreatorHelper { this: AstCreator =>
@@ -26,8 +25,26 @@ trait AstCreatorHelper { this: AstCreator =>
 
   private def nodeType(node: Value): ParserNode = fromString(node(ParserKeys.NodeType).str)
   protected def code(node: Value): String = {
-    // TODO Need to build a utlity which returns code for a node
-    ""
+
+    val lineNumber = line(node).get
+    val colNumber = column(node).get - 1
+    val lineEndNumber = lineEndNo(node).get
+    val colEndNumber = columnEndNo(node).get - 1
+
+    var nodeCode = ""
+    if (lineNumber == lineEndNumber) {
+      nodeCode = lineNumberMapping(lineNumber).substring(colNumber, colEndNumber)
+    }
+    else {
+      nodeCode += lineNumberMapping(lineNumber).substring(colNumber)
+      var currentLineNumber = lineNumber + 1
+      while (currentLineNumber < lineEndNumber){
+        nodeCode += "\n" + lineNumberMapping(currentLineNumber)
+        currentLineNumber += 1
+      }
+      nodeCode += "\n" + lineNumberMapping(lineEndNumber).substring(0, colEndNumber)
+    }
+    nodeCode
   }
 
   private def shortenCode(code: String, length: Int = MaxCodeLength): String =
@@ -40,5 +57,11 @@ trait AstCreatorHelper { this: AstCreator =>
   protected def lineEndNo(node: Value): Option[Integer] = Try(node(ParserKeys.NodeLineEndNo).num).toOption.map(_.toInt)
 
   protected def columnEndNo(node: Value): Option[Integer] = Try(node(ParserKeys.NodeColEndNo).num).toOption.map(_.toInt)
+
+  protected def positionLookupTables(source: String): Map[Int, String] = {
+    source.split("\n").zipWithIndex.map {case (sourceLine, lineNumber) =>
+      (lineNumber+1, sourceLine)
+    }.toMap
+  }
 
 }

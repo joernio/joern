@@ -4,7 +4,8 @@ import io.joern.gosrc2cpg.parser.ParserAst._
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.gosrc2cpg.utils.Operator
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
+import ujson.Value
 
 import scala.util.Try
 
@@ -19,6 +20,7 @@ trait AstForStatementsCreator { this: AstCreator =>
           case DeclStmt   => astForDeclStatement(parserNode)
           case AssignStmt => astForAssignStatement(parserNode)
           case IncDecStmt => astForIncDecStatement(parserNode)
+          case IfStmt => Seq(astForIfStatement(parserNode))
           case _          => Seq()
         }
       }
@@ -87,6 +89,33 @@ trait AstForStatementsCreator { this: AstCreator =>
         node
       }
     Seq(Ast(localNodes))
+  }
+
+  def astForConditionExpression(condStmt: ParserNodeInfo) : Ast = {
+    condStmt.node match {
+      case ParenExpr => astForNode(condStmt.json(ParserKeys.X)).head
+      case _ => Ast()
+    }
+  }
+
+  def astForIfStatement(ifStmt : ParserNodeInfo): Ast = {
+
+    val conditionParserNode = createParserNodeInfo(ifStmt.json("Cond"))
+    val conditionAst = astForConditionExpression(conditionParserNode)
+
+    val ifNode = controlStructureNode(ifStmt, ControlStructureTypes.IF, s"if ${conditionParserNode.code}")
+
+    val thenAst = astForBlockStatement(createParserNodeInfo(ifStmt.json(ParserKeys.Body))).head
+
+    val elseAst = Try(ifStmt.json("Else")).toOption match {
+      case Some(elseStmt) =>
+        val elseParserNode = createParserNodeInfo(elseStmt)
+        val elseNode = controlStructureNode(elseParserNode, ControlStructureTypes.ELSE, "else")
+        val elseAst = astForBlockStatement(elseParserNode).head
+        Ast(elseNode).withChild(elseAst)
+      case _ => Ast()
+    }
+    controlStructureAst(ifNode, Some(conditionAst), Seq(thenAst, elseAst))
   }
 
 }

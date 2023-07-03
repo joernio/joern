@@ -30,6 +30,8 @@ object ParserAst {
   object StarExpr   extends BaseExprStmt
 
   object IncDecStmt extends ParserNode
+  object IfStmt extends ParserNode
+  object ParenExpr extends ParserNode
 }
 
 object ParserKeys {
