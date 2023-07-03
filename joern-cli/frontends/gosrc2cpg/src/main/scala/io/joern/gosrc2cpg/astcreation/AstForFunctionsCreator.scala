@@ -8,7 +8,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewMethodParameterIn
 import ujson.Value
 
 trait AstForFunctionsCreator { this: AstCreator =>
-  def astForFuncDecl(funcDecl: ParserNodeInfo) = {
+  def astForFuncDecl(funcDecl: ParserNodeInfo): Seq[Ast] = {
 
     val filename       = "fileName"
     val returnType     = "returnType"
@@ -30,19 +30,19 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val astForMethod = methodAst(
       methodNode_,
       parameterNodes.map(Ast(_)),
-      astForMethodBody(funcDecl.json(ParserKeys.Body)),
+      astForMethodBody(funcDecl.json(ParserKeys.Body)).head,
       newMethodReturnNode(returnType, None, line(funcDecl), column(funcDecl))
     )
     // TODO register type above
-    astForMethod
+    Seq(astForMethod)
   }
 
-  def astForMethodBody(body: Value) = {
+  def astForMethodBody(body: Value): Seq[Ast] = {
 
     val nodeInfo = createParserNodeInfo(body)
     nodeInfo.node match {
       case BlockStmt => astForBlockStatement(nodeInfo)
-      case _         => Ast()
+      case _         => Seq()
     }
   }
 

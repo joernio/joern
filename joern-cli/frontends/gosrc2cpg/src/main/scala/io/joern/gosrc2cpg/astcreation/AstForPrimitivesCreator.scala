@@ -7,14 +7,14 @@ import scala.util.Try
 
 trait AstForPrimitivesCreator { this: AstCreator =>
 
-  protected def astForLiteral(stringLiteral: ParserNodeInfo): Ast = {
+  protected def astForLiteral(stringLiteral: ParserNodeInfo): Seq[Ast] = {
     val code = stringLiteral.json(ParserKeys.Value).str
     // TODO May need to revisit this
     val typ = getTypeOfToken(stringLiteral)
-    Ast(literalNode(stringLiteral, code, typ))
+    Seq(Ast(literalNode(stringLiteral, code, typ)))
   }
 
-  protected def astForIdentifier(ident: ParserNodeInfo): Ast = {
+  protected def astForIdentifier(ident: ParserNodeInfo): Seq[Ast] = {
     val identifierName = ident.json(ParserKeys.Name).str
 
     val variableOption = scope.lookupVariable(identifierName)
@@ -25,8 +25,8 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     val node = identifierNode(ident, identifierName, ident.json(ParserKeys.Name).str, identifierType)
     variableOption match {
       case Some((variable, _)) =>
-        Ast(node).withRefEdge(node, variable)
-      case None => Ast(node)
+        Seq(Ast(node).withRefEdge(node, variable))
+      case None => Seq(Ast(node))
     }
   }
 

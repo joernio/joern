@@ -8,16 +8,16 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 
 trait AstForExpressionCreator { this: AstCreator =>
-  def astForExpression(expr: ParserNodeInfo): Ast = {
+  def astForExpression(expr: ParserNodeInfo): Seq[Ast] = {
     expr.node match {
       case BinaryExpr => astForBinaryExpr(expr)
       case StarExpr   => astForStarExpr(expr)
       case UnaryExpr  => astForUnaryExpr(expr)
-      case _          => Ast()
+      case _          => Seq()
     }
   }
 
-  private def astForBinaryExpr(binaryExpr: ParserNodeInfo): Ast = {
+  private def astForBinaryExpr(binaryExpr: ParserNodeInfo): Seq[Ast] = {
     val op = binaryExpr.json(ParserKeys.Op).value match {
       case "*"  => Operators.multiplication
       case "/"  => Operators.division
@@ -40,16 +40,16 @@ trait AstForExpressionCreator { this: AstCreator =>
       case _    => Operator.unknown
     }
     val cNode     = createCallNodeForOperator(binaryExpr, op)
-    val arguments = Seq(astForNode(binaryExpr.json(ParserKeys.X)), astForNode(binaryExpr.json(ParserKeys.Y)))
-    callAst(cNode, arguments)
+    val arguments = astForNode(binaryExpr.json(ParserKeys.X)) ++: astForNode(binaryExpr.json(ParserKeys.Y))
+    Seq(callAst(cNode, arguments))
   }
 
-  private def astForStarExpr(starExpr: ParserNodeInfo): Ast = {
+  private def astForStarExpr(starExpr: ParserNodeInfo): Seq[Ast] = {
     val cNode   = createCallNodeForOperator(starExpr, Operators.indirection)
     val operand = astForNode(starExpr.json(ParserKeys.X))
-    callAst(cNode, Seq(operand))
+    Seq(callAst(cNode, operand))
   }
-  private def astForUnaryExpr(unaryExpr: ParserNodeInfo): Ast = {
+  private def astForUnaryExpr(unaryExpr: ParserNodeInfo): Seq[Ast] = {
     val operatorMethod = unaryExpr.json(ParserKeys.Op).value match {
       case "+" => Operators.plus
       case "-" => Operators.minus
@@ -61,7 +61,7 @@ trait AstForExpressionCreator { this: AstCreator =>
 
     val cNode   = createCallNodeForOperator(unaryExpr, operatorMethod)
     val operand = astForNode(unaryExpr.json(ParserKeys.X))
-    callAst(cNode, Seq(operand))
+    Seq(callAst(cNode, operand))
   }
 
   private def createCallNodeForOperator(
