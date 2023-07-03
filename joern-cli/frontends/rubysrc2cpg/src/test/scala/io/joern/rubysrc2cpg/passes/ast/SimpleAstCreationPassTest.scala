@@ -749,14 +749,13 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       c.lineNumber shouldBe Some(1)
       c.columnNumber shouldBe Some(8)
     }
-    
+
     "have correct structure for if statement" in {
-      val cpg = code(
-        """if x == 0 then
+      val cpg = code("""if x == 0 then
           |  puts 1
           |end
           |""".stripMargin)
-      
+
       val List(ifNode) = cpg.controlStructure.l
       ifNode.controlStructureType shouldBe ControlStructureTypes.IF
       ifNode.lineNumber shouldBe Some(1)
@@ -764,15 +763,14 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(ifCondition, ifBlock) = ifNode.astChildren.l
       ifCondition.code shouldBe "x == 0"
       ifCondition.lineNumber shouldBe Some(1)
-      
+
       val List(puts) = ifBlock.astChildren.l
       puts.code shouldBe "puts 1"
       puts.lineNumber shouldBe Some(2)
     }
-    
+
     "have correct structure for if-else statement" in {
-      val cpg = code(
-        """if x == 0 then
+      val cpg = code("""if x == 0 then
           |  puts 1
           |else
           |  puts 2
@@ -786,11 +784,11 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(ifCondition, ifBlock, elseBlock) = ifNode.astChildren.l
       ifCondition.code shouldBe "x == 0"
       ifCondition.lineNumber shouldBe Some(1)
-      
+
       val List(puts1) = ifBlock.astChildren.l
       puts1.code shouldBe "puts 1"
       puts1.lineNumber shouldBe Some(2)
-      
+
       val List(puts2) = elseBlock.astChildren.l
       puts2.code shouldBe "puts 2"
       puts2.lineNumber shouldBe Some(4)
