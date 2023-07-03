@@ -1,28 +1,29 @@
 package io.joern.javasrc2cpg.typesolvers
 
-import java.util.jar.JarFile
 import better.files.File
-import java.util.jar.JarEntry
+import io.joern.javasrc2cpg.typesolvers.JmodClassPath._
 import javassist.ClassPath
 
 import scala.jdk.CollectionConverters._
-import java.net.URL
 import scala.util.Try
 import java.io.InputStream
+import java.net.URL
+import java.util.jar.{JarEntry, JarFile}
 
-class JdkArchiveClassPath(jmodPath: String) extends ClassPath {
+class JmodClassPath(jmodPath: String) extends ClassPath {
   private val jarfile    = new JarFile(jmodPath)
   private val jarfileURL = File(jmodPath).url.toString
   private val entries    = getEntriesMap(jarfile)
 
   private def entryToClassName(entry: JarEntry): String = {
-    entry.getName.stripPrefix("classes/").stripSuffix(".class").replace('/', '.')
+    entry.getName.stripPrefix(JmodClassesPrefix).stripSuffix(".class").replace('/', '.')
   }
 
   private def getEntriesMap(jarfile: JarFile): Map[String, JarEntry] = {
     jarfile
       .entries()
       .asScala
+      .filter(_.getName.startsWith(JmodClassesPrefix))
       .filter(_.getName.endsWith(".class"))
       .map { entry => entryToClassName(entry) -> entry }
       .toMap
@@ -43,4 +44,8 @@ class JdkArchiveClassPath(jmodPath: String) extends ClassPath {
       case Some(entry) => jarfile.getInputStream(entry)
     }
   }
+}
+
+object JmodClassPath {
+  val JmodClassesPrefix: String = "classes/"
 }

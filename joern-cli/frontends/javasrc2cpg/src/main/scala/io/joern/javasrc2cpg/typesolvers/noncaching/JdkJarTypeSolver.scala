@@ -20,6 +20,7 @@ import io.joern.x2cpg.SourceFiles
 import javassist.CtClass
 import com.github.javaparser.symbolsolver.javassistmodel.JavassistFactory
 import javassist.NotFoundException
+import javassist.ClassPath
 
 class JdkJarTypeSolver private (jdkPath: String) extends TypeSolver {
 
@@ -27,7 +28,12 @@ class JdkJarTypeSolver private (jdkPath: String) extends TypeSolver {
 
   private var parent: Option[TypeSolver] = None
   private val classPool                  = new NonCachingClassPool()
-  private val knownClassNames            = mutable.Map[String, String]()
+
+  /** JavaParser replaces '$' in class names for nested classes with '.', while the names in the javassist class pool do
+    * not. This means we need to keep a record of javaparser to classpool name for class pool lookups, e.g.
+    * foo.bar.Baz.Qux -> foo.bar.Baz$Qux
+    */
+  private val javaParserToClassPoolNames = mutable.Map[String, String]()
 
   private type RefType = ResolvedReferenceTypeDeclaration
 
@@ -43,9 +49,9 @@ class JdkJarTypeSolver private (jdkPath: String) extends TypeSolver {
     }
   }
 
-  override def tryToSolveType(name: String): SymbolReference[ResolvedReferenceTypeDeclaration] = {
-    knownClassNames
-      .get(name)
+  override def tryToSolveType(javaParserName: String): SymbolReference[ResolvedReferenceTypeDeclaration] = {
+    javaParserToClassPoolNames
+      .get(javaParserName)
       .flatMap(lookupAndConvertClass)
       .getOrElse(SymbolReference.unsolved(classOf[RefType]))
   }
@@ -84,26 +90,28 @@ class JdkJarTypeSolver private (jdkPath: String) extends TypeSolver {
     }
   }
 
-  private def addJarToClassPool(path: String): Unit = {
-    path match {
-      case jarPath if jarPath.endsWith(".jar") =>
-        classPool.appendClassPath(jarPath)
-
-      case jmodPath =>
-        classPool.appendClassPath(new JdkArchiveClassPath(jmodPath))
-    }
+  private def addPathToClassPool(archivePath: String): Try[ClassPath] = {
+    if (archivePath.isJarPath) Try(classPool.appendClassPath(archivePath))
+    else if (archivePath.isJmodPath)
+      val classPath = new JmodClassPath(archivePath)
+      Try(classPool.appendClassPath(classPath))
+    else Failure(new IllegalArgumentException("$archivePath is not a path to a jar/jmod"))
   }
 
-  private def withJars(jarPaths: Seq[String]): JdkJarTypeSolver = {
-    jarPaths.foreach { jarPath =>
-      Try(classPool.appendClassPath(new JdkArchiveClassPath(jarPath))) match {
-        case Success(_) => registerKnownClassesForJar(jarPath)
+  def withJars(archivePaths: Seq[String]): JdkJarTypeSolver = {
+    addArchives(archivePaths)
+    this
+  }
+
+  def addArchives(archivePaths: Seq[String]): Unit = {
+    archivePaths.foreach { archivePath =>
+      Try(addPathToClassPool(archivePath)) match {
+        case Success(_) => registerKnownClassesForJar(archivePath)
 
         case Failure(e) =>
-          logger.warn(s"Could not load jar at path $jarPath", e.getMessage())
+          logger.warn(s"Could not load jar at path $archivePath", e.getMessage())
       }
     }
-    this
   }
 
   private def registerJarEntry(jarEntry: JarEntry): Unit = {
@@ -115,9 +123,9 @@ class JdkJarTypeSolver private (jdkPath: String) extends TypeSolver {
 
       // Avoid keeping 2 identical copies of the name.
       if (javaParserName == classPoolName) {
-        knownClassNames.put(javaParserName, javaParserName)
+        javaParserToClassPoolNames.put(javaParserName, javaParserName)
       } else {
-        knownClassNames.put(javaParserName, classPoolName)
+        javaParserToClassPoolNames.put(javaParserName, classPoolName)
       }
     }
   }
@@ -141,9 +149,16 @@ class JdkJarTypeSolver private (jdkPath: String) extends TypeSolver {
 object JdkJarTypeSolver {
   val ClassExtension: String  = ".class"
   val JmodClassPrefix: String = "classes/"
+  val JarExtension: String    = ".jar"
+  val JmodExtension: String   = ".jmod"
+
+  extension (path: String) {
+    def isJarPath: Boolean  = path.endsWith(JarExtension)
+    def isJmodPath: Boolean = path.endsWith(JmodExtension)
+  }
 
   def fromJdkPath(jdkPath: String): JdkJarTypeSolver = {
-    val jarPaths = SourceFiles.determine(jdkPath, Set(".jar", ".jmod"))
+    val jarPaths = SourceFiles.determine(jdkPath, Set(JarExtension, JmodExtension))
     new JdkJarTypeSolver(jdkPath).withJars(jarPaths)
   }
 

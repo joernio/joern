@@ -4,15 +4,13 @@ import io.joern.javasrc2cpg.Config
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 import io.joern.x2cpg.utils.ExternalCommand
-import org.scalatest.Ignore
 
-@Ignore
 class ClassLoaderTypeTests extends JavaSrcCode2CpgFixture {
   private lazy val jdk17Home = sys.env.get("JAVA_17_HOME").get
   private lazy val jdk11Home = sys.env.get("JAVA_11_HOME").get
   private lazy val jdk8Home  = sys.env.get("JAVA_8_HOME").get
 
-  "types with java 17 exclusive features" should {
+  "types with java 17 exclusive features" ignore {
     val testCode =
       """
      |import javax.swing.filechooser.FileSystemView;
@@ -57,7 +55,7 @@ class ClassLoaderTypeTests extends JavaSrcCode2CpgFixture {
     }
   }
 
-  "types with java > 8 features" should {
+  "types with java > 8 features" ignore {
     val testCode =
       """
      |public class Test {
@@ -94,5 +92,19 @@ class ClassLoaderTypeTests extends JavaSrcCode2CpgFixture {
         "<unresolvedNamespace>.isBlank:<unresolvedSignature>(0)"
       )
     }
+  }
+
+  "types with java 8 features should be resolved with a jdk path override" in {
+    val config = Config().withJdkPath(System.getProperty("java.home"))
+    val cpg = code("""
+     |public class Test {
+     |    public static void foo(String s) {
+     |        s.trim().isEmpty();
+     |    }
+     |}
+     |""".stripMargin).withConfig(config)
+
+    cpg.call.name("trim").methodFullName.head shouldBe "java.lang.String.trim:java.lang.String()"
+    cpg.call.name("isEmpty").methodFullName.head shouldBe "java.lang.String.isEmpty:boolean()"
   }
 }
