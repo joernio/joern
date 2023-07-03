@@ -31,6 +31,12 @@ jobs:
           ruby-version: 2.7
       - name: Install Bundler
         run: gem install bundler
+      - name: Delete `.rustup` directory
+        run: rm -rf /home/runner/.rustup # to save disk space
+        if: runner.os == 'Linux'
+      - name: Delete `.cargo` directory # to save disk space
+        run: rm -rf /home/runner/.cargo
+        if: runner.os == 'Linux'
       - run: sbt scalafmtCheck +test
       - run: ./testDistro.sh
       - run: |
