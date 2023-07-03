@@ -57,8 +57,7 @@ import org.jetbrains.kotlin.resolve.{BindingContext, DescriptorToSourceUtils, De
 import org.jetbrains.kotlin.resolve.DescriptorUtils.getSuperclassDescriptors
 import org.jetbrains.kotlin.resolve.`lazy`.descriptors.LazyClassDescriptor
 import org.jetbrains.kotlin.serialization.deserialization.descriptors.DeserializedClassDescriptor
-import org.jetbrains.kotlin.types.{TypeUtils}
-import org.jetbrains.kotlin.types.error.ErrorType
+import org.jetbrains.kotlin.types.{ErrorType, TypeUtils}
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
