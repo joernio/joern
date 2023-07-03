@@ -12,7 +12,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
     val filename       = relPathFileName
     val name           = funcDecl.json(ParserKeys.Name).obj(ParserKeys.Name).str
-    val fullname       = s"${fullQualifiedPackage.get()}.${name}"
+    val fullname       = s"${fullyQualifiedPackage.get()}.${name}"
     val returnType     = "returnType"
     val templateParams = "templateParams"
 

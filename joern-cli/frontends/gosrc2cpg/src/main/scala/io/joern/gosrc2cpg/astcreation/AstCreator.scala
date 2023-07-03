@@ -7,7 +7,8 @@ import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.datastructures.Scope
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder => X2CpgAstNodeBuilder}
 import io.shiftleft.codepropertygraph.generated.NodeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewNode, NewNamespaceBlock}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewNode, NewNamespaceBlock}
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import ujson.Value
@@ -23,12 +24,10 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)
     with X2CpgAstNodeBuilder[ParserNodeInfo, AstCreator] {
 
   protected val logger: Logger                                   = LoggerFactory.getLogger(classOf[AstCreator])
-  protected val fullQualifiedPackage                             = new ThreadLocal[String]
+  protected val fullyQualifiedPackage                            = new ThreadLocal[String]
   protected val scope: Scope[String, (NewNode, String), NewNode] = new Scope()
 
   override def createAst(): DiffGraphBuilder = {
-
-//    val fileNode = NewFile().name(parserResult.filename).order(1)
     val rootNode = createParserNodeInfo(parserResult.json)
     val ast      = astForTranslationUnit(rootNode)
     Ast.storeInDiffGraph(ast, diffGraph)
@@ -36,16 +35,17 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)
   }
 
   private def astForTranslationUnit(rootNode: ParserNodeInfo): Ast = {
-    fullQualifiedPackage.set(
+    fullyQualifiedPackage.set(
       GoMod.getNameSpace(parserResult.filename, parserResult.json(ParserKeys.Name)(ParserKeys.Name).str)
     )
+
     val namespaceBlock = NewNamespaceBlock()
-      .name(fullQualifiedPackage.get())
-      .fullName(s"$relPathFileName:${fullQualifiedPackage.get()}")
+      .name(fullyQualifiedPackage.get())
+      .fullName(s"$relPathFileName:${fullyQualifiedPackage.get()}")
       .filename(relPathFileName)
     Ast(namespaceBlock).withChild(
       astForFakeMethodEnclosingFile(
-        fullQualifiedPackage.get() + "tmp",
+        fullyQualifiedPackage.get() + "." + NamespaceTraversal.globalNamespaceName,
         namespaceBlock.fullName,
         relPathFileName,
         rootNode

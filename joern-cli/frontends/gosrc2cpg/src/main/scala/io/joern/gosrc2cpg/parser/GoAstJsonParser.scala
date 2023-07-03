@@ -26,12 +26,11 @@ object GoAstJsonParser {
 
   def readModFile(file: Path): Option[GoMod] = {
     val jsonContent = IOUtils.readLinesInFile(file).mkString
-    val t = decode[GoMod](jsonContent) match {
+    (decode[GoMod](jsonContent) match {
       case Left(error) =>
         logger.warn(s"Error decoding JSON - '${file.toString}': $error")
         Left(error)
       case x => x
-    }
-    t.toOption
+    }).toOption
   }
 }
