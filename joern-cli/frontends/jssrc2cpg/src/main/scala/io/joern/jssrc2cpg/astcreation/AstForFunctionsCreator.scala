@@ -166,6 +166,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
             EvaluationStrategies.BY_VALUE,
             Option(tpe)
           )
+          Ast.storeInDiffGraph(typeDecl, diffGraph)
           scope.addVariable(paramName, param, MethodScope)
 
           additionalBlockStatements.addAll(nodeInfo.json("properties").arr.toList.map { element =>
@@ -206,7 +207,9 @@ trait AstForFunctionsCreator { this: AstCreator =>
             .map(x =>
               x.node match {
                 case TSTypeLiteral =>
-                  astForTypeAlias(x).root.collect { case t: NewTypeDecl => t.fullName }.getOrElse(typeFor(nodeInfo))
+                  val typeDecl = astForTypeAlias(x)
+                  Ast.storeInDiffGraph(typeDecl, diffGraph)
+                  typeDecl.root.collect { case t: NewTypeDecl => t.fullName }.getOrElse(typeFor(nodeInfo))
                 case _ => typeFor(nodeInfo)
               }
             )
