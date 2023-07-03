@@ -24,6 +24,7 @@ object ParserAst {
   object ValueSpec  extends ParserNode
   object Ident      extends ParserNode
   object AssignStmt extends ParserNode
+  object ReturnStmt extends ParserNode
   object ExprStmt   extends BaseExprStmt
   object BinaryExpr extends BaseExprStmt
   object UnaryExpr  extends BaseExprStmt

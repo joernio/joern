@@ -22,8 +22,8 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)
     with AstForStatementsCreator
     with X2CpgAstNodeBuilder[ParserNodeInfo, AstCreator] {
 
-  protected val logger: Logger = LoggerFactory.getLogger(classOf[AstCreator])
-
+  protected val logger: Logger                                   = LoggerFactory.getLogger(classOf[AstCreator])
+  protected val fullQualifiedPackage                             = new ThreadLocal[String]
   protected val scope: Scope[String, (NewNode, String), NewNode] = new Scope()
 
   override def createAst(): DiffGraphBuilder = {
@@ -36,14 +36,20 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)
   }
 
   private def astForTranslationUnit(rootNode: ParserNodeInfo): Ast = {
-    val fullQualifiedPackage =
+    fullQualifiedPackage.set(
       GoMod.getNameSpace(parserResult.filename, parserResult.json(ParserKeys.Name)(ParserKeys.Name).str)
+    )
     val namespaceBlock = NewNamespaceBlock()
-      .name(fullQualifiedPackage)
-      .fullName(s"$relPathFileName:${fullQualifiedPackage}")
+      .name(fullQualifiedPackage.get())
+      .fullName(s"$relPathFileName:${fullQualifiedPackage.get()}")
       .filename(relPathFileName)
     Ast(namespaceBlock).withChild(
-      astForFakeMethodEnclosingFile(fullQualifiedPackage, namespaceBlock.fullName, relPathFileName, rootNode)
+      astForFakeMethodEnclosingFile(
+        fullQualifiedPackage.get() + "tmp",
+        namespaceBlock.fullName,
+        relPathFileName,
+        rootNode
+      )
     )
   }
 

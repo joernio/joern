@@ -10,10 +10,10 @@ import ujson.Value
 trait AstForFunctionsCreator { this: AstCreator =>
   def astForFuncDecl(funcDecl: ParserNodeInfo): Seq[Ast] = {
 
-    val filename       = "fileName"
-    val returnType     = "returnType"
+    val filename       = relPathFileName
     val name           = funcDecl.json(ParserKeys.Name).obj(ParserKeys.Name).str
-    val fullname       = "fullname"
+    val fullname       = s"${fullQualifiedPackage.get()}.${name}"
+    val returnType     = "returnType"
     val templateParams = "templateParams"
 
     val signature =
