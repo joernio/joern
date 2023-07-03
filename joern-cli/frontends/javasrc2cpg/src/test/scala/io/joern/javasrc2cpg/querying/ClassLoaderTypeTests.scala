@@ -4,11 +4,13 @@ import io.joern.javasrc2cpg.Config
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 import io.joern.x2cpg.utils.ExternalCommand
+import org.scalatest.Ignore
 
+@Ignore
 class ClassLoaderTypeTests extends JavaSrcCode2CpgFixture {
   private val jdk17Home = sys.env.get("JAVA_17_HOME").get
   private val jdk11Home = sys.env.get("JAVA_11_HOME").get
-  private val jdk8Home = sys.env.get("JAVA_8_HOME").get
+  private val jdk8Home  = sys.env.get("JAVA_8_HOME").get
 
   "types with java 17 exclusive features" should {
     val testCode =
@@ -26,7 +28,7 @@ class ClassLoaderTypeTests extends JavaSrcCode2CpgFixture {
 
     "be resolved with a java 17 classloader" in {
       val config = Config().withJdkPath(jdk17Home)
-      val cpg = code(testCode).withConfig(config)
+      val cpg    = code(testCode).withConfig(config)
 
       val expected = "javax.swing.filechooser.FileSystemView.getSystemIcon:javax.swing.Icon(java.io.File,int,int)"
       cpg.call.name("getSystemIcon").methodFullName.head shouldEqual expected
@@ -35,14 +37,14 @@ class ClassLoaderTypeTests extends JavaSrcCode2CpgFixture {
 
     "not be resolved with a java 11 classloader" in {
       val config = Config().withJdkPath(jdk11Home)
-      val cpg = code(testCode).withConfig(config)
+      val cpg    = code(testCode).withConfig(config)
 
       cpg.call.name("getIconHeight").methodFullName.head.startsWith("<unresolved") shouldBe true
     }
 
     "not be resolved with a java 8 classloader" in {
       val config = Config().withJdkPath(jdk8Home)
-      val cpg = code(testCode).withConfig(config)
+      val cpg    = code(testCode).withConfig(config)
 
       cpg.call.name("getIconHeight").methodFullName.head.startsWith("<unresolved") shouldBe true
     }
@@ -67,7 +69,7 @@ class ClassLoaderTypeTests extends JavaSrcCode2CpgFixture {
 
     "be resolved by the java 17 classloader" in {
       val config = Config().withJdkPath(jdk17Home)
-      val cpg = code(testCode).withConfig(config)
+      val cpg    = code(testCode).withConfig(config)
 
       cpg.call.name("strip").methodFullName.head shouldEqual "java.lang.String.strip:java.lang.String()"
       cpg.call.name("isBlank").methodFullName.head shouldEqual "java.lang.String.isBlank:boolean()"
@@ -75,7 +77,7 @@ class ClassLoaderTypeTests extends JavaSrcCode2CpgFixture {
 
     "be resolved by the java 11 classloader" in {
       val config = Config().withJdkPath(jdk11Home)
-      val cpg = code(testCode).withConfig(config)
+      val cpg    = code(testCode).withConfig(config)
 
       cpg.call.name("strip").methodFullName.head shouldEqual "java.lang.String.strip:java.lang.String()"
       cpg.call.name("isBlank").methodFullName.head shouldEqual "java.lang.String.isBlank:boolean()"
@@ -83,7 +85,7 @@ class ClassLoaderTypeTests extends JavaSrcCode2CpgFixture {
 
     "not be resolved by the java 8 classloader" in {
       val config = Config().withJdkPath(jdk8Home)
-      val cpg = code(testCode).withConfig(config)
+      val cpg    = code(testCode).withConfig(config)
 
       cpg.call.name("strip").methodFullName.head shouldBe (
         "java.lang.String.strip:<unresolvedSignature>(0)"

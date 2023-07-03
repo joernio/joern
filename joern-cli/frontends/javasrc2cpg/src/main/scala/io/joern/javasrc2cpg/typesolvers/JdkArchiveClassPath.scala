@@ -11,9 +11,9 @@ import scala.util.Try
 import java.io.InputStream
 
 class JdkArchiveClassPath(jmodPath: String) extends ClassPath {
-  private val jarfile = new JarFile(jmodPath)
+  private val jarfile    = new JarFile(jmodPath)
   private val jarfileURL = File(jmodPath).url.toString
-  private val entries = getEntriesMap(jarfile)
+  private val entries    = getEntriesMap(jarfile)
 
   private def entryToClassName(entry: JarEntry): String = {
     entry.getName.stripPrefix("classes/").stripSuffix(".class").replace('/', '.')

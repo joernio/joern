@@ -26,8 +26,8 @@ class JdkJarTypeSolver private (jdkPath: String) extends TypeSolver {
   private val logger = LoggerFactory.getLogger(this.getClass())
 
   private var parent: Option[TypeSolver] = None
-  private val classPool = new NonCachingClassPool()
-  private val knownClassNames = mutable.Map[String, String]()
+  private val classPool                  = new NonCachingClassPool()
+  private val knownClassNames            = mutable.Map[String, String]()
 
   private type RefType = ResolvedReferenceTypeDeclaration
 
@@ -44,16 +44,17 @@ class JdkJarTypeSolver private (jdkPath: String) extends TypeSolver {
   }
 
   override def tryToSolveType(name: String): SymbolReference[ResolvedReferenceTypeDeclaration] = {
-    knownClassNames.get(name)
+    knownClassNames
+      .get(name)
       .flatMap(lookupAndConvertClass)
       .getOrElse(SymbolReference.unsolved(classOf[RefType]))
   }
 
   override def solveType(name: String): ResolvedReferenceTypeDeclaration = {
     tryToSolveType(name) match {
-      case symbolReference if symbolReference.isSolved() => 
+      case symbolReference if symbolReference.isSolved() =>
         symbolReference.getCorrespondingDeclaration()
-      
+
       case _ => throw new UnsolvedSymbolException(name)
     }
   }
@@ -66,17 +67,15 @@ class JdkJarTypeSolver private (jdkPath: String) extends TypeSolver {
     SymbolReference.solved[RefType, RefType](refType)
   }
 
-  private def lookupAndConvertClass(name: String): Option[SymbolReference[RefType]]= {
+  private def lookupAndConvertClass(name: String): Option[SymbolReference[RefType]] = {
     Try(classPool.get(name)) match {
       case Success(ctClass) =>
-        val refType = ctClassToRefType(ctClass)
+        val refType      = ctClassToRefType(ctClass)
         val solvedSymbol = refTypeToSymbolReference(refType)
         Some(solvedSymbol)
 
       case Failure(_: NotFoundException) =>
-        logger.error(
-          s"BUG! Could not find class $name in class pool. This is not supposed to be possible!"
-        )
+        logger.error(s"BUG! Could not find class $name in class pool. This is not supposed to be possible!")
         None
 
       case Failure(e) =>
@@ -100,19 +99,19 @@ class JdkJarTypeSolver private (jdkPath: String) extends TypeSolver {
       Try(classPool.appendClassPath(new JdkArchiveClassPath(jarPath))) match {
         case Success(_) => registerKnownClassesForJar(jarPath)
 
-        case Failure(e) => 
+        case Failure(e) =>
           logger.warn(s"Could not load jar at path $jarPath", e.getMessage())
       }
     }
     this
-  } 
+  }
 
   private def registerJarEntry(jarEntry: JarEntry): Unit = {
     val entryName = jarEntry.getName()
 
     if (!jarEntry.isDirectory && entryName.endsWith(ClassExtension)) {
       val javaParserName = convertEntryPathToJavaParserName(entryName)
-      val classPoolName = convertEntryPathToClassPoolName(entryName)
+      val classPoolName  = convertEntryPathToClassPoolName(entryName)
 
       // Avoid keeping 2 identical copies of the name.
       if (javaParserName == classPoolName) {
@@ -127,20 +126,20 @@ class JdkJarTypeSolver private (jdkPath: String) extends TypeSolver {
     try {
       Using(new JarFile(jarPath)) { jarFile =>
         jarFile
-        .entries()
-        .asIterator()
-        .asScala
-        .foreach(registerJarEntry)
+          .entries()
+          .asIterator()
+          .asScala
+          .foreach(registerJarEntry)
       }
     } catch {
-      case ioException: IOException => 
+      case ioException: IOException =>
         logger.warn(s"Could register classes for jar/jmod at $jarPath", ioException.getMessage())
     }
   }
 }
 
 object JdkJarTypeSolver {
-  val ClassExtension: String = ".class"
+  val ClassExtension: String  = ".class"
   val JmodClassPrefix: String = "classes/"
 
   def fromJdkPath(jdkPath: String): JdkJarTypeSolver = {
@@ -150,8 +149,7 @@ object JdkJarTypeSolver {
 
   /** Convert the JarEntry path into the qualified name format expected by JavaParser
     *
-    * JarEntry format  : foo/bar/Baz$Qux.class
-    * JavaParser format: foo.bar.Baz.Qux
+    * JarEntry format : foo/bar/Baz$Qux.class JavaParser format: foo.bar.Baz.Qux
     */
   def convertEntryPathToJavaParserName(entryPath: String): String = {
     convertEntryPathToClassPoolName(entryPath).replace('$', '.')
@@ -159,8 +157,7 @@ object JdkJarTypeSolver {
 
   /** Convert the JarEntry path into the qualified name format expected by Javassist ClassPools
     *
-    * JarEntry format : foo/bar/Baz$Qux.class
-    * ClassPool format: foo.bar.Baz$Qux
+    * JarEntry format : foo/bar/Baz$Qux.class ClassPool format: foo.bar.Baz$Qux
     */
   def convertEntryPathToClassPoolName(entryPath: String): String = {
     if (!entryPath.endsWith(ClassExtension)) {

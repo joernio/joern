@@ -94,8 +94,7 @@ class CachingClassLoaderTypeSolver(classLoader: ClassLoader) extends ClassLoader
 object CachingClassLoaderTypeSolver {
   private[CachingClassLoaderTypeSolver] class NoResult
 
-  /** Use the NullClassLoader which "finds" the class NoResult
-    * to avoid falling back to system class loader
+  /** Use the NullClassLoader which "finds" the class NoResult to avoid falling back to system class loader
     */
   private class NullClassLoader extends ClassLoader {
     override def loadClass(name: String): Class[_] = {

@@ -22,9 +22,7 @@ trait JavaSrcFrontend extends LanguageFrontend {
   }
 }
 
-class JavaSrcTestCpg(enableTypeRecovery: Boolean = false)
-    extends TestCpg
-    with JavaSrcFrontend {
+class JavaSrcTestCpg(enableTypeRecovery: Boolean = false) extends TestCpg with JavaSrcFrontend {
   private var _withOssDataflow = false
 
   def withOssDataflow(value: Boolean = true): this.type = {
@@ -44,10 +42,8 @@ class JavaSrcTestCpg(enableTypeRecovery: Boolean = false)
 
 }
 
-class JavaSrcCode2CpgFixture(
-  withOssDataflow: Boolean = false,
-  enableTypeRecovery: Boolean = false
-) extends Code2CpgFixture(() => new JavaSrcTestCpg(enableTypeRecovery).withOssDataflow(withOssDataflow)) {
+class JavaSrcCode2CpgFixture(withOssDataflow: Boolean = false, enableTypeRecovery: Boolean = false)
+    extends Code2CpgFixture(() => new JavaSrcTestCpg(enableTypeRecovery).withOssDataflow(withOssDataflow)) {
 
   implicit val resolver: ICallResolver           = NoResolve
   implicit lazy val engineContext: EngineContext = EngineContext()

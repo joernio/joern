@@ -9,7 +9,12 @@ import com.github.javaparser.symbolsolver.JavaSymbolSolver
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JarTypeSolver
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.javasrc2cpg.passes.AstCreationPass._
-import io.joern.javasrc2cpg.typesolvers.{CachingClassLoaderTypeSolver, EagerSourceTypeSolver, SimpleCombinedTypeSolver, JdkJarTypeSolver}
+import io.joern.javasrc2cpg.typesolvers.{
+  CachingClassLoaderTypeSolver,
+  EagerSourceTypeSolver,
+  SimpleCombinedTypeSolver,
+  JdkJarTypeSolver
+}
 import io.joern.javasrc2cpg.util.{Delombok, SourceRootFinder}
 import io.joern.javasrc2cpg.util.Delombok.DelombokMode
 import io.joern.x2cpg.SourceFiles
@@ -84,11 +89,10 @@ class AstCreationPass(config: Config, cpg: Cpg, preCreatedAsts: Option[SplitJpAs
     symbolSolver
   }
 
-
   private def createSymbolSolver(typesAsts: List[JpAstWithMeta]): JavaSymbolSolver = {
     val dependencyList = getDependencyList()
 
-    val combinedTypeSolver   = new SimpleCombinedTypeSolver()
+    val combinedTypeSolver = new SimpleCombinedTypeSolver()
     // val classLoaderTypeSolver = CachingClassLoaderTypeSolver.getClassLoaderTypeSolver(config.jdkPath)
     // classLoaderTypeSolver.foreach(combinedTypeSolver.add)
 
@@ -97,7 +101,7 @@ class AstCreationPass(config: Config, cpg: Cpg, preCreatedAsts: Option[SplitJpAs
         val jdkJarTypeSolver = JdkJarTypeSolver.fromJdkPath(path)
         combinedTypeSolver.add(jdkJarTypeSolver)
 
-      case None => 
+      case None =>
         combinedTypeSolver.add(new ReflectionTypeSolver())
     }
 
