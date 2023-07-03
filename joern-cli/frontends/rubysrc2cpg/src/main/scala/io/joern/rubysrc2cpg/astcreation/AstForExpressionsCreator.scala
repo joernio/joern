@@ -153,31 +153,20 @@ trait AstForExpressionsCreator { this: AstCreator =>
   protected def astForIfExpression(ctx: IfExpressionContext): Ast = {
     val testAst   = astForExpressionOrCommand(ctx.expressionOrCommand())
     val thenAst   = astForCompoundStatement(ctx.thenClause().compoundStatement())
-    val elsifAsts = Option(ctx.elsifClause()).map(_.asScala).getOrElse(Seq()).map(astForElsifClause)
-    val elseAst   = Option(ctx.elseClause()).map(astForElseClause).getOrElse(Seq())
-    val ifNode    = controlStructureNode(ctx, ControlStructureTypes.IF, ctx.getText)
+    val elsifAsts = Option(ctx.elsifClause).map(_.asScala).getOrElse(Seq()).map(astForElsifClause)
+    val elseAst = Option(ctx.elseClause()).map(ctx => astForCompoundStatement(ctx.compoundStatement())).getOrElse(Seq())
+    val ifNode  = controlStructureNode(ctx, ControlStructureTypes.IF, ctx.getText)
     controlStructureAst(ifNode, testAst.headOption)
       .withChildren(thenAst)
       .withChildren(elsifAsts.toSeq)
       .withChildren(elseAst)
   }
 
-  protected def astForElsifClause(ctx: ElsifClauseContext): Ast = {
+  private def astForElsifClause(ctx: ElsifClauseContext): Ast = {
     val ifNode  = controlStructureNode(ctx, ControlStructureTypes.IF, ctx.getText)
     val testAst = astForExpressionOrCommand(ctx.expressionOrCommand())
     val bodyAst = astForCompoundStatement(ctx.thenClause().compoundStatement())
     controlStructureAst(ifNode, testAst.headOption, bodyAst)
-  }
-
-  // TODO: Rewrite this (and if expressions as a whole) to look similar to PHP's
-  protected def astForElseClause(ctx: ElseClauseContext): Seq[Ast] = {
-    val elseNode = NewJumpTarget()
-      .name("default")
-      .code(ctx.getText)
-      .lineNumber(line(ctx))
-      .columnNumber(column(ctx))
-
-    Ast(elseNode) +: astForCompoundStatement(ctx.compoundStatement())
   }
 
 }

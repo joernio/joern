@@ -1,7 +1,8 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.Block
+import io.shiftleft.semanticcpg.language.*
 
 class ControlStructureTests extends RubyCode2CpgFixture {
 
@@ -260,9 +261,11 @@ class ControlStructureTests extends RubyCode2CpgFixture {
       val List(controlStructure) = cpg.whileBlock.l
       controlStructure.lineNumber shouldBe Some(3)
 
-      val List(condition, puts, assignment) = controlStructure.astChildren.l
+      val List(condition, body: Block) = controlStructure.astChildren.l
       condition.code shouldBe "x == 0"
       condition.lineNumber shouldBe Some(3)
+
+      val List(puts, assignment) = body.astChildren.l
       puts.code shouldBe "puts \"In the loop\""
       puts.lineNumber shouldBe Some(4)
       assignment.lineNumber shouldBe Some(5)
