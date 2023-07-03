@@ -4,23 +4,18 @@ import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclar
 import com.github.javaparser.symbolsolver.cache.GuavaCache
 import com.github.javaparser.symbolsolver.model.resolution.SymbolReference
 import com.github.javaparser.symbolsolver.reflectionmodel.ReflectionFactory
-import com.github.javaparser.symbolsolver.resolution.typesolvers.ClassLoaderTypeSolver
+import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver
 import com.google.common.cache.CacheBuilder
-import io.joern.javasrc2cpg.typesolvers.CachingClassLoaderTypeSolver.NoResult
 
 import scala.jdk.CollectionConverters._
-import better.files.File
-import java.net.URLClassLoader
-import java.security.AccessControlContext
-import org.slf4j.LoggerFactory
-import io.joern.x2cpg.SourceFiles
 
 // This class caches the `loadClass` operation in order to avoid
 // duplicate loading of the same class over and over again.
-class CachingClassLoaderTypeSolver(classLoader: ClassLoader) extends ClassLoaderTypeSolver(classLoader) {
+class CachingReflectionTypeSolver extends ReflectionTypeSolver {
   private val cache = new GuavaCache(
     CacheBuilder.newBuilder().build[String, SymbolReference[ResolvedReferenceTypeDeclaration]]()
   )
+  private val classLoader = classOf[CachingReflectionTypeSolver].getClassLoader
 
   override def tryToSolveType(name: String): SymbolReference[ResolvedReferenceTypeDeclaration] = {
     if (filterName(name)) {
@@ -42,7 +37,6 @@ class CachingClassLoaderTypeSolver(classLoader: ClassLoader) extends ClassLoader
       } else {
         try {
           val clazz = classLoader.loadClass(name)
-          if (clazz == classOf[NoResult]) throw new ClassNotFoundException(name)
           val symbolReference =
             SymbolReference.solved[ResolvedReferenceTypeDeclaration, ResolvedReferenceTypeDeclaration](
               ReflectionFactory.typeDeclarationFor(clazz, getRoot)
@@ -89,49 +83,4 @@ class CachingClassLoaderTypeSolver(classLoader: ClassLoader) extends ClassLoader
     }
   }
 
-}
-
-object CachingClassLoaderTypeSolver {
-  private[CachingClassLoaderTypeSolver] class NoResult
-
-  /** Use the NullClassLoader which "finds" the class NoResult to avoid falling back to system class loader
-    */
-  private class NullClassLoader extends ClassLoader {
-    override def loadClass(name: String): Class[_] = {
-      throw new ClassNotFoundException(name)
-    }
-
-    override def loadClass(name: String, resolve: Boolean): Class[_] = {
-      throw new ClassNotFoundException(name)
-    }
-
-    override def findClass(name: String): Class[_] = {
-      throw new ClassNotFoundException(name)
-    }
-
-    override def findClass(moduleName: String, name: String): Class[_] = {
-      throw new ClassNotFoundException(s"$moduleName:$name")
-    }
-
-    override def findLibrary(name: String): String = {
-      throw new ClassNotFoundException(name)
-    }
-  }
-
-  private val logger = LoggerFactory.getLogger(this.getClass)
-  def getClassLoaderTypeSolver(jdkPath: Option[String]): Option[ClassLoaderTypeSolver] = {
-    val classLoader = jdkPath.map(File(_)) match {
-      case None => Some(classOf[ClassLoaderTypeSolver].getClassLoader())
-
-      case Some(file) if file.exists =>
-        val jars = SourceFiles.determine(file.canonicalPath, Set(".jar", ".jmod")).map(File(_).url).toArray
-        Some(new URLClassLoader("CL", jars, new NullClassLoader()))
-
-      case Some(file) =>
-        logger.error(s"Invalid JDK path ${file.pathAsString}! Type information will be missing.")
-        None
-    }
-
-    classLoader.map(new CachingClassLoaderTypeSolver(_))
-  }
 }

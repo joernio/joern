@@ -10,7 +10,6 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.JarTypeSolver
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.javasrc2cpg.passes.AstCreationPass._
 import io.joern.javasrc2cpg.typesolvers.{
-  CachingClassLoaderTypeSolver,
   EagerSourceTypeSolver,
   SimpleCombinedTypeSolver,
   JdkJarTypeSolver
@@ -33,6 +32,7 @@ import scala.util.{Success, Try}
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ClassLoaderTypeSolver
 import java.net.URLClassLoader
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver
+import io.joern.javasrc2cpg.typesolvers.CachingReflectionTypeSolver
 
 case class SourceDirectoryInfo(typeSolverSourceDirs: List[String], sourceFiles: List[SourceFileInfo])
 case class SplitDirectories(analysisSourceDir: String, typesSourceDir: String)
@@ -93,8 +93,6 @@ class AstCreationPass(config: Config, cpg: Cpg, preCreatedAsts: Option[SplitJpAs
     val dependencyList = getDependencyList()
 
     val combinedTypeSolver = new SimpleCombinedTypeSolver()
-    // val classLoaderTypeSolver = CachingClassLoaderTypeSolver.getClassLoaderTypeSolver(config.jdkPath)
-    // classLoaderTypeSolver.foreach(combinedTypeSolver.add)
 
     config.jdkPath match {
       case Some(path) =>
@@ -102,7 +100,7 @@ class AstCreationPass(config: Config, cpg: Cpg, preCreatedAsts: Option[SplitJpAs
         combinedTypeSolver.add(jdkJarTypeSolver)
 
       case None =>
-        combinedTypeSolver.add(new ReflectionTypeSolver())
+        combinedTypeSolver.add(new CachingReflectionTypeSolver())
     }
 
     val sourceTypeSolver = EagerSourceTypeSolver(typesAsts, combinedTypeSolver)
