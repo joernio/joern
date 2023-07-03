@@ -26,8 +26,6 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)
   protected val scope: Scope[String, (NewNode, String), NewNode] = new Scope()
 
   override def createAst(): DiffGraphBuilder = {
-
-//    val fileNode = NewFile().name(parserResult.filename).order(1)
     val rootNode = createParserNodeInfo(parserResult.json)
     val ast      = astForTranslationUnit(rootNode)
     Ast.storeInDiffGraph(ast, diffGraph)
@@ -35,14 +33,14 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)
   }
 
   private def astForTranslationUnit(rootNode: ParserNodeInfo): Ast = {
-    val fullQualifiedPackage =
+    val fullyQualifiedPackage =
       GoMod.getNameSpace(parserResult.filename, parserResult.json(ParserKeys.Name)(ParserKeys.Name).str)
     val namespaceBlock = NewNamespaceBlock()
-      .name(fullQualifiedPackage)
-      .fullName(s"$relPathFileName:${fullQualifiedPackage}")
+      .name(fullyQualifiedPackage)
+      .fullName(s"$relPathFileName:${fullyQualifiedPackage}")
       .filename(relPathFileName)
     Ast(namespaceBlock).withChild(
-      astInFakeMethod(fullQualifiedPackage, namespaceBlock.fullName, relPathFileName, rootNode)
+      astInFakeMethod(fullyQualifiedPackage, namespaceBlock.fullName, relPathFileName, rootNode)
     )
   }
 
