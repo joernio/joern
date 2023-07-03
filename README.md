@@ -33,6 +33,7 @@ Specification: https://cpg.joern.io
 ## Development Requirements
 
 - mvn https://maven.apache.org/install.html
+- git lfs https://git-lfs.com/
 
 ## Quick Installation
 
