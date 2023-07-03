@@ -9,11 +9,7 @@ import com.github.javaparser.symbolsolver.JavaSymbolSolver
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JarTypeSolver
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.javasrc2cpg.passes.AstCreationPass._
-import io.joern.javasrc2cpg.typesolvers.{
-  EagerSourceTypeSolver,
-  SimpleCombinedTypeSolver,
-  JdkJarTypeSolver
-}
+import io.joern.javasrc2cpg.typesolvers.{EagerSourceTypeSolver, SimpleCombinedTypeSolver, JdkJarTypeSolver}
 import io.joern.javasrc2cpg.util.{Delombok, SourceRootFinder}
 import io.joern.javasrc2cpg.util.Delombok.DelombokMode
 import io.joern.x2cpg.SourceFiles
