@@ -26,19 +26,18 @@ trait AstCreatorHelper { this: AstCreator =>
   private def nodeType(node: Value): ParserNode = fromString(node(ParserKeys.NodeType).str)
   protected def code(node: Value): String = {
 
-    val lineNumber = line(node).get
-    val colNumber = column(node).get - 1
+    val lineNumber    = line(node).get
+    val colNumber     = column(node).get - 1
     val lineEndNumber = lineEndNo(node).get
-    val colEndNumber = columnEndNo(node).get - 1
+    val colEndNumber  = columnEndNo(node).get - 1
 
     var nodeCode = ""
     if (lineNumber == lineEndNumber) {
       nodeCode = lineNumberMapping(lineNumber).substring(colNumber, colEndNumber)
-    }
-    else {
+    } else {
       nodeCode += lineNumberMapping(lineNumber).substring(colNumber)
       var currentLineNumber = lineNumber + 1
-      while (currentLineNumber < lineEndNumber){
+      while (currentLineNumber < lineEndNumber) {
         nodeCode += "\n" + lineNumberMapping(currentLineNumber)
         currentLineNumber += 1
       }
@@ -59,9 +58,13 @@ trait AstCreatorHelper { this: AstCreator =>
   protected def columnEndNo(node: Value): Option[Integer] = Try(node(ParserKeys.NodeColEndNo).num).toOption.map(_.toInt)
 
   protected def positionLookupTables(source: String): Map[Int, String] = {
-    source.split("\n").zipWithIndex.map {case (sourceLine, lineNumber) =>
-      (lineNumber+1, sourceLine)
-    }.toMap
+    source
+      .split("\n")
+      .zipWithIndex
+      .map { case (sourceLine, lineNumber) =>
+        (lineNumber + 1, sourceLine)
+      }
+      .toMap
   }
 
 }

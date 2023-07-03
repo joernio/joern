@@ -151,23 +151,22 @@ class AstCreationPassTests extends GoCodeToCpgSuite {
         |  }
         |}
     """.stripMargin)
-      inside(cpg.method.name("method").controlStructure.l) { case List(ifStmt, elseStmt) =>
-        ifStmt.controlStructureType shouldBe ControlStructureTypes.IF
-        ifStmt.code shouldBe "if (x > 0)"
-        elseStmt.controlStructureType shouldBe ControlStructureTypes.ELSE
-        elseStmt.code shouldBe "else"
+    inside(cpg.method.name("method").controlStructure.l) { case List(ifStmt, elseStmt) =>
+      ifStmt.controlStructureType shouldBe ControlStructureTypes.IF
+      ifStmt.code shouldBe "if (x > 0)"
+      elseStmt.controlStructureType shouldBe ControlStructureTypes.ELSE
+      elseStmt.code shouldBe "else"
 
-        inside(ifStmt.condition.l) { case List(cndNode) =>
-          cndNode.code shouldBe "x > 0"
-        }
-
-        ifStmt.whenTrue.assignment
-          .map(x => (x.target.code, x.source.code))
-          .headOption shouldBe Some(("y", "0"))
-        ifStmt.whenFalse.assignment
-          .map(x => (x.target.code, x.source.code))
-          .headOption shouldBe Some(("y", "1"))
+      inside(ifStmt.condition.l) { case List(cndNode) =>
+        cndNode.code shouldBe "x > 0"
       }
-  }
 
+      ifStmt.whenTrue.assignment
+        .map(x => (x.target.code, x.source.code))
+        .headOption shouldBe Some(("y", "0"))
+      ifStmt.whenFalse.assignment
+        .map(x => (x.target.code, x.source.code))
+        .headOption shouldBe Some(("y", "1"))
+    }
+  }
 }

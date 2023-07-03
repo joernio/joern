@@ -5,27 +5,33 @@ import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.gosrc2cpg.utils.Operator
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
-import ujson.Value
 
 import scala.util.Try
 
 trait AstForStatementsCreator { this: AstCreator =>
-  def astForBlockStatement(blockStmt: ParserNodeInfo): Seq[Ast] = {
-
-    val newBlockNode = blockNode(blockStmt)
+  def astForBlockStatement(blockStmt: ParserNodeInfo, order: Int = -1): Ast = {
+    val newBlockNode = blockNode(blockStmt, Defines.empty, Defines.voidTypeName).order(order).argumentIndex(order)
     scope.pushNewScope(newBlockNode)
+    var currOrder = 1
     val childAsts =
       blockStmt.json(ParserKeys.List).arrOpt.getOrElse(List()).arr.map(createParserNodeInfo).flatMap { parserNode =>
-        parserNode.node match {
-          case DeclStmt   => astForDeclStatement(parserNode)
-          case AssignStmt => astForAssignStatement(parserNode)
-          case IncDecStmt => astForIncDecStatement(parserNode)
-          case IfStmt => Seq(astForIfStatement(parserNode))
-          case _          => Seq()
-        }
+        val r = astsForStatement(parserNode, currOrder)
+        currOrder = currOrder + r.length
+        r
       }
     scope.popScope()
-    Seq(blockAst(newBlockNode, childAsts.toList))
+    blockAst(newBlockNode, childAsts.toList)
+  }
+
+  private def astsForStatement(statement: ParserNodeInfo, argIndex: Int = -1): Seq[Ast] = {
+    statement.node match {
+      case AssignStmt => astForAssignStatement(statement)
+      case BlockStmt  => Seq(astForBlockStatement(statement, argIndex))
+      case DeclStmt   => astForDeclStatement(statement)
+      case IfStmt     => Seq(astForIfStatement(statement))
+      case IncDecStmt => Seq(astForIncDecStatement(statement))
+      case _          => Seq()
+    }
   }
 
   private def astForDeclStatement(declStmt: ParserNodeInfo): Seq[Ast] = {
@@ -66,7 +72,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     localNodesIfIntialized ++: callAst_
   }
 
-  private def astForIncDecStatement(incDecStatement: ParserNodeInfo): Seq[Ast] = {
+  private def astForIncDecStatement(incDecStatement: ParserNodeInfo): Ast = {
     val op = incDecStatement.json(ParserKeys.Tok).value match {
       case "++" => Operators.postIncrement
       case "--" => Operators.postDecrement
@@ -74,10 +80,10 @@ trait AstForStatementsCreator { this: AstCreator =>
     }
     val cNode   = callNode(incDecStatement, incDecStatement.code, op, op, DispatchTypes.STATIC_DISPATCH)
     val operand = astForNode(incDecStatement.json(ParserKeys.X))
-    Seq(callAst(cNode, (operand)))
+    callAst(cNode, operand)
   }
 
-  def createLocalNodeForShortVariableDeclaration(assignStmt: ParserNodeInfo): Seq[Ast] = {
+  private def createLocalNodeForShortVariableDeclaration(assignStmt: ParserNodeInfo): Seq[Ast] = {
 
     val localNodes = (assignStmt.json(ParserKeys.Lhs).arr zip assignStmt.json(ParserKeys.Rhs).arr)
       .map { case (lhs, rhs) => (createParserNodeInfo(lhs), createParserNodeInfo(rhs)) }
@@ -91,28 +97,37 @@ trait AstForStatementsCreator { this: AstCreator =>
     Seq(Ast(localNodes))
   }
 
-  def astForConditionExpression(condStmt: ParserNodeInfo) : Ast = {
+  private def astForConditionExpression(condStmt: ParserNodeInfo): Ast = {
     condStmt.node match {
       case ParenExpr => astForNode(condStmt.json(ParserKeys.X)).head
-      case _ => Ast()
+      case _         => Ast()
     }
   }
 
-  def astForIfStatement(ifStmt : ParserNodeInfo): Ast = {
+  private def astForIfStatement(ifStmt: ParserNodeInfo): Ast = {
 
-    val conditionParserNode = createParserNodeInfo(ifStmt.json("Cond"))
-    val conditionAst = astForConditionExpression(conditionParserNode)
+    val conditionParserNode = createParserNodeInfo(ifStmt.json(ParserKeys.Cond))
+    val conditionAst        = astForConditionExpression(conditionParserNode)
 
     val ifNode = controlStructureNode(ifStmt, ControlStructureTypes.IF, s"if ${conditionParserNode.code}")
 
-    val thenAst = astForBlockStatement(createParserNodeInfo(ifStmt.json(ParserKeys.Body))).head
+    val thenAst = astForBlockStatement(createParserNodeInfo(ifStmt.json(ParserKeys.Body)))
 
-    val elseAst = Try(ifStmt.json("Else")).toOption match {
+    val elseAst = Try(ifStmt.json(ParserKeys.Else)).toOption match {
+      case Some(elseStmt) if createParserNodeInfo(elseStmt).node == BlockStmt =>
+        val elseParserNode = createParserNodeInfo(elseStmt)
+        val elseNode       = controlStructureNode(elseParserNode, ControlStructureTypes.ELSE, "else")
+        val elseAst        = astForBlockStatement(elseParserNode)
+        Ast(elseNode).withChild(elseAst)
       case Some(elseStmt) =>
         val elseParserNode = createParserNodeInfo(elseStmt)
-        val elseNode = controlStructureNode(elseParserNode, ControlStructureTypes.ELSE, "else")
-        val elseAst = astForBlockStatement(elseParserNode).head
-        Ast(elseNode).withChild(elseAst)
+        val elseNode       = controlStructureNode(elseParserNode, ControlStructureTypes.ELSE, "else")
+        val elseBlock      = blockNode(elseParserNode, Defines.empty, Defines.voidTypeName)
+        scope.pushNewScope(elseBlock)
+        val a = astsForStatement(elseParserNode)
+        setArgumentIndices(a)
+        scope.popScope()
+        Ast(elseNode).withChild(blockAst(elseBlock, a.toList))
       case _ => Ast()
     }
     controlStructureAst(ifNode, Some(conditionAst), Seq(thenAst, elseAst))

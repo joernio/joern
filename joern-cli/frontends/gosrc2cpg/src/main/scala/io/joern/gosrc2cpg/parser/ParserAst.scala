@@ -30,15 +30,17 @@ object ParserAst {
   object StarExpr   extends BaseExprStmt
 
   object IncDecStmt extends ParserNode
-  object IfStmt extends ParserNode
-  object ParenExpr extends ParserNode
+  object IfStmt     extends ParserNode
+  object ParenExpr  extends BaseExprStmt
 }
 
 object ParserKeys {
 
   val Body          = "Body"
+  val Cond          = "Cond"
   val Decl          = "Decl"
   val Decls         = "Decls"
+  val Else          = "Else"
   val Kind          = "Kind"
   val List          = "List"
   val Lhs           = "Lhs"
