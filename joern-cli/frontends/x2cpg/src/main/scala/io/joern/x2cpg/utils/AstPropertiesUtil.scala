@@ -15,6 +15,8 @@ object AstPropertiesUtil {
 
     def rootCode: Option[String] = rootProperty(PropertyNames.CODE)
 
+    def rootName: Option[String] = rootProperty(PropertyNames.NAME)
+
     def rootCodeOrEmpty: String = rootCode.getOrElse("")
 
   }
@@ -24,6 +26,8 @@ object AstPropertiesUtil {
     def rootType: Option[String] = asts.headOption.flatMap(_.rootType)
 
     def rootCode: Option[String] = asts.headOption.flatMap(_.rootCode)
+
+    def rootName: Option[String] = asts.headOption.flatMap(_.rootName)
 
     def rootCodeOrEmpty: String = asts.rootCode.getOrElse("")
   }

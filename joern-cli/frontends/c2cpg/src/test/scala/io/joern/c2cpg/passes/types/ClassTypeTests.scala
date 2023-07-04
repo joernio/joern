@@ -3,7 +3,7 @@ package io.joern.c2cpg.passes.types
 import io.joern.c2cpg.parser.FileDefaults
 import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.semanticcpg.language.types.structure.{FileTraversal, NamespaceTraversal}
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 class ClassTypeTests extends CCodeToCpgSuite(FileDefaults.CPP_EXT) {
 
@@ -103,7 +103,7 @@ class ClassTypeTests extends CCodeToCpgSuite(FileDefaults.CPP_EXT) {
       x.inheritsFromTypeFullName shouldBe List()
       x.aliasTypeFullName shouldBe None
       x.order shouldBe -1
-      x.filename shouldBe FileTraversal.UNKNOWN
+      x.filename shouldBe "<includes>"
     }
 
     "should find exactly 1 internal type" in {

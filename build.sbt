@@ -1,8 +1,8 @@
 name                     := "joern"
 ThisBuild / organization := "io.joern"
-ThisBuild / scalaVersion := "2.13.8"
+ThisBuild / scalaVersion := "3.3.0"
 
-val cpgVersion = "1.3.597"
+val cpgVersion = "1.4.1"
 
 lazy val joerncli          = Projects.joerncli
 lazy val querydb           = Projects.querydb
@@ -20,6 +20,8 @@ lazy val jssrc2cpg         = Projects.jssrc2cpg
 lazy val javasrc2cpg       = Projects.javasrc2cpg
 lazy val jimple2cpg        = Projects.jimple2cpg
 lazy val kotlin2cpg        = Projects.kotlin2cpg
+lazy val rubysrc2cpg       = Projects.rubysrc2cpg
+lazy val gosrc2cpg         = Projects.gosrc2cpg
 
 lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   joerncli,
@@ -36,11 +38,13 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   jssrc2cpg,
   javasrc2cpg,
   jimple2cpg,
-  kotlin2cpg
+  kotlin2cpg,
+  rubysrc2cpg,
+  gosrc2cpg
 )
 
 ThisBuild / libraryDependencies ++= Seq(
-  "org.slf4j"                % "slf4j-api"         % "2.0.6",
+  "org.slf4j"                % "slf4j-api"         % "2.0.7",
   "org.apache.logging.log4j" % "log4j-slf4j2-impl" % "2.20.0" % Optional,
   "org.apache.logging.log4j" % "log4j-core"        % "2.20.0" % Optional
   // `Optional` means "not transitive", but still included in "stage/lib"
@@ -48,11 +52,19 @@ ThisBuild / libraryDependencies ++= Seq(
 
 ThisBuild / compile / javacOptions ++= Seq(
   "-g", // debug symbols
-  "-Xlint"
-)
+  "-Xlint",
+  "--release=11"
+) ++ {
+  // fail early if users with JDK8 try to run this
+  val javaVersion = sys.props("java.specification.version").toFloat
+  assert(javaVersion.toInt >= 11, s"this build requires JDK11+ - you're using $javaVersion")
+  Nil
+}
 
 ThisBuild / scalacOptions ++= Seq(
-  "-deprecation" // Emit warning and location for usages of deprecated APIs.
+  "-deprecation", // Emit warning and location for usages of deprecated APIs.
+  "--release",
+  "11"
 )
 
 lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")
@@ -94,6 +106,6 @@ publish / skip := true // don't publish the root project
 // Avoids running root tasks on the benchmarks project
 lazy val root = project
   .in(file("."))
-  .aggregate(aggregatedProjects: _*)
+  .aggregate(aggregatedProjects *)
 
 ThisBuild / Test / packageBin / publishArtifact := true

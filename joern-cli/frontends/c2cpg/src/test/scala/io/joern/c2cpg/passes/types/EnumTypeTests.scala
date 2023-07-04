@@ -34,6 +34,9 @@ class EnumTypeTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
         inside(color.astChildren.isMethod.l) { case List(clinit) =>
           clinit.name shouldBe io.joern.x2cpg.Defines.StaticInitMethodName
           clinit.fullName shouldBe s"color:${io.joern.x2cpg.Defines.StaticInitMethodName}"
+          clinit.lineNumber shouldBe Some(2)
+          clinit.columnNumber shouldBe Some(1)
+          clinit.filename shouldBe "Test0.cpp"
           inside(clinit.ast.isCall.l) { case List(greenInit) =>
             greenInit.code shouldBe "green = 20"
           }
@@ -54,7 +57,7 @@ class EnumTypeTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
         case List(color, c) =>
           color.name shouldBe "color"
           color.code should startWith("typedef enum color")
-          color.aliasTypeFullName shouldBe None
+          color.aliasTypeFullName shouldBe Some("C")
           c.name shouldBe "C"
           c.aliasTypeFullName shouldBe Some("color")
           inside(color.astChildren.isMember.l) { case List(red, yellow, green, blue) =>
@@ -141,6 +144,23 @@ class EnumTypeTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
         }
         anon.astChildren.isMethod shouldBe empty
       }
+    }
+
+    "be correct for anonymous enum with alias" in {
+      val cpg = code("""
+          |enum
+          |{
+          |    d,
+          |    e,
+          |    f
+          |} testing;""".stripMargin)
+      val List(anon) = cpg.typeDecl.name("testing").l
+      inside(anon.member.l) { case List(d, e, f) =>
+        d.name shouldBe "d"
+        e.name shouldBe "e"
+        f.name shouldBe "f"
+      }
+      anon.aliasTypeFullName shouldBe None
     }
 
     "be correct for enum access" in {

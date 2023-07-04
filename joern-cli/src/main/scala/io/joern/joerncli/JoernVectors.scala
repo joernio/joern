@@ -17,7 +17,7 @@ import scala.util.hashing.MurmurHash3
 
 class BagOfPropertiesForNodes extends EmbeddingGenerator[AstNode, (String, String)] {
   override def structureToString(pair: (String, String)): String = pair._1 + ":" + pair._2
-  override def extractObjects(cpg: Cpg): Traversal[AstNode] = Traversal(cpg.graph.V.collect { case x: AstNode => x })
+  override def extractObjects(cpg: Cpg): Traversal[AstNode]      = cpg.graph.V.collect { case x: AstNode => x }
   override def enumerateSubStructures(obj: AstNode): List[(String, String)] = {
     val relevantFieldTypes = Set(PropertyNames.NAME, PropertyNames.FULL_NAME, PropertyNames.CODE)
     val relevantFields = obj
@@ -144,7 +144,7 @@ object JoernVectors {
         val embedding = generator.embed(cpg)
         println("{")
         println("\"objects\":")
-        traversalToJson(embedding.objects, { x: String => generator.defaultToString(x) })
+        traversalToJson(embedding.objects, generator.defaultToString)
         if (config.dimToFeature) {
           println(",\"dimToFeature\": ")
           println(Serialization.write(embedding.dimToStructure))
@@ -156,7 +156,7 @@ object JoernVectors {
           cpg.graph.edges().map { x =>
             Map("src" -> x.outNode().id(), "dst" -> x.inNode().id(), "label" -> x.label())
           },
-          { x: Map[String, Any] => generator.defaultToString(x) }
+          generator.defaultToString
         )
         println("}")
       }

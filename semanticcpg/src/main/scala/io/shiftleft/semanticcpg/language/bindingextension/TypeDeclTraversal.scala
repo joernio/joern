@@ -2,7 +2,6 @@ package io.shiftleft.semanticcpg.language.bindingextension
 
 import io.shiftleft.codepropertygraph.generated.nodes.{Binding, Method, TypeDecl}
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal._
 
 class TypeDeclTraversal(val traversal: Traversal[TypeDecl]) extends AnyVal {
 

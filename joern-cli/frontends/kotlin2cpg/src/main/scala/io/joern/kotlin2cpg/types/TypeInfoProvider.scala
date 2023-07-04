@@ -1,7 +1,9 @@
 package io.joern.kotlin2cpg.types
 
 import io.shiftleft.passes.KeyPool
+import org.jetbrains.kotlin.descriptors.DescriptorVisibility
 import org.jetbrains.kotlin.psi.{
+  KtAnnotationEntry,
   KtBinaryExpression,
   KtCallExpression,
   KtClassLiteralExpression,
@@ -22,10 +24,18 @@ import org.jetbrains.kotlin.psi.{
   KtTypeReference
 }
 
+case class AnonymousObjectContext(declaration: KtNamedFunction)
+
 trait TypeInfoProvider {
+  def isExtensionFn(fn: KtNamedFunction): Boolean
+
+  def usedAsExpression(expr: KtExpression): Option[Boolean]
+
   def containingTypeDeclFullName(ktFn: KtNamedFunction, defaultValue: String): String
 
   def isStaticMethodCall(expr: KtQualifiedExpression): Boolean
+
+  def visibility(fn: KtNamedFunction): Option[DescriptorVisibility]
 
   def returnType(elem: KtNamedFunction, defaultValue: String): String
 
@@ -39,9 +49,11 @@ trait TypeInfoProvider {
 
   def parameterType(expr: KtParameter, defaultValue: String): String
 
+  def destructuringEntryType(expr: KtDestructuringDeclarationEntry, defaultValue: String): String
+
   def propertyType(expr: KtProperty, defaultValue: String): String
 
-  def fullName(expr: KtClassOrObject, defaultValue: String): String
+  def fullName(expr: KtClassOrObject, defaultValue: String, ctx: Option[AnonymousObjectContext] = None): String
 
   def fullName(expr: KtTypeAlias, defaultValue: String): String
 
@@ -55,11 +67,11 @@ trait TypeInfoProvider {
 
   def typeFullName(expr: KtBinaryExpression, defaultValue: String): String
 
+  def typeFullName(expr: KtAnnotationEntry, defaultValue: String): String
+
   def isReferenceToClass(expr: KtNameReferenceExpression): Boolean
 
   def bindingKind(expr: KtQualifiedExpression): CallKinds.CallKind
-
-  def isReferencingMember(expr: KtNameReferenceExpression): Boolean
 
   def fullNameWithSignature(expr: KtQualifiedExpression, or: (String, String)): (String, String)
 
@@ -73,6 +85,8 @@ trait TypeInfoProvider {
 
   def fullNameWithSignature(expr: KtNamedFunction, or: (String, String)): (String, String)
 
+  def fullNameWithSignatureAsLambda(expr: KtNamedFunction, keyPool: KeyPool): (String, String)
+
   def fullNameWithSignature(expr: KtClassLiteralExpression, or: (String, String)): (String, String)
 
   def fullNameWithSignature(expr: KtLambdaExpression, keyPool: KeyPool): (String, String)
@@ -85,7 +99,7 @@ trait TypeInfoProvider {
 
   def nameReferenceKind(expr: KtNameReferenceExpression): NameReferenceKinds.NameReferenceKind
 
-  def isConstructorCall(expr: KtCallExpression): Option[Boolean]
+  def isConstructorCall(expr: KtExpression): Option[Boolean]
 
   def typeFullName(expr: KtTypeReference, defaultValue: String): String
 

@@ -1,7 +1,7 @@
 # Joern Query Database ("Joern-Scan")
 
 This is the central query database for the open-source code analysis
-platform [Joern](https://github.com/ShiftLeftSecurity/joern). It has
+platform [Joern](https://github.com/joernio/joern). It has
 two purposes:
 
 * It provides the batteries required to turn Joern into a ready-to-run code scanning tool.
@@ -56,7 +56,7 @@ Please follow the rules below for a tear-free query writing experience:
   A query bundle is simply an `object` that derives from `QueryBundle`
 * Queries can have parameters,but you must provide a default value for each parameter
 * Please add unit tests for queries. These also serve as a spec for what your query does.
-* Please format the code before sending a PR using `sbt scalafmt` and `sbt test:scalafmt`
+* Please format the code before sending a PR using `sbt scalafmt Test/scalafmt`
 
 Take a look at the query bundle `Metrics` at `src/main/scala/io/joern/scanners/c/Metrics.scala`
 as an example:
@@ -136,7 +136,7 @@ follows:
 sbt test
 ```
 
-You can test newly developed queries 
+You can test newly developed queries
 
 If you want to test newly created queries with `joern-scan` as follows:
 

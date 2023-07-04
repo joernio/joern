@@ -36,6 +36,7 @@ class InterfaceTests extends JimpleCode2CpgFixture {
     x.fullName shouldBe "Foo.add:int(int,int)"
     x.isExternal shouldBe false
     x.order shouldBe 1
+    x.parameter.code.l shouldBe List("this", "int param1", "int param2")
   }
 
   "should contain the correct modifier(s)" in {

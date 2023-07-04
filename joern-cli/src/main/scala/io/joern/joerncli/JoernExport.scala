@@ -22,7 +22,7 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 import scala.util.Using
 
-object JoernExport extends App {
+object JoernExport {
 
   case class Config(
     cpgFileName: String = "cpg.bin",
@@ -57,7 +57,19 @@ object JoernExport extends App {
       byNameLowercase.getOrElse(s, throw new NoSuchElementException(s"No value found for '$s'"))
   }
 
-  private def parseConfig: Option[Config] =
+  def main(args: Array[String]): Unit = {
+    parseConfig(args).foreach { config =>
+      val outDir = config.outDir
+      exitIfInvalid(outDir, config.cpgFileName)
+      mkdir(File(outDir))
+
+      Using.resource(CpgBasedTool.loadFromOdb(config.cpgFileName)) { cpg =>
+        exportCpg(cpg, config.repr, config.format, Paths.get(outDir).toAbsolutePath)
+      }
+    }
+  }
+
+  private def parseConfig(args: Array[String]): Option[Config] = {
     new scopt.OptionParser[Config]("joern-export") {
       head("Dump intermediate graph representations (or entire graph) of code in a given export format")
       help("help")
@@ -79,16 +91,6 @@ object JoernExport extends App {
           s"export format, one of [${Format.values.toSeq.map(_.toString.toLowerCase).sorted.mkString("|")}] - defaults to `${Format.Dot}`"
         )
     }.parse(args, Config())
-
-  parseConfig.foreach { config =>
-    val repr   = config.repr
-    val outDir = config.outDir
-    exitIfInvalid(outDir, config.cpgFileName)
-    mkdir(File(outDir))
-
-    Using.resource(CpgBasedTool.loadFromOdb(config.cpgFileName)) { cpg =>
-      exportCpg(cpg, config.repr, config.format, Paths.get(outDir).toAbsolutePath)
-    }
   }
 
   def exportCpg(cpg: Cpg, representation: Representation.Value, format: Format.Value, outDir: Path): Unit = {
@@ -111,8 +113,9 @@ object JoernExport extends App {
         exportWithOdbFormat(cpg, representation, outDir, GraphMLExporter)
       case Format.Graphson =>
         exportWithOdbFormat(cpg, representation, outDir, GraphSONExporter)
+      case other =>
+        throw new NotImplementedError(s"repr=$representation not yet supported for format=$format")
     }
-
   }
 
   private def exportDot(repr: Representation.Value, outDir: Path, context: LayerCreatorContext): Unit = {
@@ -125,6 +128,7 @@ object JoernExport extends App {
       case Cdg   => new DumpCdg(CdgDumpOptions(outDirStr)).create(context)
       case Pdg   => new DumpPdg(PdgDumpOptions(outDirStr)).create(context)
       case Cpg14 => new DumpCpg14(Cpg14DumpOptions(outDirStr)).create(context)
+      case other => throw new NotImplementedError(s"repr=$repr not yet supported for this format")
     }
   }
 
@@ -151,6 +155,8 @@ object JoernExport extends App {
             exporter.runExport(nodes, subGraph.edges, outFileName)
           }
           .reduce(plus)
+      case other =>
+        throw new NotImplementedError(s"repr=$repr not yet supported for this format")
     }
 
     println(s"exported $nodeCount nodes, $edgeCount edges into $outDir")

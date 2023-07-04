@@ -1,5 +1,6 @@
 package io.joern.dataflowengineoss.passes.reachingdef
 
+import io.joern.dataflowengineoss.{globalFromLiteral, identifierToFirstUsages}
 import io.joern.dataflowengineoss.queryengine.AccessPathUsage.toTrackedBaseAndAccessPathSimple
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.nodes._
@@ -7,6 +8,7 @@ import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators, PropertyN
 import io.shiftleft.semanticcpg.accesspath.MatchResult
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate.DiffGraphBuilder
+import overflowdb.traversal.Traversal
 
 import scala.collection.{Set, mutable}
 
@@ -166,6 +168,42 @@ class DdgGenerator(semantics: Semantics) {
       }
     }
 
+    def addEdgesToCapturedIdentifiersAndParameters(): Unit = {
+      val identifierDestPairs =
+        method._identifierViaContainsOut.flatMap { identifier =>
+          val firstAndLastUsageByMethod = identifierToFirstUsages(identifier).groupBy(_.method)
+          firstAndLastUsageByMethod.values
+            .filter(_.nonEmpty)
+            .map(x => (x.head, x.last))
+            .flatMap { case (firstUsage, lastUsage) =>
+              (identifier.lineNumber, firstUsage.lineNumber, lastUsage.lineNumber) match {
+                case (Some(iNo), Some(fNo), _) if iNo <= fNo => Some(identifier, firstUsage)
+                case (Some(iNo), _, Some(lNo)) if iNo >= lNo => Some(lastUsage, identifier)
+                case _                                       => None
+              }
+            }
+        }.distinct
+
+      identifierDestPairs
+        .foreach { case (src, dst) =>
+          addEdge(src, dst, nodeToEdgeLabel(src))
+        }
+      method.parameter.foreach { param =>
+        param.capturedByMethodRef.referencedMethod.ast.isIdentifier.foreach { identifier =>
+          addEdge(param, identifier, nodeToEdgeLabel(param))
+        }
+      }
+
+      val globalIdentifiers =
+        method.ast.isLiteral.flatMap(globalFromLiteral).collectAll[Identifier].l
+      globalIdentifiers
+        .foreach { global =>
+          identifierToFirstUsages(global).map { identifier =>
+            addEdge(global, identifier, nodeToEdgeLabel(global))
+          }
+        }
+    }
+
     addEdgesFromEntryNode()
     allNodes.foreach {
       case call: Call                   => addEdgesToCallSite(call)
@@ -173,6 +211,8 @@ class DdgGenerator(semantics: Semantics) {
       case paramOut: MethodParameterOut => addEdgesToMethodParameterOut(paramOut)
       case _                            =>
     }
+
+    addEdgesToCapturedIdentifiersAndParameters()
     addEdgesToExitNode(method.methodReturn)
     addEdgesFromLoneIdentifiersToExit(method)
   }

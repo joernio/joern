@@ -45,10 +45,10 @@ class LocalQueryTests extends CCodeToCpgSuite {
   "should prove correct (name, type) pairs for locals" in {
     inside(cpg.method.name("free_list").local.l) { case List(q, p) =>
       q.name shouldBe "q"
-      q.typeFullName shouldBe "node"
+      q.typeFullName shouldBe "node*"
       q.code shouldBe "struct node* q"
       p.name shouldBe "p"
-      p.typeFullName shouldBe "node"
+      p.typeFullName shouldBe "node*"
       p.code shouldBe "struct node* p"
     }
   }
@@ -65,7 +65,7 @@ class LocalQueryTests extends CCodeToCpgSuite {
       c.typeFullName shouldBe "int"
       c.code shouldBe "static int c"
       foo.name shouldBe "foo"
-      foo.typeFullName shouldBe "wchar_t"
+      foo.typeFullName shouldBe "wchar_t*"
       foo.code shouldBe "wchar_t* foo"
       d.name shouldBe "d"
       d.typeFullName shouldBe "int[10]"

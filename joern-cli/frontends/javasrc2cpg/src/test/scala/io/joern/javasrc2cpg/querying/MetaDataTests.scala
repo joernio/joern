@@ -3,7 +3,6 @@ package io.joern.javasrc2cpg.querying
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal._
 
 class MetaDataTests extends JavaSrcCode2CpgFixture {
 

@@ -4,17 +4,30 @@ import io.joern.jssrc2cpg.parser.BabelAst._
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
 
+import java.util.regex.Pattern
+
 trait TypeHelper { this: AstCreator =>
 
   private val TypeAnnotationKey = "typeAnnotation"
   private val ReturnTypeKey     = "returnType"
+  private val ImportMatcher     = Pattern.compile("(typeof )?import\\([\"'](.*)[\"']\\)")
+
+  private val ArrayReplacements = Map(
+    "any[]"     -> s"${Defines.Any}[]",
+    "unknown[]" -> s"${Defines.Unknown}[]",
+    "number[]"  -> s"${Defines.Number}[]",
+    "string[]"  -> s"${Defines.String}[]",
+    "boolean[]" -> s"${Defines.Boolean}[]"
+  )
 
   private val TypeReplacements = Map(
     " any"     -> s" ${Defines.Any}",
+    " unknown" -> s" ${Defines.Unknown}",
     " number"  -> s" ${Defines.Number}",
     " null"    -> s" ${Defines.Null}",
     " string"  -> s" ${Defines.String}",
     " boolean" -> s" ${Defines.Boolean}",
+    " bigint"  -> s" ${Defines.BigInt}",
     "{}"       -> Defines.Object,
     "typeof "  -> ""
   )
@@ -37,7 +50,7 @@ trait TypeHelper { this: AstCreator =>
     case NullLiteralTypeAnnotation    => code(flowType.json)
     case StringLiteralTypeAnnotation  => code(flowType.json)
     case GenericTypeAnnotation        => code(flowType.json("id"))
-    case ThisTypeAnnotation           => dynamicInstanceTypeStack.headOption.getOrElse(Defines.Any)
+    case ThisTypeAnnotation           => typeHintForThisExpression(Option(flowType)).headOption.getOrElse(Defines.Any);
     case NullableTypeAnnotation       => typeForTypeAnnotation(createBabelNodeInfo(flowType.json(TypeAnnotationKey)))
     case _                            => Defines.Any
   }
@@ -50,10 +63,14 @@ trait TypeHelper { this: AstCreator =>
     case TSObjectKeyword     => Defines.Object
     case TSStringKeyword     => Defines.String
     case TSSymbolKeyword     => Defines.Symbol
+    case TSUnknownKeyword    => Defines.Unknown
+    case TSVoidKeyword       => Defines.Void
+    case TSUndefinedKeyword  => Defines.Undefined
+    case TSNeverKeyword      => Defines.Never
     case TSIntrinsicKeyword  => code(tsType.json)
     case TSTypeReference     => code(tsType.json)
     case TSArrayType         => code(tsType.json)
-    case TSThisType          => dynamicInstanceTypeStack.headOption.getOrElse(Defines.Any)
+    case TSThisType          => typeHintForThisExpression(Option(tsType)).headOption.getOrElse(Defines.Any)
     case TSOptionalType      => typeForTypeAnnotation(createBabelNodeInfo(tsType.json(TypeAnnotationKey)))
     case TSRestType          => typeForTypeAnnotation(createBabelNodeInfo(tsType.json(TypeAnnotationKey)))
     case TSParenthesizedType => typeForTypeAnnotation(createBabelNodeInfo(tsType.json(TypeAnnotationKey)))
@@ -76,20 +93,30 @@ trait TypeHelper { this: AstCreator =>
 
   private def typeFromTypeMap(node: BabelNodeInfo): String =
     pos(node.json).flatMap(parserResult.typeMap.get) match {
-      case Some(value) if value.isEmpty       => Defines.String
-      case Some(value) if value == "string"   => Defines.String
-      case Some(value) if isStringType(value) => Defines.String
-      case Some(value) if value == "number"   => Defines.Number
-      case Some(value) if isNumberType(value) => Defines.Number
-      case Some(value) if value == "null"     => Defines.Null
-      case Some(value) if value == "boolean"  => Defines.Boolean
-      case Some(value) if value == "any"      => Defines.Any
+      case Some(value) if value.isEmpty                          => Defines.String
+      case Some(value) if value == "string"                      => Defines.String
+      case Some(value) if isStringType(value)                    => Defines.String
+      case Some(value) if value == "number"                      => Defines.Number
+      case Some(value) if isNumberType(value)                    => Defines.Number
+      case Some(value) if value == "null"                        => Defines.Null
+      case Some(value) if value == "boolean"                     => Defines.Boolean
+      case Some(value) if value == "any"                         => Defines.Any
+      case Some(value) if ImportMatcher.matcher(value).matches() => importToModule(value)
       case Some(other) =>
-        TypeReplacements.foldLeft(other) { case (typeStr, (m, r)) =>
+        (TypeReplacements ++ ArrayReplacements).foldLeft(other) { case (typeStr, (m, r)) =>
           typeStr.replace(m, r)
         }
       case None => Defines.Any
     }
+
+  private def importToModule(value: String): String = {
+    val matcher = ImportMatcher.matcher(value)
+    this.rootTypeDecl.headOption match {
+      case Some(typeDecl)            => typeDecl.fullName
+      case None if matcher.matches() => matcher.group(2).stripSuffix(".js").concat(".js::program")
+      case None                      => value
+    }
+  }
 
   protected def typeFor(node: BabelNodeInfo): String = {
     val tpe = Seq(TypeAnnotationKey, ReturnTypeKey).find(hasKey(node.json, _)) match {
@@ -98,6 +125,18 @@ trait TypeHelper { this: AstCreator =>
     }
     registerType(tpe, tpe)
     tpe
+  }
+
+  protected def typeHintForThisExpression(node: Option[BabelNodeInfo] = None): Seq[String] = {
+    dynamicInstanceTypeStack.headOption match {
+      case Some(tpe) => Seq(tpe)
+      case None if node.isDefined =>
+        typeFor(node.get) match {
+          case t if t != Defines.Any && t != "this" => Seq(t)
+          case _                                    => rootTypeDecl.map(_.fullName).toSeq
+        }
+      case None => rootTypeDecl.map(_.fullName).toSeq
+    }
   }
 
 }

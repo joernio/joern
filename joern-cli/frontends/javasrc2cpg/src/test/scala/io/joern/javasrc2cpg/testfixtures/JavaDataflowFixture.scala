@@ -2,6 +2,7 @@ package io.joern.javasrc2cpg.testfixtures
 
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.EngineContext
+import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
 import io.joern.javasrc2cpg.JavaSrc2CpgTestContext
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Expression, Literal}
@@ -10,13 +11,13 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 import overflowdb.traversal.Traversal
 
-class JavaDataflowFixture extends AnyFlatSpec with Matchers {
+class JavaDataflowFixture(extraFlows: List[FlowSemantic] = List.empty) extends AnyFlatSpec with Matchers {
 
   implicit val resolver: ICallResolver           = NoResolve
   implicit lazy val engineContext: EngineContext = EngineContext()
 
   val code: String  = ""
-  lazy val cpg: Cpg = JavaSrc2CpgTestContext.buildCpgWithDataflow(code)
+  lazy val cpg: Cpg = JavaSrc2CpgTestContext.buildCpgWithDataflow(code, extraFlows = extraFlows)
 
   def getConstSourceSink(
     methodName: String,

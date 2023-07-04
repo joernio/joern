@@ -1,7 +1,6 @@
 package io.joern.c2cpg.astcreation
 
 import io.joern.c2cpg.Config
-import io.joern.c2cpg.datastructures.CGlobal
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -9,7 +8,8 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.datastructures.Scope
 import io.joern.x2cpg.datastructures.Stack._
-import org.eclipse.cdt.core.dom.ast.IASTTranslationUnit
+import io.joern.x2cpg.{AstNodeBuilder => X2CpgAstNodeBuilder}
+import org.eclipse.cdt.core.dom.ast.{IASTNode, IASTTranslationUnit}
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.util.concurrent.ConcurrentHashMap
@@ -30,7 +30,8 @@ class AstCreator(
     with AstForExpressionsCreator
     with AstNodeBuilder
     with AstCreatorHelper
-    with MacroHandler {
+    with MacroHandler
+    with X2CpgAstNodeBuilder[IASTNode, AstCreator] {
 
   protected val logger: Logger = LoggerFactory.getLogger(classOf[AstCreator])
 
@@ -42,8 +43,6 @@ class AstCreator(
   // where the respective nodes are defined. Instead we put them under the parent TYPE_DECL in which they are defined.
   // To achieve this we need this extra stack.
   protected val methodAstParentStack: Stack[NewNode] = new Stack()
-
-  override def absolutePath(filename: String): String = filename
 
   def createAst(): DiffGraphBuilder = {
     val ast = astForTranslationUnit(cdtAst)
@@ -57,49 +56,33 @@ class AstCreator(
     val ast = Ast(namespaceBlock).withChild(
       astInFakeMethod(namespaceBlock.fullName, fileName(iASTTranslationUnit), iASTTranslationUnit)
     )
-    if (config.includeComments) {
-      val commentsAsts = cdtAst.getComments.map(comment => astForComment(comment)).toIndexedSeq
-      ast.withChildren(commentsAsts)
-    } else {
-      ast
-    }
+    attachDependenciesAndImports(iASTTranslationUnit)
+    ast.withChildren(astsForComments(iASTTranslationUnit))
   }
 
   /** Creates an AST of all declarations found in the translation unit - wrapped in a fake method.
     */
   private def astInFakeMethod(fullName: String, path: String, iASTTranslationUnit: IASTTranslationUnit): Ast = {
-    val allDecls = iASTTranslationUnit.getDeclarations.toSeq
+    val allDecls = iASTTranslationUnit.getDeclarations.toList.filterNot(isIncludedNode)
     val name     = NamespaceTraversal.globalNamespaceName
 
     val fakeGlobalTypeDecl =
-      newTypeDeclNode(iASTTranslationUnit, name, fullName, filename, name, NodeTypes.NAMESPACE_BLOCK, fullName)
+      typeDeclNode(iASTTranslationUnit, name, fullName, filename, name, NodeTypes.NAMESPACE_BLOCK, fullName)
     methodAstParentStack.push(fakeGlobalTypeDecl)
 
     val fakeGlobalMethod =
-      newMethodNode(iASTTranslationUnit, name, name, fullName, path, Option(NodeTypes.TYPE_DECL), Option(fullName))
+      methodNode(iASTTranslationUnit, name, name, fullName, None, path, Option(NodeTypes.TYPE_DECL), Option(fullName))
     methodAstParentStack.push(fakeGlobalMethod)
     scope.pushNewScope(fakeGlobalMethod)
 
-    val blockNode = newBlockNode(iASTTranslationUnit, registerType(Defines.anyTypeName))
+    val blockNode_ = blockNode(iASTTranslationUnit, Defines.empty, registerType(Defines.anyTypeName))
 
-    val declsAsts = allDecls.flatMap { stmt =>
-      CGlobal.getAstsFromAstCache(
-        diffGraph,
-        fileName(stmt),
-        filename,
-        line(stmt),
-        column(stmt),
-        astsForDeclaration(stmt)
-      )
-    }
+    val declsAsts = allDecls.flatMap(astsForDeclaration)
+    setArgumentIndices(declsAsts)
 
     val methodReturn = newMethodReturnNode(iASTTranslationUnit, Defines.anyTypeName)
-
     Ast(fakeGlobalTypeDecl).withChild(
-      Ast(fakeGlobalMethod)
-        .withChild(Ast(blockNode).withChildren(declsAsts))
-        .withChild(Ast(methodReturn))
+      methodAst(fakeGlobalMethod, Seq.empty, blockAst(blockNode_, declsAsts), methodReturn)
     )
   }
-
 }

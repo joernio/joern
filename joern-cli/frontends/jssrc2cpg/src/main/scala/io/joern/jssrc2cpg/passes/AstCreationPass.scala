@@ -1,11 +1,10 @@
 package io.joern.jssrc2cpg.passes
 
 import io.joern.jssrc2cpg.astcreation.AstCreator
-import io.joern.jssrc2cpg.utils.Report
-import io.joern.jssrc2cpg.utils.TimeUtils
 import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.parser.BabelJsonParser
 import io.joern.jssrc2cpg.utils.AstGenRunner.AstGenRunnerResult
+import io.joern.x2cpg.utils.{Report, TimeUtils}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.shiftleft.utils.IOUtils

@@ -1,7 +1,7 @@
 package io.joern.x2cpg
 
 import io.joern.x2cpg.passes.frontend.MetaDataPass
-import io.joern.x2cpg.utils.NodeBuilders.methodReturnNode
+import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, ModifierTypes}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
@@ -15,26 +15,45 @@ abstract class AstCreatorBase(filename: String) {
   /** Create a global namespace block for the given `filename`
     */
   def globalNamespaceBlock(): NewNamespaceBlock = {
-    val absPath  = absolutePath(filename)
     val name     = NamespaceTraversal.globalNamespaceName
-    val fullName = MetaDataPass.getGlobalNamespaceBlockFullName(Some(absPath))
+    val fullName = MetaDataPass.getGlobalNamespaceBlockFullName(Some(filename))
     NewNamespaceBlock()
       .name(name)
       .fullName(fullName)
-      .filename(absPath)
+      .filename(filename)
       .order(1)
+  }
+
+  /** Creates an AST that represents an annotation, including its content (annotation parameter assignments).
+    */
+  def annotationAst(annotation: NewAnnotation, children: Seq[Ast]): Ast = {
+    val annotationAst = Ast(annotation)
+    annotationAst.withChildren(children)
+  }
+
+  /** Creates an AST that represents an annotation assignment with a name for the assigned value, its overall code, and
+    * the respective assignment AST.
+    */
+  def annotationAssignmentAst(assignmentValueName: String, code: String, assignmentAst: Ast): Ast = {
+    val parameter      = NewAnnotationParameter().code(assignmentValueName)
+    val assign         = NewAnnotationParameterAssign().code(code)
+    val assignChildren = List(Ast(parameter), assignmentAst)
+    setArgumentIndices(assignChildren)
+    Ast(assign)
+      .withChild(Ast(parameter))
+      .withChild(assignmentAst)
   }
 
   /** Creates an AST that represents an entire method, including its content.
     */
   def methodAst(
     method: NewMethod,
-    parameters: Seq[NewMethodParameterIn],
+    parameters: Seq[Ast],
     body: Ast,
     methodReturn: NewMethodReturn,
     modifiers: Seq[NewModifier] = Nil
   ): Ast =
-    methodAstWithAnnotations(method, parameters.map(Ast(_)), body, methodReturn, modifiers, annotations = Nil)
+    methodAstWithAnnotations(method, parameters, body, methodReturn, modifiers, annotations = Nil)
 
   /** Creates an AST that represents an entire method, including its content and with support for both method and
     * parameter annotations.
@@ -69,16 +88,29 @@ abstract class AstCreatorBase(filename: String) {
       .withChildren(modifiers.map(Ast(_)))
       .withChild(Ast(methodReturn))
 
-  def staticInitMethodAst(initAsts: List[Ast], fullName: String, signature: Option[String], returnType: String): Ast = {
+  def staticInitMethodAst(
+    initAsts: List[Ast],
+    fullName: String,
+    signature: Option[String],
+    returnType: String,
+    fileName: Option[String] = None,
+    lineNumber: Option[Integer] = None,
+    columnNumber: Option[Integer] = None
+  ): Ast = {
     val methodNode = NewMethod()
       .name(Defines.StaticInitMethodName)
       .fullName(fullName)
+      .lineNumber(lineNumber)
+      .columnNumber(columnNumber)
     if (signature.isDefined) {
       methodNode.signature(signature.get)
     }
+    if (fileName.isDefined) {
+      methodNode.filename(fileName.get)
+    }
     val staticModifier = NewModifier().modifierType(ModifierTypes.STATIC)
     val body           = blockAst(NewBlock(), initAsts)
-    val methodReturn   = methodReturnNode(returnType, None, None, None)
+    val methodReturn   = newMethodReturnNode(returnType, None, None, None)
     methodAst(methodNode, Nil, body, methodReturn, List(staticModifier))
   }
 
@@ -114,11 +146,9 @@ abstract class AstCreatorBase(filename: String) {
 
   def wrapMultipleInBlock(asts: Seq[Ast], lineNumber: Option[Integer]): Ast = {
     asts.toList match {
-      case Nil => blockAst(NewBlock().lineNumber(lineNumber))
-
+      case Nil        => blockAst(NewBlock().lineNumber(lineNumber))
       case ast :: Nil => ast
-
-      case asts => blockAst(NewBlock().lineNumber(lineNumber), asts)
+      case astList    => blockAst(NewBlock().lineNumber(lineNumber), astList)
     }
   }
 
@@ -133,10 +163,9 @@ abstract class AstCreatorBase(filename: String) {
       .controlStructureType(ControlStructureTypes.WHILE)
       .lineNumber(lineNumber)
       .columnNumber(columnNumber)
-
-    if (code.isDefined)
+    if (code.isDefined) {
       whileNode = whileNode.code(code.get)
-
+    }
     controlStructureAst(whileNode, condition, body)
   }
 
@@ -151,10 +180,9 @@ abstract class AstCreatorBase(filename: String) {
       .controlStructureType(ControlStructureTypes.DO)
       .lineNumber(lineNumber)
       .columnNumber(columnNumber)
-
-    if (code.isDefined)
+    if (code.isDefined) {
       doWhileNode = doWhileNode.code(code.get)
-
+    }
     controlStructureAst(doWhileNode, condition, body, placeConditionLast = true)
   }
 
@@ -165,6 +193,16 @@ abstract class AstCreatorBase(filename: String) {
     conditionAsts: Seq[Ast],
     updateAsts: Seq[Ast],
     bodyAst: Ast
+  ): Ast =
+    forAst(forNode, locals, initAsts, conditionAsts, updateAsts, Seq(bodyAst))
+
+  def forAst(
+    forNode: NewControlStructure,
+    locals: Seq[Ast],
+    initAsts: Seq[Ast],
+    conditionAsts: Seq[Ast],
+    updateAsts: Seq[Ast],
+    bodyAsts: Seq[Ast]
   ): Ast = {
     val lineNumber = forNode.lineNumber
     Ast(forNode)
@@ -172,7 +210,7 @@ abstract class AstCreatorBase(filename: String) {
       .withChild(wrapMultipleInBlock(initAsts, lineNumber))
       .withChild(wrapMultipleInBlock(conditionAsts, lineNumber))
       .withChild(wrapMultipleInBlock(updateAsts, lineNumber))
-      .withChild(bodyAst)
+      .withChildren(bodyAsts)
       .withConditionEdges(forNode, conditionAsts.flatMap(_.root).toList)
   }
 
@@ -183,7 +221,6 @@ abstract class AstCreatorBase(filename: String) {
     tryBodyAst.root.collect { case x: ExpressionNew => x }.foreach(_.order = 1)
     catchAsts.flatMap(_.root).collect { case x: ExpressionNew => x }.foreach(_.order = 2)
     finallyAst.flatMap(_.root).collect { case x: ExpressionNew => x }.foreach(_.order = 3)
-
     Ast(tryNode)
       .withChild(tryBodyAst)
       .withChildren(catchAsts)

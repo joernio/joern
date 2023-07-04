@@ -6,6 +6,19 @@ import io.shiftleft.semanticcpg.language._
 class EjsPassTest extends AbstractPassTest {
 
   "ejs files" should {
+
+    "be renamed correctly " in AstFixture(
+      """
+        |<body>
+        |<h1>Welcome <%= user.name %></h1>
+        |</body>
+        |""".stripMargin,
+      "index.js.ejs"
+    ) { cpg =>
+      cpg.file.name.l shouldBe List("index.js.ejs")
+      cpg.call.code.l.sorted shouldBe List("user.name")
+    }
+
     "be handled correctly" in AstFixture(
       """
         |<body>

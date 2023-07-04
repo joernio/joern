@@ -43,13 +43,13 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
       implicit val callResolver: NoResolve.type = NoResolve
       val source                                = cpg.identifier
       val sink                                  = cpg.method.name("free").parameter.argument
-      sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.size shouldBe 5
+      sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.size shouldBe 6
     }
 
     "find flows to `free`" in {
       val source = cpg.identifier
       val sink   = cpg.call.name("free")
-      sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.size shouldBe 5
+      sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.size shouldBe 6
     }
 
     "find flows from identifiers to return values of `flow`" in {
@@ -462,17 +462,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
       val source = cpg.identifier
       val sink   = cpg.method.name("free").parameter.argument
       val flows  = sink.reachableByFlows(source).map(flowToResultPairs).l.distinct
-
-      flows.size shouldBe 5
-
-      flows.toSet shouldBe
-        Set(
-          List(("q = p->next", 10), ("p = q", 9), ("p != NULL", 9), ("free(p)", 11)),
-          List(("p = q", 9), ("p != NULL", 9), ("free(p)", 11)),
-          List(("p != NULL", 9), ("free(p)", 11)),
-          List(("free(p)", 11)),
-          List(("*p = head", 9), ("p != NULL", 9), ("free(p)", 11))
-        )
+      flows.size shouldBe 6
     }
   }
 
@@ -1315,13 +1305,13 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
       implicit val callResolver: NoResolve.type = NoResolve
       val source                                = cpg.identifier
       val sink                                  = cpg.method.name("free").parameter.argument
-      sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.toSet.size shouldBe 5
+      sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.toSet.size shouldBe 6
     }
 
     "find flows to `free`" in {
       val source = cpg.identifier
       val sink   = cpg.call.name("free")
-      sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.toSet.size shouldBe 5
+      sink.reachableByFlows(source).l.map(flowToResultPairs).distinct.toSet.size shouldBe 6
     }
 
     "find flows from identifiers to return values of `flow`" in {

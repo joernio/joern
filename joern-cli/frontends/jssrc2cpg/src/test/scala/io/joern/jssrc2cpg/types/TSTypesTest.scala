@@ -13,7 +13,7 @@ class TSTypesTest extends AbstractPassTest {
   ) { cpg =>
     val List(t) = cpg.identifier("this").l
     t.typeFullName shouldBe Defines.Any
-    t.dynamicTypeHintFullName shouldBe List()
+    t.dynamicTypeHintFullName shouldBe List("code.js::program")
   }
 
   "have correct types for this with proper surrounding type" in AstFixture(

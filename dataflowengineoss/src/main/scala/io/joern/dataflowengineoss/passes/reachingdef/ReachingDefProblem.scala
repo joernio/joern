@@ -3,7 +3,7 @@ package io.joern.dataflowengineoss.passes.reachingdef
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.semanticcpg.utils.MemberAccess.isGenericMemberAccessName
+import io.shiftleft.semanticcpg.utils.MemberAccess.{isFieldAccess, isGenericMemberAccessName}
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.{Set, mutable}
@@ -188,19 +188,6 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph)
     // We filter out field accesses to ensure that they propagate
     // taint unharmed.
 
-    def isFieldAccess(name: String): Boolean = {
-      (name == Operators.memberAccess) ||
-      (name == Operators.indirectComputedMemberAccess) ||
-      (name == Operators.indirectMemberAccess) ||
-      (name == Operators.computedMemberAccess) ||
-      (name == Operators.indirection) ||
-      (name == Operators.fieldAccess) ||
-      (name == Operators.indirectFieldAccess) ||
-      (name == Operators.indexAccess) ||
-      (name == Operators.indirectIndexAccess) ||
-      (name == Operators.getElementPtr)
-    }
-
     val defsForCalls = method.call
       .filterNot(x => isFieldAccess(x.name))
       .l
@@ -317,20 +304,21 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph)
 }
 
 /** Lone Identifier Optimization: we first determine and store all identifiers that neither refer to a local nor a
-  * parameter and that appear only once as a call argument. For these identifiers, we know that they are not used in any
-  * other location in the code, and so, we remove them from `gen` sets so that they need not be propagated through the
-  * entire graph only to determine that they reach the exit node. Instead, when creating reaching definition edges, we
-  * simply create edges from the identifier to the exit node.
+  * parameter and that appear only once as a call argument and not also in a return statement. For these identifiers, we
+  * know that they are not used in any other location in the code, and so, we remove them from `gen` sets so that they
+  * need not be propagated through the entire graph only to determine that they reach the exit node. Instead, when
+  * creating reaching definition edges, we simply create edges from the identifier to the exit node.
   */
 class OptimizedReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph)
     extends ReachingDefTransferFunction(flowGraph) {
 
   lazy val loneIdentifiers: Map[Call, List[Definition]] = {
-    val paramAndLocalNames = method.parameter.name.l ++ method.local.name.l
-
+    val identifiersInReturns = method._returnViaContainsOut.ast.isIdentifier.name.l
+    val paramAndLocalNames   = method.parameter.name.l ++ method.local.name.l
     val callArgPairs = method.call.flatMap { call =>
       call.argument.isIdentifier
         .filterNot(i => paramAndLocalNames.contains(i.name))
+        .filterNot(i => identifiersInReturns.contains(i.name))
         .map(arg => (arg.name, call, arg))
     }.l
 

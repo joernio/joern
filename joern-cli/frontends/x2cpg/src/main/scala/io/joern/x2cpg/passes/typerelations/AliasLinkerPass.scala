@@ -4,12 +4,12 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, PropertyNames}
 import io.shiftleft.passes.CpgPass
-import io.joern.x2cpg.passes.callgraph.MethodRefLinker.{linkToMultiple, typeFullNameToNode}
+import io.joern.x2cpg.utils.LinkingUtil
 
-class AliasLinkerPass(cpg: Cpg) extends CpgPass(cpg) {
+class AliasLinkerPass(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {
+
   override def run(dstGraph: DiffGraphBuilder): Unit = {
-    // Create ALIAS_OF edges from TYPE_DECL nodes to
-    // TYPE
+    // Create ALIAS_OF edges from TYPE_DECL nodes to TYPE
     linkToMultiple(
       cpg,
       srcLabels = List(NodeTypes.TYPE_DECL),
@@ -23,4 +23,5 @@ class AliasLinkerPass(cpg: Cpg) extends CpgPass(cpg) {
       dstGraph
     )
   }
+
 }

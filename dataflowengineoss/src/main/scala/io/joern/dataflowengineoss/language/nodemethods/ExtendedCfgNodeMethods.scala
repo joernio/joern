@@ -7,7 +7,6 @@ import io.joern.dataflowengineoss.queryengine.{Engine, EngineContext, PathElemen
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.semanticcpg.language.{toExpressionMethods, _}
 import io.shiftleft.semanticcpg.utils.MemberAccess
-import overflowdb.traversal.{Traversal, _}
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
@@ -18,7 +17,9 @@ class ExtendedCfgNodeMethods[NodeType <: CfgNode](val node: NodeType) extends An
     */
   def astNode: AstNode = node
 
-  def reachableBy[NodeType](sourceTravs: Traversal[NodeType]*)(implicit context: EngineContext): Traversal[NodeType] =
+  def reachableBy[NodeType](sourceTravs: IterableOnce[NodeType]*)(implicit
+    context: EngineContext
+  ): Traversal[NodeType] =
     node.start.reachableBy(sourceTravs: _*)
 
   def ddgIn(implicit semantics: Semantics = DefaultSemantics()): Traversal[CfgNode] = {
@@ -61,7 +62,7 @@ class ExtendedCfgNodeMethods[NodeType <: CfgNode](val node: NodeType) extends An
     withInvisible: Boolean,
     cache: mutable.HashMap[CfgNode, Vector[PathElement]]
   )(implicit semantics: Semantics): Traversal[PathElement] = {
-    val result = ddgInPathElemInternal(path, withInvisible, cache).to(Traversal)
+    val result = ddgInPathElemInternal(path, withInvisible, cache).iterator
     result
   }
 

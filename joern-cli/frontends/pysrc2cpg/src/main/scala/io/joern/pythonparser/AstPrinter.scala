@@ -131,6 +131,17 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
       withStmt.body.map(printIndented).mkString(ls, ls, "")
   }
 
+  override def visit(matchStmt: Match): String = {
+    val subjectSuffix = matchStmt.subject match {
+      case _: Starred =>
+        ","
+      case _ =>
+        ""
+    }
+    "match " + print(matchStmt.subject) + subjectSuffix + ":" +
+      matchStmt.cases.map(printIndented).mkString(ls, ls, "")
+  }
+
   override def visit(raise: Raise): String = {
     "raise" + raise.exc.map(e => " " + print(e)).getOrElse("") +
       raise.cause.map(c => " from " + print(c)).getOrElse("")
@@ -651,6 +662,81 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
 
   override def visit(withItem: Withitem): String = {
     print(withItem.context_expr) + withItem.optional_vars.map(o => " as " + print(o)).getOrElse("")
+  }
+
+  override def visit(matchCase: MatchCase): String = {
+    "case " + print(matchCase.pattern) + matchCase.guard.map(g => " if " + print(g)).getOrElse("") + ":" +
+      matchCase.body.map(printIndented).mkString(ls, ls, "")
+  }
+
+  override def visit(matchValue: MatchValue): String = {
+    print(matchValue.value)
+  }
+
+  override def visit(matchSingleton: MatchSingleton): String = {
+    print(matchSingleton.value)
+  }
+
+  override def visit(matchSequence: MatchSequence): String = {
+    matchSequence.patterns.map(print).mkString("[", ", ", "]")
+  }
+
+  override def visit(matchMapping: MatchMapping): String = {
+    "{" + matchMapping.keys
+      .zip(matchMapping.patterns)
+      .map { case (key, pattern) =>
+        print(key) + ": " + print(pattern)
+      }
+      .mkString(", ") +
+      matchMapping.rest
+        .map { r =>
+          val separatorString =
+            if (matchMapping.keys.nonEmpty) {
+              ", "
+            } else {
+              ""
+            }
+          separatorString + "**" + r
+        }
+        .getOrElse("") + "}"
+  }
+
+  override def visit(matchClass: MatchClass): String = {
+    val separatorString =
+      if (matchClass.patterns.nonEmpty && matchClass.kwd_patterns.nonEmpty) {
+        ", "
+      } else {
+        ""
+      }
+
+    print(matchClass.cls) +
+      "(" +
+      matchClass.patterns.map(print).mkString(", ") +
+      separatorString +
+      matchClass.kwd_attrs
+        .zip(matchClass.kwd_patterns)
+        .map { case (name, pattern) =>
+          name + " = " + print(pattern)
+        }
+        .mkString(", ") +
+      ")"
+  }
+
+  override def visit(matchStar: MatchStar): String = {
+    "*" + matchStar.name.getOrElse("_")
+  }
+
+  override def visit(matchAs: MatchAs): String = {
+    matchAs.pattern match {
+      case Some(pattern) =>
+        print(pattern) + matchAs.name.map(name => " as " + name).getOrElse("")
+      case None =>
+        matchAs.name.getOrElse("_")
+    }
+  }
+
+  override def visit(matchOr: MatchOr): String = {
+    matchOr.patterns.map(print).mkString(" | ")
   }
 
   override def visit(comprehension: Comprehension): String = {

@@ -5,11 +5,12 @@ import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.codepropertygraph.generated.nodes.MethodRef
+import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.semanticcpg.language._
 
 class JsClassesAstCreationPassTest extends AbstractPassTest {
 
-  "AST generation for classes" should {
+  "AST generation for JS classes" should {
 
     "have ast parent blocks for class locals" in AstFixture("""
         |var x = source();
@@ -61,27 +62,18 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       funcLocalA.closureBindingId shouldBe Option("code.js::program:b:A")
     }
 
-    "have member for static method in TYPE_DECL for ClassA" in AstFixture("""
+    "have a member function for static method in TYPE_DECL for ClassA" in AstFixture("""
        |var x = class ClassA {
        |  static staticFoo() {}
        |}""".stripMargin) { cpg =>
-      val List(classATypeDecl) = cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA").l
-      val List(memberFoo)      = classATypeDecl.member.l
-      memberFoo.dynamicTypeHintFullName shouldBe Seq("code.js::program:ClassA:staticFoo")
-      memberFoo.code shouldBe "static staticFoo() {}"
-      classATypeDecl.member.isStatic.l shouldBe List(memberFoo)
-    }
-
-    "have method for static method in ClassA AST" in AstFixture("""
-        |var x = class ClassA {
-        |  static staticFoo() {}
-        |}""".stripMargin) { cpg =>
-      val List(classATypeDecl) =
-        cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA").l
-
-      val List(methodFoo) = classATypeDecl.method.nameExact("staticFoo").l
-      methodFoo.fullName shouldBe "code.js::program:ClassA:staticFoo"
-      methodFoo.code shouldBe "static staticFoo() {}"
+      val List(classATypeDecl)         = cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA").l
+      val List(constructor, staticFoo) = classATypeDecl.method.l
+      constructor.fullName shouldBe s"code.js::program:ClassA:${io.joern.x2cpg.Defines.ConstructorMethodName}"
+      constructor.code shouldBe "constructor() {}"
+      constructor.modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL, ModifierTypes.CONSTRUCTOR)
+      staticFoo.fullName shouldBe "code.js::program:ClassA:staticFoo"
+      staticFoo.code shouldBe "static staticFoo() {}"
+      staticFoo.modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL, ModifierTypes.STATIC)
     }
 
     "have member for non-static method in TYPE_DECL for ClassA" in AstFixture("""
@@ -89,12 +81,17 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
         |  foo() {}
         |  [Symbol.iterator]() {}
         |}""".stripMargin) { cpg =>
-      val List(classATypeDecl) = cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA").l
-      val List(memberFoo, it)  = classATypeDecl.member.l
-      memberFoo.dynamicTypeHintFullName shouldBe Seq("code.js::program:ClassA:foo")
-      memberFoo.code shouldBe "foo() {}"
-      it.dynamicTypeHintFullName shouldBe Seq("code.js::program:ClassA:Symbol.iterator")
+      val List(classATypeDecl)       = cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA").l
+      val List(constructor, foo, it) = classATypeDecl.method.l
+      constructor.fullName shouldBe s"code.js::program:ClassA:${io.joern.x2cpg.Defines.ConstructorMethodName}"
+      constructor.code shouldBe "constructor() {}"
+      constructor.modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL, ModifierTypes.CONSTRUCTOR)
+      foo.fullName shouldBe "code.js::program:ClassA:foo"
+      foo.code shouldBe "foo() {}"
+      foo.modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL)
+      it.fullName shouldBe "code.js::program:ClassA:Symbol.iterator"
       it.code shouldBe "[Symbol.iterator]() {}"
+      it.modifier.modifierType.l shouldBe List(ModifierTypes.VIRTUAL)
     }
 
     "have member with initialization in TYPE_DECL for ClassA" in AstFixture("""
@@ -106,13 +103,32 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
         |  static {
         |    this.d = false
         |  }
+        |  constructor(param1, param2) {
+        |    // also register e and f as dynamically declared members
+        |    this.e = param1;
+        |    this.f = param2;
+        |    // chained access should not result in member creation
+        |    this.f.g = param2;
+        |  }
         |}""".stripMargin) { cpg =>
       val List(classATypeDecl) = cpg.typeDecl.nameExact("ClassA").fullNameExact("code.js::program:ClassA").l
-      val List(a, b)           = classATypeDecl.member.not(_.isStatic).l
+      val List(a, b, e, f)     = classATypeDecl.member.not(_.isStatic).l
       a.name shouldBe "a"
       a.code shouldBe "a = 1"
+      a.lineNumber shouldBe Some(3)
+      a.columnNumber shouldBe Some(2)
       b.name shouldBe "b"
       b.code shouldBe """b = "foo""""
+      b.lineNumber shouldBe Some(4)
+      b.columnNumber shouldBe Some(2)
+      e.name shouldBe "e"
+      e.code shouldBe "this.e = param1;"
+      e.lineNumber shouldBe Some(12)
+      e.columnNumber shouldBe Some(4)
+      f.name shouldBe "f"
+      f.code shouldBe "this.f = param2;"
+      f.lineNumber shouldBe Some(13)
+      f.columnNumber shouldBe Some(4)
 
       val List(c, d) = classATypeDecl.member.isStatic.l
       c.name shouldBe "c"
@@ -127,9 +143,12 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
 
       val List(constructor) =
         cpg.typeDecl.nameExact("ClassA").method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l
-      val List(aInitCall, bInitCall) = constructor.block.assignment.l
+      val List(aInitCall, bInitCall, eInitCall, fInitCall, gCall) = constructor.block.assignment.l
       aInitCall.code shouldBe "a = 1"
       bInitCall.code shouldBe """b = "foo""""
+      eInitCall.code shouldBe "this.e = param1"
+      fInitCall.code shouldBe "this.f = param2"
+      gCall.code shouldBe "this.f.g = param2"
     }
 
     "have method for non-static method in ClassA AST" in AstFixture("""
@@ -142,7 +161,7 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       methodFoo.code shouldBe "foo() {}"
     }
 
-    "have TYPE_REF to <meta> for ClassA" in AstFixture("var x = class ClassA {}") { cpg =>
+    "have TYPE_REF to ClassA" in AstFixture("var x = class ClassA {}") { cpg =>
       val List(program)         = cpg.method.nameExact(":program").l
       val List(programBlock)    = program.astChildren.isBlock.l
       val List(assignmentToTmp) = programBlock.astChildren.isCall.l

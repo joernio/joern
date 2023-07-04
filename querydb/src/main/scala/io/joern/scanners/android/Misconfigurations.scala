@@ -222,7 +222,7 @@ object Misconfigurations extends QueryBundle {
         )
           satisfiesConfig
         else
-          Traversal.empty
+          Iterator.empty
       }),
       tags = List(QueryTags.android, QueryTags.cryptography, QueryTags.misconfiguration)
     )

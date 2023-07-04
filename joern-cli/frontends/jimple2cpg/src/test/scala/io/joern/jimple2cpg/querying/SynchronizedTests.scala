@@ -37,7 +37,7 @@ class SynchronizedTests extends JimpleCode2CpgFixture {
   "it should create a enter/exit monitor nodes" in {
     val List(method: Method) = cpg.method.name("bar").l
     // 'l2' aliases 'this' so there is never an 'entermonitor l2'
-    val List(enterThis, exit1, exit2) = method.ast.filter(_.code.contains("monitor")).l
+    val List(enterThis, exit1, exit2) = method.ast.collectAll[Unknown].filter(_.code.contains("monitor")).l
 
     enterThis.code shouldBe "entermonitor this"
     enterThis.order shouldBe 6

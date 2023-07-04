@@ -1,6 +1,5 @@
 package io.joern.c2cpg.parser
 
-import io.joern.c2cpg.utils.IOUtils
 import org.eclipse.cdt.core.index.IIndexFileLocation
 import org.eclipse.cdt.internal.core.parser.IMacroDictionary
 import org.eclipse.cdt.internal.core.parser.scanner.{InternalFileContent, InternalFileContentProvider}
@@ -21,7 +20,7 @@ class CustomFileContentProvider(headerFileFinder: HeaderFileFinder) extends Inte
     maybeFullPath
       .map { foundPath =>
         logger.debug(s"Loading header file '$foundPath'")
-        IOUtils.readFileAsFileContent(Paths.get(foundPath)).asInstanceOf[InternalFileContent]
+        CdtParser.readFileAsFileContent(Paths.get(foundPath)).asInstanceOf[InternalFileContent]
       }
       .getOrElse {
         logger.debug(s"Cannot find header file for '$path'")

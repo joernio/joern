@@ -9,17 +9,14 @@ trait AstForTemplateDomCreator { this: AstCreator =>
 
   protected def astForJsxElement(jsxElem: BabelNodeInfo): Ast = {
     val domNode = createTemplateDomNode(jsxElem.node.toString, jsxElem.code, jsxElem.lineNumber, jsxElem.columnNumber)
-
     val openingAst   = astForNodeWithFunctionReference(jsxElem.json("openingElement"))
     val childrenAsts = astForNodes(jsxElem.json("children").arr.toList)
     val closingAst =
       safeObj(jsxElem.json, "closingElement")
         .map(e => astForNodeWithFunctionReference(Obj(e)))
         .getOrElse(Ast())
-
     val allChildrenAsts = openingAst +: childrenAsts :+ closingAst
     setArgumentIndices(allChildrenAsts)
-
     Ast(domNode).withChildren(allChildrenAsts)
   }
 
@@ -36,7 +33,22 @@ trait AstForTemplateDomCreator { this: AstCreator =>
   }
 
   protected def astForJsxAttribute(jsxAttr: BabelNodeInfo): Ast = {
-    val domNode = createTemplateDomNode(jsxAttr.node.toString, jsxAttr.code, jsxAttr.lineNumber, jsxAttr.columnNumber)
+    // A colon in front of a JSXAttribute cant be parsed by Babel.
+    // Hence, we strip it away with astgen and restore it here.
+    // parserResult.fileContent contains the unmodified Vue.js source code for the current file.
+    // We look at the previous character there and re-add the colon if needed.
+    val colon = pos(jsxAttr.json)
+      .collect {
+        case position if position > 0 && parserResult.fileContent.substring(position - 1, position) == ":" => ":"
+      }
+      .getOrElse("")
+    val domNode =
+      createTemplateDomNode(
+        jsxAttr.node.toString,
+        s"$colon${jsxAttr.code}",
+        jsxAttr.lineNumber,
+        jsxAttr.columnNumber.map(_ - colon.length)
+      )
     val valueAst = safeObj(jsxAttr.json, "value")
       .map(e => astForNodeWithFunctionReference(Obj(e)))
       .getOrElse(Ast())

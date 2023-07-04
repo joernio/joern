@@ -55,7 +55,7 @@ class TypeTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
 
     "should allow traversing from params TYPE to param" in {
-      val List(x) = cpg.typ("java.lang.Object").parameterOfType.l
+      val List(x) = cpg.typ("Object").parameterOfType.l
       x.name shouldBe "x"
     }
 

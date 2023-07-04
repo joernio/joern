@@ -6,6 +6,20 @@ import io.shiftleft.semanticcpg.language._
 
 class StructTypeTests extends CCodeToCpgSuite {
 
+  "Typedef struct with member" should {
+    val cpg = code("""
+        |typedef struct {
+        |  uint32_t bar;
+        |} Foo;
+        |""".stripMargin)
+
+    "contain correct fields for all members" in {
+      val List(typeDeclNode) = cpg.typeDecl.nameExact("Foo").l
+      typeDeclNode.member.name.toSetImmutable shouldBe Set("bar")
+      typeDeclNode.member.typ.fullName.toSetImmutable shouldBe Set("uint32_t")
+    }
+  }
+
   "Struct with array members" should {
     val cpg = code("""
         |#define SIZE 5
@@ -34,7 +48,7 @@ class StructTypeTests extends CCodeToCpgSuite {
       val List(argBInit) = bInitCall.argument.l
       argBInit.code shouldBe "SIZE - 1"
       val List(subtractionCall) = bInitCall.ast.isCall.nameExact(Operators.subtraction).l
-      subtractionCall.code shouldBe "5 - 1"
+      subtractionCall.code shouldBe "SIZE - 1"
 
       cInitCall.code shouldBe "c[10]"
       val List(argCInit) = cInitCall.argument.l

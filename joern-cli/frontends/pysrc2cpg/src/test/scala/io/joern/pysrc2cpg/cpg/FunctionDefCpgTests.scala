@@ -144,13 +144,17 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
         |
         |def func2(a: Optional[str] = None) -> List[Union[str | None]]:
         |    return [a]
+        |
+        |def func3(x : abc.Def):
+        |   return 1.0
+        |
         |""".stripMargin)
 
     "test parameter hint of method definition using built-in types" in {
       cpg.method
         .name("func1")
         .parameter
-        .dynamicTypeHintFullName
+        .typeFullName
         .dedup
         .l shouldBe Seq("__builtin.int")
     }
@@ -159,7 +163,7 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
       cpg.method
         .name("func2")
         .parameter
-        .dynamicTypeHintFullName
+        .typeFullName
         .dedup
         .l shouldBe Seq("typing.Optional")
     }
@@ -168,7 +172,7 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
       cpg.method
         .name("func1")
         .methodReturn
-        .dynamicTypeHintFullName
+        .typeFullName
         .dedup
         .l shouldBe Seq("__builtin.float")
     }
@@ -177,11 +181,19 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
       cpg.method
         .name("func2")
         .methodReturn
-        .dynamicTypeHintFullName
+        .typeFullName
         .dedup
         .l shouldBe Seq("typing.List")
     }
 
+    "test parameter hint of the form abc.def" in {
+      cpg.method
+        .name("func3")
+        .parameter
+        .typeFullName
+        .dedup
+        .l shouldBe Seq("abc.Def")
+    }
   }
 
 }

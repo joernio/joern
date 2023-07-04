@@ -65,7 +65,7 @@ class StaticMemberTests extends JimpleDataFlowCodeToCpgSuite {
       if (sources.size <= 0) {
         fail("Could not find any sources")
       }
-      Traversal.from(sources)
+      sources.iterator
     }
 
     "find a path for `MALICIOUS` data from different class via a variable" in {

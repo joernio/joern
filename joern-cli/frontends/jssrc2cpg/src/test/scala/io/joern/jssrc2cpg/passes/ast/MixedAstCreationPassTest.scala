@@ -1121,12 +1121,12 @@ class MixedAstCreationPassTest extends AbstractPassTest {
 
       val List(restCall) = destructionBlock.astChildren.isCall.nameExact("<operator>.spread").l
       restCall.code shouldBe "...rest"
-      val List(tmpArg) = restCall.argument(1).l.isCall.l
+      val List(tmpArg) = restCall.argument(1).start.isCall.l
       tmpArg.code shouldBe "_tmp_0[1]"
       tmpArg.name shouldBe Operators.indexAccess
       tmpArg.astChildren.isIdentifier.nameExact("_tmp_0").size shouldBe 1
       tmpArg.astChildren.isLiteral.codeExact("1").size shouldBe 1
-      val List(restArg) = restCall.argument(2).l.isIdentifier.l
+      val List(restArg) = restCall.argument(2).start.isIdentifier.l
       restArg.code shouldBe "rest"
 
       val List(tmpReturnIdentifier) = destructionBlock.astChildren.isIdentifier.l

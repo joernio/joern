@@ -199,22 +199,6 @@ class ScopeFunctionTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
     }
   }
 
-  "CPG for code with simple `apply` scope function" should {
-    val cpg = code("""
-        |package mypkg
-        |
-        |class Bar(p: String)
-        |
-        |fun foo() {
-        |  val x: String = "n"
-        |  val b = Bar("", "").apply { p = x }
-        |  println(b.p)
-        |}
-        |""".stripMargin)
-
-    // TODO: add test for lowering
-  }
-
   "CPG for code with simple `takeIf` scope function" should {
     val cpg = code("""
         |package mypkg

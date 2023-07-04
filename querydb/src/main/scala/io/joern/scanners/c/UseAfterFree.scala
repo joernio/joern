@@ -200,7 +200,7 @@ object UseAfterFree extends QueryBundle {
             val assignedPostDom = postDom.isIdentifier
               .where(_.inAssignment)
               .codeExact(freedIdentifierCode)
-              .flatMap(id => Traversal.fromSingle(id) ++ id.postDominatedBy)
+              .flatMap(id => Iterator.single(id) ++ id.postDominatedBy)
 
             postDom
               .removedAll(assignedPostDom)

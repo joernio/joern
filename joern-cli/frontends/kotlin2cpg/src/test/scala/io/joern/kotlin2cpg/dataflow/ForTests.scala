@@ -25,10 +25,12 @@ class ForTests extends KotlinCode2CpgFixture(withOssDataflow = true) {
             ("f1(p)", Some(2)),
             ("listOf(p, 2, 3)", Some(3)),
             ("val l = listOf(p, 2, 3)", Some(3)),
-            ("l.iterator()", Some(-1)),
-            ("iterator_1 = l.iterator()", Some(-1)),
-            ("iterator_1.next()", Some(-1)),
-            ("one = iterator_1.next()", Some(-1)),
+            ("l.iterator()", None),
+            ("l.iterator()", Some(4)),
+            ("iterator_1 = l.iterator()", None),
+            ("iterator_1.next()", None),
+            ("iterator_1.next()", Some(4)),
+            ("one = iterator_1.next()", None),
             ("println(one)", Some(4))
           )
         )

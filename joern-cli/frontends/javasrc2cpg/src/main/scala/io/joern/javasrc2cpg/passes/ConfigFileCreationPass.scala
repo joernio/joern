@@ -1,67 +1,12 @@
 package io.joern.javasrc2cpg.passes
 
 import better.files.File
+import io.joern.x2cpg.passes.frontend.XConfigFileCreationPass
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.NewConfigFile
-import io.shiftleft.passes.ConcurrentWriterCpgPass
-import io.shiftleft.utils.IOUtils
-import org.slf4j.LoggerFactory
 
-import java.nio.file.Paths
-import scala.util.{Failure, Success, Try}
+class ConfigFileCreationPass(cpg: Cpg) extends XConfigFileCreationPass(cpg) {
 
-class ConfigFileCreationPass(projectDir: String, cpg: Cpg) extends ConcurrentWriterCpgPass[File](cpg) {
-
-  private val logger = LoggerFactory.getLogger(this.getClass)
-
-  override def generateParts(): Array[File] = {
-    Try(File(projectDir)) match {
-      case Success(file) if file.isDirectory =>
-        file.listRecursively
-          .filter(isConfigFile)
-          .toArray
-
-      case Success(file) if isConfigFile(file) =>
-        Array(file)
-
-      case _ => Array.empty
-    }
-  }
-
-  override def runOnPart(diffGraph: DiffGraphBuilder, file: File): Unit = {
-    Try(IOUtils.readLinesInFile(file.path)) match {
-      case Success(fileContentsLines) =>
-        val name       = configFileName(file)
-        val content    = fileContentsLines.mkString("\n")
-        val configNode = NewConfigFile().name(name).content(content)
-        logger.debug(s"Adding config file $name")
-        diffGraph.addNode(configNode)
-
-      case Failure(error) =>
-        logger.warn(s"Unable to create config file node for ${file.canonicalPath}: $error")
-    }
-  }
-
-  private def configFileName(configFile: File): String = {
-    Try(Paths.get(projectDir).toAbsolutePath)
-      .map(_.relativize(configFile.path.toAbsolutePath).toString)
-      .orElse(Try(configFile.pathAsString))
-      .getOrElse(configFile.name)
-  }
-
-  private def extensionFilter(extension: String)(file: File): Boolean = {
-    file.extension.contains(extension)
-  }
-
-  private def pathEndFilter(pathEnd: String)(file: File): Boolean = {
-    file.canonicalPath.endsWith(pathEnd)
-  }
-
-  private def mybatisFilter(file: File): Boolean = {
-    file.canonicalPath.contains("batis") && file.extension.contains(".xml")
-  }
-
-  private val configFileFilters: List[File => Boolean] = List(
+  override val configFileFilters: List[File => Boolean] = List(
     // JAVA_INTERNAL
     extensionFilter(".properties"),
     // JSP
@@ -91,7 +36,8 @@ class ConfigFileCreationPass(projectDir: String, cpg: Cpg) extends ConcurrentWri
     pathEndFilter("AndroidManifest.xml")
   )
 
-  private def isConfigFile(file: File): Boolean = {
-    configFileFilters.exists(predicate => predicate(file))
+  private def mybatisFilter(file: File): Boolean = {
+    file.canonicalPath.contains("batis") && file.extension.contains(".xml")
   }
+
 }

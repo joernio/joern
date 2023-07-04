@@ -18,6 +18,8 @@ class AstNodeToMemoryOperationMap {
     override def hashCode(): Int = {
       System.identityHashCode(astNode)
     }
+
+    override def toString: String = astNode.toString
   }
 
   private val astNodeToMemOp = mutable.HashMap.empty[IdentityHashWrapper, MemoryOperation]

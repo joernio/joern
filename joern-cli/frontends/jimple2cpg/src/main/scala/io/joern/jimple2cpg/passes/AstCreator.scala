@@ -9,6 +9,7 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import soot.jimple._
+import soot.jimple.internal.JimpleLocal
 import soot.tagkit._
 import soot.{Local => _, _}
 
@@ -130,6 +131,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
       .toList
 
     Ast(typeDecl)
+      .withChildren(astsForHostTags(clz))
       .withChildren(memberAsts)
       .withChildren(methodAsts)
       .withChildren(modifiers)
@@ -156,20 +158,28 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
 
   private def astForMethod(methodDeclaration: SootMethod, typeDecl: RefType, childNum: Int): Ast = {
     val methodNode = createMethodNode(methodDeclaration, typeDecl, childNum)
-    val lastOrder  = 2 + methodDeclaration.getParameterCount
-    // Map params to their annotations
-    val mTags = methodDeclaration.getTags.asScala
-    val paramAnnos =
-      mTags.collect { case x: VisibilityParameterAnnotationTag => x }.flatMap(_.getVisibilityAnnotations.asScala)
-    val paramNames           = mTags.collect { case x: ParamNamesTag => x }.flatMap(_.getNames.asScala)
-    val parameterAnnotations = paramNames.zip(paramAnnos).filter(_._2 != null).toMap
     try {
       if (!methodDeclaration.isConcrete) {
+        // Soot is not able to parse origin parameter names of abstract methods
+        // https://github.com/soot-oss/soot/issues/1517
+        val locals = methodDeclaration.getParameterTypes.asScala.zipWithIndex
+          .map { case (typ, index) => new JimpleLocal(s"param${index + 1}", typ) }
+        val parameterAsts =
+          Seq(createThisNode(methodDeclaration, NewMethodParameterIn())) ++
+            withOrder(locals) { (p, order) => astForParameter(p, order, methodDeclaration, Map()) }
         Ast(methodNode)
           .withChildren(astsForModifiers(methodDeclaration))
-          .withChildren(astsForMethodTags(methodDeclaration))
+          .withChildren(parameterAsts)
+          .withChildren(astsForHostTags(methodDeclaration))
           .withChild(astForMethodReturn(methodDeclaration))
       } else {
+        val lastOrder = 2 + methodDeclaration.getParameterCount
+        // Map params to their annotations
+        val mTags = methodDeclaration.getTags.asScala
+        val paramAnnos =
+          mTags.collect { case x: VisibilityParameterAnnotationTag => x }.flatMap(_.getVisibilityAnnotations.asScala)
+        val paramNames           = mTags.collect { case x: ParamNamesTag => x }.flatMap(_.getNames.asScala)
+        val parameterAnnotations = paramNames.zip(paramAnnos).filter(_._2 != null).toMap
         val methodBody = Try(methodDeclaration.getActiveBody) match {
           case Failure(_)    => methodDeclaration.retrieveActiveBody()
           case Success(body) => body
@@ -178,10 +188,14 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
           Seq(createThisNode(methodDeclaration, NewMethodParameterIn())) ++ withOrder(methodBody.getParameterLocals) {
             (p, order) => astForParameter(p, order, methodDeclaration, parameterAnnotations)
           }
-        Ast(methodNode.lineNumberEnd(methodBody.toString.split('\n').filterNot(_.isBlank).length))
+        Ast(
+          methodNode
+            .lineNumberEnd(methodBody.toString.split('\n').filterNot(_.isBlank).length)
+            .code(methodBody.toString)
+        )
           .withChildren(astsForModifiers(methodDeclaration))
           .withChildren(parameterAsts)
-          .withChildren(astsForMethodTags(methodDeclaration))
+          .withChildren(astsForHostTags(methodDeclaration))
           .withChild(astForMethodBody(methodBody, lastOrder))
           .withChild(astForMethodReturn(methodDeclaration))
       }
@@ -205,7 +219,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
         }
         Ast(methodNode)
           .withChildren(astsForModifiers(methodDeclaration))
-          .withChildren(astsForMethodTags(methodDeclaration))
+          .withChildren(astsForHostTags(methodDeclaration))
           .withChild(astForMethodReturn(methodDeclaration))
     } finally {
       // Join all targets with CFG edges - this seems to work from what is seen on DotFiles
@@ -260,20 +274,20 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
     }
   }
 
-  private def astsForMethodTags(methodDeclaration: SootMethod): Seq[Ast] = {
-    methodDeclaration.getTags.asScala
+  private def astsForHostTags(host: AbstractHost): Seq[Ast] = {
+    host.getTags.asScala
       .collect { case x: VisibilityAnnotationTag => x }
       .flatMap { x =>
-        withOrder(x.getAnnotations.asScala) { (a, order) => astsForAnnotations(a, order, methodDeclaration) }
+        withOrder(x.getAnnotations.asScala) { (a, order) => astsForAnnotations(a, order, host) }
       }
       .toSeq
   }
 
-  private def astsForAnnotations(annotation: AnnotationTag, order: Int, methodDeclaration: AbstractHost): Ast = {
+  private def astsForAnnotations(annotation: AnnotationTag, order: Int, host: AbstractHost): Ast = {
     val annoType = registerType(parseAsmType(annotation.getType))
     val name     = annoType.split('.').last
     val elementNodes = withOrder(annotation.getElems.asScala) { case (a, order) =>
-      astForAnnotationElement(a, order, methodDeclaration)
+      astForAnnotationElement(a, order, host)
     }
     val annotationNode = NewAnnotation()
       .name(name)
@@ -701,7 +715,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
 
   private def createThisNode(method: SootMethodRef, builder: NewNode): Ast = {
     if (!method.isStatic || method.isConstructor) {
-      val parentType = registerType(method.getDeclaringClass.getType.toQuotedString)
+      val parentType = registerType(Try(method.getDeclaringClass.getType.toQuotedString).getOrElse("ANY"))
       Ast(builder match {
         case x: NewIdentifier =>
           x.name("this")
@@ -710,14 +724,8 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
             .order(0)
             .argumentIndex(0)
             .dynamicTypeHintFullName(Seq(parentType))
-        case x: NewMethodParameterIn =>
-          x.name("this")
-            .code("this")
-            .lineNumber(line(method.tryResolve()))
-            .typeFullName(parentType)
-            .order(0)
-            .evaluationStrategy(EvaluationStrategies.BY_SHARING)
-            .dynamicTypeHintFullName(Seq(parentType))
+        case _: NewMethodParameterIn =>
+          NodeBuilders.newThisParameterNode(parentType, Seq(parentType), line(Try(method.tryResolve()).getOrElse(null)))
         case x => x
       })
     } else {
@@ -1081,7 +1089,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCr
   private def astForMethodReturn(methodDeclaration: SootMethod): Ast = {
     val typeFullName = registerType(methodDeclaration.getReturnType.toQuotedString)
     val methodReturnNode = NodeBuilders
-      .methodReturnNode(typeFullName, None, line(methodDeclaration), None)
+      .newMethodReturnNode(typeFullName, None, line(methodDeclaration), None)
       .order(methodDeclaration.getParameterCount + 2)
     Ast(methodReturnNode)
   }

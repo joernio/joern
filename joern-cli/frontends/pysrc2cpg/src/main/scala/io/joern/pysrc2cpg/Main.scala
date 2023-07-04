@@ -15,11 +15,15 @@ private object Frontend {
       opt[String]("venvDir")
         // Default is specified in Py2CpgOFileSystemConfig because Scopt is a shit library.
         .text("Virtual environment directory. Defaults to .venv.")
-        .action((dir, config) => config.copy(venvDir = Paths.get(dir))),
+        .action((dir, config) => config.withVenvDir(Paths.get(dir))),
       opt[Boolean]("ignoreVenvDir")
         // Default is specified in Py2CpgOFileSystemConfig because Scopt is a shit library.
         .text("Specifies whether venv-dir is ignored. Default to true.")
-        .action(((value, config) => config.copy(ignoreVenvDir = value)))
+        .action(((value, config) => config.withIgnoreVenvDir(value))),
+      opt[Unit]("no-dummyTypes")
+        .hidden()
+        .action((_, c) => c.withDisableDummyTypes(true))
+        .text("disable generation of dummy types during type recovery")
     )
   }
 }
@@ -28,5 +32,7 @@ object NewMain extends X2CpgMain(cmdLineParser, new Py2CpgOnFileSystem())(new Py
   def run(config: Py2CpgOnFileSystemConfig, frontend: Py2CpgOnFileSystem): Unit = {
     frontend.run(config)
   }
+
+  def getCmdLineParser = cmdLineParser
 
 }

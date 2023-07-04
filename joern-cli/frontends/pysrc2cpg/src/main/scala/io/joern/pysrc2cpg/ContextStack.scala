@@ -33,7 +33,7 @@ class ContextStack {
   }
 
   private class MethodContext(
-    val name: String,
+    val scopeName: Option[String],
     val astParent: nodes.NewNode,
     val order: AutoIncIndex,
     val isClassBodyMethod: Boolean = false,
@@ -46,7 +46,7 @@ class ContextStack {
   ) extends Context {}
 
   private class ClassContext(
-    val name: String,
+    val scopeName: Option[String],
     val astParent: nodes.NewNode,
     val order: AutoIncIndex,
     val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
@@ -92,7 +92,7 @@ class ContextStack {
   }
 
   def pushMethod(
-    name: String,
+    scopeName: Option[String],
     methodNode: nodes.NewMethod,
     methodBlockNode: nodes.NewBlock,
     methodRefNode: Option[nodes.NewMethodRef]
@@ -100,15 +100,22 @@ class ContextStack {
     val isClassBodyMethod = stack.headOption.exists(_.isInstanceOf[ClassContext])
 
     val methodContext =
-      new MethodContext(name, methodNode, new AutoIncIndex(1), isClassBodyMethod, Some(methodBlockNode), methodRefNode)
+      new MethodContext(
+        scopeName,
+        methodNode,
+        new AutoIncIndex(1),
+        isClassBodyMethod,
+        Some(methodBlockNode),
+        methodRefNode
+      )
     if (moduleMethodContext.isEmpty) {
       moduleMethodContext = Some(methodContext)
     }
     push(methodContext)
   }
 
-  def pushClass(name: String, classNode: nodes.NewTypeDecl): Unit = {
-    push(new ClassContext(name, classNode, new AutoIncIndex(1)))
+  def pushClass(scopeName: Option[String], classNode: nodes.NewTypeDecl): Unit = {
+    push(new ClassContext(scopeName, classNode, new AutoIncIndex(1)))
   }
 
   def pushSpecialContext(): Unit = {
@@ -236,6 +243,42 @@ class ContextStack {
     }
   }
 
+  /** Assignments to variables on the module-level may be exported to other modules and behave as inter-procedurally
+    * global variables.
+    * @param lhs
+    *   the LHS node of an assignment
+    */
+  def considerAsGlobalVariable(lhs: NewNode): Unit = {
+    lhs match {
+      case n: NewIdentifier if findEnclosingMethodContext(stack).scopeName.contains("<module>") =>
+        addGlobalVariable(n.name)
+      case _ =>
+    }
+  }
+
+  /** For module-methods, the variables of this method can be imported into other modules which resembles behaviour much
+    * like fields/members. This inter-procedural accessibility should be marked via the module's type decl node.
+    */
+  def createMemberLinks(moduleTypeDecl: NewTypeDecl, astEdgeLinker: (NewNode, NewNode, Int) => Unit): Unit = {
+    val globalVarsForEnclMethod = findEnclosingMethodContext(stack).globalVariables
+    variableReferences
+      .map(_.identifier)
+      .filter(i => globalVarsForEnclMethod.contains(i.name))
+      .sortBy(i => (i.lineNumber, i.columnNumber))
+      .distinctBy(_.name)
+      .map(i =>
+        NewMember()
+          .name(i.name)
+          .typeFullName(Constants.ANY)
+          .dynamicTypeHintFullName(i.dynamicTypeHintFullName)
+          .lineNumber(i.lineNumber)
+          .columnNumber(i.columnNumber)
+          .code(i.name)
+      )
+      .zipWithIndex
+      .foreach { case (m, idx) => astEdgeLinker(m, moduleTypeDecl, idx + 1) }
+  }
+
   private def linkLocalOrCapturing(
     createLocal: (String, Option[String]) => NewLocal,
     createClosureBinding: (String, String) => NewClosureBinding,
@@ -341,11 +384,11 @@ class ContextStack {
     stack
       .flatMap {
         case methodContext: MethodContext =>
-          Some(methodContext.name)
+          methodContext.scopeName
         case specialBlockContext: SpecialBlockContext =>
           None
         case classContext: ClassContext =>
-          Some(classContext.name)
+          classContext.scopeName
       }
       .reverse
       .mkString(".")
@@ -370,11 +413,9 @@ class ContextStack {
   }
 
   def isClassContext: Boolean = {
-    val stackTail = stack.tail
-    stackTail.nonEmpty && (stackTail.headOption match {
-      case Some(_: ClassContext)  => true
-      case Some(x: MethodContext) => x.name.endsWith("<body>")
-      case _                      => false
+    stack.nonEmpty && (stack.head match {
+      case methodContext: MethodContext if methodContext.isClassBodyMethod => true
+      case _                                                               => false
     })
   }
 

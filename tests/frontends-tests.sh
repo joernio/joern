@@ -11,7 +11,7 @@ JOERN="$SCRIPT_ABS_DIR"/../joern
 $JOERN --script tests/frontends-smoketest.sc
 
 # now test all frontends with proper input code
-frontends=(c jssrc javasrc java ghidra pythonsrc)
+frontends=(c jssrc javasrc java ghidra pythonsrc php)
 declare -A minMethodCount=(
   [c]=2
   [jssrc]=3
@@ -19,6 +19,7 @@ declare -A minMethodCount=(
   [java]=7
   [ghidra]=100
   [pythonsrc]=2
+  [php]=3
 )
 declare -A expectedMethod=(
   [c]=print_number
@@ -27,11 +28,12 @@ declare -A expectedMethod=(
   [java]=callsExternalMethod
   [ghidra]=reallocarray
   [pythonsrc]=my_fun
+  [php]=foo
 )
 
 for frontend in "${frontends[@]}"; do
   rm -rf workspace
-  $JOERN --script tests/frontends-testscript.sc --params inputPath=tests/code/$frontend,minMethodCount=${minMethodCount[$frontend]},expectedMethod=${expectedMethod[$frontend]},frontend=$frontend
+  $JOERN --script tests/frontends-testscript.sc --param inputPath=tests/code/$frontend --param minMethodCount=${minMethodCount[$frontend]} --param expectedMethod=${expectedMethod[$frontend]} --param frontend=$frontend
 
   JOERN_EXIT_CODE=$?
   if [ $JOERN_EXIT_CODE != 0 ]; then

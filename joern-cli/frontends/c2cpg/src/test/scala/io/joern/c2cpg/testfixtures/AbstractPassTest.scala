@@ -19,8 +19,8 @@ abstract class AbstractPassTest extends AnyWordSpec with Matchers with Inside {
         val cpg  = newEmptyCpg()
         val file = dir / fileName
         file.write(code)
-        val config = Config(inputPath = dir.toString, outputPath = dir.toString())
-        new AstCreationPass(cpg, AstCreationPass.SourceFiles, config).createAndApply()
+        val config = Config().withInputPath(dir.toString()).withOutputPath(dir.toString())
+        new AstCreationPass(cpg, config).createAndApply()
         f(cpg)
         file.delete()
       }
@@ -31,8 +31,8 @@ abstract class AbstractPassTest extends AnyWordSpec with Matchers with Inside {
       File.usingTemporaryDirectory("c2cpgtest") { dir =>
         val file = dir / "file.c"
         file.write(code)
-        val config = Config(inputPath = dir.toString, outputPath = dir.toString())
-        new AstCreationPass(cpg, AstCreationPass.SourceFiles, config).createAndApply()
+        val config = Config().withInputPath(dir.toString()).withOutputPath(dir.toString())
+        new AstCreationPass(cpg, config).createAndApply()
       }
       cpg
     }

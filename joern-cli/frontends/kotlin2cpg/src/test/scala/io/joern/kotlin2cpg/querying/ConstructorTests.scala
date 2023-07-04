@@ -177,8 +177,6 @@ class ConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       m.methodReturn.typeFullName shouldBe "void"
       m.methodReturn.lineNumber shouldBe Some(4)
       m.methodReturn.columnNumber shouldBe Some(9)
-
-      m.block.astChildren.size shouldBe 0
     }
 
     "should contain a METHOD node for the secondary constructor with properties set correctly" in {

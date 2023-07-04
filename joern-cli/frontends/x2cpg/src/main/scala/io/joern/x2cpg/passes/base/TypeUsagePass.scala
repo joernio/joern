@@ -1,15 +1,14 @@
 package io.joern.x2cpg.passes.base
 
+import io.joern.x2cpg.utils.LinkingUtil
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, PropertyNames}
 import io.shiftleft.passes.CpgPass
-import io.joern.x2cpg.passes.callgraph.MethodRefLinker.{linkToSingle, typeDeclFullNameToNode, typeFullNameToNode}
 
-class TypeUsagePass(cpg: Cpg) extends CpgPass(cpg) {
+class TypeUsagePass(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {
 
   override def run(dstGraph: DiffGraphBuilder): Unit = {
     // Create REF edges from TYPE nodes to TYPE_DECL
-
     linkToSingle(
       cpg,
       srcLabels = List(NodeTypes.TYPE),
@@ -21,9 +20,7 @@ class TypeUsagePass(cpg: Cpg) extends CpgPass(cpg) {
       None
     )
 
-    // Create EVAL_TYPE edges from nodes of various types
-    // to TYPE
-
+    // Create EVAL_TYPE edges from nodes of various types to TYPE
     linkToSingle(
       cpg,
       srcLabels = List(

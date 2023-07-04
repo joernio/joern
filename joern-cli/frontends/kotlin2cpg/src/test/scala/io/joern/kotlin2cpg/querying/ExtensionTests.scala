@@ -92,4 +92,41 @@ class ExtensionTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       c.signature shouldBe "java.lang.String()"
     }
   }
+
+  "CPG for code with call to stdlib extension fn defined on type with upper bound" should {
+    val cpg = code("""
+        |package mypkg
+        |fun f1(p: String) {
+        |    val cs: CharSequence = "abcd"
+        |    cs.onEach { println(it) }
+        |}
+        |""".stripMargin)
+    implicit val resolver = NoResolve
+
+    "contain a CALL node with the correct METHOD_FULLNAME set" in {
+      val List(c) = cpg.method.nameExact("onEach").callIn.l
+      // from the documentation at https://kotlinlang.org/api/latest/jvm/stdlib/kotlin.text/on-each.html
+      // ```
+      // inline fun <S : CharSequence> S.onEach(action: (Char) -> Unit): S
+      // ```
+      c.methodFullName shouldBe "java.lang.CharSequence.onEach:java.lang.Object(kotlin.Function1)"
+    }
+  }
+
+  "CPG for code with extension fn using `this` parameter" should {
+    val cpg = code("""
+        |package mypkg
+        |open class AClass(val p1: String)
+        |fun AClass.doSomething() {
+        |    println(this.p1)
+        |}
+        |""".stripMargin)
+    implicit val resolver = NoResolve
+
+    "contain a CALL node with the correct METHOD_FULLNAME set" in {
+      val List(p1) = cpg.method.nameExact("doSomething").parameter.l
+      p1.typeFullName shouldBe "mypkg.AClass"
+    }
+  }
+
 }

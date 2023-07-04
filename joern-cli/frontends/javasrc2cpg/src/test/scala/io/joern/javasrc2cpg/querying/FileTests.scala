@@ -7,27 +7,24 @@ import org.scalatest.Ignore
 
 import java.io.{File => JFile}
 import java.io.File
+import java.nio.file.Paths
 
 class FileTests extends JavaSrcCode2CpgFixture {
 
-  val cpg = code("""
+  private val fileName = Paths.get("a", "b", "Foo.java").toString
+
+  val cpg = code(
+    """
       | package a.b;
       | class Foo { int bar() { return 1; } }
-      |""".stripMargin)
+      |""".stripMargin,
+    fileName = fileName
+  )
 
   "should contain two file nodes in total with correct order" in {
     cpg.file.order.l shouldBe List(0, 0)
     cpg.file.name(FileTraversal.UNKNOWN).size shouldBe 1
     cpg.file.nameNot(FileTraversal.UNKNOWN).size shouldBe 1
-  }
-
-  "should contain exactly one non-placeholder file with absolute path in `name`" in {
-    val List(u) = cpg.file.nameNot(FileTraversal.UNKNOWN).l
-    u.name should (
-      startWith(File.separator) or // Unix
-        startWith regex "[A-Z]:"   // Windows
-    )
-    u.hash.isDefined shouldBe false
   }
 
   "should allow traversing from file to its namespace blocks" in {
@@ -46,4 +43,10 @@ class FileTests extends JavaSrcCode2CpgFixture {
     cpg.file.nameNot(FileTraversal.UNKNOWN).typeDecl.name.toSetMutable shouldBe Set("Foo")
   }
 
+  "the filename should be the path relative to the project root" in {
+    inside(cpg.file.nameNot(FileTraversal.UNKNOWN).l) { case List(foo) =>
+      foo.name shouldBe fileName
+      foo.hash.isDefined shouldBe false
+    }
+  }
 }

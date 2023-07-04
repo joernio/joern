@@ -36,6 +36,10 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       cpg.typeDecl.name("CustomReceiver").method.nameExact("onReceive").parameter.typeFullName.l shouldBe
         List("no.such.pkg.CustomReceiver", "android.content.Context", "android.content.Intent")
     }
+
+    "should contain a TYPE node for the superclass" in {
+      cpg.typ.typeDeclFullNameExact("android.content.BroadcastReceiver").size shouldBe 1
+    }
   }
 
   "CPG for code with class declaration with two init blocks" should {
@@ -372,6 +376,26 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     "should contain a TYPE_DECL node for the nested class" in {
       val List(td) = cpg.typeDecl.nameExact("AnotherClass").l
       td.inheritsFromTypeFullName shouldBe List("another.made.up.pkg.SomeClass")
+    }
+  }
+
+  "CPG for code with class with call to fn member initializer" should {
+    val cpg = code("""
+        |package mypkg
+        |fun addB(a: String): String {
+        |    return a + "b"
+        |}
+        |class MyClass(val x: String) {
+        |    var m: String = addB(x)
+        |    fun printM() = println(this.m)
+        |}
+        |""".stripMargin)
+
+    "should contain CALL nodes for the member initializer" in {
+      val List(lhs: Call, rhs: Call) = cpg.call.code("this.*addB.*").argument.l
+      lhs.code shouldBe "this.m"
+      rhs.code shouldBe "addB(x)"
+      rhs.methodFullName shouldBe "mypkg.addB:java.lang.String(java.lang.String)"
     }
   }
 }

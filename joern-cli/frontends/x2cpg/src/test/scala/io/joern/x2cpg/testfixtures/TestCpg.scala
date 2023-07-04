@@ -1,11 +1,13 @@
 package io.joern.x2cpg.testfixtures
 
+import io.joern.x2cpg.X2CpgConfig
 import io.shiftleft.codepropertygraph.Cpg
 import overflowdb.Graph
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths}
 import java.util.Comparator
+import scala.annotation.nowarn
 import scala.collection.mutable
 
 // Lazily populated test CPG which is created upon first access to the underlying graph.
@@ -16,6 +18,7 @@ abstract class TestCpg extends Cpg() with LanguageFrontend {
   private val codeFileNamePairs = mutable.ArrayBuffer.empty[(String, Path)]
   private var fileNameCounter   = 0
 
+  @nowarn
   protected def codeFilePreProcessing(codeFile: Path): Unit = {}
 
   protected def applyPasses(): Unit
@@ -29,6 +32,11 @@ abstract class TestCpg extends Cpg() with LanguageFrontend {
   def moreCode(code: String, fileName: String): this.type = {
     checkGraphEmpty()
     codeFileNamePairs.append((code, Paths.get(fileName)))
+    this
+  }
+
+  def withConfig(config: X2CpgConfig[_]): this.type = {
+    setConfig(config)
     this
   }
 

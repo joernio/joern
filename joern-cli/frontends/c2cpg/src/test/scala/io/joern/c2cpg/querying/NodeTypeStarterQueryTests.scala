@@ -4,7 +4,6 @@ import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
 import io.shiftleft.codepropertygraph.generated.{Languages, NodeTypes}
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-import overflowdb.traversal._
 
 /** The following tests show in detail how queries can be started. For all node types, for which it seems reasonable,
   * all nodes of that type can be used as a starting point, e.g., `cpg.method` starts at all methods while `cpg.local`
@@ -28,7 +27,11 @@ class NodeTypeStarterQueryTests extends CCodeToCpgSuite {
     * `cpg.method.external`.
     */
   "should allow retrieving methods" in {
-    cpg.method.internal.name.l shouldBe List(NamespaceTraversal.globalNamespaceName, "main")
+    cpg.method.internal.name.l.sorted shouldBe List(
+      NamespaceTraversal.globalNamespaceName,
+      NamespaceTraversal.globalNamespaceName,
+      "main"
+    )
     cpg.method.external.name.l shouldBe List("libfunc")
   }
 
@@ -65,7 +68,7 @@ class NodeTypeStarterQueryTests extends CCodeToCpgSuite {
   }
 
   "should allow retrieving (used) types" in {
-    cpg.typ.name.toSetMutable shouldBe Set("int", "void", "char", "ANY", "foo")
+    cpg.typ.name.toSetMutable shouldBe Set("int", "void", "char**", "ANY", "foo")
   }
 
   "should allow retrieving namespaces" in {
@@ -77,7 +80,7 @@ class NodeTypeStarterQueryTests extends CCodeToCpgSuite {
   }
 
   "should allow retrieving of method returns" in {
-    cpg.methodReturn.l.size shouldBe 3
+    cpg.methodReturn.l.size shouldBe 4
   }
 
   "should allow retrieving of meta data" in {

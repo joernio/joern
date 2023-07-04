@@ -2,7 +2,6 @@ package io.shiftleft.semanticcpg.language.types.expressions
 
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal._
 
 /** A call site
   */

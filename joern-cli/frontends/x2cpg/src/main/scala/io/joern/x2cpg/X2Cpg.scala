@@ -11,15 +11,61 @@ import scopt.OParser
 
 import java.io.PrintWriter
 import java.nio.file.Files
+import java.nio.file.Paths
 import scala.util.{Failure, Success, Try}
+import scala.util.matching.Regex
 
 object X2CpgConfig {
   def defaultOutputPath: String = "cpg.bin"
 }
 
-trait X2CpgConfig[R] {
-  def withInputPath(inputPath: String): R
-  def withOutputPath(x: String): R
+trait X2CpgConfig[R <: X2CpgConfig[R]] {
+  var inputPath: String  = ""
+  var outputPath: String = X2CpgConfig.defaultOutputPath
+
+  def withInputPath(inputPath: String): R = {
+    this.inputPath = Paths.get(inputPath).toAbsolutePath.normalize().toString
+    this.asInstanceOf[R]
+  }
+
+  def withOutputPath(x: String): R = {
+    this.outputPath = x
+    this.asInstanceOf[R]
+  }
+
+  var defaultIgnoredFilesRegex: Seq[Regex] = Seq.empty
+  var ignoredFilesRegex: Regex             = "".r
+  var ignoredFiles: Seq[String]            = Seq.empty
+
+  def withDefaultIgnoredFilesRegex(x: Seq[Regex]): R = {
+    this.defaultIgnoredFilesRegex = x
+    this.asInstanceOf[R]
+  }
+
+  def withIgnoredFilesRegex(x: String): R = {
+    this.ignoredFilesRegex = x.r
+    this.asInstanceOf[R]
+  }
+
+  def withIgnoredFiles(x: Seq[String]): R = {
+    this.ignoredFiles = x.map(createPathForIgnore)
+    this.asInstanceOf[R]
+  }
+
+  def createPathForIgnore(ignore: String): String = {
+    val path = Paths.get(ignore)
+    if (path.isAbsolute) { path.toString }
+    else { Paths.get(inputPath, ignore).toAbsolutePath.normalize().toString }
+  }
+
+  def withInheritedFields(config: R): R = {
+    this.inputPath = config.inputPath
+    this.outputPath = config.outputPath
+    this.defaultIgnoredFilesRegex = config.defaultIgnoredFilesRegex
+    this.ignoredFilesRegex = config.ignoredFilesRegex
+    this.ignoredFiles = config.ignoredFiles
+    this.asInstanceOf[R]
+  }
 }
 
 /** Base class for `Main` classes of CPG frontends.
@@ -33,28 +79,31 @@ trait X2CpgConfig[R] {
   * @param frontend
   *   the frontend to use for CPG creation
   */
-abstract class X2CpgMain[T <: X2CpgConfig[T], X <: X2CpgFrontend[_]](cmdLineParser: OParser[Unit, T], frontend: X)(
+abstract class X2CpgMain[T <: X2CpgConfig[T], X <: X2CpgFrontend[_]](val cmdLineParser: OParser[Unit, T], frontend: X)(
   implicit defaultConfig: T
-) extends App {
+) {
 
   /** method that evaluates frontend with configuration
     */
   def run(config: T, frontend: X): Unit
 
-  X2Cpg.parseCommandLine(args, cmdLineParser, defaultConfig) match {
-    case Some(config) =>
-      try {
-        run(config, frontend)
-      } catch {
-        case ex: Throwable =>
-          println(ex.getMessage)
-          ex.printStackTrace()
-          System.exit(1)
-      }
-    case None =>
-      println("Error parsing the command line")
-      System.exit(1)
+  def main(args: Array[String]): Unit = {
+    X2Cpg.parseCommandLine(args, cmdLineParser, defaultConfig) match {
+      case Some(config) =>
+        try {
+          run(config, frontend)
+        } catch {
+          case ex: Throwable =>
+            println(ex.getMessage)
+            ex.printStackTrace()
+            System.exit(1)
+        }
+      case None =>
+        println("Error parsing the command line")
+        System.exit(1)
+    }
   }
+
 }
 
 /** Trait that represents a CPG generator, where T is the frontend configuration class.
@@ -156,6 +205,19 @@ object X2Cpg {
         .action { (x, c) =>
           c.withOutputPath(x)
         },
+      opt[Seq[String]]("exclude")
+        .valueName("<file1>,<file2>,...")
+        .action { (x, c) =>
+          c.ignoredFiles = c.ignoredFiles ++ x.map(c.createPathForIgnore)
+          c
+        }
+        .text("files or folders to exclude during CPG generation (paths relative to <input-dir> or absolute paths)"),
+      opt[String]("exclude-regex")
+        .action { (x, c) =>
+          c.ignoredFilesRegex = x.r
+          c
+        }
+        .text("a regex specifying files to exclude during CPG generation (paths relative to <input-dir> are matched)"),
       help("help").text("display this help message"),
       frontendSpecific
     )
@@ -237,5 +299,13 @@ object X2Cpg {
     new PrintWriter(codeFile) { write(sourceCode); close() }
     tmpDir
   }
+
+  /** Strips surrounding quotation characters from a string.
+    * @param s
+    *   the target string.
+    * @return
+    *   the stripped string.
+    */
+  def stripQuotes(str: String): String = str.replaceAll("^(\"|')|(\"|')$", "")
 
 }

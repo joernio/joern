@@ -6,6 +6,8 @@ import io.joern.dataflowengineoss.language._
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.Block
+import io.shiftleft.codepropertygraph.generated.nodes.Call
+import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.semanticcpg.language._
 
 class MacroHandlingTests extends CCodeToCpgSuite {
@@ -14,9 +16,9 @@ class MacroHandlingTests extends CCodeToCpgSuite {
     val cpg = code("""
        |#define A_MACRO(x,c) (x = 10 + c)
        |int foo() {
-       |int *y;
-       |A_MACRO(*y, 2);
-       |return 10 * y;
+       |  int *y;
+       |  A_MACRO(*y, 2);
+       |  return 10 * y;
        |}
     """.stripMargin)
 
@@ -224,7 +226,30 @@ class MacroHandlingTests extends CCodeToCpgSuite {
     "should not result in malformed CFGs when expanding a nested macro with block" in {
       cpg.all.collectAll[Block].l.count(b => b.cfgOut.size > 1) shouldBe 0
     }
+  }
 
+  "MacroHandlingTests8" should {
+    val cpg = code("""
+       |#define FLAG_A 1
+       |
+       |int func(int x) {
+       |  if(x & FLAG_A) {
+       |    return 0;
+       |  } else if (FLAG_A & x) {
+       |    return 1;
+       |  }
+       |}""".stripMargin)
+
+    "should expand the macro on both sides of binary operators" in {
+      cpg.call.name(Operators.and).code.l shouldBe List("x & FLAG_A", "FLAG_A & x")
+      val List(andCall1, andCall2)                           = cpg.call.name(Operators.and).l
+      val List(andCall1Arg1: Identifier, andCall1Arg2: Call) = andCall1.argument.l
+      andCall1Arg1.name shouldBe "x"
+      andCall1Arg2.name shouldBe "FLAG_A"
+      val List(andCall2Arg1: Call, andCall2Arg2: Identifier) = andCall2.argument.l
+      andCall2Arg1.name shouldBe "FLAG_A"
+      andCall2Arg2.name shouldBe "x"
+    }
   }
 }
 

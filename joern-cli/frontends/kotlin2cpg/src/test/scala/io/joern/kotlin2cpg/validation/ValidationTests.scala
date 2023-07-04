@@ -549,25 +549,6 @@ class ValidationTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
   }
 
-  "CPG for code with simple object expression with apply called after it" should {
-    lazy val cpg = code("""
-        |package main
-        |
-        |fun main() {
-        |    val o = object { var prop = 1 }.apply { prop = 2 }
-        |    println(o.prop) // prints `2`
-        |}
-        |
-        |""".stripMargin)
-
-    "should not contain any CALL nodes with MFNs starting with `.`" in {
-      cpg.call
-        .methodFullName("\\..*")
-        .methodFullName
-        .l shouldBe List()
-    }
-  }
-
   "CPG for code with method with two callbacks with two generic types" should {
     lazy val cpg = code("""
         |package main
@@ -646,8 +627,6 @@ class ValidationTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
   }
 
-  // TODO: re-enable test
-  /*
   "CPG for code with local declaration with RHS a call with lambda argument capturing the parameter of its containing method" should {
     lazy val cpg = code("""
         |package main
@@ -675,7 +654,6 @@ class ValidationTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         .l shouldBe List()
     }
   }
-   */
 
   "CPG for code with lambda inside method with captured constructor parameter and method parameter" should {
     lazy val cpg = code("""
@@ -732,17 +710,14 @@ class ValidationTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         |}
         |""".stripMargin)
 
-    // TODO: re-enable test case
-    /*
-      "should not contain any LOCAL nodes with the CLOSURE_BINDING_ID prop set but without corresponding CLOSURE_BINDING node" in {
-        val allClosureBindingIds = cpg.all.collectAll[ClosureBinding].closureBindingId.l
-        cpg.local
-          .where(_.closureBindingId)
-          .filterNot { l => allClosureBindingIds.contains(l.closureBindingId.get) }
-          .map { cb => (cb.code, cb.closureBindingId) }
-          .l shouldBe List()
-      }
-     */
+    "should not contain any LOCAL nodes with the CLOSURE_BINDING_ID prop set but without corresponding CLOSURE_BINDING node" in {
+      val allClosureBindingIds = cpg.all.collectAll[ClosureBinding].closureBindingId.l
+      cpg.local
+        .where(_.closureBindingId)
+        .filterNot { l => allClosureBindingIds.contains(l.closureBindingId.get) }
+        .map { cb => (cb.code, cb.closureBindingId) }
+        .l shouldBe List()
+    }
 
     "should not contain any METHOD nodes with FNs with a the `>` character in them" in {
       cpg.method

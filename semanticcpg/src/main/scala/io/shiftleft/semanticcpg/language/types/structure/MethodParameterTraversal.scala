@@ -2,7 +2,7 @@ package io.shiftleft.semanticcpg.language.types.structure
 
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.{help, Traversal}
+import overflowdb.traversal.help
 
 import scala.jdk.CollectionConverters._
 
@@ -32,7 +32,7 @@ class MethodParameterTraversal(val traversal: Traversal[MethodParameterIn]) exte
     for {
       paramIn <- traversal
       call    <- callResolver.getMethodCallsites(paramIn.method)
-      arg     <- Traversal.from(call._argumentOut).collectAll[Expression]
+      arg     <- call._argumentOut.collectAll[Expression]
       if arg.argumentIndex == paramIn.index
     } yield arg
 

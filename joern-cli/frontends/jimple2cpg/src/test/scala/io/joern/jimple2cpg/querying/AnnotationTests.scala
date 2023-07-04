@@ -7,6 +7,24 @@ import io.shiftleft.semanticcpg.language._
 
 class AnnotationTests extends JimpleCode2CpgFixture {
 
+  "annotation type" should {
+
+    lazy val cpg: Cpg = code("""
+        |@interface NormalAnnotation {
+        |    public String value() default "";
+        |}
+        |@NormalAnnotation("annotation")
+        |class SomeClass {}
+        |""".stripMargin).cpg
+
+    "test annotation node properties" in {
+      val annotationNode = cpg.typeDecl("SomeClass").annotation.head
+      annotationNode.code shouldBe """@NormalAnnotation(value = "annotation")"""
+      annotationNode.name shouldBe "NormalAnnotation"
+      annotationNode.fullName shouldBe "NormalAnnotation"
+    }
+  }
+
   "annotation type method 1" should {
 
     lazy val cpg: Cpg = code("""import java.lang.annotation.*;

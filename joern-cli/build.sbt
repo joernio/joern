@@ -6,16 +6,15 @@ libraryDependencies ++= Seq(
   "io.shiftleft"     %% "codepropertygraph" % Versions.cpg,
   "com.lihaoyi"      %% "requests"          % "0.7.1",
   "com.github.scopt" %% "scopt"             % "4.1.0",
-  "io.circe"         %% "circe-core"        % "0.14.5",
-  "io.circe"         %% "circe-generic"     % "0.14.5",
   "org.reflections"   % "reflections"       % "0.10.2",
   "org.scalatest"    %% "scalatest"         % Versions.scalatest % Test
 )
 
-Test / fork := false
+Test / compile := (Test / compile).dependsOn((Projects.c2cpg / stage), (Projects.jssrc2cpg / stage)).value
+Test / fork    := false
 
-enablePlugins(UniversalPlugin)
-enablePlugins(JavaAppPackaging)
+enablePlugins(JavaAppPackaging, UniversalPlugin)
+
 //wildcard import from staged `lib` dir, for simplicity and also to avoid `line too long` error on windows
 scriptClasspath := Seq("*")
 
@@ -36,6 +35,8 @@ lazy val pysrc2cpg   = project.in(file("frontends/pysrc2cpg"))
 lazy val php2cpg     = project.in(file("frontends/php2cpg"))
 lazy val jimple2cpg  = project.in(file("frontends/jimple2cpg"))
 lazy val jssrc2cpg   = project.in(file("frontends/jssrc2cpg"))
+lazy val rubysrc2cpg = project.in(file("frontends/rubysrc2cpg"))
+lazy val gosrc2cpg   = project.in(file("frontends/gosrc2cpg"))
 
 Universal / mappings ++= frontendMappings("kotlin2cpg", (kotlin2cpg / stage).value)
 Universal / mappings ++= frontendMappings("javasrc2cpg", (javasrc2cpg / stage).value)
@@ -45,6 +46,8 @@ Universal / mappings ++= frontendMappings("jssrc2cpg", (jssrc2cpg / stage).value
 Universal / mappings ++= frontendMappings("jimple2cpg", (jimple2cpg / stage).value)
 Universal / mappings ++= frontendMappings("pysrc2cpg", (pysrc2cpg / stage).value)
 Universal / mappings ++= frontendMappings("php2cpg", (php2cpg / stage).value)
+Universal / mappings ++= frontendMappings("rubysrc2cpg", (rubysrc2cpg / stage).value)
+Universal / mappings ++= frontendMappings("gosrc2cpg", (gosrc2cpg / stage).value)
 
 lazy val cpgVersionFile = taskKey[File]("persist cpg version in file (e.g. for schema-extender)")
 cpgVersionFile := {
@@ -85,7 +88,7 @@ generateScaladocs := {
 
   /* extract sources-jar dependencies */
   List("codepropertygraph", "semanticcpg").foreach { projectName =>
-    val jar = SbtHelper.findJar(s"${projectName}_2.13", updateReport, SbtHelper.JarClassifier.Sources)
+    val jar = SbtHelper.findJar(s"${projectName}_3", updateReport, SbtHelper.JarClassifier.Sources)
     new ZipFile(jar).extractAll(inputFiles.pathAsString)
   }
 

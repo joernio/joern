@@ -22,7 +22,7 @@ class ImportsPassTests extends Code2CpgFixture(() => new TestCpgWithoutDataFlow(
       val List(assignment) = call.inAssignment.l
       assignment.code shouldBe "var barOrBaz = require('./bar.js')"
       assignment.target.code shouldBe "barOrBaz"
-      val List(source) = assignment.source.l
+      val source = assignment.source
       source shouldBe call
     }
 
@@ -38,7 +38,7 @@ class ImportsPassTests extends Code2CpgFixture(() => new TestCpgWithoutDataFlow(
       val List(assignment) = call.inAssignment.l
       assignment.code shouldBe "barOrBaz = require('./bar.js')"
       assignment.target.code shouldBe "barOrBaz"
-      val List(source) = assignment.source.l
+      val source = assignment.source
       source shouldBe call
     }
   }

@@ -15,8 +15,8 @@ class NamespaceBlockTests extends CCodeToCpgSuite {
       |struct my_struct{};
       |""".stripMargin)
 
-  "should contain two namespace blocks in total" in {
-    cpg.namespaceBlock.size shouldBe 2
+  "should contain three namespace blocks in total" in {
+    cpg.namespaceBlock.size shouldBe 3
   }
 
   "should contain a correct global namespace block for the `<unknown>` file" in {
@@ -27,7 +27,7 @@ class NamespaceBlockTests extends CCodeToCpgSuite {
   }
 
   "should contain correct namespace block for known file" in {
-    val List(x) = cpg.namespaceBlock.filenameNot(FileTraversal.UNKNOWN).l
+    val List(x) = cpg.namespaceBlock.filenameNot(FileTraversal.UNKNOWN, "<includes>").l
     x.name shouldBe NamespaceTraversal.globalNamespaceName
     x.filename should not be empty
     x.fullName shouldBe s"${x.filename}:${NamespaceTraversal.globalNamespaceName}"
@@ -35,7 +35,7 @@ class NamespaceBlockTests extends CCodeToCpgSuite {
   }
 
   "should allow traversing from namespace block to method" in {
-    cpg.namespaceBlock.filenameNot(FileTraversal.UNKNOWN).ast.isMethod.name.l shouldBe List(
+    cpg.namespaceBlock.filenameNot(FileTraversal.UNKNOWN, "<includes>").ast.isMethod.name.l shouldBe List(
       NamespaceTraversal.globalNamespaceName,
       "foo"
     )
@@ -48,11 +48,12 @@ class NamespaceBlockTests extends CCodeToCpgSuite {
       .isTypeDecl
       .nameNot(NamespaceTraversal.globalNamespaceName)
       .name
-      .l shouldBe List("my_struct")
+      .l
+      .sorted shouldBe List("ANY", "int", "my_struct", "void")
   }
 
   "should allow traversing from namespace block to namespace" in {
-    cpg.namespaceBlock.filenameNot(FileTraversal.UNKNOWN).namespace.name.l shouldBe List(
+    cpg.namespaceBlock.filenameNot(FileTraversal.UNKNOWN, "<includes>").namespace.name.l shouldBe List(
       NamespaceTraversal.globalNamespaceName
     )
   }

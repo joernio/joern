@@ -8,7 +8,6 @@ import io.shiftleft.codepropertygraph.generated.nodes
 import io.joern.console.Query
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.utils.ProjectRoot
-import overflowdb.traversal.iterableToTraversal
 
 class GhidraQueryTestSuite[QB <: QueryBundle](val queryBundle: QB) extends DataFlowBinToCpgSuite {
   val argumentProvider              = new QDBArgumentProvider(3)

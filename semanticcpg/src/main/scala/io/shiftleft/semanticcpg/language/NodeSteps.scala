@@ -87,7 +87,7 @@ class NodeSteps[NodeType <: StoredNode](val traversal: Traversal[NodeType]) exte
   /* follow the incoming edges of the given type as long as possible */
   protected def walkIn(edgeType: String): Traversal[Node] =
     traversal
-      .repeat(_.in(edgeType))(_.until(_.in(edgeType).count.filter(_ == 0)))
+      .repeat(_.in(edgeType))(_.until(_.in(edgeType).countTrav.filter(_ == 0)))
 
   @Doc(
     info = "Tag node with `tagName`",

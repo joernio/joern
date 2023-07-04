@@ -2,7 +2,6 @@ package io.shiftleft.semanticcpg.language.operatorextension
 
 import io.shiftleft.codepropertygraph.generated.nodes.{Expression, Identifier}
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal._
 import overflowdb.traversal.help.Doc
 
 class ArrayAccessTraversal(val traversal: Traversal[OpNodes.ArrayAccess]) extends AnyVal {

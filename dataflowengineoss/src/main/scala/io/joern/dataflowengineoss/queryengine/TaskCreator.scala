@@ -2,10 +2,17 @@ package io.joern.dataflowengineoss.queryengine
 
 import io.joern.dataflowengineoss.queryengine.Engine.argToOutputParams
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Expression, MethodParameterIn, MethodParameterOut, Return}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  Call,
+  Expression,
+  Method,
+  MethodParameterIn,
+  MethodParameterOut,
+  MethodRef,
+  Return
+}
 import io.shiftleft.semanticcpg.language.NoResolve
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.{NodeOps, Traversal}
 
 /** Creation of new tasks from results of completed tasks.
   */
@@ -72,7 +79,6 @@ class TaskCreator(context: EngineContext) {
   private def paramToArgsOfCallers(param: MethodParameterIn): List[Expression] =
     NoResolve
       .getMethodCallsites(param.method)
-      .to(Traversal)
       .collectAll[Call]
       .argument(param.index)
       .l
@@ -95,49 +101,71 @@ class TaskCreator(context: EngineContext) {
       .distinct
 
     val forCalls = outArgsAndCalls.flatMap { case (result, outArg, path, callDepth) =>
-      val outCall = outArg.collect { case n: Call => n }
+      outArg.toList.flatMap {
+        case call: Call =>
+          val methodReturns = call.toList
+            .flatMap(x => NoResolve.getCalledMethods(x).methodReturn.map(y => (x, y)))
+            .iterator
 
-      val methodReturns = outCall.toList
-        .flatMap(x => NoResolve.getCalledMethods(x).methodReturn.map(y => (x, y)))
-        .to(Traversal)
-
-      methodReturns.flatMap { case (call, methodReturn) =>
-        val method           = methodReturn.method.head
-        val returnStatements = methodReturn._reachingDefIn.toList.collect { case r: Return => r }
-        if (method.isExternal || method.start.isStub.nonEmpty) {
-          val newPath = path
-          (call.receiver.l ++ call.argument.l).map { arg =>
-            val taskStack = result.taskStack :+ TaskFingerprint(arg, result.callSiteStack, callDepth)
-            ReachableByTask(taskStack, newPath)
+          methodReturns.flatMap { case (call, methodReturn) =>
+            val method           = methodReturn.method
+            val returnStatements = methodReturn._reachingDefIn.toList.collect { case r: Return => r }
+            if (method.isExternal || method.start.isStub.nonEmpty) {
+              val newPath = path
+              (call.receiver.l ++ call.argument.l).map { arg =>
+                val taskStack = result.taskStack :+ TaskFingerprint(arg, result.callSiteStack, callDepth)
+                ReachableByTask(taskStack, newPath)
+              }
+            } else {
+              returnStatements.map { returnStatement =>
+                val newPath = Vector(PathElement(methodReturn, result.callSiteStack)) ++ path
+                val taskStack =
+                  result.taskStack :+ TaskFingerprint(returnStatement, call :: result.callSiteStack, callDepth + 1)
+                ReachableByTask(taskStack, newPath)
+              }
+            }
           }
-        } else {
-          returnStatements.map { returnStatement =>
-            val newPath = Vector(PathElement(methodReturn, result.callSiteStack)) ++ path
-            val taskStack =
-              result.taskStack :+ TaskFingerprint(returnStatement, call :: result.callSiteStack, callDepth + 1)
-            ReachableByTask(taskStack, newPath)
-          }
-        }
+        case _ => Vector.empty
       }
     }
 
     val forArgs = outArgsAndCalls.flatMap { case (result, args, path, callDepth) =>
-      args.toList.flatMap { case arg: Expression =>
-        val outParams = if (result.callSiteStack.nonEmpty) {
-          List[MethodParameterOut]()
-        } else {
-          argToOutputParams(arg).l
-        }
-        outParams
-          .filterNot(_.method.isExternal)
-          .map { p =>
-            val newStack = arg.inCall.headOption.map { x => x :: result.callSiteStack }.getOrElse(result.callSiteStack)
-            ReachableByTask(result.taskStack :+ TaskFingerprint(p, newStack, callDepth + 1), path)
+      args.toList.flatMap {
+        case arg: Expression =>
+          val outParams = if (result.callSiteStack.nonEmpty) {
+            List[MethodParameterOut]()
+          } else {
+            argToOutputParams(arg).l
           }
+          outParams
+            .filterNot(_.method.isExternal)
+            .map { p =>
+              val newStack =
+                arg.inCall.headOption.map { x => x :: result.callSiteStack }.getOrElse(result.callSiteStack)
+              ReachableByTask(result.taskStack :+ TaskFingerprint(p, newStack, callDepth + 1), path)
+            }
+        case _ => Vector.empty
       }
     }
 
-    forCalls ++ forArgs
+    val forMethodRefs = outArgsAndCalls.flatMap { case (result, outArg, path, callDepth) =>
+      outArg.toList.flatMap {
+        case methodRef: MethodRef =>
+          val methodReturns = methodRef._refOut.collectAll[Method].methodReturn
+          methodReturns.flatMap { methodReturn =>
+            val returnStatements = methodReturn._reachingDefIn.toList.collect { case r: Return => r }
+            returnStatements.map { returnStatement =>
+              val newPath = Vector(PathElement(methodReturn, result.callSiteStack)) ++ path
+              val taskStack =
+                result.taskStack :+ TaskFingerprint(returnStatement, result.callSiteStack, callDepth + 1)
+              ReachableByTask(taskStack, newPath)
+            }
+          }
+        case _ => Vector.empty
+      }
+    }
+
+    forCalls ++ forArgs ++ forMethodRefs
   }
 
 }

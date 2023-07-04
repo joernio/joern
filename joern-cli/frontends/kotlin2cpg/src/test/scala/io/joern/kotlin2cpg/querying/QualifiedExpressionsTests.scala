@@ -26,6 +26,20 @@ class QualifiedExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = 
     }
   }
 
+  "CPG for code with chained qualified expressions" should {
+    val cpg = code("""
+        |fun main() {
+        |      val out = StringBuilder().append("one").append("-two").toString()
+        |      println(out)
+        |}
+        |""".stripMargin)
+
+    "should contain a CALL node for the long DQE with the correct METHOD_FULL_NAME set" in {
+      val List(c) = cpg.call.codeExact("StringBuilder().append(\"one\")").l
+      c.methodFullName shouldBe "java.lang.StringBuilder.append:java.lang.StringBuilder(java.lang.String)"
+    }
+  }
+
   "CPG for code with qualified expression with CALL as a receiver" should {
     val cpg = code("""
         |package mypkg

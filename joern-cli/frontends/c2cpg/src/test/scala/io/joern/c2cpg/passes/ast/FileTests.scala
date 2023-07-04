@@ -14,9 +14,9 @@ class FileTests extends CCodeToCpgSuite {
       |""".stripMargin)
 
   "should contain two file nodes in total, both with order=0" in {
-    cpg.file.order.l shouldBe List(0, 0)
+    cpg.file.nameNot("<includes>").order.l shouldBe List(0, 0)
     cpg.file.name(FileTraversal.UNKNOWN).size shouldBe 1
-    cpg.file.nameNot(FileTraversal.UNKNOWN).size shouldBe 1
+    cpg.file.nameNot(FileTraversal.UNKNOWN, "<includes>").size shouldBe 1
   }
 
   "should contain exactly one placeholder file node with `name=\"<unknown>\"/order=0`" in {
@@ -44,11 +44,19 @@ class FileTests extends CCodeToCpgSuite {
       .typeDecl
       .nameNot(NamespaceTraversal.globalNamespaceName)
       .name
-      .toSetMutable shouldBe Set("my_struct")
+      .l
+      .sorted shouldBe List("ANY", "int", "my_struct", "void")
   }
 
   "should allow traversing to namespaces" in {
-    cpg.file.namespace.name(NamespaceTraversal.globalNamespaceName).l.size shouldBe 2
+    val List(ns1, ns2, ns3) = cpg.file.namespaceBlock.l
+    ns1.filename shouldBe "<includes>"
+    ns1.fullName shouldBe "<includes>:<global>"
+    ns2.filename shouldBe "<unknown>"
+    ns2.fullName shouldBe "<global>"
+    ns3.filename shouldBe "Test0.c"
+    ns3.fullName shouldBe "Test0.c:<global>"
+    cpg.file.namespace.name(NamespaceTraversal.globalNamespaceName).l.size shouldBe 3
   }
 
 }

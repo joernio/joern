@@ -2,7 +2,6 @@ package io.shiftleft.semanticcpg.language
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{ConfigFile, Literal, Local, Method}
-import overflowdb.traversal.Traversal
 
 /** Language extensions for android. */
 package object android {
@@ -11,21 +10,21 @@ package object android {
     new NodeTypeStarters(cpg)
 
   implicit def singleToLocalExt[A <: Local](a: A): LocalTraversal =
-    new LocalTraversal(Traversal.fromSingle(a))
+    new LocalTraversal(Iterator.single(a))
 
   implicit def iterOnceToLocalExt[A <: Local](a: IterableOnce[A]): LocalTraversal =
-    new LocalTraversal(iterableToTraversal(a))
+    new LocalTraversal(a.iterator)
 
   implicit def singleToConfigFileExt[A <: ConfigFile](a: A): ConfigFileTraversal =
-    new ConfigFileTraversal(Traversal.fromSingle(a))
+    new ConfigFileTraversal(Iterator.single(a))
 
   implicit def iterOnceToConfigFileExt[A <: ConfigFile](a: IterableOnce[A]): ConfigFileTraversal =
-    new ConfigFileTraversal(iterableToTraversal(a))
+    new ConfigFileTraversal(a.iterator)
 
   implicit def singleToMethodExt[A <: Method](a: A): MethodTraversal =
-    new MethodTraversal(Traversal.fromSingle(a))
+    new MethodTraversal(Iterator.single(a))
 
   implicit def iterOnceToMethodExt[A <: Method](a: IterableOnce[A]): MethodTraversal =
-    new MethodTraversal(iterableToTraversal(a))
+    new MethodTraversal(a.iterator)
 
 }

@@ -12,8 +12,11 @@ trait JsSrc2CpgFrontend extends LanguageFrontend {
     val cpgOutFile = File.newTemporaryFile(suffix = "cpg.bin")
     cpgOutFile.deleteOnExit()
     val jssrc2cpg = new JsSrc2Cpg()
-    val config =
-      Config(inputPath = sourceCodePath.getAbsolutePath, outputPath = cpgOutFile.pathAsString, tsTypes = false)
+    val config = getConfig()
+      .map(_.asInstanceOf[Config])
+      .getOrElse(Config(tsTypes = false))
+      .withInputPath(sourceCodePath.getAbsolutePath())
+      .withOutputPath(cpgOutFile.pathAsString)
     jssrc2cpg.createCpg(config).get
   }
 }

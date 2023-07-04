@@ -20,7 +20,7 @@ trait ICallResolver {
   def getCalledMethods(callsite: CallRepr): Iterable[Method] = {
     triggerCallsiteResolution(callsite)
     val combined = mutable.ArrayBuffer.empty[Method]
-    callsite._callOut.asScala.foreach(method => combined.append(method.asInstanceOf[Method]))
+    callsite._callOut.foreach(method => combined.append(method.asInstanceOf[Method]))
     combined.appendAll(getResolvedCalledMethods(callsite))
 
     combined
@@ -29,7 +29,7 @@ trait ICallResolver {
   /** Same as getCalledMethods but with traversal return type.
     */
   def getCalledMethodsAsTraversal(callsite: CallRepr): Traversal[Method] =
-    getCalledMethods(callsite).to(Traversal)
+    getCalledMethods(callsite).iterator
 
   /** Get callsites of the given method. This internally calls triggerMethodResolution.
     */
@@ -40,7 +40,7 @@ trait ICallResolver {
     // a certain method which could be overriden. If we are looking for the call sites of
     // such a statically asserted method, we find it twice and thus deduplicate here.
     val combined = mutable.LinkedHashSet.empty[CallRepr]
-    method._callIn.asScala.foreach(call => combined.add(call.asInstanceOf[CallRepr]))
+    method._callIn.foreach(call => combined.add(call.asInstanceOf[CallRepr]))
     combined.addAll(getResolvedMethodCallsites(method))
 
     combined.toBuffer
@@ -49,7 +49,7 @@ trait ICallResolver {
   /** Same as getMethodCallsites but with traversal return type.
     */
   def getMethodCallsitesAsTraversal(method: Method): Traversal[CallRepr] =
-    getMethodCallsites(method).to(Traversal)
+    getMethodCallsites(method).iterator
 
   /** Starts data flow tracking to find all method which could be called at the given callsite. The result is stored in
     * the resolver internal cache.

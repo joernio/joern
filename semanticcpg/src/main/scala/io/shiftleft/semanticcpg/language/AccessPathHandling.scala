@@ -63,11 +63,13 @@ object AccessPathHandling {
         IndirectionAccess :: tail
       case Operators.addressOf =>
         AddressOf :: tail
-      case Operators.fieldAccess | Operators.indexAccess =>
+      case Operators.fieldAccess =>
+        extractAccessStringTokenForFieldAccess(memberAccess) :: tail
+      case Operators.indexAccess =>
         extractAccessStringToken(memberAccess) :: tail
       case Operators.indirectFieldAccess =>
         // we will reverse the list in the end
-        extractAccessStringToken(memberAccess) :: IndirectionAccess :: tail
+        extractAccessStringTokenForFieldAccess(memberAccess) :: IndirectionAccess :: tail
       case Operators.indirectIndexAccess =>
         // we will reverse the list in the end
         IndirectionAccess :: extractAccessIntToken(memberAccess) :: tail
@@ -75,7 +77,28 @@ object AccessPathHandling {
         extractAccessIntToken(memberAccess) :: tail
       case Operators.getElementPtr =>
         // we will reverse the list in the end
-        AddressOf :: extractAccessStringToken(memberAccess) :: IndirectionAccess :: tail
+        AddressOf :: extractAccessStringTokenForFieldAccess(memberAccess) :: IndirectionAccess :: tail
+    }
+  }
+
+  private def extractAccessStringTokenForFieldAccess(memberAccess: Call): AccessElement = {
+    memberAccess.argumentOption(2) match {
+      case None =>
+        logger.warn(
+          s"Invalid AST: Found member access without second argument." +
+            s" Member access CODE: ${memberAccess.code}" +
+            s" In method ${memberAccess.method.fullName}"
+        )
+        VariableAccess
+      case Some(literal: Literal) => ConstantAccess(literal.code)
+      case Some(fieldIdentifier: FieldIdentifier) =>
+        ConstantAccess(fieldIdentifier.canonicalName)
+      case Some(identifier: Identifier) =>
+        // TODO remove this case.
+        // This is handling a very old CPG format version where IDENTIFIER was used instead of FIELD_IDENTIFIER.
+        // Sadly we need this for now to support a GO cpg.
+        ConstantAccess(identifier.name)
+      case _ => VariableAccess
     }
   }
 
@@ -94,6 +117,7 @@ object AccessPathHandling {
       case _ => VariableAccess
     }
   }
+
   private def extractAccessIntToken(memberAccess: Call): AccessElement = {
     memberAccess.argumentOption(2) match {
       case None =>
@@ -114,7 +138,7 @@ object AccessPathHandling {
   }
 
   def lastExpressionInBlock(block: Block): Option[Expression] =
-    block._astOut.asScala
+    block._astOut
       .collect {
         case node: Expression if !node.isInstanceOf[Local] && !node.isInstanceOf[Method] => node
       }

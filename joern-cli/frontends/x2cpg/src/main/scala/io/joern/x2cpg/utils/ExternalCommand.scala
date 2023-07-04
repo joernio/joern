@@ -1,6 +1,7 @@
 package io.joern.x2cpg.utils
 
 import java.util.concurrent.ConcurrentLinkedQueue
+import org.apache.commons.lang.StringUtils
 import scala.sys.process.{Process, ProcessLogger}
 import scala.util.{Failure, Success, Try}
 import scala.jdk.CollectionConverters._
@@ -23,6 +24,28 @@ object ExternalCommand {
         Success(stdOutOutput.asScala.toSeq)
       case _ =>
         Failure(new RuntimeException(stdErrOutput.asScala.mkString(System.lineSeparator())))
+    }
+  }
+
+  private val COMMAND_AND: String = " && "
+
+  def toOSCommand(command: String): String = if (IS_WIN) command + ".cmd" else command
+
+  def runMultiple(command: String, inDir: String = ".", extraEnv: Map[String, String] = Map.empty): Try[String] = {
+    val dir           = new java.io.File(inDir)
+    val stdOutOutput  = new ConcurrentLinkedQueue[String]
+    val stdErrOutput  = new ConcurrentLinkedQueue[String]
+    val processLogger = ProcessLogger(stdOutOutput.add, stdErrOutput.add)
+    val commands      = command.split(COMMAND_AND).toSeq
+    commands.map { cmd =>
+      val cmdWithQuotesAroundDir = StringUtils.replace(cmd, inDir, s"'$inDir'")
+      Try(Process(cmdWithQuotesAroundDir, dir, extraEnv.toList: _*).!(processLogger)).getOrElse(1)
+    }.sum match {
+      case 0 =>
+        Success(stdOutOutput.asScala.mkString(System.lineSeparator()))
+      case _ =>
+        val allOutput = stdOutOutput.asScala ++ stdErrOutput.asScala
+        Failure(new RuntimeException(allOutput.mkString(System.lineSeparator())))
     }
   }
 }

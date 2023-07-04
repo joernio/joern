@@ -27,18 +27,19 @@ class ConsoleTests extends AnyWordSpec with Matchers {
   "importCode" should {
     "warn about non-existent dir" in ConsoleFixture() { (console, _) =>
       val nonExistentDir = "/does/not/exist/"
-      the[ConsoleException] thrownBy console.importCode(
-        nonExistentDir
-      ) should have message s"Input path does not exist: '$nonExistentDir'"
-      the[ConsoleException] thrownBy console.importCode.c(
-        nonExistentDir
-      ) should have message s"Input path does not exist: '$nonExistentDir'"
-      the[ConsoleException] thrownBy console.importCode.jssrc(
-        nonExistentDir
-      ) should have message s"Input path does not exist: '$nonExistentDir'"
-      the[ConsoleException] thrownBy console.importCode.java(
-        nonExistentDir
-      ) should have message s"Input path does not exist: '$nonExistentDir'"
+
+      intercept[ConsoleException] {
+        console.importCode(nonExistentDir)
+      }.getMessage shouldBe s"Input path does not exist: '$nonExistentDir'"
+      intercept[ConsoleException] {
+        console.importCode.c(nonExistentDir)
+      }.getMessage shouldBe s"Input path does not exist: '$nonExistentDir'"
+      intercept[ConsoleException] {
+        console.importCode.jssrc(nonExistentDir)
+      }.getMessage shouldBe s"Input path does not exist: '$nonExistentDir'"
+      intercept[ConsoleException] {
+        console.importCode.java(nonExistentDir)
+      }.getMessage shouldBe s"Input path does not exist: '$nonExistentDir'"
     }
 
     "provide overview of available language modules" in ConsoleFixture() { (console, _) =>
