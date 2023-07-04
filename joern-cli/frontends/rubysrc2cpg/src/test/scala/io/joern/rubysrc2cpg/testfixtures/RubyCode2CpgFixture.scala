@@ -12,10 +12,10 @@ trait RubyFrontend extends LanguageFrontend {
   override val fileSuffix: String = ".rb"
 
   override def execute(sourceCodeFile: File): Cpg = {
-    implicit val defaultConfig: Config = 
+    implicit val defaultConfig: Config =
       getConfig()
-      .map(_.asInstanceOf[Config])
-      .getOrElse(Config())
+        .map(_.asInstanceOf[Config])
+        .getOrElse(Config())
     new RubySrc2Cpg()
       .createCpg(sourceCodeFile.getAbsolutePath)
       .map(applyPostProcessingPasses)
