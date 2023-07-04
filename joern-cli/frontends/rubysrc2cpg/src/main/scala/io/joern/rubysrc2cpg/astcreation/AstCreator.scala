@@ -336,7 +336,7 @@ class AstCreator(
     case ctx: IfExpressionPrimaryContext       => Seq(astForIfExpression(ctx.ifExpression()))
     case ctx: UnlessExpressionPrimaryContext   => astForUnlessExpressionPrimaryContext(ctx)
     case ctx: CaseExpressionPrimaryContext     => astForCaseExpressionPrimaryContext(ctx)
-    case ctx: WhileExpressionPrimaryContext    => astForWhileExpressionContext(ctx.whileExpression())
+    case ctx: WhileExpressionPrimaryContext    => Seq(astForWhileExpression(ctx.whileExpression()))
     case ctx: UntilExpressionPrimaryContext    => Seq(astForUntilExpression(ctx.untilExpression()))
     case ctx: ForExpressionPrimaryContext      => Seq(astForForExpression(ctx.forExpression()))
     case ctx: JumpExpressionPrimaryContext     => astForJumpExpressionPrimaryContext(ctx)
@@ -1578,25 +1578,7 @@ class AstCreator(
   def astForVariableReferencePrimaryContext(ctx: VariableReferencePrimaryContext): Seq[Ast] = {
     astForVariableRefenceContext(ctx.variableReference())
   }
-
-  def astForDoClauseContext(ctx: DoClauseContext): Seq[Ast] = {
-    astForCompoundStatement(ctx.compoundStatement())
-  }
-
-  def astForWhileExpressionContext(ctx: WhileExpressionContext): Seq[Ast] = {
-    val whileCondAst = astForExpressionOrCommand(ctx.expressionOrCommand()).headOption
-    val doClauseAsts = astForDoClauseContext(ctx.doClause())
-
-    val ast = whileAst(
-      whileCondAst,
-      doClauseAsts,
-      Some(ctx.getText),
-      Some(ctx.WHILE().getSymbol.getLine),
-      Some(ctx.WHILE().getSymbol.getCharPositionInLine)
-    )
-    Seq(ast)
-  }
-
+  
   def astForBlockArgumentContext(ctx: BlockArgumentContext): Seq[Ast] = {
     if (ctx == null) return Seq(Ast())
     astForExpressionContext(ctx.expression())

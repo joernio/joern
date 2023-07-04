@@ -149,6 +149,12 @@ trait AstForExpressionsCreator { this: AstCreator =>
     val forRootAst = whileAst(forExprAst.headOption, forBodyAst, Some(ctx.getText), line(ctx), column(ctx))
     forVarAst.headOption.map(forRootAst.withChild).getOrElse(forRootAst)
   }
+  
+  protected def astForWhileExpression(ctx: WhileExpressionContext): Ast = {
+    val testAst = astForExpressionOrCommand(ctx.expressionOrCommand())
+    val bodyAst = astForCompoundStatement(ctx.doClause().compoundStatement())
+    whileAst(testAst.headOption, bodyAst, Some(ctx.getText), line(ctx), column(ctx))
+  }
 
   protected def astForIfExpression(ctx: IfExpressionContext): Ast = {
     val testAst   = astForExpressionOrCommand(ctx.expressionOrCommand())
