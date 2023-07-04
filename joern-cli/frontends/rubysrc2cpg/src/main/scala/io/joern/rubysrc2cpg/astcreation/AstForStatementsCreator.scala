@@ -46,20 +46,16 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   protected def astForIfModifierStatement(ctx: ModifierStatementContext): Ast = {
-    val lhs = astForStatement(ctx.statement(0))
-    val rhs = astForStatement(ctx.statement(1)).headOption
-    val ifNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.IF)
-      .code(ctx.getText)
+    val lhs    = astForStatement(ctx.statement(0))
+    val rhs    = astForStatement(ctx.statement(1)).headOption
+    val ifNode = controlStructureNode(ctx, ControlStructureTypes.IF, ctx.getText)
     controlStructureAst(ifNode, rhs, lhs)
   }
 
   protected def astForUnlessModifierStatement(ctx: ModifierStatementContext): Ast = {
-    val lhs = astForStatement(ctx.statement(0))
-    val rhs = astForStatement(ctx.statement(1))
-    val ifNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.IF)
-      .code(ctx.getText)
+    val lhs    = astForStatement(ctx.statement(0))
+    val rhs    = astForStatement(ctx.statement(1))
+    val ifNode = controlStructureNode(ctx, ControlStructureTypes.IF, ctx.getText)
     controlStructureAst(ifNode, lhs.headOption, rhs)
   }
 
@@ -76,11 +72,9 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   protected def astForRescueModifierStatement(ctx: ModifierStatementContext): Ast = {
-    val lhs = astForStatement(ctx.statement(0))
-    val rhs = astForStatement(ctx.statement(1))
-    val throwNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.THROW)
-      .code(ctx.getText)
+    val lhs       = astForStatement(ctx.statement(0))
+    val rhs       = astForStatement(ctx.statement(1))
+    val throwNode = controlStructureNode(ctx, ControlStructureTypes.THROW, ctx.getText)
     controlStructureAst(throwNode, rhs.headOption, lhs)
   }
 
@@ -90,7 +84,12 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   protected def astForStatements(ctx: StatementsContext): Seq[Ast] = {
-    Option(ctx).map(_.statement()).map(_.asScala).getOrElse(Seq()).flatMap(astForStatement).toSeq
+    Option(ctx) match {
+      case Some(ctx) =>
+        Option(ctx).map(_.statement()).map(_.asScala).getOrElse(Seq()).flatMap(astForStatement).toSeq
+      case None =>
+        Seq()
+    }
   }
 
   // TODO: return Ast instead of Seq[Ast].
@@ -109,6 +108,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     case ctx: NotExpressionOrCommandContext        => Seq(astForNotKeywordExpressionOrCommand(ctx))
     case ctx: OrAndExpressionOrCommandContext      => Seq(astForOrAndExpressionOrCommand(ctx))
     case ctx: ExpressionExpressionOrCommandContext => astForExpressionContext(ctx.expression())
+    case _                                         => Seq(Ast())
   }
 
   protected def astForNotKeywordExpressionOrCommand(ctx: NotExpressionOrCommandContext): Ast = {
@@ -226,4 +226,19 @@ trait AstForStatementsCreator { this: AstCreator =>
       .code(code)
     Seq(Ast(importNode))
   }
+
+  protected implicit class BlockContextExt(val ctx: BlockContext) {
+    def compoundStatement: CompoundStatementContext = {
+      fold(_.compoundStatement(), _.compoundStatement())
+    }
+
+    def blockParameter: Option[BlockParameterContext] = {
+      fold(ctx => Option(ctx.blockParameter()), ctx => Option(ctx.blockParameter()))
+    }
+
+    private def fold[A](f: DoBlockContext => A, g: BraceBlockContext => A): A = {
+      Option(ctx.doBlock()).fold(g(ctx.braceBlock()))(f)
+    }
+  }
+
 }

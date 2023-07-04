@@ -6,9 +6,9 @@ import io.joern.dataflowengineoss.language._
 
 class DataflowTests extends GoCodeToCpgSuite(withOssDataflow = true) {
 
-  "Source to sink dataflow for through operators" should {
+  "Source to sink dataflow through operators" should {
 
-    "be reachable" in {
+    "be reachable (case 1)" in {
       val cpg = code("""
           |package main
           |func main(){
@@ -25,6 +25,108 @@ class DataflowTests extends GoCodeToCpgSuite(withOssDataflow = true) {
 
     }
 
+    "be reachable (case 2)" in {
+      val cpg = code("""
+          |package main
+          |func main(){
+          |   var a int = 4
+          |   var b int = 5
+          |   c := b + (a + 3)
+          |   var d int = c
+          |}
+          |
+          |""".stripMargin)
+      val source = cpg.identifier("a")
+      val sink   = cpg.identifier("d")
+      sink.reachableByFlows(source).size shouldBe 2
+
+    }
+  }
+
+  "Source to sink dataflow through if loop" should {
+
+    "be reachable (case 1)" in {
+      val cpg = code("""
+          |package main
+          |func main(){
+          |   var a int = 4
+          |   var b int
+          |   if (a > 6) {
+          |     c := a
+          |     b = c
+          |   }
+          |}
+          |
+          |""".stripMargin)
+      val source = cpg.identifier("a").lineNumber(4)
+      val sink   = cpg.identifier("b").lineNumber(8)
+      sink.reachableByFlows(source).size shouldBe 1
+
+    }
+
+    "be reachable (case 2)" in {
+      val cpg = code("""
+          |package main
+          |func main(){
+          |   var a int = 4
+          |   var b int
+          |   if (a > 6) {
+          |     b = a
+          |   }else {
+          |      c := a
+          |      b = c
+          |   }
+          |}
+          |
+          |""".stripMargin)
+      val source = cpg.identifier("a").lineNumber(4)
+      val sink   = cpg.identifier("b").lineNumber(10)
+      sink.reachableByFlows(source).size shouldBe 1
+
+    }
+
+    "be reachable (case 3)" in {
+      val cpg = code("""
+          |package main
+          |func main(){
+          |   var a int = 4
+          |   var b int
+          |   if (a > 6) {
+          |     b = a
+          |   }else if (a < 4) {
+          |      c := a
+          |      b = c
+          |   }else {
+          |      b = a
+          |   }
+          |}
+          |
+          |""".stripMargin)
+      val source = cpg.identifier("a").lineNumber(4)
+      val sink   = cpg.identifier("b").lineNumber(10)
+      sink.reachableByFlows(source).size shouldBe 1
+
+    }
+
+    "be reachable (case 4)" in {
+      val cpg = code("""
+          |package main
+          |func main(){
+          |   var a int = 4
+          |   var b int
+          |   if (a > 6) {
+          |     if (a < 10) {
+          |       c := a
+          |       b = c
+          |     }
+          |   }
+          |}
+          |
+          |""".stripMargin)
+      val source = cpg.identifier("a").lineNumber(4)
+      val sink   = cpg.identifier("b").lineNumber(9)
+      sink.reachableByFlows(source).size shouldBe 1
+    }
   }
 
 }

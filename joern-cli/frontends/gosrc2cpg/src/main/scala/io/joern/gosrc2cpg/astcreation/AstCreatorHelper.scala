@@ -1,11 +1,11 @@
 package io.joern.gosrc2cpg.astcreation
 
-import io.joern.gosrc2cpg.parser.ParserAst.{ImportSpec, ParserNode, fromString}
+import io.joern.gosrc2cpg.parser.ParserAst.{ParserNode, fromString}
 import ujson.Value
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
-import io.joern.x2cpg.Ast
 import org.apache.commons.lang.StringUtils
 
+import scala.collection.mutable.ListBuffer
 import scala.util.Try
 
 trait AstCreatorHelper { this: AstCreator =>
@@ -15,7 +15,7 @@ trait AstCreatorHelper { this: AstCreator =>
   private val MinCodeLength: Int = 50
 
   protected def createParserNodeInfo(json: Value): ParserNodeInfo = {
-    val c     = shortenCode(code(json))
+    val c     = shortenCode(code(json).toOption.getOrElse(""))
     val ln    = line(json)
     val cn    = column(json)
     val lnEnd = lineEndNo(json)
@@ -25,9 +25,25 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   private def nodeType(node: Value): ParserNode = fromString(node(ParserKeys.NodeType).str)
-  protected def code(node: Value): String = {
-    // TODO Need to build a utlity which returns code for a node
-    ""
+  protected def code(node: Value): Try[String] = Try {
+
+    val lineNumber    = line(node).get
+    val colNumber     = column(node).get - 1
+    val lineEndNumber = lineEndNo(node).get
+    val colEndNumber  = columnEndNo(node).get - 1
+
+    if (lineNumber == lineEndNumber) {
+      lineNumberMapping(lineNumber).substring(colNumber, colEndNumber)
+    } else {
+      val stringList = new ListBuffer[String]()
+      stringList.addOne(lineNumberMapping(lineNumber).substring(colNumber))
+      Iterator
+        .from(lineNumber + 1)
+        .takeWhile(currentLineNumber => currentLineNumber < lineEndNumber)
+        .foreach(currentLineNumber => stringList.addOne(lineNumberMapping(currentLineNumber)))
+      stringList.addOne(lineNumberMapping(lineEndNumber).substring(0, colEndNumber))
+      stringList.mkString("\n")
+    }
   }
 
   private def shortenCode(code: String, length: Int = MaxCodeLength): String =
@@ -40,5 +56,15 @@ trait AstCreatorHelper { this: AstCreator =>
   protected def lineEndNo(node: Value): Option[Integer] = Try(node(ParserKeys.NodeLineEndNo).num).toOption.map(_.toInt)
 
   protected def columnEndNo(node: Value): Option[Integer] = Try(node(ParserKeys.NodeColEndNo).num).toOption.map(_.toInt)
+
+  protected def positionLookupTables(source: String): Map[Int, String] = {
+    source
+      .split("\n")
+      .zipWithIndex
+      .map { case (sourceLine, lineNumber) =>
+        (lineNumber + 1, sourceLine)
+      }
+      .toMap
+  }
 
 }

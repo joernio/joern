@@ -1,5 +1,6 @@
 package io.joern.x2cpg.testfixtures
 
+import io.joern.x2cpg.X2CpgConfig
 import io.shiftleft.codepropertygraph.Cpg
 import overflowdb.Graph
 
@@ -31,6 +32,11 @@ abstract class TestCpg extends Cpg() with LanguageFrontend {
   def moreCode(code: String, fileName: String): this.type = {
     checkGraphEmpty()
     codeFileNamePairs.append((code, Paths.get(fileName)))
+    this
+  }
+
+  def withConfig(config: X2CpgConfig[_]): this.type = {
+    setConfig(config)
     this
   }
 

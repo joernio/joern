@@ -31,6 +31,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
   }
 
   protected def getTypeOfToken(basicLit: ParserNodeInfo): String = {
+    // TODO Maybe in future need to add __BuiltIn kind of prefix
     Try(basicLit.json(ParserKeys.Kind).str match {
       case "INT"    => "int"
       case "FLOAT"  => "float32"
