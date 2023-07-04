@@ -8,8 +8,8 @@ import com.github.javaparser.ast.Node.Parsedness
 import com.github.javaparser.symbolsolver.JavaSymbolSolver
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JarTypeSolver
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
-import io.joern.javasrc2cpg.passes.AstCreationPass.getSplitJavaparserAsts
-import io.joern.javasrc2cpg.typesolvers.{CachingReflectionTypeSolver, EagerSourceTypeSolver, SimpleCombinedTypeSolver}
+import io.joern.javasrc2cpg.passes.AstCreationPass._
+import io.joern.javasrc2cpg.typesolvers.{EagerSourceTypeSolver, SimpleCombinedTypeSolver, JdkJarTypeSolver}
 import io.joern.javasrc2cpg.util.{Delombok, SourceRootFinder}
 import io.joern.javasrc2cpg.util.Delombok.DelombokMode
 import io.joern.x2cpg.SourceFiles
@@ -25,6 +25,10 @@ import scala.collection.parallel.CollectionConverters._
 import scala.jdk.CollectionConverters._
 import scala.jdk.OptionConverters.RichOptional
 import scala.util.{Success, Try}
+import com.github.javaparser.symbolsolver.resolution.typesolvers.ClassLoaderTypeSolver
+import java.net.URLClassLoader
+import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver
+import io.joern.javasrc2cpg.typesolvers.CachingReflectionTypeSolver
 
 case class SourceDirectoryInfo(typeSolverSourceDirs: List[String], sourceFiles: List[SourceFileInfo])
 case class SplitDirectories(analysisSourceDir: String, typesSourceDir: String)
@@ -84,9 +88,16 @@ class AstCreationPass(config: Config, cpg: Cpg, preCreatedAsts: Option[SplitJpAs
   private def createSymbolSolver(typesAsts: List[JpAstWithMeta]): JavaSymbolSolver = {
     val dependencyList = getDependencyList()
 
-    val combinedTypeSolver   = new SimpleCombinedTypeSolver()
-    val reflectionTypeSolver = new CachingReflectionTypeSolver()
-    combinedTypeSolver.add(reflectionTypeSolver)
+    val combinedTypeSolver = new SimpleCombinedTypeSolver()
+
+    config.jdkPath match {
+      case Some(path) =>
+        val jdkJarTypeSolver = JdkJarTypeSolver.fromJdkPath(path)
+        combinedTypeSolver.add(jdkJarTypeSolver)
+
+      case None =>
+        combinedTypeSolver.add(new CachingReflectionTypeSolver())
+    }
 
     val sourceTypeSolver = EagerSourceTypeSolver(typesAsts, combinedTypeSolver)
     // The sourceTypeSolver will often be the fastest due to there being no possibility of encountering a SOE on lookup.
