@@ -146,6 +146,23 @@ class EnumTypeTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
       }
     }
 
+    "be correct for anonymous enum with alias" in {
+      val cpg = code("""
+          |enum
+          |{
+          |    d,
+          |    e,
+          |    f
+          |} testing;""".stripMargin)
+      val List(anon) = cpg.typeDecl.name("testing").l
+      inside(anon.member.l) { case List(d, e, f) =>
+        d.name shouldBe "d"
+        e.name shouldBe "e"
+        f.name shouldBe "f"
+      }
+      anon.aliasTypeFullName shouldBe None
+    }
+
     "be correct for enum access" in {
       val cpg = code("""
        |enum X: int
