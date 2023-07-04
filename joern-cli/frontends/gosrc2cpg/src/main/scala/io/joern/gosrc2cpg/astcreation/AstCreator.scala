@@ -27,6 +27,8 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)
 
   protected val scope: Scope[String, (NewNode, String), NewNode] = new Scope()
 
+  protected val lineNumberMapping = positionLookupTables(parserResult.fileContent)
+
   override def createAst(): DiffGraphBuilder = {
     val rootNode = createParserNodeInfo(parserResult.json)
     val ast      = astForTranslationUnit(rootNode)

@@ -13,6 +13,7 @@ trait AstForExpressionCreator { this: AstCreator =>
       case BinaryExpr => astForBinaryExpr(expr)
       case StarExpr   => astForStarExpr(expr)
       case UnaryExpr  => astForUnaryExpr(expr)
+      case ParenExpr  => astForExpression(createParserNodeInfo(expr.json(ParserKeys.X)))
       case _          => Seq()
     }
   }

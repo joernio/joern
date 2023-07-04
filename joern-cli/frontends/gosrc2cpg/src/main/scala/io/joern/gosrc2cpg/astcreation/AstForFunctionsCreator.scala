@@ -30,19 +30,19 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val astForMethod = methodAst(
       methodNode_,
       parameterNodes.map(Ast(_)),
-      astForMethodBody(funcDecl.json(ParserKeys.Body)).head,
+      astForMethodBody(funcDecl.json(ParserKeys.Body)),
       newMethodReturnNode(returnType, None, line(funcDecl), column(funcDecl))
     )
     // TODO register type above
     Seq(astForMethod)
   }
 
-  def astForMethodBody(body: Value): Seq[Ast] = {
+  def astForMethodBody(body: Value): Ast = {
 
     val nodeInfo = createParserNodeInfo(body)
     nodeInfo.node match {
       case BlockStmt => astForBlockStatement(nodeInfo)
-      case _         => Seq()
+      case _         => Ast()
     }
   }
 
