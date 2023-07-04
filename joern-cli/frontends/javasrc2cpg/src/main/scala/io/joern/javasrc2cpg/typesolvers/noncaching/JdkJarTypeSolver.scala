@@ -91,11 +91,14 @@ class JdkJarTypeSolver private (jdkPath: String) extends TypeSolver {
   }
 
   private def addPathToClassPool(archivePath: String): Try[ClassPath] = {
-    if (archivePath.isJarPath) Try(classPool.appendClassPath(archivePath))
-    else if (archivePath.isJmodPath)
+    if (archivePath.isJarPath) {
+      Try(classPool.appendClassPath(archivePath))
+    } else if (archivePath.isJmodPath) {
       val classPath = new JmodClassPath(archivePath)
       Try(classPool.appendClassPath(classPath))
-    else Failure(new IllegalArgumentException("$archivePath is not a path to a jar/jmod"))
+    } else {
+      Failure(new IllegalArgumentException("$archivePath is not a path to a jar/jmod"))
+    }
   }
 
   def withJars(archivePaths: Seq[String]): JdkJarTypeSolver = {
@@ -105,7 +108,7 @@ class JdkJarTypeSolver private (jdkPath: String) extends TypeSolver {
 
   def addArchives(archivePaths: Seq[String]): Unit = {
     archivePaths.foreach { archivePath =>
-      Try(addPathToClassPool(archivePath)) match {
+      addPathToClassPool(archivePath) match {
         case Success(_) => registerKnownClassesForJar(archivePath)
 
         case Failure(e) =>
