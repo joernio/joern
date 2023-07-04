@@ -22,7 +22,7 @@ class CaseConditionTests extends RubyParserAbstractTest {
             |  ExpressionExpressionOrCommand
             |   PrimaryExpression
             |    VariableReferencePrimary
-            |     VariableReference
+            |     VariableIdentifierVariableReference
             |      VariableIdentifier
             |       something
             |  Separators
@@ -79,7 +79,7 @@ class CaseConditionTests extends RubyParserAbstractTest {
             |  ExpressionExpressionOrCommand
             |   PrimaryExpression
             |    VariableReferencePrimary
-            |     VariableReference
+            |     VariableIdentifierVariableReference
             |      VariableIdentifier
             |       something
             |  Separators
@@ -122,7 +122,7 @@ class CaseConditionTests extends RubyParserAbstractTest {
             |  ExpressionExpressionOrCommand
             |   PrimaryExpression
             |    VariableReferencePrimary
-            |     VariableReference
+            |     VariableIdentifierVariableReference
             |      VariableIdentifier
             |       something
             |  Separators
@@ -162,7 +162,7 @@ class CaseConditionTests extends RubyParserAbstractTest {
             |  ExpressionExpressionOrCommand
             |   PrimaryExpression
             |    VariableReferencePrimary
-            |     VariableReference
+            |     VariableIdentifierVariableReference
             |      VariableIdentifier
             |       x
             |  Separators
