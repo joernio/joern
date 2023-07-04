@@ -254,7 +254,12 @@ class AstCreator(
   def astForMultipleRightHandSideContext(ctx: MultipleRightHandSideContext): Seq[Ast] = {
     if (ctx == null) return Seq(Ast())
 
-    val exprAsts = ctx.expressionOrCommands().expressionOrCommand().asScala.flatMap(astForExpressionOrCommand).toSeq
+    val expCmd = ctx.expressionOrCommands()
+    val exprAsts = Option(expCmd) match
+      case Some(expCmd) =>
+        expCmd.expressionOrCommand().asScala.flatMap(astForExpressionOrCommand).toSeq
+      case None =>
+        Seq()
 
     val paramAsts = if (ctx.splattingArgument() != null) {
       val splattingAsts = astForSplattingArgumentContext(ctx.splattingArgument())
@@ -281,8 +286,8 @@ class AstCreator(
         .methodFullName(operatorName)
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .typeFullName(Defines.Any)
-        .lineNumber(ctx.EQ().getSymbol().getLine())
-        .columnNumber(ctx.EQ().getSymbol().getCharPositionInLine())
+        .lineNumber(ctx.op.getLine())
+        .columnNumber(ctx.op.getCharPositionInLine())
 
       val packedRHS = getPackedRHS(rightAst)
       Seq(callAst(callNode, leftAst ++ packedRHS))
@@ -719,17 +724,33 @@ class AstCreator(
       val argAst = astForArguments(ctx.arguments())
       Seq(returnAst(retNode, argAst))
     case ctx: BreakArgsInvocationWithoutParenthesesContext =>
-      val node = NewControlStructure()
-        .controlStructureType(ControlStructureTypes.BREAK)
-        .lineNumber(ctx.BREAK().getSymbol.getLine)
-        .columnNumber(ctx.BREAK().getSymbol.getCharPositionInLine)
-        .code(ctx.getText)
-      Seq(
-        Ast(node)
-          .withChildren(astForArguments(ctx.arguments()))
-      )
+      val args = ctx.arguments()
+      Option(args) match {
+        case Some(args) =>
+          /*
+           * This is break with args inside a block. The argument passed to break will be returned by the bloc
+           * Model this as a return since this is effectively a  return
+           */
+          val retNode = NewReturn()
+            .code(ctx.getText)
+            .lineNumber(ctx.BREAK().getSymbol().getLine)
+            .columnNumber(ctx.BREAK().getSymbol().getCharPositionInLine)
+          val argAst = astForArguments(args)
+          Seq(returnAst(retNode, argAst))
+        case None =>
+          val node = NewControlStructure()
+            .controlStructureType(ControlStructureTypes.BREAK)
+            .lineNumber(ctx.BREAK().getSymbol.getLine)
+            .columnNumber(ctx.BREAK().getSymbol.getCharPositionInLine)
+            .code(ctx.getText)
+          Seq(
+            Ast(node)
+              .withChildren(astForArguments(ctx.arguments()))
+          )
+      }
     case ctx: NextArgsInvocationWithoutParenthesesContext =>
-      astForArguments(ctx.arguments())
+      // failing test case. Exception:  Only jump labels and integer literals are currently supported for continue statements.
+      // this overlaps with the problem if returning a value from a block
       val node = NewControlStructure()
         .controlStructureType(ControlStructureTypes.CONTINUE)
         .lineNumber(ctx.NEXT().getSymbol.getLine)
@@ -745,7 +766,7 @@ class AstCreator(
   }
 
   def astForInvocationWithBlockOnlyPrimaryContext(ctx: InvocationWithBlockOnlyPrimaryContext): Seq[Ast] = {
-    val methodIdAst = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText, true)
+    val methodIdAst = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText)
     val blockName = methodIdAst.head.nodes.head
       .asInstanceOf[NewCall]
       .name
@@ -769,7 +790,7 @@ class AstCreator(
   }
 
   def astForInvocationWithParenthesesPrimaryContext(ctx: InvocationWithParenthesesPrimaryContext): Seq[Ast] = {
-    val methodIdAst = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText, true)
+    val methodIdAst = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText)
     val parenAst    = astForArgumentsWithParenthesesContext(ctx.argumentsWithParentheses())
     val callNode    = methodIdAst.head.nodes.filter(_.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
     callNode.name(getActualMethodName(callNode.name))
@@ -867,43 +888,17 @@ class AstCreator(
     }
   }
 
-  def astForMethodIdentifierContext(
-    ctx: MethodIdentifierContext,
-    code: String,
-    definitelyMethod: Boolean = false
-  ): Seq[Ast] = {
+  def astForMethodIdentifierContext(ctx: MethodIdentifierContext, code: String): Seq[Ast] = {
+    // the local/const identifiers are definitely method names
     if (ctx.methodOnlyIdentifier() != null) {
       astForMethodOnlyIdentifier(ctx.methodOnlyIdentifier())
     } else if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
       val localVar  = ctx.LOCAL_VARIABLE_IDENTIFIER()
       val varSymbol = localVar.getSymbol
-
-      /*
-       * Preferences
-       * 1. If definitelyMethod is SET, we are in the context of processing a method or call
-       * node wrt the statement being processed. Create a call node
-       * 2. If an identifier with the variable name exists within the scope, create a identifier node
-       * 3. Otherwise default to call node creation since there is no reason (point 2) to create a identifier node
-       * 4. Applies to CONSTANT_IDENTIFIER as well
-       */
-
-      if (scope.lookupVariable(varSymbol.getText).isDefined && !definitelyMethod) {
-        val node =
-          createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
-        Seq(Ast(node))
-      } else {
-        astForCallNode(localVar, code, methodNamesWithYield.contains(varSymbol.getText))
-      }
+      astForCallNode(localVar, code, methodNamesWithYield.contains(varSymbol.getText))
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
-      val localVar  = ctx.CONSTANT_IDENTIFIER()
-      val varSymbol = localVar.getSymbol
-      if (scope.lookupVariable(varSymbol.getText).isDefined && !definitelyMethod) {
-        val node =
-          createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
-        Seq(Ast(node))
-      } else {
-        astForCallNode(localVar, code)
-      }
+      val localVar = ctx.CONSTANT_IDENTIFIER()
+      astForCallNode(localVar, code)
     } else {
       Seq(Ast())
     }
@@ -934,7 +929,7 @@ class AstCreator(
 
   def astForMethodNameContext(ctx: MethodNameContext): Seq[Ast] = {
     if (ctx.methodIdentifier() != null) {
-      astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText, true)
+      astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText)
     } else if (ctx.operatorMethodName() != null) {
       astForOperatorMethodNameContext(ctx.operatorMethodName())
     } else if (ctx.keyword() != null) {
@@ -961,6 +956,8 @@ class AstCreator(
   def astForAssignmentLikeMethodIdentifierContext(ctx: AssignmentLikeMethodIdentifierContext): Seq[Ast] = {
     if (ctx == null) return Seq(Ast())
 
+    // this is a assignment method. Return a AST of the assigned value
+    // test case can be written once class modelling is in place using a assignment method of the class
     if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
       val localVar  = ctx.LOCAL_VARIABLE_IDENTIFIER()
       val varSymbol = localVar.getSymbol()
@@ -984,7 +981,7 @@ class AstCreator(
     methodNameAst ++ assignLinkedMethodAst
   }
 
-  def astForSingletonObjextContext(ctx: SingletonObjectContext): Seq[Ast] = {
+  def astForSingletonObjectContext(ctx: SingletonObjectContext): Seq[Ast] = {
     if (ctx.variableIdentifier() != null) {
       astForVariableIdentifierContext(ctx.variableIdentifier(), true)
     } else if (ctx.pseudoVariableIdentifier() != null) {
@@ -998,7 +995,7 @@ class AstCreator(
 
   def astForSingletonMethodNamePartContext(ctx: SingletonMethodNamePartContext): Seq[Ast] = {
     val definedMethodNameAst = astForDefinedMethodNameContext(ctx.definedMethodName())
-    val singletonObjAst      = astForSingletonObjextContext(ctx.singletonObject())
+    val singletonObjAst      = astForSingletonObjectContext(ctx.singletonObject())
     definedMethodNameAst ++ singletonObjAst
   }
 
@@ -1344,7 +1341,7 @@ class AstCreator(
     case ctx: RubyParser.ArgsAndDoBlockAndMethodIdCommandWithDoBlockContext =>
       val argsAsts     = astForArguments(ctx.argumentsWithoutParentheses().arguments())
       val doBlockAsts  = astForDoBlockContext(ctx.doBlock())
-      val methodIdAsts = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText, true)
+      val methodIdAsts = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText)
       methodIdAsts ++ argsAsts ++ doBlockAsts
     case ctx: RubyParser.PrimaryMethodArgsDoBlockCommandWithDoBlockContext =>
       val argsAsts       = astForArguments(ctx.argumentsWithoutParentheses().arguments())
@@ -1478,23 +1475,15 @@ class AstCreator(
       case Some(value) =>
         value.nodes
           .map(node => {
-            if (node.isInstanceOf[NewIdentifier]) {
-              val identifierNode = node.asInstanceOf[NewIdentifier]
-              val param = NewMethodParameterIn()
-                .name(identifierNode.name)
-                .code(identifierNode.code)
-                .lineNumber(identifierNode.lineNumber)
-                .columnNumber(identifierNode.columnNumber)
-              Ast(param)
-            } else {
-              val callNode = node.asInstanceOf[NewCall]
-              val param = NewMethodParameterIn()
-                .name(callNode.name)
-                .code(callNode.code)
-                .lineNumber(callNode.lineNumber)
-                .columnNumber(callNode.columnNumber)
-              Ast(param)
-            }
+            // this is guaranteed to be picked up as an identifier since this is a parameter
+            val identifierNode = node.asInstanceOf[NewIdentifier]
+            val param = NewMethodParameterIn()
+              .name(identifierNode.name)
+              .code(identifierNode.code)
+              .lineNumber(identifierNode.lineNumber)
+              .columnNumber(identifierNode.columnNumber)
+            Ast(param)
+
           })
           .toSeq
       case None => Seq()
@@ -1546,7 +1535,11 @@ class AstCreator(
   def astForUnlessExpressionPrimaryContext(ctx: UnlessExpressionPrimaryContext): Seq[Ast] = {
     val conditionAsts = astForExpressionOrCommand(ctx.unlessExpression().expressionOrCommand())
     val thenAsts      = astForCompoundStatement(ctx.unlessExpression().thenClause().compoundStatement())
-    val elseAsts      = astForCompoundStatement(ctx.unlessExpression().elseClause().compoundStatement())
+    val elseAsts = if (ctx.unlessExpression().elseClause() != null) {
+      astForCompoundStatement(ctx.unlessExpression().elseClause().compoundStatement())
+    } else {
+      Seq()
+    }
 
     // unless will be modelled as IF since there is no difference from a static analysis POV
     val unlessNode = NewControlStructure()
