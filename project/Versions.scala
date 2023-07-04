@@ -7,7 +7,7 @@ object Versions {
   val scalatest     = "3.2.16"
   val cats          = "3.5.0"
   val json4s        = "4.0.6"
-  val gradleTooling = "7.6.1"
+  val gradleTooling = "7.6.2"
   val circe         = "0.14.5"
 
   private def parseVersion(key: String): String = {
