@@ -18,7 +18,7 @@ dependsOn(
 )
 
 libraryDependencies ++= Seq(
-  "com.michaelpollmeier" %% "scala-repl-pp-all" % "0.1.32",
+  "com.michaelpollmeier" %% "scala-repl-pp-all" % "0.1.33",
   "io.shiftleft"         %% "codepropertygraph" % Versions.cpg,
   "com.github.scopt"     %% "scopt"             % ScoptVersion,
   "org.typelevel"        %% "cats-effect"       % Versions.cats,
@@ -31,4 +31,4 @@ libraryDependencies ++= Seq(
   "org.scalatest"        %% "scalatest"         % Versions.scalatest % Test
 )
 
-Test/compile := (Test/compile).dependsOn((Projects.c2cpg/stage)).value
+Test / compile := (Test / compile).dependsOn((Projects.c2cpg / stage)).value
