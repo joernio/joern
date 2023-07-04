@@ -3,8 +3,11 @@ package io.joern.rubysrc2cpg.querying
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.BeforeAndAfterAll
+import io.joern.rubysrc2cpg.Config
 
-class RubyMethodFullNameTests extends RubyCode2CpgFixture(true) with BeforeAndAfterAll {
+class RubyMethodFullNameTests extends RubyCode2CpgFixture with BeforeAndAfterAll {
+
+  private val config = Config().withEnableDependencyDownload(true)
 
   "Code for method full name when method present in module" should {
     val cpg = code(
@@ -28,6 +31,7 @@ class RubyMethodFullNameTests extends RubyCode2CpgFixture(true) with BeforeAndAf
           |""".stripMargin,
         "Gemfile"
       )
+      .withConfig(config)
 
     "recognise call node" in {
       cpg.call.name("first_fun").l.size shouldBe 1
@@ -71,6 +75,7 @@ class RubyMethodFullNameTests extends RubyCode2CpgFixture(true) with BeforeAndAf
           |""".stripMargin,
         Seq("util", "help.rb").mkString(java.io.File.separator)
       )
+      .withConfig(config)
 
     "recognise call node" in {
       cpg.call.name("printValue").size shouldBe 1
