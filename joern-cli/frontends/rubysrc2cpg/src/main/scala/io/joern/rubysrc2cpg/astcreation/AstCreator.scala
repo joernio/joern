@@ -213,7 +213,7 @@ class AstCreator(
       val xAsts = astForPrimaryContext(ctx.primary())
       val localVar = {
         if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
-          ctx.LOCAL_VARIABLE_IDENTIFIER() // failing dataflow test case
+          ctx.LOCAL_VARIABLE_IDENTIFIER()
         } else if (ctx.CONSTANT_IDENTIFIER() != null) {
           ctx.CONSTANT_IDENTIFIER()
         } else {
@@ -624,7 +624,7 @@ class AstCreator(
           if (item.singleLeftHandSide() != null) {
             astForSingleLeftHandSideContext(item.singleLeftHandSide())
           } else {
-            astForGroupedLeftHandSideContext(item.groupedLeftHandSide()) // failing dataflow test case
+            astForGroupedLeftHandSideContext(item.groupedLeftHandSide())
           }
         })
         .toList
@@ -632,7 +632,7 @@ class AstCreator(
       val paramAsts =
         if (ctx.packingLeftHandSide() != null) {
           val packingLHSAst = astForPackingLeftHandSideContext(ctx.packingLeftHandSide())
-          packingLHSAst ++ multipleLHSAsts // failing dataflow test case
+          packingLHSAst ++ multipleLHSAsts
         } else {
           multipleLHSAsts
         }
@@ -652,7 +652,7 @@ class AstCreator(
     if (ctx.singleLeftHandSide() != null) {
       astForSingleLeftHandSideContext(ctx.singleLeftHandSide())
     } else if (ctx.multipleLeftHandSide() != null) {
-      astForMultipleLeftHandSideContext(ctx.multipleLeftHandSide()) // unknown dataflow test case
+      astForMultipleLeftHandSideContext(ctx.multipleLeftHandSide())
     } else {
       Seq(Ast())
     }
@@ -683,7 +683,6 @@ class AstCreator(
     if (ctx.EMARK() != null) {
       val invocWOParenAsts = astForInvocationWithoutParenthesesContext(ctx.invocationWithoutParentheses())
       val operatorName     = getOperatorName(ctx.EMARK().getSymbol)
-      // unknown dataflow test case
       val callNode = NewCall()
         .name(operatorName)
         .code(ctx.getText)
@@ -704,7 +703,6 @@ class AstCreator(
     case ctx: ChainedCommandDoBlockInvocationWithoutParenthesesContext =>
       astForChainedCommandWithDoBlockContext(ctx.chainedCommandWithDoBlock())
     case ctx: ChainedCommandDoBlockDorCol2mNameArgsInvocationWithoutParenthesesContext =>
-      // unknown dataflow test case
       val cmdDoBlockAst  = astForChainedCommandWithDoBlockContext(ctx.chainedCommandWithDoBlock())
       val methodNameAst  = astForMethodNameContext(ctx.methodName())
       val argsWOParenAst = astForArguments(ctx.argumentsWithoutParentheses().arguments())
@@ -789,7 +787,6 @@ class AstCreator(
     callNode.name(getActualMethodName(callNode.name))
 
     if (ctx.block() != null) {
-      // unknown dataflow test case
       val blockAst = astForBlockContext(ctx.block())
       Seq(callAst(callNode, parenAst ++ blockAst))
     } else {
@@ -799,7 +796,6 @@ class AstCreator(
 
   def astForJumpExpressionPrimaryContext(ctx: JumpExpressionPrimaryContext): Seq[Ast] = {
     if (ctx.jumpExpression().RETURN() != null) {
-      // failing dataflow test case for global variable usage will cover this
       val retNode = NewReturn()
         .code(ctx.getText)
         .lineNumber(ctx.jumpExpression().RETURN().getSymbol().getLine)
