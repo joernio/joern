@@ -1,10 +1,11 @@
 package io.joern.gosrc2cpg.astcreation
 
-import io.joern.gosrc2cpg.parser.ParserAst.{ImportSpec, ParserNode, fromString}
+import io.joern.gosrc2cpg.parser.ParserAst.{ParserNode, fromString}
 import ujson.Value
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
-import io.joern.x2cpg.Ast
 import org.apache.commons.lang.StringUtils
+
+import scala.collection.mutable.ListBuffer
 import scala.util.Try
 
 trait AstCreatorHelper { this: AstCreator =>
@@ -31,19 +32,18 @@ trait AstCreatorHelper { this: AstCreator =>
     val lineEndNumber = lineEndNo(node).get
     val colEndNumber  = columnEndNo(node).get - 1
 
-    var nodeCode = ""
     if (lineNumber == lineEndNumber) {
-      nodeCode = lineNumberMapping(lineNumber).substring(colNumber, colEndNumber)
+      lineNumberMapping(lineNumber).substring(colNumber, colEndNumber)
     } else {
-      nodeCode += lineNumberMapping(lineNumber).substring(colNumber)
-      var currentLineNumber = lineNumber + 1
-      while (currentLineNumber < lineEndNumber) {
-        nodeCode += "\n" + lineNumberMapping(currentLineNumber)
-        currentLineNumber += 1
-      }
-      nodeCode += "\n" + lineNumberMapping(lineEndNumber).substring(0, colEndNumber)
+      val stringList = new ListBuffer[String]()
+      stringList.addOne(lineNumberMapping(lineNumber).substring(colNumber))
+      Iterator
+        .from(lineNumber + 1)
+        .takeWhile(currentLineNumber => currentLineNumber < lineEndNumber)
+        .foreach(currentLineNumber => stringList.addOne(lineNumberMapping(currentLineNumber)))
+      stringList.addOne(lineNumberMapping(lineEndNumber).substring(0, colEndNumber))
+      stringList.mkString("\n")
     }
-    nodeCode
   }
 
   private def shortenCode(code: String, length: Int = MaxCodeLength): String =
