@@ -226,4 +226,19 @@ trait AstForStatementsCreator { this: AstCreator =>
       .code(code)
     Seq(Ast(importNode))
   }
+
+  protected implicit class BlockContextExt(val ctx: BlockContext) {
+    def compoundStatement: CompoundStatementContext = {
+      fold(_.compoundStatement(), _.compoundStatement())
+    }
+
+    def blockParameter: Option[BlockParameterContext] = {
+      fold(ctx => Option(ctx.blockParameter()), ctx => Option(ctx.blockParameter()))
+    }
+
+    private def fold[A](f: DoBlockContext => A, g: BraceBlockContext => A): A = {
+      Option(ctx.doBlock()).fold(g(ctx.braceBlock()))(f)
+    }
+  }
+
 }
