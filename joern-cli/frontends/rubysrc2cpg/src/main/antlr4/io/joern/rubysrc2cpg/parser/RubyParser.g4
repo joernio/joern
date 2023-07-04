@@ -223,8 +223,8 @@ expressions
 // --------------------------------------------------------
 
 block
-    :   braceBlock
-    |   doBlock
+    :   braceBlock                                                                                                              # braceBlockBlock
+    |   doBlock                                                                                                                 # doBlockBlock
     ;
 
 braceBlock

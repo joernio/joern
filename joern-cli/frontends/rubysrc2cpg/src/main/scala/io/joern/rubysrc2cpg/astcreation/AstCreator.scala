@@ -582,7 +582,7 @@ class AstCreator(
     val baseAst       = astForPrimaryContext(ctx.primary())
 
     val blocksAst = if (ctx.block() != null) {
-      astForBlockContext(ctx.block())
+      Seq(astForBlock(ctx.block()))
     } else {
       Seq()
     }
@@ -792,7 +792,7 @@ class AstCreator(
         columnEnd(ctx).head
       )
     } else {
-      val blockAst = astForBlockContext(ctx.block())
+      val blockAst = Seq(astForBlock(ctx.block()))
       blockAst ++ methodIdAst
     }
   }
@@ -804,7 +804,7 @@ class AstCreator(
     callNode.name(getActualMethodName(callNode.name))
 
     if (ctx.block() != null) {
-      val blockAst = astForBlockContext(ctx.block())
+      val blockAst = Seq(astForBlock(ctx.block()))
       Seq(callAst(callNode, parenAst ++ blockAst))
     } else {
       Seq(callAst(callNode, parenAst))
@@ -1344,16 +1344,16 @@ class AstCreator(
   def astForCommandWithDoBlockContext(ctx: CommandWithDoBlockContext): Seq[Ast] = ctx match {
     case ctx: ArgsAndDoBlockCommandWithDoBlockContext =>
       val argsAsts   = astForArguments(ctx.argumentsWithoutParentheses().arguments())
-      val doBlockAst = astForDoBlockContext(ctx.doBlock())
+      val doBlockAst = Seq(astForDoBlock(ctx.doBlock()))
       argsAsts ++ doBlockAst
     case ctx: RubyParser.ArgsAndDoBlockAndMethodIdCommandWithDoBlockContext =>
       val argsAsts     = astForArguments(ctx.argumentsWithoutParentheses().arguments())
-      val doBlockAsts  = astForDoBlockContext(ctx.doBlock())
+      val doBlockAsts  = Seq(astForDoBlock(ctx.doBlock()))
       val methodIdAsts = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText)
       methodIdAsts ++ argsAsts ++ doBlockAsts
     case ctx: RubyParser.PrimaryMethodArgsDoBlockCommandWithDoBlockContext =>
       val argsAsts       = astForArguments(ctx.argumentsWithoutParentheses().arguments())
-      val doBlockAsts    = astForDoBlockContext(ctx.doBlock())
+      val doBlockAsts    = Seq(astForDoBlock(ctx.doBlock()))
       val methodNameAsts = astForMethodNameContext(ctx.methodName())
       val primaryAsts    = astForPrimaryContext(ctx.primary())
       primaryAsts ++ methodNameAsts ++ argsAsts ++ doBlockAsts
@@ -1412,36 +1412,6 @@ class AstCreator(
     } else {
       Seq(Ast())
     }
-  }
-
-  def astForDoBlockContext(ctx: DoBlockContext): Seq[Ast] = {
-    val lineStart = ctx.DO().getSymbol.getLine
-    val lineEnd   = ctx.DO().getSymbol.getCharPositionInLine
-    val colStart  = ctx.END().getSymbol.getLine
-    val colEnd    = ctx.END().getSymbol.getCharPositionInLine
-    astForBlock(
-      ctx.compoundStatement().statements(),
-      Option(ctx.blockParameter()),
-      lineStart,
-      lineEnd,
-      colStart,
-      colEnd
-    )
-  }
-
-  def astForBraceBlockContext(ctx: BraceBlockContext): Seq[Ast] = {
-    val lineStart = ctx.LCURLY().getSymbol.getLine
-    val lineEnd   = ctx.LCURLY().getSymbol.getCharPositionInLine
-    val colStart  = ctx.RCURLY().getSymbol.getLine
-    val colEnd    = ctx.RCURLY().getSymbol.getCharPositionInLine
-    astForBlock(
-      ctx.compoundStatement().statements(),
-      Option(ctx.blockParameter()),
-      lineStart,
-      lineEnd,
-      colStart,
-      colEnd
-    )
   }
 
   def astForBlockMethod(
@@ -1504,33 +1474,6 @@ class AstCreator(
       Seq[NewModifier](publicModifier)
     )
     Seq(methAst)
-  }
-
-  def astForBlock(
-    ctxStmt: StatementsContext,
-    ctxParam: Option[BlockParameterContext],
-    lineStart: Int,
-    lineEnd: Int,
-    colStart: Int,
-    colEnd: Int
-  ): Seq[Ast] = {
-    val stmtAsts  = astForStatements(ctxStmt).toList
-    val blockNode = NewBlock().typeFullName(Defines.Any)
-    val retAst = ctxParam match
-      case Some(ctxParam) => blockAst(blockNode, astForBlockParameterContext(ctxParam).toList ++ stmtAsts)
-      case None           => blockAst(blockNode, stmtAsts)
-    Seq(retAst)
-
-  }
-
-  def astForBlockContext(ctx: BlockContext): Seq[Ast] = {
-    if (ctx.doBlock() != null) {
-      astForDoBlockContext(ctx.doBlock())
-    } else if (ctx.braceBlock() != null) {
-      astForBraceBlockContext(ctx.braceBlock())
-    } else {
-      Seq(Ast())
-    }
   }
 
   def astForUnlessExpressionPrimaryContext(ctx: UnlessExpressionPrimaryContext): Seq[Ast] = {
