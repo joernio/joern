@@ -829,16 +829,14 @@ class AstCreator(
     astForDefinedMethodNameContext(ctx.definedMethodName())
   }
 
-  def astForCallNode(localIdentifier: TerminalNode, code: String, isYieldBlock: Boolean = false): Seq[Ast] = {
-    val column = localIdentifier.getSymbol.getCharPositionInLine
-    val line   = localIdentifier.getSymbol.getLine
+  def astForCallNode(ctx: ParserRuleContext, code: String, isYieldBlock: Boolean = false): Ast = {
     val nameSuffix =
       if (isYieldBlock) {
         YIELD_SUFFIX
       } else {
         ""
       }
-    val name = s"${getActualMethodName(localIdentifier.getText)}$nameSuffix"
+    val name = s"${getActualMethodName(ctx.getText)}$nameSuffix"
     val methodFullName = packageContext.packageTable
       .getMethodFullNameUsingName(packageStack.toList, name)
       .headOption match {
@@ -847,24 +845,14 @@ class AstCreator(
       case None                               => DynamicCallUnknownFullName
     }
 
-    val callNode = NewCall()
-      .name(name)
-      .methodFullName(methodFullName)
-      .signature(localIdentifier.getText)
-      .typeFullName(Defines.Any)
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .code(code)
-      .lineNumber(line)
-      .columnNumber(column)
-      .code(code)
-    Seq(callAst(callNode))
+    callAst(callNode(ctx, code, name, methodFullName, DispatchTypes.STATIC_DISPATCH))
   }
 
   def astForMethodOnlyIdentifier(ctx: MethodOnlyIdentifierContext): Seq[Ast] = {
     if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
-      astForCallNode(ctx.LOCAL_VARIABLE_IDENTIFIER(), ctx.getText)
+      Seq(astForCallNode(ctx, ctx.getText))
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
-      astForCallNode(ctx.CONSTANT_IDENTIFIER(), ctx.getText)
+      Seq(astForCallNode(ctx, ctx.getText))
     } else {
       Seq(Ast())
     }
@@ -877,10 +865,10 @@ class AstCreator(
     } else if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
       val localVar  = ctx.LOCAL_VARIABLE_IDENTIFIER()
       val varSymbol = localVar.getSymbol
-      astForCallNode(localVar, code, methodNamesWithYield.contains(varSymbol.getText))
+      Seq(astForCallNode(ctx, code, methodNamesWithYield.contains(varSymbol.getText)))
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
       val localVar = ctx.CONSTANT_IDENTIFIER()
-      astForCallNode(localVar, code)
+      Seq(astForCallNode(ctx, code))
     } else {
       Seq(Ast())
     }

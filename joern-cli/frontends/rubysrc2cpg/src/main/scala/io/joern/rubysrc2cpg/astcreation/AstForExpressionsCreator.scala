@@ -197,9 +197,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     ctx: VariableIdentifierContext,
     definitelyIdentifier: Boolean = false
   ): Ast = {
-    val terminalNode = ctx.children.asScala.map(_.asInstanceOf[TerminalNode]).head
-    val token        = terminalNode.getSymbol
-    val variableName = token.getText
+    val variableName = ctx.getText
     /*
      * Preferences
      * 1. If definitelyIdentifier is SET, create a identifier node
@@ -212,8 +210,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
       val node = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List[String]())
       Ast(node)
     } else if (methodNames.contains(variableName)) {
-      // TODO: astForCallNode always returns a single Ast even though its return type is Seq[Ast]
-      astForCallNode(terminalNode, ctx.getText).head
+      astForCallNode(ctx, ctx.getText)
     } else {
       val node = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List[String]())
       Ast(node)
