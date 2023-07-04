@@ -45,10 +45,8 @@ abstract class TestCpg extends Cpg() with LanguageFrontend {
     this
   }
 
-  def isGraphDefined(): Boolean = _graph.isDefined
-
   private def checkGraphEmpty(): Unit = {
-    if (isGraphDefined()) {
+    if (_graph.isDefined) {
       throw new RuntimeException("Modifying test data is not allowed after accessing graph.")
     }
   }

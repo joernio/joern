@@ -22,27 +22,22 @@ class Code2CpgFixture[T <: TestCpg](testCpgFactory: () => T)
   private val cpgs                           = mutable.ArrayBuffer.empty[TestCpg]
   private var config: Option[X2CpgConfig[_]] = None
 
-  private def assertCpgsEmpty(): Unit = {
-    if (cpgs.exists(_.isGraphDefined())) {
-      throw new RuntimeException("`withConfigForAll` may only be called before TestCpgs are created")
-    }
-  }
-
-  def setConfigForAll(config: X2CpgConfig[_]): Unit = {
-    assertCpgsEmpty()
-    this.config = Some(config)
+  /** This method can be overridden to specify config that should be used for all tests in a fixture.
+    */
+  def getOverrideConfig(): Option[X2CpgConfig[_]] = {
+    None
   }
 
   def code(code: String): T = {
     val newCpg = testCpgFactory().moreCode(code)
     cpgs.append(newCpg)
-    newCpg.withConfig(config)
+    newCpg.withConfig(getOverrideConfig())
   }
 
   def code(code: String, fileName: String): T = {
     val newCpg = testCpgFactory().moreCode(code, fileName)
     cpgs.append(newCpg)
-    newCpg.withConfig(config)
+    newCpg.withConfig(getOverrideConfig())
   }
 
   override def afterAll(): Unit = {
