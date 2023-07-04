@@ -46,20 +46,16 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   protected def astForIfModifierStatement(ctx: ModifierStatementContext): Ast = {
-    val lhs = astForStatement(ctx.statement(0))
-    val rhs = astForStatement(ctx.statement(1)).headOption
-    val ifNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.IF)
-      .code(ctx.getText)
+    val lhs    = astForStatement(ctx.statement(0))
+    val rhs    = astForStatement(ctx.statement(1)).headOption
+    val ifNode = controlStructureNode(ctx, ControlStructureTypes.IF, ctx.getText)
     controlStructureAst(ifNode, rhs, lhs)
   }
 
   protected def astForUnlessModifierStatement(ctx: ModifierStatementContext): Ast = {
-    val lhs = astForStatement(ctx.statement(0))
-    val rhs = astForStatement(ctx.statement(1))
-    val ifNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.IF)
-      .code(ctx.getText)
+    val lhs    = astForStatement(ctx.statement(0))
+    val rhs    = astForStatement(ctx.statement(1))
+    val ifNode = controlStructureNode(ctx, ControlStructureTypes.IF, ctx.getText)
     controlStructureAst(ifNode, lhs.headOption, rhs)
   }
 
@@ -76,11 +72,9 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   protected def astForRescueModifierStatement(ctx: ModifierStatementContext): Ast = {
-    val lhs = astForStatement(ctx.statement(0))
-    val rhs = astForStatement(ctx.statement(1))
-    val throwNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.THROW)
-      .code(ctx.getText)
+    val lhs       = astForStatement(ctx.statement(0))
+    val rhs       = astForStatement(ctx.statement(1))
+    val throwNode = controlStructureNode(ctx, ControlStructureTypes.THROW, ctx.getText)
     controlStructureAst(throwNode, rhs.headOption, lhs)
   }
 
