@@ -718,16 +718,6 @@ class AstCreator(
       val args = ctx.arguments()
       Option(args) match {
         case Some(args) =>
-          val node = NewControlStructure()
-            .controlStructureType(ControlStructureTypes.BREAK)
-            .lineNumber(ctx.BREAK().getSymbol.getLine)
-            .columnNumber(ctx.BREAK().getSymbol.getCharPositionInLine)
-            .code(ctx.getText)
-          Seq(
-            Ast(node)
-              .withChildren(astForArguments(args))
-          )
-        case None =>
           /*
            * This is break with args inside a block. The argument passed to break will be returned by the bloc
            * Model this as a return since this is effectively a  return
@@ -736,8 +726,18 @@ class AstCreator(
             .code(ctx.getText)
             .lineNumber(ctx.BREAK().getSymbol().getLine)
             .columnNumber(ctx.BREAK().getSymbol().getCharPositionInLine)
-          val argAst = astForArguments(ctx.arguments())
+          val argAst = astForArguments(args)
           Seq(returnAst(retNode, argAst))
+        case None =>
+          val node = NewControlStructure()
+            .controlStructureType(ControlStructureTypes.BREAK)
+            .lineNumber(ctx.BREAK().getSymbol.getLine)
+            .columnNumber(ctx.BREAK().getSymbol.getCharPositionInLine)
+            .code(ctx.getText)
+          Seq(
+            Ast(node)
+              .withChildren(astForArguments(ctx.arguments()))
+          )
       }
     case ctx: NextArgsInvocationWithoutParenthesesContext =>
       // failing test case. Exception:  Only jump labels and integer literals are currently supported for continue statements.
