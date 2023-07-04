@@ -22,7 +22,6 @@ trait KotlinFrontend extends LanguageFrontend {
       .map(_.asInstanceOf[Config])
       .getOrElse(
         Config(
-          // classpath = if (withTestResourcePaths) Set(defaultContentRoot.path.toAbsolutePath.toString) else Set(),
           includeJavaSourceFiles = true
         )
       )
