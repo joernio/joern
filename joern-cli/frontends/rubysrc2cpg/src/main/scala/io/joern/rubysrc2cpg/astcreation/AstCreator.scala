@@ -213,7 +213,7 @@ class AstCreator(
       val xAsts = astForPrimaryContext(ctx.primary())
       val localVar = {
         if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
-          ctx.LOCAL_VARIABLE_IDENTIFIER() //failing dataflow test case
+          ctx.LOCAL_VARIABLE_IDENTIFIER() // failing dataflow test case
         } else if (ctx.CONSTANT_IDENTIFIER() != null) {
           ctx.CONSTANT_IDENTIFIER()
         } else {
@@ -623,7 +623,7 @@ class AstCreator(
           if (item.singleLeftHandSide() != null) {
             astForSingleLeftHandSideContext(item.singleLeftHandSide())
           } else {
-            astForGroupedLeftHandSideContext(item.groupedLeftHandSide())//failing dataflow test case
+            astForGroupedLeftHandSideContext(item.groupedLeftHandSide()) // failing dataflow test case
           }
         })
         .toList
@@ -631,7 +631,7 @@ class AstCreator(
       val paramAsts =
         if (ctx.packingLeftHandSide() != null) {
           val packingLHSAst = astForPackingLeftHandSideContext(ctx.packingLeftHandSide())
-          packingLHSAst ++ multipleLHSAsts //failing dataflow test case
+          packingLHSAst ++ multipleLHSAsts // failing dataflow test case
         } else {
           multipleLHSAsts
         }
@@ -651,7 +651,7 @@ class AstCreator(
     if (ctx.singleLeftHandSide() != null) {
       astForSingleLeftHandSideContext(ctx.singleLeftHandSide())
     } else if (ctx.multipleLeftHandSide() != null) {
-      astForMultipleLeftHandSideContext(ctx.multipleLeftHandSide()) //unknown dataflow test case
+      astForMultipleLeftHandSideContext(ctx.multipleLeftHandSide()) // unknown dataflow test case
     } else {
       Seq(Ast())
     }
@@ -796,7 +796,7 @@ class AstCreator(
 
   def astForJumpExpressionPrimaryContext(ctx: JumpExpressionPrimaryContext): Seq[Ast] = {
     if (ctx.jumpExpression().RETURN() != null) {
-      //failing dataflow test case for global variable usage will cover this
+      // failing dataflow test case for global variable usage will cover this
       val retNode = NewReturn()
         .code(ctx.getText)
         .lineNumber(ctx.jumpExpression().RETURN().getSymbol().getLine)
