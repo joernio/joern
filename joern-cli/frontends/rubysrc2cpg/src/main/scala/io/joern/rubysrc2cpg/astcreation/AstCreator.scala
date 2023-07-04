@@ -531,10 +531,10 @@ class AstCreator(
         .name
       val blockMethodName = blockName + terminalNode.getSymbol.getLine
       val blockMethodAsts =
-        astForBlock(
+        astForBlockMethod(
           ctxStmt = ctx.block().compoundStatement.statements(),
           ctxParam = ctx.block().blockParameter,
-          Some(blockMethodName),
+          blockMethodName,
           line(ctx).head,
           column(ctx).head,
           lineEnd(ctx).head,
@@ -782,10 +782,10 @@ class AstCreator(
       /*
        * This is a yield block. Create a fake method out of it. The yield call will be a call to the yield block
        */
-      astForBlock(
+      astForBlockMethod(
         ctx.block().compoundStatement.statements(),
         ctx.block().blockParameter,
-        Some(blockName),
+        blockName,
         line(ctx).head,
         lineEnd(ctx).head,
         column(ctx).head,
@@ -1422,7 +1422,6 @@ class AstCreator(
     astForBlock(
       ctx.compoundStatement().statements(),
       Option(ctx.blockParameter()),
-      None,
       lineStart,
       lineEnd,
       colStart,
@@ -1438,7 +1437,6 @@ class AstCreator(
     astForBlock(
       ctx.compoundStatement().statements(),
       Option(ctx.blockParameter()),
-      None,
       lineStart,
       lineEnd,
       colStart,
@@ -1511,23 +1509,18 @@ class AstCreator(
   def astForBlock(
     ctxStmt: StatementsContext,
     ctxParam: Option[BlockParameterContext],
-    blockMethodName: Option[String] = None,
     lineStart: Int,
     lineEnd: Int,
     colStart: Int,
     colEnd: Int
   ): Seq[Ast] = {
-    blockMethodName match {
-      case Some(blockMethodName) =>
-        astForBlockMethod(ctxStmt, ctxParam, blockMethodName, lineStart, lineEnd, colStart, colEnd)
-      case None =>
-        val stmtAsts  = astForStatements(ctxStmt).toList
-        val blockNode = NewBlock().typeFullName(Defines.Any)
-        val retAst = ctxParam match
-          case Some(ctxParam) => blockAst(blockNode, astForBlockParameterContext(ctxParam).toList ++ stmtAsts)
-          case None           => blockAst(blockNode, stmtAsts)
-        Seq(retAst)
-    }
+    val stmtAsts  = astForStatements(ctxStmt).toList
+    val blockNode = NewBlock().typeFullName(Defines.Any)
+    val retAst = ctxParam match
+      case Some(ctxParam) => blockAst(blockNode, astForBlockParameterContext(ctxParam).toList ++ stmtAsts)
+      case None           => blockAst(blockNode, stmtAsts)
+    Seq(retAst)
+
   }
 
   def astForBlockContext(ctx: BlockContext): Seq[Ast] = {
