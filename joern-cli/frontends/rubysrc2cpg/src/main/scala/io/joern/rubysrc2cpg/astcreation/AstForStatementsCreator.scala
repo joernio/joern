@@ -90,7 +90,12 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   protected def astForStatements(ctx: StatementsContext): Seq[Ast] = {
-    Option(ctx.statement()).map(_.asScala).getOrElse(Seq()).flatMap(astForStatement).toSeq
+    Option(ctx) match {
+      case Some(ctx) =>
+        Option(ctx.statement()).map(_.asScala).getOrElse(Seq()).flatMap(astForStatement).toSeq
+      case None =>
+        Seq()
+    }
   }
 
   // TODO: return Ast instead of Seq[Ast].
@@ -109,6 +114,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     case ctx: NotExpressionOrCommandContext        => Seq(astForNotKeywordExpressionOrCommand(ctx))
     case ctx: OrAndExpressionOrCommandContext      => Seq(astForOrAndExpressionOrCommand(ctx))
     case ctx: ExpressionExpressionOrCommandContext => astForExpressionContext(ctx.expression())
+    case _                                         => Seq(Ast())
   }
 
   protected def astForNotKeywordExpressionOrCommand(ctx: NotExpressionOrCommandContext): Ast = {
