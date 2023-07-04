@@ -1528,7 +1528,7 @@ class AstCreator(
         val blockNode = NewBlock().typeFullName(Defines.Any)
         val retAst = ctxParam match
           case Some(ctxParam) => blockAst(blockNode, astForBlockParameterContext(ctxParam).toList ++ stmtAsts)
-          case None => blockAst(blockNode, stmtAsts)
+          case None           => blockAst(blockNode, stmtAsts)
         Seq(retAst)
     }
   }
