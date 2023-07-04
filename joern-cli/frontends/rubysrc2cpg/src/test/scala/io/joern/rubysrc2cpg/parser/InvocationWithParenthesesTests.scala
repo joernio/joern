@@ -68,7 +68,7 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
             |    Association
             |     PrimaryExpression
             |      VariableReferencePrimary
-            |       VariableReference
+            |       VariableIdentifierVariableReference
             |        VariableIdentifier
             |         region
             |     :

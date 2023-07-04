@@ -167,35 +167,9 @@ class AstCreator(
   protected def lineEnd(ctx: ParserRuleContext): Option[Integer]   = Option(ctx.getStop.getLine)
   protected def columnEnd(ctx: ParserRuleContext): Option[Integer] = Option(ctx.getStop.getCharPositionInLine)
 
-  def astForVariableIdentifierContext(
-    ctx: VariableIdentifierContext,
-    definitelyIdentifier: Boolean = false
-  ): Seq[Ast] = {
-    val terminalNode = ctx.children.asScala.map(_.asInstanceOf[TerminalNode]).head
-    val token        = terminalNode.getSymbol
-    val variableName = token.getText
-    /*
-     * Preferences
-     * 1. If definitelyIdentifier is SET, create a identifier node
-     * 2. If an identifier with the variable name exists within the scope, create a identifier node
-     * 3. If a method with the variable name exists, create a method node
-     * 4. Otherwise default to identifier node creation since there is no reason (point 2) to create a call node
-     */
-
-    if (definitelyIdentifier || scope.lookupVariable(variableName).isDefined) {
-      val node = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List[String]())
-      Seq(Ast(node))
-    } else if (methodNames.contains(variableName)) {
-      astForCallNode(terminalNode, ctx.getText)
-    } else {
-      val node = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List[String]())
-      Seq(Ast(node))
-    }
-  }
-
   def astForSingleLeftHandSideContext(ctx: SingleLeftHandSideContext): Seq[Ast] = ctx match {
     case ctx: VariableIdentifierOnlySingleLeftHandSideContext =>
-      astForVariableIdentifierContext(ctx.variableIdentifier(), true)
+      Seq(astForVariableIdentifierHelper(ctx.variableIdentifier(), true))
     case ctx: PrimaryInsideBracketsSingleLeftHandSideContext =>
       val primaryAsts = astForPrimaryContext(ctx.primary())
       val argsAsts    = astForArguments(ctx.arguments())
@@ -347,7 +321,7 @@ class AstCreator(
     case ctx: JumpExpressionPrimaryContext     => astForJumpExpressionPrimaryContext(ctx)
     case ctx: BeginExpressionPrimaryContext    => astForBeginExpressionPrimaryContext(ctx)
     case ctx: GroupingExpressionPrimaryContext => astForCompoundStatement(ctx.compoundStatement())
-    case ctx: VariableReferencePrimaryContext  => astForVariableReferencePrimaryContext(ctx)
+    case ctx: VariableReferencePrimaryContext  => Seq(astForVariableReference(ctx.variableReference()))
     case ctx: SimpleScopedConstantReferencePrimaryContext =>
       astForSimpleScopedConstantReferencePrimaryContext(ctx)
     case ctx: ChainedScopedConstantReferencePrimaryContext =>
@@ -991,7 +965,7 @@ class AstCreator(
 
   def astForSingletonObjectContext(ctx: SingletonObjectContext): Seq[Ast] = {
     if (ctx.variableIdentifier() != null) {
-      astForVariableIdentifierContext(ctx.variableIdentifier(), true)
+      Seq(astForVariableIdentifierHelper(ctx.variableIdentifier(), true))
     } else if (ctx.pseudoVariableIdentifier() != null) {
       Seq(Ast())
     } else if (ctx.expressionOrCommand() != null) {
@@ -1493,28 +1467,6 @@ class AstCreator(
       .columnNumber(ctx.unlessExpression().UNLESS().getSymbol.getCharPositionInLine)
 
     Seq(controlStructureAst(unlessNode, conditionAsts.headOption, List(thenAsts ++ elseAsts).flatten))
-  }
-
-  private def astForPseudoVariableIdentifierContext(ctx: PseudoVariableIdentifierContext): Ast = ctx match {
-    case ctx: NilPseudoVariableIdentifierContext      => astForNilLiteral(ctx)
-    case ctx: TruePseudoVariableIdentifierContext     => astForTrueLiteral(ctx)
-    case ctx: FalsePseudoVariableIdentifierContext    => astForFalseLiteral(ctx)
-    case ctx: SelfPseudoVariableIdentifierContext     => astForSelfPseudoIdentifier(ctx)
-    case ctx: FilePseudoVariableIdentifierContext     => astForFilePseudoIdentifier(ctx)
-    case ctx: LinePseudoVariableIdentifierContext     => astForLinePseudoIdentifier(ctx)
-    case ctx: EncodingPseudoVariableIdentifierContext => astForEncodingPseudoIdentifier(ctx)
-  }
-
-  def astForVariableRefenceContext(ctx: RubyParser.VariableReferenceContext): Seq[Ast] = {
-    if (ctx.variableIdentifier() != null) {
-      astForVariableIdentifierContext(ctx.variableIdentifier())
-    } else {
-      Seq(astForPseudoVariableIdentifierContext(ctx.pseudoVariableIdentifier()))
-    }
-  }
-
-  def astForVariableReferencePrimaryContext(ctx: VariableReferencePrimaryContext): Seq[Ast] = {
-    astForVariableRefenceContext(ctx.variableReference())
   }
 
   def astForBlockArgumentContext(ctx: BlockArgumentContext): Seq[Ast] = {

@@ -484,8 +484,8 @@ jumpExpression
 // --------------------------------------------------------
 
 variableReference
-    :   variableIdentifier
-    |   pseudoVariableIdentifier
+    :   variableIdentifier                                                                                          # variableIdentifierVariableReference
+    |   pseudoVariableIdentifier                                                                                    # pseudoVariableIdentifierVariableReference
     ;
 
 variableIdentifier

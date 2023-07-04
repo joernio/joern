@@ -1,10 +1,12 @@
 package io.joern.rubysrc2cpg.astcreation
 
-import io.joern.rubysrc2cpg.parser.RubyParser._
+import io.joern.rubysrc2cpg.parser.RubyParser.*
+import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.nodes.NewJumpTarget
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import org.antlr.v4.runtime.ParserRuleContext
+import org.antlr.v4.runtime.tree.TerminalNode
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
@@ -173,6 +175,49 @@ trait AstForExpressionsCreator { this: AstCreator =>
     val testAst = astForExpressionOrCommand(ctx.expressionOrCommand())
     val bodyAst = astForCompoundStatement(ctx.thenClause().compoundStatement())
     controlStructureAst(ifNode, testAst.headOption, bodyAst)
+  }
+
+  protected def astForVariableReference(ctx: VariableReferenceContext): Ast = ctx match {
+    case ctx: VariableIdentifierVariableReferenceContext => astForVariableIdentifierHelper(ctx.variableIdentifier())
+    case ctx: PseudoVariableIdentifierVariableReferenceContext =>
+      astForPseudoVariableIdentifier(ctx.pseudoVariableIdentifier())
+  }
+
+  private def astForPseudoVariableIdentifier(ctx: PseudoVariableIdentifierContext): Ast = ctx match {
+    case ctx: NilPseudoVariableIdentifierContext      => astForNilLiteral(ctx)
+    case ctx: TruePseudoVariableIdentifierContext     => astForTrueLiteral(ctx)
+    case ctx: FalsePseudoVariableIdentifierContext    => astForFalseLiteral(ctx)
+    case ctx: SelfPseudoVariableIdentifierContext     => astForSelfPseudoIdentifier(ctx)
+    case ctx: FilePseudoVariableIdentifierContext     => astForFilePseudoIdentifier(ctx)
+    case ctx: LinePseudoVariableIdentifierContext     => astForLinePseudoIdentifier(ctx)
+    case ctx: EncodingPseudoVariableIdentifierContext => astForEncodingPseudoIdentifier(ctx)
+  }
+
+  protected def astForVariableIdentifierHelper(
+    ctx: VariableIdentifierContext,
+    definitelyIdentifier: Boolean = false
+  ): Ast = {
+    val terminalNode = ctx.children.asScala.map(_.asInstanceOf[TerminalNode]).head
+    val token        = terminalNode.getSymbol
+    val variableName = token.getText
+    /*
+     * Preferences
+     * 1. If definitelyIdentifier is SET, create a identifier node
+     * 2. If an identifier with the variable name exists within the scope, create a identifier node
+     * 3. If a method with the variable name exists, create a method node
+     * 4. Otherwise default to identifier node creation since there is no reason (point 2) to create a call node
+     */
+
+    if (definitelyIdentifier || scope.lookupVariable(variableName).isDefined) {
+      val node = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List[String]())
+      Ast(node)
+    } else if (methodNames.contains(variableName)) {
+      // TODO: astForCallNode always returns a single Ast even though its return type is Seq[Ast]
+      astForCallNode(terminalNode, ctx.getText).head
+    } else {
+      val node = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List[String]())
+      Ast(node)
+    }
   }
 
 }
