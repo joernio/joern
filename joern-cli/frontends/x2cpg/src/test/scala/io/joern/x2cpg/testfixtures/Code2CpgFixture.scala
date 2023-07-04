@@ -5,6 +5,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 import scala.collection.mutable
+import io.joern.x2cpg.X2CpgConfig
 
 // Fixture class from which all tests which require a code to CPG translation step
 // should either directly or indirectly use. The intended way is to derive from
@@ -18,18 +19,30 @@ class Code2CpgFixture[T <: TestCpg](testCpgFactory: () => T)
     with Matchers
     with BeforeAndAfterAll
     with Inside {
-  private val cpgs = mutable.ArrayBuffer.empty[TestCpg]
+  private val cpgs                           = mutable.ArrayBuffer.empty[TestCpg]
+  private var config: Option[X2CpgConfig[_]] = None
+
+  private def assertCpgsEmpty(): Unit = {
+    if (cpgs.exists(_.isGraphDefined())) {
+      throw new RuntimeException("`withConfigForAll` may only be called before TestCpgs are created")
+    }
+  }
+
+  def setConfigForAll(config: X2CpgConfig[_]): Unit = {
+    assertCpgsEmpty()
+    this.config = Some(config)
+  }
 
   def code(code: String): T = {
     val newCpg = testCpgFactory().moreCode(code)
     cpgs.append(newCpg)
-    newCpg
+    newCpg.withConfig(config)
   }
 
   def code(code: String, fileName: String): T = {
     val newCpg = testCpgFactory().moreCode(code, fileName)
     cpgs.append(newCpg)
-    newCpg
+    newCpg.withConfig(config)
   }
 
   override def afterAll(): Unit = {
