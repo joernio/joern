@@ -6,7 +6,6 @@ import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.nodes.NewJumpTarget
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import org.antlr.v4.runtime.ParserRuleContext
-import org.antlr.v4.runtime.tree.TerminalNode
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
@@ -197,7 +196,6 @@ trait AstForExpressionsCreator { this: AstCreator =>
     ctx: VariableIdentifierContext,
     definitelyIdentifier: Boolean = false
   ): Ast = {
-    val variableName = ctx.getText
     /*
      * Preferences
      * 1. If definitelyIdentifier is SET, create a identifier node
@@ -206,13 +204,14 @@ trait AstForExpressionsCreator { this: AstCreator =>
      * 4. Otherwise default to identifier node creation since there is no reason (point 2) to create a call node
      */
 
+    val variableName = ctx.getText
     if (definitelyIdentifier || scope.lookupVariable(variableName).isDefined) {
-      val node = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List[String]())
+      val node = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List())
       Ast(node)
     } else if (methodNames.contains(variableName)) {
-      astForCallNode(ctx, ctx.getText)
+      astForCallNode(ctx, variableName)
     } else {
-      val node = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List[String]())
+      val node = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List())
       Ast(node)
     }
   }
