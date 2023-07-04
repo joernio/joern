@@ -525,7 +525,16 @@ class AstCreator(
         .asInstanceOf[NewCall]
         .name
       val blockMethodName = blockName + terminalNode.getSymbol.getLine
-      val blockMethodAsts = astForBlockContext(ctx.block(), Some(blockMethodName))
+      val blockMethodAsts =
+        astForBlock(
+          ctxStmt = ctx.block().compoundStatement.statements(),
+          ctxParam = ctx.block().blockParameter,
+          Some(blockMethodName),
+          line(ctx).head,
+          column(ctx).head,
+          lineEnd(ctx).head,
+          columnEnd(ctx).head
+        )
       val blockMethodNode =
         blockMethodAsts.head.nodes.head
           .asInstanceOf[NewMethod]
@@ -1407,7 +1416,7 @@ class AstCreator(
     val colEnd    = ctx.END().getSymbol.getCharPositionInLine
     astForBlock(
       ctx.compoundStatement().statements(),
-      ctx.blockParameter(),
+      Option(ctx.blockParameter()),
       blockMethodName,
       lineStart,
       lineEnd,
@@ -1423,7 +1432,7 @@ class AstCreator(
     val colEnd    = ctx.RCURLY().getSymbol.getCharPositionInLine
     astForBlock(
       ctx.compoundStatement().statements(),
-      ctx.blockParameter(),
+      Option(ctx.blockParameter()),
       blockMethodName,
       lineStart,
       lineEnd,
@@ -1434,7 +1443,7 @@ class AstCreator(
 
   def astForBlockMethod(
     ctxStmt: StatementsContext,
-    ctxParam: BlockParameterContext,
+    ctxParam: Option[BlockParameterContext],
     blockMethodName: String,
     lineStart: Int,
     lineEnd: Int,
@@ -1445,12 +1454,7 @@ class AstCreator(
      * Model a block as a method
      */
 
-    val astMethodParam = if (ctxParam != null) {
-      astForBlockParameterContext(ctxParam)
-    } else {
-      Seq()
-    }
-
+    val astMethodParam = ctxParam.map(astForBlockParameterContext).getOrElse(Seq())
     scope.pushNewScope(())
     val astBody = astForStatements(ctxStmt)
     scope.popScope()
@@ -1509,7 +1513,7 @@ class AstCreator(
 
   def astForBlock(
     ctxStmt: StatementsContext,
-    ctxParam: BlockParameterContext,
+    ctxParam: Option[BlockParameterContext],
     blockMethodName: Option[String] = None,
     lineStart: Int,
     lineEnd: Int,
@@ -1520,14 +1524,11 @@ class AstCreator(
       case Some(blockMethodName) =>
         astForBlockMethod(ctxStmt, ctxParam, blockMethodName, lineStart, lineEnd, colStart, colEnd)
       case None =>
-        val stmtAsts  = astForStatements(ctxStmt)
+        val stmtAsts  = astForStatements(ctxStmt).toList
         val blockNode = NewBlock().typeFullName(Defines.Any)
-        val retAst = if (ctxParam != null) {
-          val bpAsts = astForBlockParameterContext(ctxParam)
-          blockAst(blockNode, (bpAsts ++ stmtAsts).toList)
-        } else {
-          blockAst(blockNode, stmtAsts.toList)
-        }
+        val retAst = ctxParam match
+          case Some(ctxParam) => blockAst(blockNode, astForBlockParameterContext(ctxParam).toList ++ stmtAsts)
+          case None => blockAst(blockNode, stmtAsts)
         Seq(retAst)
     }
   }
