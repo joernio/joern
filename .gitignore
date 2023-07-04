@@ -40,3 +40,4 @@ null
 **/goastgen-macos
 **/goastgen-macos-arm64
 slices.json
+.direnv
