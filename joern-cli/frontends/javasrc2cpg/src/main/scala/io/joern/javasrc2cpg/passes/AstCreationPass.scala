@@ -90,14 +90,13 @@ class AstCreationPass(config: Config, cpg: Cpg, preCreatedAsts: Option[SplitJpAs
 
     val combinedTypeSolver = new SimpleCombinedTypeSolver()
 
-    config.jdkPath match {
-      case Some(path) =>
-        val jdkJarTypeSolver = JdkJarTypeSolver.fromJdkPath(path)
-        combinedTypeSolver.add(jdkJarTypeSolver)
-
-      case None =>
-        combinedTypeSolver.add(new CachingReflectionTypeSolver())
+    val jdkPath = config.jdkPath.getOrElse {
+      val javaHome = System.getProperty("java.home")
+      logger.debug("No explicit jdkPath set in config, so using system java.home at $javaHome")
+      javaHome
     }
+
+    combinedTypeSolver.add(JdkJarTypeSolver.fromJdkPath(jdkPath))
 
     val sourceTypeSolver = EagerSourceTypeSolver(typesAsts, combinedTypeSolver)
     // The sourceTypeSolver will often be the fastest due to there being no possibility of encountering a SOE on lookup.
