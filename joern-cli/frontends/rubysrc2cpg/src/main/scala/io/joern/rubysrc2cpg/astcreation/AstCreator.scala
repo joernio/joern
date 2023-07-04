@@ -1578,7 +1578,7 @@ class AstCreator(
   def astForVariableReferencePrimaryContext(ctx: VariableReferencePrimaryContext): Seq[Ast] = {
     astForVariableRefenceContext(ctx.variableReference())
   }
-  
+
   def astForBlockArgumentContext(ctx: BlockArgumentContext): Seq[Ast] = {
     if (ctx == null) return Seq(Ast())
     astForExpressionContext(ctx.expression())
