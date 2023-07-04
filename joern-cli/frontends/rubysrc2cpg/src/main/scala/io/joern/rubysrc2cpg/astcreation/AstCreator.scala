@@ -761,7 +761,15 @@ class AstCreator(
       /*
        * This is a yield block. Create a fake method out of it. The yield call will be a call to the yield block
        */
-      astForBlockContext(ctx.block(), Some(blockName))
+      astForBlock(
+        ctx.block().compoundStatement.statements(),
+        ctx.block().blockParameter,
+        Some(blockName),
+        line(ctx).head,
+        lineEnd(ctx).head,
+        column(ctx).head,
+        columnEnd(ctx).head
+      )
     } else {
       val blockAst = astForBlockContext(ctx.block())
       blockAst ++ methodIdAst
@@ -1409,7 +1417,7 @@ class AstCreator(
     }
   }
 
-  def astForDoBlockContext(ctx: DoBlockContext, blockMethodName: Option[String] = None): Seq[Ast] = {
+  def astForDoBlockContext(ctx: DoBlockContext): Seq[Ast] = {
     val lineStart = ctx.DO().getSymbol.getLine
     val lineEnd   = ctx.DO().getSymbol.getCharPositionInLine
     val colStart  = ctx.END().getSymbol.getLine
@@ -1417,7 +1425,7 @@ class AstCreator(
     astForBlock(
       ctx.compoundStatement().statements(),
       Option(ctx.blockParameter()),
-      blockMethodName,
+      None,
       lineStart,
       lineEnd,
       colStart,
@@ -1425,7 +1433,7 @@ class AstCreator(
     )
   }
 
-  def astForBraceBlockContext(ctx: BraceBlockContext, blockMethodName: Option[String] = None): Seq[Ast] = {
+  def astForBraceBlockContext(ctx: BraceBlockContext): Seq[Ast] = {
     val lineStart = ctx.LCURLY().getSymbol.getLine
     val lineEnd   = ctx.LCURLY().getSymbol.getCharPositionInLine
     val colStart  = ctx.RCURLY().getSymbol.getLine
@@ -1433,7 +1441,7 @@ class AstCreator(
     astForBlock(
       ctx.compoundStatement().statements(),
       Option(ctx.blockParameter()),
-      blockMethodName,
+      None,
       lineStart,
       lineEnd,
       colStart,
@@ -1533,11 +1541,11 @@ class AstCreator(
     }
   }
 
-  def astForBlockContext(ctx: BlockContext, blockMethodName: Option[String] = None): Seq[Ast] = {
+  def astForBlockContext(ctx: BlockContext): Seq[Ast] = {
     if (ctx.doBlock() != null) {
-      astForDoBlockContext(ctx.doBlock(), blockMethodName)
+      astForDoBlockContext(ctx.doBlock())
     } else if (ctx.braceBlock() != null) {
-      astForBraceBlockContext(ctx.braceBlock(), blockMethodName)
+      astForBraceBlockContext(ctx.braceBlock())
     } else {
       Seq(Ast())
     }
