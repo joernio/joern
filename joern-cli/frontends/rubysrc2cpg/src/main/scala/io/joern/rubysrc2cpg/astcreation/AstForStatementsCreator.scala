@@ -1,17 +1,19 @@
 package io.joern.rubysrc2cpg.astcreation
 
 import better.files.File
-import io.joern.rubysrc2cpg.parser.RubyParser._
+import io.joern.rubysrc2cpg.parser.RubyParser.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewControlStructure, NewImport, NewLiteral}
+import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 trait AstForStatementsCreator { this: AstCreator =>
 
+  private val logger = LoggerFactory.getLogger(this.getClass)
   protected def astForAliasStatement(ctx: AliasStatementContext): Ast = {
     val aliasName  = ctx.definedMethodNameOrSymbol(0).getText.substring(1)
     val methodName = ctx.definedMethodNameOrSymbol(1).getText.substring(1)
@@ -114,7 +116,9 @@ trait AstForStatementsCreator { this: AstCreator =>
     case ctx: NotExpressionOrCommandContext        => Seq(astForNotKeywordExpressionOrCommand(ctx))
     case ctx: OrAndExpressionOrCommandContext      => Seq(astForOrAndExpressionOrCommand(ctx))
     case ctx: ExpressionExpressionOrCommandContext => astForExpressionContext(ctx.expression())
-    case _                                         => Seq(Ast())
+    case _ =>
+      logger.error(s"astForExpressionOrCommand() $filename, ${ctx.getText} All contexts mismatched.")
+      Seq(Ast())
   }
 
   protected def astForNotKeywordExpressionOrCommand(ctx: NotExpressionOrCommandContext): Ast = {
