@@ -338,8 +338,20 @@ trait AstForTypesCreator { this: AstCreator =>
     val (name, fullname) =
       uniqueName("enum", ASTStringUtil.getSimpleName(typeSpecifier.getName), fullName(typeSpecifier))
     val alias = decls.headOption.map(d => registerType(shortName(d))).filter(_.nonEmpty)
+
+    val (deAliasedName, deAliasedFullName, newAlias) = if (name.contains("anonymous_enum") && alias.isDefined) {
+      (alias.get, fullname.substring(0, fullname.indexOf("anonymous_enum")) + alias.get, None)
+    } else { (name, fullname, alias) }
+
     val typeDecl =
-      typeDeclNode(typeSpecifier, name, registerType(fullname), filename, nodeSignature(typeSpecifier), alias = alias)
+      typeDeclNode(
+        typeSpecifier,
+        deAliasedName,
+        registerType(deAliasedFullName),
+        filename,
+        nodeSignature(typeSpecifier),
+        alias = newAlias
+      )
     methodAstParentStack.push(typeDecl)
     scope.pushNewScope(typeDecl)
 
@@ -355,7 +367,7 @@ trait AstForTypesCreator { this: AstCreator =>
     } else {
       val init = staticInitMethodAst(
         calls,
-        s"$fullname:${io.joern.x2cpg.Defines.StaticInitMethodName}",
+        s"$deAliasedFullName:${io.joern.x2cpg.Defines.StaticInitMethodName}",
         None,
         Defines.anyTypeName,
         Some(filename),
