@@ -50,13 +50,6 @@ class MethodOneTests extends RubyCode2CpgFixture {
       cpg.method.name("foo").file.name.l should not be empty
     }
 
-    // TODO: Need to be fixed
-    "test function method ref" ignore {
-      cpg.methodRef("foo").referencedMethod.fullName.l should not be empty
-      cpg.methodRef("foo").referencedMethod.fullName.head shouldBe
-        "Test0.rb::program:foo"
-    }
-
     // TODO: Need to be fixed.
     "test existence of local variable in module function" ignore {
       cpg.method.fullName("Test0.rb::program").local.name.l should contain("foo")
