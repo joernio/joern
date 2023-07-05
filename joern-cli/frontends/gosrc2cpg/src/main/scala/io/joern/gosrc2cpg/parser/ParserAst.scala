@@ -14,24 +14,27 @@ object ParserAst {
   }
   sealed trait BaseExprStmt extends ParserNode
 
-  object File       extends ParserNode
-  object GenDecl    extends ParserNode
-  object ImportSpec extends ParserNode
-  object BasicLit   extends ParserNode
-  object FuncDecl   extends ParserNode
-  object BlockStmt  extends ParserNode
-  object DeclStmt   extends ParserNode
-  object ValueSpec  extends ParserNode
-  object Ident      extends ParserNode
-  object AssignStmt extends ParserNode
-  object ExprStmt   extends BaseExprStmt
-  object BinaryExpr extends BaseExprStmt
-  object UnaryExpr  extends BaseExprStmt
-  object StarExpr   extends BaseExprStmt
-
-  object IncDecStmt extends ParserNode
-  object IfStmt     extends ParserNode
-  object ParenExpr  extends BaseExprStmt
+  object File         extends ParserNode
+  object GenDecl      extends ParserNode
+  object ImportSpec   extends ParserNode
+  object BasicLit     extends ParserNode
+  object FuncDecl     extends ParserNode
+  object BlockStmt    extends ParserNode
+  object DeclStmt     extends ParserNode
+  object ValueSpec    extends ParserNode
+  object Ident        extends ParserNode
+  object AssignStmt   extends ParserNode
+  object ExprStmt     extends BaseExprStmt
+  object BinaryExpr   extends BaseExprStmt
+  object UnaryExpr    extends BaseExprStmt
+  object StarExpr     extends BaseExprStmt
+  object IncDecStmt   extends ParserNode
+  object IfStmt       extends ParserNode
+  object ParenExpr    extends BaseExprStmt
+  object ReturnStmt   extends ParserNode
+  object FuncType     extends ParserNode
+  object Ellipsis     extends ParserNode
+  object SelectorExpr extends ParserNode
 }
 
 object ParserKeys {
@@ -62,4 +65,8 @@ object ParserKeys {
   val Values        = "Values"
   val X             = "X"
   val Y             = "Y"
+  val Results       = "Results"
+  val Params        = "Params"
+  val Elt           = "Elt"
+  val Sel           = "Sel"
 }
