@@ -11,7 +11,7 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
           |class MyClass
           |end
           |""".stripMargin)
-      val Some(myClass) = cpg.typeDecl.nameExact("MyClass").headOption
+      val Some(myClass) = cpg.typeDecl.nameExact("MyClass").headOption: @unchecked
       myClass.name shouldBe "MyClass"
       myClass.fullName shouldBe "Test0.rb::program:MyClass"
     }
