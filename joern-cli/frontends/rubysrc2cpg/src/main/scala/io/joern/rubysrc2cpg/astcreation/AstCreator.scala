@@ -215,7 +215,7 @@ class AstCreator(
       val node = createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
       Seq(Ast(node))
     case _ =>
-      logger.error("astForSingleLeftHandSideContext() All contexts mismatched.")
+      logger.error(s"astForSingleLeftHandSideContext() $filename, ${ctx.getText} All contexts mismatched.")
       Seq(Ast())
 
   }
@@ -340,7 +340,7 @@ class AstCreator(
     case ctx: ChainedInvocationWithoutArgumentsPrimaryContext =>
       astForChainedInvocationWithoutArgumentsPrimaryContext(ctx)
     case _ =>
-      logger.error("astForPrimaryContext() All contexts mismatched.")
+      logger.error(s"astForPrimaryContext() $filename, ${ctx.getText} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -364,7 +364,7 @@ class AstCreator(
     case ctx: MultipleAssignmentExpressionContext  => astForMultipleAssignmentExpressionContext(ctx)
     case ctx: IsDefinedExpressionContext           => Seq(astForIsDefinedExpression(ctx))
     case _ =>
-      logger.error("astForExpressionContext() All contexts mismatched.")
+      logger.error(s"astForExpressionContext() $filename, ${ctx.getText} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -415,7 +415,7 @@ class AstCreator(
     case ctx: RubyParser.SplattingOnlyIndexingArgumentsContext =>
       astForSplattingArgumentContext(ctx.splattingArgument())
     case _ =>
-      logger.error("astForIndexingArgumentsContext() All contexts mismatched.")
+      logger.error(s"astForIndexingArgumentsContext() $filename, ${ctx.getText} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -627,7 +627,7 @@ class AstCreator(
     case ctx: GroupedLeftHandSideOnlyMultipleLeftHandSideContext =>
       astForGroupedLeftHandSideContext(ctx.groupedLeftHandSide())
     case _ =>
-      logger.error("astForMultipleLeftHandSideContext() All contexts mismatched.")
+      logger.error(s"astForMultipleLeftHandSideContext() $filename, ${ctx.getText} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -735,7 +735,7 @@ class AstCreator(
           .withChildren(astForArguments(ctx.arguments()))
       )
     case _ =>
-      logger.error("astForInvocationWithoutParenthesesContext() All contexts mismatched.")
+      logger.error(s"astForInvocationWithoutParenthesesContext() $filename, ${ctx.getText} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -973,7 +973,7 @@ class AstCreator(
     case ctx: SimpleMethodNamePartContext    => astForSimpleMethodNamePartContext(ctx)
     case ctx: SingletonMethodNamePartContext => astForSingletonMethodNamePartContext(ctx)
     case _ =>
-      logger.error("astForMethodNamePartContext() All contexts mismatched.")
+      logger.error(s"astForMethodNamePartContext() $filename, ${ctx.getText} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -1320,7 +1320,7 @@ class AstCreator(
       val primaryAsts    = astForPrimaryContext(ctx.primary())
       primaryAsts ++ methodNameAsts ++ argsAsts ++ doBlockAsts
     case _ =>
-      logger.error("astForCommandWithDoBlockContext() All contexts mismatched.")
+      logger.error(s"astForCommandWithDoBlockContext() $filename, ${ctx.getText} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -1354,7 +1354,7 @@ class AstCreator(
     case ctx: ChainedCommandWithDoBlockOnlyArgumentsWithParenthesesContext =>
       astForChainedCommandWithDoBlockContext(ctx.chainedCommandWithDoBlock())
     case _ =>
-      logger.error("astForArgumentsWithParenthesesContext() All contexts mismatched.")
+      logger.error(s"astForArgumentsWithParenthesesContext() $filename, ${ctx.getText} All contexts mismatched.")
       Seq(Ast())
   }
 
