@@ -8,6 +8,10 @@ import java.nio.file.Paths
 
 object SourceFiles {
 
+  case object InvalidInputPathsException extends Exception("Invalid source input paths")
+
+  case object NoSourceFilesFoundException extends Exception("No source files found at input paths")
+
   private val logger = LoggerFactory.getLogger(getClass)
 
   private def isIgnoredByFileList(filePath: String, config: X2CpgConfig[_]): Boolean = {
@@ -70,9 +74,10 @@ object SourceFiles {
     def hasSourceFileExtension(file: File): Boolean =
       file.extension.exists(sourceFileExtensions.contains)
 
-    val (dirs, files) = inputPaths
-      .map(File(_))
-      .partition(_.isDirectory)
+    val inputFiles = inputPaths.map(File(_))
+    assertAllExist(inputFiles)
+
+    val (dirs, files) = inputFiles.partition(_.isDirectory)
 
     val matchingFiles = files.filter(hasSourceFileExtension).map(_.toString)
     val matchingFilesFromDirs = dirs
@@ -80,7 +85,49 @@ object SourceFiles {
       .filter(hasSourceFileExtension)
       .map(_.pathAsString)
 
-    (matchingFiles ++ matchingFilesFromDirs).toList.sorted
+    val sourceFiles = (matchingFiles ++ matchingFilesFromDirs).toList.sorted
+    assertNonEmpty(inputPaths, sourceFiles)
+    sourceFiles
+  }
+
+  /** Attempting to analyse source paths that do not exist is a hard error. Terminate execution early to avoid
+    * unexpected and hard-to-debug issues in the results.
+    */
+  private def assertAllExist(files: Set[File]): Unit = {
+    val (existant, nonExistant) = files.partition(_.isReadable)
+    val nonReadable             = existant.filterNot(_.isReadable)
+
+    if (nonExistant.nonEmpty || nonReadable.nonEmpty) {
+      logErrorWithPaths("Source input paths do not exist", nonExistant.map(_.canonicalPath))
+
+      logErrorWithPaths("Source input paths exist, but are not readable", nonReadable.map(_.canonicalPath))
+
+      throw InvalidInputPathsException
+    }
+  }
+
+  /** Finding no source files is an unexpected result that is most likely due to user error. Terminate execution early
+    * to avoid unexpected and hard-to-debug issues in the results.
+    */
+  def assertNonEmpty(inputPaths: Set[String], sourceFiles: List[String]): Unit = {
+    if (sourceFiles.isEmpty) {
+      logErrorWithPaths("No source files found at input paths", inputPaths)
+
+      throw NoSourceFilesFoundException
+    }
+  }
+
+  private def logErrorWithPaths(message: String, paths: Iterable[String]): Unit = {
+    val pathsArray = paths.toArray.sorted
+
+    pathsArray.lengthCompare(1) match {
+      case cmp if cmp < 0  => // pathsArray is empty, so don't log anything
+      case cmp if cmp == 0 => logger.error(s"$message: ${paths.head}")
+
+      case cmp =>
+        val errorMessage = (message +: pathsArray.map(path => s"- $path")).mkString("\n")
+        logger.error(errorMessage)
+    }
   }
 
   /** Constructs an absolute path against rootPath. If the given path is already absolute this path is returned
