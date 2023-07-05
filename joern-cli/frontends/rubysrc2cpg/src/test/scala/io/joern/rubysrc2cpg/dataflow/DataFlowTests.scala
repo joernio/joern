@@ -1010,6 +1010,30 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
+  "Data flow for begin/rescue with sink in ensure" should {
+    val cpg = code("""
+        |x = 1
+        |begin
+        |  puts "in begin"
+        |rescue SomeException
+        |   puts "SomeException occurred"
+        |rescue => exceptionVar
+        |  puts "Caught exception in variable #{exceptionVar}"
+        |rescue
+        |  puts "In rescue all"
+        |ensure
+        |  puts x
+        |end
+        |
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).size shouldBe 2
+    }
+  }
+
   "Data flow for begin/rescue with data flow through the exception" should {
     val cpg = code("""
         |x = "Exception message: "
