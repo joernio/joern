@@ -85,24 +85,18 @@ object ProgramHandlingUtil {
     * @param sourceCodePath
     *   The project root path to unpack to.
     */
-  def unzipArchive(zf: ZipFile, sourceCodePath: String): List[String] = {
+  def unzipArchive(zf: ZipFile): List[String] = {
     val zipTempDir = Files.createTempDirectory("plume-unzip-")
     try {
       Using.resource(zf) { (zip: ZipFile) =>
         // Copy zipped files across
-        return moveClassFiles(
+        moveClassFiles(
           zip
             .entries()
             .asScala
             .filter(f => !f.isDirectory && f.getName.endsWith(".class"))
             .flatMap(entry => {
-              val sourceCodePathFile = new File(sourceCodePath)
-              // Handle the case if the input source code path is an archive itself
-              val destFile = if (sourceCodePathFile.isDirectory) {
-                new File(zipTempDir.toAbsolutePath.toString + File.separator + entry.getName)
-              } else {
-                new File(zipTempDir.toAbsolutePath.toString + File.separator + entry.getName)
-              }
+              val destFile = new File(zipTempDir.toAbsolutePath.toString + File.separator + entry.getName)
               // dirName accounts for nested directories as a result of JAR package structure
               val dirName = destFile.getAbsolutePath
                 .substring(0, destFile.getAbsolutePath.lastIndexOf(File.separator))
@@ -147,7 +141,7 @@ object ProgramHandlingUtil {
       } else {
         SourceFiles.determine(sourceCodeDir, archiveFileExtensions)
       }
-    archives.flatMap { x => unzipArchive(new ZipFile(x), sourceCodeDir) }
+    archives.flatMap { x => unzipArchive(new ZipFile(x)) }
   }
 
   /** Removes all files in the temporary unpacking directory.
