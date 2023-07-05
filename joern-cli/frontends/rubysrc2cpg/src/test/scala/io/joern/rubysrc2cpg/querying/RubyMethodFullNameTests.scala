@@ -32,7 +32,6 @@ class RubyMethodFullNameTests extends RubyCode2CpgFixture with BeforeAndAfterAll
         "Gemfile"
       )
       .withConfig(config)
-
     "recognise call node" in {
       cpg.call.name("first_fun").l.size shouldBe 1
     }
