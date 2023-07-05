@@ -2,7 +2,6 @@ package io.joern.dataflowengineoss
 
 import better.files.File
 import io.circe.{Decoder, Encoder, HCursor, Json}
-import io.joern.x2cpg.X2CpgConfig
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
@@ -123,19 +122,15 @@ package object slicing {
     *   the nodes in the slice.
     * @param edges
     *   a map linking nodes with their edges.
-    * @param methodToChildNode
-    *   a mapping between method names and which nodes fall under them.
     */
-  case class DataFlowSlice(nodes: Set[SliceNode], edges: Set[SliceEdge], methodToChildNode: Map[String, Set[Long]])
-      extends ProgramSlice {
+  case class DataFlowSlice(nodes: Set[SliceNode], edges: Set[SliceEdge]) extends ProgramSlice {
     def toJson: String = this.asJson.toString()
 
     def toJsonPretty: String = this.asJson.spaces2
   }
 
-  implicit val encodeDataFlowSlice: Encoder[DataFlowSlice] = Encoder.instance {
-    case DataFlowSlice(nodes, edges, methodToChildNode) =>
-      Json.obj("nodes" -> nodes.asJson, "edges" -> edges.asJson, "methodToChildNode" -> methodToChildNode.asJson)
+  implicit val encodeDataFlowSlice: Encoder[DataFlowSlice] = Encoder.instance { case DataFlowSlice(nodes, edges) =>
+    Json.obj("nodes" -> nodes.asJson, "edges" -> edges.asJson)
   }
 
   case class SliceNode(
@@ -144,18 +139,22 @@ package object slicing {
     name: String = "",
     code: String,
     typeFullName: String = "",
+    parentMethod: String = "",
+    parentFile: String = "",
     lineNumber: Option[Integer] = None,
     columnNumber: Option[Integer] = None
   )
 
   implicit val encodeSliceNode: Encoder[SliceNode] = Encoder.instance {
-    case SliceNode(id, label, name, code, typeFullName, lineNumber, columnNumber) =>
+    case SliceNode(id, label, name, code, typeFullName, parentMethod, parentFile, lineNumber, columnNumber) =>
       Json.obj(
         "id"           -> id.asJson,
         "label"        -> label.asJson,
         "name"         -> name.asJson,
         "code"         -> code.asJson,
         "typeFullName" -> typeFullName.asJson,
+        "parentMethod" -> parentMethod.asJson,
+        "parentFile"   -> parentFile.asJson,
         "lineNumber"   -> lineNumber.asJson,
         "columnNumber" -> columnNumber.asJson
       )
@@ -208,24 +207,46 @@ package object slicing {
 
   /** Packages the object usage slices along with the method source code.
     *
-    * @param source
-    *   source code.
+    * @param code
+    *   raw source code.
+    * @param fullName
+    *   method full name.
+    * @param fileName
+    *   the file name.
     * @param slices
     *   the object usage slices.
     */
-  case class MethodUsageSlice(source: String, slices: Set[ObjectUsageSlice])
+  case class MethodUsageSlice(
+    code: String,
+    fullName: String,
+    fileName: String,
+    slices: Set[ObjectUsageSlice],
+    lineNumber: Option[Int] = None,
+    columnNumber: Option[Int] = None
+  )
 
   implicit val decodeMethodUsageSlice: Decoder[MethodUsageSlice] =
     (c: HCursor) =>
       for {
-        x <- c.downField("source").as[String]
-        y <- c.downField("slices").as[Set[ObjectUsageSlice]]
+        code <- c.downField("code").as[String]
+        fn   <- c.downField("fullName").as[String]
+        fln  <- c.downField("fileName").as[String]
+        ss   <- c.downField("slices").as[Set[ObjectUsageSlice]]
+        lin  <- c.downField("lineNumber").as[Option[Int]]
+        col  <- c.downField("columnNumber").as[Option[Int]]
       } yield {
-        MethodUsageSlice(x, y)
+        MethodUsageSlice(code, fn, fln, ss, lin, col)
       }
   implicit val encodeMethodUsageSlice: Encoder[MethodUsageSlice] =
-    Encoder.instance { case MethodUsageSlice(x, y) =>
-      Json.obj("source" -> x.asJson, "slices" -> y.asJson)
+    Encoder.instance { case MethodUsageSlice(a, b, c, d, e, f) =>
+      Json.obj(
+        "code"         -> a.asJson,
+        "fullName"     -> b.asJson,
+        "fileName"     -> c.asJson,
+        "slices"       -> d.asJson,
+        "lineNumber"   -> e.asJson,
+        "columnNumber" -> f.asJson
+      )
     }
 
   /** Represents a source of data-generation, i.e., where data is defined and can be assigned to some variable or used
@@ -405,7 +426,9 @@ package object slicing {
     callName: String,
     resolvedMethod: Option[String],
     paramTypes: List[String],
-    returnType: String
+    returnType: String,
+    lineNumber: Option[Int] = None,
+    columnNumber: Option[Int] = None
   ) {
     override def toString: String =
       s"$callName(${paramTypes.mkString(",")}):$returnType"
@@ -417,22 +440,33 @@ package object slicing {
     callName: String,
     resolvedMethod: Option[String],
     paramTypes: List[String],
-    returnType: String
-  ) extends UsedCall(callName, resolvedMethod, paramTypes, returnType)
+    returnType: String,
+    lineNumber: Option[Int] = None,
+    columnNumber: Option[Int] = None
+  ) extends UsedCall(callName, resolvedMethod, paramTypes, returnType, lineNumber, columnNumber)
 
   implicit val decodeObservedCall: Decoder[ObservedCall] =
     (c: HCursor) =>
       for {
-        x <- c.downField("callName").as[String]
-        m <- c.downField("resolvedMethod").as[Option[String]]
-        p <- c.downField("paramTypes").as[List[String]]
-        r <- c.downField("returnType").as[String]
+        x   <- c.downField("callName").as[String]
+        m   <- c.downField("resolvedMethod").as[Option[String]]
+        p   <- c.downField("paramTypes").as[List[String]]
+        r   <- c.downField("returnType").as[String]
+        lin <- c.downField("lineNumber").as[Option[Int]]
+        col <- c.downField("columnNumber").as[Option[Int]]
       } yield {
-        ObservedCall(x, m, p, r)
+        ObservedCall(x, m, p, r, lin, col)
       }
   implicit val encodeObservedCall: Encoder[ObservedCall] =
-    Encoder.instance { case ObservedCall(c, m, p, r) =>
-      Json.obj("callName" -> c.asJson, "resolvedMethod" -> m.asJson, "paramTypes" -> p.asJson, "returnType" -> r.asJson)
+    Encoder.instance { case ObservedCall(c, m, p, r, lin, col) =>
+      Json.obj(
+        "callName"       -> c.asJson,
+        "resolvedMethod" -> m.asJson,
+        "paramTypes"     -> p.asJson,
+        "returnType"     -> r.asJson,
+        "lineNumber"     -> lin.asJson,
+        "columnNumber"   -> col.asJson
+      )
     }
 
   /** Extends observed call with a specific argument in mind.
@@ -445,8 +479,10 @@ package object slicing {
     resolvedMethod: Option[String],
     paramTypes: List[String],
     returnType: String,
-    position: Either[String, Int]
-  ) extends UsedCall(callName, resolvedMethod, paramTypes, returnType) {
+    position: Either[String, Int],
+    lineNumber: Option[Int] = None,
+    columnNumber: Option[Int] = None
+  ) extends UsedCall(callName, resolvedMethod, paramTypes, returnType, lineNumber, columnNumber) {
     override def toString: String = super.toString + " @ " + (position match {
       case Left(namedArg) => namedArg
       case Right(argIdx)  => argIdx
@@ -455,16 +491,26 @@ package object slicing {
 
   object ObservedCallWithArgPos {
     def fromObservedCall(oc: ObservedCall, pos: Either[String, Int]): ObservedCallWithArgPos =
-      ObservedCallWithArgPos(oc.callName, oc.resolvedMethod, oc.paramTypes, oc.returnType, pos)
+      ObservedCallWithArgPos(
+        oc.callName,
+        oc.resolvedMethod,
+        oc.paramTypes,
+        oc.returnType,
+        pos,
+        oc.lineNumber,
+        oc.columnNumber
+      )
   }
 
   implicit val decodeObservedCallWithArgPos: Decoder[ObservedCallWithArgPos] =
     (c: HCursor) =>
       for {
-        x <- c.downField("callName").as[String]
-        m <- c.downField("resolvedMethod").as[Option[String]]
-        p <- c.downField("paramTypes").as[List[String]]
-        r <- c.downField("returnType").as[String]
+        x   <- c.downField("callName").as[String]
+        m   <- c.downField("resolvedMethod").as[Option[String]]
+        p   <- c.downField("paramTypes").as[List[String]]
+        r   <- c.downField("returnType").as[String]
+        lin <- c.downField("lineNumber").as[Option[Int]]
+        col <- c.downField("columnNumber").as[Option[Int]]
       } yield {
         val pos = c.downField("position").as[Int] match {
           case Left(_) =>
@@ -478,10 +524,10 @@ package object slicing {
             }
           case Right(argIdx) => Right(argIdx)
         }
-        ObservedCallWithArgPos(x, m, p, r, pos)
+        ObservedCallWithArgPos(x, m, p, r, pos, lin, col)
       }
   implicit val encodeObservedCallWithArgPos: Encoder[ObservedCallWithArgPos] =
-    Encoder.instance { case ObservedCallWithArgPos(c, m, p, r, a) =>
+    Encoder.instance { case ObservedCallWithArgPos(c, m, p, r, a, lin, col) =>
       Json.obj(
         "callName"       -> c.asJson,
         "resolvedMethod" -> m.asJson,
@@ -490,13 +536,15 @@ package object slicing {
         "position" -> (a match {
           case Left(argName) => argName.asJson
           case Right(argIdx) => argIdx.asJson
-        })
+        }),
+        "lineNumber"   -> lin.asJson,
+        "columnNumber" -> col.asJson
       )
     }
 
   implicit val encodeUsedCall: Encoder[UsedCall] = Encoder.instance {
-    case oc @ ObservedCall(_, _, _, _)               => oc.asJson
-    case oca @ ObservedCallWithArgPos(_, _, _, _, _) => oca.asJson
+    case oc @ ObservedCall(_, _, _, _, _, _)               => oc.asJson
+    case oca @ ObservedCallWithArgPos(_, _, _, _, _, _, _) => oca.asJson
   }
 
   implicit val decodeUsedCall: Decoder[UsedCall] =
@@ -511,20 +559,37 @@ package object slicing {
     * @param procedures
     *   defined, named procedures within the type.
     */
-  case class UserDefinedType(name: String, fields: List[LocalDef], procedures: List[ObservedCall])
+  case class UserDefinedType(
+    name: String,
+    fields: List[LocalDef],
+    procedures: List[ObservedCall],
+    fileName: String = "",
+    lineNumber: Option[Int] = None,
+    columnNumber: Option[Int] = None
+  )
 
   implicit val decodeUserDefinedType: Decoder[UserDefinedType] =
     (c: HCursor) =>
       for {
-        n <- c.downField("name").as[String]
-        f <- c.downField("fields").as[List[LocalDef]]
-        p <- c.downField("procedures").as[List[ObservedCall]]
+        n   <- c.downField("name").as[String]
+        f   <- c.downField("fields").as[List[LocalDef]]
+        p   <- c.downField("procedures").as[List[ObservedCall]]
+        fn  <- c.downField("fileName").as[String]
+        lin <- c.downField("lineNumber").as[Option[Int]]
+        col <- c.downField("columnNumber").as[Option[Int]]
       } yield {
-        UserDefinedType(n, f, p)
+        UserDefinedType(n, f, p, fn, lin, col)
       }
   implicit val encodeUserDefinedType: Encoder[UserDefinedType] =
-    Encoder.instance { case UserDefinedType(n, f, p) =>
-      Json.obj("name" -> n.asJson, "fields" -> f.asJson, "procedures" -> p.asJson)
+    Encoder.instance { case UserDefinedType(n, f, p, fn, lin, col) =>
+      Json.obj(
+        "name"         -> n.asJson,
+        "fields"       -> f.asJson,
+        "procedures"   -> p.asJson,
+        "fileName"     -> fn.asJson,
+        "lineNumber"   -> lin.asJson,
+        "columnNumber" -> col.asJson
+      )
     }
 
   /** The program usage slices and UDTs.
@@ -534,7 +599,7 @@ package object slicing {
     * @param userDefinedTypes
     *   the UDTs.
     */
-  case class ProgramUsageSlice(objectSlices: Map[String, MethodUsageSlice], userDefinedTypes: List[UserDefinedType])
+  case class ProgramUsageSlice(objectSlices: List[MethodUsageSlice], userDefinedTypes: List[UserDefinedType])
       extends ProgramSlice {
 
     def toJson: String = this.asJson.toString()
@@ -545,7 +610,7 @@ package object slicing {
   implicit val decodeProgramUsageSlice: Decoder[ProgramUsageSlice] =
     (c: HCursor) =>
       for {
-        o <- c.downField("objectSlices").as[Map[String, MethodUsageSlice]]
+        o <- c.downField("objectSlices").as[List[MethodUsageSlice]]
         u <- c.downField("userDefinedTypes").as[List[UserDefinedType]]
       } yield {
         ProgramUsageSlice(o, u)
