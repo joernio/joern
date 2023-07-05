@@ -1050,7 +1050,7 @@ class AstCreator(
   }
 
   def astForBodyStatementContext(ctx: BodyStatementContext, addReturnNode: Boolean = false): Seq[Ast] = {
-    val compoundStatementAsts = astForCompoundStatement(ctx.compoundStatement())
+    val compoundStatementAsts = astForCompoundStatement(ctx.compoundStatement(), !addReturnNode)
 
     val compoundStatementAstsWithReturn =
       if (addReturnNode && compoundStatementAsts.size > 0) {
