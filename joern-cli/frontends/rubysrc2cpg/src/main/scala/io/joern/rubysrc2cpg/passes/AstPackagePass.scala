@@ -35,7 +35,7 @@ class AstPackagePass(cpg: Cpg, tempExtDir: String, global: Global, packageTable:
           currentNameSpace.addOne(classOrModuleName)
         case NodeType.DEFNNODE =>
           val methodName = node.asInstanceOf[DefnNode].getName.toString
-          val classPath = currentNameSpace.mkString(":")
+          val classPath  = currentNameSpace.mkString(":")
           packageTable.addPackageMethod(moduleName, methodName, classPath, "<extMod>")
         case _ =>
       }

@@ -31,7 +31,8 @@ class PackageTable() extends AstCreatorHelper {
     val finalMethodName = ListBuffer[String]()
     packageUsed.foreach(module => {
       if (methodTableMap.containsKey(module)) {
-        methodTableMap.get(module)
+        methodTableMap
+          .get(module)
           .filter(_.methodName == methodName)
           .foreach(method => {
             finalMethodName.addOne(s"$module::program:${method.parentClassPath}:$methodName")

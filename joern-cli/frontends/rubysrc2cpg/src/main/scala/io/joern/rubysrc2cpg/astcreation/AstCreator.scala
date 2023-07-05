@@ -829,7 +829,7 @@ class AstCreator(
       .getMethodFullNameUsingName(packageStack.toList, name) match {
       case None if isBuiltin(name)            => prefixAsBuiltin(name) // TODO: Probably not super precise
       case Some(externalDependencyResolution) => externalDependencyResolution
-      case None                             => DynamicCallUnknownFullName
+      case None                               => DynamicCallUnknownFullName
     }
 
     val callNode = NewCall()
