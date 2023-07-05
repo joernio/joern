@@ -322,6 +322,7 @@ parameters
     :   mandatoryParameters (COMMA wsOrNl* optionalParameters)? (COMMA WS* arrayParameter)? (COMMA WS* hashParameter)? (COMMA WS* procParameter)?
     |   optionalParameters (COMMA wsOrNl* arrayParameter)? (COMMA WS* hashParameter)? (COMMA wsOrNl* procParameter)?
     |   arrayParameter (COMMA wsOrNl* procParameter)?
+    |   hashParameter (COMMA wsOrNl* procParameter)?
     |   procParameter
     ;
 
