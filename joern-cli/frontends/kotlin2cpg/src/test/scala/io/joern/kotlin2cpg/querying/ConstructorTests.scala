@@ -209,7 +209,8 @@ class ConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       assignmentLhs.name shouldBe Operators.fieldAccess
       assignmentRhs.code shouldBe "bar"
       secondParam.referencingIdentifiers.id.l.contains(assignmentRhs.id) shouldBe true
-      val List(thisIdentifier: Identifier, relevantFieldIdentifier: FieldIdentifier) = assignmentLhs.argument.l: @unchecked
+      val List(thisIdentifier: Identifier, relevantFieldIdentifier: FieldIdentifier) =
+        assignmentLhs.argument.l: @unchecked
       thisIdentifier.code shouldBe "this"
       thisIdentifier.argumentIndex shouldBe 1
       mThisParam.referencingIdentifiers.id.l.contains(thisIdentifier.id) shouldBe true

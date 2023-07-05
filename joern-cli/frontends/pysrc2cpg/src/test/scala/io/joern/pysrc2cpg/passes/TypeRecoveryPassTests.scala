@@ -1036,7 +1036,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     )
 
     "assert the method properties in RedisDB, especially quoted type hints" in {
-      val Some(redisDB)                    = cpg.typeDecl.nameExact("RedisDB").method.nameExact("<body>").headOption: @unchecked
+      val Some(redisDB) = cpg.typeDecl.nameExact("RedisDB").method.nameExact("<body>").headOption: @unchecked
       val List(instanceM, getRedisM, setM) = redisDB.astOut.isMethod.nameExact("instance", "get_redis", "set").l
 
       instanceM.methodReturn.typeFullName shouldBe Seq("db", "redis.py:<module>.RedisDB").mkString(File.separator)

@@ -241,7 +241,8 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
       iteratorAssignment.methodFullName shouldBe Operators.assignment
       iteratorAssignment.code shouldBe expectedIteratorLocalName + " = " + "l.iterator()"
 
-      val List(iteratorAssignmentLhs: Identifier, iteratorAssignmentRhs: Call) = iteratorAssignment.argument.l: @unchecked
+      val List(iteratorAssignmentLhs: Identifier, iteratorAssignmentRhs: Call) =
+        iteratorAssignment.argument.l: @unchecked
       iteratorAssignmentLhs.argumentIndex shouldBe 1
       iteratorAssignmentLhs.code shouldBe expectedIteratorLocalName
       iteratorAssignmentLhs.typeFullName shouldBe "ANY"
@@ -264,7 +265,8 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
       controlStructure.order shouldBe 3
       controlStructure.condition.size shouldBe 1
 
-      val List(controlStructureFirstChild: Call, controlStructureSecondChild: Block) = controlStructure.astChildren.l: @unchecked
+      val List(controlStructureFirstChild: Call, controlStructureSecondChild: Block) =
+        controlStructure.astChildren.l: @unchecked
       controlStructureFirstChild.order shouldBe 1
       controlStructureFirstChild.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       controlStructureFirstChild.methodFullName shouldBe "kotlin.collections.Iterator.hasNext:boolean()"
@@ -272,7 +274,8 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
       controlStructureFirstChild.signature shouldBe "boolean()"
       controlStructureSecondChild.order shouldBe 2
 
-      val List(loopParameter: Local, getNext: Call, blockInsideBody: Block) = controlStructureSecondChild.astChildren.l: @unchecked
+      val List(loopParameter: Local, getNext: Call, blockInsideBody: Block) =
+        controlStructureSecondChild.astChildren.l: @unchecked
       loopParameter.order shouldBe 1
       loopParameter.code shouldBe "entry"
       getNext.order shouldBe 2
@@ -354,7 +357,8 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
       iteratorAssignment.methodFullName shouldBe Operators.assignment
       iteratorAssignment.code shouldBe expectedIteratorLocalName + " = " + "aList.iterator()"
 
-      val List(iteratorAssignmentLhs: Identifier, iteratorAssignmentRhs: Call) = iteratorAssignment.argument.l: @unchecked
+      val List(iteratorAssignmentLhs: Identifier, iteratorAssignmentRhs: Call) =
+        iteratorAssignment.argument.l: @unchecked
       iteratorAssignmentLhs.argumentIndex shouldBe 1
       iteratorAssignmentLhs.code shouldBe expectedIteratorLocalName
       iteratorAssignmentLhs.typeFullName shouldBe "ANY"
@@ -377,7 +381,8 @@ class ControlStructureTests extends KotlinCode2CpgFixture(withOssDataflow = fals
       controlStructure.order shouldBe 3
       controlStructure.condition.size shouldBe 1
 
-      val List(controlStructureFirstChild: Call, controlStructureSecondChild: Block) = controlStructure.astChildren.l: @unchecked
+      val List(controlStructureFirstChild: Call, controlStructureSecondChild: Block) =
+        controlStructure.astChildren.l: @unchecked
       controlStructureFirstChild.order shouldBe 1
       controlStructureFirstChild.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       controlStructureFirstChild.methodFullName shouldBe "kotlin.collections.Iterator.hasNext:boolean()"

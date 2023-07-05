@@ -60,7 +60,8 @@ class CompanionObjectTests extends KotlinCode2CpgFixture(withOssDataflow = false
       secondArg.code shouldBe "m"
       secondArg.canonicalName shouldBe "m"
 
-      val List(firstArgOfLoweredCall: Identifier, secondArgOfLoweredCall: FieldIdentifier) = firstArg.argument.l: @unchecked
+      val List(firstArgOfLoweredCall: Identifier, secondArgOfLoweredCall: FieldIdentifier) =
+        firstArg.argument.l: @unchecked
       firstArgOfLoweredCall.typeFullName shouldBe "mypkg.AClass$Companion"
       firstArgOfLoweredCall.refsTo.size shouldBe 0 // yes, 0. it's how the closed-source dataflow engine wants it atm
       secondArgOfLoweredCall.canonicalName shouldBe Constants.companionObjectMemberName
@@ -118,7 +119,8 @@ class CompanionObjectTests extends KotlinCode2CpgFixture(withOssDataflow = false
       secondArg.code shouldBe "m"
       secondArg.canonicalName shouldBe "m"
 
-      val List(firstArgOfLoweredCall: Identifier, secondArgOfLoweredCall: FieldIdentifier) = firstArg.argument.l: @unchecked
+      val List(firstArgOfLoweredCall: Identifier, secondArgOfLoweredCall: FieldIdentifier) =
+        firstArg.argument.l: @unchecked
       firstArgOfLoweredCall.typeFullName shouldBe "mypkg.AClass$NamedCompanion"
       firstArgOfLoweredCall.refsTo.size shouldBe 0 // yes, 0. it's how the closed-source dataflow engine wants it atm
       secondArgOfLoweredCall.canonicalName shouldBe Constants.companionObjectMemberName

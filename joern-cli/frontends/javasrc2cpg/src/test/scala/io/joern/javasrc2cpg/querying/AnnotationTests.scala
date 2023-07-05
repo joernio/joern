@@ -197,7 +197,8 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
     }
 
     "test annotation node parameter value" in {
-      val Seq(paramValue: AnnotationLiteral) = cpg.method.name("function").annotation.parameterAssign.value.l: @unchecked
+      val Seq(paramValue: AnnotationLiteral) =
+        cpg.method.name("function").annotation.parameterAssign.value.l: @unchecked
       paramValue.code shouldBe "2"
       paramValue.order shouldBe 2
       paramValue.argumentIndex shouldBe 2

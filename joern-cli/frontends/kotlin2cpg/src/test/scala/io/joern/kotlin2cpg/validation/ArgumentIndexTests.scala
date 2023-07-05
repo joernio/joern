@@ -103,7 +103,10 @@ class ArgumentIndexTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
 
     "should contain the correct argumentIndex values for its arguments" in {
       val List(firstArg: Call, secondArg: Literal) =
-        cpg.call.methodFullNameExact("java.lang.Runtime.exec:java.lang.Process(java.lang.String)").argument.l: @unchecked
+        cpg.call
+          .methodFullNameExact("java.lang.Runtime.exec:java.lang.Process(java.lang.String)")
+          .argument
+          .l: @unchecked
       firstArg.argumentIndex shouldBe 0
       secondArg.argumentIndex shouldBe 1
     }

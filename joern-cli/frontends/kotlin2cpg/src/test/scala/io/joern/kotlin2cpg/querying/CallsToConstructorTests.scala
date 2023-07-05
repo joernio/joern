@@ -20,7 +20,8 @@ class CallsToConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = fa
         |""".stripMargin)
 
     "should contain a correct lowered representation" in {
-      val List(l: Local, allocAssignment: Call, init: Call, _: Call) = cpg.method.nameExact("main").block.astChildren.l: @unchecked
+      val List(l: Local, allocAssignment: Call, init: Call, _: Call) =
+        cpg.method.nameExact("main").block.astChildren.l: @unchecked
       l.name shouldBe "f"
       l.typeFullName shouldBe "java.io.File"
 
@@ -79,8 +80,8 @@ class CallsToConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = fa
       firstBlockChild.name shouldBe "tmp_1"
       firstBlockChild.typeFullName shouldBe "java.io.File"
 
-      val List(secondBlockChild: Call)                                   = loweredBlock.astChildren.slice(1, 2).l: @unchecked
-      val allocAssignment                                                = secondBlockChild
+      val List(secondBlockChild: Call) = loweredBlock.astChildren.slice(1, 2).l: @unchecked
+      val allocAssignment              = secondBlockChild
       val List(allocAssignmentLhs: Identifier, allocAssignmentRhs: Call) = allocAssignment.argument.l: @unchecked
       allocAssignmentLhs.code shouldBe "tmp_1"
       allocAssignmentLhs.typeFullName shouldBe "java.io.File"
@@ -134,7 +135,8 @@ class CallsToConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = fa
         |""".stripMargin)
 
     "should contain a correct lowered representation" in {
-      val List(l: Local, allocAssignment: Call, init: Call, _: Call) = cpg.method.nameExact("main").block.astChildren.l: @unchecked
+      val List(l: Local, allocAssignment: Call, init: Call, _: Call) =
+        cpg.method.nameExact("main").block.astChildren.l: @unchecked
       l.name shouldBe "a"
       l.typeFullName shouldBe "mypkg.AClass"
 
@@ -208,7 +210,8 @@ class CallsToConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = fa
          |""".stripMargin)
 
     "contain a correctly lowered representation" in {
-      val List(l: Local, allocAssignment: Call, init: Call, _: Call) = cpg.method.nameExact("main").block.astChildren.l: @unchecked
+      val List(l: Local, allocAssignment: Call, init: Call, _: Call) =
+        cpg.method.nameExact("main").block.astChildren.l: @unchecked
       l.name shouldBe "a"
       l.typeFullName shouldBe "java.lang.Error"
 
@@ -250,8 +253,9 @@ class CallsToConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = fa
       val List(c: Call) = cpg.call.code("listOf.*").l
       c.methodFullName shouldBe "kotlin.collections.listOf:java.util.List(java.lang.Object)"
 
-      val List(b: Block)                                                                     = c.argument.l: @unchecked
-      val List(l: Local, allocAssignment: Call, init: Call, returningIdentifier: Identifier) = b.astChildren.l: @unchecked
+      val List(b: Block) = c.argument.l: @unchecked
+      val List(l: Local, allocAssignment: Call, init: Call, returningIdentifier: Identifier) =
+        b.astChildren.l: @unchecked
       l.name shouldBe "tmp"
       l.typeFullName shouldBe "java.lang.Error"
 

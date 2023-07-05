@@ -266,7 +266,8 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         |""".stripMargin)
 
     "resolve correct imports via tag nodes" in {
-      val List(x: UnknownMethod, y: UnknownTypeDecl) = cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+      val List(x: UnknownMethod, y: UnknownTypeDecl) =
+        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
       x.fullName shouldBe "googleapis"
       y.fullName shouldBe "googleapis"
     }

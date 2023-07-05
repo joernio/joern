@@ -54,7 +54,8 @@ class JoernSliceJS1 extends AnyWordSpec with Matchers with AbstractJoernCliTest 
     }
 
     "extract 'Car' object instantiation" in {
-      val Some(slice) = programSlice.objectSlices.get("main.js::program:carTest").flatMap(_.slices.headOption): @unchecked
+      val Some(slice) =
+        programSlice.objectSlices.get("main.js::program:carTest").flatMap(_.slices.headOption): @unchecked
       slice.definedBy shouldBe Some(
         CallDef("new Car", "main.js::program:Car", Option("main.js::program:Car"), Some(32), Some(14))
       )
@@ -137,7 +138,8 @@ class JoernSliceTS1 extends AnyWordSpec with Matchers with AbstractJoernCliTest 
         .asInstanceOf[ProgramUsageSlice]
 
     "extract 'name' parameter slice from 'startScene'" in {
-      val Some(slice) = programSlice.objectSlices.get("main.ts::program:Game:startScene").flatMap(_.slices.headOption): @unchecked
+      val Some(slice) =
+        programSlice.objectSlices.get("main.ts::program:Game:startScene").flatMap(_.slices.headOption): @unchecked
       slice.definedBy shouldBe Some(ParamDef("name", "__ecma.String", 1, Some(56), Some(22)))
       slice.targetObj shouldBe ParamDef("name", "__ecma.String", 1, Some(56), Some(22))
 
