@@ -33,7 +33,6 @@ class MethodOneTests extends RubyCode2CpgFixture {
       cpg.method.name("foo").numberOfLines.l shouldBe List(3)
     }
 
-    // TODO: This test cases needs to be fixed.
     "should allow traversing to parameters" in {
       cpg.method.name("foo").parameter.name.toSetMutable shouldBe Set("a", "b")
     }
