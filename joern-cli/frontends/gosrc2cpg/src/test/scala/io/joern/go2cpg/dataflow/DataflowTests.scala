@@ -130,7 +130,7 @@ class DataflowTests extends GoCodeToCpgSuite(withOssDataflow = true) {
   }
 
   "Source to sink dataflow through switch case" should {
-    "be reachable" in {
+    "be reachable for expression condition" in {
       val cpg = code("""
         |package main
         |func method() {
@@ -143,16 +143,10 @@ class DataflowTests extends GoCodeToCpgSuite(withOssDataflow = true) {
         |   }
         |}
     """.stripMargin)
-      "(case in)" in {
-        val source = cpg.identifier("grade").lineNumber(5)
-        val sink   = cpg.identifier("myGrade").lineNumber(7)
-        sink.reachableByFlows(source).size shouldBe 1
-      }
-      "(case 2)" in {
-        val source = cpg.identifier("grade").lineNumber(7)
-        val sink   = cpg.identifier("myGrade").lineNumber(7)
-        sink.reachableByFlows(source).size shouldBe 1
-      }
+      val source = cpg.identifier("grade").lineNumber(5)
+      val sink   = cpg.identifier("myGrade").lineNumber(7)
+      sink.reachableByFlows(source).size shouldBe 1
+
     }
 
     "be reachable for empty condition" ignore {
