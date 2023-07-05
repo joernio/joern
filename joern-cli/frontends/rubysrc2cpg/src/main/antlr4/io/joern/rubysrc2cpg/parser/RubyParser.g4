@@ -197,6 +197,7 @@ blockArgument
 
 splattingArgument
     :   STAR WS* expressionOrCommand
+    |   STAR2 WS* expressionOrCommand
     ;
 
 indexingArguments
@@ -318,9 +319,10 @@ methodParameterPart
     ;
 
 parameters
-    :   mandatoryParameters (COMMA wsOrNl* optionalParameters)? (COMMA WS* arrayParameter)? (COMMA WS* procParameter)?
-    |   optionalParameters (COMMA wsOrNl* arrayParameter)? (COMMA wsOrNl* procParameter)?
-    |   arrayParameter (COMMA wsOrNl* procParameter)?
+    :   mandatoryParameters (COMMA wsOrNl* optionalParameters)? (COMMA WS* arrayParameter)? (COMMA WS* hashParameter)? (COMMA WS* procParameter)?
+    |   optionalParameters (COMMA wsOrNl* arrayParameter)? (COMMA WS* hashParameter)? (COMMA wsOrNl* procParameter)?
+    |   arrayParameter (COMMA WS* hashParameter)? (COMMA wsOrNl* procParameter)?
+    |   hashParameter (COMMA wsOrNl* procParameter)?
     |   procParameter
     ;
 
@@ -338,6 +340,10 @@ optionalParameter
 
 arrayParameter
     :   STAR LOCAL_VARIABLE_IDENTIFIER?
+    ;
+
+hashParameter
+    :   STAR2 LOCAL_VARIABLE_IDENTIFIER?
     ;
 
 procParameter
