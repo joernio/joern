@@ -183,7 +183,7 @@ arguments
     :   blockArgument                                                                                                           # blockArgumentTypeArguments
     |   splattingArgument (COMMA wsOrNl* blockArgument)?                                                                        # blockSplattingTypeArguments
     |   expressions WS* COMMA wsOrNl* associations (WS* COMMA wsOrNl* splattingArgument)? (WS* COMMA wsOrNl* blockArgument)?    # blockSplattingExprAssocTypeArguments
-    |   (expressions | associations) (WS* COMMA wsOrNl* blockArgument)?                                                         # blockExprAssocTypeArguments
+    |   (expressions | associations) (WS* COMMA wsOrNl* splattingArgument)? (WS* COMMA wsOrNl* blockArgument)?                  # blockExprAssocTypeArguments
     |   command                                                                                                                 # commandTypeArguments
     ;
 
@@ -196,7 +196,7 @@ blockArgument
 // --------------------------------------------------------
 
 splattingArgument
-    :   STAR expressionOrCommand
+    :   STAR WS* expressionOrCommand
     ;
 
 indexingArguments
