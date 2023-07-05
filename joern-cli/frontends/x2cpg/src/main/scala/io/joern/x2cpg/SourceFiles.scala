@@ -4,13 +4,10 @@ import better.files.File.VisitOptions
 import better.files._
 import org.slf4j.LoggerFactory
 
+import java.io.FileNotFoundException
 import java.nio.file.Paths
 
 object SourceFiles {
-
-  case object InvalidInputPathsException extends Exception("Invalid source input paths")
-
-  case object NoSourceFilesFoundException extends Exception("No source files found at input paths")
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -85,9 +82,7 @@ object SourceFiles {
       .filter(hasSourceFileExtension)
       .map(_.pathAsString)
 
-    val sourceFiles = (matchingFiles ++ matchingFilesFromDirs).toList.sorted
-    assertNonEmpty(inputPaths, sourceFiles)
-    sourceFiles
+    (matchingFiles ++ matchingFilesFromDirs).toList.sorted
   }
 
   /** Attempting to analyse source paths that do not exist is a hard error. Terminate execution early to avoid
@@ -102,18 +97,7 @@ object SourceFiles {
 
       logErrorWithPaths("Source input paths exist, but are not readable", nonReadable.map(_.canonicalPath))
 
-      throw InvalidInputPathsException
-    }
-  }
-
-  /** Finding no source files is an unexpected result that is most likely due to user error. Terminate execution early
-    * to avoid unexpected and hard-to-debug issues in the results.
-    */
-  def assertNonEmpty(inputPaths: Set[String], sourceFiles: List[String]): Unit = {
-    if (sourceFiles.isEmpty) {
-      logErrorWithPaths("No source files found at input paths", inputPaths)
-
-      throw NoSourceFilesFoundException
+      throw FileNotFoundException("Invalid source paths provided")
     }
   }
 

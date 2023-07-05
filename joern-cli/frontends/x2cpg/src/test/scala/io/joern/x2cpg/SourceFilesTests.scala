@@ -54,15 +54,5 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
         result.failed.get shouldBe InvalidInputPathsException
       }
     }
-
-    "no source files are found" in {
-      File.usingTemporaryDirectory() { tmpDirectory =>
-        (tmpDirectory / "non-source-file").createFileIfNotExists()
-
-        val result = Try(SourceFiles.determine(tmpDirectory.canonicalPath, cSourceFileExtensions))
-        result.isFailure shouldBe true
-        result.failed.get shouldBe NoSourceFilesFoundException
-      }
-    }
   }
 }
