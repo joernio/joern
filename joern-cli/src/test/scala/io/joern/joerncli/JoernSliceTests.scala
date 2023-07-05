@@ -113,7 +113,9 @@ class JoernSliceJS2 extends AnyWordSpec with Matchers with AbstractJoernCliTest 
         Some("main.js::program:Foo"),
         List("__ecma.Number", "__ecma.Number"),
         "main.js::program:Foo",
-        Right(1)
+        Right(1),
+        Some(17),
+        Some(6)
       )
 
       arg2 shouldBe ObservedCallWithArgPos(
@@ -121,7 +123,9 @@ class JoernSliceJS2 extends AnyWordSpec with Matchers with AbstractJoernCliTest 
         Some("main.js::program:bar"),
         List("main.js::program:Foo"),
         "ANY",
-        Right(1)
+        Right(1),
+        Some(19),
+        Some(0)
       )
     }
   }
