@@ -173,6 +173,38 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |  WsOrNl
           |  end""".stripMargin
       }
+
+      "it contains both a named array and hash splatting argument" in {
+        val code = "def foo(*arr, **hash); end"
+        printAst(_.primary(), code) shouldEqual
+          """MethodDefinitionPrimary
+          | MethodDefinition
+          |  def
+          |  WsOrNl
+          |  SimpleMethodNamePart
+          |   DefinedMethodName
+          |    MethodName
+          |     MethodIdentifier
+          |      foo
+          |  MethodParameterPart
+          |   (
+          |   Parameters
+          |    ArrayParameter
+          |     *
+          |     arr
+          |    ,
+          |    HashParameter
+          |     **
+          |     hash
+          |   )
+          |  BodyStatement
+          |   CompoundStatement
+          |    Separators
+          |     Separator
+          |      ;
+          |  WsOrNl
+          |  end""".stripMargin
+      }
     }
   }
 }
