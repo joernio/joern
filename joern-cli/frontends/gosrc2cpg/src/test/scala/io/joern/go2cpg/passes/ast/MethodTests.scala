@@ -1,7 +1,9 @@
 package io.joern.go2cpg.passes.ast
 
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
+
+import java.io.File
 
 class MethodTests extends GoCodeToCpgSuite {
 
@@ -107,7 +109,7 @@ class MethodTests extends GoCodeToCpgSuite {
         |	name int
         |}
         |""".stripMargin,
-      "fpkg/lib.go"
+      Seq("fpkg", "lib.go").mkString(File.separator)
     ).moreCode(
       """
         |package main
