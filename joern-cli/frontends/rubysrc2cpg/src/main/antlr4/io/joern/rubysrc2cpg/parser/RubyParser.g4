@@ -197,6 +197,7 @@ blockArgument
 
 splattingArgument
     :   STAR WS* expressionOrCommand
+    |   STAR2 WS* expressionOrCommand
     ;
 
 indexingArguments
@@ -338,6 +339,7 @@ optionalParameter
 
 arrayParameter
     :   STAR LOCAL_VARIABLE_IDENTIFIER?
+    |   STAR2 LOCAL_VARIABLE_IDENTIFIER?
     ;
 
 procParameter
