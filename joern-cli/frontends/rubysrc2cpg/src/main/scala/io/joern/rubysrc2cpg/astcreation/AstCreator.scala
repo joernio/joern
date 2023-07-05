@@ -1018,6 +1018,7 @@ class AstCreator(
           .name(varSymbol.getText)
           .code(varSymbol.getText)
           .lineNumber(varSymbol.getLine)
+          .typeFullName(Defines.Any)
           .columnNumber(varSymbol.getCharPositionInLine)
         Ast(param)
       })

@@ -74,8 +74,7 @@ class MethodOneTests extends RubyCode2CpgFixture {
       bindingTypeDecl.referencingType.fullName.head shouldBe "Test0.rb::program:foo"
     }
 
-    // TODO: Need to be fixed
-    "test method parameter nodes" ignore {
+    "test method parameter nodes" in {
       cpg.method.name("foo").parameter.name.l.size shouldBe 2
       val parameter1 = cpg.method.fullName("Test0.rb::program:foo").parameter.order(1).head
       parameter1.name shouldBe "a"
@@ -88,10 +87,8 @@ class MethodOneTests extends RubyCode2CpgFixture {
       parameter2.typeFullName shouldBe "ANY"
     }
 
-    // TODO: Need to be fixed
-    "should allow traversing from parameter to method" ignore {
+    "should allow traversing from parameter to method" in {
       cpg.parameter.name("a").method.name.l shouldBe List("foo")
-      // TODO: its not working with "b"
       cpg.parameter.name("b").method.name.l shouldBe List("foo")
     }
   }
