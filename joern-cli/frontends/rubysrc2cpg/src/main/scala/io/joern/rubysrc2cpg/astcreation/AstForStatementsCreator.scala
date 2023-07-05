@@ -8,10 +8,12 @@ import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewControlStructure, NewImport, NewLiteral}
 import org.slf4j.LoggerFactory
+import org.antlr.v4.runtime.ParserRuleContext
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-trait AstForStatementsCreator { this: AstCreator =>
+trait AstForStatementsCreator {
+  this: AstCreator =>
 
   private val logger = LoggerFactory.getLogger(this.getClass)
   protected def astForAliasStatement(ctx: AliasStatementContext): Ast = {
@@ -48,20 +50,16 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   protected def astForIfModifierStatement(ctx: ModifierStatementContext): Ast = {
-    val lhs = astForStatement(ctx.statement(0))
-    val rhs = astForStatement(ctx.statement(1)).headOption
-    val ifNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.IF)
-      .code(ctx.getText)
+    val lhs    = astForStatement(ctx.statement(0))
+    val rhs    = astForStatement(ctx.statement(1)).headOption
+    val ifNode = controlStructureNode(ctx, ControlStructureTypes.IF, ctx.getText)
     controlStructureAst(ifNode, rhs, lhs)
   }
 
   protected def astForUnlessModifierStatement(ctx: ModifierStatementContext): Ast = {
-    val lhs = astForStatement(ctx.statement(0))
-    val rhs = astForStatement(ctx.statement(1))
-    val ifNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.IF)
-      .code(ctx.getText)
+    val lhs    = astForStatement(ctx.statement(0))
+    val rhs    = astForStatement(ctx.statement(1))
+    val ifNode = controlStructureNode(ctx, ControlStructureTypes.IF, ctx.getText)
     controlStructureAst(ifNode, lhs.headOption, rhs)
   }
 
@@ -78,11 +76,9 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   protected def astForRescueModifierStatement(ctx: ModifierStatementContext): Ast = {
-    val lhs = astForStatement(ctx.statement(0))
-    val rhs = astForStatement(ctx.statement(1))
-    val throwNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.THROW)
-      .code(ctx.getText)
+    val lhs       = astForStatement(ctx.statement(0))
+    val rhs       = astForStatement(ctx.statement(1))
+    val throwNode = controlStructureNode(ctx, ControlStructureTypes.THROW, ctx.getText)
     controlStructureAst(throwNode, rhs.headOption, lhs)
   }
 
@@ -237,17 +233,42 @@ trait AstForStatementsCreator { this: AstCreator =>
     Seq(Ast(importNode))
   }
 
+  protected def astForBlock(ctx: BlockContext): Ast = ctx match
+    case ctx: DoBlockBlockContext    => astForDoBlock(ctx.doBlock())
+    case ctx: BraceBlockBlockContext => astForBraceBlock(ctx.braceBlock())
+
+  private def astForBlockHelper(
+    ctx: ParserRuleContext,
+    blockParamCtx: Option[BlockParameterContext],
+    compoundStmtCtx: CompoundStatementContext
+  ) = {
+    val blockNode_    = blockNode(ctx, ctx.getText, Defines.Any)
+    val blockBodyAst  = astForCompoundStatement(compoundStmtCtx)
+    val blockParamAst = blockParamCtx.flatMap(astForBlockParameterContext)
+    blockAst(blockNode_, blockBodyAst.toList ++ blockParamAst)
+  }
+
+  protected def astForDoBlock(ctx: DoBlockContext): Ast = {
+    astForBlockHelper(ctx, Option(ctx.blockParameter), ctx.compoundStatement)
+  }
+
+  protected def astForBraceBlock(ctx: BraceBlockContext): Ast = {
+    astForBlockHelper(ctx, Option(ctx.blockParameter), ctx.compoundStatement)
+  }
+
+  // TODO: This class shouldn't be required and will eventually be phased out.
   protected implicit class BlockContextExt(val ctx: BlockContext) {
     def compoundStatement: CompoundStatementContext = {
-      fold(_.compoundStatement(), _.compoundStatement())
+      fold(_.compoundStatement(), _.compoundStatement)
     }
 
     def blockParameter: Option[BlockParameterContext] = {
       fold(ctx => Option(ctx.blockParameter()), ctx => Option(ctx.blockParameter()))
     }
 
-    private def fold[A](f: DoBlockContext => A, g: BraceBlockContext => A): A = {
-      Option(ctx.doBlock()).fold(g(ctx.braceBlock()))(f)
+    private def fold[A](f: DoBlockContext => A, g: BraceBlockContext => A): A = ctx match {
+      case ctx: DoBlockBlockContext    => f(ctx.doBlock())
+      case ctx: BraceBlockBlockContext => g(ctx.braceBlock())
     }
   }
 

@@ -223,8 +223,8 @@ expressions
 // --------------------------------------------------------
 
 block
-    :   braceBlock
-    |   doBlock
+    :   braceBlock                                                                                                              # braceBlockBlock
+    |   doBlock                                                                                                                 # doBlockBlock
     ;
 
 braceBlock
@@ -484,8 +484,8 @@ jumpExpression
 // --------------------------------------------------------
 
 variableReference
-    :   variableIdentifier
-    |   pseudoVariableIdentifier
+    :   variableIdentifier                                                                                          # variableIdentifierVariableReference
+    |   pseudoVariableIdentifier                                                                                    # pseudoVariableIdentifierVariableReference
     ;
 
 variableIdentifier
