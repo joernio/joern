@@ -130,7 +130,6 @@ class RubyMethodFullNameTests extends RubyCode2CpgFixture(true) with BeforeAndAf
     }
 
     "recognise methodFullName for call Node" in {
-      println(cpg.call.name("fun").head.methodFullName)
       cpg.call.name("fun").head.methodFullName shouldBe "main.rb::program:Outer:Inner:fun"
     }
   }
