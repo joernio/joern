@@ -23,8 +23,7 @@ class MethodOneTests extends RubyCode2CpgFixture {
         x.code should startWith("def foo(a, b)")
         x.isExternal shouldBe false
         x.order shouldBe 1
-        // TODO: At present it is returning absolute path
-//        x.filename shouldBe "Test0.rb"
+        x.filename endsWith "Test0.rb"
         x.lineNumber shouldBe Option(2)
         x.lineNumberEnd shouldBe Option(4)
       }
@@ -84,7 +83,7 @@ class MethodOneTests extends RubyCode2CpgFixture {
       parameter1.index shouldBe 1
       parameter1.typeFullName shouldBe "ANY"
 
-      val parameter2 = cpg.method.fullName("test.py:<module>.func").parameter.order(2).head
+      val parameter2 = cpg.method.fullName("Test0.rb::program:foo").parameter.order(2).head
       parameter2.name shouldBe "b"
       parameter2.index shouldBe 2
       parameter2.typeFullName shouldBe "ANY"
@@ -119,7 +118,7 @@ class MethodOneTests extends RubyCode2CpgFixture {
         |  if names == "Alice"
         |    return 1
         |  else
-        |    return 1
+        |    return 2
         |end
         |""".stripMargin)
 
@@ -135,7 +134,7 @@ class MethodOneTests extends RubyCode2CpgFixture {
       inside(astReturns) { case List(ret1, ret2) =>
         ret1.code shouldBe "return 1"
         ret1.lineNumber shouldBe Option(4)
-        ret2.code shouldBe "return 2;"
+        ret2.code shouldBe "return 2"
         ret2.lineNumber shouldBe Option(6)
       }
       astReturns shouldBe cfgReturns

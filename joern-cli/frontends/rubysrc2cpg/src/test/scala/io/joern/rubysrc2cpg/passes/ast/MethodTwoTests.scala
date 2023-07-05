@@ -23,8 +23,7 @@ class MethodTwoTests extends RubyCode2CpgFixture {
         x.code should startWith("def foo(a, b)")
         x.isExternal shouldBe false
         x.order shouldBe 1
-        // TODO: At present it is returning absolute path
-        //        x.filename shouldBe "Test0.rb"
+        x.filename endsWith "Test0.rb"
         x.lineNumber shouldBe Option(2)
         x.lineNumberEnd shouldBe Option(4)
       }
@@ -89,7 +88,7 @@ class MethodTwoTests extends RubyCode2CpgFixture {
       parameter1.index shouldBe 1
       parameter1.typeFullName shouldBe "ANY"
 
-      val parameter2 = cpg.method.fullName("test.py:<module>.func").parameter.order(2).head
+      val parameter2 = cpg.method.fullName("Test0.rb::program:foo").parameter.order(2).head
       parameter2.name shouldBe "b"
       parameter2.index shouldBe 2
       parameter2.typeFullName shouldBe "ANY"

@@ -39,8 +39,7 @@ class NamespaceBlockTest extends RubyCode2CpgFixture {
       .isTypeDecl
       .nameNot(NamespaceTraversal.globalNamespaceName)
       .name
-      .l
-      .sorted shouldBe List("MyClass")
+      .l shouldBe List("MyClass")
   }
 
   "should allow traversing from namespace block to namespace" in {
