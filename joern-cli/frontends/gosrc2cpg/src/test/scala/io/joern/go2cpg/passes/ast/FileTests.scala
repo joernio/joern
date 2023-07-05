@@ -46,7 +46,7 @@ class FileTests extends GoCodeToCpgSuite {
       .typeDecl
       .name
       .l
-      .sorted shouldBe List("main.<global>", "Sample")
+      .sorted shouldBe List("main.<global>", "int", "Sample")
   }
 
   "should allow traversing to namespaces" in {
