@@ -826,14 +826,10 @@ class AstCreator(
       }
     val name = s"${getActualMethodName(localIdentifier.getText)}$nameSuffix"
     val methodFullName = packageContext.packageTable
-      .getMethodFullNameUsingName(packageStack.toList, name)
-      .headOption match {
+      .getMethodFullNameUsingName(packageStack.toList, name) match {
       case None if isBuiltin(name)            => prefixAsBuiltin(name) // TODO: Probably not super precise
       case Some(externalDependencyResolution) => externalDependencyResolution
-      case None                               => DynamicCallUnknownFullName
-      .getMethodFullNameUsingName(packageStack.toList, name) match {
-      case externalDependencyResolution if externalDependencyResolution.nonEmpty => externalDependencyResolution
-      case _                              => s"$filename:$name"
+      case None                             => DynamicCallUnknownFullName
     }
 
     val callNode = NewCall()

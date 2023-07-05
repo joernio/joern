@@ -1,6 +1,7 @@
 package io.joern.rubysrc2cpg.utils
 
-import io.joern.x2cpg.Defines
+import io.joern.rubysrc2cpg.astcreation.AstCreatorHelper
+import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
 
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
@@ -10,7 +11,7 @@ case class MethodTableModel(methodName: String, parentClassPath: String, classTy
 
 case class PackageContext(moduleName: String, packageTable: PackageTable)
 
-class PackageTable() {
+class PackageTable() extends AstCreatorHelper {
 
   private val methodTableMap = new ConcurrentHashMap[String, mutable.HashSet[MethodTableModel]]()
 
@@ -22,18 +23,26 @@ class PackageTable() {
     moduleMethodSet.add(packageMethod)
   }
 
-  def getMethodFullNameUsingName(packageUsed: List[String], methodName: String): String = {
+  def getMethodFullNameUsingName(packageUsed: List[String], methodName: String): Option[String] = {
+    if (isExcluded(methodName)) {
+      DynamicCallUnknownFullName
+    }
+
     val finalMethodName = ListBuffer[String]()
     packageUsed.foreach(module => {
       if (methodTableMap.containsKey(module)) {
         methodTableMap.get(module)
           .filter(_.methodName == methodName)
           .foreach(method => {
-            finalMethodName.addOne(s"$module::program:${method.parentClassPath}$methodName")
+            finalMethodName.addOne(s"$module::program:${method.parentClassPath}:$methodName")
           })
       }
     })
 
-    finalMethodName.mkString("----")
+    if (finalMethodName.size == 1) {
+      Some(finalMethodName.head)
+    } else {
+      None
+    }
   }
 }
