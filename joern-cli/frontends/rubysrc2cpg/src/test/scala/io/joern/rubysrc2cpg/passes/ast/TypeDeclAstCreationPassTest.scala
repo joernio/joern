@@ -18,7 +18,7 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
       myClass.fullName shouldBe "Test0.rb::program:MyClass"
     }
 
-    "generate methods under type declarations" ignore {
+    "generate methods under type declarations" in {
       val cpg = code("""
           |class Vehicle
           |
@@ -36,7 +36,7 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
           |
           |end
           |""".stripMargin)
-      val Some(vehicle) = cpg.typeDecl.nameExact("Vehicle").headOption
+      val Some(vehicle) = cpg.typeDecl.nameExact("Vehicle").headOption: @unchecked
       vehicle.name shouldBe "Vehicle"
       vehicle.fullName shouldBe "Test0.rb::program:Vehicle"
 
@@ -61,7 +61,7 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
           |  end
           |end
           |""".stripMargin)
-      val Some(song) = cpg.typeDecl.nameExact("Song").headOption
+      val Some(song) = cpg.typeDecl.nameExact("Song").headOption: @unchecked
       song.name shouldBe "Song"
       song.fullName shouldBe "Test0.rb::program:Song"
 
@@ -80,7 +80,7 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
           |  attr_writer :album
           |end
           |""".stripMargin)
-      val Some(song) = cpg.typeDecl.nameExact("Song").headOption
+      val Some(song) = cpg.typeDecl.nameExact("Song").headOption: @unchecked
       song.name shouldBe "Song"
       song.fullName shouldBe "Test0.rb::program:Song"
 
@@ -92,7 +92,7 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
       album.name shouldBe "album"
     }
 
-    "generate methods with the correct access control modifiers case 1" ignore {
+    "generate methods with the correct access control modifiers case 1" in {
       val cpg = code("""
           |class MyClass
           |
@@ -119,7 +119,7 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
           |    end
           |end
           |""".stripMargin)
-      val Some(myClass) = cpg.typeDecl.nameExact("MyClass").headOption
+      val Some(myClass) = cpg.typeDecl.nameExact("MyClass").headOption: @unchecked
       myClass.name shouldBe "MyClass"
       myClass.fullName shouldBe "Test0.rb::program:MyClass"
 
@@ -129,10 +129,15 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
       m3.name shouldBe "method3"
       m4.name shouldBe "method4"
 
-      m1.modifier.l shouldBe List(ModifierTypes.PUBLIC)
-      m2.modifier.l shouldBe List(ModifierTypes.PROTECTED)
-      m3.modifier.l shouldBe List(ModifierTypes.PRIVATE)
-      m4.modifier.l shouldBe List(ModifierTypes.PUBLIC)
+      m1.fullName shouldBe "Test0.rb::program:MyClass:method1"
+      m2.fullName shouldBe "Test0.rb::program:MyClass:method2"
+      m3.fullName shouldBe "Test0.rb::program:MyClass:method3"
+      m4.fullName shouldBe "Test0.rb::program:MyClass:method4"
+
+      m1.modifier.modifierType.l shouldBe List(ModifierTypes.PUBLIC)
+      m2.modifier.modifierType.l shouldBe List(ModifierTypes.PROTECTED)
+      m3.modifier.modifierType.l shouldBe List(ModifierTypes.PRIVATE)
+      m4.modifier.modifierType.l shouldBe List(ModifierTypes.PUBLIC)
     }
 
     "generate methods with the correct access control modifiers case 2" ignore {
@@ -156,7 +161,7 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
           |  private   :method3
           |end
           |""".stripMargin)
-      val Some(myClass) = cpg.typeDecl.nameExact("MyClass").headOption
+      val Some(myClass) = cpg.typeDecl.nameExact("MyClass").headOption: @unchecked
       myClass.name shouldBe "MyClass"
       myClass.fullName shouldBe "Test0.rb::program:MyClass"
 
@@ -166,10 +171,15 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
       m3.name shouldBe "method3"
       m4.name shouldBe "method4"
 
-      m1.modifier.l shouldBe List(ModifierTypes.PUBLIC)
-      m2.modifier.l shouldBe List(ModifierTypes.PROTECTED)
-      m3.modifier.l shouldBe List(ModifierTypes.PRIVATE)
-      m4.modifier.l shouldBe List(ModifierTypes.PUBLIC)
+      m1.fullName shouldBe "Test0.rb::program:MyClass:method1"
+      m2.fullName shouldBe "Test0.rb::program:MyClass:method2"
+      m3.fullName shouldBe "Test0.rb::program:MyClass:method3"
+      m4.fullName shouldBe "Test0.rb::program:MyClass:method4"
+
+      m1.modifier.modifierType.l shouldBe List(ModifierTypes.PUBLIC)
+      m2.modifier.modifierType.l shouldBe List(ModifierTypes.PROTECTED)
+      m3.modifier.modifierType.l shouldBe List(ModifierTypes.PRIVATE)
+      m4.modifier.modifierType.l shouldBe List(ModifierTypes.PUBLIC)
     }
 
   }
@@ -195,11 +205,11 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
           |end
           |""".stripMargin)
 
-      val Some(baseType) = cpg.typeDecl.nameExact("GeeksforGeeks").headOption
+      val Some(baseType) = cpg.typeDecl.nameExact("GeeksforGeeks").headOption: @unchecked
       baseType.name shouldBe "GeeksforGeeks"
       baseType.fullName shouldBe "Test0.rb::program:GeeksforGeeks"
 
-      val Some(subType) = cpg.typeDecl.nameExact("Sudo_Placement").headOption
+      val Some(subType) = cpg.typeDecl.nameExact("Sudo_Placement").headOption: @unchecked
       subType.name shouldBe "Sudo_Placement"
       subType.fullName shouldBe "Test0.rb::program:Sudo_Placement"
       subType.inheritsFromTypeFullName shouldBe Seq("Test0.rb::program:GeeksforGeeks")
