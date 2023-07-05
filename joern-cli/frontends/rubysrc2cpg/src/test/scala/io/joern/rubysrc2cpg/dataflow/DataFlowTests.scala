@@ -1010,6 +1010,45 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
+  "Data flow for begin/rescue with data flow through the exception" should {
+    val cpg = code("""
+        |x = "Exception message: "
+        |begin
+        |1/0
+        |rescue ZeroDivisionError => e
+        |   y = x + e.message
+        |   puts y
+        |end
+        |
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).size shouldBe 2
+    }
+  }
+
+  "Data flow for begin/rescue with data flow through block with multiple exceptions being caught" should {
+    val cpg = code("""
+        |x = 1
+        |y = 10
+        |begin
+        |1/0
+        |rescue SystemCallError, ZeroDivisionError
+        |   y = x + 100
+        |end
+        |
+        |puts y
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).size shouldBe 2
+    }
+  }
+
   "Data flow for begin/rescue with sink in function without begin" ignore {
     val cpg = code("""
         |def foo(arg)
