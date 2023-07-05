@@ -29,7 +29,7 @@ class SpecialOperatorTests extends JavaSrcCode2CpgFixture {
     call.order shouldBe 1
     call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
-    val List(o: Identifier, t: TypeRef) = call.argument.l
+    val List(o: Identifier, t: TypeRef) = call.argument.l: @unchecked
     o.code shouldBe "o"
     o.order shouldBe 1
     o.argumentIndex shouldBe 1
@@ -53,7 +53,7 @@ class SpecialOperatorTests extends JavaSrcCode2CpgFixture {
     call.argumentIndex shouldBe 2
     call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
-    val List(t: TypeRef, i: Identifier) = call.argument.l
+    val List(t: TypeRef, i: Identifier) = call.argument.l: @unchecked
 
     t.order shouldBe 1
     t.argumentIndex shouldBe 1

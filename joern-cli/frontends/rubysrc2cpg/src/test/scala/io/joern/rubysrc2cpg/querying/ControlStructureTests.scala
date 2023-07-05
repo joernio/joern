@@ -261,7 +261,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
       val List(controlStructure) = cpg.whileBlock.l
       controlStructure.lineNumber shouldBe Some(3)
 
-      val List(condition, body: Block) = controlStructure.astChildren.l
+      val List(condition, body: Block) = controlStructure.astChildren.l: @unchecked
       condition.code shouldBe "x == 0"
       condition.lineNumber shouldBe Some(3)
 

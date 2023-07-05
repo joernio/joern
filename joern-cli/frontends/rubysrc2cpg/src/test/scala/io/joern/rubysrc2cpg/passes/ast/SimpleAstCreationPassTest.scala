@@ -284,7 +284,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       callNode.name shouldBe "puts"
       callNode.lineNumber shouldBe Some(1)
 
-      val List(literalArg: Literal) = callNode.argument.l
+      val List(literalArg: Literal) = callNode.argument.l: @unchecked
       literalArg.argumentIndex shouldBe 1
       literalArg.typeFullName shouldBe Defines.Regexp
       literalArg.code shouldBe "/x/"
@@ -732,13 +732,13 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       controlNode.lineNumber shouldBe Some(1)
       controlNode.columnNumber shouldBe Some(0)
 
-      val List(a: Identifier) = controlNode.condition.l
+      val List(a: Identifier) = controlNode.condition.l: @unchecked
       a.code shouldBe "a"
       a.name shouldBe "a"
       a.lineNumber shouldBe Some(1)
       a.columnNumber shouldBe Some(0)
 
-      val List(_, b: Identifier, c: Identifier) = controlNode.astChildren.l
+      val List(_, b: Identifier, c: Identifier) = controlNode.astChildren.l: @unchecked
       b.code shouldBe "b"
       b.name shouldBe "b"
       b.lineNumber shouldBe Some(1)
@@ -818,7 +818,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       callNode.name shouldBe "<operator>.super"
       callNode.lineNumber shouldBe Some(1)
 
-      val List(literalArg: Literal) = callNode.argument.l
+      val List(literalArg: Literal) = callNode.argument.l: @unchecked
       literalArg.argumentIndex shouldBe 1
       literalArg.code shouldBe "1"
       literalArg.lineNumber shouldBe Some(1)
@@ -832,7 +832,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       callNode.name shouldBe "<operator>.super"
       callNode.lineNumber shouldBe Some(1)
 
-      val List(literalArg: Literal) = callNode.argument.l
+      val List(literalArg: Literal) = callNode.argument.l: @unchecked
       literalArg.argumentIndex shouldBe 1
       literalArg.code shouldBe "1"
       literalArg.lineNumber shouldBe Some(1)

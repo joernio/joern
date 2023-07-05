@@ -53,14 +53,14 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           frLocal.typeFullName shouldBe "java.io.FileReader"
 
           frAssign.name shouldBe Operators.assignment
-          val List(frAssignLhs: Identifier, frAssignRhs: Call) = frAssign.argument.l
+          val List(frAssignLhs: Identifier, frAssignRhs: Call) = frAssign.argument.l: @unchecked
           frAssignLhs.name shouldBe "fr"
           frAssignLhs.typeFullName shouldBe "java.io.FileReader"
           frAssignRhs.name shouldBe Operators.alloc
           frAssignRhs.typeFullName shouldBe "java.io.FileReader"
 
           frInit.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
-          val List(frInitThis: Identifier, frInitArg: Identifier) = frInit.argument.l
+          val List(frInitThis: Identifier, frInitArg: Identifier) = frInit.argument.l: @unchecked
           frInitThis.name shouldBe "fr"
           frInitThis.typeFullName shouldBe "java.io.FileReader"
           frInitArg.name shouldBe "path"
@@ -71,14 +71,14 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           brLocal.typeFullName shouldBe "java.io.BufferedReader"
 
           brAssign.name shouldBe Operators.assignment
-          val List(brAssignLhs: Identifier, brAssignRhs: Call) = brAssign.argument.l
+          val List(brAssignLhs: Identifier, brAssignRhs: Call) = brAssign.argument.l: @unchecked
           brAssignLhs.name shouldBe "br"
           brAssignLhs.typeFullName shouldBe "java.io.BufferedReader"
           brAssignRhs.name shouldBe Operators.alloc
           brAssignRhs.typeFullName shouldBe "java.io.BufferedReader"
 
           brInit.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
-          val List(brInitThis: Identifier, brInitArg: Identifier) = brInit.argument.l
+          val List(brInitThis: Identifier, brInitArg: Identifier) = brInit.argument.l: @unchecked
           brInitThis.name shouldBe "br"
           brInitThis.typeFullName shouldBe "java.io.BufferedReader"
           brInitArg.name shouldBe "fr"
@@ -87,7 +87,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           tryBlock.controlStructureType shouldBe ControlStructureTypes.TRY
           tryBlock.astChildren.l match {
             case List(block: Block) =>
-              val List(returnStmt: Return) = block.astChildren.l
+              val List(returnStmt: Return) = block.astChildren.l: @unchecked
               returnStmt.code shouldBe "return br.readLine();"
 
             case result => fail(s"Expected single block as try body but got $result")
@@ -330,10 +330,10 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           indexAccess.typeFullName shouldBe "java.lang.String"
           indexAccess.order shouldBe 2
           indexAccess.argumentIndex shouldBe 2
-          val (iterLocal: Identifier, idx: Identifier) = indexAccess.argument.l match {
+          val (iterLocal: Identifier, idx: Identifier) = (indexAccess.argument.l match {
             case List(items: Identifier, idx: Identifier) => (items, idx)
             case result                                   => s"Expected iterLocal0[idx] args but got $result"
-          }
+          }): @unchecked
           iterLocal.name shouldBe "$iterLocal0"
           iterLocal.typeFullName shouldBe "java.lang.String[]"
           iterLocal.order shouldBe 1
@@ -510,10 +510,10 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           indexAccess.typeFullName shouldBe "java.lang.String"
           indexAccess.order shouldBe 2
           indexAccess.argumentIndex shouldBe 2
-          val (items: Identifier, idx: Identifier) = indexAccess.argument.l match {
+          val (items: Identifier, idx: Identifier) = (indexAccess.argument.l match {
             case List(items: Identifier, idx: Identifier) => (items, idx)
             case result                                   => s"Expected items[idx] args but got $result"
-          }
+          }): @unchecked
           items.name shouldBe "items"
           items.typeFullName shouldBe "java.lang.String[]"
           items.order shouldBe 1
@@ -826,7 +826,7 @@ class ControlStructureTests extends JavaSrcCode2CpgFixture {
   "should identify an else block" in {
     val ifBlock = cpg.method.name("elseTest").ifBlock.head
     ifBlock.code shouldBe "if (b)"
-    val List(condition: Identifier, thenBlock: Block, elseBlock: ControlStructure) = ifBlock.astChildren.l
+    val List(condition: Identifier, thenBlock: Block, elseBlock: ControlStructure) = ifBlock.astChildren.l: @unchecked
     condition.code shouldBe "b"
     condition.order shouldBe 1
 
@@ -852,7 +852,7 @@ class ControlStructureTests extends JavaSrcCode2CpgFixture {
     }
 
     switchBlock.astChildren.size shouldBe 2
-    val List(cond: Identifier, body: Block) = switchBlock.astChildren.l
+    val List(cond: Identifier, body: Block) = switchBlock.astChildren.l: @unchecked
 
     cond.order shouldBe 1
     cond.code shouldBe "this"

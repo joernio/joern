@@ -1,16 +1,18 @@
 package io.joern.rubysrc2cpg.astcreation
 
 import better.files.File
-import io.joern.rubysrc2cpg.parser.RubyParser._
+import io.joern.rubysrc2cpg.parser.RubyParser.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewControlStructure, NewImport, NewLiteral}
+import org.antlr.v4.runtime.ParserRuleContext
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-trait AstForStatementsCreator { this: AstCreator =>
+trait AstForStatementsCreator {
+  this: AstCreator =>
 
   protected def astForAliasStatement(ctx: AliasStatementContext): Ast = {
     val aliasName  = ctx.definedMethodNameOrSymbol(0).getText.substring(1)
@@ -227,17 +229,42 @@ trait AstForStatementsCreator { this: AstCreator =>
     Seq(Ast(importNode))
   }
 
+  protected def astForBlock(ctx: BlockContext): Ast = ctx match
+    case ctx: DoBlockBlockContext    => astForDoBlock(ctx.doBlock())
+    case ctx: BraceBlockBlockContext => astForBraceBlock(ctx.braceBlock())
+
+  private def astForBlockHelper(
+    ctx: ParserRuleContext,
+    blockParamCtx: Option[BlockParameterContext],
+    compoundStmtCtx: CompoundStatementContext
+  ) = {
+    val blockNode_    = blockNode(ctx, ctx.getText, Defines.Any)
+    val blockBodyAst  = astForCompoundStatement(compoundStmtCtx)
+    val blockParamAst = blockParamCtx.flatMap(astForBlockParameterContext)
+    blockAst(blockNode_, blockBodyAst.toList ++ blockParamAst)
+  }
+
+  protected def astForDoBlock(ctx: DoBlockContext): Ast = {
+    astForBlockHelper(ctx, Option(ctx.blockParameter), ctx.compoundStatement)
+  }
+
+  protected def astForBraceBlock(ctx: BraceBlockContext): Ast = {
+    astForBlockHelper(ctx, Option(ctx.blockParameter), ctx.compoundStatement)
+  }
+
+  // TODO: This class shouldn't be required and will eventually be phased out.
   protected implicit class BlockContextExt(val ctx: BlockContext) {
     def compoundStatement: CompoundStatementContext = {
-      fold(_.compoundStatement(), _.compoundStatement())
+      fold(_.compoundStatement(), _.compoundStatement)
     }
 
     def blockParameter: Option[BlockParameterContext] = {
       fold(ctx => Option(ctx.blockParameter()), ctx => Option(ctx.blockParameter()))
     }
 
-    private def fold[A](f: DoBlockContext => A, g: BraceBlockContext => A): A = {
-      Option(ctx.doBlock()).fold(g(ctx.braceBlock()))(f)
+    private def fold[A](f: DoBlockContext => A, g: BraceBlockContext => A): A = ctx match {
+      case ctx: DoBlockBlockContext    => f(ctx.doBlock())
+      case ctx: BraceBlockBlockContext => g(ctx.braceBlock())
     }
   }
 

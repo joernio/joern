@@ -223,8 +223,8 @@ expressions
 // --------------------------------------------------------
 
 block
-    :   braceBlock
-    |   doBlock
+    :   braceBlock                                                                                                              # braceBlockBlock
+    |   doBlock                                                                                                                 # doBlockBlock
     ;
 
 braceBlock
@@ -421,7 +421,7 @@ bodyStatement
     ;
 
 rescueClause
-    :   RESCUE WS* exceptionClass? wsOrNl* exceptionVariableAssignment? thenClause
+    :   RESCUE WS* exceptionClass? wsOrNl* exceptionVariableAssignment? wsOrNl* thenClause
     ;
 
 exceptionClass
@@ -484,8 +484,8 @@ jumpExpression
 // --------------------------------------------------------
 
 variableReference
-    :   variableIdentifier
-    |   pseudoVariableIdentifier
+    :   variableIdentifier                                                                                          # variableIdentifierVariableReference
+    |   pseudoVariableIdentifier                                                                                    # pseudoVariableIdentifierVariableReference
     ;
 
 variableIdentifier
