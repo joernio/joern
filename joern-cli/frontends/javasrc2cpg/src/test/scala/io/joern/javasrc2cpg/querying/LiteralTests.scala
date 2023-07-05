@@ -51,7 +51,7 @@ class LiteralTests extends JavaSrcCode2CpgFixture {
 
   "should correctly parse literals of all types" in {
     val valueMap = cpg.assignment.map { a =>
-      val List(identifier: Identifier, value: Literal) = a.argument.l
+      val List(identifier: Identifier, value: Literal) = a.argument.l: @unchecked
       identifier.name -> (identifier, value)
     }.toMap
 

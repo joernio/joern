@@ -54,7 +54,7 @@ class ThisTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         |""".stripMargin)
 
     "should have a CALL node with _this_ as argument" in {
-      val List(a: Identifier) = cpg.call("bar").argument.code("this").l
+      val List(a: Identifier) = cpg.call("bar").argument.code("this").l: @unchecked
       a.lineNumber shouldBe Some(8)
       a.columnNumber shouldBe Some(12)
       a.typeFullName shouldBe "mypkg.Foo"

@@ -421,7 +421,7 @@ bodyStatement
     ;
 
 rescueClause
-    :   RESCUE WS* exceptionClass? wsOrNl* exceptionVariableAssignment? thenClause
+    :   RESCUE WS* exceptionClass? wsOrNl* exceptionVariableAssignment? wsOrNl* thenClause
     ;
 
 exceptionClass

@@ -28,21 +28,21 @@ class WhenExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = false)
       c.argumentIndex shouldBe 2
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
-      val List(arg1: Block, arg2: Block, arg3: Block, arg4: Block) = c.argument.l
+      val List(arg1: Block, arg2: Block, arg3: Block, arg4: Block) = c.argument.l: @unchecked
       arg1.argumentIndex shouldBe 1
       arg2.argumentIndex shouldBe 2
       arg3.argumentIndex shouldBe 3
       arg4.argumentIndex shouldBe 4
-      val List(arg1First: Identifier) = arg1.astChildren.l
+      val List(arg1First: Identifier) = arg1.astChildren.l: @unchecked
       arg1First.code shouldBe "x"
-      val List(arg2First: Literal, arg2Second: Literal) = arg2.astChildren.l
+      val List(arg2First: Literal, arg2Second: Literal) = arg2.astChildren.l: @unchecked
       arg2First.code shouldBe "1"
       arg2Second.code shouldBe "123"
-      val List(arg3First: Literal, arg3Second: Literal) = arg3.astChildren.l
+      val List(arg3First: Literal, arg3Second: Literal) = arg3.astChildren.l: @unchecked
       arg3First.code shouldBe "2"
       arg3Second.code shouldBe "234"
-      val List(arg4First: Block)    = arg4.astChildren.l
-      val List(arg4First1: Literal) = arg4First.astChildren.l
+      val List(arg4First: Block)    = arg4.astChildren.l: @unchecked
+      val List(arg4First1: Literal) = arg4First.astChildren.l: @unchecked
       arg4First1.code shouldBe "456"
     }
   }
