@@ -1,17 +1,17 @@
 package io.joern.rubysrc2cpg.parser
 
 class BeginExpressionTests extends RubyParserAbstractTest {
-  
+
   "A begin expression" should {
-    
+
     "be parsed as a primary expression" when {
-      
+
       "it contains a `rescue` clause with both exception class and exception variable" in {
         val code = """begin
             |1/0
             |rescue ZeroDivisionError => e
             |end""".stripMargin
-          
+
         printAst(_.primary(), code) shouldBe
           """BeginExpressionPrimary
             | BeginExpression
