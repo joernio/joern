@@ -1,7 +1,6 @@
 package io.joern.x2cpg
 
 import better.files._
-import io.joern.x2cpg.SourceFiles._
 import io.shiftleft.utils.ProjectRoot
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -10,6 +9,7 @@ import org.scalatest.Inside
 import java.nio.file.attribute.PosixFilePermissions
 import scala.jdk.CollectionConverters._
 import scala.util.Try
+import java.io.FileNotFoundException
 
 class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
 
@@ -40,7 +40,7 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
     "the input file does not exist" in {
       val result = Try(SourceFiles.determine("path/to/nothing/", cSourceFileExtensions))
       result.isFailure shouldBe true
-      result.failed.get shouldBe InvalidInputPathsException
+      result.failed.get shouldBe a[FileNotFoundException]
     }
 
     "the input file exists, but is not readable" in {
@@ -51,7 +51,7 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
 
         val result = Try(SourceFiles.determine(tmpFile.canonicalPath, cSourceFileExtensions))
         result.isFailure shouldBe true
-        result.failed.get shouldBe InvalidInputPathsException
+        result.failed.get shouldBe a[FileNotFoundException]
       }
     }
   }
