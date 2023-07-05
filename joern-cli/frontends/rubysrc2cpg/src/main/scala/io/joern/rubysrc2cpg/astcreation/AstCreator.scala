@@ -1151,9 +1151,6 @@ class AstCreator(
       .filename(filename)
     callNode.methodFullName(methodFullName)
 
-//    val classType = if (classStack.isEmpty) "Standalone" else classStack.top
-//    packageContext.packageTable.addPackageMethod(packageContext.moduleName, callNode.name, classPath, classType)
-
     // process yield calls.
     astBody
       .flatMap(ast =>

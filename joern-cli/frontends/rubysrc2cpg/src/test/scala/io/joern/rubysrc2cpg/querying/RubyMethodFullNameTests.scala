@@ -6,7 +6,7 @@ import org.scalatest.BeforeAndAfterAll
 
 class RubyMethodFullNameTests extends RubyCode2CpgFixture(true) with BeforeAndAfterAll {
 
-  "Code for method full name when method present in module" should {
+  "Code for methodFullName when method present in module" should {
     val cpg = code(
       """
         |require "dummy_logger"
@@ -50,7 +50,7 @@ class RubyMethodFullNameTests extends RubyCode2CpgFixture(true) with BeforeAndAf
     }
   }
 
-  "Code for method full name when method present in other file" should {
+  "Code for methodFullName when method present in other file" should {
     val cpg = code(
       """
         |require_relative "util/help.rb"
@@ -80,13 +80,58 @@ class RubyMethodFullNameTests extends RubyCode2CpgFixture(true) with BeforeAndAf
       cpg.imports.code(".*util/help.rb*.").size shouldBe 1
     }
 
-    "recognise method full name for call node" in {
+    "recognise methodFullName for call node" in {
       if (!scala.util.Properties.isWin) {
         cpg.call
           .name("printValue")
           .head
           .methodFullName shouldBe "util/help.rb::program:Outer:printValue"
       }
+    }
+  }
+
+  "Code for methodFullName on builtin function" should {
+    val cpg = code("""
+        |class Outer
+        | def fun()
+        |   puts "value"
+        | end
+        |end
+        |""".stripMargin)
+
+    "recognise call node" in {
+      cpg.call.name("puts").size shouldBe 1
+    }
+
+    "recognise methodFullName for call node" in {
+      cpg.call.name("puts").head.methodFullName shouldBe "__builtin:puts"
+    }
+  }
+
+  "Code for methodFullName when method present on same file" should {
+    val cpg = code(
+      """
+        |module Outer
+        | class Inner
+        |   def fun()
+        |     puts "value"
+        |   end
+        | end
+        |end
+        |
+        |temp = Outer.Inner.new
+        |temp.fun()
+        |""".stripMargin,
+      "main.rb"
+    )
+
+    "recognise call node" in {
+      cpg.call.name("fun").size shouldBe 1
+    }
+
+    "recognise methodFullName for call Node" in {
+      println(cpg.call.name("fun").head.methodFullName)
+      cpg.call.name("fun").head.methodFullName shouldBe "main.rb::program:Outer:Inner:fun"
     }
   }
 }

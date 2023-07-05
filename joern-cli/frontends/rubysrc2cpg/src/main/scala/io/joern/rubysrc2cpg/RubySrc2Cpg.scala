@@ -80,8 +80,10 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
         logger.error("Skipping Dependency Download: Ruby is not installed.")
       case (true, false) =>
         logger.error("Skipping Dependency Download: Bundler is not installed.")
-      case _ =>
+      case (false, false) =>
         logger.error("Skipping Dependency Download: Ruby and Bundler are not installed.")
+      case _ =>
+        logger.info("Ruby and Bundler are installed.")
     }
 
     isRubyInstalled && isBundleInstalled
