@@ -167,35 +167,9 @@ class AstCreator(
   protected def lineEnd(ctx: ParserRuleContext): Option[Integer]   = Option(ctx.getStop.getLine)
   protected def columnEnd(ctx: ParserRuleContext): Option[Integer] = Option(ctx.getStop.getCharPositionInLine)
 
-  def astForVariableIdentifierContext(
-    ctx: VariableIdentifierContext,
-    definitelyIdentifier: Boolean = false
-  ): Seq[Ast] = {
-    val terminalNode = ctx.children.asScala.map(_.asInstanceOf[TerminalNode]).head
-    val token        = terminalNode.getSymbol
-    val variableName = token.getText
-    /*
-     * Preferences
-     * 1. If definitelyIdentifier is SET, create a identifier node
-     * 2. If an identifier with the variable name exists within the scope, create a identifier node
-     * 3. If a method with the variable name exists, create a method node
-     * 4. Otherwise default to identifier node creation since there is no reason (point 2) to create a call node
-     */
-
-    if (definitelyIdentifier || scope.lookupVariable(variableName).isDefined) {
-      val node = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List[String]())
-      Seq(Ast(node))
-    } else if (methodNames.contains(variableName)) {
-      astForCallNode(terminalNode, ctx.getText)
-    } else {
-      val node = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List[String]())
-      Seq(Ast(node))
-    }
-  }
-
   def astForSingleLeftHandSideContext(ctx: SingleLeftHandSideContext): Seq[Ast] = ctx match {
     case ctx: VariableIdentifierOnlySingleLeftHandSideContext =>
-      astForVariableIdentifierContext(ctx.variableIdentifier(), true)
+      Seq(astForVariableIdentifierHelper(ctx.variableIdentifier(), true))
     case ctx: PrimaryInsideBracketsSingleLeftHandSideContext =>
       val primaryAsts = astForPrimaryContext(ctx.primary())
       val argsAsts    = astForArguments(ctx.arguments())
@@ -347,7 +321,7 @@ class AstCreator(
     case ctx: JumpExpressionPrimaryContext     => astForJumpExpressionPrimaryContext(ctx)
     case ctx: BeginExpressionPrimaryContext    => astForBeginExpressionPrimaryContext(ctx)
     case ctx: GroupingExpressionPrimaryContext => astForCompoundStatement(ctx.compoundStatement())
-    case ctx: VariableReferencePrimaryContext  => astForVariableReferencePrimaryContext(ctx)
+    case ctx: VariableReferencePrimaryContext  => Seq(astForVariableReference(ctx.variableReference()))
     case ctx: SimpleScopedConstantReferencePrimaryContext =>
       astForSimpleScopedConstantReferencePrimaryContext(ctx)
     case ctx: ChainedScopedConstantReferencePrimaryContext =>
@@ -855,16 +829,14 @@ class AstCreator(
     astForDefinedMethodNameContext(ctx.definedMethodName())
   }
 
-  def astForCallNode(localIdentifier: TerminalNode, code: String, isYieldBlock: Boolean = false): Seq[Ast] = {
-    val column = localIdentifier.getSymbol.getCharPositionInLine
-    val line   = localIdentifier.getSymbol.getLine
+  def astForCallNode(ctx: ParserRuleContext, code: String, isYieldBlock: Boolean = false): Ast = {
     val nameSuffix =
       if (isYieldBlock) {
         YIELD_SUFFIX
       } else {
         ""
       }
-    val name = s"${getActualMethodName(localIdentifier.getText)}$nameSuffix"
+    val name = s"${getActualMethodName(ctx.getText)}$nameSuffix"
     val methodFullName = packageContext.packageTable
       .getMethodFullNameUsingName(packageStack.toList, name)
       .headOption match {
@@ -873,24 +845,14 @@ class AstCreator(
       case None                               => DynamicCallUnknownFullName
     }
 
-    val callNode = NewCall()
-      .name(name)
-      .methodFullName(methodFullName)
-      .signature(localIdentifier.getText)
-      .typeFullName(Defines.Any)
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .code(code)
-      .lineNumber(line)
-      .columnNumber(column)
-      .code(code)
-    Seq(callAst(callNode))
+    callAst(callNode(ctx, code, name, methodFullName, DispatchTypes.STATIC_DISPATCH))
   }
 
   def astForMethodOnlyIdentifier(ctx: MethodOnlyIdentifierContext): Seq[Ast] = {
     if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
-      astForCallNode(ctx.LOCAL_VARIABLE_IDENTIFIER(), ctx.getText)
+      Seq(astForCallNode(ctx, ctx.getText))
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
-      astForCallNode(ctx.CONSTANT_IDENTIFIER(), ctx.getText)
+      Seq(astForCallNode(ctx, ctx.getText))
     } else {
       Seq(Ast())
     }
@@ -903,10 +865,10 @@ class AstCreator(
     } else if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
       val localVar  = ctx.LOCAL_VARIABLE_IDENTIFIER()
       val varSymbol = localVar.getSymbol
-      astForCallNode(localVar, code, methodNamesWithYield.contains(varSymbol.getText))
+      Seq(astForCallNode(ctx, code, methodNamesWithYield.contains(varSymbol.getText)))
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
       val localVar = ctx.CONSTANT_IDENTIFIER()
-      astForCallNode(localVar, code)
+      Seq(astForCallNode(ctx, code))
     } else {
       Seq(Ast())
     }
@@ -991,7 +953,7 @@ class AstCreator(
 
   def astForSingletonObjectContext(ctx: SingletonObjectContext): Seq[Ast] = {
     if (ctx.variableIdentifier() != null) {
-      astForVariableIdentifierContext(ctx.variableIdentifier(), true)
+      Seq(astForVariableIdentifierHelper(ctx.variableIdentifier(), true))
     } else if (ctx.pseudoVariableIdentifier() != null) {
       Seq(Ast())
     } else if (ctx.expressionOrCommand() != null) {
@@ -1493,28 +1455,6 @@ class AstCreator(
       .columnNumber(ctx.unlessExpression().UNLESS().getSymbol.getCharPositionInLine)
 
     Seq(controlStructureAst(unlessNode, conditionAsts.headOption, List(thenAsts ++ elseAsts).flatten))
-  }
-
-  private def astForPseudoVariableIdentifierContext(ctx: PseudoVariableIdentifierContext): Ast = ctx match {
-    case ctx: NilPseudoVariableIdentifierContext      => astForNilLiteral(ctx)
-    case ctx: TruePseudoVariableIdentifierContext     => astForTrueLiteral(ctx)
-    case ctx: FalsePseudoVariableIdentifierContext    => astForFalseLiteral(ctx)
-    case ctx: SelfPseudoVariableIdentifierContext     => astForSelfPseudoIdentifier(ctx)
-    case ctx: FilePseudoVariableIdentifierContext     => astForFilePseudoIdentifier(ctx)
-    case ctx: LinePseudoVariableIdentifierContext     => astForLinePseudoIdentifier(ctx)
-    case ctx: EncodingPseudoVariableIdentifierContext => astForEncodingPseudoIdentifier(ctx)
-  }
-
-  def astForVariableRefenceContext(ctx: RubyParser.VariableReferenceContext): Seq[Ast] = {
-    if (ctx.variableIdentifier() != null) {
-      astForVariableIdentifierContext(ctx.variableIdentifier())
-    } else {
-      Seq(astForPseudoVariableIdentifierContext(ctx.pseudoVariableIdentifier()))
-    }
-  }
-
-  def astForVariableReferencePrimaryContext(ctx: VariableReferencePrimaryContext): Seq[Ast] = {
-    astForVariableRefenceContext(ctx.variableReference())
   }
 
   def astForBlockArgumentContext(ctx: BlockArgumentContext): Seq[Ast] = {
