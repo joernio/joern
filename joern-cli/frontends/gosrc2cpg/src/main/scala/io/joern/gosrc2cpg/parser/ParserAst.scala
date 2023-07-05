@@ -37,6 +37,10 @@ object ParserAst {
   object TypeSwitchStmt extends ParserNode
   object TypeAssertExpr extends BaseExprStmt
   object InterfaceType  extends ParserNode
+  object ReturnStmt     extends ParserNode
+  object FuncType       extends ParserNode
+  object Ellipsis       extends ParserNode
+  object SelectorExpr   extends ParserNode
 }
 
 object ParserKeys {
@@ -69,4 +73,8 @@ object ParserKeys {
   val Values        = "Values"
   val X             = "X"
   val Y             = "Y"
+  val Results       = "Results"
+  val Params        = "Params"
+  val Elt           = "Elt"
+  val Sel           = "Sel"
 }

@@ -31,7 +31,7 @@ class CallsToFieldAccessTests extends KotlinCode2CpgFixture(withOssDataflow = fa
       c.columnNumber shouldBe Some(16)
 
       val List(firstArg: Identifier, secondArg: FieldIdentifier) =
-        cpg.call.codeExact("println(x)").argument.isCall.argument.l
+        cpg.call.codeExact("println(x)").argument.isCall.argument.l: @unchecked
       firstArg.argumentIndex shouldBe 1
       firstArg.code shouldBe "this"
       firstArg.typeFullName shouldBe "mypkg.AClass"

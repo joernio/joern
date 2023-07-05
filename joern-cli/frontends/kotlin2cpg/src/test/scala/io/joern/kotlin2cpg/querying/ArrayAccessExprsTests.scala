@@ -28,7 +28,7 @@ class ArrayAccessExprsTests extends KotlinCode2CpgFixture(withOssDataflow = true
       c.lineNumber shouldBe Some(6)
       c.columnNumber shouldBe Some(14)
 
-      val List(firstArg: Identifier, secondArg: Literal) = callNodeQ.argument.l
+      val List(firstArg: Identifier, secondArg: Literal) = callNodeQ.argument.l: @unchecked
       firstArg.argumentIndex shouldBe 1
       firstArg.code shouldBe "foo"
       firstArg.lineNumber shouldBe c.lineNumber
@@ -60,7 +60,7 @@ class ArrayAccessExprsTests extends KotlinCode2CpgFixture(withOssDataflow = true
       c.lineNumber shouldBe Some(6)
       c.columnNumber shouldBe Some(14)
 
-      val List(firstArg: Identifier, secondArg: Literal) = callNodeQ.argument.l
+      val List(firstArg: Identifier, secondArg: Literal) = callNodeQ.argument.l: @unchecked
       firstArg.argumentIndex shouldBe 1
       firstArg.code shouldBe "foo"
       firstArg.lineNumber shouldBe c.lineNumber

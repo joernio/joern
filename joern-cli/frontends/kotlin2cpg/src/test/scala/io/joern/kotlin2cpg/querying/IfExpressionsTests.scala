@@ -63,7 +63,7 @@ class IfExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
         cpg.call.methodFullNameExact(Operators.conditional).where(_.argument(1).code(".*r < 33.*")).l
       parentConditional.argument.size shouldBe 3
 
-      val List(firstChild: Call, secondChild: Literal, thirdChild: Call) = parentConditional.argument.l
+      val List(firstChild: Call, secondChild: Literal, thirdChild: Call) = parentConditional.argument.l: @unchecked
       firstChild.code shouldBe "r < 33"
       firstChild.methodFullName shouldBe Operators.lessThan
       secondChild.code shouldBe "\"<33\""
@@ -74,7 +74,7 @@ class IfExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
         firstArgOfChildConditional: Call,
         secondArgOfChildConditional: Literal,
         thirdArgOfChildConditional: Literal
-      ) = thirdChild.argument.l
+      ) = thirdChild.argument.l: @unchecked
       firstArgOfChildConditional.code shouldBe "r < 66"
       firstArgOfChildConditional.methodFullName shouldBe Operators.lessThan
       secondArgOfChildConditional.code shouldBe "\">=33<66\""

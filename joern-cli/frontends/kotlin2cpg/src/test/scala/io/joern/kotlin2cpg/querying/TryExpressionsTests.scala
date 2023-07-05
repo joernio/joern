@@ -31,7 +31,7 @@ class TryExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = false)
       val List(c) = cpg.call.methodFullNameExact(Operators.tryCatch).l
       c.argument.size shouldBe 2
 
-      val List(firstArg: Block, secondArg: Block) = c.argument.l
+      val List(firstArg: Block, secondArg: Block) = c.argument.l: @unchecked
       firstArg.argumentIndex shouldBe 1
       secondArg.argumentIndex shouldBe 2
       firstArg.order shouldBe 1
