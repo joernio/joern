@@ -42,7 +42,13 @@ class MethodTwoTests extends RubyCode2CpgFixture {
 
     // TODO: This test cases needs to be fixed.
     "should allow traversing to methodReturn" ignore {
+      cpg.method.name("foo").methodReturn.l.size shouldBe 1
       cpg.method.name("foo").methodReturn.typeFullName.head shouldBe "ANY"
+    }
+
+    // TODO: This test cases needs to be fixed.
+    "should allow traversing to method" ignore {
+      cpg.methodReturn.method.name.l shouldBe List("foo", ":program")
     }
 
     // TODO: This test cases needs to be fixed.
@@ -87,6 +93,12 @@ class MethodTwoTests extends RubyCode2CpgFixture {
       parameter2.name shouldBe "b"
       parameter2.index shouldBe 2
       parameter2.typeFullName shouldBe "ANY"
+    }
+
+    // TODO: Need to be fixed
+    "should allow traversing from parameter to method" ignore {
+      cpg.parameter.name("a").method.name.l shouldBe List("foo")
+      cpg.parameter.name("b").method.name.l shouldBe List("foo")
     }
   }
 }

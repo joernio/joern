@@ -40,7 +40,12 @@ class MethodOneTests extends RubyCode2CpgFixture {
     }
 
     "should allow traversing to methodReturn" in {
+      cpg.method.name("foo").methodReturn.l.size shouldBe 1
       cpg.method.name("foo").methodReturn.typeFullName.head shouldBe "ANY"
+    }
+
+    "should allow traversing to method" in {
+      cpg.methodReturn.method.name.l shouldBe List("foo", ":program")
     }
 
     "should allow traversing to file" in {
@@ -84,6 +89,57 @@ class MethodOneTests extends RubyCode2CpgFixture {
       parameter2.index shouldBe 2
       parameter2.typeFullName shouldBe "ANY"
     }
+
+    // TODO: Need to be fixed
+    "should allow traversing from parameter to method" ignore {
+      cpg.parameter.name("a").method.name.l shouldBe List("foo")
+      // TODO: its not working with "b"
+      cpg.parameter.name("b").method.name.l shouldBe List("foo")
+    }
   }
 
+  "Method with variable arguments" should {
+    val cpg = code("""
+        |def foo(*names)
+        |  return ""
+        |end
+        |""".stripMargin)
+
+    // TODO: Need to be fixed
+    "Variable argument properties should be rightly set" ignore {
+      cpg.parameter.name("names").l.size shouldBe 1
+      val param = cpg.parameter.name("names").l.head
+      param.isVariadic shouldBe true
+    }
+  }
+
+  "Multiple Return tests" should {
+    val cpg = code("""
+        |def foo(names)
+        |  if names == "Alice"
+        |    return 1
+        |  else
+        |    return 1
+        |end
+        |""".stripMargin)
+
+    // TODO: Need to be fixed.
+    "be correct for multiple returns" ignore {
+      cpg.method("foo").methodReturn.l.size shouldBe 2
+      inside(cpg.method("foo").methodReturn.l) { case List(mainMethodReturn) =>
+        mainMethodReturn.typeFullName shouldBe "ANY"
+      }
+      val astReturns  = cpg.method("foo").ast.isReturn.l
+      val cfgReturns  = cpg.method("foo").methodReturn.cfgPrev.l
+      val travReturns = cpg.method("foo").methodReturn.toReturn.l
+      inside(astReturns) { case List(ret1, ret2) =>
+        ret1.code shouldBe "return 1"
+        ret1.lineNumber shouldBe Option(4)
+        ret2.code shouldBe "return 2;"
+        ret2.lineNumber shouldBe Option(6)
+      }
+      astReturns shouldBe cfgReturns
+      astReturns shouldBe travReturns
+    }
+  }
 }
