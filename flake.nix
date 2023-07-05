@@ -14,6 +14,7 @@
           buildInputs = with pkgs; [
             sbt
             jdk19
+            graphviz
           ];
         };
       });
