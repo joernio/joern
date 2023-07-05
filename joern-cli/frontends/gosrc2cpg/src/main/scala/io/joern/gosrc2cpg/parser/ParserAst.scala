@@ -29,13 +29,19 @@ object ParserAst {
   object UnaryExpr  extends BaseExprStmt
   object StarExpr   extends BaseExprStmt
 
-  object IncDecStmt extends ParserNode
-  object IfStmt     extends ParserNode
-  object ParenExpr  extends BaseExprStmt
+  object IncDecStmt     extends ParserNode
+  object IfStmt         extends ParserNode
+  object ParenExpr      extends BaseExprStmt
+  object SwitchStmt     extends ParserNode
+  object CaseClause     extends ParserNode
+  object TypeSwitchStmt extends ParserNode
+  object TypeAssertExpr extends BaseExprStmt
+  object InterfaceType  extends ParserNode
 }
 
 object ParserKeys {
 
+  val Assign        = "Assign"
   val Body          = "Body"
   val Cond          = "Cond"
   val Decl          = "Decl"
@@ -56,6 +62,7 @@ object ParserKeys {
   val Path          = "Path"
   val Rhs           = "Rhs"
   val Specs         = "Specs"
+  val Tag           = "Tag"
   val Tok           = "Tok"
   val Type          = "Type"
   val Value         = "Value"

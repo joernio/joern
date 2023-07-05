@@ -4,6 +4,7 @@ import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.Ast
 import io.joern.gosrc2cpg.parser.ParserAst._
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import ujson.Value
 
 import scala.util.Try
 
@@ -50,7 +51,7 @@ trait AstForGenDeclarationCreator { this: AstCreator =>
               val localParserNode = createParserNodeInfo(parserNode)
 
               val name = parserNode(ParserKeys.Name).str
-              val typ  = valueSpec.json(ParserKeys.Type).obj(ParserKeys.Name).str
+              val typ  = getTypeForJsonNode(valueSpec.json(ParserKeys.Type))
               val node = localNode(localParserNode, name, localParserNode.code, typ)
               scope.addToScope(name, (node, typ))
               Ast(node)
