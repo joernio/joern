@@ -40,7 +40,7 @@ class ArithmeticOperationsTests extends JavaSrcCode2CpgFixture {
 
   "should contain a call node for the addition operator" in {
     val List(op)                           = cpg.call.nameExact(Operators.addition).l
-    val List(a: Identifier, b: Identifier) = op.astOut.l
+    val List(a: Identifier, b: Identifier) = op.astOut.l: @unchecked
     a.name shouldBe "a"
     a.code shouldBe "a"
     a.typeFullName shouldBe "int"
@@ -54,21 +54,21 @@ class ArithmeticOperationsTests extends JavaSrcCode2CpgFixture {
 
   "should contain a call node for the subtraction operator" in {
     val List(op)                           = cpg.call(Operators.subtraction).l
-    val List(c: Identifier, a: Identifier) = op.astOut.l
+    val List(c: Identifier, a: Identifier) = op.astOut.l: @unchecked
     c.name shouldBe "c"
     a.name shouldBe "a"
   }
 
   "should contain a call node for the multiplication operator" in {
     val List(op)                           = cpg.call(Operators.multiplication).l
-    val List(a: Identifier, b: Identifier) = op.astOut.l
+    val List(a: Identifier, b: Identifier) = op.astOut.l: @unchecked
     a.name shouldBe "a"
     b.name shouldBe "b"
   }
 
   "should contain a call node for the division operator" in {
     val List(op)                           = cpg.call(Operators.division).l
-    val List(b: Identifier, a: Identifier) = op.astOut.l
+    val List(b: Identifier, a: Identifier) = op.astOut.l: @unchecked
     a.name shouldBe "a"
     b.name shouldBe "b"
   }

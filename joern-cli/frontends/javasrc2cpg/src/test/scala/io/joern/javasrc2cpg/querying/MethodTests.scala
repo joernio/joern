@@ -44,7 +44,7 @@ class MethodTests extends JavaSrcCode2CpgFixture {
   }
 
   "should create correct method node for empty param list to non-static method" in {
-    val x :: Nil = cpg.typeDecl.name("Baz").method.name("baz").l
+    val x :: Nil = cpg.typeDecl.name("Baz").method.name("baz").l: @unchecked
     x.name shouldBe "baz"
     x.fullName shouldBe "Baz.baz:void()"
     x.code shouldBe "void baz()"

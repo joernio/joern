@@ -35,7 +35,7 @@ class FieldAccessTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
     "should contain a CALL node for the _fieldAccess_ expression with the correct arguments set" in {
       val List(oneArg: Identifier, anotherArg: FieldIdentifier) =
-        cpg.call.methodFullNameExact(Operators.assignment).code("a.m.*").argument(1).isCall.argument.l
+        cpg.call.methodFullNameExact(Operators.assignment).code("a.m.*").argument(1).isCall.argument.l: @unchecked
 
       oneArg.argumentIndex shouldBe 1
       oneArg.code shouldBe "a"
