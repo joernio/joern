@@ -39,7 +39,7 @@ class AstTests extends AnyWordSpec with Matchers {
     }
 
     "copy AST edges correctly" in {
-      val Seq(_, callInCallClone: NewCall, leafClone: NewIdentifier) = copied.nodes
+      val Seq(_, callInCallClone: NewCall, leafClone: NewIdentifier) = copied.nodes: @unchecked
       callInCallClone.order shouldBe 1
       leafClone.order shouldBe 1
 
@@ -53,7 +53,7 @@ class AstTests extends AnyWordSpec with Matchers {
     }
 
     "copy argument edges correctly" in {
-      val Seq(edge1, edge2) = copied.argEdges
+      val Seq(edge1, edge2) = copied.argEdges: @unchecked
       edge1 match {
         case AstEdge(m: NewCall, c: NewCall) =>
           m should not be moo

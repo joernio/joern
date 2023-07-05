@@ -206,7 +206,7 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       |""".stripMargin)
 
     "should contain a CALL node with arguments with the correct props set" in {
-      val List(firstArg: Identifier, secondArg: Identifier) = cpg.call.code("r.exec.*").argument.l
+      val List(firstArg: Identifier, secondArg: Identifier) = cpg.call.code("r.exec.*").argument.l: @unchecked
       firstArg.typeFullName shouldBe "java.lang.Runtime"
       secondArg.typeFullName shouldBe "java.lang.String"
     }
