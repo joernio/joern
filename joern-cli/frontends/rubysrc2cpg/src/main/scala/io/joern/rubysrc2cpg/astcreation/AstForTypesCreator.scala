@@ -28,21 +28,7 @@ trait AstForTypesCreator { this: AstCreator =>
       classStack.push(className)
       val fullName = classStack.reverse.mkString(":")
 
-      val bodyAst = astForBodyStatementContext(ctx.classDefinition().bodyStatement())
-      val bodyAstSansModifiers = bodyAst
-        .filterNot(ast => {
-          val nodes = ast.nodes
-            .filter(_.isInstanceOf[NewIdentifier])
-
-          if (nodes.size == 1) {
-            val varName = nodes
-              .map(_.asInstanceOf[NewIdentifier].name)
-              .head
-            varName == "public" || varName == "protected" || varName == "private"
-          } else {
-            false
-          }
-        })
+      val bodyAst = astForClassBody(ctx.classDefinition().bodyStatement())
 
       if (classStack.nonEmpty) {
         classStack.pop()
@@ -51,7 +37,7 @@ trait AstForTypesCreator { this: AstCreator =>
       val typeDeclNode = NewTypeDecl()
         .name(className)
         .fullName(fullName)
-      Seq(Ast(typeDeclNode).withChildren(bodyAstSansModifiers))
+      Seq(Ast(typeDeclNode).withChildren(bodyAst))
     } else {
       Seq.empty
     }
@@ -95,8 +81,9 @@ trait AstForTypesCreator { this: AstCreator =>
     }
   }
 
-  def astsForClassMembers(): Seq[Ast] = {
-    ???
+  def astsForClassMembers(ast: Ast): Ast = {
+    // TODO: Handle members
+    Ast()
   }
 
   implicit class ClassDefinitionPrimaryContextExt(val ctx: ClassDefinitionPrimaryContext) {

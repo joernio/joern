@@ -4,12 +4,14 @@ import io.joern.rubysrc2cpg.parser.RubyParser.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.nodes.NewJumpTarget
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, ModifierTypes, Operators}
 import org.antlr.v4.runtime.ParserRuleContext
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 trait AstForExpressionsCreator { this: AstCreator =>
+
+  protected var lastModifier: Option[String] = None
 
   protected def astForPowerExpression(ctx: PowerExpressionContext): Ast =
     astForBinaryOperatorExpression(ctx, Operators.exponentiation, ctx.expression().asScala)
@@ -210,6 +212,9 @@ trait AstForExpressionsCreator { this: AstCreator =>
       Ast(node)
     } else if (methodNames.contains(variableName)) {
       astForCallNode(ctx, variableName)
+    } else if (ModifierTypes.ALL.contains(variableName.toUpperCase)) {
+      lastModifier = Option(variableName.toUpperCase)
+      Ast()
     } else {
       val node = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List())
       Ast(node)
