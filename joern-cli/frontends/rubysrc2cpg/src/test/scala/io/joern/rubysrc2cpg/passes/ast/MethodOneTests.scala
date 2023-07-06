@@ -88,8 +88,7 @@ class MethodOneTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    // TODO: Need to be fixed
-    "Variable argument properties should be rightly set" ignore {
+    "Variable argument properties should be rightly set" in {
       cpg.parameter.name("names").l.size shouldBe 1
       val param = cpg.parameter.name("names").l.head
       param.isVariadic shouldBe true
@@ -103,6 +102,7 @@ class MethodOneTests extends RubyCode2CpgFixture {
         |    return 1
         |  else
         |    return 2
+        |  end
         |end
         |""".stripMargin)
 

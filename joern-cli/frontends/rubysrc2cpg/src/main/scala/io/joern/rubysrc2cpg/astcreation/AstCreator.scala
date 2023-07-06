@@ -1022,6 +1022,9 @@ class AstCreator(
           .lineNumber(varSymbol.getLine)
           .typeFullName(Defines.Any)
           .columnNumber(varSymbol.getCharPositionInLine)
+        if (arrayParameter != null) {
+          param.isVariadic = true
+        }
         Ast(param)
       })
       .toSeq
