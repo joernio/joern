@@ -417,7 +417,7 @@ class MemberTests extends JavaSrcCode2CpgFixture {
               fieldAccess.typeFullName shouldBe "int"
               fieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
-              val List(identifier: Identifier, field: FieldIdentifier) = fieldAccess.argument.l
+              val List(identifier: Identifier, field: FieldIdentifier) = fieldAccess.argument.l: @unchecked
               identifier.name shouldBe "Bar"
               identifier.typeFullName shouldBe "Bar"
               identifier.order shouldBe 1

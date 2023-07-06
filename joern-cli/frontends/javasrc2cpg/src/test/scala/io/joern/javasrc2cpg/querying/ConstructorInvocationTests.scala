@@ -131,7 +131,7 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
   "it should create joint `alloc` and `init` calls for a constructor invocation in a vardecl" in {
     cpg.typeDecl.name("Bar").method.name("test1").l match {
       case List(method) =>
-        val List(_: Local, assign: Call, init: Call) = method.astChildren.isBlock.astChildren.l
+        val List(_: Local, assign: Call, init: Call) = method.astChildren.isBlock.astChildren.l: @unchecked
 
         assign.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
         assign.name shouldBe Operators.assignment
@@ -152,7 +152,7 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
         init.code shouldBe "new Bar(4, 2)"
 
         init.argument.size shouldBe 3
-        val List(obj: Identifier, initArg1: Literal, initArg2: Literal) = init.argument.l
+        val List(obj: Identifier, initArg1: Literal, initArg2: Literal) = init.argument.l: @unchecked
         obj.order shouldBe 1
         obj.argumentIndex shouldBe 0
         obj.name shouldBe "b"
@@ -172,7 +172,7 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
   "it should create joint `alloc` and `init` calls for a constructor invocation in an assignment" in {
     cpg.typeDecl.name("Bar").method.name("test2").l match {
       case List(method) =>
-        val List(assign: Call, init: Call) = method.astChildren.isBlock.astChildren.l
+        val List(assign: Call, init: Call) = method.astChildren.isBlock.astChildren.l: @unchecked
 
         assign.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
         assign.name shouldBe Operators.assignment
@@ -193,7 +193,7 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
         init.code shouldBe "new Bar(4, 2)"
 
         init.argument.size shouldBe 3
-        val List(obj: Identifier, initArg1: Literal, initArg2: Literal) = init.argument.l
+        val List(obj: Identifier, initArg1: Literal, initArg2: Literal) = init.argument.l: @unchecked
         obj.order shouldBe 1
         obj.argumentIndex shouldBe 0
         obj.name shouldBe "b"
@@ -215,9 +215,9 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
       case List(method) =>
         val idCall                                          = method.call.name("id").head
         val consBlock                                       = idCall.argument(1).asInstanceOf[Block]
-        val List(assign: Call, init: Call, ret: Identifier) = consBlock.astChildren.l
+        val List(assign: Call, init: Call, ret: Identifier) = consBlock.astChildren.l: @unchecked
 
-        val List(temp: Identifier, alloc: Call) = assign.argument.l
+        val List(temp: Identifier, alloc: Call) = assign.argument.l: @unchecked
         temp.name shouldBe "$obj0"
         temp.typeFullName shouldBe "Bar"
         temp.order shouldBe 1
@@ -241,7 +241,7 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
 
         init.argument.size shouldBe 2
-        val List(obj: Identifier, initArg1: Literal) = init.argument.l
+        val List(obj: Identifier, initArg1: Literal) = init.argument.l: @unchecked
         obj.order shouldBe 1
         obj.argumentIndex shouldBe 0
         obj.name shouldBe "$obj0"
@@ -260,9 +260,9 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
       case List(method) =>
         val assignCall                                      = method.call.nameExact("<operator>.assignment").head
         val consBlock                                       = assignCall.argument(2).asInstanceOf[Block]
-        val List(assign: Call, init: Call, ret: Identifier) = consBlock.astChildren.l
+        val List(assign: Call, init: Call, ret: Identifier) = consBlock.astChildren.l: @unchecked
 
-        val List(temp: Identifier, alloc: Call) = assign.argument.l
+        val List(temp: Identifier, alloc: Call) = assign.argument.l: @unchecked
         temp.name shouldBe "$obj3"
         temp.typeFullName shouldBe "Bar"
         temp.order shouldBe 1
@@ -286,7 +286,7 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
 
         init.argument.size shouldBe 2
-        val List(obj: Identifier, initArg1: Literal) = init.argument.l
+        val List(obj: Identifier, initArg1: Literal) = init.argument.l: @unchecked
         obj.order shouldBe 1
         obj.argumentIndex shouldBe 0
         obj.name shouldBe "$obj3"
@@ -307,14 +307,14 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
       .fullNameExact(s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)")
       .l match {
       case List(method) =>
-        val List(init: Call) = method.astChildren.isBlock.astChildren.l
+        val List(init: Call) = method.astChildren.isBlock.astChildren.l: @unchecked
         init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
         init.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
         init.typeFullName shouldBe "void"
         init.signature shouldBe "void(int)"
 
-        val List(obj: Identifier, initArg1: Call) = init.argument.l
+        val List(obj: Identifier, initArg1: Call) = init.argument.l: @unchecked
         obj.name shouldBe "this"
         obj.order shouldBe 1
         obj.argumentIndex shouldBe 0
@@ -335,14 +335,14 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
       .fullNameExact(s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)")
       .l match {
       case List(method) =>
-        val List(init: Call) = method.astChildren.isBlock.astChildren.l
+        val List(init: Call) = method.astChildren.isBlock.astChildren.l: @unchecked
         init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
         init.methodFullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
         init.typeFullName shouldBe "void"
         init.signature shouldBe "void(int)"
 
-        val List(obj: Identifier, initArg: Identifier) = init.argument.l
+        val List(obj: Identifier, initArg: Identifier) = init.argument.l: @unchecked
         obj.name shouldBe "this"
         obj.typeFullName shouldBe "Foo"
         obj.argumentIndex shouldBe 0

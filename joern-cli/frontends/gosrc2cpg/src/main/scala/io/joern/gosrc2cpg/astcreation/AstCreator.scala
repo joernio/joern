@@ -5,6 +5,7 @@ import io.joern.gosrc2cpg.parser.GoAstJsonParser.ParserResult
 import io.joern.gosrc2cpg.parser.ParserAst._
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.datastructures.Scope
+import io.joern.x2cpg.datastructures.Stack._
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder => X2CpgAstNodeBuilder}
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewNamespaceBlock, NewNode}
@@ -25,7 +26,9 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)
 
   protected val logger: Logger = LoggerFactory.getLogger(classOf[AstCreator])
 
+  protected val methodAstParentStack: Stack[NewNode]             = new Stack()
   protected val scope: Scope[String, (NewNode, String), NewNode] = new Scope()
+  protected val fullyQualifiedPackage                            = new ThreadLocal[String]
 
   protected val lineNumberMapping = positionLookupTables(parserResult.fileContent)
 
@@ -37,15 +40,17 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)
   }
 
   private def astForTranslationUnit(rootNode: ParserNodeInfo): Ast = {
-    val fullyQualifiedPackage =
+    fullyQualifiedPackage.set(
       GoMod.getNameSpace(parserResult.filename, parserResult.json(ParserKeys.Name)(ParserKeys.Name).str)
+    )
     val namespaceBlock = NewNamespaceBlock()
-      .name(fullyQualifiedPackage)
-      .fullName(s"$relPathFileName:${fullyQualifiedPackage}")
+      .name(fullyQualifiedPackage.get())
+      .fullName(s"$relPathFileName:${fullyQualifiedPackage.get()}")
       .filename(relPathFileName)
+    methodAstParentStack.push(namespaceBlock)
     Ast(namespaceBlock).withChild(
       astInFakeMethod(
-        fullyQualifiedPackage + "." + NamespaceTraversal.globalNamespaceName,
+        fullyQualifiedPackage.get() + "." + NamespaceTraversal.globalNamespaceName,
         namespaceBlock.fullName,
         relPathFileName,
         rootNode
@@ -59,10 +64,11 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)
 
     val fakeGlobalTypeDecl =
       typeDeclNode(rootNode, name, fullName, relPathFileName, name, NodeTypes.NAMESPACE_BLOCK, fullName)
-
+    methodAstParentStack.push(fakeGlobalTypeDecl)
     val fakeGlobalMethod =
       methodNode(rootNode, name, name, fullName, None, path, Option(NodeTypes.TYPE_DECL), Option(fullName))
-
+    methodAstParentStack.push(fakeGlobalMethod)
+    scope.pushNewScope(fakeGlobalMethod)
     val blockNode_ = blockNode(rootNode, Defines.empty, Defines.anyTypeName)
 
     val methodReturn = methodReturnNode(rootNode, Defines.anyTypeName)

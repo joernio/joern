@@ -129,8 +129,8 @@ class MethodTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
     "should contain a RETURN node as the child of the METHOD's BLOCK" in {
       val List(m)         = cpg.method.nameExact("f1").l
-      val List(r: Return) = m.block.astChildren.l
-      val List(_: Block)  = r.astChildren.l
+      val List(r: Return) = m.block.astChildren.l: @unchecked
+      val List(_: Block)  = r.astChildren.l: @unchecked
     }
   }
 
