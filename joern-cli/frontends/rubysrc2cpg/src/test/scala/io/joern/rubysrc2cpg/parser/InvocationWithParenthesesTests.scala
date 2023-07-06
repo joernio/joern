@@ -120,6 +120,43 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
             |  ,
             |  )""".stripMargin
       }
+
+      "it contains a splatting expression before a keyword argument" in {
+        val code = "foo(*x, y: 1)"
+        printAst(_.primary(), code) shouldEqual
+          """InvocationWithParenthesesPrimary
+            | MethodIdentifier
+            |  foo
+            | ArgsOnlyArgumentsWithParentheses
+            |  (
+            |  BlockSplattingTypeArguments
+            |   SplattingArgument
+            |    *
+            |    ExpressionExpressionOrCommand
+            |     PrimaryExpression
+            |      VariableReferencePrimary
+            |       VariableIdentifierVariableReference
+            |        VariableIdentifier
+            |         x
+            |   ,
+            |   WsOrNl
+            |   Associations
+            |    Association
+            |     PrimaryExpression
+            |      VariableReferencePrimary
+            |       VariableIdentifierVariableReference
+            |        VariableIdentifier
+            |         y
+            |     :
+            |     WsOrNl
+            |     PrimaryExpression
+            |      LiteralPrimary
+            |       NumericLiteralLiteral
+            |        NumericLiteral
+            |         UnsignedNumericLiteral
+            |          1
+            |  )""".stripMargin
+      }
     }
   }
 }
