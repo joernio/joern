@@ -45,10 +45,10 @@ class ObjectExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = fals
     "should contain two correctly-lowered representations of the assignments" in {
       val List(firstAssignment: Call, secondAssignment: Call) =
         cpg.method.nameExact("foo").call.methodFullNameExact("<operator>.assignment").l
-      val List(firstAssignmentLHS: Identifier, firstAssignmentRHS: Call) = firstAssignment.argument.l
+      val List(firstAssignmentLHS: Identifier, firstAssignmentRHS: Call) = firstAssignment.argument.l: @unchecked
       firstAssignmentLHS.typeFullName shouldBe "mypkg.foo$object$1"
       firstAssignmentRHS.methodFullName shouldBe "<operator>.alloc"
-      val List(secondAssignmentLHS: Identifier, secondAssignmentRHS: Call) = secondAssignment.argument.l
+      val List(secondAssignmentLHS: Identifier, secondAssignmentRHS: Call) = secondAssignment.argument.l: @unchecked
       secondAssignmentLHS.typeFullName shouldBe "mypkg.foo$object$2"
       secondAssignmentRHS.methodFullName shouldBe "<operator>.alloc"
     }
@@ -57,9 +57,9 @@ class ObjectExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = fals
       val List(firstCall: Call, secondCall: Call) = cpg.call.methodFullName(".*printWithSuffix.*").l
       firstCall.methodFullName shouldBe "mypkg.foo$object$1.printWithSuffix:void(java.lang.String)"
       secondCall.methodFullName shouldBe "mypkg.foo$object$2.printWithSuffix:void(java.lang.String)"
-      val List(firstCallLHS: Identifier, _: Identifier) = firstCall.argument.l
+      val List(firstCallLHS: Identifier, _: Identifier) = firstCall.argument.l: @unchecked
       firstCallLHS.typeFullName shouldBe "mypkg.foo$object$1"
-      val List(secondCallLHS: Identifier, _: Identifier) = secondCall.argument.l
+      val List(secondCallLHS: Identifier, _: Identifier) = secondCall.argument.l: @unchecked
       secondCallLHS.typeFullName shouldBe "mypkg.foo$object$2"
     }
   }
@@ -99,7 +99,7 @@ class ObjectExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = fals
 
     "contain a CALL node assigning a temp identifier to an alloc call" in {
       val List(firstAssignment: Call) = cpg.call.methodFullNameExact("<operator>.assignment").l
-      val List(firstAssignmentLHS: Identifier, firstAssignmentRHS: Call) = firstAssignment.argument.l
+      val List(firstAssignmentLHS: Identifier, firstAssignmentRHS: Call) = firstAssignment.argument.l: @unchecked
       firstAssignmentLHS.typeFullName shouldBe "mypkg.foo$object$1"
       firstAssignmentRHS.methodFullName shouldBe "<operator>.alloc"
     }
@@ -110,7 +110,7 @@ class ObjectExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = fals
     }
 
     "contain an IDENTIFIER node for the argument representing the object literal" in {
-      val List(firstArg: Identifier, _: Identifier) = cpg.call.code("does.*").argument.l
+      val List(firstArg: Identifier, _: Identifier) = cpg.call.code("does.*").argument.l: @unchecked
       firstArg.name shouldBe "tmp_obj_1"
       firstArg.typeFullName shouldBe "mypkg.foo$object$1"
     }

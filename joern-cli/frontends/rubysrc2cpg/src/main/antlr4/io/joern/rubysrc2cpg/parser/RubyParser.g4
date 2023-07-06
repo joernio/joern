@@ -183,7 +183,7 @@ arguments
     :   blockArgument                                                                                                           # blockArgumentTypeArguments
     |   splattingArgument (COMMA wsOrNl* blockArgument)?                                                                        # blockSplattingTypeArguments
     |   expressions WS* COMMA wsOrNl* associations (WS* COMMA wsOrNl* splattingArgument)? (WS* COMMA wsOrNl* blockArgument)?    # blockSplattingExprAssocTypeArguments
-    |   (expressions | associations) (WS* COMMA wsOrNl* blockArgument)?                                                         # blockExprAssocTypeArguments
+    |   (expressions | associations) (WS* COMMA wsOrNl* splattingArgument)? (WS* COMMA wsOrNl* blockArgument)?                  # blockExprAssocTypeArguments
     |   command                                                                                                                 # commandTypeArguments
     ;
 
@@ -196,7 +196,8 @@ blockArgument
 // --------------------------------------------------------
 
 splattingArgument
-    :   STAR expressionOrCommand
+    :   STAR WS* expressionOrCommand
+    |   STAR2 WS* expressionOrCommand
     ;
 
 indexingArguments
@@ -318,9 +319,10 @@ methodParameterPart
     ;
 
 parameters
-    :   mandatoryParameters (COMMA wsOrNl* optionalParameters)? (COMMA WS* arrayParameter)? (COMMA WS* procParameter)?
-    |   optionalParameters (COMMA wsOrNl* arrayParameter)? (COMMA wsOrNl* procParameter)?
-    |   arrayParameter (COMMA wsOrNl* procParameter)?
+    :   mandatoryParameters (COMMA wsOrNl* optionalParameters)? (COMMA WS* arrayParameter)? (COMMA WS* hashParameter)? (COMMA WS* procParameter)?
+    |   optionalParameters (COMMA wsOrNl* arrayParameter)? (COMMA WS* hashParameter)? (COMMA wsOrNl* procParameter)?
+    |   arrayParameter (COMMA WS* hashParameter)? (COMMA wsOrNl* procParameter)?
+    |   hashParameter (COMMA wsOrNl* procParameter)?
     |   procParameter
     ;
 
@@ -338,6 +340,10 @@ optionalParameter
 
 arrayParameter
     :   STAR LOCAL_VARIABLE_IDENTIFIER?
+    ;
+
+hashParameter
+    :   STAR2 LOCAL_VARIABLE_IDENTIFIER?
     ;
 
 procParameter
@@ -421,7 +427,7 @@ bodyStatement
     ;
 
 rescueClause
-    :   RESCUE WS* exceptionClass? wsOrNl* exceptionVariableAssignment? thenClause
+    :   RESCUE WS* exceptionClass? wsOrNl* exceptionVariableAssignment? wsOrNl* thenClause
     ;
 
 exceptionClass

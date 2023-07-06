@@ -313,7 +313,7 @@ class AstCreator(
     case ctx: YieldWithOptionalArgumentPrimaryContext =>
       Seq(astForYieldCall(ctx, Option(ctx.yieldWithOptionalArgument().arguments())))
     case ctx: IfExpressionPrimaryContext       => Seq(astForIfExpression(ctx.ifExpression()))
-    case ctx: UnlessExpressionPrimaryContext   => astForUnlessExpressionPrimaryContext(ctx)
+    case ctx: UnlessExpressionPrimaryContext   => Seq(astForUnlessExpression(ctx.unlessExpression()))
     case ctx: CaseExpressionPrimaryContext     => astForCaseExpressionPrimaryContext(ctx)
     case ctx: WhileExpressionPrimaryContext    => Seq(astForWhileExpression(ctx.whileExpression()))
     case ctx: UntilExpressionPrimaryContext    => Seq(astForUntilExpression(ctx.untilExpression()))
@@ -1436,25 +1436,6 @@ class AstCreator(
       Seq[NewModifier](publicModifier)
     )
     Seq(methAst)
-  }
-
-  def astForUnlessExpressionPrimaryContext(ctx: UnlessExpressionPrimaryContext): Seq[Ast] = {
-    val conditionAsts = astForExpressionOrCommand(ctx.unlessExpression().expressionOrCommand())
-    val thenAsts      = astForCompoundStatement(ctx.unlessExpression().thenClause().compoundStatement())
-    val elseAsts = if (ctx.unlessExpression().elseClause() != null) {
-      astForCompoundStatement(ctx.unlessExpression().elseClause().compoundStatement())
-    } else {
-      Seq()
-    }
-
-    // unless will be modelled as IF since there is no difference from a static analysis POV
-    val unlessNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.IF)
-      .code(ctx.getText)
-      .lineNumber(ctx.unlessExpression().UNLESS().getSymbol.getLine)
-      .columnNumber(ctx.unlessExpression().UNLESS().getSymbol.getCharPositionInLine)
-
-    Seq(controlStructureAst(unlessNode, conditionAsts.headOption, List(thenAsts ++ elseAsts).flatten))
   }
 
   def astForBlockArgumentContext(ctx: BlockArgumentContext): Seq[Ast] = {

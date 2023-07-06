@@ -95,8 +95,8 @@ object BenchmarkTags {
   }
 
   private def getTotalTests: (Int, Int, Int, Int, Int) = {
-    val impl = confusionMatrix.getOrElse(ImplicitFlows.name, Array.ofDim(4))
-    val expl = confusionMatrix.getOrElse(ExplicitFlows.name, Array.ofDim(4))
+    val impl = confusionMatrix.getOrElse(ImplicitFlows.name, Array.ofDim[Int](4))
+    val expl = confusionMatrix.getOrElse(ExplicitFlows.name, Array.ofDim[Int](4))
     if (impl.sum > 0 || expl.sum > 0) {
       // running IFSpec so this means there is a 1-many relationship with tests-categories
       (impl.sum + expl.sum, impl(FP) + expl(FP), impl(TP) + expl(TP), impl(TN) + expl(TN), impl(FN) + expl(FN))

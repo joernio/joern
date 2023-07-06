@@ -86,15 +86,18 @@ class IdentifierReferencesTests extends KotlinCode2CpgFixture(withOssDataflow = 
 
     "should contain LOCAL nodes with correctly-set referencing IDENTIFIERS" in {
       val List(firstX: Local, secondX: Local, thirdX: Local) = cpg.local.nameExact("x").l
-      val List(firstXUsage: Identifier) = cpg.call.methodFullName(Operators.addition).code(".*first.*").argument(2).l
+      val List(firstXUsage: Identifier) =
+        cpg.call.methodFullName(Operators.addition).code(".*first.*").argument(2).l: @unchecked
       firstX.referencingIdentifiers.id.l.contains(firstXUsage.id) shouldBe true
       firstXUsage.refsTo.size shouldBe 1
 
-      val List(secondXUsage: Identifier) = cpg.call.methodFullName(Operators.addition).code(".*second.*").argument(2).l
+      val List(secondXUsage: Identifier) =
+        cpg.call.methodFullName(Operators.addition).code(".*second.*").argument(2).l: @unchecked
       secondX.referencingIdentifiers.id.l.contains(secondXUsage.id) shouldBe true
       secondXUsage.refsTo.size shouldBe 1
 
-      val List(thirdXUsage: Identifier) = cpg.call.methodFullName(Operators.addition).code(".*third.*").argument(2).l
+      val List(thirdXUsage: Identifier) =
+        cpg.call.methodFullName(Operators.addition).code(".*third.*").argument(2).l: @unchecked
       thirdX.referencingIdentifiers.id.l.contains(thirdXUsage.id) shouldBe true
       thirdXUsage.refsTo.size shouldBe 1
     }
