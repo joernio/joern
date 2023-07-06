@@ -158,6 +158,29 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
             |          1
             |  )""".stripMargin
       }
+
+      "it contains a keyword-named keyword argument" in {
+        val code = "foo(if: true)"
+        printAst(_.primary(), code) shouldEqual
+          """InvocationWithParenthesesPrimary
+            | MethodIdentifier
+            |  foo
+            | ArgsOnlyArgumentsWithParentheses
+            |  (
+            |  Arguments
+            |   AssociationArgument
+            |    Association
+            |     Keyword
+            |      if
+            |     :
+            |     WsOrNl
+            |     PrimaryExpression
+            |      VariableReferencePrimary
+            |       PseudoVariableIdentifierVariableReference
+            |        TruePseudoVariableIdentifier
+            |         true
+            |  )""".stripMargin
+      }
     }
   }
 }
