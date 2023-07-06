@@ -42,8 +42,9 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |  MethodParameterPart
             |   (
             |   Parameters
-            |    MandatoryParameters
-            |     x
+            |    Parameter
+            |     MandatoryParameter
+            |      x
             |   )
             |  BodyStatement
             |   CompoundStatement
@@ -68,7 +69,7 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
              |  MethodParameterPart
              |   (
              |   Parameters
-             |    OptionalParameters
+             |    Parameter
              |     OptionalParameter
              |      x
              |      =
@@ -102,12 +103,15 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |  MethodParameterPart
             |   (
             |   Parameters
-            |    MandatoryParameters
-            |     x
+            |    Parameter
+            |     MandatoryParameter
+            |      x
             |    ,
-            |    ProcParameter
-            |     &
-            |     y
+            |    WsOrNl
+            |    Parameter
+            |     ProcParameter
+            |      &
+            |      y
             |   )
             |  BodyStatement
             |   CompoundStatement
@@ -133,9 +137,10 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |  MethodParameterPart
           |   (
           |   Parameters
-          |    ArrayParameter
-          |     *
-          |     arr
+          |    Parameter
+          |     ArrayParameter
+          |      *
+          |      arr
           |   )
           |  BodyStatement
           |   CompoundStatement
@@ -161,9 +166,10 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |  MethodParameterPart
           |   (
           |   Parameters
-          |    HashParameter
-          |     **
-          |     hash
+          |    Parameter
+          |     HashParameter
+          |      **
+          |      hash
           |   )
           |  BodyStatement
           |   CompoundStatement
@@ -189,13 +195,16 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |  MethodParameterPart
           |   (
           |   Parameters
-          |    ArrayParameter
-          |     *
-          |     arr
+          |    Parameter
+          |     ArrayParameter
+          |      *
+          |      arr
           |    ,
-          |    HashParameter
-          |     **
-          |     hash
+          |    WsOrNl
+          |    Parameter
+          |     HashParameter
+          |      **
+          |      hash
           |   )
           |  BodyStatement
           |   CompoundStatement
@@ -204,6 +213,45 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |      ;
           |  WsOrNl
           |  end""".stripMargin
+      }
+
+      "it contains an optional parameter before a mandatory one" in {
+        val code = "def foo(x=1,y); end"
+        printAst(_.primary(), code) shouldEqual
+          """MethodDefinitionPrimary
+            | MethodDefinition
+            |  def
+            |  WsOrNl
+            |  SimpleMethodNamePart
+            |   DefinedMethodName
+            |    MethodName
+            |     MethodIdentifier
+            |      foo
+            |  MethodParameterPart
+            |   (
+            |   Parameters
+            |    Parameter
+            |     OptionalParameter
+            |      x
+            |      =
+            |      PrimaryExpression
+            |       LiteralPrimary
+            |        NumericLiteralLiteral
+            |         NumericLiteral
+            |          UnsignedNumericLiteral
+            |           1
+            |    ,
+            |    Parameter
+            |     MandatoryParameter
+            |      y
+            |   )
+            |  BodyStatement
+            |   CompoundStatement
+            |    Separators
+            |     Separator
+            |      ;
+            |  WsOrNl
+            |  end""".stripMargin
       }
     }
   }

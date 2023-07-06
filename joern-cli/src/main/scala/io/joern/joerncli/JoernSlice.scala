@@ -19,7 +19,7 @@ object JoernSlice {
     head("Extract various slices from the CPG.")
     help("help")
     arg[String]("cpg")
-      .text("input CPG file name - defaults to `cpg.bin`")
+      .text("input CPG file name, or source code - defaults to `cpg.bin`")
       .optional()
       .action((x, c) => c.withInputPath(File(x)))
       .validate { x =>

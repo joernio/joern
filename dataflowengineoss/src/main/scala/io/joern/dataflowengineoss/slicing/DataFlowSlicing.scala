@@ -27,8 +27,7 @@ object DataFlowSlicing {
           .filter(x => sliceNodesIdSet.contains(x.inNode().id()))
           .map { e => SliceEdge(e.outNode().id(), e.inNode().id(), e.label()) }
           .toSet
-        lazy val methodToNodes = sliceNodes.groupBy(_.method).map { case (m, ns) => m.fullName -> ns.map(_.id()).toSet }
-        lazy val slice = Option(DataFlowSlice(sliceNodes.map(cfgNodeToSliceNode).toSet, sliceEdges, methodToNodes))
+        lazy val slice = Option(DataFlowSlice(sliceNodes.map(cfgNodeToSliceNode).toSet, sliceEdges))
 
         // Filtering
         sliceNodes match {
@@ -37,11 +36,7 @@ object DataFlowSlicing {
           case _                                                                       => slice
         }
       }
-      .reduceOption { (a, b) =>
-        val methodToChildNode = (a.methodToChildNode.keys ++ b.methodToChildNode.keys)
-          .map(k => k -> (a.methodToChildNode.getOrElse(k, Set.empty) ++ b.methodToChildNode.getOrElse(k, Set.empty)))
-        DataFlowSlice(a.nodes ++ b.nodes, a.edges ++ b.edges, methodToChildNode.toMap)
-      }
+      .reduceOption { (a, b) => DataFlowSlice(a.nodes ++ b.nodes, a.edges ++ b.edges) }
   }
 
   /** True if the sinks are either calls to external methods or are in external method stubs.
@@ -54,6 +49,8 @@ object DataFlowSlicing {
       cfgNode.id(),
       cfgNode.label,
       code = cfgNode.code,
+      parentMethod = cfgNode.method.fullName,
+      parentFile = cfgNode.file.name.headOption.getOrElse(""),
       lineNumber = cfgNode.lineNumber,
       columnNumber = cfgNode.columnNumber
     )

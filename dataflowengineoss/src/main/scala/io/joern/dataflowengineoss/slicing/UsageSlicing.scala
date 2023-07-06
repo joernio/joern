@@ -55,7 +55,7 @@ object UsageSlicing {
     cpg: Cpg,
     getDeclIdentifiers: () => Traversal[Declaration],
     typeMap: TrieMap[String, String]
-  )(implicit config: UsagesConfig): Map[String, MethodUsageSlice] = {
+  )(implicit config: UsagesConfig): List[MethodUsageSlice] = {
     val language = cpg.metaData.language.headOption
     val root     = cpg.metaData.root.headOption
     getDeclIdentifiers()
@@ -66,16 +66,18 @@ object UsageSlicing {
       .groupBy { case (scope, _) => scope }
       .view
       .map { case (method, slices) =>
-        method.fullName -> MethodUsageSlice(
-          source =
+        MethodUsageSlice(
+          code =
             if (config.excludeMethodSource) ""
             else dump(method.location, language, root, highlight = false, withArrow = false),
-          slices = slices.iterator.map(_._2).toSet
+          fullName = method.fullName,
+          fileName = method.filename,
+          slices = slices.iterator.map(_._2).toSet,
+          lineNumber = method.lineNumber.map(_.intValue()),
+          columnNumber = method.columnNumber.map(_.intValue())
         )
       }
-      .toMap
-      .iterator
-      .toMap
+      .toList
   }
 
   private class TrackUsageTask(cpg: Cpg, tgt: Declaration, typeMap: TrieMap[String, String])(implicit
@@ -209,7 +211,16 @@ object UsageSlicing {
           .getOrElse("ANY")
       }
 
-      Option(ObservedCall(callName.get, resolvedMethod, params, returnType))
+      Option(
+        ObservedCall(
+          callName.get,
+          resolvedMethod,
+          params,
+          returnType,
+          baseCall.lineNumber.map(_.intValue()),
+          baseCall.columnNumber.map(_.intValue())
+        )
+      )
     }
 
     private def partitionInvolvementInCalls: (List[ObservedCall], List[ObservedCallWithArgPos]) = {
@@ -254,7 +265,7 @@ object UsageSlicing {
           }
           slice.argToCalls
             .flatMap {
-              case ObservedCallWithArgPos(_, Some(resolvedMethod), _, _, Left(argName)) =>
+              case ObservedCallWithArgPos(_, Some(resolvedMethod), _, _, Left(argName), _, _) =>
                 slices.get(resolvedMethod).flatMap { calleeSlices =>
                   calleeSlices.find { s =>
                     s.targetObj match {
@@ -263,7 +274,7 @@ object UsageSlicing {
                     }
                   }
                 }
-              case ObservedCallWithArgPos(_, Some(resolvedMethod), _, _, Right(argIdx)) =>
+              case ObservedCallWithArgPos(_, Some(resolvedMethod), _, _, Right(argIdx), _, _) =>
                 slices.get(resolvedMethod).flatMap { calleeSlices =>
                   calleeSlices.find { s =>
                     s.targetObj match {
@@ -333,10 +344,15 @@ object UsageSlicing {
               m.name,
               Option(m.fullName),
               m.parameter.map(_.typeFullName).toList,
-              m.methodReturn.typeFullName
+              m.methodReturn.typeFullName,
+              m.lineNumber.map(_.intValue()),
+              m.columnNumber.map(_.intValue())
             )
           )
-          .l
+          .l,
+        typeDecl.filename,
+        typeDecl.lineNumber.map(_.intValue()),
+        typeDecl.columnNumber.map(_.intValue())
       )
     }
 

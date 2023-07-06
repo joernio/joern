@@ -1,5 +1,5 @@
 package io.joern.rubysrc2cpg.astcreation
-import io.joern.rubysrc2cpg.parser.RubyParser._
+import io.joern.rubysrc2cpg.parser.RubyParser.*
 import io.joern.rubysrc2cpg.parser.{RubyLexer, RubyParser}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.utils.PackageContext
@@ -7,18 +7,18 @@ import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
 import io.joern.x2cpg.datastructures.{Global, Scope}
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder}
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.*
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.antlr.v4.runtime.{CharStreams, CommonTokenStream, ParserRuleContext, Token}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
-import java.io.{File => JFile}
+import java.io.File as JFile
 import scala.collection.immutable.Seq
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 class AstCreator(
   protected val filename: String,
@@ -977,38 +977,41 @@ class AstCreator(
       Seq(Ast())
   }
 
+  // TODO: Rewrite for simplicity and take into account more than parameter names.
   def astForMethodParameterPartContext(ctx: MethodParameterPartContext): Seq[Ast] = {
     if (ctx == null || ctx.parameters() == null) return Seq(Ast())
     // NOT differentiating between the productions here since either way we get paramaters
-    val mandatoryParameters = ctx.parameters().mandatoryParameters()
-    val optionalParameters  = ctx.parameters().optionalParameters()
-    val arrayParameter      = ctx.parameters().arrayParameter()
-    val procParameter       = ctx.parameters().procParameter()
+    val mandatoryParameters = ctx
+      .parameters()
+      .parameter()
+      .asScala
+      .filter(ctx => Option(ctx.mandatoryParameter()).isDefined)
+      .map(_.mandatoryParameter().LOCAL_VARIABLE_IDENTIFIER())
+    val optionalParameters = ctx
+      .parameters()
+      .parameter()
+      .asScala
+      .filter(ctx => Option(ctx.optionalParameter()).isDefined)
+      .map(_.optionalParameter().LOCAL_VARIABLE_IDENTIFIER())
+    val arrayParameter = ctx
+      .parameters()
+      .parameter()
+      .asScala
+      .filter(ctx => Option(ctx.arrayParameter()).isDefined)
+      .map(_.arrayParameter().LOCAL_VARIABLE_IDENTIFIER())
+    val procParameter = ctx
+      .parameters()
+      .parameter()
+      .asScala
+      .filter(ctx => Option(ctx.procParameter()).isDefined)
+      .map(_.procParameter().LOCAL_VARIABLE_IDENTIFIER())
 
     val localVarList = ListBuffer[TerminalNode]()
 
-    if (mandatoryParameters != null) {
-      mandatoryParameters
-        .LOCAL_VARIABLE_IDENTIFIER()
-        .forEach(localVar => {
-          localVarList.addOne(localVar)
-        })
-    }
-
-    if (optionalParameters != null) {
-      val optionalParameterList = optionalParameters.optionalParameter()
-      optionalParameterList.forEach(param => {
-        localVarList.addOne(param.LOCAL_VARIABLE_IDENTIFIER())
-      })
-    }
-
-    if (arrayParameter != null) {
-      localVarList.addOne(arrayParameter.LOCAL_VARIABLE_IDENTIFIER())
-    }
-
-    if (procParameter != null) {
-      localVarList.addOne(procParameter.LOCAL_VARIABLE_IDENTIFIER())
-    }
+    localVarList.addAll(mandatoryParameters)
+    localVarList.addAll(optionalParameters)
+    localVarList.addAll(arrayParameter)
+    localVarList.addAll(procParameter)
 
     localVarList
       .map(localVar => {
@@ -1049,11 +1052,33 @@ class AstCreator(
     blockAst(blockNode, asts.toList)
   }
 
+  /** Handles body statements differently from [[astForBodyStatementContext]] by noting that method definitions should
+    * be on the root level and assignments where the LHS starts with @@ should be treated as fields.
+    */
+  def astForClassBody(ctx: BodyStatementContext): Seq[Ast] = {
+    val rootStatements =
+      Option(ctx).map(_.compoundStatement()).map(_.statements()).map(astForStatements).getOrElse(Seq())
+
+    val (methods, blockStmts) =
+      rootStatements
+        .flatMap { ast =>
+          ast.root match
+            case Some(x: NewMethod)                                 => Seq(ast)
+            case Some(x: NewCall) if x.name == Operators.assignment => Seq(ast) :+ astsForClassMembers(ast)
+            case _                                                  => Seq(ast)
+        }
+        .partition(_.root match
+          case Some(_: NewMethod) => true
+          case _                  => false
+        )
+    Seq(blockAst(blockNode(ctx), blockStmts.toList)) ++ methods
+  }
+
   def astForBodyStatementContext(ctx: BodyStatementContext, addReturnNode: Boolean = false): Seq[Ast] = {
     val compoundStatementAsts = astForCompoundStatement(ctx.compoundStatement())
 
     val compoundStatementAstsWithReturn =
-      if (addReturnNode && compoundStatementAsts.size > 0) {
+      if (addReturnNode && compoundStatementAsts.nonEmpty) {
         /*
          * Convert the last statement to a return AST if it is not already a return AST.
          * If it is a return AST leave it untouched.
@@ -1090,7 +1115,7 @@ class AstCreator(
     val rescueAsts = ctx
       .rescueClause()
       .asScala
-      .map(astForRescueClauseContext(_))
+      .map(astForRescueClauseContext)
       .toSeq
 
     if (ctx.elseClause() != null) {
@@ -1165,7 +1190,10 @@ class AstCreator(
       .columnNumber(None)
       .typeFullName(Defines.Any)
 
-    val publicModifier = NewModifier().modifierType(ModifierTypes.PUBLIC)
+    val modifierNode = lastModifier match {
+      case Some(modifier) => NewModifier().modifierType(modifier).code(modifier)
+      case None           => NewModifier().modifierType(ModifierTypes.PUBLIC).code(ModifierTypes.PUBLIC)
+    }
     /*
      * public/private/protected modifiers are in a separate statement
      * TODO find out how they should be used. Need to do this iff it adds any value
@@ -1185,7 +1213,7 @@ class AstCreator(
         paramSeq,
         blockAst(blockNode, astBody.toList),
         methodRetNode,
-        Seq[NewModifier](publicModifier)
+        Seq[NewModifier](modifierNode)
       )
     )
   }
