@@ -29,7 +29,7 @@ object CompilerAPI {
     val config = new CompilerConfiguration()
     config.put(CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY, messageCollector)
     forDirectories.foreach { p =>
-      config.add(CLIConfigurationKeys.CONTENT_ROOTS, new KotlinSourceRoot(p, true))
+      config.add(CLIConfigurationKeys.CONTENT_ROOTS, new KotlinSourceRoot(p, true, null))
     }
 
     val javaHome = File(System.getProperty("java.home"))
