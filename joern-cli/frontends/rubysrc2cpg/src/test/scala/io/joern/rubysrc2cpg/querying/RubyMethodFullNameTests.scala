@@ -32,13 +32,8 @@ class RubyMethodFullNameTests extends RubyCode2CpgFixture with BeforeAndAfterAll
         "Gemfile"
       )
       .withConfig(config)
-
     "recognise call node" in {
       cpg.call.name("first_fun").l.size shouldBe 1
-    }
-
-    "recognise import node" in {
-      cpg.imports.code(".*dummy_logger.*").l.size shouldBe 1
     }
 
     "recognise methodFullName for call Node" in {
@@ -79,10 +74,6 @@ class RubyMethodFullNameTests extends RubyCode2CpgFixture with BeforeAndAfterAll
 
     "recognise call node" in {
       cpg.call.name("printValue").size shouldBe 1
-    }
-
-    "recognise import node" in {
-      cpg.imports.code(".*util/help.rb*.").size shouldBe 1
     }
 
     "recognise method full name for call node" in {

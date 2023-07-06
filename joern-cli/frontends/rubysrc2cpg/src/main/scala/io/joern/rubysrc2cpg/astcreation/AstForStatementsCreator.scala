@@ -5,6 +5,7 @@ import io.joern.rubysrc2cpg.parser.RubyParser.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
+import io.joern.x2cpg.Imports.createImportNodeAndLink
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewControlStructure, NewImport, NewLiteral}
 import org.antlr.v4.runtime.ParserRuleContext
@@ -200,7 +201,8 @@ trait AstForStatementsCreator {
           pathValue
       }
       packageStack.append(result)
-      astForImportNode(node.code)
+      val importNode = createImportNodeAndLink(result, "", Some(callNode), diffGraph)
+      Seq(callAst(callNode, argsAst), Ast(importNode))
     } else {
       Seq(callAst(callNode, argsAst))
     }
@@ -216,17 +218,11 @@ trait AstForStatementsCreator {
       val currentDirectory = File(currentFile).parent
       val file             = File(currentDirectory, updatedPath)
       packageStack.append(file.pathAsString)
-      astForImportNode(node.code)
+      val importNode = createImportNodeAndLink(updatedPath, "", Some(callNode), diffGraph)
+      Seq(callAst(callNode, argsAst), Ast(importNode))
     } else {
       Seq(callAst(callNode, argsAst))
     }
-  }
-
-  protected def astForImportNode(code: String): Seq[Ast] = {
-    // fully implemented later
-    val importNode = NewImport()
-      .code(code)
-    Seq(Ast(importNode))
   }
 
   protected def astForBlock(ctx: BlockContext): Ast = ctx match
