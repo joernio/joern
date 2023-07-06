@@ -214,7 +214,7 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |  WsOrNl
           |  end""".stripMargin
       }
-      
+
       "it contains an optional parameter before a mandatory one" in {
         val code = "def foo(x=1,y); end"
         printAst(_.primary(), code) shouldEqual
