@@ -319,19 +319,19 @@ methodParameterPart
     ;
 
 parameters
-    :   mandatoryParameters (COMMA wsOrNl* optionalParameters)? (COMMA WS* arrayParameter)? (COMMA WS* hashParameter)? (COMMA WS* procParameter)?
-    |   optionalParameters (COMMA wsOrNl* arrayParameter)? (COMMA WS* hashParameter)? (COMMA wsOrNl* procParameter)?
-    |   arrayParameter (COMMA WS* hashParameter)? (COMMA wsOrNl* procParameter)?
-    |   hashParameter (COMMA wsOrNl* procParameter)?
+    :   parameter (WS* COMMA wsOrNl* parameter)*
+    ;
+    
+parameter
+    :   mandatoryParameter
+    |   optionalParameter
+    |   arrayParameter
+    |   hashParameter
     |   procParameter
     ;
 
-mandatoryParameters
-    :   LOCAL_VARIABLE_IDENTIFIER (COMMA wsOrNl* LOCAL_VARIABLE_IDENTIFIER)*
-    ;
-
-optionalParameters
-    :   optionalParameter (COMMA wsOrNl* optionalParameter)*
+mandatoryParameter
+    :   LOCAL_VARIABLE_IDENTIFIER
     ;
 
 optionalParameter
