@@ -1,6 +1,7 @@
 package io.joern.x2cpg
 
 import better.files._
+import io.joern.x2cpg.utils.IgnoreInWindows
 import io.shiftleft.utils.ProjectRoot
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -43,7 +44,7 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
       result.failed.get shouldBe a[FileNotFoundException]
     }
 
-    "the input file exists, but is not readable" in {
+    "the input file exists, but is not readable" taggedAs IgnoreInWindows in {
       File.usingTemporaryFile() { tmpFile =>
         tmpFile.setPermissions(PosixFilePermissions.fromString("-wx-w--w-").asScala.toSet)
         tmpFile.exists shouldBe true
