@@ -180,11 +180,15 @@ argumentsWithoutParentheses
     ;
 
 arguments
-    :   blockArgument                                                                                                           # blockArgumentTypeArguments
-    |   splattingArgument (WS* COMMA wsOrNl expressions)? (WS* COMMA wsOrNl* associations)? (COMMA wsOrNl* blockArgument)?      # blockSplattingTypeArguments
-    |   expressions WS* COMMA wsOrNl* associations (WS* COMMA wsOrNl* splattingArgument)? (WS* COMMA wsOrNl* blockArgument)?    # blockSplattingExprAssocTypeArguments
-    |   (expressions | associations) (WS* COMMA wsOrNl* splattingArgument)? (WS* COMMA wsOrNl* blockArgument)?                  # blockExprAssocTypeArguments
-    |   command                                                                                                                 # commandTypeArguments
+    :   argument (WS* COMMA wsOrNl* argument)*
+    ;
+    
+argument
+    :   blockArgument                                                                                                           # blockArgumentArgument
+    |   splattingArgument                                                                                                       # splattingArgumentArgument
+    |   expression                                                                                                              # expressionArgument
+    |   association                                                                                                             # associationArgument
+    |   command                                                                                                                 # commandArgument
     ;
 
 blockArgument
