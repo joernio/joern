@@ -2,6 +2,7 @@ package io.joern.rubysrc2cpg.testfixtures
 
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
+import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, DefaultTestCpg, LanguageFrontend}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
@@ -18,7 +19,10 @@ trait RubyFrontend extends LanguageFrontend {
         .getOrElse(Config())
     new RubySrc2Cpg()
       .createCpg(sourceCodeFile.getAbsolutePath)
-      .map(applyPostProcessingPasses)
+      .map { cpg =>
+        X2Cpg.applyDefaultOverlays(cpg)
+        applyPostProcessingPasses(cpg)
+      }
       .get
   }
 
