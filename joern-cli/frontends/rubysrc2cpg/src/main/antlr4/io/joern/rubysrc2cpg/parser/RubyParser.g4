@@ -327,6 +327,7 @@ parameter
     |   optionalParameter
     |   arrayParameter
     |   hashParameter
+    |   keywordParameter
     |   procParameter
     ;
 
@@ -344,6 +345,10 @@ arrayParameter
 
 hashParameter
     :   STAR2 LOCAL_VARIABLE_IDENTIFIER?
+    ;
+
+keywordParameter
+    :   LOCAL_VARIABLE_IDENTIFIER WS* COLON wsOrNl* expression
     ;
 
 procParameter

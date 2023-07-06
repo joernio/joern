@@ -253,6 +253,42 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |  WsOrNl
             |  end""".stripMargin
       }
+
+      "it contains a keyword parameter" in {
+        val code = "def foo(x: 1); end"
+        printAst(_.primary(), code) shouldEqual
+          """MethodDefinitionPrimary
+            | MethodDefinition
+            |  def
+            |  WsOrNl
+            |  SimpleMethodNamePart
+            |   DefinedMethodName
+            |    MethodName
+            |     MethodIdentifier
+            |      foo
+            |  MethodParameterPart
+            |   (
+            |   Parameters
+            |    Parameter
+            |     KeywordParameter
+            |      x
+            |      :
+            |      WsOrNl
+            |      PrimaryExpression
+            |       LiteralPrimary
+            |        NumericLiteralLiteral
+            |         NumericLiteral
+            |          UnsignedNumericLiteral
+            |           1
+            |   )
+            |  BodyStatement
+            |   CompoundStatement
+            |    Separators
+            |     Separator
+            |      ;
+            |  WsOrNl
+            |  end""".stripMargin
+      }
     }
   }
 }
