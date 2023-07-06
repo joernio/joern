@@ -370,6 +370,25 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
+  "Data flow coming out of yield without argument" ignore {
+    val cpg = code("""
+        |def foo
+        |        x=10
+        |        z = yield
+        |        puts z
+        |end
+        |
+        |x = 100
+        |foo{ x + 10 }
+        |""".stripMargin)
+
+    "be found" in {
+      val src  = cpg.identifier.name("x").l
+      val sink = cpg.call.name("puts").l
+      sink.reachableByFlows(src).size shouldBe 1
+    }
+  }
+
   "Data flow through yield with argument and multiple yield blocks" ignore {
     val cpg = code("""
         |def yield_with_arguments
