@@ -25,25 +25,21 @@ class PackageTable() extends AstCreatorHelper {
 
   def getMethodFullNameUsingName(packageUsed: List[String], methodName: String): Option[String] = {
     if (isExcluded(methodName)) {
-      DynamicCallUnknownFullName
-    }
-
-    val finalMethodName = ListBuffer[String]()
-    packageUsed.foreach(module => {
-      if (methodTableMap.containsKey(module)) {
-        methodTableMap
-          .get(module)
-          .filter(_.methodName == methodName)
-          .foreach(method => {
-            finalMethodName.addOne(s"$module::program:${method.parentClassPath}:$methodName")
-          })
-      }
-    })
-
-    if (finalMethodName.size == 1) {
-      Some(finalMethodName.head)
+      Some(DynamicCallUnknownFullName)
     } else {
-      None
+      val finalMethodName = ListBuffer[String]()
+      packageUsed.foreach(module => {
+        if (methodTableMap.containsKey(module)) {
+          methodTableMap
+            .get(module)
+            .filter(_.methodName == methodName)
+            .foreach(method => {
+              finalMethodName.addOne(s"$module::program:${method.parentClassPath}:$methodName")
+            })
+        }
+      })
+
+      finalMethodName.headOption
     }
   }
 }

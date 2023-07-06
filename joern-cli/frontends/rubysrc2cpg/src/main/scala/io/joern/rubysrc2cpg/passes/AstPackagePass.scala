@@ -9,6 +9,7 @@ import org.jruby.Ruby
 import org.jruby.ast.{Colon2Node, DefnNode, Node, NodeType, ReturnNode}
 
 import scala.collection.mutable.ListBuffer
+import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 class AstPackagePass(cpg: Cpg, tempExtDir: String, global: Global, packageTable: PackageTable, inputPath: String)
     extends ConcurrentWriterCpgPass[String](cpg) {
@@ -31,8 +32,11 @@ class AstPackagePass(cpg: Cpg, tempExtDir: String, global: Global, packageTable:
     if (node != null) {
       node.getNodeType match {
         case NodeType.CLASSNODE | NodeType.MODULENODE =>
-          val classOrModuleName = node.childNodes().get(0).asInstanceOf[Colon2Node].getName.toString
-          currentNameSpace.addOne(classOrModuleName)
+          val childList = node.childNodes().asScala.toList
+          if (childList.nonEmpty) {
+            val classOrModuleName = childList.head.asInstanceOf[Colon2Node].getName.toString
+            currentNameSpace.addOne(classOrModuleName)
+          }
         case NodeType.DEFNNODE =>
           val methodName = node.asInstanceOf[DefnNode].getName.toString
           val classPath  = currentNameSpace.mkString(":")
