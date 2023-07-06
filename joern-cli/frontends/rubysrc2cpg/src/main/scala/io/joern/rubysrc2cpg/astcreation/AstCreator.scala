@@ -1021,6 +1021,7 @@ class AstCreator(
           .name(varSymbol.getText)
           .code(varSymbol.getText)
           .lineNumber(varSymbol.getLine)
+          .typeFullName(Defines.Any)
           .columnNumber(varSymbol.getCharPositionInLine)
         Ast(param)
       })
@@ -1128,9 +1129,9 @@ class AstCreator(
 
   def astForMethodDefinitionContext(ctx: MethodDefinitionContext): Seq[Ast] = {
     scope.pushNewScope(())
-    val astMethodParam = astForMethodParameterPartContext(ctx.methodParameterPart())
-    val astMethodName  = astForMethodNamePartContext(ctx.methodNamePart())
-    val callNode       = astMethodName.head.nodes.filter(node => node.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
+    val astMethodParamSeq = astForMethodParameterPartContext(ctx.methodParameterPart())
+    val astMethodName     = astForMethodNamePartContext(ctx.methodNamePart())
+    val callNode = astMethodName.head.nodes.filter(node => node.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
     // there can be only one call node
     val astBody = astForBodyStatementContext(ctx.bodyStatement(), addReturnNode = true)
     scope.popScope()
@@ -1199,18 +1200,12 @@ class AstCreator(
      * TODO find out how they should be used. Need to do this iff it adds any value
      */
 
-    val paramSeq = astMethodParam.head.nodes
-      .map(node => {
-        Ast(node)
-      })
-      .toSeq
-
     methodNames.add(methodNode.name)
     val blockNode = NewBlock().typeFullName(Defines.Any)
     Seq(
       methodAst(
         methodNode,
-        paramSeq,
+        astMethodParamSeq,
         blockAst(blockNode, astBody.toList),
         methodRetNode,
         Seq[NewModifier](modifierNode)
