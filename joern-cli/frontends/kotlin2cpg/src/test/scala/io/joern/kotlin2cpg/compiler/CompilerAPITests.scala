@@ -40,13 +40,19 @@ class CompilerAPITests extends AnyFreeSpec with Matchers {
     val projectDependenciesPath = Paths.get(projectDirPath, "dependencies")
 
     "should not receive a compiler error message when the dependencies of the project have been provided" in {
+      val jarResources = Seq(
+        DefaultContentRootJarPath("jars/kotlin-stdlib-1.8.21.jar", isResource = true),
+        DefaultContentRootJarPath("jars/kotlin-stdlib-common-1.8.21.jar", isResource = true),
+        DefaultContentRootJarPath("jars/kotlin-stdlib-jdk8-1.8.21.jar", isResource = true)
+      )
+
       val defaultContentRootJarsDir = File(projectDependenciesPath)
       val contentRoots = defaultContentRootJarsDir.listRecursively
         .filter(_.pathAsString.endsWith("jar"))
         .map { f => DefaultContentRootJarPath(f.pathAsString, false) }
-        .toSeq
+        .toSeq ++ jarResources
       val messageCollector = new ErrorCountMessageCollector()
-      val environment = CompilerAPI.makeEnvironment(Seq(projectDirPath), Seq(), contentRoots, Seq(), messageCollector)
+      val environment      = CompilerAPI.makeEnvironment(Seq(projectDirPath), Seq(), contentRoots, messageCollector)
 
       KotlinToJVMBytecodeCompiler.INSTANCE.analyze(environment)
       messageCollector.hasErrors() shouldBe false
@@ -54,7 +60,7 @@ class CompilerAPITests extends AnyFreeSpec with Matchers {
 
     "should receive a compiler error message when the dependencies of the project have not been provided" in {
       val messageCollector = new ErrorCountMessageCollector()
-      val environment      = CompilerAPI.makeEnvironment(Seq(projectDirPath), Seq(), Seq(), Seq(), messageCollector)
+      val environment      = CompilerAPI.makeEnvironment(Seq(projectDirPath), Seq(), Seq(), messageCollector)
 
       KotlinToJVMBytecodeCompiler.INSTANCE.analyze(environment)
       messageCollector.hasErrors() shouldBe true
