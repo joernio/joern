@@ -1466,20 +1466,6 @@ class AstCreator(
     astForExpressionContext(ctx.expression())
   }
 
-  def astForBlockArgumentTypeArgumentsContext(ctx: BlockArgumentTypeArgumentsContext): Seq[Ast] = {
-    astForBlockArgumentContext(ctx.blockArgument())
-  }
-
-  def astForBlockSplattingTypeArgumentsContext(ctx: BlockSplattingTypeArgumentsContext): Seq[Ast] = {
-    val splatAst = astForSplattingArgumentContext(ctx.splattingArgument())
-    if (ctx.blockArgument() != null) {
-      val blockArgAst = astForBlockArgumentContext(ctx.blockArgument())
-      blockArgAst ++ splatAst
-    } else {
-      splatAst
-    }
-  }
-
   def astForAssociationContext(ctx: AssociationContext): Seq[Ast] = {
     val expr1Asts = astForExpressionContext(ctx.expression().get(0))
     val expr2Asts = astForExpressionContext(ctx.expression().get(1))
@@ -1509,31 +1495,6 @@ class AstCreator(
         astForAssociationContext(assoc)
       })
       .toSeq
-  }
-
-  def astForBlockSplattingExprAssocTypeArgumentsContext(ctx: BlockSplattingExprAssocTypeArgumentsContext): Seq[Ast] = {
-    val blockArgAsts     = astForBlockArgumentContext(ctx.blockArgument())
-    val splatAsts        = astForSplattingArgumentContext(ctx.splattingArgument())
-    val associationsAsts = astForAssociationsContext(ctx.associations())
-    val expAsts          = ctx.expressions().expression().asScala.flatMap(exp => astForExpressionContext(exp)).toSeq
-    blockArgAsts ++ splatAsts ++ associationsAsts ++ expAsts
-  }
-
-  def astForBlockExprAssocTypeArgumentsContext(ctx: BlockExprAssocTypeArgumentsContext): Seq[Ast] = {
-    val listAsts = ListBuffer[Ast]()
-
-    if (ctx.blockArgument() != null) {
-      listAsts.addAll(astForBlockArgumentContext(ctx.blockArgument()))
-    }
-
-    if (ctx.associations() != null) {
-      listAsts.addAll(astForAssociationsContext(ctx.associations()))
-    } else {
-      val exprAsts = ctx.expressions().expression().asScala.flatMap(exp => astForExpressionContext(exp))
-      listAsts.addAll(exprAsts)
-    }
-
-    listAsts.toSeq
   }
 
 }

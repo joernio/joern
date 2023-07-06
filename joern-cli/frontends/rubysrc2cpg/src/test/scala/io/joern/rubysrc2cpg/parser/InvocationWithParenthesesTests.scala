@@ -43,8 +43,8 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
             |  foo
             | ArgsOnlyArgumentsWithParentheses
             |  (
-            |  BlockExprAssocTypeArguments
-            |   Expressions
+            |  Arguments
+            |   ExpressionArgument
             |    PrimaryExpression
             |     LiteralPrimary
             |      NumericLiteralLiteral
@@ -59,27 +59,27 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
 
         printAst(_.primary(), code) shouldEqual
           s"""InvocationWithParenthesesPrimary
-            | MethodIdentifier
-            |  foo
-            | ArgsOnlyArgumentsWithParentheses
-            |  (
-            |  BlockExprAssocTypeArguments
-            |   Associations
-            |    Association
-            |     PrimaryExpression
-            |      VariableReferencePrimary
-            |       VariableIdentifierVariableReference
-            |        VariableIdentifier
-            |         region
-            |     :
-            |     WsOrNl
-            |     PrimaryExpression
-            |      LiteralPrimary
-            |       NumericLiteralLiteral
-            |        NumericLiteral
-            |         UnsignedNumericLiteral
-            |          1
-            |  )""".stripMargin
+             | MethodIdentifier
+             |  foo
+             | ArgsOnlyArgumentsWithParentheses
+             |  (
+             |  Arguments
+             |   AssociationArgument
+             |    Association
+             |     PrimaryExpression
+             |      VariableReferencePrimary
+             |       VariableIdentifierVariableReference
+             |        VariableIdentifier
+             |         region
+             |     :
+             |     WsOrNl
+             |     PrimaryExpression
+             |      LiteralPrimary
+             |       NumericLiteralLiteral
+             |        NumericLiteral
+             |         UnsignedNumericLiteral
+             |          1
+             |  )""".stripMargin
       }
 
       "it contains a single symbol literal positional argument" in {
@@ -91,8 +91,8 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
             |  foo
             | ArgsOnlyArgumentsWithParentheses
             |  (
-            |  BlockExprAssocTypeArguments
-            |   Expressions
+            |  Arguments
+            |   ExpressionArgument
             |    PrimaryExpression
             |     LiteralPrimary
             |      SymbolLiteral
@@ -110,8 +110,8 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
             |  foo
             | ArgsOnlyArgumentsWithParentheses
             |  (
-            |  BlockExprAssocTypeArguments
-            |   Expressions
+            |  Arguments
+            |   ExpressionArgument
             |    PrimaryExpression
             |     LiteralPrimary
             |      SymbolLiteral
@@ -129,18 +129,19 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
             |  foo
             | ArgsOnlyArgumentsWithParentheses
             |  (
-            |  BlockSplattingTypeArguments
-            |   SplattingArgument
-            |    *
-            |    ExpressionExpressionOrCommand
-            |     PrimaryExpression
-            |      VariableReferencePrimary
-            |       VariableIdentifierVariableReference
-            |        VariableIdentifier
-            |         x
+            |  Arguments
+            |   SplattingArgumentArgument
+            |    SplattingArgument
+            |     *
+            |     ExpressionExpressionOrCommand
+            |      PrimaryExpression
+            |       VariableReferencePrimary
+            |        VariableIdentifierVariableReference
+            |         VariableIdentifier
+            |          x
             |   ,
             |   WsOrNl
-            |   Associations
+            |   AssociationArgument
             |    Association
             |     PrimaryExpression
             |      VariableReferencePrimary
