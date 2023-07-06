@@ -867,7 +867,6 @@ class AstCreator(
       val varSymbol = localVar.getSymbol
       Seq(astForCallNode(ctx, code, methodNamesWithYield.contains(varSymbol.getText)))
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
-      val localVar = ctx.CONSTANT_IDENTIFIER()
       Seq(astForCallNode(ctx, code))
     } else {
       Seq(Ast())
