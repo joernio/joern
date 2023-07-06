@@ -314,7 +314,7 @@ methodIdentifier
     ;
 
 methodOnlyIdentifier
-    :   (LOCAL_VARIABLE_IDENTIFIER | CONSTANT_IDENTIFIER) (EMARK | QMARK)
+    :   (LOCAL_VARIABLE_IDENTIFIER | CONSTANT_IDENTIFIER | keyword) (EMARK | QMARK)
     ;
 
 methodParameterPart
