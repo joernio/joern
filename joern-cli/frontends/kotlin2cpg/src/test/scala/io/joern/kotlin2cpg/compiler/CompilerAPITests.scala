@@ -41,9 +41,9 @@ class CompilerAPITests extends AnyFreeSpec with Matchers {
 
     "should not receive a compiler error message when the dependencies of the project have been provided" in {
       val jarResources = Seq(
-        DefaultContentRootJarPath("jars/kotlin-stdlib-1.8.21.jar", isResource = true),
-        DefaultContentRootJarPath("jars/kotlin-stdlib-common-1.8.21.jar", isResource = true),
-        DefaultContentRootJarPath("jars/kotlin-stdlib-jdk8-1.8.21.jar", isResource = true)
+        DefaultContentRootJarPath("jars/kotlin-stdlib-1.9.0.jar", isResource = true),
+        DefaultContentRootJarPath("jars/kotlin-stdlib-common-1.9.0.jar", isResource = true),
+        DefaultContentRootJarPath("jars/kotlin-stdlib-jdk8-1.9.0.jar", isResource = true)
       )
 
       val defaultContentRootJarsDir = File(projectDependenciesPath)
