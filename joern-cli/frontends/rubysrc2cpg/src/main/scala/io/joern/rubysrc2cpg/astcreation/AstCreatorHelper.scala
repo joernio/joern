@@ -50,7 +50,7 @@ object GlobalTypes {
     "fail",
     "fork",
     "format",
-    "frozen?",
+    // "frozen?",
     "gets",
     "global_variables",
     "gsub",
