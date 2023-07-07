@@ -23,10 +23,10 @@ class InvocationWithoutParenthesesTests extends RubyParserAbstractTest {
             |     nil
             |    ?""".stripMargin
       }
-      
+
       "it is keyword?-named" in {
         val code = "do?"
-        
+
         printAst(_.primary(), code) shouldBe
           """MethodOnlyIdentifierPrimary
             | MethodOnlyIdentifier
@@ -34,10 +34,10 @@ class InvocationWithoutParenthesesTests extends RubyParserAbstractTest {
             |   do
             |  ?""".stripMargin
       }
-      
+
       "it is keyword!-named" in {
         val code = "return!"
-        
+
         printAst(_.primary(), code) shouldBe
           """MethodOnlyIdentifierPrimary
             | MethodOnlyIdentifier
