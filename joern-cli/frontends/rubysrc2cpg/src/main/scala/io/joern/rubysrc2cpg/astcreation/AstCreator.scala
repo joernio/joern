@@ -841,7 +841,7 @@ class AstCreator(
       .getMethodFullNameUsingName(packageStack.toList, name)
       .headOption match {
       case None if isBuiltin(name)            => prefixAsBuiltin(name) // TODO: Probably not super precise
-      case Some(externalDependencyResolution) => externalDependencyResolution
+      case Some(externalDependencyResolution) => DynamicCallUnknownFullName
       case None                               => DynamicCallUnknownFullName
     }
 

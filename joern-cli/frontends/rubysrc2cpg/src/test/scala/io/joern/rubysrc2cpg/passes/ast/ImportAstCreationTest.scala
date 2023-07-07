@@ -1,7 +1,8 @@
 package io.joern.rubysrc2cpg.passes.ast
 
+import io.joern.rubysrc2cpg.Config
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class ImportAstCreationTest extends RubyCode2CpgFixture {
 
@@ -30,5 +31,4 @@ class ImportAstCreationTest extends RubyCode2CpgFixture {
       calls.referencedImports.importedEntity.l shouldBe List("dummy_logger", "util/help.rb", "mymodule.rb")
     }
   }
-
 }

@@ -23,4 +23,10 @@ class PackageTable() {
           .filter(_.methodName == methodName)
           .map(method => s"$module::program:${method.parentClassPath}$methodName")
       )
+
+  def getPackageInfo(moduleName: String): List[MethodTableModel] = {
+    methodTableMap.get(moduleName) match
+      case Some(value) => value.toList
+      case None => List[MethodTableModel]()
+  }
 }
