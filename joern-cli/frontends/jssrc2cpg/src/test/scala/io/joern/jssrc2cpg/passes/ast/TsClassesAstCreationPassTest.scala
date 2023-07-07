@@ -2,8 +2,8 @@ package io.joern.jssrc2cpg.passes.ast
 
 import io.joern.jssrc2cpg.passes.{AbstractPassTest, Defines}
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode, Declaration, Identifier}
+import io.shiftleft.semanticcpg.language.*
 
 class TsClassesAstCreationPassTest extends AbstractPassTest {
 
@@ -312,6 +312,8 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
       credentialsParam.typeFullName shouldBe "code.ts::program:Test:run:_anon_cdecl"
       // should not produce dangling nodes that are meant to be inside procedures
       cpg.all.collectAll[CfgNode].whereNot(_._astIn).size shouldBe 0
+      cpg.identifier.count(_.refsTo.size > 1) shouldBe 0
+      cpg.identifier.whereNot(_.refsTo).size shouldBe 0
     }
 
     "AST generation for destructured type in a parameter" in TsAstFixture("""
@@ -327,6 +329,8 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
       credentialsParam.typeFullName shouldBe "code.ts::program:apiCall:_anon_cdecl"
       // should not produce dangling nodes that are meant to be inside procedures
       cpg.all.collectAll[CfgNode].whereNot(_._astIn).size shouldBe 0
+      cpg.identifier.count(_.refsTo.size > 1) shouldBe 0
+      cpg.identifier.whereNot(_.refsTo).size shouldBe 0
     }
 
   }
