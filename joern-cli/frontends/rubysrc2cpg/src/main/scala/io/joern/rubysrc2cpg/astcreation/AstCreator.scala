@@ -220,11 +220,6 @@ class AstCreator(
 
   }
 
-  def astForSplattingArgumentContext(ctx: SplattingArgumentContext): Seq[Ast] = {
-    if (ctx == null) return Seq(Ast())
-    astForExpressionOrCommand(ctx.expressionOrCommand())
-  }
-
   def astForMultipleRightHandSideContext(ctx: MultipleRightHandSideContext): Seq[Ast] = {
     if (ctx == null) return Seq(Ast())
 
@@ -236,7 +231,7 @@ class AstCreator(
         Seq()
 
     val paramAsts = if (ctx.splattingArgument() != null) {
-      val splattingAsts = astForSplattingArgumentContext(ctx.splattingArgument())
+      val splattingAsts = astForExpressionOrCommand(ctx.splattingArgument().expressionOrCommand())
       exprAsts ++ splattingAsts
     } else {
       exprAsts
@@ -399,7 +394,7 @@ class AstCreator(
           astForExpressionContext(exp)
         })
         .toSeq
-      val splatAsts = astForSplattingArgumentContext(ctx.splattingArgument())
+      val splatAsts = astForExpressionOrCommand(ctx.splattingArgument().expressionOrCommand())
       val callNode = NewCall()
         .name(ctx.COMMA().getText)
         .methodFullName(Operators.arrayInitializer)
@@ -413,7 +408,7 @@ class AstCreator(
     case ctx: AssociationsOnlyIndexingArgumentsContext =>
       astForAssociationsContext(ctx.associations())
     case ctx: RubyParser.SplattingOnlyIndexingArgumentsContext =>
-      astForSplattingArgumentContext(ctx.splattingArgument())
+      astForExpressionOrCommand(ctx.splattingArgument().expressionOrCommand())
     case _ =>
       logger.error(s"astForIndexingArgumentsContext() $filename, ${ctx.getText} All contexts mismatched.")
       Seq(Ast())
@@ -440,7 +435,7 @@ class AstCreator(
 
     val asts =
       if (ctx.splattingArgument() != null) {
-        expAsts ++ astForSplattingArgumentContext(ctx.splattingArgument())
+        expAsts ++ astForExpressionOrCommand(ctx.splattingArgument().expressionOrCommand())
       } else {
         expAsts
       }
@@ -1463,11 +1458,6 @@ class AstCreator(
       Seq[NewModifier](publicModifier)
     )
     Seq(methAst)
-  }
-
-  def astForBlockArgumentContext(ctx: BlockArgumentContext): Seq[Ast] = {
-    if (ctx == null) return Seq(Ast())
-    astForExpressionContext(ctx.expression())
   }
 
   def astForAssociationContext(ctx: AssociationContext): Seq[Ast] = {
