@@ -1,7 +1,13 @@
 package io.joern.rubysrc2cpg
 
 import better.files.File
-import io.joern.rubysrc2cpg.passes.{AstCreationPass, AstPackagePass, ConfigFileCreationPass, ImportResolverPass, RubyTypeRecoveryPass}
+import io.joern.rubysrc2cpg.passes.{
+  AstCreationPass,
+  AstPackagePass,
+  ConfigFileCreationPass,
+  ImportResolverPass,
+  RubyTypeRecoveryPass
+}
 import io.joern.rubysrc2cpg.utils.PackageTable
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
@@ -65,8 +71,7 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
 
 object RubySrc2Cpg {
 
-  def postProcessingPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] = List(
-    new RubyTypeRecoveryPass(cpg),
-    new NaiveCallLinker(cpg))
+  def postProcessingPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] =
+    List(new RubyTypeRecoveryPass(cpg), new NaiveCallLinker(cpg))
 
 }

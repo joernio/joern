@@ -27,6 +27,6 @@ class PackageTable() {
   def getPackageInfo(moduleName: String): List[MethodTableModel] = {
     methodTableMap.get(moduleName) match
       case Some(value) => value.toList
-      case None => List[MethodTableModel]()
+      case None        => List[MethodTableModel]()
   }
 }
