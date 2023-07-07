@@ -1459,7 +1459,7 @@ class AstCreator(
     )
     Seq(methAst)
   }
-  
+
   def astForAssociationContext(ctx: AssociationContext): Seq[Ast] = {
     val expr1Asts = astForExpressionContext(ctx.expression().get(0))
     val expr2Asts = astForExpressionContext(ctx.expression().get(1))
