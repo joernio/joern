@@ -4,6 +4,7 @@ import better.files.File.VisitOptions
 import better.files._
 import org.slf4j.LoggerFactory
 
+import java.io.FileNotFoundException
 import java.nio.file.Paths
 
 object SourceFiles {
@@ -70,9 +71,10 @@ object SourceFiles {
     def hasSourceFileExtension(file: File): Boolean =
       file.extension.exists(sourceFileExtensions.contains)
 
-    val (dirs, files) = inputPaths
-      .map(File(_))
-      .partition(_.isDirectory)
+    val inputFiles = inputPaths.map(File(_))
+    assertAllExist(inputFiles)
+
+    val (dirs, files) = inputFiles.partition(_.isDirectory)
 
     val matchingFiles = files.filter(hasSourceFileExtension).map(_.toString)
     val matchingFilesFromDirs = dirs
@@ -81,6 +83,35 @@ object SourceFiles {
       .map(_.pathAsString)
 
     (matchingFiles ++ matchingFilesFromDirs).toList.sorted
+  }
+
+  /** Attempting to analyse source paths that do not exist is a hard error. Terminate execution early to avoid
+    * unexpected and hard-to-debug issues in the results.
+    */
+  private def assertAllExist(files: Set[File]): Unit = {
+    val (existant, nonExistant) = files.partition(_.isReadable)
+    val nonReadable             = existant.filterNot(_.isReadable)
+
+    if (nonExistant.nonEmpty || nonReadable.nonEmpty) {
+      logErrorWithPaths("Source input paths do not exist", nonExistant.map(_.canonicalPath))
+
+      logErrorWithPaths("Source input paths exist, but are not readable", nonReadable.map(_.canonicalPath))
+
+      throw FileNotFoundException("Invalid source paths provided")
+    }
+  }
+
+  private def logErrorWithPaths(message: String, paths: Iterable[String]): Unit = {
+    val pathsArray = paths.toArray.sorted
+
+    pathsArray.lengthCompare(1) match {
+      case cmp if cmp < 0  => // pathsArray is empty, so don't log anything
+      case cmp if cmp == 0 => logger.error(s"$message: ${paths.head}")
+
+      case cmp =>
+        val errorMessage = (message +: pathsArray.map(path => s"- $path")).mkString("\n")
+        logger.error(errorMessage)
+    }
   }
 
   /** Constructs an absolute path against rootPath. If the given path is already absolute this path is returned

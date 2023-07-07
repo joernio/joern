@@ -976,38 +976,41 @@ class AstCreator(
       Seq(Ast())
   }
 
+  // TODO: Rewrite for simplicity and take into account more than parameter names.
   def astForMethodParameterPartContext(ctx: MethodParameterPartContext): Seq[Ast] = {
     if (ctx == null || ctx.parameters() == null) return Seq(Ast())
     // NOT differentiating between the productions here since either way we get paramaters
-    val mandatoryParameters = ctx.parameters().mandatoryParameters()
-    val optionalParameters  = ctx.parameters().optionalParameters()
-    val arrayParameter      = ctx.parameters().arrayParameter()
-    val procParameter       = ctx.parameters().procParameter()
+    val mandatoryParameters = ctx
+      .parameters()
+      .parameter()
+      .asScala
+      .filter(ctx => Option(ctx.mandatoryParameter()).isDefined)
+      .map(_.mandatoryParameter().LOCAL_VARIABLE_IDENTIFIER())
+    val optionalParameters = ctx
+      .parameters()
+      .parameter()
+      .asScala
+      .filter(ctx => Option(ctx.optionalParameter()).isDefined)
+      .map(_.optionalParameter().LOCAL_VARIABLE_IDENTIFIER())
+    val arrayParameter = ctx
+      .parameters()
+      .parameter()
+      .asScala
+      .filter(ctx => Option(ctx.arrayParameter()).isDefined)
+      .map(_.arrayParameter().LOCAL_VARIABLE_IDENTIFIER())
+    val procParameter = ctx
+      .parameters()
+      .parameter()
+      .asScala
+      .filter(ctx => Option(ctx.procParameter()).isDefined)
+      .map(_.procParameter().LOCAL_VARIABLE_IDENTIFIER())
 
     val localVarList = ListBuffer[TerminalNode]()
 
-    if (mandatoryParameters != null) {
-      mandatoryParameters
-        .LOCAL_VARIABLE_IDENTIFIER()
-        .forEach(localVar => {
-          localVarList.addOne(localVar)
-        })
-    }
-
-    if (optionalParameters != null) {
-      val optionalParameterList = optionalParameters.optionalParameter()
-      optionalParameterList.forEach(param => {
-        localVarList.addOne(param.LOCAL_VARIABLE_IDENTIFIER())
-      })
-    }
-
-    if (arrayParameter != null) {
-      localVarList.addOne(arrayParameter.LOCAL_VARIABLE_IDENTIFIER())
-    }
-
-    if (procParameter != null) {
-      localVarList.addOne(procParameter.LOCAL_VARIABLE_IDENTIFIER())
-    }
+    localVarList.addAll(mandatoryParameters)
+    localVarList.addAll(optionalParameters)
+    localVarList.addAll(arrayParameter)
+    localVarList.addAll(procParameter)
 
     localVarList
       .map(localVar => {
@@ -1017,6 +1020,7 @@ class AstCreator(
           .name(varSymbol.getText)
           .code(varSymbol.getText)
           .lineNumber(varSymbol.getLine)
+          .typeFullName(Defines.Any)
           .columnNumber(varSymbol.getCharPositionInLine)
         Ast(param)
       })
@@ -1124,9 +1128,9 @@ class AstCreator(
 
   def astForMethodDefinitionContext(ctx: MethodDefinitionContext): Seq[Ast] = {
     scope.pushNewScope(())
-    val astMethodParam = astForMethodParameterPartContext(ctx.methodParameterPart())
-    val astMethodName  = astForMethodNamePartContext(ctx.methodNamePart())
-    val callNode       = astMethodName.head.nodes.filter(node => node.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
+    val astMethodParamSeq = astForMethodParameterPartContext(ctx.methodParameterPart())
+    val astMethodName     = astForMethodNamePartContext(ctx.methodNamePart())
+    val callNode = astMethodName.head.nodes.filter(node => node.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
     // there can be only one call node
     val astBody = astForBodyStatementContext(ctx.bodyStatement(), addReturnNode = true)
     scope.popScope()
@@ -1195,18 +1199,12 @@ class AstCreator(
      * TODO find out how they should be used. Need to do this iff it adds any value
      */
 
-    val paramSeq = astMethodParam.head.nodes
-      .map(node => {
-        Ast(node)
-      })
-      .toSeq
-
     methodNames.add(methodNode.name)
     val blockNode = NewBlock().typeFullName(Defines.Any)
     Seq(
       methodAst(
         methodNode,
-        paramSeq,
+        astMethodParamSeq,
         blockAst(blockNode, astBody.toList),
         methodRetNode,
         Seq[NewModifier](modifierNode)
@@ -1467,20 +1465,6 @@ class AstCreator(
     astForExpressionContext(ctx.expression())
   }
 
-  def astForBlockArgumentTypeArgumentsContext(ctx: BlockArgumentTypeArgumentsContext): Seq[Ast] = {
-    astForBlockArgumentContext(ctx.blockArgument())
-  }
-
-  def astForBlockSplattingTypeArgumentsContext(ctx: BlockSplattingTypeArgumentsContext): Seq[Ast] = {
-    val splatAst = astForSplattingArgumentContext(ctx.splattingArgument())
-    if (ctx.blockArgument() != null) {
-      val blockArgAst = astForBlockArgumentContext(ctx.blockArgument())
-      blockArgAst ++ splatAst
-    } else {
-      splatAst
-    }
-  }
-
   def astForAssociationContext(ctx: AssociationContext): Seq[Ast] = {
     val expr1Asts = astForExpressionContext(ctx.expression().get(0))
     val expr2Asts = astForExpressionContext(ctx.expression().get(1))
@@ -1510,31 +1494,6 @@ class AstCreator(
         astForAssociationContext(assoc)
       })
       .toSeq
-  }
-
-  def astForBlockSplattingExprAssocTypeArgumentsContext(ctx: BlockSplattingExprAssocTypeArgumentsContext): Seq[Ast] = {
-    val blockArgAsts     = astForBlockArgumentContext(ctx.blockArgument())
-    val splatAsts        = astForSplattingArgumentContext(ctx.splattingArgument())
-    val associationsAsts = astForAssociationsContext(ctx.associations())
-    val expAsts          = ctx.expressions().expression().asScala.flatMap(exp => astForExpressionContext(exp)).toSeq
-    blockArgAsts ++ splatAsts ++ associationsAsts ++ expAsts
-  }
-
-  def astForBlockExprAssocTypeArgumentsContext(ctx: BlockExprAssocTypeArgumentsContext): Seq[Ast] = {
-    val listAsts = ListBuffer[Ast]()
-
-    if (ctx.blockArgument() != null) {
-      listAsts.addAll(astForBlockArgumentContext(ctx.blockArgument()))
-    }
-
-    if (ctx.associations() != null) {
-      listAsts.addAll(astForAssociationsContext(ctx.associations()))
-    } else {
-      val exprAsts = ctx.expressions().expression().asScala.flatMap(exp => astForExpressionContext(exp))
-      listAsts.addAll(exprAsts)
-    }
-
-    listAsts.toSeq
   }
 
 }

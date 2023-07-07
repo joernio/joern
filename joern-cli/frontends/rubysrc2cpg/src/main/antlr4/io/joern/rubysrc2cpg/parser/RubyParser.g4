@@ -180,11 +180,15 @@ argumentsWithoutParentheses
     ;
 
 arguments
-    :   blockArgument                                                                                                           # blockArgumentTypeArguments
-    |   splattingArgument (COMMA wsOrNl* blockArgument)?                                                                        # blockSplattingTypeArguments
-    |   expressions WS* COMMA wsOrNl* associations (WS* COMMA wsOrNl* splattingArgument)? (WS* COMMA wsOrNl* blockArgument)?    # blockSplattingExprAssocTypeArguments
-    |   (expressions | associations) (WS* COMMA wsOrNl* splattingArgument)? (WS* COMMA wsOrNl* blockArgument)?                  # blockExprAssocTypeArguments
-    |   command                                                                                                                 # commandTypeArguments
+    :   argument (WS* COMMA wsOrNl* argument)*
+    ;
+    
+argument
+    :   blockArgument                                                                                                           # blockArgumentArgument
+    |   splattingArgument                                                                                                       # splattingArgumentArgument
+    |   expression                                                                                                              # expressionArgument
+    |   association                                                                                                             # associationArgument
+    |   command                                                                                                                 # commandArgument
     ;
 
 blockArgument
@@ -266,7 +270,7 @@ associations
     ;
 
 association
-    :   expression WS* (EQGT|COLON) wsOrNl* expression
+    :   (expression | keyword) WS* (EQGT|COLON) wsOrNl* expression
     ;
 
 // --------------------------------------------------------
@@ -310,7 +314,7 @@ methodIdentifier
     ;
 
 methodOnlyIdentifier
-    :   (LOCAL_VARIABLE_IDENTIFIER | CONSTANT_IDENTIFIER) (EMARK | QMARK)
+    :   (LOCAL_VARIABLE_IDENTIFIER | CONSTANT_IDENTIFIER | keyword) (EMARK | QMARK)
     ;
 
 methodParameterPart
@@ -319,19 +323,20 @@ methodParameterPart
     ;
 
 parameters
-    :   mandatoryParameters (COMMA wsOrNl* optionalParameters)? (COMMA WS* arrayParameter)? (COMMA WS* hashParameter)? (COMMA WS* procParameter)?
-    |   optionalParameters (COMMA wsOrNl* arrayParameter)? (COMMA WS* hashParameter)? (COMMA wsOrNl* procParameter)?
-    |   arrayParameter (COMMA WS* hashParameter)? (COMMA wsOrNl* procParameter)?
-    |   hashParameter (COMMA wsOrNl* procParameter)?
+    :   parameter (WS* COMMA wsOrNl* parameter)*
+    ;
+    
+parameter
+    :   mandatoryParameter
+    |   optionalParameter
+    |   arrayParameter
+    |   hashParameter
+    |   keywordParameter
     |   procParameter
     ;
 
-mandatoryParameters
-    :   LOCAL_VARIABLE_IDENTIFIER (COMMA wsOrNl* LOCAL_VARIABLE_IDENTIFIER)*
-    ;
-
-optionalParameters
-    :   optionalParameter (COMMA wsOrNl* optionalParameter)*
+mandatoryParameter
+    :   LOCAL_VARIABLE_IDENTIFIER
     ;
 
 optionalParameter
@@ -344,6 +349,10 @@ arrayParameter
 
 hashParameter
     :   STAR2 LOCAL_VARIABLE_IDENTIFIER?
+    ;
+
+keywordParameter
+    :   LOCAL_VARIABLE_IDENTIFIER WS* COLON wsOrNl* expression
     ;
 
 procParameter

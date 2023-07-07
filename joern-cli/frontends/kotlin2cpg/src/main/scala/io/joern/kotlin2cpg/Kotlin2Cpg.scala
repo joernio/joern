@@ -36,9 +36,9 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
   protected val logger = LoggerFactory.getLogger(getClass)
   val parsingError     = "KOTLIN2CPG_PARSING_ERROR"
   private val defaultKotlinStdlibContentRootJarPaths = Seq(
-    DefaultContentRootJarPath("jars/kotlin-stdlib-1.6.0.jar", isResource = true),
-    DefaultContentRootJarPath("jars/kotlin-stdlib-common-1.6.0.jar", isResource = true),
-    DefaultContentRootJarPath("jars/kotlin-stdlib-jdk8-1.6.0.jar", isResource = true)
+    DefaultContentRootJarPath("jars/kotlin-stdlib-1.9.0.jar", isResource = true),
+    DefaultContentRootJarPath("jars/kotlin-stdlib-common-1.9.0.jar", isResource = true),
+    DefaultContentRootJarPath("jars/kotlin-stdlib-jdk8-1.9.0.jar", isResource = true)
   )
 
   def createCpg(config: Config): Try[Cpg] = {
@@ -106,13 +106,11 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
       if (dirsForSourcesToCompile.isEmpty) {
         logger.warn("The list of directories to analyze is empty.")
       }
-      val plugins = Seq()
       val environment =
         CompilerAPI.makeEnvironment(
           dirsForSourcesToCompile,
           filesWithJavaExtension,
           defaultContentRootJars,
-          plugins,
           messageCollector
         )
 

@@ -33,8 +33,7 @@ class MethodOneTests extends RubyCode2CpgFixture {
       cpg.method.name("foo").numberOfLines.l shouldBe List(3)
     }
 
-    // TODO: This test cases needs to be fixed.
-    "should allow traversing to parameters" ignore {
+    "should allow traversing to parameters" in {
       cpg.method.name("foo").parameter.name.toSetMutable shouldBe Set("a", "b")
     }
 
@@ -51,18 +50,6 @@ class MethodOneTests extends RubyCode2CpgFixture {
       cpg.method.name("foo").file.name.l should not be empty
     }
 
-    // TODO: Need to be fixed
-    "test function method ref" ignore {
-      cpg.methodRef("foo").referencedMethod.fullName.l should not be empty
-      cpg.methodRef("foo").referencedMethod.fullName.head shouldBe
-        "Test0.rb::program:foo"
-    }
-
-    // TODO: Need to be fixed.
-    "test existence of local variable in module function" ignore {
-      cpg.method.fullName("Test0.rb::program").local.name.l should contain("foo")
-    }
-
     // TODO: need to be fixed.
     "test corresponding type, typeDecl and binding" ignore {
       cpg.method.fullName("Test0.rb::program:foo").referencingBinding.bindingTypeDecl.l should not be empty
@@ -75,8 +62,7 @@ class MethodOneTests extends RubyCode2CpgFixture {
       bindingTypeDecl.referencingType.fullName.head shouldBe "Test0.rb::program:foo"
     }
 
-    // TODO: Need to be fixed
-    "test method parameter nodes" ignore {
+    "test method parameter nodes" in {
       cpg.method.name("foo").parameter.name.l.size shouldBe 2
       val parameter1 = cpg.method.fullName("Test0.rb::program:foo").parameter.order(1).head
       parameter1.name shouldBe "a"
@@ -89,10 +75,8 @@ class MethodOneTests extends RubyCode2CpgFixture {
       parameter2.typeFullName shouldBe "ANY"
     }
 
-    // TODO: Need to be fixed
-    "should allow traversing from parameter to method" ignore {
+    "should allow traversing from parameter to method" in {
       cpg.parameter.name("a").method.name.l shouldBe List("foo")
-      // TODO: its not working with "b"
       cpg.parameter.name("b").method.name.l shouldBe List("foo")
     }
   }

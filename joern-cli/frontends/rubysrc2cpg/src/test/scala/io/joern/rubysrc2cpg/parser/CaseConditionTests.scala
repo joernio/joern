@@ -50,8 +50,8 @@ class CaseConditionTests extends RubyParserAbstractTest {
             |          MethodIdentifier
             |           puts
             |          ArgumentsWithoutParentheses
-            |           BlockExprAssocTypeArguments
-            |            Expressions
+            |           Arguments
+            |            ExpressionArgument
             |             PrimaryExpression
             |              LiteralPrimary
             |               NumericLiteralLiteral
