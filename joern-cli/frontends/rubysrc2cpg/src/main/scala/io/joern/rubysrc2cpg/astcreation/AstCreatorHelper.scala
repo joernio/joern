@@ -79,6 +79,7 @@ object GlobalTypes {
     "sprintf",
     "srand",
     "sub",
+    "sub!",
     "syscall",
     "system",
     "tap",
