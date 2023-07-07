@@ -370,7 +370,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Data flow coming out of yield without argument" ignore {
+  "Data flow coming out of yield without argument" should {
     val cpg = code("""
         |def foo
         |        x=10

@@ -1074,33 +1074,36 @@ class AstCreator(
     Seq(blockAst(blockNode(ctx), blockStmts.toList)) ++ methods
   }
 
+  private def convertLastStmtToReturn(compoundStatementAsts: Seq[Ast], ctxStmt: StatementsContext): Seq[Ast] = {
+    val lastStmtIsAlreadyReturn = compoundStatementAsts.last.root match {
+      case Some(value) => value.isInstanceOf[NewReturn]
+      case None        => false
+    }
+
+    if (
+      !lastStmtIsAlreadyReturn &&
+      ctxStmt != null
+    ) {
+      val len  = ctxStmt.statement().size()
+      val code = ctxStmt.statement().get(len - 1).getText
+      val retNode = NewReturn()
+        .code(code)
+      val returnReplaced = returnAst(retNode, Seq[Ast](compoundStatementAsts.last))
+      compoundStatementAsts.updated(compoundStatementAsts.size - 1, returnReplaced)
+    } else {
+      compoundStatementAsts
+    }
+  }
   def astForBodyStatementContext(ctx: BodyStatementContext, addReturnNode: Boolean = false): Seq[Ast] = {
     val compoundStatementAsts = astForCompoundStatement(ctx.compoundStatement(), !addReturnNode)
 
+    /*
+     * Convert the last statement to a return AST if it is not already a return AST.
+     * If it is a return AST leave it untouched.
+     */
     val compoundStatementAstsWithReturn =
       if (addReturnNode && compoundStatementAsts.nonEmpty) {
-        /*
-         * Convert the last statement to a return AST if it is not already a return AST.
-         * If it is a return AST leave it untouched.
-         */
-        val lastStmtIsAlreadyReturn = compoundStatementAsts.last.root match {
-          case Some(value) => value.isInstanceOf[NewReturn]
-          case None        => false
-        }
-
-        if (
-          !lastStmtIsAlreadyReturn &&
-          ctx.compoundStatement().statements() != null
-        ) {
-          val len  = ctx.compoundStatement().statements().statement().size()
-          val code = ctx.compoundStatement().statements().statement().get(len - 1).getText
-          val retNode = NewReturn()
-            .code(code)
-          val returnReplaced = returnAst(retNode, Seq[Ast](compoundStatementAsts.last))
-          compoundStatementAsts.updated(compoundStatementAsts.size - 1, returnReplaced)
-        } else {
-          compoundStatementAsts
-        }
+        convertLastStmtToReturn(compoundStatementAsts, ctx.compoundStatement().statements())
       } else {
         compoundStatementAsts
       }
@@ -1413,8 +1416,10 @@ class AstCreator(
 
     val astMethodParam = ctxParam.map(astForBlockParameterContext).getOrElse(Seq())
     scope.pushNewScope(())
-    val astBody = astForStatements(ctxStmt)
+    val astBodyWOReturn = astForStatements(ctxStmt)
     scope.popScope()
+
+    val astBody = convertLastStmtToReturn(astBodyWOReturn, ctxStmt)
 
     val methodFullName = classStack.reverse :+ blockMethodName mkString ":"
     val methodNode = NewMethod()
