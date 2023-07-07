@@ -41,8 +41,8 @@ object GlobalTypes {
     "catch",
     "chomp",
     "chop",
-    //"class",
-    //"clone",
+    // "class",
+    // "clone",
     "eval",
     "exec",
     "exit",
@@ -88,7 +88,7 @@ object GlobalTypes {
     "trace_var",
     // "trap",
     "untrace_var",
-    "warn",
+    "warn"
     // "yield_self",
   )
 }
