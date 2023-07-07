@@ -29,6 +29,7 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.ClassLoaderType
 import java.net.URLClassLoader
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver
 import io.joern.javasrc2cpg.typesolvers.CachingReflectionTypeSolver
+import io.joern.javasrc2cpg.JavaSrc2Cpg.JavaSrcEnvVar
 
 case class SourceDirectoryInfo(typeSolverSourceDirs: List[String], sourceFiles: List[SourceFileInfo])
 case class SplitDirectories(analysisSourceDir: String, typesSourceDir: String)
@@ -90,10 +91,24 @@ class AstCreationPass(config: Config, cpg: Cpg, preCreatedAsts: Option[SplitJpAs
 
     val combinedTypeSolver = new SimpleCombinedTypeSolver()
 
-    val jdkPath = config.jdkPath.getOrElse {
-      val javaHome = System.getProperty("java.home")
-      logger.debug("No explicit jdkPath set in config, so using system java.home at $javaHome")
-      javaHome
+    val jdkPathFromEnvVar = Option(System.getenv(JavaSrcEnvVar.JdkPath.name))
+    val jdkPath = (config.jdkPath, jdkPathFromEnvVar) match {
+      case (None, None) =>
+        val javaHome = System.getProperty("java.home")
+        logger.info(
+          s"No explicit jdk-path set in config, so using system java.home for JDK type information: $javaHome"
+        )
+        javaHome
+
+      case (None, Some(jdkPath)) =>
+        logger.info(
+          s"Using JDK path from environment variable ${JavaSrcEnvVar.JdkPath.name} for JDK type information: $jdkPath"
+        )
+        jdkPath
+
+      case (Some(jdkPath), _) =>
+        logger.info(s"Using JDK path set with jdk-path option for JDK type information: $jdkPath")
+        jdkPath
     }
 
     combinedTypeSolver.add(JdkJarTypeSolver.fromJdkPath(jdkPath))

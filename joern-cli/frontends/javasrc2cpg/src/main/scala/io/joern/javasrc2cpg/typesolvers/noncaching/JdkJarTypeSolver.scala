@@ -162,6 +162,9 @@ object JdkJarTypeSolver {
 
   def fromJdkPath(jdkPath: String): JdkJarTypeSolver = {
     val jarPaths = SourceFiles.determine(jdkPath, Set(JarExtension, JmodExtension))
+    if (jarPaths.isEmpty) {
+      throw new IllegalArgumentException(s"No .jar or .jmod files found at JDK path ${jdkPath}")
+    }
     new JdkJarTypeSolver(jdkPath).withJars(jarPaths)
   }
 

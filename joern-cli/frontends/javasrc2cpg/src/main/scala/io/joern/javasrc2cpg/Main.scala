@@ -14,7 +14,8 @@ final case class Config(
   delombokMode: Option[String] = None,
   enableTypeRecovery: Boolean = false,
   disableDummyTypes: Boolean = false,
-  jdkPath: Option[String] = None
+  jdkPath: Option[String] = None,
+  showEnv: Boolean = false
 ) extends X2CpgConfig[Config] {
   def withInferenceJarPaths(paths: Set[String]): Config = {
     copy(inferenceJarPaths = paths).withInheritedFields(this)
@@ -46,6 +47,10 @@ final case class Config(
 
   def withJdkPath(path: String): Config = {
     copy(jdkPath = Some(path)).withInheritedFields(this)
+  }
+
+  def withShowEnv(value: Boolean): Config = {
+    copy(showEnv = value).withInheritedFields(this)
   }
 }
 
@@ -84,14 +89,25 @@ private object Frontend {
         .text("disable generation of dummy types during type recovery"),
       opt[String]("jdk-path")
         .action((path, c) => c.withJdkPath(path))
-        .text("JDK used for resolving builtin Java types. If not set, current classpath will be used")
+        .text("JDK used for resolving builtin Java types. If not set, current classpath will be used"),
+      opt[Unit]("show-env")
+        .action((_, c) => c.withShowEnv(true))
+        // This should really be a print-and-exit but, with the current scopt setup, input paths
+        // are still required, so for now `javasrc2cpg --show-env <inputs>` is less confusing
+        // than `javasrc2cpg --show-env <dummy input to keep scopt happy>`
+        .text("print information about environment variables used by javasrc2cpg prior to analysis")
     )
   }
 }
 
 object Main extends X2CpgMain(cmdLineParser, new JavaSrc2Cpg()) {
+
   def run(config: Config, javasrc2Cpg: JavaSrc2Cpg): Unit = {
-    javasrc2Cpg.run(config)
+    if (config.showEnv) {
+      JavaSrc2Cpg.showEnv()
+    } else {
+      javasrc2Cpg.run(config)
+    }
   }
 
   def getCmdLineParser = cmdLineParser
