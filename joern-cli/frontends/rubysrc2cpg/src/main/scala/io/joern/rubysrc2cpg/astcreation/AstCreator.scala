@@ -220,11 +220,6 @@ class AstCreator(
 
   }
 
-  def astForSplattingArgumentContext(ctx: SplattingArgumentContext): Seq[Ast] = {
-    if (ctx == null) return Seq(Ast())
-    astForExpressionOrCommand(ctx.expressionOrCommand())
-  }
-
   def astForMultipleRightHandSideContext(ctx: MultipleRightHandSideContext): Seq[Ast] = {
     if (ctx == null) return Seq(Ast())
 
@@ -236,7 +231,7 @@ class AstCreator(
         Seq()
 
     val paramAsts = if (ctx.splattingArgument() != null) {
-      val splattingAsts = astForSplattingArgumentContext(ctx.splattingArgument())
+      val splattingAsts = astForExpressionOrCommand(ctx.splattingArgument().expressionOrCommand())
       exprAsts ++ splattingAsts
     } else {
       exprAsts
@@ -246,9 +241,21 @@ class AstCreator(
   }
 
   def astForSingleAssignmentExpressionContext(ctx: SingleAssignmentExpressionContext): Seq[Ast] = {
-    val rightAst     = astForMultipleRightHandSideContext(ctx.multipleRightHandSide())
-    val leftAst      = astForSingleLeftHandSideContext(ctx.singleLeftHandSide())
-    val operatorName = getOperatorName(ctx.op)
+    val rightAst = astForMultipleRightHandSideContext(ctx.multipleRightHandSide())
+    val leftAst  = astForSingleLeftHandSideContext(ctx.singleLeftHandSide())
+
+    val operatorName      = getOperatorName(ctx.op)
+    val isSelfFieldAccess = ctx.singleLeftHandSide().getText.startsWith("@")
+
+    // Very basic field detection
+    // TODO: Create a <operator.fieldAccess>
+    if (isSelfFieldAccess) {
+      fieldReferences.updateWith(classStack.top) {
+        case Some(xs) => Option(xs ++ Set(ctx.singleLeftHandSide()))
+        case None     => Option(Set(ctx.singleLeftHandSide()))
+      }
+    }
+
     if (leftAst.size == 1 && rightAst.size > 1) {
       /*
        * This is multiple RHS packed into a single LHS. That is, packing left hand side.
@@ -333,7 +340,7 @@ class AstCreator(
     case ctx: IsDefinedPrimaryContext                 => Seq(astForIsDefinedPrimaryExpression(ctx))
     case ctx: SuperExpressionPrimaryContext           => Seq(astForSuperExpression(ctx))
     case ctx: IndexingExpressionPrimaryContext        => astForIndexingExpressionPrimaryContext(ctx)
-    case ctx: MethodOnlyIdentifierPrimaryContext      => astForMethodOnlyIdentifierPrimaryContext(ctx)
+    case ctx: MethodOnlyIdentifierPrimaryContext      => astForMethodOnlyIdentifier(ctx.methodOnlyIdentifier())
     case ctx: InvocationWithBlockOnlyPrimaryContext   => astForInvocationWithBlockOnlyPrimaryContext(ctx)
     case ctx: InvocationWithParenthesesPrimaryContext => astForInvocationWithParenthesesPrimaryContext(ctx)
     case ctx: ChainedInvocationPrimaryContext         => astForChainedInvocationPrimaryContext(ctx)
@@ -399,7 +406,7 @@ class AstCreator(
           astForExpressionContext(exp)
         })
         .toSeq
-      val splatAsts = astForSplattingArgumentContext(ctx.splattingArgument())
+      val splatAsts = astForExpressionOrCommand(ctx.splattingArgument().expressionOrCommand())
       val callNode = NewCall()
         .name(ctx.COMMA().getText)
         .methodFullName(Operators.arrayInitializer)
@@ -413,7 +420,7 @@ class AstCreator(
     case ctx: AssociationsOnlyIndexingArgumentsContext =>
       astForAssociationsContext(ctx.associations())
     case ctx: RubyParser.SplattingOnlyIndexingArgumentsContext =>
-      astForSplattingArgumentContext(ctx.splattingArgument())
+      astForExpressionOrCommand(ctx.splattingArgument().expressionOrCommand())
     case _ =>
       logger.error(s"astForIndexingArgumentsContext() $filename, ${ctx.getText} All contexts mismatched.")
       Seq(Ast())
@@ -440,7 +447,7 @@ class AstCreator(
 
     val asts =
       if (ctx.splattingArgument() != null) {
-        expAsts ++ astForSplattingArgumentContext(ctx.splattingArgument())
+        expAsts ++ astForExpressionOrCommand(ctx.splattingArgument().expressionOrCommand())
       } else {
         expAsts
       }
@@ -1058,20 +1065,39 @@ class AstCreator(
   def astForClassBody(ctx: BodyStatementContext): Seq[Ast] = {
     val rootStatements =
       Option(ctx).map(_.compoundStatement()).map(_.statements()).map(astForStatements).getOrElse(Seq())
+    retrieveAndGenerateClassChildren(ctx, rootStatements)
+  }
 
-    val (methods, blockStmts) =
-      rootStatements
-        .flatMap { ast =>
-          ast.root match
-            case Some(x: NewMethod)                                 => Seq(ast)
-            case Some(x: NewCall) if x.name == Operators.assignment => Seq(ast) :+ astsForClassMembers(ast)
-            case _                                                  => Seq(ast)
-        }
-        .partition(_.root match
-          case Some(_: NewMethod) => true
-          case _                  => false
-        )
-    Seq(blockAst(blockNode(ctx), blockStmts.toList)) ++ methods
+  /** As class bodies are not treated much differently to other procedure bodies, we need to retrieve certain components
+    * that would result in the creation of interprocedural constructs.
+    *
+    * TODO: This is pretty hacky and the parser could benefit from more specific tokens
+    */
+  private def retrieveAndGenerateClassChildren(classCtx: BodyStatementContext, rootStatements: Seq[Ast]): Seq[Ast] = {
+    val (memberLikeStmts, blockStmts) = rootStatements
+      .flatMap { ast =>
+        ast.root match
+          case Some(x: NewMethod)                                 => Seq(ast)
+          case Some(x: NewCall) if x.name == Operators.assignment => Seq(ast) ++ membersFromStatementAsts(ast)
+          case _                                                  => Seq(ast)
+      }
+      .partition(_.root match
+        case Some(_: NewMethod) => true
+        case Some(_: NewMember) => true
+        case _                  => false
+      )
+
+    val methodStmts = memberLikeStmts.filter(_.root.exists(_.isInstanceOf[NewMethod]))
+    val memberNodes = memberLikeStmts.flatMap(_.root).collect { case m: NewMember => m }
+
+    val uniqueMemberReferences =
+      (memberNodes ++ fieldReferences.getOrElse(classStack.top, Set.empty).groupBy(_.getText).map { case (code, ctxs) =>
+        NewMember()
+          .name(code.replaceAll("@", ""))
+          .code(code)
+          .typeFullName(Defines.Any)
+      }).toList.distinctBy(_.name).map(Ast.apply)
+    Seq(blockAst(blockNode(classCtx), blockStmts.toList)) ++ uniqueMemberReferences ++ methodStmts
   }
 
   private def convertLastStmtToReturn(compoundStatementAsts: Seq[Ast], ctxStmt: StatementsContext): Seq[Ast] = {
@@ -1213,10 +1239,6 @@ class AstCreator(
         Seq[NewModifier](modifierNode)
       )
     )
-  }
-
-  def astForMethodOnlyIdentifierPrimaryContext(ctx: MethodOnlyIdentifierPrimaryContext): Seq[Ast] = {
-    astForMethodOnlyIdentifier(ctx.methodOnlyIdentifier())
   }
 
   def astForModuleDefinitionPrimaryContext(ctx: ModuleDefinitionPrimaryContext): Seq[Ast] = {
@@ -1463,11 +1485,6 @@ class AstCreator(
       Seq[NewModifier](publicModifier)
     )
     Seq(methAst)
-  }
-
-  def astForBlockArgumentContext(ctx: BlockArgumentContext): Seq[Ast] = {
-    if (ctx == null) return Seq(Ast())
-    astForExpressionContext(ctx.expression())
   }
 
   def astForAssociationContext(ctx: AssociationContext): Seq[Ast] = {

@@ -15,7 +15,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
   }
 
   protected def astForArgument(ctx: ArgumentContext): Seq[Ast] = ctx match {
-    case ctx: BlockArgumentArgumentContext     => astForBlockArgumentContext(ctx.blockArgument)
+    case ctx: BlockArgumentArgumentContext     => astForExpressionContext(ctx.blockArgument.expression)
     case ctx: SplattingArgumentArgumentContext => astForExpressionOrCommand(ctx.splattingArgument.expressionOrCommand)
     case ctx: ExpressionArgumentContext        => astForExpressionContext(ctx.expression)
     case ctx: AssociationArgumentContext       => astForAssociationContext(ctx.association)

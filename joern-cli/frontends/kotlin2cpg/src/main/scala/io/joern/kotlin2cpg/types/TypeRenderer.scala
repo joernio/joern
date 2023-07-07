@@ -119,7 +119,8 @@ object TypeRenderer {
 
   def render(t: KotlinType, shouldMapPrimitiveArrayTypes: Boolean = true, unwrapPrimitives: Boolean = true): String = {
     val rendered =
-      if (TypeUtilsKt.isTypeParameter(t)) TypeConstants.javaLangObject
+      if (t.isInstanceOf[ErrorType]) TypeConstants.any
+      else if (TypeUtilsKt.isTypeParameter(t)) TypeConstants.javaLangObject
       else if (isFunctionXType(t)) TypeConstants.kotlinFunctionXPrefix + (t.getArguments.size() - 1).toString
       else
         Option(TypeUtils.getClassDescriptor(t))

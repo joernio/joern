@@ -2,7 +2,7 @@ package io.joern.rubysrc2cpg.passes.ast
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
 
@@ -50,7 +50,7 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
       driving.fullName shouldBe "Test0.rb::program:Vehicle:driving"
     }
 
-    "generate members for various class members under the respective type declaration" ignore {
+    "generate members for various class members under the respective type declaration" in {
       val cpg = code("""
           |class Song
           |  @@plays = 0
@@ -65,7 +65,7 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
       song.name shouldBe "Song"
       song.fullName shouldBe "Test0.rb::program:Song"
 
-      val List(plays, name, artist, duration) = song.member.l
+      val List(plays, artist, duration, name) = song.member.l
 
       plays.name shouldBe "plays"
       name.name shouldBe "name"
@@ -192,12 +192,12 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
           |    def initialize
           |        puts "This is Superclass"
           |    end
-          |     
+          |
           |    def super_method
           |        puts "Method of superclass"
           |    end
           |end
-          | 
+          |
           |class Sudo_Placement < GeeksforGeeks
           |    def initialize
           |       puts "This is Subclass"
