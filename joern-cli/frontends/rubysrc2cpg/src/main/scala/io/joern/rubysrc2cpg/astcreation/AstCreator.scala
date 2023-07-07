@@ -1022,7 +1022,7 @@ class AstCreator(
           .lineNumber(varSymbol.getLine)
           .typeFullName(Defines.Any)
           .columnNumber(varSymbol.getCharPositionInLine)
-        if (arrayParameter != null) {
+        if (Option(arrayParameter).isDefined) {
           param.isVariadic = true
         }
         Ast(param)
