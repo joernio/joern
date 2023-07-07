@@ -1,6 +1,7 @@
 package io.joern.rubysrc2cpg.passes
 
 import better.files.File
+import io.joern.rubysrc2cpg.parser.jruby.JRubyBasedParser
 import io.joern.rubysrc2cpg.utils.{PackageContext, PackageTable}
 import io.joern.x2cpg.datastructures.Global
 import io.shiftleft.codepropertygraph.Cpg
@@ -50,9 +51,7 @@ class AstPackagePass(cpg: Cpg, tempExtDir: String, global: Global, packageTable:
   private def processRubyDependencyFile(inputPath: String, moduleName: String): Unit = {
     val currentFile = File(inputPath)
     if (currentFile.exists) {
-      val rubyFile = new java.io.File(inputPath)
-      val rubyCode = scala.io.Source.fromFile(rubyFile).mkString
-      val rootNode = rubyInstance.parseEval(rubyCode, inputPath, null, 0)
+      val rootNode = JRubyBasedParser.parseFile(inputPath)
       fetchMethodInfoFromNode(rootNode, ListBuffer.empty, moduleName)
     }
   }
