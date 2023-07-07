@@ -1083,12 +1083,20 @@ class AstCreator(
       case None        => false
     }
 
+    val lastStmtIsBlock = compoundStatementAsts.last.root match {
+      case Some(value) => value.isInstanceOf[NewBlock]
+      case None => false
+    }
+
     if (
       !lastStmtIsAlreadyReturn &&
       ctxStmt != null
     ) {
       val len  = ctxStmt.statement().size()
-      val code = ctxStmt.statement().get(len - 1).getText
+      var code = ctxStmt.statement().get(len - 1).getText
+      if (lastStmtIsBlock) {
+        code = ""
+      }
       val retNode = NewReturn()
         .code(code)
       val returnReplaced = returnAst(retNode, Seq[Ast](compoundStatementAsts.last))
