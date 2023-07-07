@@ -128,11 +128,11 @@ class OperatorExtensionTests extends AnyWordSpec with Matchers {
         .withIdentifierArgument(Operators.assignment, "y", 2)
         .cpg
 
-      val List(target: Identifier) = cpg.assignment.target.l
+      val List(target: Identifier) = cpg.assignment.target.l: @unchecked
       target.name shouldBe "x"
-      val List(source: Identifier) = cpg.assignment.source.l
+      val List(source: Identifier) = cpg.assignment.source.l: @unchecked
       source.name shouldBe "y"
-      val List((x: Identifier, y: Identifier)) = cpg.assignment.map(x => (x.target, x.source)).l
+      val List((x: Identifier, y: Identifier)) = cpg.assignment.map(x => (x.target, x.source)).l: @unchecked
       x.name shouldBe "x"
       y.name shouldBe "y"
     }
@@ -144,11 +144,11 @@ class OperatorExtensionTests extends AnyWordSpec with Matchers {
         .withIdentifierArgument(Operators.postIncrement, "x", 1)
         .cpg
 
-      val List(target: Identifier) = cpg.assignment.target.l
+      val List(target: Identifier) = cpg.assignment.target.l: @unchecked
       target.name shouldBe "x"
-      val List(source: Identifier) = cpg.assignment.source.l
+      val List(source: Identifier) = cpg.assignment.source.l: @unchecked
       source.name shouldBe "x"
-      val List((x: Identifier, y: Identifier)) = cpg.assignment.map(x => (x.target, x.source)).l
+      val List((x: Identifier, y: Identifier)) = cpg.assignment.map(x => (x.target, x.source)).l: @unchecked
       x.name shouldBe "x"
       y.name shouldBe "x"
     }
@@ -174,7 +174,7 @@ class OperatorExtensionTests extends AnyWordSpec with Matchers {
         .withCallArgument(Operators.assignment, Operators.indirection, "*(ptr)")
         .withIdentifierArgument(Operators.indirection, "ptr")
         .cpg
-      val List(x: Identifier) = cpg.assignment.target.pointer.l
+      val List(x: Identifier) = cpg.assignment.target.pointer.l: @unchecked
       x.name shouldBe "ptr"
     }
 

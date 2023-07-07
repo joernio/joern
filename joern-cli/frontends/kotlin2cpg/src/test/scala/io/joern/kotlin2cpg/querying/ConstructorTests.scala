@@ -80,14 +80,14 @@ class ConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       memberAssignmentCall.name shouldBe Operators.assignment
       memberAssignmentCall.order shouldBe 1
 
-      val List(assignmentLhs: Call, assignmentRhs: Identifier) = memberAssignmentCall.argument.l
+      val List(assignmentLhs: Call, assignmentRhs: Identifier) = memberAssignmentCall.argument.l: @unchecked
       assignmentRhs.code shouldBe "x"
       assignmentRhs.name shouldBe "x"
       assignmentRhs.typeFullName shouldBe "java.lang.String"
       assignmentRhs.argumentIndex shouldBe 2
       assignmentRhs.order shouldBe 2
 
-      val List(refParam: MethodParameterIn) = assignmentRhs.refsTo.l
+      val List(refParam: MethodParameterIn) = assignmentRhs.refsTo.l: @unchecked
       refParam.name shouldBe "x"
 
       assignmentLhs.methodFullName shouldBe Operators.fieldAccess
@@ -96,7 +96,7 @@ class ConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       assignmentLhs.order shouldBe 1
       assignmentLhs.argumentIndex shouldBe 1
 
-      val List(fieldAccessLhs: Identifier, fieldAccessRhs: FieldIdentifier) = assignmentLhs.argument.l
+      val List(fieldAccessLhs: Identifier, fieldAccessRhs: FieldIdentifier) = assignmentLhs.argument.l: @unchecked
       fieldAccessLhs.order shouldBe 1
       fieldAccessLhs.argumentIndex shouldBe 1
       fieldAccessLhs.typeFullName shouldBe "mypkg.AClass"
@@ -198,18 +198,19 @@ class ConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       secondParam.name shouldBe "bar"
 
       val b                                     = m.block
-      val List(_: Call, secondBlockChild: Call) = b.astChildren.l
+      val List(_: Call, secondBlockChild: Call) = b.astChildren.l: @unchecked
       secondBlockChild.methodFullName shouldBe Operators.assignment
       secondBlockChild.code shouldBe "this.bar = bar"
       secondBlockChild.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
-      val List(assignmentLhs: Call, assignmentRhs: Identifier) = secondBlockChild.argument.l
+      val List(assignmentLhs: Call, assignmentRhs: Identifier) = secondBlockChild.argument.l: @unchecked
       assignmentLhs.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       assignmentLhs.methodFullName shouldBe Operators.fieldAccess
       assignmentLhs.name shouldBe Operators.fieldAccess
       assignmentRhs.code shouldBe "bar"
       secondParam.referencingIdentifiers.id.l.contains(assignmentRhs.id) shouldBe true
-      val List(thisIdentifier: Identifier, relevantFieldIdentifier: FieldIdentifier) = assignmentLhs.argument.l
+      val List(thisIdentifier: Identifier, relevantFieldIdentifier: FieldIdentifier) =
+        assignmentLhs.argument.l: @unchecked
       thisIdentifier.code shouldBe "this"
       thisIdentifier.argumentIndex shouldBe 1
       mThisParam.referencingIdentifiers.id.l.contains(thisIdentifier.id) shouldBe true

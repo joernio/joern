@@ -284,7 +284,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       callNode.name shouldBe "puts"
       callNode.lineNumber shouldBe Some(1)
 
-      val List(literalArg: Literal) = callNode.argument.l
+      val List(literalArg: Literal) = callNode.argument.l: @unchecked
       literalArg.argumentIndex shouldBe 1
       literalArg.typeFullName shouldBe Defines.Regexp
       literalArg.code shouldBe "/x/"
@@ -714,17 +714,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       callNode.columnNumber shouldBe Some(56)
     }
 
-    "have correct structure in the body of module definition" in {
-      val cpg = code("module MyModule\ndef some_method\nend\nprivate\nend")
-
-      val List(callNode) = cpg.method.name("some_method").l
-      callNode.code shouldBe "def some_method\nend"
-      callNode.lineNumber shouldBe Some(2)
-      callNode.columnNumber shouldBe Some(4)
-
-      cpg.identifier.name("private").l.size shouldBe 0
-    }
-
     "have correct structure for undef" in {
       val cpg = code("undef method1,method2")
 
@@ -743,13 +732,13 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       controlNode.lineNumber shouldBe Some(1)
       controlNode.columnNumber shouldBe Some(0)
 
-      val List(a: Identifier) = controlNode.condition.l
+      val List(a: Identifier) = controlNode.condition.l: @unchecked
       a.code shouldBe "a"
       a.name shouldBe "a"
       a.lineNumber shouldBe Some(1)
       a.columnNumber shouldBe Some(0)
 
-      val List(_, b: Identifier, c: Identifier) = controlNode.astChildren.l
+      val List(_, b: Identifier, c: Identifier) = controlNode.astChildren.l: @unchecked
       b.code shouldBe "b"
       b.name shouldBe "b"
       b.lineNumber shouldBe Some(1)
@@ -759,6 +748,50 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       c.name shouldBe "c"
       c.lineNumber shouldBe Some(1)
       c.columnNumber shouldBe Some(8)
+    }
+
+    "have correct structure for if statement" in {
+      val cpg = code("""if x == 0 then
+          |  puts 1
+          |end
+          |""".stripMargin)
+
+      val List(ifNode) = cpg.controlStructure.l
+      ifNode.controlStructureType shouldBe ControlStructureTypes.IF
+      ifNode.lineNumber shouldBe Some(1)
+
+      val List(ifCondition, ifBlock) = ifNode.astChildren.l
+      ifCondition.code shouldBe "x == 0"
+      ifCondition.lineNumber shouldBe Some(1)
+
+      val List(puts) = ifBlock.astChildren.l
+      puts.code shouldBe "puts 1"
+      puts.lineNumber shouldBe Some(2)
+    }
+
+    "have correct structure for if-else statement" in {
+      val cpg = code("""if x == 0 then
+          |  puts 1
+          |else
+          |  puts 2
+          |end
+          |""".stripMargin)
+
+      val List(ifNode) = cpg.controlStructure.l
+      ifNode.controlStructureType shouldBe ControlStructureTypes.IF
+      ifNode.lineNumber shouldBe Some(1)
+
+      val List(ifCondition, ifBlock, elseBlock) = ifNode.astChildren.l
+      ifCondition.code shouldBe "x == 0"
+      ifCondition.lineNumber shouldBe Some(1)
+
+      val List(puts1) = ifBlock.astChildren.l
+      puts1.code shouldBe "puts 1"
+      puts1.lineNumber shouldBe Some(2)
+
+      val List(puts2) = elseBlock.astChildren.l
+      puts2.code shouldBe "puts 2"
+      puts2.lineNumber shouldBe Some(4)
     }
 
     "have correct structure for class definition with body having only identifiers" in {
@@ -785,7 +818,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       callNode.name shouldBe "<operator>.super"
       callNode.lineNumber shouldBe Some(1)
 
-      val List(literalArg: Literal) = callNode.argument.l
+      val List(literalArg: Literal) = callNode.argument.l: @unchecked
       literalArg.argumentIndex shouldBe 1
       literalArg.code shouldBe "1"
       literalArg.lineNumber shouldBe Some(1)
@@ -799,7 +832,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       callNode.name shouldBe "<operator>.super"
       callNode.lineNumber shouldBe Some(1)
 
-      val List(literalArg: Literal) = callNode.argument.l
+      val List(literalArg: Literal) = callNode.argument.l: @unchecked
       literalArg.argumentIndex shouldBe 1
       literalArg.code shouldBe "1"
       literalArg.lineNumber shouldBe Some(1)

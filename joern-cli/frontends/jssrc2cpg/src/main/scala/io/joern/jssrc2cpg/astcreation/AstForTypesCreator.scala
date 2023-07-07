@@ -53,14 +53,14 @@ trait AstForTypesCreator { this: AstCreator =>
       }
 
     // adding all class methods / functions and uninitialized, non-static members
-    (alias.node match {
+    val membersAndInitializers = (alias.node match {
       case TSTypeLiteral => classMembersForTypeAlias(alias)
       case ObjectPattern => Try(alias.json("properties").arr).toOption.toSeq.flatten
       case _             => classMembersForTypeAlias(createBabelNodeInfo(alias.json("typeAnnotation")))
     }).filter(member => isClassMethodOrUninitializedMemberOrObjectProperty(member) && !isStaticMember(member))
-      .foreach(m => astForClassMember(m, aliasTypeDeclNode))
+      .map(m => astForClassMember(m, aliasTypeDeclNode))
     typeDeclNodeAst.root.foreach(diffGraph.addEdge(methodAstParentStack.head, _, EdgeTypes.AST))
-    Ast(aliasTypeDeclNode)
+    Ast(aliasTypeDeclNode).withChildren(membersAndInitializers)
   }
 
   private def isConstructor(json: Value): Boolean = createBabelNodeInfo(json).node match {

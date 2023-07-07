@@ -1,8 +1,5 @@
 name := "rubysrc2cpg"
 
-scalaVersion       := "2.13.8"
-crossScalaVersions := Seq("2.13.8", "3.3.0")
-
 dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test")
 
 libraryDependencies ++= Seq(
@@ -10,10 +7,6 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest"         % Versions.scalatest % Test,
   "org.antlr"      % "antlr4-runtime"    % Versions.antlr,
   "org.jruby"      % "jruby-complete"    % "9.2.20.0"
-)
-
-scalacOptions ++= Seq(
-  "-deprecation" // Emit warning and location for usages of deprecated APIs.
 )
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin, Antlr4Plugin)

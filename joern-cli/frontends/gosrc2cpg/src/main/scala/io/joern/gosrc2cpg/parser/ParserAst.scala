@@ -12,34 +12,61 @@ object ParserAst {
   sealed trait ParserNode {
     override def toString: String = this.getClass.getSimpleName.stripSuffix("$")
   }
+  sealed trait BaseExprStmt extends ParserNode
 
-  object GenDecl    extends ParserNode
-  object ImportSpec extends ParserNode
-  object BasicLit   extends ParserNode
-  object FuncDecl   extends ParserNode
-  object BlockStmt  extends ParserNode
-  object DeclStmt   extends ParserNode
-  object ValueSpec  extends ParserNode
-  object Ident      extends ParserNode
-  object AssignStmt extends ParserNode
-  object ExprStmt   extends ParserNode
+  object File         extends ParserNode
+  object GenDecl      extends ParserNode
+  object ImportSpec   extends ParserNode
+  object BasicLit     extends ParserNode
+  object FuncDecl     extends ParserNode
+  object BlockStmt    extends ParserNode
+  object DeclStmt     extends ParserNode
+  object ValueSpec    extends ParserNode
+  object Ident        extends ParserNode
+  object AssignStmt   extends ParserNode
+  object ExprStmt     extends BaseExprStmt
+  object BinaryExpr   extends BaseExprStmt
+  object UnaryExpr    extends BaseExprStmt
+  object StarExpr     extends BaseExprStmt
+  object IncDecStmt   extends ParserNode
+  object IfStmt       extends ParserNode
+  object ParenExpr    extends BaseExprStmt
+  object ReturnStmt   extends ParserNode
+  object FuncType     extends ParserNode
+  object Ellipsis     extends ParserNode
+  object SelectorExpr extends ParserNode
 }
 
 object ParserKeys {
 
-  val Path         = "Path"
-  val Value        = "Value"
-  val Values       = "Values"
-  val Name         = "Name"
-  val Names        = "Names"
-  val Specs        = "Specs"
-  val Decls        = "Decls"
-  val Decl         = "Decl"
-  val NodeFileName = "node_filename"
-  val NodeType     = "node_type"
-  val NodeLineNo   = "node_line_no"
-  val NodeColNo    = "node_col_no"
-  val Type         = "Type"
-  val List         = "List"
-  val Body         = "Body"
+  val Body          = "Body"
+  val Cond          = "Cond"
+  val Decl          = "Decl"
+  val Decls         = "Decls"
+  val Else          = "Else"
+  val Kind          = "Kind"
+  val List          = "List"
+  val Lhs           = "Lhs"
+  val Name          = "Name"
+  val Names         = "Names"
+  val NodeColNo     = "node_col_no"
+  val NodeColEndNo  = "node_col_no_end"
+  val NodeFileName  = "node_filename"
+  val NodeLineNo    = "node_line_no"
+  val NodeLineEndNo = "node_line_no_end"
+  val NodeType      = "node_type"
+  val Op            = "Op"
+  val Path          = "Path"
+  val Rhs           = "Rhs"
+  val Specs         = "Specs"
+  val Tok           = "Tok"
+  val Type          = "Type"
+  val Value         = "Value"
+  val Values        = "Values"
+  val X             = "X"
+  val Y             = "Y"
+  val Results       = "Results"
+  val Params        = "Params"
+  val Elt           = "Elt"
+  val Sel           = "Sel"
 }

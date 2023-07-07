@@ -1,14 +1,17 @@
 package io.joern.rubysrc2cpg.astcreation
 
-import io.joern.rubysrc2cpg.parser.RubyParser._
+import io.joern.rubysrc2cpg.parser.RubyParser.*
+import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.nodes.NewJumpTarget
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, ModifierTypes, Operators}
 import org.antlr.v4.runtime.ParserRuleContext
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 trait AstForExpressionsCreator { this: AstCreator =>
+
+  protected var lastModifier: Option[String] = None
 
   protected def astForPowerExpression(ctx: PowerExpressionContext): Ast =
     astForBinaryOperatorExpression(ctx, Operators.exponentiation, ctx.expression().asScala)
@@ -150,34 +153,80 @@ trait AstForExpressionsCreator { this: AstCreator =>
     forVarAst.headOption.map(forRootAst.withChild).getOrElse(forRootAst)
   }
 
+  protected def astForWhileExpression(ctx: WhileExpressionContext): Ast = {
+    val testAst = astForExpressionOrCommand(ctx.expressionOrCommand())
+    val bodyAst = astForCompoundStatement(ctx.doClause().compoundStatement())
+    whileAst(testAst.headOption, bodyAst, Some(ctx.getText), line(ctx), column(ctx))
+  }
+
   protected def astForIfExpression(ctx: IfExpressionContext): Ast = {
     val testAst   = astForExpressionOrCommand(ctx.expressionOrCommand())
     val thenAst   = astForCompoundStatement(ctx.thenClause().compoundStatement())
-    val elsifAsts = Option(ctx.elsifClause()).map(_.asScala).getOrElse(Seq()).map(astForElsifClause)
-    val elseAst   = Option(ctx.elseClause()).map(astForElseClause).getOrElse(Seq())
-    val ifNode    = controlStructureNode(ctx, ControlStructureTypes.IF, ctx.getText)
+    val elsifAsts = Option(ctx.elsifClause).map(_.asScala).getOrElse(Seq()).map(astForElsifClause)
+    val elseAst = Option(ctx.elseClause()).map(ctx => astForCompoundStatement(ctx.compoundStatement())).getOrElse(Seq())
+    val ifNode  = controlStructureNode(ctx, ControlStructureTypes.IF, ctx.getText)
     controlStructureAst(ifNode, testAst.headOption)
       .withChildren(thenAst)
       .withChildren(elsifAsts.toSeq)
       .withChildren(elseAst)
   }
 
-  protected def astForElsifClause(ctx: ElsifClauseContext): Ast = {
+  private def astForElsifClause(ctx: ElsifClauseContext): Ast = {
     val ifNode  = controlStructureNode(ctx, ControlStructureTypes.IF, ctx.getText)
     val testAst = astForExpressionOrCommand(ctx.expressionOrCommand())
     val bodyAst = astForCompoundStatement(ctx.thenClause().compoundStatement())
     controlStructureAst(ifNode, testAst.headOption, bodyAst)
   }
 
-  // TODO: Rewrite this (and if expressions as a whole) to look similar to PHP's
-  protected def astForElseClause(ctx: ElseClauseContext): Seq[Ast] = {
-    val elseNode = NewJumpTarget()
-      .name("default")
-      .code(ctx.getText)
-      .lineNumber(line(ctx))
-      .columnNumber(column(ctx))
+  protected def astForVariableReference(ctx: VariableReferenceContext): Ast = ctx match {
+    case ctx: VariableIdentifierVariableReferenceContext => astForVariableIdentifierHelper(ctx.variableIdentifier())
+    case ctx: PseudoVariableIdentifierVariableReferenceContext =>
+      astForPseudoVariableIdentifier(ctx.pseudoVariableIdentifier())
+  }
 
-    Ast(elseNode) +: astForCompoundStatement(ctx.compoundStatement())
+  private def astForPseudoVariableIdentifier(ctx: PseudoVariableIdentifierContext): Ast = ctx match {
+    case ctx: NilPseudoVariableIdentifierContext      => astForNilLiteral(ctx)
+    case ctx: TruePseudoVariableIdentifierContext     => astForTrueLiteral(ctx)
+    case ctx: FalsePseudoVariableIdentifierContext    => astForFalseLiteral(ctx)
+    case ctx: SelfPseudoVariableIdentifierContext     => astForSelfPseudoIdentifier(ctx)
+    case ctx: FilePseudoVariableIdentifierContext     => astForFilePseudoIdentifier(ctx)
+    case ctx: LinePseudoVariableIdentifierContext     => astForLinePseudoIdentifier(ctx)
+    case ctx: EncodingPseudoVariableIdentifierContext => astForEncodingPseudoIdentifier(ctx)
+  }
+
+  protected def astForVariableIdentifierHelper(
+    ctx: VariableIdentifierContext,
+    definitelyIdentifier: Boolean = false
+  ): Ast = {
+    /*
+     * Preferences
+     * 1. If definitelyIdentifier is SET, create a identifier node
+     * 2. If an identifier with the variable name exists within the scope, create a identifier node
+     * 3. If a method with the variable name exists, create a method node
+     * 4. Otherwise default to identifier node creation since there is no reason (point 2) to create a call node
+     */
+
+    val variableName = ctx.getText
+    if (definitelyIdentifier || scope.lookupVariable(variableName).isDefined) {
+      val node = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List())
+      Ast(node)
+    } else if (methodNames.contains(variableName)) {
+      astForCallNode(ctx, variableName)
+    } else if (ModifierTypes.ALL.contains(variableName.toUpperCase)) {
+      lastModifier = Option(variableName.toUpperCase)
+      Ast()
+    } else {
+      val node = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List())
+      Ast(node)
+    }
+  }
+
+  protected def astForUnlessExpression(ctx: UnlessExpressionContext): Ast = {
+    val testAst = astForExpressionOrCommand(ctx.expressionOrCommand())
+    val thenAst = astForCompoundStatement(ctx.thenClause().compoundStatement())
+    val elseAst = Option(ctx.elseClause()).map(_.compoundStatement()).map(astForCompoundStatement).getOrElse(Seq())
+    val ifNode  = controlStructureNode(ctx, ControlStructureTypes.IF, ctx.getText)
+    controlStructureAst(ifNode, testAst.headOption, thenAst ++ elseAst)
   }
 
 }

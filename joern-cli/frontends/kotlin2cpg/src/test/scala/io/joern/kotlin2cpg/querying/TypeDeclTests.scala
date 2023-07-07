@@ -95,16 +95,16 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       secondCtorParam.name shouldBe "x"
       secondCtorParam.typeFullName shouldBe "java.lang.String"
 
-      val List(memberSetCall: Call) = ctor.block.expressionDown.l
+      val List(memberSetCall: Call) = ctor.block.expressionDown.l: @unchecked
       memberSetCall.methodFullName shouldBe Operators.assignment
 
-      val List(memberSetCallLhs: Call, memberSetCallRhs: Identifier) = memberSetCall.argument.l
+      val List(memberSetCallLhs: Call, memberSetCallRhs: Identifier) = memberSetCall.argument.l: @unchecked
       memberSetCallLhs.code shouldBe "this.x"
       memberSetCallLhs.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       memberSetCallRhs.code shouldBe "x"
       memberSetCallRhs.typeFullName shouldBe "java.lang.String"
 
-      val List(_this: Identifier, x: FieldIdentifier) = memberSetCallLhs.argument.l
+      val List(_this: Identifier, x: FieldIdentifier) = memberSetCallLhs.argument.l: @unchecked
       _this.code shouldBe "this"
       _this.typeFullName shouldBe "mypkg.AClass"
       _this.dynamicTypeHintFullName shouldBe Seq("mypkg.AClass")
@@ -131,16 +131,16 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       secondCtorParam.name shouldBe "x"
       secondCtorParam.typeFullName shouldBe "java.lang.String"
 
-      val List(memberSetCall: Call) = ctor.block.expressionDown.l
+      val List(memberSetCall: Call) = ctor.block.expressionDown.l: @unchecked
       memberSetCall.methodFullName shouldBe Operators.assignment
 
-      val List(memberSetCallLhs: Call, memberSetCallRhs: Identifier) = memberSetCall.argument.l
+      val List(memberSetCallLhs: Call, memberSetCallRhs: Identifier) = memberSetCall.argument.l: @unchecked
       memberSetCallLhs.code shouldBe "this.x"
       memberSetCallLhs.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       memberSetCallRhs.code shouldBe "x"
       memberSetCallRhs.typeFullName shouldBe "java.lang.String"
 
-      val List(_this: Identifier, x: FieldIdentifier) = memberSetCallLhs.argument.l
+      val List(_this: Identifier, x: FieldIdentifier) = memberSetCallLhs.argument.l: @unchecked
       _this.code shouldBe "this"
       _this.typeFullName shouldBe "mypkg.AClass"
       _this.dynamicTypeHintFullName shouldBe Seq("mypkg.AClass")
@@ -158,12 +158,12 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       p.name shouldBe "this"
       p.typeFullName shouldBe "mypkg.AClass"
 
-      val List(returnCall: Call) = componentN.block.expressionDown.isReturn.astChildren.l
+      val List(returnCall: Call) = componentN.block.expressionDown.isReturn.astChildren.l: @unchecked
       returnCall.methodFullName shouldBe Operators.fieldAccess
       returnCall.code shouldBe "this.x"
       returnCall.typeFullName shouldBe "java.lang.String"
 
-      val List(_this: Identifier, x: FieldIdentifier) = returnCall.argument.l
+      val List(_this: Identifier, x: FieldIdentifier) = returnCall.argument.l: @unchecked
       _this.code shouldBe "this"
       _this.typeFullName shouldBe "mypkg.AClass"
       _this.dynamicTypeHintFullName shouldBe Seq("mypkg.AClass")
@@ -392,7 +392,7 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         |""".stripMargin)
 
     "should contain CALL nodes for the member initializer" in {
-      val List(lhs: Call, rhs: Call) = cpg.call.code("this.*addB.*").argument.l
+      val List(lhs: Call, rhs: Call) = cpg.call.code("this.*addB.*").argument.l: @unchecked
       lhs.code shouldBe "this.m"
       rhs.code shouldBe "addB(x)"
       rhs.methodFullName shouldBe "mypkg.addB:java.lang.String(java.lang.String)"

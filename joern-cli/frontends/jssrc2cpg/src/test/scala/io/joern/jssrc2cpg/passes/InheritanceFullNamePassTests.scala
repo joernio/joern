@@ -42,7 +42,7 @@ class InheritanceFullNamePassTests extends DataFlowCodeToCpgSuite {
     )
 
     "resolve the type being inherited fully" in {
-      val Some(tgtType) = cpg.typeDecl.nameExact("MusicWithLyrics").headOption
+      val Some(tgtType) = cpg.typeDecl.nameExact("MusicWithLyrics").headOption: @unchecked
       tgtType.fullName shouldBe "inheritance.js::program:MusicWithLyrics"
       cpg.typeDecl("Musician").fullName.headOption shouldBe Some(
         Seq("domain", "music.js::program:Musician").mkString(File.separator)
@@ -54,8 +54,8 @@ class InheritanceFullNamePassTests extends DataFlowCodeToCpgSuite {
     }
 
     "identifiers instantiated from these types should have their fully resolved types" in {
-      val Some(musician)           = cpg.identifier.nameExact("myMusician").headOption
-      val Some(musicianWithLyrics) = cpg.identifier.nameExact("myMusicWithLyrics").headOption
+      val Some(musician)           = cpg.identifier.nameExact("myMusician").headOption: @unchecked
+      val Some(musicianWithLyrics) = cpg.identifier.nameExact("myMusicWithLyrics").headOption: @unchecked
       musician.typeFullName shouldBe Seq("domain", "music.js::program:Musician").mkString(File.separator)
       musicianWithLyrics.typeFullName shouldBe "inheritance.js::program:MusicWithLyrics"
     }
@@ -77,7 +77,7 @@ class InheritanceFullNamePassTests extends DataFlowCodeToCpgSuite {
     )
 
     "resolve the type to a type stub from an external module" in {
-      val Some(tgtType) = cpg.typeDecl.nameExact("MusicWithLyrics").headOption
+      val Some(tgtType) = cpg.typeDecl.nameExact("MusicWithLyrics").headOption: @unchecked
       tgtType.fullName shouldBe "inheritance.js::program:MusicWithLyrics"
       tgtType.inheritsFromTypeFullName.headOption shouldBe Some("music.js::program:Musician")
     }

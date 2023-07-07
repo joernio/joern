@@ -1,16 +1,19 @@
 package io.joern.rubysrc2cpg.astcreation
 
 import better.files.File
-import io.joern.rubysrc2cpg.parser.RubyParser._
+import io.joern.rubysrc2cpg.parser.RubyParser.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
+import io.joern.x2cpg.Imports.createImportNodeAndLink
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewControlStructure, NewImport, NewLiteral}
+import org.antlr.v4.runtime.ParserRuleContext
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-trait AstForStatementsCreator { this: AstCreator =>
+trait AstForStatementsCreator {
+  this: AstCreator =>
 
   protected def astForAliasStatement(ctx: AliasStatementContext): Ast = {
     val aliasName  = ctx.definedMethodNameOrSymbol(0).getText.substring(1)
@@ -20,24 +23,9 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   protected def astForUndefStatement(ctx: UndefStatementContext): Ast = {
-    val undefMethods =
-      ctx
-        .definedMethodNameOrSymbol()
-        .asScala
-        .flatMap(astForDefinedMethodNameOrSymbolContext)
-        .toSeq
-
-    val operatorName = RubyOperators.undef
-    val callNode = NewCall()
-      .name(operatorName)
-      .code(ctx.getText)
-      .methodFullName(operatorName)
-      .signature("")
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .typeFullName(Defines.Any)
-      .lineNumber(ctx.UNDEF().getSymbol().getLine())
-      .columnNumber(ctx.UNDEF().getSymbol().getCharPositionInLine())
-    callAst(callNode, undefMethods)
+    val undefNames = ctx.definedMethodNameOrSymbol().asScala.flatMap(astForDefinedMethodNameOrSymbolContext).toSeq
+    val call       = callNode(ctx, ctx.getText, RubyOperators.undef, RubyOperators.undef, DispatchTypes.STATIC_DISPATCH)
+    callAst(call, undefNames)
   }
 
   protected def astForBeginStatement(ctx: BeginStatementContext): Ast = {
@@ -61,20 +49,16 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   protected def astForIfModifierStatement(ctx: ModifierStatementContext): Ast = {
-    val lhs = astForStatement(ctx.statement(0))
-    val rhs = astForStatement(ctx.statement(1)).headOption
-    val ifNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.IF)
-      .code(ctx.getText)
+    val lhs    = astForStatement(ctx.statement(0))
+    val rhs    = astForStatement(ctx.statement(1)).headOption
+    val ifNode = controlStructureNode(ctx, ControlStructureTypes.IF, ctx.getText)
     controlStructureAst(ifNode, rhs, lhs)
   }
 
   protected def astForUnlessModifierStatement(ctx: ModifierStatementContext): Ast = {
-    val lhs = astForStatement(ctx.statement(0))
-    val rhs = astForStatement(ctx.statement(1))
-    val ifNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.IF)
-      .code(ctx.getText)
+    val lhs    = astForStatement(ctx.statement(0))
+    val rhs    = astForStatement(ctx.statement(1))
+    val ifNode = controlStructureNode(ctx, ControlStructureTypes.IF, ctx.getText)
     controlStructureAst(ifNode, lhs.headOption, rhs)
   }
 
@@ -91,19 +75,25 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   protected def astForRescueModifierStatement(ctx: ModifierStatementContext): Ast = {
-    val lhs = astForStatement(ctx.statement(0))
-    val rhs = astForStatement(ctx.statement(1))
-    val throwNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.THROW)
-      .code(ctx.getText)
+    val lhs       = astForStatement(ctx.statement(0))
+    val rhs       = astForStatement(ctx.statement(1))
+    val throwNode = controlStructureNode(ctx, ControlStructureTypes.THROW, ctx.getText)
     controlStructureAst(throwNode, rhs.headOption, lhs)
   }
 
-  protected def astForCompoundStatement(ctx: CompoundStatementContext): Seq[Ast] =
-    Option(ctx.statements()).map(astForStatements).getOrElse(Seq())
+  protected def astForCompoundStatement(ctx: CompoundStatementContext): Seq[Ast] = {
+    val stmtAsts = Option(ctx).map(_.statements()).map(astForStatements).getOrElse(Seq())
+    Seq(blockAst(blockNode(ctx), stmtAsts.toList))
+  }
 
-  protected def astForStatements(ctx: StatementsContext): Seq[Ast] =
-    Option(ctx.statement()).map(_.asScala).getOrElse(Seq()).flatMap(astForStatement).toSeq
+  protected def astForStatements(ctx: StatementsContext): Seq[Ast] = {
+    Option(ctx) match {
+      case Some(ctx) =>
+        Option(ctx).map(_.statement()).map(_.asScala).getOrElse(Seq()).flatMap(astForStatement).toSeq
+      case None =>
+        Seq()
+    }
+  }
 
   // TODO: return Ast instead of Seq[Ast].
   protected def astForStatement(ctx: StatementContext): Seq[Ast] = ctx match {
@@ -121,6 +111,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     case ctx: NotExpressionOrCommandContext        => Seq(astForNotKeywordExpressionOrCommand(ctx))
     case ctx: OrAndExpressionOrCommandContext      => Seq(astForOrAndExpressionOrCommand(ctx))
     case ctx: ExpressionExpressionOrCommandContext => astForExpressionContext(ctx.expression())
+    case _                                         => Seq(Ast())
   }
 
   protected def astForNotKeywordExpressionOrCommand(ctx: NotExpressionOrCommandContext): Ast = {
@@ -210,7 +201,8 @@ trait AstForStatementsCreator { this: AstCreator =>
           pathValue
       }
       packageStack.append(result)
-      astForImportNode(node.code)
+      val importNode = createImportNodeAndLink(result, "", Some(callNode), diffGraph)
+      Seq(callAst(callNode, argsAst), Ast(importNode))
     } else {
       Seq(callAst(callNode, argsAst))
     }
@@ -226,16 +218,50 @@ trait AstForStatementsCreator { this: AstCreator =>
       val currentDirectory = File(currentFile).parent
       val file             = File(currentDirectory, updatedPath)
       packageStack.append(file.pathAsString)
-      astForImportNode(node.code)
+      val importNode = createImportNodeAndLink(updatedPath, "", Some(callNode), diffGraph)
+      Seq(callAst(callNode, argsAst), Ast(importNode))
     } else {
       Seq(callAst(callNode, argsAst))
     }
   }
 
-  protected def astForImportNode(code: String): Seq[Ast] = {
-    // fully implemented later
-    val importNode = NewImport()
-      .code(code)
-    Seq(Ast(importNode))
+  protected def astForBlock(ctx: BlockContext): Ast = ctx match
+    case ctx: DoBlockBlockContext    => astForDoBlock(ctx.doBlock())
+    case ctx: BraceBlockBlockContext => astForBraceBlock(ctx.braceBlock())
+
+  private def astForBlockHelper(
+    ctx: ParserRuleContext,
+    blockParamCtx: Option[BlockParameterContext],
+    compoundStmtCtx: CompoundStatementContext
+  ) = {
+    val blockNode_    = blockNode(ctx, ctx.getText, Defines.Any)
+    val blockBodyAst  = astForCompoundStatement(compoundStmtCtx)
+    val blockParamAst = blockParamCtx.flatMap(astForBlockParameterContext)
+    blockAst(blockNode_, blockBodyAst.toList ++ blockParamAst)
   }
+
+  protected def astForDoBlock(ctx: DoBlockContext): Ast = {
+    astForBlockHelper(ctx, Option(ctx.blockParameter), ctx.compoundStatement)
+  }
+
+  protected def astForBraceBlock(ctx: BraceBlockContext): Ast = {
+    astForBlockHelper(ctx, Option(ctx.blockParameter), ctx.compoundStatement)
+  }
+
+  // TODO: This class shouldn't be required and will eventually be phased out.
+  protected implicit class BlockContextExt(val ctx: BlockContext) {
+    def compoundStatement: CompoundStatementContext = {
+      fold(_.compoundStatement(), _.compoundStatement)
+    }
+
+    def blockParameter: Option[BlockParameterContext] = {
+      fold(ctx => Option(ctx.blockParameter()), ctx => Option(ctx.blockParameter()))
+    }
+
+    private def fold[A](f: DoBlockContext => A, g: BraceBlockContext => A): A = ctx match {
+      case ctx: DoBlockBlockContext    => f(ctx.doBlock())
+      case ctx: BraceBlockBlockContext => g(ctx.braceBlock())
+    }
+  }
+
 }

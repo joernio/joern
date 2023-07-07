@@ -5,9 +5,6 @@ import com.typesafe.config.{Config, ConfigFactory}
 
 name := "gosrc2cpg"
 
-scalaVersion       := "2.13.8"
-crossScalaVersions := Seq("2.13.8", "3.3.0")
-
 dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test")
 
 libraryDependencies ++= Seq(
@@ -16,7 +13,10 @@ libraryDependencies ++= Seq(
   "com.lihaoyi"               %% "upickle"           % "2.0.0",
   "com.fasterxml.jackson.core" % "jackson-databind"  % "2.15.2",
   "com.typesafe"               % "config"            % "1.4.2",
-  "com.michaelpollmeier"       % "versionsort"       % "1.0.11"
+  "com.michaelpollmeier"       % "versionsort"       % "1.0.11",
+  "io.circe"                  %% "circe-core"        % Versions.circe,
+  "io.circe"                  %% "circe-generic"     % Versions.circe,
+  "io.circe"                  %% "circe-parser"      % Versions.circe,
 )
 
 scalacOptions ++= Seq(

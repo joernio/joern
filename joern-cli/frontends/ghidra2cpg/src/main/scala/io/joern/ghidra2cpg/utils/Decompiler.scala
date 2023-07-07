@@ -17,7 +17,7 @@ object Decompiler {
     opts.grabFromProgram(program)
     decompilerInterface.setOptions(opts)
     if (!decompilerInterface.openProgram(program)) {
-      println("Decompiler error: %s\n", decompilerInterface.getLastMessage)
+      println(s"Decompiler error: ${decompilerInterface.getLastMessage}")
       None
     } else {
       Some(new Decompiler(decompilerInterface))

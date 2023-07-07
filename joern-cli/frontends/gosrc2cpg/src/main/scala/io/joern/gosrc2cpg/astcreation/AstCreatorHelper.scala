@@ -1,11 +1,11 @@
 package io.joern.gosrc2cpg.astcreation
 
-import io.joern.gosrc2cpg.parser.ParserAst.{ImportSpec, ParserNode, fromString}
+import io.joern.gosrc2cpg.parser.ParserAst.{ParserNode, fromString}
 import ujson.Value
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
-import io.joern.x2cpg.Ast
 import org.apache.commons.lang.StringUtils
 
+import scala.collection.mutable.ListBuffer
 import scala.util.Try
 
 trait AstCreatorHelper { this: AstCreator =>
@@ -15,19 +15,35 @@ trait AstCreatorHelper { this: AstCreator =>
   private val MinCodeLength: Int = 50
 
   protected def createParserNodeInfo(json: Value): ParserNodeInfo = {
-    val c     = shortenCode(code(json))
+    val c     = shortenCode(code(json).toOption.getOrElse(""))
     val ln    = line(json)
     val cn    = column(json)
-    val lnEnd = None
-    val cnEnd = None
+    val lnEnd = lineEndNo(json)
+    val cnEnd = columnEndNo(json)
     val node  = nodeType(json)
     ParserNodeInfo(node, json, c, ln, cn, lnEnd, cnEnd)
   }
 
   private def nodeType(node: Value): ParserNode = fromString(node(ParserKeys.NodeType).str)
-  protected def code(node: Value): String = {
-    // TODO Need to build a utlity which returns code for a node
-    ""
+  protected def code(node: Value): Try[String] = Try {
+
+    val lineNumber    = line(node).get
+    val colNumber     = column(node).get - 1
+    val lineEndNumber = lineEndNo(node).get
+    val colEndNumber  = columnEndNo(node).get - 1
+
+    if (lineNumber == lineEndNumber) {
+      lineNumberMapping(lineNumber).substring(colNumber, colEndNumber)
+    } else {
+      val stringList = new ListBuffer[String]()
+      stringList.addOne(lineNumberMapping(lineNumber).substring(colNumber))
+      Iterator
+        .from(lineNumber + 1)
+        .takeWhile(currentLineNumber => currentLineNumber < lineEndNumber)
+        .foreach(currentLineNumber => stringList.addOne(lineNumberMapping(currentLineNumber)))
+      stringList.addOne(lineNumberMapping(lineEndNumber).substring(0, colEndNumber))
+      stringList.mkString("\n")
+    }
   }
 
   private def shortenCode(code: String, length: Int = MaxCodeLength): String =
@@ -35,31 +51,20 @@ trait AstCreatorHelper { this: AstCreator =>
 
   protected def line(node: Value): Option[Integer] = Try(node(ParserKeys.NodeLineNo).num).toOption.map(_.toInt)
 
-  protected def column(node: Value): Option[Integer] = Try(node(ParserKeys.NodeLineNo).num).toOption.map(_.toInt)
+  protected def column(node: Value): Option[Integer] = Try(node(ParserKeys.NodeColNo).num).toOption.map(_.toInt)
 
-  def isImportDeclaration(genDecl: ParserNodeInfo) = {
-    Try(genDecl.json(ParserKeys.Specs).arr.map(createParserNodeInfo).exists(_.node == ImportSpec)).toOption
-      .getOrElse(false)
-  }
-  def astForImport(genDecl: ParserNodeInfo): Ast = {
-    genDecl.json(ParserKeys.Specs).arr.map(createParserNodeInfo).foreach { nodeInfo =>
-      nodeInfo.node match {
-        case ImportSpec =>
-          val basicLit       = createParserNodeInfo(nodeInfo.json(ParserKeys.Path))
-          val importedEntity = nodeInfo.json(ParserKeys.Path).obj(ParserKeys.Value).str
-          val importedAs =
-            Try(nodeInfo.json(ParserKeys.Name).obj(ParserKeys.Name).str).toOption.getOrElse(importedEntity)
-          val importedAsReplacement = if (importedEntity.equals(importedAs)) "" else s"$importedAs "
-          // This may be better way to add code for import node
-          val importNode =
-            newImportNode(s"import $importedAsReplacement$importedEntity", importedEntity, importedAs, basicLit)
-          // Adding import node directly because it is not a Ast Node
-          diffGraph.addNode(importNode)
-        case _ =>
+  protected def lineEndNo(node: Value): Option[Integer] = Try(node(ParserKeys.NodeLineEndNo).num).toOption.map(_.toInt)
+
+  protected def columnEndNo(node: Value): Option[Integer] = Try(node(ParserKeys.NodeColEndNo).num).toOption.map(_.toInt)
+
+  protected def positionLookupTables(source: String): Map[Int, String] = {
+    source
+      .split("\n")
+      .zipWithIndex
+      .map { case (sourceLine, lineNumber) =>
+        (lineNumber + 1, sourceLine)
       }
-    }
-    // We add imports directly to the graph, so return empty Ast
-    Ast()
+      .toMap
   }
 
 }

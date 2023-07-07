@@ -58,7 +58,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
     "resolve correct imports via tag nodes" in {
       val List(a: UnknownMethod, b: UnknownTypeDecl, x: UnknownMethod, y: UnknownTypeDecl) =
-        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList
+        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
       a.fullName shouldBe "slack_sdk:WebClient"
       b.fullName shouldBe "slack_sdk:WebClient"
       x.fullName shouldBe "sendgrid:SendGridAPIClient"
@@ -103,11 +103,11 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         |""".stripMargin).cpg
 
     "resolve 'print' and 'max' calls" in {
-      val Some(printCall) = cpg.call("log").headOption
+      val Some(printCall) = cpg.call("log").headOption: @unchecked
       printCall.methodFullName shouldBe "__whatwg.console:log"
-      val Some(maxCall) = cpg.call("abs").headOption
+      val Some(maxCall) = cpg.call("abs").headOption: @unchecked
       maxCall.methodFullName shouldBe "__ecma.Math:abs"
-      val Some(x) = cpg.identifier("x").headOption
+      val Some(x) = cpg.identifier("x").headOption: @unchecked
       // TODO: Ideally we would know the result of `abs` but this can be a future task
       x.typeFullName shouldBe "__ecma.Math:abs:<returnValue>"
     }
@@ -142,7 +142,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
     "resolve correct imports via tag nodes" in {
       val List(a: ResolvedMember, b: ResolvedMember, c: ResolvedMember, d: UnknownMethod, e: UnknownTypeDecl) =
-        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList
+        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
       a.basePath shouldBe "Foo.ts::program"
       a.memberName shouldBe "x"
       b.basePath shouldBe "Foo.ts::program"
@@ -154,11 +154,11 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
     }
 
     "resolve 'x' and 'y' locally under foo.py" in {
-      val Some(x) = cpg.file.name(".*Foo.*").ast.isIdentifier.nameExact("x").headOption
+      val Some(x) = cpg.file.name(".*Foo.*").ast.isIdentifier.nameExact("x").headOption: @unchecked
       x.typeFullName shouldBe "__ecma.Number"
-      val Some(y) = cpg.file.name(".*Foo.*").ast.isIdentifier.nameExact("y").headOption
+      val Some(y) = cpg.file.name(".*Foo.*").ast.isIdentifier.nameExact("y").headOption: @unchecked
       y.typeFullName shouldBe "__ecma.String"
-      val Some(db) = cpg.file.name(".*Foo.*").ast.isIdentifier.nameExact("db").headOption
+      val Some(db) = cpg.file.name(".*Foo.*").ast.isIdentifier.nameExact("db").headOption: @unchecked
       db.typeFullName shouldBe "flask_sqlalchemy:SQLAlchemy"
     }
 
@@ -181,7 +181,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         .ast
         .isIdentifier
         .nameExact("d")
-        .headOption
+        .headOption: @unchecked
       d.typeFullName shouldBe "flask_sqlalchemy:SQLAlchemy"
       d.dynamicTypeHintFullName shouldBe Seq()
     }
@@ -238,22 +238,22 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
     )
 
     "resolve correct imports via tag nodes" in {
-      val List(x: ResolvedMethod) = cpg.call.where(_.referencedImports).tag.toResolvedImport.toList
+      val List(x: ResolvedMethod) = cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
       x.fullName shouldBe "util.js::program:getIncrementalInteger"
     }
 
     "resolve the method full name off of an aliased 'this'" in {
-      val Some(x) = cpg.file("util.js").ast.isCall.nameExact("getIncrementalInteger").headOption
+      val Some(x) = cpg.file("util.js").ast.isCall.nameExact("getIncrementalInteger").headOption: @unchecked
       x.methodFullName shouldBe "util.js::program:getIncrementalInteger"
     }
 
     "resolve the method full name off of the imported 'util'" in {
-      val Some(x) = cpg.file("foo.js").ast.isCall.nameExact("getIncrementalInteger").headOption
+      val Some(x) = cpg.file("foo.js").ast.isCall.nameExact("getIncrementalInteger").headOption: @unchecked
       x.methodFullName shouldBe "util.js::program:getIncrementalInteger"
     }
 
     "resolve the full name of the currying from the closure" in {
-      val Some(x) = cpg.file("util.js").ast.isCall.lineNumber(4).lastOption
+      val Some(x) = cpg.file("util.js").ast.isCall.lineNumber(4).lastOption: @unchecked
       x.name shouldBe "anonymous"
       x.methodFullName shouldBe "util.js::program:anonymous"
     }
@@ -266,7 +266,8 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         |""".stripMargin)
 
     "resolve correct imports via tag nodes" in {
-      val List(x: UnknownMethod, y: UnknownTypeDecl) = cpg.call.where(_.referencedImports).tag.toResolvedImport.toList
+      val List(x: UnknownMethod, y: UnknownTypeDecl) =
+        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
       x.fullName shouldBe "googleapis"
       y.fullName shouldBe "googleapis"
     }
@@ -288,7 +289,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
     "resolve correct imports via tag nodes" in {
       val List(x: UnknownMethod, y: UnknownTypeDecl, z: UnknownMethod) =
-        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList
+        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
       x.fullName shouldBe "googleapis"
       y.fullName shouldBe "googleapis"
       z.fullName shouldBe "googleapis"
@@ -314,7 +315,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
     "be propagated to `methodFullName` of call" in {
       val List(constructor) = cpg.call.code("new google.auth.GoogleAuth\\(.*").l
       constructor.methodFullName shouldBe "googleapis:google:<member>(auth):GoogleAuth:<init>"
-      val Some(typeFullName) = cpg.identifier.name("authObj").typeFullName.headOption
+      val Some(typeFullName) = cpg.identifier.name("authObj").typeFullName.headOption: @unchecked
       typeFullName shouldBe "googleapis:google:<member>(auth):GoogleAuth"
     }
   }
@@ -327,9 +328,9 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         |""".stripMargin)
 
     "succeed in propagating type cast identifiers" in {
-      val Some(imgSrc) = cpg.identifier("imgScr").headOption
+      val Some(imgSrc) = cpg.identifier("imgScr").headOption: @unchecked
       imgSrc.typeFullName shouldBe "__ecma.String"
-      val Some(_tmp_0) = cpg.identifier("_tmp_0").headOption
+      val Some(_tmp_0) = cpg.identifier("_tmp_0").headOption: @unchecked
       _tmp_0.typeFullName shouldBe "__ecma.HTMLImageElement"
     }
   }
@@ -345,13 +346,13 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         |""".stripMargin)
 
     "be propagated within the method full name reflecting the import `googleapis`" in {
-      val Some(bar) = cpg.call("bar").headOption
+      val Some(bar) = cpg.call("bar").headOption: @unchecked
       bar.methodFullName shouldBe "googleapis:google:More:bar"
 
-      val Some(baz) = cpg.call("baz").headOption
+      val Some(baz) = cpg.call("baz").headOption: @unchecked
       baz.methodFullName shouldBe "googleapis:google:Money:baz"
 
-      val Some(foo) = cpg.method("foo").methodReturn.headOption
+      val Some(foo) = cpg.method("foo").methodReturn.headOption: @unchecked
       foo.typeFullName shouldBe "googleapis:google:Problems"
     }
   }
@@ -387,7 +388,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
     "resolve correct imports via tag nodes" in {
       val List(a: ResolvedTypeDecl, b: ResolvedMethod, c: ResolvedMethod, d: UnknownMethod, e: UnknownTypeDecl) =
-        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList
+        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
       a.fullName shouldBe "foo.js::program"
       b.fullName shouldBe "foo.js::program:literalFunction"
       c.fullName shouldBe "foo.js::program:get"
@@ -397,22 +398,22 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
     }
 
     "propagate literal types to the method return" in {
-      val Some(literalMethod) = cpg.method.nameExact("literalFunction").headOption
+      val Some(literalMethod) = cpg.method.nameExact("literalFunction").headOption: @unchecked
       literalMethod.methodReturn.typeFullName shouldBe "__ecma.Number"
-      val Some(x) = cpg.identifier("x").headOption
+      val Some(x) = cpg.identifier("x").headOption: @unchecked
       x.typeFullName shouldBe "__ecma.Number"
 
-      val Some(literalCall) = cpg.call.nameExact("literalFunction").headOption
+      val Some(literalCall) = cpg.call.nameExact("literalFunction").headOption: @unchecked
       literalCall.typeFullName shouldBe "__ecma.Number"
     }
 
     "propagate complex types to the method return" in {
-      val Some(getMethod) = cpg.method.nameExact("get").headOption
+      val Some(getMethod) = cpg.method.nameExact("get").headOption: @unchecked
       getMethod.methodReturn.typeFullName shouldBe "axios:create:<returnValue>:get:<returnValue>"
-      val Some(y) = cpg.identifier("y").headOption
+      val Some(y) = cpg.identifier("y").headOption: @unchecked
       y.typeFullName shouldBe "axios:create:<returnValue>:get:<returnValue>"
 
-      val Some(getCall) = cpg.call.nameExact("get").headOption
+      val Some(getCall) = cpg.call.nameExact("get").headOption: @unchecked
       getCall.typeFullName shouldBe "axios:create:<returnValue>:get:<returnValue>"
     }
   }

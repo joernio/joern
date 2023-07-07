@@ -45,7 +45,7 @@ class ConstClosurePassTests extends DataFlowCodeToCpgSuite {
       val List(foo) = cpg.method.name("foo").l
       foo.name shouldBe "foo"
       foo.fullName.endsWith("program:foo") shouldBe true
-      val Some(fooCall) = cpg.call("foo").headOption
+      val Some(fooCall) = cpg.call("foo").headOption: @unchecked
       fooCall.methodFullName.endsWith("program:foo") shouldBe true
     }
 
@@ -53,7 +53,7 @@ class ConstClosurePassTests extends DataFlowCodeToCpgSuite {
       val List(bar) = cpg.method.name("anonymous1").l
       bar.name shouldBe "anonymous1"
       bar.fullName.endsWith("program:anonymous1") shouldBe true
-      val Some(barCall) = cpg.call("bar").headOption
+      val Some(barCall) = cpg.call("bar").headOption: @unchecked
       barCall.methodFullName.endsWith("program:anonymous1") shouldBe true
     }
   }

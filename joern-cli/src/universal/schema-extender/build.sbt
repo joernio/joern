@@ -1,5 +1,7 @@
 name := "schema-extender"
 
+ThisBuild / scalaVersion := "3.3.0"
+
 val cpgVersion = IO.read(file("cpg-version"))
 
 val generateDomainClasses = taskKey[Seq[File]]("generate overflowdb domain classes for our schema")
@@ -16,7 +18,7 @@ replaceDomainClassesInJoern := {
   val newDomainClassesJar = (domainClasses / Compile / packageBin).value
 
   val targetFile =
-    file(joernInstallPath.value) / "lib" / s"io.shiftleft.codepropertygraph-domain-classes_2.13-$cpgVersion.jar"
+    file(joernInstallPath.value) / "lib" / s"io.shiftleft.codepropertygraph-domain-classes_3-$cpgVersion.jar"
   assert(targetFile.exists, s"target jar assumed to be $targetFile, but that file doesn't exist...")
 
   println(s"copying $newDomainClassesJar to $targetFile")
@@ -27,7 +29,6 @@ ThisBuild / libraryDependencies ++= Seq(
   "io.shiftleft" %% "codepropertygraph-schema"         % cpgVersion,
   "io.shiftleft" %% "codepropertygraph-domain-classes" % cpgVersion
 )
-ThisBuild / scalaVersion := "2.13.5"
 
 lazy val schema = project
   .in(file("schema"))

@@ -23,7 +23,7 @@ class NestedDeclarationsTests extends KotlinCode2CpgFixture(withOssDataflow = fa
 
     "contain METHODs node for the local fns with the correct `astParent`s set" in {
       val List(m: Method)         = cpg.method.nameExact("f2").l
-      val List(astParent: Method) = m.astIn.l
+      val List(astParent: Method) = m.astIn.l: @unchecked
       astParent.fullName shouldBe cpg.method.nameExact("f1").fullName.head
     }
   }
@@ -48,15 +48,15 @@ class NestedDeclarationsTests extends KotlinCode2CpgFixture(withOssDataflow = fa
 
     "contain METHOD nodes for the local fns with the correct `astParent`s set" in {
       val List(m2: Method)         = cpg.method.nameExact("f2").l
-      val List(astParent2: Method) = m2.astIn.l
+      val List(astParent2: Method) = m2.astIn.l: @unchecked
       astParent2.fullName shouldBe cpg.method.nameExact("f1").fullName.head
 
       val List(m3: Method)         = cpg.method.nameExact("f3").l
-      val List(astParent3: Method) = m3.astIn.l
+      val List(astParent3: Method) = m3.astIn.l: @unchecked
       astParent3.fullName shouldBe cpg.method.nameExact("f2").fullName.head
 
       val List(m4: Method)         = cpg.method.nameExact("f4").l
-      val List(astParent4: Method) = m4.astIn.l
+      val List(astParent4: Method) = m4.astIn.l: @unchecked
       astParent4.fullName shouldBe cpg.method.nameExact("f3").fullName.head
     }
   }
@@ -77,7 +77,7 @@ class NestedDeclarationsTests extends KotlinCode2CpgFixture(withOssDataflow = fa
 
     "contain TYPE_DECL nodes for the local classes with the correct `astParent`s set" in {
       val List(td: TypeDecl)      = cpg.typeDecl.nameExact("AClass").l
-      val List(astParent: Method) = td.astIn.l
+      val List(astParent: Method) = td.astIn.l: @unchecked
       astParent.fullName shouldBe cpg.method.nameExact("main").fullName.head
     }
   }
@@ -106,11 +106,11 @@ class NestedDeclarationsTests extends KotlinCode2CpgFixture(withOssDataflow = fa
 
     "contain TYPE_DECL nodes for the local classes with the correct `astParent`s set" in {
       val List(td: TypeDecl)      = cpg.typeDecl.nameExact("AClass").l
-      val List(astParent: Method) = td.astIn.l
+      val List(astParent: Method) = td.astIn.l: @unchecked
       astParent.fullName shouldBe cpg.method.nameExact("f1").fullName.head
 
       val List(td2: TypeDecl)      = cpg.typeDecl.nameExact("BClass").l
-      val List(astParent2: Method) = td2.astIn.l
+      val List(astParent2: Method) = td2.astIn.l: @unchecked
       astParent2.fullName shouldBe cpg.method.nameExact("doSomething").fullName.head
     }
   }

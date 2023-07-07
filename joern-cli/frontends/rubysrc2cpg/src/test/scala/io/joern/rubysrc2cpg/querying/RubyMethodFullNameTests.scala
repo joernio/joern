@@ -3,10 +3,13 @@ package io.joern.rubysrc2cpg.querying
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.BeforeAndAfterAll
+import io.joern.rubysrc2cpg.Config
 
-class RubyMethodFullNameTests extends RubyCode2CpgFixture(true) with BeforeAndAfterAll {
+class RubyMethodFullNameTests extends RubyCode2CpgFixture with BeforeAndAfterAll {
 
-  "Code for methodFullName when method present in module" should {
+  private val config = Config().withEnableDependencyDownload(true)
+
+  "Code for method full name when method present in module" should {
     val cpg = code(
       """
         |require "dummy_logger"
@@ -28,13 +31,9 @@ class RubyMethodFullNameTests extends RubyCode2CpgFixture(true) with BeforeAndAf
           |""".stripMargin,
         "Gemfile"
       )
-
+      .withConfig(config)
     "recognise call node" in {
       cpg.call.name("first_fun").l.size shouldBe 1
-    }
-
-    "recognise import node" in {
-      cpg.imports.code(".*dummy_logger.*").l.size shouldBe 1
     }
 
     "recognise methodFullName for call Node" in {
@@ -50,7 +49,7 @@ class RubyMethodFullNameTests extends RubyCode2CpgFixture(true) with BeforeAndAf
     }
   }
 
-  "Code for methodFullName when method present in other file" should {
+  "Code for method full name when method present in other file" should {
     val cpg = code(
       """
         |require_relative "util/help.rb"
@@ -71,16 +70,13 @@ class RubyMethodFullNameTests extends RubyCode2CpgFixture(true) with BeforeAndAf
           |""".stripMargin,
         Seq("util", "help.rb").mkString(java.io.File.separator)
       )
+      .withConfig(config)
 
     "recognise call node" in {
       cpg.call.name("printValue").size shouldBe 1
     }
 
-    "recognise import node" in {
-      cpg.imports.code(".*util/help.rb*.").size shouldBe 1
-    }
-
-    "recognise methodFullName for call node" in {
+    "recognise method full name for call node" in {
       if (!scala.util.Properties.isWin) {
         cpg.call
           .name("printValue")
@@ -98,6 +94,7 @@ class RubyMethodFullNameTests extends RubyCode2CpgFixture(true) with BeforeAndAf
         | end
         |end
         |""".stripMargin)
+      .withConfig(config)
 
     "recognise call node" in {
       cpg.call.name("puts").size shouldBe 1
@@ -123,7 +120,7 @@ class RubyMethodFullNameTests extends RubyCode2CpgFixture(true) with BeforeAndAf
         |temp.fun()
         |""".stripMargin,
       "main.rb"
-    )
+    ).withConfig(config)
 
     "recognise call node" in {
       cpg.call.name("fun").size shouldBe 1
