@@ -215,7 +215,7 @@ class AstCreator(
       val node = createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
       Seq(Ast(node))
     case _ =>
-      logger.error("astForSingleLeftHandSideContext() All contexts mismatched.")
+      logger.error(s"astForSingleLeftHandSideContext() $filename, ${ctx.getText} All contexts mismatched.")
       Seq(Ast())
 
   }
@@ -340,7 +340,7 @@ class AstCreator(
     case ctx: ChainedInvocationWithoutArgumentsPrimaryContext =>
       astForChainedInvocationWithoutArgumentsPrimaryContext(ctx)
     case _ =>
-      logger.error("astForPrimaryContext() All contexts mismatched.")
+      logger.error(s"astForPrimaryContext() $filename, ${ctx.getText} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -364,7 +364,7 @@ class AstCreator(
     case ctx: MultipleAssignmentExpressionContext  => astForMultipleAssignmentExpressionContext(ctx)
     case ctx: IsDefinedExpressionContext           => Seq(astForIsDefinedExpression(ctx))
     case _ =>
-      logger.error("astForExpressionContext() All contexts mismatched.")
+      logger.error(s"astForExpressionContext() $filename, ${ctx.getText} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -415,7 +415,7 @@ class AstCreator(
     case ctx: RubyParser.SplattingOnlyIndexingArgumentsContext =>
       astForSplattingArgumentContext(ctx.splattingArgument())
     case _ =>
-      logger.error("astForIndexingArgumentsContext() All contexts mismatched.")
+      logger.error(s"astForIndexingArgumentsContext() $filename, ${ctx.getText} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -627,7 +627,7 @@ class AstCreator(
     case ctx: GroupedLeftHandSideOnlyMultipleLeftHandSideContext =>
       astForGroupedLeftHandSideContext(ctx.groupedLeftHandSide())
     case _ =>
-      logger.error("astForMultipleLeftHandSideContext() All contexts mismatched.")
+      logger.error(s"astForMultipleLeftHandSideContext() $filename, ${ctx.getText} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -735,7 +735,7 @@ class AstCreator(
           .withChildren(astForArguments(ctx.arguments()))
       )
     case _ =>
-      logger.error("astForInvocationWithoutParenthesesContext() All contexts mismatched.")
+      logger.error(s"astForInvocationWithoutParenthesesContext() $filename, ${ctx.getText} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -867,7 +867,6 @@ class AstCreator(
       val varSymbol = localVar.getSymbol
       Seq(astForCallNode(ctx, code, methodNamesWithYield.contains(varSymbol.getText)))
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
-      val localVar = ctx.CONSTANT_IDENTIFIER()
       Seq(astForCallNode(ctx, code))
     } else {
       Seq(Ast())
@@ -973,7 +972,7 @@ class AstCreator(
     case ctx: SimpleMethodNamePartContext    => astForSimpleMethodNamePartContext(ctx)
     case ctx: SingletonMethodNamePartContext => astForSingletonMethodNamePartContext(ctx)
     case _ =>
-      logger.error("astForMethodNamePartContext() All contexts mismatched.")
+      logger.error(s"astForMethodNamePartContext() $filename, ${ctx.getText} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -1075,33 +1074,36 @@ class AstCreator(
     Seq(blockAst(blockNode(ctx), blockStmts.toList)) ++ methods
   }
 
-  def astForBodyStatementContext(ctx: BodyStatementContext, addReturnNode: Boolean = false): Seq[Ast] = {
-    val compoundStatementAsts = astForCompoundStatement(ctx.compoundStatement())
+  private def convertLastStmtToReturn(compoundStatementAsts: Seq[Ast], ctxStmt: StatementsContext): Seq[Ast] = {
+    val lastStmtIsAlreadyReturn = compoundStatementAsts.last.root match {
+      case Some(value) => value.isInstanceOf[NewReturn]
+      case None        => false
+    }
 
+    if (
+      !lastStmtIsAlreadyReturn &&
+      ctxStmt != null
+    ) {
+      val len  = ctxStmt.statement().size()
+      val code = ctxStmt.statement().get(len - 1).getText
+      val retNode = NewReturn()
+        .code(code)
+      val returnReplaced = returnAst(retNode, Seq[Ast](compoundStatementAsts.last))
+      compoundStatementAsts.updated(compoundStatementAsts.size - 1, returnReplaced)
+    } else {
+      compoundStatementAsts
+    }
+  }
+  def astForBodyStatementContext(ctx: BodyStatementContext, addReturnNode: Boolean = false): Seq[Ast] = {
+    val compoundStatementAsts = astForCompoundStatement(ctx.compoundStatement(), !addReturnNode)
+
+    /*
+     * Convert the last statement to a return AST if it is not already a return AST.
+     * If it is a return AST leave it untouched.
+     */
     val compoundStatementAstsWithReturn =
       if (addReturnNode && compoundStatementAsts.nonEmpty) {
-        /*
-         * Convert the last statement to a return AST if it is not already a return AST.
-         * If it is a return AST leave it untouched.
-         */
-        val lastStmtIsAlreadyReturn = compoundStatementAsts.last.root match {
-          case Some(value) => value.isInstanceOf[NewReturn]
-          case None        => false
-        }
-
-        if (
-          !lastStmtIsAlreadyReturn &&
-          ctx.compoundStatement().statements() != null
-        ) {
-          val len  = ctx.compoundStatement().statements().statement().size()
-          val code = ctx.compoundStatement().statements().statement().get(len - 1).getText
-          val retNode = NewReturn()
-            .code(code)
-          val returnReplaced = returnAst(retNode, Seq[Ast](compoundStatementAsts.last))
-          compoundStatementAsts.updated(compoundStatementAsts.size - 1, returnReplaced)
-        } else {
-          compoundStatementAsts
-        }
+        convertLastStmtToReturn(compoundStatementAsts, ctx.compoundStatement().statements())
       } else {
         compoundStatementAsts
       }
@@ -1343,7 +1345,7 @@ class AstCreator(
       val primaryAsts    = astForPrimaryContext(ctx.primary())
       primaryAsts ++ methodNameAsts ++ argsAsts ++ doBlockAsts
     case _ =>
-      logger.error("astForCommandWithDoBlockContext() All contexts mismatched.")
+      logger.error(s"astForCommandWithDoBlockContext() $filename, ${ctx.getText} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -1377,7 +1379,7 @@ class AstCreator(
     case ctx: ChainedCommandWithDoBlockOnlyArgumentsWithParenthesesContext =>
       astForChainedCommandWithDoBlockContext(ctx.chainedCommandWithDoBlock())
     case _ =>
-      logger.error("astForArgumentsWithParenthesesContext() All contexts mismatched.")
+      logger.error(s"astForArgumentsWithParenthesesContext() $filename, ${ctx.getText} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -1414,8 +1416,10 @@ class AstCreator(
 
     val astMethodParam = ctxParam.map(astForBlockParameterContext).getOrElse(Seq())
     scope.pushNewScope(())
-    val astBody = astForStatements(ctxStmt)
+    val astBodyWOReturn = astForStatements(ctxStmt)
     scope.popScope()
+
+    val astBody = convertLastStmtToReturn(astBodyWOReturn, ctxStmt)
 
     val methodFullName = classStack.reverse :+ blockMethodName mkString ":"
     val methodNode = NewMethod()

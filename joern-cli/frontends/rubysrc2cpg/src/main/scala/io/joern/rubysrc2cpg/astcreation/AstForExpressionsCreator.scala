@@ -224,8 +224,9 @@ trait AstForExpressionsCreator { this: AstCreator =>
   protected def astForUnlessExpression(ctx: UnlessExpressionContext): Ast = {
     val testAst = astForExpressionOrCommand(ctx.expressionOrCommand())
     val thenAst = astForCompoundStatement(ctx.thenClause().compoundStatement())
-    val elseAst = Option(ctx.elseClause()).map(_.compoundStatement()).map(astForCompoundStatement).getOrElse(Seq())
-    val ifNode  = controlStructureNode(ctx, ControlStructureTypes.IF, ctx.getText)
+    val elseAst =
+      Option(ctx.elseClause()).map(_.compoundStatement()).map(st => astForCompoundStatement(st)).getOrElse(Seq())
+    val ifNode = controlStructureNode(ctx, ControlStructureTypes.IF, ctx.getText)
     controlStructureAst(ifNode, testAst.headOption, thenAst ++ elseAst)
   }
 
