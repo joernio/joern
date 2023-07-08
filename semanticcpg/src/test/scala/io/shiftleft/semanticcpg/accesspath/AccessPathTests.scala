@@ -30,9 +30,8 @@ class AccessPathTests extends AnyWordSpec {
             case (IndirectionAccess, AddressOf) =>
               /** We also collapse *&. This is WRONG (you cannot deref a pointer and then un-deref the result). However,
                 * it is sometimes valid as a syntactic construct, and the language should make sure that this only
-                * occurs in such settings.
-                * I.e. valid code should only produce such paths when their contraction is valid. We still treat * as
-                * un-invertible, though!
+                * occurs in such settings. I.e. valid code should only produce such paths when their contraction is
+                * valid. We still treat * as un-invertible, though!
                 */
               Elements.newIfNonEmpty(elements.dropRight(1))
             case _ => Elements.newIfNonEmpty(elements :+ element)
