@@ -72,8 +72,6 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
 object RubySrc2Cpg {
 
   def postProcessingPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] =
-    List(
-      //new RubyTypeRecoveryPass(cpg),
-      new NaiveCallLinker(cpg))
+    List(new RubyTypeRecoveryPass(cpg), new NaiveCallLinker(cpg))
 
 }
