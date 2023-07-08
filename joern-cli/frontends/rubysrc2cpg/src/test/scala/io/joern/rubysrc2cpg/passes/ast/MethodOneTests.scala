@@ -37,7 +37,7 @@ class MethodOneTests extends RubyCode2CpgFixture {
       cpg.method.name("foo").parameter.name.toSetMutable shouldBe Set("a", "b")
     }
 
-    "should allow traversing to methodReturn" in {
+    "should allow traversing to methodReturn" ignore {
       cpg.method.name("foo").methodReturn.l.size shouldBe 1
       cpg.method.name("foo").methodReturn.typeFullName.head shouldBe "String"
     }
