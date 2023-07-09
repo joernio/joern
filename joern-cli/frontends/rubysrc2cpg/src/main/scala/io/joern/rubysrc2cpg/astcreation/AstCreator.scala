@@ -1083,9 +1083,10 @@ class AstCreator(
       case None        => false
     }
 
-    val lastStmtIsBlock = compoundStatementAsts.last.root match {
-      case Some(value) => value.isInstanceOf[NewBlock]
-      case None => false
+    val lastStmtIsLiteralIdentifier = compoundStatementAsts.last.root match {
+      case Some(value) => value.isInstanceOf[NewIdentifier]
+      case Some(value) => value.isInstanceOf[NewLiteral]
+      case None        => false
     }
 
     if (
@@ -1094,7 +1095,7 @@ class AstCreator(
     ) {
       val len  = ctxStmt.statement().size()
       var code = ctxStmt.statement().get(len - 1).getText
-      if (lastStmtIsBlock) {
+      if (!lastStmtIsLiteralIdentifier) {
         code = ""
       }
       val retNode = NewReturn()
