@@ -1019,6 +1019,9 @@ class AstCreator(
           .lineNumber(varSymbol.getLine)
           .typeFullName(Defines.Any)
           .columnNumber(varSymbol.getCharPositionInLine)
+        if (Option(arrayParameter).isDefined) {
+          param.isVariadic = true
+        }
         Ast(param)
       })
       .toSeq
@@ -1102,12 +1105,21 @@ class AstCreator(
       case None        => false
     }
 
+    val lastStmtIsLiteralIdentifier = compoundStatementAsts.last.root match {
+      case Some(value) => value.isInstanceOf[NewIdentifier]
+      case Some(value) => value.isInstanceOf[NewLiteral]
+      case None        => false
+    }
+
     if (
       !lastStmtIsAlreadyReturn &&
       ctxStmt != null
     ) {
       val len  = ctxStmt.statement().size()
-      val code = ctxStmt.statement().get(len - 1).getText
+      var code = ctxStmt.statement().get(len - 1).getText
+      if (!lastStmtIsLiteralIdentifier) {
+        code = ""
+      }
       val retNode = NewReturn()
         .code(code)
       val returnReplaced = returnAst(retNode, Seq[Ast](compoundStatementAsts.last))
