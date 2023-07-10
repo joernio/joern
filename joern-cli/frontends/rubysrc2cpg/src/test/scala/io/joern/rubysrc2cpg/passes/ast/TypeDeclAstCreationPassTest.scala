@@ -18,6 +18,17 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
       myClass.fullName shouldBe "Test0.rb::program:MyClass"
     }
 
+    // TODO: Need to be fixed.
+    "generate a basic type declaration node for an empty class with Class.new" ignore {
+      val cpg = code("""
+          |MyClass = Class.new do
+          |end
+          |""".stripMargin)
+      val Some(myClass) = cpg.typeDecl.nameExact("MyClass").headOption: @unchecked
+      myClass.name shouldBe "MyClass"
+      myClass.fullName shouldBe "Test0.rb::program:MyClass"
+    }
+
     "generate methods under type declarations" in {
       val cpg = code("""
           |class Vehicle
