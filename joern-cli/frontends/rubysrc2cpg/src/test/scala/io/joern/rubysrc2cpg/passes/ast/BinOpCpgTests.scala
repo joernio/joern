@@ -51,4 +51,3 @@ class BinOpCpgTests extends RubyCode2CpgFixture {
   }
 
 }
-

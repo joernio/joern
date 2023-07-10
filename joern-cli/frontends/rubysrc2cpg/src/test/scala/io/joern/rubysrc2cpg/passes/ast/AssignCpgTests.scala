@@ -82,7 +82,7 @@ class AssignCpgTests extends RubyCode2CpgFixture {
     }
 
     "test tmp variable assignment" in {
-      val block = getSurroundingBlock
+      val block         = getSurroundingBlock
       val tmpAssignNode = block.astChildren.isCall.sortBy(_.order).head
       // tmpAssignNode.code shouldBe "tmp0 = list"
       tmpAssignNode.methodFullName shouldBe Operators.assignment
@@ -91,7 +91,7 @@ class AssignCpgTests extends RubyCode2CpgFixture {
 
     // TODO: Fix the code property of the Block node & the order too
     "test assignments to targets" ignore {
-      val block = getSurroundingBlock
+      val block       = getSurroundingBlock
       val assignNodes = block.astChildren.isCall.sortBy(_.order).tail
       assignNodes.map(_.code) should contain theSameElementsInOrderAs List(
         "x = tmp0[0]",
@@ -166,7 +166,7 @@ class AssignCpgTests extends RubyCode2CpgFixture {
 
     // TODO: Need to fix the code property
     "test tmp variable assignment" ignore {
-      val block = getSurroundingBlock
+      val block         = getSurroundingBlock
       val tmpAssignNode = block.astChildren.isCall.sortBy(_.order).head
       tmpAssignNode.code shouldBe "tmp0 = list"
       tmpAssignNode.methodFullName shouldBe Operators.assignment
