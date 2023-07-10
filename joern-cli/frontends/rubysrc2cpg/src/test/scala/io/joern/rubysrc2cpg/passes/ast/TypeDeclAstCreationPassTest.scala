@@ -65,12 +65,14 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
       song.name shouldBe "Song"
       song.fullName shouldBe "Test0.rb::program:Song"
 
-      val List(plays, artist, duration, name) = song.member.l
+      val List(artist, duration, name, plays) = song.member.l
 
       plays.name shouldBe "plays"
       name.name shouldBe "name"
       artist.name shouldBe "artist"
       duration.name shouldBe "duration"
+
+      cpg.fieldAccess.fieldIdentifier.canonicalName.l shouldBe List("plays", "name", "artist", "duration")
     }
 
     "generate members for various class members when using the `attr_reader` and `attr_writer` idioms" ignore {

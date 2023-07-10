@@ -5,6 +5,7 @@ import io.joern.rubysrc2cpg.parser.RubyParser.{
   ClassOrModuleReferenceContext,
   ScopedConstantReferenceContext
 }
+import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -92,6 +93,10 @@ trait AstForTypesCreator { this: AstCreator =>
       .collect { case i: NewIdentifier if i.name.startsWith("@") => i }
       .map { i =>
         val code = ast.root.collect { case c: NewCall => c.code }.getOrElse(i.name)
+        val modifierType = i.name match
+          case x if x.startsWith("@@") => ModifierTypes.STATIC
+          case _                       => ModifierTypes.VIRTUAL
+        val modifierAst = Ast(NewModifier().modifierType(modifierType))
         Ast(
           NewMember()
             .code(code)
@@ -99,7 +104,7 @@ trait AstForTypesCreator { this: AstCreator =>
             .typeFullName(i.typeFullName)
             .lineNumber(i.lineNumber)
             .columnNumber(i.columnNumber)
-        )
+        ).withChild(modifierAst)
       }
       .toSeq
 
