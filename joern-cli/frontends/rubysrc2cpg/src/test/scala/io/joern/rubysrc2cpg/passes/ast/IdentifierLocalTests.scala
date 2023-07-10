@@ -49,6 +49,10 @@ class IdentifierLocalTests extends RubyCode2CpgFixture {
     val List(indentifierX) = method.block.ast.isIdentifier.l
     indentifierX.name shouldBe "x"
 
+    indentifierX.refsTo.l.size shouldBe 1
+    val List(paramx) = indentifierX.refsTo.l
+    paramx.name shouldBe "x"
+
     val parameterX = indentifierX._methodParameterInViaRefOut.get
     parameterX.name shouldBe "x"
   }
