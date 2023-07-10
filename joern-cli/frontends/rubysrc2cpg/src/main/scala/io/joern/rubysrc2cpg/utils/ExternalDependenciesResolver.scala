@@ -7,7 +7,6 @@ import io.joern.x2cpg.utils.ExternalCommand
 import io.shiftleft.codepropertygraph.Cpg
 import org.slf4j.LoggerFactory
 
-import scala.io.Source
 import sys.process.*
 import scala.util.{Failure, Success}
 
@@ -37,7 +36,7 @@ object ExternalDependenciesResolver {
   }
 
   private def fetchDependencyList(inputPath: String): List[(String, String)] = {
-    val gemFileContent = Source.fromFile(s"$inputPath${java.io.File.separator}Gemfile").mkString
+    val gemFileContent = File(s"$inputPath${java.io.File.separator}Gemfile").contentAsString
     val gemRegex       = """gem ['"]([^'"]+)['"](?:,\s*['"]([^'"]+)['"])?""".r
 
     gemRegex
