@@ -12,7 +12,7 @@ import org.jruby.ast.{Colon2Node, DefnNode, Node, NodeType, ReturnNode}
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-class AstPackagePass(cpg: Cpg, tempExtDir: String, global: Global, packageTable: PackageTable, inputPath: String)
+class AstPackagePass(cpg: Cpg, tempExtDir: String, packageTable: PackageTable, inputPath: String)
     extends ConcurrentWriterCpgPass[String](cpg) {
 
   private val rubyInstance = Ruby.getGlobalRuntime()
@@ -67,7 +67,7 @@ class AstPackagePass(cpg: Cpg, tempExtDir: String, global: Global, packageTable:
 
   private def resolveModuleNameFromPath(path: String): String = {
     if (path.contains(tempExtDir)) {
-      val moduleNameRegex = Seq("gems", "([^", "]+)", "lib", ".*").mkString(java.io.File.separator).r
+      val moduleNameRegex = Seq("unpack", "([^", "]+)", "lib", ".*").mkString(java.io.File.separator).r
       moduleNameRegex
         .findFirstMatchIn(path)
         .map(_.group(1))
