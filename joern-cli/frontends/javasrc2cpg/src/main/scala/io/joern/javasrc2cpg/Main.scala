@@ -92,15 +92,22 @@ private object Frontend {
         .text("JDK used for resolving builtin Java types. If not set, current classpath will be used"),
       opt[Unit]("show-env")
         .action((_, c) => c.withShowEnv(true))
-        // This should really be a print-and-exit but, with the current scopt setup, input paths
-        // are still required, so for now `javasrc2cpg --show-env <inputs>` is less confusing
-        // than `javasrc2cpg --show-env <dummy input to keep scopt happy>`
-        .text("print information about environment variables used by javasrc2cpg prior to analysis")
+        .text("print information about environment variables used by javasrc2cpg prior to analysis and exit.")
     )
   }
 }
 
 object Main extends X2CpgMain(cmdLineParser, new JavaSrc2Cpg()) {
+
+  override def main(args: Array[String]): Unit = {
+    // TODO: This is a hack to allow users to use the "--show-env" option without having
+    //  to specify an input argument. Clean this up when adding this option to more frontends.
+    if (args.contains("--show-env")) {
+      super.main(Array("--show-env", "<input_dir_placeholder>"))
+    } else {
+      super.main(args)
+    }
+  }
 
   def run(config: Config, javasrc2Cpg: JavaSrc2Cpg): Unit = {
     if (config.showEnv) {

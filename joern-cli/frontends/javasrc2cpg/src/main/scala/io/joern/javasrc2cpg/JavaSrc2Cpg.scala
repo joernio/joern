@@ -56,8 +56,8 @@ object JavaSrc2Cpg {
       JavaSrcEnvVar.values.foreach { envVar =>
         val currentValue = Option(System.getenv(envVar.name)).getOrElse("<unset>")
         println(s"${envVar.name}:")
-        println(s"- Description  : ${envVar.description}")
-        println(s"- Current value: $currentValue")
+        println(s"  Description  : ${envVar.description}")
+        println(s"  Current value: $currentValue")
       }
   }
 
