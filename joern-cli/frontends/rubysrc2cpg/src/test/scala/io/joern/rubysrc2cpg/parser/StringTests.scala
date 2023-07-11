@@ -145,7 +145,6 @@ class StringTests extends RubyParserAbstractTest {
           |  "
           |  number
           |  """".stripMargin
-
       }
     }
 
