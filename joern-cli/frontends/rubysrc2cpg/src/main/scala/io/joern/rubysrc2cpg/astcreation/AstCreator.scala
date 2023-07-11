@@ -148,6 +148,7 @@ class AstCreator(
     val activeRecordAssociation = "<operator>.activeRecordAssociation"
     val undef                   = "<operator>.undef"
     val superKeyword            = "<operator>.super"
+    val concatStringLiteral     = "<operator>.stringConcatenation"
   }
   private def getOperatorName(token: Token): String = token.getType match {
     case ASSIGNMENT_OPERATOR => Operators.assignment

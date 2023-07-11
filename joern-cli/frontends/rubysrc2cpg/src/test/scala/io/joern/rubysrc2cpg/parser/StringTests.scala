@@ -10,8 +10,9 @@ class StringTests extends RubyParserAbstractTest {
       "be parsed as a primary expression" in {
         printAst(_.primary(), code) shouldEqual
           """LiteralPrimary
-            | SingleQuotedStringLiteral
-            |  ''""".stripMargin
+            | StringLiteralLiteral
+            |  SingleQuotedStringLiteral
+            |   ''""".stripMargin
       }
     }
   }
@@ -24,9 +25,10 @@ class StringTests extends RubyParserAbstractTest {
       "be parsed as a primary expression" in {
         printAst(_.primary(), code) shouldEqual
           """LiteralPrimary
-            | DoubleQuotedStringLiteral
-            |  "
-            |  """".stripMargin
+            | StringLiteralLiteral
+            |  DoubleQuotedStringLiteral
+            |   "
+            |   """".stripMargin
       }
     }
 
