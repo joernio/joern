@@ -6,7 +6,6 @@ import io.shiftleft.semanticcpg.language.*
 import io.joern.x2cpg.Defines as XDefines
 import io.shiftleft.codepropertygraph.generated.Operators
 
-
 class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
 
   "AST generation for simple classes declarations" should {
