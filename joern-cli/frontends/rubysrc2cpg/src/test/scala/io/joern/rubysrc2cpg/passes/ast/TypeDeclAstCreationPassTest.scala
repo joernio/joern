@@ -18,6 +18,17 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
       myClass.fullName shouldBe "Test0.rb::program:MyClass"
     }
 
+    // TODO: Need to be fixed.
+    "generate a basic type declaration node for an empty class with Class.new" ignore {
+      val cpg = code("""
+          |MyClass = Class.new do
+          |end
+          |""".stripMargin)
+      val Some(myClass) = cpg.typeDecl.nameExact("MyClass").headOption: @unchecked
+      myClass.name shouldBe "MyClass"
+      myClass.fullName shouldBe "Test0.rb::program:MyClass"
+    }
+
     "generate methods under type declarations" in {
       val cpg = code("""
           |class Vehicle
@@ -65,12 +76,14 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
       song.name shouldBe "Song"
       song.fullName shouldBe "Test0.rb::program:Song"
 
-      val List(plays, artist, duration, name) = song.member.l
+      val List(artist, duration, name, plays) = song.member.l
 
       plays.name shouldBe "plays"
       name.name shouldBe "name"
       artist.name shouldBe "artist"
       duration.name shouldBe "duration"
+
+      cpg.fieldAccess.fieldIdentifier.canonicalName.l shouldBe List("plays", "name", "artist", "duration")
     }
 
     "generate members for various class members when using the `attr_reader` and `attr_writer` idioms" ignore {

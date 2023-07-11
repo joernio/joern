@@ -194,7 +194,7 @@ class AstCreator(
           null
         }
       }
-      val varSymbol = localVar.getSymbol()
+      val varSymbol = localVar.getSymbol
       val node =
         createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
       val yAst = Ast(node)
@@ -207,11 +207,11 @@ class AstCreator(
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .typeFullName(Defines.Any)
         .lineNumber(localVar.getSymbol.getLine)
-        .columnNumber(localVar.getSymbol.getCharPositionInLine())
+        .columnNumber(localVar.getSymbol.getCharPositionInLine)
       Seq(callAst(callNode, xAsts ++ Seq(yAst)))
     case ctx: ScopedConstantAccessSingleLeftHandSideContext =>
       val localVar  = ctx.CONSTANT_IDENTIFIER()
-      val varSymbol = localVar.getSymbol()
+      val varSymbol = localVar.getSymbol
       val node = createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
       Seq(Ast(node))
     case _ =>
@@ -244,17 +244,7 @@ class AstCreator(
     val rightAst = astForMultipleRightHandSideContext(ctx.multipleRightHandSide())
     val leftAst  = astForSingleLeftHandSideContext(ctx.singleLeftHandSide())
 
-    val operatorName      = getOperatorName(ctx.op)
-    val isSelfFieldAccess = ctx.singleLeftHandSide().getText.startsWith("@")
-
-    // Very basic field detection
-    // TODO: Create a <operator.fieldAccess>
-    if (isSelfFieldAccess) {
-      fieldReferences.updateWith(classStack.top) {
-        case Some(xs) => Option(xs ++ Set(ctx.singleLeftHandSide()))
-        case None     => Option(Set(ctx.singleLeftHandSide()))
-      }
-    }
+    val operatorName = getOperatorName(ctx.op)
 
     if (leftAst.size == 1 && rightAst.size > 1) {
       /*
@@ -267,8 +257,8 @@ class AstCreator(
         .methodFullName(operatorName)
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .typeFullName(Defines.Any)
-        .lineNumber(ctx.op.getLine())
-        .columnNumber(ctx.op.getCharPositionInLine())
+        .lineNumber(ctx.op.getLine)
+        .columnNumber(ctx.op.getCharPositionInLine)
 
       val packedRHS = getPackedRHS(rightAst)
       Seq(callAst(callNode, leftAst ++ packedRHS))
@@ -280,8 +270,8 @@ class AstCreator(
         .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .typeFullName(Defines.Any)
-        .lineNumber(ctx.op.getLine())
-        .columnNumber(ctx.op.getCharPositionInLine())
+        .lineNumber(ctx.op.getLine)
+        .columnNumber(ctx.op.getCharPositionInLine)
       Seq(callAst(callNode, leftAst ++ rightAst))
     }
   }
@@ -1029,6 +1019,9 @@ class AstCreator(
           .lineNumber(varSymbol.getLine)
           .typeFullName(Defines.Any)
           .columnNumber(varSymbol.getCharPositionInLine)
+        if (Option(arrayParameter).isDefined) {
+          param.isVariadic = true
+        }
         Ast(param)
       })
       .toSeq
@@ -1096,7 +1089,13 @@ class AstCreator(
           .name(code.replaceAll("@", ""))
           .code(code)
           .typeFullName(Defines.Any)
-      }).toList.distinctBy(_.name).map(Ast.apply)
+      }).toList.distinctBy(_.name).map { m =>
+        val modifierType = m.name match
+          case x if x.startsWith("@@") => ModifierTypes.STATIC
+          case _                       => ModifierTypes.VIRTUAL
+        val modifierAst = Ast(NewModifier().modifierType(modifierType))
+        Ast(m).withChild(modifierAst)
+      }
     Seq(blockAst(blockNode(classCtx), blockStmts.toList)) ++ uniqueMemberReferences ++ methodStmts
   }
 
@@ -1106,12 +1105,21 @@ class AstCreator(
       case None        => false
     }
 
+    val lastStmtIsLiteralIdentifier = compoundStatementAsts.last.root match {
+      case Some(value) => value.isInstanceOf[NewIdentifier]
+      case Some(value) => value.isInstanceOf[NewLiteral]
+      case None        => false
+    }
+
     if (
       !lastStmtIsAlreadyReturn &&
       ctxStmt != null
     ) {
       val len  = ctxStmt.statement().size()
-      val code = ctxStmt.statement().get(len - 1).getText
+      var code = ctxStmt.statement().get(len - 1).getText
+      if (!lastStmtIsLiteralIdentifier) {
+        code = ""
+      }
       val retNode = NewReturn()
         .code(code)
       val returnReplaced = returnAst(retNode, Seq[Ast](compoundStatementAsts.last))

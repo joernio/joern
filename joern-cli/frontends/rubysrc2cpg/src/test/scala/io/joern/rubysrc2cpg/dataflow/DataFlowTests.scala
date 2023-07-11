@@ -1698,4 +1698,37 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
+  "Across the file data flow test" should {
+    val cpg = code(
+      """
+        |def foo(arg)
+        | loop do
+        | arg += 1
+        |  if arg > 3
+        |        puts arg
+        |        return
+        |  end
+        | end
+        |end
+        |""".stripMargin,
+      "foo.rb"
+    )
+      .moreCode(
+        """
+          |x = 1
+          |foo x
+          |""".stripMargin,
+        "bar.rb"
+      )
+
+    "be found in" in {
+      val source = cpg.literal.code("1").l
+      val sink   = cpg.call.name("puts").argument(1).l
+      sink.reachableByFlows(source).size shouldBe 1
+
+      val src = cpg.identifier("x").l
+      sink.reachableByFlows(source).size shouldBe 1
+    }
+  }
+
 }

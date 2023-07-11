@@ -88,8 +88,7 @@ class MethodOneTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    // TODO: Need to be fixed
-    "Variable argument properties should be rightly set" ignore {
+    "Variable argument properties should be rightly set" in {
       cpg.parameter.name("names").l.size shouldBe 1
       val param = cpg.parameter.name("names").l.head
       param.isVariadic shouldBe true
@@ -103,26 +102,24 @@ class MethodOneTests extends RubyCode2CpgFixture {
         |    return 1
         |  else
         |    return 2
+        |  end
         |end
         |""".stripMargin)
 
-    // TODO: Need to be fixed.
-    "be correct for multiple returns" ignore {
-      cpg.method("foo").methodReturn.l.size shouldBe 2
-      inside(cpg.method("foo").methodReturn.l) { case List(mainMethodReturn) =>
-        mainMethodReturn.typeFullName shouldBe "ANY"
+    "be correct for multiple returns" in {
+      cpg.method("foo").methodReturn.l.size shouldBe 1
+      cpg.method("foo").ast.isReturn.l.size shouldBe 3 // there is 1 implicit return node also
+      inside(cpg.method("foo").methodReturn.l) { case List(fooReturn) =>
+        fooReturn.typeFullName shouldBe "ANY"
       }
-      val astReturns  = cpg.method("foo").ast.isReturn.l
-      val cfgReturns  = cpg.method("foo").methodReturn.cfgPrev.l
-      val travReturns = cpg.method("foo").methodReturn.toReturn.l
-      inside(astReturns) { case List(ret1, ret2) =>
-        ret1.code shouldBe "return 1"
-        ret1.lineNumber shouldBe Option(4)
-        ret2.code shouldBe "return 2"
-        ret2.lineNumber shouldBe Option(6)
+      val astReturns = cpg.method("foo").ast.isReturn.l
+      inside(astReturns) { case List(ret1, ret2, ret3) =>
+        ret1.code shouldBe ""
+        ret2.code shouldBe "return 1"
+        ret2.lineNumber shouldBe Option(4)
+        ret3.code shouldBe "return 2"
+        ret3.lineNumber shouldBe Option(6)
       }
-      astReturns shouldBe cfgReturns
-      astReturns shouldBe travReturns
     }
   }
 }
