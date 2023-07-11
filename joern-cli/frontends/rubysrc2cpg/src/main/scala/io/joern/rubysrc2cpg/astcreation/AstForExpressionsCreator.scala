@@ -109,12 +109,12 @@ trait AstForExpressionsCreator { this: AstCreator =>
   }
 
   protected def astForStringLiteral(ctx: StringLiteralContext): Ast = ctx match {
-    case ctx: SingleQuotedStringLiteralContext  => astForSingleQuotedStringLiteral(ctx)
-    case ctx: DoubleQuotedStringLiteralContext  => astForDoubleQuotedStringLiteral(ctx)
-    case ctx: ConcatenationStringLiteralContext => astForConcatenatedStringLiterals(ctx)
+    case ctx: SingleQuotedStringLiteralContext => astForSingleQuotedStringLiteral(ctx)
+    case ctx: DoubleQuotedStringLiteralContext => astForDoubleQuotedStringLiteral(ctx)
+    case ctx: ConcatenatedStringLiteralContext => astForConcatenatedStringLiterals(ctx)
   }
 
-  protected def astForConcatenatedStringLiterals(ctx: ConcatenationStringLiteralContext): Ast = {
+  protected def astForConcatenatedStringLiterals(ctx: ConcatenatedStringLiteralContext): Ast = {
     val literalAsts = ctx.stringLiteral().asScala.map(astForStringLiteral)
     val callNode_ = callNode(
       ctx,

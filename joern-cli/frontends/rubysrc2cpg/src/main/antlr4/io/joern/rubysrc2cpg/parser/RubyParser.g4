@@ -540,7 +540,7 @@ literal
 stringLiteral
     :   SINGLE_QUOTED_STRING_LITERAL                                                                                # singleQuotedStringLiteral
     |   DOUBLE_QUOTED_STRING_START DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE? DOUBLE_QUOTED_STRING_END                # doubleQuotedStringLiteral
-    |   stringLiteral (WS stringLiteral)+                                                                           # concatenationStringLiteral
+    |   stringLiteral (WS stringLiteral)+                                                                           # concatenatedStringLiteral
     ;
 
 symbol

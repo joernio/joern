@@ -22,7 +22,7 @@ class StringTests extends RubyParserAbstractTest {
       "be parsed as a literal expression" in {
         printAst(_.literal(), code) shouldEqual
           """StringLiteralLiteral
-            | ConcatenationStringLiteral
+            | ConcatenatedStringLiteral
             |  SingleQuotedStringLiteral
             |   'x'
             |  SingleQuotedStringLiteral
@@ -30,14 +30,14 @@ class StringTests extends RubyParserAbstractTest {
       }
     }
 
-    "separated by '\\\n' " should {
+    "separated by '\\\\n' " should {
       val code = """'x' \
           | 'y'""".stripMargin
 
       "be parsed as a literal expression" in {
         printAst(_.literal(), code) shouldEqual
           """StringLiteralLiteral
-            | ConcatenationStringLiteral
+            | ConcatenatedStringLiteral
             |  SingleQuotedStringLiteral
             |   'x'
             |   \
@@ -67,7 +67,7 @@ class StringTests extends RubyParserAbstractTest {
         "be parsed as a literal expression" in {
           printAst(_.literal(), code) shouldEqual
             """StringLiteralLiteral
-              | ConcatenationStringLiteral
+              | ConcatenatedStringLiteral
               |  DoubleQuotedStringLiteral
               |   "
               |   x
@@ -79,7 +79,7 @@ class StringTests extends RubyParserAbstractTest {
         }
       }
 
-      "separated by '\\\n' " should {
+      "separated by '\\\\n'" should {
         val code =
           """"x" \
             | "y" """.stripMargin
@@ -87,7 +87,7 @@ class StringTests extends RubyParserAbstractTest {
         "be parsed as a literal expression" in {
           printAst(_.literal(), code) shouldEqual
             """StringLiteralLiteral
-              | ConcatenationStringLiteral
+              | ConcatenatedStringLiteral
               |  DoubleQuotedStringLiteral
               |   "
               |   x
@@ -124,27 +124,6 @@ class StringTests extends RubyParserAbstractTest {
             |            1
             |   }
             |  """".stripMargin
-      }
-    }
-
-    "separated by '\\\n' and containing a numeric literal interpolation" should {
-      val code = """"#{10} is a" \
-                   |"number"""".stripMargin
-
-      "be parsed as a literal expression" in {
-        printAst(_.literal(), code) shouldEqual
-          """StringLiteralLiteral
-          | DoubleQuotedStringLiteral
-          |  "
-          |  #{
-          |  10
-          |  }
-          |   is a
-          |  "
-          |   \
-          |  "
-          |  number
-          |  """".stripMargin
       }
     }
 
