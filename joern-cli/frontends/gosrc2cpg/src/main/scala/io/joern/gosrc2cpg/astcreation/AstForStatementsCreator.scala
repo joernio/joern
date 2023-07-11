@@ -107,7 +107,7 @@ trait AstForStatementsCreator { this: AstCreator =>
   private def astForConditionExpression(condStmt: ParserNodeInfo): Ast = {
     condStmt.node match {
       case ParenExpr => astForNode(condStmt.json(ParserKeys.X)).head
-      case _         => astsForStatement(condStmt).head
+      case _         => astsForStatement(condStmt).headOption.getOrElse(Ast())
     }
   }
 
