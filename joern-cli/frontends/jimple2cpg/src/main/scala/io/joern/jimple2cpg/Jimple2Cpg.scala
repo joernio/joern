@@ -48,10 +48,10 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
   }
 
   /** Load all class files from archives or directories recursively
-   * @return
-   *  The list of extracted class files whose package path could be
-   *  extracted, placed on that package path relative to [[tmpDir]]
-   */
+    * @return
+    *   The list of extracted class files whose package path could be extracted, placed on that package path relative to
+    *   [[tmpDir]]
+    */
   private def loadClassFiles(src: File, tmpDir: File): List[ClassFile] = {
     val archiveFileExtensions = Set(".jar", ".war", ".zip")
     extractClassesInPackageLayout(
@@ -62,11 +62,12 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
     )
   }
 
-  /**
-   * Extract all class files found, place them in their package layout and load them into soot.
-   * @param input The file/directory to traverse for class files.
-   * @param tmpDir The directory to place the class files in their package layout
-   */
+  /** Extract all class files found, place them in their package layout and load them into soot.
+    * @param input
+    *   The file/directory to traverse for class files.
+    * @param tmpDir
+    *   The directory to place the class files in their package layout
+    */
   private def sootLoadRecursively(input: File, tmpDir: File): List[ClassFile] = {
     Options.v().set_soot_classpath(tmpDir.canonicalPath)
     Options.v().set_prepend_classpath(true)
@@ -81,12 +82,12 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
     classFiles
   }
 
-  /**
-   * Apply the soot passes
-   * @param cpg
-   * @param config
-   * @param tmpDir A temporary directory that will be used as the classpath for extracted class files
-   */
+  /** Apply the soot passes
+    * @param cpg
+    * @param config
+    * @param tmpDir
+    *   A temporary directory that will be used as the classpath for extracted class files
+    */
   private def cpgApplyPasses(cpg: Cpg, config: Config, tmpDir: File): Unit = {
     val input = File(config.inputPath)
     configureSoot(config, tmpDir)
