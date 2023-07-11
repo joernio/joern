@@ -533,9 +533,14 @@ scopedConstantReference
 literal
     :   numericLiteral                                                                                              # numericLiteralLiteral
     |   symbol                                                                                                      # symbolLiteral
-    |   SINGLE_QUOTED_STRING_LITERAL                                                                                # singleQuotedStringLiteral
-    |   DOUBLE_QUOTED_STRING_START DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE? DOUBLE_QUOTED_STRING_END                # doubleQuotedStringLiteral
+    |   stringLiteral                                                                                               # stringLiteralLiteral
     |   REGULAR_EXPRESSION_START REGULAR_EXPRESSION_BODY? REGULAR_EXPRESSION_END                                    # regularExpressionLiteral
+    ;
+    
+stringLiteral
+    :   SINGLE_QUOTED_STRING_LITERAL                                                                                # singleQuotedStringLiteral
+    |   DOUBLE_QUOTED_STRING_START DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE? DOUBLE_QUOTED_STRING_END                # doubleQuotedStringLiteral
+    |   stringLiteral (WS stringLiteral)+                                                                           # concatenatedStringLiteral
     ;
 
 symbol

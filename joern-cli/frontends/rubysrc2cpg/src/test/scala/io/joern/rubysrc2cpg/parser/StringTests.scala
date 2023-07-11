@@ -10,8 +10,39 @@ class StringTests extends RubyParserAbstractTest {
       "be parsed as a primary expression" in {
         printAst(_.primary(), code) shouldEqual
           """LiteralPrimary
-            | SingleQuotedStringLiteral
-            |  ''""".stripMargin
+            | StringLiteralLiteral
+            |  SingleQuotedStringLiteral
+            |   ''""".stripMargin
+      }
+    }
+
+    "separated by whitespace" should {
+      val code = "'x' 'y'"
+
+      "be parsed as a literal expression" in {
+        printAst(_.literal(), code) shouldEqual
+          """StringLiteralLiteral
+            | ConcatenatedStringLiteral
+            |  SingleQuotedStringLiteral
+            |   'x'
+            |  SingleQuotedStringLiteral
+            |   'y'""".stripMargin
+      }
+    }
+
+    "separated by '\\\\n' " should {
+      val code = """'x' \
+          | 'y'""".stripMargin
+
+      "be parsed as a literal expression" in {
+        printAst(_.literal(), code) shouldEqual
+          """StringLiteralLiteral
+            | ConcatenatedStringLiteral
+            |  SingleQuotedStringLiteral
+            |   'x'
+            |   \
+            |  SingleQuotedStringLiteral
+            |   'y'""".stripMargin
       }
     }
   }
@@ -24,9 +55,49 @@ class StringTests extends RubyParserAbstractTest {
       "be parsed as a primary expression" in {
         printAst(_.primary(), code) shouldEqual
           """LiteralPrimary
-            | DoubleQuotedStringLiteral
-            |  "
-            |  """".stripMargin
+            | StringLiteralLiteral
+            |  DoubleQuotedStringLiteral
+            |   "
+            |   """".stripMargin
+      }
+
+      "separated by whitespace" should {
+        val code = "\"x\" \"y\""
+
+        "be parsed as a literal expression" in {
+          printAst(_.literal(), code) shouldEqual
+            """StringLiteralLiteral
+              | ConcatenatedStringLiteral
+              |  DoubleQuotedStringLiteral
+              |   "
+              |   x
+              |   "
+              |  DoubleQuotedStringLiteral
+              |   "
+              |   y
+              |   """".stripMargin
+        }
+      }
+
+      "separated by '\\\\n'" should {
+        val code =
+          """"x" \
+            | "y" """.stripMargin
+
+        "be parsed as a literal expression" in {
+          printAst(_.literal(), code) shouldEqual
+            """StringLiteralLiteral
+              | ConcatenatedStringLiteral
+              |  DoubleQuotedStringLiteral
+              |   "
+              |   x
+              |   "
+              |   \
+              |  DoubleQuotedStringLiteral
+              |   "
+              |   y
+              |   """".stripMargin
+        }
       }
     }
 
