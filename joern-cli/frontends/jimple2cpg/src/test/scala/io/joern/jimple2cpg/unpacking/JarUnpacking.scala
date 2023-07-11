@@ -28,7 +28,7 @@ class JarUnpacking extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     }
   }
 
-  "should extract files and clean up temp directory" in {
+  "'resources/unpacking' should contain 'HelloWorld.jar'" in {
     val targetDir = ProjectRoot.relativise("joern-cli/frontends/jimple2cpg/src/test/resources/unpacking")
     Files
       .walk(Path.of(targetDir))
@@ -36,7 +36,6 @@ class JarUnpacking extends AnyWordSpec with Matchers with BeforeAndAfterAll {
       .filter(f => f.isFile && f.getName.contains(".jar"))
       .map(_.getName)
       .toArray shouldBe Array("HelloWorld.jar")
-    ProgramHandlingUtil.getUnpackingDir.toFile.length() shouldBe 0
   }
 
   "should reflect the correct package order" in {

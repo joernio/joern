@@ -1,16 +1,16 @@
 package io.joern.jimple2cpg.util
 
+import better.files.*
 import io.joern.x2cpg.SourceFiles
-import org.apache.commons.io.FileUtils
 import org.objectweb.asm.ClassReader.SKIP_CODE
 import org.objectweb.asm.{ClassReader, ClassVisitor, Opcodes}
 import org.slf4j.LoggerFactory
 
-import java.io.{File, FileInputStream}
-import java.nio.file.{Files, Path, Paths, StandardCopyOption}
-import java.util.zip.ZipFile
+import java.io.FileInputStream
+import java.nio.file.Path
+import java.util.zip.ZipEntry
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
-import scala.util.Using
+import scala.util.{Failure, Left, Success, Try, Using}
 
 /** Responsible for handling JAR unpacking and handling the temporary build directory.
   */
@@ -18,135 +18,119 @@ object ProgramHandlingUtil {
 
   private val logger = LoggerFactory.getLogger(ProgramHandlingUtil.getClass)
 
-  /** The temporary directory used to unpack class files to.
-    */
-  private var TEMP_DIR: Option[Path] = None
+  sealed class Entry(entry: Either[File, ZipEntry]) {
 
-  logger.debug(s"Using temporary folder at $TEMP_DIR")
-
-  /** Returns the temporary directory used to unpack and analyze projects in. This allows us to lazily create the
-    * unpacking directory.
-    * @return
-    *   the path pointing to the unpacking directory.
-    */
-  def getUnpackingDir: Path =
-    TEMP_DIR match {
-      case None =>
-        val p = Files.createTempDirectory("joern-")
-        TEMP_DIR = Some(p)
-        p
-      case Some(dir) => dir
-    }
-
-  /** Inspects class files and moves them to the temp directory based on their package path.
-    *
-    * @param files
-    *   the class files to move.
-    * @return
-    *   the list of class files at their new locations.
-    */
-  def moveClassFiles(files: List[String]): List[String] = {
-    var destPath: Option[String] = None
-
-    sealed class ClassPathVisitor extends ClassVisitor(Opcodes.ASM9) {
-      override def visit(
-        version: Int,
-        access: Int,
-        name: String,
-        signature: String,
-        superName: String,
-        interfaces: Array[String]
-      ): Unit = {
-        destPath = Some(getUnpackingDir.toAbsolutePath.toString + File.separator + name + ".class")
-      }
-    }
-
-    files.flatMap { f =>
-      Using.resource(new FileInputStream(f)) { fis =>
-        val cr          = new ClassReader(fis)
-        val rootVisitor = new ClassPathVisitor()
-        cr.accept(rootVisitor, SKIP_CODE)
-      }
-      destPath match {
-        case Some(destPath) =>
-          val dstFile = new File(destPath)
-          dstFile.mkdirs()
-          Files.copy(Paths.get(f), dstFile.toPath, StandardCopyOption.REPLACE_EXISTING)
-          Some(dstFile.getAbsolutePath)
-        case None => None
-      }
-    }
+    def this(file: File) = this(Left(file))
+    def this(entry: ZipEntry) = this(Right(entry))
+    private def file: File            = entry.fold(identity, e => File(e.getName))
+    def name: String                  = file.name
+    def fullExtension: Option[String] = file.extension(includeAll = true)
+    def extension: Option[String]     = file.extension
+    def isDirectory: Boolean          = entry.fold(_.isDirectory, _.isDirectory)
+    def maybeRegularFile(): Boolean   = entry.fold(_.isRegularFile, !_.isDirectory)
   }
 
-  /** Unzips a ZIP file into a sequence of files. All files unpacked are deleted at the end of CPG construction.
-    *
-    * @param zf
-    *   The ZIP file to extract.
-    * @param sourceCodePath
-    *   The project root path to unpack to.
-    */
-  def unzipArchive(zf: ZipFile): List[String] = {
-    val zipTempDir = Files.createTempDirectory("plume-unzip-")
-    try {
-      Using.resource(zf) { (zip: ZipFile) =>
-        // Copy zipped files across
-        moveClassFiles(
-          zip
-            .entries()
-            .asScala
-            .filter(f => !f.isDirectory && f.getName.endsWith(".class"))
-            .flatMap(entry => {
-              val destFile = new File(zipTempDir.toAbsolutePath.toString + File.separator + entry.getName)
-              // dirName accounts for nested directories as a result of JAR package structure
-              val dirName = destFile.getAbsolutePath
-                .substring(0, destFile.getAbsolutePath.lastIndexOf(File.separator))
-              // Create directory path
-              new File(dirName).mkdirs()
-              try {
-                if (destFile.exists()) destFile.delete()
-                Using.resource(zip.getInputStream(entry)) { input =>
-                  Files.copy(input, destFile.toPath)
-                }
-                destFile.deleteOnExit()
-                Option(destFile.getAbsolutePath)
-              } catch {
-                case e: Exception =>
-                  logger
-                    .warn(
-                      s"Encountered an error while extracting entry ${entry.getName} from archive ${zip.getName}.",
-                      e
-                    )
-                  Option.empty
-              }
-            })
-            .toList
-        )
-      }
-    } catch {
-      case e: Exception => throw new RuntimeException(s"Error extracting files from archive at ${zf.getName}", e)
-    } finally {
-      FileUtils.deleteDirectory(zipTempDir.toFile)
+  private def unfoldArchives[A](src: File, emitOrUnpack: File => Either[A, List[File]]): IterableOnce[A] = {
+    emitOrUnpack(src) match {
+      case Left(a)             => Seq(a)
+      case Right(disposeFiles) => disposeFiles.flatMap(x => unfoldArchives(x, emitOrUnpack))
     }
   }
+  private def extractClassesToTmp(
+    src: File,
+    tmpDir: File,
+    isArchive: Entry => Boolean,
+    isSource: Entry => Boolean
+  ): IterableOnce[ClassFile] = {
 
-  /** Retrieve parseable files from archive types.
-    */
-  def extractSourceFilesFromArchive(sourceCodeDir: String, archiveFileExtensions: Set[String]): List[String] = {
-    val archives =
-      if (
-        new File(sourceCodeDir).isFile &&
-        archiveFileExtensions.map(sourceCodeDir.endsWith).reduce((a, b) => a && b)
-      ) {
-        List(sourceCodeDir)
-      } else {
-        SourceFiles.determine(sourceCodeDir, archiveFileExtensions)
+    def shouldExtract(e: Entry) = e.maybeRegularFile() && (isArchive(e) || isSource(e))
+    unfoldArchives(
+      src,
+      {
+        case f if isSource(Entry(f)) =>
+          Left(ClassFile(f))
+        case f if f.isDirectory() =>
+          val files = f.listRecursively.filter(!_.isDirectory).toList
+          Right(files)
+        case f if isArchive(Entry(f)) =>
+          val xTmp = File.newTemporaryDirectory("extract-archive-", parent = Some(tmpDir))
+          Right(Try(f.unzipTo(xTmp, e => shouldExtract(Entry(f)))) match {
+            case Success(dir) => List(dir)
+            case Failure(e) =>
+              logger.warn(s"Failed to extract archive", e)
+              List.empty
+          })
+        case _ =>
+          Right(List.empty)
       }
-    archives.flatMap { x => unzipArchive(new ZipFile(x)) }
+    )
   }
 
-  /** Removes all files in the temporary unpacking directory.
-    */
-  def clean(): Unit = {
-    FileUtils.deleteDirectory(getUnpackingDir.toFile)
+  object ClassFile {
+    def getPackagePathFromByteCode(fis: FileInputStream): Option[String] = {
+      val cr                   = new ClassReader(fis)
+      var path: Option[String] = None
+      sealed class ClassNameVisitor extends ClassVisitor(Opcodes.ASM9) {
+        override def visit(
+          version: Int,
+          access: Int,
+          name: String,
+          signature: String,
+          superName: String,
+          interfaces: Array[String]
+        ): Unit = {
+          path = Some(name)
+        }
+      }
+      val rootVisitor = new ClassNameVisitor()
+      cr.accept(rootVisitor, SKIP_CODE)
+      path
+    }
+
+    def getPackagePathFromByteCode(file: File): Option[String] =
+      Try(file.fileInputStream.apply(getPackagePathFromByteCode))
+        .recover {
+          case e: Throwable => {
+            logger.warn(s"Error reading class file ${file.canonicalPath}", e)
+            None
+          }
+        }
+        .getOrElse(None)
   }
+  sealed class ClassFile(val file: File, val packagePath: Option[String]) {
+    def this(file: File) = this(file, ClassFile.getPackagePathFromByteCode(file))
+
+    // Test that the path separator is always unix
+    val components: Option[Array[String]] = packagePath.map(_.split("/"))
+
+    val fqcn: Option[String] = components.map(_.mkString("."))
+    def moveToPackageLayoutIn(destDir: File): Option[ClassFile] =
+      packagePath
+        .map { path =>
+          val destClass = File(destDir, path + ".class")
+          if (destClass.exists()) {
+            logger.warn(s"Overwriting class file: ${destClass.path.toAbsolutePath}")
+          }
+          destClass.parent.createDirectories();
+          ClassFile(file.moveTo(destClass)(File.CopyOptions(overwrite = true)), packagePath)
+        }
+        .orElse {
+          logger.warn(s"Missing package path for ${file.canonicalPath}. Failed to move to ${destDir.canonicalPath}")
+          None
+        }
+  }
+  def extractClassesInPackageLayout(
+    src: File,
+    destDir: File,
+    isClass: Entry => Boolean,
+    isArchive: Entry => Boolean
+  ): List[ClassFile] =
+    File
+      .temporaryDirectory("extract-classes-")
+      .apply(tmpDir =>
+        extractClassesToTmp(src, tmpDir, isArchive, isClass).iterator
+          .flatMap(_.moveToPackageLayoutIn(destDir))
+          .toList
+      )
+
 }
