@@ -6,12 +6,14 @@ import io.joern.rubysrc2cpg.passes.{
   AstPackagePass,
   ConfigFileCreationPass,
   ImportResolverPass,
+  RubyTypeHintCallLinker,
   RubyTypeRecoveryPass
 }
 import io.joern.rubysrc2cpg.utils.PackageTable
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.datastructures.Global
+import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.utils.ExternalCommand
@@ -73,8 +75,14 @@ object RubySrc2Cpg {
 
   def postProcessingPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] =
     List(
+      // TODO commented below two passes, as waiting on Dependency download PR to get merged
       // new RubyTypeRecoveryPass(cpg),
-      new NaiveCallLinker(cpg)
+      // new RubyTypeHintCallLinker(cpg),
+      new NaiveCallLinker(cpg),
+
+      // Some of passes above create new methods, so, we
+      // need to run the ASTLinkerPass one more time
+      new AstLinkerPass(cpg)
     )
 
 }

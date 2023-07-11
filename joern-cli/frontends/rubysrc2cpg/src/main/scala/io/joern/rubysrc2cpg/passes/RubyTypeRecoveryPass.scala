@@ -55,12 +55,4 @@ private class RecoverForRubyFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, 
     associateTypes(i, constructorPaths)
   }
 
-  override def storeCallTypeInfo(c: Call, types: Seq[String]): Unit =
-    if (types.nonEmpty) {
-      super.storeCallTypeInfo(c, types)
-      // Update the methodFullName if we have only 1 type
-      if (c.methodFullName.equals(DynamicCallUnknownFullName) && types.size == 1)
-        builder.setNodeProperty(c, PropertyNames.METHOD_FULL_NAME, types.head)
-    }
-
 }
