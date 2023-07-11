@@ -6,7 +6,7 @@ import io.joern.rubysrc2cpg.utils.PackageContext
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
 import io.joern.x2cpg.datastructures.{Global, Scope}
-import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder}
+import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.antlr.v4.runtime.tree.TerminalNode
@@ -1093,7 +1093,27 @@ class AstCreator(
         val modifierAst = Ast(NewModifier().modifierType(modifierType))
         Ast(m).withChild(modifierAst)
       }
-    Seq(blockAst(blockNode(classCtx), blockStmts.toList)) ++ uniqueMemberReferences ++ methodStmts
+
+    // Create class initialization method to host all field initializers
+    val classInitMethodAst = if (blockStmts.nonEmpty) {
+      val classInitFullName = (classStack.reverse :+ XDefines.StaticInitMethodName).mkString(":")
+      val classInitMethod = methodNode(
+        classCtx,
+        XDefines.StaticInitMethodName,
+        XDefines.StaticInitMethodName,
+        classInitFullName,
+        None,
+        filename,
+        Option(NodeTypes.TYPE_DECL),
+        Option(classStack.reverse.mkString(":"))
+      )
+      val classInitBody = blockAst(blockNode(classCtx), blockStmts.toList)
+      Seq(methodAst(classInitMethod, Seq.empty, classInitBody, methodReturnNode(classCtx, Defines.Any)))
+    } else {
+      Seq.empty
+    }
+
+    classInitMethodAst ++ uniqueMemberReferences ++ methodStmts
   }
 
   private def convertLastStmtToReturn(compoundStatementAsts: Seq[Ast], ctxStmt: StatementsContext): Seq[Ast] = {
