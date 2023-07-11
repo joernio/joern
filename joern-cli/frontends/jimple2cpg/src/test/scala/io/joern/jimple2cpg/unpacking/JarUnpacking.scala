@@ -36,7 +36,7 @@ class JarUnpacking extends AnyWordSpec with Matchers with BeforeAndAfterAll {
         fail("Unable to obtain test resources.", x)
     }
 
-  "'resources/unpacking/helloworld' should contain 'HelloWorld.jar'" in {
+  "'resources/unpacking' should contain 'HelloWorld.jar' and 'NestedHelloWorld.jar'" in {
     val targetDir = ProjectRoot.relativise("joern-cli/frontends/jimple2cpg/src/test/resources/unpacking")
     File(targetDir)
       .walk()
