@@ -1044,12 +1044,8 @@ class AstCreator(
       asts.addAll(astForSingleLeftHandSideContext(ctx.exceptionVariableAssignment().singleLeftHandSide()))
     }
 
-    asts.addAll(astForCompoundStatement(ctx.thenClause().compoundStatement()))
-    val blockNode = NewBlock()
-      .code(ctx.getText)
-      .lineNumber(ctx.RESCUE().getSymbol.getLine)
-      .columnNumber(ctx.RESCUE().getSymbol.getCharPositionInLine)
-    blockAst(blockNode, asts.toList)
+    asts.addAll(astForCompoundStatement(ctx.thenClause().compoundStatement(), false))
+    blockAst(blockNode(ctx), asts.toList)
   }
 
   /** Handles body statements differently from [[astForBodyStatementContext]] by noting that method definitions should
@@ -1131,35 +1127,43 @@ class AstCreator(
   def astForBodyStatementContext(ctx: BodyStatementContext, addReturnNode: Boolean = false): Seq[Ast] = {
     val compoundStatementAsts = astForCompoundStatement(ctx.compoundStatement(), !addReturnNode)
 
-    /*
-     * Convert the last statement to a return AST if it is not already a return AST.
-     * If it is a return AST leave it untouched.
-     */
-    val compoundStatementAstsWithReturn =
-      if (addReturnNode && compoundStatementAsts.nonEmpty) {
-        convertLastStmtToReturn(compoundStatementAsts, ctx.compoundStatement().statements())
-      } else {
-        compoundStatementAsts
-      }
+    if (ctx.rescueClause().size > 0) {
+      val elseClauseAsts = Option(ctx.elseClause()) match
+        case Some(ctx) => astForCompoundStatement(ctx.compoundStatement(), false)
+        case None      => Seq()
 
-    val mainBodyAsts = if (ctx.ensureClause() != null) {
-      val ensureAsts = astForCompoundStatement(ctx.ensureClause().compoundStatement())
-      compoundStatementAstsWithReturn ++ ensureAsts
+      /*
+       * TODO Conversion of last statement to return AST is needed here
+       */
+      val tryBodyAsts = compoundStatementAsts ++ elseClauseAsts
+      val tryBodyAst  = blockAst(blockNode(ctx), tryBodyAsts.toList)
+
+      val finallyAst = Option(ctx.ensureClause()) match
+        case Some(ctx) => astForCompoundStatement(ctx.compoundStatement()).headOption
+        case None      => None
+
+      val catchAsts = ctx
+        .rescueClause()
+        .asScala
+        .map(astForRescueClauseContext)
+        .toSeq
+
+      val tryNode = NewControlStructure()
+        .controlStructureType(ControlStructureTypes.TRY)
+        .code("try")
+        .lineNumber(line(ctx))
+        .columnNumber(column(ctx))
+
+      Seq(tryCatchAst(tryNode, tryBodyAst, catchAsts, finallyAst))
+    } else if (addReturnNode && compoundStatementAsts.nonEmpty) {
+      /*
+       * Convert the last statement to a return AST if it is not already a return AST.
+       * If it is a return AST leave it untouched.
+       * TODO Handling for last statement being if-else is needed here
+       */
+      convertLastStmtToReturn(compoundStatementAsts, ctx.compoundStatement().statements())
     } else {
-      compoundStatementAstsWithReturn
-    }
-
-    val rescueAsts = ctx
-      .rescueClause()
-      .asScala
-      .map(astForRescueClauseContext)
-      .toSeq
-
-    if (ctx.elseClause() != null) {
-      val elseClauseAsts = astForCompoundStatement(ctx.elseClause().compoundStatement())
-      mainBodyAsts ++ rescueAsts ++ elseClauseAsts
-    } else {
-      mainBodyAsts ++ rescueAsts
+      compoundStatementAsts
     }
   }
 
