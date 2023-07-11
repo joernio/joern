@@ -50,16 +50,17 @@ object ProgramHandlingUtil {
         case f if isSource(Entry(f)) =>
           Left(ClassFile(f))
         case f if f.isDirectory() =>
-          val files = f.listRecursively.filter(!_.isDirectory).toList
+          val files = f.listRecursively.filterNot(_.isDirectory).toList
           Right(files)
         case f if isArchive(Entry(f)) =>
           val xTmp = File.newTemporaryDirectory("extract-archive-", parent = Some(tmpDir))
-          Right(Try(f.unzipTo(xTmp, e => shouldExtract(Entry(f)))) match {
+          val unzipDirs = Try(f.unzipTo(xTmp, e => shouldExtract(Entry(f)))) match {
             case Success(dir) => List(dir)
             case Failure(e) =>
               logger.warn(s"Failed to extract archive", e)
               List.empty
-          })
+          }
+          Right(unzipDirs)
         case _ =>
           Right(List.empty)
       }
@@ -68,9 +69,9 @@ object ProgramHandlingUtil {
 
   object ClassFile {
     def getPackagePathFromByteCode(fis: FileInputStream): Option[String] = {
-      val cr                   = new ClassReader(fis)
-      var path: Option[String] = None
+      val cr = new ClassReader(fis)
       sealed class ClassNameVisitor extends ClassVisitor(Opcodes.ASM9) {
+        var path: Option[String] = None
         override def visit(
           version: Int,
           access: Int,
@@ -84,14 +85,14 @@ object ProgramHandlingUtil {
       }
       val rootVisitor = new ClassNameVisitor()
       cr.accept(rootVisitor, SKIP_CODE)
-      path
+      rootVisitor.path
     }
 
     def getPackagePathFromByteCode(file: File): Option[String] =
       Try(file.fileInputStream.apply(getPackagePathFromByteCode))
         .recover {
           case e: Throwable => {
-            logger.warn(s"Error reading class file ${file.canonicalPath}", e)
+            logger.error(s"Error reading class file ${file.canonicalPath}", e)
             None
           }
         }
@@ -100,14 +101,14 @@ object ProgramHandlingUtil {
   sealed class ClassFile(val file: File, val packagePath: Option[String]) {
     def this(file: File) = this(file, ClassFile.getPackagePathFromByteCode(file))
 
-    // Test that the path separator is always unix
+    // TODO: Test that the path separator is always unix
     val components: Option[Array[String]] = packagePath.map(_.split("/"))
 
-    val fqcn: Option[String] = components.map(_.mkString("."))
+    val fullyQualifiedClassName: Option[String] = components.map(_.mkString("."))
     def moveToPackageLayoutIn(destDir: File): Option[ClassFile] =
       packagePath
         .map { path =>
-          val destClass = File(destDir, path + ".class")
+          val destClass = destDir / s"${path}.class"
           if (destClass.exists()) {
             logger.warn(s"Overwriting class file: ${destClass.path.toAbsolutePath}")
           }

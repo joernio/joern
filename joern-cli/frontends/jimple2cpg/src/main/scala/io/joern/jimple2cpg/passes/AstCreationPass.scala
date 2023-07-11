@@ -24,7 +24,7 @@ class AstCreationPass(classFiles: List[ClassFile], cpg: Cpg) extends ConcurrentW
 
   override def runOnPart(builder: DiffGraphBuilder, classFile: ClassFile): Unit = {
     try {
-      val sootClass = Scene.v().loadClassAndSupport(classFile.fqcn.get)
+      val sootClass = Scene.v().loadClassAndSupport(classFile.fullyQualifiedClassName.get)
       sootClass.setApplicationClass()
       val localDiff = AstCreator(classFile.file.canonicalPath, sootClass, global).createAst()
       builder.absorb(localDiff)
