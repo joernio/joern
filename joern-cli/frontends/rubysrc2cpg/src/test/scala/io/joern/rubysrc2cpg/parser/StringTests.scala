@@ -15,6 +15,36 @@ class StringTests extends RubyParserAbstractTest {
             |   ''""".stripMargin
       }
     }
+
+    "separated by whitespace" should {
+      val code = "'x' 'y'"
+
+      "be parsed as a literal expression" in {
+        printAst(_.literal(), code) shouldEqual
+          """StringLiteralLiteral
+            | ConcatenationStringLiteral
+            |  SingleQuotedStringLiteral
+            |   'x'
+            |  SingleQuotedStringLiteral
+            |   'y'""".stripMargin
+      }
+    }
+
+    "separated by '\\\n' " should {
+      val code = """'x' \
+          | 'y'""".stripMargin
+
+      "be parsed as a literal expression" in {
+        printAst(_.literal(), code) shouldEqual
+          """StringLiteralLiteral
+            | ConcatenationStringLiteral
+            |  SingleQuotedStringLiteral
+            |   'x'
+            |   \
+            |  SingleQuotedStringLiteral
+            |   'y'""".stripMargin
+      }
+    }
   }
 
   "A double-quoted string literal" when {
@@ -29,6 +59,45 @@ class StringTests extends RubyParserAbstractTest {
             |  DoubleQuotedStringLiteral
             |   "
             |   """".stripMargin
+      }
+
+      "separated by whitespace" should {
+        val code = "\"x\" \"y\""
+
+        "be parsed as a literal expression" in {
+          printAst(_.literal(), code) shouldEqual
+            """StringLiteralLiteral
+              | ConcatenationStringLiteral
+              |  DoubleQuotedStringLiteral
+              |   "
+              |   x
+              |   "
+              |  DoubleQuotedStringLiteral
+              |   "
+              |   y
+              |   """".stripMargin
+        }
+      }
+
+      "separated by '\\\n' " should {
+        val code =
+          """"x" \
+            | "y" """.stripMargin
+
+        "be parsed as a literal expression" in {
+          printAst(_.literal(), code) shouldEqual
+            """StringLiteralLiteral
+              | ConcatenationStringLiteral
+              |  DoubleQuotedStringLiteral
+              |   "
+              |   x
+              |   "
+              |   \
+              |  DoubleQuotedStringLiteral
+              |   "
+              |   y
+              |   """".stripMargin
+        }
       }
     }
 
@@ -55,6 +124,28 @@ class StringTests extends RubyParserAbstractTest {
             |            1
             |   }
             |  """".stripMargin
+      }
+    }
+
+    "separated by '\\\n' and containing a numeric literal interpolation" should {
+      val code = """"#{10} is a" \
+                   |"number"""".stripMargin
+
+      "be parsed as a literal expression" in {
+        printAst(_.literal(), code) shouldEqual
+          """StringLiteralLiteral
+          | DoubleQuotedStringLiteral
+          |  "
+          |  #{
+          |  10
+          |  }
+          |   is a
+          |  "
+          |   \
+          |  "
+          |  number
+          |  """".stripMargin
+
       }
     }
 

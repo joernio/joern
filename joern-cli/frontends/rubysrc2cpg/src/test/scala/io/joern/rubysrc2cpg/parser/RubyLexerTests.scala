@@ -350,7 +350,7 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       EOF
     )
   }
-  
+
   "Multi-line string literal concatenation" should "be recognized as two string literals separated by whitespace" in {
     val code =
       """'abc' \
