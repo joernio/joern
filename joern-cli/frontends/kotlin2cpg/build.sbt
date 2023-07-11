@@ -9,7 +9,7 @@ dependsOn(
 )
 
 libraryDependencies ++= Seq(
-  "com.lihaoyi"             %% "requests"                   % "0.7.0",
+  "com.lihaoyi"             %% "requests"                   % Versions.requests,
   "com.lihaoyi"             %% "ujson"                      % "2.0.0",
   "com.squareup.tools.build" % "maven-archeologist"         % "0.0.10",
   "io.shiftleft"            %% "codepropertygraph"          % Versions.cpg,

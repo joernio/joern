@@ -9,6 +9,7 @@ object Versions {
   val json4s        = "4.0.6"
   val gradleTooling = "8.2"
   val circe         = "0.14.5"
+  val requests      = "0.8.0"
 
   private def parseVersion(key: String): String = {
     val versionRegexp = s""".*val $key[ ]+=[ ]?"(.*?)"""".r
