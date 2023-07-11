@@ -242,12 +242,14 @@ class MacroHandlingTests extends CCodeToCpgSuite {
 
     "should expand the macro on both sides of binary operators" in {
       cpg.call.name(Operators.and).code.l shouldBe List("x & FLAG_A", "FLAG_A & x")
-      val List(andCall1, andCall2)                           = cpg.call.name(Operators.and).l
-      val List(andCall1Arg1: Identifier, andCall1Arg2: Call) = andCall1.argument.l: @unchecked
+      val List(andCall1, andCall2) = cpg.call.name(Operators.and).l
+      val List(andCall1Arg1)       = andCall1.argument.isIdentifier.l
       andCall1Arg1.name shouldBe "x"
+      val List(andCall1Arg2) = andCall1.argument.isCall.l
       andCall1Arg2.name shouldBe "FLAG_A"
-      val List(andCall2Arg1: Call, andCall2Arg2: Identifier) = andCall2.argument.l: @unchecked
+      val List(andCall2Arg1) = andCall2.argument.isCall.l
       andCall2Arg1.name shouldBe "FLAG_A"
+      val List(andCall2Arg2) = andCall2.argument.isIdentifier.l
       andCall2Arg2.name shouldBe "x"
     }
   }
