@@ -3,6 +3,9 @@ package io.joern.rubysrc2cpg.passes.ast
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.semanticcpg.language.*
+import io.joern.x2cpg.Defines as XDefines
+import io.shiftleft.codepropertygraph.generated.Operators
+
 
 class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
 
@@ -76,6 +79,11 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
       song.name shouldBe "Song"
       song.fullName shouldBe "Test0.rb::program:Song"
 
+      val List(classInit) = song.method.name(XDefines.StaticInitMethodName).l
+      classInit.fullName shouldBe s"Test0.rb::program:Song:${XDefines.StaticInitMethodName}"
+      val List(playsDef) = classInit.call.nameExact(Operators.fieldAccess).fieldAccess.l
+      playsDef.fieldIdentifier.canonicalName.headOption shouldBe Option("plays")
+
       val List(artist, duration, name, plays) = song.member.l
 
       plays.name shouldBe "plays"
@@ -136,7 +144,7 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
       myClass.name shouldBe "MyClass"
       myClass.fullName shouldBe "Test0.rb::program:MyClass"
 
-      val List(m1, m2, m3, m4) = myClass.method.l
+      val List(_, m1, m2, m3, m4) = myClass.method.l
       m1.name shouldBe "method1"
       m2.name shouldBe "method2"
       m3.name shouldBe "method3"
