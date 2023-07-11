@@ -23,7 +23,7 @@ import scala.collection.mutable
 abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
 
   implicit protected val resolver: NoResolve.type = NoResolve
-  private val fileNamePattern                     = Pattern.compile("^(.*(.py|.js)).*$")
+  private val fileNamePattern                     = Pattern.compile("^(.*(.py|.js|.rb)).*$")
   protected val pathSep: Char                     = '.'
 
   protected def calls: Traversal[Call] = cpg.call

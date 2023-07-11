@@ -1,11 +1,19 @@
 package io.joern.rubysrc2cpg
 
 import better.files.File
-import io.joern.rubysrc2cpg.passes.{AstCreationPass, AstPackagePass, ConfigFileCreationPass}
+import io.joern.rubysrc2cpg.passes.{
+  AstCreationPass,
+  AstPackagePass,
+  ConfigFileCreationPass,
+  ImportResolverPass,
+  RubyTypeHintCallLinker,
+  RubyTypeRecoveryPass
+}
 import io.joern.rubysrc2cpg.utils.PackageTable
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.datastructures.Global
+import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.utils.ExternalCommand
@@ -40,6 +48,7 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
       val astCreationPass = new AstCreationPass(config.inputPath, cpg, global, packageTableInfo)
       astCreationPass.createAndApply()
       TypeNodePass.withRegisteredTypes(astCreationPass.allUsedTypes(), cpg).createAndApply()
+      new ImportResolverPass(cpg, packageTableInfo).createAndApply()
     }
   }
 
@@ -64,6 +73,16 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
 
 object RubySrc2Cpg {
 
-  def postProcessingPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] = List(new NaiveCallLinker(cpg))
+  def postProcessingPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] =
+    List(
+      // TODO commented below two passes, as waiting on Dependency download PR to get merged
+      // new RubyTypeRecoveryPass(cpg),
+      // new RubyTypeHintCallLinker(cpg),
+      new NaiveCallLinker(cpg),
+
+      // Some of passes above create new methods, so, we
+      // need to run the ASTLinkerPass one more time
+      new AstLinkerPass(cpg)
+    )
 
 }
