@@ -30,14 +30,14 @@ class DefaultTestCpgWithRuby(withPostProcessing: Boolean, withDataFlow: Boolean)
   override def applyPasses(): Unit = {
     X2Cpg.applyDefaultOverlays(this)
 
+    if (withPostProcessing) {
+      RubySrc2Cpg.postProcessingPasses(this).foreach(_.createAndApply())
+    }
+
     if (withDataFlow) {
       val context = new LayerCreatorContext(this)
       val options = new OssDataFlowOptions()
       new OssDataFlow(options).run(context)
-    }
-
-    if (withPostProcessing) {
-      RubySrc2Cpg.postProcessingPasses(this).foreach(_.createAndApply())
     }
   }
 
