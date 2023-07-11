@@ -6,7 +6,7 @@ import org.objectweb.asm.ClassReader.SKIP_CODE
 import org.objectweb.asm.{ClassReader, ClassVisitor, Opcodes}
 import org.slf4j.LoggerFactory
 
-import java.io.FileInputStream
+import java.io.{FileInputStream, InputStream}
 import java.nio.file.Path
 import java.util.zip.ZipEntry
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
@@ -18,6 +18,10 @@ object ProgramHandlingUtil {
 
   private val logger = LoggerFactory.getLogger(ProgramHandlingUtil.getClass)
 
+  /** Common properties of a File and ZipEntry, used to
+   * determine whether a file in a directory or an entry
+   * in an archive is worth emitting/extracting
+   */
   sealed class Entry(entry: Either[File, ZipEntry]) {
 
     def this(file: File) = this(Left(file))
@@ -30,24 +34,41 @@ object ProgramHandlingUtil {
     def maybeRegularFile(): Boolean   = entry.fold(_.isRegularFile, !_.isDirectory)
   }
 
+  /** Process files that may lead to more files to process or to emit a resulting value of [[A]]
+   *
+   * @param src The file/directory to traverse
+   * @param emitOrUnpack A function that takes a file and either emits a value or returns more files to traverse
+   * @tparam A The type of emitted values
+   * @return The emitted values
+   */
   private def unfoldArchives[A](src: File, emitOrUnpack: File => Either[A, List[File]]): IterableOnce[A] = {
+    // TODO: add recursion depth limit
     emitOrUnpack(src) match {
       case Left(a)             => Seq(a)
       case Right(disposeFiles) => disposeFiles.flatMap(x => unfoldArchives(x, emitOrUnpack))
     }
   }
+
+  /** Find <pre>.class</pre> files, including those inside archives.
+   *
+   * @param src The file/directory to search.
+   * @param tmpDir A temporary directory for extracted archives
+   * @param isArchive Whether an entry is an archive to extract
+   * @param isClass Whether an entry is a class file
+   * @return The list of class files found, which may either be in [[src]] or in an extracted archive under [[tmpDir]]
+   */
   private def extractClassesToTmp(
     src: File,
     tmpDir: File,
     isArchive: Entry => Boolean,
-    isSource: Entry => Boolean
+    isClass: Entry => Boolean
   ): IterableOnce[ClassFile] = {
 
-    def shouldExtract(e: Entry) = e.maybeRegularFile() && (isArchive(e) || isSource(e))
+    def shouldExtract(e: Entry) = e.maybeRegularFile() && (isArchive(e) || isClass(e))
     unfoldArchives(
       src,
       {
-        case f if isSource(Entry(f)) =>
+        case f if isClass(Entry(f)) =>
           Left(ClassFile(f))
         case f if f.isDirectory() =>
           val files = f.listRecursively.filterNot(_.isDirectory).toList
@@ -68,8 +89,8 @@ object ProgramHandlingUtil {
   }
 
   object ClassFile {
-    def getPackagePathFromByteCode(fis: FileInputStream): Option[String] = {
-      val cr = new ClassReader(fis)
+    def getPackagePathFromByteCode(is: InputStream): Option[String] = {
+      val cr = new ClassReader(is)
       sealed class ClassNameVisitor extends ClassVisitor(Opcodes.ASM9) {
         var path: Option[String] = None
         override def visit(
@@ -88,6 +109,11 @@ object ProgramHandlingUtil {
       rootVisitor.path
     }
 
+    /** Attempt to retrieve the package path from JVM bytecode.
+     *
+     * @param file The class file
+     * @return The package path if successfully retrieved
+     */
     def getPackagePathFromByteCode(file: File): Option[String] =
       Try(file.fileInputStream.apply(getPackagePathFromByteCode))
         .recover {
@@ -101,11 +127,16 @@ object ProgramHandlingUtil {
   sealed class ClassFile(val file: File, val packagePath: Option[String]) {
     def this(file: File) = this(file, ClassFile.getPackagePathFromByteCode(file))
 
-    // TODO: Test that the path separator is always unix
     val components: Option[Array[String]] = packagePath.map(_.split("/"))
 
     val fullyQualifiedClassName: Option[String] = components.map(_.mkString("."))
-    def moveToPackageLayoutIn(destDir: File): Option[ClassFile] =
+
+    /** Copy the class file to its package path relative to [[destDir]].
+     * This will overwrite a class file at the destination if it exists.
+     * @param destDir The directory in which to place the class file
+     * @return The class file at the destination if the package path could be retrieved from the its bytecode
+     */
+    def copyToPackageLayoutIn(destDir: File): Option[ClassFile] =
       packagePath
         .map { path =>
           val destClass = destDir / s"${path}.class"
@@ -113,13 +144,23 @@ object ProgramHandlingUtil {
             logger.warn(s"Overwriting class file: ${destClass.path.toAbsolutePath}")
           }
           destClass.parent.createDirectories();
-          ClassFile(file.moveTo(destClass)(File.CopyOptions(overwrite = true)), packagePath)
+          ClassFile(file.copyTo(destClass)(File.CopyOptions(overwrite = true)), packagePath)
         }
         .orElse {
-          logger.warn(s"Missing package path for ${file.canonicalPath}. Failed to move to ${destDir.canonicalPath}")
+          logger.warn(s"Missing package path for ${file.canonicalPath}. Failed to copy to ${destDir.canonicalPath}")
           None
         }
   }
+
+  /** Find <pre>.class</pre> files, including those inside archives and copy them to their
+   * package path location relative to [[destDir]]
+   *
+   * @param src The file/directory to search.
+   * @param destDir The directory in which to place the class files
+   * @param isArchive Whether an entry is an archive to extract
+   * @param isClass Whether an entry is a class file
+   * @return The copied class files in destDir
+   */
   def extractClassesInPackageLayout(
     src: File,
     destDir: File,
@@ -130,7 +171,7 @@ object ProgramHandlingUtil {
       .temporaryDirectory("extract-classes-")
       .apply(tmpDir =>
         extractClassesToTmp(src, tmpDir, isArchive, isClass).iterator
-          .flatMap(_.moveToPackageLayoutIn(destDir))
+          .flatMap(_.copyToPackageLayoutIn(destDir))
           .toList
       )
 
