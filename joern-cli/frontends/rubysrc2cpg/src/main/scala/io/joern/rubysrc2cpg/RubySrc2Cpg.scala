@@ -76,8 +76,8 @@ object RubySrc2Cpg {
   def postProcessingPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] =
     List(
       // TODO commented below two passes, as waiting on Dependency download PR to get merged
-      // new RubyTypeRecoveryPass(cpg),
-      // new RubyTypeHintCallLinker(cpg),
+       new RubyTypeRecoveryPass(cpg),
+       new RubyTypeHintCallLinker(cpg),
       new NaiveCallLinker(cpg),
 
       // Some of passes above create new methods, so, we
