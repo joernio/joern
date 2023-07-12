@@ -94,6 +94,7 @@ primary
     |   arrayConstructor                                                                                            # arrayConstructorPrimary
     |   hashConstructor                                                                                             # hashConstructorPrimary
     |   literal                                                                                                     # literalPrimary
+    |   stringExpression                                                                                            # stringExpressionPrimary
     |   stringInterpolation                                                                                         # stringInterpolationPrimary
     |   regexInterpolation                                                                                          # regexInterpolationPrimary
     |   IS_DEFINED LPAREN expressionOrCommand RPAREN                                                                # isDefinedPrimary
@@ -533,24 +534,28 @@ scopedConstantReference
 literal
     :   numericLiteral                                                                                              # numericLiteralLiteral
     |   symbol                                                                                                      # symbolLiteral
-    |   stringLiteral                                                                                               # stringLiteralLiteral
     |   REGULAR_EXPRESSION_START REGULAR_EXPRESSION_BODY? REGULAR_EXPRESSION_END                                    # regularExpressionLiteral
     ;
     
-stringLiteral
-    :   SINGLE_QUOTED_STRING_LITERAL                                                                                # singleQuotedStringLiteral
-    |   DOUBLE_QUOTED_STRING_START DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE? DOUBLE_QUOTED_STRING_END                # doubleQuotedStringLiteral
-    |   stringLiteral (WS stringLiteral)+                                                                           # concatenatedStringLiteral
-    ;
-
 symbol
     :   SYMBOL_LITERAL
     |   COLON SINGLE_QUOTED_STRING_LITERAL
     ;
 
 // --------------------------------------------------------
-// String interpolation
+// Strings
 // --------------------------------------------------------
+
+stringExpression
+    :   simpleString                                                                                                # simpleStringExpression
+    |   stringInterpolation                                                                                         # interpolatedStringExpression
+    |   stringExpression (WS stringExpression)+                                                                     # concatenatedStringExpression
+    ;
+
+simpleString
+    :   SINGLE_QUOTED_STRING_LITERAL                                                                                # singleQuotedStringLiteral
+    |   DOUBLE_QUOTED_STRING_START DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE? DOUBLE_QUOTED_STRING_END                # doubleQuotedStringLiteral
+    ;
 
 stringInterpolation
     :   DOUBLE_QUOTED_STRING_START

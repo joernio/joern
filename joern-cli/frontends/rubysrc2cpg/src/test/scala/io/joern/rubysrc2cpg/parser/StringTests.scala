@@ -9,8 +9,8 @@ class StringTests extends RubyParserAbstractTest {
 
       "be parsed as a primary expression" in {
         printAst(_.primary(), code) shouldEqual
-          """LiteralPrimary
-            | StringLiteralLiteral
+          """StringExpressionPrimary
+            | SimpleStringExpression
             |  SingleQuotedStringLiteral
             |   ''""".stripMargin
       }
@@ -19,14 +19,16 @@ class StringTests extends RubyParserAbstractTest {
     "separated by whitespace" should {
       val code = "'x' 'y'"
 
-      "be parsed as a literal expression" in {
-        printAst(_.literal(), code) shouldEqual
-          """StringLiteralLiteral
-            | ConcatenatedStringLiteral
-            |  SingleQuotedStringLiteral
-            |   'x'
-            |  SingleQuotedStringLiteral
-            |   'y'""".stripMargin
+      "be parsed as a primary expression" in {
+        printAst(_.primary(), code) shouldEqual
+          """StringExpressionPrimary
+            | ConcatenatedStringExpression
+            |  SimpleStringExpression
+            |   SingleQuotedStringLiteral
+            |    'x'
+            |  SimpleStringExpression
+            |   SingleQuotedStringLiteral
+            |    'y'""".stripMargin
       }
     }
 
@@ -34,15 +36,17 @@ class StringTests extends RubyParserAbstractTest {
       val code = """'x' \
           | 'y'""".stripMargin
 
-      "be parsed as a literal expression" in {
-        printAst(_.literal(), code) shouldEqual
-          """StringLiteralLiteral
-            | ConcatenatedStringLiteral
-            |  SingleQuotedStringLiteral
-            |   'x'
+      "be parsed as a primary expression" in {
+        printAst(_.primary(), code) shouldEqual
+          """StringExpressionPrimary
+            | ConcatenatedStringExpression
+            |  SimpleStringExpression
+            |   SingleQuotedStringLiteral
+            |    'x'
             |   \
-            |  SingleQuotedStringLiteral
-            |   'y'""".stripMargin
+            |  SimpleStringExpression
+            |   SingleQuotedStringLiteral
+            |    'y'""".stripMargin
       }
     }
   }
@@ -54,8 +58,8 @@ class StringTests extends RubyParserAbstractTest {
 
       "be parsed as a primary expression" in {
         printAst(_.primary(), code) shouldEqual
-          """LiteralPrimary
-            | StringLiteralLiteral
+          """StringExpressionPrimary
+            | SimpleStringExpression
             |  DoubleQuotedStringLiteral
             |   "
             |   """".stripMargin
@@ -64,18 +68,20 @@ class StringTests extends RubyParserAbstractTest {
       "separated by whitespace" should {
         val code = "\"x\" \"y\""
 
-        "be parsed as a literal expression" in {
-          printAst(_.literal(), code) shouldEqual
-            """StringLiteralLiteral
-              | ConcatenatedStringLiteral
-              |  DoubleQuotedStringLiteral
-              |   "
-              |   x
-              |   "
-              |  DoubleQuotedStringLiteral
-              |   "
-              |   y
-              |   """".stripMargin
+        "be parsed as a primary expression" in {
+          printAst(_.primary(), code) shouldEqual
+            """StringExpressionPrimary
+              | ConcatenatedStringExpression
+              |  SimpleStringExpression
+              |   DoubleQuotedStringLiteral
+              |    "
+              |    x
+              |    "
+              |  SimpleStringExpression
+              |   DoubleQuotedStringLiteral
+              |    "
+              |    y
+              |    """".stripMargin
         }
       }
 
@@ -84,19 +90,21 @@ class StringTests extends RubyParserAbstractTest {
           """"x" \
             | "y" """.stripMargin
 
-        "be parsed as a literal expression" in {
-          printAst(_.literal(), code) shouldEqual
-            """StringLiteralLiteral
-              | ConcatenatedStringLiteral
-              |  DoubleQuotedStringLiteral
-              |   "
-              |   x
-              |   "
+        "be parsed as a primary expression" in {
+          printAst(_.primary(), code) shouldEqual
+            """StringExpressionPrimary
+              | ConcatenatedStringExpression
+              |  SimpleStringExpression
+              |   DoubleQuotedStringLiteral
+              |    "
+              |    x
+              |    "
               |   \
-              |  DoubleQuotedStringLiteral
-              |   "
-              |   y
-              |   """".stripMargin
+              |  SimpleStringExpression
+              |   DoubleQuotedStringLiteral
+              |    "
+              |    y
+              |    """".stripMargin
         }
       }
     }
@@ -106,24 +114,25 @@ class StringTests extends RubyParserAbstractTest {
 
       "be parsed as primary expression" in {
         printAst(_.primary(), code) shouldEqual
-          """StringInterpolationPrimary
-            | StringInterpolation
-            |  "
-            |  text=
-            |  InterpolatedStringSequence
-            |   #{
-            |   CompoundStatement
-            |    Statements
-            |     ExpressionOrCommandStatement
-            |      ExpressionExpressionOrCommand
-            |       PrimaryExpression
-            |        LiteralPrimary
-            |         NumericLiteralLiteral
-            |          NumericLiteral
-            |           UnsignedNumericLiteral
-            |            1
-            |   }
-            |  """".stripMargin
+          """StringExpressionPrimary
+            | InterpolatedStringExpression
+            |  StringInterpolation
+            |   "
+            |   text=
+            |   InterpolatedStringSequence
+            |    #{
+            |    CompoundStatement
+            |     Statements
+            |      ExpressionOrCommandStatement
+            |       ExpressionExpressionOrCommand
+            |        PrimaryExpression
+            |         LiteralPrimary
+            |          NumericLiteralLiteral
+            |           NumericLiteral
+            |            UnsignedNumericLiteral
+            |             1
+            |    }
+            |   """".stripMargin
       }
     }
 
@@ -132,36 +141,93 @@ class StringTests extends RubyParserAbstractTest {
 
       "be parsed as primary expression" in {
         printAst(_.primary(), code) shouldEqual
-          """StringInterpolationPrimary
-            | StringInterpolation
-            |  "
-            |  InterpolatedStringSequence
-            |   #{
-            |   CompoundStatement
-            |    Statements
-            |     ExpressionOrCommandStatement
-            |      ExpressionExpressionOrCommand
-            |       PrimaryExpression
-            |        LiteralPrimary
-            |         NumericLiteralLiteral
-            |          NumericLiteral
-            |           UnsignedNumericLiteral
-            |            1
-            |   }
-            |  InterpolatedStringSequence
-            |   #{
-            |   CompoundStatement
-            |    Statements
-            |     ExpressionOrCommandStatement
-            |      ExpressionExpressionOrCommand
-            |       PrimaryExpression
-            |        LiteralPrimary
-            |         NumericLiteralLiteral
-            |          NumericLiteral
-            |           UnsignedNumericLiteral
-            |            2
-            |   }
-            |  """".stripMargin
+          """StringExpressionPrimary
+            | InterpolatedStringExpression
+            |  StringInterpolation
+            |   "
+            |   InterpolatedStringSequence
+            |    #{
+            |    CompoundStatement
+            |     Statements
+            |      ExpressionOrCommandStatement
+            |       ExpressionExpressionOrCommand
+            |        PrimaryExpression
+            |         LiteralPrimary
+            |          NumericLiteralLiteral
+            |           NumericLiteral
+            |            UnsignedNumericLiteral
+            |             1
+            |    }
+            |   InterpolatedStringSequence
+            |    #{
+            |    CompoundStatement
+            |     Statements
+            |      ExpressionOrCommandStatement
+            |       ExpressionExpressionOrCommand
+            |        PrimaryExpression
+            |         LiteralPrimary
+            |          NumericLiteralLiteral
+            |           NumericLiteral
+            |            UnsignedNumericLiteral
+            |             2
+            |    }
+            |   """".stripMargin
+      }
+    }
+
+    "separated by '\\\\n'" should {
+      val code = """"x" \
+          | "y" """.stripMargin
+
+      "be parsed as a primary expression" in {
+        printAst(_.primary(), code) shouldEqual
+          """StringExpressionPrimary
+              | ConcatenatedStringExpression
+              |  SimpleStringExpression
+              |   DoubleQuotedStringLiteral
+              |    "
+              |    x
+              |    "
+              |   \
+              |  SimpleStringExpression
+              |   DoubleQuotedStringLiteral
+              |    "
+              |    y
+              |    """".stripMargin
+      }
+
+      "separated by '\\\\n' and containing a numeric interpolation" should {
+        val code = """"#{10}" \
+                     | "is a number."""".stripMargin
+
+        "be parsed as a primary expression" in {
+          printAst(_.primary(), code) shouldEqual
+            """StringExpressionPrimary
+              | ConcatenatedStringExpression
+              |  InterpolatedStringExpression
+              |   StringInterpolation
+              |    "
+              |    InterpolatedStringSequence
+              |     #{
+              |     CompoundStatement
+              |      Statements
+              |       ExpressionOrCommandStatement
+              |        ExpressionExpressionOrCommand
+              |         PrimaryExpression
+              |          LiteralPrimary
+              |           NumericLiteralLiteral
+              |            NumericLiteral
+              |             UnsignedNumericLiteral
+              |              10
+              |     }
+              |    "
+              |   \
+              |  SimpleStringExpression
+              |   DoubleQuotedStringLiteral
+              |    "
+              |    is a number.
+              |    """".stripMargin
+        }
       }
     }
   }
