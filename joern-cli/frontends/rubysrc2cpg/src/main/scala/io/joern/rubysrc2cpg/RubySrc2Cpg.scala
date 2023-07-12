@@ -28,7 +28,8 @@ import scala.util.{Failure, Success, Try}
 
 class RubySrc2Cpg extends X2CpgFrontend[Config] {
 
-  val global = new Global()
+  val global         = new Global()
+  private val logger = LoggerFactory.getLogger(this.getClass)
 
   override def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
@@ -39,7 +40,7 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
         val tempDir = File.newTemporaryDirectory()
         try {
           downloadDependency(config.inputPath, tempDir.toString())
-          new AstPackagePass(cpg, tempDir.toString(), new Global(), RubySrc2Cpg.packageTableInfo, config.inputPath)
+          new AstPackagePass(cpg, tempDir.toString(), global, RubySrc2Cpg.packageTableInfo, config.inputPath)
             .createAndApply()
         } finally {
           tempDir.delete()
