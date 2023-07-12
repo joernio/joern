@@ -56,7 +56,7 @@ class ImportResolverPass(cpg: Cpg, packageTableInfo: PackageTable) extends XImpo
       val resolvedTypeDecls = cpg.typeDecl
         .where(_.file.name(s"${Pattern.quote(resolvedPath)}\\.?.*"))
         .fullName
-        .map(fullName => ResolvedTypeDecl(fullName))
+        .flatMap(fullName => Seq(ResolvedTypeDecl(fullName), ResolvedMethod(s"$fullName.new", "new")))
         .toList
       val resolvedFunctions = cpg.method
         .where(_.file.name(s"${Pattern.quote(resolvedPath)}\\.?.*"))
