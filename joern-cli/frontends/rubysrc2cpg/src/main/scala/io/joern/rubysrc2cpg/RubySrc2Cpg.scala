@@ -48,12 +48,12 @@ object RubySrc2Cpg {
   private val logger = LoggerFactory.getLogger(this.getClass)
   def postProcessingPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] = {
 
-    val global = new Global()
     if (config.isDefined && config.get.enableDependencyDownload && !scala.util.Properties.isWin) {
       val tempDir = File.newTemporaryDirectory()
       try {
         downloadDependency(config.get.inputPath, tempDir.toString())
-        new AstPackagePass(cpg, tempDir.toString(), global, packageTableInfo, config.get.inputPath).createAndApply()
+        new AstPackagePass(cpg, tempDir.toString(), new Global(), packageTableInfo, config.get.inputPath)
+          .createAndApply()
       } finally {
         tempDir.delete()
       }
