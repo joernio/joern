@@ -1,6 +1,6 @@
 package io.joern.gosrc2cpg.astcreation
 
-import io.joern.gosrc2cpg.parser.ParserAst.{ParserNode, fromString}
+import io.joern.gosrc2cpg.parser.ParserAst.{Ident, ParserNode, fromString}
 import ujson.Value
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import org.apache.commons.lang.StringUtils
@@ -66,5 +66,11 @@ trait AstCreatorHelper { this: AstCreator =>
       }
       .toMap
   }
-
+  protected def getTypeForJsonNode(jsonNode: Value): String = {
+    val nodeInfo = createParserNodeInfo(jsonNode)
+    nodeInfo.node match {
+      case Ident => jsonNode.obj(ParserKeys.Name).str
+      case _     => Defines.anyTypeName
+    }
+  }
 }
