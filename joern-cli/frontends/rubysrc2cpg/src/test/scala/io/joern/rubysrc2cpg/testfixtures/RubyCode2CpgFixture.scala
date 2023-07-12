@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.testfixtures
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
 import io.joern.x2cpg.X2Cpg
-import io.joern.x2cpg.testfixtures.{Code2CpgFixture, DefaultTestCpg, LanguageFrontend}
+import io.joern.x2cpg.testfixtures.{CfgTestCpg, Code2CpgFixture, DefaultTestCpg, LanguageFrontend}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 
@@ -37,4 +37,9 @@ class DefaultTestCpgWithRuby extends DefaultTestCpg with RubyFrontend
 class RubyCode2CpgFixture extends Code2CpgFixture(() => new DefaultTestCpgWithRuby()) {
   implicit val resolver: ICallResolver           = NoResolve
   implicit lazy val engineContext: EngineContext = EngineContext()
+}
+
+class RubyCfgTestCpg extends CfgTestCpg with RubyFrontend {
+  override val fileSuffix: String = ".rb"
+
 }
