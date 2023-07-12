@@ -44,7 +44,7 @@ class IdentifierLocalTests extends RubyCode2CpgFixture {
   }
 
   "be correct for parameter x in method2" in {
-    val List(method)       = cpg.method.nameExact("method2").l
+    val List(method)      = cpg.method.nameExact("method2").l
     val List(identifierX) = method.block.ast.isIdentifier.l
     identifierX.name shouldBe "x"
 
