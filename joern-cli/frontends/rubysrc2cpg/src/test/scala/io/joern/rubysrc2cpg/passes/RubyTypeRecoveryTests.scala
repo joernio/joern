@@ -10,7 +10,6 @@ class RubyTypeRecoveryTests extends RubyCode2CpgFixture {
 
   "Type information for nodes with external dependency" should {
     "be present in (Case 1)" ignore {
-
       val cpg = code(
         """
           |require "sendgrid-ruby"
