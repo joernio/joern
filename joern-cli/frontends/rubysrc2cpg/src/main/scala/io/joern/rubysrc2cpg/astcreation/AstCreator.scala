@@ -116,7 +116,9 @@ class AstCreator(
     }
     scope.popScope()
 
-    val thisParam = parameterInNode(programCtx, "this", "this", 0, false, EvaluationStrategies.BY_VALUE).typeFullName(classStack.reverse.mkString(pathSep))
+    val thisParam = parameterInNode(programCtx, "this", "this", 0, false, EvaluationStrategies.BY_VALUE).typeFullName(
+      classStack.reverse.mkString(pathSep)
+    )
     val thisParamAst = Ast(thisParam)
 
     val methodRetNode = NewMethodReturn()
@@ -778,11 +780,10 @@ class AstCreator(
     if (ctx.block() != null) {
       val blockAst = Seq(astForBlock(ctx.block()))
       Seq(callAst(callNode, parenAst ++ blockAst))
-    } else if(methodNames.contains(getActualMethodName(callNode.name))) {
+    } else if (methodNames.contains(getActualMethodName(callNode.name))) {
       val thisNode = identifierNode(ctx, "this", "this", classStack.reverse.mkString(pathSep))
       Seq(callAst(callNode, parenAst, Some(Ast(thisNode))))
-    }
-    else
+    } else
       Seq(callAst(callNode, parenAst))
   }
 
@@ -1099,7 +1100,7 @@ class AstCreator(
 
     // Create class initialization method to host all field initializers
     val classInitMethodAst = if (blockStmts.nonEmpty) {
-      val classInitFullName = (classStack.reverse :+ XDefines.StaticInitMethodName).mkString(":")
+      val classInitFullName = (classStack.reverse :+ XDefines.StaticInitMethodName).mkString(pathSep)
       val classInitMethod = methodNode(
         classCtx,
         XDefines.StaticInitMethodName,
@@ -1108,7 +1109,7 @@ class AstCreator(
         None,
         filename,
         Option(NodeTypes.TYPE_DECL),
-        Option(classStack.reverse.mkString(":"))
+        Option(classStack.reverse.mkString(pathSep))
       )
       val classInitBody = blockAst(blockNode(classCtx), blockStmts.toList)
       Seq(methodAst(classInitMethod, Seq.empty, classInitBody, methodReturnNode(classCtx, Defines.Any)))

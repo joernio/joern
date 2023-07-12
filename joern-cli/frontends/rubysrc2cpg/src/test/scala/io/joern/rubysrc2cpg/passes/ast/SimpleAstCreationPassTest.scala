@@ -839,8 +839,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
 
     "have correct base for a call" in {
-      val cpg = code(
-        """
+      val cpg = code("""
           |def foo(x)
           | puts x
           |end
@@ -850,7 +849,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
           |""".stripMargin)
 
       val callWithoutParen = cpg.call("foo").lineNumber(6).l
-      val callWithParen = cpg.call("foo").lineNumber(7).l
+      val callWithParen    = cpg.call("foo").lineNumber(7).l
 
       val List(base1: Identifier, argument1: Literal) = callWithoutParen.argument.l
       base1.typeFullName shouldBe "Test0.rb::program"

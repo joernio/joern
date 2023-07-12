@@ -40,23 +40,31 @@ class ImportResolverPass(cpg: Cpg, packageTableInfo: PackageTable) extends XImpo
      */
 
     val relativeImportNodes = if (importCall.name.equals("require_relative")) {
-      val rawEntity = expEntity.stripPrefix("./")
-      val matcher = pathPattern.matcher(rawEntity)
-      val sep = Matcher.quoteReplacement(JFile.separator)
-      val root = codeRoot + JFile.separator
+      val rawEntity   = expEntity.stripPrefix("./")
+      val matcher     = pathPattern.matcher(rawEntity)
+      val sep         = Matcher.quoteReplacement(JFile.separator)
+      val root        = codeRoot + JFile.separator
       val currentFile = s"$root$fileName"
-      val entity = if (matcher.find()) matcher.group(1) else rawEntity
+      val entity      = if (matcher.find()) matcher.group(1) else rawEntity
       val resolvedPath = better.files
         .File(currentFile.stripSuffix(currentFile.split(sep).last), entity.split("\\.").head)
         .pathAsString match {
         case resPath if entity.endsWith(".rb") => s"$resPath.rb"
-        case resPath => resPath
+        case resPath                           => resPath
       }
 
-      val resolvedTypeDecls = cpg.typeDecl.where(_.file.name(s"${Pattern.quote(resolvedPath)}\\.?.*")).fullName.map(fullName => ResolvedTypeDecl(fullName)).toList
-      val resolvedFunctions = cpg.method.where(_.file.name(s"${Pattern.quote(resolvedPath)}\\.?.*")).whereNot(_.name(":program")).map(method => ResolvedMethod(method.fullName, method.name)).toList
+      val resolvedTypeDecls = cpg.typeDecl
+        .where(_.file.name(s"${Pattern.quote(resolvedPath)}\\.?.*"))
+        .fullName
+        .map(fullName => ResolvedTypeDecl(fullName))
+        .toList
+      val resolvedFunctions = cpg.method
+        .where(_.file.name(s"${Pattern.quote(resolvedPath)}\\.?.*"))
+        .whereNot(_.name(":program"))
+        .map(method => ResolvedMethod(method.fullName, method.name))
+        .toList
       (resolvedTypeDecls ++ resolvedFunctions).distinct
-    }else Seq.empty
+    } else Seq.empty
 
     val importNodes = methodTableModelList.flatMap { methodTableModel =>
       Seq(ResolvedMethod(s"$expEntity::program.${methodTableModel.parentClassPath.stripSuffix(":")}.new", "new"))
