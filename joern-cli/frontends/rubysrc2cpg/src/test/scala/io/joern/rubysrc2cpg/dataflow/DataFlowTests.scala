@@ -1756,7 +1756,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
       sink.reachableByFlows(src).size shouldBe 1
     }
 
-    "be found for sink in nested block" ignore {
+    "be found for sink in nested block" in {
       val src  = cpg.identifier("x").lineNumber(3).l
       val sink = cpg.call.name("puts").argument(1).lineNumber(7).l
       sink.reachableByFlows(src).size shouldBe 1
