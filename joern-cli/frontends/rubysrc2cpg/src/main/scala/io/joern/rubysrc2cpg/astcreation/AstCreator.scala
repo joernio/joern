@@ -1277,7 +1277,7 @@ class AstCreator(
           .asInstanceOf[Seq[NewMethodParameterIn]]
       )
       .foreach(paramNode => {
-        val linkIdentifiers = identifiers.filter(_.name.equals(paramNode.name))
+        val linkIdentifiers = identifiers.filter(_.name == paramNode.name)
         identifiers.foreach { identifier =>
           diffGraph.addEdge(identifier, paramNode, EdgeTypes.REF)
         }
