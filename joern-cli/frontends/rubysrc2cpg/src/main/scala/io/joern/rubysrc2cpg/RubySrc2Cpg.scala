@@ -1,7 +1,6 @@
 package io.joern.rubysrc2cpg
 
 import better.files.File
-import io.joern.rubysrc2cpg.RubySrc2Cpg.logger
 import io.joern.rubysrc2cpg.passes.{
   AstCreationPass,
   AstPackagePass,
