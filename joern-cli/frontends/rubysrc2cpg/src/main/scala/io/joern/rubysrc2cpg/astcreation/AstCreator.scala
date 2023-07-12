@@ -12,7 +12,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.antlr.v4.runtime.{CharStreams, CommonTokenStream, ParserRuleContext, Token}
 import org.slf4j.LoggerFactory
-import overflowdb.BatchedUpdate
+import overflowdb.{BatchedUpdate, NodeOrDetachedNode}
 
 import java.io.File as JFile
 import scala.collection.immutable.Seq
@@ -1265,6 +1265,24 @@ class AstCreator(
 
     methodNames.put(methodNode.name, methodFullName)
     val blockNode = NewBlock().typeFullName(Defines.Any)
+
+    /* Before creating ast, we traverse the method params and identifiers and link them*/
+    val identifiers =
+      astBody.flatMap(ast => ast.nodes.filter(_.isInstanceOf[NewIdentifier])).asInstanceOf[Seq[NewIdentifier]]
+
+    astMethodParamSeq
+      .flatMap(ast =>
+        ast.nodes
+          .filter(_.isInstanceOf[NewMethodParameterIn])
+          .asInstanceOf[Seq[NewMethodParameterIn]]
+      )
+      .foreach(paramNode => {
+        val linkIdentifiers = identifiers.filter(_.name.equals(paramNode.name))
+        identifiers.foreach { identifier =>
+          diffGraph.addEdge(identifier, paramNode, EdgeTypes.REF)
+        }
+      })
+
     Seq(
       methodAst(
         methodNode,
