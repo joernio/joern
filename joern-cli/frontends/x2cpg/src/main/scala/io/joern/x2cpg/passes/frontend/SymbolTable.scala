@@ -25,7 +25,7 @@ abstract class SBKey(val identifier: String) {
 object SBKey {
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
   def fromNodeToLocalKey(node: AstNode): Option[LocalKey] = {
-    val option = Option(node match {
+    Option(node match {
       case n: Identifier => LocalVar(n.name)
       case n: Local      => LocalVar(n.name)
       case n: Call =>
@@ -36,7 +36,6 @@ object SBKey {
       case n: MethodParameterIn => LocalVar(n.name)
       case _ => logger.debug(s"Local node of type ${node.label} is not supported in the type recovery pass."); null
     })
-    option
   }
 
 }

@@ -1122,8 +1122,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     )).iterator
 
     def getKnownTypes: Set[String] = {
-      val all = x.allTypes.filterNot(_.toUpperCase.matches("(UNKNOWN|ANY)")).toSet
-      all
+      x.allTypes.filterNot(_.toUpperCase.matches("(UNKNOWN|ANY)")).toSet
     }
   }
 

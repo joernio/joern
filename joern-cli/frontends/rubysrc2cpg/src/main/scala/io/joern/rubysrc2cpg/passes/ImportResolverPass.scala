@@ -43,11 +43,14 @@ class ImportResolverPass(cpg: Cpg, packageTableInfo: PackageTable) extends XImpo
       val rawEntity   = expEntity.stripPrefix("./")
       val matcher     = pathPattern.matcher(rawEntity)
       val sep         = Matcher.quoteReplacement(JFile.separator)
-      val root        = codeRoot + JFile.separator
+      val root        = s"$codeRoot${JFile.separator}"
       val currentFile = s"$root$fileName"
       val entity      = if (matcher.find()) matcher.group(1) else rawEntity
       val resolvedPath = better.files
-        .File(currentFile.stripSuffix(currentFile.split(sep).last), entity.split("\\.").head)
+        .File(
+          currentFile.stripSuffix(currentFile.split(sep).lastOption.getOrElse("")),
+          entity.split("\\.").headOption.getOrElse(entity)
+        )
         .pathAsString match {
         case resPath if entity.endsWith(".rb") => s"$resPath.rb"
         case resPath                           => resPath
@@ -60,7 +63,7 @@ class ImportResolverPass(cpg: Cpg, packageTableInfo: PackageTable) extends XImpo
         .toList
       val resolvedFunctions = cpg.method
         .where(_.file.name(s"${Pattern.quote(resolvedPath)}\\.?.*"))
-        .whereNot(_.name(":program"))
+        .whereNot(_.nameExact(":program"))
         .map(method => ResolvedMethod(method.fullName, method.name))
         .toList
       (resolvedTypeDecls ++ resolvedFunctions).distinct
