@@ -5,11 +5,18 @@ import io.joern.rubysrc2cpg.parser.RubyParser.{
   ClassOrModuleReferenceContext,
   ScopedConstantReferenceContext
 }
+import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewIdentifier, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import org.antlr.v4.runtime.ParserRuleContext
+
+import scala.collection.mutable
 
 trait AstForTypesCreator { this: AstCreator =>
+
+  // Maps field references of known types
+  protected val fieldReferences = mutable.HashMap.empty[String, Set[ParserRuleContext]]
 
   def astForClassDeclaration(ctx: ClassDefinitionPrimaryContext): Seq[Ast] = {
     val baseClassName = if (ctx.classDefinition().expressionOrCommand() != null) {
@@ -26,23 +33,9 @@ trait AstForTypesCreator { this: AstCreator =>
     val className = ctx.className(baseClassName)
     if (className != Defines.Any) {
       classStack.push(className)
-      val fullName = classStack.reverse.mkString(":")
+      val fullName = classStack.reverse.mkString(pathSep)
 
-      val bodyAst = astForBodyStatementContext(ctx.classDefinition().bodyStatement())
-      val bodyAstSansModifiers = bodyAst
-        .filterNot(ast => {
-          val nodes = ast.nodes
-            .filter(_.isInstanceOf[NewIdentifier])
-
-          if (nodes.size == 1) {
-            val varName = nodes
-              .map(_.asInstanceOf[NewIdentifier].name)
-              .head
-            varName == "public" || varName == "protected" || varName == "private"
-          } else {
-            false
-          }
-        })
+      val bodyAst = astForClassBody(ctx.classDefinition().bodyStatement())
 
       if (classStack.nonEmpty) {
         classStack.pop()
@@ -51,7 +44,7 @@ trait AstForTypesCreator { this: AstCreator =>
       val typeDeclNode = NewTypeDecl()
         .name(className)
         .fullName(fullName)
-      Seq(Ast(typeDeclNode).withChildren(bodyAstSansModifiers))
+      Seq(Ast(typeDeclNode).withChildren(bodyAst))
     } else {
       Seq.empty
     }
@@ -95,9 +88,25 @@ trait AstForTypesCreator { this: AstCreator =>
     }
   }
 
-  def astsForClassMembers(): Seq[Ast] = {
-    ???
-  }
+  def membersFromStatementAsts(ast: Ast): Seq[Ast] =
+    ast.nodes
+      .collect { case i: NewIdentifier if i.name.startsWith("@") => i }
+      .map { i =>
+        val code = ast.root.collect { case c: NewCall => c.code }.getOrElse(i.name)
+        val modifierType = i.name match
+          case x if x.startsWith("@@") => ModifierTypes.STATIC
+          case _                       => ModifierTypes.VIRTUAL
+        val modifierAst = Ast(NewModifier().modifierType(modifierType))
+        Ast(
+          NewMember()
+            .code(code)
+            .name(i.name.replaceAll("@", ""))
+            .typeFullName(i.typeFullName)
+            .lineNumber(i.lineNumber)
+            .columnNumber(i.columnNumber)
+        ).withChild(modifierAst)
+      }
+      .toSeq
 
   implicit class ClassDefinitionPrimaryContextExt(val ctx: ClassDefinitionPrimaryContext) {
 

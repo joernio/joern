@@ -8,6 +8,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewFieldIdentifier,
   NewIdentifier,
   NewImport,
+  NewJumpTarget,
   NewLiteral,
   NewLocal,
   NewMember,
@@ -297,5 +298,19 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
 
   protected def methodReturnNode(node: Node, typeFullName: String): NewMethodReturn = {
     newMethodReturnNode(typeFullName, None, line(node), column(node))
+  }
+
+  protected def jumpTargetNode(
+    node: Node,
+    name: String,
+    code: String,
+    parserTypeName: Option[String] = None
+  ): NewJumpTarget = {
+    NewJumpTarget()
+      .parserTypeName(parserTypeName.getOrElse(node.getClass.getSimpleName))
+      .name(name)
+      .code(code)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
   }
 }

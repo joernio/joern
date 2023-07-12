@@ -22,7 +22,7 @@ class CaseConditionTests extends RubyParserAbstractTest {
             |  ExpressionExpressionOrCommand
             |   PrimaryExpression
             |    VariableReferencePrimary
-            |     VariableReference
+            |     VariableIdentifierVariableReference
             |      VariableIdentifier
             |       something
             |  Separators
@@ -50,8 +50,8 @@ class CaseConditionTests extends RubyParserAbstractTest {
             |          MethodIdentifier
             |           puts
             |          ArgumentsWithoutParentheses
-            |           BlockExprAssocTypeArguments
-            |            Expressions
+            |           Arguments
+            |            ExpressionArgument
             |             PrimaryExpression
             |              LiteralPrimary
             |               NumericLiteralLiteral
@@ -79,7 +79,7 @@ class CaseConditionTests extends RubyParserAbstractTest {
             |  ExpressionExpressionOrCommand
             |   PrimaryExpression
             |    VariableReferencePrimary
-            |     VariableReference
+            |     VariableIdentifierVariableReference
             |      VariableIdentifier
             |       something
             |  Separators
@@ -122,7 +122,7 @@ class CaseConditionTests extends RubyParserAbstractTest {
             |  ExpressionExpressionOrCommand
             |   PrimaryExpression
             |    VariableReferencePrimary
-            |     VariableReference
+            |     VariableIdentifierVariableReference
             |      VariableIdentifier
             |       something
             |  Separators
@@ -162,7 +162,7 @@ class CaseConditionTests extends RubyParserAbstractTest {
             |  ExpressionExpressionOrCommand
             |   PrimaryExpression
             |    VariableReferencePrimary
-            |     VariableReference
+            |     VariableIdentifierVariableReference
             |      VariableIdentifier
             |       x
             |  Separators

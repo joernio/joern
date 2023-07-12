@@ -1,10 +1,10 @@
 package io.joern.rubysrc2cpg.dataflow
 
-import io.joern.dataflowengineoss.language._
-import io.joern.rubysrc2cpg.testfixtures.DataFlowCodeToCpgSuite
-import io.shiftleft.semanticcpg.language._
+import io.joern.dataflowengineoss.language.*
+import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.shiftleft.semanticcpg.language.*
 
-class DataFlowTests extends DataFlowCodeToCpgSuite {
+class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataFlow = true) {
 
   "Data flow through if-elseif-else" should {
     val cpg = code("""
@@ -87,6 +87,28 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
 
     "be found" in {
       val src  = cpg.identifier.name("n").l
+      val sink = cpg.call.name("puts").l
+      sink.reachableByFlows(src).l.size shouldBe 2
+    }
+  }
+
+  "Implicit return in if-else block" ignore {
+    val cpg = code("""
+        |def foo(arg)
+        |if arg > 1
+        |        arg + 1
+        |else
+        |        arg + 10
+        |end
+        |end
+        |
+        |x = 1
+        |y = foo x
+        |puts y
+        |""".stripMargin)
+
+    "be found" in {
+      val src  = cpg.identifier.name("x").l
       val sink = cpg.call.name("puts").l
       sink.reachableByFlows(src).l.size shouldBe 2
     }
@@ -361,6 +383,25 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
         |  yield
         |end
         |yield_method { puts x }
+        |""".stripMargin)
+
+    "be found" in {
+      val src  = cpg.identifier.name("x").l
+      val sink = cpg.call.name("puts").l
+      sink.reachableByFlows(src).size shouldBe 1
+    }
+  }
+
+  "Data flow coming out of yield without argument" should {
+    val cpg = code("""
+        |def foo
+        |        x=10
+        |        z = yield
+        |        puts z
+        |end
+        |
+        |x = 100
+        |foo{ x + 10 }
         |""".stripMargin)
 
     "be found" in {
@@ -944,6 +985,29 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
+  "Data flow for begin/rescue with sink in else" should {
+    val cpg = code("""
+        |x = 1
+        |begin
+        |  puts "In begin"
+        |rescue SomeException
+        |  puts "SomeException occurred"
+        |rescue => exceptionVar
+        |  puts "Caught exception in variable #{exceptionVar}"
+        |rescue
+        |  puts "Catch-all block"
+        |else
+        |  puts x
+        |end
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).size shouldBe 2
+    }
+  }
+
   "Data flow for begin/rescue with sink in rescue" should {
     val cpg = code("""
         |x = 1
@@ -1010,7 +1074,70 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Data flow for begin/rescue with sink in function without begin" ignore {
+  "Data flow for begin/rescue with sink in ensure" should {
+    val cpg = code("""
+        |x = 1
+        |begin
+        |  puts "in begin"
+        |rescue SomeException
+        |   puts "SomeException occurred"
+        |rescue => exceptionVar
+        |  puts "Caught exception in variable #{exceptionVar}"
+        |rescue
+        |  puts "In rescue all"
+        |ensure
+        |  puts x
+        |end
+        |
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).size shouldBe 2
+    }
+  }
+
+  "Data flow for begin/rescue with data flow through the exception" should {
+    val cpg = code("""
+        |x = "Exception message: "
+        |begin
+        |1/0
+        |rescue ZeroDivisionError => e
+        |   y = x + e.message
+        |   puts y
+        |end
+        |
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).size shouldBe 2
+    }
+  }
+
+  "Data flow for begin/rescue with data flow through block with multiple exceptions being caught" should {
+    val cpg = code("""
+        |x = 1
+        |y = 10
+        |begin
+        |1/0
+        |rescue SystemCallError, ZeroDivisionError
+        |   y = x + 100
+        |end
+        |
+        |puts y
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).size shouldBe 2
+    }
+  }
+
+  "Data flow for begin/rescue with sink in function without begin" should {
     val cpg = code("""
         |def foo(arg)
         |  puts "in begin"
@@ -1035,7 +1162,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Data flow for begin/rescue with sink in function without begin and sink in rescue with exception" ignore {
+  "Data flow for begin/rescue with sink in function without begin and sink in rescue with exception" should {
     val cpg = code("""
         |def foo(arg)
         |  puts "in begin"
@@ -1058,7 +1185,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Data flow for begin/rescue with sink in function without begin and sink in catch-call rescue" ignore {
+  "Data flow for begin/rescue with sink in function without begin and sink in catch-call rescue" should {
     val cpg = code("""
         |def foo(arg)
         |  puts "in begin"
@@ -1568,4 +1695,72 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
       }
     }
   }
+
+  "Data flow across files" should {
+    val cpg = code(
+      """
+        |def my_func(x)
+        | puts x
+        |end
+        |""".stripMargin,
+      "foo.rb"
+    )
+      .moreCode(
+        """
+          |require_relative 'foo.rb'
+          |x = 1
+          |my_func(x)
+          |""".stripMargin,
+        "bar.rb"
+      )
+
+    "be found in" in {
+      val source = cpg.literal.code("1").l
+      val sink   = cpg.call.name("puts").argument(1).l
+      sink.reachableByFlows(source).size shouldBe 1
+    }
+  }
+
+  // TODO: Need to be fixed.
+  "Across the file data flow test" ignore {
+    val cpg = code(
+      """
+        |def foo(arg)
+        | puts arg
+        | loop do
+        | arg += 1
+        |  if arg > 3
+        |        puts arg
+        |        return
+        |  end
+        | end
+        |end
+        |""".stripMargin,
+      "foo.rb"
+    )
+      .moreCode(
+        """
+          |require_relative 'foo.rb'
+          |x = 1
+          |foo x
+          |""".stripMargin,
+        "bar.rb"
+      )
+
+    "be found in" in {
+      val source = cpg.literal.code("1").l
+      val sink   = cpg.call.name("puts").argument(1).lineNumber(3).l
+      sink.reachableByFlows(source).size shouldBe 1
+
+      val src = cpg.identifier("x").lineNumber(3).l
+      sink.reachableByFlows(src).size shouldBe 1
+    }
+
+    "be found for sink in nested block" ignore {
+      val src  = cpg.identifier("x").lineNumber(3).l
+      val sink = cpg.call.name("puts").argument(1).lineNumber(7).l
+      sink.reachableByFlows(src).size shouldBe 1
+    }
+  }
+
 }

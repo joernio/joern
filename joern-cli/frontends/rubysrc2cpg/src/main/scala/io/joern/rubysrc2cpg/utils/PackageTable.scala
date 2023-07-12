@@ -8,7 +8,7 @@ case class PackageContext(moduleName: String, packageTable: PackageTable)
 
 class PackageTable() {
 
-  private val methodTableMap = mutable.HashMap[String, mutable.HashSet[MethodTableModel]]()
+  val methodTableMap = mutable.HashMap[String, mutable.HashSet[MethodTableModel]]()
 
   def addPackageMethod(moduleName: String, methodName: String, parentClassPath: String, classType: String): Unit = {
     val packageMethod = MethodTableModel(methodName, parentClassPath, classType)
@@ -23,4 +23,15 @@ class PackageTable() {
           .filter(_.methodName == methodName)
           .map(method => s"$module::program:${method.parentClassPath}$methodName")
       )
+
+  def getPackageInfo(moduleName: String): List[MethodTableModel] = {
+    methodTableMap.get(moduleName) match
+      case Some(value) => value.toList
+      case None        => List[MethodTableModel]()
+  }
+
+  def set(table: PackageTable): Unit = {
+    methodTableMap.addAll(table.methodTableMap)
+  }
+  def clear(): Unit = methodTableMap.clear
 }

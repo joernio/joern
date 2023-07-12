@@ -1,24 +1,24 @@
 package io.joern.rubysrc2cpg.astcreation
-import io.joern.rubysrc2cpg.parser.RubyParser._
+import io.joern.rubysrc2cpg.parser.RubyParser.*
 import io.joern.rubysrc2cpg.parser.{RubyLexer, RubyParser}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.utils.PackageContext
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
 import io.joern.x2cpg.datastructures.{Global, Scope}
-import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder}
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, Defines as XDefines}
+import io.shiftleft.codepropertygraph.generated.*
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.antlr.v4.runtime.{CharStreams, CommonTokenStream, ParserRuleContext, Token}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
-import java.io.{File => JFile}
+import java.io.File as JFile
 import scala.collection.immutable.Seq
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 class AstCreator(
   protected val filename: String,
@@ -49,7 +49,7 @@ class AstCreator(
   protected val methodNameAsIdentifierStack = mutable.Stack[Ast]()
 
   protected val methodAliases = mutable.HashMap[String, String]()
-  protected val methodNames   = mutable.HashSet[String]()
+  protected val methodNames   = mutable.HashMap[String, String]()
 
   protected val methodNamesWithYield = mutable.HashSet[String]()
 
@@ -63,6 +63,8 @@ class AstCreator(
    * The appropriate name wrt the names of their actual methods is set later in them.
    */
   protected val UNRESOLVED_YIELD = "unresolved_yield"
+
+  protected val pathSep = "."
 
   protected val blockMethods = ListBuffer[Ast]()
 
@@ -114,9 +116,9 @@ class AstCreator(
     }
     scope.popScope()
 
-    val thisParam = NewMethodParameterIn()
-      .name("this")
-      .code("this")
+    val thisParam = parameterInNode(programCtx, "this", "this", 0, false, EvaluationStrategies.BY_VALUE).typeFullName(
+      classStack.reverse.mkString(pathSep)
+    )
     val thisParamAst = Ast(thisParam)
 
     val methodRetNode = NewMethodReturn()
@@ -148,6 +150,7 @@ class AstCreator(
     val activeRecordAssociation = "<operator>.activeRecordAssociation"
     val undef                   = "<operator>.undef"
     val superKeyword            = "<operator>.super"
+    val concatStringLiteral     = "<operator>.stringConcatenation"
   }
   private def getOperatorName(token: Token): String = token.getType match {
     case ASSIGNMENT_OPERATOR => Operators.assignment
@@ -167,35 +170,9 @@ class AstCreator(
   protected def lineEnd(ctx: ParserRuleContext): Option[Integer]   = Option(ctx.getStop.getLine)
   protected def columnEnd(ctx: ParserRuleContext): Option[Integer] = Option(ctx.getStop.getCharPositionInLine)
 
-  def astForVariableIdentifierContext(
-    ctx: VariableIdentifierContext,
-    definitelyIdentifier: Boolean = false
-  ): Seq[Ast] = {
-    val terminalNode = ctx.children.asScala.map(_.asInstanceOf[TerminalNode]).head
-    val token        = terminalNode.getSymbol
-    val variableName = token.getText
-    /*
-     * Preferences
-     * 1. If definitelyIdentifier is SET, create a identifier node
-     * 2. If an identifier with the variable name exists within the scope, create a identifier node
-     * 3. If a method with the variable name exists, create a method node
-     * 4. Otherwise default to identifier node creation since there is no reason (point 2) to create a call node
-     */
-
-    if (definitelyIdentifier || scope.lookupVariable(variableName).isDefined) {
-      val node = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List[String]())
-      Seq(Ast(node))
-    } else if (methodNames.contains(variableName)) {
-      astForCallNode(terminalNode, ctx.getText)
-    } else {
-      val node = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List[String]())
-      Seq(Ast(node))
-    }
-  }
-
   def astForSingleLeftHandSideContext(ctx: SingleLeftHandSideContext): Seq[Ast] = ctx match {
     case ctx: VariableIdentifierOnlySingleLeftHandSideContext =>
-      astForVariableIdentifierContext(ctx.variableIdentifier(), true)
+      Seq(astForVariableIdentifierHelper(ctx.variableIdentifier(), true))
     case ctx: PrimaryInsideBracketsSingleLeftHandSideContext =>
       val primaryAsts = astForPrimaryContext(ctx.primary())
       val argsAsts    = astForArguments(ctx.arguments())
@@ -220,7 +197,7 @@ class AstCreator(
           null
         }
       }
-      val varSymbol = localVar.getSymbol()
+      val varSymbol = localVar.getSymbol
       val node =
         createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
       val yAst = Ast(node)
@@ -233,22 +210,17 @@ class AstCreator(
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .typeFullName(Defines.Any)
         .lineNumber(localVar.getSymbol.getLine)
-        .columnNumber(localVar.getSymbol.getCharPositionInLine())
+        .columnNumber(localVar.getSymbol.getCharPositionInLine)
       Seq(callAst(callNode, xAsts ++ Seq(yAst)))
     case ctx: ScopedConstantAccessSingleLeftHandSideContext =>
       val localVar  = ctx.CONSTANT_IDENTIFIER()
-      val varSymbol = localVar.getSymbol()
+      val varSymbol = localVar.getSymbol
       val node = createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
       Seq(Ast(node))
     case _ =>
-      logger.error("astForSingleLeftHandSideContext() All contexts mismatched.")
+      logger.error(s"astForSingleLeftHandSideContext() $filename, ${ctx.getText} All contexts mismatched.")
       Seq(Ast())
 
-  }
-
-  def astForSplattingArgumentContext(ctx: SplattingArgumentContext): Seq[Ast] = {
-    if (ctx == null) return Seq(Ast())
-    astForExpressionOrCommand(ctx.expressionOrCommand())
   }
 
   def astForMultipleRightHandSideContext(ctx: MultipleRightHandSideContext): Seq[Ast] = {
@@ -262,7 +234,7 @@ class AstCreator(
         Seq()
 
     val paramAsts = if (ctx.splattingArgument() != null) {
-      val splattingAsts = astForSplattingArgumentContext(ctx.splattingArgument())
+      val splattingAsts = astForExpressionOrCommand(ctx.splattingArgument().expressionOrCommand())
       exprAsts ++ splattingAsts
     } else {
       exprAsts
@@ -272,9 +244,11 @@ class AstCreator(
   }
 
   def astForSingleAssignmentExpressionContext(ctx: SingleAssignmentExpressionContext): Seq[Ast] = {
-    val rightAst     = astForMultipleRightHandSideContext(ctx.multipleRightHandSide())
-    val leftAst      = astForSingleLeftHandSideContext(ctx.singleLeftHandSide())
+    val rightAst = astForMultipleRightHandSideContext(ctx.multipleRightHandSide())
+    val leftAst  = astForSingleLeftHandSideContext(ctx.singleLeftHandSide())
+
     val operatorName = getOperatorName(ctx.op)
+
     if (leftAst.size == 1 && rightAst.size > 1) {
       /*
        * This is multiple RHS packed into a single LHS. That is, packing left hand side.
@@ -286,8 +260,8 @@ class AstCreator(
         .methodFullName(operatorName)
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .typeFullName(Defines.Any)
-        .lineNumber(ctx.op.getLine())
-        .columnNumber(ctx.op.getCharPositionInLine())
+        .lineNumber(ctx.op.getLine)
+        .columnNumber(ctx.op.getCharPositionInLine)
 
       val packedRHS = getPackedRHS(rightAst)
       Seq(callAst(callNode, leftAst ++ packedRHS))
@@ -299,8 +273,8 @@ class AstCreator(
         .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .typeFullName(Defines.Any)
-        .lineNumber(ctx.op.getLine())
-        .columnNumber(ctx.op.getCharPositionInLine())
+        .lineNumber(ctx.op.getLine)
+        .columnNumber(ctx.op.getCharPositionInLine)
       Seq(callAst(callNode, leftAst ++ rightAst))
     }
   }
@@ -339,7 +313,7 @@ class AstCreator(
     case ctx: YieldWithOptionalArgumentPrimaryContext =>
       Seq(astForYieldCall(ctx, Option(ctx.yieldWithOptionalArgument().arguments())))
     case ctx: IfExpressionPrimaryContext       => Seq(astForIfExpression(ctx.ifExpression()))
-    case ctx: UnlessExpressionPrimaryContext   => astForUnlessExpressionPrimaryContext(ctx)
+    case ctx: UnlessExpressionPrimaryContext   => Seq(astForUnlessExpression(ctx.unlessExpression()))
     case ctx: CaseExpressionPrimaryContext     => astForCaseExpressionPrimaryContext(ctx)
     case ctx: WhileExpressionPrimaryContext    => Seq(astForWhileExpression(ctx.whileExpression()))
     case ctx: UntilExpressionPrimaryContext    => Seq(astForUntilExpression(ctx.untilExpression()))
@@ -347,7 +321,7 @@ class AstCreator(
     case ctx: JumpExpressionPrimaryContext     => astForJumpExpressionPrimaryContext(ctx)
     case ctx: BeginExpressionPrimaryContext    => astForBeginExpressionPrimaryContext(ctx)
     case ctx: GroupingExpressionPrimaryContext => astForCompoundStatement(ctx.compoundStatement())
-    case ctx: VariableReferencePrimaryContext  => astForVariableReferencePrimaryContext(ctx)
+    case ctx: VariableReferencePrimaryContext  => Seq(astForVariableReference(ctx.variableReference()))
     case ctx: SimpleScopedConstantReferencePrimaryContext =>
       astForSimpleScopedConstantReferencePrimaryContext(ctx)
     case ctx: ChainedScopedConstantReferencePrimaryContext =>
@@ -359,14 +333,14 @@ class AstCreator(
     case ctx: IsDefinedPrimaryContext                 => Seq(astForIsDefinedPrimaryExpression(ctx))
     case ctx: SuperExpressionPrimaryContext           => Seq(astForSuperExpression(ctx))
     case ctx: IndexingExpressionPrimaryContext        => astForIndexingExpressionPrimaryContext(ctx)
-    case ctx: MethodOnlyIdentifierPrimaryContext      => astForMethodOnlyIdentifierPrimaryContext(ctx)
+    case ctx: MethodOnlyIdentifierPrimaryContext      => astForMethodOnlyIdentifier(ctx.methodOnlyIdentifier())
     case ctx: InvocationWithBlockOnlyPrimaryContext   => astForInvocationWithBlockOnlyPrimaryContext(ctx)
     case ctx: InvocationWithParenthesesPrimaryContext => astForInvocationWithParenthesesPrimaryContext(ctx)
     case ctx: ChainedInvocationPrimaryContext         => astForChainedInvocationPrimaryContext(ctx)
     case ctx: ChainedInvocationWithoutArgumentsPrimaryContext =>
       astForChainedInvocationWithoutArgumentsPrimaryContext(ctx)
     case _ =>
-      logger.error("astForPrimaryContext() All contexts mismatched.")
+      logger.error(s"astForPrimaryContext() $filename, ${ctx.getText} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -390,7 +364,7 @@ class AstCreator(
     case ctx: MultipleAssignmentExpressionContext  => astForMultipleAssignmentExpressionContext(ctx)
     case ctx: IsDefinedExpressionContext           => Seq(astForIsDefinedExpression(ctx))
     case _ =>
-      logger.error("astForExpressionContext() All contexts mismatched.")
+      logger.error(s"astForExpressionContext() $filename, ${ctx.getText} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -425,7 +399,7 @@ class AstCreator(
           astForExpressionContext(exp)
         })
         .toSeq
-      val splatAsts = astForSplattingArgumentContext(ctx.splattingArgument())
+      val splatAsts = astForExpressionOrCommand(ctx.splattingArgument().expressionOrCommand())
       val callNode = NewCall()
         .name(ctx.COMMA().getText)
         .methodFullName(Operators.arrayInitializer)
@@ -439,9 +413,9 @@ class AstCreator(
     case ctx: AssociationsOnlyIndexingArgumentsContext =>
       astForAssociationsContext(ctx.associations())
     case ctx: RubyParser.SplattingOnlyIndexingArgumentsContext =>
-      astForSplattingArgumentContext(ctx.splattingArgument())
+      astForExpressionOrCommand(ctx.splattingArgument().expressionOrCommand())
     case _ =>
-      logger.error("astForIndexingArgumentsContext() All contexts mismatched.")
+      logger.error(s"astForIndexingArgumentsContext() $filename, ${ctx.getText} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -466,7 +440,7 @@ class AstCreator(
 
     val asts =
       if (ctx.splattingArgument() != null) {
-        expAsts ++ astForSplattingArgumentContext(ctx.splattingArgument())
+        expAsts ++ astForExpressionOrCommand(ctx.splattingArgument().expressionOrCommand())
       } else {
         expAsts
       }
@@ -582,7 +556,7 @@ class AstCreator(
     val baseAst       = astForPrimaryContext(ctx.primary())
 
     val blocksAst = if (ctx.block() != null) {
-      astForBlockContext(ctx.block())
+      Seq(astForBlock(ctx.block()))
     } else {
       Seq()
     }
@@ -653,7 +627,7 @@ class AstCreator(
     case ctx: GroupedLeftHandSideOnlyMultipleLeftHandSideContext =>
       astForGroupedLeftHandSideContext(ctx.groupedLeftHandSide())
     case _ =>
-      logger.error("astForMultipleLeftHandSideContext() All contexts mismatched.")
+      logger.error(s"astForMultipleLeftHandSideContext() $filename, ${ctx.getText} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -761,7 +735,7 @@ class AstCreator(
           .withChildren(astForArguments(ctx.arguments()))
       )
     case _ =>
-      logger.error("astForInvocationWithoutParenthesesContext() All contexts mismatched.")
+      logger.error(s"astForInvocationWithoutParenthesesContext() $filename, ${ctx.getText} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -792,7 +766,7 @@ class AstCreator(
         columnEnd(ctx).head
       )
     } else {
-      val blockAst = astForBlockContext(ctx.block())
+      val blockAst = Seq(astForBlock(ctx.block()))
       blockAst ++ methodIdAst
     }
   }
@@ -804,11 +778,13 @@ class AstCreator(
     callNode.name(getActualMethodName(callNode.name))
 
     if (ctx.block() != null) {
-      val blockAst = astForBlockContext(ctx.block())
+      val blockAst = Seq(astForBlock(ctx.block()))
       Seq(callAst(callNode, parenAst ++ blockAst))
-    } else {
+    } else if (methodNames.contains(getActualMethodName(callNode.name))) {
+      val thisNode = identifierNode(ctx, "this", "this", classStack.reverse.mkString(pathSep))
+      Seq(callAst(callNode, parenAst, Some(Ast(thisNode))))
+    } else
       Seq(callAst(callNode, parenAst))
-    }
   }
 
   def astForJumpExpressionPrimaryContext(ctx: JumpExpressionPrimaryContext): Seq[Ast] = {
@@ -855,42 +831,31 @@ class AstCreator(
     astForDefinedMethodNameContext(ctx.definedMethodName())
   }
 
-  def astForCallNode(localIdentifier: TerminalNode, code: String, isYieldBlock: Boolean = false): Seq[Ast] = {
-    val column = localIdentifier.getSymbol.getCharPositionInLine
-    val line   = localIdentifier.getSymbol.getLine
+  def astForCallNode(ctx: ParserRuleContext, code: String, isYieldBlock: Boolean = false): Ast = {
     val nameSuffix =
       if (isYieldBlock) {
         YIELD_SUFFIX
       } else {
         ""
       }
-    val name = s"${getActualMethodName(localIdentifier.getText)}$nameSuffix"
+    val name = s"${getActualMethodName(ctx.getText)}$nameSuffix"
     val methodFullName = packageContext.packageTable
       .getMethodFullNameUsingName(packageStack.toList, name)
       .headOption match {
+      case None if methodNames.contains(name) => methodNames.get(name).get
       case None if isBuiltin(name)            => prefixAsBuiltin(name) // TODO: Probably not super precise
-      case Some(externalDependencyResolution) => externalDependencyResolution
+      case Some(externalDependencyResolution) => DynamicCallUnknownFullName
       case None                               => DynamicCallUnknownFullName
     }
 
-    val callNode = NewCall()
-      .name(name)
-      .methodFullName(methodFullName)
-      .signature(localIdentifier.getText)
-      .typeFullName(Defines.Any)
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .code(code)
-      .lineNumber(line)
-      .columnNumber(column)
-      .code(code)
-    Seq(callAst(callNode))
+    callAst(callNode(ctx, code, name, methodFullName, DispatchTypes.STATIC_DISPATCH))
   }
 
   def astForMethodOnlyIdentifier(ctx: MethodOnlyIdentifierContext): Seq[Ast] = {
     if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
-      astForCallNode(ctx.LOCAL_VARIABLE_IDENTIFIER(), ctx.getText)
+      Seq(astForCallNode(ctx, ctx.getText))
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
-      astForCallNode(ctx.CONSTANT_IDENTIFIER(), ctx.getText)
+      Seq(astForCallNode(ctx, ctx.getText))
     } else {
       Seq(Ast())
     }
@@ -903,10 +868,9 @@ class AstCreator(
     } else if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
       val localVar  = ctx.LOCAL_VARIABLE_IDENTIFIER()
       val varSymbol = localVar.getSymbol
-      astForCallNode(localVar, code, methodNamesWithYield.contains(varSymbol.getText))
+      Seq(astForCallNode(ctx, code, methodNamesWithYield.contains(varSymbol.getText)))
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
-      val localVar = ctx.CONSTANT_IDENTIFIER()
-      astForCallNode(localVar, code)
+      Seq(astForCallNode(ctx, code))
     } else {
       Seq(Ast())
     }
@@ -921,7 +885,7 @@ class AstCreator(
       .asInstanceOf[TerminalNode]
 
     val name           = ctx.getText
-    val methodFullName = classStack.reverse :+ name mkString ":"
+    val methodFullName = classStack.reverse :+ name mkString pathSep
 
     val callNode = NewCall()
       .name(name)
@@ -991,7 +955,7 @@ class AstCreator(
 
   def astForSingletonObjectContext(ctx: SingletonObjectContext): Seq[Ast] = {
     if (ctx.variableIdentifier() != null) {
-      astForVariableIdentifierContext(ctx.variableIdentifier(), true)
+      Seq(astForVariableIdentifierHelper(ctx.variableIdentifier(), true))
     } else if (ctx.pseudoVariableIdentifier() != null) {
       Seq(Ast())
     } else if (ctx.expressionOrCommand() != null) {
@@ -1011,42 +975,45 @@ class AstCreator(
     case ctx: SimpleMethodNamePartContext    => astForSimpleMethodNamePartContext(ctx)
     case ctx: SingletonMethodNamePartContext => astForSingletonMethodNamePartContext(ctx)
     case _ =>
-      logger.error("astForMethodNamePartContext() All contexts mismatched.")
+      logger.error(s"astForMethodNamePartContext() $filename, ${ctx.getText} All contexts mismatched.")
       Seq(Ast())
   }
 
+  // TODO: Rewrite for simplicity and take into account more than parameter names.
   def astForMethodParameterPartContext(ctx: MethodParameterPartContext): Seq[Ast] = {
     if (ctx == null || ctx.parameters() == null) return Seq(Ast())
     // NOT differentiating between the productions here since either way we get paramaters
-    val mandatoryParameters = ctx.parameters().mandatoryParameters()
-    val optionalParameters  = ctx.parameters().optionalParameters()
-    val arrayParameter      = ctx.parameters().arrayParameter()
-    val procParameter       = ctx.parameters().procParameter()
+    val mandatoryParameters = ctx
+      .parameters()
+      .parameter()
+      .asScala
+      .filter(ctx => Option(ctx.mandatoryParameter()).isDefined)
+      .map(_.mandatoryParameter().LOCAL_VARIABLE_IDENTIFIER())
+    val optionalParameters = ctx
+      .parameters()
+      .parameter()
+      .asScala
+      .filter(ctx => Option(ctx.optionalParameter()).isDefined)
+      .map(_.optionalParameter().LOCAL_VARIABLE_IDENTIFIER())
+    val arrayParameter = ctx
+      .parameters()
+      .parameter()
+      .asScala
+      .filter(ctx => Option(ctx.arrayParameter()).isDefined)
+      .map(_.arrayParameter().LOCAL_VARIABLE_IDENTIFIER())
+    val procParameter = ctx
+      .parameters()
+      .parameter()
+      .asScala
+      .filter(ctx => Option(ctx.procParameter()).isDefined)
+      .map(_.procParameter().LOCAL_VARIABLE_IDENTIFIER())
 
     val localVarList = ListBuffer[TerminalNode]()
 
-    if (mandatoryParameters != null) {
-      mandatoryParameters
-        .LOCAL_VARIABLE_IDENTIFIER()
-        .forEach(localVar => {
-          localVarList.addOne(localVar)
-        })
-    }
-
-    if (optionalParameters != null) {
-      val optionalParameterList = optionalParameters.optionalParameter()
-      optionalParameterList.forEach(param => {
-        localVarList.addOne(param.LOCAL_VARIABLE_IDENTIFIER())
-      })
-    }
-
-    if (arrayParameter != null) {
-      localVarList.addOne(arrayParameter.LOCAL_VARIABLE_IDENTIFIER())
-    }
-
-    if (procParameter != null) {
-      localVarList.addOne(procParameter.LOCAL_VARIABLE_IDENTIFIER())
-    }
+    localVarList.addAll(mandatoryParameters)
+    localVarList.addAll(optionalParameters)
+    localVarList.addAll(arrayParameter)
+    localVarList.addAll(procParameter)
 
     localVarList
       .map(localVar => {
@@ -1056,7 +1023,11 @@ class AstCreator(
           .name(varSymbol.getText)
           .code(varSymbol.getText)
           .lineNumber(varSymbol.getLine)
+          .typeFullName(Defines.Any)
           .columnNumber(varSymbol.getCharPositionInLine)
+        if (Option(arrayParameter).isDefined) {
+          param.isVariadic = true
+        }
         Ast(param)
       })
       .toSeq
@@ -1079,71 +1050,154 @@ class AstCreator(
       asts.addAll(astForSingleLeftHandSideContext(ctx.exceptionVariableAssignment().singleLeftHandSide()))
     }
 
-    asts.addAll(astForCompoundStatement(ctx.thenClause().compoundStatement()))
-    val blockNode = NewBlock()
-      .code(ctx.getText)
-      .lineNumber(ctx.RESCUE().getSymbol.getLine)
-      .columnNumber(ctx.RESCUE().getSymbol.getCharPositionInLine)
-    blockAst(blockNode, asts.toList)
+    asts.addAll(astForCompoundStatement(ctx.thenClause().compoundStatement(), false))
+    blockAst(blockNode(ctx), asts.toList)
   }
 
-  def astForBodyStatementContext(ctx: BodyStatementContext, addReturnNode: Boolean = false): Seq[Ast] = {
-    val compoundStatementAsts = astForCompoundStatement(ctx.compoundStatement())
+  /** Handles body statements differently from [[astForBodyStatementContext]] by noting that method definitions should
+    * be on the root level and assignments where the LHS starts with @@ should be treated as fields.
+    */
+  def astForClassBody(ctx: BodyStatementContext): Seq[Ast] = {
+    val rootStatements =
+      Option(ctx).map(_.compoundStatement()).map(_.statements()).map(astForStatements).getOrElse(Seq())
+    retrieveAndGenerateClassChildren(ctx, rootStatements)
+  }
 
-    val compoundStatementAstsWithReturn =
-      if (addReturnNode && compoundStatementAsts.size > 0) {
-        /*
-         * Convert the last statement to a return AST if it is not already a return AST.
-         * If it is a return AST leave it untouched.
-         */
-        val lastStmtIsAlreadyReturn = compoundStatementAsts.last.root match {
-          case Some(value) => value.isInstanceOf[NewReturn]
-          case None        => false
-        }
+  /** As class bodies are not treated much differently to other procedure bodies, we need to retrieve certain components
+    * that would result in the creation of interprocedural constructs.
+    *
+    * TODO: This is pretty hacky and the parser could benefit from more specific tokens
+    */
+  private def retrieveAndGenerateClassChildren(classCtx: BodyStatementContext, rootStatements: Seq[Ast]): Seq[Ast] = {
+    val (memberLikeStmts, blockStmts) = rootStatements
+      .flatMap { ast =>
+        ast.root match
+          case Some(x: NewMethod)                                 => Seq(ast)
+          case Some(x: NewCall) if x.name == Operators.assignment => Seq(ast) ++ membersFromStatementAsts(ast)
+          case _                                                  => Seq(ast)
+      }
+      .partition(_.root match
+        case Some(_: NewMethod) => true
+        case Some(_: NewMember) => true
+        case _                  => false
+      )
 
-        if (
-          !lastStmtIsAlreadyReturn &&
-          ctx.compoundStatement().statements() != null
-        ) {
-          val len  = ctx.compoundStatement().statements().statement().size()
-          val code = ctx.compoundStatement().statements().statement().get(len - 1).getText
-          val retNode = NewReturn()
-            .code(code)
-          val returnReplaced = returnAst(retNode, Seq[Ast](compoundStatementAsts.last))
-          compoundStatementAsts.updated(compoundStatementAsts.size - 1, returnReplaced)
-        } else {
-          compoundStatementAsts
-        }
-      } else {
-        compoundStatementAsts
+    val methodStmts = memberLikeStmts.filter(_.root.exists(_.isInstanceOf[NewMethod]))
+    val memberNodes = memberLikeStmts.flatMap(_.root).collect { case m: NewMember => m }
+
+    val uniqueMemberReferences =
+      (memberNodes ++ fieldReferences.getOrElse(classStack.top, Set.empty).groupBy(_.getText).map { case (code, ctxs) =>
+        NewMember()
+          .name(code.replaceAll("@", ""))
+          .code(code)
+          .typeFullName(Defines.Any)
+      }).toList.distinctBy(_.name).map { m =>
+        val modifierType = m.name match
+          case x if x.startsWith("@@") => ModifierTypes.STATIC
+          case _                       => ModifierTypes.VIRTUAL
+        val modifierAst = Ast(NewModifier().modifierType(modifierType))
+        Ast(m).withChild(modifierAst)
       }
 
-    val mainBodyAsts = if (ctx.ensureClause() != null) {
-      val ensureAsts = astForCompoundStatement(ctx.ensureClause().compoundStatement())
-      compoundStatementAstsWithReturn ++ ensureAsts
+    // Create class initialization method to host all field initializers
+    val classInitMethodAst = if (blockStmts.nonEmpty) {
+      val classInitFullName = (classStack.reverse :+ XDefines.StaticInitMethodName).mkString(pathSep)
+      val classInitMethod = methodNode(
+        classCtx,
+        XDefines.StaticInitMethodName,
+        XDefines.StaticInitMethodName,
+        classInitFullName,
+        None,
+        filename,
+        Option(NodeTypes.TYPE_DECL),
+        Option(classStack.reverse.mkString(pathSep))
+      )
+      val classInitBody = blockAst(blockNode(classCtx), blockStmts.toList)
+      Seq(methodAst(classInitMethod, Seq.empty, classInitBody, methodReturnNode(classCtx, Defines.Any)))
     } else {
-      compoundStatementAstsWithReturn
+      Seq.empty
     }
 
-    val rescueAsts = ctx
-      .rescueClause()
-      .asScala
-      .map(astForRescueClauseContext(_))
-      .toSeq
+    classInitMethodAst ++ uniqueMemberReferences ++ methodStmts
+  }
 
-    if (ctx.elseClause() != null) {
-      val elseClauseAsts = astForCompoundStatement(ctx.elseClause().compoundStatement())
-      mainBodyAsts ++ rescueAsts ++ elseClauseAsts
+  private def convertLastStmtToReturn(compoundStatementAsts: Seq[Ast], ctxStmt: StatementsContext): Seq[Ast] = {
+    val lastStmtIsAlreadyReturn = compoundStatementAsts.last.root match {
+      case Some(value) => value.isInstanceOf[NewReturn]
+      case None        => false
+    }
+
+    val lastStmtIsLiteralIdentifier = compoundStatementAsts.last.root match {
+      case Some(value) => value.isInstanceOf[NewIdentifier]
+      case Some(value) => value.isInstanceOf[NewLiteral]
+      case None        => false
+    }
+
+    if (
+      !lastStmtIsAlreadyReturn &&
+      ctxStmt != null
+    ) {
+      val len  = ctxStmt.statement().size()
+      var code = ctxStmt.statement().get(len - 1).getText
+      if (!lastStmtIsLiteralIdentifier) {
+        code = ""
+      }
+      val retNode = NewReturn()
+        .code(code)
+      val returnReplaced = returnAst(retNode, Seq[Ast](compoundStatementAsts.last))
+      compoundStatementAsts.updated(compoundStatementAsts.size - 1, returnReplaced)
     } else {
-      mainBodyAsts ++ rescueAsts
+      compoundStatementAsts
+    }
+  }
+  def astForBodyStatementContext(ctx: BodyStatementContext, addReturnNode: Boolean = false): Seq[Ast] = {
+    val compoundStatementAsts = astForCompoundStatement(ctx.compoundStatement(), !addReturnNode)
+
+    if (ctx.rescueClause().size > 0) {
+      val elseClauseAsts = Option(ctx.elseClause()) match
+        case Some(ctx) => astForCompoundStatement(ctx.compoundStatement(), false)
+        case None      => Seq()
+
+      /*
+       * TODO Conversion of last statement to return AST is needed here
+       */
+      val tryBodyAsts = compoundStatementAsts ++ elseClauseAsts
+      val tryBodyAst  = blockAst(blockNode(ctx), tryBodyAsts.toList)
+
+      val finallyAst = Option(ctx.ensureClause()) match
+        case Some(ctx) => astForCompoundStatement(ctx.compoundStatement()).headOption
+        case None      => None
+
+      val catchAsts = ctx
+        .rescueClause()
+        .asScala
+        .map(astForRescueClauseContext)
+        .toSeq
+
+      val tryNode = NewControlStructure()
+        .controlStructureType(ControlStructureTypes.TRY)
+        .code("try")
+        .lineNumber(line(ctx))
+        .columnNumber(column(ctx))
+
+      Seq(tryCatchAst(tryNode, tryBodyAst, catchAsts, finallyAst))
+    } else if (addReturnNode && compoundStatementAsts.nonEmpty) {
+      /*
+       * Convert the last statement to a return AST if it is not already a return AST.
+       * If it is a return AST leave it untouched.
+       * TODO Handling for last statement being if-else is needed here
+       */
+      convertLastStmtToReturn(compoundStatementAsts, ctx.compoundStatement().statements())
+    } else {
+      compoundStatementAsts
     }
   }
 
   def astForMethodDefinitionContext(ctx: MethodDefinitionContext): Seq[Ast] = {
     scope.pushNewScope(())
-    val astMethodParam = astForMethodParameterPartContext(ctx.methodParameterPart())
-    val astMethodName  = astForMethodNamePartContext(ctx.methodNamePart())
-    val callNode       = astMethodName.head.nodes.filter(node => node.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
+    val astMethodParamSeq = astForMethodParameterPartContext(ctx.methodParameterPart())
+    val astMethodName     = astForMethodNamePartContext(ctx.methodNamePart())
+    val callNode = astMethodName.head.nodes.filter(node => node.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
     // there can be only one call node
     val astBody = astForBodyStatementContext(ctx.bodyStatement(), addReturnNode = true)
     scope.popScope()
@@ -1157,7 +1211,7 @@ class AstCreator(
      * TODO Dave: ^ This seems like it needs a re-design, it is confusing
      */
 
-    val methodFullName = classStack.reverse :+ callNode.name mkString ":"
+    val methodFullName = classStack.reverse :+ callNode.name mkString pathSep
     val methodNode = NewMethod()
       .code(ctx.getText)
       .name(callNode.name)
@@ -1169,10 +1223,7 @@ class AstCreator(
     callNode.methodFullName(methodFullName)
 
     val classType = if (classStack.isEmpty) "Standalone" else classStack.top
-    val classPath = classStack.reverse.toList match {
-      case _ :: xs => xs.mkString(":") + ":"
-      case _       => ""
-    }
+    val classPath = classStack.reverse.toList.mkString(pathSep)
     packageContext.packageTable.addPackageMethod(packageContext.moduleName, callNode.name, classPath, classType)
 
     // process yield calls.
@@ -1185,7 +1236,7 @@ class AstCreator(
       .foreach(node => {
         val yieldCallNode  = node.asInstanceOf[NewCall]
         val name           = methodNode.name
-        val methodFullName = classStack.reverse :+ callNode.name mkString ":"
+        val methodFullName = classStack.reverse :+ callNode.name mkString pathSep
         yieldCallNode.name(name + YIELD_SUFFIX)
         yieldCallNode.methodFullName(methodFullName + YIELD_SUFFIX)
         methodNamesWithYield.add(methodNode.name)
@@ -1203,33 +1254,26 @@ class AstCreator(
       .columnNumber(None)
       .typeFullName(Defines.Any)
 
-    val publicModifier = NewModifier().modifierType(ModifierTypes.PUBLIC)
+    val modifierNode = lastModifier match {
+      case Some(modifier) => NewModifier().modifierType(modifier).code(modifier)
+      case None           => NewModifier().modifierType(ModifierTypes.PUBLIC).code(ModifierTypes.PUBLIC)
+    }
     /*
      * public/private/protected modifiers are in a separate statement
      * TODO find out how they should be used. Need to do this iff it adds any value
      */
 
-    val paramSeq = astMethodParam.head.nodes
-      .map(node => {
-        Ast(node)
-      })
-      .toSeq
-
-    methodNames.add(methodNode.name)
+    methodNames.put(methodNode.name, methodFullName)
     val blockNode = NewBlock().typeFullName(Defines.Any)
     Seq(
       methodAst(
         methodNode,
-        paramSeq,
+        astMethodParamSeq,
         blockAst(blockNode, astBody.toList),
         methodRetNode,
-        Seq[NewModifier](publicModifier)
+        Seq[NewModifier](modifierNode)
       )
     )
-  }
-
-  def astForMethodOnlyIdentifierPrimaryContext(ctx: MethodOnlyIdentifierPrimaryContext): Seq[Ast] = {
-    astForMethodOnlyIdentifier(ctx.methodOnlyIdentifier())
   }
 
   def astForModuleDefinitionPrimaryContext(ctx: ModuleDefinitionPrimaryContext): Seq[Ast] = {
@@ -1344,21 +1388,21 @@ class AstCreator(
   def astForCommandWithDoBlockContext(ctx: CommandWithDoBlockContext): Seq[Ast] = ctx match {
     case ctx: ArgsAndDoBlockCommandWithDoBlockContext =>
       val argsAsts   = astForArguments(ctx.argumentsWithoutParentheses().arguments())
-      val doBlockAst = astForDoBlockContext(ctx.doBlock())
+      val doBlockAst = Seq(astForDoBlock(ctx.doBlock()))
       argsAsts ++ doBlockAst
     case ctx: RubyParser.ArgsAndDoBlockAndMethodIdCommandWithDoBlockContext =>
       val argsAsts     = astForArguments(ctx.argumentsWithoutParentheses().arguments())
-      val doBlockAsts  = astForDoBlockContext(ctx.doBlock())
+      val doBlockAsts  = Seq(astForDoBlock(ctx.doBlock()))
       val methodIdAsts = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText)
       methodIdAsts ++ argsAsts ++ doBlockAsts
     case ctx: RubyParser.PrimaryMethodArgsDoBlockCommandWithDoBlockContext =>
       val argsAsts       = astForArguments(ctx.argumentsWithoutParentheses().arguments())
-      val doBlockAsts    = astForDoBlockContext(ctx.doBlock())
+      val doBlockAsts    = Seq(astForDoBlock(ctx.doBlock()))
       val methodNameAsts = astForMethodNameContext(ctx.methodName())
       val primaryAsts    = astForPrimaryContext(ctx.primary())
       primaryAsts ++ methodNameAsts ++ argsAsts ++ doBlockAsts
     case _ =>
-      logger.error("astForCommandWithDoBlockContext() All contexts mismatched.")
+      logger.error(s"astForCommandWithDoBlockContext() $filename, ${ctx.getText} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -1392,7 +1436,7 @@ class AstCreator(
     case ctx: ChainedCommandWithDoBlockOnlyArgumentsWithParenthesesContext =>
       astForChainedCommandWithDoBlockContext(ctx.chainedCommandWithDoBlock())
     case _ =>
-      logger.error("astForArgumentsWithParenthesesContext() All contexts mismatched.")
+      logger.error(s"astForArgumentsWithParenthesesContext() $filename, ${ctx.getText} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -1414,36 +1458,6 @@ class AstCreator(
     }
   }
 
-  def astForDoBlockContext(ctx: DoBlockContext): Seq[Ast] = {
-    val lineStart = ctx.DO().getSymbol.getLine
-    val lineEnd   = ctx.DO().getSymbol.getCharPositionInLine
-    val colStart  = ctx.END().getSymbol.getLine
-    val colEnd    = ctx.END().getSymbol.getCharPositionInLine
-    astForBlock(
-      ctx.compoundStatement().statements(),
-      Option(ctx.blockParameter()),
-      lineStart,
-      lineEnd,
-      colStart,
-      colEnd
-    )
-  }
-
-  def astForBraceBlockContext(ctx: BraceBlockContext): Seq[Ast] = {
-    val lineStart = ctx.LCURLY().getSymbol.getLine
-    val lineEnd   = ctx.LCURLY().getSymbol.getCharPositionInLine
-    val colStart  = ctx.RCURLY().getSymbol.getLine
-    val colEnd    = ctx.RCURLY().getSymbol.getCharPositionInLine
-    astForBlock(
-      ctx.compoundStatement().statements(),
-      Option(ctx.blockParameter()),
-      lineStart,
-      lineEnd,
-      colStart,
-      colEnd
-    )
-  }
-
   def astForBlockMethod(
     ctxStmt: StatementsContext,
     ctxParam: Option[BlockParameterContext],
@@ -1459,10 +1473,12 @@ class AstCreator(
 
     val astMethodParam = ctxParam.map(astForBlockParameterContext).getOrElse(Seq())
     scope.pushNewScope(())
-    val astBody = astForStatements(ctxStmt)
+    val astBodyWOReturn = astForStatements(ctxStmt)
     scope.popScope()
 
-    val methodFullName = classStack.reverse :+ blockMethodName mkString ":"
+    val astBody = convertLastStmtToReturn(astBodyWOReturn, ctxStmt)
+
+    val methodFullName = classStack.reverse :+ blockMethodName mkString pathSep
     val methodNode = NewMethod()
       .code(ctxStmt.getText)
       .name(blockMethodName)
@@ -1506,93 +1522,6 @@ class AstCreator(
     Seq(methAst)
   }
 
-  def astForBlock(
-    ctxStmt: StatementsContext,
-    ctxParam: Option[BlockParameterContext],
-    lineStart: Int,
-    lineEnd: Int,
-    colStart: Int,
-    colEnd: Int
-  ): Seq[Ast] = {
-    val stmtAsts  = astForStatements(ctxStmt).toList
-    val blockNode = NewBlock().typeFullName(Defines.Any)
-    val retAst = ctxParam match
-      case Some(ctxParam) => blockAst(blockNode, astForBlockParameterContext(ctxParam).toList ++ stmtAsts)
-      case None           => blockAst(blockNode, stmtAsts)
-    Seq(retAst)
-
-  }
-
-  def astForBlockContext(ctx: BlockContext): Seq[Ast] = {
-    if (ctx.doBlock() != null) {
-      astForDoBlockContext(ctx.doBlock())
-    } else if (ctx.braceBlock() != null) {
-      astForBraceBlockContext(ctx.braceBlock())
-    } else {
-      Seq(Ast())
-    }
-  }
-
-  def astForUnlessExpressionPrimaryContext(ctx: UnlessExpressionPrimaryContext): Seq[Ast] = {
-    val conditionAsts = astForExpressionOrCommand(ctx.unlessExpression().expressionOrCommand())
-    val thenAsts      = astForCompoundStatement(ctx.unlessExpression().thenClause().compoundStatement())
-    val elseAsts = if (ctx.unlessExpression().elseClause() != null) {
-      astForCompoundStatement(ctx.unlessExpression().elseClause().compoundStatement())
-    } else {
-      Seq()
-    }
-
-    // unless will be modelled as IF since there is no difference from a static analysis POV
-    val unlessNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.IF)
-      .code(ctx.getText)
-      .lineNumber(ctx.unlessExpression().UNLESS().getSymbol.getLine)
-      .columnNumber(ctx.unlessExpression().UNLESS().getSymbol.getCharPositionInLine)
-
-    Seq(controlStructureAst(unlessNode, conditionAsts.headOption, List(thenAsts ++ elseAsts).flatten))
-  }
-
-  private def astForPseudoVariableIdentifierContext(ctx: PseudoVariableIdentifierContext): Ast = ctx match {
-    case ctx: NilPseudoVariableIdentifierContext      => astForNilLiteral(ctx)
-    case ctx: TruePseudoVariableIdentifierContext     => astForTrueLiteral(ctx)
-    case ctx: FalsePseudoVariableIdentifierContext    => astForFalseLiteral(ctx)
-    case ctx: SelfPseudoVariableIdentifierContext     => astForSelfPseudoIdentifier(ctx)
-    case ctx: FilePseudoVariableIdentifierContext     => astForFilePseudoIdentifier(ctx)
-    case ctx: LinePseudoVariableIdentifierContext     => astForLinePseudoIdentifier(ctx)
-    case ctx: EncodingPseudoVariableIdentifierContext => astForEncodingPseudoIdentifier(ctx)
-  }
-
-  def astForVariableRefenceContext(ctx: RubyParser.VariableReferenceContext): Seq[Ast] = {
-    if (ctx.variableIdentifier() != null) {
-      astForVariableIdentifierContext(ctx.variableIdentifier())
-    } else {
-      Seq(astForPseudoVariableIdentifierContext(ctx.pseudoVariableIdentifier()))
-    }
-  }
-
-  def astForVariableReferencePrimaryContext(ctx: VariableReferencePrimaryContext): Seq[Ast] = {
-    astForVariableRefenceContext(ctx.variableReference())
-  }
-
-  def astForBlockArgumentContext(ctx: BlockArgumentContext): Seq[Ast] = {
-    if (ctx == null) return Seq(Ast())
-    astForExpressionContext(ctx.expression())
-  }
-
-  def astForBlockArgumentTypeArgumentsContext(ctx: BlockArgumentTypeArgumentsContext): Seq[Ast] = {
-    astForBlockArgumentContext(ctx.blockArgument())
-  }
-
-  def astForBlockSplattingTypeArgumentsContext(ctx: BlockSplattingTypeArgumentsContext): Seq[Ast] = {
-    val splatAst = astForSplattingArgumentContext(ctx.splattingArgument())
-    if (ctx.blockArgument() != null) {
-      val blockArgAst = astForBlockArgumentContext(ctx.blockArgument())
-      blockArgAst ++ splatAst
-    } else {
-      splatAst
-    }
-  }
-
   def astForAssociationContext(ctx: AssociationContext): Seq[Ast] = {
     val expr1Asts = astForExpressionContext(ctx.expression().get(0))
     val expr2Asts = astForExpressionContext(ctx.expression().get(1))
@@ -1622,31 +1551,6 @@ class AstCreator(
         astForAssociationContext(assoc)
       })
       .toSeq
-  }
-
-  def astForBlockSplattingExprAssocTypeArgumentsContext(ctx: BlockSplattingExprAssocTypeArgumentsContext): Seq[Ast] = {
-    val blockArgAsts     = astForBlockArgumentContext(ctx.blockArgument())
-    val splatAsts        = astForSplattingArgumentContext(ctx.splattingArgument())
-    val associationsAsts = astForAssociationsContext(ctx.associations())
-    val expAsts          = ctx.expressions().expression().asScala.flatMap(exp => astForExpressionContext(exp)).toSeq
-    blockArgAsts ++ splatAsts ++ associationsAsts ++ expAsts
-  }
-
-  def astForBlockExprAssocTypeArgumentsContext(ctx: BlockExprAssocTypeArgumentsContext): Seq[Ast] = {
-    val listAsts = ListBuffer[Ast]()
-
-    if (ctx.blockArgument() != null) {
-      listAsts.addAll(astForBlockArgumentContext(ctx.blockArgument()))
-    }
-
-    if (ctx.associations() != null) {
-      listAsts.addAll(astForAssociationsContext(ctx.associations()))
-    } else {
-      val exprAsts = ctx.expressions().expression().asScala.flatMap(exp => astForExpressionContext(exp))
-      listAsts.addAll(exprAsts)
-    }
-
-    listAsts.toSeq
   }
 
 }

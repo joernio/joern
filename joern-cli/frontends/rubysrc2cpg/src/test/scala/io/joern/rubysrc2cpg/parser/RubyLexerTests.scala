@@ -350,4 +350,11 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       EOF
     )
   }
+
+  "Multi-line string literal concatenation" should "be recognized as two string literals separated by whitespace" in {
+    val code =
+      """'abc' \
+        |'cde'""".stripMargin
+    tokenize(code) shouldBe Seq(SINGLE_QUOTED_STRING_LITERAL, WS, SINGLE_QUOTED_STRING_LITERAL, EOF)
+  }
 }

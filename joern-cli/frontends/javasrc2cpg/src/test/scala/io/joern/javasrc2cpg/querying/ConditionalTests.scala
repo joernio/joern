@@ -18,7 +18,7 @@ class ConditionalTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     val List(ternaryExpr: Call)                                  = cpg.method.name("foo").call(Operators.conditional).l
-    val List(condition: Call, thenExpr: Literal, elseExpr: Call) = ternaryExpr.argument.l
+    val List(condition: Call, thenExpr: Literal, elseExpr: Call) = ternaryExpr.argument.l: @unchecked
 
     condition.code shouldBe "x > 5"
     condition.methodFullName shouldBe Operators.greaterThan
@@ -40,7 +40,7 @@ class ConditionalTests extends JavaSrcCode2CpgFixture {
         |}
         |""".stripMargin)
     val List(conditional: Call) = cpg.method.name("bar").call(Operators.conditional).l
-    val List(condition: Identifier, thenExpr: Call, elseExpr: Call) = conditional.argument.l
+    val List(condition: Identifier, thenExpr: Call, elseExpr: Call) = conditional.argument.l: @unchecked
 
     condition.code shouldBe "allowNull"
     condition.typeFullName shouldBe "boolean"

@@ -1,12 +1,12 @@
 package io.joern.jssrc2cpg.astcreation
 
 import io.joern.jssrc2cpg.datastructures.{BlockScope, MethodScope}
-import io.joern.jssrc2cpg.parser.BabelAst._
+import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.Ast
-import io.joern.x2cpg.datastructures.Stack._
+import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newLocalNode}
-import io.shiftleft.codepropertygraph.generated.nodes.{Identifier => _, _}
+import io.shiftleft.codepropertygraph.generated.nodes.{Identifier as _, *}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes}
 import ujson.Value
 
@@ -189,13 +189,18 @@ trait AstForFunctionsCreator { this: AstCreator =>
                   createFieldIdentifierNode(elemName, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber)
                 val accessAst =
                   createFieldAccessCallAst(paramNode, keyNode, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber)
-                createAssignmentCallAst(
+                val assignmentCallAst = createAssignmentCallAst(
                   Ast(localParamNode),
                   accessAst,
                   s"$elemName = ${codeOf(accessAst.nodes.head)}",
                   elementNodeInfo.lineNumber,
                   elementNodeInfo.columnNumber
                 )
+                // Handle identifiers referring to locals created by destructured parameters
+                assignmentCallAst.nodes
+                  .collect { case i: NewIdentifier if localNode.name == i.name => i }
+                  .map { i => assignmentCallAst.withRefEdge(i, localNode) }
+                  .reduce(_ merge _)
               case RestElement => handleRestInParameters(elementNodeInfo, nodeInfo, paramName)
               case _           => astForNodeWithFunctionReference(elementNodeInfo.json)
             }

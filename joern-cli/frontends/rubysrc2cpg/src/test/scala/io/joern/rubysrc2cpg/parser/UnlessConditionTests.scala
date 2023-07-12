@@ -20,7 +20,7 @@ class UnlessConditionTests extends RubyParserAbstractTest {
             |  ExpressionExpressionOrCommand
             |   PrimaryExpression
             |    VariableReferencePrimary
-            |     VariableReference
+            |     VariableIdentifierVariableReference
             |      VariableIdentifier
             |       foo
             |  ThenClause
@@ -32,7 +32,7 @@ class UnlessConditionTests extends RubyParserAbstractTest {
             |      ExpressionExpressionOrCommand
             |       PrimaryExpression
             |        VariableReferencePrimary
-            |         VariableReference
+            |         VariableIdentifierVariableReference
             |          VariableIdentifier
             |           bar
             |    Separators
@@ -54,7 +54,7 @@ class UnlessConditionTests extends RubyParserAbstractTest {
             |  ExpressionExpressionOrCommand
             |   PrimaryExpression
             |    VariableReferencePrimary
-            |     VariableReference
+            |     VariableIdentifierVariableReference
             |      VariableIdentifier
             |       foo
             |  ThenClause
@@ -67,7 +67,7 @@ class UnlessConditionTests extends RubyParserAbstractTest {
             |      ExpressionExpressionOrCommand
             |       PrimaryExpression
             |        VariableReferencePrimary
-            |         VariableReference
+            |         VariableIdentifierVariableReference
             |          VariableIdentifier
             |           bar
             |    Separators
@@ -90,7 +90,7 @@ class UnlessConditionTests extends RubyParserAbstractTest {
             |  ExpressionExpressionOrCommand
             |   PrimaryExpression
             |    VariableReferencePrimary
-            |     VariableReference
+            |     VariableIdentifierVariableReference
             |      VariableIdentifier
             |       foo
             |  ThenClause
@@ -103,7 +103,7 @@ class UnlessConditionTests extends RubyParserAbstractTest {
             |      ExpressionExpressionOrCommand
             |       PrimaryExpression
             |        VariableReferencePrimary
-            |         VariableReference
+            |         VariableIdentifierVariableReference
             |          VariableIdentifier
             |           bar
             |    Separators

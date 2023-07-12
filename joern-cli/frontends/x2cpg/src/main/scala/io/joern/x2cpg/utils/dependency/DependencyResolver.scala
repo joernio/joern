@@ -1,10 +1,12 @@
 package io.joern.x2cpg.utils.dependency
 
 import better.files.File
+import io.joern.x2cpg.utils.ExternalCommand
 import io.joern.x2cpg.utils.dependency.GradleConfigKeys.GradleConfigKey
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Path
+import scala.util.{Failure, Success}
 
 object GradleConfigKeys extends Enumeration {
   type GradleConfigKey = Value
@@ -18,8 +20,92 @@ case class DependencyResolverParams(
 object DependencyResolver {
   private val logger                         = LoggerFactory.getLogger(getClass)
   private val defaultGradleProjectName       = "app"
-  private val defaultGradleConfigurationName = "releaseCompileClasspath"
+  private val defaultGradleConfigurationName = "compileClasspath"
   private val MaxSearchDepth: Int            = 4
+
+  def getCoordinates(
+    projectDir: Path,
+    params: DependencyResolverParams = new DependencyResolverParams
+  ): Option[collection.Seq[String]] = {
+    val coordinates = findSupportedBuildFiles(projectDir).flatMap { buildFile =>
+      if (isMavenBuildFile(buildFile))
+        // TODO: implement
+        None
+      else if (isGradleBuildFile(buildFile))
+        getCoordinatesForGradleProject(buildFile.getParent, defaultGradleConfigurationName)
+      else {
+        logger.warn(s"Found unsupported build file $buildFile")
+        Nil
+      }
+    }.flatten
+
+    Option.when(coordinates.nonEmpty)(coordinates)
+  }
+
+  private def getCoordinatesForGradleProject(
+    projectDir: Path,
+    configuration: String
+  ): Option[collection.Seq[String]] = {
+    val lines = ExternalCommand.run(s"gradle dependencies --configuration $configuration", projectDir.toString) match {
+      case Success(lines) => lines
+      case Failure(exception) =>
+        logger.warn(
+          s"Could not retrieve dependencies for Gradle project at path `$projectDir`\n" +
+            exception.getMessage
+        )
+        Seq()
+    }
+
+    /*
+    on the following regex, for the following input:
+    ```
+    |    |    +--- org.springframework.boot:spring-boot-starter-logging:3.0.5
+    |    |    |    +--- ch.qos.logback:logback-classic:1.4.6
+    |    |    |    |    +--- ch.qos.logback:logback-core:1.4.6
+    |    |    |    |    \--- org.slf4j:slf4j-api:2.0.4 -> 2.0.7
+    |    |    |    +--- org.apache.logging.log4j:log4j-to-slf4j:2.19.0
+    |    |    |    |    +--- org.slf4j:slf4j-api:1.7.36 -> 2.0.7
+    |    |    |    |    \--- org.apache.logging.log4j:log4j-api:2.19.0 -> 2.15.0
+    |    |    |    \--- org.slf4j:jul-to-slf4j:2.0.7
+    ```
+    the resulting matches and their groups are:
+    ```
+    org.springframework.boot:spring-boot-starter-logging:3.0.5
+    ^g1 ------------------------------------------------^^g2 ^
+    ch.qos.logback:logback-classic:1.4.6
+    ^g1 --------------------------^^g2 ^
+    ch.qos.logback:logback-core:1.4.6
+    ^g1 -----------------------^^g2 ^
+    org.slf4j:slf4j-api:2.0.4 -> 2.0.7
+    ^g1 ---------------^^g2 ^^g3^^g4 ^
+    org.apache.logging.log4j:log4j-to-slf4j:2.19.0
+    ^g1 -----------------------------------^^g2 -^
+    org.slf4j:slf4j-api:1.7.36 -> 2.0.7
+    ^g1 ---------------^^g2 -^^g3^^g4 ^
+    org.apache.logging.log4j:log4j-api:2.19.0 -> 2.15.0
+    ^g1 ------------------------------^^g2 -^^g3^^g4 -^
+    org.slf4j:jul-to-slf4j:2.0.7
+    ^g1 ------------------^^g2 ^
+    ```
+     */
+    val pattern = """^[| ]?[+\\]\s*[-]*\s*([^:]+:[^:]+:)([^\s]+)(\s+->\s+)?([^\s]+)?""".r
+    val coordinates = lines
+      .flatMap { l =>
+        pattern.findFirstMatchIn(l) match {
+          case Some(m) =>
+            if (Option(m.group(4)).isEmpty)
+              Some(m.group(1) + m.group(2))
+            else
+              Some(m.group(1) + m.group(4))
+          case _ => None
+        }
+      }
+      .distinct
+      .toList
+
+    logger.info("Got {} Maven coordinates", coordinates.size)
+    Some(coordinates)
+  }
 
   def getDependencies(
     projectDir: Path,
