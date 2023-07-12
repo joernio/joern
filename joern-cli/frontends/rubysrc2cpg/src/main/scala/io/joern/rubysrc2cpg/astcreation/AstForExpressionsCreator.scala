@@ -3,10 +3,11 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.parser.RubyParser.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.nodes.NewJumpTarget
+import io.shiftleft.codepropertygraph.generated.nodes.{NewFieldIdentifier, NewJumpTarget, NewNode}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, ModifierTypes, Operators}
 import org.antlr.v4.runtime.ParserRuleContext
 
+import scala.collection.immutable.Set
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 trait AstForExpressionsCreator { this: AstCreator =>
@@ -101,11 +102,28 @@ trait AstForExpressionsCreator { this: AstCreator =>
   }
 
   protected def astForLiteralPrimaryExpression(ctx: LiteralPrimaryContext): Ast = ctx.literal() match {
-    case ctx: NumericLiteralLiteralContext     => astForNumericLiteral(ctx.numericLiteral())
-    case ctx: SymbolLiteralContext             => astForSymbolLiteral(ctx.symbol())
+    case ctx: NumericLiteralLiteralContext    => astForNumericLiteral(ctx.numericLiteral())
+    case ctx: SymbolLiteralContext            => astForSymbolLiteral(ctx.symbol())
+    case ctx: StringLiteralLiteralContext     => astForStringLiteral(ctx.stringLiteral)
+    case ctx: RegularExpressionLiteralContext => astForRegularExpressionLiteral(ctx)
+  }
+
+  protected def astForStringLiteral(ctx: StringLiteralContext): Ast = ctx match {
     case ctx: SingleQuotedStringLiteralContext => astForSingleQuotedStringLiteral(ctx)
     case ctx: DoubleQuotedStringLiteralContext => astForDoubleQuotedStringLiteral(ctx)
-    case ctx: RegularExpressionLiteralContext  => astForRegularExpressionLiteral(ctx)
+    case ctx: ConcatenatedStringLiteralContext => astForConcatenatedStringLiterals(ctx)
+  }
+
+  protected def astForConcatenatedStringLiterals(ctx: ConcatenatedStringLiteralContext): Ast = {
+    val literalAsts = ctx.stringLiteral().asScala.map(astForStringLiteral)
+    val callNode_ = callNode(
+      ctx,
+      ctx.getText,
+      RubyOperators.concatStringLiteral,
+      RubyOperators.concatStringLiteral,
+      DispatchTypes.STATIC_DISPATCH
+    )
+    callAst(callNode_, literalAsts.toSeq)
   }
 
   protected def astForTernaryConditionalOperator(ctx: ConditionalOperatorExpressionContext): Ast = {
@@ -206,8 +224,17 @@ trait AstForExpressionsCreator { this: AstCreator =>
      * 4. Otherwise default to identifier node creation since there is no reason (point 2) to create a call node
      */
 
-    val variableName = ctx.getText
-    if (definitelyIdentifier || scope.lookupVariable(variableName).isDefined) {
+    val variableName      = ctx.getText
+    val isSelfFieldAccess = variableName.startsWith("@")
+    if (isSelfFieldAccess) {
+      // Very basic field detection
+      fieldReferences.updateWith(classStack.top) {
+        case Some(xs) => Option(xs ++ Set(ctx))
+        case None     => Option(Set(ctx))
+      }
+      val thisNode = createIdentifierWithScope(ctx, "this", "this", Defines.Any, List.empty)
+      astForFieldAccess(ctx, thisNode)
+    } else if (definitelyIdentifier || scope.lookupVariable(variableName).isDefined) {
       val node = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List())
       Ast(node)
     } else if (methodNames.contains(variableName)) {
@@ -228,6 +255,24 @@ trait AstForExpressionsCreator { this: AstCreator =>
       Option(ctx.elseClause()).map(_.compoundStatement()).map(st => astForCompoundStatement(st)).getOrElse(Seq())
     val ifNode = controlStructureNode(ctx, ControlStructureTypes.IF, ctx.getText)
     controlStructureAst(ifNode, testAst.headOption, thenAst ++ elseAst)
+  }
+
+  protected def astForFieldAccess(ctx: ParserRuleContext, baseNode: NewNode): Ast = {
+    val fieldAccess =
+      callNode(ctx, ctx.getText, Operators.fieldAccess, Operators.fieldAccess, DispatchTypes.STATIC_DISPATCH)
+    val fieldIdentifier = newFieldIdentifier(ctx)
+    val astChildren     = Seq(baseNode, fieldIdentifier)
+    callAst(fieldAccess, astChildren.map(Ast.apply))
+  }
+
+  protected def newFieldIdentifier(ctx: ParserRuleContext): NewFieldIdentifier = {
+    val code = ctx.getText
+    val name = code.replaceAll("@", "")
+    NewFieldIdentifier()
+      .code(code)
+      .canonicalName(name)
+      .lineNumber(ctx.start.getLine)
+      .columnNumber(ctx.start.getCharPositionInLine)
   }
 
 }

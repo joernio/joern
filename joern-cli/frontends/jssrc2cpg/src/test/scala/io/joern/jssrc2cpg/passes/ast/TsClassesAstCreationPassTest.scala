@@ -291,7 +291,7 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
         |    gender: string;
         |}
         |""".stripMargin) { cpg =>
-      val Some(userType) = cpg.typeDecl.name("User").headOption: @unchecked
+      val List(userType) = cpg.typeDecl.name("User").l
       userType.member.name.l shouldBe List("email", "organizationIds", "username", "name", "gender")
       userType.member.typeFullName.toSet shouldBe Set("__ecma.String", "string[]")
     }
@@ -304,11 +304,11 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
         |    }
         |}
         |""".stripMargin) { cpg =>
-      val Some(credentialsType) = cpg.typeDecl.nameExact("_anon_cdecl").headOption: @unchecked
+      val List(credentialsType) = cpg.typeDecl.nameExact("_anon_cdecl").l
       credentialsType.fullName shouldBe "code.ts::program:Test:run:_anon_cdecl"
       credentialsType.member.name.l shouldBe List("username", "password")
       credentialsType.member.typeFullName.toSet shouldBe Set("__ecma.String")
-      val Some(credentialsParam) = cpg.parameter.nameExact("credentials").headOption: @unchecked
+      val List(credentialsParam) = cpg.parameter.nameExact("credentials").l
       credentialsParam.typeFullName shouldBe "code.ts::program:Test:run:_anon_cdecl"
       // should not produce dangling nodes that are meant to be inside procedures
       cpg.all.collectAll[CfgNode].whereNot(_._astIn).size shouldBe 0
@@ -321,11 +321,11 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
         |    log(`${username}: ${password}`);
         |}
         |""".stripMargin) { cpg =>
-      val Some(credentialsType) = cpg.typeDecl.nameExact("_anon_cdecl").headOption: @unchecked
+      val List(credentialsType) = cpg.typeDecl.nameExact("_anon_cdecl").l
       credentialsType.fullName shouldBe "code.ts::program:apiCall:_anon_cdecl"
       credentialsType.member.name.l shouldBe List("username", "password")
       credentialsType.member.typeFullName.toSet shouldBe Set(Defines.Any)
-      val Some(credentialsParam) = cpg.parameter.nameExact("param1_0").headOption: @unchecked
+      val List(credentialsParam) = cpg.parameter.nameExact("param1_0").l
       credentialsParam.typeFullName shouldBe "code.ts::program:apiCall:_anon_cdecl"
       // should not produce dangling nodes that are meant to be inside procedures
       cpg.all.collectAll[CfgNode].whereNot(_._astIn).size shouldBe 0

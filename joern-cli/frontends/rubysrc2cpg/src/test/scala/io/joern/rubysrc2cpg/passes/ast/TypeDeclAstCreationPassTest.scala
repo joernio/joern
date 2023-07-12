@@ -2,7 +2,9 @@ package io.joern.rubysrc2cpg.passes.ast
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
+import io.joern.x2cpg.Defines as XDefines
+import io.shiftleft.codepropertygraph.generated.Operators
 
 class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
 
@@ -11,6 +13,17 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
     "generate a basic type declaration node for an empty class" in {
       val cpg = code("""
           |class MyClass
+          |end
+          |""".stripMargin)
+      val Some(myClass) = cpg.typeDecl.nameExact("MyClass").headOption: @unchecked
+      myClass.name shouldBe "MyClass"
+      myClass.fullName shouldBe "Test0.rb::program:MyClass"
+    }
+
+    // TODO: Need to be fixed.
+    "generate a basic type declaration node for an empty class with Class.new" ignore {
+      val cpg = code("""
+          |MyClass = Class.new do
           |end
           |""".stripMargin)
       val Some(myClass) = cpg.typeDecl.nameExact("MyClass").headOption: @unchecked
@@ -50,7 +63,7 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
       driving.fullName shouldBe "Test0.rb::program:Vehicle:driving"
     }
 
-    "generate members for various class members under the respective type declaration" ignore {
+    "generate members for various class members under the respective type declaration" in {
       val cpg = code("""
           |class Song
           |  @@plays = 0
@@ -65,12 +78,19 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
       song.name shouldBe "Song"
       song.fullName shouldBe "Test0.rb::program:Song"
 
-      val List(plays, name, artist, duration) = song.member.l
+      val List(classInit) = song.method.name(XDefines.StaticInitMethodName).l
+      classInit.fullName shouldBe s"Test0.rb::program:Song:${XDefines.StaticInitMethodName}"
+      val List(playsDef) = classInit.call.nameExact(Operators.fieldAccess).fieldAccess.l
+      playsDef.fieldIdentifier.canonicalName.headOption shouldBe Option("plays")
+
+      val List(artist, duration, name, plays) = song.member.l
 
       plays.name shouldBe "plays"
       name.name shouldBe "name"
       artist.name shouldBe "artist"
       duration.name shouldBe "duration"
+
+      cpg.fieldAccess.fieldIdentifier.canonicalName.l shouldBe List("plays", "name", "artist", "duration")
     }
 
     "generate members for various class members when using the `attr_reader` and `attr_writer` idioms" ignore {
@@ -123,7 +143,7 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
       myClass.name shouldBe "MyClass"
       myClass.fullName shouldBe "Test0.rb::program:MyClass"
 
-      val List(m1, m2, m3, m4) = myClass.method.l
+      val List(_, m1, m2, m3, m4) = myClass.method.l
       m1.name shouldBe "method1"
       m2.name shouldBe "method2"
       m3.name shouldBe "method3"
@@ -192,12 +212,12 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
           |    def initialize
           |        puts "This is Superclass"
           |    end
-          |     
+          |
           |    def super_method
           |        puts "Method of superclass"
           |    end
           |end
-          | 
+          |
           |class Sudo_Placement < GeeksforGeeks
           |    def initialize
           |       puts "This is Subclass"

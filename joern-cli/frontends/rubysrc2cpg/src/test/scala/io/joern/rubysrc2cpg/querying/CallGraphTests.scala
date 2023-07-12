@@ -4,7 +4,7 @@ import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.semanticcpg.language._
 
-class CallGraphTests extends RubyCode2CpgFixture {
+class CallGraphTests extends RubyCode2CpgFixture(withPostProcessing = true) {
 
   val cpg = code("""
       |def bar(content)

@@ -1,10 +1,10 @@
 package io.joern.rubysrc2cpg.dataflow
 
-import io.joern.dataflowengineoss.language._
-import io.joern.rubysrc2cpg.testfixtures.DataFlowCodeToCpgSuite
-import io.shiftleft.semanticcpg.language._
+import io.joern.dataflowengineoss.language.*
+import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.shiftleft.semanticcpg.language.*
 
-class DataFlowTests extends DataFlowCodeToCpgSuite {
+class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataFlow = true) {
 
   "Data flow through if-elseif-else" should {
     val cpg = code("""
@@ -87,6 +87,28 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
 
     "be found" in {
       val src  = cpg.identifier.name("n").l
+      val sink = cpg.call.name("puts").l
+      sink.reachableByFlows(src).l.size shouldBe 2
+    }
+  }
+
+  "Implicit return in if-else block" ignore {
+    val cpg = code("""
+        |def foo(arg)
+        |if arg > 1
+        |        arg + 1
+        |else
+        |        arg + 10
+        |end
+        |end
+        |
+        |x = 1
+        |y = foo x
+        |puts y
+        |""".stripMargin)
+
+    "be found" in {
+      val src  = cpg.identifier.name("x").l
       val sink = cpg.call.name("puts").l
       sink.reachableByFlows(src).l.size shouldBe 2
     }
@@ -1115,7 +1137,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Data flow for begin/rescue with sink in function without begin" ignore {
+  "Data flow for begin/rescue with sink in function without begin" should {
     val cpg = code("""
         |def foo(arg)
         |  puts "in begin"
@@ -1140,7 +1162,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Data flow for begin/rescue with sink in function without begin and sink in rescue with exception" ignore {
+  "Data flow for begin/rescue with sink in function without begin and sink in rescue with exception" should {
     val cpg = code("""
         |def foo(arg)
         |  puts "in begin"
@@ -1163,7 +1185,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     }
   }
 
-  "Data flow for begin/rescue with sink in function without begin and sink in catch-call rescue" ignore {
+  "Data flow for begin/rescue with sink in function without begin and sink in catch-call rescue" should {
     val cpg = code("""
         |def foo(arg)
         |  puts "in begin"
@@ -1694,6 +1716,39 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     "be found in" in {
       val source = cpg.literal.code("1").l
       val sink   = cpg.call.name("puts").argument(1).l
+      sink.reachableByFlows(source).size shouldBe 1
+    }
+  }
+
+  "Across the file data flow test" should {
+    val cpg = code(
+      """
+        |def foo(arg)
+        | loop do
+        | arg += 1
+        |  if arg > 3
+        |        puts arg
+        |        return
+        |  end
+        | end
+        |end
+        |""".stripMargin,
+      "foo.rb"
+    )
+      .moreCode(
+        """
+          |x = 1
+          |foo x
+          |""".stripMargin,
+        "bar.rb"
+      )
+
+    "be found in" in {
+      val source = cpg.literal.code("1").l
+      val sink   = cpg.call.name("puts").argument(1).l
+      sink.reachableByFlows(source).size shouldBe 1
+
+      val src = cpg.identifier("x").l
       sink.reachableByFlows(source).size shouldBe 1
     }
   }

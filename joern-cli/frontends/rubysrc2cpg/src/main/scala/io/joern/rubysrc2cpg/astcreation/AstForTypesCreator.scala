@@ -5,11 +5,18 @@ import io.joern.rubysrc2cpg.parser.RubyParser.{
   ClassOrModuleReferenceContext,
   ScopedConstantReferenceContext
 }
+import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewIdentifier, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import org.antlr.v4.runtime.ParserRuleContext
+
+import scala.collection.mutable
 
 trait AstForTypesCreator { this: AstCreator =>
+
+  // Maps field references of known types
+  protected val fieldReferences = mutable.HashMap.empty[String, Set[ParserRuleContext]]
 
   def astForClassDeclaration(ctx: ClassDefinitionPrimaryContext): Seq[Ast] = {
     val baseClassName = if (ctx.classDefinition().expressionOrCommand() != null) {
@@ -81,10 +88,25 @@ trait AstForTypesCreator { this: AstCreator =>
     }
   }
 
-  def astsForClassMembers(ast: Ast): Ast = {
-    // TODO: Handle members
-    Ast()
-  }
+  def membersFromStatementAsts(ast: Ast): Seq[Ast] =
+    ast.nodes
+      .collect { case i: NewIdentifier if i.name.startsWith("@") => i }
+      .map { i =>
+        val code = ast.root.collect { case c: NewCall => c.code }.getOrElse(i.name)
+        val modifierType = i.name match
+          case x if x.startsWith("@@") => ModifierTypes.STATIC
+          case _                       => ModifierTypes.VIRTUAL
+        val modifierAst = Ast(NewModifier().modifierType(modifierType))
+        Ast(
+          NewMember()
+            .code(code)
+            .name(i.name.replaceAll("@", ""))
+            .typeFullName(i.typeFullName)
+            .lineNumber(i.lineNumber)
+            .columnNumber(i.columnNumber)
+        ).withChild(modifierAst)
+      }
+      .toSeq
 
   implicit class ClassDefinitionPrimaryContextExt(val ctx: ClassDefinitionPrimaryContext) {
 
