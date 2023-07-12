@@ -49,7 +49,7 @@ class AstCreator(
   protected val methodNameAsIdentifierStack = mutable.Stack[Ast]()
 
   protected val methodAliases = mutable.HashMap[String, String]()
-  protected val methodNames   = mutable.HashSet[String]()
+  protected val methodNames   = mutable.HashMap[String, String]()
 
   protected val methodNamesWithYield = mutable.HashSet[String]()
 
@@ -842,6 +842,7 @@ class AstCreator(
     val methodFullName = packageContext.packageTable
       .getMethodFullNameUsingName(packageStack.toList, name)
       .headOption match {
+      case None if methodNames.contains(name) => methodNames.get(name).get
       case None if isBuiltin(name)            => prefixAsBuiltin(name) // TODO: Probably not super precise
       case Some(externalDependencyResolution) => DynamicCallUnknownFullName
       case None                               => DynamicCallUnknownFullName
@@ -1262,7 +1263,7 @@ class AstCreator(
      * TODO find out how they should be used. Need to do this iff it adds any value
      */
 
-    methodNames.add(methodNode.name)
+    methodNames.put(methodNode.name, methodFullName)
     val blockNode = NewBlock().typeFullName(Defines.Any)
     Seq(
       methodAst(
