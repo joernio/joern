@@ -275,7 +275,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
   "Data flow through class method" should {
     val cpg = code("""
         |class MyClass
-        |  def myprint(text)
+        |  def print(text)
         |    puts text
         |  end
         |end
@@ -283,7 +283,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
         |
         |x = "some text"
         |inst = MyClass.new
-        |inst.myprint(x)
+        |inst.print(x)
         |""".stripMargin)
 
     "be found" in {
@@ -323,14 +323,14 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
   "Data flow through module method" should {
     val cpg = code("""
         |module MyModule
-        |  def MyModule.myprint(text)
+        |  def MyModule.print(text)
         |    puts text
         |  end
         |end
         |
         |x = "some text"
         |
-        |MyModule::myprint(x)
+        |MyModule::print(x)
         |""".stripMargin)
 
     "be found" in {
