@@ -29,4 +29,9 @@ class PackageTable() {
       case Some(value) => value.toList
       case None        => List[MethodTableModel]()
   }
+
+  def set(table: PackageTable): Unit = {
+    methodTableMap.addAll(table.methodTableMap)
+  }
+  def clear(): Unit = methodTableMap.clear
 }

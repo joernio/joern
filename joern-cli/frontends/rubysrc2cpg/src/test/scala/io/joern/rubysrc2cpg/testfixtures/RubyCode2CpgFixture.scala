@@ -2,6 +2,7 @@ package io.joern.rubysrc2cpg.testfixtures
 
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
+import io.joern.rubysrc2cpg.utils.PackageTable
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, DefaultTestCpg, LanguageFrontend, TestCpg}
@@ -24,13 +25,19 @@ trait RubyFrontend extends LanguageFrontend {
 
 }
 
-class DefaultTestCpgWithRuby(withPostProcessing: Boolean, withDataFlow: Boolean)
+class DefaultTestCpgWithRuby(withPostProcessing: Boolean, withDataFlow: Boolean, packageTable: Option[PackageTable])
     extends DefaultTestCpg
     with RubyFrontend {
   override def applyPasses(): Unit = {
     X2Cpg.applyDefaultOverlays(this)
 
     if (withPostProcessing) {
+      packageTable match {
+        case Some(table) =>
+          RubySrc2Cpg.packageTableInfo.clear()
+          RubySrc2Cpg.packageTableInfo.set(table)
+        case None =>
+      }
       RubySrc2Cpg.postProcessingPasses(this).foreach(_.createAndApply())
     }
 
@@ -43,8 +50,11 @@ class DefaultTestCpgWithRuby(withPostProcessing: Boolean, withDataFlow: Boolean)
 
 }
 
-class RubyCode2CpgFixture(withPostProcessing: Boolean = false, withDataFlow: Boolean = false)
-    extends Code2CpgFixture(() => new DefaultTestCpgWithRuby(withPostProcessing, withDataFlow)) {
+class RubyCode2CpgFixture(
+  withPostProcessing: Boolean = false,
+  withDataFlow: Boolean = false,
+  packageTable: Option[PackageTable] = None
+) extends Code2CpgFixture(() => new DefaultTestCpgWithRuby(withPostProcessing, withDataFlow, packageTable)) {
 
   implicit val resolver: ICallResolver           = NoResolve
   implicit lazy val engineContext: EngineContext = EngineContext()
