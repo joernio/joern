@@ -75,9 +75,7 @@ object RubySrc2Cpg {
 
   val packageTableInfo = new PackageTable()
 
-  private val logger = LoggerFactory.getLogger(this.getClass)
-  def postProcessingPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] = {
-
+  def postProcessingPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] =
     List(
       // TODO commented below two passes, as waiting on Dependency download PR to get merged
       new ImportResolverPass(cpg, packageTableInfo),
@@ -89,6 +87,5 @@ object RubySrc2Cpg {
       // need to run the ASTLinkerPass one more time
       new AstLinkerPass(cpg)
     )
-  }
 
 }
