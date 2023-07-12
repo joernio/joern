@@ -5,10 +5,10 @@ import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.AlwaysEdge
 import io.joern.x2cpg.testfixtures.CfgTestFixture
 import io.shiftleft.codepropertygraph.Cpg
 
-class SimpleCfgCreationPassTest  extends CfgTestFixture(() => new RubyCfgTestCpg()) {
+class SimpleCfgCreationPassTest extends CfgTestFixture(() => new RubyCfgTestCpg()) {
 
   "CFG generation for simple fragments" should {
-    "have correct structure for empty array literal" ignore  {
+    "have correct structure for empty array literal" ignore {
       implicit val cpg: Cpg = code("x = []")
       succOf(":program") shouldBe expected(("x", AlwaysEdge))
       succOf("x") shouldBe expected(("=", AlwaysEdge))
@@ -21,7 +21,7 @@ class SimpleCfgCreationPassTest  extends CfgTestFixture(() => new RubyCfgTestCpg
       succOf("x = [1, 2]") shouldBe expected(("<empty>", AlwaysEdge))
     }
 
-    "assigning a literal value" in  {
+    "assigning a literal value" in {
       implicit val cpg: Cpg = code("x = 1")
       succOf(":program") shouldBe expected(("x", AlwaysEdge))
       succOf("=") shouldBe expected(("<empty>", AlwaysEdge))
@@ -53,10 +53,8 @@ class SimpleCfgCreationPassTest  extends CfgTestFixture(() => new RubyCfgTestCpg
       succOf("1 + 2") shouldBe expected(("=", AlwaysEdge))
     }
 
-
     "addition of multiple string" in {
-      implicit val cpg: Cpg = code(
-        """
+      implicit val cpg: Cpg = code("""
           |a = "Nice to meet you"
           |b = ", "
           |c = "do you like blueberries?"
@@ -74,8 +72,7 @@ class SimpleCfgCreationPassTest  extends CfgTestFixture(() => new RubyCfgTestCpg
     }
 
     "addition of multiple string and assign to variable" in {
-      implicit val cpg: Cpg = code(
-        """
+      implicit val cpg: Cpg = code("""
           |a = "Nice to meet you"
           |b = ", "
           |c = "do you like blueberries?"
@@ -94,8 +91,7 @@ class SimpleCfgCreationPassTest  extends CfgTestFixture(() => new RubyCfgTestCpg
     }
 
     "single hierarchy of if else statement" in {
-      implicit val cpg: Cpg = code(
-        """
+      implicit val cpg: Cpg = code("""
           |x = 1
           |if x > 2
           |   puts "x is greater than 2"
@@ -108,8 +104,7 @@ class SimpleCfgCreationPassTest  extends CfgTestFixture(() => new RubyCfgTestCpg
     }
 
     "multiple hierarchy of if else statement" in {
-      implicit val cpg: Cpg = code(
-        """
+      implicit val cpg: Cpg = code("""
           |x = 1
           |if x > 2
           |   puts "x is greater than 2"
@@ -126,7 +121,6 @@ class SimpleCfgCreationPassTest  extends CfgTestFixture(() => new RubyCfgTestCpg
       succOf("x <= 2 and x!=0") subsetOf expected(("\"x is 1\"", AlwaysEdge))
       succOf("x <= 2 and x!=0") subsetOf expected(("<empty>", AlwaysEdge))
     }
-
 
   }
 }
