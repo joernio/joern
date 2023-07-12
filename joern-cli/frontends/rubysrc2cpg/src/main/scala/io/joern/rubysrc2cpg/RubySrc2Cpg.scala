@@ -27,31 +27,50 @@ import scala.util.{Failure, Success, Try}
 
 class RubySrc2Cpg extends X2CpgFrontend[Config] {
 
-  private val logger = LoggerFactory.getLogger(this.getClass)
-
   val global = new Global()
 
   override def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
-      val packageTableInfo = new PackageTable()
+
       new MetaDataPass(cpg, Languages.RUBYSRC, config.inputPath).createAndApply()
       new ConfigFileCreationPass(cpg).createAndApply()
-      if (config.enableDependencyDownload && !scala.util.Properties.isWin) {
-        val tempDir = File.newTemporaryDirectory()
-        try {
-          downloadDependency(config.inputPath, tempDir.toString())
-          new AstPackagePass(cpg, tempDir.toString(), global, packageTableInfo, config.inputPath).createAndApply()
-        } finally {
-          tempDir.delete()
-        }
-      }
-      val astCreationPass = new AstCreationPass(config.inputPath, cpg, global, packageTableInfo)
+      val astCreationPass = new AstCreationPass(config.inputPath, cpg, global, new PackageTable())
       astCreationPass.createAndApply()
       TypeNodePass.withRegisteredTypes(astCreationPass.allUsedTypes(), cpg).createAndApply()
-      new ImportResolverPass(cpg, packageTableInfo).createAndApply()
     }
   }
+}
 
+object RubySrc2Cpg {
+
+  val packageTableInfo = new PackageTable()
+
+  private val logger = LoggerFactory.getLogger(this.getClass)
+  def postProcessingPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] = {
+
+    val global = new Global()
+    if (config.isDefined && config.get.enableDependencyDownload && !scala.util.Properties.isWin) {
+      val tempDir = File.newTemporaryDirectory()
+      try {
+        downloadDependency(config.get.inputPath, tempDir.toString())
+        new AstPackagePass(cpg, tempDir.toString(), global, packageTableInfo, config.get.inputPath).createAndApply()
+      } finally {
+        tempDir.delete()
+      }
+    }
+
+    List(
+      // TODO commented below two passes, as waiting on Dependency download PR to get merged
+      new ImportResolverPass(cpg, packageTableInfo),
+      new RubyTypeRecoveryPass(cpg),
+      new RubyTypeHintCallLinker(cpg),
+      new NaiveCallLinker(cpg),
+
+      // Some of passes above create new methods, so, we
+      // need to run the ASTLinkerPass one more time
+      new AstLinkerPass(cpg)
+    )
+  }
   private def downloadDependency(inputPath: String, tempPath: String): Unit = {
     if (Files.isRegularFile(Paths.get(s"${inputPath}${java.io.File.separator}Gemfile"))) {
       ExternalCommand.run(s"bundle config set --local path ${tempPath}", inputPath) match {
@@ -69,20 +88,5 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
       }
     }
   }
-}
-
-object RubySrc2Cpg {
-
-  def postProcessingPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] =
-    List(
-      // TODO commented below two passes, as waiting on Dependency download PR to get merged
-      new RubyTypeRecoveryPass(cpg),
-      new RubyTypeHintCallLinker(cpg),
-      new NaiveCallLinker(cpg),
-
-      // Some of passes above create new methods, so, we
-      // need to run the ASTLinkerPass one more time
-      new AstLinkerPass(cpg)
-    )
 
 }
