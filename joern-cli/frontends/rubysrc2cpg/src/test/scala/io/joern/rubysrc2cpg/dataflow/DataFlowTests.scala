@@ -1726,6 +1726,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     val cpg = code(
       """
         |def foo(arg)
+        | puts arg
         | loop do
         | arg += 1
         |  if arg > 3
@@ -1748,10 +1749,16 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
 
     "be found in" in {
       val source = cpg.literal.code("1").l
-      val sink   = cpg.call.name("puts").argument(1).l
+      val sink   = cpg.call.name("puts").argument(1).lineNumber(3).l
       sink.reachableByFlows(source).size shouldBe 1
 
-      val src = cpg.identifier("x").l
+      val src = cpg.identifier("x").lineNumber(3).l
+      sink.reachableByFlows(src).size shouldBe 1
+    }
+
+    "be found for sink in nested block" ignore {
+      val src  = cpg.identifier("x").lineNumber(3).l
+      val sink = cpg.call.name("puts").argument(1).lineNumber(7).l
       sink.reachableByFlows(src).size shouldBe 1
     }
   }

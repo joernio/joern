@@ -2,7 +2,7 @@ package io.joern.rubysrc2cpg.passes
 
 import io.joern.rubysrc2cpg.Config
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class RubyTypeRecoveryTests extends RubyCode2CpgFixture {
 

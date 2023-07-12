@@ -6,7 +6,7 @@ trait AstCreatorHelper { this: AstCreator =>
 
   def isBuiltin(x: String): Boolean = builtinFunctions.contains(x)
 
-  def prefixAsBuiltin(x: String): String = s"$builtinPrefix:$x"
+  def prefixAsBuiltin(x: String): String = s"$builtinPrefix$pathSep$x"
 
 }
 

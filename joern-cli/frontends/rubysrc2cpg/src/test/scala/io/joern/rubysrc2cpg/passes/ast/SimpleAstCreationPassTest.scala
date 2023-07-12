@@ -535,7 +535,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
           |""".stripMargin)
 
       val List(methodNode) = cpg.method.name("\\[]").l
-      methodNode.fullName shouldBe "Test0.rb::program:MyClass:[]"
+      methodNode.fullName shouldBe "Test0.rb::program.MyClass.[]"
       methodNode.code shouldBe "def [](key)\n  @member_hash[key]\nend"
       methodNode.lineNumber shouldBe Some(3)
       methodNode.lineNumberEnd shouldBe Some(5)
@@ -552,7 +552,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
           |""".stripMargin)
 
       val List(methodNode) = cpg.method.name("==").l
-      methodNode.fullName shouldBe "Test0.rb::program:MyClass:=="
+      methodNode.fullName shouldBe "Test0.rb::program.MyClass.=="
       methodNode.code shouldBe "def ==(other)\n  @my_member==other\nend"
       methodNode.lineNumber shouldBe Some(3)
       methodNode.lineNumberEnd shouldBe Some(5)
@@ -568,7 +568,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
           |""".stripMargin)
 
       val List(methodNode) = cpg.method.name("some_method").l
-      methodNode.fullName shouldBe "Test0.rb::program:MyClass:some_method"
+      methodNode.fullName shouldBe "Test0.rb::program.MyClass.some_method"
       methodNode.code shouldBe "def some_method(param)\nend"
       methodNode.lineNumber shouldBe Some(3)
       methodNode.lineNumberEnd shouldBe Some(4)
@@ -836,6 +836,28 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literalArg.argumentIndex shouldBe 1
       literalArg.code shouldBe "1"
       literalArg.lineNumber shouldBe Some(1)
+    }
+
+    "have correct base for a call" in {
+      val cpg = code("""
+          |def foo(x)
+          | puts x
+          |end
+          |
+          |foo 123
+          |foo(132)
+          |""".stripMargin)
+
+      val callWithoutParen = cpg.call("foo").lineNumber(6).l
+      val callWithParen    = cpg.call("foo").lineNumber(7).l
+
+      val List(base1: Identifier, argument1: Literal) = callWithoutParen.argument.l
+      base1.typeFullName shouldBe "Test0.rb::program"
+      argument1.code shouldBe "123"
+
+      val List(base2: Identifier, argument2: Literal) = callWithParen.argument.l
+      base2.typeFullName shouldBe "Test0.rb::program"
+      argument2.code shouldBe "132"
     }
   }
 }

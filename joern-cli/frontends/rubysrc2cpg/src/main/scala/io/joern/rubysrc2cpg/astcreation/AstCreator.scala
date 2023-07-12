@@ -64,6 +64,8 @@ class AstCreator(
    */
   protected val UNRESOLVED_YIELD = "unresolved_yield"
 
+  protected val pathSep = "."
+
   protected val blockMethods = ListBuffer[Ast]()
 
   protected val relativeFilename: String =
@@ -114,9 +116,9 @@ class AstCreator(
     }
     scope.popScope()
 
-    val thisParam = NewMethodParameterIn()
-      .name("this")
-      .code("this")
+    val thisParam = parameterInNode(programCtx, "this", "this", 0, false, EvaluationStrategies.BY_VALUE).typeFullName(
+      classStack.reverse.mkString(pathSep)
+    )
     val thisParamAst = Ast(thisParam)
 
     val methodRetNode = NewMethodReturn()
@@ -778,9 +780,11 @@ class AstCreator(
     if (ctx.block() != null) {
       val blockAst = Seq(astForBlock(ctx.block()))
       Seq(callAst(callNode, parenAst ++ blockAst))
-    } else {
+    } else if (methodNames.contains(getActualMethodName(callNode.name))) {
+      val thisNode = identifierNode(ctx, "this", "this", classStack.reverse.mkString(pathSep))
+      Seq(callAst(callNode, parenAst, Some(Ast(thisNode))))
+    } else
       Seq(callAst(callNode, parenAst))
-    }
   }
 
   def astForJumpExpressionPrimaryContext(ctx: JumpExpressionPrimaryContext): Seq[Ast] = {
@@ -880,7 +884,7 @@ class AstCreator(
       .asInstanceOf[TerminalNode]
 
     val name           = ctx.getText
-    val methodFullName = classStack.reverse :+ name mkString ":"
+    val methodFullName = classStack.reverse :+ name mkString pathSep
 
     val callNode = NewCall()
       .name(name)
@@ -1096,7 +1100,7 @@ class AstCreator(
 
     // Create class initialization method to host all field initializers
     val classInitMethodAst = if (blockStmts.nonEmpty) {
-      val classInitFullName = (classStack.reverse :+ XDefines.StaticInitMethodName).mkString(":")
+      val classInitFullName = (classStack.reverse :+ XDefines.StaticInitMethodName).mkString(pathSep)
       val classInitMethod = methodNode(
         classCtx,
         XDefines.StaticInitMethodName,
@@ -1105,7 +1109,7 @@ class AstCreator(
         None,
         filename,
         Option(NodeTypes.TYPE_DECL),
-        Option(classStack.reverse.mkString(":"))
+        Option(classStack.reverse.mkString(pathSep))
       )
       val classInitBody = blockAst(blockNode(classCtx), blockStmts.toList)
       Seq(methodAst(classInitMethod, Seq.empty, classInitBody, methodReturnNode(classCtx, Defines.Any)))
@@ -1206,7 +1210,7 @@ class AstCreator(
      * TODO Dave: ^ This seems like it needs a re-design, it is confusing
      */
 
-    val methodFullName = classStack.reverse :+ callNode.name mkString ":"
+    val methodFullName = classStack.reverse :+ callNode.name mkString pathSep
     val methodNode = NewMethod()
       .code(ctx.getText)
       .name(callNode.name)
@@ -1218,10 +1222,7 @@ class AstCreator(
     callNode.methodFullName(methodFullName)
 
     val classType = if (classStack.isEmpty) "Standalone" else classStack.top
-    val classPath = classStack.reverse.toList match {
-      case _ :: xs => xs.mkString(":") + ":"
-      case _       => ""
-    }
+    val classPath = classStack.reverse.toList.mkString(pathSep)
     packageContext.packageTable.addPackageMethod(packageContext.moduleName, callNode.name, classPath, classType)
 
     // process yield calls.
@@ -1234,7 +1235,7 @@ class AstCreator(
       .foreach(node => {
         val yieldCallNode  = node.asInstanceOf[NewCall]
         val name           = methodNode.name
-        val methodFullName = classStack.reverse :+ callNode.name mkString ":"
+        val methodFullName = classStack.reverse :+ callNode.name mkString pathSep
         yieldCallNode.name(name + YIELD_SUFFIX)
         yieldCallNode.methodFullName(methodFullName + YIELD_SUFFIX)
         methodNamesWithYield.add(methodNode.name)
@@ -1476,7 +1477,7 @@ class AstCreator(
 
     val astBody = convertLastStmtToReturn(astBodyWOReturn, ctxStmt)
 
-    val methodFullName = classStack.reverse :+ blockMethodName mkString ":"
+    val methodFullName = classStack.reverse :+ blockMethodName mkString pathSep
     val methodNode = NewMethod()
       .code(ctxStmt.getText)
       .name(blockMethodName)
