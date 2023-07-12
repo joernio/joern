@@ -838,7 +838,7 @@ class AstCreator(
     val methodFullName = packageContext.packageTable
       .getMethodFullNameUsingName(packageStack.toList, name)
       .headOption match {
-      case None if methodNames.contains(name) => methodNames.get(name).getOrElse(DynamicCallUnknownFullName)
+      case None if methodNames.contains(name) => methodNames.get(name).get
       case None if isBuiltin(name)            => prefixAsBuiltin(name) // TODO: Probably not super precise
       case Some(externalDependencyResolution) => DynamicCallUnknownFullName
       case None                               => DynamicCallUnknownFullName
