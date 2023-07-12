@@ -36,29 +36,27 @@ class IdentifierLocalTests extends RubyCode2CpgFixture {
   "be correct for local x in method1" ignore {
     val List(method) = cpg.method.nameExact("method1").l
     method.block.ast.isIdentifier.l.size shouldBe 2
-    val List(indentifierX, _) = method.block.ast.isIdentifier.l
-    indentifierX.name shouldBe "x"
+    val List(identifierX, _) = method.block.ast.isIdentifier.l
+    identifierX.name shouldBe "x"
 
-    val localX = indentifierX._localViaRefOut.get
+    val localX = identifierX._localViaRefOut.get
     localX.name shouldBe "x"
   }
 
-  // TODO: Need to be fixed
-  "be correct for parameter x in method2" ignore {
-    val List(method)       = cpg.method.nameExact("method2").l
-    val List(indentifierX) = method.block.ast.isIdentifier.l
-    indentifierX.name shouldBe "x"
+  "be correct for parameter x in method2" in {
+    val List(method)      = cpg.method.nameExact("method2").l
+    val List(identifierX) = method.block.ast.isIdentifier.l
+    identifierX.name shouldBe "x"
 
-    indentifierX.refsTo.l.size shouldBe 1
-    val List(paramx) = indentifierX.refsTo.l
+    identifierX.refsTo.l.size shouldBe 1
+    val List(paramx) = identifierX.refsTo.l
     paramx.name shouldBe "x"
 
-    val parameterX = indentifierX._methodParameterInViaRefOut.get
+    val parameterX = identifierX._methodParameterInViaRefOut.get
     parameterX.name shouldBe "x"
   }
 
-  // TODO: Need to be fixed.
-  "Reach parameter from last identifer" ignore {
+  "Reach parameter from last identifier" in {
     val List(method)           = cpg.method.nameExact("method3").l
     val List(outerIdentifierX) = method.ast.isIdentifier.lineNumber(22).l
     val parameterX             = outerIdentifierX._methodParameterInViaRefOut.get
@@ -74,7 +72,7 @@ class IdentifierLocalTests extends RubyCode2CpgFixture {
   }
 
   // TODO: Need to be fixed.
-  "nested block identifer to local taversal" ignore {
+  "nested block identifier to local traversal" ignore {
     val List(method) = cpg.method.nameExact("method3").l
     method.block.astChildren.isBlock.l.size shouldBe 1
     val List(nestedBlock) = method.block.astChildren.isBlock.l
