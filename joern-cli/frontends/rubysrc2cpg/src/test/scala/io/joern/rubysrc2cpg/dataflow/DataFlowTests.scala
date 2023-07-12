@@ -34,19 +34,19 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
 
   "Flow via call" should {
     val cpg = code("""
-      |def print(content)
+      |def printone(content)
       |puts content
       |end
       |
       |def main
       |n = 1
-      |print( n )
+      |printone( n )
       |end
       |""".stripMargin)
 
     "be found" in {
       implicit val resolver: ICallResolver = NoResolve
-      val src                              = cpg.identifier.name("n").where(_.inCall.name("print")).l
+      val src                              = cpg.identifier.name("n").where(_.inCall.name("printone")).l
       val sink                             = cpg.method.name("puts").callIn.argument(1).l
       sink.reachableByFlows(src).size shouldBe 1
     }
@@ -275,7 +275,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
   "Data flow through class method" should {
     val cpg = code("""
         |class MyClass
-        |  def print(text)
+        |  def myprint(text)
         |    puts text
         |  end
         |end
@@ -283,7 +283,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
         |
         |x = "some text"
         |inst = MyClass.new
-        |inst.print(x)
+        |inst.myprint(x)
         |""".stripMargin)
 
     "be found" in {
@@ -323,14 +323,14 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
   "Data flow through module method" should {
     val cpg = code("""
         |module MyModule
-        |  def MyModule.print(text)
+        |  def MyModule.myprint(text)
         |    puts text
         |  end
         |end
         |
         |x = "some text"
         |
-        |MyModule::print(x)
+        |MyModule::myprint(x)
         |""".stripMargin)
 
     "be found" in {
