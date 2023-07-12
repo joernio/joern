@@ -31,9 +31,16 @@ class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[Call](cpg) {
     // An erroneous `this` argument is added for unresolved calls to static methods.
     val argSizeMod = if (method.modifier.modifierType.iterator.contains(ModifierTypes.STATIC)) 1 else 0
     if (
-      method.parameter.size != (call.argument.size - argSizeMod) || callNameParts.typeDecl.contains(
-        Defines.UnresolvedNamespace
-      )
+      method
+        .parameter
+        .size != (
+          call
+            .argument
+            .size - 
+            argSizeMod) ||
+          callNameParts
+            .typeDecl
+            .contains(Defines.UnresolvedNamespace)
     ) {
       false
     } else {
