@@ -1128,8 +1128,7 @@ class AstCreator(
     }
 
     val lastStmtIsLiteralIdentifier = compoundStatementAsts.last.root match {
-      case Some(value) => value.isInstanceOf[NewIdentifier]
-      case Some(value) => value.isInstanceOf[NewLiteral]
+      case Some(value) => value.isInstanceOf[NewIdentifier] || value.isInstanceOf[NewLiteral]
       case None        => false
     }
 

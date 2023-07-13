@@ -15,7 +15,7 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
           |class MyClass
           |end
           |""".stripMargin)
-      val Some(myClass) = cpg.typeDecl.nameExact("MyClass").headOption: @unchecked
+      val List(myClass) = cpg.typeDecl.nameExact("MyClass").l
       myClass.name shouldBe "MyClass"
       myClass.fullName shouldBe "Test0.rb::program.MyClass"
     }
@@ -26,7 +26,7 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
           |MyClass = Class.new do
           |end
           |""".stripMargin)
-      val Some(myClass) = cpg.typeDecl.nameExact("MyClass").headOption: @unchecked
+      val List(myClass) = cpg.typeDecl.nameExact("MyClass").l
       myClass.name shouldBe "MyClass"
       myClass.fullName shouldBe "Test0.rb::program.MyClass"
     }
@@ -49,7 +49,7 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
           |
           |end
           |""".stripMargin)
-      val Some(vehicle) = cpg.typeDecl.nameExact("Vehicle").headOption: @unchecked
+      val List(vehicle) = cpg.typeDecl.nameExact("Vehicle").l
       vehicle.name shouldBe "Vehicle"
       vehicle.fullName shouldBe "Test0.rb::program.Vehicle"
 
@@ -74,7 +74,7 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
           |  end
           |end
           |""".stripMargin)
-      val Some(song) = cpg.typeDecl.nameExact("Song").headOption: @unchecked
+      val List(song) = cpg.typeDecl.nameExact("Song").l
       song.name shouldBe "Song"
       song.fullName shouldBe "Test0.rb::program.Song"
 
@@ -100,12 +100,11 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
           |  attr_writer :album
           |end
           |""".stripMargin)
-      val Some(song) = cpg.typeDecl.nameExact("Song").headOption: @unchecked
+      val List(song) = cpg.typeDecl.nameExact("Song").l
       song.name shouldBe "Song"
       song.fullName shouldBe "Test0.rb::program.Song"
 
       val List(name, artist, duration, album) = song.member.l
-
       name.name shouldBe "name"
       artist.name shouldBe "artist"
       duration.name shouldBe "duration"
@@ -139,7 +138,7 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
           |    end
           |end
           |""".stripMargin)
-      val Some(myClass) = cpg.typeDecl.nameExact("MyClass").headOption: @unchecked
+      val List(myClass) = cpg.typeDecl.nameExact("MyClass").l
       myClass.name shouldBe "MyClass"
       myClass.fullName shouldBe "Test0.rb::program.MyClass"
 
@@ -181,7 +180,7 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
           |  private   :method3
           |end
           |""".stripMargin)
-      val Some(myClass) = cpg.typeDecl.nameExact("MyClass").headOption: @unchecked
+      val List(myClass) = cpg.typeDecl.nameExact("MyClass").l
       myClass.name shouldBe "MyClass"
       myClass.fullName shouldBe "Test0.rb::program.MyClass"
 
@@ -225,11 +224,11 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
           |end
           |""".stripMargin)
 
-      val Some(baseType) = cpg.typeDecl.nameExact("GeeksforGeeks").headOption: @unchecked
+      val List(baseType) = cpg.typeDecl.nameExact("GeeksforGeeks").l
       baseType.name shouldBe "GeeksforGeeks"
       baseType.fullName shouldBe "Test0.rb::program.GeeksforGeeks"
 
-      val Some(subType) = cpg.typeDecl.nameExact("Sudo_Placement").headOption: @unchecked
+      val List(subType) = cpg.typeDecl.nameExact("Sudo_Placement").l
       subType.name shouldBe "Sudo_Placement"
       subType.fullName shouldBe "Test0.rb::program.Sudo_Placement"
       subType.inheritsFromTypeFullName shouldBe Seq("Test0.rb::program.GeeksforGeeks")
