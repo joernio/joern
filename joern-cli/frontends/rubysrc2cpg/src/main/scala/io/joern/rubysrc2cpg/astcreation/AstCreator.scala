@@ -150,7 +150,7 @@ class AstCreator(
     val activeRecordAssociation = "<operator>.activeRecordAssociation"
     val undef                   = "<operator>.undef"
     val superKeyword            = "<operator>.super"
-    val concatStringLiteral     = "<operator>.stringConcatenation"
+    val stringConcatenation     = "<operator>.stringConcatenation"
   }
   private def getOperatorName(token: Token): String = token.getType match {
     case ASSIGNMENT_OPERATOR => Operators.assignment
@@ -279,7 +279,7 @@ class AstCreator(
     }
   }
 
-  def astForStringInterpolationPrimaryContext(ctx: StringInterpolationPrimaryContext): Seq[Ast] = {
+  def astForStringInterpolationContext(ctx: InterpolatedStringExpressionContext): Seq[Ast] = {
     val varAsts = ctx
       .stringInterpolation()
       .interpolatedStringSequence()
@@ -329,7 +329,7 @@ class AstCreator(
     case ctx: ArrayConstructorPrimaryContext          => astForArrayConstructorPrimaryContext(ctx)
     case ctx: HashConstructorPrimaryContext           => astForHashConstructorPrimaryContext(ctx)
     case ctx: LiteralPrimaryContext                   => Seq(astForLiteralPrimaryExpression(ctx))
-    case ctx: StringInterpolationPrimaryContext       => astForStringInterpolationPrimaryContext(ctx)
+    case ctx: StringExpressionPrimaryContext          => astForStringExpression(ctx.stringExpression)
     case ctx: IsDefinedPrimaryContext                 => Seq(astForIsDefinedPrimaryExpression(ctx))
     case ctx: SuperExpressionPrimaryContext           => Seq(astForSuperExpression(ctx))
     case ctx: IndexingExpressionPrimaryContext        => astForIndexingExpressionPrimaryContext(ctx)
