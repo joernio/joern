@@ -2,7 +2,7 @@ package io.joern.jssrc2cpg.parser
 
 import ujson.AstTransformer
 import ujson.Value
-import upickle.core.Util
+import upickle.core.ParseUtils
 import upickle.core.Visitor
 import upickle.core.compat.Factory
 import upickle.core.ArrVisitor
@@ -35,7 +35,7 @@ object JsValueVisitor extends AstTransformer[Value] {
     adapted.transform(j, f)
 
   override def visitJsonableObject(length: Int, index: Int): ObjVisitor[Value, Value] =
-    new JsAstObjVisitor[mutable.LinkedHashMap[String, Value]](xs => ujson.Obj(xs))
+    new JsAstObjVisitor[upickle.core.LinkedHashMap[String, Value]](xs => ujson.Obj(xs))
 
   override def visitArray(length: Int, index: Int): ArrVisitor[Value, Value] =
     new JsAstArrVisitor[ArrayBuffer](xs => ujson.Arr(xs))
@@ -58,7 +58,7 @@ object JsValueVisitor extends AstTransformer[Value] {
     } else {
       // We accept the loss of precision here.
       // See: https://github.com/joernio/joern/issues/2440
-      Try(Util.parseIntegralNum(s, decIndex, expIndex, index)) match {
+      Try(ParseUtils.parseIntegralNum(s, decIndex, expIndex, index)) match {
         case Success(num)                      => num.toDouble
         case Failure(_: NumberFormatException) => s.toString.toDouble
         case Failure(other: Throwable)         => throw other

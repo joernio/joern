@@ -27,28 +27,28 @@ import scala.util.{Failure, Success, Try}
 
 class RubySrc2Cpg extends X2CpgFrontend[Config] {
 
+  val global         = new Global()
   private val logger = LoggerFactory.getLogger(this.getClass)
-
-  val global = new Global()
 
   override def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
-      val packageTableInfo = new PackageTable()
+
       new MetaDataPass(cpg, Languages.RUBYSRC, config.inputPath).createAndApply()
       new ConfigFileCreationPass(cpg).createAndApply()
       if (config.enableDependencyDownload && !scala.util.Properties.isWin) {
         val tempDir = File.newTemporaryDirectory()
         try {
           downloadDependency(config.inputPath, tempDir.toString())
-          new AstPackagePass(cpg, tempDir.toString(), global, packageTableInfo, config.inputPath).createAndApply()
+          new AstPackagePass(cpg, tempDir.toString(), global, RubySrc2Cpg.packageTableInfo, config.inputPath)
+            .createAndApply()
         } finally {
           tempDir.delete()
         }
       }
-      val astCreationPass = new AstCreationPass(config.inputPath, cpg, global, packageTableInfo)
+
+      val astCreationPass = new AstCreationPass(config.inputPath, cpg, global, RubySrc2Cpg.packageTableInfo)
       astCreationPass.createAndApply()
       TypeNodePass.withRegisteredTypes(astCreationPass.allUsedTypes(), cpg).createAndApply()
-      new ImportResolverPass(cpg, packageTableInfo).createAndApply()
     }
   }
 
@@ -73,11 +73,14 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
 
 object RubySrc2Cpg {
 
+  val packageTableInfo = new PackageTable()
+
   def postProcessingPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] =
     List(
       // TODO commented below two passes, as waiting on Dependency download PR to get merged
-      // new RubyTypeRecoveryPass(cpg),
-      // new RubyTypeHintCallLinker(cpg),
+      new ImportResolverPass(cpg, packageTableInfo),
+      new RubyTypeRecoveryPass(cpg),
+      new RubyTypeHintCallLinker(cpg),
       new NaiveCallLinker(cpg),
 
       // Some of passes above create new methods, so, we

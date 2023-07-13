@@ -17,7 +17,7 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
           |""".stripMargin)
       val Some(myClass) = cpg.typeDecl.nameExact("MyClass").headOption: @unchecked
       myClass.name shouldBe "MyClass"
-      myClass.fullName shouldBe "Test0.rb::program:MyClass"
+      myClass.fullName shouldBe "Test0.rb::program.MyClass"
     }
 
     // TODO: Need to be fixed.
@@ -28,7 +28,7 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
           |""".stripMargin)
       val Some(myClass) = cpg.typeDecl.nameExact("MyClass").headOption: @unchecked
       myClass.name shouldBe "MyClass"
-      myClass.fullName shouldBe "Test0.rb::program:MyClass"
+      myClass.fullName shouldBe "Test0.rb::program.MyClass"
     }
 
     "generate methods under type declarations" in {
@@ -51,16 +51,16 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
           |""".stripMargin)
       val Some(vehicle) = cpg.typeDecl.nameExact("Vehicle").headOption: @unchecked
       vehicle.name shouldBe "Vehicle"
-      vehicle.fullName shouldBe "Test0.rb::program:Vehicle"
+      vehicle.fullName shouldBe "Test0.rb::program.Vehicle"
 
       val List(speeding, halting, driving) = vehicle.method.l
       speeding.name shouldBe "speeding"
       halting.name shouldBe "halting"
       driving.name shouldBe "driving"
 
-      speeding.fullName shouldBe "Test0.rb::program:Vehicle:speeding"
-      halting.fullName shouldBe "Test0.rb::program:Vehicle:halting"
-      driving.fullName shouldBe "Test0.rb::program:Vehicle:driving"
+      speeding.fullName shouldBe "Test0.rb::program.Vehicle.speeding"
+      halting.fullName shouldBe "Test0.rb::program.Vehicle.halting"
+      driving.fullName shouldBe "Test0.rb::program.Vehicle.driving"
     }
 
     "generate members for various class members under the respective type declaration" in {
@@ -76,10 +76,10 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
           |""".stripMargin)
       val Some(song) = cpg.typeDecl.nameExact("Song").headOption: @unchecked
       song.name shouldBe "Song"
-      song.fullName shouldBe "Test0.rb::program:Song"
+      song.fullName shouldBe "Test0.rb::program.Song"
 
       val List(classInit) = song.method.name(XDefines.StaticInitMethodName).l
-      classInit.fullName shouldBe s"Test0.rb::program:Song:${XDefines.StaticInitMethodName}"
+      classInit.fullName shouldBe s"Test0.rb::program.Song.${XDefines.StaticInitMethodName}"
       val List(playsDef) = classInit.call.nameExact(Operators.fieldAccess).fieldAccess.l
       playsDef.fieldIdentifier.canonicalName.headOption shouldBe Option("plays")
 
@@ -102,7 +102,7 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
           |""".stripMargin)
       val Some(song) = cpg.typeDecl.nameExact("Song").headOption: @unchecked
       song.name shouldBe "Song"
-      song.fullName shouldBe "Test0.rb::program:Song"
+      song.fullName shouldBe "Test0.rb::program.Song"
 
       val List(name, artist, duration, album) = song.member.l
 
@@ -141,7 +141,7 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
           |""".stripMargin)
       val Some(myClass) = cpg.typeDecl.nameExact("MyClass").headOption: @unchecked
       myClass.name shouldBe "MyClass"
-      myClass.fullName shouldBe "Test0.rb::program:MyClass"
+      myClass.fullName shouldBe "Test0.rb::program.MyClass"
 
       val List(_, m1, m2, m3, m4) = myClass.method.l
       m1.name shouldBe "method1"
@@ -149,10 +149,10 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
       m3.name shouldBe "method3"
       m4.name shouldBe "method4"
 
-      m1.fullName shouldBe "Test0.rb::program:MyClass:method1"
-      m2.fullName shouldBe "Test0.rb::program:MyClass:method2"
-      m3.fullName shouldBe "Test0.rb::program:MyClass:method3"
-      m4.fullName shouldBe "Test0.rb::program:MyClass:method4"
+      m1.fullName shouldBe "Test0.rb::program.MyClass.method1"
+      m2.fullName shouldBe "Test0.rb::program.MyClass.method2"
+      m3.fullName shouldBe "Test0.rb::program.MyClass.method3"
+      m4.fullName shouldBe "Test0.rb::program.MyClass.method4"
 
       m1.modifier.modifierType.l shouldBe List(ModifierTypes.PUBLIC)
       m2.modifier.modifierType.l shouldBe List(ModifierTypes.PROTECTED)
@@ -183,7 +183,7 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
           |""".stripMargin)
       val Some(myClass) = cpg.typeDecl.nameExact("MyClass").headOption: @unchecked
       myClass.name shouldBe "MyClass"
-      myClass.fullName shouldBe "Test0.rb::program:MyClass"
+      myClass.fullName shouldBe "Test0.rb::program.MyClass"
 
       val List(m1, m2, m3, m4) = myClass.method.l
       m1.name shouldBe "method1"
@@ -191,10 +191,10 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
       m3.name shouldBe "method3"
       m4.name shouldBe "method4"
 
-      m1.fullName shouldBe "Test0.rb::program:MyClass:method1"
-      m2.fullName shouldBe "Test0.rb::program:MyClass:method2"
-      m3.fullName shouldBe "Test0.rb::program:MyClass:method3"
-      m4.fullName shouldBe "Test0.rb::program:MyClass:method4"
+      m1.fullName shouldBe "Test0.rb::program.MyClass.method1"
+      m2.fullName shouldBe "Test0.rb::program.MyClass.method2"
+      m3.fullName shouldBe "Test0.rb::program.MyClass.method3"
+      m4.fullName shouldBe "Test0.rb::program.MyClass.method4"
 
       m1.modifier.modifierType.l shouldBe List(ModifierTypes.PUBLIC)
       m2.modifier.modifierType.l shouldBe List(ModifierTypes.PROTECTED)
@@ -227,12 +227,12 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
 
       val Some(baseType) = cpg.typeDecl.nameExact("GeeksforGeeks").headOption: @unchecked
       baseType.name shouldBe "GeeksforGeeks"
-      baseType.fullName shouldBe "Test0.rb::program:GeeksforGeeks"
+      baseType.fullName shouldBe "Test0.rb::program.GeeksforGeeks"
 
       val Some(subType) = cpg.typeDecl.nameExact("Sudo_Placement").headOption: @unchecked
       subType.name shouldBe "Sudo_Placement"
-      subType.fullName shouldBe "Test0.rb::program:Sudo_Placement"
-      subType.inheritsFromTypeFullName shouldBe Seq("Test0.rb::program:GeeksforGeeks")
+      subType.fullName shouldBe "Test0.rb::program.Sudo_Placement"
+      subType.inheritsFromTypeFullName shouldBe Seq("Test0.rb::program.GeeksforGeeks")
     }
 
   }

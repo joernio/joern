@@ -163,6 +163,9 @@ trait AstForStatementsCreator {
         resolveRequireOrLoadPath(argsAsts, callNode)
       } else if (callNode.name == "require_relative") {
         resolveRelativePath(filename, argsAsts, callNode)
+      } else if (methodNames.contains(getActualMethodName(callNode.name))) {
+        val thisNode = identifierNode(ctx, "this", "this", classStack.reverse.mkString(pathSep))
+        Seq(callAst(callNode, argsAsts, Some(Ast(thisNode))))
       } else {
         Seq(callAst(callNode, argsAsts))
       }

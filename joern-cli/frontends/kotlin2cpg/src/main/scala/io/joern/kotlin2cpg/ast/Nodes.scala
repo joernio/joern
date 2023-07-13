@@ -5,21 +5,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewJumpTarget, N
 
 object Nodes {
 
-  def jumpTargetNode(
-    code: String,
-    name: String,
-    parserTypeName: String,
-    line: Option[Integer] = None,
-    column: Option[Integer] = None
-  ): NewJumpTarget = {
-    NewJumpTarget()
-      .code(code)
-      .name(name)
-      .parserTypeName(parserTypeName)
-      .lineNumber(line)
-      .columnNumber(column)
-  }
-
   def modifierNode(_type: String): NewModifier = {
     NewModifier()
       .modifierType(_type)
