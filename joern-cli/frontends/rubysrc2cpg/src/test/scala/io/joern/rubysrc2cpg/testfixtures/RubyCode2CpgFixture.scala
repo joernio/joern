@@ -34,7 +34,6 @@ class DefaultTestCpgWithRuby(withPostProcessing: Boolean, withDataFlow: Boolean,
     if (withPostProcessing) {
       packageTable match {
         case Some(table) =>
-          RubySrc2Cpg.packageTableInfo.clear()
           RubySrc2Cpg.packageTableInfo.set(table)
         case None =>
       }
