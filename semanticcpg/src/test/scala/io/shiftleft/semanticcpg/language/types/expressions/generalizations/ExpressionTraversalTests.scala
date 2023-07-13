@@ -25,7 +25,7 @@ class ExpressionTraversalTests extends AnyWordSpec with Matchers {
 
   "generic cpg" should {
     "expand to next expression in CFG" in {
-      val List(x: Call) = cpg.method.name("methodForCfgTest").cfgFirst.cfgNext.isExpression.l: @unchecked
+      val List(x) = cpg.method.name("methodForCfgTest").cfgFirst.cfgNext.isCall.l
       x.name shouldBe "call2"
     }
 
@@ -34,8 +34,7 @@ class ExpressionTraversalTests extends AnyWordSpec with Matchers {
     }
 
     "expand to previous expression in CFG" in {
-      val List(x: Call) =
-        cpg.method.name("methodForCfgTest").cfgLast.cfgPrev.isExpression.l: @unchecked
+      val List(x) = cpg.method.name("methodForCfgTest").cfgLast.cfgPrev.isCall.l
       x.name shouldBe "call1"
     }
 
