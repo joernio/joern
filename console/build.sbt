@@ -3,7 +3,7 @@ name := "console"
 enablePlugins(JavaAppPackaging)
 
 val ScoptVersion          = "4.1.0"
-val CaskVersion           = "0.8.3"
+val CaskVersion           = "0.9.1"
 val CirceVersion          = "0.14.5"
 val ZeroturnaroundVersion = "1.15"
 
@@ -25,7 +25,7 @@ libraryDependencies ++= Seq(
   "io.circe"             %% "circe-generic"     % CirceVersion,
   "io.circe"             %% "circe-parser"      % CirceVersion,
   "org.zeroturnaround"    % "zt-zip"            % ZeroturnaroundVersion,
-  "com.lihaoyi"          %% "os-lib"            % "0.8.1",
+  "com.lihaoyi"          %% "os-lib"            % "0.9.1",
   "com.lihaoyi"          %% "pprint"            % "0.7.3",
   "com.lihaoyi"          %% "cask"              % CaskVersion,
   "org.scalatest"        %% "scalatest"         % Versions.scalatest % Test

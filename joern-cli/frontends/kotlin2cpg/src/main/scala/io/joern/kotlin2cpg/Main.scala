@@ -13,7 +13,8 @@ final case class Config(
   gradleProjectName: Option[String] = None,
   gradleConfigurationName: Option[String] = None,
   jar4importServiceUrl: Option[String] = None,
-  includeJavaSourceFiles: Boolean = false
+  includeJavaSourceFiles: Boolean = false,
+  generateNodesForDependencies: Boolean = false
 ) extends X2CpgConfig[Config] {
 
   def withClasspath(classpath: Set[String]): Config = {
@@ -42,6 +43,10 @@ final case class Config(
 
   def withIncludeJavaSourceFiles(value: Boolean): Config = {
     this.copy(includeJavaSourceFiles = value).withInheritedFields(this)
+  }
+
+  def withGenerateNodesForDependencies(value: Boolean): Config = {
+    this.copy(generateNodesForDependencies = value).withInheritedFields(this)
   }
 }
 
@@ -75,7 +80,10 @@ private object Frontend {
         .action((value, c) => c.withGradleConfigurationName(value)),
       opt[Unit]("include-java-sources")
         .text("Include Java sources in the resulting CPG")
-        .action((_, c) => c.withIncludeJavaSourceFiles(true))
+        .action((_, c) => c.withIncludeJavaSourceFiles(true)),
+      opt[Unit]("generate-nodes-for-dependencies")
+        .text("Generate nodes for the dependencies of the target project")
+        .action((_, c) => c.withGenerateNodesForDependencies(true))
     )
   }
 }
