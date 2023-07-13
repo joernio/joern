@@ -284,7 +284,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       callNode.name shouldBe "puts"
       callNode.lineNumber shouldBe Some(1)
 
-      val List(literalArg: Literal) = callNode.argument.l: @unchecked
+      val List(literalArg) = callNode.argument.isLiteral.l
       literalArg.argumentIndex shouldBe 1
       literalArg.typeFullName shouldBe Defines.Regexp
       literalArg.code shouldBe "/x/"
@@ -732,13 +732,13 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       controlNode.lineNumber shouldBe Some(1)
       controlNode.columnNumber shouldBe Some(0)
 
-      val List(a: Identifier) = controlNode.condition.l: @unchecked
+      val List(a) = controlNode.condition.isIdentifier.l
       a.code shouldBe "a"
       a.name shouldBe "a"
       a.lineNumber shouldBe Some(1)
       a.columnNumber shouldBe Some(0)
 
-      val List(_, b: Identifier, c: Identifier) = controlNode.astChildren.l: @unchecked
+      val List(_, b, c) = controlNode.astChildren.isIdentifier.l
       b.code shouldBe "b"
       b.name shouldBe "b"
       b.lineNumber shouldBe Some(1)
@@ -818,7 +818,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       callNode.name shouldBe "<operator>.super"
       callNode.lineNumber shouldBe Some(1)
 
-      val List(literalArg: Literal) = callNode.argument.l: @unchecked
+      val List(literalArg) = callNode.argument.isLiteral.l
       literalArg.argumentIndex shouldBe 1
       literalArg.code shouldBe "1"
       literalArg.lineNumber shouldBe Some(1)
@@ -832,7 +832,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       callNode.name shouldBe "<operator>.super"
       callNode.lineNumber shouldBe Some(1)
 
-      val List(literalArg: Literal) = callNode.argument.l: @unchecked
+      val List(literalArg) = callNode.argument.isLiteral.l
       literalArg.argumentIndex shouldBe 1
       literalArg.code shouldBe "1"
       literalArg.lineNumber shouldBe Some(1)
@@ -851,12 +851,16 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val callWithoutParen = cpg.call("foo").lineNumber(6).l
       val callWithParen    = cpg.call("foo").lineNumber(7).l
 
-      val List(base1: Identifier, argument1: Literal) = callWithoutParen.argument.l
+      val List(base1) = callWithoutParen.argument.isIdentifier.l
       base1.typeFullName shouldBe "Test0.rb::program"
+
+      val List(argument1) = callWithoutParen.argument.isLiteral.l
       argument1.code shouldBe "123"
 
-      val List(base2: Identifier, argument2: Literal) = callWithParen.argument.l
+      val List(base2) = callWithParen.argument.isIdentifier.l
       base2.typeFullName shouldBe "Test0.rb::program"
+
+      val List(argument2) = callWithParen.argument.isLiteral.l
       argument2.code shouldBe "132"
     }
   }
