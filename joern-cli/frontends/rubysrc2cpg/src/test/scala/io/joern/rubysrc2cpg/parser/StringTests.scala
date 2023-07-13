@@ -49,6 +49,31 @@ class StringTests extends RubyParserAbstractTest {
             |    'y'""".stripMargin
       }
     }
+
+    "separated by '\\\\n' twice" should {
+      val code =
+        """'x' \
+          | 'y' \
+          | 'z'""".stripMargin
+
+      "be parsed as a primary expression" in {
+        printAst(_.primary(), code) shouldEqual
+          """StringExpressionPrimary
+            | ConcatenatedStringExpression
+            |  SimpleStringExpression
+            |   SingleQuotedStringLiteral
+            |    'x'
+            |   \
+            |  ConcatenatedStringExpression
+            |   SimpleStringExpression
+            |    SingleQuotedStringLiteral
+            |     'y'
+            |    \
+            |   SimpleStringExpression
+            |    SingleQuotedStringLiteral
+            |     'z'""".stripMargin
+      }
+    }
   }
 
   "A double-quoted string literal" when {
