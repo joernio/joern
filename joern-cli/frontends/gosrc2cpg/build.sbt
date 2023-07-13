@@ -10,7 +10,7 @@ dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->t
 libraryDependencies ++= Seq(
   "io.shiftleft"              %% "codepropertygraph" % Versions.cpg,
   "org.scalatest"             %% "scalatest"         % Versions.scalatest % Test,
-  "com.lihaoyi"               %% "upickle"           % "2.0.0",
+  "com.lihaoyi"               %% "upickle"           % Versions.upickle,
   "com.fasterxml.jackson.core" % "jackson-databind"  % "2.15.2",
   "com.typesafe"               % "config"            % "1.4.2",
   "com.michaelpollmeier"       % "versionsort"       % "1.0.11",

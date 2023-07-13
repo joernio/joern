@@ -1702,7 +1702,7 @@ trait KtPsiToAst {
     val name =
       if (entry.getElseKeyword == null) Constants.defaultCaseNode
       else s"${Constants.caseNodePrefix}$argIdx"
-    val jumpNode = jumpTargetNode(entry.getText, name, Constants.caseNodeParserTypeName, line(entry), column(entry))
+    val jumpNode = jumpTargetNode(entry, name, entry.getText, Some(Constants.caseNodeParserTypeName))
       .argumentIndex(argIdx)
     val exprNode = astsForExpression(entry.getExpression, Some(argIdx + 1)).headOption.getOrElse(Ast())
     Seq(Ast(jumpNode), exprNode)

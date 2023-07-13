@@ -103,7 +103,7 @@ trait AstCreatorHelper { this: AstCreator =>
   protected def safeBool(node: Value, key: String): Option[Boolean] =
     if (hasKey(node, key)) Try(node(key).bool).toOption else None
 
-  protected def safeObj(node: Value, key: String): Option[mutable.LinkedHashMap[String, Value]] = Try(
+  protected def safeObj(node: Value, key: String): Option[upickle.core.LinkedHashMap[String, Value]] = Try(
     node(key).obj
   ) match {
     case Success(value) if value.nonEmpty => Option(value)
