@@ -130,7 +130,7 @@ class OperatorExtensionTests extends AnyWordSpec with Matchers {
 
       val List(target) = cpg.assignment.target.isIdentifier.l
       target.name shouldBe "x"
-      val List(source) = cpg.assignment.isIdentifier.l
+      val List(source) = cpg.assignment.source.isIdentifier.l
       source.name shouldBe "y"
     }
 
