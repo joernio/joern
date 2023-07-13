@@ -1779,7 +1779,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
   }
 
   // TODO:
-  "Data flow for astForChainedCommandWithDoBlockContext without parantheses" ignore {
+  "Data flow for chained command with do-block without parentheses" ignore {
     val cpg = code(
       """
         |x=10
@@ -1802,7 +1802,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
   }
 
   // TODO:
-  "Data flow for ChainedCommandWithDoBlockContext with parantheses" ignore {
+  "Data flow for chained command with do-block with parentheses" ignore {
     val cpg = code(
       """
         |x=10
@@ -1812,7 +1812,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
         |
         |y = greet x do
         |    [1,2,3,4,5]
-        |end.sum 2
+        |end.sum(2)
         |
         |puts y
         |""".stripMargin)
@@ -1848,7 +1848,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
   }
 
   // TODO:
-  "Data flow for ExpressionsAndChainedCommandWithDoBlockArgumentsWithParenthesesContext" ignore {
+  "Data flow for expressions and chained commands and do block args with parentheses" ignore {
     val cpg = code(
       """
         |x=10
@@ -1876,7 +1876,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
   }
 
   // TODO:
-  "Data flow for ChainedCommandWithDoBlockOnlyArgumentsWithParenthesesContext" ignore {
+  "Data flow for chained command with do block as only argument with parentheses" ignore {
     val cpg = code(
       """
         |x=10
@@ -1925,7 +1925,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     }
   }
   // TODO:
-  "Data flow for ChainedInvocationWithoutArgumentsPrimaryContext" ignore {
+  "Data flow for chained invocation without argument" ignore {
     val cpg = code(
       """
         |x=10
@@ -1966,7 +1966,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     }
   }
 
-  "Data flow through InvocationExpressionOrCommand with EMARK" should {
+  "Data flow through invocation or command with EMARK" should {
     val cpg = code(
       """
         |x=12
@@ -1988,7 +1988,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     }
   }
   // TODO:
-  "Data flow through OperatorMethodddFullName" ignore {
+  "Data flow through overloaded operator method" ignore {
     val cpg = code(
       """
         |class Foo
@@ -2011,7 +2011,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
   }
 
   // TODO:
-  "Data flow through assignmentLikeMethodIdentifier" ignore {
+  "Data flow through assignment-like method identifier" ignore {
     val cpg = code(
       """
         |class Foo
@@ -2031,7 +2031,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
   }
 
   // TODO:
-  "Data flow through whenArgumentContext" ignore {
+  "Data flow through a when argument context" ignore {
     val cpg = code(
       """
         |x = 10
