@@ -71,8 +71,8 @@ private class RecoverForRubyFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, 
     val memberTypes = methodFullNames.flatMap { fullName =>
       val memberName = fullName.split("\\.").lastOption
       if (memberName.isDefined) {
-        val typeDeclName = fullName.stripSuffix(memberName.get).stripSuffix(".")
-        cpg.typeDecl.nameExact(typeDeclName).member.nameExact(memberName.get).typeFullName.l
+        val typeDeclFullName = fullName.stripSuffix(s".${memberName.get}")
+        cpg.typeDecl.fullName(typeDeclFullName).member.nameExact(memberName.get).typeFullName.l
       } else
         List.empty
     }.toSet
