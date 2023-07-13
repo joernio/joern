@@ -6,6 +6,7 @@ import io.joern.gosrc2cpg.utils.Operator
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 
+import scala.annotation.tailrec
 import scala.util.Try
 
 trait AstForStatementsCreator { this: AstCreator =>
@@ -23,14 +24,20 @@ trait AstForStatementsCreator { this: AstCreator =>
     blockAst(newBlockNode, childAsts.toList)
   }
 
+  @tailrec
   private def astsForStatement(statement: ParserNodeInfo, argIndex: Int = -1): Seq[Ast] = {
     statement.node match {
-      case AssignStmt => astForAssignStatement(statement)
-      case BlockStmt  => Seq(astForBlockStatement(statement, argIndex))
-      case DeclStmt   => astForDeclStatement(statement)
-      case IfStmt     => Seq(astForIfStatement(statement))
-      case IncDecStmt => Seq(astForIncDecStatement(statement))
-      case _          => Seq()
+      case AssignStmt     => astForAssignStatement(statement)
+      case BlockStmt      => Seq(astForBlockStatement(statement, argIndex))
+      case CaseClause     => astForCaseClause(statement)
+      case DeclStmt       => astForDeclStatement(statement)
+      case ExprStmt       => astsForStatement(createParserNodeInfo(statement.json(ParserKeys.X)))
+      case IfStmt         => Seq(astForIfStatement(statement))
+      case IncDecStmt     => Seq(astForIncDecStatement(statement))
+      case SwitchStmt     => Seq(astForSwitchStatement(statement))
+      case TypeAssertExpr => astForNode(statement.json(ParserKeys.X))
+      case TypeSwitchStmt => Seq(astForTypeSwitchStatement(statement))
+      case _              => astForNode(statement.json)
     }
   }
 
@@ -100,7 +107,7 @@ trait AstForStatementsCreator { this: AstCreator =>
   private def astForConditionExpression(condStmt: ParserNodeInfo): Ast = {
     condStmt.node match {
       case ParenExpr => astForNode(condStmt.json(ParserKeys.X)).head
-      case _         => Ast()
+      case _         => astsForStatement(condStmt).headOption.getOrElse(Ast())
     }
   }
 
@@ -133,4 +140,45 @@ trait AstForStatementsCreator { this: AstCreator =>
     controlStructureAst(ifNode, Some(conditionAst), Seq(thenAst, elseAst))
   }
 
+  private def astForSwitchStatement(switchStmt: ParserNodeInfo): Ast = {
+
+    val conditionParserNode = Try(createParserNodeInfo(switchStmt.json(ParserKeys.Tag)))
+    val (code, conditionAst) = conditionParserNode.toOption match {
+      case Some(node) => (node.code, Some(astForConditionExpression(node)))
+      case _          => ("", None)
+    }
+    val switchNode = controlStructureNode(switchStmt, ControlStructureTypes.SWITCH, s"switch $code")
+    val stmtAsts   = astsForStatement(createParserNodeInfo(switchStmt.json(ParserKeys.Body)))
+    controlStructureAst(switchNode, conditionAst, stmtAsts)
+  }
+
+  private def astForTypeSwitchStatement(typeSwitchStmt: ParserNodeInfo): Ast = {
+
+    val conditionParserNode = Try(createParserNodeInfo(typeSwitchStmt.json(ParserKeys.Assign)))
+    val (code, conditionAst) = conditionParserNode.toOption match {
+      case Some(node) => (node.code, Some(astForConditionExpression(node)))
+      case _          => ("", None)
+    }
+    val switchNode = controlStructureNode(typeSwitchStmt, ControlStructureTypes.SWITCH, s"switch $code")
+    val stmtAsts   = astsForStatement(createParserNodeInfo(typeSwitchStmt.json(ParserKeys.Body)))
+    controlStructureAst(switchNode, conditionAst, stmtAsts)
+  }
+
+  private def astForCaseClause(caseStmt: ParserNodeInfo): Seq[Ast] = {
+    val caseClauseAst = caseStmt.json(ParserKeys.List).arrOpt match {
+      case Some(caseConditionList) =>
+        caseConditionList.flatMap { caseConditionNode =>
+          val caseConditionParserNode = createParserNodeInfo(caseConditionNode)
+          val jumpTarget              = jumpTargetNode(caseStmt, "case", s"case ${caseConditionParserNode.code}")
+          val labelAsts               = astForNode(caseConditionNode).toList
+          Ast(jumpTarget) :: labelAsts
+        }
+      case _ =>
+        val target = jumpTargetNode(caseStmt, "default", "default")
+        Seq(Ast(target))
+    }
+
+    val caseBodyAst = caseStmt.json(ParserKeys.Body).arr.map(createParserNodeInfo).flatMap(astsForStatement(_)).toList
+    caseClauseAst ++: caseBodyAst
+  }
 }

@@ -1,10 +1,10 @@
 package io.joern.rubysrc2cpg.dataflow
 
-import io.joern.dataflowengineoss.language._
-import io.joern.rubysrc2cpg.testfixtures.DataFlowCodeToCpgSuite
-import io.shiftleft.semanticcpg.language._
+import io.joern.dataflowengineoss.language.*
+import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.shiftleft.semanticcpg.language.*
 
-class DataFlowTests extends DataFlowCodeToCpgSuite {
+class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withDataFlow = true) {
 
   "Data flow through if-elseif-else" should {
     val cpg = code("""
@@ -1726,6 +1726,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
     val cpg = code(
       """
         |def foo(arg)
+        | puts arg
         | loop do
         | arg += 1
         |  if arg > 3
@@ -1748,10 +1749,15 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
 
     "be found in" in {
       val source = cpg.literal.code("1").l
-      val sink   = cpg.call.name("puts").argument(1).l
+      val sink   = cpg.call.name("puts").argument(1).lineNumber(3).l
       sink.reachableByFlows(source).size shouldBe 1
+      val src = cpg.identifier("x").lineNumber(3).l
+      sink.reachableByFlows(src).size shouldBe 1
+    }
 
-      val src = cpg.identifier("x").l
+    "be found for sink in nested block" in {
+      val src  = cpg.identifier("x").lineNumber(3).l
+      val sink = cpg.call.name("puts").argument(1).lineNumber(7).l
       sink.reachableByFlows(src).size shouldBe 1
     }
   }

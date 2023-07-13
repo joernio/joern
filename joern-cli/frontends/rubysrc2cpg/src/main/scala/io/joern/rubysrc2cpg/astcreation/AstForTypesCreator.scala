@@ -33,7 +33,7 @@ trait AstForTypesCreator { this: AstCreator =>
     val className = ctx.className(baseClassName)
     if (className != Defines.Any) {
       classStack.push(className)
-      val fullName = classStack.reverse.mkString(":")
+      val fullName = classStack.reverse.mkString(pathSep)
 
       val bodyAst = astForClassBody(ctx.classDefinition().bodyStatement())
 

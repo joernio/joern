@@ -169,4 +169,149 @@ class AstCreationPassTests extends GoCodeToCpgSuite {
         .headOption shouldBe Some(("y", "1"))
     }
   }
+
+  "be correct for switch case 1" in {
+
+    val cpg = code("""
+        |package main
+        |func method() {
+        |  var marks int = 90
+        |  var grade string = "B"
+        |  switch marks {
+        |      case 90: grade = "A"
+        |      case 50,60,70: grade = "C"
+        |      default: grade = "D"
+        |   }
+        |}
+    """.stripMargin)
+    inside(cpg.method.name("method").controlStructure.l) { case List(controlStruct: ControlStructure) =>
+      controlStruct.code shouldBe "switch marks"
+      controlStruct.controlStructureType shouldBe ControlStructureTypes.SWITCH
+      inside(controlStruct.astChildren.l) { case List(cond: Identifier, switchBlock: Block) =>
+        cond.code shouldBe "marks"
+        switchBlock.astChildren.size shouldBe 12
+        switchBlock.astChildren.code.l shouldBe List(
+          "case 90",
+          "90",
+          "grade = \"A\"",
+          "case 50",
+          "50",
+          "case 60",
+          "60",
+          "case 70",
+          "70",
+          "grade = \"C\"",
+          "default",
+          "grade = \"D\""
+        )
+      }
+    }
+  }
+
+  "be correct for switch case 2" in {
+
+    val cpg = code("""
+        |package main
+        |func method() {
+        |  var marks int = 90
+        |  var grade string = "B"
+        |  switch {
+        |      case grade == "A" :
+        |         marks = 95
+        |      case grade == "B":
+        |         marks = 80
+        |   }
+        |}
+    """.stripMargin)
+    inside(cpg.method.name("method").controlStructure.l) { case List(controlStruct: ControlStructure) =>
+      controlStruct.code shouldBe "switch "
+      controlStruct.controlStructureType shouldBe ControlStructureTypes.SWITCH
+      inside(controlStruct.astChildren.l) { case List(switchBlock: Block) =>
+        switchBlock.astChildren.size shouldBe 6
+        switchBlock.astChildren.code.l shouldBe List(
+          "case grade == \"A\"",
+          "grade == \"A\"",
+          "marks = 95",
+          "case grade == \"B\"",
+          "grade == \"B\"",
+          "marks = 80"
+        )
+      }
+    }
+  }
+
+  "be correct for switch case 3" ignore {
+
+    val cpg = code("""
+        |package main
+        |func method() {
+        |   var x interface{}
+        |   var y int = 6
+        |   switch i := x.(type) {
+        |      case nil:
+        |         y = 5
+        |      case int:
+        |         y = 8
+        |      case float64:
+        |         y= 12
+        |   }
+        |}
+    """.stripMargin)
+    inside(cpg.method.name("method").controlStructure.l) { case List(controlStruct: ControlStructure) =>
+      controlStruct.code shouldBe "switch i := x.(type)"
+      controlStruct.controlStructureType shouldBe ControlStructureTypes.SWITCH
+      inside(controlStruct.astChildren.l) { case List(assignment: Call, switchBlock: Block) =>
+        switchBlock.astChildren.size shouldBe 9
+        switchBlock.astChildren.code.l shouldBe List(
+          "case nil",
+          "nil",
+          "y = 5",
+          "case int",
+          "int",
+          "y = 8",
+          "case float64",
+          "float64",
+          "y = 12"
+        )
+      }
+    }
+  }
+
+  "be correct for switch case 4" in {
+
+    val cpg = code("""
+        |package main
+        |func method() {
+        |   var x interface{}
+        |   var y int = 6
+        |   switch x.(type) {
+        |      case nil:
+        |         y = 5
+        |      case int:
+        |         y = 8
+        |      case float64:
+        |         y = 12
+        |   }
+        |}
+    """.stripMargin)
+    inside(cpg.method.name("method").controlStructure.l) { case List(controlStruct: ControlStructure) =>
+      controlStruct.code shouldBe "switch x.(type)"
+      controlStruct.controlStructureType shouldBe ControlStructureTypes.SWITCH
+      inside(controlStruct.astChildren.l) { case List(identifier: Identifier, switchBlock: Block) =>
+        identifier.code shouldBe "x"
+        switchBlock.astChildren.size shouldBe 9
+        switchBlock.astChildren.code.l shouldBe List(
+          "case nil",
+          "nil",
+          "y = 5",
+          "case int",
+          "int",
+          "y = 8",
+          "case float64",
+          "float64",
+          "y = 12"
+        )
+      }
+    }
+  }
 }

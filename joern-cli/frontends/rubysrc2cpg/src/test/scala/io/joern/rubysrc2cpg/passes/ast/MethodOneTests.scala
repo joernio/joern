@@ -19,7 +19,7 @@ class MethodOneTests extends RubyCode2CpgFixture {
       inside(cpg.method.name("foo").l) { case List(x) =>
         x.name shouldBe "foo"
         x.isExternal shouldBe false
-        x.fullName shouldBe "Test0.rb::program:foo"
+        x.fullName shouldBe "Test0.rb::program.foo"
         x.code should startWith("def foo(a, b)")
         x.isExternal shouldBe false
         x.order shouldBe 1
@@ -52,24 +52,24 @@ class MethodOneTests extends RubyCode2CpgFixture {
 
     // TODO: need to be fixed.
     "test corresponding type, typeDecl and binding" ignore {
-      cpg.method.fullName("Test0.rb::program:foo").referencingBinding.bindingTypeDecl.l should not be empty
+      cpg.method.fullName("Test0.rb::program.foo").referencingBinding.bindingTypeDecl.l should not be empty
       val bindingTypeDecl =
-        cpg.method.fullName("Test0.rb::program:foo").referencingBinding.bindingTypeDecl.head
+        cpg.method.fullName("Test0.rb::program.foo").referencingBinding.bindingTypeDecl.head
 
       bindingTypeDecl.name shouldBe "foo"
-      bindingTypeDecl.fullName shouldBe "Test0.rb::program:foo"
+      bindingTypeDecl.fullName shouldBe "Test0.rb::program.foo"
       bindingTypeDecl.referencingType.name.head shouldBe "foo"
-      bindingTypeDecl.referencingType.fullName.head shouldBe "Test0.rb::program:foo"
+      bindingTypeDecl.referencingType.fullName.head shouldBe "Test0.rb::program.foo"
     }
 
     "test method parameter nodes" in {
       cpg.method.name("foo").parameter.name.l.size shouldBe 2
-      val parameter1 = cpg.method.fullName("Test0.rb::program:foo").parameter.order(1).head
+      val parameter1 = cpg.method.fullName("Test0.rb::program.foo").parameter.order(1).head
       parameter1.name shouldBe "a"
       parameter1.index shouldBe 1
       parameter1.typeFullName shouldBe "ANY"
 
-      val parameter2 = cpg.method.fullName("Test0.rb::program:foo").parameter.order(2).head
+      val parameter2 = cpg.method.fullName("Test0.rb::program.foo").parameter.order(2).head
       parameter2.name shouldBe "b"
       parameter2.index shouldBe 2
       parameter2.typeFullName shouldBe "ANY"

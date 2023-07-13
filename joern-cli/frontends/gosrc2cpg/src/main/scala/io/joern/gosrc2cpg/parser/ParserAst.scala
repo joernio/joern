@@ -14,31 +14,38 @@ object ParserAst {
   }
   sealed trait BaseExprStmt extends ParserNode
 
-  object File         extends ParserNode
-  object GenDecl      extends ParserNode
-  object ImportSpec   extends ParserNode
-  object BasicLit     extends ParserNode
-  object FuncDecl     extends ParserNode
-  object BlockStmt    extends ParserNode
-  object DeclStmt     extends ParserNode
-  object ValueSpec    extends ParserNode
-  object Ident        extends ParserNode
-  object AssignStmt   extends ParserNode
-  object ExprStmt     extends BaseExprStmt
-  object BinaryExpr   extends BaseExprStmt
-  object UnaryExpr    extends BaseExprStmt
-  object StarExpr     extends BaseExprStmt
-  object IncDecStmt   extends ParserNode
-  object IfStmt       extends ParserNode
-  object ParenExpr    extends BaseExprStmt
-  object ReturnStmt   extends ParserNode
-  object FuncType     extends ParserNode
-  object Ellipsis     extends ParserNode
-  object SelectorExpr extends ParserNode
+  object File       extends ParserNode
+  object GenDecl    extends ParserNode
+  object ImportSpec extends ParserNode
+  object BasicLit   extends ParserNode
+  object FuncDecl   extends ParserNode
+  object BlockStmt  extends ParserNode
+  object DeclStmt   extends ParserNode
+  object ValueSpec  extends ParserNode
+  object Ident      extends ParserNode
+  object AssignStmt extends ParserNode
+  object ExprStmt   extends BaseExprStmt
+  object BinaryExpr extends BaseExprStmt
+  object UnaryExpr  extends BaseExprStmt
+  object StarExpr   extends BaseExprStmt
+
+  object IncDecStmt     extends ParserNode
+  object IfStmt         extends ParserNode
+  object ParenExpr      extends BaseExprStmt
+  object SwitchStmt     extends ParserNode
+  object CaseClause     extends ParserNode
+  object TypeSwitchStmt extends ParserNode
+  object TypeAssertExpr extends BaseExprStmt
+  object InterfaceType  extends ParserNode
+  object ReturnStmt     extends ParserNode
+  object FuncType       extends ParserNode
+  object Ellipsis       extends ParserNode
+  object SelectorExpr   extends ParserNode
 }
 
 object ParserKeys {
 
+  val Assign        = "Assign"
   val Body          = "Body"
   val Cond          = "Cond"
   val Decl          = "Decl"
@@ -59,6 +66,7 @@ object ParserKeys {
   val Path          = "Path"
   val Rhs           = "Rhs"
   val Specs         = "Specs"
+  val Tag           = "Tag"
   val Tok           = "Tok"
   val Type          = "Type"
   val Value         = "Value"

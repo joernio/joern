@@ -1,14 +1,15 @@
 package io.joern.kotlin2cpg
 
 import better.files.File
+
 import java.nio.file.{Files, Paths}
 import org.jetbrains.kotlin.psi.KtFile
 import org.slf4j.LoggerFactory
+
 import scala.util.Try
 import scala.jdk.CollectionConverters.{CollectionHasAsScala, EnumerationHasAsScala}
-
 import io.joern.kotlin2cpg.files.SourceFilesPicker
-import io.joern.kotlin2cpg.passes.{AstCreationPass, ConfigPass}
+import io.joern.kotlin2cpg.passes.{AstCreationPass, ConfigPass, DependenciesFromMavenCoordinatesPass}
 import io.joern.kotlin2cpg.compiler.{CompilerAPI, ErrorLoggingMessageCollector}
 import io.joern.kotlin2cpg.types.{ContentSourcesPicker, DefaultTypeInfoProvider}
 import io.joern.kotlin2cpg.utils.PathUtils
@@ -20,7 +21,7 @@ import io.joern.kotlin2cpg.interop.JavasrcInterop
 import io.joern.kotlin2cpg.jar4import.UsesService
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.utils.IOUtils
 
 object Kotlin2Cpg {
@@ -85,6 +86,11 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
         Seq()
       }
 
+      val mavenCoordinates = if (config.generateNodesForDependencies) {
+        logger.info(s"Fetching maven coordinates.")
+        fetchMavenCoordinates(sourceDir, config)
+      } else Seq()
+
       val jarsAtConfigClassPath = findJarsIn(config.classpath)
       if (config.classpath.nonEmpty) {
         if (jarsAtConfigClassPath.nonEmpty) {
@@ -143,6 +149,9 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
       val configCreator = new ConfigPass(configFiles, cpg)
       configCreator.createAndApply()
 
+      val dependenciesFromMavenCoordinatesPass = new DependenciesFromMavenCoordinatesPass(mavenCoordinates, cpg)
+      dependenciesFromMavenCoordinatesPass.createAndApply()
+
       val hasAtLeastOneMethodNode = cpg.method.take(1).nonEmpty
       if (!hasAtLeastOneMethodNode) {
         logger.warn("Resulting CPG does not contain any METHOD nodes.")
@@ -176,6 +185,25 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
       case None =>
         logger.warn(s"Could not fetch dependencies for project at path $sourceDir")
         println("Could not fetch dependencies when explicitly asked to. Exiting.")
+        System.exit(1)
+        Seq()
+    }
+  }
+
+  private def fetchMavenCoordinates(sourceDir: String, config: Config): Seq[String] = {
+    val gradleParams = Map(
+      GradleConfigKeys.ProjectName       -> config.gradleProjectName,
+      GradleConfigKeys.ConfigurationName -> config.gradleConfigurationName
+    ).collect { case (key, Some(value)) => (key, value) }
+
+    val resolverParams = DependencyResolverParams(Map.empty, gradleParams)
+    DependencyResolver.getCoordinates(Paths.get(sourceDir), resolverParams) match {
+      case Some(coordinates) =>
+        logger.info(s"Found ${coordinates.size} maven coordinates.")
+        coordinates.toSeq
+      case None =>
+        logger.warn(s"Could not fetch coordinates for project at path $sourceDir")
+        println("Could not fetch coordinates when explicitly asked to. Exiting.")
         System.exit(1)
         Seq()
     }

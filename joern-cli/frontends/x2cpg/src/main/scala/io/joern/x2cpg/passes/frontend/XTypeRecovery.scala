@@ -208,8 +208,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   }
 
   protected def prepopulateSymbolTableEntry(x: AstNode): Unit = x match {
-    case x @ (_: Identifier | _: Local | _: MethodParameterIn) => symbolTable.put(x, x.getKnownTypes)
-    case x: Call => symbolTable.put(x, (x.methodFullName +: x.dynamicTypeHintFullName).toSet)
+    case x @ (_: Identifier | _: Local | _: MethodParameterIn) => symbolTable.append(x, x.getKnownTypes)
+    case x: Call => symbolTable.append(x, (x.methodFullName +: x.dynamicTypeHintFullName).toSet)
     case _       =>
   }
 
@@ -1121,8 +1121,9 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       Seq.empty
     )).iterator
 
-    def getKnownTypes: Set[String] =
+    def getKnownTypes: Set[String] = {
       x.allTypes.filterNot(_.toUpperCase.matches("(UNKNOWN|ANY)")).toSet
+    }
   }
 
   implicit class AllNodeTypesFromTraversalExt(x: Traversal[StoredNode]) {

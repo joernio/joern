@@ -102,11 +102,28 @@ trait AstForExpressionsCreator { this: AstCreator =>
   }
 
   protected def astForLiteralPrimaryExpression(ctx: LiteralPrimaryContext): Ast = ctx.literal() match {
-    case ctx: NumericLiteralLiteralContext     => astForNumericLiteral(ctx.numericLiteral())
-    case ctx: SymbolLiteralContext             => astForSymbolLiteral(ctx.symbol())
+    case ctx: NumericLiteralLiteralContext    => astForNumericLiteral(ctx.numericLiteral())
+    case ctx: SymbolLiteralContext            => astForSymbolLiteral(ctx.symbol())
+    case ctx: StringLiteralLiteralContext     => astForStringLiteral(ctx.stringLiteral)
+    case ctx: RegularExpressionLiteralContext => astForRegularExpressionLiteral(ctx)
+  }
+
+  protected def astForStringLiteral(ctx: StringLiteralContext): Ast = ctx match {
     case ctx: SingleQuotedStringLiteralContext => astForSingleQuotedStringLiteral(ctx)
     case ctx: DoubleQuotedStringLiteralContext => astForDoubleQuotedStringLiteral(ctx)
-    case ctx: RegularExpressionLiteralContext  => astForRegularExpressionLiteral(ctx)
+    case ctx: ConcatenatedStringLiteralContext => astForConcatenatedStringLiterals(ctx)
+  }
+
+  protected def astForConcatenatedStringLiterals(ctx: ConcatenatedStringLiteralContext): Ast = {
+    val literalAsts = ctx.stringLiteral().asScala.map(astForStringLiteral)
+    val callNode_ = callNode(
+      ctx,
+      ctx.getText,
+      RubyOperators.concatStringLiteral,
+      RubyOperators.concatStringLiteral,
+      DispatchTypes.STATIC_DISPATCH
+    )
+    callAst(callNode_, literalAsts.toSeq)
   }
 
   protected def astForTernaryConditionalOperator(ctx: ConditionalOperatorExpressionContext): Ast = {
