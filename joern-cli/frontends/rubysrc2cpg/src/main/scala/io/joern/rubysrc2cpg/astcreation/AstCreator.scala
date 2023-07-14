@@ -1295,7 +1295,10 @@ class AstCreator(
 
   def astForModuleDefinitionPrimaryContext(ctx: ModuleDefinitionPrimaryContext): Seq[Ast] = {
     val referenceAsts = astForClassOrModuleReferenceContext(ctx.moduleDefinition().classOrModuleReference())
-    val bodyStmtAsts  = astForBodyStatementContext(ctx.moduleDefinition().bodyStatement())
+    if (classStack.nonEmpty) {
+      packageContext.packageTable.addModule(filename, classStack.top)
+    }
+    val bodyStmtAsts = astForBodyStatementContext(ctx.moduleDefinition().bodyStatement())
     if (classStack.size > 0) {
       classStack.pop()
     }

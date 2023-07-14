@@ -27,7 +27,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for an unsigned, decimal integer literal" in {
       val cpg           = code("123")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.Integer
+      literal.typeFullName shouldBe "__builtin.Integer"
       literal.code shouldBe "123"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
@@ -36,7 +36,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for a +integer, decimal literal" in {
       val cpg           = code("+1")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.Integer
+      literal.typeFullName shouldBe "__builtin.Integer"
       literal.code shouldBe "+1"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
@@ -45,7 +45,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for a -integer, decimal literal" in {
       val cpg           = code("-1")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.Integer
+      literal.typeFullName shouldBe "__builtin.Integer"
       literal.code shouldBe "-1"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
@@ -54,7 +54,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for an unsigned, decimal float literal" in {
       val cpg           = code("3.14")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.Float
+      literal.typeFullName shouldBe "__builtin.Float"
       literal.code shouldBe "3.14"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
@@ -63,7 +63,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for a +float, decimal literal" in {
       val cpg           = code("+3.14")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.Float
+      literal.typeFullName shouldBe "__builtin.Float"
       literal.code shouldBe "+3.14"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
@@ -72,7 +72,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for a -float, decimal literal" in {
       val cpg           = code("-3.14")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.Float
+      literal.typeFullName shouldBe "__builtin.Float"
       literal.code shouldBe "-3.14"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
@@ -81,7 +81,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for an unsigned, decimal float literal with unsigned exponent" in {
       val cpg           = code("3e10")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.Float
+      literal.typeFullName shouldBe "__builtin.Float"
       literal.code shouldBe "3e10"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
@@ -90,7 +90,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for an unsigned, decimal float literal with -exponent" in {
       val cpg           = code("12e-10")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.Float
+      literal.typeFullName shouldBe "__builtin.Float"
       literal.code shouldBe "12e-10"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
@@ -99,7 +99,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for an unsigned, binary integer literal" in {
       val cpg           = code("0b01")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.Integer
+      literal.typeFullName shouldBe "__builtin.Integer"
       literal.code shouldBe "0b01"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
@@ -108,7 +108,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for a -integer, binary literal" in {
       val cpg           = code("-0b01")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.Integer
+      literal.typeFullName shouldBe "__builtin.Integer"
       literal.code shouldBe "-0b01"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
@@ -117,7 +117,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for a +integer, binary literal" in {
       val cpg           = code("+0b01")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.Integer
+      literal.typeFullName shouldBe "__builtin.Integer"
       literal.code shouldBe "+0b01"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
@@ -126,7 +126,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for an unsigned, hexadecimal integer literal" in {
       val cpg           = code("0xabc")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.Integer
+      literal.typeFullName shouldBe "__builtin.Integer"
       literal.code shouldBe "0xabc"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
@@ -135,7 +135,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for a -integer, hexadecimal literal" in {
       val cpg           = code("-0xa")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.Integer
+      literal.typeFullName shouldBe "__builtin.Integer"
       literal.code shouldBe "-0xa"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
@@ -144,7 +144,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for a +integer, hexadecimal literal" in {
       val cpg           = code("+0xa")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.Integer
+      literal.typeFullName shouldBe "__builtin.Integer"
       literal.code shouldBe "+0xa"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
@@ -189,7 +189,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for `__FILE__` identifier" in {
       val cpg        = code("puts __FILE__")
       val List(file) = cpg.identifier.l
-      file.typeFullName shouldBe Defines.String
+      file.typeFullName shouldBe "__builtin.String"
       file.code shouldBe "__FILE__"
       file.lineNumber shouldBe Some(1)
       file.columnNumber shouldBe Some(5)
@@ -198,7 +198,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for `__LINE__` identifier" in {
       val cpg        = code("puts __LINE__")
       val List(line) = cpg.identifier.l
-      line.typeFullName shouldBe Defines.Integer
+      line.typeFullName shouldBe "__builtin.Integer"
       line.code shouldBe "__LINE__"
       line.lineNumber shouldBe Some(1)
       line.columnNumber shouldBe Some(5)
@@ -216,7 +216,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for a single-line double-quoted string literal" in {
       val cpg           = code("\"hello\"")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.String
+      literal.typeFullName shouldBe "__builtin.String"
       literal.code shouldBe "\"hello\""
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
@@ -225,7 +225,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for a single-line single-quoted string literal" in {
       val cpg           = code("'hello'")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.String
+      literal.typeFullName shouldBe "__builtin.String"
       literal.code shouldBe "'hello'"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)

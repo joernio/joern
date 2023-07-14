@@ -61,16 +61,23 @@ class ImportResolverPass(cpg: Cpg, packageTableInfo: PackageTable) extends XImpo
         .fullName
         .flatMap(fullName => Seq(ResolvedTypeDecl(fullName), ResolvedMethod(s"$fullName.new", "new")))
         .toList
+      val resolvedTypeDeclByModule = packageTableInfo
+        .getModulesByGem(resolvedPath)
+        .map(moduleName => ResolvedTypeDecl(s"$entity::program.$moduleName"))
+        .toList
       val resolvedFunctions = cpg.method
         .where(_.file.name(s"${Pattern.quote(resolvedPath)}\\.?.*"))
         .whereNot(_.nameExact(":program"))
         .map(method => ResolvedMethod(method.fullName, method.name))
         .toList
-      (resolvedTypeDecls ++ resolvedFunctions).distinct
+      (resolvedTypeDecls ++ resolvedTypeDeclByModule ++ resolvedFunctions).distinct
     } else Seq.empty
 
     val importNodes = methodTableModelList.flatMap { methodTableModel =>
-      Seq(ResolvedMethod(s"$expEntity::program.${methodTableModel.parentClassPath.stripSuffix(":")}.new", "new"))
+      Seq(
+        ResolvedMethod(s"$expEntity::program.${methodTableModel.parentClassPath.stripSuffix(":")}.new", "new"),
+        ResolvedTypeDecl(s"$expEntity::program.${methodTableModel.parentClassPath}")
+      )
     }.distinct
     (relativeImportNodes ++ importNodes).toSet
   }

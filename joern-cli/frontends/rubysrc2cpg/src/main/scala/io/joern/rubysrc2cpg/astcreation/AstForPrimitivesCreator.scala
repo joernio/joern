@@ -2,6 +2,7 @@ package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.parser.RubyParser
 import io.joern.rubysrc2cpg.passes.Defines
+import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import io.joern.x2cpg.Ast
 
 trait AstForPrimitivesCreator { this: AstCreator =>
@@ -19,16 +20,17 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     Ast(createIdentifierWithScope(ctx, ctx.getText, ctx.getText, Defines.Object))
 
   protected def astForFilePseudoIdentifier(ctx: RubyParser.FilePseudoVariableIdentifierContext): Ast =
-    Ast(createIdentifierWithScope(ctx, ctx.getText, ctx.getText, Defines.String))
+    Ast(createIdentifierWithScope(ctx, ctx.getText, ctx.getText, getBuiltInType(Defines.String)))
 
   protected def astForLinePseudoIdentifier(ctx: RubyParser.LinePseudoVariableIdentifierContext): Ast =
-    Ast(createIdentifierWithScope(ctx, ctx.getText, ctx.getText, Defines.Integer))
+    Ast(createIdentifierWithScope(ctx, ctx.getText, ctx.getText, getBuiltInType(Defines.Integer)))
 
   protected def astForEncodingPseudoIdentifier(ctx: RubyParser.EncodingPseudoVariableIdentifierContext): Ast =
     Ast(createIdentifierWithScope(ctx, ctx.getText, ctx.getText, Defines.Encoding))
 
   protected def astForNumericLiteral(ctx: RubyParser.NumericLiteralContext): Ast = {
-    val numericTypeName = if (isFloatLiteral(ctx.unsignedNumericLiteral)) Defines.Float else Defines.Integer
+    val numericTypeName =
+      if (isFloatLiteral(ctx.unsignedNumericLiteral)) getBuiltInType(Defines.Float) else getBuiltInType(Defines.Integer)
     Ast(literalNode(ctx, ctx.getText, numericTypeName))
   }
 
@@ -36,10 +38,10 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     Ast(literalNode(ctx, ctx.getText, Defines.Symbol))
 
   protected def astForSingleQuotedStringLiteral(ctx: RubyParser.SingleQuotedStringLiteralContext): Ast =
-    Ast(literalNode(ctx, ctx.getText, Defines.String))
+    Ast(literalNode(ctx, ctx.getText, getBuiltInType(Defines.String)))
 
   protected def astForDoubleQuotedStringLiteral(ctx: RubyParser.DoubleQuotedStringLiteralContext): Ast =
-    Ast(literalNode(ctx, ctx.getText, Defines.String))
+    Ast(literalNode(ctx, ctx.getText, getBuiltInType(Defines.String)))
 
   protected def astForRegularExpressionLiteral(ctx: RubyParser.RegularExpressionLiteralContext): Ast =
     Ast(literalNode(ctx, ctx.getText, Defines.Regexp))
