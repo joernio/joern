@@ -71,6 +71,11 @@ class AstCreator(
   protected val relativeFilename: String =
     projectRoot.map(filename.stripPrefix).map(_.stripPrefix(JFile.separator)).getOrElse(filename)
 
+  protected var processingLastMethodStatement = false
+  protected var blockIdCounter                = 1
+  protected var currentBlockId                = 0
+  protected val blockChildHash                = mutable.HashMap[Int, Int]()
+
   protected def createIdentifierWithScope(
     ctx: ParserRuleContext,
     name: String,
@@ -110,7 +115,7 @@ class AstCreator(
     val statementCtx = programCtx.compoundStatement().statements()
     scope.pushNewScope(())
     val statementAsts = if (statementCtx != null) {
-      astForStatements(statementCtx) ++ blockMethods
+      astForStatements(statementCtx, false, false) ++ blockMethods
     } else {
       List[Ast](Ast())
     }
@@ -285,7 +290,7 @@ class AstCreator(
       .interpolatedStringSequence()
       .asScala
       .flatMap(inter => {
-        astForStatements(inter.compoundStatement().statements())
+        astForStatements(inter.compoundStatement().statements(), false, false)
       })
       .toSeq
 
@@ -320,7 +325,7 @@ class AstCreator(
     case ctx: ForExpressionPrimaryContext      => Seq(astForForExpression(ctx.forExpression()))
     case ctx: JumpExpressionPrimaryContext     => astForJumpExpressionPrimaryContext(ctx)
     case ctx: BeginExpressionPrimaryContext    => astForBeginExpressionPrimaryContext(ctx)
-    case ctx: GroupingExpressionPrimaryContext => astForCompoundStatement(ctx.compoundStatement())
+    case ctx: GroupingExpressionPrimaryContext => astForCompoundStatement(ctx.compoundStatement(), false, false)
     case ctx: VariableReferencePrimaryContext  => Seq(astForVariableReference(ctx.variableReference()))
     case ctx: SimpleScopedConstantReferencePrimaryContext =>
       astForSimpleScopedConstantReferencePrimaryContext(ctx)
@@ -1059,7 +1064,7 @@ class AstCreator(
     */
   def astForClassBody(ctx: BodyStatementContext): Seq[Ast] = {
     val rootStatements =
-      Option(ctx).map(_.compoundStatement()).map(_.statements()).map(astForStatements).getOrElse(Seq())
+      Option(ctx).map(_.compoundStatement()).map(_.statements()).map(st => { astForStatements(st) }).getOrElse(Seq())
     retrieveAndGenerateClassChildren(ctx, rootStatements)
   }
 
@@ -1121,44 +1126,16 @@ class AstCreator(
     classInitMethodAst ++ uniqueMemberReferences ++ methodStmts
   }
 
-  private def convertLastStmtToReturn(compoundStatementAsts: Seq[Ast], ctxStmt: StatementsContext): Seq[Ast] = {
-    val lastStmtIsAlreadyReturn = compoundStatementAsts.last.root match {
-      case Some(value) => value.isInstanceOf[NewReturn]
-      case None        => false
-    }
-
-    val lastStmtIsLiteralIdentifier = compoundStatementAsts.last.root match {
-      case Some(value) => value.isInstanceOf[NewIdentifier] || value.isInstanceOf[NewLiteral]
-      case None        => false
-    }
-
-    if (
-      !lastStmtIsAlreadyReturn &&
-      ctxStmt != null
-    ) {
-      val len  = ctxStmt.statement().size()
-      var code = ctxStmt.statement().get(len - 1).getText
-      if (!lastStmtIsLiteralIdentifier) {
-        code = ""
-      }
-      val retNode = NewReturn()
-        .code(code)
-      val returnReplaced = returnAst(retNode, Seq[Ast](compoundStatementAsts.last))
-      compoundStatementAsts.updated(compoundStatementAsts.size - 1, returnReplaced)
-    } else {
-      compoundStatementAsts
-    }
-  }
-  def astForBodyStatementContext(ctx: BodyStatementContext, addReturnNode: Boolean = false): Seq[Ast] = {
-    val compoundStatementAsts = astForCompoundStatement(ctx.compoundStatement(), !addReturnNode)
-
+  def astForBodyStatementContext(ctx: BodyStatementContext, isMethodBody: Boolean = false): Seq[Ast] = {
     if (ctx.rescueClause().size > 0) {
+      val compoundStatementAsts = astForCompoundStatement(ctx.compoundStatement())
       val elseClauseAsts = Option(ctx.elseClause()) match
         case Some(ctx) => astForCompoundStatement(ctx.compoundStatement(), false)
         case None      => Seq()
 
       /*
        * TODO Conversion of last statement to return AST is needed here
+       * This can be done after the data flow engine issue with return from a try block is fixed
        */
       val tryBodyAsts = compoundStatementAsts ++ elseClauseAsts
       val tryBodyAst  = blockAst(blockNode(ctx), tryBodyAsts.toList)
@@ -1180,15 +1157,8 @@ class AstCreator(
         .columnNumber(column(ctx))
 
       Seq(tryCatchAst(tryNode, tryBodyAst, catchAsts, finallyAst))
-    } else if (addReturnNode && compoundStatementAsts.nonEmpty) {
-      /*
-       * Convert the last statement to a return AST if it is not already a return AST.
-       * If it is a return AST leave it untouched.
-       * TODO Handling for last statement being if-else is needed here
-       */
-      convertLastStmtToReturn(compoundStatementAsts, ctx.compoundStatement().statements())
     } else {
-      compoundStatementAsts
+      astForCompoundStatement(ctx.compoundStatement(), isMethodBody)
     }
   }
 
@@ -1198,7 +1168,7 @@ class AstCreator(
     val astMethodName     = astForMethodNamePartContext(ctx.methodNamePart())
     val callNode = astMethodName.head.nodes.filter(node => node.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
     // there can be only one call node
-    val astBody = astForBodyStatementContext(ctx.bodyStatement(), addReturnNode = true)
+    val astBody = astForBodyStatementContext(ctx.bodyStatement(), true)
     scope.popScope()
 
     /*
@@ -1490,10 +1460,8 @@ class AstCreator(
 
     val astMethodParam = ctxParam.map(astForBlockParameterContext).getOrElse(Seq())
     scope.pushNewScope(())
-    val astBodyWOReturn = astForStatements(ctxStmt)
+    val astBody = astForStatements(ctxStmt, true)
     scope.popScope()
-
-    val astBody = convertLastStmtToReturn(astBodyWOReturn, ctxStmt)
 
     val methodFullName = classStack.reverse :+ blockMethodName mkString pathSep
     val methodNode = NewMethod()
