@@ -19,11 +19,11 @@ class CustomFileContentProvider(headerFileFinder: HeaderFileFinder) extends Inte
     }
     maybeFullPath
       .map { foundPath =>
-        // logger.debug(s"Loading header file '$foundPath'")
+        logger.debug(s"Loading header file '$foundPath'")
         CdtParser.readFileAsFileContent(Paths.get(foundPath)).asInstanceOf[InternalFileContent]
       }
       .getOrElse {
-        // logger.debug(s"Cannot find header file for '$path'")
+        logger.debug(s"Cannot find header file for '$path'")
         null
       }
 
