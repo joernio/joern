@@ -28,7 +28,7 @@ trait AstForStatementsCreator { this: AstCreator =>
     blockAst(node, childAsts.toList)
   }
 
-  protected def astsForDeclarationStatement(decl: IASTDeclarationStatement): Seq[Ast] =
+  private def astsForDeclarationStatement(decl: IASTDeclarationStatement): Seq[Ast] =
     decl.getDeclaration match {
       case simplDecl: IASTSimpleDeclaration
           if simplDecl.getDeclarators.headOption.exists(_.isInstanceOf[IASTFunctionDeclarator]) =>
