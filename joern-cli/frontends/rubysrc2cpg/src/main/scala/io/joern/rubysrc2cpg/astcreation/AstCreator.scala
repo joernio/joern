@@ -1064,7 +1064,7 @@ class AstCreator(
     */
   def astForClassBody(ctx: BodyStatementContext): Seq[Ast] = {
     val rootStatements =
-      Option(ctx).map(_.compoundStatement()).map(_.statements()).map(st => { astForStatements(st) }).getOrElse(Seq())
+      Option(ctx).map(_.compoundStatement()).map(_.statements()).map(astForStatements(_)).getOrElse(Seq())
     retrieveAndGenerateClassChildren(ctx, rootStatements)
   }
 
