@@ -33,6 +33,8 @@ package object slicing {
 
     var methodAnnotationFilter: Option[String] = None
 
+    var parallelism: Option[Int] = None
+
     def withInputPath(x: File): BaseConfig = {
       this.inputPath = x
       this
@@ -65,6 +67,11 @@ package object slicing {
 
     def withMethodAnnotationFilter(x: Option[String]): BaseConfig = {
       this.methodParamTypeFilter = x
+      this
+    }
+
+    def withParallelism(x: Int): BaseConfig = {
+      this.parallelism = Option(x)
       this
     }
 
