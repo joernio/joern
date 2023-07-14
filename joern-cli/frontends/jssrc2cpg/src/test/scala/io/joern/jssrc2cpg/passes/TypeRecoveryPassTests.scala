@@ -53,7 +53,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         |let response = sg.send(message);
         |""".stripMargin,
       "Test1.ts"
-    ).cpg
+    )
 
     "resolve correct imports via tag nodes" in {
       val List(a: UnknownMethod, b: UnknownTypeDecl, x: UnknownMethod, y: UnknownTypeDecl) =
@@ -99,7 +99,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
     val cpg = code("""
         |console.log("Hello world");
         |let x = Math.abs(-1);
-        |""".stripMargin).cpg
+        |""".stripMargin)
 
     "resolve 'print' and 'max' calls" in {
       val List(printCall) = cpg.call("log").l
@@ -137,7 +137,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         |db.deleteTable();
         |""".stripMargin,
       "Bar.ts"
-    ).cpg
+    )
 
     "resolve correct imports via tag nodes" in {
       val List(a: ResolvedMember, b: ResolvedMember, c: ResolvedMember, d: UnknownMethod, e: UnknownTypeDecl) =
