@@ -70,14 +70,14 @@ class RubyTypeRecoveryTests extends RubyCode2CpgFixture {
     ).cpg
 
     "resolve 'print' and 'puts' calls" in {
-      val Some(printCall) = cpg.call("print").headOption: @unchecked
+      val List(printCall) = cpg.call("print").l
       printCall.methodFullName shouldBe "__builtin.print"
-      val Some(maxCall) = cpg.call("puts").headOption: @unchecked
+      val List(maxCall) = cpg.call("puts").l
       maxCall.methodFullName shouldBe "__builtin.puts"
     }
 
     "conservatively present either option when an imported function uses the same name as a builtin" ignore {
-      val Some(absCall) = cpg.call("sleep").headOption: @unchecked
+      val List(absCall) = cpg.call("sleep").l
       absCall.methodFullName shouldBe "main.rb::program.sleep"
       // NOTE: I am not sure if this is a valid expectation. If it is not then we can get rid of this one.
       absCall.dynamicTypeHintFullName shouldBe Seq("main.rb::program.sleep", "__builtin.sleep")
