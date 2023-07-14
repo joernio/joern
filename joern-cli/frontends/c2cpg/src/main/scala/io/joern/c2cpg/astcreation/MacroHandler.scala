@@ -11,9 +11,12 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
 }
 import io.joern.x2cpg.{Ast, AstEdge}
 import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
+import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
 import org.apache.commons.lang.StringUtils
 import org.eclipse.cdt.core.dom.ast.{IASTMacroExpansionLocation, IASTNode, IASTPreprocessorMacroDefinition}
 import org.eclipse.cdt.core.dom.ast.IASTBinaryExpression
+import org.eclipse.cdt.core.dom.ast.IASTDeclarationStatement
+import org.eclipse.cdt.core.dom.ast.IASTFunctionDeclarator
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 import org.eclipse.cdt.internal.core.parser.scanner.MacroArgumentExtractor
 
@@ -42,12 +45,30 @@ trait MacroHandler { this: AstCreator =>
     macroCallAst match {
       case Some(callAst) =>
         val lostLocals = ast.refEdges.collect { case AstEdge(_, dst: NewLocal) => Ast(dst) }.toList
-        val newAst     = ast.subTreeCopy(ast.root.get.asInstanceOf[AstNodeNew], argIndex = 1)
+        val fixedAst = if (ast.root.isEmpty && node.isInstanceOf[IASTDeclarationStatement]) {
+          val seenCopy = mutable.Map.empty[String, Ast]
+          seenCopy.addAll(seenFunctionSignatures)
+          seenFunctionSignatures.clear()
+          astsForDeclarationStatement(node.asInstanceOf[IASTDeclarationStatement]).headOption
+            .map { r =>
+              val newAst = r.root
+                // if a macro in a header file contains a method definition already seen in some
+                // source file we skipped that during the previous AST creation put stored its AST in
+                // seenFunctionSignatures.
+                .collect { case m: NewMethod => seenCopy(m.signature) }
+                .getOrElse(ast)
+              seenFunctionSignatures.addAll(seenCopy)
+              newAst
+            }
+            .getOrElse(ast)
+        } else {
+          ast
+        }
+        val newAst = fixedAst.subTreeCopy(fixedAst.root.get.asInstanceOf[AstNodeNew], argIndex = 1)
         // We need to wrap the copied AST as it may contain CPG nodes not being allowed
         // to be connected via AST edges under a CALL. E.g., LOCALs but only if its not already a BLOCK.
         val childAst = newAst.root match {
-          case Some(_: NewBlock) =>
-            newAst
+          case Some(_: NewBlock) => newAst
           case _ =>
             val b = NewBlock().argumentIndex(1).typeFullName(registerType(Defines.voidTypeName))
             blockAst(b, List(newAst))

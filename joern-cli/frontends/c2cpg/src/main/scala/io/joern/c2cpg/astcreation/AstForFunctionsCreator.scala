@@ -17,7 +17,7 @@ import scala.collection.mutable
 
 trait AstForFunctionsCreator { this: AstCreator =>
 
-  private val seenFunctionSignatures = mutable.HashSet.empty[String]
+  protected val seenFunctionSignatures = mutable.HashMap.empty[String, Ast]
 
   private def createFunctionTypeAndTypeDecl(
     node: IASTNode,
@@ -129,7 +129,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     val signature =
       s"$returnType $fullname$templateParams ${parameterListSignature(funcDecl)}"
 
-    if (seenFunctionSignatures.add(signature)) {
+    if (!seenFunctionSignatures.contains(signature)) {
       val name        = shortName(funcDecl)
       val code        = nodeSignature(funcDecl.getParent)
       val filename    = fileName(funcDecl)
@@ -146,7 +146,9 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
       val stubAst = methodStubAst(methodNode_, parameterNodes, newMethodReturnNode(funcDecl, registerType(returnType)))
       val typeDeclAst = createFunctionTypeAndTypeDecl(funcDecl, methodNode_, name, fullname, signature)
-      stubAst.merge(typeDeclAst)
+      val ast         = stubAst.merge(typeDeclAst)
+      seenFunctionSignatures(signature) = ast
+      ast
     } else {
       Ast()
     }
@@ -161,8 +163,6 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
     val signature =
       s"$returnType $fullname$templateParams ${parameterListSignature(funcDef)}"
-    seenFunctionSignatures.add(signature)
-
     val code        = nodeSignature(funcDef)
     val methodNode_ = methodNode(funcDef, name, code, fullname, Some(signature), filename)
 
@@ -185,7 +185,9 @@ trait AstForFunctionsCreator { this: AstCreator =>
     methodAstParentStack.pop()
 
     val typeDeclAst = createFunctionTypeAndTypeDecl(funcDef, methodNode_, name, fullname, signature)
-    astForMethod.merge(typeDeclAst)
+    val ast         = astForMethod.merge(typeDeclAst)
+    seenFunctionSignatures(signature) = ast
+    ast
   }
 
   private def parameterNode(parameter: IASTNode, paramIndex: Int): NewMethodParameterIn = {
