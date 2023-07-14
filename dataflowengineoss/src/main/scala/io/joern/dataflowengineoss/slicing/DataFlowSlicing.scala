@@ -21,9 +21,9 @@ object DataFlowSlicing {
       case _                                     => Executors.newWorkStealingPool()
 
     (config.fileFilter match {
-      case Some(fileName) => cpg.file.nameExact(fileName).ast.isCall
+      case Some(fileName) => cpg.file.nameExact(fileName).method.call
       case None           => cpg.call
-    }).iterator.method.withMethodNameFilter.withMethodParameterFilter.withMethodAnnotationFilter.ast.isCall
+    }).iterator.method.withMethodNameFilter.withMethodParameterFilter.withMethodAnnotationFilter.call
       .map(c => exec.submit(new TrackDataFlowTask(config, c)))
       .flatMap(_.get())
       .reduceOption { (a, b) => DataFlowSlice(a.nodes ++ b.nodes, a.edges ++ b.edges) }
