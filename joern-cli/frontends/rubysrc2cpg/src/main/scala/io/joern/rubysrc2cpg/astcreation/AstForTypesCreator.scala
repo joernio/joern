@@ -3,9 +3,10 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.parser.RubyParser.{
   ClassDefinitionPrimaryContext,
   ClassOrModuleReferenceContext,
+  ModuleDefinitionPrimaryContext,
   ScopedConstantReferenceContext
 }
-import io.shiftleft.codepropertygraph.generated.ModifierTypes
+import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -60,16 +61,66 @@ trait AstForTypesCreator { this: AstCreator =>
     astExprOfCommand ++ Seq(bodyBlockAst)
   }
 
-  def astForClassOrModuleReferenceContext(
-    ctx: ClassOrModuleReferenceContext,
-    baseClassName: Option[String] = None
-  ): Seq[Ast] = {
-    val className = ctx.className(baseClassName)
+  def astForModuleDefinitionPrimaryContext(ctx: ModuleDefinitionPrimaryContext): Seq[Ast] = {
+    val className = ctx.moduleDefinition().classOrModuleReference().className(None)
 
     if (className != Defines.Any) {
       classStack.push(className)
+
+      val fullName = classStack.reverse.mkString(pathSep)
+      val namespaceBlock = NewNamespaceBlock()
+        .name(className)
+        .fullName(fullName)
+        .filename(filename)
+
+      val moduleBodyAst = astInFakeMethod(className, fullName, filename, ctx)
+
+      if (classStack.size > 0) {
+        classStack.pop()
+      }
+      Seq(Ast(namespaceBlock).withChildren(moduleBodyAst))
+    } else {
+      Seq.empty
     }
-    Seq(Ast())
+
+  }
+
+  private def astInFakeMethod(
+    name: String,
+    fullName: String,
+    path: String,
+    ctx: ModuleDefinitionPrimaryContext
+  ): Seq[Ast] = {
+
+    val fakeGlobalTypeDecl = NewTypeDecl()
+      .name(name)
+      .fullName(fullName)
+    val fakeGlobalMethod =
+      methodNode(ctx, name, name, fullName, None, path, Option(NodeTypes.TYPE_DECL), Option(fullName))
+    scope.pushNewScope(fakeGlobalMethod)
+    val blockNode_ = blockNode(ctx)
+
+    val methodReturn = methodReturnNode(ctx, Defines.Any)
+    val bodyStmtAsts = astForBodyStatementContext(ctx.moduleDefinition().bodyStatement())
+    val bodyAstSansModifiers = bodyStmtAsts
+      .filterNot(ast => {
+        val nodes = ast.nodes
+          .filter(_.isInstanceOf[NewIdentifier])
+
+        if (nodes.size == 1) {
+          val varName = nodes
+            .map(_.asInstanceOf[NewIdentifier].name)
+            .head
+          varName == "public" || varName == "protected" || varName == "private"
+        } else {
+          false
+        }
+      })
+    Seq(
+      Ast(fakeGlobalTypeDecl).withChild(
+        methodAst(fakeGlobalMethod, Seq.empty, blockAst(blockNode_, bodyAstSansModifiers.toList), methodReturn)
+      )
+    )
   }
 
   private def getClassNameScopedConstantReferenceContext(ctx: ScopedConstantReferenceContext): String = {

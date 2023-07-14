@@ -1293,32 +1293,6 @@ class AstCreator(
     )
   }
 
-  def astForModuleDefinitionPrimaryContext(ctx: ModuleDefinitionPrimaryContext): Seq[Ast] = {
-    val referenceAsts = astForClassOrModuleReferenceContext(ctx.moduleDefinition().classOrModuleReference())
-    if (classStack.nonEmpty) {
-      packageContext.packageTable.addModule(filename, classStack.top)
-    }
-    val bodyStmtAsts = astForBodyStatementContext(ctx.moduleDefinition().bodyStatement())
-    if (classStack.size > 0) {
-      classStack.pop()
-    }
-    val bodyAstSansModifiers = bodyStmtAsts
-      .filterNot(ast => {
-        val nodes = ast.nodes
-          .filter(_.isInstanceOf[NewIdentifier])
-
-        if (nodes.size == 1) {
-          val varName = nodes
-            .map(_.asInstanceOf[NewIdentifier].name)
-            .head
-          varName == "public" || varName == "protected" || varName == "private"
-        } else {
-          false
-        }
-      })
-    Seq(referenceAsts.head.withChildren(bodyAstSansModifiers))
-  }
-
   def getPackedRHS(astsToConcat: Seq[Ast]) = {
     val callNode = NewCall()
       .name(Operators.arrayInitializer)
