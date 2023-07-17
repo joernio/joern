@@ -55,8 +55,6 @@ expressionOrCommand
 
 expression
     :   primary                                                                                                     # primaryExpression
-    |   <assoc=right> singleLeftHandSide WS* op=(EQ | ASSIGNMENT_OPERATOR) wsOrNl* multipleRightHandSide            # singleAssignmentExpression
-    |   <assoc=right> multipleLeftHandSide WS* EQ wsOrNl* multipleRightHandSide                                     # multipleAssignmentExpression
     |   op=(TILDE | PLUS | EMARK) wsOrNl* expression                                                                # unaryExpression
     |   <assoc=right> expression WS* STAR2 wsOrNl* expression                                                       # powerExpression
     |   MINUS wsOrNl* expression                                                                                    # unaryMinusExpression
@@ -71,6 +69,8 @@ expression
     |   expression WS* op=BAR2 wsOrNl* expression                                                                   # operatorOrExpression
     |   expression WS* op=(DOT2 | DOT3) wsOrNl* expression?                                                         # rangeExpression
     |   expression WS* QMARK wsOrNl* expression WS* COLON wsOrNl* expression                                        # conditionalOperatorExpression
+    |   <assoc=right> singleLeftHandSide WS* op=(EQ | ASSIGNMENT_OPERATOR) wsOrNl* multipleRightHandSide            # singleAssignmentExpression
+    |   <assoc=right> multipleLeftHandSide WS* EQ wsOrNl* multipleRightHandSide                                     # multipleAssignmentExpression
     |   IS_DEFINED wsOrNl* expression                                                                               # isDefinedExpression
     ;
 
