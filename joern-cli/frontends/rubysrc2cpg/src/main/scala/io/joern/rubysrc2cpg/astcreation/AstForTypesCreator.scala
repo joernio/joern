@@ -92,32 +92,9 @@ trait AstForTypesCreator { this: AstCreator =>
     val fakeGlobalTypeDecl = NewTypeDecl()
       .name(name)
       .fullName(fullName)
-    val fakeGlobalMethod =
-      methodNode(ctx, name, name, fullName, None, path, Option(NodeTypes.TYPE_DECL), Option(fullName))
-    scope.pushNewScope(fakeGlobalMethod)
-    val blockNode_ = blockNode(ctx)
 
-    val methodReturn = methodReturnNode(ctx, Defines.Any)
-    val bodyStmtAsts = astForBodyStatementContext(ctx.moduleDefinition().bodyStatement())
-    val bodyAstSansModifiers = bodyStmtAsts
-      .filterNot(ast => {
-        val nodes = ast.nodes
-          .filter(_.isInstanceOf[NewIdentifier])
-
-        if (nodes.size == 1) {
-          val varName = nodes
-            .map(_.asInstanceOf[NewIdentifier].name)
-            .head
-          varName == "public" || varName == "protected" || varName == "private"
-        } else {
-          false
-        }
-      })
-    Seq(
-      Ast(fakeGlobalTypeDecl).withChild(
-        methodAst(fakeGlobalMethod, Seq.empty, blockAst(blockNode_, bodyAstSansModifiers.toList), methodReturn)
-      )
-    )
+    val bodyAst = astForClassBody(ctx.moduleDefinition().bodyStatement())
+    Seq(Ast(fakeGlobalTypeDecl).withChildren(bodyAst))
   }
 
   private def getClassNameScopedConstantReferenceContext(ctx: ScopedConstantReferenceContext): String = {
