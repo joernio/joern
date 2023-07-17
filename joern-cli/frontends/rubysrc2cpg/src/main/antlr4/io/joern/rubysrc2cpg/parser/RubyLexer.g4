@@ -59,6 +59,8 @@ UNTIL: 'until';
 WHEN: 'when';
 WHILE: 'while';
 YIELD: 'yield';
+ONLY: 'only';
+EXCEPT: 'except';
 
 fragment KEYWORD
     :   LINE__
@@ -404,6 +406,9 @@ fragment SYMBOL_NAME
     |   KEYWORD
     ;
 
+ARRAY_LITERAL
+    : PERCENT ('i'|'w');
+
 // --------------------------------------------------------
 // Identifiers
 // --------------------------------------------------------
@@ -566,6 +571,7 @@ fragment SIMPLE_ESCAPE_SEQUENCE
 fragment DOUBLE_ESCAPED_CHARACTER
     :   [ntrfvaebs]
     ;
+
 
 // --------------------------------------------------------
 // Regex literal mode
