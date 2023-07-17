@@ -124,14 +124,20 @@ trait AstForStatementsCreator {
   }
 
   /*
-   * We will convert the last statement of the last leaf block in the hierarchy of blocks to a return
+   * Each statement set can be considered a block. The blocks of a method can be considered to form a hierarchy.
+   * We can consider the blocks structure as a n-way tree. Leaf blocks are blocks that have no more sub blocks i.e children in the
+   * hierarchy. The last statement of the block of the method which is the top level/root block i.e. method body should be
+   * converted into a implicit return. However, if the last statement is a if-else it has sub-blocks/child blocks and the last statement of each leaf block in it
+   * will have to be converted to a implicit return, unless it is already a implicit return.
+   * Some sub-blocks are exempt from their last statements being converted to returns. Examples are blocks that are arguments to functions like string interpolation.
+   *
    * isMethodBody => The statement set is the top level block in the method. i.e. the root block
    * canConsiderAsLeaf => The statement set can be considered a leaf block. This is set to false by the caller when it is a statement
    * set as a part of an expression. Eg. argument in string interpolation. We do not want to construct return nodes out of
-   * string interpolation arguments
+   * string interpolation arguments. These are exempt blocks for implicit returns.
    * blockChildHash => Hash of a block id to any child. Absence of a block in this after all its statements have been processed implies
    * that the block is a leaf
-   * blockIdCounter => A simple counter used to assign an id to each block.
+   * blockIdCounter => A simple counter used to assign an unique id to each block.
    */
   protected def astForStatements(
     ctx: StatementsContext,
