@@ -1988,4 +1988,48 @@ class DataFlowTestsWithCallDepth extends DataFlowCodeToCpgSuite {
       )
     }
   }
+
+  "DataFlowTest73" should {
+    val cpg = code("""
+        |struct struct_length {
+        | unsigned int *plen;
+        |};
+        |struct wraping_struct {
+        |  struct struct_length *s_len;
+        |};
+        |void sink(unsigned int *plen4) {
+        |  *plen4 = 1000;
+        |}
+        |void level3(unsigned int *plen3) {
+        |  sink(plen3);
+        |}
+        |void level2(unsigned int *plen2) {
+        |  level3(plen2);
+        |}
+        |void level1(struct struct_length s_len) {
+        |  level2(s_len->plen);
+        |}
+        |void source(struct s_s_len_t **s_s_len) {
+        |  level1((*s_s_len)->s_len);
+        |}
+        |""".stripMargin)
+    "find flows" in {
+      def source = cpg.method.name("source").parameter
+
+      def sink = cpg.call.name("sink").argument.order(1)
+
+      sink.reachableByFlows(source).l.map(flowToResultPairs).toSet shouldBe Set(
+        List(
+          ("source(struct s_s_len_t **s_s_len)", 20),
+          ("level1((*s_s_len)->s_len)", 21),
+          ("level1(struct struct_length s_len)", 17),
+          ("level2(s_len->plen)", 18),
+          ("level2(unsigned int *plen2)", 14),
+          ("level3(plen2)", 15),
+          ("level3(unsigned int *plen3)", 11),
+          ("sink(plen3)", 12)
+        )
+      )
+    }
+  }
 }
