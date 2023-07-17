@@ -62,7 +62,7 @@ trait AstForTypesCreator { this: AstCreator =>
   }
 
   def astForModuleDefinitionPrimaryContext(ctx: ModuleDefinitionPrimaryContext): Seq[Ast] = {
-    val className = ctx.moduleDefinition().classOrModuleReference().className(None)
+    val className = ctx.moduleDefinition().classOrModuleReference().classOrModuleName(None)
 
     if (className != Defines.Any) {
       classStack.push(className)
@@ -74,10 +74,7 @@ trait AstForTypesCreator { this: AstCreator =>
         .filename(filename)
 
       val moduleBodyAst = astInFakeMethod(className, fullName, filename, ctx)
-
-      if (classStack.size > 0) {
-        classStack.pop()
-      }
+      classStack.pop()
       Seq(Ast(namespaceBlock).withChildren(moduleBodyAst))
     } else {
       Seq.empty
@@ -166,7 +163,7 @@ trait AstForTypesCreator { this: AstCreator =>
     def className(baseClassName: Option[String] = None): String =
       Option(ctx.classDefinition())
         .map(_.classOrModuleReference())
-        .map(_.className(baseClassName))
+        .map(_.classOrModuleName(baseClassName))
         .getOrElse(Defines.Any)
   }
 
@@ -174,7 +171,7 @@ trait AstForTypesCreator { this: AstCreator =>
 
     def hasScopedConstantReference: Boolean = Option(ctx.scopedConstantReference()).isDefined
 
-    def className(baseClassName: Option[String] = None): String =
+    def classOrModuleName(baseClassName: Option[String] = None): String =
       if (ctx.hasScopedConstantReference)
         getClassNameScopedConstantReferenceContext(ctx.scopedConstantReference())
       else
