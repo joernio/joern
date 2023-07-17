@@ -352,7 +352,21 @@ private class UsageAnalyzer(
   private def sameVariable(use: StoredNode, inElement: StoredNode): Boolean = {
     inElement match {
       case param: MethodParameterIn =>
-        nodeToString(use).getOrElse("").contains(param.name)
+        /*
+         If `use` is a call (Operators.indirectFieldAccess, see DataFlowTest73), we end up with this:
+         Some("foo").contains("foo") => true
+         Some("foo->bar").contains("foo") => false
+
+         We probably want something like:
+         Some("foo->bar").getOrElse("").contains("foo") => true
+
+         Using getOrElse generates failing tests in some frontends, so that we have to do a check here:
+         */
+        if (use.isInstanceOf[Call]) {
+          callAstChildrenToList(use).exists(call => call.contains(param.name))
+        }
+
+        nodeToString(use).contains(param.name)
       case call: Call if indirectionAccessSet.contains(call.name) =>
         call.argumentOption(1).exists(x => nodeToString(use).contains(x.code))
       case call: Call =>
@@ -360,6 +374,12 @@ private class UsageAnalyzer(
       case identifier: Identifier => nodeToString(use).contains(identifier.code)
       case _                      => false
     }
+  }
+
+  private def callAstChildrenToList(node: StoredNode): List[String] = {
+    node match
+      case c: Call => c.astChildren.code.toList
+      case _       => List()
   }
 
   private def nodeToString(node: StoredNode): Option[String] = {
