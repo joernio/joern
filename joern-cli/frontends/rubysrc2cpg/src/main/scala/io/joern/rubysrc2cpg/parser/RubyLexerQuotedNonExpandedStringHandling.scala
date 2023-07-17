@@ -26,10 +26,6 @@ trait RubyLexerQuotedNonExpandedStringHandling { this: RubyLexerBase =>
     char == currentClosingDelimiter()
   }
 
-  def currentQuotedNonExpandedStringLiteralOpeningDelimiter(): Int = {
-    quotedNonExpandedStringLiteralOpeningDelimiters.top
-  }
-
   private def currentOpeningDelimiter(): Int = {
     quotedNonExpandedStringLiteralOpeningDelimiters.top
   }
