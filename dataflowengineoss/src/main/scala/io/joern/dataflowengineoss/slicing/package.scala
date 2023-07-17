@@ -3,8 +3,8 @@ package io.joern.dataflowengineoss
 import better.files.File
 import io.circe.{Decoder, Encoder, HCursor, Json}
 import io.shiftleft.codepropertygraph.generated.PropertyNames
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 import overflowdb.PropertyKey
 
@@ -12,8 +12,8 @@ import java.util.regex.Pattern
 
 package object slicing {
 
-  import cats.syntax.functor._
-  import io.circe.generic.auto._
+  import cats.syntax.functor.*
+  import io.circe.generic.auto.*
   import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
   import io.circe.syntax.EncoderOps
 
@@ -90,6 +90,18 @@ package object slicing {
     excludeOperatorCalls: Boolean = false,
     excludeMethodSource: Boolean = false
   ) extends BaseConfig
+
+  /** Adds extensions to modify a call traversal based on config options.
+    */
+  implicit class CallFilterExt(trav: Iterator[Call]) {
+
+    /** This works because we use backwards slicing and start at sinks.
+      */
+    def withExternalCalleeFilter(implicit config: DataFlowConfig, resolver: ICallResolver): Iterator[Call] =
+      if (config.mustEndAtExternalMethod) trav.where(_.callee.filter(_.isExternal))
+      else trav
+
+  }
 
   /** Adds extensions to modify a method traversal based on config options
     */

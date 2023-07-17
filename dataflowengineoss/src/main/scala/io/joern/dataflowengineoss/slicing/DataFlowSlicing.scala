@@ -13,7 +13,7 @@ object DataFlowSlicing {
   implicit val resolver: ICallResolver = NoResolve
 
   def calculateDataFlowSlice(cpg: Cpg, config: DataFlowConfig): Option[DataFlowSlice] = {
-    implicit val implicitConfig: BaseConfig = config
+    implicit val implicitConfig: DataFlowConfig = config
 
     val exec = config.parallelism match
       case Some(parallelism) if parallelism == 1 => Executors.newSingleThreadExecutor()
@@ -23,7 +23,7 @@ object DataFlowSlicing {
     (config.fileFilter match {
       case Some(fileName) => cpg.file.nameExact(fileName).method.call
       case None           => cpg.call
-    }).iterator.method.withMethodNameFilter.withMethodParameterFilter.withMethodAnnotationFilter.call
+    }).method.withMethodNameFilter.withMethodParameterFilter.withMethodAnnotationFilter.call.withExternalCalleeFilter
       .map(c => exec.submit(new TrackDataFlowTask(config, c)))
       .flatMap(_.get())
       .reduceOption { (a, b) => DataFlowSlice(a.nodes ++ b.nodes, a.edges ++ b.edges) }
@@ -43,12 +43,8 @@ object DataFlowSlicing {
         .toSet
       lazy val slice = Option(DataFlowSlice(sliceNodes.map(cfgNodeToSliceNode).toSet, sliceEdges))
 
-      // Filtering
-      sliceNodes match {
-        case Nil                                                                     => None
-        case _ if config.mustEndAtExternalMethod && !sinksEndAtExternalMethod(sinks) => None
-        case _                                                                       => slice
-      }
+      if (sliceNodes.isEmpty) None
+      else slice
     }
 
   }

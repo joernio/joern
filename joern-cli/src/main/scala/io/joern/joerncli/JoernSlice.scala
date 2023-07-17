@@ -69,7 +69,7 @@ object JoernSlice {
             }
           ),
         opt[Unit]("end-at-external-method")
-          .text(s"all slices must end at an external method - defaults to false.")
+          .text(s"all slices must end at a call to an external method - defaults to false.")
           .action((_, c) =>
             c match {
               case c: DataFlowConfig => c.copy(mustEndAtExternalMethod = true)
