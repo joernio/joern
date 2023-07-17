@@ -71,10 +71,20 @@ class AstCreator(
   protected val relativeFilename: String =
     projectRoot.map(filename.stripPrefix).map(_.stripPrefix(JFile.separator)).getOrElse(filename)
 
+  // The below are for adding implicit return nodes to methods
+
+  // This is true if the last statement of a method is being processed. The last statement could be a if-else as well
   protected var processingLastMethodStatement = false
-  protected var blockIdCounter                = 1
-  protected var currentBlockId                = 0
-  protected val blockChildHash                = mutable.HashMap[Int, Int]()
+  // a monotonically increasing block id unique within this file
+  protected var blockIdCounter = 1
+  // block id of the block currently being processed
+  protected var currentBlockId = 0
+  /*
+   * This is a hash of parent block id ---> child block id. If there are multiple children, any one child can be present.
+   * The value of this entry for a block is read AFTER its last statement has been processed. Absence of the the block
+   * in this hash implies this is a leaf block.
+   */
+  protected val blockChildHash = mutable.HashMap[Int, Int]()
 
   protected def createIdentifierWithScope(
     ctx: ParserRuleContext,
