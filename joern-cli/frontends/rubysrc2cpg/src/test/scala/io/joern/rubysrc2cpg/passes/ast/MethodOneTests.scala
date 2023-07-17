@@ -108,17 +108,16 @@ class MethodOneTests extends RubyCode2CpgFixture {
 
     "be correct for multiple returns" in {
       cpg.method("foo").methodReturn.l.size shouldBe 1
-      cpg.method("foo").ast.isReturn.l.size shouldBe 3 // there is 1 implicit return node also
+      cpg.method("foo").ast.isReturn.l.size shouldBe 2
       inside(cpg.method("foo").methodReturn.l) { case List(fooReturn) =>
         fooReturn.typeFullName shouldBe "ANY"
       }
       val astReturns = cpg.method("foo").ast.isReturn.l
-      inside(astReturns) { case List(ret1, ret2, ret3) =>
-        ret1.code shouldBe ""
-        ret2.code shouldBe "return 1"
-        ret2.lineNumber shouldBe Option(4)
-        ret3.code shouldBe "return 2"
-        ret3.lineNumber shouldBe Option(6)
+      inside(astReturns) { case List(ret1, ret2) =>
+        ret1.code shouldBe "return 1"
+        ret1.lineNumber shouldBe Option(4)
+        ret2.code shouldBe "return 2"
+        ret2.lineNumber shouldBe Option(6)
       }
     }
   }

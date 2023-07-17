@@ -7,7 +7,8 @@ lexer grammar RubyLexer;
 tokens {
     STRING_INTERPOLATION_END,
     REGULAR_EXPRESSION_INTERPOLATION_END,
-    REGULAR_EXPRESSION_START
+    REGULAR_EXPRESSION_START,
+    QUOTED_NON_EXPANDED_STRING_LITERAL_END
 }
 
 options {
@@ -276,6 +277,15 @@ fragment SINGLE_QUOTED_STRING_NON_ESCAPED_CHARACTER_SEQUENCE
 DOUBLE_QUOTED_STRING_START
     :   '"'
         -> pushMode(DOUBLE_QUOTED_STRING_MODE)
+    ;
+
+QUOTED_NON_EXPANDED_STRING_LITERAL_START
+    :   '%q' {!Character.isAlphabetic(_input.LA(1))}?
+    {
+        pushQuotedNonExpandedStringDelimiter(_input.LA(1));
+        _input.consume();
+        pushMode(QUOTED_NON_EXPANDED_STRING_MODE);
+    }
     ;
 
 // --------------------------------------------------------
@@ -565,6 +575,41 @@ fragment SIMPLE_ESCAPE_SEQUENCE
 
 fragment DOUBLE_ESCAPED_CHARACTER
     :   [ntrfvaebs]
+    ;
+
+// --------------------------------------------------------
+// %q string mode
+// --------------------------------------------------------
+
+mode QUOTED_NON_EXPANDED_STRING_MODE;
+
+fragment QUOTED_NON_EXPANDED_ESCAPED_CHARACTER
+    :   '\\' QUOTED_NON_EXPANDED_NON_ESCAPED_CHARACTER
+    ;
+
+fragment QUOTED_NON_EXPANDED_NON_ESCAPED_CHARACTER
+    :   ~[\r\n]
+    |   '\n' {_input.LA(1) != '\r'}?
+    ;
+
+QUOTED_NON_EXPANDED_CHARACTER
+    :   QUOTED_NON_EXPANDED_ESCAPED_CHARACTER
+    |   QUOTED_NON_EXPANDED_NON_ESCAPED_CHARACTER
+        {
+            int readChar = _input.LA(-1);
+            
+            if (isQuotedNonExpandedStringClosingDelimiter(readChar)) {
+                popQuotedNonExpandedStringDelimiter();
+                
+                if (isQuotedNonExpandedStringDelimitersEmpty()) {
+                    setType(QUOTED_NON_EXPANDED_STRING_LITERAL_END);
+                    popMode();
+                }
+            }
+            else if (isQuotedNonExpandedStringOpeningDelimiter(readChar)) {
+                pushQuotedNonExpandedStringDelimiter(readChar);
+            }
+        }
     ;
 
 // --------------------------------------------------------
