@@ -363,7 +363,7 @@ private class UsageAnalyzer(
          Using getOrElse generates failing tests in some frontends, so that we have to do a check here:
          */
         if (use.isInstanceOf[Call]) {
-          callAstChildrenToList(use).exists(call => call.contains(param.name))
+          return callAstChildrenToList(use).exists(call => call.contains(param.name))
         }
 
         nodeToString(use).contains(param.name)
