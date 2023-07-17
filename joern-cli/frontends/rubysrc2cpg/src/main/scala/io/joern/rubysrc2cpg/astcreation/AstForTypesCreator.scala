@@ -3,9 +3,10 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.parser.RubyParser.{
   ClassDefinitionPrimaryContext,
   ClassOrModuleReferenceContext,
+  ModuleDefinitionPrimaryContext,
   ScopedConstantReferenceContext
 }
-import io.shiftleft.codepropertygraph.generated.ModifierTypes
+import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -60,16 +61,40 @@ trait AstForTypesCreator { this: AstCreator =>
     astExprOfCommand ++ Seq(bodyBlockAst)
   }
 
-  def astForClassOrModuleReferenceContext(
-    ctx: ClassOrModuleReferenceContext,
-    baseClassName: Option[String] = None
-  ): Seq[Ast] = {
-    val className = ctx.className(baseClassName)
+  def astForModuleDefinitionPrimaryContext(ctx: ModuleDefinitionPrimaryContext): Seq[Ast] = {
+    val className = ctx.moduleDefinition().classOrModuleReference().classOrModuleName(None)
 
     if (className != Defines.Any) {
       classStack.push(className)
+
+      val fullName = classStack.reverse.mkString(pathSep)
+      val namespaceBlock = NewNamespaceBlock()
+        .name(className)
+        .fullName(fullName)
+        .filename(filename)
+
+      val moduleBodyAst = astInFakeMethod(className, fullName, filename, ctx)
+      classStack.pop()
+      Seq(Ast(namespaceBlock).withChildren(moduleBodyAst))
+    } else {
+      Seq.empty
     }
-    Seq(Ast())
+
+  }
+
+  private def astInFakeMethod(
+    name: String,
+    fullName: String,
+    path: String,
+    ctx: ModuleDefinitionPrimaryContext
+  ): Seq[Ast] = {
+
+    val fakeGlobalTypeDecl = NewTypeDecl()
+      .name(name)
+      .fullName(fullName)
+
+    val bodyAst = astForClassBody(ctx.moduleDefinition().bodyStatement())
+    Seq(Ast(fakeGlobalTypeDecl).withChildren(bodyAst))
   }
 
   private def getClassNameScopedConstantReferenceContext(ctx: ScopedConstantReferenceContext): String = {
@@ -115,7 +140,7 @@ trait AstForTypesCreator { this: AstCreator =>
     def className(baseClassName: Option[String] = None): String =
       Option(ctx.classDefinition())
         .map(_.classOrModuleReference())
-        .map(_.className(baseClassName))
+        .map(_.classOrModuleName(baseClassName))
         .getOrElse(Defines.Any)
   }
 
@@ -123,7 +148,7 @@ trait AstForTypesCreator { this: AstCreator =>
 
     def hasScopedConstantReference: Boolean = Option(ctx.scopedConstantReference()).isDefined
 
-    def className(baseClassName: Option[String] = None): String =
+    def classOrModuleName(baseClassName: Option[String] = None): String =
       if (ctx.hasScopedConstantReference)
         getClassNameScopedConstantReferenceContext(ctx.scopedConstantReference())
       else
