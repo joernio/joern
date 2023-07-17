@@ -8,6 +8,18 @@ import io.shiftleft.semanticcpg.language._
 class TypeNodePassTests extends CCodeToCpgSuite {
 
   "TypeNodePass" should {
+
+    "be correct for top level type definitions" in {
+      val cpg = code("""
+          |typedef const char * foo;
+          |typedef foo * bar;
+          |""".stripMargin)
+      val List(foo) = cpg.typeDecl.nameExact("foo").l
+      val List(bar) = cpg.typeDecl.nameExact("bar").l
+      foo.aliasTypeFullName shouldBe Some("char")
+      bar.aliasTypeFullName shouldBe Some("char")
+    }
+
     "be correct for static decl assignment" in {
       val cpg = code("""
           |void method() {
