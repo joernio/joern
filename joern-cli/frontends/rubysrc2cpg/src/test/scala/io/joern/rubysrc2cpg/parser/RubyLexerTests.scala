@@ -460,4 +460,50 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     )
   }
 
+  "empty `%i` symbol array literals" should "be recognized as such" in {
+    val eg = Seq("%i()", "%i[]", "%i{}", "%i<>", "%i##", "%i!!", "%i--", "%i@@", "%i++", "%i**", "%i//", "%i&&")
+    all(eg.map(tokenize)) shouldBe Seq(
+      QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_START,
+      QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END,
+      EOF
+    )
+  }
+
+  "single-character `%i` symbol array literals" should "be recognized as such" in {
+    val eg =
+      Seq("%i(x)", "%i[y]", "%i{z}", "%i<w>", "%i#a#", "%i!b!", "%i-_-", "%i@c@", "%i+d+", "%i*e*", "%i/#/", "%i&!&")
+    all(eg.map(tokenize)) shouldBe Seq(
+      QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_START,
+      QUOTED_NON_EXPANDED_SYMBOL_ARRAY_CHARACTER,
+      QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END,
+      EOF
+    )
+  }
+
+  "two-word `%i` symbol array literals" should "be recognized as such" in {
+    val eg = Seq(
+      "%i(xx y)",
+      "%i[yy z]",
+      "%i{z0 w}",
+      "%i<w; 1>",
+      "%i#a& ?#",
+      "%i!b_ c!",
+      "%i-_= +-",
+      "%i@c\" d@",
+      "%i+d/ *+",
+      "%i*ef <*",
+      "%i/#< >/",
+      "%i&!! %&"
+    )
+    all(eg.map(tokenize)) shouldBe Seq(
+      QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_START,
+      QUOTED_NON_EXPANDED_SYMBOL_ARRAY_CHARACTER,
+      QUOTED_NON_EXPANDED_SYMBOL_ARRAY_CHARACTER,
+      QUOTED_NON_EXPANDED_SYMBOL_ARRAY_SEPARATOR,
+      QUOTED_NON_EXPANDED_SYMBOL_ARRAY_CHARACTER,
+      QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END,
+      EOF
+    )
+  }
+
 }
