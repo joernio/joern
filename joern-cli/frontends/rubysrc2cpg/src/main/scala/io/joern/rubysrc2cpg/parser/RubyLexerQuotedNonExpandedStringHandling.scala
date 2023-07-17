@@ -9,38 +9,38 @@ trait RubyLexerQuotedNonExpandedStringHandling { this: RubyLexerBase =>
   def pushQuotedNonExpandedStringDelimiter(char: Int): Unit = {
     quotedNonExpandedStringLiteralOpeningDelimiters.push(char)
   }
-  
+
   def popQuotedNonExpandedStringDelimiter(): Unit = {
     quotedNonExpandedStringLiteralOpeningDelimiters.pop()
   }
-  
+
   def isQuotedNonExpandedStringDelimitersEmpty: Boolean = {
     quotedNonExpandedStringLiteralOpeningDelimiters.isEmpty
   }
-  
+
   def isQuotedNonExpandedStringOpeningDelimiter(char: Int): Boolean = {
     char == currentOpeningDelimiter()
   }
-  
+
   def isQuotedNonExpandedStringClosingDelimiter(char: Int): Boolean = {
     char == currentClosingDelimiter()
   }
-  
+
   def currentQuotedNonExpandedStringLiteralOpeningDelimiter(): Int = {
     quotedNonExpandedStringLiteralOpeningDelimiters.top
   }
-  
+
   private def currentOpeningDelimiter(): Int = {
     quotedNonExpandedStringLiteralOpeningDelimiters.top
   }
-  
-  private def currentClosingDelimiter(): Int = 
+
+  private def currentClosingDelimiter(): Int =
     currentOpeningDelimiter() match {
       case '(' => ')'
       case '[' => ']'
       case '{' => '}'
       case '<' => '>'
-      case c => c
+      case c   => c
     }
-    
+
 }

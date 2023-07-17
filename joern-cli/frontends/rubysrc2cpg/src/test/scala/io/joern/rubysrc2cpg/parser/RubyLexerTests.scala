@@ -366,18 +366,10 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       EOF
     )
   }
-  
-  "single-character `%q` string literals" should "be recognized as such" in {
-    val eg = Seq("%q(x)", "%q[y]", "%q{z}", "%q<w>", "%q#a#", "%q!b!", "%q-_-", "%q@c@", "%q+d+", "%q*e*", "%q/#/", "%q&!&")
-    all(eg.map(tokenize)) shouldBe Seq(
-      QUOTED_NON_EXPANDED_STRING_LITERAL_START,
-      QUOTED_NON_EXPANDED_CHARACTER,
-      QUOTED_NON_EXPANDED_STRING_LITERAL_END,
-      EOF)
-  }
 
-  "delimiter-escaped-single-character `%q` string literals" should "be recognized as such" in {
-    val eg = Seq("%q(\\))", "%q[\\]]", "%q{\\}}", "%q<\\>>", "%q#\\##", "%q!\\!!", "%q-\\--", "%q@\\@@", "%q+\\++", "%q*\\**", "%q/\\//", "%q&\\&&")
+  "single-character `%q` string literals" should "be recognized as such" in {
+    val eg =
+      Seq("%q(x)", "%q[y]", "%q{z}", "%q<w>", "%q#a#", "%q!b!", "%q-_-", "%q@c@", "%q+d+", "%q*e*", "%q/#/", "%q&!&")
     all(eg.map(tokenize)) shouldBe Seq(
       QUOTED_NON_EXPANDED_STRING_LITERAL_START,
       QUOTED_NON_EXPANDED_CHARACTER,
@@ -385,7 +377,30 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       EOF
     )
   }
-  
+
+  "delimiter-escaped-single-character `%q` string literals" should "be recognized as such" in {
+    val eg = Seq(
+      "%q(\\))",
+      "%q[\\]]",
+      "%q{\\}}",
+      "%q<\\>>",
+      "%q#\\##",
+      "%q!\\!!",
+      "%q-\\--",
+      "%q@\\@@",
+      "%q+\\++",
+      "%q*\\**",
+      "%q/\\//",
+      "%q&\\&&"
+    )
+    all(eg.map(tokenize)) shouldBe Seq(
+      QUOTED_NON_EXPANDED_STRING_LITERAL_START,
+      QUOTED_NON_EXPANDED_CHARACTER,
+      QUOTED_NON_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
   "nested `%q` string literals" should "be recognized as such" in {
     val eg = Seq("%q(()())", "%q[[][]]", "%q{{}{}}", "%q<<><>>")
     all(eg.map(tokenize)) shouldBe Seq(
