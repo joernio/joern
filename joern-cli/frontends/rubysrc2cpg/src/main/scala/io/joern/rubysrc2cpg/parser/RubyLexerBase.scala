@@ -7,7 +7,10 @@ import org.antlr.v4.runtime.{CharStream, Lexer, Token}
 abstract class RubyLexerBase(input: CharStream)
     extends Lexer(input)
     with RubyLexerRegexHandling
-    with RubyLexerStringInterpolationHandling {
+    with RubyLexerStringInterpolationHandling
+    with RubyLexerQuotedNonExpandedStringHandling
+    with RubyLexerQuotedNonExpandedStringArrayHandling
+    with RubyLexerQuotedNonExpandedSymbolArrayHandling {
 
   /** The previously (non-WS) emitted token (in DEFAULT_CHANNEL.) */
   protected var previousNonWsToken: Option[Token] = None
