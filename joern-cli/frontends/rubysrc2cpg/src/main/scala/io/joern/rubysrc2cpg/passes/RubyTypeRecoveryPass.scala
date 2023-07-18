@@ -79,4 +79,39 @@ private class RecoverForRubyFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, 
     if (memberTypes.nonEmpty) memberTypes else super.methodReturnValues(methodFullNames)
   }
 
+  override def visitIdentifierAssignedToCall(i: Identifier, c: Call): Set[String] = {
+    if (c.name.startsWith("<operator>")) {
+      visitIdentifierAssignedToOperator(i, c, c.name)
+    } else if (symbolTable.contains(c) && isConstructor(c)) {
+      visitIdentifierAssignedToConstructor(i, c)
+    } else if (symbolTable.contains(c)) {
+      visitIdentifierAssignedToCallRetVal(i, c)
+    } else if (c.argument.headOption.exists(symbolTable.contains)) {
+      setCallMethodFullNameFromBase(c)
+      // Repeat this method now that the call has a type
+      visitIdentifierAssignedToCall(i, c)
+    } else if (
+      c.argument.headOption
+        .exists(_.isCall) && c.argument.head.asInstanceOf[Call].name.equals("<operator>.scopeResolution")
+    ) {
+      setCallMethodFullNameFromBaseScopeResolution(c)
+      // Repeat this method now that the call has a type
+      visitIdentifierAssignedToCall(i, c)
+    } else {
+      // We can try obtain a return type for this call
+      visitIdentifierAssignedToCallRetVal(i, c)
+    }
+  }
+
+  protected def setCallMethodFullNameFromBaseScopeResolution(c: Call): Set[String] = {
+    val recTypes = c.argument.headOption
+      .map {
+        case x: Call if x.name.equals("<operator>.scopeResolution") =>
+          x.argument.lastOption.map(i => symbolTable.get(i)).getOrElse(Set.empty[String])
+      }
+      .getOrElse(Set.empty[String])
+    val callTypes = recTypes.map(_.concat(s"$pathSep${c.name}"))
+    symbolTable.append(c, callTypes)
+  }
+
 }
