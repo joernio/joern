@@ -353,6 +353,18 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     tokenize(code) shouldBe Seq(LOCAL_VARIABLE_IDENTIFIER, WS, SLASH, WS, LOCAL_VARIABLE_IDENTIFIER, EOF)
   }
 
+  "Addition between class fields" should "not be confused with +@ token" in {
+    // This test exists to check if RubyLexer properly decided between PLUS and PLUSAT
+    val code = "x+@y"
+    tokenize(code) shouldBe Seq(LOCAL_VARIABLE_IDENTIFIER, PLUS, INSTANCE_VARIABLE_IDENTIFIER, EOF)
+  }
+
+  "Subtraction between class fields" should "not be confused with -@ token" in {
+    // This test exists to check if RubyLexer properly decided between MINUS and MINUSAT
+    val code = "x-@y"
+    tokenize(code) shouldBe Seq(LOCAL_VARIABLE_IDENTIFIER, MINUS, INSTANCE_VARIABLE_IDENTIFIER, EOF)
+  }
+
   "Invocation of command with regex literal" should "not be confused with binary division" in {
     val code = "puts /x/"
     tokenize(code) shouldBe Seq(
