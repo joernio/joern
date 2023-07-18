@@ -4,7 +4,7 @@ import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
 
@@ -862,6 +862,13 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
 
       val List(argument2) = callWithParen.argument.isLiteral.l
       argument2.code shouldBe "132"
+    }
+
+    "have generated call nodes for regex interpolation" in {
+      val cpg               = code("/x#{Regexp.quote(foo)}b#{x+'z'}a/")
+      val List(literalNode) = cpg.literal.l
+      cpg.call.size shouldBe 2
+      literalNode.code shouldBe "'z'"
     }
   }
 }

@@ -2246,4 +2246,30 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     }
   }
 
+  "flow through a regex interpolation" should {
+    val cpg = code(s"""
+        |x="abc"
+        |y=/x#{x}b/
+        |puts y
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).size shouldBe 2
+    }
+  }
+
+  "flow through a regex interpolation with multiple expressions" should {
+    val cpg = code("""
+        |x="abc"
+        |y=/x#{x}b#{x+'z'}b{x+'y'+'z'}w/
+        |puts y
+        |""".stripMargin)
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).size shouldBe 3
+    }
+  }
 }
