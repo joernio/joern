@@ -122,7 +122,6 @@ trait AstForExpressionsCreator { this: AstCreator =>
         astForStatements(inter.compoundStatement().statements(), false, false)
       })
       .toSeq
-    println(varAsts)
     varAsts
   }
 
