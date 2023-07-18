@@ -258,6 +258,20 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     )
   }
 
+  "Non-empty regex literal on the RHS of an assignment" should "be recognized as such" in {
+    val code = """NAME_REGEX = /\A[^0-9!\``@#\$%\^&*+_=]+\z/"""
+    tokenize(code) shouldBe Seq(
+      CONSTANT_IDENTIFIER,
+      WS,
+      EQ,
+      WS,
+      REGULAR_EXPRESSION_START,
+      REGULAR_EXPRESSION_BODY,
+      REGULAR_EXPRESSION_END,
+      EOF
+    )
+  }
+
   "Regex literals without metacharacters" should "be recognized as such" in {
     val eg = Seq("/regexp/", "/a regexp/")
     all(eg.map(tokenize)) shouldBe Seq(REGULAR_EXPRESSION_START, REGULAR_EXPRESSION_BODY, REGULAR_EXPRESSION_END, EOF)
@@ -505,5 +519,4 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       EOF
     )
   }
-
 }
