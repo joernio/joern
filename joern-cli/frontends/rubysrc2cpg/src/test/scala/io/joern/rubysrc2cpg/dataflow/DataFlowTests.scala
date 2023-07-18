@@ -2246,7 +2246,38 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     }
   }
 
-  "flow through a regex interpolation" should {
+  "Data flow through a keyword? named method usage" should {
+    val cpg = code("""
+        |x = 1
+        |y = x.nil?
+        |puts y
+        |""".stripMargin)
+
+    "be found" in {
+      val src  = cpg.identifier.name("x").l
+      val sink = cpg.call.name("puts").l
+      sink.reachableByFlows(src).size shouldBe 2
+    }
+  }
+
+  "Data flow through a keyword inside a association" should {
+    val cpg = code("""
+        |def foo(arg)
+        |puts arg
+        |end
+        |
+        |x = 1
+        |foo if: x.nil?
+        |""".stripMargin)
+
+    "be found" in {
+      val src  = cpg.identifier.name("x").l
+      val sink = cpg.call.name("puts").l
+      sink.reachableByFlows(src).size shouldBe 2
+    }
+  }
+
+  "Data flow through a regex interpolation" should {
     val cpg = code(s"""
         |x="abc"
         |y=/x#{x}b/
