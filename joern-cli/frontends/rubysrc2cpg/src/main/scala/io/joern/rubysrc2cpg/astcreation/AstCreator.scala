@@ -528,7 +528,7 @@ class AstCreator(
       .name
 
     /* If we have ".new" usage, we skip block creation and instead create a typeDecl node*/
-    if (methodName == "new") {
+    if (methodName == "new" && baseAst.headOption.get.nodes.head.isInstanceOf[NewIdentifier]) {
       // most probably we also have single "Class" identifier in Class.new, so check that
       val identifierName = baseAst.headOption.get.nodes.head.asInstanceOf[NewIdentifier].name
       if (identifierName == "Class") {
@@ -537,7 +537,16 @@ class AstCreator(
           .lineNumber(line(ctx).head)
         typeDecls.addOne(Ast(newTypeDeclNode))
       }
-      Seq()
+      // create call node for .new
+      val callNode = methodNameAst.head.nodes
+        .filter(node => node.isInstanceOf[NewCall])
+        .head
+        .asInstanceOf[NewCall]
+      callNode
+        .code(methodName)
+        .lineNumber(line(ctx).head)
+        .columnNumber(column(ctx).head)
+      Seq(callAst(callNode, argsAst, baseAst.headOption))
     } else if (ctx.block() != null && ctx.block().compoundStatement.statements() != null) {
       val blockMethodName = methodName + terminalNode.getSymbol.getLine
       val blockMethodAsts =

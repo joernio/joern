@@ -26,7 +26,7 @@ class FunctionTests extends RubyCode2CpgFixture {
         |  end
         |end
         |
-        |p = Person. new
+        |p = Person.new
         |p.greet
         |""".stripMargin)
 
