@@ -1,11 +1,11 @@
 package io.joern.rubysrc2cpg.parser
 
 class ProcDefinitionTests extends RubyParserAbstractTest {
-  
+
   "A one-line proc definition" should {
-    
+
     "be parsed as a primary expression" when {
-      
+
       "it contains no parameters and no statements in a brace block" in {
         val code = "-> {}"
         printAst(_.primary(), code) shouldBe
@@ -18,7 +18,7 @@ class ProcDefinitionTests extends RubyParserAbstractTest {
             |    CompoundStatement
             |    }""".stripMargin
       }
-      
+
       "it contains no parameters and no statements in a do block" in {
         val code = "-> do ; end"
         printAst(_.primary(), code) shouldBe
@@ -36,7 +36,7 @@ class ProcDefinitionTests extends RubyParserAbstractTest {
             |    CompoundStatement
             |    end""".stripMargin
       }
-      
+
       "it contains a mandatory parameter and no statements in a brace block" in {
         val code = "-> (x) {}"
         printAst(_.primary(), code) shouldBe
@@ -55,7 +55,7 @@ class ProcDefinitionTests extends RubyParserAbstractTest {
             |    CompoundStatement
             |    }""".stripMargin
       }
-      
+
       "it contains a mandatory parameter and no statements in a do block" in {
         val code = "-> (x) do ; end"
         printAst(_.primary(), code) shouldBe
@@ -79,7 +79,7 @@ class ProcDefinitionTests extends RubyParserAbstractTest {
             |    CompoundStatement
             |    end""".stripMargin
       }
-      
+
       "it contains an optional numeric parameter and no statements in a brace block" in {
         val code = "->(x = 1) {}"
         printAst(_.primary(), code) shouldBe
@@ -106,7 +106,7 @@ class ProcDefinitionTests extends RubyParserAbstractTest {
             |    CompoundStatement
             |    }""".stripMargin
       }
-      
+
       "it contains a keyword parameter and no statements in a do block" in {
         val code = "-> (foo: 1) do ; end"
         printAst(_.primary(), code) shouldBe
@@ -138,7 +138,7 @@ class ProcDefinitionTests extends RubyParserAbstractTest {
             |    CompoundStatement
             |    end""".stripMargin
       }
-      
+
       "it contains two mandatory parameters and two puts statements in a brace block" in {
         val code = "->(x, y) {puts x; puts y}"
         printAst(_.primary(), code) shouldBe
@@ -194,7 +194,7 @@ class ProcDefinitionTests extends RubyParserAbstractTest {
             |                 y
             |    }""".stripMargin
       }
-      
+
     }
   }
 
