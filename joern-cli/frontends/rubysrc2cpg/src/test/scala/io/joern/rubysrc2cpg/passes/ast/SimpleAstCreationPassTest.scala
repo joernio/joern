@@ -4,7 +4,7 @@ import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
 
@@ -864,37 +864,43 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       argument2.code shouldBe "132"
     }
 
-    "have correct structure for keyword? named method usage usage" in {
-      val cpg = code("x = 1.nil?")
+    "have generated call nodes for regex interpolation" in {
+      val cpg               = code("/x#{Regexp.quote(foo)}b#{x+'z'}a/")
+      val List(literalNode) = cpg.literal.l
+      cpg.call.size shouldBe 2
+      literalNode.code shouldBe "'z'"
 
-      val List(callNode) = cpg.call.nameExact("nil?").l
-      callNode.code shouldBe "1.nil?"
-      callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(5)
+      "have correct structure for keyword? named method usage usage" in {
+        val cpg = code("x = 1.nil?")
 
-      val List(arg) = callNode.argument.isLiteral.l
-      arg.code shouldBe "1"
-    }
+        val List(callNode) = cpg.call.nameExact("nil?").l
+        callNode.code shouldBe "1.nil?"
+        callNode.lineNumber shouldBe Some(1)
+        callNode.columnNumber shouldBe Some(5)
 
-    "have correct structure for keyword usage inside association" in {
-      val cpg = code("foo if: x.nil?")
+        val List(arg) = callNode.argument.isLiteral.l
+        arg.code shouldBe "1"
+      }
 
-      val List(callNode) = cpg.call.nameExact("nil?").l
-      callNode.code shouldBe "x.nil?"
-      callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(9)
+      "have correct structure for keyword usage inside association" in {
+        val cpg = code("foo if: x.nil?")
 
-      val List(arg) = callNode.argument.isIdentifier.l
-      arg.code shouldBe "x"
+        val List(callNode) = cpg.call.nameExact("nil?").l
+        callNode.code shouldBe "x.nil?"
+        callNode.lineNumber shouldBe Some(1)
+        callNode.columnNumber shouldBe Some(9)
 
-      val List(assocCallNode) = cpg.call.nameExact("<operator>.activeRecordAssociation").l
-      assocCallNode.code shouldBe "if: x.nil?"
-      assocCallNode.lineNumber shouldBe Some(1)
-      assocCallNode.columnNumber shouldBe Some(6)
+        val List(arg) = callNode.argument.isIdentifier.l
+        arg.code shouldBe "x"
 
-      assocCallNode.argument.size shouldBe 2
-      assocCallNode.argument.argumentIndex(1).head.code shouldBe "if"
-      assocCallNode.argument.argumentIndex(2).head.code shouldBe "x.nil?"
+        val List(assocCallNode) = cpg.call.nameExact("<operator>.activeRecordAssociation").l
+        assocCallNode.code shouldBe "if: x.nil?"
+        assocCallNode.lineNumber shouldBe Some(1)
+        assocCallNode.columnNumber shouldBe Some(6)
+
+        assocCallNode.argument.size shouldBe 2
+        assocCallNode.argument.argumentIndex(1).head.code shouldBe "if"
+        assocCallNode.argument.argumentIndex(2).head.code shouldBe "x.nil?"
     }
   }
 }

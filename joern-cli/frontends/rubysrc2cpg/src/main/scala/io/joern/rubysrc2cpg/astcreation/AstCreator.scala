@@ -341,10 +341,12 @@ class AstCreator(
       astForSimpleScopedConstantReferencePrimaryContext(ctx)
     case ctx: ChainedScopedConstantReferencePrimaryContext =>
       astForChainedScopedConstantReferencePrimaryContext(ctx)
-    case ctx: ArrayConstructorPrimaryContext          => astForArrayConstructorPrimaryContext(ctx)
-    case ctx: HashConstructorPrimaryContext           => astForHashConstructorPrimaryContext(ctx)
-    case ctx: LiteralPrimaryContext                   => Seq(astForLiteralPrimaryExpression(ctx))
-    case ctx: StringExpressionPrimaryContext          => astForStringExpression(ctx.stringExpression)
+    case ctx: ArrayConstructorPrimaryContext => astForArrayConstructorPrimaryContext(ctx)
+    case ctx: HashConstructorPrimaryContext  => astForHashConstructorPrimaryContext(ctx)
+    case ctx: LiteralPrimaryContext          => Seq(astForLiteralPrimaryExpression(ctx))
+    case ctx: StringExpressionPrimaryContext => astForStringExpression(ctx.stringExpression)
+    case ctx: RegexInterpolationPrimaryContext =>
+      astForRegexInterpolationPrimaryContext(ctx.regexInterpolation)
     case ctx: IsDefinedPrimaryContext                 => Seq(astForIsDefinedPrimaryExpression(ctx))
     case ctx: SuperExpressionPrimaryContext           => Seq(astForSuperExpression(ctx))
     case ctx: IndexingExpressionPrimaryContext        => astForIndexingExpressionPrimaryContext(ctx)
