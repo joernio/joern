@@ -870,7 +870,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.nameExact("nil?").l
       callNode.code shouldBe "1.nil?"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(0)
+      callNode.columnNumber shouldBe Some(5)
 
       val List(arg) = callNode.argument.isLiteral.l
       arg.code shouldBe "1"
@@ -882,7 +882,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(callNode) = cpg.call.nameExact("nil?").l
       callNode.code shouldBe "x.nil?"
       callNode.lineNumber shouldBe Some(1)
-      callNode.columnNumber shouldBe Some(0)
+      callNode.columnNumber shouldBe Some(9)
 
       val List(arg) = callNode.argument.isIdentifier.l
       arg.code shouldBe "x"
@@ -890,7 +890,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(assocCallNode) = cpg.call.nameExact("<operator>.activeRecordAssociation").l
       assocCallNode.code shouldBe "if: x.nil?"
       assocCallNode.lineNumber shouldBe Some(1)
-      assocCallNode.columnNumber shouldBe Some(0)
+      assocCallNode.columnNumber shouldBe Some(6)
 
       assocCallNode.argument.size shouldBe 2
       assocCallNode.argument.argumentIndex(1).head.code shouldBe "if"

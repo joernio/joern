@@ -435,7 +435,9 @@ class AstCreator(
           logger.error(s"astForIndexingArgumentsContext() $filename, ${ctx.getText} All contexts mismatched.")
           Seq(Ast())
       }
-    case None => Seq()
+    case None =>
+      logger.error(s"astForIndexingArgumentsContext() $filename, ${ctx.getText} All contexts mismatched.")
+      Seq()
   }
 
   def astForArrayConstructorPrimaryContext(ctx: ArrayConstructorPrimaryContext): Seq[Ast] = {
@@ -1447,7 +1449,9 @@ class AstCreator(
           logger.error(s"astForArgumentsWithParenthesesContext() $filename, ${ctx.getText} All contexts mismatched.")
           Seq(Ast())
       }
-    case None => Seq()
+    case None =>
+      logger.error(s"astForArgumentsWithParenthesesContext() $filename, ${ctx.getText} All contexts mismatched.")
+      Seq()
   }
 
   def astForBlockParametersContext(ctx: BlockParametersContext): Seq[Ast] = {
