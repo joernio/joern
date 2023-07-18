@@ -863,5 +863,38 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(argument2) = callWithParen.argument.isLiteral.l
       argument2.code shouldBe "132"
     }
+
+    "have correct structure for keyword usage" in {
+      val cpg = code("x = 1.nil?")
+
+      val List(callNode) = cpg.call.nameExact("nil?").l
+      callNode.code shouldBe "1.nil?"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(0)
+
+      val List(arg) = callNode.argument.isLiteral.l
+      arg.code shouldBe "1"
+    }
+
+    "have correct structure for keyword usage inside association" in {
+      val cpg = code("foo if: x.nil?")
+
+      val List(callNode) = cpg.call.nameExact("nil?").l
+      callNode.code shouldBe "x.nil?"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(0)
+
+      val List(arg) = callNode.argument.isIdentifier.l
+      arg.code shouldBe "x"
+
+      val List(assocCallNode) = cpg.call.nameExact("<operator>.activeRecordAssociation").l
+      assocCallNode.code shouldBe "if: x.nil?"
+      assocCallNode.lineNumber shouldBe Some(1)
+      assocCallNode.columnNumber shouldBe Some(0)
+
+      assocCallNode.argument.size shouldBe 2
+      assocCallNode.argument.argumentIndex(1).head.code shouldBe "if"
+      assocCallNode.argument.argumentIndex(2).head.code shouldBe "x.nil?"
+    }
   }
 }

@@ -1552,7 +1552,6 @@ class AstCreator(
       .name(operatorText)
       .code(ctx.getText)
       .methodFullName(operatorText)
-      .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .typeFullName(Defines.Any)
       .lineNumber(terminalNode.getSymbol.getLine)
