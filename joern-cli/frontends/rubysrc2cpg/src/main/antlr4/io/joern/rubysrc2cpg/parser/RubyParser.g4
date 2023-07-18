@@ -78,6 +78,7 @@ primary
     :   classDefinition                                                                                             # classDefinitionPrimary
     |   moduleDefinition                                                                                            # moduleDefinitionPrimary
     |   methodDefinition                                                                                            # methodDefinitionPrimary
+    |   procDefinition                                                                                              # procDefinitionPrimary
     |   yieldWithOptionalArgument                                                                                   # yieldWithOptionalArgumentPrimary
     |   ifExpression                                                                                                # ifExpressionPrimary
     |   unlessExpression                                                                                            # unlessExpressionPrimary
@@ -280,6 +281,10 @@ association
 
 methodDefinition
     :   DEF wsOrNl* methodNamePart WS* methodParameterPart wsOrNl* bodyStatement wsOrNl* END
+    ;
+
+procDefinition
+    :   MINUSGT WS? (LPAREN parameters? RPAREN)? WS? block
     ;
 
 methodNamePart

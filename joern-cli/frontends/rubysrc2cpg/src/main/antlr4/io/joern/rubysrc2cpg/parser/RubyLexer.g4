@@ -136,6 +136,7 @@ DOT2: '..';
 DOT3: '...';
 QMARK: '?';
 EQGT: '=>';
+MINUSGT: '->';
 
 fragment PUNCTUATOR
     :   LBRACK
