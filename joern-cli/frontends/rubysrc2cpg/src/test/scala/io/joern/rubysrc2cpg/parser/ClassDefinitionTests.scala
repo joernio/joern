@@ -1,11 +1,11 @@
 package io.joern.rubysrc2cpg.parser
 
 class ClassDefinitionTests extends RubyParserAbstractTest {
-  
+
   "A one-line singleton class definition" should {
-    
+
     "be parsed as a primary expression" when {
-      
+
       "it contains no members" in {
         val code = "class << self ; end"
         printAst(_.primary(), code) shouldBe
@@ -31,11 +31,11 @@ class ClassDefinitionTests extends RubyParserAbstractTest {
       }
     }
   }
-  
+
   "A multi-line singleton class definition" should {
-    
+
     "be parsed as a primary expression" when {
-      
+
       "it contains a single method definition" in {
         val code =
           """class << x
