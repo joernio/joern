@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.parser.RubyParser.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.nodes.{NewFieldIdentifier, NewJumpTarget, NewNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewFieldIdentifier, NewJumpTarget, NewLiteral, NewNode}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, ModifierTypes, Operators}
 import org.antlr.v4.runtime.ParserRuleContext
 
@@ -112,6 +112,18 @@ trait AstForExpressionsCreator { this: AstCreator =>
     case ctx: SimpleStringExpressionContext       => Seq(astForSimpleString(ctx.simpleString))
     case ctx: InterpolatedStringExpressionContext => astForStringInterpolationContext(ctx)
     case ctx: ConcatenatedStringExpressionContext => Seq(astForConcatenatedStringExpressions(ctx))
+  }
+
+  protected def astForRegexInterpolationPrimaryContext(ctx: RegexInterpolationContext): Seq[Ast] = {
+    val varAsts = ctx
+      .interpolatedRegexSequence()
+      .asScala
+      .flatMap(inter => {
+        astForStatements(inter.compoundStatement().statements(), false, false)
+      })
+      .toSeq
+    println(varAsts)
+    varAsts
   }
 
   protected def astForSimpleString(ctx: SimpleStringContext): Ast = ctx match {
