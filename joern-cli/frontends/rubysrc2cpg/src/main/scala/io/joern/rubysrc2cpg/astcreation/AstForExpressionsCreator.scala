@@ -114,6 +114,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     case ctx: ConcatenatedStringExpressionContext => Seq(astForConcatenatedStringExpressions(ctx))
   }
 
+  // Regex interpolation has been modeled just as a set of statements, that suffices to track dataflows
   protected def astForRegexInterpolationPrimaryContext(ctx: RegexInterpolationContext): Seq[Ast] = {
     val varAsts = ctx
       .interpolatedRegexSequence()
