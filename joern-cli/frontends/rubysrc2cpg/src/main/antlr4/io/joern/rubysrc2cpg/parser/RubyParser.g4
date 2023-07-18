@@ -464,7 +464,7 @@ ensureClause
 
 classDefinition
     :   CLASS wsOrNl* classOrModuleReference WS* (LT wsOrNl* expressionOrCommand)? separators wsOrNl* bodyStatement wsOrNl* END
-    |   CLASS wsOrNl* LT2 expressionOrCommand separator bodyStatement wsOrNl* END
+    |   CLASS wsOrNl* LT2 wsOrNl* expressionOrCommand separators wsOrNl* bodyStatement wsOrNl* END
     ;
 
 classOrModuleReference
