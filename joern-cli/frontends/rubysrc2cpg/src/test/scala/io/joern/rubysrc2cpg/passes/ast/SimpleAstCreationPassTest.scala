@@ -863,5 +863,14 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(argument2) = callWithParen.argument.isLiteral.l
       argument2.code shouldBe "132"
     }
+
+    "have correct structure for keyword?-like methods" in {
+      val cpg = code("a.nil?")
+
+      val List(callNode) = cpg.call.l
+      callNode.code shouldBe "a.nil?"
+      callNode.name shouldBe "nil?"
+      callNode.lineNumber shouldBe Some(1)
+    }
   }
 }

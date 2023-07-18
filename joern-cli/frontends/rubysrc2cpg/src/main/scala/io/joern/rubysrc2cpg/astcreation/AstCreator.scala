@@ -871,6 +871,8 @@ class AstCreator(
       Seq(astForCallNode(ctx, ctx.getText))
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
       Seq(astForCallNode(ctx, ctx.getText))
+    } else if (ctx.keyword() != null) {
+      Seq(astForCallNode(ctx, ctx.getText))
     } else {
       Seq(Ast())
     }
