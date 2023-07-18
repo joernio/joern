@@ -38,7 +38,7 @@ private def expressionIsPointer(argument: Expression, isSubExpression: Boolean =
     "literal_addrOf_subtraction = 3 - &i",
     "array_subtraction = x - p",
     "array_literal_subtraction = x - 3",
-    "array_addrOf_subtraction = x - &i",
+    "array_addrOf_subtraction = x - &i"
     // TODO: We don't have access to type info for indirect field member access.
     // "unsafe_struct = foo_t->p - 1"
   )

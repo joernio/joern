@@ -3,7 +3,7 @@ import scala.util.Try
 import versionsort.VersionHelper
 import com.typesafe.config.{Config, ConfigFactory}
 
-name               := "jssrc2cpg"
+name := "jssrc2cpg"
 
 dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test")
 
