@@ -869,38 +869,39 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val List(literalNode) = cpg.literal.l
       cpg.call.size shouldBe 2
       literalNode.code shouldBe "'z'"
+    }
 
-      "have correct structure for keyword? named method usage usage" in {
-        val cpg = code("x = 1.nil?")
+    "have correct structure for keyword? named method usage usage" in {
+      val cpg = code("x = 1.nil?")
 
-        val List(callNode) = cpg.call.nameExact("nil?").l
-        callNode.code shouldBe "1.nil?"
-        callNode.lineNumber shouldBe Some(1)
-        callNode.columnNumber shouldBe Some(5)
+      val List(callNode) = cpg.call.nameExact("nil?").l
+      callNode.code shouldBe "1.nil?"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(5)
 
-        val List(arg) = callNode.argument.isLiteral.l
-        arg.code shouldBe "1"
-      }
+      val List(arg) = callNode.argument.isLiteral.l
+      arg.code shouldBe "1"
+    }
 
-      "have correct structure for keyword usage inside association" in {
-        val cpg = code("foo if: x.nil?")
+    "have correct structure for keyword usage inside association" in {
+      val cpg = code("foo if: x.nil?")
 
-        val List(callNode) = cpg.call.nameExact("nil?").l
-        callNode.code shouldBe "x.nil?"
-        callNode.lineNumber shouldBe Some(1)
-        callNode.columnNumber shouldBe Some(9)
+      val List(callNode) = cpg.call.nameExact("nil?").l
+      callNode.code shouldBe "x.nil?"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(9)
 
-        val List(arg) = callNode.argument.isIdentifier.l
-        arg.code shouldBe "x"
+      val List(arg) = callNode.argument.isIdentifier.l
+      arg.code shouldBe "x"
 
-        val List(assocCallNode) = cpg.call.nameExact("<operator>.activeRecordAssociation").l
-        assocCallNode.code shouldBe "if: x.nil?"
-        assocCallNode.lineNumber shouldBe Some(1)
-        assocCallNode.columnNumber shouldBe Some(6)
+      val List(assocCallNode) = cpg.call.nameExact("<operator>.activeRecordAssociation").l
+      assocCallNode.code shouldBe "if: x.nil?"
+      assocCallNode.lineNumber shouldBe Some(1)
+      assocCallNode.columnNumber shouldBe Some(6)
 
-        assocCallNode.argument.size shouldBe 2
-        assocCallNode.argument.argumentIndex(1).head.code shouldBe "if"
-        assocCallNode.argument.argumentIndex(2).head.code shouldBe "x.nil?"
+      assocCallNode.argument.size shouldBe 2
+      assocCallNode.argument.argumentIndex(1).head.code shouldBe "if"
+      assocCallNode.argument.argumentIndex(2).head.code shouldBe "x.nil?"
     }
   }
 }
