@@ -903,5 +903,31 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       assocCallNode.argument.argumentIndex(1).head.code shouldBe "if"
       assocCallNode.argument.argumentIndex(2).head.code shouldBe "x.nil?"
     }
+
+    "have correct structure for proc definiton with procParameters and empty block" in {
+      val cpg =
+        code("-> (x,y) {}")
+      cpg.parameter.size shouldBe 3
+    }
+
+    "have correct structure for proc definiton with procParameters and non-empty block" in {
+      val cpg =
+        code("""-> (x,y) {
+            |if (x)
+            | y
+            |else
+            | b
+            |end
+            |}""".stripMargin)
+      cpg.parameter.size shouldBe 3
+      cpg.ifBlock.size shouldBe 1
+
+      cpg.parameter.head.code shouldBe "this"
+    }
+
+    "have correct structure for proc definition with no parameters and empty block" in {
+      val cpg = code("-> {}")
+      cpg.parameter.size shouldBe 1
+    }
   }
 }
