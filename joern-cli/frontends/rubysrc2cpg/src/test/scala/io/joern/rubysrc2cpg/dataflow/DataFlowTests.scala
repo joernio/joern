@@ -2246,4 +2246,18 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     }
   }
 
+  "Data flow through a keyword" should {
+    val cpg = code("""
+        |x = 1
+        |y = x.nil?
+        |puts y
+        |""".stripMargin)
+
+    "be found" in {
+      val src  = cpg.identifier.name("x").l
+      val sink = cpg.call.name("puts").l
+      sink.reachableByFlows(src).size shouldBe 2
+    }
+  }
+
 }
