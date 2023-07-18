@@ -67,6 +67,7 @@ class AstCreator(
   protected val pathSep = "."
 
   protected val blockMethods = ListBuffer[Ast]()
+  protected val typeDecls    = ListBuffer[Ast]()
 
   protected val relativeFilename: String =
     projectRoot.map(filename.stripPrefix).map(_.stripPrefix(JFile.separator)).getOrElse(filename)
@@ -125,7 +126,7 @@ class AstCreator(
     val statementCtx = programCtx.compoundStatement().statements()
     scope.pushNewScope(())
     val statementAsts = if (statementCtx != null) {
-      astForStatements(statementCtx, false, false) ++ blockMethods
+      astForStatements(statementCtx, false, false) ++ blockMethods ++ typeDecls
     } else {
       List[Ast](Ast())
     }
@@ -522,11 +523,23 @@ class AstCreator(
       Seq()
     }
 
-    if (ctx.block() != null) {
-      val blockName = methodNameAst.head.nodes.head
-        .asInstanceOf[NewCall]
-        .name
-      val blockMethodName = blockName + terminalNode.getSymbol.getLine
+    val methodName = methodNameAst.head.nodes.head
+      .asInstanceOf[NewCall]
+      .name
+
+    /* If we have ".new" usage, we skip block creation and instead create a typeDecl node*/
+    if (methodName == "new") {
+      // most probably we also have single "Class" identifier in Class.new, so check that
+      val identifierName = baseAst.headOption.get.nodes.head.asInstanceOf[NewIdentifier].name
+      if (identifierName == "Class") {
+        val newTypeDeclNode = NewTypeDecl()
+          .name("<anonymous>")
+          .lineNumber(line(ctx).head)
+        typeDecls.addOne(Ast(newTypeDeclNode))
+      }
+      Seq()
+    } else if (ctx.block() != null && ctx.block().compoundStatement.statements() != null) {
+      val blockMethodName = methodName + terminalNode.getSymbol.getLine
       val blockMethodAsts =
         astForBlockMethod(
           ctxStmt = ctx.block().compoundStatement.statements(),
@@ -544,7 +557,7 @@ class AstCreator(
       blockMethods.addOne(blockMethodAsts.head)
 
       val callNode = NewCall()
-        .name(blockName)
+        .name(methodName)
         .methodFullName(blockMethodNode.fullName)
         .typeFullName(Defines.Any)
         .code(blockMethodNode.code)
