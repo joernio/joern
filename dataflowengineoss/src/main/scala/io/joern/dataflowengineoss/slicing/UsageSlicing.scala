@@ -370,7 +370,7 @@ object UsageSlicing {
   /** Adds extensions to extract all declaration nodes from a method body.
     */
   implicit class MethodDataSourceExt(trav: Iterator[Method]) {
-    def declaration: Iterator[Declaration] = trav.local ++ trav.parameter
+    def declaration: Iterator[Declaration] = trav.ast.collectAll[Declaration]
 
   }
 
