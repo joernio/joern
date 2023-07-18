@@ -864,7 +864,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       argument2.code shouldBe "132"
     }
 
-    "have correct structure for keyword usage" in {
+    "have correct structure for keyword? named method usage usage" in {
       val cpg = code("x = 1.nil?")
 
       val List(callNode) = cpg.call.nameExact("nil?").l

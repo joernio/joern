@@ -2246,7 +2246,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     }
   }
 
-  "Data flow through a keyword" should {
+  "Data flow through a keyword? named method usage" should {
     val cpg = code("""
         |x = 1
         |y = x.nil?
