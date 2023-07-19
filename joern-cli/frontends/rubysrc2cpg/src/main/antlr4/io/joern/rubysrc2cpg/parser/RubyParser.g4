@@ -152,9 +152,8 @@ expressionOrCommands
 // --------------------------------------------------------
 
 invocationWithoutParentheses
-    :   command                                                                                                                 # singleCommandOnlyInvocationWithoutParentheses
-    |   chainedCommandWithDoBlock                                                                                               # chainedCommandDoBlockInvocationWithoutParentheses
-    |   chainedCommandWithDoBlock (DOT | COLON2) methodName argumentsWithoutParentheses                                         # chainedCommandDoBlockDorCol2mNameArgsInvocationWithoutParentheses
+    :   chainedCommandWithDoBlock                                                                                               # chainedCommandDoBlockInvocationWithoutParentheses
+    |   command                                                                                                                 # singleCommandOnlyInvocationWithoutParentheses
     |   RETURN WS arguments                                                                                                     # returnArgsInvocationWithoutParentheses
     |   BREAK WS arguments                                                                                                      # breakArgsInvocationWithoutParentheses
     |   NEXT WS arguments                                                                                                       # nextArgsInvocationWithoutParentheses
