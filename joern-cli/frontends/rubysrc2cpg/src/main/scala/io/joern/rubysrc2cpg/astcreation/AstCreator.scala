@@ -387,9 +387,10 @@ class AstCreator(
   }
 
   def astForProcDefinitionContext(ctx: ProcDefinitionContext): Seq[Ast] = {
-    if (ctx == null) return Seq(Ast())
     val localVarList  = ListBuffer[TerminalNode]()
     var parameterAsts = Seq(Ast())
+
+    // Note: For parameters in the Proc definiton, an implicit parameter which goes by the name of `this` is added to the cpg
     if (ctx.parameters() != null) {
       val mandatoryParameters = ctx
         .parameters()

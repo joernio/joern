@@ -920,14 +920,17 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
             |end
             |}""".stripMargin)
       cpg.parameter.size shouldBe 3
+      val List(paramOne, paramTwo, paramThree) = cpg.parameter.l
+      paramOne.name shouldBe "this"
+      paramTwo.name shouldBe "x"
+      paramThree.name shouldBe "y"
       cpg.ifBlock.size shouldBe 1
-
-      cpg.parameter.head.code shouldBe "this"
     }
 
     "have correct structure for proc definition with no parameters and empty block" in {
       val cpg = code("-> {}")
       cpg.parameter.size shouldBe 1
+      cpg.parameter.head.code shouldBe "this"
     }
 
     "have correct structure for proc definition with additional context" in {
