@@ -17,6 +17,7 @@ object RubyTypeRecoveryTests {
     packageTable.addTypeDecl("sendgrid-ruby", "API", "SendGrid.API")
     packageTable.addModule("dbi", "DBI", "DBI")
     packageTable.addTypeDecl("logger", "Logger", "Logger")
+    packageTable.addModule("stripe", "Customer", "Stripe.Customer")
     packageTable
   }
 
@@ -188,7 +189,7 @@ class RubyTypeRecoveryTests
 
   }
 
-  "assignment from a call to a method inside an imported module" should {
+  "assignment from a call to a identifier inside an imported module using new" should {
     lazy val cpg = code("""
         |require 'logger'
         |
@@ -207,6 +208,25 @@ class RubyTypeRecoveryTests
       log.typeFullName shouldBe "logger::program.Logger"
       val List(errorCall) = cpg.call("error").l
       errorCall.methodFullName shouldBe "logger::program.Logger.error"
+    }
+  }
+
+  "assignment from a call to a identifier inside an imported module using methodCall" should {
+    lazy val cpg = code("""
+        |require 'stripe'
+        |
+        |customer = Stripe::Customer.create
+        |
+        |""".stripMargin).cpg
+
+    "resolved the type of call" in {
+      val Some(create) = cpg.call("create").headOption: @unchecked
+      create.methodFullName shouldBe "stripe::program.Stripe.Customer.create"
+    }
+
+    "resolved the type of identifier" in {
+      val Some(customer) = cpg.identifier("customer").headOption: @unchecked
+      customer.typeFullName shouldBe "stripe::program.Stripe.Customer.create.<returnValue>"
     }
   }
 }

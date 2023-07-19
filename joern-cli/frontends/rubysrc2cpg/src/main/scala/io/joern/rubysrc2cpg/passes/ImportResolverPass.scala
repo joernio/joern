@@ -73,10 +73,13 @@ class ImportResolverPass(cpg: Cpg, packageTableInfo: PackageTable) extends XImpo
           .flatMap(module => Seq(ResolvedTypeDecl(module.fullName)))
           .toSet
 
+        // Expose methods which are directly present in a file, without any module, TypeDecl
         val resolvedMethods = cpg.method
           .where(_.file.name(s"${Pattern.quote(expResolvedPath)}\\.?.*"))
-          .whereNot(_.nameExact(":program"))
-          .whereNot(_.nameExact("<clinit>"))
+          .where(_.nameExact(":program"))
+          .astChildren
+          .astChildren
+          .isMethod
           .flatMap(method => Seq(ResolvedMethod(method.fullName, method.name)))
           .toSet
         resolvedTypeDecls ++ resolvedModules ++ resolvedMethods

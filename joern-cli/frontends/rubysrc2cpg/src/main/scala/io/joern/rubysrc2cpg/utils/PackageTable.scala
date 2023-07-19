@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.utils
 
 import java.io.File as JFile
-import java.util.regex.Matcher
+import java.util.regex.Pattern
 import scala.collection.mutable
 
 case class MethodTableModel(methodName: String, parentClassPath: String, classType: String)
@@ -21,7 +21,7 @@ class PackageTable {
   }
 
   def addModule(gemOrFileName: String, moduleName: String, modulePath: String): Unit = {
-    val fName = gemOrFileName.split(Matcher.quoteReplacement(JFile.separator)).lastOption.getOrElse(gemOrFileName)
+    val fName = gemOrFileName.split(Pattern.quote(JFile.separator)).lastOption.getOrElse(gemOrFileName)
     moduleMapping.getOrElseUpdate(gemOrFileName, mutable.HashSet.empty[ModuleModel]) += ModuleModel(
       moduleName,
       s"$fName::program.$modulePath"
@@ -29,7 +29,7 @@ class PackageTable {
   }
 
   def addTypeDecl(gemOrFileName: String, typeDeclName: String, typeDeclPath: String): Unit = {
-    val fName = gemOrFileName.split(Matcher.quoteReplacement(JFile.separator)).lastOption.getOrElse(gemOrFileName)
+    val fName = gemOrFileName.split(Pattern.quote(JFile.separator)).lastOption.getOrElse(gemOrFileName)
     typeDeclMapping.getOrElseUpdate(gemOrFileName, mutable.HashSet.empty[TypeDeclModel]) += TypeDeclModel(
       typeDeclName,
       s"$fName::program.$typeDeclPath"

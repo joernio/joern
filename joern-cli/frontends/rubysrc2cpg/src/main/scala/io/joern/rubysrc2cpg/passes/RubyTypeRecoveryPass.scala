@@ -92,7 +92,14 @@ private class RecoverForRubyFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, 
       visitIdentifierAssignedToCall(i, c)
     } else if (
       c.argument.headOption
-        .exists(_.isCall) && c.argument.head.asInstanceOf[Call].name.equals("<operator>.scopeResolution")
+        .exists(_.isCall) && c.argument.head
+        .asInstanceOf[Call]
+        .name
+        .equals("<operator>.scopeResolution") && c.argument.head
+        .asInstanceOf[Call]
+        .argument
+        .lastOption
+        .exists(symbolTable.contains)
     ) {
       setCallMethodFullNameFromBaseScopeResolution(c)
       // Repeat this method now that the call has a type
