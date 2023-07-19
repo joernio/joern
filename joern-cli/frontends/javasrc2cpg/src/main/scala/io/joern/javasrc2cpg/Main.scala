@@ -92,7 +92,7 @@ private object Frontend {
         .text("JDK used for resolving builtin Java types. If not set, current classpath will be used"),
       opt[Unit]("show-env")
         .action((_, c) => c.withShowEnv(true))
-        .text("print information about environment variables used by javasrc2cpg prior to analysis and exit.")
+        .text("print information about environment variables used by javasrc2cpg and exit.")
     )
   }
 }
