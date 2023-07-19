@@ -929,5 +929,13 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val cpg = code("-> {}")
       cpg.parameter.size shouldBe 1
     }
+
+    "have correct structure for proc definition with additional context" in {
+      val cpg = code(
+        "scope :get_all_doctors, -> { (select('id, first_name').where('role = :user_role', user_role: User.roles[:doctor])) }"
+      )
+      cpg.parameter.size shouldBe 6
+      cpg.call.size shouldBe 6
+    }
   }
 }
