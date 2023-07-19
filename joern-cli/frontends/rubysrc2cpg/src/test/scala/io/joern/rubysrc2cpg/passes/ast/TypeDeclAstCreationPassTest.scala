@@ -31,6 +31,19 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
       myClass.fullName shouldBe "Test0.rb::program.MyClass"
     }
 
+    // TODO: Need to be fixed.
+    "populate class name correctly for a derived class" in {
+      val cpg = code("""
+          |module ApplicationCable
+          |  class Channel < ActionCable::Channel::Base
+          |  end
+          |end
+          |""".stripMargin)
+      val List(myClass) = cpg.typeDecl.nameExact("Channel").l
+      myClass.name shouldBe "Channel"
+      myClass.fullName shouldBe "Test0.rb::program.ApplicationCable.ActionCable.Channel"
+    }
+
     "generate methods under type declarations" in {
       val cpg = code("""
           |class Vehicle
