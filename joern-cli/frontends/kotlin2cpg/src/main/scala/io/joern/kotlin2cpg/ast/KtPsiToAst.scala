@@ -625,8 +625,7 @@ trait KtPsiToAst {
         case node: NewMember            => NodeContext(node, node.name, node.typeFullName)
       }
       .map { capturedNodeContext =>
-        val uuidBytes =
-          fn.getContainingKtFile.getName + fn.getContainingKtFile.getPackageFqName.toString + capturedNodeContext.name + capturedNodeContext.typeFullName
+        val uuidBytes        = stringForUUID(fn, capturedNodeContext.name, capturedNodeContext.typeFullName)
         val closureBindingId = nameUUIDFromBytes(uuidBytes.getBytes).toString
         val closureBindingNode =
           newClosureBindingNode(closureBindingId, capturedNodeContext.name, EvaluationStrategies.BY_REFERENCE)
@@ -709,8 +708,7 @@ trait KtPsiToAst {
         case node: NewMember            => NodeContext(node, node.name, node.typeFullName)
       }
       .map { capturedNodeContext =>
-        val uuidBytes =
-          expr.getContainingKtFile.getName + expr.getContainingKtFile.getPackageFqName.toString + capturedNodeContext.name + capturedNodeContext.typeFullName
+        val uuidBytes        = stringForUUID(expr, capturedNodeContext.name, capturedNodeContext.typeFullName)
         val closureBindingId = nameUUIDFromBytes(uuidBytes.getBytes).toString
         val closureBindingNode =
           newClosureBindingNode(closureBindingId, capturedNodeContext.name, EvaluationStrategies.BY_REFERENCE)

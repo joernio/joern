@@ -130,6 +130,10 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     }
   }
 
+  protected def stringForUUID(node: KtExpression, name: String, typeFullName: String): String = {
+    node.getText + node.getContainingKtFile.getName + node.getContainingKtFile.getPackageFqName.toString + name + typeFullName
+  }
+
   protected def ktTokenToOperator(forPostfixExpr: Boolean): PartialFunction[KtToken, String] = {
     val postfixKtTokenToOperator: PartialFunction[KtToken, String] = {
       case KtTokens.EXCLEXCL   => Operators.notNullAssert
