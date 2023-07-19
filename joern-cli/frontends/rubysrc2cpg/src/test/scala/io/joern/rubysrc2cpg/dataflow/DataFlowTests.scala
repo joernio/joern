@@ -1950,8 +1950,8 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
       sink.reachableByFlows(source).size shouldBe 3
     }
   }
-  // TODO:
-  "Data flow for chained invocation without argument" ignore {
+
+  "Data flow for chained invocation without argument" should {
     val cpg = code("""
         |x=10
         |def bar(y)
@@ -1979,8 +1979,8 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     val cpg = code("""
         |x = 1
         |
-        |x += 2 unless x.zero?
-        |    puts(x)
+        |y += 2 unless x.zero?
+        |    puts(y)
         |""".stripMargin)
 
     "find flows to the sink" in {
@@ -1997,10 +1997,8 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
         |    return x == 10
         |end
         |
-        |if !woo x
-        |    puts x
-        |else
-        |    puts "No"
+        |y = !woo x
+        |puts y
         |end
         |""".stripMargin)
 
