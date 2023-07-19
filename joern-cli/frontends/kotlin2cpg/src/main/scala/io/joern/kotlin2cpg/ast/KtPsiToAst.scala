@@ -1572,13 +1572,17 @@ trait KtPsiToAst {
       callAst(controlStructureCondition, List(), Option(Ast(conditionIdentifier)))
 
     val destructuringDeclEntries = expr.getDestructuringDeclaration.getEntries
-    val localsForDestructuringVars = destructuringDeclEntries.asScala.map { entry =>
-      val entryTypeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
-      val entryName         = entry.getText
-      val node              = localNode(entry, entryName, entryName, entryTypeFullName)
-      scope.addToScope(entryName, node)
-      Ast(node)
-    }.toList
+    val localsForDestructuringVars =
+      destructuringDeclEntries.asScala
+        .filterNot(_.getText == Constants.unusedDestructuringEntryText)
+        .map { entry =>
+          val entryTypeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
+          val entryName         = entry.getText
+          val node              = localNode(entry, entryName, entryName, entryTypeFullName)
+          scope.addToScope(entryName, node)
+          Ast(node)
+        }
+        .toList
 
     val tmpName     = s"${Constants.tmpLocalPrefix}${tmpKeyPool.next}"
     val localForTmp = newLocalNode(tmpName, TypeConstants.any)
@@ -1606,8 +1610,9 @@ trait KtPsiToAst {
     val tmpParameterNextAssignmentAst = callAst(tmpParameterNextAssignment, List(tmpIdentifierAst, iteratorNextCallAst))
 
     val assignmentsForEntries =
-      destructuringDeclEntries.asScala.zipWithIndex.map { case (entry, idx) =>
-        assignmentAstForDestructuringEntry(entry, localForTmp.name, localForTmp.typeFullName, idx + 1)
+      destructuringDeclEntries.asScala.filterNot(_.getText == Constants.unusedDestructuringEntryText).zipWithIndex.map {
+        case (entry, idx) =>
+          assignmentAstForDestructuringEntry(entry, localForTmp.name, localForTmp.typeFullName, idx + 1)
       }
 
     val stmtAsts             = astsForExpression(expr.getBody, None)
