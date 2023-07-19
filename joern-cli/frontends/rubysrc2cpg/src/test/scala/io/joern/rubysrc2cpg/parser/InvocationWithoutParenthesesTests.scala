@@ -48,4 +48,60 @@ class InvocationWithoutParenthesesTests extends RubyParserAbstractTest {
     }
   }
 
+  "A command with do block" should {
+
+    "be parsed as a statement" when {
+
+      "it contains only one argument" in {
+        val code = """it 'should print 1' do
+                      |  puts 1
+                      |end 
+                      |""".stripMargin
+
+        printAst(_.statement(), code) shouldBe
+          """ExpressionOrCommandStatement
+            | InvocationExpressionOrCommand
+            |  ChainedCommandDoBlockInvocationWithoutParentheses
+            |   ChainedCommandWithDoBlock
+            |    ArgsAndDoBlockAndMethodIdCommandWithDoBlock
+            |     MethodIdentifier
+            |      it
+            |     ArgumentsWithoutParentheses
+            |      Arguments
+            |       ExpressionArgument
+            |        PrimaryExpression
+            |         StringExpressionPrimary
+            |          SimpleStringExpression
+            |           SingleQuotedStringLiteral
+            |            'should print 1'
+            |     DoBlock
+            |      do
+            |      Separators
+            |       Separator
+            |      WsOrNl
+            |      CompoundStatement
+            |       Statements
+            |        ExpressionOrCommandStatement
+            |         InvocationExpressionOrCommand
+            |          SingleCommandOnlyInvocationWithoutParentheses
+            |           SimpleMethodCommand
+            |            MethodIdentifier
+            |             puts
+            |            ArgumentsWithoutParentheses
+            |             Arguments
+            |              ExpressionArgument
+            |               PrimaryExpression
+            |                LiteralPrimary
+            |                 NumericLiteralLiteral
+            |                  NumericLiteral
+            |                   UnsignedNumericLiteral
+            |                    1
+            |       Separators
+            |        Separator
+            |      end""".stripMargin
+
+      }
+    }
+  }
+
 }
