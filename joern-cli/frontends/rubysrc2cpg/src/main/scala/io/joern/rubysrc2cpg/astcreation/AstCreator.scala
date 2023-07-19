@@ -122,13 +122,17 @@ class AstCreator(
 
     classStack.push(fullName)
 
-    val statementCtx = programCtx.compoundStatement().statements()
     scope.pushNewScope(())
-    val statementAsts = if (statementCtx != null) {
-      astForStatements(statementCtx, false, false) ++ blockMethods
-    } else {
-      List[Ast](Ast())
-    }
+    val statementAsts =
+      if (
+        programCtx.compoundStatement() != null &&
+        programCtx.compoundStatement().statements() != null
+      ) {
+        astForStatements(programCtx.compoundStatement().statements(), false, false) ++ blockMethods
+      } else {
+        logger.error(s"File $filename has no compound statement. Needs to be examined")
+        List[Ast](Ast())
+      }
     scope.popScope()
 
     val thisParam = parameterInNode(programCtx, "this", "this", 0, false, EvaluationStrategies.BY_VALUE).typeFullName(
