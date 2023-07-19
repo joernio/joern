@@ -30,17 +30,6 @@ class JdkJarTypeSolver private (jdkPath: String) extends TypeSolver {
   private var parent: Option[TypeSolver] = None
   private val classPool                  = new NonCachingClassPool()
 
-  // TODO Use or remove this
-  private def initClassPool: NonCachingClassPool = {
-    // This static field is used in javassist.ClassPoolTail to decide if opened
-    // JarFiles should be cached. This is set to false, since the jdk jar files get
-    // quite large, so this saves some memory at the cost of speed for the first
-    // lookup per class. This will affect JavaParser JarTypeSolvers as well.
-    ClassPool.cacheOpenedJarFile = false
-    val classPool = new NonCachingClassPool()
-    classPool
-  }
-
   private val knownPackagePrefixes: mutable.Set[String] = mutable.Set.empty
 
   private type RefType = ResolvedReferenceTypeDeclaration
@@ -62,7 +51,7 @@ class JdkJarTypeSolver private (jdkPath: String) extends TypeSolver {
     if (knownPackagePrefixes.contains(packagePrefix)) {
       lookupType(javaParserName)
     } else {
-      SymbolReference.unsolved(classOf[RefType])      
+      SymbolReference.unsolved(classOf[RefType])
     }
   }
 
@@ -70,7 +59,7 @@ class JdkJarTypeSolver private (jdkPath: String) extends TypeSolver {
     val name = convertJavaParserNameToStandard(javaParserName)
     Try(classPool.get(name)) match {
       case Success(ctClass) =>
-        val refType      = ctClassToRefType(ctClass)
+        val refType = ctClassToRefType(ctClass)
         refTypeToSymbolReference(refType)
 
       case Failure(e) =>
@@ -160,46 +149,52 @@ object JdkJarTypeSolver {
     new JdkJarTypeSolver(jdkPath).withJars(jarPaths)
   }
 
-  /** Convert JavaParser class name foo.bar.qux.Baz to package prefix foo.bar
-    * Only use first 2 parts since this is sufficient to deterimine whether a class
-    * has been registered in most cases and, if not, the failure is just a slow lookup.
+  /** Convert JavaParser class name foo.bar.qux.Baz to package prefix foo.bar Only use first 2 parts since this is
+    * sufficient to deterimine whether a class has been registered in most cases and, if not, the failure is just a slow
+    * lookup.
     */
   def packagePrefixForJavaParserName(className: String): String = {
     className.split("\\.").take(2).mkString(".")
   }
 
-  /** Convert Jar entry name foo/bar/qux/Baz.class to package prefix foo.bar
-    * Only use first 2 parts since this is sufficient to deterimine whether a class
-    * has been registered in most cases and, if not, the failure is just a slow lookup.
+  /** Convert Jar entry name foo/bar/qux/Baz.class to package prefix foo.bar Only use first 2 parts since this is
+    * sufficient to deterimine whether a class has been registered in most cases and, if not, the failure is just a slow
+    * lookup.
     */
   def packagePrefixForJarEntry(entryName: String): String = {
     entryName.split("/").take(2).mkString(".")
   }
 
-  /** Convert jmod entry name classes/foo/bar/qux/Baz.class to package prefix foo.bar
-    * Only use first 2 parts since this is sufficient to deterimine whether a class
-    * has been registered in most cases and, if not, the failure is just a slow lookup.
+  /** Convert jmod entry name classes/foo/bar/qux/Baz.class to package prefix foo.bar Only use first 2 parts since this
+    * is sufficient to deterimine whether a class has been registered in most cases and, if not, the failure is just a
+    * slow lookup.
     */
   def packagePrefixForJmodEntry(entryName: String): String = {
     packagePrefixForJarEntry(entryName.stripPrefix(JmodClassPrefix))
   }
 
+  /** A name is assumed to contain at least one subclass (e.g. ...Foo$Bar) if the last name part starts with a digit, or
+    * if the last 2 name parts start with capital letters. This heuristic is based on the class name format in the JDK
+    * jars, where names with subclasses have one of the forms:
+    *   - java.lang.ClassLoader$2
+    *   - java.lang.ClassLoader$NativeLibrary
+    *   - java.lang.ClassLoader$NativeLibrary$Unloader
+    */
   private def namePartsContainSubclass(nameParts: Array[String]): Boolean = {
     nameParts.takeRight(2) match {
       case Array() => false
 
       case Array(singlePart) => false
 
-      case Array(secondLast, last) => 
+      case Array(secondLast, last) =>
         last.head.isDigit || (secondLast.head.isUpper && last.head.isUpper)
     }
   }
 
-  /** JavaParser replaces the `$` in nested class names with a `.`. This method converts
-    * the JavaParser names to the standard format by replacing the `.` between name parts
-    * that start with a capital letter or a digit with a `$` since the jdk classes follow
-    * the standard practice of capitalising the first letter in class names but not
-    * package names.
+  /** JavaParser replaces the `$` in nested class names with a `.`. This method converts the JavaParser names to the
+    * standard format by replacing the `.` between name parts that start with a capital letter or a digit with a `$`
+    * since the jdk classes follow the standard practice of capitalising the first letter in class names but not package
+    * names.
     */
   def convertJavaParserNameToStandard(className: String): String = {
     className.split(".") match {
