@@ -193,8 +193,10 @@ SLASH: '/'
 ;
 PERCENT: '%';
 TILDE: '~';
-PLUSAT: '+@';
-MINUSAT: '-@';
+// These tokens should only occur after a DEF token, as they are solely used to (re)define unary + and - operators.
+// This way we won't emit the wrong token in e.g. `x+@y` (which means + between x and @y)
+PLUSAT: '+@'  {previousNonWsTokenTypeOrEOF() == DEF}?;
+MINUSAT: '-@' {previousNonWsTokenTypeOrEOF() == DEF}?;
 
 ASSIGNMENT_OPERATOR
     :   ASSIGNMENT_OPERATOR_NAME '='
@@ -429,6 +431,8 @@ fragment LINE_TERMINATOR
 
 SYMBOL_LITERAL
     :   ':' SYMBOL_NAME
+    |   ':+@'
+    |   ':-@'
     ;
 
 fragment SYMBOL_NAME
