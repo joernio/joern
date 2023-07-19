@@ -41,7 +41,7 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
           |""".stripMargin)
       val List(myClass) = cpg.typeDecl.nameExact("Channel").l
       myClass.name shouldBe "Channel"
-      myClass.fullName shouldBe "Test0.rb::program.ApplicationCable.ActionCable.Channel"
+      myClass.fullName shouldBe "Test0.rb::program.ApplicationCable.Channel"
     }
 
     "generate methods under type declarations" in {
