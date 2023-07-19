@@ -117,7 +117,7 @@ class ModuleTests extends RubyCode2CpgFixture {
     }
   }
 
-  "Module internal structure checks with Constant defined in moudle" should {
+  "Module internal structure checks with Constant defined in module" should {
     val cpg = code("""
         |module MyNamespace
         |  MY_CONSTANT = 0

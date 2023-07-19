@@ -11,7 +11,7 @@ import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.antlr.v4.runtime.ParserRuleContext
-
+import io.joern.x2cpg.utils._
 import scala.collection.mutable
 
 trait AstForTypesCreator { this: AstCreator =>
@@ -115,13 +115,13 @@ trait AstForTypesCreator { this: AstCreator =>
 
   def membersFromStatementAsts(ast: Ast): Seq[Ast] =
     ast.nodes
-      .collect { case i: NewIdentifier if i.name.startsWith("@") || i.name.forall(x => x.isUpper || !x.isLetter) => i }
+      .collect { case i: NewIdentifier if i.name.startsWith("@") || i.name.isAllUpperCase => i }
       .map { i =>
         val code = ast.root.collect { case c: NewCall => c.code }.getOrElse(i.name)
         val modifierType = i.name match
-          case x if x.startsWith("@@")                      => ModifierTypes.STATIC
-          case x if x.forall(y => y.isUpper || !y.isLetter) => ModifierTypes.FINAL
-          case _                                            => ModifierTypes.VIRTUAL
+          case x if x.startsWith("@@") => ModifierTypes.STATIC
+          case x if x.isAllUpperCase   => ModifierTypes.FINAL
+          case _                       => ModifierTypes.VIRTUAL
         val modifierAst = Ast(NewModifier().modifierType(modifierType))
         Ast(
           NewMember()
