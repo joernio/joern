@@ -531,10 +531,18 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       EOF
     )
   }
-  
+
   "identifier used in a keyword argument" should "not be mistaken for a symbol literal" in {
     // This test exists to check if RubyLexer properly decided between COLON and SYMBOL_LITERAL
     val code = "foo(x:y)"
-    tokenize(code) shouldBe Seq(LOCAL_VARIABLE_IDENTIFIER, LPAREN, LOCAL_VARIABLE_IDENTIFIER, COLON, LOCAL_VARIABLE_IDENTIFIER, RPAREN, EOF)
+    tokenize(code) shouldBe Seq(
+      LOCAL_VARIABLE_IDENTIFIER,
+      LPAREN,
+      LOCAL_VARIABLE_IDENTIFIER,
+      COLON,
+      LOCAL_VARIABLE_IDENTIFIER,
+      RPAREN,
+      EOF
+    )
   }
 }
