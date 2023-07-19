@@ -6,7 +6,7 @@ import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFieldIdentifier, NewJumpTarget, NewLiteral, NewNode}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, ModifierTypes, Operators}
 import org.antlr.v4.runtime.ParserRuleContext
-
+import io.joern.x2cpg.utils._
 import scala.collection.immutable.Set
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
@@ -242,7 +242,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
      */
 
     val variableName      = ctx.getText
-    val isSelfFieldAccess = variableName.startsWith("@")
+    val isSelfFieldAccess = variableName.startsWith("@") || variableName.isAllUpperCase
     if (isSelfFieldAccess) {
       // Very basic field detection
       fieldReferences.updateWith(classStack.top) {

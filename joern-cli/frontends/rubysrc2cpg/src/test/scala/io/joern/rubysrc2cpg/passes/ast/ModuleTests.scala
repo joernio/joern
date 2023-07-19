@@ -115,25 +115,18 @@ class ModuleTests extends RubyCode2CpgFixture {
       plays.name shouldBe "plays"
       cpg.fieldAccess.fieldIdentifier.canonicalName.l shouldBe List("plays")
     }
-
-    "Module Constant strucutre in place" ignore {
-      cpg.identifier("MY_CONSTANT").l.size shouldBe 1
-      val List(x)      = cpg.typeDecl("MyClass").l
-      val List(member) = x.member.l
-      member.name shouldBe "MY_CONSTANT"
-    }
   }
 
-  "Module internal structure checks with Constant defined in moudle" ignore {
+  "Module internal structure checks with Constant defined in module" should {
     val cpg = code("""
         |module MyNamespace
-        |  MY_CONSTANT = 100
+        |  MY_CONSTANT = 0
         |end
         |""".stripMargin)
     "member variables structure in place" in {
-      val List(classInit) = cpg.method(XDefines.StaticInitMethodName).l
-      classInit.fullName shouldBe s"Test0.rb::program.MyNamespace.${XDefines.StaticInitMethodName}"
-      val List(myconstant) = classInit.call.nameExact(Operators.fieldAccess).fieldAccess.l
+      val List(moduleInit) = cpg.method(XDefines.StaticInitMethodName).l
+      moduleInit.fullName shouldBe s"Test0.rb::program.MyNamespace.${XDefines.StaticInitMethodName}"
+      val List(myconstant) = moduleInit.call.nameExact(Operators.fieldAccess).fieldAccess.l
       myconstant.fieldIdentifier.canonicalName.headOption shouldBe Option("MY_CONSTANT")
 
       val List(myclassTd)  = cpg.typeDecl("MyNamespace").l
@@ -143,4 +136,74 @@ class ModuleTests extends RubyCode2CpgFixture {
     }
   }
 
+  "Hierarchical module checks with constants" ignore {
+    val cpg = code("""
+        |module MyNamespace
+        |  MY_CONSTANT = 0
+        |  @@plays = 0
+        |  module ChildModule
+        |    @@name = 0
+        |    MY_CONSTANT = 0
+        |  end
+        |end
+        |""".stripMargin)
+
+    "member variables structure in place" in {
+      val List(modInit1, modInit2) = cpg.method(XDefines.StaticInitMethodName).l
+      modInit1.fullName shouldBe s"Test0.rb::program.MyNamespace.${XDefines.StaticInitMethodName}"
+      val List(myconstantfa, playsfa) = modInit1.call.nameExact(Operators.fieldAccess).fieldAccess.l
+      myconstantfa.fieldIdentifier.canonicalName.headOption shouldBe Option("MY_CONSTANT")
+      playsfa.fieldIdentifier.canonicalName.headOption shouldBe Option("plays")
+
+      modInit2.fullName shouldBe s"Test0.rb::program.MyNamespace.ChildModule.${XDefines.StaticInitMethodName}"
+      val List(namefa, myconstant2fa) = modInit2.call.nameExact(Operators.fieldAccess).fieldAccess.l
+      myconstant2fa.fieldIdentifier.canonicalName.headOption shouldBe Option("MY_CONSTANT")
+      namefa.fieldIdentifier.canonicalName.headOption shouldBe Option("name")
+
+      val List(myclassTd2)          = cpg.typeDecl("ChildModule").l
+      val List(namem, myConstant2m) = myclassTd2.member.l
+      myConstant2m.name shouldBe "MY_CONSTANT"
+      namem.name shouldBe "name"
+      cpg.fieldAccess.fieldIdentifier.canonicalName.l shouldBe List("name", "MY_CONSTANT")
+
+      val List(myclassTd)           = cpg.typeDecl("MyNamespace").l
+      val List(myconstantm, playsm) = myclassTd.member.l
+      myconstantm.name shouldBe "MY_CONSTANT"
+      playsm.name shouldBe "plays"
+      cpg.fieldAccess.fieldIdentifier.canonicalName.l shouldBe List("MY_CONSTANT", "plays")
+
+    }
+  }
+
+  "Class inside module checks with constants" ignore {
+    val cpg = code("""
+        |module MyNamespace
+        |  MY_CONSTANT = 0
+        |  class ChildCls
+        |    MY_CONSTANT = 0
+        |  end
+        |end
+        |""".stripMargin)
+
+    "member variables structure in place" in {
+      val List(modInit1, modInit2) = cpg.method(XDefines.StaticInitMethodName).l
+      modInit1.fullName shouldBe s"Test0.rb::program.MyNamespace.${XDefines.StaticInitMethodName}"
+      val List(myconstant) = modInit1.call.nameExact(Operators.fieldAccess).fieldAccess.l
+      myconstant.fieldIdentifier.canonicalName.headOption shouldBe Option("MY_CONSTANT")
+
+      modInit2.fullName shouldBe s"Test0.rb::program.MyNamespace.ChildCls.${XDefines.StaticInitMethodName}"
+      val List(myconstant2) = modInit2.call.nameExact(Operators.fieldAccess).fieldAccess.l
+      myconstant2.fieldIdentifier.canonicalName.headOption shouldBe Option("MY_CONSTANT")
+
+      val List(myclassTd)  = cpg.typeDecl("MyNamespace").l
+      val List(myConstant) = myclassTd.member.l
+      myConstant.name shouldBe "MY_CONSTANT"
+      cpg.fieldAccess.fieldIdentifier.canonicalName.l shouldBe List("MY_CONSTANT")
+
+      val List(myclassTd2)  = cpg.typeDecl("ChildCls").l
+      val List(myConstant2) = myclassTd2.member.l
+      myConstant2.name shouldBe "MY_CONSTANT"
+      cpg.fieldAccess.fieldIdentifier.canonicalName.l shouldBe List("MY_CONSTANT")
+    }
+  }
 }

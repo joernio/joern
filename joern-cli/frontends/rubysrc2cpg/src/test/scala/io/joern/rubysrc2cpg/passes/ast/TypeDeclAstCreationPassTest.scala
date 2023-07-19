@@ -236,4 +236,42 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
 
   }
 
+  "Hierarchical class checks with constants" ignore {
+    val cpg = code("""
+        |class MyClass
+        |  MY_CONSTANT = 0
+        |  @@plays = 0
+        |  class ChildCls
+        |    @@name = 0
+        |    MY_CONSTANT = 0
+        |  end
+        |end
+        |""".stripMargin)
+
+    "member variables structure in place" in {
+      val List(clsInit1, clsInit2) = cpg.method(XDefines.StaticInitMethodName).l
+      clsInit1.fullName shouldBe s"Test0.rb::program.MyClass.${XDefines.StaticInitMethodName}"
+      val List(myconstantfa, playsfa) = clsInit1.call.nameExact(Operators.fieldAccess).fieldAccess.l
+      myconstantfa.fieldIdentifier.canonicalName.headOption shouldBe Option("MY_CONSTANT")
+      playsfa.fieldIdentifier.canonicalName.headOption shouldBe Option("plays")
+
+      clsInit2.fullName shouldBe s"Test0.rb::program.MyClass.ChildCls.${XDefines.StaticInitMethodName}"
+      val List(namefa, myconstant2fa) = clsInit2.call.nameExact(Operators.fieldAccess).fieldAccess.l
+      myconstant2fa.fieldIdentifier.canonicalName.headOption shouldBe Option("MY_CONSTANT")
+      namefa.fieldIdentifier.canonicalName.headOption shouldBe Option("name")
+
+      val List(myclassTd2)          = cpg.typeDecl("ChildCls").l
+      val List(namem, myConstant2m) = myclassTd2.member.l
+      myConstant2m.name shouldBe "MY_CONSTANT"
+      namem.name shouldBe "name"
+      cpg.fieldAccess.fieldIdentifier.canonicalName.l shouldBe List("name", "MY_CONSTANT")
+
+      val List(myclassTd)           = cpg.typeDecl("MyClass").l
+      val List(myconstantm, playsm) = myclassTd.member.l
+      myconstantm.name shouldBe "MY_CONSTANT"
+      playsm.name shouldBe "plays"
+      cpg.fieldAccess.fieldIdentifier.canonicalName.l shouldBe List("MY_CONSTANT", "plays")
+
+    }
+  }
 }

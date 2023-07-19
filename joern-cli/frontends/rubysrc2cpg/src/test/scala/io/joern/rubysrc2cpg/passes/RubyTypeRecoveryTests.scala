@@ -72,9 +72,10 @@ class RubyTypeRecoveryTests
     }
 
     "resolve module constant type" in {
-      cpg.identifier("MY_CONSTANT").l.size shouldBe 1
-      val List(x) = cpg.identifier("MY_CONSTANT").l
-      x.typeFullName shouldBe "__builtin.Integer"
+      cpg.typeDecl("MyNamespace").size shouldBe 1
+      val List(typeDecl) = cpg.typeDecl("MyNamespace").l
+      val List(myconst)  = typeDecl.member.l
+      myconst.typeFullName shouldBe "__builtin.Integer"
     }
   }
 
