@@ -82,6 +82,32 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
              |  )""".stripMargin
       }
 
+      "it contains an identifier keyword argument" in {
+        val code = "foo(region:region)"
+
+        printAst(_.primary(), code) shouldEqual
+          s"""InvocationWithParenthesesPrimary
+             | MethodIdentifier
+             |  foo
+             | ArgsOnlyArgumentsWithParentheses
+             |  (
+             |  Arguments
+             |   AssociationArgument
+             |    Association
+             |     PrimaryExpression
+             |      VariableReferencePrimary
+             |       VariableIdentifierVariableReference
+             |        VariableIdentifier
+             |         region
+             |     :
+             |     PrimaryExpression
+             |      VariableReferencePrimary
+             |       VariableIdentifierVariableReference
+             |        VariableIdentifier
+             |         region
+             |  )""".stripMargin
+      }
+
       "it contains a single symbol literal positional argument" in {
         val code = "foo(:region)"
 

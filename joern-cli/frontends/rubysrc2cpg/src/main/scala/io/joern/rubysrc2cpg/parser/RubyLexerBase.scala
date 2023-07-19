@@ -33,4 +33,8 @@ abstract class RubyLexerBase(input: CharStream)
     previousNonWsToken.map(_.getType).getOrElse(EOF)
   }
 
+  def previousTokenTypeOrEOF(): Int = {
+    previousToken.map(_.getType).getOrElse(EOF)
+  }
+
 }

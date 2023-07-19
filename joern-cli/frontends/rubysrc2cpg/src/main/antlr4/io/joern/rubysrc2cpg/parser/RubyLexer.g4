@@ -431,8 +431,8 @@ fragment LINE_TERMINATOR
 
 SYMBOL_LITERAL
     :   ':' SYMBOL_NAME
-    |   ':+@'
-    |   ':-@'
+    // This check exists to prevent issuing a SYMBOL_LITERAL in whitespace-free associations, e.g. `foo(x:y)`.
+    {previousTokenTypeOrEOF() != LOCAL_VARIABLE_IDENTIFIER}?
     ;
 
 fragment SYMBOL_NAME
@@ -445,6 +445,11 @@ fragment SYMBOL_NAME
     |   ASSIGNMENT_LIKE_METHOD_IDENTIFIER
     |   OPERATOR_METHOD_NAME
     |   KEYWORD
+    // NOTE: Even though we have PLUSAT and MINUSAT in OPERATOR_METHOD_NAME, the former
+    // are not emitted unless there's a DEF token before them, cf. their predicate.
+    // Thus, we need to add them explicitly here in order to recognize standalone SYMBOL_LITERAL tokens as well.
+    |   '+@'
+    |   '-@'
     ;
 
 // --------------------------------------------------------
