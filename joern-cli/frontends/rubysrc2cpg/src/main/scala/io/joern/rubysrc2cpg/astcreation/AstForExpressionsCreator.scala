@@ -242,7 +242,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
      */
 
     val variableName      = ctx.getText
-    val isSelfFieldAccess = variableName.startsWith("@")
+    val isSelfFieldAccess = variableName.startsWith("@") || variableName.forall(x => x.isUpper || !x.isLetter)
     if (isSelfFieldAccess) {
       // Very basic field detection
       fieldReferences.updateWith(classStack.top) {

@@ -115,12 +115,13 @@ trait AstForTypesCreator { this: AstCreator =>
 
   def membersFromStatementAsts(ast: Ast): Seq[Ast] =
     ast.nodes
-      .collect { case i: NewIdentifier if i.name.startsWith("@") => i }
+      .collect { case i: NewIdentifier if i.name.startsWith("@") || i.name.forall(x => x.isUpper || !x.isLetter) => i }
       .map { i =>
         val code = ast.root.collect { case c: NewCall => c.code }.getOrElse(i.name)
         val modifierType = i.name match
-          case x if x.startsWith("@@") => ModifierTypes.STATIC
-          case _                       => ModifierTypes.VIRTUAL
+          case x if x.startsWith("@@")                      => ModifierTypes.STATIC
+          case x if x.forall(y => y.isUpper || !y.isLetter) => ModifierTypes.FINAL
+          case _                                            => ModifierTypes.VIRTUAL
         val modifierAst = Ast(NewModifier().modifierType(modifierType))
         Ast(
           NewMember()
