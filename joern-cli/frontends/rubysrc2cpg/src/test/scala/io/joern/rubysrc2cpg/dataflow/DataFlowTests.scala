@@ -1975,6 +1975,20 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     }
   }
 
+  "Data flow through unless modifier" should {
+    val cpg = code("""
+        |x = 1
+        |y += 2 unless x.zero?
+        |puts(y)
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).size shouldBe 3
+    }
+  }
+
   "Data flow through zero keyword" should {
     val cpg = code("""
         |x = 1
