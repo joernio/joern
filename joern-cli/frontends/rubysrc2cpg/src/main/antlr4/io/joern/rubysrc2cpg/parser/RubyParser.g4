@@ -660,6 +660,7 @@ keyword
     |   WHEN
     |   WHILE
     |   YIELD
+    |   ZERO
     ;
 
 operatorMethodName

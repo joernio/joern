@@ -62,6 +62,7 @@ UNTIL: 'until';
 WHEN: 'when';
 WHILE: 'while';
 YIELD: 'yield';
+ZERO: 'zero';
 
 fragment KEYWORD
     :   LINE__
@@ -105,6 +106,7 @@ fragment KEYWORD
     |   WHEN
     |   WHILE
     |   YIELD
+    |   ZERO
     ;
 
 // --------------------------------------------------------
