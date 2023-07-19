@@ -325,6 +325,7 @@ class AstCreator(
     case ctx: ClassDefinitionPrimaryContext                           => astForClassExpression(ctx)
     case ctx: ModuleDefinitionPrimaryContext                          => astForModuleDefinitionPrimaryContext(ctx)
     case ctx: MethodDefinitionPrimaryContext => astForMethodDefinitionContext(ctx.methodDefinition())
+    case ctx: ProcDefinitionPrimaryContext   => astForProcDefinitionContext(ctx.procDefinition())
     case ctx: YieldWithOptionalArgumentPrimaryContext =>
       Seq(astForYieldCall(ctx, Option(ctx.yieldWithOptionalArgument().arguments())))
     case ctx: IfExpressionPrimaryContext       => Seq(astForIfExpression(ctx.ifExpression()))
@@ -383,6 +384,67 @@ class AstCreator(
     case _ =>
       logger.error(s"astForExpressionContext() $filename, ${ctx.getText} All contexts mismatched.")
       Seq(Ast())
+  }
+
+  def astForProcDefinitionContext(ctx: ProcDefinitionContext): Seq[Ast] = {
+    val localVarList  = ListBuffer[TerminalNode]()
+    var parameterAsts = Seq(Ast())
+
+    // Note: For parameters in the Proc definiton, an implicit parameter which goes by the name of `this` is added to the cpg
+    if (ctx.parameters() != null) {
+      val mandatoryParameters = ctx
+        .parameters()
+        .parameter()
+        .asScala
+        .filter(ctx => Option(ctx.mandatoryParameter()).isDefined)
+        .map(_.mandatoryParameter().LOCAL_VARIABLE_IDENTIFIER())
+      val optionalParameters = ctx
+        .parameters()
+        .parameter()
+        .asScala
+        .filter(ctx => Option(ctx.optionalParameter()).isDefined)
+        .map(_.optionalParameter().LOCAL_VARIABLE_IDENTIFIER())
+      val arrayParameter = ctx
+        .parameters()
+        .parameter()
+        .asScala
+        .filter(ctx => Option(ctx.arrayParameter()).isDefined)
+        .map(_.arrayParameter().LOCAL_VARIABLE_IDENTIFIER())
+      val procParameter = ctx
+        .parameters()
+        .parameter()
+        .asScala
+        .filter(ctx => Option(ctx.procParameter()).isDefined)
+        .map(_.procParameter().LOCAL_VARIABLE_IDENTIFIER())
+
+      localVarList.addAll(mandatoryParameters)
+      localVarList.addAll(optionalParameters)
+      localVarList.addAll(arrayParameter)
+      localVarList.addAll(procParameter)
+
+      parameterAsts = localVarList
+        .map(localVar => {
+          val varSymbol = localVar.getSymbol()
+          createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, Seq[String](Defines.Any))
+          val param = NewMethodParameterIn()
+            .name(varSymbol.getText)
+            .code(varSymbol.getText)
+            .lineNumber(varSymbol.getLine)
+            .typeFullName(Defines.Any)
+            .columnNumber(varSymbol.getCharPositionInLine)
+          if (Option(arrayParameter).isDefined) {
+            param.isVariadic = true
+          }
+          Ast(param)
+        })
+        .toSeq
+    }
+
+    var blockAsts = Ast()
+    if (ctx.block() != null)
+      blockAsts = astForBlock(ctx.block())
+    else blockAsts = Ast()
+    parameterAsts ++ Seq(blockAsts)
   }
 
   def astForDefinedMethodNameOrSymbolContext(ctx: DefinedMethodNameOrSymbolContext): Seq[Ast] = {
