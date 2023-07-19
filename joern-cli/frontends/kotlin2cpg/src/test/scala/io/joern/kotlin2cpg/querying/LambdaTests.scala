@@ -213,6 +213,32 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     }
   }
 
+  "CPG for code containing a lambda with parameter destructuring and an `_` entry" should {
+    val cpg = code("""
+      |package mypkg
+      |
+      |fun f1(p: String) {
+      |    val m = mapOf(p to 1, "two" to 2, "three" to 3)
+      |    m.forEach { (k, _) ->
+      |        println(k)
+      |    }
+      |}
+      |""".stripMargin)
+
+    "should contain a METHOD node for the lambda the correct props set" in {
+      val List(m) = cpg.method.fullName(".*lambda.*").l
+      m.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:java.lang.Object(java.lang.Object)"
+      m.signature shouldBe "java.lang.Object(java.lang.Object)"
+    }
+
+    "should contain one METHOD_PARAMETER_IN node for the lambda with the correct properties set" in {
+      val List(p1) = cpg.method.fullName(".*lambda.*").parameter.l
+      p1.code shouldBe "k"
+      p1.index shouldBe 1
+      p1.typeFullName shouldBe "java.lang.String"
+    }
+  }
+
   "CPG for code with a scope function lambda" should {
     val cpg = code("""
         |package mypkg
