@@ -27,7 +27,17 @@ class JdkJarTypeSolver private (jdkPath: String) extends TypeSolver {
   private val logger = LoggerFactory.getLogger(this.getClass())
 
   private var parent: Option[TypeSolver] = None
-  private val classPool                  = new NonCachingClassPool()
+  private val classPool                  = initClassPool
+
+  private def initClassPool: NonCachingClassPool = {
+    // This static field is used in javassist.ClassPoolTail to decide if opened
+    // JarFiles should be cached. This is set to false, since the jdk jar files get
+    // quite large, so this saves some memory at the cost of speed for the first
+    // lookup per class. This will affect JavaParser JarTypeSolvers as well.
+    ClassPool.cacheOpenedJarFile = false
+    val classPool = new NonCachingClassPool()
+    classPool
+  }
 
   /** JavaParser replaces '$' in class names for nested classes with '.', while the names in the javassist class pool do
     * not. This means we need to keep a record of javaparser to classpool name for class pool lookups, e.g.
