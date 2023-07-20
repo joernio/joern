@@ -31,7 +31,7 @@ trait AstForTypesCreator { this: AstCreator =>
       None
     }
 
-    var className = ctx.className(baseClassName)
+    val className = ctx.className(baseClassName)
     if (className != Defines.Any) {
       classStack.push(className)
       val fullName = classStack.reverse.mkString(pathSep)
@@ -40,11 +40,6 @@ trait AstForTypesCreator { this: AstCreator =>
 
       if (classStack.nonEmpty) {
         classStack.pop()
-      }
-
-      /* If we have basename, we will have X.Y as classname. We only need Y for "name" though */
-      if (baseClassName != null) {
-        className = Option(className.split("\\.").last).getOrElse(className)
       }
 
       val typeDeclNode = NewTypeDecl()
