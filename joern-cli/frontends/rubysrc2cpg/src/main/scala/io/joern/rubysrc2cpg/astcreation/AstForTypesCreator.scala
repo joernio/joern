@@ -150,14 +150,16 @@ trait AstForTypesCreator { this: AstCreator =>
     def hasScopedConstantReference: Boolean = Option(ctx.scopedConstantReference()).isDefined
 
     def classOrModuleName(baseClassName: Option[String] = None): String =
-      if (ctx.hasScopedConstantReference)
-        getClassNameScopedConstantReferenceContext(ctx.scopedConstantReference())
-      else
-        Option(ctx.CONSTANT_IDENTIFIER()).map(_.getText) match {
-          case Some(className) => className
-          case None            => Defines.Any
-        }
-
+      Option(ctx) match {
+        case Some(ct) =>
+          if (ct.hasScopedConstantReference)
+            getClassNameScopedConstantReferenceContext(ct.scopedConstantReference())
+          else
+            Option(ct.CONSTANT_IDENTIFIER()).map(_.getText) match {
+              case Some(className) => className
+              case None            => Defines.Any
+            }
+        case None => Defines.Any
+      }
   }
-
 }
