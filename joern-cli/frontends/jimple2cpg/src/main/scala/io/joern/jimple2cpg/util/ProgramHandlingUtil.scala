@@ -77,7 +77,8 @@ object ProgramHandlingUtil {
     src: File,
     tmpDir: File,
     isArchive: Entry => Boolean,
-    isClass: Entry => Boolean
+    isClass: Entry => Boolean,
+    recurse: Boolean
   ): IterableOnce[ClassFile] = {
 
     def shouldExtract(e: Entry) = !e.isZipSlip && e.maybeRegularFile() && (isArchive(e) || isClass(e))
@@ -89,7 +90,7 @@ object ProgramHandlingUtil {
         case f if f.isDirectory() =>
           val files = f.listRecursively.filterNot(_.isDirectory).toList
           Right(files)
-        case f if isArchive(Entry(f)) =>
+        case f if isArchive(Entry(f)) && recurse =>
           val xTmp = File.newTemporaryDirectory("extract-archive-", parent = Some(tmpDir))
           val unzipDirs = Try(f.unzipTo(xTmp, e => shouldExtract(Entry(e)))) match {
             case Success(dir) => List(dir)
@@ -183,6 +184,8 @@ object ProgramHandlingUtil {
     *   Whether an entry is an archive to extract
     * @param isClass
     *   Whether an entry is a class file
+    * @param recurse
+    *   Whether to unpack recursively
     * @return
     *   The copied class files in destDir
     */
@@ -190,12 +193,13 @@ object ProgramHandlingUtil {
     src: File,
     destDir: File,
     isClass: Entry => Boolean,
-    isArchive: Entry => Boolean
+    isArchive: Entry => Boolean,
+    recurse: Boolean
   ): List[ClassFile] =
     File
       .temporaryDirectory("extract-classes-")
       .apply(tmpDir =>
-        extractClassesToTmp(src, tmpDir, isArchive, isClass).iterator
+        extractClassesToTmp(src, tmpDir, isArchive, isClass, recurse: Boolean).iterator
           .flatMap(_.copyToPackageLayoutIn(destDir))
           .toList
       )
