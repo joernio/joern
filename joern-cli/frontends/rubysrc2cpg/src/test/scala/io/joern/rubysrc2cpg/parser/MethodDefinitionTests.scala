@@ -289,6 +289,72 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |  WsOrNl
             |  end""".stripMargin
       }
+
+      "it contains a mandatory keyword parameter" in {
+        val code = "def foo(x:) ; end"
+        printAst(_.primary(), code) shouldBe
+          """MethodDefinitionPrimary
+            | MethodDefinition
+            |  def
+            |  WsOrNl
+            |  SimpleMethodNamePart
+            |   DefinedMethodName
+            |    MethodName
+            |     MethodIdentifier
+            |      foo
+            |  MethodParameterPart
+            |   (
+            |   Parameters
+            |    Parameter
+            |     KeywordParameter
+            |      x
+            |      :
+            |   )
+            |  WsOrNl
+            |  BodyStatement
+            |   CompoundStatement
+            |    Separators
+            |     Separator
+            |      ;
+            |  WsOrNl
+            |  end""".stripMargin
+      }
+
+      "it contains two mandatory keyword parameters" in {
+        val code = "def foo(name:, surname:) ; end"
+        printAst(_.primary(), code) shouldBe
+          """MethodDefinitionPrimary
+            | MethodDefinition
+            |  def
+            |  WsOrNl
+            |  SimpleMethodNamePart
+            |   DefinedMethodName
+            |    MethodName
+            |     MethodIdentifier
+            |      foo
+            |  MethodParameterPart
+            |   (
+            |   Parameters
+            |    Parameter
+            |     KeywordParameter
+            |      name
+            |      :
+            |    ,
+            |    WsOrNl
+            |    Parameter
+            |     KeywordParameter
+            |      surname
+            |      :
+            |   )
+            |  WsOrNl
+            |  BodyStatement
+            |   CompoundStatement
+            |    Separators
+            |     Separator
+            |      ;
+            |  WsOrNl
+            |  end""".stripMargin
+      }
     }
   }
 }
