@@ -90,7 +90,7 @@ object ProgramHandlingUtil {
         case f if f.isDirectory() =>
           val files = f.listRecursively.filterNot(_.isDirectory).toList
           Right(files)
-        case f if isArchive(Entry(f)) && recurse =>
+        case f if isArchive(Entry(f)) && (recurse || f == src) =>
           val xTmp = File.newTemporaryDirectory("extract-archive-", parent = Some(tmpDir))
           val unzipDirs = Try(f.unzipTo(xTmp, e => shouldExtract(Entry(e)))) match {
             case Success(dir) => List(dir)
