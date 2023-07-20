@@ -1,18 +1,18 @@
 package io.joern.rubysrc2cpg.parser
 
 class RescueClauseTests extends RubyParserAbstractTest {
-  
+
   "A rescue statement" should {
-    
+
     "be parsed as a standalone statement" when {
-      
+
       "in the immediate scope of a `begin` block" in {
         val code =
           """begin
             |1/0
             |rescue ZeroDivisionError => e
             |end""".stripMargin
-        
+
         printAst(_.beginExpression(), code) shouldEqual
           """BeginExpression
             | begin
@@ -57,14 +57,14 @@ class RescueClauseTests extends RubyParserAbstractTest {
             |    CompoundStatement
             | end""".stripMargin
       }
-      
+
       "in the immediate scope of a `def` block" in {
         val code =
           """def foo;
             |1/0
             |rescue ZeroDivisionError => e
             |end""".stripMargin
-        
+
         printAst(_.methodDefinition(), code) shouldEqual
           """MethodDefinition
             | def
@@ -118,14 +118,14 @@ class RescueClauseTests extends RubyParserAbstractTest {
             |    CompoundStatement
             | end""".stripMargin
       }
-      
+
       "in the immediate scope of a `do` block" in {
         val code =
           """foo x do |y|
             |y/0
             |rescue ZeroDivisionError => e
             |end""".stripMargin
-          
+
         printAst(_.statement(), code) shouldEqual
           """ExpressionOrCommandStatement
             | InvocationExpressionOrCommand
@@ -194,7 +194,7 @@ class RescueClauseTests extends RubyParserAbstractTest {
             |      end""".stripMargin
       }
     }
-    
+
   }
 
 }

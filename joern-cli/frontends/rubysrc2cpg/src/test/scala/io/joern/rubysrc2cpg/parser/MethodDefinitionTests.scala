@@ -357,11 +357,11 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
       }
     }
   }
-  
+
   "A multi-line method definition" should {
-    
+
     "be parsed as a primary expression" when {
-      
+
       "it contains a `rescue` clause" in {
         val code = """def foo
                       |  1/0
@@ -420,12 +420,10 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |     Separator
             |     CompoundStatement
             |  end""".stripMargin
-        
-        
+
       }
     }
-    
-    
+
   }
 
 }
