@@ -108,6 +108,33 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
              |  )""".stripMargin
       }
 
+      "it contains a non-empty regex literal keyword argument" in {
+        val code = "foo(id: /.*/)"
+        printAst(_.primary(), code) shouldEqual
+          """InvocationWithParenthesesPrimary
+            | MethodIdentifier
+            |  foo
+            | ArgsOnlyArgumentsWithParentheses
+            |  (
+            |  Arguments
+            |   AssociationArgument
+            |    Association
+            |     PrimaryExpression
+            |      VariableReferencePrimary
+            |       VariableIdentifierVariableReference
+            |        VariableIdentifier
+            |         id
+            |     :
+            |     WsOrNl
+            |     PrimaryExpression
+            |      LiteralPrimary
+            |       RegularExpressionLiteral
+            |        /
+            |        .*
+            |        /
+            |  )""".stripMargin
+      }
+
       "it contains a single symbol literal positional argument" in {
         val code = "foo(:region)"
 
@@ -207,6 +234,7 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
             |         true
             |  )""".stripMargin
       }
+
     }
   }
 }

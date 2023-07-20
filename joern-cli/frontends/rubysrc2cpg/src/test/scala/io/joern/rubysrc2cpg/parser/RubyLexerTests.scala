@@ -258,6 +258,36 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     )
   }
 
+  "Empty regex literal on the RHS of an association" should "be recognized as such" in {
+    val code = "{x: //}"
+    tokenize(code) shouldBe Seq(
+      LCURLY,
+      LOCAL_VARIABLE_IDENTIFIER,
+      COLON,
+      WS,
+      REGULAR_EXPRESSION_START,
+      REGULAR_EXPRESSION_END,
+      RCURLY,
+      EOF
+    )
+  }
+
+  "Non-empty regex literal on the RHS of a keyword argument" should "be recognized as such" in {
+    val code = "foo(x: /.*/)"
+    tokenize(code) shouldBe Seq(
+      LOCAL_VARIABLE_IDENTIFIER,
+      LPAREN,
+      LOCAL_VARIABLE_IDENTIFIER,
+      COLON,
+      WS,
+      REGULAR_EXPRESSION_START,
+      REGULAR_EXPRESSION_BODY,
+      REGULAR_EXPRESSION_END,
+      RPAREN,
+      EOF
+    )
+  }
+
   "Non-empty regex literal on the RHS of an assignment" should "be recognized as such" in {
     val code = """NAME_REGEX = /\A[^0-9!\``@#\$%\^&*+_=]+\z/"""
     tokenize(code) shouldBe Seq(
