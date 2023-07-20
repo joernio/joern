@@ -357,7 +357,7 @@ hashParameter
     ;
 
 keywordParameter
-    :   LOCAL_VARIABLE_IDENTIFIER WS* COLON wsOrNl* expression
+    :   LOCAL_VARIABLE_IDENTIFIER WS* COLON (wsOrNl* expression)?
     ;
 
 procParameter
