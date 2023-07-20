@@ -1,16 +1,16 @@
 package io.joern.kotlin2cpg.ast
 
-import io.joern.kotlin2cpg.ast.Nodes._
+import io.joern.kotlin2cpg.ast.Nodes.*
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.KtFileWithMeta
-import io.joern.kotlin2cpg.psi.PsiUtils._
+import io.joern.kotlin2cpg.psi.PsiUtils.*
 import io.joern.kotlin2cpg.types.{AnonymousObjectContext, CallKinds, TypeConstants, TypeInfoProvider}
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated._
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.joern.x2cpg.{Ast, Defines}
-import io.joern.x2cpg.datastructures.Stack._
+import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.utils.NodeBuilders.{
   newBindingNode,
@@ -22,12 +22,12 @@ import io.joern.x2cpg.utils.NodeBuilders.{
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.DescriptorVisibility
 
-import java.util.UUID.randomUUID
-import org.jetbrains.kotlin.psi._
+import java.util.UUID.{nameUUIDFromBytes}
+import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.lexer.{KtToken, KtTokens}
 
 import scala.annotation.unused
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 trait KtPsiToAst {
   this: AstCreator =>
@@ -625,8 +625,8 @@ trait KtPsiToAst {
         case node: NewMember            => NodeContext(node, node.name, node.typeFullName)
       }
       .map { capturedNodeContext =>
-        // TODO: remove the randomness here, two CPGs created from the same codebase should be the same
-        val closureBindingId = randomUUID().toString
+        val uuidBytes        = stringForUUID(fn, capturedNodeContext.name, capturedNodeContext.typeFullName)
+        val closureBindingId = nameUUIDFromBytes(uuidBytes.getBytes).toString
         val closureBindingNode =
           newClosureBindingNode(closureBindingId, capturedNodeContext.name, EvaluationStrategies.BY_REFERENCE)
         (closureBindingNode, capturedNodeContext)
@@ -708,8 +708,8 @@ trait KtPsiToAst {
         case node: NewMember            => NodeContext(node, node.name, node.typeFullName)
       }
       .map { capturedNodeContext =>
-        // TODO: remove the randomness here, two CPGs created from the same codebase should be the same
-        val closureBindingId = randomUUID().toString
+        val uuidBytes        = stringForUUID(expr, capturedNodeContext.name, capturedNodeContext.typeFullName)
+        val closureBindingId = nameUUIDFromBytes(uuidBytes.getBytes).toString
         val closureBindingNode =
           newClosureBindingNode(closureBindingId, capturedNodeContext.name, EvaluationStrategies.BY_REFERENCE)
         (closureBindingNode, capturedNodeContext)
@@ -741,14 +741,15 @@ trait KtPsiToAst {
               .map(_.getEntries.asScala)
               .getOrElse(Seq())
           if (destructuringEntries.nonEmpty)
-            destructuringEntries.zipWithIndex.map { case (entry, innerIdx) =>
-              val name             = entry.getName
-              val explicitTypeName = Option(entry.getTypeReference).map(_.getText).getOrElse(TypeConstants.any)
-              val typeFullName     = registerType(typeInfoProvider.destructuringEntryType(entry, explicitTypeName))
-              val node =
-                parameterInNode(entry, name, name, innerIdx + idx, false, EvaluationStrategies.BY_VALUE, typeFullName)
-              scope.addToScope(name, node)
-              Ast(node)
+            destructuringEntries.filterNot(_.getText == Constants.unusedDestructuringEntryText).zipWithIndex.map {
+              case (entry, innerIdx) =>
+                val name             = entry.getName
+                val explicitTypeName = Option(entry.getTypeReference).map(_.getText).getOrElse(TypeConstants.any)
+                val typeFullName     = registerType(typeInfoProvider.destructuringEntryType(entry, explicitTypeName))
+                val node =
+                  parameterInNode(entry, name, name, innerIdx + idx, false, EvaluationStrategies.BY_VALUE, typeFullName)
+                scope.addToScope(name, node)
+                Ast(node)
             }
           else Seq(astForParameter(p, idx))
         }.flatten
@@ -1572,13 +1573,17 @@ trait KtPsiToAst {
       callAst(controlStructureCondition, List(), Option(Ast(conditionIdentifier)))
 
     val destructuringDeclEntries = expr.getDestructuringDeclaration.getEntries
-    val localsForDestructuringVars = destructuringDeclEntries.asScala.map { entry =>
-      val entryTypeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
-      val entryName         = entry.getText
-      val node              = localNode(entry, entryName, entryName, entryTypeFullName)
-      scope.addToScope(entryName, node)
-      Ast(node)
-    }.toList
+    val localsForDestructuringVars =
+      destructuringDeclEntries.asScala
+        .filterNot(_.getText == Constants.unusedDestructuringEntryText)
+        .map { entry =>
+          val entryTypeFullName = registerType(typeInfoProvider.typeFullName(entry, TypeConstants.any))
+          val entryName         = entry.getText
+          val node              = localNode(entry, entryName, entryName, entryTypeFullName)
+          scope.addToScope(entryName, node)
+          Ast(node)
+        }
+        .toList
 
     val tmpName     = s"${Constants.tmpLocalPrefix}${tmpKeyPool.next}"
     val localForTmp = newLocalNode(tmpName, TypeConstants.any)
@@ -1606,8 +1611,9 @@ trait KtPsiToAst {
     val tmpParameterNextAssignmentAst = callAst(tmpParameterNextAssignment, List(tmpIdentifierAst, iteratorNextCallAst))
 
     val assignmentsForEntries =
-      destructuringDeclEntries.asScala.zipWithIndex.map { case (entry, idx) =>
-        assignmentAstForDestructuringEntry(entry, localForTmp.name, localForTmp.typeFullName, idx + 1)
+      destructuringDeclEntries.asScala.filterNot(_.getText == Constants.unusedDestructuringEntryText).zipWithIndex.map {
+        case (entry, idx) =>
+          assignmentAstForDestructuringEntry(entry, localForTmp.name, localForTmp.typeFullName, idx + 1)
       }
 
     val stmtAsts             = astsForExpression(expr.getBody, None)
