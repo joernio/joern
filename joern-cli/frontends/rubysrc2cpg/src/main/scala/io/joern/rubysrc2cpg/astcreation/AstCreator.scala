@@ -774,11 +774,6 @@ class AstCreator(
     case ctx: SingleCommandOnlyInvocationWithoutParenthesesContext => astForCommand(ctx.command())
     case ctx: ChainedCommandDoBlockInvocationWithoutParenthesesContext =>
       astForChainedCommandWithDoBlockContext(ctx.chainedCommandWithDoBlock())
-    case ctx: ChainedCommandDoBlockDorCol2mNameArgsInvocationWithoutParenthesesContext =>
-      val cmdDoBlockAst  = astForChainedCommandWithDoBlockContext(ctx.chainedCommandWithDoBlock())
-      val methodNameAst  = astForMethodNameContext(ctx.methodName())
-      val argsWOParenAst = astForArguments(ctx.argumentsWithoutParentheses().arguments())
-      cmdDoBlockAst ++ methodNameAst ++ argsWOParenAst
     case ctx: ReturnArgsInvocationWithoutParenthesesContext =>
       val retNode = NewReturn()
         .code(ctx.getText)
