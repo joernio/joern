@@ -398,4 +398,35 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       rhs.methodFullName shouldBe "mypkg.addB:java.lang.String(java.lang.String)"
     }
   }
+
+  "CPG for code with a simple interface" should {
+    val cpg = code("""
+        |package mypkg
+        |interface AnInterface {
+        |    fun doSomething(p: String)
+        |}
+        |""".stripMargin)
+
+    "should contain a TYPE_DECL node with the correct properties set" in {
+      val List(td) = cpg.typeDecl.nameExact("AnInterface").l
+      td.fullName shouldBe "mypkg.AnInterface"
+      td.inheritsFromTypeFullName shouldBe Seq("java.lang.Object")
+    }
+  }
+
+  "CPG for code with a simple functional interface" should {
+    val cpg = code("""
+        |package mypkg
+        |fun interface AFunInterface {
+        |    fun doSomething(p: String)
+        |}
+        |""".stripMargin)
+
+    "should contain a TYPE_DECL node with the correct properties set" in {
+      val List(td) = cpg.typeDecl.nameExact("AFunInterface").l
+      td.fullName shouldBe "mypkg.AFunInterface"
+      td.inheritsFromTypeFullName shouldBe Seq("java.lang.Object")
+    }
+  }
+
 }
