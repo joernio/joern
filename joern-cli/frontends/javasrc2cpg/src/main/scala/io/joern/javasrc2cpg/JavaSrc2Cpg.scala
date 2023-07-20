@@ -50,4 +50,22 @@ object JavaSrc2Cpg {
       new JavaTypeHintCallLinker(cpg)
     )
   }
+
+  def showEnv(): Unit = {
+    val value =
+      JavaSrcEnvVar.values.foreach { envVar =>
+        val currentValue = Option(System.getenv(envVar.name)).getOrElse("<unset>")
+        println(s"${envVar.name}:")
+        println(s"  Description  : ${envVar.description}")
+        println(s"  Current value: $currentValue")
+      }
+  }
+
+  enum JavaSrcEnvVar(val name: String, val description: String) {
+    case JdkPath
+        extends JavaSrcEnvVar(
+          "JAVASRC_JDK_PATH",
+          "Path to the JDK home used for retrieving type information about builtin Java types."
+        )
+  }
 }
