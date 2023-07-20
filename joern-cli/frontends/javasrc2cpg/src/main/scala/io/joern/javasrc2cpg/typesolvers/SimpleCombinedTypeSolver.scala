@@ -9,15 +9,19 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 import scala.jdk.OptionConverters.RichOptional
+import com.google.common.cache.Weigher
+import scala.util.Try
 
-class SimpleCombinedTypeSolver extends TypeSolver {
+class SimpleCombinedTypeSolver(maxSize: Option[Long]) extends TypeSolver {
 
   private val logger                                       = LoggerFactory.getLogger(this.getClass)
   private var parent: TypeSolver                           = _
   private val typeSolvers: mutable.ArrayBuffer[TypeSolver] = mutable.ArrayBuffer()
-  private val typeCache = new GuavaCache(
-    CacheBuilder.newBuilder().build[String, SymbolReference[ResolvedReferenceTypeDeclaration]]()
-  )
+  private val typeCache = {
+    val builder = CacheBuilder.newBuilder()
+    maxSize.foreach(builder.maximumSize(_))
+    new GuavaCache(builder.build[String, SymbolReference[ResolvedReferenceTypeDeclaration]]())
+  }
 
   def add(typeSolver: TypeSolver): Unit = {
     typeSolvers.append(typeSolver)
@@ -33,30 +37,33 @@ class SimpleCombinedTypeSolver extends TypeSolver {
     SymbolReference.unsolved(classOf[ResolvedReferenceTypeDeclaration])
 
   override def tryToSolveType(name: String): SymbolReference[ResolvedReferenceTypeDeclaration] = {
-    typeCache.get(name).toScala match {
-      case Some(result) => result
+    synchronized {
 
-      case None =>
-        // Use an iterator here so that the map is only applied until a solved result is found.
-        val result = typeSolvers.iterator
-          .map { typeSolver =>
-            try {
-              typeSolver.tryToSolveType(name): SymbolReference[ResolvedReferenceTypeDeclaration]
-            } catch {
-              case _: UnsolvedSymbolException  => unsolved
-              case _: StackOverflowError       => unsolved
-              case _: IllegalArgumentException =>
-                // RecordDeclarations aren't handled by JavaParser yet
-                unsolved
-              case unhandled: Throwable =>
-                logger.warn("Caught unhandled exception", unhandled)
-                unsolved
+      typeCache.get(name).toScala match {
+        case Some(result) => result
+
+        case None =>
+          // Use an iterator here so that the map is only applied until a solved result is found.
+          val result = typeSolvers.iterator
+            .map { typeSolver =>
+              try {
+                typeSolver.tryToSolveType(name): SymbolReference[ResolvedReferenceTypeDeclaration]
+              } catch {
+                case _: UnsolvedSymbolException  => unsolved
+                case _: StackOverflowError       => unsolved
+                case _: IllegalArgumentException =>
+                  // RecordDeclarations aren't handled by JavaParser yet
+                  unsolved
+                case unhandled: Throwable =>
+                  logger.warn("Caught unhandled exception", unhandled)
+                  unsolved
+              }
             }
-          }
-          .find(_.isSolved)
-          .getOrElse(unsolved)
-        typeCache.put(name, result)
-        result
+            .find(_.isSolved)
+            .getOrElse(unsolved)
+          typeCache.put(name, result)
+          result
+      }
     }
   }
 
@@ -81,5 +88,4 @@ class SimpleCombinedTypeSolver extends TypeSolver {
       this.parent = parent
     }
   }
-
 }

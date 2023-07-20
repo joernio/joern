@@ -12,6 +12,31 @@ import overflowdb.traversal.toNodeTraversal
 
 class NewCallTests extends JavaSrcCode2CpgFixture {
 
+  "calls to imported nested classes should be resolved" in {
+    lazy val cpg = code("""
+      |import foo.Foo.Bar;
+      |
+      |class Test {
+      |  void test() {
+      |    Bar.bar();
+      |  }
+      |}""".stripMargin)
+      .moreCode(
+        """
+      |package foo;
+      |
+      |public class Foo {
+      |  public class Bar {
+      |    void bar() {}
+      |  }
+      |}
+      |""".stripMargin,
+        fileName = "Foo.java"
+      )
+
+    cpg.call.name("bar").methodFullName.l shouldBe List("foo.Foo$Bar.bar:void()")
+  }
+
   "constructor init method call" should {
     lazy val cpg = code("""
         |class Foo {
@@ -32,6 +57,45 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
     "contain a call to `<init>` with one of the arguments containing a REF edge to the newly-defined local" in {
       cpg.call.nameExact("<init>").argument(0).isIdentifier.outE.collectAll[Ref].l should not be List()
     }
+  }
+
+  "calls to methods with varargs should be resolved correctly" in {
+    val cpg = code("""
+        |class Test {
+        |  void foo(String... inputs) {
+        |    System.out.println(inputs.length);
+        |  }
+        |
+        |  void test() {
+        |    foo("a", "b");
+        |  }
+        |}
+      |""".stripMargin)
+
+    cpg.call.name("foo").methodFullName.toList shouldBe List("Test.foo:void(java.lang.String[])")
+  }
+
+  "calls to static methods in other files with varargs should be resolved correctly" in {
+    val cpg = code("""
+        |class Test {
+        |
+        |  void test(String[] inputs) {
+        |    Foo.foo("a", "b");
+        |  }
+        |}
+        |""".stripMargin)
+      .moreCode(
+        """
+        |class Foo {
+        |  static void foo(String... inputs) {
+        |    System.out.println(inputs.length);
+        |  }
+        |}
+        |""".stripMargin,
+        fileName = "Foo.java"
+      )
+
+    cpg.call.name("foo").methodFullName.toList shouldBe List("Foo.foo:void(java.lang.String[])")
   }
 
   "calls to static methods in different files should be resolved correctly" in {

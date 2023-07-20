@@ -17,7 +17,7 @@ trait JavaSrcFrontend extends LanguageFrontend {
   override val fileSuffix: String = ".java"
 
   override def execute(sourceCodeFile: File): Cpg = {
-    val config = getConfig().map(_.asInstanceOf[Config]).getOrElse(Config())
+    val config = getConfig().map(_.asInstanceOf[Config]).getOrElse(JavaSrc2Cpg.DefaultConfig)
     new JavaSrc2Cpg().createCpg(sourceCodeFile.getAbsolutePath)(config).get
   }
 }
