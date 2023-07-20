@@ -234,7 +234,7 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
             |         true
             |  )""".stripMargin
       }
-      
+
     }
   }
 }

@@ -257,7 +257,7 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       EOF
     )
   }
-  
+
   "Empty regex literal on the RHS of an association" should "be recognized as such" in {
     val code = "{x: //}"
     tokenize(code) shouldBe Seq(
@@ -271,7 +271,7 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       EOF
     )
   }
-  
+
   "Non-empty regex literal on the RHS of a keyword argument" should "be recognized as such" in {
     val code = "foo(x: /.*/)"
     tokenize(code) shouldBe Seq(
