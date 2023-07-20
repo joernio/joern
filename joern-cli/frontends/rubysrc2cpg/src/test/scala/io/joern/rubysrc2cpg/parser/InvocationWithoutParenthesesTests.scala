@@ -79,25 +79,26 @@ class InvocationWithoutParenthesesTests extends RubyParserAbstractTest {
             |      Separators
             |       Separator
             |      WsOrNl
-            |      CompoundStatement
-            |       Statements
-            |        ExpressionOrCommandStatement
-            |         InvocationExpressionOrCommand
-            |          SingleCommandOnlyInvocationWithoutParentheses
-            |           SimpleMethodCommand
-            |            MethodIdentifier
-            |             puts
-            |            ArgumentsWithoutParentheses
-            |             Arguments
-            |              ExpressionArgument
-            |               PrimaryExpression
-            |                LiteralPrimary
-            |                 NumericLiteralLiteral
-            |                  NumericLiteral
-            |                   UnsignedNumericLiteral
-            |                    1
-            |       Separators
-            |        Separator
+            |      BodyStatement
+            |       CompoundStatement
+            |        Statements
+            |         ExpressionOrCommandStatement
+            |          InvocationExpressionOrCommand
+            |           SingleCommandOnlyInvocationWithoutParentheses
+            |            SimpleMethodCommand
+            |             MethodIdentifier
+            |              puts
+            |             ArgumentsWithoutParentheses
+            |              Arguments
+            |               ExpressionArgument
+            |                PrimaryExpression
+            |                 LiteralPrimary
+            |                  NumericLiteralLiteral
+            |                   NumericLiteral
+            |                    UnsignedNumericLiteral
+            |                     1
+            |        Separators
+            |         Separator
             |      end""".stripMargin
 
       }

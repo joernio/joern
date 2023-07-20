@@ -345,17 +345,17 @@ trait AstForStatementsCreator {
   }
 
   protected def astForDoBlock(ctx: DoBlockContext): Ast = {
-    astForBlockHelper(ctx, Option(ctx.blockParameter), ctx.compoundStatement)
+    astForBlockHelper(ctx, Option(ctx.blockParameter), ctx.bodyStatement().compoundStatement())
   }
 
   protected def astForBraceBlock(ctx: BraceBlockContext): Ast = {
-    astForBlockHelper(ctx, Option(ctx.blockParameter), ctx.compoundStatement)
+    astForBlockHelper(ctx, Option(ctx.blockParameter), ctx.bodyStatement().compoundStatement())
   }
 
   // TODO: This class shouldn't be required and will eventually be phased out.
   protected implicit class BlockContextExt(val ctx: BlockContext) {
     def compoundStatement: CompoundStatementContext = {
-      fold(_.compoundStatement(), _.compoundStatement)
+      fold(_.bodyStatement.compoundStatement, _.bodyStatement.compoundStatement)
     }
 
     def blockParameter: Option[BlockParameterContext] = {

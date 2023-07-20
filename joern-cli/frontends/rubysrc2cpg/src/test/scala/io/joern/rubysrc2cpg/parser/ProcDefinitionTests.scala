@@ -15,7 +15,8 @@ class ProcDefinitionTests extends RubyParserAbstractTest {
             |  BraceBlockBlock
             |   BraceBlock
             |    {
-            |    CompoundStatement
+            |    BodyStatement
+            |     CompoundStatement
             |    }""".stripMargin
       }
 
@@ -33,7 +34,8 @@ class ProcDefinitionTests extends RubyParserAbstractTest {
             |     Separator
             |      ;
             |    WsOrNl
-            |    CompoundStatement
+            |    BodyStatement
+            |     CompoundStatement
             |    end""".stripMargin
       }
 
@@ -52,7 +54,8 @@ class ProcDefinitionTests extends RubyParserAbstractTest {
             |  BraceBlockBlock
             |   BraceBlock
             |    {
-            |    CompoundStatement
+            |    BodyStatement
+            |     CompoundStatement
             |    }""".stripMargin
       }
 
@@ -76,7 +79,8 @@ class ProcDefinitionTests extends RubyParserAbstractTest {
             |     Separator
             |      ;
             |    WsOrNl
-            |    CompoundStatement
+            |    BodyStatement
+            |     CompoundStatement
             |    end""".stripMargin
       }
 
@@ -103,7 +107,8 @@ class ProcDefinitionTests extends RubyParserAbstractTest {
             |  BraceBlockBlock
             |   BraceBlock
             |    {
-            |    CompoundStatement
+            |    BodyStatement
+            |     CompoundStatement
             |    }""".stripMargin
       }
 
@@ -135,7 +140,8 @@ class ProcDefinitionTests extends RubyParserAbstractTest {
             |     Separator
             |      ;
             |    WsOrNl
-            |    CompoundStatement
+            |    BodyStatement
+            |     CompoundStatement
             |    end""".stripMargin
       }
 
@@ -159,39 +165,40 @@ class ProcDefinitionTests extends RubyParserAbstractTest {
             |  BraceBlockBlock
             |   BraceBlock
             |    {
-            |    CompoundStatement
-            |     Statements
-            |      ExpressionOrCommandStatement
-            |       InvocationExpressionOrCommand
-            |        SingleCommandOnlyInvocationWithoutParentheses
-            |         SimpleMethodCommand
-            |          MethodIdentifier
-            |           puts
-            |          ArgumentsWithoutParentheses
-            |           Arguments
-            |            ExpressionArgument
-            |             PrimaryExpression
-            |              VariableReferencePrimary
-            |               VariableIdentifierVariableReference
-            |                VariableIdentifier
-            |                 x
-            |      Separators
-            |       Separator
-            |        ;
-            |      ExpressionOrCommandStatement
-            |       InvocationExpressionOrCommand
-            |        SingleCommandOnlyInvocationWithoutParentheses
-            |         SimpleMethodCommand
-            |          MethodIdentifier
-            |           puts
-            |          ArgumentsWithoutParentheses
-            |           Arguments
-            |            ExpressionArgument
-            |             PrimaryExpression
-            |              VariableReferencePrimary
-            |               VariableIdentifierVariableReference
-            |                VariableIdentifier
-            |                 y
+            |    BodyStatement
+            |     CompoundStatement
+            |      Statements
+            |       ExpressionOrCommandStatement
+            |        InvocationExpressionOrCommand
+            |         SingleCommandOnlyInvocationWithoutParentheses
+            |          SimpleMethodCommand
+            |           MethodIdentifier
+            |            puts
+            |           ArgumentsWithoutParentheses
+            |            Arguments
+            |             ExpressionArgument
+            |              PrimaryExpression
+            |               VariableReferencePrimary
+            |                VariableIdentifierVariableReference
+            |                 VariableIdentifier
+            |                  x
+            |       Separators
+            |        Separator
+            |         ;
+            |       ExpressionOrCommandStatement
+            |        InvocationExpressionOrCommand
+            |         SingleCommandOnlyInvocationWithoutParentheses
+            |          SimpleMethodCommand
+            |           MethodIdentifier
+            |            puts
+            |           ArgumentsWithoutParentheses
+            |            Arguments
+            |             ExpressionArgument
+            |              PrimaryExpression
+            |               VariableReferencePrimary
+            |                VariableIdentifierVariableReference
+            |                 VariableIdentifier
+            |                  y
             |    }""".stripMargin
       }
 
