@@ -28,58 +28,84 @@ class ImportResolverPass(cpg: Cpg, packageTableInfo: PackageTable) extends XImpo
 
   private def resolveEntities(expEntity: String, importCall: Call, fileName: String): Set[ResolvedImport] = {
 
-    val methodTableModelList = packageTableInfo.getPackageInfo(expEntity)
-
-    // Below is a dummy sample for `sendgrid-ruby` gem, which can be used for development
-    // val methodTableModelList = List(MethodTableModel("client", "SendGrid::API", "API"))
-
     // TODO
     /* Currently we are considering only case where exposed module are Classes,
     and the only way to consume them is by creating a new object as we encounter more cases,
      This needs to be handled accordingly
      */
 
-    val relativeImportNodes = if (importCall.name.equals("require_relative")) {
-      val rawEntity   = expEntity.stripPrefix("./")
-      val matcher     = pathPattern.matcher(rawEntity)
-      val sep         = Matcher.quoteReplacement(JFile.separator)
-      val root        = s"$codeRoot${JFile.separator}"
-      val currentFile = s"$root$fileName"
-      val entity      = if (matcher.find()) matcher.group(1) else rawEntity
-      val resolvedPath = better.files
-        .File(
-          currentFile.stripSuffix(currentFile.split(sep).lastOption.getOrElse("")),
-          entity.split("\\.").headOption.getOrElse(entity)
-        )
-        .pathAsString match {
-        case resPath if entity.endsWith(".rb") => s"$resPath.rb"
-        case resPath                           => resPath
+    val expResolvedPath =
+      if (packageTableInfo.getModule(expEntity).nonEmpty || packageTableInfo.getTypeDecl(expEntity).nonEmpty)
+        expEntity
+      else if (expEntity.contains("."))
+        getResolvedPath(expEntity, fileName)
+      else if (cpg.file.name(s".*$expEntity.rb").nonEmpty)
+        getResolvedPath(s"$expEntity.rb", fileName)
+      else
+        expEntity
+
+    // TODO Limited ResolvedMethod exposure for now, will open up after looking at more concrete examples
+    val finalResolved = {
+      if (
+        packageTableInfo.getModule(expResolvedPath).nonEmpty || packageTableInfo.getTypeDecl(expResolvedPath).nonEmpty
+      ) {
+        val importNodesFromTypeDecl = packageTableInfo
+          .getTypeDecl(expEntity)
+          .flatMap { typeDeclModel =>
+            Seq(ResolvedMethod(s"${typeDeclModel.fullName}.new", "new"), ResolvedTypeDecl(typeDeclModel.fullName))
+          }
+          .distinct
+
+        val importNodesFromModule = packageTableInfo.getModule(expEntity).flatMap { moduleModel =>
+          Seq(ResolvedTypeDecl(moduleModel.fullName))
+        }
+        (importNodesFromTypeDecl ++ importNodesFromModule).toSet
+      } else {
+        val resolvedTypeDecls = cpg.typeDecl
+          .where(_.file.name(s"${Pattern.quote(expResolvedPath)}\\.?.*"))
+          .fullName
+          .flatMap(fullName => Seq(ResolvedTypeDecl(fullName), ResolvedMethod(s"$fullName.new", "new")))
+          .toSet
+
+        val resolvedModules = cpg.namespaceBlock
+          .whereNot(_.nameExact("<global>"))
+          .where(_.file.name(s"${Pattern.quote(expResolvedPath)}\\.?.*"))
+          .flatMap(module => Seq(ResolvedTypeDecl(module.fullName)))
+          .toSet
+
+        // Expose methods which are directly present in a file, without any module, TypeDecl
+        val resolvedMethods = cpg.method
+          .where(_.file.name(s"${Pattern.quote(expResolvedPath)}\\.?.*"))
+          .where(_.nameExact(":program"))
+          .astChildren
+          .astChildren
+          .isMethod
+          .flatMap(method => Seq(ResolvedMethod(method.fullName, method.name)))
+          .toSet
+        resolvedTypeDecls ++ resolvedModules ++ resolvedMethods
       }
+    }
 
-      val resolvedTypeDecls = cpg.typeDecl
-        .where(_.file.name(s"${Pattern.quote(resolvedPath)}\\.?.*"))
-        .fullName
-        .flatMap(fullName => Seq(ResolvedTypeDecl(fullName), ResolvedMethod(s"$fullName.new", "new")))
-        .toList
-      val resolvedTypeDeclByModule = packageTableInfo
-        .getModulesByGem(resolvedPath)
-        .map(moduleName => ResolvedTypeDecl(s"$entity::program.$moduleName"))
-        .toList
-      val resolvedFunctions = cpg.method
-        .where(_.file.name(s"${Pattern.quote(resolvedPath)}\\.?.*"))
-        .whereNot(_.nameExact(":program"))
-        .map(method => ResolvedMethod(method.fullName, method.name))
-        .toList
-      (resolvedTypeDecls ++ resolvedTypeDeclByModule ++ resolvedFunctions).distinct
-    } else Seq.empty
+    finalResolved
+  }
 
-    val importNodes = methodTableModelList.flatMap { methodTableModel =>
-      Seq(
-        ResolvedMethod(s"$expEntity::program.${methodTableModel.parentClassPath.stripSuffix(":")}.new", "new"),
-        ResolvedTypeDecl(s"$expEntity::program.${methodTableModel.parentClassPath}")
+  def getResolvedPath(expEntity: String, fileName: String) = {
+    val rawEntity   = expEntity.stripPrefix("./")
+    val matcher     = pathPattern.matcher(rawEntity)
+    val sep         = Matcher.quoteReplacement(JFile.separator)
+    val root        = s"$codeRoot${JFile.separator}"
+    val currentFile = s"$root$fileName"
+    val entity      = if (matcher.find()) matcher.group(1) else rawEntity
+    val resolvedPath = better.files
+      .File(
+        currentFile.stripSuffix(currentFile.split(sep).lastOption.getOrElse("")),
+        entity.split("\\.").headOption.getOrElse(entity)
       )
-    }.distinct
-    (relativeImportNodes ++ importNodes).toSet
+      .pathAsString match {
+      case resPath if entity.endsWith(".rb") => s"$resPath.rb"
+      case resPath                           => resPath
+    }
+    resolvedPath
   }
 
 }
