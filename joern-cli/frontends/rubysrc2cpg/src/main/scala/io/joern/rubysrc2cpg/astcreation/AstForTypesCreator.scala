@@ -154,9 +154,8 @@ trait AstForTypesCreator { this: AstCreator =>
         getClassNameScopedConstantReferenceContext(ctx.scopedConstantReference())
       else
         Option(ctx.CONSTANT_IDENTIFIER()).map(_.getText) match {
-          case Some(className) if baseClassName.isDefined => s"${baseClassName.get}.$className"
-          case Some(className)                            => className
-          case None                                       => Defines.Any
+          case Some(className) => className
+          case None            => Defines.Any
         }
 
   }
