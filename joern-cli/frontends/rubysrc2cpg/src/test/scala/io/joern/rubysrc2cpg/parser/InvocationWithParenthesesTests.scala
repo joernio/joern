@@ -286,6 +286,37 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
             |  )""".stripMargin
       }
 
+      "it spans two lines, with the second line starting with `.`" in {
+        val code = "foo\n   .bar"
+        printAst(_.primary(), code) shouldEqual
+          """ChainedInvocationPrimary
+            | VariableReferencePrimary
+            |  VariableIdentifierVariableReference
+            |   VariableIdentifier
+            |    foo
+            | WsOrNl
+            | WsOrNl
+            | .
+            | MethodName
+            |  MethodIdentifier
+            |   bar""".stripMargin
+      }
+
+      "it spans two lines, with the first line ending with `.`" in {
+        val code = "foo.\n   bar"
+        printAst(_.primary(), code) shouldEqual
+          """ChainedInvocationPrimary
+            | VariableReferencePrimary
+            |  VariableIdentifierVariableReference
+            |   VariableIdentifier
+            |    foo
+            | .
+            | WsOrNl
+            | WsOrNl
+            | MethodName
+            |  MethodIdentifier
+            |   bar""".stripMargin
+      }
     }
   }
 }
