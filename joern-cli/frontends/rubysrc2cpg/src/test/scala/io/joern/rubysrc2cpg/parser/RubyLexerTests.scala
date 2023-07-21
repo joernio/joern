@@ -301,6 +301,20 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       EOF
     )
   }
+  
+  "Non-empty regex literal on the RHS of an regex matching operation" should "be recognized as such" in {
+    val code = """content_filename =~ /filename="(.*)"/"""
+    tokenize(code) shouldBe Seq(
+      LOCAL_VARIABLE_IDENTIFIER,
+      WS,
+      EQTILDE,
+      WS,
+      REGULAR_EXPRESSION_START,
+      REGULAR_EXPRESSION_BODY,
+      REGULAR_EXPRESSION_END,
+      EOF
+    )
+  }
 
   "Regex literals without metacharacters" should "be recognized as such" in {
     val eg = Seq("/regexp/", "/a regexp/")
@@ -602,5 +616,10 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       RPAREN,
       EOF
     )
+  }
+  
+  "Regex match global variables" should "be recognized as such" in {
+    val eg = Seq("$0", "$10", "$2", "$3")
+    all(eg.map(tokenize)) shouldBe Seq(GLOBAL_VARIABLE_IDENTIFIER, EOF)
   }
 }
