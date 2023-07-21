@@ -301,7 +301,7 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       EOF
     )
   }
-  
+
   "Non-empty regex literal on the RHS of an regex matching operation" should "be recognized as such" in {
     val code = """content_filename =~ /filename="(.*)"/"""
     tokenize(code) shouldBe Seq(
@@ -617,7 +617,7 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       EOF
     )
   }
-  
+
   "Regex match global variables" should "be recognized as such" in {
     val eg = Seq("$0", "$10", "$2", "$3")
     all(eg.map(tokenize)) shouldBe Seq(GLOBAL_VARIABLE_IDENTIFIER, EOF)
