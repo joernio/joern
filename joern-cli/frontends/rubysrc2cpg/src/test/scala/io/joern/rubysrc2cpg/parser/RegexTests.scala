@@ -114,6 +114,56 @@ class RegexTests extends RubyParserAbstractTest {
             |    )""".stripMargin
       }
     }
+
+    "used in a `when` clause" should {
+      val code =
+        """case foo
+            |      when /^ch_/
+            |        bar
+            |end""".stripMargin
+
+      "be parsed as such" in {
+        printAst(_.primary(), code) shouldEqual
+          """CaseExpressionPrimary
+              | CaseExpression
+              |  case
+              |  WsOrNl
+              |  ExpressionExpressionOrCommand
+              |   PrimaryExpression
+              |    VariableReferencePrimary
+              |     VariableIdentifierVariableReference
+              |      VariableIdentifier
+              |       foo
+              |  Separators
+              |   Separator
+              |  WhenClause
+              |   when
+              |   WsOrNl
+              |   WhenArgument
+              |    Expressions
+              |     PrimaryExpression
+              |      LiteralPrimary
+              |       RegularExpressionLiteral
+              |        /
+              |        ^ch_
+              |        /
+              |   ThenClause
+              |    Separator
+              |    WsOrNl
+              |    CompoundStatement
+              |     Statements
+              |      ExpressionOrCommandStatement
+              |       ExpressionExpressionOrCommand
+              |        PrimaryExpression
+              |         VariableReferencePrimary
+              |          VariableIdentifierVariableReference
+              |           VariableIdentifier
+              |            bar
+              |     Separators
+              |      Separator
+              |  end""".stripMargin
+      }
+    }
   }
 
   "A non-interpolated regex literal" when {
