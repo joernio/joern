@@ -437,7 +437,7 @@ beginExpression
     ;
 
 bodyStatement
-    :   compoundStatement (wsOrNl* rescueClause)* (wsOrNl* elseClause)? ensureClause?
+    :   compoundStatement (wsOrNl* rescueClause)* (wsOrNl* elseClause)? (wsOrNl* ensureClause)?
     ;
 
 rescueClause
