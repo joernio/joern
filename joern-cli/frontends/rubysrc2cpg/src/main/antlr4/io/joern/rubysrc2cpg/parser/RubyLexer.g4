@@ -431,8 +431,10 @@ fragment LINE_TERMINATOR
 
 SYMBOL_LITERAL
     :   ':' SYMBOL_NAME
-    // This check exists to prevent issuing a SYMBOL_LITERAL in whitespace-free associations, e.g. `foo(x:y)`.
-    {previousTokenTypeOrEOF() != LOCAL_VARIABLE_IDENTIFIER}?
+    // This check exists to prevent issuing a SYMBOL_LITERAL in whitespace-free associations, e.g. 
+    //      in `foo(x:y)`, so that `:y` is not a SYMBOL_LITERAL
+    // or   in `{:x=>1}`, so that `:x=` is not a SYMBOL_LITERAL
+    {previousTokenTypeOrEOF() != LOCAL_VARIABLE_IDENTIFIER && _input.LA(1) != '>'}?
     ;
 
 fragment SYMBOL_NAME

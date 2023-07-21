@@ -589,6 +589,19 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       EOF
     )
   }
+  
+  "operator-named symbol used in a whitespace-free `=>` association" should "not be include `=` as part of its name" in {
+    // This test exists to check if RubyLexer properly recognizes EQGT
+    val code = "{:x=>1}"
+    tokenize(code) shouldBe Seq(
+      LCURLY,
+      SYMBOL_LITERAL,
+      EQGT,
+      DECIMAL_INTEGER_LITERAL,
+      RCURLY,
+      EOF
+    )
+  }
 
   "class variable used in a keyword argument" should "not be mistaken for a symbol literal" in {
     // This test exists to check if RubyLexer properly decided between COLON and SYMBOL_LITERAL
