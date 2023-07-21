@@ -104,7 +104,7 @@ primary
     |   methodOnlyIdentifier                                                                                        # methodOnlyIdentifierPrimary
     |   methodIdentifier WS? block                                                                                  # invocationWithBlockOnlyPrimary
     |   methodIdentifier argumentsWithParentheses WS* block?                                                        # invocationWithParenthesesPrimary
-    |   primary (DOT | COLON2) wsOrNl* methodName argumentsWithParentheses? WS? block?                              # chainedInvocationPrimary
+    |   primary (DOT | COLON2| AMPDOT) wsOrNl* methodName argumentsWithParentheses? WS? block?                              # chainedInvocationPrimary
     |   primary COLON2 methodName block?                                                                            # chainedInvocationWithoutArgumentsPrimary
     ;
 
