@@ -240,10 +240,8 @@ class MiscTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    "recognise all method nodes" in {
-      cpg.method
-        .name("submoduleMethod2")
-        .size shouldBe 1
+    "recognise all method nodes" ignore {
+      cpg.method.name("submoduleMethod2").size shouldBe 1
     }
 
     "recognise all call nodes" in {

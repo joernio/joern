@@ -31,10 +31,10 @@ class FunctionTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "recognise all identifier nodes" in {
-      cpg.identifier.name("name").l.size shouldBe 1
-      cpg.identifier.name("age").l.size shouldBe 1
-      cpg.identifier.name("@name").l.size shouldBe 2
-      cpg.identifier.name("@age").l.size shouldBe 4
+      cpg.identifier.name("name").size shouldBe 1
+      cpg.identifier.name("age").size shouldBe 1
+      cpg.fieldAccess.fieldIdentifier.canonicalName("name").size shouldBe 2
+      cpg.fieldAccess.fieldIdentifier.canonicalName("age").size shouldBe 4
       cpg.identifier.size shouldBe 11
     }
 
@@ -80,11 +80,11 @@ class FunctionTests extends RubyCode2CpgFixture {
       cpg.call.name(Operators.assignment).size shouldBe 3
       cpg.call.name("to_s").size shouldBe 2
       cpg.call.name("new").size shouldBe 1
-      cpg.call.size shouldBe 8
+      cpg.call.size shouldBe 11
     }
 
     "recognize all identifier nodes" in {
-      cpg.identifier.name("@my_hash").size shouldBe 3
+      cpg.fieldAccess.fieldIdentifier.canonicalName("my_hash").size shouldBe 3
       cpg.identifier.name("key").size shouldBe 2
       cpg.identifier.name("value").size shouldBe 1
       cpg.identifier.name("my_object").size shouldBe 1

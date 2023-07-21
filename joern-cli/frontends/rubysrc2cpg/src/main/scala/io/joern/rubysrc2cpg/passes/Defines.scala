@@ -1,5 +1,7 @@
 package io.joern.rubysrc2cpg.passes
 
+import io.joern.rubysrc2cpg.astcreation.GlobalTypes
+
 object Defines {
   val Any: String    = "ANY"
   val Object: String = "Object"
@@ -25,4 +27,6 @@ object Defines {
   val ModifierRedo: String  = "redo"
   val ModifierRetry: String = "retry"
   var ModifierNext: String  = "next"
+
+  def getBuiltInType(typeInString: String) = s"${GlobalTypes.builtinPrefix}.$typeInString"
 }

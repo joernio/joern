@@ -4,7 +4,7 @@ dependsOn(Projects.console, Projects.console % "test->test", Projects.dataflowen
 
 libraryDependencies ++= Seq(
   "io.shiftleft"     %% "codepropertygraph" % Versions.cpg,
-  "com.lihaoyi"      %% "requests"          % "0.7.1",
+  "com.lihaoyi"      %% "requests"          % Versions.requests,
   "com.github.scopt" %% "scopt"             % "4.1.0",
   "org.reflections"   % "reflections"       % "0.10.2",
   "org.scalatest"    %% "scalatest"         % Versions.scalatest % Test

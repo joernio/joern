@@ -43,8 +43,8 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
             |  foo
             | ArgsOnlyArgumentsWithParentheses
             |  (
-            |  BlockExprAssocTypeArguments
-            |   Expressions
+            |  Arguments
+            |   ExpressionArgument
             |    PrimaryExpression
             |     LiteralPrimary
             |      NumericLiteralLiteral
@@ -59,26 +59,79 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
 
         printAst(_.primary(), code) shouldEqual
           s"""InvocationWithParenthesesPrimary
+             | MethodIdentifier
+             |  foo
+             | ArgsOnlyArgumentsWithParentheses
+             |  (
+             |  Arguments
+             |   AssociationArgument
+             |    Association
+             |     PrimaryExpression
+             |      VariableReferencePrimary
+             |       VariableIdentifierVariableReference
+             |        VariableIdentifier
+             |         region
+             |     :
+             |     WsOrNl
+             |     PrimaryExpression
+             |      LiteralPrimary
+             |       NumericLiteralLiteral
+             |        NumericLiteral
+             |         UnsignedNumericLiteral
+             |          1
+             |  )""".stripMargin
+      }
+
+      "it contains an identifier keyword argument" in {
+        val code = "foo(region:region)"
+
+        printAst(_.primary(), code) shouldEqual
+          s"""InvocationWithParenthesesPrimary
+             | MethodIdentifier
+             |  foo
+             | ArgsOnlyArgumentsWithParentheses
+             |  (
+             |  Arguments
+             |   AssociationArgument
+             |    Association
+             |     PrimaryExpression
+             |      VariableReferencePrimary
+             |       VariableIdentifierVariableReference
+             |        VariableIdentifier
+             |         region
+             |     :
+             |     PrimaryExpression
+             |      VariableReferencePrimary
+             |       VariableIdentifierVariableReference
+             |        VariableIdentifier
+             |         region
+             |  )""".stripMargin
+      }
+
+      "it contains a non-empty regex literal keyword argument" in {
+        val code = "foo(id: /.*/)"
+        printAst(_.primary(), code) shouldEqual
+          """InvocationWithParenthesesPrimary
             | MethodIdentifier
             |  foo
             | ArgsOnlyArgumentsWithParentheses
             |  (
-            |  BlockExprAssocTypeArguments
-            |   Associations
+            |  Arguments
+            |   AssociationArgument
             |    Association
             |     PrimaryExpression
             |      VariableReferencePrimary
             |       VariableIdentifierVariableReference
             |        VariableIdentifier
-            |         region
+            |         id
             |     :
             |     WsOrNl
             |     PrimaryExpression
             |      LiteralPrimary
-            |       NumericLiteralLiteral
-            |        NumericLiteral
-            |         UnsignedNumericLiteral
-            |          1
+            |       RegularExpressionLiteral
+            |        /
+            |        .*
+            |        /
             |  )""".stripMargin
       }
 
@@ -91,8 +144,8 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
             |  foo
             | ArgsOnlyArgumentsWithParentheses
             |  (
-            |  BlockExprAssocTypeArguments
-            |   Expressions
+            |  Arguments
+            |   ExpressionArgument
             |    PrimaryExpression
             |     LiteralPrimary
             |      SymbolLiteral
@@ -110,8 +163,8 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
             |  foo
             | ArgsOnlyArgumentsWithParentheses
             |  (
-            |  BlockExprAssocTypeArguments
-            |   Expressions
+            |  Arguments
+            |   ExpressionArgument
             |    PrimaryExpression
             |     LiteralPrimary
             |      SymbolLiteral
@@ -120,6 +173,119 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
             |  ,
             |  )""".stripMargin
       }
+
+      "it contains a splatting expression before a keyword argument" in {
+        val code = "foo(*x, y: 1)"
+        printAst(_.primary(), code) shouldEqual
+          """InvocationWithParenthesesPrimary
+            | MethodIdentifier
+            |  foo
+            | ArgsOnlyArgumentsWithParentheses
+            |  (
+            |  Arguments
+            |   SplattingArgumentArgument
+            |    SplattingArgument
+            |     *
+            |     ExpressionExpressionOrCommand
+            |      PrimaryExpression
+            |       VariableReferencePrimary
+            |        VariableIdentifierVariableReference
+            |         VariableIdentifier
+            |          x
+            |   ,
+            |   WsOrNl
+            |   AssociationArgument
+            |    Association
+            |     PrimaryExpression
+            |      VariableReferencePrimary
+            |       VariableIdentifierVariableReference
+            |        VariableIdentifier
+            |         y
+            |     :
+            |     WsOrNl
+            |     PrimaryExpression
+            |      LiteralPrimary
+            |       NumericLiteralLiteral
+            |        NumericLiteral
+            |         UnsignedNumericLiteral
+            |          1
+            |  )""".stripMargin
+      }
+
+      "it contains a keyword-named keyword argument" in {
+        val code = "foo(if: true)"
+        printAst(_.primary(), code) shouldEqual
+          """InvocationWithParenthesesPrimary
+            | MethodIdentifier
+            |  foo
+            | ArgsOnlyArgumentsWithParentheses
+            |  (
+            |  Arguments
+            |   AssociationArgument
+            |    Association
+            |     Keyword
+            |      if
+            |     :
+            |     WsOrNl
+            |     PrimaryExpression
+            |      VariableReferencePrimary
+            |       PseudoVariableIdentifierVariableReference
+            |        TruePseudoVariableIdentifier
+            |         true
+            |  )""".stripMargin
+      }
+
+      "it contains a safe navigation operator with no parameters" in {
+        val code = "foo&.bar()"
+        printAst(_.primary(), code) shouldEqual
+          """ChainedInvocationPrimary
+            | VariableReferencePrimary
+            |  VariableIdentifierVariableReference
+            |   VariableIdentifier
+            |    foo
+            | &.
+            | MethodName
+            |  MethodIdentifier
+            |   bar
+            | BlankArgsArgumentsWithParentheses
+            |  (
+            |  )""".stripMargin
+      }
+
+      "it contains a safe navigation operator with non-zero parameters" in {
+        val code = "foo&.bar(1, 2)"
+        printAst(_.primary(), code) shouldEqual
+          """ChainedInvocationPrimary
+            | VariableReferencePrimary
+            |  VariableIdentifierVariableReference
+            |   VariableIdentifier
+            |    foo
+            | &.
+            | MethodName
+            |  MethodIdentifier
+            |   bar
+            | ArgsOnlyArgumentsWithParentheses
+            |  (
+            |  Arguments
+            |   ExpressionArgument
+            |    PrimaryExpression
+            |     LiteralPrimary
+            |      NumericLiteralLiteral
+            |       NumericLiteral
+            |        UnsignedNumericLiteral
+            |         1
+            |   ,
+            |   WsOrNl
+            |   ExpressionArgument
+            |    PrimaryExpression
+            |     LiteralPrimary
+            |      NumericLiteralLiteral
+            |       NumericLiteral
+            |        UnsignedNumericLiteral
+            |         2
+            |  )""".stripMargin
+      }
+
     }
   }
 }

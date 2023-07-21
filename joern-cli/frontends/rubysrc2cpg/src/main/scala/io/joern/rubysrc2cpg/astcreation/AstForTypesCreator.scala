@@ -3,13 +3,21 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.parser.RubyParser.{
   ClassDefinitionPrimaryContext,
   ClassOrModuleReferenceContext,
+  ModuleDefinitionPrimaryContext,
   ScopedConstantReferenceContext
 }
+import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewIdentifier, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import org.antlr.v4.runtime.ParserRuleContext
+import io.joern.x2cpg.utils._
+import scala.collection.mutable
 
 trait AstForTypesCreator { this: AstCreator =>
+
+  // Maps field references of known types
+  protected val fieldReferences = mutable.HashMap.empty[String, Set[ParserRuleContext]]
 
   def astForClassDeclaration(ctx: ClassDefinitionPrimaryContext): Seq[Ast] = {
     val baseClassName = if (ctx.classDefinition().expressionOrCommand() != null) {
@@ -26,23 +34,9 @@ trait AstForTypesCreator { this: AstCreator =>
     val className = ctx.className(baseClassName)
     if (className != Defines.Any) {
       classStack.push(className)
-      val fullName = classStack.reverse.mkString(":")
+      val fullName = classStack.reverse.mkString(pathSep)
 
-      val bodyAst = astForBodyStatementContext(ctx.classDefinition().bodyStatement())
-      val bodyAstSansModifiers = bodyAst
-        .filterNot(ast => {
-          val nodes = ast.nodes
-            .filter(_.isInstanceOf[NewIdentifier])
-
-          if (nodes.size == 1) {
-            val varName = nodes
-              .map(_.asInstanceOf[NewIdentifier].name)
-              .head
-            varName == "public" || varName == "protected" || varName == "private"
-          } else {
-            false
-          }
-        })
+      val bodyAst = astForClassBody(ctx.classDefinition().bodyStatement())
 
       if (classStack.nonEmpty) {
         classStack.pop()
@@ -51,7 +45,7 @@ trait AstForTypesCreator { this: AstCreator =>
       val typeDeclNode = NewTypeDecl()
         .name(className)
         .fullName(fullName)
-      Seq(Ast(typeDeclNode).withChildren(bodyAstSansModifiers))
+      Seq(Ast(typeDeclNode).withChildren(bodyAst))
     } else {
       Seq.empty
     }
@@ -67,16 +61,40 @@ trait AstForTypesCreator { this: AstCreator =>
     astExprOfCommand ++ Seq(bodyBlockAst)
   }
 
-  def astForClassOrModuleReferenceContext(
-    ctx: ClassOrModuleReferenceContext,
-    baseClassName: Option[String] = None
-  ): Seq[Ast] = {
-    val className = ctx.className(baseClassName)
+  def astForModuleDefinitionPrimaryContext(ctx: ModuleDefinitionPrimaryContext): Seq[Ast] = {
+    val className = ctx.moduleDefinition().classOrModuleReference().classOrModuleName(None)
 
     if (className != Defines.Any) {
       classStack.push(className)
+
+      val fullName = classStack.reverse.mkString(pathSep)
+      val namespaceBlock = NewNamespaceBlock()
+        .name(className)
+        .fullName(fullName)
+        .filename(filename)
+
+      val moduleBodyAst = astInFakeMethod(className, fullName, filename, ctx)
+      classStack.pop()
+      Seq(Ast(namespaceBlock).withChildren(moduleBodyAst))
+    } else {
+      Seq.empty
     }
-    Seq(Ast())
+
+  }
+
+  private def astInFakeMethod(
+    name: String,
+    fullName: String,
+    path: String,
+    ctx: ModuleDefinitionPrimaryContext
+  ): Seq[Ast] = {
+
+    val fakeGlobalTypeDecl = NewTypeDecl()
+      .name(name)
+      .fullName(fullName)
+
+    val bodyAst = astForClassBody(ctx.moduleDefinition().bodyStatement())
+    Seq(Ast(fakeGlobalTypeDecl).withChildren(bodyAst))
   }
 
   private def getClassNameScopedConstantReferenceContext(ctx: ScopedConstantReferenceContext): String = {
@@ -95,9 +113,26 @@ trait AstForTypesCreator { this: AstCreator =>
     }
   }
 
-  def astsForClassMembers(): Seq[Ast] = {
-    ???
-  }
+  def membersFromStatementAsts(ast: Ast): Seq[Ast] =
+    ast.nodes
+      .collect { case i: NewIdentifier if i.name.startsWith("@") || i.name.isAllUpperCase => i }
+      .map { i =>
+        val code = ast.root.collect { case c: NewCall => c.code }.getOrElse(i.name)
+        val modifierType = i.name match
+          case x if x.startsWith("@@") => ModifierTypes.STATIC
+          case x if x.isAllUpperCase   => ModifierTypes.FINAL
+          case _                       => ModifierTypes.VIRTUAL
+        val modifierAst = Ast(NewModifier().modifierType(modifierType))
+        Ast(
+          NewMember()
+            .code(code)
+            .name(i.name.replaceAll("@", ""))
+            .typeFullName(i.typeFullName)
+            .lineNumber(i.lineNumber)
+            .columnNumber(i.columnNumber)
+        ).withChild(modifierAst)
+      }
+      .toSeq
 
   implicit class ClassDefinitionPrimaryContextExt(val ctx: ClassDefinitionPrimaryContext) {
 
@@ -106,7 +141,7 @@ trait AstForTypesCreator { this: AstCreator =>
     def className(baseClassName: Option[String] = None): String =
       Option(ctx.classDefinition())
         .map(_.classOrModuleReference())
-        .map(_.className(baseClassName))
+        .map(_.classOrModuleName(baseClassName))
         .getOrElse(Defines.Any)
   }
 
@@ -114,16 +149,17 @@ trait AstForTypesCreator { this: AstCreator =>
 
     def hasScopedConstantReference: Boolean = Option(ctx.scopedConstantReference()).isDefined
 
-    def className(baseClassName: Option[String] = None): String =
-      if (ctx.hasScopedConstantReference)
-        getClassNameScopedConstantReferenceContext(ctx.scopedConstantReference())
-      else
-        Option(ctx.CONSTANT_IDENTIFIER()).map(_.getText) match {
-          case Some(className) if baseClassName.isDefined => s"${baseClassName.get}.$className"
-          case Some(className)                            => className
-          case None                                       => Defines.Any
-        }
-
+    def classOrModuleName(baseClassName: Option[String] = None): String =
+      Option(ctx) match {
+        case Some(ct) =>
+          if (ct.hasScopedConstantReference)
+            getClassNameScopedConstantReferenceContext(ct.scopedConstantReference())
+          else
+            Option(ct.CONSTANT_IDENTIFIER()).map(_.getText) match {
+              case Some(className) => className
+              case None            => Defines.Any
+            }
+        case None => Defines.Any
+      }
   }
-
 }

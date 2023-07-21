@@ -9,9 +9,10 @@ import io.joern.x2cpg.utils.NodeBuilders.newDependencyNode
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.utils.IOUtils
 import org.apache.commons.lang.StringUtils
-import org.eclipse.cdt.core.dom.ast._
+import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.c.{ICASTArrayDesignator, ICASTDesignatedInitializer, ICASTFieldDesignator}
-import org.eclipse.cdt.core.dom.ast.cpp._
+import org.eclipse.cdt.core.dom.ast.c.ICASTTypedefNameSpecifier
+import org.eclipse.cdt.core.dom.ast.cpp.*
 import org.eclipse.cdt.core.dom.ast.gnu.c.ICASTKnRFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTArrayRangeDesignator
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalBinding
@@ -382,6 +383,7 @@ trait AstCreatorHelper { this: AstCreator =>
       case e: IASTEnumerationSpecifier    => ASTStringUtil.getSimpleName(e.getName)
       case c: IASTCompositeTypeSpecifier  => ASTStringUtil.getSimpleName(c.getName)
       case e: IASTElaboratedTypeSpecifier => ASTStringUtil.getSimpleName(e.getName)
+      case s: IASTNamedTypeSpecifier      => ASTStringUtil.getSimpleName(s.getName)
       case other                          => notHandledYet(other); ""
     }
     name

@@ -258,6 +258,50 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     )
   }
 
+  "Empty regex literal on the RHS of an association" should "be recognized as such" in {
+    val code = "{x: //}"
+    tokenize(code) shouldBe Seq(
+      LCURLY,
+      LOCAL_VARIABLE_IDENTIFIER,
+      COLON,
+      WS,
+      REGULAR_EXPRESSION_START,
+      REGULAR_EXPRESSION_END,
+      RCURLY,
+      EOF
+    )
+  }
+
+  "Non-empty regex literal on the RHS of a keyword argument" should "be recognized as such" in {
+    val code = "foo(x: /.*/)"
+    tokenize(code) shouldBe Seq(
+      LOCAL_VARIABLE_IDENTIFIER,
+      LPAREN,
+      LOCAL_VARIABLE_IDENTIFIER,
+      COLON,
+      WS,
+      REGULAR_EXPRESSION_START,
+      REGULAR_EXPRESSION_BODY,
+      REGULAR_EXPRESSION_END,
+      RPAREN,
+      EOF
+    )
+  }
+
+  "Non-empty regex literal on the RHS of an assignment" should "be recognized as such" in {
+    val code = """NAME_REGEX = /\A[^0-9!\``@#\$%\^&*+_=]+\z/"""
+    tokenize(code) shouldBe Seq(
+      CONSTANT_IDENTIFIER,
+      WS,
+      EQ,
+      WS,
+      REGULAR_EXPRESSION_START,
+      REGULAR_EXPRESSION_BODY,
+      REGULAR_EXPRESSION_END,
+      EOF
+    )
+  }
+
   "Regex literals without metacharacters" should "be recognized as such" in {
     val eg = Seq("/regexp/", "/a regexp/")
     all(eg.map(tokenize)) shouldBe Seq(REGULAR_EXPRESSION_START, REGULAR_EXPRESSION_BODY, REGULAR_EXPRESSION_END, EOF)
@@ -339,6 +383,18 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     tokenize(code) shouldBe Seq(LOCAL_VARIABLE_IDENTIFIER, WS, SLASH, WS, LOCAL_VARIABLE_IDENTIFIER, EOF)
   }
 
+  "Addition between class fields" should "not be confused with +@ token" in {
+    // This test exists to check if RubyLexer properly decided between PLUS and PLUSAT
+    val code = "x+@y"
+    tokenize(code) shouldBe Seq(LOCAL_VARIABLE_IDENTIFIER, PLUS, INSTANCE_VARIABLE_IDENTIFIER, EOF)
+  }
+
+  "Subtraction between class fields" should "not be confused with -@ token" in {
+    // This test exists to check if RubyLexer properly decided between MINUS and MINUSAT
+    val code = "x-@y"
+    tokenize(code) shouldBe Seq(LOCAL_VARIABLE_IDENTIFIER, MINUS, INSTANCE_VARIABLE_IDENTIFIER, EOF)
+  }
+
   "Invocation of command with regex literal" should "not be confused with binary division" in {
     val code = "puts /x/"
     tokenize(code) shouldBe Seq(
@@ -347,6 +403,203 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       REGULAR_EXPRESSION_START,
       REGULAR_EXPRESSION_BODY,
       REGULAR_EXPRESSION_END,
+      EOF
+    )
+  }
+
+  "Multi-line string literal concatenation" should "be recognized as two string literals separated by whitespace" in {
+    val code =
+      """'abc' \
+        |'cde'""".stripMargin
+    tokenize(code) shouldBe Seq(SINGLE_QUOTED_STRING_LITERAL, WS, SINGLE_QUOTED_STRING_LITERAL, EOF)
+  }
+
+  "empty `%q` string literals" should "be recognized as such" in {
+    val eg = Seq("%q()", "%q[]", "%q{}", "%q<>", "%q##", "%q!!", "%q--", "%q@@", "%q++", "%q**", "%q//", "%q&&")
+    all(eg.map(tokenize)) shouldBe Seq(
+      QUOTED_NON_EXPANDED_STRING_LITERAL_START,
+      QUOTED_NON_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
+  "single-character `%q` string literals" should "be recognized as such" in {
+    val eg =
+      Seq("%q(x)", "%q[y]", "%q{z}", "%q<w>", "%q#a#", "%q!b!", "%q-_-", "%q@c@", "%q+d+", "%q*e*", "%q/#/", "%q&!&")
+    all(eg.map(tokenize)) shouldBe Seq(
+      QUOTED_NON_EXPANDED_STRING_LITERAL_START,
+      QUOTED_NON_EXPANDED_CHARACTER,
+      QUOTED_NON_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
+  "delimiter-escaped-single-character `%q` string literals" should "be recognized as such" in {
+    val eg = Seq(
+      "%q(\\))",
+      "%q[\\]]",
+      "%q{\\}}",
+      "%q<\\>>",
+      "%q#\\##",
+      "%q!\\!!",
+      "%q-\\--",
+      "%q@\\@@",
+      "%q+\\++",
+      "%q*\\**",
+      "%q/\\//",
+      "%q&\\&&"
+    )
+    all(eg.map(tokenize)) shouldBe Seq(
+      QUOTED_NON_EXPANDED_STRING_LITERAL_START,
+      QUOTED_NON_EXPANDED_CHARACTER,
+      QUOTED_NON_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
+  "nested `%q` string literals" should "be recognized as such" in {
+    val eg = Seq("%q(()())", "%q[[][]]", "%q{{}{}}", "%q<<><>>")
+    all(eg.map(tokenize)) shouldBe Seq(
+      QUOTED_NON_EXPANDED_STRING_LITERAL_START,
+      QUOTED_NON_EXPANDED_CHARACTER,
+      QUOTED_NON_EXPANDED_CHARACTER,
+      QUOTED_NON_EXPANDED_CHARACTER,
+      QUOTED_NON_EXPANDED_CHARACTER,
+      QUOTED_NON_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
+  "empty `%w` string array literals" should "be recognized as such" in {
+    val eg = Seq("%w()", "%w[]", "%w{}", "%w<>", "%w##", "%w!!", "%w--", "%w@@", "%w++", "%w**", "%w//", "%w&&")
+    all(eg.map(tokenize)) shouldBe Seq(
+      QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_START,
+      QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END,
+      EOF
+    )
+  }
+
+  "single-character `%w` string array literals" should "be recognized as such" in {
+    val eg =
+      Seq("%w(x)", "%w[y]", "%w{z}", "%w<w>", "%w#a#", "%w!b!", "%w-_-", "%w@c@", "%w+d+", "%w*e*", "%w/#/", "%w&!&")
+    all(eg.map(tokenize)) shouldBe Seq(
+      QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_START,
+      QUOTED_NON_EXPANDED_STRING_ARRAY_CHARACTER,
+      QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END,
+      EOF
+    )
+  }
+
+  "two-word `%w` string array literals" should "be recognized as such" in {
+    val eg = Seq(
+      "%w(xx y)",
+      "%w[yy z]",
+      "%w{z0 w}",
+      "%w<w; 1>",
+      "%w#a& ?#",
+      "%w!b_ c!",
+      "%w-_= +-",
+      "%w@c\" d@",
+      "%w+d/ *+",
+      "%w*ef <*",
+      "%w/#< >/",
+      "%w&!! %&"
+    )
+    all(eg.map(tokenize)) shouldBe Seq(
+      QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_START,
+      QUOTED_NON_EXPANDED_STRING_ARRAY_CHARACTER,
+      QUOTED_NON_EXPANDED_STRING_ARRAY_CHARACTER,
+      QUOTED_NON_EXPANDED_STRING_ARRAY_SEPARATOR,
+      QUOTED_NON_EXPANDED_STRING_ARRAY_CHARACTER,
+      QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END,
+      EOF
+    )
+  }
+
+  "empty `%i` symbol array literals" should "be recognized as such" in {
+    val eg = Seq("%i()", "%i[]", "%i{}", "%i<>", "%i##", "%i!!", "%i--", "%i@@", "%i++", "%i**", "%i//", "%i&&")
+    all(eg.map(tokenize)) shouldBe Seq(
+      QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_START,
+      QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END,
+      EOF
+    )
+  }
+
+  "single-character `%i` symbol array literals" should "be recognized as such" in {
+    val eg =
+      Seq("%i(x)", "%i[y]", "%i{z}", "%i<w>", "%i#a#", "%i!b!", "%i-_-", "%i@c@", "%i+d+", "%i*e*", "%i/#/", "%i&!&")
+    all(eg.map(tokenize)) shouldBe Seq(
+      QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_START,
+      QUOTED_NON_EXPANDED_SYMBOL_ARRAY_CHARACTER,
+      QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END,
+      EOF
+    )
+  }
+
+  "two-word `%i` symbol array literals" should "be recognized as such" in {
+    val eg = Seq(
+      "%i(xx y)",
+      "%i[yy z]",
+      "%i{z0 w}",
+      "%i<w; 1>",
+      "%i#a& ?#",
+      "%i!b_ c!",
+      "%i-_= +-",
+      "%i@c\" d@",
+      "%i+d/ *+",
+      "%i*ef <*",
+      "%i/#< >/",
+      "%i&!! %&"
+    )
+    all(eg.map(tokenize)) shouldBe Seq(
+      QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_START,
+      QUOTED_NON_EXPANDED_SYMBOL_ARRAY_CHARACTER,
+      QUOTED_NON_EXPANDED_SYMBOL_ARRAY_CHARACTER,
+      QUOTED_NON_EXPANDED_SYMBOL_ARRAY_SEPARATOR,
+      QUOTED_NON_EXPANDED_SYMBOL_ARRAY_CHARACTER,
+      QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END,
+      EOF
+    )
+  }
+
+  "identifier used in a keyword argument" should "not be mistaken for a symbol literal" in {
+    // This test exists to check if RubyLexer properly decided between COLON and SYMBOL_LITERAL
+    val code = "foo(x:y)"
+    tokenize(code) shouldBe Seq(
+      LOCAL_VARIABLE_IDENTIFIER,
+      LPAREN,
+      LOCAL_VARIABLE_IDENTIFIER,
+      COLON,
+      LOCAL_VARIABLE_IDENTIFIER,
+      RPAREN,
+      EOF
+    )
+  }
+
+  "instance variable used in a keyword argument" should "not be mistaken for a symbol literal" in {
+    // This test exists to check if RubyLexer properly decided between COLON and SYMBOL_LITERAL
+    val code = "foo(x:@y)"
+    tokenize(code) shouldBe Seq(
+      LOCAL_VARIABLE_IDENTIFIER,
+      LPAREN,
+      LOCAL_VARIABLE_IDENTIFIER,
+      COLON,
+      INSTANCE_VARIABLE_IDENTIFIER,
+      RPAREN,
+      EOF
+    )
+  }
+
+  "class variable used in a keyword argument" should "not be mistaken for a symbol literal" in {
+    // This test exists to check if RubyLexer properly decided between COLON and SYMBOL_LITERAL
+    val code = "foo(x:@@y)"
+    tokenize(code) shouldBe Seq(
+      LOCAL_VARIABLE_IDENTIFIER,
+      LPAREN,
+      LOCAL_VARIABLE_IDENTIFIER,
+      COLON,
+      CLASS_VARIABLE_IDENTIFIER,
+      RPAREN,
       EOF
     )
   }

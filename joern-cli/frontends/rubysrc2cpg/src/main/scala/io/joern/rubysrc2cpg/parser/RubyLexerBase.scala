@@ -1,13 +1,17 @@
 package io.joern.rubysrc2cpg.parser
 
-import io.joern.rubysrc2cpg.parser.RubyLexer._
+import io.joern.rubysrc2cpg.parser.RubyLexer.*
+import org.antlr.v4.runtime.Recognizer.EOF
 import org.antlr.v4.runtime.{CharStream, Lexer, Token}
 
 /** Aggregates auxiliary features to RubyLexer in a single place. */
 abstract class RubyLexerBase(input: CharStream)
     extends Lexer(input)
     with RubyLexerRegexHandling
-    with RubyLexerStringInterpolationHandling {
+    with RubyLexerStringInterpolationHandling
+    with RubyLexerQuotedNonExpandedStringHandling
+    with RubyLexerQuotedNonExpandedStringArrayHandling
+    with RubyLexerQuotedNonExpandedSymbolArrayHandling {
 
   /** The previously (non-WS) emitted token (in DEFAULT_CHANNEL.) */
   protected var previousNonWsToken: Option[Token] = None
@@ -23,6 +27,14 @@ abstract class RubyLexerBase(input: CharStream)
     }
     previousToken = Some(token)
     token
+  }
+
+  def previousNonWsTokenTypeOrEOF(): Int = {
+    previousNonWsToken.map(_.getType).getOrElse(EOF)
+  }
+
+  def previousTokenTypeOrEOF(): Int = {
+    previousToken.map(_.getType).getOrElse(EOF)
   }
 
 }

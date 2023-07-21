@@ -5,8 +5,18 @@ import io.joern.rubysrc2cpg.parser.RubyParser.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
+import io.joern.x2cpg.Imports.createImportNodeAndLink
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewControlStructure, NewImport, NewLiteral}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewBlock,
+  NewCall,
+  NewControlStructure,
+  NewIdentifier,
+  NewImport,
+  NewLiteral,
+  NewReturn
+}
+import org.slf4j.LoggerFactory
 import org.antlr.v4.runtime.ParserRuleContext
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -14,6 +24,7 @@ import scala.jdk.CollectionConverters.CollectionHasAsScala
 trait AstForStatementsCreator {
   this: AstCreator =>
 
+  private val logger = LoggerFactory.getLogger(this.getClass)
   protected def astForAliasStatement(ctx: AliasStatementContext): Ast = {
     val aliasName  = ctx.definedMethodNameOrSymbol(0).getText.substring(1)
     val methodName = ctx.definedMethodNameOrSymbol(1).getText.substring(1)
@@ -80,15 +91,104 @@ trait AstForStatementsCreator {
     controlStructureAst(throwNode, rhs.headOption, lhs)
   }
 
-  protected def astForCompoundStatement(ctx: CompoundStatementContext): Seq[Ast] = {
-    val stmtAsts = Option(ctx.statements()).map(astForStatements).getOrElse(Seq())
-    Seq(blockAst(blockNode(ctx), stmtAsts.toList))
+  private def lastStmtAsReturn(code: String, lastStmtAst: Ast): Ast = {
+    val lastStmtIsAlreadyReturn = lastStmtAst.root match {
+      case Some(value) => value.isInstanceOf[NewReturn]
+      case None        => false
+    }
+
+    if (lastStmtIsAlreadyReturn) {
+      lastStmtAst
+    } else {
+      val retNode = NewReturn()
+        .code(code)
+      returnAst(retNode, Seq[Ast](lastStmtAst))
+    }
   }
 
-  protected def astForStatements(ctx: StatementsContext): Seq[Ast] = {
+  protected def astForCompoundStatement(
+    ctx: CompoundStatementContext,
+    isMethodBody: Boolean = false,
+    canConsiderAsLeaf: Boolean = true
+  ): Seq[Ast] = {
+    val stmtAsts = Option(ctx)
+      .map(_.statements())
+      .map(st => { astForStatements(st, isMethodBody, canConsiderAsLeaf) })
+      .getOrElse(Seq())
+    if (isMethodBody) {
+      stmtAsts
+    } else {
+      Seq(blockAst(blockNode(ctx), stmtAsts.toList))
+
+    }
+  }
+
+  /*
+   * Each statement set can be considered a block. The blocks of a method can be considered to form a hierarchy.
+   * We can consider the blocks structure as a n-way tree. Leaf blocks are blocks that have no more sub blocks i.e children in the
+   * hierarchy. The last statement of the block of the method which is the top level/root block i.e. method body should be
+   * converted into a implicit return. However, if the last statement is a if-else it has sub-blocks/child blocks and the last statement of each leaf block in it
+   * will have to be converted to a implicit return, unless it is already a implicit return.
+   * Some sub-blocks are exempt from their last statements being converted to returns. Examples are blocks that are arguments to functions like string interpolation.
+   *
+   * isMethodBody => The statement set is the top level block in the method. i.e. the root block
+   * canConsiderAsLeaf => The statement set can be considered a leaf block. This is set to false by the caller when it is a statement
+   * set as a part of an expression. Eg. argument in string interpolation. We do not want to construct return nodes out of
+   * string interpolation arguments. These are exempt blocks for implicit returns.
+   * blockChildHash => Hash of a block id to any child. Absence of a block in this after all its statements have been processed implies
+   * that the block is a leaf
+   * blockIdCounter => A simple counter used to assign an unique id to each block.
+   */
+  protected def astForStatements(
+    ctx: StatementsContext,
+    isMethodBody: Boolean = false,
+    canConsiderAsLeaf: Boolean = true
+  ): Seq[Ast] = {
     Option(ctx) match {
       case Some(ctx) =>
-        Option(ctx.statement()).map(_.asScala).getOrElse(Seq()).flatMap(astForStatement).toSeq
+        val stmtCount   = ctx.statement().size()
+        var stmtCounter = 0
+        val myBlockId   = blockIdCounter
+        blockIdCounter += 1
+        val parentBlockId = currentBlockId
+        if (canConsiderAsLeaf) {
+          blockChildHash.update(parentBlockId, myBlockId)
+        }
+        currentBlockId = myBlockId
+
+        val stmtAsts = Option(ctx)
+          .map(_.statement())
+          .map(_.asScala)
+          .getOrElse(Seq())
+          .flatMap(stCtx => {
+            stmtCounter += 1
+            if (isMethodBody) {
+              if (stmtCounter == stmtCount) {
+                processingLastMethodStatement = true
+              } else {
+                processingLastMethodStatement = false
+              }
+            }
+            val stAsts = astForStatement(stCtx)
+            if (canConsiderAsLeaf && processingLastMethodStatement) {
+              blockChildHash.get(myBlockId) match {
+                case Some(value) =>
+                  // this is a non-leaf block
+                  stAsts
+                case None =>
+                  // this is a leaf block
+                  if (isMethodBody && stmtCounter == stmtCount) {
+                    processingLastMethodStatement = false
+                  }
+                  Seq(lastStmtAsReturn(stCtx.getText, stAsts.head))
+              }
+            } else {
+              stAsts
+            }
+          })
+          .toSeq
+        currentBlockId = parentBlockId
+        stmtAsts
       case None =>
         Seq()
     }
@@ -110,7 +210,9 @@ trait AstForStatementsCreator {
     case ctx: NotExpressionOrCommandContext        => Seq(astForNotKeywordExpressionOrCommand(ctx))
     case ctx: OrAndExpressionOrCommandContext      => Seq(astForOrAndExpressionOrCommand(ctx))
     case ctx: ExpressionExpressionOrCommandContext => astForExpressionContext(ctx.expression())
-    case _                                         => Seq(Ast())
+    case _ =>
+      logger.error(s"astForExpressionOrCommand() $filename, ${ctx.getText} All contexts mismatched.")
+      Seq(Ast())
   }
 
   protected def astForNotKeywordExpressionOrCommand(ctx: NotExpressionOrCommandContext): Ast = {
@@ -154,6 +256,9 @@ trait AstForStatementsCreator {
         resolveRequireOrLoadPath(argsAsts, callNode)
       } else if (callNode.name == "require_relative") {
         resolveRelativePath(filename, argsAsts, callNode)
+      } else if (methodNames.contains(getActualMethodName(callNode.name))) {
+        val thisNode = identifierNode(ctx, "this", "this", classStack.reverse.mkString(pathSep))
+        Seq(callAst(callNode, argsAsts, Some(Ast(thisNode))))
       } else {
         Seq(callAst(callNode, argsAsts))
       }
@@ -200,7 +305,8 @@ trait AstForStatementsCreator {
           pathValue
       }
       packageStack.append(result)
-      astForImportNode(node.code)
+      val importNode = createImportNodeAndLink(result, "", Some(callNode), diffGraph)
+      Seq(callAst(callNode, argsAst), Ast(importNode))
     } else {
       Seq(callAst(callNode, argsAst))
     }
@@ -216,17 +322,11 @@ trait AstForStatementsCreator {
       val currentDirectory = File(currentFile).parent
       val file             = File(currentDirectory, updatedPath)
       packageStack.append(file.pathAsString)
-      astForImportNode(node.code)
+      val importNode = createImportNodeAndLink(updatedPath, "", Some(callNode), diffGraph)
+      Seq(callAst(callNode, argsAst), Ast(importNode))
     } else {
       Seq(callAst(callNode, argsAst))
     }
-  }
-
-  protected def astForImportNode(code: String): Seq[Ast] = {
-    // fully implemented later
-    val importNode = NewImport()
-      .code(code)
-    Seq(Ast(importNode))
   }
 
   protected def astForBlock(ctx: BlockContext): Ast = ctx match
@@ -245,17 +345,17 @@ trait AstForStatementsCreator {
   }
 
   protected def astForDoBlock(ctx: DoBlockContext): Ast = {
-    astForBlockHelper(ctx, Option(ctx.blockParameter), ctx.compoundStatement)
+    astForBlockHelper(ctx, Option(ctx.blockParameter), ctx.bodyStatement().compoundStatement())
   }
 
   protected def astForBraceBlock(ctx: BraceBlockContext): Ast = {
-    astForBlockHelper(ctx, Option(ctx.blockParameter), ctx.compoundStatement)
+    astForBlockHelper(ctx, Option(ctx.blockParameter), ctx.bodyStatement().compoundStatement())
   }
 
   // TODO: This class shouldn't be required and will eventually be phased out.
   protected implicit class BlockContextExt(val ctx: BlockContext) {
     def compoundStatement: CompoundStatementContext = {
-      fold(_.compoundStatement(), _.compoundStatement)
+      fold(_.bodyStatement.compoundStatement, _.bodyStatement.compoundStatement)
     }
 
     def blockParameter: Option[BlockParameterContext] = {

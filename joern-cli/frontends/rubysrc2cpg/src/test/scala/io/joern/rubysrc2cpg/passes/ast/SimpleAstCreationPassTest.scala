@@ -4,7 +4,7 @@ import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
 
@@ -27,7 +27,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for an unsigned, decimal integer literal" in {
       val cpg           = code("123")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.Integer
+      literal.typeFullName shouldBe "__builtin.Integer"
       literal.code shouldBe "123"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
@@ -36,7 +36,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for a +integer, decimal literal" in {
       val cpg           = code("+1")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.Integer
+      literal.typeFullName shouldBe "__builtin.Integer"
       literal.code shouldBe "+1"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
@@ -45,7 +45,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for a -integer, decimal literal" in {
       val cpg           = code("-1")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.Integer
+      literal.typeFullName shouldBe "__builtin.Integer"
       literal.code shouldBe "-1"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
@@ -54,7 +54,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for an unsigned, decimal float literal" in {
       val cpg           = code("3.14")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.Float
+      literal.typeFullName shouldBe "__builtin.Float"
       literal.code shouldBe "3.14"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
@@ -63,7 +63,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for a +float, decimal literal" in {
       val cpg           = code("+3.14")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.Float
+      literal.typeFullName shouldBe "__builtin.Float"
       literal.code shouldBe "+3.14"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
@@ -72,7 +72,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for a -float, decimal literal" in {
       val cpg           = code("-3.14")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.Float
+      literal.typeFullName shouldBe "__builtin.Float"
       literal.code shouldBe "-3.14"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
@@ -81,7 +81,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for an unsigned, decimal float literal with unsigned exponent" in {
       val cpg           = code("3e10")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.Float
+      literal.typeFullName shouldBe "__builtin.Float"
       literal.code shouldBe "3e10"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
@@ -90,7 +90,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for an unsigned, decimal float literal with -exponent" in {
       val cpg           = code("12e-10")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.Float
+      literal.typeFullName shouldBe "__builtin.Float"
       literal.code shouldBe "12e-10"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
@@ -99,7 +99,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for an unsigned, binary integer literal" in {
       val cpg           = code("0b01")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.Integer
+      literal.typeFullName shouldBe "__builtin.Integer"
       literal.code shouldBe "0b01"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
@@ -108,7 +108,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for a -integer, binary literal" in {
       val cpg           = code("-0b01")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.Integer
+      literal.typeFullName shouldBe "__builtin.Integer"
       literal.code shouldBe "-0b01"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
@@ -117,7 +117,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for a +integer, binary literal" in {
       val cpg           = code("+0b01")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.Integer
+      literal.typeFullName shouldBe "__builtin.Integer"
       literal.code shouldBe "+0b01"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
@@ -126,7 +126,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for an unsigned, hexadecimal integer literal" in {
       val cpg           = code("0xabc")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.Integer
+      literal.typeFullName shouldBe "__builtin.Integer"
       literal.code shouldBe "0xabc"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
@@ -135,7 +135,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for a -integer, hexadecimal literal" in {
       val cpg           = code("-0xa")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.Integer
+      literal.typeFullName shouldBe "__builtin.Integer"
       literal.code shouldBe "-0xa"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
@@ -144,7 +144,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for a +integer, hexadecimal literal" in {
       val cpg           = code("+0xa")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.Integer
+      literal.typeFullName shouldBe "__builtin.Integer"
       literal.code shouldBe "+0xa"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
@@ -189,7 +189,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for `__FILE__` identifier" in {
       val cpg        = code("puts __FILE__")
       val List(file) = cpg.identifier.l
-      file.typeFullName shouldBe Defines.String
+      file.typeFullName shouldBe "__builtin.String"
       file.code shouldBe "__FILE__"
       file.lineNumber shouldBe Some(1)
       file.columnNumber shouldBe Some(5)
@@ -198,7 +198,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for `__LINE__` identifier" in {
       val cpg        = code("puts __LINE__")
       val List(line) = cpg.identifier.l
-      line.typeFullName shouldBe Defines.Integer
+      line.typeFullName shouldBe "__builtin.Integer"
       line.code shouldBe "__LINE__"
       line.lineNumber shouldBe Some(1)
       line.columnNumber shouldBe Some(5)
@@ -216,7 +216,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for a single-line double-quoted string literal" in {
       val cpg           = code("\"hello\"")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.String
+      literal.typeFullName shouldBe "__builtin.String"
       literal.code shouldBe "\"hello\""
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
@@ -225,7 +225,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for a single-line single-quoted string literal" in {
       val cpg           = code("'hello'")
       val List(literal) = cpg.literal.l
-      literal.typeFullName shouldBe Defines.String
+      literal.typeFullName shouldBe "__builtin.String"
       literal.code shouldBe "'hello'"
       literal.lineNumber shouldBe Some(1)
       literal.columnNumber shouldBe Some(0)
@@ -284,7 +284,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       callNode.name shouldBe "puts"
       callNode.lineNumber shouldBe Some(1)
 
-      val List(literalArg: Literal) = callNode.argument.l: @unchecked
+      val List(literalArg) = callNode.argument.isLiteral.l
       literalArg.argumentIndex shouldBe 1
       literalArg.typeFullName shouldBe Defines.Regexp
       literalArg.code shouldBe "/x/"
@@ -535,7 +535,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
           |""".stripMargin)
 
       val List(methodNode) = cpg.method.name("\\[]").l
-      methodNode.fullName shouldBe "Test0.rb::program:MyClass:[]"
+      methodNode.fullName shouldBe "Test0.rb::program.MyClass.[]"
       methodNode.code shouldBe "def [](key)\n  @member_hash[key]\nend"
       methodNode.lineNumber shouldBe Some(3)
       methodNode.lineNumberEnd shouldBe Some(5)
@@ -552,7 +552,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
           |""".stripMargin)
 
       val List(methodNode) = cpg.method.name("==").l
-      methodNode.fullName shouldBe "Test0.rb::program:MyClass:=="
+      methodNode.fullName shouldBe "Test0.rb::program.MyClass.=="
       methodNode.code shouldBe "def ==(other)\n  @my_member==other\nend"
       methodNode.lineNumber shouldBe Some(3)
       methodNode.lineNumberEnd shouldBe Some(5)
@@ -568,7 +568,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
           |""".stripMargin)
 
       val List(methodNode) = cpg.method.name("some_method").l
-      methodNode.fullName shouldBe "Test0.rb::program:MyClass:some_method"
+      methodNode.fullName shouldBe "Test0.rb::program.MyClass.some_method"
       methodNode.code shouldBe "def some_method(param)\nend"
       methodNode.lineNumber shouldBe Some(3)
       methodNode.lineNumberEnd shouldBe Some(4)
@@ -648,10 +648,13 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       callNode3.lineNumber shouldBe Some(2)
       callNode3.columnNumber shouldBe Some(0)
 
-      val List(identifierNode) = cpg.identifier.name("arg").l
-      identifierNode.code shouldBe "arg"
-      identifierNode.lineNumber shouldBe Some(2)
-      identifierNode.columnNumber shouldBe Some(5)
+      val List(argArgumentOfFoo, argArgumentOfPuts) = cpg.identifier.name("arg").l
+      argArgumentOfFoo.code shouldBe "arg"
+      argArgumentOfFoo.lineNumber shouldBe Some(1)
+      argArgumentOfFoo.columnNumber shouldBe Some(5)
+
+      argArgumentOfPuts.code shouldBe "arg"
+      argArgumentOfPuts.lineNumber shouldBe Some(2)
     }
 
     "have correct structure for a hash initialisation" in {
@@ -732,13 +735,13 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       controlNode.lineNumber shouldBe Some(1)
       controlNode.columnNumber shouldBe Some(0)
 
-      val List(a: Identifier) = controlNode.condition.l: @unchecked
+      val List(a) = controlNode.condition.isIdentifier.l
       a.code shouldBe "a"
       a.name shouldBe "a"
       a.lineNumber shouldBe Some(1)
       a.columnNumber shouldBe Some(0)
 
-      val List(_, b: Identifier, c: Identifier) = controlNode.astChildren.l: @unchecked
+      val List(_, b, c) = controlNode.astChildren.isIdentifier.l
       b.code shouldBe "b"
       b.name shouldBe "b"
       b.lineNumber shouldBe Some(1)
@@ -818,7 +821,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       callNode.name shouldBe "<operator>.super"
       callNode.lineNumber shouldBe Some(1)
 
-      val List(literalArg: Literal) = callNode.argument.l: @unchecked
+      val List(literalArg) = callNode.argument.isLiteral.l
       literalArg.argumentIndex shouldBe 1
       literalArg.code shouldBe "1"
       literalArg.lineNumber shouldBe Some(1)
@@ -832,10 +835,141 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       callNode.name shouldBe "<operator>.super"
       callNode.lineNumber shouldBe Some(1)
 
-      val List(literalArg: Literal) = callNode.argument.l: @unchecked
+      val List(literalArg) = callNode.argument.isLiteral.l
       literalArg.argumentIndex shouldBe 1
       literalArg.code shouldBe "1"
       literalArg.lineNumber shouldBe Some(1)
+    }
+
+    "have correct base for a call" in {
+      val cpg = code("""
+          |def foo(x)
+          | puts x
+          |end
+          |
+          |foo 123
+          |foo(132)
+          |""".stripMargin)
+
+      val callWithoutParen = cpg.call("foo").lineNumber(6).l
+      val callWithParen    = cpg.call("foo").lineNumber(7).l
+
+      val List(base1) = callWithoutParen.argument.isIdentifier.l
+      base1.typeFullName shouldBe "Test0.rb::program"
+
+      val List(argument1) = callWithoutParen.argument.isLiteral.l
+      argument1.code shouldBe "123"
+
+      val List(base2) = callWithParen.argument.isIdentifier.l
+      base2.typeFullName shouldBe "Test0.rb::program"
+
+      val List(argument2) = callWithParen.argument.isLiteral.l
+      argument2.code shouldBe "132"
+    }
+
+    "have generated call nodes for regex interpolation" in {
+      val cpg               = code("/x#{Regexp.quote(foo)}b#{x+'z'}a/")
+      val List(literalNode) = cpg.literal.l
+      cpg.call.size shouldBe 2
+      literalNode.code shouldBe "'z'"
+    }
+
+    "have correct structure for keyword? named method usage usage" in {
+      val cpg = code("x = 1.nil?")
+
+      val List(callNode) = cpg.call.nameExact("nil?").l
+      callNode.code shouldBe "1.nil?"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(5)
+
+      val List(arg) = callNode.argument.isLiteral.l
+      arg.code shouldBe "1"
+    }
+
+    "have correct structure for keyword usage inside association" in {
+      val cpg = code("foo if: x.nil?")
+
+      val List(callNode) = cpg.call.nameExact("nil?").l
+      callNode.code shouldBe "x.nil?"
+      callNode.lineNumber shouldBe Some(1)
+      callNode.columnNumber shouldBe Some(9)
+
+      val List(arg) = callNode.argument.isIdentifier.l
+      arg.code shouldBe "x"
+
+      val List(assocCallNode) = cpg.call.nameExact("<operator>.activeRecordAssociation").l
+      assocCallNode.code shouldBe "if: x.nil?"
+      assocCallNode.lineNumber shouldBe Some(1)
+      assocCallNode.columnNumber shouldBe Some(6)
+
+      assocCallNode.argument.size shouldBe 2
+      assocCallNode.argument.argumentIndex(1).head.code shouldBe "if"
+      assocCallNode.argument.argumentIndex(2).head.code shouldBe "x.nil?"
+    }
+
+    "have correct structure for proc definiton with procParameters and empty block" in {
+      val cpg =
+        code("-> (x,y) {}")
+      cpg.parameter.size shouldBe 3
+    }
+
+    "have correct structure for proc definiton with procParameters and non-empty block" in {
+      val cpg =
+        code("""-> (x,y) {
+            |if (x)
+            | y
+            |else
+            | b
+            |end
+            |}""".stripMargin)
+      cpg.parameter.size shouldBe 3
+      val List(paramOne, paramTwo, paramThree) = cpg.parameter.l
+      paramOne.name shouldBe "this"
+      paramTwo.name shouldBe "x"
+      paramThree.name shouldBe "y"
+      cpg.ifBlock.size shouldBe 1
+    }
+
+    "have correct structure for proc definition with no parameters and empty block" in {
+      val cpg = code("-> {}")
+      cpg.parameter.size shouldBe 1
+      cpg.parameter.head.code shouldBe "this"
+    }
+
+    "have correct structure for proc definition with additional context" in {
+      val cpg = code(
+        "scope :get_all_doctors, -> { (select('id, first_name').where('role = :user_role', user_role: User.roles[:doctor])) }"
+      )
+      cpg.parameter.size shouldBe 6
+      cpg.call.size shouldBe 6
+    }
+
+    "have correct structure when method called with safe navigation without parameters" in {
+      val cpg             = code("foo&.bar")
+      val List(parameter) = cpg.parameter.l
+      parameter.name shouldBe "this"
+      cpg.parameter.size shouldBe 1
+      cpg.call.size shouldBe 1
+    }
+
+    "have correct structure when method called with safe navigation with parameters with parantheses" in {
+      val cpg = code("foo&.bar(1)")
+
+      val List(callNode)  = cpg.call.l
+      val List(actualArg) = callNode.argument.argumentIndex(1).l
+      actualArg.code shouldBe "1"
+      cpg.argument.size shouldBe 2
+      cpg.call.size shouldBe 1
+    }
+
+    "have correct structure when method called with safe navigation with parameters without parantheses" in {
+      val cpg = code("foo&.bar 1,2")
+
+      val List(callNode)  = cpg.call.l
+      val List(actualArg) = callNode.argument.argumentIndex(2).l
+      actualArg.code shouldBe "1"
+      cpg.argument.size shouldBe 3
+      cpg.call.size shouldBe 1
     }
   }
 }

@@ -2,8 +2,8 @@ package io.joern.jssrc2cpg.passes.ast
 
 import io.joern.jssrc2cpg.passes.{AbstractPassTest, Defines}
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode, Declaration, Identifier}
+import io.shiftleft.semanticcpg.language.*
 
 class TsClassesAstCreationPassTest extends AbstractPassTest {
 
@@ -291,7 +291,7 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
         |    gender: string;
         |}
         |""".stripMargin) { cpg =>
-      val Some(userType) = cpg.typeDecl.name("User").headOption: @unchecked
+      val List(userType) = cpg.typeDecl.name("User").l
       userType.member.name.l shouldBe List("email", "organizationIds", "username", "name", "gender")
       userType.member.typeFullName.toSet shouldBe Set("__ecma.String", "string[]")
     }
@@ -304,14 +304,16 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
         |    }
         |}
         |""".stripMargin) { cpg =>
-      val Some(credentialsType) = cpg.typeDecl.nameExact("_anon_cdecl").headOption: @unchecked
+      val List(credentialsType) = cpg.typeDecl.nameExact("_anon_cdecl").l
       credentialsType.fullName shouldBe "code.ts::program:Test:run:_anon_cdecl"
       credentialsType.member.name.l shouldBe List("username", "password")
       credentialsType.member.typeFullName.toSet shouldBe Set("__ecma.String")
-      val Some(credentialsParam) = cpg.parameter.nameExact("credentials").headOption: @unchecked
+      val List(credentialsParam) = cpg.parameter.nameExact("credentials").l
       credentialsParam.typeFullName shouldBe "code.ts::program:Test:run:_anon_cdecl"
       // should not produce dangling nodes that are meant to be inside procedures
       cpg.all.collectAll[CfgNode].whereNot(_._astIn).size shouldBe 0
+      cpg.identifier.count(_.refsTo.size > 1) shouldBe 0
+      cpg.identifier.whereNot(_.refsTo).size shouldBe 0
     }
 
     "AST generation for destructured type in a parameter" in TsAstFixture("""
@@ -319,14 +321,16 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
         |    log(`${username}: ${password}`);
         |}
         |""".stripMargin) { cpg =>
-      val Some(credentialsType) = cpg.typeDecl.nameExact("_anon_cdecl").headOption: @unchecked
+      val List(credentialsType) = cpg.typeDecl.nameExact("_anon_cdecl").l
       credentialsType.fullName shouldBe "code.ts::program:apiCall:_anon_cdecl"
       credentialsType.member.name.l shouldBe List("username", "password")
       credentialsType.member.typeFullName.toSet shouldBe Set(Defines.Any)
-      val Some(credentialsParam) = cpg.parameter.nameExact("param1_0").headOption: @unchecked
+      val List(credentialsParam) = cpg.parameter.nameExact("param1_0").l
       credentialsParam.typeFullName shouldBe "code.ts::program:apiCall:_anon_cdecl"
       // should not produce dangling nodes that are meant to be inside procedures
       cpg.all.collectAll[CfgNode].whereNot(_._astIn).size shouldBe 0
+      cpg.identifier.count(_.refsTo.size > 1) shouldBe 0
+      cpg.identifier.whereNot(_.refsTo).size shouldBe 0
     }
 
   }

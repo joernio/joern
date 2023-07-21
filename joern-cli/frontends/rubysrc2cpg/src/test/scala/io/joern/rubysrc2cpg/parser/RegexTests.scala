@@ -50,8 +50,8 @@ class RegexTests extends RubyParserAbstractTest {
             |   MethodIdentifier
             |    puts
             |   ArgumentsWithoutParentheses
-            |    BlockExprAssocTypeArguments
-            |     Expressions
+            |    Arguments
+            |     ExpressionArgument
             |      PrimaryExpression
             |       LiteralPrimary
             |        RegularExpressionLiteral
@@ -72,8 +72,8 @@ class RegexTests extends RubyParserAbstractTest {
             |    puts
             |   ArgsOnlyArgumentsWithParentheses
             |    (
-            |    BlockExprAssocTypeArguments
-            |     Expressions
+            |    Arguments
+            |     ExpressionArgument
             |      PrimaryExpression
             |       LiteralPrimary
             |        RegularExpressionLiteral
@@ -95,16 +95,17 @@ class RegexTests extends RubyParserAbstractTest {
             |    puts
             |   ArgsOnlyArgumentsWithParentheses
             |    (
-            |    BlockExprAssocTypeArguments
-            |     Expressions
+            |    Arguments
+            |     ExpressionArgument
             |      PrimaryExpression
             |       LiteralPrimary
             |        NumericLiteralLiteral
             |         NumericLiteral
             |          UnsignedNumericLiteral
             |           1
-            |      ,
-            |      WsOrNl
+            |     ,
+            |     WsOrNl
+            |     ExpressionArgument
             |      PrimaryExpression
             |       LiteralPrimary
             |        RegularExpressionLiteral
@@ -165,8 +166,8 @@ class RegexTests extends RubyParserAbstractTest {
             |   MethodIdentifier
             |    puts
             |   ArgumentsWithoutParentheses
-            |    BlockExprAssocTypeArguments
-            |     Expressions
+            |    Arguments
+            |     ExpressionArgument
             |      PrimaryExpression
             |       LiteralPrimary
             |        RegularExpressionLiteral
@@ -188,8 +189,8 @@ class RegexTests extends RubyParserAbstractTest {
             |    puts
             |   ArgsOnlyArgumentsWithParentheses
             |    (
-            |    BlockExprAssocTypeArguments
-            |     Expressions
+            |    Arguments
+            |     ExpressionArgument
             |      PrimaryExpression
             |       LiteralPrimary
             |        RegularExpressionLiteral
@@ -279,8 +280,8 @@ class RegexTests extends RubyParserAbstractTest {
             |   MethodIdentifier
             |    puts
             |   ArgumentsWithoutParentheses
-            |    BlockExprAssocTypeArguments
-            |     Expressions
+            |    Arguments
+            |     ExpressionArgument
             |      PrimaryExpression
             |       RegexInterpolationPrimary
             |        RegexInterpolation
@@ -316,8 +317,8 @@ class RegexTests extends RubyParserAbstractTest {
             |    puts
             |   ArgsOnlyArgumentsWithParentheses
             |    (
-            |    BlockExprAssocTypeArguments
-            |     Expressions
+            |    Arguments
+            |     ExpressionArgument
             |      PrimaryExpression
             |       RegexInterpolationPrimary
             |        RegexInterpolation

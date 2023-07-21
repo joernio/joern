@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language._
 class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
   "literals declared from built-in types" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |let x = 123;
         |
         |function foo_shadowing() {
@@ -38,8 +38,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
   }
 
   "call from a function from an external type" should {
-
-    lazy val cpg = code(
+    val cpg = code(
       """
         |import { WebClient } from "slack_sdk";
         |import { SendGridAPIClient } from "sendgrid";
@@ -54,7 +53,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         |let response = sg.send(message);
         |""".stripMargin,
       "Test1.ts"
-    ).cpg
+    )
 
     "resolve correct imports via tag nodes" in {
       val List(a: UnknownMethod, b: UnknownTypeDecl, x: UnknownMethod, y: UnknownTypeDecl) =
@@ -97,17 +96,17 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
   }
 
   "recovering paths for built-in calls" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |console.log("Hello world");
         |let x = Math.abs(-1);
-        |""".stripMargin).cpg
+        |""".stripMargin)
 
     "resolve 'print' and 'max' calls" in {
-      val Some(printCall) = cpg.call("log").headOption: @unchecked
+      val List(printCall) = cpg.call("log").l
       printCall.methodFullName shouldBe "__whatwg.console:log"
-      val Some(maxCall) = cpg.call("abs").headOption: @unchecked
+      val List(maxCall) = cpg.call("abs").l
       maxCall.methodFullName shouldBe "__ecma.Math:abs"
-      val Some(x) = cpg.identifier("x").headOption: @unchecked
+      val List(x) = cpg.identifier("x").l
       // TODO: Ideally we would know the result of `abs` but this can be a future task
       x.typeFullName shouldBe "__ecma.Math:abs:<returnValue>"
     }
@@ -115,7 +114,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
   }
 
   "recovering module members across modules" should {
-    lazy val cpg = code(
+    val cpg = code(
       """
         |import { SQLAlchemy } from "flask_sqlalchemy";
         |
@@ -138,7 +137,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         |db.deleteTable();
         |""".stripMargin,
       "Bar.ts"
-    ).cpg
+    )
 
     "resolve correct imports via tag nodes" in {
       val List(a: ResolvedMember, b: ResolvedMember, c: ResolvedMember, d: UnknownMethod, e: UnknownTypeDecl) =
@@ -153,22 +152,20 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
       e.fullName shouldBe "flask_sqlalchemy:SQLAlchemy"
     }
 
-    "resolve 'x' and 'y' locally under foo.py" in {
-      val Some(x) = cpg.file.name(".*Foo.*").ast.isIdentifier.nameExact("x").headOption: @unchecked
-      x.typeFullName shouldBe "__ecma.Number"
-      val Some(y) = cpg.file.name(".*Foo.*").ast.isIdentifier.nameExact("y").headOption: @unchecked
-      y.typeFullName shouldBe "__ecma.String"
-      val Some(db) = cpg.file.name(".*Foo.*").ast.isIdentifier.nameExact("db").headOption: @unchecked
-      db.typeFullName shouldBe "flask_sqlalchemy:SQLAlchemy"
+    "resolve 'x' and 'y' locally under Foo.ts" in {
+      val List(x1, x2) = cpg.file.name(".*Foo.*").ast.isIdentifier.nameExact("x").l
+      x1.typeFullName shouldBe "__ecma.Number"
+      x2.typeFullName shouldBe "__ecma.Number"
+      val List(y1, y2) = cpg.file.name(".*Foo.*").ast.isIdentifier.nameExact("y").l
+      y1.typeFullName shouldBe "__ecma.String"
+      y2.typeFullName shouldBe "__ecma.String"
+      val List(db1, db2) = cpg.file.name(".*Foo.*").ast.isIdentifier.nameExact("db").l
+      db1.typeFullName shouldBe "flask_sqlalchemy:SQLAlchemy"
+      db2.typeFullName shouldBe "flask_sqlalchemy:SQLAlchemy"
     }
 
     "resolve 'foo.x' and 'foo.y' field access primitive types correctly" in {
-      val List(z1, z2) = cpg.file
-        .name(".*Bar.*")
-        .ast
-        .isIdentifier
-        .nameExact("z")
-        .l
+      val List(z1, z2) = cpg.file.name(".*Bar.*").ast.isIdentifier.nameExact("z").l
       z1.typeFullName shouldBe "ANY"
       z1.dynamicTypeHintFullName shouldBe Seq("__ecma.Number", "__ecma.String")
       z2.typeFullName shouldBe "ANY"
@@ -176,23 +173,17 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
     }
 
     "resolve 'foo.d' field access object types correctly" in {
-      val Some(d) = cpg.file
-        .name(".*Bar.*")
-        .ast
-        .isIdentifier
-        .nameExact("d")
-        .headOption: @unchecked
-      d.typeFullName shouldBe "flask_sqlalchemy:SQLAlchemy"
-      d.dynamicTypeHintFullName shouldBe Seq()
+      val List(d1, d2, d3) = cpg.file.name(".*Bar.*").ast.isIdentifier.nameExact("d").l
+      d1.typeFullName shouldBe "flask_sqlalchemy:SQLAlchemy"
+      d1.dynamicTypeHintFullName shouldBe Seq()
+      d2.typeFullName shouldBe "flask_sqlalchemy:SQLAlchemy"
+      d2.dynamicTypeHintFullName shouldBe Seq()
+      d3.typeFullName shouldBe "flask_sqlalchemy:SQLAlchemy"
+      d3.dynamicTypeHintFullName shouldBe Seq()
     }
 
     "resolve a 'createTable' call indirectly from 'foo.d' field access correctly" in {
-      val List(d) = cpg.file
-        .name(".*Bar.*")
-        .ast
-        .isCall
-        .name("createTable")
-        .l
+      val List(d) = cpg.file.name(".*Bar.*").ast.isCall.name("createTable").l
       d.methodFullName shouldBe "flask_sqlalchemy:SQLAlchemy:createTable"
       d.dynamicTypeHintFullName shouldBe Seq()
       d.callee(NoResolve).isExternal.headOption shouldBe Some(true)
@@ -213,7 +204,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
   }
 
   "Importing an anonymous function" should {
-    lazy val cpg = code(
+    val cpg = code(
       """
         |var refThis = this;
         |
@@ -243,24 +234,24 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
     }
 
     "resolve the method full name off of an aliased 'this'" in {
-      val Some(x) = cpg.file("util.js").ast.isCall.nameExact("getIncrementalInteger").headOption: @unchecked
+      val List(x) = cpg.file("util.js").ast.isCall.nameExact("getIncrementalInteger").l
       x.methodFullName shouldBe "util.js::program:getIncrementalInteger"
     }
 
     "resolve the method full name off of the imported 'util'" in {
-      val Some(x) = cpg.file("foo.js").ast.isCall.nameExact("getIncrementalInteger").headOption: @unchecked
+      val List(x) = cpg.file("foo.js").ast.isCall.nameExact("getIncrementalInteger").l
       x.methodFullName shouldBe "util.js::program:getIncrementalInteger"
     }
 
     "resolve the full name of the currying from the closure" in {
-      val Some(x) = cpg.file("util.js").ast.isCall.lineNumber(4).lastOption: @unchecked
+      val List(x) = cpg.file("util.js").ast.isCall.nameExact("anonymous").lineNumber(4).l
       x.name shouldBe "anonymous"
       x.methodFullName shouldBe "util.js::program:anonymous"
     }
   }
 
   "Type obtained via assignment from `require`" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |const google = require('googleapis');
         |const driveObj = google.drive({ version: 'v3', auth });
         |""".stripMargin)
@@ -282,7 +273,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
   }
 
   "Type obtained via assignment from `require` to {...}" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |const { google } = require('googleapis');
         |const driveObj = google.drive({ version: 'v3', auth });
         |""".stripMargin)
@@ -304,7 +295,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
   }
 
   "Type obtained via field access from 'require' derived identifier" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |import google from 'googleapis';
         |export const authObj = new google.auth.GoogleAuth({
         |  keyFile: 'path/to/your/credentials.json',
@@ -315,28 +306,32 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
     "be propagated to `methodFullName` of call" in {
       val List(constructor) = cpg.call.code("new google.auth.GoogleAuth\\(.*").l
       constructor.methodFullName shouldBe "googleapis:google:<member>(auth):GoogleAuth:<init>"
-      val Some(typeFullName) = cpg.identifier.name("authObj").typeFullName.headOption: @unchecked
-      typeFullName shouldBe "googleapis:google:<member>(auth):GoogleAuth"
+      val List(authObj1, authObj2) = cpg.identifier.name("authObj").l
+      authObj1.typeFullName shouldBe "googleapis:google:<member>(auth):GoogleAuth"
+      authObj2.typeFullName shouldBe "googleapis:google:<member>(auth):GoogleAuth"
     }
   }
 
   "Type casts of an identifier and call receiver" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |let imgScr: string = <string>this.imageElement;
         |this.imageElement = new HTMLImageElement();
         |(<HTMLImageElement>this.imageElement).src = imgScr;
         |""".stripMargin)
 
     "succeed in propagating type cast identifiers" in {
-      val Some(imgSrc) = cpg.identifier("imgScr").headOption: @unchecked
-      imgSrc.typeFullName shouldBe "__ecma.String"
-      val Some(_tmp_0) = cpg.identifier("_tmp_0").headOption: @unchecked
-      _tmp_0.typeFullName shouldBe "__ecma.HTMLImageElement"
+      val List(imgSrc1, imgSrc2) = cpg.identifier("imgScr").l
+      imgSrc1.typeFullName shouldBe "__ecma.String"
+      imgSrc2.typeFullName shouldBe "__ecma.String"
+      val List(tmp1, tmp2, tmp3) = cpg.identifier("_tmp_0").l
+      tmp1.typeFullName shouldBe "__ecma.HTMLImageElement"
+      tmp2.typeFullName shouldBe "__ecma.HTMLImageElement"
+      tmp3.typeFullName shouldBe "__ecma.HTMLImageElement"
     }
   }
 
   "Type hints for method parameters and returns" should {
-    lazy val cpg = code("""
+    val cpg = code("""
         |import google from 'googleapis';
         |
         |function foo(a: google.More, b: google.Money): google.Problems {
@@ -346,19 +341,17 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         |""".stripMargin)
 
     "be propagated within the method full name reflecting the import `googleapis`" in {
-      val Some(bar) = cpg.call("bar").headOption: @unchecked
+      val List(bar) = cpg.call("bar").l
       bar.methodFullName shouldBe "googleapis:google:More:bar"
-
-      val Some(baz) = cpg.call("baz").headOption: @unchecked
+      val List(baz) = cpg.call("baz").l
       baz.methodFullName shouldBe "googleapis:google:Money:baz"
-
-      val Some(foo) = cpg.method("foo").methodReturn.headOption: @unchecked
+      val List(foo) = cpg.method("foo").methodReturn.l
       foo.typeFullName shouldBe "googleapis:google:Problems"
     }
   }
 
   "Recovered values that are returned in methods" should {
-    lazy val cpg = code(
+    val cpg = code(
       """
         |const axios = require("axios");
         |
@@ -398,29 +391,26 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
     }
 
     "propagate literal types to the method return" in {
-      val Some(literalMethod) = cpg.method.nameExact("literalFunction").headOption: @unchecked
+      val List(literalMethod) = cpg.method.nameExact("literalFunction").l
       literalMethod.methodReturn.typeFullName shouldBe "__ecma.Number"
-      val Some(x) = cpg.identifier("x").headOption: @unchecked
+      val List(x) = cpg.identifier("x").l
       x.typeFullName shouldBe "__ecma.Number"
-
-      val Some(literalCall) = cpg.call.nameExact("literalFunction").headOption: @unchecked
+      val List(literalCall) = cpg.call.nameExact("literalFunction").l
       literalCall.typeFullName shouldBe "__ecma.Number"
     }
 
     "propagate complex types to the method return" in {
-      val Some(getMethod) = cpg.method.nameExact("get").headOption: @unchecked
+      val List(getMethod) = cpg.method.nameExact("get").lineNumber(12).l
       getMethod.methodReturn.typeFullName shouldBe "axios:create:<returnValue>:get:<returnValue>"
-      val Some(y) = cpg.identifier("y").headOption: @unchecked
+      val List(y) = cpg.identifier("y").l
       y.typeFullName shouldBe "axios:create:<returnValue>:get:<returnValue>"
-
-      val Some(getCall) = cpg.call.nameExact("get").headOption: @unchecked
+      val List(getCall) = cpg.call.nameExact("get").lineNumber(5).l
       getCall.typeFullName shouldBe "axios:create:<returnValue>:get:<returnValue>"
     }
   }
 
   "Temporary variables inserted to produce a three-address code structure" should {
-
-    lazy val cpg = code(
+    val cpg = code(
       """
         |import { HttpClient } from '@angular/common/http';
         |
@@ -446,7 +436,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
   "Members initialized from constructors where the parameter has a type hint" should {
 
-    lazy val cpg = code(
+    val cpg = code(
       """
         |import { HttpClient } from '@angular/common/http';
         |
