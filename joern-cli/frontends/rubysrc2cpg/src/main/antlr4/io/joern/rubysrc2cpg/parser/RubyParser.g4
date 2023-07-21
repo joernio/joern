@@ -90,7 +90,7 @@ primary
     |   beginExpression                                                                                                     # beginExpressionPrimary
     |   LPAREN wsOrNl* compoundStatement wsOrNl* RPAREN                                                                     # groupingExpressionPrimary
     |   variableReference                                                                                                   # variableReferencePrimary
-            |   COLON2 CONSTANT_IDENTIFIER                                                                                  # simpleScopedConstantReferencePrimary
+    |   COLON2 CONSTANT_IDENTIFIER                                                                                          # simpleScopedConstantReferencePrimary
     |   primary COLON2 CONSTANT_IDENTIFIER                                                                                  # chainedScopedConstantReferencePrimary
     |   arrayConstructor                                                                                                    # arrayConstructorPrimary
     |   hashConstructor                                                                                                     # hashConstructorPrimary
