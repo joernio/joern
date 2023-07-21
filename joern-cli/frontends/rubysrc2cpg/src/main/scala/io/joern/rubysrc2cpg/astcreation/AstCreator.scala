@@ -504,7 +504,7 @@ class AstCreator(
           Seq(Ast())
       }
     case None =>
-      logger.error(s"astForIndexingArgumentsContext() $filename, ${ctx.getText} All contexts mismatched.")
+      logger.error(s"astForIndexingArgumentsContext() $filename All contexts mismatched.")
       Seq()
   }
 
@@ -1487,7 +1487,7 @@ class AstCreator(
           Seq(Ast())
       }
     case None =>
-      logger.error(s"astForArgumentsWithParenthesesContext() $filename, ${ctx.getText} All contexts mismatched.")
+      logger.error(s"astForArgumentsWithParenthesesContext() $filename All contexts mismatched.")
       Seq()
   }
 

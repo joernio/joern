@@ -21,6 +21,7 @@ import javassist.CtClass
 import com.github.javaparser.symbolsolver.javassistmodel.JavassistFactory
 import javassist.NotFoundException
 import javassist.ClassPath
+import io.shiftleft.semanticcpg.language.singleToEvalTypeAccessorsParameterOut
 
 class JdkJarTypeSolver private (jdkPath: String) extends TypeSolver {
 
@@ -29,11 +30,7 @@ class JdkJarTypeSolver private (jdkPath: String) extends TypeSolver {
   private var parent: Option[TypeSolver] = None
   private val classPool                  = new NonCachingClassPool()
 
-  /** JavaParser replaces '$' in class names for nested classes with '.', while the names in the javassist class pool do
-    * not. This means we need to keep a record of javaparser to classpool name for class pool lookups, e.g.
-    * foo.bar.Baz.Qux -> foo.bar.Baz$Qux
-    */
-  private val javaParserToClassPoolNames = mutable.Map[String, String]()
+  private val knownPackagePrefixes: mutable.Set[String] = mutable.Set.empty
 
   private type RefType = ResolvedReferenceTypeDeclaration
 
@@ -50,10 +47,24 @@ class JdkJarTypeSolver private (jdkPath: String) extends TypeSolver {
   }
 
   override def tryToSolveType(javaParserName: String): SymbolReference[ResolvedReferenceTypeDeclaration] = {
-    javaParserToClassPoolNames
-      .get(javaParserName)
-      .flatMap(lookupAndConvertClass)
-      .getOrElse(SymbolReference.unsolved(classOf[RefType]))
+    val packagePrefix = packagePrefixForJavaParserName(javaParserName)
+    if (knownPackagePrefixes.contains(packagePrefix)) {
+      lookupType(javaParserName)
+    } else {
+      SymbolReference.unsolved(classOf[RefType])
+    }
+  }
+
+  private def lookupType(javaParserName: String): SymbolReference[ResolvedReferenceTypeDeclaration] = {
+    val name = convertJavaParserNameToStandard(javaParserName)
+    Try(classPool.get(name)) match {
+      case Success(ctClass) =>
+        val refType = ctClassToRefType(ctClass)
+        refTypeToSymbolReference(refType)
+
+      case Failure(e) =>
+        SymbolReference.unsolved(classOf[RefType])
+    }
   }
 
   override def solveType(name: String): ResolvedReferenceTypeDeclaration = {
@@ -71,23 +82,6 @@ class JdkJarTypeSolver private (jdkPath: String) extends TypeSolver {
 
   private def refTypeToSymbolReference(refType: RefType): SymbolReference[RefType] = {
     SymbolReference.solved[RefType, RefType](refType)
-  }
-
-  private def lookupAndConvertClass(name: String): Option[SymbolReference[RefType]] = {
-    Try(classPool.get(name)) match {
-      case Success(ctClass) =>
-        val refType      = ctClassToRefType(ctClass)
-        val solvedSymbol = refTypeToSymbolReference(refType)
-        Some(solvedSymbol)
-
-      case Failure(_: NotFoundException) =>
-        logger.error(s"BUG! Could not find class $name in class pool. This is not supposed to be possible!")
-        None
-
-      case Failure(e) =>
-        logger.warn("Unexpected exception getting $name from class pool", e)
-        None
-    }
   }
 
   private def addPathToClassPool(archivePath: String): Try[ClassPath] = {
@@ -109,7 +103,7 @@ class JdkJarTypeSolver private (jdkPath: String) extends TypeSolver {
   def addArchives(archivePaths: Seq[String]): Unit = {
     archivePaths.foreach { archivePath =>
       addPathToClassPool(archivePath) match {
-        case Success(_) => registerKnownClassesForJar(archivePath)
+        case Success(_) => registerPackagesForJar(archivePath)
 
         case Failure(e) =>
           logger.warn(s"Could not load jar at path $archivePath", e.getMessage())
@@ -117,34 +111,21 @@ class JdkJarTypeSolver private (jdkPath: String) extends TypeSolver {
     }
   }
 
-  private def registerJarEntry(jarEntry: JarEntry): Unit = {
-    val entryName = jarEntry.getName()
-
-    if (!jarEntry.isDirectory && entryName.endsWith(ClassExtension)) {
-      val javaParserName = convertEntryPathToJavaParserName(entryName)
-      val classPoolName  = convertEntryPathToClassPoolName(entryName)
-
-      // Avoid keeping 2 identical copies of the name.
-      if (javaParserName == classPoolName) {
-        javaParserToClassPoolNames.put(javaParserName, javaParserName)
-      } else {
-        javaParserToClassPoolNames.put(javaParserName, classPoolName)
-      }
-    }
-  }
-
-  private def registerKnownClassesForJar(jarPath: String): Unit = {
+  private def registerPackagesForJar(archivePath: String): Unit = {
+    val entryNameConverter = if (archivePath.isJarPath) packagePrefixForJarEntry else packagePrefixForJmodEntry
     try {
-      Using(new JarFile(jarPath)) { jarFile =>
-        jarFile
-          .entries()
-          .asIterator()
-          .asScala
-          .foreach(registerJarEntry)
+      Using(new JarFile(archivePath)) { jarFile =>
+        knownPackagePrefixes ++=
+          jarFile
+            .entries()
+            .asIterator()
+            .asScala
+            .filter(entry => !entry.isDirectory() && entry.getName().endsWith(ClassExtension))
+            .map(entry => entryNameConverter(entry.getName()))
       }
     } catch {
       case ioException: IOException =>
-        logger.warn(s"Could register classes for jar/jmod at $jarPath", ioException.getMessage())
+        logger.warn(s"Could register classes for archive at $archivePath", ioException.getMessage())
     }
   }
 }
@@ -162,28 +143,67 @@ object JdkJarTypeSolver {
 
   def fromJdkPath(jdkPath: String): JdkJarTypeSolver = {
     val jarPaths = SourceFiles.determine(jdkPath, Set(JarExtension, JmodExtension))
+    if (jarPaths.isEmpty) {
+      throw new IllegalArgumentException(s"No .jar or .jmod files found at JDK path ${jdkPath}")
+    }
     new JdkJarTypeSolver(jdkPath).withJars(jarPaths)
   }
 
-  /** Convert the JarEntry path into the qualified name format expected by JavaParser
-    *
-    * JarEntry format : foo/bar/Baz$Qux.class JavaParser format: foo.bar.Baz.Qux
+  /** Convert JavaParser class name foo.bar.qux.Baz to package prefix foo.bar Only use first 2 parts since this is
+    * sufficient to deterimine whether a class has been registered in most cases and, if not, the failure is just a slow
+    * lookup.
     */
-  def convertEntryPathToJavaParserName(entryPath: String): String = {
-    convertEntryPathToClassPoolName(entryPath).replace('$', '.')
+  def packagePrefixForJavaParserName(className: String): String = {
+    className.split("\\.").take(2).mkString(".")
   }
 
-  /** Convert the JarEntry path into the qualified name format expected by Javassist ClassPools
-    *
-    * JarEntry format : foo/bar/Baz$Qux.class ClassPool format: foo.bar.Baz$Qux
+  /** Convert Jar entry name foo/bar/qux/Baz.class to package prefix foo.bar Only use first 2 parts since this is
+    * sufficient to deterimine whether a class has been registered in most cases and, if not, the failure is just a slow
+    * lookup.
     */
-  def convertEntryPathToClassPoolName(entryPath: String): String = {
-    if (!entryPath.endsWith(ClassExtension)) {
-      throw new IllegalArgumentException(s"The entry path should end with $ClassExtension")
+  def packagePrefixForJarEntry(entryName: String): String = {
+    entryName.split("/").take(2).mkString(".")
+  }
+
+  /** Convert jmod entry name classes/foo/bar/qux/Baz.class to package prefix foo.bar Only use first 2 parts since this
+    * is sufficient to deterimine whether a class has been registered in most cases and, if not, the failure is just a
+    * slow lookup.
+    */
+  def packagePrefixForJmodEntry(entryName: String): String = {
+    packagePrefixForJarEntry(entryName.stripPrefix(JmodClassPrefix))
+  }
+
+  /** A name is assumed to contain at least one subclass (e.g. ...Foo$Bar) if the last name part starts with a digit, or
+    * if the last 2 name parts start with capital letters. This heuristic is based on the class name format in the JDK
+    * jars, where names with subclasses have one of the forms:
+    *   - java.lang.ClassLoader$2
+    *   - java.lang.ClassLoader$NativeLibrary
+    *   - java.lang.ClassLoader$NativeLibrary$Unloader
+    */
+  private def namePartsContainSubclass(nameParts: Array[String]): Boolean = {
+    nameParts.takeRight(2) match {
+      case Array() => false
+
+      case Array(singlePart) => false
+
+      case Array(secondLast, last) =>
+        last.head.isDigit || (secondLast.head.isUpper && last.head.isUpper)
     }
-    entryPath
-      .stripPrefix(JmodClassPrefix)
-      .stripSuffix(ClassExtension)
-      .replace('/', '.')
+  }
+
+  /** JavaParser replaces the `$` in nested class names with a `.`. This method converts the JavaParser names to the
+    * standard format by replacing the `.` between name parts that start with a capital letter or a digit with a `$`
+    * since the jdk classes follow the standard practice of capitalising the first letter in class names but not package
+    * names.
+    */
+  def convertJavaParserNameToStandard(className: String): String = {
+    className.split(".") match {
+      case nameParts if namePartsContainSubclass(nameParts) =>
+        val (packagePrefix, classNames) = nameParts.partition(_.head.isLower)
+        s"${packagePrefix.mkString(".")}.${classNames.mkString("$")}"
+
+      case _ => className
+    }
+
   }
 }

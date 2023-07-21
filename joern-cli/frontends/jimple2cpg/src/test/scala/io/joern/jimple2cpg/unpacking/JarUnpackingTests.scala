@@ -14,7 +14,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import java.nio.file.{Files, Path, Paths}
 import scala.util.{Failure, Success, Try}
 
-class JarUnpacking extends AnyWordSpec with Matchers with BeforeAndAfterAll {
+class JarUnpackingTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
   var validCpgs: Map[String, Cpg] = _
   var slippyCpg: Cpg              = _
@@ -30,7 +30,7 @@ class JarUnpacking extends AnyWordSpec with Matchers with BeforeAndAfterAll {
   private def getUnpackingCpg(path: String): Cpg =
     Try(getClass.getResource(s"/unpacking/${path}").toURI) match {
       case Success(x) =>
-        implicit val defaultConfig: Config = Config()
+        implicit val config: Config = Config().withRecurse(true)
         new Jimple2Cpg().createCpg(Paths.get(x).toString).get
       case Failure(x: Throwable) =>
         fail("Unable to obtain test resources.", x)
