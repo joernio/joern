@@ -11,6 +11,8 @@ import io.joern.x2cpg.passes.frontend.ImportsPass.{
 }
 import io.shiftleft.semanticcpg.language.*
 
+import scala.collection.immutable.List
+
 object RubyTypeRecoveryTests {
   def getPackageTable: PackageTable = {
     val packageTable = PackageTable()
@@ -100,10 +102,10 @@ class RubyTypeRecoveryTests
       maxCall.methodFullName shouldBe "__builtin.puts"
     }
 
+    // TODO Need to fix this and stream line the implemented w.r.t python
     "conservatively present either option when an imported function uses the same name as a builtin" ignore {
       val List(absCall) = cpg.call("sleep").l
-      absCall.methodFullName shouldBe "main.rb::program.sleep"
-      absCall.dynamicTypeHintFullName shouldBe Seq("main.rb::program.sleep")
+      absCall.dynamicTypeHintFullName shouldBe Seq("__buitlin.sleep", "main.rb::program.sleep")
     }
   }
 
@@ -210,6 +212,27 @@ class RubyTypeRecoveryTests
       log.typeFullName shouldBe "logger::program.Logger"
       val List(errorCall) = cpg.call("error").l
       errorCall.methodFullName shouldBe "logger::program.Logger.error"
+    }
+  }
+
+  "recovery of type for call having a method with same name" should {
+    lazy val cpg = code("""
+        |require "dbi"
+        |
+        |def connect
+        |  puts "I am here"
+        |end
+        |
+        |d = DBI.connect("DBI:Mysql:TESTDB:localhost", "testuser", "test123")
+        |""".stripMargin)
+
+    "have a correct type for call `connect`" in {
+      cpg.call("connect").methodFullName.l shouldBe List("dbi::program.DBI.connect")
+      // cpg.call("connect").dynamicTypeHintFullName.l shouldBe List("lskdj")
+    }
+
+    "have a correct type for identifier `d`" in {
+      cpg.identifier("d").typeFullName.l shouldBe List("dbi::program.DBI.connect.<returnValue>")
     }
   }
 }
