@@ -265,7 +265,7 @@ class MiscTests extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    "recognise all identifier and call nodes" in {
+    "recognise all typedecl nodes" in {
       cpg.typeDecl.name("self").size shouldBe 1
     }
   }
