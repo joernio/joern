@@ -151,7 +151,6 @@ trait AstForTypesCreator { this: AstCreator =>
             .map(_.classOrModuleName(baseClassName))
             .getOrElse(Defines.Any)
         case None =>
-          ""
           ctx
             .classDefinition()
             .expressionOrCommand()
