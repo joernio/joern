@@ -22,6 +22,8 @@ trait RubyLexerRegexHandling { this: RubyLexerBase =>
     COMMA,
     // When '/' occurs after a ':'.
     COLON,
+    // When '/' occurs after 'when'.
+    WHEN,
     // When '/' occurs after an operator.
     EMARK,
     EMARKEQ,
