@@ -578,8 +578,10 @@ class AstCreator(
 
     val terminalNode = if (ctx.COLON2() != null) {
       ctx.COLON2()
-    } else {
+    } else if (ctx.DOT() != null) {
       ctx.DOT()
+    } else {
+      ctx.AMPDOT()
     }
 
     val argsAst = if (ctx.argumentsWithParentheses() != null) {

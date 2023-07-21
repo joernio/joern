@@ -75,37 +75,37 @@ expression
     ;
 
 primary
-    :   classDefinition                                                                                             # classDefinitionPrimary
-    |   moduleDefinition                                                                                            # moduleDefinitionPrimary
-    |   methodDefinition                                                                                            # methodDefinitionPrimary
-    |   procDefinition                                                                                              # procDefinitionPrimary
-    |   yieldWithOptionalArgument                                                                                   # yieldWithOptionalArgumentPrimary
-    |   ifExpression                                                                                                # ifExpressionPrimary
-    |   unlessExpression                                                                                            # unlessExpressionPrimary
-    |   caseExpression                                                                                              # caseExpressionPrimary
-    |   whileExpression                                                                                             # whileExpressionPrimary
-    |   untilExpression                                                                                             # untilExpressionPrimary
-    |   forExpression                                                                                               # forExpressionPrimary
-    |   jumpExpression                                                                                              # jumpExpressionPrimary
-    |   beginExpression                                                                                             # beginExpressionPrimary
-    |   LPAREN wsOrNl* compoundStatement wsOrNl* RPAREN                                                             # groupingExpressionPrimary
-    |   variableReference                                                                                           # variableReferencePrimary
-    |   COLON2 CONSTANT_IDENTIFIER                                                                                  # simpleScopedConstantReferencePrimary
-    |   primary COLON2 CONSTANT_IDENTIFIER                                                                          # chainedScopedConstantReferencePrimary
-    |   arrayConstructor                                                                                            # arrayConstructorPrimary
-    |   hashConstructor                                                                                             # hashConstructorPrimary
-    |   literal                                                                                                     # literalPrimary
-    |   stringExpression                                                                                            # stringExpressionPrimary
-    |   stringInterpolation                                                                                         # stringInterpolationPrimary
-    |   regexInterpolation                                                                                          # regexInterpolationPrimary
-    |   IS_DEFINED LPAREN expressionOrCommand RPAREN                                                                # isDefinedPrimary
-    |   SUPER argumentsWithParentheses? block?                                                                      # superExpressionPrimary
-    |   primary LBRACK WS* indexingArguments? WS* RBRACK                                                            # indexingExpressionPrimary
-    |   methodOnlyIdentifier                                                                                        # methodOnlyIdentifierPrimary
-    |   methodIdentifier WS? block                                                                                  # invocationWithBlockOnlyPrimary
-    |   methodIdentifier argumentsWithParentheses WS* block?                                                        # invocationWithParenthesesPrimary
-    |   primary (DOT | COLON2) wsOrNl* methodName argumentsWithParentheses? WS? block?                              # chainedInvocationPrimary
-    |   primary COLON2 methodName block?                                                                            # chainedInvocationWithoutArgumentsPrimary
+    :   classDefinition                                                                                                     # classDefinitionPrimary
+    |   moduleDefinition                                                                                                    # moduleDefinitionPrimary
+    |   methodDefinition                                                                                                    # methodDefinitionPrimary
+    |   procDefinition                                                                                                      # procDefinitionPrimary
+    |   yieldWithOptionalArgument                                                                                           # yieldWithOptionalArgumentPrimary
+    |   ifExpression                                                                                                        # ifExpressionPrimary
+    |   unlessExpression                                                                                                    # unlessExpressionPrimary
+    |   caseExpression                                                                                                      # caseExpressionPrimary
+    |   whileExpression                                                                                                     # whileExpressionPrimary
+    |   untilExpression                                                                                                     # untilExpressionPrimary
+    |   forExpression                                                                                                       # forExpressionPrimary
+    |   jumpExpression                                                                                                      # jumpExpressionPrimary
+    |   beginExpression                                                                                                     # beginExpressionPrimary
+    |   LPAREN wsOrNl* compoundStatement wsOrNl* RPAREN                                                                     # groupingExpressionPrimary
+    |   variableReference                                                                                                   # variableReferencePrimary
+    |   COLON2 CONSTANT_IDENTIFIER                                                                                          # simpleScopedConstantReferencePrimary
+    |   primary COLON2 CONSTANT_IDENTIFIER                                                                                  # chainedScopedConstantReferencePrimary
+    |   arrayConstructor                                                                                                    # arrayConstructorPrimary
+    |   hashConstructor                                                                                                     # hashConstructorPrimary
+    |   literal                                                                                                             # literalPrimary
+    |   stringExpression                                                                                                    # stringExpressionPrimary
+    |   stringInterpolation                                                                                                 # stringInterpolationPrimary
+    |   regexInterpolation                                                                                                  # regexInterpolationPrimary
+    |   IS_DEFINED LPAREN expressionOrCommand RPAREN                                                                        # isDefinedPrimary
+    |   SUPER argumentsWithParentheses? block?                                                                              # superExpressionPrimary
+    |   primary LBRACK WS* indexingArguments? WS* RBRACK                                                                    # indexingExpressionPrimary
+    |   methodOnlyIdentifier                                                                                                # methodOnlyIdentifierPrimary
+    |   methodIdentifier WS? block                                                                                          # invocationWithBlockOnlyPrimary
+    |   methodIdentifier argumentsWithParentheses WS* block?                                                                # invocationWithParenthesesPrimary
+    |   primary (DOT | COLON2| AMPDOT) wsOrNl* methodName argumentsWithParentheses? WS? block?                              # chainedInvocationPrimary
+    |   primary COLON2 methodName block?                                                                                    # chainedInvocationWithoutArgumentsPrimary
     ;
 
 // --------------------------------------------------------
@@ -160,10 +160,10 @@ invocationWithoutParentheses
     ;
 
 command
-    :   SUPER argumentsWithoutParentheses                                                                                       # superCommand
-    |   YIELD argumentsWithoutParentheses                                                                                       # yieldCommand
-    |   methodIdentifier argumentsWithoutParentheses                                                                            # simpleMethodCommand
-    |   primary WS* (DOT | COLON2) wsOrNl* methodName argumentsWithoutParentheses                                               # memberAccessCommand
+    :   SUPER argumentsWithoutParentheses                                                                                               # superCommand
+    |   YIELD argumentsWithoutParentheses                                                                                               # yieldCommand
+    |   methodIdentifier argumentsWithoutParentheses                                                                                    # simpleMethodCommand
+    |   primary WS* (DOT | COLON2| AMPDOT) wsOrNl* methodName argumentsWithoutParentheses                                               # memberAccessCommand
     ;
 
 chainedCommandWithDoBlock
