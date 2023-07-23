@@ -508,7 +508,12 @@ class AstCreator(
   }
 
   def astForArrayConstructorPrimaryContext(ctx: ArrayConstructorPrimaryContext): Seq[Ast] = {
-    astForIndexingArgumentsContext(ctx.arrayConstructor().indexingArguments())
+    if (ctx.getText == "[]") {
+      /* we might have empty array, so create empty literal with [] */
+      Seq(Ast(literalNode(ctx, ctx.getText, Defines.NilClass)))
+    } else {
+      astForIndexingArgumentsContext(ctx.arrayConstructor().indexingArguments())
+    }
   }
 
   def astForBeginExpressionPrimaryContext(ctx: BeginExpressionPrimaryContext): Seq[Ast] = {
