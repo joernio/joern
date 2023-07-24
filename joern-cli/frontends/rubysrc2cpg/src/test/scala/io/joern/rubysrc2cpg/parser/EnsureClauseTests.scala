@@ -22,7 +22,7 @@ class EnsureClauseTests extends RubyParserAbstractTest {
             |    MethodIdentifier
             |     refund
             | MethodParameterPart
-            |  Separator
+            | Separator
             | WsOrNl
             | BodyStatement
             |  CompoundStatement
