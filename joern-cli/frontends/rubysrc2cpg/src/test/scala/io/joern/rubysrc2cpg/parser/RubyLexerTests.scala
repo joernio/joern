@@ -328,6 +328,18 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     )
   }
 
+  "Non-empty regex literal after `unless`" should "be recognized as such" in {
+    val code = "unless /^ch_/"
+    tokenize(code) shouldBe Seq(
+      UNLESS,
+      WS,
+      REGULAR_EXPRESSION_START,
+      REGULAR_EXPRESSION_BODY,
+      REGULAR_EXPRESSION_END,
+      EOF
+    )
+  }
+
   "Regex literals without metacharacters" should "be recognized as such" in {
     val eg = Seq("/regexp/", "/a regexp/")
     all(eg.map(tokenize)) shouldBe Seq(REGULAR_EXPRESSION_START, REGULAR_EXPRESSION_BODY, REGULAR_EXPRESSION_END, EOF)

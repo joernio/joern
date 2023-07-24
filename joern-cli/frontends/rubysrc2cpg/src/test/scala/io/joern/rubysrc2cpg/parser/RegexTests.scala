@@ -163,6 +163,48 @@ class RegexTests extends RubyParserAbstractTest {
               |      Separator
               |  end""".stripMargin
       }
+
+      "used in a `unless` clause" should {
+        val code =
+          """unless /\A([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})\z/i.match?(value)
+            |end""".stripMargin
+
+        "be parsed as such" in {
+          printAst(_.primary(), code) shouldEqual
+            """UnlessExpressionPrimary
+              | UnlessExpression
+              |  unless
+              |  WsOrNl
+              |  ExpressionExpressionOrCommand
+              |   PrimaryExpression
+              |    ChainedInvocationPrimary
+              |     LiteralPrimary
+              |      RegularExpressionLiteral
+              |       /
+              |       \A([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})\z
+              |       /i
+              |     .
+              |     MethodName
+              |      MethodIdentifier
+              |       MethodOnlyIdentifier
+              |        match
+              |        ?
+              |     ArgsOnlyArgumentsWithParentheses
+              |      (
+              |      Arguments
+              |       ExpressionArgument
+              |        PrimaryExpression
+              |         VariableReferencePrimary
+              |          VariableIdentifierVariableReference
+              |           VariableIdentifier
+              |            value
+              |      )
+              |  ThenClause
+              |   Separator
+              |   CompoundStatement
+              |  end""".stripMargin
+        }
+      }
     }
   }
 
