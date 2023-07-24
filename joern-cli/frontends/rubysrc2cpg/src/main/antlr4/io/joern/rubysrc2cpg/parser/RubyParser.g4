@@ -263,7 +263,16 @@ arrayConstructor
 // --------------------------------------------------------
 
 hashConstructor
-    :   LCURLY wsOrNl* (associations WS* COMMA?)? wsOrNl* RCURLY
+    :   LCURLY wsOrNl* (hashConstructorElements WS* COMMA?)? wsOrNl* RCURLY
+    ;
+
+hashConstructorElements
+    :   hashConstructorElement (WS* COMMA wsOrNl* hashConstructorElement)*
+    ;
+
+hashConstructorElement
+    :   association
+    |   STAR2 WS* expression
     ;
 
 associations
