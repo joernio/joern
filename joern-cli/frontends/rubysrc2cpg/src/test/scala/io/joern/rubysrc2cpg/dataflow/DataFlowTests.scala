@@ -2396,4 +2396,49 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
       sink.reachableByFlows(source).size shouldBe 3
     }
   }
+
+  "flow through a method call present in next line, with the second line starting with `.`" should {
+    val cpg = code("""
+        |class Foo
+        | def bar(x)
+        |   return x
+        | end
+        |end
+        |
+        |x = 1
+        |foo = Foo.new
+        |y = foo
+        | .bar(1)
+        |puts y
+        |""".stripMargin)
+
+    "find flow to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).size shouldBe 1
+    }
+  }
+
+  "flow through a method call present in next line, with the first line ending with `.`" should {
+    val cpg = code("""
+        |class Foo
+        | def bar(x)
+        |   return x
+        | end
+        |end
+        |
+        |x = 1
+        |foo = Foo.new
+        |y = foo.
+        |  bar(1)
+        |puts y
+        |""".stripMargin)
+
+    "find flow to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).size shouldBe 1
+    }
+  }
+
 }

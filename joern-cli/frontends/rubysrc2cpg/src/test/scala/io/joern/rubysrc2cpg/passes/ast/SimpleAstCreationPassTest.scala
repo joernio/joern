@@ -971,5 +971,29 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       cpg.argument.size shouldBe 3
       cpg.call.size shouldBe 1
     }
+
+    "have correct structure when method call present in next line, with the second line starting with `.`" in {
+      val cpg = code("foo\n   .bar(1)")
+
+      val List(callNode) = cpg.call.l
+      cpg.call.size shouldBe 1
+      callNode.code shouldBe ("foo\n   .bar(1)")
+      callNode.name shouldBe "bar"
+      callNode.lineNumber shouldBe Some(2)
+      val List(actualArg) = callNode.argument.argumentIndex(1).l
+      actualArg.code shouldBe "1"
+    }
+
+    "have correct structure when method call present in next line, with the first line ending with `.`" in {
+      val cpg = code("foo.\n   bar(1)")
+
+      val List(callNode) = cpg.call.l
+      cpg.call.size shouldBe 1
+      callNode.code shouldBe ("foo.\n   bar(1)")
+      callNode.name shouldBe "bar"
+      callNode.lineNumber shouldBe Some(1)
+      val List(actualArg) = callNode.argument.argumentIndex(1).l
+      actualArg.code shouldBe "1"
+    }
   }
 }
