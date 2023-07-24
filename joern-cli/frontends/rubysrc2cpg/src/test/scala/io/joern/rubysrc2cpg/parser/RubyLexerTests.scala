@@ -193,6 +193,11 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       EOF
     )
   }
+  
+  "Double-quoted string literals containing `\\u` character sequences" should "be recognized as such" in {
+    val code = """"AB\u0003\u0004\u0014\u0000\u0000\u0000\b\u0000\u0000\u0000!\u0000file""""
+    tokenize(code) shouldBe Seq(DOUBLE_QUOTED_STRING_START, DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE, DOUBLE_QUOTED_STRING_END, EOF)
+  }
 
   "Interpolated double-quoted string literal" should "be recognized as such" in {
     val code = "\"x is #{1+1}\""
