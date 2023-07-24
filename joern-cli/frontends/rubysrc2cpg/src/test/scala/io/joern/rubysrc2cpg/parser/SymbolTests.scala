@@ -100,7 +100,7 @@ class SymbolTests extends RubyParserAbstractTest {
             |     x y z
             |     """".stripMargin
       }
-        
+
       "they are given by an interpolated double-quoted string literal" in {
         val code = """:"#{10}""""
         printAst(_.primary(), code) shouldEqual
