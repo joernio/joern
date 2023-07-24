@@ -19,8 +19,8 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |     MethodIdentifier
             |      foo
             |  MethodParameterPart
-            |   Separator
-            |    ;
+            |  Separator
+            |   ;
             |  WsOrNl
             |  BodyStatement
             |   CompoundStatement
@@ -46,11 +46,10 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |     MandatoryParameter
             |      x
             |   )
+            |  Separator
+            |   ;
             |  BodyStatement
             |   CompoundStatement
-            |    Separators
-            |     Separator
-            |      ;
             |  end""".stripMargin
       }
 
@@ -58,34 +57,33 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
         val code = "def foo(x=1);end"
         printAst(_.primary(), code) shouldEqual
           """MethodDefinitionPrimary
-             | MethodDefinition
-             |  def
-             |  WsOrNl
-             |  SimpleMethodNamePart
-             |   DefinedMethodName
-             |    MethodName
-             |     MethodIdentifier
-             |      foo
-             |  MethodParameterPart
-             |   (
-             |   Parameters
-             |    Parameter
-             |     OptionalParameter
-             |      x
-             |      =
-             |      PrimaryExpression
-             |       LiteralPrimary
-             |        NumericLiteralLiteral
-             |         NumericLiteral
-             |          UnsignedNumericLiteral
-             |           1
-             |   )
-             |  BodyStatement
-             |   CompoundStatement
-             |    Separators
-             |     Separator
-             |      ;
-             |  end""".stripMargin
+            | MethodDefinition
+            |  def
+            |  WsOrNl
+            |  SimpleMethodNamePart
+            |   DefinedMethodName
+            |    MethodName
+            |     MethodIdentifier
+            |      foo
+            |  MethodParameterPart
+            |   (
+            |   Parameters
+            |    Parameter
+            |     OptionalParameter
+            |      x
+            |      =
+            |      PrimaryExpression
+            |       LiteralPrimary
+            |        NumericLiteralLiteral
+            |         NumericLiteral
+            |          UnsignedNumericLiteral
+            |           1
+            |   )
+            |  Separator
+            |   ;
+            |  BodyStatement
+            |   CompoundStatement
+            |  end""".stripMargin
       }
 
       "it contains two parameters, the last of which a &-parameter" in {
@@ -113,12 +111,11 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |      &
             |      y
             |   )
+            |  Separator
+            |   ;
+            |  WsOrNl
             |  BodyStatement
             |   CompoundStatement
-            |    Separators
-            |     Separator
-            |      ;
-            |  WsOrNl
             |  end""".stripMargin
       }
 
@@ -126,93 +123,90 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
         val code = "def foo(*arr); end"
         printAst(_.primary(), code) shouldEqual
           """MethodDefinitionPrimary
-          | MethodDefinition
-          |  def
-          |  WsOrNl
-          |  SimpleMethodNamePart
-          |   DefinedMethodName
-          |    MethodName
-          |     MethodIdentifier
-          |      foo
-          |  MethodParameterPart
-          |   (
-          |   Parameters
-          |    Parameter
-          |     ArrayParameter
-          |      *
-          |      arr
-          |   )
-          |  BodyStatement
-          |   CompoundStatement
-          |    Separators
-          |     Separator
-          |      ;
-          |  WsOrNl
-          |  end""".stripMargin
+            | MethodDefinition
+            |  def
+            |  WsOrNl
+            |  SimpleMethodNamePart
+            |   DefinedMethodName
+            |    MethodName
+            |     MethodIdentifier
+            |      foo
+            |  MethodParameterPart
+            |   (
+            |   Parameters
+            |    Parameter
+            |     ArrayParameter
+            |      *
+            |      arr
+            |   )
+            |  Separator
+            |   ;
+            |  WsOrNl
+            |  BodyStatement
+            |   CompoundStatement
+            |  end""".stripMargin
       }
 
       "it contains a named (hash) splatting argument" in {
         val code = "def foo(**hash); end"
         printAst(_.primary(), code) shouldEqual
           """MethodDefinitionPrimary
-          | MethodDefinition
-          |  def
-          |  WsOrNl
-          |  SimpleMethodNamePart
-          |   DefinedMethodName
-          |    MethodName
-          |     MethodIdentifier
-          |      foo
-          |  MethodParameterPart
-          |   (
-          |   Parameters
-          |    Parameter
-          |     HashParameter
-          |      **
-          |      hash
-          |   )
-          |  BodyStatement
-          |   CompoundStatement
-          |    Separators
-          |     Separator
-          |      ;
-          |  WsOrNl
-          |  end""".stripMargin
+            | MethodDefinition
+            |  def
+            |  WsOrNl
+            |  SimpleMethodNamePart
+            |   DefinedMethodName
+            |    MethodName
+            |     MethodIdentifier
+            |      foo
+            |  MethodParameterPart
+            |   (
+            |   Parameters
+            |    Parameter
+            |     HashParameter
+            |      **
+            |      hash
+            |   )
+            |  Separator
+            |   ;
+            |  WsOrNl
+            |  BodyStatement
+            |   CompoundStatement
+            |  end""".stripMargin
       }
 
       "it contains both a named array and hash splatting argument" in {
         val code = "def foo(*arr, **hash); end"
         printAst(_.primary(), code) shouldEqual
           """MethodDefinitionPrimary
-          | MethodDefinition
-          |  def
-          |  WsOrNl
-          |  SimpleMethodNamePart
-          |   DefinedMethodName
-          |    MethodName
-          |     MethodIdentifier
-          |      foo
-          |  MethodParameterPart
-          |   (
-          |   Parameters
-          |    Parameter
-          |     ArrayParameter
-          |      *
-          |      arr
-          |    ,
-          |    WsOrNl
-          |    Parameter
-          |     HashParameter
-          |      **
-          |      hash
-          |   )
-          |  BodyStatement
-          |   CompoundStatement
-          |    Separators
-          |     Separator
-          |      ;
-          |  WsOrNl
-          |  end""".stripMargin
+            | MethodDefinition
+            |  def
+            |  WsOrNl
+            |  SimpleMethodNamePart
+            |   DefinedMethodName
+            |    MethodName
+            |     MethodIdentifier
+            |      foo
+            |  MethodParameterPart
+            |   (
+            |   Parameters
+            |    Parameter
+            |     ArrayParameter
+            |      *
+            |      arr
+            |    ,
+            |    WsOrNl
+            |    Parameter
+            |     HashParameter
+            |      **
+            |      hash
+            |   )
+            |  Separator
+            |   ;
+            |  WsOrNl
+            |  BodyStatement
+            |   CompoundStatement
+            |  end""".stripMargin
       }
 
       "it contains an optional parameter before a mandatory one" in {
@@ -245,12 +239,11 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |     MandatoryParameter
             |      y
             |   )
+            |  Separator
+            |   ;
+            |  WsOrNl
             |  BodyStatement
             |   CompoundStatement
-            |    Separators
-            |     Separator
-            |      ;
-            |  WsOrNl
             |  end""".stripMargin
       }
 
@@ -281,12 +274,11 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |          UnsignedNumericLiteral
             |           1
             |   )
+            |  Separator
+            |   ;
+            |  WsOrNl
             |  BodyStatement
             |   CompoundStatement
-            |    Separators
-            |     Separator
-            |      ;
-            |  WsOrNl
             |  end""".stripMargin
       }
 
@@ -378,7 +370,7 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |     MethodIdentifier
             |      foo
             |  MethodParameterPart
-            |   Separator
+            |  Separator
             |  WsOrNl
             |  BodyStatement
             |   CompoundStatement
@@ -426,9 +418,113 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
 
   }
 
+  "An endless method definition" should {
+
+    "be parsed as a primary expression" when {
+
+      "it contains no arguments" in {
+        val code = "def foo = x"
+        printAst(_.primary(), code) shouldEqual
+          """MethodDefinitionPrimary
+            | MethodDefinition
+            |  def
+            |  WsOrNl
+            |  SimpleMethodNamePart
+            |   DefinedMethodName
+            |    MethodName
+            |     MethodIdentifier
+            |      foo
+            |  MethodParameterPart
+            |  =
+            |  WsOrNl
+            |  PrimaryExpression
+            |   VariableReferencePrimary
+            |    VariableIdentifierVariableReference
+            |     VariableIdentifier
+            |      x""".stripMargin
+      }
+
+      "it contains a line break right after `=`" in {
+        val code = "def foo =\n x"
+        printAst(_.primary(), code) shouldEqual
+          """MethodDefinitionPrimary
+            | MethodDefinition
+            |  def
+            |  WsOrNl
+            |  SimpleMethodNamePart
+            |   DefinedMethodName
+            |    MethodName
+            |     MethodIdentifier
+            |      foo
+            |  MethodParameterPart
+            |  =
+            |  WsOrNl
+            |  WsOrNl
+            |  PrimaryExpression
+            |   VariableReferencePrimary
+            |    VariableIdentifierVariableReference
+            |     VariableIdentifier
+            |      x""".stripMargin
+      }
+
+      "it contains no arguments and a string literal on the RHS" in {
+        val code = """def foo = "something""""
+        printAst(_.primary(), code) shouldEqual
+          """MethodDefinitionPrimary
+            | MethodDefinition
+            |  def
+            |  WsOrNl
+            |  SimpleMethodNamePart
+            |   DefinedMethodName
+            |    MethodName
+            |     MethodIdentifier
+            |      foo
+            |  MethodParameterPart
+            |  =
+            |  WsOrNl
+            |  PrimaryExpression
+            |   StringExpressionPrimary
+            |    SimpleStringExpression
+            |     DoubleQuotedStringLiteral
+            |      "
+            |      something
+            |      """".stripMargin
+      }
+
+      "it contains a single mandatory argument" in {
+        val code = "def id(x) = x"
+        printAst(_.primary(), code) shouldEqual
+          """MethodDefinitionPrimary
+            | MethodDefinition
+            |  def
+            |  WsOrNl
+            |  SimpleMethodNamePart
+            |   DefinedMethodName
+            |    MethodName
+            |     MethodIdentifier
+            |      id
+            |  MethodParameterPart
+            |   (
+            |   Parameters
+            |    Parameter
+            |     MandatoryParameter
+            |      x
+            |   )
+            |  =
+            |  WsOrNl
+            |  PrimaryExpression
+            |   VariableReferencePrimary
+            |    VariableIdentifierVariableReference
+            |     VariableIdentifier
+            |      x""".stripMargin
+      }
+    }
+  }
+
   "method definition with proc parameters" should {
     "have correct structure for proc parameters with name" in {
-      val code = """def foo(&block)
+      val code =
+        """def foo(&block)
           |   yield
           |end
           |""".stripMargin
@@ -451,7 +547,7 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |      &
           |      block
           |   )
-          |  WsOrNl
+          |  Separator
           |  WsOrNl
           |  BodyStatement
           |   CompoundStatement
@@ -491,7 +587,7 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |     ProcParameter
           |      &
           |   )
-          |  WsOrNl
+          |  Separator
           |  WsOrNl
           |  BodyStatement
           |   CompoundStatement

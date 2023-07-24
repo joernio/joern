@@ -279,8 +279,10 @@ association
 // --------------------------------------------------------
 
 methodDefinition
-    :   DEF wsOrNl* methodNamePart WS* methodParameterPart wsOrNl* bodyStatement wsOrNl* END
+    :   DEF wsOrNl* methodNamePart WS* methodParameterPart separator? wsOrNl* bodyStatement wsOrNl* END
+    |   DEF wsOrNl* methodNamePart WS* methodParameterPart WS* EQ wsOrNl* expression
     ;
+    
 
 procDefinition
     :   MINUSGT WS? (LPAREN parameters? RPAREN)? WS? block
@@ -324,7 +326,7 @@ methodOnlyIdentifier
 
 methodParameterPart
     :   LPAREN parameters? RPAREN
-    |   parameters? separator
+    |   parameters?
     ;
 
 parameters
