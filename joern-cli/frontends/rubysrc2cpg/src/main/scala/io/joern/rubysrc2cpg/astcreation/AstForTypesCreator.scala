@@ -37,7 +37,7 @@ trait AstForTypesCreator { this: AstCreator =>
       None
     }
 
-    val className = ctx.className(baseClassName)
+    val className = ctx.className(baseClassName).getOrElse(Defines.Any)
     if (className != Defines.Any) {
       classStack.push(className)
       val fullName = classStack.reverse.mkString(pathSep)
@@ -144,23 +144,14 @@ trait AstForTypesCreator { this: AstCreator =>
 
     def hasClassDefinition: Boolean = Option(ctx.classDefinition()).isDefined
 
-    def className(baseClassName: Option[String] = None): String =
+    def className(baseClassName: Option[String] = None): Option[String] =
       Option(ctx.classDefinition().classOrModuleReference()) match {
         case Some(classOrModuleReferenceCtx) =>
           Option(classOrModuleReferenceCtx)
             .map(_.classOrModuleName(baseClassName))
-            .getOrElse(Defines.Any)
         case None =>
           // TODO the below is just to avoid crashes. This needs to be implemented properly
-          val exprAst = astForExpressionOrCommand(ctx.classDefinition().expressionOrCommand())
-          exprAst.head.root.headOption match {
-            case Some(ctx) =>
-              ctx match {
-                case ctx: NewIdentifier => ctx.name
-                case ctx: NewLiteral    => ctx.code
-              }
-            case None => Defines.Any
-          }
+          None
       }
   }
 
