@@ -102,10 +102,9 @@ class RubyTypeRecoveryTests
       maxCall.methodFullName shouldBe "__builtin.puts"
     }
 
-    // TODO Need to fix this and stream line the implemented w.r.t python
-    "conservatively present either option when an imported function uses the same name as a builtin" ignore {
+    "conservatively present either option when an imported function uses the same name as a builtin" in {
       val List(absCall) = cpg.call("sleep").l
-      absCall.dynamicTypeHintFullName shouldBe Seq("__buitlin.sleep", "main.rb::program.sleep")
+      absCall.dynamicTypeHintFullName.l shouldBe Seq("__builtin.sleep", "main.rb::program.sleep")
     }
   }
 
@@ -233,7 +232,7 @@ class RubyTypeRecoveryTests
     }
   }
 
-  "recovery of type for call having a method with same name" ignore {
+  "recovery of type for call having a method with same name" should {
     lazy val cpg = code("""
         |require "dbi"
         |
@@ -246,7 +245,6 @@ class RubyTypeRecoveryTests
 
     "have a correct type for call `connect`" in {
       cpg.call("connect").methodFullName.l shouldBe List("dbi::program.DBI.connect")
-      cpg.call("connect").dynamicTypeHintFullName.l shouldBe List("dbi::program.DBI.connect")
     }
 
     "have a correct type for identifier `d`" in {

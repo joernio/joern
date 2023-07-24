@@ -254,7 +254,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     } else if (definitelyIdentifier || scope.lookupVariable(variableName).isDefined) {
       val node = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List())
       Ast(node)
-    } else if (methodNames.contains(variableName)) {
+    } else if (methodNameToMethod.contains(variableName)) {
       astForCallNode(ctx, variableName)
     } else if (ModifierTypes.ALL.contains(variableName.toUpperCase)) {
       lastModifier = Option(variableName.toUpperCase)

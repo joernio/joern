@@ -48,8 +48,8 @@ class AstCreator(
    */
   protected val methodNameAsIdentifierStack = mutable.Stack[Ast]()
 
-  protected val methodAliases = mutable.HashMap[String, String]()
-  protected val methodNames   = mutable.HashMap[String, String]()
+  protected val methodAliases      = mutable.HashMap[String, String]()
+  protected val methodNameToMethod = mutable.HashMap[String, nodes.NewMethod]()
 
   protected val methodNamesWithYield = mutable.HashSet[String]()
 
@@ -85,6 +85,8 @@ class AstCreator(
    * in this hash implies this is a leaf block.
    */
   protected val blockChildHash = mutable.HashMap[Int, Int]()
+
+  protected val builtInCallNames = mutable.HashSet[String]()
 
   protected def createIdentifierWithScope(
     ctx: ParserRuleContext,
@@ -135,19 +137,57 @@ class AstCreator(
       }
     scope.popScope()
 
-    val thisParam = parameterInNode(programCtx, "this", "this", 0, false, EvaluationStrategies.BY_VALUE).typeFullName(
-      classStack.reverse.mkString(pathSep)
-    )
-    val thisParamAst = Ast(thisParam)
-
     val methodRetNode = NewMethodReturn()
       .lineNumber(None)
       .columnNumber(None)
       .typeFullName(Defines.Any)
 
+    // For all the builtIn's encountered create assignment ast
+    val lineColNum = 1
+    val builtInMethodAst = builtInCallNames.map { builtInCallName =>
+      val identifierNode = NewIdentifier()
+        .code(builtInCallName)
+        .name(builtInCallName)
+        .lineNumber(lineColNum)
+        .columnNumber(lineColNum)
+        .typeFullName(Defines.Any)
+      val typeRefNode = NewTypeRef()
+        .code(prefixAsBuiltin(builtInCallName))
+        .typeFullName(prefixAsBuiltin(builtInCallName))
+        .lineNumber(lineColNum)
+        .columnNumber(lineColNum)
+      astForAssignment(identifierNode, typeRefNode, Some(lineColNum), Some(lineColNum))
+    }.toList
+
+    val methodRefAssignmentAsts = methodNameToMethod.values.map { methodNode =>
+      // Create a methodRefNode and assign it to the identifier version of the method, which will help in type propogation to resolve calls
+      val methodRefNode = NewMethodRef()
+        .code("def " + methodNode.name + "(...)")
+        .methodFullName(methodNode.fullName)
+        .typeFullName(methodNode.fullName)
+        .lineNumber(lineColNum)
+        .columnNumber(lineColNum)
+
+      val methodNameIdentifier = NewIdentifier()
+        .code(methodNode.name)
+        .name(methodNode.name)
+        .typeFullName(Defines.Any)
+        .lineNumber(lineColNum)
+        .columnNumber(lineColNum)
+
+      val methodRefAssignmentAst =
+        astForAssignment(methodNameIdentifier, methodRefNode, methodNode.lineNumber, methodNode.columnNumber)
+      methodRefAssignmentAst
+    }.toList
+
     val blockNode = NewBlock().typeFullName(Defines.Any)
     val programAst =
-      methodAst(programMethod, Seq(thisParamAst), blockAst(blockNode, statementAsts.toList), methodRetNode)
+      methodAst(
+        programMethod,
+        Seq(Ast()),
+        blockAst(blockNode, statementAsts.toList ++ builtInMethodAst ++ methodRefAssignmentAsts),
+        methodRetNode
+      )
 
     val fileNode       = NewFile().name(filename).order(1)
     val namespaceBlock = globalNamespaceBlock()
@@ -864,9 +904,6 @@ class AstCreator(
     if (ctx.block() != null) {
       val blockAst = Seq(astForBlock(ctx.block()))
       Seq(callAst(callNode, parenAst ++ blockAst))
-    } else if (methodNames.contains(getActualMethodName(callNode.name))) {
-      val thisNode = identifierNode(ctx, "this", "this", classStack.reverse.mkString(pathSep))
-      Seq(callAst(callNode, parenAst, Some(Ast(thisNode))))
     } else
       Seq(callAst(callNode, parenAst))
   }
@@ -923,16 +960,11 @@ class AstCreator(
         ""
       }
     val name = s"${getActualMethodName(ctx.getText)}$nameSuffix"
-    val methodFullName = packageContext.packageTable
-      .getMethodFullNameUsingName(packageStack.toList, name)
-      .headOption match {
-      case None if methodNames.contains(name) => methodNames.get(name).get
-      case None if isBuiltin(name)            => prefixAsBuiltin(name) // TODO: Probably not super precise
-      case Some(externalDependencyResolution) => DynamicCallUnknownFullName
-      case None                               => DynamicCallUnknownFullName
-    }
+    // Add the call name to the global builtIn callNames set
+    if (isBuiltin(name))
+      builtInCallNames.add(name)
 
-    callAst(callNode(ctx, code, name, methodFullName, DispatchTypes.STATIC_DISPATCH))
+    callAst(callNode(ctx, code, name, DynamicCallUnknownFullName, DispatchTypes.STATIC_DISPATCH))
   }
 
   def astForMethodOnlyIdentifier(ctx: MethodOnlyIdentifierContext): Seq[Ast] = {
@@ -1313,7 +1345,7 @@ class AstCreator(
      * TODO find out how they should be used. Need to do this iff it adds any value
      */
 
-    methodNames.put(methodNode.name, methodFullName)
+    methodNameToMethod.put(methodNode.name, methodNode)
     val blockNode = NewBlock().typeFullName(Defines.Any)
 
     /* Before creating ast, we traverse the method params and identifiers and link them*/
