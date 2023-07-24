@@ -87,6 +87,45 @@ class SymbolTests extends RubyParserAbstractTest {
         eg.map(code => printAst(_.primary(), code)) shouldEqual eg.map(symbolLiteralParseTreeText)
       }
 
+      "they are given by a non-interpolated double-quoted string literal" in {
+        val code = """:"x y z""""
+        printAst(_.primary(), code) shouldEqual
+          """LiteralPrimary
+            | SymbolLiteral
+            |  Symbol
+            |   :
+            |   SimpleStringExpression
+            |    DoubleQuotedStringLiteral
+            |     "
+            |     x y z
+            |     """".stripMargin
+      }
+        
+      "they are given by an interpolated double-quoted string literal" in {
+        val code = """:"#{10}""""
+        printAst(_.primary(), code) shouldEqual
+          """LiteralPrimary
+            | SymbolLiteral
+            |  Symbol
+            |   :
+            |   InterpolatedStringExpression
+            |    StringInterpolation
+            |     "
+            |     InterpolatedStringSequence
+            |      #{
+            |      CompoundStatement
+            |       Statements
+            |        ExpressionOrCommandStatement
+            |         ExpressionExpressionOrCommand
+            |          PrimaryExpression
+            |           LiteralPrimary
+            |            NumericLiteralLiteral
+            |             NumericLiteral
+            |              UnsignedNumericLiteral
+            |               10
+            |      }
+            |     """".stripMargin
+      }
     }
   }
 
