@@ -615,7 +615,7 @@ fragment SIMPLE_ESCAPE_SEQUENCE
     ;
 
 fragment DOUBLE_ESCAPED_CHARACTER
-    :   [ntrfvaebs]
+    :   [ntrfvaebsu]
     ;
 
 // --------------------------------------------------------
