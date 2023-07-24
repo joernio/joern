@@ -151,10 +151,16 @@ trait AstForTypesCreator { this: AstCreator =>
             .map(_.classOrModuleName(baseClassName))
             .getOrElse(Defines.Any)
         case None =>
+          // TODO the below is just to avoid crashes. This needs to be implemented properly
           val exprAst = astForExpressionOrCommand(ctx.classDefinition().expressionOrCommand())
-          exprAst.head.root match
-            case Some(value) => value.asInstanceOf[NewIdentifier].name
-            case None        => Defines.Any
+          exprAst.head.root.headOption match {
+            case Some(ctx) =>
+              ctx match {
+                case ctx: NewIdentifier => ctx.name
+                case ctx: NewLiteral    => ctx.code
+              }
+            case None => Defines.Any
+          }
       }
   }
 

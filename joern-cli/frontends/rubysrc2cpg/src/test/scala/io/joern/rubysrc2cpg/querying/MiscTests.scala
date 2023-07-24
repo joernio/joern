@@ -259,7 +259,7 @@ class MiscTests extends RubyCode2CpgFixture {
     }
   }
 
-  "CPG for code with singleton class" should {
+  "CPG for code with singleton object of self" should {
     val cpg = code("""
         |class << self
         |end
@@ -267,6 +267,17 @@ class MiscTests extends RubyCode2CpgFixture {
 
     "recognise all typedecl nodes" in {
       cpg.typeDecl.name("self").size shouldBe 1
+    }
+  }
+
+  "CPG for code with singleton object of some class" ignore {
+    val cpg = code("""
+        |class << "some_class"
+        |end
+        |""".stripMargin)
+
+    "recognise all typedecl nodes" in {
+      cpg.typeDecl.name("some_class").size shouldBe 1
     }
   }
 }
