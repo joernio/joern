@@ -14,10 +14,10 @@ import io.shiftleft.semanticcpg.language.*
 object RubyTypeRecoveryTests {
   def getPackageTable: PackageTable = {
     val packageTable = PackageTable()
-    packageTable.addPackageMethod("sendgrid-ruby", "client", "SendGrid.API", "API")
-    packageTable.addPackageMethod("dbi", "connect", "DBI", "DBI")
-    packageTable.addPackageMethod("dbi", "select_one", "DBI", "DBI")
-    packageTable.addPackageMethod("logger", "error", "Logger", "Logger")
+    packageTable.addTypeDecl("sendgrid-ruby", "API", "SendGrid.API")
+    packageTable.addModule("dbi", "DBI", "DBI")
+    packageTable.addTypeDecl("logger", "Logger", "Logger")
+    packageTable.addModule("stripe", "Customer", "Stripe.Customer")
     packageTable
   }
 
@@ -135,12 +135,11 @@ class RubyTypeRecoveryTests
       "bar.rb"
     ).cpg
 
-    // TODO: Need to fix it
+    // TODO Waiting for Module modelling to be done
     "resolve correct imports via tag nodes" ignore {
-      val List(foo1: ResolvedMethod, foo2: ResolvedTypeDecl) =
+      val List(foo: ResolvedTypeDecl) =
         cpg.file(".*foo.rb").ast.isCall.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
-      foo1.fullName shouldBe "dbi::program.DBI.new"
-      foo2.fullName shouldBe "dbi::program.DBI"
+      foo.fullName shouldBe "dbi::program.DBI"
       val List(bar: ResolvedTypeDecl) =
         cpg.file(".*bar.rb").ast.isCall.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
       bar.fullName shouldBe "foo.rb::program.FooModule"
@@ -191,7 +190,7 @@ class RubyTypeRecoveryTests
 
   }
 
-  "assignment from a call to a method inside an imported module" should {
+  "assignment from a call to a identifier inside an imported module using new" should {
     lazy val cpg = code("""
         |require 'logger'
         |
@@ -210,6 +209,25 @@ class RubyTypeRecoveryTests
       log.typeFullName shouldBe "logger::program.Logger"
       val List(errorCall) = cpg.call("error").l
       errorCall.methodFullName shouldBe "logger::program.Logger.error"
+    }
+  }
+
+  "assignment from a call to a identifier inside an imported module using methodCall" should {
+    lazy val cpg = code("""
+        |require 'stripe'
+        |
+        |customer = Stripe::Customer.create
+        |
+        |""".stripMargin).cpg
+
+    "resolved the type of call" in {
+      val Some(create) = cpg.call("create").headOption: @unchecked
+      create.methodFullName shouldBe "stripe::program.Stripe.Customer.create"
+    }
+
+    "resolved the type of identifier" in {
+      val Some(customer) = cpg.identifier("customer").headOption: @unchecked
+      customer.typeFullName shouldBe "stripe::program.Stripe.Customer.create.<returnValue>"
     }
   }
 }

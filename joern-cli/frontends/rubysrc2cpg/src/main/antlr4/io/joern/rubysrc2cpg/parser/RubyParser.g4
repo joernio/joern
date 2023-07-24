@@ -234,11 +234,11 @@ block
     ;
 
 braceBlock
-    :   LCURLY wsOrNl* blockParameter? wsOrNl* compoundStatement wsOrNl* RCURLY
+    :   LCURLY wsOrNl* blockParameter? wsOrNl* bodyStatement wsOrNl* RCURLY
     ;
 
 doBlock
-    :   DO wsOrNl* blockParameter? separators wsOrNl* compoundStatement wsOrNl* END
+    :   DO wsOrNl* blockParameter? separators wsOrNl* bodyStatement wsOrNl* END
     ;
 
 blockParameter
