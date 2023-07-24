@@ -68,7 +68,7 @@ expression
     |   expression WS* op=AMP2 wsOrNl* expression                                                                   # operatorAndExpression
     |   expression WS* op=BAR2 wsOrNl* expression                                                                   # operatorOrExpression
     |   expression WS* op=(DOT2 | DOT3) wsOrNl* expression?                                                         # rangeExpression
-    |   expression WS* QMARK wsOrNl* expression WS* COLON wsOrNl* expression                                        # conditionalOperatorExpression
+    |   expression WS* QMARK wsOrNl* expression wsOrNl* COLON wsOrNl* expression                                    # conditionalOperatorExpression
     |   <assoc=right> singleLeftHandSide WS* op=(EQ | ASSIGNMENT_OPERATOR) wsOrNl* multipleRightHandSide            # singleAssignmentExpression
     |   <assoc=right> multipleLeftHandSide WS* EQ wsOrNl* multipleRightHandSide                                     # multipleAssignmentExpression
     |   IS_DEFINED wsOrNl* expression                                                                               # isDefinedExpression
@@ -279,8 +279,10 @@ association
 // --------------------------------------------------------
 
 methodDefinition
-    :   DEF wsOrNl* methodNamePart WS* methodParameterPart wsOrNl* bodyStatement wsOrNl* END
+    :   DEF wsOrNl* methodNamePart WS* methodParameterPart separator? wsOrNl* bodyStatement wsOrNl* END
+    |   DEF wsOrNl* methodNamePart WS* methodParameterPart WS* EQ wsOrNl* expression
     ;
+    
 
 procDefinition
     :   MINUSGT WS? (LPAREN parameters? RPAREN)? WS? block
@@ -324,7 +326,7 @@ methodOnlyIdentifier
 
 methodParameterPart
     :   LPAREN parameters? RPAREN
-    |   parameters? separator
+    |   parameters?
     ;
 
 parameters
@@ -361,8 +363,9 @@ keywordParameter
     ;
 
 procParameter
-    :   AMP LOCAL_VARIABLE_IDENTIFIER
+    :   AMP LOCAL_VARIABLE_IDENTIFIER?
     ;
+
 
 // --------------------------------------------------------
 // Conditional expressions
@@ -492,7 +495,7 @@ yieldWithOptionalArgument
 // --------------------------------------------------------
 
 jumpExpression
-    :   RETURN
+    :   RETURN argumentsWithParentheses?
     |   BREAK
     |   NEXT
     |   REDO
@@ -543,7 +546,7 @@ literal
     
 symbol
     :   SYMBOL_LITERAL
-    |   COLON SINGLE_QUOTED_STRING_LITERAL
+    |   COLON stringExpression
     ;
 
 // --------------------------------------------------------

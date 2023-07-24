@@ -3,15 +3,21 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.parser.RubyParser.{
   ClassDefinitionPrimaryContext,
   ClassOrModuleReferenceContext,
+  ExpressionExpressionOrCommandContext,
   ModuleDefinitionPrimaryContext,
-  ScopedConstantReferenceContext
+  PrimaryExpressionContext,
+  PseudoVariableIdentifierVariableReferenceContext,
+  ScopedConstantReferenceContext,
+  SelfPseudoVariableIdentifierContext,
+  VariableReferencePrimaryContext
 }
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.antlr.v4.runtime.ParserRuleContext
-import io.joern.x2cpg.utils._
+import io.joern.x2cpg.utils.*
+
 import scala.collection.mutable
 
 trait AstForTypesCreator { this: AstCreator =>
@@ -31,7 +37,7 @@ trait AstForTypesCreator { this: AstCreator =>
       None
     }
 
-    val className = ctx.className(baseClassName)
+    val className = ctx.className(baseClassName).getOrElse(Defines.Any)
     if (className != Defines.Any) {
       classStack.push(className)
       val fullName = classStack.reverse.mkString(pathSep)
@@ -138,11 +144,15 @@ trait AstForTypesCreator { this: AstCreator =>
 
     def hasClassDefinition: Boolean = Option(ctx.classDefinition()).isDefined
 
-    def className(baseClassName: Option[String] = None): String =
-      Option(ctx.classDefinition())
-        .map(_.classOrModuleReference())
-        .map(_.classOrModuleName(baseClassName))
-        .getOrElse(Defines.Any)
+    def className(baseClassName: Option[String] = None): Option[String] =
+      Option(ctx.classDefinition().classOrModuleReference()) match {
+        case Some(classOrModuleReferenceCtx) =>
+          Option(classOrModuleReferenceCtx)
+            .map(_.classOrModuleName(baseClassName))
+        case None =>
+          // TODO the below is just to avoid crashes. This needs to be implemented properly
+          None
+      }
   }
 
   implicit class ClassOrModuleReferenceContextExt(val ctx: ClassOrModuleReferenceContext) {

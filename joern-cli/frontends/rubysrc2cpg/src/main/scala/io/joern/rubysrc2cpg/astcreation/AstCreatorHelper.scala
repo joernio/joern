@@ -1,5 +1,7 @@
 package io.joern.rubysrc2cpg.astcreation
 
+import scala.collection.mutable
+
 trait AstCreatorHelper { this: AstCreator =>
 
   import GlobalTypes._
@@ -8,6 +10,12 @@ trait AstCreatorHelper { this: AstCreator =>
 
   def prefixAsBuiltin(x: String): String = s"$builtinPrefix$pathSep$x"
 
+  def getUnusedVariableNames(usedVariableNames: mutable.HashMap[String, Int], variableName: String): String = {
+    val counter             = usedVariableNames.get(variableName).map(_ + 1).getOrElse(0)
+    val currentVariableName = s"${variableName}_$counter"
+    usedVariableNames.put(variableName, counter)
+    currentVariableName
+  }
 }
 
 object GlobalTypes {
