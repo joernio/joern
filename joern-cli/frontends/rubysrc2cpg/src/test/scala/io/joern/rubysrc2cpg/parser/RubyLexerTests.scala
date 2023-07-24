@@ -327,7 +327,7 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       EOF
     )
   }
-  
+
   "Non-empty regex literal after `unless`" should "be recognized as such" in {
     val code = "unless /^ch_/"
     tokenize(code) shouldBe Seq(
