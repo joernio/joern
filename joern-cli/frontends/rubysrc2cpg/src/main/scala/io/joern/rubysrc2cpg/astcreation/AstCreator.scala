@@ -1035,29 +1035,26 @@ class AstCreator(
   def astForAssignmentLikeMethodIdentifierContext(ctx: AssignmentLikeMethodIdentifierContext): Seq[Ast] = {
     if (ctx == null) return Seq(Ast())
 
-    // this is a assignment method. Return a AST of the assigned value
-    // test case can be written once class modelling is in place using a assignment method of the class
-    if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
-      val localVar  = ctx.LOCAL_VARIABLE_IDENTIFIER()
-      val varSymbol = localVar.getSymbol()
-      val node =
-        createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
-      Seq(Ast(node))
-    } else if (ctx.CONSTANT_IDENTIFIER() != null) {
-      val localVar  = ctx.CONSTANT_IDENTIFIER()
-      val varSymbol = localVar.getSymbol()
-      val node =
-        createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
-      Seq(Ast(node))
-    } else {
-      Seq(Ast())
-    }
+    val terminalNode = Option(ctx.LOCAL_VARIABLE_IDENTIFIER()) match
+      case Some(value) => value
+      case None        => ctx.CONSTANT_IDENTIFIER()
+
+    val callNode = NewCall()
+      .name(terminalNode.getText)
+      .code(ctx.getText)
+      .methodFullName(terminalNode.getText)
+      .signature("")
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .typeFullName(Defines.Any)
+      .lineNumber(terminalNode.getSymbol().getLine())
+      .columnNumber(terminalNode.getSymbol().getCharPositionInLine())
+    Seq(callAst(callNode))
   }
 
   def astForDefinedMethodNameContext(ctx: DefinedMethodNameContext): Seq[Ast] = {
-    val methodNameAst         = astForMethodNameContext(ctx.methodName())
-    val assignLinkedMethodAst = astForAssignmentLikeMethodIdentifierContext(ctx.assignmentLikeMethodIdentifier())
-    methodNameAst ++ assignLinkedMethodAst
+    Option(ctx.methodName()) match
+      case Some(methodNameCtx) => astForMethodNameContext(methodNameCtx)
+      case None => astForAssignmentLikeMethodIdentifierContext(ctx.assignmentLikeMethodIdentifier())
   }
 
   def astForSingletonObjectContext(ctx: SingletonObjectContext): Seq[Ast] = {
