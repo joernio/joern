@@ -990,4 +990,18 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       actualParameter.name shouldBe "param_0"
     }
   }
+
+  "have correct structure when regular expression literal passed after `when`" in {
+    val cpg = code("""
+        |case foo
+        | when /^ch/
+        |   bar
+        |end
+        |""".stripMargin)
+
+    val List(literalArg) = cpg.literal.l
+    literalArg.typeFullName shouldBe Defines.Regexp
+    literalArg.code shouldBe "/^ch/"
+    literalArg.lineNumber shouldBe Some(3)
+  }
 }
