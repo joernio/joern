@@ -24,6 +24,8 @@ trait RubyLexerRegexHandling { this: RubyLexerBase =>
     COLON,
     // When '/' occurs after 'when'.
     WHEN,
+    // When '/' occurs after 'unless'.
+    UNLESS,
     // When '/' occurs after an operator.
     EMARK,
     EMARKEQ,
