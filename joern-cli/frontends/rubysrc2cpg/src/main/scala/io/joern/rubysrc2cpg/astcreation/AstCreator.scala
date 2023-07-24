@@ -1583,19 +1583,22 @@ class AstCreator(
     val publicModifier = NewModifier().modifierType(ModifierTypes.PUBLIC)
     val paramSeq = astMethodParam.headOption match {
       case Some(value) =>
-        value.nodes
-          .map(node => {
-            // this is guaranteed to be picked up as an identifier since this is a parameter
-            val identifierNode = node.asInstanceOf[NewIdentifier]
+        value.nodes.map {
+          /* In majority of cases, node will be an identifier */
+          case identifierNode: NewIdentifier =>
             val param = NewMethodParameterIn()
               .name(identifierNode.name)
               .code(identifierNode.code)
               .lineNumber(identifierNode.lineNumber)
               .columnNumber(identifierNode.columnNumber)
             Ast(param)
-
-          })
-          .toSeq
+          case callNode: NewCall =>
+            /* TODO: Occasionally, we might encounter a _ call in cases like "do |_, x|" where we should handle this?
+             * But for now, we just return an empty AST. Keeping this match explicitly here so we come back */
+            Ast()
+          case _ =>
+            Ast()
+        }.toSeq
       case None => Seq()
     }
 
