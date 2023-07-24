@@ -493,7 +493,7 @@ yieldWithOptionalArgument
 // --------------------------------------------------------
 
 jumpExpression
-    :   RETURN
+    :   RETURN argumentsWithParentheses?
     |   BREAK
     |   NEXT
     |   REDO
