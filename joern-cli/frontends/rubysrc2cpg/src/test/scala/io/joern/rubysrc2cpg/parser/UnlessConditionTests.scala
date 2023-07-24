@@ -112,14 +112,14 @@ class UnlessConditionTests extends RubyParserAbstractTest {
       }
     }
   }
-  
+
   "An unless (modifier) statement" should {
-    
+
     "be parsed as a statement" when {
-      
+
       "it explicitly returns an identifier out of a method" in {
         val code = "return(value) unless item"
-          
+
         printAst(_.statement(), code) shouldEqual
           """ModifierStatement
             | ExpressionOrCommandStatement
