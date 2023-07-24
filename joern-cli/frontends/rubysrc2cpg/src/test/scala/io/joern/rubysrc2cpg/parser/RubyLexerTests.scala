@@ -194,6 +194,16 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     )
   }
 
+  "Double-quoted string literals containing `\\u` character sequences" should "be recognized as such" in {
+    val code = """"AB\u0003\u0004\u0014\u0000\u0000\u0000\b\u0000\u0000\u0000!\u0000file""""
+    tokenize(code) shouldBe Seq(
+      DOUBLE_QUOTED_STRING_START,
+      DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE,
+      DOUBLE_QUOTED_STRING_END,
+      EOF
+    )
+  }
+
   "Interpolated double-quoted string literal" should "be recognized as such" in {
     val code = "\"x is #{1+1}\""
     tokenize(code) shouldBe Seq(
@@ -294,6 +304,44 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       CONSTANT_IDENTIFIER,
       WS,
       EQ,
+      WS,
+      REGULAR_EXPRESSION_START,
+      REGULAR_EXPRESSION_BODY,
+      REGULAR_EXPRESSION_END,
+      EOF
+    )
+  }
+
+  "Non-empty regex literal on the RHS of an regex matching operation" should "be recognized as such" in {
+    val code = """content_filename =~ /filename="(.*)"/"""
+    tokenize(code) shouldBe Seq(
+      LOCAL_VARIABLE_IDENTIFIER,
+      WS,
+      EQTILDE,
+      WS,
+      REGULAR_EXPRESSION_START,
+      REGULAR_EXPRESSION_BODY,
+      REGULAR_EXPRESSION_END,
+      EOF
+    )
+  }
+
+  "Non-empty regex literal after `when`" should "be recognized as such" in {
+    val code = "when /^ch_/"
+    tokenize(code) shouldBe Seq(
+      WHEN,
+      WS,
+      REGULAR_EXPRESSION_START,
+      REGULAR_EXPRESSION_BODY,
+      REGULAR_EXPRESSION_END,
+      EOF
+    )
+  }
+
+  "Non-empty regex literal after `unless`" should "be recognized as such" in {
+    val code = "unless /^ch_/"
+    tokenize(code) shouldBe Seq(
+      UNLESS,
       WS,
       REGULAR_EXPRESSION_START,
       REGULAR_EXPRESSION_BODY,
@@ -590,6 +638,12 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     )
   }
 
+  "operator-named symbol used in a whitespace-free `=>` association" should "not be include `=` as part of its name" in {
+    // This test exists to check if RubyLexer properly recognizes EQGT
+    val code = "{:x=>1}"
+    tokenize(code) shouldBe Seq(LCURLY, SYMBOL_LITERAL, EQGT, DECIMAL_INTEGER_LITERAL, RCURLY, EOF)
+  }
+
   "class variable used in a keyword argument" should "not be mistaken for a symbol literal" in {
     // This test exists to check if RubyLexer properly decided between COLON and SYMBOL_LITERAL
     val code = "foo(x:@@y)"
@@ -602,5 +656,10 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       RPAREN,
       EOF
     )
+  }
+
+  "Regex match global variables" should "be recognized as such" in {
+    val eg = Seq("$0", "$10", "$2", "$3")
+    all(eg.map(tokenize)) shouldBe Seq(GLOBAL_VARIABLE_IDENTIFIER, EOF)
   }
 }

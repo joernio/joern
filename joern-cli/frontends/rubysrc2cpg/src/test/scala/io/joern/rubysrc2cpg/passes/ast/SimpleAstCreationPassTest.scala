@@ -917,5 +917,56 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       cpg.parameter.size shouldBe 6
       cpg.call.size shouldBe 7
     }
+
+    "have correct structure when method called with safe navigation without parameters" in {
+      val cpg = code("foo&.bar")
+      cpg.call.size shouldBe 1
+    }
+
+    "have correct structure when method called with safe navigation with parameters with parantheses" in {
+      val cpg = code("foo&.bar(1)")
+
+      val List(callNode)  = cpg.call.l
+      val List(actualArg) = callNode.argument.argumentIndex(1).l
+      actualArg.code shouldBe "1"
+      cpg.argument.size shouldBe 2
+      cpg.call.size shouldBe 1
+    }
+
+    "have correct structure when method called with safe navigation with parameters without parantheses" in {
+      val cpg = code("foo&.bar 1,2")
+
+      val List(callNode)  = cpg.call.l
+      val List(actualArg) = callNode.argument.argumentIndex(2).l
+      actualArg.code shouldBe "1"
+      cpg.argument.size shouldBe 3
+      cpg.call.size shouldBe 1
+    }
+
+    "have correct structure for proc parameter with name" in {
+      val cpg                   = code("def foo(&block) end")
+      val List(actualParameter) = cpg.method("foo").parameter.l
+      actualParameter.name shouldBe "block"
+    }
+
+    "have correct structure for proc parameter with no name" in {
+      val cpg                   = code("def foo(&) end")
+      val List(actualParameter) = cpg.method("foo").parameter.l
+      actualParameter.name shouldBe "param_0"
+    }
+  }
+
+  "have correct structure when regular expression literal passed after `when`" in {
+    val cpg = code("""
+        |case foo
+        | when /^ch/
+        |   bar
+        |end
+        |""".stripMargin)
+
+    val List(literalArg) = cpg.literal.l
+    literalArg.typeFullName shouldBe Defines.Regexp
+    literalArg.code shouldBe "/^ch/"
+    literalArg.lineNumber shouldBe Some(3)
   }
 }

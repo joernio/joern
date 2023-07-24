@@ -2355,4 +2355,65 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
       sink.reachableByFlows(source).size shouldBe 3
     }
   }
+
+  "flow through a method call with safe navigation operator with parantheses" should {
+    val cpg = code("""
+        |class Foo
+        | def bar(x)
+        |   return x
+        | end
+        |end
+        |x=1
+        |foo = Foo.new
+        |y = foo&.bar(x)
+        |puts y
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).size shouldBe 3
+    }
+  }
+
+  // TODO: Flow size should be 3 as above, but is 1 instead.
+  "flow through a method call with safe navigation operator without parantheses" ignore {
+    val cpg = code("""
+        |class Foo
+        | def bar(x)
+        |   return x
+        | end
+        |end
+        |x=1
+        |foo = Foo.new
+        |y = foo&.bar x
+        |puts y
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).size shouldBe 3
+    }
+  }
+
+  "flow through statement when regular expression literal passed after `when`" should {
+    val cpg = code("""
+        |x = 2
+        |a = 2
+        |
+        |case a
+        | when /^ch/
+        |   b = x
+        |   puts b
+        |end
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).size shouldBe 2
+    }
+  }
 }

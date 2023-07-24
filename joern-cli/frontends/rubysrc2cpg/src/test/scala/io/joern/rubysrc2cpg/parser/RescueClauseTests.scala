@@ -75,8 +75,8 @@ class RescueClauseTests extends RubyParserAbstractTest {
             |    MethodIdentifier
             |     foo
             | MethodParameterPart
-            |  Separator
-            |   ;
+            | Separator
+            |  ;
             | WsOrNl
             | BodyStatement
             |  CompoundStatement

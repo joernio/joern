@@ -28,5 +28,9 @@ object Defines {
   val ModifierRetry: String = "retry"
   var ModifierNext: String  = "next"
 
+  // For un-named identifiers and parameters
+  val TempIdentifier = "tmp"
+  val TempParameter  = "param"
+
   def getBuiltInType(typeInString: String) = s"${GlobalTypes.builtinPrefix}.$typeInString"
 }
