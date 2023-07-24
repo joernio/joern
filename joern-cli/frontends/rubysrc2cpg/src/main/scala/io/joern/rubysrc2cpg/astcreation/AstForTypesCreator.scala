@@ -151,19 +151,10 @@ trait AstForTypesCreator { this: AstCreator =>
             .map(_.classOrModuleName(baseClassName))
             .getOrElse(Defines.Any)
         case None =>
-          ctx
-            .classDefinition()
-            .expressionOrCommand()
-            .asInstanceOf[ExpressionExpressionOrCommandContext]
-            .expression()
-            .asInstanceOf[PrimaryExpressionContext]
-            .primary()
-            .asInstanceOf[VariableReferencePrimaryContext]
-            .variableReference()
-            .asInstanceOf[PseudoVariableIdentifierVariableReferenceContext]
-            .pseudoVariableIdentifier()
-            .asInstanceOf[SelfPseudoVariableIdentifierContext]
-            .getText
+          val exprAst = astForExpressionOrCommand(ctx.classDefinition().expressionOrCommand())
+          exprAst.head.root match
+            case Some(value) => value.asInstanceOf[NewIdentifier].name
+            case None        => Defines.Any
       }
   }
 
