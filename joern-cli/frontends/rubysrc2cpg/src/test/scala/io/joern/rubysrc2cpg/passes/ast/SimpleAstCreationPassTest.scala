@@ -971,5 +971,23 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       cpg.argument.size shouldBe 3
       cpg.call.size shouldBe 1
     }
+
+    "have correct structure for proc parameter with name" in {
+      val cpg                                      = code("def foo(&block) end")
+      val List(implicitParameter, actualParameter) = cpg.parameter.l
+
+      cpg.parameter.size shouldBe 2
+      implicitParameter.name shouldBe "this"
+      actualParameter.name shouldBe "block"
+    }
+
+    "have correct structure for proc parameter with no name" in {
+      val cpg                                      = code("def foo(&) end")
+      val List(implicitParameter, actualParameter) = cpg.parameter.l
+
+      cpg.parameter.size shouldBe 2
+      implicitParameter.name shouldBe "this"
+      actualParameter.name shouldBe "param_0"
+    }
   }
 }

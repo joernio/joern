@@ -361,8 +361,9 @@ keywordParameter
     ;
 
 procParameter
-    :   AMP LOCAL_VARIABLE_IDENTIFIER
+    :   AMP LOCAL_VARIABLE_IDENTIFIER?
     ;
+
 
 // --------------------------------------------------------
 // Conditional expressions

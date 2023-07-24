@@ -426,4 +426,86 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
 
   }
 
+  "method definition with proc parameters" should {
+    "have correct structure for proc parameters with name" in {
+      val code = """def foo(&block)
+          |   yield
+          |end
+          |""".stripMargin
+
+      printAst(_.primary(), code) shouldBe
+        """MethodDefinitionPrimary
+          | MethodDefinition
+          |  def
+          |  WsOrNl
+          |  SimpleMethodNamePart
+          |   DefinedMethodName
+          |    MethodName
+          |     MethodIdentifier
+          |      foo
+          |  MethodParameterPart
+          |   (
+          |   Parameters
+          |    Parameter
+          |     ProcParameter
+          |      &
+          |      block
+          |   )
+          |  WsOrNl
+          |  WsOrNl
+          |  BodyStatement
+          |   CompoundStatement
+          |    Statements
+          |     ExpressionOrCommandStatement
+          |      ExpressionExpressionOrCommand
+          |       PrimaryExpression
+          |        YieldWithOptionalArgumentPrimary
+          |         YieldWithOptionalArgument
+          |          yield
+          |    Separators
+          |     Separator
+          |  end""".stripMargin
+    }
+
+    "have correct structure for proc parameters with no name" in {
+      val code =
+        """def foo(&)
+          |   yield
+          |end
+          |""".stripMargin
+
+      printAst(_.primary(), code) shouldBe
+        """MethodDefinitionPrimary
+          | MethodDefinition
+          |  def
+          |  WsOrNl
+          |  SimpleMethodNamePart
+          |   DefinedMethodName
+          |    MethodName
+          |     MethodIdentifier
+          |      foo
+          |  MethodParameterPart
+          |   (
+          |   Parameters
+          |    Parameter
+          |     ProcParameter
+          |      &
+          |   )
+          |  WsOrNl
+          |  WsOrNl
+          |  BodyStatement
+          |   CompoundStatement
+          |    Statements
+          |     ExpressionOrCommandStatement
+          |      ExpressionExpressionOrCommand
+          |       PrimaryExpression
+          |        YieldWithOptionalArgumentPrimary
+          |         YieldWithOptionalArgument
+          |          yield
+          |    Separators
+          |     Separator
+          |  end""".stripMargin
+    }
+  }
+
 }
