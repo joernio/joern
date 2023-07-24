@@ -361,7 +361,12 @@ keywordParameter
     ;
 
 procParameter
-    :   AMP LOCAL_VARIABLE_IDENTIFIER?
+    :   AMP parameterOrDummy
+    ;
+
+parameterOrDummy
+    :   LOCAL_VARIABLE_IDENTIFIER
+    |   dummyVariable
     ;
 
 // --------------------------------------------------------
