@@ -546,7 +546,7 @@ literal
     
 symbol
     :   SYMBOL_LITERAL
-    |   COLON SINGLE_QUOTED_STRING_LITERAL
+    |   COLON stringExpression
     ;
 
 // --------------------------------------------------------
