@@ -361,13 +361,9 @@ keywordParameter
     ;
 
 procParameter
-    :   AMP parameterOrDummy
+    :   AMP LOCAL_VARIABLE_IDENTIFIER?
     ;
 
-parameterOrDummy
-    :   LOCAL_VARIABLE_IDENTIFIER
-    |   dummyVariable
-    ;
 
 // --------------------------------------------------------
 // Conditional expressions
