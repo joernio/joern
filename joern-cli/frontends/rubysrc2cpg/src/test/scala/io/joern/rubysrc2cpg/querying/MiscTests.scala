@@ -271,8 +271,7 @@ class MiscTests extends RubyCode2CpgFixture {
   }
 
   "CPG for code with method ending with =" should {
-    val cpg = code(
-      """
+    val cpg = code("""
         |class MyClass
         | def foo=(value)
         | puts value

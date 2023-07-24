@@ -1054,7 +1054,7 @@ class AstCreator(
   def astForDefinedMethodNameContext(ctx: DefinedMethodNameContext): Seq[Ast] = {
     Option(ctx.methodName()) match
       case Some(methodNameCtx) => astForMethodNameContext(methodNameCtx)
-      case None => astForAssignmentLikeMethodIdentifierContext(ctx.assignmentLikeMethodIdentifier())
+      case None                => astForAssignmentLikeMethodIdentifierContext(ctx.assignmentLikeMethodIdentifier())
   }
 
   def astForSingletonObjectContext(ctx: SingletonObjectContext): Seq[Ast] = {
