@@ -941,7 +941,13 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
         "scope :get_all_doctors, -> { (select('id, first_name').where('role = :user_role', user_role: User.roles[:doctor])) }"
       )
       cpg.parameter.size shouldBe 6
-      cpg.call.size shouldBe 7
+      cpg.call.name("proc_4").size shouldBe 1
+      cpg.call.name("scope").size shouldBe 1
+      cpg.call.name("where").size shouldBe 1
+      cpg.call.name("select").size shouldBe 1
+      cpg.call.name("roles").size shouldBe 1
+      cpg.call.name("<operator>.activeRecordAssociation").size shouldBe 1
+      cpg.call.name("<operator>.indexAccess").size shouldBe 1
     }
 
     "have correct structure when method called with safe navigation without parameters" in {
