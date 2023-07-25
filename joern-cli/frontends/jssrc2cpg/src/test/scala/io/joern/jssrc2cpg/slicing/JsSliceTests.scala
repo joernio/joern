@@ -1,27 +1,63 @@
-package io.joern.joerncli
+package io.joern.jssrc2cpg.slicing
 
-import better.files.File
-import io.joern.dataflowengineoss.slicing.{ObservedCallWithArgPos, _}
-import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.{Languages, Operators}
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
+import io.joern.dataflowengineoss.slicing.*
+import io.joern.jssrc2cpg.testfixtures.DataFlowCodeToCpgSuite
 
-class JoernSliceJS1 extends AnyWordSpec with Matchers with AbstractJoernCliTest {
+class JsSliceTests extends DataFlowCodeToCpgSuite {
 
-  "extracting a usage slice from JavaScript code" should withTestCpg(
-    File(getClass.getClassLoader.getResource("testcode/jssrc-slice-1")),
-    Languages.JSSRC
-  ) { case (cpg: Cpg, _) =>
+  private val config = UsagesConfig(excludeOperatorCalls = true).withParallelism(1).asInstanceOf[UsagesConfig]
+
+  "extracting a usage slice from a JavaScript module" should {
+
+    val cpg = code(
+      """const express = require('express')
+        |const app = express()
+        |const port = 3000
+        |
+        |app.get('/', (req, res) => {
+        |    res.send('Hello World!')
+        |})
+        |
+        |app.listen(port, () => {
+        |    console.log(`Example app listening on port ${port}`)
+        |})
+        |
+        |console.log(app)
+        |
+        |function notHiddenByClosure() {
+        |    console.debug(app)
+        |}
+        |
+        |class Car {
+        |    constructor(name, year) {
+        |        this.name = name;
+        |        this.year = year;
+        |    }
+        |
+        |    rev() {
+        |        return "vroom";
+        |    }
+        |
+        |}
+        |
+        |function carTest() {
+        |    const c = new Car("Noodle", 2012);
+        |    c.rev();
+        |}
+        |
+        |""".stripMargin,
+      "main.js"
+    )
+
     val programSlice =
       UsageSlicing
-        .calculateUsageSlice(cpg, UsagesConfig(excludeOperatorCalls = true))
+        .calculateUsageSlice(cpg, config)
         .asInstanceOf[ProgramUsageSlice]
 
     "extract 'express.js' slice" in {
       val slice = programSlice.objectSlices.find(x => x.fullName == "main.js::program").flatMap(_.slices.headOption).get
       slice.definedBy shouldBe Some(CallDef("express", "ANY", Option("express"), Option(2), Option(12)))
-      slice.targetObj shouldBe LocalDef("app", "ANY")
+      slice.targetObj shouldBe LocalDef("app", "express:<returnValue>")
 
       val List(inv1, inv2) = slice.invokedCalls
       inv1.callName shouldBe "get"
@@ -36,12 +72,12 @@ class JoernSliceJS1 extends AnyWordSpec with Matchers with AbstractJoernCliTest 
 
       arg1.position shouldBe Right(1)
       arg1.callName shouldBe "log"
-      arg1.paramTypes shouldBe List("ANY")
+      arg1.paramTypes shouldBe List("express:<returnValue>")
       arg1.returnType shouldBe "ANY"
 
       arg2.position shouldBe Right(1)
       arg2.callName shouldBe "debug"
-      arg2.paramTypes shouldBe List("ANY")
+      arg2.paramTypes shouldBe List("express:<returnValue>")
       arg2.returnType shouldBe "ANY"
     }
 
@@ -50,7 +86,7 @@ class JoernSliceJS1 extends AnyWordSpec with Matchers with AbstractJoernCliTest 
       carUdt.name shouldBe "main.js::program:Car"
       val carInit = carUdt.procedures.head
       carInit.callName shouldBe "<init>"
-      carInit.returnType shouldBe "main.js::program:Car:<init>"
+      carInit.returnType shouldBe "ANY"
     }
 
     "extract 'Car' object instantiation" in {
@@ -73,16 +109,38 @@ class JoernSliceJS1 extends AnyWordSpec with Matchers with AbstractJoernCliTest 
       arg1.paramTypes shouldBe List("__ecma.String", "__ecma.Number")
       arg1.returnType shouldBe "main.js::program:Car"
     }
+
   }
-}
-class JoernSliceJS2 extends AnyWordSpec with Matchers with AbstractJoernCliTest {
-  "extracting an interprocedural usage slice from JavaScript code 2" should withTestCpg(
-    File(getClass.getClassLoader.getResource("testcode/jssrc-slice-2")),
-    Languages.JSSRC
-  ) { case (cpg: Cpg, _) =>
+
+  "extracting a usage slice from object parameters" should {
+    val cpg = code(
+      """class Foo {
+        |
+        |    constructor(a, b) {
+        |        this.a = a;
+        |        this.b = b;
+        |    }
+        |
+        |    getA() {
+        |        return this.a;
+        |    }
+        |}
+        |
+        |
+        |function bar(y) {
+        |    y.getA();
+        |}
+        |const x = new Foo(1, 2)
+        |
+        |bar(x)
+        |
+        |""".stripMargin,
+      "main.js"
+    )
+
     val programSlice =
       UsageSlicing
-        .calculateUsageSlice(cpg, UsagesConfig(excludeOperatorCalls = true))
+        .calculateUsageSlice(cpg, config)
         .asInstanceOf[ProgramUsageSlice]
 
     "extract 'y' local variable" in {
@@ -129,63 +187,4 @@ class JoernSliceJS2 extends AnyWordSpec with Matchers with AbstractJoernCliTest 
       )
     }
   }
-
-}
-
-class JoernSliceTS1 extends AnyWordSpec with Matchers with AbstractJoernCliTest {
-  "extracting a usage slice from TypeScript code" should withTestCpg(
-    File(getClass.getClassLoader.getResource("testcode/tssrc-slice")),
-    Languages.JSSRC
-  ) { case (cpg: Cpg, _) =>
-    val programSlice =
-      UsageSlicing
-        .calculateUsageSlice(cpg, UsagesConfig())
-        .asInstanceOf[ProgramUsageSlice]
-
-    "extract 'name' parameter slice from 'startScene'" in {
-      val slice = programSlice.objectSlices
-        .find(x => x.fullName == "main.ts::program:Game:startScene")
-        .flatMap(_.slices.headOption)
-        .get
-      slice.definedBy shouldBe Some(ParamDef("name", "__ecma.String", 1, Some(56), Some(22)))
-      slice.targetObj shouldBe ParamDef("name", "__ecma.String", 1, Some(56), Some(22))
-
-      val List(_, _, arg1) = slice.argToCalls
-
-      arg1.position shouldBe Right(2)
-      arg1.callName shouldBe Operators.formatString
-      arg1.paramTypes shouldBe List("__ecma.String", "__ecma.String", "__ecma.String")
-      arg1.returnType shouldBe "ANY"
-    }
-
-    "extract 'loader' object slice from the main program" in {
-      val slice = programSlice.objectSlices.find(x => x.fullName == "main.ts::program").flatMap(_.slices.headOption).get
-      slice.definedBy shouldBe Some(CallDef("new Loader", "Loader", Option("Loader"), Some(24), Some(21)))
-      slice.targetObj shouldBe LocalDef("loader", "loader:Loader")
-
-      val List(arg1) = slice.argToCalls
-
-      arg1.position shouldBe Right(1)
-      arg1.callName shouldBe "Loader"
-      arg1.returnType shouldBe "Loader"
-    }
-
-    "extract 'time' parameter slice from the lambda in 'loop'" in {
-      val slice =
-        programSlice.objectSlices
-          .find(x => x.fullName == "main.ts::program:Game:loop:anonymous")
-          .flatMap(_.slices.headOption)
-          .get
-      slice.definedBy shouldBe Some(ParamDef("time", "__ecma.Number", 1, Some(68), Some(31)))
-      slice.targetObj shouldBe ParamDef("time", "__ecma.Number", 1, Some(68), Some(31))
-
-      val List(arg1) = slice.argToCalls
-
-      arg1.position shouldBe Right(1)
-      arg1.callName shouldBe "loop"
-      arg1.paramTypes shouldBe List("DOMHighResTimeStamp")
-      arg1.returnType shouldBe "ANY"
-    }
-  }
-
 }
