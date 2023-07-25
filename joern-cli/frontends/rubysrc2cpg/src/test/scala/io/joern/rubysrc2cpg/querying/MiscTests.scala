@@ -270,6 +270,7 @@ class MiscTests extends RubyCode2CpgFixture {
     }
   }
 
+  // TODO obj.foo="arg" should be interpreted as obj.foo("arg"). code change pending
   "CPG for code with method ending with =" should {
     val cpg = code("""
         |class MyClass

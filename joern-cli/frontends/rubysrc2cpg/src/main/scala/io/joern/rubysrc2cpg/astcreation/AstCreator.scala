@@ -209,6 +209,7 @@ class AstCreator(
         .columnNumber(ctx.LBRACK().getSymbol.getCharPositionInLine())
       Seq(callAst(callNode, primaryAsts ++ argsAsts))
     case ctx: XdotySingleLeftHandSideContext =>
+      // TODO handle obj.foo=arg being interpreted as obj.foo(arg) here.
       val xAsts = astForPrimaryContext(ctx.primary())
       val localVar = {
         if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
