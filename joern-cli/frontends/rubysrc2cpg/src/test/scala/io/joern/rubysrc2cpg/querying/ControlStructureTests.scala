@@ -24,6 +24,24 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     }
   }
 
+  "CPG for code iterating over hash discarding key using _" should {
+    val cpg = code("""
+        |x.each do |_, y|
+        |  puts y
+        |end
+        |""".stripMargin)
+
+    "have a valid each call and method" in {
+      cpg.call("each").size shouldBe 1
+      cpg.call("each").argument.where(_.isIdentifier).code.l shouldBe List("x")
+    }
+
+    "have valid identifiers" in {
+      cpg.identifier.name("x").size shouldBe 1
+      cpg.identifier.name("y").size shouldBe 1
+    }
+  }
+
   "CPG for code with doBlock iterating over a constant array and multiple params" should {
     val cpg = code("""
           |[1, 2, "three"].each do |n, m|
