@@ -102,6 +102,52 @@ class InvocationWithoutParenthesesTests extends RubyParserAbstractTest {
             |      end""".stripMargin
 
       }
+
+      "it contains a safe navigation operator with no parameters" in {
+        val code = "foo&.bar"
+        printAst(_.primary(), code) shouldEqual
+          """ChainedInvocationPrimary
+            | VariableReferencePrimary
+            |  VariableIdentifierVariableReference
+            |   VariableIdentifier
+            |    foo
+            | &.
+            | MethodName
+            |  MethodIdentifier
+            |   bar""".stripMargin
+      }
+
+      "it contains a safe navigation operator with non-zero parameters" in {
+        val code = "foo&.bar 1,2"
+        printAst(_.command(), code) shouldEqual
+          """MemberAccessCommand
+            | VariableReferencePrimary
+            |  VariableIdentifierVariableReference
+            |   VariableIdentifier
+            |    foo
+            | &.
+            | MethodName
+            |  MethodIdentifier
+            |   bar
+            | ArgumentsWithoutParentheses
+            |  Arguments
+            |   ExpressionArgument
+            |    PrimaryExpression
+            |     LiteralPrimary
+            |      NumericLiteralLiteral
+            |       NumericLiteral
+            |        UnsignedNumericLiteral
+            |         1
+            |   ,
+            |   ExpressionArgument
+            |    PrimaryExpression
+            |     LiteralPrimary
+            |      NumericLiteralLiteral
+            |       NumericLiteral
+            |        UnsignedNumericLiteral
+            |         2""".stripMargin
+      }
+
     }
   }
 

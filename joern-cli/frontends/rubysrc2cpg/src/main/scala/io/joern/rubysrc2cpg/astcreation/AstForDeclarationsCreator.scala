@@ -14,11 +14,13 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     ctx.argument().asScala.flatMap(astForArgument).toSeq
   }
 
-  protected def astForArgument(ctx: ArgumentContext): Seq[Ast] = ctx match {
-    case ctx: BlockArgumentArgumentContext     => astForExpressionContext(ctx.blockArgument.expression)
-    case ctx: SplattingArgumentArgumentContext => astForExpressionOrCommand(ctx.splattingArgument.expressionOrCommand)
-    case ctx: ExpressionArgumentContext        => astForExpressionContext(ctx.expression)
-    case ctx: AssociationArgumentContext       => astForAssociationContext(ctx.association)
-    case ctx: CommandArgumentContext           => astForCommand(ctx.command)
+  protected def astForArgument(ctx: ArgumentContext): Seq[Ast] = {
+    ctx match {
+      case ctx: BlockArgumentArgumentContext     => astForExpressionContext(ctx.blockArgument.expression)
+      case ctx: SplattingArgumentArgumentContext => astForExpressionOrCommand(ctx.splattingArgument.expressionOrCommand)
+      case ctx: ExpressionArgumentContext        => astForExpressionContext(ctx.expression)
+      case ctx: AssociationArgumentContext       => astForAssociationContext(ctx.association)
+      case ctx: CommandArgumentContext           => astForCommand(ctx.command)
+    }
   }
 }

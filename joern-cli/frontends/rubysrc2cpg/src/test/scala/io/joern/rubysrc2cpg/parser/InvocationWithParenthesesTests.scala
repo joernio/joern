@@ -235,6 +235,88 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
             |  )""".stripMargin
       }
 
+      "it contains a safe navigation operator with no parameters" in {
+        val code = "foo&.bar()"
+        printAst(_.primary(), code) shouldEqual
+          """ChainedInvocationPrimary
+            | VariableReferencePrimary
+            |  VariableIdentifierVariableReference
+            |   VariableIdentifier
+            |    foo
+            | &.
+            | MethodName
+            |  MethodIdentifier
+            |   bar
+            | BlankArgsArgumentsWithParentheses
+            |  (
+            |  )""".stripMargin
+      }
+
+      "it contains a safe navigation operator with non-zero parameters" in {
+        val code = "foo&.bar(1, 2)"
+        printAst(_.primary(), code) shouldEqual
+          """ChainedInvocationPrimary
+            | VariableReferencePrimary
+            |  VariableIdentifierVariableReference
+            |   VariableIdentifier
+            |    foo
+            | &.
+            | MethodName
+            |  MethodIdentifier
+            |   bar
+            | ArgsOnlyArgumentsWithParentheses
+            |  (
+            |  Arguments
+            |   ExpressionArgument
+            |    PrimaryExpression
+            |     LiteralPrimary
+            |      NumericLiteralLiteral
+            |       NumericLiteral
+            |        UnsignedNumericLiteral
+            |         1
+            |   ,
+            |   WsOrNl
+            |   ExpressionArgument
+            |    PrimaryExpression
+            |     LiteralPrimary
+            |      NumericLiteralLiteral
+            |       NumericLiteral
+            |        UnsignedNumericLiteral
+            |         2
+            |  )""".stripMargin
+      }
+
+      "it spans two lines, with the second line starting with `.`" in {
+        val code = "foo\n   .bar"
+        printAst(_.primary(), code) shouldEqual
+          """ChainedInvocationPrimary
+            | VariableReferencePrimary
+            |  VariableIdentifierVariableReference
+            |   VariableIdentifier
+            |    foo
+            | WsOrNl
+            | WsOrNl
+            | .
+            | MethodName
+            |  MethodIdentifier
+            |   bar""".stripMargin
+      }
+
+      "it spans two lines, with the first line ending with `.`" in {
+        val code = "foo.\n   bar"
+        printAst(_.primary(), code) shouldEqual
+          """ChainedInvocationPrimary
+            | VariableReferencePrimary
+            |  VariableIdentifierVariableReference
+            |   VariableIdentifier
+            |    foo
+            | .
+            | WsOrNl
+            | WsOrNl
+            | MethodName
+            |  MethodIdentifier
+            |   bar""".stripMargin
+      }
     }
   }
 }

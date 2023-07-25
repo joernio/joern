@@ -1,14 +1,15 @@
 package io.joern.dataflowengineoss.slicing
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
+import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.{ForkJoinPool, RecursiveTask}
 import java.util.regex.Pattern
 import scala.collection.concurrent.TrieMap
+import scala.util.Try
 
 /** A utility for slicing based off of usage references for identifiers and parameters. This is mainly tested around
   * JavaScript CPGs.
@@ -37,21 +38,24 @@ object UsageSlicing {
 
     def typeMap = TrieMap.from(cpg.typeDecl.map(f => (f.name, f.fullName)).toMap)
 
-    val fjp = ForkJoinPool.commonPool()
+    val exec = config.parallelism match
+      case Some(parallelism) if parallelism == 1 => Executors.newSingleThreadExecutor()
+      case Some(parallelism) if parallelism > 1  => Executors.newWorkStealingPool(parallelism)
+      case _                                     => Executors.newWorkStealingPool()
 
     try {
-      val slices       = usageSlices(fjp, cpg, () => getDeclarations, typeMap)
+      val slices       = usageSlices(exec, cpg, () => getDeclarations, typeMap)
       val userDefTypes = userDefinedTypes(cpg)
       ProgramUsageSlice(slices, userDefTypes)
     } finally {
-      fjp.shutdown()
+      exec.shutdown()
     }
   }
 
   import io.shiftleft.semanticcpg.codedumper.CodeDumper.dump
 
   private def usageSlices(
-    fjp: ForkJoinPool,
+    exec: ExecutorService,
     cpg: Cpg,
     getDeclIdentifiers: () => Traversal[Declaration],
     typeMap: TrieMap[String, String]
@@ -61,15 +65,16 @@ object UsageSlicing {
     getDeclIdentifiers()
       .to(LazyList)
       .filter(a => atLeastNCalls(a, config.minNumCalls) && !a.name.startsWith("_tmp_"))
-      .map(a => fjp.submit(new TrackUsageTask(cpg, a, typeMap)))
+      .map(a => exec.submit(new TrackUsageTask(cpg, a, typeMap)))
       .flatMap(_.get())
       .groupBy { case (scope, _) => scope }
       .view
+      .sortBy(_._1.fullName)
       .map { case (method, slices) =>
         MethodUsageSlice(
           code =
-            if (config.excludeMethodSource) ""
-            else dump(method.location, language, root, highlight = false, withArrow = false),
+            if (config.excludeMethodSource || !better.files.File(method.filename).exists) ""
+            else Try(dump(method.location, language, root, highlight = false, withArrow = false)).getOrElse(""),
           fullName = method.fullName,
           fileName = method.filename,
           slices = slices.iterator.map(_._2).toSet,
@@ -80,11 +85,10 @@ object UsageSlicing {
       .toList
   }
 
-  private class TrackUsageTask(cpg: Cpg, tgt: Declaration, typeMap: TrieMap[String, String])(implicit
-    config: UsagesConfig
-  ) extends RecursiveTask[Option[(Method, ObjectUsageSlice)]] {
+  private class TrackUsageTask(cpg: Cpg, tgt: Declaration, typeMap: TrieMap[String, String])
+      extends Callable[Option[(Method, ObjectUsageSlice)]] {
 
-    override def compute(): Option[(Method, ObjectUsageSlice)] = {
+    override def call(): Option[(Method, ObjectUsageSlice)] = {
       val defNode = tgt match {
         case local: Local =>
           local.referencingIdentifiers.inCall.astParent.assignment
@@ -363,7 +367,7 @@ object UsageSlicing {
       .l
   }
 
-  /** Adds extensions to extract all assignments from method bodies.
+  /** Adds extensions to extract all declaration nodes from a method body.
     */
   implicit class MethodDataSourceExt(trav: Iterator[Method]) {
     def declaration: Iterator[Declaration] = trav.ast.collectAll[Declaration]

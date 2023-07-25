@@ -73,8 +73,8 @@ class ClassDefinitionTests extends RubyParserAbstractTest {
             |             MethodIdentifier
             |              show
             |          MethodParameterPart
-            |           Separator
-            |            ;
+            |          Separator
+            |           ;
             |          WsOrNl
             |          BodyStatement
             |           CompoundStatement
