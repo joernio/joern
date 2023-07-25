@@ -2,17 +2,17 @@ package io.joern.kotlin2cpg.ast
 
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.KtFileWithMeta
-import io.joern.kotlin2cpg.types.{TypeConstants, TypeInfoProvider}
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated._
+import io.joern.kotlin2cpg.types.{TypeConstants, TypeInfoProvider, TypeRenderer}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.passes.IntervalKeyPool
 import io.joern.x2cpg.{Ast, AstCreatorBase}
 import io.joern.x2cpg.datastructures.Global
-import io.joern.x2cpg.datastructures.Stack._
+import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.AstNodeBuilder
 import io.joern.kotlin2cpg.datastructures.Scope
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
-import org.jetbrains.kotlin.psi._
+import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.lexer.{KtToken, KtTokens}
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -46,7 +46,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     implicit val typeInfoProvider: TypeInfoProvider = xTypeInfoProvider
     logger.debug(s"Started parsing file `${fileWithMeta.filename}`.")
 
-    val defaultTypes = Set(TypeConstants.javaLangObject, TypeConstants.kotlin)
+    val defaultTypes =
+      Set(TypeConstants.javaLangObject, TypeConstants.kotlin) ++ TypeRenderer.primitiveArrayMappings.keys
     defaultTypes.foreach(registerType)
     storeInDiffGraph(astForFile(fileWithMeta))
     diffGraph
