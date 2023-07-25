@@ -336,17 +336,20 @@ class AstCreator(
     case ctx: ProcDefinitionPrimaryContext   => astForProcDefinitionContext(ctx.procDefinition())
     case ctx: YieldWithOptionalArgumentPrimaryContext =>
       Seq(astForYieldCall(ctx, Option(ctx.yieldWithOptionalArgument().arguments())))
-    case ctx: IfExpressionPrimaryContext          => Seq(astForIfExpression(ctx.ifExpression()))
-    case ctx: UnlessExpressionPrimaryContext      => Seq(astForUnlessExpression(ctx.unlessExpression()))
-    case ctx: CaseExpressionPrimaryContext        => astForCaseExpressionPrimaryContext(ctx)
-    case ctx: WhileExpressionPrimaryContext       => Seq(astForWhileExpression(ctx.whileExpression()))
-    case ctx: UntilExpressionPrimaryContext       => Seq(astForUntilExpression(ctx.untilExpression()))
-    case ctx: ForExpressionPrimaryContext         => Seq(astForForExpression(ctx.forExpression()))
-    case ctx: ReturnWithParenthesesPrimaryContext => Seq(returnAst(returnNode(ctx, ctx.getText), astForArgumentsWithParenthesesContext(ctx.argumentsWithParentheses())))
-    case ctx: JumpExpressionPrimaryContext        => astForJumpExpressionPrimaryContext(ctx)
-    case ctx: BeginExpressionPrimaryContext       => astForBeginExpressionPrimaryContext(ctx)
-    case ctx: GroupingExpressionPrimaryContext    => astForCompoundStatement(ctx.compoundStatement(), false, false)
-    case ctx: VariableReferencePrimaryContext     => Seq(astForVariableReference(ctx.variableReference()))
+    case ctx: IfExpressionPrimaryContext     => Seq(astForIfExpression(ctx.ifExpression()))
+    case ctx: UnlessExpressionPrimaryContext => Seq(astForUnlessExpression(ctx.unlessExpression()))
+    case ctx: CaseExpressionPrimaryContext   => astForCaseExpressionPrimaryContext(ctx)
+    case ctx: WhileExpressionPrimaryContext  => Seq(astForWhileExpression(ctx.whileExpression()))
+    case ctx: UntilExpressionPrimaryContext  => Seq(astForUntilExpression(ctx.untilExpression()))
+    case ctx: ForExpressionPrimaryContext    => Seq(astForForExpression(ctx.forExpression()))
+    case ctx: ReturnWithParenthesesPrimaryContext =>
+      Seq(
+        returnAst(returnNode(ctx, ctx.getText), astForArgumentsWithParenthesesContext(ctx.argumentsWithParentheses()))
+      )
+    case ctx: JumpExpressionPrimaryContext     => astForJumpExpressionPrimaryContext(ctx)
+    case ctx: BeginExpressionPrimaryContext    => astForBeginExpressionPrimaryContext(ctx)
+    case ctx: GroupingExpressionPrimaryContext => astForCompoundStatement(ctx.compoundStatement(), false, false)
+    case ctx: VariableReferencePrimaryContext  => Seq(astForVariableReference(ctx.variableReference()))
     case ctx: SimpleScopedConstantReferencePrimaryContext =>
       astForSimpleScopedConstantReferencePrimaryContext(ctx)
     case ctx: ChainedScopedConstantReferencePrimaryContext =>
