@@ -751,9 +751,12 @@ class AstCreator(
     }
   }
 
+  // TODO: Clean-up and take into account other hash elements
   def astForHashConstructorPrimaryContext(ctx: HashConstructorPrimaryContext): Seq[Ast] = {
-    if (ctx.hashConstructor().associations() == null) return Seq(Ast())
-    astForAssociationsContext(ctx.hashConstructor().associations())
+    if (ctx.hashConstructor().hashConstructorElements() == null) return Seq(Ast())
+    val hashCtorElemCtxs = ctx.hashConstructor().hashConstructorElements().hashConstructorElement().asScala
+    val associationCtxs  = hashCtorElemCtxs.filter(_.association() != null).map(_.association()).toSeq
+    associationCtxs.flatMap(astForAssociationContext)
   }
 
   def astForIndexingExpressionPrimaryContext(ctx: IndexingExpressionPrimaryContext): Seq[Ast] = {
