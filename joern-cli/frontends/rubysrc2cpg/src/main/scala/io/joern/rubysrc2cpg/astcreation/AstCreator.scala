@@ -395,80 +395,55 @@ class AstCreator(
   }
 
   def astForProcDefinitionContext(ctx: ProcDefinitionContext): Seq[Ast] = {
-    val localVarList  = ListBuffer[Option[TerminalNode]]()
-    var parameterAsts = Seq(Ast())
-
+    /*
+     * Model a proc as a method
+     */
     // Note: For parameters in the Proc definiton, an implicit parameter which goes by the name of `this` is added to the cpg
-    if (ctx.parameters() != null) {
-      val mandatoryParameters = ctx
-        .parameters()
-        .parameter()
-        .asScala
-        .filter(ctx => Option(ctx.mandatoryParameter()).isDefined)
-        .map(ctx => Option(ctx.mandatoryParameter().LOCAL_VARIABLE_IDENTIFIER()))
-      val optionalParameters = ctx
-        .parameters()
-        .parameter()
-        .asScala
-        .filter(ctx => Option(ctx.optionalParameter()).isDefined)
-        .map(ctx => Option(ctx.optionalParameter().LOCAL_VARIABLE_IDENTIFIER()))
-      val arrayParameter = ctx
-        .parameters()
-        .parameter()
-        .asScala
-        .filter(ctx => Option(ctx.arrayParameter()).isDefined)
-        .map(ctx => Option(ctx.arrayParameter().LOCAL_VARIABLE_IDENTIFIER()))
-      val procParameter = ctx
-        .parameters()
-        .parameter()
-        .asScala
-        .filter(ctx => Option(ctx.procParameter()).isDefined)
-        .map(ctx => Option(ctx.procParameter().LOCAL_VARIABLE_IDENTIFIER()))
+    val astMethodParam = astForParametersContext(ctx.parameters())
+    scope.pushNewScope(())
+    val astBody = astForCompoundStatement(ctx.block.compoundStatement, true)
+    scope.popScope()
 
-      localVarList.addAll(mandatoryParameters)
-      localVarList.addAll(optionalParameters)
-      localVarList.addAll(arrayParameter)
-      localVarList.addAll(procParameter)
+    val procId = blockIdCounter
+    blockIdCounter += 1
+    val procMethodName = "proc_" + procId
 
-      parameterAsts = localVarList.map {
-        case localVar @ Some(paramContext) => {
-          val varSymbol = paramContext.getSymbol
-          createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, Seq[String](Defines.Any))
-          val param = NewMethodParameterIn()
-            .name(varSymbol.getText)
-            .code(varSymbol.getText)
-            .lineNumber(varSymbol.getLine)
-            .typeFullName(Defines.Any)
-            .columnNumber(varSymbol.getCharPositionInLine)
-          if (Option(arrayParameter).isDefined) {
-            param.isVariadic = true
-          }
-          Ast(param)
-        }
-        case localVar @ _ => {
-          val identifierName = getUnusedVariableNames(usedVariableNames, Defines.TempIdentifier)
-          val parameterName  = getUnusedVariableNames(usedVariableNames, Defines.TempParameter)
-          createIdentifierWithScope(ctx, identifierName, identifierName, Defines.Any, Seq[String](Defines.Any))
-          val param = NewMethodParameterIn()
-            .name(parameterName)
-            .code(parameterName)
-            .lineNumber(None)
-            .typeFullName(Defines.Any)
-            .columnNumber(None)
-          if (Option(arrayParameter).isDefined) {
-            param.isVariadic = true
-          }
-          Ast(param)
-        }
-      }.toSeq
+    val methodFullName = classStack.reverse :+ procMethodName mkString pathSep
+    val methodNode = NewMethod()
+      .code(ctx.getText)
+      .name(procMethodName)
+      .fullName(methodFullName)
+      .filename(filename)
 
-    }
+    val methodRetNode = NewMethodReturn()
+      .typeFullName(Defines.Any)
 
-    var blockAsts = Ast()
-    if (ctx.block() != null)
-      blockAsts = astForBlock(ctx.block())
-    else blockAsts = Ast()
-    parameterAsts ++ Seq(blockAsts)
+    val publicModifier = NewModifier().modifierType(ModifierTypes.PUBLIC)
+
+    val blockNode = NewBlock().typeFullName(Defines.Any)
+    val methAst = methodAst(
+      methodNode,
+      astMethodParam,
+      blockAst(blockNode, astBody.toList),
+      methodRetNode,
+      Seq[NewModifier](publicModifier)
+    )
+    blockMethods.addOne(methAst)
+
+    val callArgs = astMethodParam
+      .map(ast => {
+        val param = ast.nodes.head.asInstanceOf[NewMethodParameterIn]
+        val node  = createIdentifierWithScope(ctx, param.name, param.code, Defines.Any, Seq())
+        Ast(node)
+      })
+
+    val callNode = NewCall()
+      .name(procMethodName)
+      .methodFullName(methodFullName)
+      .typeFullName(Defines.Any)
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .code(ctx.getText)
+    Seq(callAst(callNode, callArgs))
   }
 
   def astForDefinedMethodNameOrSymbolContext(ctx: DefinedMethodNameOrSymbolContext): Seq[Ast] = {
@@ -1088,32 +1063,26 @@ class AstCreator(
       Seq(Ast())
   }
 
-  // TODO: Rewrite for simplicity and take into account more than parameter names.
-  def astForMethodParameterPartContext(ctx: MethodParameterPartContext): Seq[Ast] = {
-    if (ctx == null || ctx.parameters() == null) return Seq(Ast())
+  private def astForParametersContext(ctx: ParametersContext): Seq[Ast] = {
+    if (ctx == null) return Seq()
     val localVarList = ListBuffer[Option[TerminalNode]]()
-
-    // NOT differentiating between the productions here since either way we get paramaters
+    // NOT differentiating between the productions here since either way we get parameters
     val mandatoryParameters = ctx
-      .parameters()
       .parameter()
       .asScala
       .filter(ctx => Option(ctx.mandatoryParameter()).isDefined)
       .map(ctx => Option(ctx.mandatoryParameter().LOCAL_VARIABLE_IDENTIFIER()))
     val optionalParameters = ctx
-      .parameters()
       .parameter()
       .asScala
       .filter(ctx => Option(ctx.optionalParameter()).isDefined)
       .map(ctx => Option(ctx.optionalParameter().LOCAL_VARIABLE_IDENTIFIER()))
     val arrayParameter = ctx
-      .parameters()
       .parameter()
       .asScala
       .filter(ctx => Option(ctx.arrayParameter()).isDefined)
       .map(ctx => Option(ctx.arrayParameter().LOCAL_VARIABLE_IDENTIFIER()))
     val procParameter = ctx
-      .parameters()
       .parameter()
       .asScala
       .filter(ctx => Option(ctx.procParameter()).isDefined)
@@ -1155,6 +1124,12 @@ class AstCreator(
         Ast(param)
       }
     }.toSeq
+  }
+
+  // TODO: Rewrite for simplicity and take into account more than parameter names.
+  def astForMethodParameterPartContext(ctx: MethodParameterPartContext): Seq[Ast] = {
+    if (ctx == null || ctx.parameters() == null) return Seq()
+    astForParametersContext(ctx.parameters())
   }
 
   def astForRescueClauseContext(ctx: RescueClauseContext): Ast = {

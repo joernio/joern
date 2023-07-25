@@ -2362,7 +2362,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     "find flows to the sink" in {
       val source = cpg.identifier.name("x").l
       val sink   = cpg.call.name("puts").l
-      sink.reachableByFlows(source).size shouldBe 3
+      sink.reachableByFlows(source).size shouldBe 2
     }
   }
 
@@ -2379,7 +2379,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     "find flows to the sink" in {
       val source = cpg.identifier.name("x").l
       val sink   = cpg.call.name("puts").l
-      sink.reachableByFlows(source).size shouldBe 3
+      sink.reachableByFlows(source).size shouldBe 4
     }
   }
 
