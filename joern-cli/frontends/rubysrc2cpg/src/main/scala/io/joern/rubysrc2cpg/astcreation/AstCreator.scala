@@ -431,7 +431,7 @@ class AstCreator(
 
     val callArgs = astMethodParam
       .map(ast => {
-        val param = ast.nodes.filter(_.isInstanceOf[NewMethodParameterIn]).asInstanceOf[NewMethodParameterIn]
+        val param = ast.nodes.head.asInstanceOf[NewMethodParameterIn]
         val node  = createIdentifierWithScope(ctx, param.name, param.code, Defines.Any, Seq())
         Ast(node)
       })
