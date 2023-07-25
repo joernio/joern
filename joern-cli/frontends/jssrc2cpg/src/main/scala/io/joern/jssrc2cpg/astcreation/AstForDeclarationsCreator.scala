@@ -37,9 +37,13 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       case FunctionDeclaration if hasName(obj.json) => Seq(obj.json("id")("name").str)
       case FunctionExpression if hasName(obj.json)  => Seq(obj.json("id")("name").str)
       case ClassExpression if hasName(obj.json)     => Seq(obj.json("id")("name").str)
-      case VariableDeclarator if hasName(obj.json)  => Seq(obj.json("id")("name").str)
-      case VariableDeclarator                       => Seq(code(obj.json("id")))
-      case MemberExpression                         => Seq(code(obj.json("property")))
+      case VariableDeclarator if hasName(obj.json) =>
+        createBabelNodeInfo(obj.json("id")).node match {
+          case ArrayPattern => obj.json("id")("elements").arr.toSeq.map(createBabelNodeInfo).map(_.code)
+          case _            => Seq(obj.json("id")("name").str)
+        }
+      case VariableDeclarator => Seq(code(obj.json("id")))
+      case MemberExpression   => Seq(code(obj.json("property")))
       case ObjectExpression =>
         obj.json("properties").arr.toSeq.flatMap(d => codeForBabelNodeInfo(createBabelNodeInfo(d)))
       case VariableDeclaration =>

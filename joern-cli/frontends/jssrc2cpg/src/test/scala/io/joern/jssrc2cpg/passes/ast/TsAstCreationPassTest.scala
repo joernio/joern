@@ -8,6 +8,31 @@ class TsAstCreationPassTest extends AbstractPassTest {
 
   "AST generation for simple TS constructs" should {
 
+    "have correct structure for exported variable with array declaration" in TsAstFixture("""
+        |module M {
+        |  export var [a, b] = [1, 2];
+        |}
+        |""".stripMargin) { cpg =>
+      cpg.assignment.code.l shouldBe List(
+        "_tmp_1 = [1, 2]",
+        "_tmp_0 = __ecma.Array.factory()",
+        "a = _tmp_1[0]",
+        "b = _tmp_1[1]",
+        "exports.a = a",
+        "exports.b = b"
+      )
+    }
+
+    "have correct structure for binding pattern" in TsAstFixture("""
+        |const a = (): string | undefined => undefined;
+        |(({ [a() ?? "d"]: c = "" }) => {})();
+        |""".stripMargin) { cpg =>
+      cpg.method.name.sorted.l shouldBe List(":program", "anonymous", "anonymous1")
+      val params = cpg.method.nameExact("anonymous1").parameter.l
+      params.code.l shouldBe List("this", """{ [a() ?? "d"]: c = "" }""")
+      params.name.l shouldBe List("this", "param1_0")
+    }
+
     "create methods for const exports" in TsAstFixture(
       "export const getApiA = (req: Request) => { const user = req.user as UserDocument; }"
     ) { cpg =>
