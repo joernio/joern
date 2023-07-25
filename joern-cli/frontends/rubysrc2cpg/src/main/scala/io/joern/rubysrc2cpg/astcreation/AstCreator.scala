@@ -1640,7 +1640,7 @@ class AstCreator(
         case None =>
           var expr2Asts = Seq(Ast())
           val expr1Asts = astForExpressionContext(ctx.expression().get(0))
-          if (ctx.expression().get(1) != null)
+          if (ctx.expression().size() > 1 && ctx.expression().get(1) != null)
             expr2Asts = astForExpressionContext(ctx.expression().get(1))
           expr1Asts ++ expr2Asts
       }

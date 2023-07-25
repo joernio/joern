@@ -604,8 +604,8 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
     }
   }
 
-  "method definition for association parameters" should {
-    "have correct structure for association parameters" in {
+  "method definition for mandatory parameters" should {
+    "have correct structure for mandatory parameters" in {
       val code = "def foo(bar:) end"
       printAst(_.primary(), code) shouldBe
         """MethodDefinitionPrimary
