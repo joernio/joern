@@ -1042,10 +1042,11 @@ class AstCreator(
       case Some(value) => value
       case None        => ctx.CONSTANT_IDENTIFIER()
 
+    val methodName = terminalNode.getText + "="
     val callNode = NewCall()
-      .name(terminalNode.getText)
+      .name(methodName)
       .code(ctx.getText)
-      .methodFullName(terminalNode.getText)
+      .methodFullName(methodName)
       .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .typeFullName(Defines.Any)

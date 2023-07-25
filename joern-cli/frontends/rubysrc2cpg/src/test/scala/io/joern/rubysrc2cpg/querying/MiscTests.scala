@@ -288,7 +288,7 @@ class MiscTests extends RubyCode2CpgFixture {
     }
 
     "recognise all method nodes" in {
-      cpg.method.name("foo").size shouldBe 1
+      cpg.method.name("foo=").size shouldBe 1
     }
   }
 }
