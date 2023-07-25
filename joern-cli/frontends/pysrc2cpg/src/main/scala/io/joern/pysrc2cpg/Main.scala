@@ -23,7 +23,11 @@ private object Frontend {
       opt[Unit]("no-dummyTypes")
         .hidden()
         .action((_, c) => c.withDisableDummyTypes(true))
-        .text("disable generation of dummy types during type recovery")
+        .text("disable generation of dummy types during type propagation"),
+      opt[Int]("type-prop-iterations")
+        .hidden()
+        .action((x, c) => c.withTypePropagationIterations(x))
+        .text("maximum iterations of type propagation")
     )
   }
 }

@@ -1,19 +1,24 @@
 package io.joern.jssrc2cpg
 
-import io.joern.jssrc2cpg.Frontend._
+import io.joern.jssrc2cpg.Frontend.*
 import io.joern.x2cpg.utils.Environment
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
 import scopt.OParser
 
 import java.nio.file.Paths
 
-final case class Config(tsTypes: Boolean = true, disableDummyTypes: Boolean = false) extends X2CpgConfig[Config] {
+final case class Config(tsTypes: Boolean = true, disableDummyTypes: Boolean = false, typePropagationIterations: Int = 2)
+    extends X2CpgConfig[Config] {
   def withTsTypes(value: Boolean): Config = {
     copy(tsTypes = value).withInheritedFields(this)
   }
 
   def withDisableDummyTypes(value: Boolean): Config = {
     copy(disableDummyTypes = value).withInheritedFields(this)
+  }
+
+  def withTypePropagationIterations(value: Int): Config = {
+    copy(typePropagationIterations = value).withInheritedFields(this)
   }
 }
 
@@ -22,7 +27,7 @@ object Frontend {
 
   val cmdLineParser: OParser[Unit, Config] = {
     val builder = OParser.builder[Config]
-    import builder._
+    import builder.*
     OParser.sequence(
       programName("jssrc2cpg"),
       opt[Unit]("no-tsTypes")
@@ -32,7 +37,11 @@ object Frontend {
       opt[Unit]("no-dummyTypes")
         .hidden()
         .action((_, c) => c.withDisableDummyTypes(true))
-        .text("disable generation of dummy types during type recovery")
+        .text("disable generation of dummy types during type propagation"),
+      opt[Int]("type-prop-iterations")
+        .hidden()
+        .action((x, c) => c.withTypePropagationIterations(x))
+        .text("maximum iterations of type propagation")
     )
   }
 

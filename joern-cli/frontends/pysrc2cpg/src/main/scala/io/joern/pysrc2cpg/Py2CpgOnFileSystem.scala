@@ -5,13 +5,14 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 
-import java.nio.file._
+import java.nio.file.*
 import scala.util.Try
 
 case class Py2CpgOnFileSystemConfig(
   venvDir: Path = Paths.get(".venv"),
   ignoreVenvDir: Boolean = true,
   disableDummyTypes: Boolean = false,
+  typePropagationIterations: Int = 2,
   requirementsTxt: String = "requirements.txt"
 ) extends X2CpgConfig[Py2CpgOnFileSystemConfig] {
   def withVenvDir(venvDir: Path): Py2CpgOnFileSystemConfig = {
@@ -24,6 +25,10 @@ case class Py2CpgOnFileSystemConfig(
 
   def withDisableDummyTypes(value: Boolean): Py2CpgOnFileSystemConfig = {
     copy(disableDummyTypes = value).withInheritedFields(this)
+  }
+
+  def withTypePropagationIterations(value: Int): Py2CpgOnFileSystemConfig = {
+    copy(typePropagationIterations = value).withInheritedFields(this)
   }
 
   def withRequirementsTxt(text: String): Py2CpgOnFileSystemConfig = {
