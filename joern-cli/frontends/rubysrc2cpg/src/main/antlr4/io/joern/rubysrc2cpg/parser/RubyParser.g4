@@ -280,7 +280,7 @@ associations
     ;
 
 association
-    :   (expression | keyword) WS* (EQGT|COLON) wsOrNl* expression
+    :   (expression | keyword) WS* (EQGT|COLON) (wsOrNl* expression)?
     ;
 
 // --------------------------------------------------------

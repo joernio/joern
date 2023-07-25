@@ -423,11 +423,18 @@ class AstCreator(
         .asScala
         .filter(ctx => Option(ctx.procParameter()).isDefined)
         .map(ctx => Option(ctx.procParameter().LOCAL_VARIABLE_IDENTIFIER()))
+      val keywordParameter = ctx
+        .parameters()
+        .parameter()
+        .asScala
+        .filter(ctx => Option(ctx.keywordParameter()).isDefined)
+        .map(ctx => Option(ctx.keywordParameter().LOCAL_VARIABLE_IDENTIFIER()))
 
       localVarList.addAll(mandatoryParameters)
       localVarList.addAll(optionalParameters)
       localVarList.addAll(arrayParameter)
       localVarList.addAll(procParameter)
+      localVarList.addAll(keywordParameter)
 
       parameterAsts = localVarList.map {
         case localVar @ Some(paramContext) => {
@@ -1120,10 +1127,18 @@ class AstCreator(
       .filter(ctx => Option(ctx.procParameter()).isDefined)
       .map(ctx => Option(ctx.procParameter().LOCAL_VARIABLE_IDENTIFIER()))
 
+    val keywordParameter = ctx
+      .parameters()
+      .parameter()
+      .asScala
+      .filter(ctx => Option(ctx.keywordParameter()).isDefined)
+      .map(ctx => Option(ctx.keywordParameter().LOCAL_VARIABLE_IDENTIFIER()))
+
     localVarList.addAll(mandatoryParameters)
     localVarList.addAll(optionalParameters)
     localVarList.addAll(arrayParameter)
     localVarList.addAll(procParameter)
+    localVarList.addAll(keywordParameter)
 
     localVarList.map {
       case localVar @ Some(paramContext) => {
@@ -1623,8 +1638,12 @@ class AstCreator(
           val expr2Asts = astForExpressionContext(ctx.expression().get(0))
           Seq(expr1Ast) ++ expr2Asts
         case None =>
+          var expr2Asts = Seq(Ast())
+          println(ctx.expression().get(0))
+          println(ctx.expression().get(1))
           val expr1Asts = astForExpressionContext(ctx.expression().get(0))
-          val expr2Asts = astForExpressionContext(ctx.expression().get(1))
+          if (ctx.expression().get(1) != null)
+            expr2Asts = astForExpressionContext(ctx.expression().get(1))
           expr1Asts ++ expr2Asts
       }
 

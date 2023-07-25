@@ -889,6 +889,8 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for keyword usage inside association" in {
       val cpg = code("foo if: x.nil?")
 
+      println(cpg.call.name.l)
+      println(cpg.argument.code.l)
       val List(callNode) = cpg.call.nameExact("nil?").l
       callNode.code shouldBe "x.nil?"
       callNode.lineNumber shouldBe Some(1)
@@ -1027,5 +1029,29 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     literalArg.typeFullName shouldBe Defines.Regexp
     literalArg.code shouldBe "/^ch/"
     literalArg.lineNumber shouldBe Some(3)
+  }
+
+  "have correct structure when no RHS for an association as a parameter is provided" in {
+    val cpg = code("""
+        |def foo(bar:)
+        |end
+        |""".stripMargin)
+
+    cpg.parameter.size shouldBe 2
+    val List(implicitParameter, actualParameter) = cpg.parameter.l
+    actualParameter.name shouldBe "bar"
+    implicitParameter.name shouldBe "this"
+  }
+
+  "have correct structure when RHS for an association as a parameter is provided" in {
+    val cpg = code("""
+        |def foo(bar: world)
+        |end
+        |""".stripMargin)
+
+    cpg.parameter.size shouldBe 2
+    val List(implicitParameter, actualParameter) = cpg.parameter.l
+    actualParameter.name shouldBe "bar"
+    implicitParameter.name shouldBe "this"
   }
 }
