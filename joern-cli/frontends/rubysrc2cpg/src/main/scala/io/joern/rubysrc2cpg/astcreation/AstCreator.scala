@@ -509,8 +509,14 @@ class AstCreator(
 
   def astForArrayConstructorPrimaryContext(ctx: ArrayConstructorPrimaryContext): Seq[Ast] = {
     if (ctx.getText == "[]") {
-      /* we might have empty array, so create empty literal with [] */
-      Seq(Ast(literalNode(ctx, ctx.getText, Defines.NilClass)))
+      /* we might have an empty array, so create an empty as there would be no indexing args */
+      val arrayInitCallNode = NewCall()
+        .name(Operators.arrayInitializer)
+        .methodFullName(Operators.arrayInitializer)
+        .signature(Operators.arrayInitializer)
+        .typeFullName(Defines.Any)
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      Seq(callAst(arrayInitCallNode))
     } else {
       astForIndexingArgumentsContext(ctx.arrayConstructor().indexingArguments())
     }

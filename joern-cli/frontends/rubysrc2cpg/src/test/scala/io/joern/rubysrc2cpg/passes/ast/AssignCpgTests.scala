@@ -179,7 +179,8 @@ class AssignCpgTests extends RubyCode2CpgFixture {
 
     "have an empty assignment" in {
       val List(assignment) = cpg.call.name(Operators.assignment).l
-      assignment.argument.where(_.argumentIndex(2)).code.l shouldBe List("[]")
+      assignment.argument.where(_.argumentIndex(2)).isCall.name.l shouldBe List(Operators.arrayInitializer)
+      assignment.argument.where(_.argumentIndex(2)).isCall.argument.l shouldBe List()
     }
   }
 }
