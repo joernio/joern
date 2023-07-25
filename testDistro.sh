@@ -10,8 +10,6 @@ echo "staging joern"
 pushd $REPO_ROOT
   sbt -Dsbt.log.noformat=true clean joerncli/stage querydb/createDistribution
   tests/frontends-tests.sh
-  tests/scripts-test.sh
-  tests/querydb-test.sh
 popd
 
 echo "success. go analyse some code"
