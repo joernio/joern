@@ -398,6 +398,7 @@ class AstCreator(
     /*
      * Model a proc as a method
      */
+    // Note: For parameters in the Proc definiton, an implicit parameter which goes by the name of `this` is added to the cpg
     val astMethodParam = astForParametersContext(ctx.parameters())
     scope.pushNewScope(())
     val astBody = astForCompoundStatement(ctx.block.compoundStatement, true)
