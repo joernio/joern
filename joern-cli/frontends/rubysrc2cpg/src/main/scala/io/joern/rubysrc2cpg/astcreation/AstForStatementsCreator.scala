@@ -170,7 +170,7 @@ trait AstForStatementsCreator {
               }
             }
             val stAsts = astForStatement(stCtx)
-            if (canConsiderAsLeaf && processingLastMethodStatement) {
+            if (stAsts.size > 0 && canConsiderAsLeaf && processingLastMethodStatement) {
               blockChildHash.get(myBlockId) match {
                 case Some(value) =>
                   // this is a non-leaf block
