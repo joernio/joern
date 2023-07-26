@@ -9,6 +9,29 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
   "AST generation for simple fragments" should {
 
+    "have correct structure for with statement with block" in AstFixture("""
+        |with(foo()) {
+        |  bar();
+        |}
+        |""".stripMargin) { cpg =>
+      val List(method)      = cpg.method.nameExact(":program").l
+      val List(methodBlock) = method.astChildren.isBlock.l
+      val List(withBlock)   = methodBlock.astChildren.isBlock.l
+      withBlock.astChildren.isCall.code.l shouldBe List("foo()", "bar()")
+    }
+
+    "have correct structure for with statement without block" in AstFixture("""
+        |with(foo())
+        |  bar();
+        |baz();
+        |""".stripMargin) { cpg =>
+      val List(method)      = cpg.method.nameExact(":program").l
+      val List(methodBlock) = method.astChildren.isBlock.l
+      methodBlock.astChildren.isCall.code.l shouldBe List("baz()")
+      val List(withBlock) = methodBlock.astChildren.isBlock.l
+      withBlock.astChildren.isCall.code.l shouldBe List("foo()", "bar()")
+    }
+
     "have correct structure for long numeric literal" in AstFixture("console.log(1e20)") { cpg =>
       val List(lit) = cpg.literal.l
       lit.code shouldBe "1e20"

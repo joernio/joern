@@ -9,9 +9,9 @@ readonly REPO_ROOT=$SCRIPT_ABS_DIR
 echo "staging joern"
 pushd $REPO_ROOT
   sbt -Dsbt.log.noformat=true clean joerncli/stage querydb/createDistribution
-  tests/querydb-test.sh
   tests/frontends-tests.sh
   tests/scripts-test.sh
+  tests/querydb-test.sh
 popd
 
 echo "success. go analyse some code"
