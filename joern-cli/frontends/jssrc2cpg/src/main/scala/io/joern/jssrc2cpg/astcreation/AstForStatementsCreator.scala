@@ -47,6 +47,23 @@ trait AstForStatementsCreator { this: AstCreator =>
     blockAsts
   }
 
+  protected def astForWithStatement(withStatement: BabelNodeInfo): Ast = {
+    val blockNode = createBlockNode(withStatement)
+    scope.pushNewBlockScope(blockNode)
+    localAstParentStack.push(blockNode)
+    val objectAst    = astForNodeWithFunctionReferenceAndCall(withStatement.json("object"))
+    val bodyNodeInfo = createBabelNodeInfo(withStatement.json("body"))
+    val bodyAsts = bodyNodeInfo.node match {
+      case BlockStatement => createBlockStatementAsts(bodyNodeInfo.json("body"))
+      case _              => List(astForNodeWithFunctionReferenceAndCall(bodyNodeInfo.json))
+    }
+    val blockStatementAsts = objectAst +: bodyAsts
+    setArgumentIndices(blockStatementAsts)
+    localAstParentStack.pop()
+    scope.popScope()
+    blockAst(blockNode, blockStatementAsts)
+  }
+
   protected def astForBlockStatement(block: BabelNodeInfo): Ast = {
     val blockNode = createBlockNode(block)
     scope.pushNewBlockScope(blockNode)
