@@ -1,8 +1,7 @@
 package io.joern.rubysrc2cpg.passes.ast
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
-import io.shiftleft.codepropertygraph.generated.NodeTypes
+import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
@@ -119,6 +118,19 @@ class MethodOneTests extends RubyCode2CpgFixture {
         ret2.code shouldBe "return 2"
         ret2.lineNumber shouldBe Option(6)
       }
+    }
+  }
+
+  "Function with empty array in block" should {
+    val cpg = code("""
+        |def foo
+        |  []
+        |end
+        |""".stripMargin)
+
+    "contain empty array" in {
+      cpg.method.name("foo").size shouldBe 1
+      cpg.method.name("foo").block.containsCallTo(Operators.arrayInitializer).size shouldBe 1
     }
   }
 }
