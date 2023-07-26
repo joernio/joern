@@ -2,11 +2,35 @@ package io.joern.jssrc2cpg.passes.ast
 
 import io.joern.jssrc2cpg.passes.AbstractPassTest
 import io.joern.jssrc2cpg.passes.Defines
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier}
+import io.shiftleft.semanticcpg.language.*
 
 class TsAstCreationPassTest extends AbstractPassTest {
 
   "AST generation for simple TS constructs" should {
+
+    "have correct structure for for-of loops" in TsAstFixture("""
+        |for(foo().x of arr) {
+        |  bar();
+        |}
+        |""".stripMargin) { cpg =>
+      val List(method)      = cpg.method.nameExact(":program").l
+      val List(methodBlock) = method.astChildren.isBlock.l
+      val List(loopBlock)   = methodBlock.astChildren.isBlock.l
+      checkForInOrOf(loopBlock)
+    }
+
+    "have correct structure for for-in loops" in TsAstFixture("""
+        |for(foo().x in arr) {
+        |  bar();
+        |}
+        |""".stripMargin) { cpg =>
+      val List(method)      = cpg.method.nameExact(":program").l
+      val List(methodBlock) = method.astChildren.isBlock.l
+      val List(loopBlock)   = methodBlock.astChildren.isBlock.l
+      checkForInOrOf(loopBlock)
+    }
 
     "have correct structure for exported variable with array declaration" in TsAstFixture("""
         |module M {
@@ -95,6 +119,79 @@ class TsAstCreationPassTest extends AbstractPassTest {
       x.code shouldBe "x"
       y.code shouldBe "y"
     }
+  }
+
+  private def checkForInOrOf(node: Block): Unit = {
+    val List(localIterator) = node.astChildren.isLocal.nameExact("_iterator_0").l
+    localIterator.code shouldBe "_iterator_0"
+
+    val List(localResult) = node.astChildren.isLocal.nameExact("_result_0").l
+    localResult.code shouldBe "_result_0"
+
+    val List(iteratorAssignment) =
+      node.astChildren.isCall.codeExact("_iterator_0 = <operator>.iterator(arr)").l
+    iteratorAssignment.name shouldBe Operators.assignment
+
+    val List(iteratorAssignmentLhs) = iteratorAssignment.astChildren.isIdentifier.l
+    iteratorAssignmentLhs.name shouldBe "_iterator_0"
+    iteratorAssignmentLhs.order shouldBe 1
+    iteratorAssignmentLhs.argumentIndex shouldBe 1
+
+    val List(iteratorAssignmentRhs) = iteratorAssignment.astChildren.isCall.l
+    iteratorAssignmentRhs.code shouldBe "<operator>.iterator(arr)"
+    iteratorAssignmentRhs.order shouldBe 2
+    iteratorAssignmentRhs.argumentIndex shouldBe 2
+    iteratorAssignmentRhs.name shouldBe "<operator>.iterator"
+    iteratorAssignmentRhs.methodFullName shouldBe "<operator>.iterator"
+    iteratorAssignmentRhs.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+    val objectKeysCallArg = iteratorAssignmentRhs.argument(1).asInstanceOf[Identifier]
+    objectKeysCallArg.name shouldBe "arr"
+    objectKeysCallArg.order shouldBe 1
+
+    val List(varResult) = node.astChildren.isIdentifier.nameExact("_result_0").l
+    varResult.code shouldBe "_result_0"
+
+    val List(loop) = node.astChildren.isControlStructure.l
+    loop.controlStructureType shouldBe ControlStructureTypes.WHILE
+
+    val List(loopTestCall) = loop.astChildren.isCall.codeExact("!(_result_0 = _iterator_0.next()).done").l
+    loopTestCall.name shouldBe Operators.not
+    loopTestCall.order shouldBe 1
+
+    val List(doneMaCall) = loopTestCall.astChildren.isCall.codeExact("(_result_0 = _iterator_0.next()).done").l
+    doneMaCall.name shouldBe Operators.fieldAccess
+
+    val List(doneMaBase) = doneMaCall.astChildren.isCall.codeExact("(_result_0 = _iterator_0.next())").l
+    doneMaBase.name shouldBe Operators.assignment
+    doneMaBase.order shouldBe 1
+    doneMaBase.argumentIndex shouldBe 1
+
+    val List(doneMaBaseLhs) = doneMaBase.astChildren.isIdentifier.order(1).l
+    doneMaBaseLhs.name shouldBe "_result_0"
+    doneMaBaseLhs.argumentIndex shouldBe 1
+
+    val List(doneMaBaseRhs) = doneMaBase.astChildren.isCall.order(2).l
+    doneMaBaseRhs.code shouldBe "_iterator_0.next()"
+    doneMaBaseRhs.argumentIndex shouldBe 2
+
+    val List(doneMember) = doneMaCall.astChildren.isFieldIdentifier.canonicalNameExact("done").l
+    doneMember.order shouldBe 2
+    doneMember.argumentIndex shouldBe 2
+
+    val List(whileLoopBlock) = loop.astChildren.isBlock.l
+    whileLoopBlock.order shouldBe 2
+
+    val List(loopVarAssignmentCall) = whileLoopBlock.astChildren.isCall.codeExact("foo().x = _result_0.value").l
+    loopVarAssignmentCall.name shouldBe Operators.assignment
+    loopVarAssignmentCall.order shouldBe 1
+
+    val fooCall = loopVarAssignmentCall.argument(1).asInstanceOf[Call]
+    fooCall.code shouldBe "foo().x"
+    fooCall.name shouldBe Operators.fieldAccess
+
+    val List(barCall) = whileLoopBlock.astChildren.isBlock.astChildren.isCall.codeExact("bar()").l
+    barCall.name shouldBe "bar"
   }
 
 }
