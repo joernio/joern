@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.passes.ast
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes, DispatchTypes, Operators, nodes}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, NodeTypes, Operators, nodes}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
@@ -171,6 +171,16 @@ class AssignCpgTests extends RubyCode2CpgFixture {
       tmpAssignNode.code shouldBe "tmp0 = list"
       tmpAssignNode.methodFullName shouldBe Operators.assignment
       tmpAssignNode.lineNumber shouldBe Some(1)
+    }
+  }
+
+  "empty array assignment" should {
+    val cpg = code("""x.y = []""".stripMargin)
+
+    "have an empty assignment" in {
+      val List(assignment) = cpg.call.name(Operators.assignment).l
+      assignment.argument.where(_.argumentIndex(2)).isCall.name.l shouldBe List(Operators.arrayInitializer)
+      assignment.argument.where(_.argumentIndex(2)).isCall.argument.l shouldBe List()
     }
   }
 }
