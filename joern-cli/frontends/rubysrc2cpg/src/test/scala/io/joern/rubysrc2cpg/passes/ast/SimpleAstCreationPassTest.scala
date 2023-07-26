@@ -1041,10 +1041,9 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    cpg.parameter.size shouldBe 2
-    val List(implicitParameter, actualParameter) = cpg.parameter.l
-    actualParameter.name shouldBe "bar"
-    implicitParameter.name shouldBe "this"
+    cpg.parameter.size shouldBe 1
+    val List(parameterNode) = cpg.parameter.l
+    parameterNode.name shouldBe "this"
   }
 
   "have correct structure when RHS for a mandatory parameter is provided" in {
@@ -1053,10 +1052,9 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    cpg.parameter.size shouldBe 2
-    val List(implicitParameter, actualParameter) = cpg.parameter.l
-    actualParameter.name shouldBe "bar"
-    implicitParameter.name shouldBe "this"
+    cpg.parameter.size shouldBe 1
+    val List(parameterNode) = cpg.parameter.l
+    parameterNode.name shouldBe "this"
   }
 
   "have correct structure when a association is passed as an argument with parantheses" in {
@@ -1064,8 +1062,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
 
     cpg.argument.size shouldBe 2
     cpg.argument.l(0).code shouldBe "bar:"
-    cpg.argument.l(1).code shouldBe "bar"
-
     cpg.call.size shouldBe 2
     val List(callNode, operatorNode) = cpg.call.l
     callNode.name shouldBe "foo"
@@ -1077,7 +1073,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
 
     cpg.argument.size shouldBe 2
     cpg.argument.l.head.code shouldBe "bar:"
-    cpg.argument.l(1).code shouldBe "bar"
 
     cpg.call.size shouldBe 2
     val List(callNode, operatorNode) = cpg.call.l
