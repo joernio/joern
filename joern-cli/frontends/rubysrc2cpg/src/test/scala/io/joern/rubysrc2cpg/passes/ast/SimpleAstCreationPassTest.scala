@@ -889,8 +889,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for keyword usage inside association" in {
       val cpg = code("foo if: x.nil?")
 
-      println(cpg.call.name.l)
-      println(cpg.argument.code.l)
       val List(callNode) = cpg.call.nameExact("nil?").l
       callNode.code shouldBe "x.nil?"
       callNode.lineNumber shouldBe Some(1)
