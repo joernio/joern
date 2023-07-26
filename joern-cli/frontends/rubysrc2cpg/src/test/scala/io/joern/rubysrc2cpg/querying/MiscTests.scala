@@ -292,4 +292,20 @@ class MiscTests extends RubyCode2CpgFixture {
       cpg.method.name("foo=").size shouldBe 1
     }
   }
+
+  // expectation is that this should not cause a crash
+  "CPG for code with method having a singleton class" should {
+    val cpg = code("""
+        |module SomeModule
+        |    def self.someMethod(arg)
+        |      class << arg
+        |      end
+        |    end
+        |end
+        |""".stripMargin)
+
+    "recognise all namespace nodes" in {
+      cpg.namespace.name("SomeModule").size shouldBe 1
+    }
+  }
 }
