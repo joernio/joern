@@ -1034,4 +1034,49 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     literalArg.code shouldBe "/^ch/"
     literalArg.lineNumber shouldBe Some(3)
   }
+
+  "have correct structure when no RHS for a mandatory parameter is provided" in {
+    val cpg = code("""
+        |def foo(bar:)
+        |end
+        |""".stripMargin)
+
+    cpg.parameter.size shouldBe 1
+    val List(parameterNode) = cpg.parameter.l
+    parameterNode.name shouldBe "this"
+  }
+
+  "have correct structure when RHS for a mandatory parameter is provided" in {
+    val cpg = code("""
+        |def foo(bar: world)
+        |end
+        |""".stripMargin)
+
+    cpg.parameter.size shouldBe 1
+    val List(parameterNode) = cpg.parameter.l
+    parameterNode.name shouldBe "this"
+  }
+
+  "have correct structure when a association is passed as an argument with parantheses" in {
+    val cpg = code("""foo(bar:)""".stripMargin)
+
+    cpg.argument.size shouldBe 2
+    cpg.argument.l(0).code shouldBe "bar:"
+    cpg.call.size shouldBe 2
+    val List(callNode, operatorNode) = cpg.call.l
+    callNode.name shouldBe "foo"
+    operatorNode.name shouldBe "<operator>.activeRecordAssociation"
+  }
+
+  "have correct structure when a association is passed as an argument without parantheses" in {
+    val cpg = code("""foo bar:""".stripMargin)
+
+    cpg.argument.size shouldBe 2
+    cpg.argument.l.head.code shouldBe "bar:"
+
+    cpg.call.size shouldBe 2
+    val List(callNode, operatorNode) = cpg.call.l
+    callNode.name shouldBe "foo"
+    operatorNode.name shouldBe "<operator>.activeRecordAssociation"
+  }
 }

@@ -655,4 +655,95 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
     }
   }
 
+  "method definition for mandatory parameters" should {
+    "have correct structure for mandatory parameters" in {
+      val code = "def foo(bar:) end"
+      printAst(_.primary(), code) shouldBe
+        """MethodDefinitionPrimary
+          | MethodDefinition
+          |  def
+          |  WsOrNl
+          |  SimpleMethodNamePart
+          |   DefinedMethodName
+          |    MethodName
+          |     MethodIdentifier
+          |      foo
+          |  MethodParameterPart
+          |   (
+          |   Parameters
+          |    Parameter
+          |     KeywordParameter
+          |      bar
+          |      :
+          |   )
+          |  WsOrNl
+          |  BodyStatement
+          |   CompoundStatement
+          |  end""".stripMargin
+    }
+
+    "have correct structure for a hash created using a method" in {
+      val code =
+        """
+          |def data
+          |    {
+          |     first_link:,
+          |     action_link_group:,
+          |    }
+          |end""".stripMargin
+
+      printAst(_.primary(), code) shouldBe
+        """MethodDefinitionPrimary
+          | MethodDefinition
+          |  def
+          |  WsOrNl
+          |  SimpleMethodNamePart
+          |   DefinedMethodName
+          |    MethodName
+          |     MethodIdentifier
+          |      data
+          |  MethodParameterPart
+          |  Separator
+          |  WsOrNl
+          |  BodyStatement
+          |   CompoundStatement
+          |    Statements
+          |     ExpressionOrCommandStatement
+          |      ExpressionExpressionOrCommand
+          |       PrimaryExpression
+          |        HashConstructorPrimary
+          |         HashConstructor
+          |          {
+          |          WsOrNl
+          |          WsOrNl
+          |          HashConstructorElements
+          |           HashConstructorElement
+          |            Association
+          |             PrimaryExpression
+          |              VariableReferencePrimary
+          |               VariableIdentifierVariableReference
+          |                VariableIdentifier
+          |                 first_link
+          |             :
+          |           ,
+          |           WsOrNl
+          |           WsOrNl
+          |           HashConstructorElement
+          |            Association
+          |             PrimaryExpression
+          |              VariableReferencePrimary
+          |               VariableIdentifierVariableReference
+          |                VariableIdentifier
+          |                 action_link_group
+          |             :
+          |          ,
+          |          WsOrNl
+          |          WsOrNl
+          |          }
+          |    Separators
+          |     Separator
+          |  end""".stripMargin
+    }
+  }
+
 }
