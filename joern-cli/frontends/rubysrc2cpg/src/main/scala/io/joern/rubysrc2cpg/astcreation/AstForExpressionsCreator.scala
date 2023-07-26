@@ -109,7 +109,9 @@ trait AstForExpressionsCreator { this: AstCreator =>
   }
 
   protected def astForSymbol(ctx: SymbolContext): Seq[Ast] = {
-    if (ctx.stringExpression() != null && ctx.stringExpression().getText.startsWith("\"")) {
+    if (
+      ctx.stringExpression() != null && ctx.stringExpression().children.get(0).isInstanceOf[StringInterpolationContext]
+    ) {
       val node = NewCall()
         .name(RubyOperators.formattedString)
         .methodFullName(RubyOperators.formattedString)

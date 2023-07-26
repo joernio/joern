@@ -1040,6 +1040,9 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       cpg.literal.size shouldBe 2
       cpg.literal.code("w x ").size shouldBe 1
       cpg.literal.code(" z").size shouldBe 1
+
+      cpg.identifier.name("y").size shouldBe 1
+      cpg.identifier.name("v").size shouldBe 1
     }
 
     "have correct structure when have non-interpolated double-quoted string literal" in {
@@ -1047,9 +1050,21 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
           |x = :"y z"
           |""".stripMargin)
 
-      cpg.call.size shouldBe 3
-      cpg.call.name("<operator>.formatString").head.code shouldBe """:"y z""""
-      cpg.literal.code("\"y z\"").size shouldBe 1
+      cpg.call.size shouldBe 1
+      val List(literal) = cpg.literal.l
+      literal.code shouldBe ":\"y z\""
+      literal.typeFullName shouldBe Defines.Symbol
+    }
+
+    "have correct structure when have symbol " in {
+      val cpg = code(s"""
+          |x = :"${10}"
+          |""".stripMargin)
+
+      cpg.call.size shouldBe 1
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Symbol
+      literal.code shouldBe ":\"10\""
     }
   }
 }
