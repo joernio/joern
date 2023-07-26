@@ -186,7 +186,7 @@ trait AstForTypesCreator { this: AstCreator =>
         val memberNodeInfo = createBabelNodeInfo(nodeInfo.json("expression")("left")("property"))
         val name           = memberNodeInfo.code
         memberNode(nodeInfo, name, nodeInfo.code, typeFullName)
-      case TSPropertySignature | ObjectProperty =>
+      case TSPropertySignature | ObjectProperty if hasKey(nodeInfo.json("key"), "name") =>
         val memberNodeInfo = createBabelNodeInfo(nodeInfo.json("key"))
         val name           = memberNodeInfo.json("name").str
         memberNode(nodeInfo, name, nodeInfo.code, typeFullName)

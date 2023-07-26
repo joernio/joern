@@ -125,19 +125,18 @@ class UnlessConditionTests extends RubyParserAbstractTest {
             | ExpressionOrCommandStatement
             |  ExpressionExpressionOrCommand
             |   PrimaryExpression
-            |    JumpExpressionPrimary
-            |     JumpExpression
-            |      return
-            |      ArgsOnlyArgumentsWithParentheses
-            |       (
-            |       Arguments
-            |        ExpressionArgument
-            |         PrimaryExpression
-            |          VariableReferencePrimary
-            |           VariableIdentifierVariableReference
-            |            VariableIdentifier
-            |             value
-            |       )
+            |    ReturnWithParenthesesPrimary
+            |     return
+            |     ArgsOnlyArgumentsWithParentheses
+            |      (
+            |      Arguments
+            |       ExpressionArgument
+            |        PrimaryExpression
+            |         VariableReferencePrimary
+            |          VariableIdentifierVariableReference
+            |           VariableIdentifier
+            |            value
+            |      )
             | unless
             | WsOrNl
             | ExpressionOrCommandStatement

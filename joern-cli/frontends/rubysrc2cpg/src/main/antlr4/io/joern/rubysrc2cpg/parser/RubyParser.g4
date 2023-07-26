@@ -86,6 +86,7 @@ primary
     |   whileExpression                                                                                                     # whileExpressionPrimary
     |   untilExpression                                                                                                     # untilExpressionPrimary
     |   forExpression                                                                                                       # forExpressionPrimary
+    |   RETURN argumentsWithParentheses                                                                                     # returnWithParenthesesPrimary
     |   jumpExpression                                                                                                      # jumpExpressionPrimary
     |   beginExpression                                                                                                     # beginExpressionPrimary
     |   LPAREN wsOrNl* compoundStatement wsOrNl* RPAREN                                                                     # groupingExpressionPrimary
@@ -154,7 +155,7 @@ expressionOrCommands
 invocationWithoutParentheses
     :   chainedCommandWithDoBlock                                                                                               # chainedCommandDoBlockInvocationWithoutParentheses
     |   command                                                                                                                 # singleCommandOnlyInvocationWithoutParentheses
-    |   RETURN WS arguments                                                                                                     # returnArgsInvocationWithoutParentheses
+    |   RETURN (WS arguments)?                                                                                                  # returnArgsInvocationWithoutParentheses
     |   BREAK WS arguments                                                                                                      # breakArgsInvocationWithoutParentheses
     |   NEXT WS arguments                                                                                                       # nextArgsInvocationWithoutParentheses
     ;
@@ -504,8 +505,7 @@ yieldWithOptionalArgument
 // --------------------------------------------------------
 
 jumpExpression
-    :   RETURN argumentsWithParentheses?
-    |   BREAK
+    :   BREAK
     |   NEXT
     |   REDO
     |   RETRY

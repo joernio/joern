@@ -1259,6 +1259,33 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     }
   }
 
+  "Data flow for begin/rescue with sink in function within do block" ignore {
+    val cpg = code("""
+        |def foo(arg)
+        |  puts "in begin"
+        |  arg do |y|
+        |  return y
+        |rescue SomeException
+        |  puts "Caught SomeException"
+        |rescue => exvar
+        |  puts "Caught exception in variable #{exvar}"
+        |rescue
+        |  puts "Catch-all block"
+        |end
+        |
+        |x = 1
+        |z = foo x
+        |puts z
+        |
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").lineNumber(8).l
+      sink.reachableByFlows(source).size shouldBe 1
+    }
+  }
+
   "Data flow through array assignments" should {
     val cpg = code("""
         |x = 10
@@ -2335,7 +2362,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     "find flows to the sink" in {
       val source = cpg.identifier.name("x").l
       val sink   = cpg.call.name("puts").l
-      sink.reachableByFlows(source).size shouldBe 3
+      sink.reachableByFlows(source).size shouldBe 2
     }
   }
 
@@ -2352,7 +2379,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     "find flows to the sink" in {
       val source = cpg.identifier.name("x").l
       val sink   = cpg.call.name("puts").l
-      sink.reachableByFlows(source).size shouldBe 3
+      sink.reachableByFlows(source).size shouldBe 4
     }
   }
 
