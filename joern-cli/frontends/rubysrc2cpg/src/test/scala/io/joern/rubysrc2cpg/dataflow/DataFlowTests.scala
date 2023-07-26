@@ -2460,4 +2460,18 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
       sink.reachableByFlows(source).size shouldBe 2
     }
   }
+
+  "flow through interpolated double-quoted string literal " should {
+    val cpg = code("""
+        |x = "foo"
+        |y = :"bar #{x}"
+        |puts y
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).size shouldBe 2
+    }
+  }
 }
