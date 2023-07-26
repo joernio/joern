@@ -429,11 +429,8 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             | MethodDefinition
             |  def
             |  WsOrNl
-            |  SimpleMethodNamePart
-            |   DefinedMethodName
-            |    MethodName
-            |     MethodIdentifier
-            |      foo
+            |  MethodIdentifier
+            |   foo
             |  MethodParameterPart
             |  =
             |  WsOrNl
@@ -451,11 +448,8 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             | MethodDefinition
             |  def
             |  WsOrNl
-            |  SimpleMethodNamePart
-            |   DefinedMethodName
-            |    MethodName
-            |     MethodIdentifier
-            |      foo
+            |  MethodIdentifier
+            |   foo
             |  MethodParameterPart
             |  =
             |  WsOrNl
@@ -474,11 +468,8 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             | MethodDefinition
             |  def
             |  WsOrNl
-            |  SimpleMethodNamePart
-            |   DefinedMethodName
-            |    MethodName
-            |     MethodIdentifier
-            |      foo
+            |  MethodIdentifier
+            |   foo
             |  MethodParameterPart
             |  =
             |  WsOrNl
@@ -498,11 +489,8 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             | MethodDefinition
             |  def
             |  WsOrNl
-            |  SimpleMethodNamePart
-            |   DefinedMethodName
-            |    MethodName
-            |     MethodIdentifier
-            |      id
+            |  MethodIdentifier
+            |   id
             |  MethodParameterPart
             |   (
             |   Parameters
@@ -517,6 +505,69 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |    VariableIdentifierVariableReference
             |     VariableIdentifier
             |      x""".stripMargin
+      }
+    }
+
+    "not be recognized" when {
+
+      // This test exists to make sure that `foo2=` is not parsed as an endless method, as
+      // endless methods cannot end in `=`.
+      "its name ends in `=`" in {
+        val code =
+          """def foo1
+            |end
+            |def foo2=(arg)
+            |end
+            |""".stripMargin
+
+        printAst(_.compoundStatement(), code) shouldEqual
+          """CompoundStatement
+            | Statements
+            |  ExpressionOrCommandStatement
+            |   ExpressionExpressionOrCommand
+            |    PrimaryExpression
+            |     MethodDefinitionPrimary
+            |      MethodDefinition
+            |       def
+            |       WsOrNl
+            |       SimpleMethodNamePart
+            |        DefinedMethodName
+            |         MethodName
+            |          MethodIdentifier
+            |           foo1
+            |       MethodParameterPart
+            |       Separator
+            |       BodyStatement
+            |        CompoundStatement
+            |       end
+            |  Separators
+            |   Separator
+            |  ExpressionOrCommandStatement
+            |   ExpressionExpressionOrCommand
+            |    PrimaryExpression
+            |     MethodDefinitionPrimary
+            |      MethodDefinition
+            |       def
+            |       WsOrNl
+            |       SimpleMethodNamePart
+            |        DefinedMethodName
+            |         AssignmentLikeMethodIdentifier
+            |          foo2
+            |          =
+            |       MethodParameterPart
+            |        (
+            |        Parameters
+            |         Parameter
+            |          MandatoryParameter
+            |           arg
+            |        )
+            |       Separator
+            |       BodyStatement
+            |        CompoundStatement
+            |       end
+            | Separators
+            |  Separator""".stripMargin
+
       }
     }
   }
