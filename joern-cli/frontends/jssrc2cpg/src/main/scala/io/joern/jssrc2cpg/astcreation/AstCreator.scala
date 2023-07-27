@@ -218,6 +218,7 @@ class AstCreator(
       case JSXSpreadAttribute        => astForJsxSpreadAttribute(nodeInfo)
       case JSXFragment               => astForJsxFragment(nodeInfo)
       case JSXAttribute              => astForJsxAttribute(nodeInfo)
+      case WithStatement             => astForWithStatement(nodeInfo)
       case EmptyStatement            => Ast()
       case DebuggerStatement         => Ast()
       case _                         => notHandledYet(nodeInfo)

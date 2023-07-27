@@ -9,6 +9,19 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
 
   "AST generation for TS classes" should {
 
+    "have correct structure for constructor parameter assignment" in TsAstFixture("""
+        |class D {
+        |  readonly noWiden = 1
+        |  constructor(readonly widen = 2) {
+        |    this.noWiden = 5;
+        |    this.widen = 6;
+        |  }
+        |}
+        |new D(7);
+        |""".stripMargin) { cpg =>
+      cpg.typeDecl.nameExact("D").method.isConstructor.parameter.name.l shouldBe List("this", "widen")
+    }
+
     "have correct structure for simple enum" in TsAstFixture("""
         |enum Direction {
         |  Up = 1,

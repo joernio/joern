@@ -151,4 +151,31 @@ class InvocationWithoutParenthesesTests extends RubyParserAbstractTest {
     }
   }
 
+  "invocation with association arguments" should {
+    "have correct structure for association arguments" in {
+      val code = """foo bar:"""
+      printAst(_.program(), code) shouldBe
+        """Program
+          | CompoundStatement
+          |  Statements
+          |   ExpressionOrCommandStatement
+          |    InvocationExpressionOrCommand
+          |     SingleCommandOnlyInvocationWithoutParentheses
+          |      SimpleMethodCommand
+          |       MethodIdentifier
+          |        foo
+          |       ArgumentsWithoutParentheses
+          |        Arguments
+          |         AssociationArgument
+          |          Association
+          |           PrimaryExpression
+          |            VariableReferencePrimary
+          |             VariableIdentifierVariableReference
+          |              VariableIdentifier
+          |               bar
+          |           :
+          | <EOF>""".stripMargin
+    }
+  }
+
 }

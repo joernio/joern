@@ -13,7 +13,7 @@ import scala.util.{Try, Using}
 
 object JoernSlice {
 
-  import io.joern.dataflowengineoss.slicing._
+  import io.joern.dataflowengineoss.slicing.*
 
   private val configParser = new scopt.OptionParser[BaseConfig]("joern-slice") {
     head("Extract various slices from the CPG.")
@@ -45,6 +45,10 @@ object JoernSlice {
     opt[String]("method-annotation-filter")
       .text(s"filters in slices that go through methods with specific annotations on the methods. Uses regex.")
       .action((x, c) => c.withMethodAnnotationFilter(Option(x)))
+    opt[Int]('p', "parallelism")
+      .text(s"the number of threads the executor pool should be specified with.")
+      .action((x, c) => c.withParallelism(x))
+      .validate(x => if (x <= 0) failure("Parallelism should be greater than 0") else success)
     cmd("data-flow")
       .action((_, _) => DataFlowConfig())
       .children(
@@ -65,7 +69,7 @@ object JoernSlice {
             }
           ),
         opt[Unit]("end-at-external-method")
-          .text(s"all slices must end at an external method - defaults to false.")
+          .text(s"all slices must end at a call to an external method - defaults to false.")
           .action((_, c) =>
             c match {
               case c: DataFlowConfig => c.copy(mustEndAtExternalMethod = true)
@@ -137,7 +141,7 @@ object JoernSlice {
   /** Makes sure necessary passes are overlaid
     */
   private def checkAndApplyOverlays(cpg: Cpg): Unit = {
-    import io.shiftleft.semanticcpg.language._
+    import io.shiftleft.semanticcpg.language.*
 
     if (!cpg.metaData.overlays.contains(Base.overlayName)) {
       println("Default overlays are not detected, applying defaults now")

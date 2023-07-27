@@ -68,7 +68,7 @@ expression
     |   expression WS* op=AMP2 wsOrNl* expression                                                                   # operatorAndExpression
     |   expression WS* op=BAR2 wsOrNl* expression                                                                   # operatorOrExpression
     |   expression WS* op=(DOT2 | DOT3) wsOrNl* expression?                                                         # rangeExpression
-    |   expression WS* QMARK wsOrNl* expression WS* COLON wsOrNl* expression                                        # conditionalOperatorExpression
+    |   expression WS* QMARK wsOrNl* expression wsOrNl* COLON wsOrNl* expression                                    # conditionalOperatorExpression
     |   <assoc=right> singleLeftHandSide WS* op=(EQ | ASSIGNMENT_OPERATOR) wsOrNl* multipleRightHandSide            # singleAssignmentExpression
     |   <assoc=right> multipleLeftHandSide WS* EQ wsOrNl* multipleRightHandSide                                     # multipleAssignmentExpression
     |   IS_DEFINED wsOrNl* expression                                                                               # isDefinedExpression
@@ -86,6 +86,7 @@ primary
     |   whileExpression                                                                                                     # whileExpressionPrimary
     |   untilExpression                                                                                                     # untilExpressionPrimary
     |   forExpression                                                                                                       # forExpressionPrimary
+    |   RETURN argumentsWithParentheses                                                                                     # returnWithParenthesesPrimary
     |   jumpExpression                                                                                                      # jumpExpressionPrimary
     |   beginExpression                                                                                                     # beginExpressionPrimary
     |   LPAREN wsOrNl* compoundStatement wsOrNl* RPAREN                                                                     # groupingExpressionPrimary
@@ -154,7 +155,7 @@ expressionOrCommands
 invocationWithoutParentheses
     :   chainedCommandWithDoBlock                                                                                               # chainedCommandDoBlockInvocationWithoutParentheses
     |   command                                                                                                                 # singleCommandOnlyInvocationWithoutParentheses
-    |   RETURN WS arguments                                                                                                     # returnArgsInvocationWithoutParentheses
+    |   RETURN (WS arguments)?                                                                                                  # returnArgsInvocationWithoutParentheses
     |   BREAK WS arguments                                                                                                      # breakArgsInvocationWithoutParentheses
     |   NEXT WS arguments                                                                                                       # nextArgsInvocationWithoutParentheses
     ;
@@ -263,7 +264,16 @@ arrayConstructor
 // --------------------------------------------------------
 
 hashConstructor
-    :   LCURLY wsOrNl* (associations WS* COMMA?)? wsOrNl* RCURLY
+    :   LCURLY wsOrNl* (hashConstructorElements WS* COMMA?)? wsOrNl* RCURLY
+    ;
+
+hashConstructorElements
+    :   hashConstructorElement (WS* COMMA wsOrNl* hashConstructorElement)*
+    ;
+
+hashConstructorElement
+    :   association
+    |   STAR2 WS* expression
     ;
 
 associations
@@ -271,7 +281,7 @@ associations
     ;
 
 association
-    :   (expression | keyword) WS* (EQGT|COLON) wsOrNl* expression
+    :   (expression | keyword) WS* (EQGT|COLON) (wsOrNl* expression)?
     ;
 
 // --------------------------------------------------------
@@ -280,7 +290,7 @@ association
 
 methodDefinition
     :   DEF wsOrNl* methodNamePart WS* methodParameterPart separator? wsOrNl* bodyStatement wsOrNl* END
-    |   DEF wsOrNl* methodNamePart WS* methodParameterPart WS* EQ wsOrNl* expression
+    |   DEF wsOrNl* methodIdentifier WS* methodParameterPart WS* EQ wsOrNl* expression
     ;
     
 
@@ -495,8 +505,7 @@ yieldWithOptionalArgument
 // --------------------------------------------------------
 
 jumpExpression
-    :   RETURN argumentsWithParentheses?
-    |   BREAK
+    :   BREAK
     |   NEXT
     |   REDO
     |   RETRY

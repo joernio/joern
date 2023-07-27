@@ -915,7 +915,13 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
         "scope :get_all_doctors, -> { (select('id, first_name').where('role = :user_role', user_role: User.roles[:doctor])) }"
       )
       cpg.parameter.size shouldBe 6
-      cpg.call.size shouldBe 7
+      cpg.call.name("proc_4").size shouldBe 1
+      cpg.call.name("scope").size shouldBe 1
+      cpg.call.name("where").size shouldBe 1
+      cpg.call.name("select").size shouldBe 1
+      cpg.call.name("roles").size shouldBe 1
+      cpg.call.name("<operator>.activeRecordAssociation").size shouldBe 1
+      cpg.call.name("<operator>.indexAccess").size shouldBe 1
     }
 
     "have correct structure when method called with safe navigation without parameters" in {
@@ -943,6 +949,30 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       cpg.call.size shouldBe 1
     }
 
+    "have correct structure when method call present in next line, with the second line starting with `.`" in {
+      val cpg = code("foo\n   .bar(1)")
+
+      val List(callNode) = cpg.call.l
+      cpg.call.size shouldBe 1
+      callNode.code shouldBe ("foo\n   .bar(1)")
+      callNode.name shouldBe "bar"
+      callNode.lineNumber shouldBe Some(2)
+      val List(actualArg) = callNode.argument.argumentIndex(1).l
+      actualArg.code shouldBe "1"
+    }
+
+    "have correct structure when method call present in next line, with the first line ending with `.`" in {
+      val cpg = code("foo.\n   bar(1)")
+
+      val List(callNode) = cpg.call.l
+      cpg.call.size shouldBe 1
+      callNode.code shouldBe ("foo.\n   bar(1)")
+      callNode.name shouldBe "bar"
+      callNode.lineNumber shouldBe Some(1)
+      val List(actualArg) = callNode.argument.argumentIndex(1).l
+      actualArg.code shouldBe "1"
+    }
+
     "have correct structure for proc parameter with name" in {
       val cpg                   = code("def foo(&block) end")
       val List(actualParameter) = cpg.method("foo").parameter.l
@@ -968,5 +998,47 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     literalArg.typeFullName shouldBe Defines.Regexp
     literalArg.code shouldBe "/^ch/"
     literalArg.lineNumber shouldBe Some(3)
+  }
+
+  "have correct structure when no RHS for a mandatory parameter is provided" ignore {
+    val cpg = code("""
+        |def foo(bar:)
+        |end
+        |""".stripMargin)
+
+    cpg.method("foo").parameter.size shouldBe 1
+  }
+
+  "have correct structure when RHS for a mandatory parameter is provided" ignore {
+    val cpg = code("""
+        |def foo(bar: world)
+        |end
+        |""".stripMargin)
+
+    cpg.method("foo").parameter.size shouldBe 1
+  }
+
+  // Change below test cases to focus on the argument of call `foo`
+  "have correct structure when a association is passed as an argument with parantheses" in {
+    val cpg = code("""foo(bar:)""".stripMargin)
+
+    cpg.argument.size shouldBe 2
+    cpg.argument.l(0).code shouldBe "bar:"
+    cpg.call.size shouldBe 2
+    val List(callNode, operatorNode) = cpg.call.l
+    callNode.name shouldBe "foo"
+    operatorNode.name shouldBe "<operator>.activeRecordAssociation"
+  }
+
+  "have correct structure when a association is passed as an argument without parantheses" in {
+    val cpg = code("""foo bar:""".stripMargin)
+
+    cpg.argument.size shouldBe 2
+    cpg.argument.l.head.code shouldBe "bar:"
+
+    cpg.call.size shouldBe 2
+    val List(callNode, operatorNode) = cpg.call.l
+    callNode.name shouldBe "foo"
+    operatorNode.name shouldBe "<operator>.activeRecordAssociation"
   }
 }
