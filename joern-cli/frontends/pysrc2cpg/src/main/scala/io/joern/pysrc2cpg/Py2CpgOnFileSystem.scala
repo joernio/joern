@@ -1,5 +1,6 @@
 package io.joern.pysrc2cpg
 
+import io.joern.x2cpg.passes.frontend.TypeRecoveryParserConfig
 import io.joern.x2cpg.{SourceFiles, X2Cpg, X2CpgConfig, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.utils.IOUtils
@@ -11,24 +12,15 @@ import scala.util.Try
 case class Py2CpgOnFileSystemConfig(
   venvDir: Path = Paths.get(".venv"),
   ignoreVenvDir: Boolean = true,
-  disableDummyTypes: Boolean = false,
-  typePropagationIterations: Int = 2,
   requirementsTxt: String = "requirements.txt"
-) extends X2CpgConfig[Py2CpgOnFileSystemConfig] {
+) extends X2CpgConfig[Py2CpgOnFileSystemConfig]
+    with TypeRecoveryParserConfig[Py2CpgOnFileSystemConfig] {
   def withVenvDir(venvDir: Path): Py2CpgOnFileSystemConfig = {
     copy(venvDir = venvDir).withInheritedFields(this)
   }
 
   def withIgnoreVenvDir(value: Boolean): Py2CpgOnFileSystemConfig = {
     copy(ignoreVenvDir = value).withInheritedFields(this)
-  }
-
-  def withDisableDummyTypes(value: Boolean): Py2CpgOnFileSystemConfig = {
-    copy(disableDummyTypes = value).withInheritedFields(this)
-  }
-
-  def withTypePropagationIterations(value: Int): Py2CpgOnFileSystemConfig = {
-    copy(typePropagationIterations = value).withInheritedFields(this)
   }
 
   def withRequirementsTxt(text: String): Py2CpgOnFileSystemConfig = {

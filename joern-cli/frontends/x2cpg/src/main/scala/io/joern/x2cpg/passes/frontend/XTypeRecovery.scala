@@ -1,6 +1,6 @@
 package io.joern.x2cpg.passes.frontend
 
-import io.joern.x2cpg.Defines
+import io.joern.x2cpg.{Defines, X2CpgConfig}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, Operators, PropertyNames}
@@ -12,6 +12,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import overflowdb.traversal.Traversal
+import scopt.OParser
 
 import java.util.concurrent.RecursiveTask
 import java.util.concurrent.atomic.AtomicBoolean
@@ -66,23 +67,41 @@ abstract class XTypeRecoveryPass[CompilationUnitType <: AstNode](
   config: XTypeRecoveryConfig = XTypeRecoveryConfig()
 ) extends CpgPass(cpg) {
 
-  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
-    val stopEarly = new AtomicBoolean(false)
-    val state     = XTypeRecoveryState(config, stopEarly = stopEarly)
-    try {
-      Iterator.from(0).takeWhile(_ < config.iterations).foreach { i =>
-        val newState = state.copy(currentIteration = i)
-        generateRecoveryPass(newState).createAndApply()
+  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit =
+    if (config.iterations > 0) {
+      val stopEarly = new AtomicBoolean(false)
+      val state     = XTypeRecoveryState(config, stopEarly = stopEarly)
+      try {
+        Iterator.from(0).takeWhile(_ < config.iterations).foreach { i =>
+          val newState = state.copy(currentIteration = i)
+          generateRecoveryPass(newState).createAndApply()
+        }
+        // If dummy values are enabled and we are stopping early, we need one more round to propagate these dummy values
+        if (stopEarly.get() && config.enabledDummyTypes)
+          generateRecoveryPass(state.copy(currentIteration = config.iterations - 1)).createAndApply()
+      } finally {
+        state.clear()
       }
-      // If dummy values are enabled and we are stopping early, we need one more round to propagate these dummy values
-      if (stopEarly.get() && config.enabledDummyTypes)
-        generateRecoveryPass(state.copy(currentIteration = config.iterations - 1)).createAndApply()
-    } finally {
-      state.clear()
     }
-  }
 
   protected def generateRecoveryPass(state: XTypeRecoveryState): XTypeRecovery[CompilationUnitType]
+
+}
+
+trait TypeRecoveryParserConfig[R <: X2CpgConfig[R]] { this: R =>
+
+  var disableDummyTypes: Boolean     = false
+  var typePropagationIterations: Int = 2
+
+  def withDisableDummyTypes(value: Boolean): R = {
+    this.disableDummyTypes = value
+    this
+  }
+
+  def withTypePropagationIterations(value: Int): R = {
+    typePropagationIterations = value
+    this
+  }
 
 }
 
@@ -142,6 +161,8 @@ abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, state: XT
 
 object XTypeRecovery {
 
+  private val logger = LoggerFactory.getLogger(getClass)
+
   val DummyReturnType                       = "<returnValue>"
   val DummyMemberLoad                       = "<member>"
   val DummyIndexAccess                      = "<indexAccess>"
@@ -153,6 +174,33 @@ object XTypeRecovery {
   /** Scans the type for placeholder/dummy types.
     */
   def isDummyType(typ: String): Boolean = DummyTokens.exists(typ.contains)
+
+  /** Parser options for languages implementing this pass.
+    */
+  def parserOptions[R <: X2CpgConfig[R] with TypeRecoveryParserConfig[R]]: OParser[_, R] = {
+    val builder = OParser.builder[R]
+    import builder.*
+    OParser.sequence(
+      opt[Unit]("no-dummyTypes")
+        .hidden()
+        .action((_, c) => c.withDisableDummyTypes(true))
+        .text("disable generation of dummy types during type propagation"),
+      opt[Int]("type-prop-iterations")
+        .hidden()
+        .action((x, c) => c.withTypePropagationIterations(x))
+        .text("maximum iterations of type propagation")
+        .validate { x =>
+          if (x <= 0) {
+            logger.info("Disabling type propagation as the given iteration count is <= 0")
+          } else if (x == 1) {
+            logger.info("Intra-procedural type propagation enabled")
+          } else if (x > 5) {
+            logger.warn(s"Large iteration count of $x will take a while to terminate")
+          }
+          success
+        }
+    )
+  }
 
 }
 
