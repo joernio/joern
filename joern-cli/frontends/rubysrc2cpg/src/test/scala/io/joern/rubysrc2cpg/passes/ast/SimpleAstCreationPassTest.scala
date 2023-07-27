@@ -1019,20 +1019,59 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       implicitParameter.name shouldBe "this"
       actualParameter.name shouldBe "param_0"
     }
-  }
 
-  "have correct structure when regular expression literal passed after `when`" in {
-    val cpg = code("""
-        |case foo
-        | when /^ch/
-        |   bar
-        |end
-        |""".stripMargin)
+    "have correct structure when regular expression literal passed after `when`" in {
+      val cpg = code("""
+          |case foo
+          | when /^ch/
+          |   bar
+          |end
+          |""".stripMargin)
 
-    val List(literalArg) = cpg.literal.l
-    literalArg.typeFullName shouldBe Defines.Regexp
-    literalArg.code shouldBe "/^ch/"
-    literalArg.lineNumber shouldBe Some(3)
+      val List(literalArg) = cpg.literal.l
+      literalArg.typeFullName shouldBe Defines.Regexp
+      literalArg.code shouldBe "/^ch/"
+      literalArg.lineNumber shouldBe Some(3)
+    }
+
+    "have correct structure when have interpolated double-quoted string literal" in {
+      val cpg = code("""
+          |v = :"w x #{y} z"
+          |""".stripMargin)
+
+      cpg.call.size shouldBe 4
+      cpg.call.name("<operator>.formatString").head.code shouldBe """:"w x #{y} z""""
+      cpg.call.name("<operator>.formatValue").head.code shouldBe "#{y}"
+
+      cpg.literal.size shouldBe 2
+      cpg.literal.code("w x ").size shouldBe 1
+      cpg.literal.code(" z").size shouldBe 1
+
+      cpg.identifier.name("y").size shouldBe 1
+      cpg.identifier.name("v").size shouldBe 1
+    }
+
+    "have correct structure when have non-interpolated double-quoted string literal" in {
+      val cpg = code("""
+          |x = :"y z"
+          |""".stripMargin)
+
+      cpg.call.size shouldBe 1
+      val List(literal) = cpg.literal.l
+      literal.code shouldBe ":\"y z\""
+      literal.typeFullName shouldBe Defines.Symbol
+    }
+
+    "have correct structure when have symbol " in {
+      val cpg = code(s"""
+          |x = :"${10}"
+          |""".stripMargin)
+
+      cpg.call.size shouldBe 1
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe Defines.Symbol
+      literal.code shouldBe ":\"10\""
+    }
   }
 
   "have correct structure when no RHS for a mandatory parameter is provided" in {
