@@ -568,7 +568,7 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |  Separator""".stripMargin
 
       }
-      
+
       // This test makes sure that the `end` after `def foo2=` is not parsed as part of its definition,
       // which could happen if `foo2=` was parsed as two separate tokens (LOCAL_VARIABLE_IDENTIFIER, EQ)
       // instead of just ASSIGNMENT_LIKE_METHOD_IDENTIFIER.

@@ -1035,7 +1035,11 @@ class AstCreator(
     }
   }
   def astForAssignmentLikeMethodIdentifierContext(ctx: AssignmentLikeMethodIdentifierContext): Seq[Ast] = {
-    Seq(callAst(callNode(ctx, ctx.getText, ctx.getText, ctx.getText, DispatchTypes.STATIC_DISPATCH, Some(""), Some(Defines.Any))))
+    Seq(
+      callAst(
+        callNode(ctx, ctx.getText, ctx.getText, ctx.getText, DispatchTypes.STATIC_DISPATCH, Some(""), Some(Defines.Any))
+      )
+    )
   }
 
   def astForDefinedMethodNameContext(ctx: DefinedMethodNameContext): Seq[Ast] = {

@@ -122,7 +122,7 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     val eg = Seq(":^", ":==", ":[]", ":[]=", ":+", ":%", ":**", ":>>", ":+@")
     all(eg.map(tokenize)) shouldBe Seq(SYMBOL_LITERAL, EOF)
   }
-  
+
   "Assignment-like-named symbols" should "be recognized as such" in {
     val eg = Seq(":X=", ":xyz=")
     all(eg.map(tokenize)) shouldBe Seq(SYMBOL_LITERAL, EOF)
@@ -667,10 +667,10 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     val eg = Seq("$0", "$10", "$2", "$3")
     all(eg.map(tokenize)) shouldBe Seq(GLOBAL_VARIABLE_IDENTIFIER, EOF)
   }
-  
+
   "Assignment-like method identifiers" should "be recognized as such" in {
     val eg = Seq("def x=", "def X=")
     all(eg.map(tokenize)) shouldBe Seq(DEF, WS, ASSIGNMENT_LIKE_METHOD_IDENTIFIER, EOF)
   }
-  
+
 }
