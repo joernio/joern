@@ -2501,4 +2501,21 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
       sink.reachableByFlows(source).size shouldBe 2
     }
   }
+
+  "flow through statement with ternary operator with multiple line" in {
+    val cpg = code("""
+        |x = 2
+        |y = 3
+        |z = 4
+        |
+        |w = x == 2 ?
+        | y
+        | : z
+        |puts y
+        |""".stripMargin)
+
+    val source = cpg.identifier.name("y").l
+    val sink   = cpg.call.name("puts").l
+    sink.reachableByFlows(source).size shouldBe 2
+  }
 }

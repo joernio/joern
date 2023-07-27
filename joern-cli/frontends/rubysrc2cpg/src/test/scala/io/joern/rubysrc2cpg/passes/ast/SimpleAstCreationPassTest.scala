@@ -1118,4 +1118,33 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     callNode.name shouldBe "foo"
     operatorNode.name shouldBe "<operator>.activeRecordAssociation"
   }
+
+  "have correct structure with ternary operator with multiple line" in {
+    val cpg = code("""x = a ?
+        | b
+        |: c""".stripMargin)
+
+    val List(controlNode) = cpg.controlStructure.l
+    controlNode.controlStructureType shouldBe ControlStructureTypes.IF
+    controlNode.code shouldBe "a ?\n b\n: c"
+    controlNode.lineNumber shouldBe Some(1)
+    controlNode.columnNumber shouldBe Some(4)
+
+    val List(a) = controlNode.condition.isIdentifier.l
+    a.code shouldBe "a"
+    a.name shouldBe "a"
+    a.lineNumber shouldBe Some(1)
+    a.columnNumber shouldBe Some(4)
+
+    val List(_, b, c) = controlNode.astChildren.isIdentifier.l
+    b.code shouldBe "b"
+    b.name shouldBe "b"
+    b.lineNumber shouldBe Some(2)
+    b.columnNumber shouldBe Some(1)
+
+    c.code shouldBe "c"
+    c.name shouldBe "c"
+    c.lineNumber shouldBe Some(3)
+    c.columnNumber shouldBe Some(2)
+  }
 }
