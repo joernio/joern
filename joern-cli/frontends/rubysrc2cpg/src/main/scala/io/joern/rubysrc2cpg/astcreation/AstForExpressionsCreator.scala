@@ -2,8 +2,9 @@ package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.parser.RubyParser.*
 import io.joern.rubysrc2cpg.passes.Defines
+import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.nodes.{NewFieldIdentifier, NewJumpTarget, NewLiteral, NewNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewFieldIdentifier, NewJumpTarget, NewLiteral, NewNode}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, ModifierTypes, Operators}
 import org.antlr.v4.runtime.ParserRuleContext
 import io.joern.x2cpg.utils._
@@ -101,10 +102,29 @@ trait AstForExpressionsCreator { this: AstCreator =>
     callAst(call, argsAst.toList)
   }
 
-  protected def astForLiteralPrimaryExpression(ctx: LiteralPrimaryContext): Ast = ctx.literal() match {
-    case ctx: NumericLiteralLiteralContext    => astForNumericLiteral(ctx.numericLiteral())
-    case ctx: SymbolLiteralContext            => astForSymbolLiteral(ctx.symbol())
-    case ctx: RegularExpressionLiteralContext => astForRegularExpressionLiteral(ctx)
+  protected def astForLiteralPrimaryExpression(ctx: LiteralPrimaryContext): Seq[Ast] = ctx.literal() match {
+    case ctx: NumericLiteralLiteralContext    => Seq(astForNumericLiteral(ctx.numericLiteral()))
+    case ctx: SymbolLiteralContext            => astForSymbol(ctx.symbol())
+    case ctx: RegularExpressionLiteralContext => Seq(astForRegularExpressionLiteral(ctx))
+  }
+
+  protected def astForSymbol(ctx: SymbolContext): Seq[Ast] = {
+    if (
+      ctx.stringExpression() != null && ctx.stringExpression().children.get(0).isInstanceOf[StringInterpolationContext]
+    ) {
+      val node = NewCall()
+        .name(RubyOperators.formattedString)
+        .methodFullName(RubyOperators.formattedString)
+        .code(ctx.getText)
+        .lineNumber(line(ctx))
+        .columnNumber(column(ctx))
+        .typeFullName(Defines.Any)
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+
+      astForStringExpression(ctx.stringExpression()) ++ Seq(Ast(node))
+    } else {
+      Seq(astForSymbolLiteral(ctx))
+    }
   }
 
   // TODO: Return Ast instead of Seq[Ast]

@@ -173,6 +173,8 @@ class AstCreator(
     val undef                   = "<operator>.undef"
     val superKeyword            = "<operator>.super"
     val stringConcatenation     = "<operator>.stringConcatenation"
+    val formattedString         = "<operator>.formatString"
+    val formattedValue          = "<operator>.formatValue"
   }
   private def getOperatorName(token: Token): String = token.getType match {
     case ASSIGNMENT_OPERATOR => Operators.assignment
@@ -308,7 +310,19 @@ class AstCreator(
       .interpolatedStringSequence()
       .asScala
       .flatMap(inter => {
-        astForStatements(inter.compoundStatement().statements(), false, false)
+        Seq(
+          Ast(
+            NewCall()
+              .code(inter.getText)
+              .name(RubyOperators.formattedValue)
+              .methodFullName(RubyOperators.formattedValue)
+              .lineNumber(line(ctx))
+              .columnNumber(column(ctx))
+              .typeFullName(Defines.Any)
+              .dispatchType(DispatchTypes.STATIC_DISPATCH)
+          )
+        ) ++
+          astForStatements(inter.compoundStatement().statements(), false, false)
       })
       .toSeq
 
@@ -356,7 +370,7 @@ class AstCreator(
       astForChainedScopedConstantReferencePrimaryContext(ctx)
     case ctx: ArrayConstructorPrimaryContext => astForArrayConstructorPrimaryContext(ctx)
     case ctx: HashConstructorPrimaryContext  => astForHashConstructorPrimaryContext(ctx)
-    case ctx: LiteralPrimaryContext          => Seq(astForLiteralPrimaryExpression(ctx))
+    case ctx: LiteralPrimaryContext          => astForLiteralPrimaryExpression(ctx)
     case ctx: StringExpressionPrimaryContext => astForStringExpression(ctx.stringExpression)
     case ctx: RegexInterpolationPrimaryContext =>
       astForRegexInterpolationPrimaryContext(ctx.regexInterpolation)
