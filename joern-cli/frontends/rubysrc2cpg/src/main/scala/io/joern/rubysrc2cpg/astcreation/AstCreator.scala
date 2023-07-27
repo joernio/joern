@@ -51,6 +51,8 @@ class AstCreator(
   protected val methodAliases = mutable.HashMap[String, String]()
   protected val methodNames   = mutable.HashMap[String, String]()
 
+  protected val typeDeclNameToTypeDecl = mutable.HashMap[String, nodes.NewTypeDecl]()
+
   protected val methodNamesWithYield = mutable.HashSet[String]()
 
   /*
@@ -148,9 +150,75 @@ class AstCreator(
       .columnNumber(None)
       .typeFullName(Defines.Any)
 
+    // For all the builtIn's encountered create assignment ast
+    val lineColNum = 1
+    val builtInMethodAst = builtInCallNames.map { builtInCallName =>
+      val identifierNode = NewIdentifier()
+        .code(builtInCallName)
+        .name(builtInCallName)
+        .lineNumber(lineColNum)
+        .columnNumber(lineColNum)
+        .typeFullName(Defines.Any)
+      val typeRefNode = NewTypeRef()
+        .code(prefixAsBuiltin(builtInCallName))
+        .typeFullName(prefixAsBuiltin(builtInCallName))
+        .lineNumber(lineColNum)
+        .columnNumber(lineColNum)
+      astForAssignment(identifierNode, typeRefNode, Some(lineColNum), Some(lineColNum))
+    }.toList
+
+    val methodRefAssignmentAsts = methodNameToMethod.values.map { methodNode =>
+      // Create a methodRefNode and assign it to the identifier version of the method, which will help in type propogation to resolve calls
+      val methodRefNode = NewMethodRef()
+        .code("def " + methodNode.name + "(...)")
+        .methodFullName(methodNode.fullName)
+        .typeFullName(methodNode.fullName)
+        .lineNumber(lineColNum)
+        .columnNumber(lineColNum)
+
+      val methodNameIdentifier = NewIdentifier()
+        .code(methodNode.name)
+        .name(methodNode.name)
+        .typeFullName(Defines.Any)
+        .lineNumber(lineColNum)
+        .columnNumber(lineColNum)
+
+      val methodRefAssignmentAst =
+        astForAssignment(methodNameIdentifier, methodRefNode, methodNode.lineNumber, methodNode.columnNumber)
+      methodRefAssignmentAst
+    }.toList
+
+    val typeRefAssignmentAst = typeDeclNameToTypeDecl.values.map { typeDeclNode =>
+
+      val typeRefNode = NewTypeRef()
+        .code("class " + typeDeclNode.name + "(...)")
+        .typeFullName(typeDeclNode.fullName)
+        .lineNumber(typeDeclNode.lineNumber)
+        .columnNumber(typeDeclNode.columnNumber)
+
+      val typeDeclNameIdentifier = NewIdentifier()
+        .code(typeDeclNode.name)
+        .name(typeDeclNode.name)
+        .typeFullName(Defines.Any)
+        .lineNumber(lineColNum)
+        .columnNumber(lineColNum)
+
+      val typeRefAssignmentAst =
+        astForAssignment(typeDeclNameIdentifier, typeRefNode, typeDeclNode.lineNumber, typeDeclNode.columnNumber)
+      typeRefAssignmentAst
+    }
+
     val blockNode = NewBlock().typeFullName(Defines.Any)
     val programAst =
-      methodAst(programMethod, Seq(thisParamAst), blockAst(blockNode, statementAsts.toList), methodRetNode)
+      methodAst(
+        programMethod,
+        Seq(Ast()),
+        blockAst(
+          blockNode,
+          statementAsts.toList ++ builtInMethodAst ++ methodRefAssignmentAsts ++ typeRefAssignmentAst
+        ),
+        methodRetNode
+      )
 
     val fileNode       = NewFile().name(filename).order(1)
     val namespaceBlock = globalNamespaceBlock()
@@ -1088,65 +1156,43 @@ class AstCreator(
 
   private def astForParametersContext(ctx: ParametersContext): Seq[Ast] = {
     if (ctx == null) return Seq()
-    val localVarList = ListBuffer[Option[TerminalNode]]()
-    // NOT differentiating between the productions here since either way we get parameters
-    val mandatoryParameters = ctx
-      .parameter()
-      .asScala
-      .filter(ctx => Option(ctx.mandatoryParameter()).isDefined)
-      .map(ctx => Option(ctx.mandatoryParameter().LOCAL_VARIABLE_IDENTIFIER()))
-    val optionalParameters = ctx
-      .parameter()
-      .asScala
-      .filter(ctx => Option(ctx.optionalParameter()).isDefined)
-      .map(ctx => Option(ctx.optionalParameter().LOCAL_VARIABLE_IDENTIFIER()))
-    val arrayParameter = ctx
-      .parameter()
-      .asScala
-      .filter(ctx => Option(ctx.arrayParameter()).isDefined)
-      .map(ctx => Option(ctx.arrayParameter().LOCAL_VARIABLE_IDENTIFIER()))
-    val procParameter = ctx
-      .parameter()
-      .asScala
-      .filter(ctx => Option(ctx.procParameter()).isDefined)
-      .map(ctx => Option(ctx.procParameter().LOCAL_VARIABLE_IDENTIFIER()))
 
-    localVarList.addAll(mandatoryParameters)
-    localVarList.addAll(optionalParameters)
-    localVarList.addAll(arrayParameter)
-    localVarList.addAll(procParameter)
+    // the parameterTupleList holds the parameter terminal node and is the parameter a variadic parameter
+    val parameterTupleList = ctx.parameter().asScala.map {
+      case procCtx if procCtx.procParameter() != null =>
+        (Option(procCtx.procParameter().LOCAL_VARIABLE_IDENTIFIER()), false)
+      case optCtx if optCtx.optionalParameter() != null =>
+        (Option(optCtx.optionalParameter().LOCAL_VARIABLE_IDENTIFIER()), false)
+      case manCtx if manCtx.mandatoryParameter() != null =>
+        (Option(manCtx.mandatoryParameter().LOCAL_VARIABLE_IDENTIFIER()), false)
+      case arrCtx if arrCtx.arrayParameter() != null =>
+        (Option(arrCtx.arrayParameter().LOCAL_VARIABLE_IDENTIFIER()), arrCtx.arrayParameter().STAR() != null)
+      case _ => (None, false)
+    }
 
-    localVarList.map {
-      case localVar @ Some(paramContext) => {
-        val varSymbol = paramContext.getSymbol
-        createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, Seq[String](Defines.Any))
-        val param = NewMethodParameterIn()
-          .name(varSymbol.getText)
-          .code(varSymbol.getText)
-          .lineNumber(varSymbol.getLine)
-          .typeFullName(Defines.Any)
-          .columnNumber(varSymbol.getCharPositionInLine)
-        if (Option(arrayParameter).isDefined) {
-          param.isVariadic = true
-        }
-        Ast(param)
-      }
-      case localVar @ _ => {
-        val identifierName = getUnusedVariableNames(usedVariableNames, Defines.TempIdentifier)
-        val parameterName  = getUnusedVariableNames(usedVariableNames, Defines.TempParameter)
-        createIdentifierWithScope(ctx, identifierName, identifierName, Defines.Any, Seq[String](Defines.Any))
-        val param = NewMethodParameterIn()
-          .name(parameterName)
-          .code(parameterName)
-          .lineNumber(None)
-          .typeFullName(Defines.Any)
-          .columnNumber(None)
-        if (Option(arrayParameter).isDefined) {
-          param.isVariadic = true
-        }
-        Ast(param)
-      }
-    }.toSeq
+    parameterTupleList.zipWithIndex.map { case (paraTuple, paraIndex) =>
+      paraTuple match
+        case (Some(paraValue), isVariadic) =>
+          val varSymbol = paraValue.getSymbol
+          createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, Seq[String](Defines.Any))
+          Ast(
+            createMethodParameterIn(
+              varSymbol.getText,
+              lineNumber = Some(varSymbol.getLine),
+              colNumber = Some(varSymbol.getCharPositionInLine),
+              order = paraIndex + 1,
+              index = paraIndex + 1
+            ).isVariadic(isVariadic)
+          )
+        case _ =>
+          Ast(
+            createMethodParameterIn(
+              getUnusedVariableNames(usedVariableNames, Defines.TempParameter),
+              order = paraIndex + 1,
+              index = paraIndex + 1
+            )
+          )
+    }.toList
   }
 
   // TODO: Rewrite for simplicity and take into account more than parameter names.
@@ -1281,9 +1327,25 @@ class AstCreator(
 
   def astForMethodDefinitionContext(ctx: MethodDefinitionContext): Seq[Ast] = {
     scope.pushNewScope(())
-    val astMethodParamSeq = astForMethodParameterPartContext(ctx.methodParameterPart())
-    val astMethodName     = astForMethodNamePartContext(ctx.methodNamePart())
-    val callNode = astMethodName.head.nodes.filter(node => node.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
+    val astMethodName = astForMethodNamePartContext(ctx.methodNamePart())
+    val callNode      = astMethodName.head.nodes.filter(node => node.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
+
+    // Create thisParameter if this is an instance method
+    // TODO may need to revisit to make this more robust
+    val astMethodParamSeq = ctx.methodNamePart() match {
+      case _: SimpleMethodNamePartContext if !classStack.top.endsWith(":program") =>
+        val thisParameterNode = createMethodParameterIn(
+          "this",
+          typeFullName = callNode.methodFullName,
+          lineNumber = callNode.lineNumber,
+          colNumber = callNode.columnNumber,
+          index = 0,
+          order = 0
+        )
+        Seq(Ast(thisParameterNode)) ++ astForMethodParameterPartContext(ctx.methodParameterPart())
+      case _ => astForMethodParameterPartContext(ctx.methodParameterPart())
+    }
+
     // there can be only one call node
     val astBody = astForBodyStatementContext(ctx.bodyStatement(), true)
     scope.popScope()
@@ -1362,12 +1424,12 @@ class AstCreator(
           .filter(_.isInstanceOf[NewMethodParameterIn])
           .asInstanceOf[Seq[NewMethodParameterIn]]
       )
-      .foreach(paramNode => {
+      .foreach { paramNode =>
         val linkIdentifiers = identifiers.filter(_.name == paramNode.name)
-        identifiers.foreach { identifier =>
+        linkIdentifiers.foreach { identifier =>
           diffGraph.addEdge(identifier, paramNode, EdgeTypes.REF)
         }
-      })
+      }
 
     Seq(
       methodAst(

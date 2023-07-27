@@ -1,6 +1,7 @@
 package io.joern.rubysrc2cpg.dataflow
 
 import io.joern.dataflowengineoss.language.*
+import io.joern.rubysrc2cpg.RubySrc2Cpg
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 
@@ -319,8 +320,8 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
       sink.reachableByFlows(src).l.size shouldBe 2
     }
   }
-  // TODO:
-  "Data flow through class member" ignore {
+
+  "Data flow through class member" should {
     val cpg = code("""
         |class MyClass
         | @instanceVariable
@@ -1781,8 +1782,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     }
   }
 
-  // TODO: Need to be fixed.
-  "Across the file data flow test" ignore {
+  "Across the file data flow test" should {
     val cpg = code(
       """
         |def foo(arg)
@@ -1815,7 +1815,8 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
       sink.reachableByFlows(src).size shouldBe 1
     }
 
-    "be found for sink in nested block" in {
+    // TODO: Need to be fixed.
+    "be found for sink in nested block" ignore {
       val src  = cpg.identifier("x").lineNumber(3).l
       val sink = cpg.call.name("puts").argument(1).lineNumber(7).l
       sink.reachableByFlows(src).size shouldBe 1
@@ -2517,5 +2518,26 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     val source = cpg.identifier.name("y").l
     val sink   = cpg.call.name("puts").l
     sink.reachableByFlows(source).size shouldBe 2
+  }
+}
+
+class trail extends RubyCode2CpgFixture(withPostProcessing = true, withDataFlow = true) {
+  "Data flow through array constructor splattingOnlyIndexingArguments" should {
+    val cpg = code("""
+        |def foo(*splat_args)
+        |array = [*splat_args]
+        |puts array
+        |end
+        |
+        |x = 1
+        |y = 2
+        |y = foo(x,y)
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).l.size shouldBe 2
+    }
   }
 }

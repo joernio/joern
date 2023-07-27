@@ -121,4 +121,11 @@ private class RecoverForRubyFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, 
     symbolTable.append(c, callTypes)
   }
 
+  override protected def visitIdentifierAssignedToTypeRef(i: Identifier, t: TypeRef, rec: Option[String]): Set[String] =
+    t.typ.referencedTypeDecl
+      .map(_.fullName.stripSuffix("<meta>"))
+      .map(td => symbolTable.append(CallAlias(i.name, rec), Set(td)))
+      .headOption
+      .getOrElse(super.visitIdentifierAssignedToTypeRef(i, t, rec))
+
 }
