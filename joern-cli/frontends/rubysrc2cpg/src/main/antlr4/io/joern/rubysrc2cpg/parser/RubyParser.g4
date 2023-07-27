@@ -315,7 +315,7 @@ definedMethodName
     ;
 
 assignmentLikeMethodIdentifier
-    :   (CONSTANT_IDENTIFIER | LOCAL_VARIABLE_IDENTIFIER) EQ
+    :   ASSIGNMENT_LIKE_METHOD_IDENTIFIER
     ;
 
 methodName
