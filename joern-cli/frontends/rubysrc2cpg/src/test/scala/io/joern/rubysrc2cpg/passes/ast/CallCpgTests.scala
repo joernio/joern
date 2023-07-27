@@ -112,9 +112,7 @@ class CallCpgTests extends RubyCode2CpgFixture {
       callNode.signature shouldBe ""
       callNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       callNode.lineNumber shouldBe Some(14)
-      callNode.astChildren.head.code shouldBe "this"
       callNode.astChildren.last.code shouldBe "books_and_articles_we_love"
-      callNode.argument.head.code shouldBe "this"
       callNode.argument.last.code shouldBe "books_and_articles_we_love"
     }
   }

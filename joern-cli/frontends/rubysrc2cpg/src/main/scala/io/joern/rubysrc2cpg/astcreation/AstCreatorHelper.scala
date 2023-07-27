@@ -11,7 +11,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewNode
 }
 import scala.collection.mutable
-
 trait AstCreatorHelper { this: AstCreator =>
 
   import GlobalTypes._

@@ -35,7 +35,7 @@ class FunctionTests extends RubyCode2CpgFixture {
       cpg.identifier.name("age").size shouldBe 1
       cpg.fieldAccess.fieldIdentifier.canonicalName("name").size shouldBe 2
       cpg.fieldAccess.fieldIdentifier.canonicalName("age").size shouldBe 4
-      cpg.identifier.size shouldBe 12 // 4 identifier node is for `puts = typeDef(__builtin.puts)` and methodRef's assignment, 1 node for class Person = typeDef
+      cpg.identifier.size shouldBe 16 // 4 identifier node is for `puts = typeDef(__builtin.puts)` and methodRef's assignment, 1 node for class Person = typeDef
     }
 
     "recognize all call nodes" in {
@@ -82,7 +82,7 @@ class FunctionTests extends RubyCode2CpgFixture {
         .size shouldBe 7 // 3 identifier node is for methodRef's assignment, 1 identifier node for TypeRef's assignment
       cpg.call.name("to_s").size shouldBe 2
       cpg.call.name("new").size shouldBe 1
-      cpg.call.size shouldBe 12 // 3 identifier node is for methodRef's assignment, 1 identifier node for TypeRef's assignment
+      cpg.call.size shouldBe 15 // 3 identifier node is for methodRef's assignment, 1 identifier node for TypeRef's assignment
     }
 
     "recognize all identifier nodes" in {

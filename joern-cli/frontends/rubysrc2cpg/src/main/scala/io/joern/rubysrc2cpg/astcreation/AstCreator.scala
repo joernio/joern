@@ -48,8 +48,8 @@ class AstCreator(
    */
   protected val methodNameAsIdentifierStack = mutable.Stack[Ast]()
 
-  protected val methodAliases = mutable.HashMap[String, String]()
-  protected val methodNames   = mutable.HashMap[String, String]()
+  protected val methodAliases      = mutable.HashMap[String, String]()
+  protected val methodNameToMethod = mutable.HashMap[String, nodes.NewMethod]()
 
   protected val typeDeclNameToTypeDecl = mutable.HashMap[String, nodes.NewTypeDecl]()
 
@@ -88,6 +88,7 @@ class AstCreator(
    */
   protected val blockChildHash = mutable.HashMap[Int, Int]()
 
+  protected val builtInCallNames = mutable.HashSet[String]()
   // Hashmap to store used variable names, to avoid duplicates in case of un-named variables
   protected val usedVariableNames = mutable.HashMap.empty[String, Int]
 
@@ -139,11 +140,6 @@ class AstCreator(
         List[Ast](Ast())
       }
     scope.popScope()
-
-    val thisParam = parameterInNode(programCtx, "this", "this", 0, false, EvaluationStrategies.BY_VALUE).typeFullName(
-      classStack.reverse.mkString(pathSep)
-    )
-    val thisParamAst = Ast(thisParam)
 
     val methodRetNode = NewMethodReturn()
       .lineNumber(None)
@@ -961,9 +957,6 @@ class AstCreator(
     if (ctx.block() != null) {
       val blockAst = Seq(astForBlock(ctx.block()))
       Seq(callAst(callNode, parenAst ++ blockAst))
-    } else if (methodNames.contains(getActualMethodName(callNode.name))) {
-      val thisNode = identifierNode(ctx, "this", "this", classStack.reverse.mkString(pathSep))
-      Seq(callAst(callNode, parenAst, Some(Ast(thisNode))))
     } else
       Seq(callAst(callNode, parenAst))
   }
@@ -1014,16 +1007,11 @@ class AstCreator(
         ""
       }
     val name = s"${getActualMethodName(ctx.getText)}$nameSuffix"
-    val methodFullName = packageContext.packageTable
-      .getMethodFullNameUsingName(packageStack.toList, name)
-      .headOption match {
-      case None if methodNames.contains(name) => methodNames.get(name).get
-      case None if isBuiltin(name)            => prefixAsBuiltin(name) // TODO: Probably not super precise
-      case Some(externalDependencyResolution) => DynamicCallUnknownFullName
-      case None                               => DynamicCallUnknownFullName
-    }
+    // Add the call name to the global builtIn callNames set
+    if (isBuiltin(name))
+      builtInCallNames.add(name)
 
-    callAst(callNode(ctx, code, name, methodFullName, DispatchTypes.STATIC_DISPATCH))
+    callAst(callNode(ctx, code, name, DynamicCallUnknownFullName, DispatchTypes.STATIC_DISPATCH))
   }
 
   def astForMethodOnlyIdentifier(ctx: MethodOnlyIdentifierContext): Seq[Ast] = {
@@ -1411,7 +1399,7 @@ class AstCreator(
      * TODO find out how they should be used. Need to do this iff it adds any value
      */
 
-    methodNames.put(methodNode.name, methodFullName)
+    methodNameToMethod.put(methodNode.name, methodNode)
     val blockNode = NewBlock().typeFullName(Defines.Any)
 
     /* Before creating ast, we traverse the method params and identifiers and link them*/

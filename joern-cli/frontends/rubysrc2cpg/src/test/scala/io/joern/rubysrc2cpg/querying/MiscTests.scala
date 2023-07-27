@@ -31,7 +31,7 @@ class MiscTests extends RubyCode2CpgFixture {
       cpg.identifier.name("beginbool").size shouldBe 1
       cpg.identifier.name("endbool").size shouldBe 1
       cpg.call.name("puts").size shouldBe 1
-      cpg.identifier.size shouldBe 6
+      cpg.identifier.size shouldBe 7 // 1 identifier node is for `puts = typeDef(__builtin.puts)`
     }
   }
 
