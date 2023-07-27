@@ -290,7 +290,7 @@ association
 
 methodDefinition
     :   DEF wsOrNl* methodNamePart WS* methodParameterPart separator? wsOrNl* bodyStatement wsOrNl* END
-    |   DEF wsOrNl* methodIdentifier WS* methodParameterPart WS* EQ wsOrNl* expression
+    |   DEF wsOrNl* methodIdentifier WS* methodParameterPart WS* EQ wsOrNl* expression wsOrNl* END
     ;
     
 
