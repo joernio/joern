@@ -13,3 +13,7 @@ jobs:
           distribution: 'oracle'
           java-version: '17'
       - run: ./testDistro.sh
+      - uses: actions/upload-artifact@v3
+        with:
+          name: debug-artifacts
+          path: target/debug-artifacts
