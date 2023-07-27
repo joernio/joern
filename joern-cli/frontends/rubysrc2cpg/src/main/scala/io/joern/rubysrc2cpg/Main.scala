@@ -27,7 +27,7 @@ private object Frontend {
         .text("enable dependency download for Unix System only"),
       opt[String]("skipFileRegex")
         .abbr("s")
-        .text("skip regex matched files")
+        .text("skip regex matched files for cpg creation")
         .action((regex, c) => c.withIgnoredFilesRegex(regex))
     )
   }
