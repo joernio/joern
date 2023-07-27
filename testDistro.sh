@@ -14,7 +14,8 @@ pushd $REPO_ROOT
   for i in {0..9}; do
     echo "XX0 run $i start"
     tests/frontends-tests.sh 
-    echo "XX0 run $i end"
+    exit_code=$?
+    echo "XX0 run $i end; exit_code=$exit_code"
   done
 popd
 
