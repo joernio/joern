@@ -4,7 +4,8 @@ import io.joern.rubysrc2cpg.Frontend._
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
 import scopt.OParser
 
-final case class Config(enableDependencyDownload: Boolean = false, skipFileRegex: String = "") extends X2CpgConfig[Config] {
+final case class Config(enableDependencyDownload: Boolean = false, skipFileRegex: String = "")
+    extends X2CpgConfig[Config] {
 
   def withEnableDependencyDownload(value: Boolean): Config = {
     copy(enableDependencyDownload = value).withInheritedFields(this)

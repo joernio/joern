@@ -21,7 +21,8 @@ class AstCreationPass(config: Config, cpg: Cpg, global: Global, packageTable: Pa
   def allUsedTypes(): List[String] =
     global.usedTypes.keys().asScala.toList
 
-  override def generateParts(): Array[String] = SourceFiles.determine(config.inputPath, RubySourceFileExtensions, config).toArray
+  override def generateParts(): Array[String] =
+    SourceFiles.determine(config.inputPath, RubySourceFileExtensions, config).toArray
 
   override def runOnPart(diffGraph: DiffGraphBuilder, fileName: String): Unit = {
     try {
