@@ -17,7 +17,7 @@ case class PythonSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends
 
   /** Generate a CPG for the given input path. Returns the output path, or None, if no CPG was generated.
     */
-  override def generate(inputPath: String, outputPath: String = "cpg.bin.zip"): Try[String] = {
+  override def generate(inputPath: String, outputPath: String = "cpg.bin.zip", skipFileRegex: String): Try[String] = {
     val arguments = Seq(inputPath, "-o", outputPath) ++ config.cmdLineParams
     pyConfig = X2Cpg.parseCommandLine(arguments.toArray, NewMain.getCmdLineParser, Py2CpgOnFileSystemConfig())
     runShellCommand(command.toString, arguments).map(_ => outputPath)

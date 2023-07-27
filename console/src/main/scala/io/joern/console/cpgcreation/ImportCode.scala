@@ -27,17 +27,17 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) extends Rep
     * looking at the `language` parameter and if no generator is found for the language, looking the contents at
     * `inputPath` to determine heuristically which generator to use.
     */
-  def apply(inputPath: String, projectName: String = "", language: String = ""): Cpg = {
+  def apply(inputPath: String, projectName: String = "", language: String = "", skipFileRegex: String = ""): Cpg = {
     checkInputPath(inputPath)
     if (language != "") {
       generatorFactory.forLanguage(language) match {
         case None           => throw new ConsoleException(s"No CPG generator exists for language: $language")
-        case Some(frontend) => apply(frontend, inputPath, projectName)
+        case Some(frontend) => apply(frontend, inputPath, projectName, skipFileRegex)
       }
     } else {
       generatorFactory.forCodeAt(inputPath) match {
         case None           => throw new ConsoleException(s"No suitable CPG generator found for: $inputPath")
-        case Some(frontend) => apply(frontend, inputPath, projectName)
+        case Some(frontend) => apply(frontend, inputPath, projectName, skipFileRegex)
       }
     }
   }
@@ -81,7 +81,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) extends Rep
     def apply(inputPath: String, projectName: String = "", args: List[String] = List()): Cpg = {
       val frontend = cpgGeneratorForLanguage(language, config.frontend, config.install.rootPath.path, args)
         .getOrElse(throw new ConsoleException(s"no cpg generator for language=$language available!"))
-      new ImportCode(console)(frontend, inputPath, projectName)
+      new ImportCode(console)(frontend, inputPath, projectName, "")
     }
   }
 
@@ -124,7 +124,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) extends Rep
       "\n" + Table(cols, rows).render
   }
 
-  private def apply(generator: CpgGenerator, inputPath: String, projectName: String): Cpg = {
+  private def apply(generator: CpgGenerator, inputPath: String, projectName: String, skipFileRegex: String): Cpg = {
     checkInputPath(inputPath)
 
     val name = Option(projectName).filter(_.nonEmpty).getOrElse(deriveNameFromInputPath(inputPath, workspace))
@@ -132,7 +132,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) extends Rep
 
     val cpgMaybe = workspace.createProject(inputPath, name).flatMap { pathToProject =>
       val frontendCpgOutFile = pathToProject.resolve(nameOfLegacyCpgInProject)
-      generatorFactory.runGenerator(generator, inputPath, frontendCpgOutFile.toString) match {
+      generatorFactory.runGenerator(generator, inputPath, frontendCpgOutFile.toString, skipFileRegex) match {
         case Success(_) =>
           console.open(name).flatMap(_.cpg)
         case Failure(exception) =>

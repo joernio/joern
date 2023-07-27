@@ -12,7 +12,7 @@ case class JavaCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgG
 
   /** Generate a CPG for the given input path. Returns the output path, or None, if no CPG was generated.
     */
-  override def generate(inputPath: String, outputPath: String = "cpg.bin.zip"): Try[String] = {
+  override def generate(inputPath: String, outputPath: String = "cpg.bin.zip", skipFileRegex: String): Try[String] = {
 
     if (commercialAvailable) {
       generateCommercial(inputPath, outputPath)

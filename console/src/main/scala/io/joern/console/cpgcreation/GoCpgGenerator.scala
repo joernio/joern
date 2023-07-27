@@ -13,7 +13,7 @@ case class GoCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGen
 
   /** Generate a CPG for the given input path. Returns the output path, or None, if no CPG was generated.
     */
-  override def generate(inputPath: String, outputPath: String): Try[String] = {
+  override def generate(inputPath: String, outputPath: String, skipFileRegex: String): Try[String] = {
     if (go2CpgAvailable()) go2CpgGenerate(inputPath, outputPath) else goSrc2CpgGenerate(inputPath, outputPath)
   }
 

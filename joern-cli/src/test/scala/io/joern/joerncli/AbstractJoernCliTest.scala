@@ -26,7 +26,7 @@ trait AbstractJoernCliTest {
       case Languages.C | Languages.CSHARP         => CCpgGenerator(new FrontendConfig(), relativePath("c2cpg"))
       case Languages.JSSRC | Languages.JAVASCRIPT => JsSrcCpgGenerator(new FrontendConfig(), relativePath("jssrc2cpg"))
     }
-    cpgGenerator.generate(inputPath = file.pathAsString, outputPath = cpgOutFileName) match {
+    cpgGenerator.generate(inputPath = file.pathAsString, outputPath = cpgOutFileName, skipFileRegex = "") match {
       case Failure(exception) => throw new AssertionError("error while invoking cpgGenerator", exception)
       case _                  =>
     }

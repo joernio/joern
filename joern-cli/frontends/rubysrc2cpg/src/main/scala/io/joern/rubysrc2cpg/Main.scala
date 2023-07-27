@@ -4,7 +4,7 @@ import io.joern.rubysrc2cpg.Frontend._
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
 import scopt.OParser
 
-final case class Config(enableDependencyDownload: Boolean = false) extends X2CpgConfig[Config] {
+final case class Config(enableDependencyDownload: Boolean = false, skipFileRegex: String = "") extends X2CpgConfig[Config] {
 
   def withEnableDependencyDownload(value: Boolean): Config = {
     copy(enableDependencyDownload = value).withInheritedFields(this)
@@ -23,7 +23,11 @@ private object Frontend {
       opt[Unit]("enableDependencyDownload")
         .hidden()
         .action((_, c) => c.withEnableDependencyDownload(false))
-        .text("enable dependency download for Unix System only")
+        .text("enable dependency download for Unix System only"),
+      opt[String]("skipFileRegex")
+        .abbr("s")
+        .text("skip regex matched files")
+        .action((regex, c) => c.withIgnoredFilesRegex(regex))
     )
   }
 }

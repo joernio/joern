@@ -10,8 +10,8 @@ import scala.util.Try
 case class RubyCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGenerator {
   private lazy val command: Path = if (isWin) rootPath.resolve("rubysrc2cpg.bat") else rootPath.resolve("rubysrc2cpg")
 
-  override def generate(inputPath: String, outputPath: String): Try[String] = {
-    val arguments = List(inputPath) ++ Seq("-o", outputPath) ++ config.cmdLineParams
+  override def generate(inputPath: String, outputPath: String, skipFileRegex: String): Try[String] = {
+    val arguments = List(inputPath) ++ Seq("-o", outputPath) ++ Seq("-s", skipFileRegex) ++config.cmdLineParams
     runShellCommand(command.toString, arguments).map(_ => outputPath)
   }
 

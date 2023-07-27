@@ -146,7 +146,7 @@ object JoernParse {
       }.flatMap { newGenerator =>
         generator = newGenerator
         generator
-          .generate(config.inputPath, outputPath = config.outputCpgFile)
+          .generate(config.inputPath, outputPath = config.outputCpgFile, skipFileRegex = "")
           .recover { case exception =>
             throw new RuntimeException(
               s"Could not generate CPG with language = $language and input = ${config.inputPath}",

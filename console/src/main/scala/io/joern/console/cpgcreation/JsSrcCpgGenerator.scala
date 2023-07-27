@@ -14,7 +14,7 @@ case class JsSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends Cpg
 
   /** Generate a CPG for the given input path. Returns the output path, or None, if no CPG was generated.
     */
-  override def generate(inputPath: String, outputPath: String = "cpg.bin.zip"): Try[String] = {
+  override def generate(inputPath: String, outputPath: String = "cpg.bin.zip", skipFileRegex: String): Try[String] = {
     val arguments = Seq(inputPath, "--output", outputPath) ++ config.cmdLineParams
     jsConfig = X2Cpg.parseCommandLine(arguments.toArray, Frontend.cmdLineParser, Config())
     runShellCommand(command.toString, arguments).map(_ => outputPath)

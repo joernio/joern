@@ -10,7 +10,7 @@ case class JsCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGen
 
   /** Generate a CPG for the given input path. Returns the output path, or None, if no CPG was generated.
     */
-  override def generate(inputPath: String, outputPath: String = "cpg.bin.zip"): Try[String] = {
+  override def generate(inputPath: String, outputPath: String = "cpg.bin.zip", skipFileRegex: String): Try[String] = {
     val arguments = Seq(inputPath, "--output", outputPath) ++ config.cmdLineParams
     runShellCommand(command.toString, arguments).map(_ => outputPath)
   }
