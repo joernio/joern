@@ -9,8 +9,8 @@ import io.joern.x2cpg.datastructures.{Global, Scope}
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.tree.TerminalNode
-import org.antlr.v4.runtime.{CharStreams, CommonTokenStream, ParserRuleContext, Token}
 import org.slf4j.LoggerFactory
 import overflowdb.{BatchedUpdate, NodeOrDetachedNode}
 
@@ -19,6 +19,7 @@ import scala.collection.immutable.Seq
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters.*
+import scala.util.{Failure, Success, Try}
 
 class AstCreator(
   protected val filename: String,
@@ -105,12 +106,18 @@ class AstCreator(
     methodAliases.getOrElse(name, name)
   }
   override def createAst(): BatchedUpdate.DiffGraphBuilder = {
-    val charStream  = CharStreams.fromFileName(filename)
-    val lexer       = new RubyLexer(charStream)
-    val tokenStream = new CommonTokenStream(lexer)
-    val parser      = new RubyParser(tokenStream)
-    val programCtx  = parser.program()
+    Try {
+      new AntlrParser().parse(filename)
+    } match {
+      case Success(programCtx) =>
+        createAstForProgramCtx(programCtx)
+      case Failure(exc) =>
+        logger.warn(s"Could not parse file: $filename, skipping")
+        diffGraph
+    }
+  }
 
+  private def createAstForProgramCtx(programCtx: RubyParser.ProgramContext) = {
     val name     = ":program"
     val fullName = s"$relativeFilename:$name"
     val programMethod =
