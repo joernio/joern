@@ -113,6 +113,7 @@ class AstCreator(
         createAstForProgramCtx(programCtx)
       case Failure(exc) =>
         logger.warn(s"Could not parse file: $filename, skipping")
+        logger.warn(exc.getMessage)
         diffGraph
     }
   }
