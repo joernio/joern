@@ -174,8 +174,12 @@ trait AstForExpressionsCreator { this: AstCreator =>
   def astForRangeExpressionContext(ctx: RangeExpressionContext): Seq[Ast] =
     Seq(astForBinaryOperatorExpression(ctx, Operators.range, ctx.expression().asScala))
 
-  protected def astForSuperExpression(ctx: SuperExpressionPrimaryContext): Ast =
-    astForSuperCall(ctx, astForArgumentsWithParenthesesContext(ctx.argumentsWithParentheses))
+  protected def astForSuperExpression(ctx: SuperExpressionPrimaryContext): Ast = {
+    val argsAst = Option(ctx.argumentsWithParentheses()) match
+      case Some(ctxArgs) => astForArgumentsWithParenthesesContext(ctxArgs)
+      case None          => Seq()
+    astForSuperCall(ctx, argsAst)
+  }
 
   // TODO: Handle the optional block.
   // NOTE: `super` is quite complicated semantically speaking. We'll need

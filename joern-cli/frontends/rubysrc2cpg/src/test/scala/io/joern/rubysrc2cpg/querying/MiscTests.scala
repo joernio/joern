@@ -308,4 +308,24 @@ class MiscTests extends RubyCode2CpgFixture {
       cpg.namespace.name("SomeModule").size shouldBe 1
     }
   }
+
+  "CPG for code with super without arguments" should {
+    val cpg = code("""
+        |class Parent
+        |  def foo(arg)
+        |  end
+        |end
+        |
+        |class Child < Parent
+        |  def foo(arg)
+        |    super
+        |  end
+        |end
+        |""".stripMargin)
+
+    "recognise all call nodes" in {
+      cpg.call.name("<operator>.super").size shouldBe 1
+      cpg.method.name("foo").size shouldBe 2
+    }
+  }
 }

@@ -1500,31 +1500,25 @@ class AstCreator(
     cmdAsts ++ mNameAsts ++ apAsts
   }
 
-  def astForArgumentsWithParenthesesContext(ctx: ArgumentsWithParenthesesContext): Seq[Ast] = Option(ctx) match {
-    case Some(ctx) =>
-      ctx match {
-        case ctx: BlankArgsArgumentsWithParenthesesContext => Seq(Ast())
-        case ctx: ArgsOnlyArgumentsWithParenthesesContext  => astForArguments(ctx.arguments())
-        case ctx: ExpressionsAndChainedCommandWithDoBlockArgumentsWithParenthesesContext =>
-          val expAsts = ctx
-            .expressions()
-            .expression
-            .asScala
-            .flatMap(exp => {
-              astForExpressionContext(exp)
-            })
-            .toSeq
-          val ccDoBlock = astForChainedCommandWithDoBlockContext(ctx.chainedCommandWithDoBlock())
-          expAsts ++ ccDoBlock
-        case ctx: ChainedCommandWithDoBlockOnlyArgumentsWithParenthesesContext =>
-          astForChainedCommandWithDoBlockContext(ctx.chainedCommandWithDoBlock())
-        case _ =>
-          logger.error(s"astForArgumentsWithParenthesesContext() $filename, ${ctx.getText} All contexts mismatched.")
-          Seq(Ast())
-      }
-    case None =>
-      logger.error(s"astForArgumentsWithParenthesesContext() $filename All contexts mismatched.")
-      Seq()
+  def astForArgumentsWithParenthesesContext(ctx: ArgumentsWithParenthesesContext): Seq[Ast] = ctx match {
+    case ctx: BlankArgsArgumentsWithParenthesesContext => Seq(Ast())
+    case ctx: ArgsOnlyArgumentsWithParenthesesContext  => astForArguments(ctx.arguments())
+    case ctx: ExpressionsAndChainedCommandWithDoBlockArgumentsWithParenthesesContext =>
+      val expAsts = ctx
+        .expressions()
+        .expression
+        .asScala
+        .flatMap(exp => {
+          astForExpressionContext(exp)
+        })
+        .toSeq
+      val ccDoBlock = astForChainedCommandWithDoBlockContext(ctx.chainedCommandWithDoBlock())
+      expAsts ++ ccDoBlock
+    case ctx: ChainedCommandWithDoBlockOnlyArgumentsWithParenthesesContext =>
+      astForChainedCommandWithDoBlockContext(ctx.chainedCommandWithDoBlock())
+    case _ =>
+      logger.error(s"astForArgumentsWithParenthesesContext() $filename, ${ctx.getText} All contexts mismatched.")
+      Seq(Ast())
   }
 
   def astForBlockParametersContext(ctx: BlockParametersContext): Seq[Ast] = {
