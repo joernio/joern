@@ -340,7 +340,7 @@ methodParameterPart
     ;
 
 parameters
-    :   parameter (WS* COMMA wsOrNl* parameter)*
+    :   wsOrNl* parameter (WS* COMMA wsOrNl* parameter)*
     ;
     
 parameter
