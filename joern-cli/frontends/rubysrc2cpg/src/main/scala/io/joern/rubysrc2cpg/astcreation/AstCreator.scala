@@ -526,9 +526,7 @@ class AstCreator(
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
       Seq(callAst(arrayInitCallNode))
     } else {
-      Option(ctx.arrayConstructor().indexingArguments()) match
-        case Some(ctxIndexingArguments) => astForIndexingArgumentsContext(ctxIndexingArguments)
-        case None                       => Seq()
+      Option(ctx.arrayConstructor().indexingArguments).map(astForIndexingArgumentsContext).getOrElse(Seq())
     }
   }
 
