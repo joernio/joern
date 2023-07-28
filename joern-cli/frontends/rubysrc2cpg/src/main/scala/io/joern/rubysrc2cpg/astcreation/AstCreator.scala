@@ -1068,23 +1068,11 @@ class AstCreator(
     }
   }
   def astForAssignmentLikeMethodIdentifierContext(ctx: AssignmentLikeMethodIdentifierContext): Seq[Ast] = {
-    if (ctx == null) return Seq(Ast())
-
-    val terminalNode = Option(ctx.LOCAL_VARIABLE_IDENTIFIER()) match
-      case Some(value) => value
-      case None        => ctx.CONSTANT_IDENTIFIER()
-
-    val methodName = terminalNode.getText + "="
-    val callNode = NewCall()
-      .name(methodName)
-      .code(ctx.getText)
-      .methodFullName(methodName)
-      .signature("")
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .typeFullName(Defines.Any)
-      .lineNumber(terminalNode.getSymbol().getLine())
-      .columnNumber(terminalNode.getSymbol().getCharPositionInLine())
-    Seq(callAst(callNode))
+    Seq(
+      callAst(
+        callNode(ctx, ctx.getText, ctx.getText, ctx.getText, DispatchTypes.STATIC_DISPATCH, Some(""), Some(Defines.Any))
+      )
+    )
   }
 
   def astForDefinedMethodNameContext(ctx: DefinedMethodNameContext): Seq[Ast] = {
