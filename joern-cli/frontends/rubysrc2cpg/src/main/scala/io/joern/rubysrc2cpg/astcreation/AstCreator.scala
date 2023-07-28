@@ -521,51 +521,45 @@ class AstCreator(
     }
   }
 
-  def astForIndexingArgumentsContext(ctx: IndexingArgumentsContext): Seq[Ast] = Option(ctx) match {
-    case Some(ctx) =>
-      ctx match {
-        case ctx: RubyParser.CommandOnlyIndexingArgumentsContext =>
-          astForCommand(ctx.command())
-        case ctx: RubyParser.ExpressionsOnlyIndexingArgumentsContext =>
-          ctx
-            .expressions()
-            .expression()
-            .asScala
-            .flatMap(exp => {
-              astForExpressionContext(exp)
-            })
-            .toSeq
-        case ctx: RubyParser.ExpressionsAndSplattingIndexingArgumentsContext =>
-          val expAsts = ctx
-            .expressions()
-            .expression()
-            .asScala
-            .flatMap(exp => {
-              astForExpressionContext(exp)
-            })
-            .toSeq
-          val splatAsts = astForExpressionOrCommand(ctx.splattingArgument().expressionOrCommand())
-          val callNode = NewCall()
-            .name(ctx.COMMA().getText)
-            .methodFullName(Operators.arrayInitializer)
-            .signature(Operators.arrayInitializer)
-            .typeFullName(Defines.Any)
-            .dispatchType(DispatchTypes.STATIC_DISPATCH)
-            .code(ctx.getText)
-            .lineNumber(ctx.COMMA().getSymbol.getLine)
-            .columnNumber(ctx.COMMA().getSymbol.getCharPositionInLine)
-          Seq(callAst(callNode, expAsts ++ splatAsts))
-        case ctx: AssociationsOnlyIndexingArgumentsContext =>
-          astForAssociationsContext(ctx.associations())
-        case ctx: RubyParser.SplattingOnlyIndexingArgumentsContext =>
-          astForExpressionOrCommand(ctx.splattingArgument().expressionOrCommand())
-        case _ =>
-          logger.error(s"astForIndexingArgumentsContext() $filename, ${ctx.getText} All contexts mismatched.")
-          Seq(Ast())
-      }
-    case None =>
-      logger.error(s"astForIndexingArgumentsContext() $filename All contexts mismatched.")
-      Seq()
+  def astForIndexingArgumentsContext(ctx: IndexingArgumentsContext): Seq[Ast] = ctx match {
+    case ctx: RubyParser.CommandOnlyIndexingArgumentsContext =>
+      astForCommand(ctx.command())
+    case ctx: RubyParser.ExpressionsOnlyIndexingArgumentsContext =>
+      ctx
+        .expressions()
+        .expression()
+        .asScala
+        .flatMap(exp => {
+          astForExpressionContext(exp)
+        })
+        .toSeq
+    case ctx: RubyParser.ExpressionsAndSplattingIndexingArgumentsContext =>
+      val expAsts = ctx
+        .expressions()
+        .expression()
+        .asScala
+        .flatMap(exp => {
+          astForExpressionContext(exp)
+        })
+        .toSeq
+      val splatAsts = astForExpressionOrCommand(ctx.splattingArgument().expressionOrCommand())
+      val callNode = NewCall()
+        .name(ctx.COMMA().getText)
+        .methodFullName(Operators.arrayInitializer)
+        .signature(Operators.arrayInitializer)
+        .typeFullName(Defines.Any)
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        .code(ctx.getText)
+        .lineNumber(ctx.COMMA().getSymbol.getLine)
+        .columnNumber(ctx.COMMA().getSymbol.getCharPositionInLine)
+      Seq(callAst(callNode, expAsts ++ splatAsts))
+    case ctx: AssociationsOnlyIndexingArgumentsContext =>
+      astForAssociationsContext(ctx.associations())
+    case ctx: RubyParser.SplattingOnlyIndexingArgumentsContext =>
+      astForExpressionOrCommand(ctx.splattingArgument().expressionOrCommand())
+    case _ =>
+      logger.error(s"astForIndexingArgumentsContext() $filename, ${ctx.getText} All contexts mismatched.")
+      Seq(Ast())
   }
 
   def astForArrayConstructorPrimaryContext(ctx: ArrayConstructorPrimaryContext): Seq[Ast] = {
@@ -579,7 +573,7 @@ class AstCreator(
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
       Seq(callAst(arrayInitCallNode))
     } else {
-      astForIndexingArgumentsContext(ctx.arrayConstructor().indexingArguments())
+      Option(ctx.arrayConstructor().indexingArguments).map(astForIndexingArgumentsContext).getOrElse(Seq())
     }
   }
 
@@ -813,7 +807,7 @@ class AstCreator(
 
   def astForIndexingExpressionPrimaryContext(ctx: IndexingExpressionPrimaryContext): Seq[Ast] = {
     val lhsExpressionAst = astForPrimaryContext(ctx.primary())
-    val rhsExpressionAst = astForIndexingArgumentsContext(ctx.indexingArguments())
+    val rhsExpressionAst = Option(ctx.indexingArguments).map(astForIndexingArgumentsContext).getOrElse(Seq())
     val callNode = NewCall()
       .name(Operators.indexAccess)
       .code(ctx.getText)
