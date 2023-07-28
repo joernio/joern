@@ -763,8 +763,6 @@ class AstCreator(
   def astForIndexingExpressionPrimaryContext(ctx: IndexingExpressionPrimaryContext): Seq[Ast] = {
     val lhsExpressionAst = astForPrimaryContext(ctx.primary())
     val rhsExpressionAst = Option(ctx.indexingArguments).map(astForIndexingArgumentsContext).getOrElse(Seq())
-      case Some(ctxIndexingArguments) => astForIndexingArgumentsContext(ctxIndexingArguments)
-      case None                       => Seq()
     val callNode = NewCall()
       .name(Operators.indexAccess)
       .code(ctx.getText)
