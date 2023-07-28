@@ -924,6 +924,75 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |     Separator
           |  end""".stripMargin
     }
+
+    "have correct structure when keyword parameters are defined using wsOrNL" in {
+      val code =
+        """
+          |class SomeClass
+          |  def initialize(
+          |              name: nil, age
+          |              )
+          |  end
+          |end
+          |""".stripMargin
+
+      printAst(_.primary(), code) shouldBe
+        """ClassDefinitionPrimary
+          | ClassDefinition
+          |  class
+          |  WsOrNl
+          |  ClassOrModuleReference
+          |   SomeClass
+          |  Separators
+          |   Separator
+          |  WsOrNl
+          |  BodyStatement
+          |   CompoundStatement
+          |    Statements
+          |     ExpressionOrCommandStatement
+          |      ExpressionExpressionOrCommand
+          |       PrimaryExpression
+          |        MethodDefinitionPrimary
+          |         MethodDefinition
+          |          def
+          |          WsOrNl
+          |          SimpleMethodNamePart
+          |           DefinedMethodName
+          |            MethodName
+          |             MethodIdentifier
+          |              initialize
+          |          MethodParameterPart
+          |           (
+          |           WsOrNl
+          |           WsOrNl
+          |           Parameters
+          |            Parameter
+          |             KeywordParameter
+          |              name
+          |              :
+          |              WsOrNl
+          |              PrimaryExpression
+          |               VariableReferencePrimary
+          |                PseudoVariableIdentifierVariableReference
+          |                 NilPseudoVariableIdentifier
+          |                  nil
+          |            ,
+          |            WsOrNl
+          |            Parameter
+          |             MandatoryParameter
+          |              age
+          |           WsOrNl
+          |           WsOrNl
+          |           )
+          |          Separator
+          |          WsOrNl
+          |          BodyStatement
+          |           CompoundStatement
+          |          end
+          |    Separators
+          |     Separator
+          |  end""".stripMargin
+    }
   }
 
 }
