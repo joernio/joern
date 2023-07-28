@@ -266,7 +266,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
      */
 
     val variableName      = ctx.getText
-    val isSelfFieldAccess = variableName.startsWith("@") || variableName.isAllUpperCase
+    val isSelfFieldAccess = variableName.startsWith("@")
     if (isSelfFieldAccess) {
       // Very basic field detection
       fieldReferences.updateWith(classStack.top) {
@@ -278,7 +278,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     } else if (definitelyIdentifier || scope.lookupVariable(variableName).isDefined) {
       val node = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List())
       Ast(node)
-    } else if (methodNames.contains(variableName)) {
+    } else if (methodNameToMethod.contains(variableName)) {
       astForCallNode(ctx, variableName)
     } else if (ModifierTypes.ALL.contains(variableName.toUpperCase)) {
       lastModifier = Option(variableName.toUpperCase)
