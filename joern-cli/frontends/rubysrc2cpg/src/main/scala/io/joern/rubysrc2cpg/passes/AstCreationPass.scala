@@ -12,7 +12,7 @@ import overflowdb.BatchedUpdate
 
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
 
-class AstCreationPass(cpg: Cpg, config: Config, global: Global, packageTable: PackageTable)
+class AstCreationPass(cpg: Cpg, global: Global, packageTable: PackageTable, config: Config)
     extends ConcurrentWriterCpgPass[String](cpg) {
 
   private val logger                        = LoggerFactory.getLogger(this.getClass)
