@@ -34,14 +34,14 @@ packTestCode := {
   jarFileRoot.createDirectories()
 
   File(testClassOutputPath.toPath.resolve(relativeTestCodePath)).list.filter(_.exists).foreach { testDir =>
-    val tmpDir = File.newTemporaryDirectory()
+    val tmpDir                     = File.newTemporaryDirectory()
     val tmpDirWithCorrectPkgStruct = File(tmpDir.path.resolve(relativeTestCodePath)).createDirectoryIfNotExists()
     testDir.copyToDirectory(tmpDirWithCorrectPkgStruct)
     val testRootPath = tmpDir.path.resolve(pkgRoot)
 
     val jarFilePath = jarFileRoot / (testDir.name + ".jar")
     if (jarFilePath.exists()) jarFilePath.delete()
-    val jarFile = new ZipFile(jarFilePath.canonicalPath)
+    val jarFile       = new ZipFile(jarFilePath.canonicalPath)
     val zipParameters = new ZipParameters()
     zipParameters.setCompressionMethod(CompressionMethod.DEFLATE)
     zipParameters.setCompressionLevel(CompressionLevel.NORMAL)

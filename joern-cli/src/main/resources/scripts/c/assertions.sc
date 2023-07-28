@@ -3,10 +3,8 @@ def assertContains[A](name: String, actual: IterableOnce[A], expected: IterableO
 
   val missing = expected.iterator.filterNot(actualSet.contains).toSeq
   if (missing.nonEmpty)
-    throw new AssertionError(
-      s"""$name did not contain the following expected element(s):
+    throw new AssertionError(s"""$name did not contain the following expected element(s):
          |$missing
          |Actual elements:
-         |${actual.iterator.mkString(System.lineSeparator)}""".mkString
-    ) with scala.util.control.NoStackTrace
+         |${actual.iterator.mkString(System.lineSeparator)}""".mkString) with scala.util.control.NoStackTrace
 }

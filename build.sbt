@@ -106,6 +106,6 @@ publish / skip := true // don't publish the root project
 // Avoids running root tasks on the benchmarks project
 lazy val root = project
   .in(file("."))
-  .aggregate(aggregatedProjects *)
+  .aggregate(aggregatedProjects*)
 
 ThisBuild / Test / packageBin / publishArtifact := true
