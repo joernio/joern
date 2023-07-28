@@ -49,8 +49,9 @@ class AstCreator(
    */
   protected val methodNameAsIdentifierStack = mutable.Stack[Ast]()
 
-  protected val methodAliases      = mutable.HashMap[String, String]()
-  protected val methodNameToMethod = mutable.HashMap[String, nodes.NewMethod]()
+  protected val methodAliases       = mutable.HashMap[String, String]()
+  protected val methodNameToMethod  = mutable.HashMap[String, nodes.NewMethod]()
+  protected val methodDefInArgument = mutable.HashSet[Ast]()
 
   protected val methodNamesWithYield = mutable.HashSet[String]()
 
