@@ -1,7 +1,9 @@
 package io.joern.rubysrc2cpg.astcreation
 
+import io.joern.x2cpg.{Ast, Defines}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNodeNew, NewCall, NewNode}
 import scala.collection.mutable
-
 trait AstCreatorHelper { this: AstCreator =>
 
   import GlobalTypes._
@@ -9,6 +11,24 @@ trait AstCreatorHelper { this: AstCreator =>
   def isBuiltin(x: String): Boolean = builtinFunctions.contains(x)
 
   def prefixAsBuiltin(x: String): String = s"$builtinPrefix$pathSep$x"
+
+  def astForAssignment(lhs: NewNode, rhs: NewNode, lineNumber: Option[Integer], colNumber: Option[Integer]): Ast = {
+
+    val code = codeOf(lhs) + " = " + codeOf(rhs)
+    val callNode = NewCall()
+      .name(Operators.assignment)
+      .code(code)
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .lineNumber(lineNumber)
+      .columnNumber(colNumber)
+      .methodFullName(Operators.assignment)
+
+    callAst(callNode, Seq(Ast(lhs), Ast(rhs)))
+  }
+
+  protected def codeOf(node: NewNode): String = {
+    node.asInstanceOf[AstNodeNew].code
+  }
 
   def getUnusedVariableNames(usedVariableNames: mutable.HashMap[String, Int], variableName: String): String = {
     val counter             = usedVariableNames.get(variableName).map(_ + 1).getOrElse(0)

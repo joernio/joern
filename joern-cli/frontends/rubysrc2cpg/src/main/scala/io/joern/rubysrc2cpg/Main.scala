@@ -22,7 +22,7 @@ private object Frontend {
       programName("rubysrc2cpg"),
       opt[Unit]("enableDependencyDownload")
         .hidden()
-        .action((_, c) => c.withEnableDependencyDownload(false))
+        .action((_, c) => c.withEnableDependencyDownload(true))
         .text("enable dependency download for Unix System only")
     )
   }

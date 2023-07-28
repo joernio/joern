@@ -42,7 +42,7 @@ class MethodOneTests extends RubyCode2CpgFixture {
     }
 
     "should allow traversing to method" in {
-      cpg.methodReturn.method.name.l shouldBe List("foo", ":program")
+      cpg.methodReturn.method.name.l shouldBe List("foo", ":program", "<operator>.assignment")
     }
 
     "should allow traversing to file" in {
