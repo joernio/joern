@@ -335,7 +335,7 @@ methodOnlyIdentifier
     ;
 
 methodParameterPart
-    :   LPAREN parameters? RPAREN
+    :   LPAREN wsOrNl* parameters? wsOrNl* RPAREN
     |   parameters?
     ;
 
