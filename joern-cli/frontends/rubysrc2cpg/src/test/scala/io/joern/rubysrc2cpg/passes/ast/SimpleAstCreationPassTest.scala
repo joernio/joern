@@ -1120,7 +1120,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     callNode.columnNumber shouldBe Some(9)
   }
 
-  "have correct structure endless method" in {
+  "have correct structure for a endless method" in {
     val cpg = code("""
         |def foo(a,b) = a*b
         |""".stripMargin)
