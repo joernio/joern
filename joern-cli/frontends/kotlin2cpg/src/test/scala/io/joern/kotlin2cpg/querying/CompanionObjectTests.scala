@@ -54,13 +54,14 @@ class CompanionObjectTests extends KotlinCode2CpgFixture(withOssDataflow = false
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       c.argument.code.l shouldBe List("AClass", "m")
 
-      val List(firstArg: Call, secondArg: FieldIdentifier) = c.argument.l
+      val List(firstArg: Call, secondArg: FieldIdentifier) = c.argument.l: @unchecked
       firstArg.code shouldBe "AClass"
       firstArg.typeFullName shouldBe "mypkg.AClass$Companion"
       secondArg.code shouldBe "m"
       secondArg.canonicalName shouldBe "m"
 
-      val List(firstArgOfLoweredCall: Identifier, secondArgOfLoweredCall: FieldIdentifier) = firstArg.argument.l
+      val List(firstArgOfLoweredCall: Identifier, secondArgOfLoweredCall: FieldIdentifier) =
+        firstArg.argument.l: @unchecked
       firstArgOfLoweredCall.typeFullName shouldBe "mypkg.AClass$Companion"
       firstArgOfLoweredCall.refsTo.size shouldBe 0 // yes, 0. it's how the closed-source dataflow engine wants it atm
       secondArgOfLoweredCall.canonicalName shouldBe Constants.companionObjectMemberName
@@ -112,13 +113,14 @@ class CompanionObjectTests extends KotlinCode2CpgFixture(withOssDataflow = false
       c.name shouldBe "<operator>.fieldAccess"
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
-      val List(firstArg: Call, secondArg: FieldIdentifier) = c.argument.l
+      val List(firstArg: Call, secondArg: FieldIdentifier) = c.argument.l: @unchecked
       firstArg.code shouldBe "AClass"
       firstArg.typeFullName shouldBe "mypkg.AClass$NamedCompanion"
       secondArg.code shouldBe "m"
       secondArg.canonicalName shouldBe "m"
 
-      val List(firstArgOfLoweredCall: Identifier, secondArgOfLoweredCall: FieldIdentifier) = firstArg.argument.l
+      val List(firstArgOfLoweredCall: Identifier, secondArgOfLoweredCall: FieldIdentifier) =
+        firstArg.argument.l: @unchecked
       firstArgOfLoweredCall.typeFullName shouldBe "mypkg.AClass$NamedCompanion"
       firstArgOfLoweredCall.refsTo.size shouldBe 0 // yes, 0. it's how the closed-source dataflow engine wants it atm
       secondArgOfLoweredCall.canonicalName shouldBe Constants.companionObjectMemberName

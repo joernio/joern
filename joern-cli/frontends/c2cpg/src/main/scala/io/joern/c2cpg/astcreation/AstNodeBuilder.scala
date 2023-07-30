@@ -11,19 +11,6 @@ trait AstNodeBuilder { this: AstCreator =>
     NewComment().code(code).filename(filename).lineNumber(line(node)).columnNumber(column(node))
   }
 
-  protected def newImportNode(
-    code: String,
-    importedEntity: String,
-    include: IASTPreprocessorIncludeStatement
-  ): NewImport = {
-    NewImport()
-      .code(code)
-      .importedEntity(importedEntity)
-      .importedAs(importedEntity)
-      .lineNumber(line(include))
-      .columnNumber(column(include))
-  }
-
   protected def newNamespaceBlockNode(
     node: IASTNode,
     name: String,
@@ -40,6 +27,7 @@ trait AstNodeBuilder { this: AstCreator =>
       .fullName(fullname)
   }
 
+  // TODO: We should get rid of this method as its being used at multiple places and use it from x2cpg/AstNodeBuilder "methodReturnNode"
   protected def newMethodReturnNode(node: IASTNode, typeFullName: String): NewMethodReturn = {
     newMethodReturnNode_(typeFullName, None, line(node), column(node))
   }

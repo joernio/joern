@@ -6,6 +6,8 @@ import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, Local, Member, Method}
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.codepropertygraph.generated.nodes.Block
+import io.shiftleft.codepropertygraph.generated.nodes.MethodRef
+import io.shiftleft.codepropertygraph.generated.nodes.TypeRef
 
 class TypeDeclTests extends PhpCode2CpgFixture {
 
@@ -245,5 +247,40 @@ class TypeDeclTests extends PhpCode2CpgFixture {
     val cpg = code("<?php echo 0;", fileName = "foo.php")
 
     cpg.typeDecl.nameExact("<global>").fullName.l shouldBe List("foo.php:<global>")
+  }
+
+  "class magic constants" when {
+    "called on a class name should give the fully qualified class name" in {
+      val cpg = code("""<?php
+        |namespace foo;
+        |class Foo {}
+        |
+        |function test() {
+        |  Foo::class;
+        |}
+        |""")
+
+      inside(cpg.method.name("test").body.astChildren.l) { case List(fooRef: TypeRef) =>
+        fooRef.typeFullName shouldBe "foo\\Foo"
+        fooRef.lineNumber shouldBe Some(6)
+      }
+    }
+
+    "called on an object should give the fully qualified type name" in {
+      val cpg = code("""<?php
+        |namespace foo;
+        |class Foo {}
+        |
+        |function test(Foo $f) {
+        |  $f::class;
+        |}
+        |""")
+
+      inside(cpg.method.name("test").body.astChildren.l) { case List(fooRef: TypeRef) =>
+        // TODO The typeFullName here is missing, even though we should get it. Fix with types in general.
+        // fooRef.typeFullName shouldBe "foo\\Foo"
+        fooRef.lineNumber shouldBe Some(6)
+      }
+    }
   }
 }

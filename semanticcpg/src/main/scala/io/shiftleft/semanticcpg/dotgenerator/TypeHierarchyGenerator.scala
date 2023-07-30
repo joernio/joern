@@ -11,8 +11,8 @@ class TypeHierarchyGenerator {
 
   def generate(cpg: Cpg): Graph = {
     val subgraph         = mutable.HashMap.empty[String, Seq[StoredNode]]
-    val vertices         = cpg.all.collect { case m: TypeDecl => m }.l
-    val typeToIsExternal = cpg.all.collect { case m: TypeDecl => m }.map { t => t.fullName -> t.isExternal }.toMap
+    val vertices         = cpg.typeDecl.l
+    val typeToIsExternal = vertices.map { t => t.fullName -> t.isExternal }.toMap
     val edges = for {
       srcTypeDecl <- vertices
       srcType     <- srcTypeDecl._typeViaRefIn.l

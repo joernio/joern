@@ -89,7 +89,7 @@ class CallTests extends PhpCode2CpgFixture {
 
     inside(cpg.call.l) { case List(fooCall) =>
       fooCall.name shouldBe "foo"
-      fooCall.methodFullName shouldBe s"<empty>"
+      fooCall.methodFullName shouldBe """<unresolvedNamespace>\$f->foo"""
       fooCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       fooCall.lineNumber shouldBe Some(2)
       fooCall.code shouldBe "$f->foo($x)"
@@ -109,7 +109,7 @@ class CallTests extends PhpCode2CpgFixture {
 
     inside(cpg.call.filter(_.name != Operators.fieldAccess).l) { case List(fooCall) =>
       fooCall.name shouldBe "$foo"
-      fooCall.methodFullName shouldBe s"<empty>"
+      fooCall.methodFullName shouldBe """<unresolvedNamespace>\$$f->$foo"""
       fooCall.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
       fooCall.lineNumber shouldBe Some(2)
       fooCall.code shouldBe "$$f->$foo($x)"

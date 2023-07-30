@@ -141,7 +141,7 @@ class DependenciesPassTest extends AbstractPassTest {
         file.write(code)
         json.write(packageJsonContent)
         val cpg    = newEmptyCpg()
-        val config = Config(inputPath = dir.toString())
+        val config = Config().withInputPath(dir.toString())
         new DependenciesPass(cpg, config).createAndApply()
         f(cpg)
       }

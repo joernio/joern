@@ -36,7 +36,12 @@ trait MacroHandler { this: AstCreator =>
     * invocation and attach `ast` as its child.
     */
   def asChildOfMacroCall(node: IASTNode, ast: Ast): Ast = {
+    // If a macro in a header file contained a method definition already seen in some
+    // source file we skipped that during the previous AST creation and returned an empty AST.
+    if (ast.root.isEmpty && isExpandedFromMacro(node)) return ast
+    // We do nothing for locals only.
     if (ast.nodes.size == 1 && ast.root.exists(_.isInstanceOf[NewLocal])) return ast
+    // Otherwise, we create the synthetic call AST.
     val matchingMacro = extractMatchingMacro(node)
     val macroCallAst  = matchingMacro.map { case (mac, args) => createMacroCallAst(ast, node, mac, args) }
     macroCallAst match {

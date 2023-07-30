@@ -4,7 +4,7 @@
 This is a [CPG](https://docs.joern.io/code-property-graph/) frontend based on [Ghidra](https://ghidra-sre.org/). 
 
 [![Build Status](https://github.com/joernio/ghidra2cpg/workflows/release/badge.svg)](https://github.com/joernio/ghidra2cpg/actions?query=workflow%3Arelease)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.joern/ghidra2cpg_2.13/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.joern/ghidra2cpg_2.13)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/io.joern/ghidra2cpg_3/badge.svg)](https://maven-badges.herokuapp.com/maven-central/io.joern/ghidra2cpg_3)
 
 ## Setup
 

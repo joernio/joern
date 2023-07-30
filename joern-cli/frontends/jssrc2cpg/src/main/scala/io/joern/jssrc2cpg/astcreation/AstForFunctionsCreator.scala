@@ -1,17 +1,17 @@
 package io.joern.jssrc2cpg.astcreation
 
-import io.joern.jssrc2cpg.datastructures.BlockScope
-import io.joern.jssrc2cpg.datastructures.MethodScope
-import io.joern.jssrc2cpg.parser.BabelAst._
+import io.joern.jssrc2cpg.datastructures.{BlockScope, MethodScope}
+import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.Ast
-import io.joern.x2cpg.datastructures.Stack._
+import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newLocalNode}
-import io.shiftleft.codepropertygraph.generated.nodes.{Identifier => _, _}
+import io.shiftleft.codepropertygraph.generated.nodes.{Identifier as _, *}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes}
 import ujson.Value
 
 import scala.collection.mutable
+import scala.util.Try
 
 trait AstForFunctionsCreator { this: AstCreator =>
 
@@ -154,7 +154,9 @@ trait AstForFunctionsCreator { this: AstCreator =>
           param
         case ObjectPattern =>
           val paramName = generateUnusedVariableName(usedVariableNames, s"param$index")
-          val tpe       = typeFor(nodeInfo)
+          // Handle de-structured parameters declared as `{ username: string; password: string; }`
+          val typeDecl = astForTypeAlias(nodeInfo)
+          val tpe      = typeDecl.root.collect { case t: NewTypeDecl => t.fullName }.getOrElse(typeFor(nodeInfo))
           val param = parameterInNode(
             nodeInfo,
             paramName,
@@ -164,6 +166,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
             EvaluationStrategies.BY_VALUE,
             Option(tpe)
           )
+          Ast.storeInDiffGraph(typeDecl, diffGraph)
           scope.addVariable(paramName, param, MethodScope)
 
           additionalBlockStatements.addAll(nodeInfo.json("properties").arr.toList.map { element =>
@@ -186,20 +189,37 @@ trait AstForFunctionsCreator { this: AstCreator =>
                   createFieldIdentifierNode(elemName, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber)
                 val accessAst =
                   createFieldAccessCallAst(paramNode, keyNode, elementNodeInfo.lineNumber, elementNodeInfo.columnNumber)
-                createAssignmentCallAst(
+                val assignmentCallAst = createAssignmentCallAst(
                   Ast(localParamNode),
                   accessAst,
                   s"$elemName = ${codeOf(accessAst.nodes.head)}",
                   elementNodeInfo.lineNumber,
                   elementNodeInfo.columnNumber
                 )
+                // Handle identifiers referring to locals created by destructured parameters
+                assignmentCallAst.nodes
+                  .collect { case i: NewIdentifier if localNode.name == i.name => i }
+                  .map { i => assignmentCallAst.withRefEdge(i, localNode) }
+                  .reduce(_ merge _)
               case RestElement => handleRestInParameters(elementNodeInfo, nodeInfo, paramName)
               case _           => astForNodeWithFunctionReference(elementNodeInfo.json)
             }
           })
           param
         case Identifier =>
-          val tpe  = typeFor(nodeInfo)
+          // Handle types declared as `credentials: { username: string; password: string; }`
+          val tpe = Try(createBabelNodeInfo(nodeInfo.json("typeAnnotation")("typeAnnotation")))
+            .map(x =>
+              x.node match {
+                case TSTypeLiteral =>
+                  val typeDecl = astForTypeAlias(x)
+                  Ast.storeInDiffGraph(typeDecl, diffGraph)
+                  typeDecl.root.collect { case t: NewTypeDecl => t.fullName }.getOrElse(typeFor(nodeInfo))
+                case _ => typeFor(nodeInfo)
+              }
+            )
+            .getOrElse(typeFor(nodeInfo))
+
           val name = nodeInfo.json("name").str
           val node =
             parameterInNode(nodeInfo, name, nodeInfo.code, index, false, EvaluationStrategies.BY_VALUE, Option(tpe))
@@ -208,7 +228,11 @@ trait AstForFunctionsCreator { this: AstCreator =>
         case TSParameterProperty =>
           val unpackedParam = createBabelNodeInfo(nodeInfo.json("parameter"))
           val tpe           = typeFor(unpackedParam)
-          val name          = unpackedParam.json("name").str
+
+          val name = unpackedParam.node match {
+            case AssignmentPattern => createBabelNodeInfo(unpackedParam.json("left")).code
+            case _                 => unpackedParam.json("name").str
+          }
           val node =
             parameterInNode(nodeInfo, name, nodeInfo.code, index, false, EvaluationStrategies.BY_VALUE, Option(tpe))
           scope.addVariable(name, node, MethodScope)

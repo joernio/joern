@@ -304,20 +304,21 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph)
 }
 
 /** Lone Identifier Optimization: we first determine and store all identifiers that neither refer to a local nor a
-  * parameter and that appear only once as a call argument. For these identifiers, we know that they are not used in any
-  * other location in the code, and so, we remove them from `gen` sets so that they need not be propagated through the
-  * entire graph only to determine that they reach the exit node. Instead, when creating reaching definition edges, we
-  * simply create edges from the identifier to the exit node.
+  * parameter and that appear only once as a call argument and not also in a return statement. For these identifiers, we
+  * know that they are not used in any other location in the code, and so, we remove them from `gen` sets so that they
+  * need not be propagated through the entire graph only to determine that they reach the exit node. Instead, when
+  * creating reaching definition edges, we simply create edges from the identifier to the exit node.
   */
 class OptimizedReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph)
     extends ReachingDefTransferFunction(flowGraph) {
 
   lazy val loneIdentifiers: Map[Call, List[Definition]] = {
-    val paramAndLocalNames = method.parameter.name.l ++ method.local.name.l
-
+    val identifiersInReturns = method._returnViaContainsOut.ast.isIdentifier.name.l
+    val paramAndLocalNames   = method.parameter.name.l ++ method.local.name.l
     val callArgPairs = method.call.flatMap { call =>
       call.argument.isIdentifier
         .filterNot(i => paramAndLocalNames.contains(i.name))
+        .filterNot(i => identifiersInReturns.contains(i.name))
         .map(arg => (arg.name, call, arg))
     }.l
 

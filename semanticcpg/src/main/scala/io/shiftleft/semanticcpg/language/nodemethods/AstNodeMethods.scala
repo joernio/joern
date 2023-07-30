@@ -131,7 +131,6 @@ class AstNodeMethods(val node: AstNode) extends AnyVal with NodeExtension {
 
 object AstNodeMethods {
 
-  import scala.jdk.CollectionConverters._
   private def lastExpressionInBlock(block: Block): Option[Expression] =
     block._astOut
       .collect {

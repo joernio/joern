@@ -100,6 +100,9 @@ class SymbolTable[K <: SBKey](val keyFromNode: AstNode => Option[K]) {
   def append(node: AstNode, typeFullName: String): Set[String] =
     append(node, Set(typeFullName))
 
+  def append(node: K, typeFullName: String): Set[String] =
+    append(node, Set(typeFullName))
+
   def append(node: AstNode, typeFullNames: Set[String]): Set[String] = keyFromNode(node) match {
     case Some(key) => append(key, typeFullNames)
     case None      => Set.empty

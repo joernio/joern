@@ -13,11 +13,41 @@ class NewMemberTests extends JavaSrcCode2CpgFixture {
         |  Foo x = new Foo() {
         |    @Override
         |    void foo() {}
-        |  }
+        |  };
         |
         |  void foo() {}
         |}""".stripMargin)
+    cpg.member.size shouldBe 1
     cpg.member.name("x").astChildren.size shouldBe 0
+  }
+
+  "member with generic class" should {
+    val cpg = code("""
+        |import org.apache.kafka.clients.consumer.Consumer;
+        |public class CountryPopulationConsumer {
+        |
+        | private Consumer<String, Integer> consumer;
+        |
+        |  void foo() {
+        |   consumer.poll(1000);
+        |  }
+        |}""".stripMargin)
+
+    "have a resolved typeFullName" in {
+      cpg.member
+        .name("consumer")
+        .typeFullName
+        .head shouldBe "org.apache.kafka.clients.consumer.Consumer<String,Integer>"
+    }
+
+    "have a resolved package name in methodFullName" in {
+      cpg
+        .call("poll")
+        .methodFullName
+        .head
+        .split(":")
+        .head shouldBe "org.apache.kafka.clients.consumer.Consumer<String,Integer>.poll"
+    }
   }
 
   "enum entries with anonymous classes should not result in subtrees to the member node" in {
@@ -26,12 +56,13 @@ class NewMemberTests extends JavaSrcCode2CpgFixture {
         |  X(12) {
         |    @Override
         |    void foo() {}
-        |  }
+        |  };
         |
         |  private Foo(int x) {}
         |
         |  void foo() {}
         |}""".stripMargin)
+    cpg.member.size shouldBe 1
     cpg.member.name("x").astChildren.size shouldBe 0
   }
 
@@ -386,7 +417,7 @@ class MemberTests extends JavaSrcCode2CpgFixture {
               fieldAccess.typeFullName shouldBe "int"
               fieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
-              val List(identifier: Identifier, field: FieldIdentifier) = fieldAccess.argument.l
+              val List(identifier: Identifier, field: FieldIdentifier) = fieldAccess.argument.l: @unchecked
               identifier.name shouldBe "Bar"
               identifier.typeFullName shouldBe "Bar"
               identifier.order shouldBe 1

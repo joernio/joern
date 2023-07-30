@@ -30,6 +30,7 @@ object Constants {
   val this_                          = "this"
   val tmpLocalPrefix                 = "tmp_"
   val tryCode                        = "try"
+  val unusedDestructuringEntryText   = "_"
   val unknownOperator                = "<operator>.unknown"
   val when                           = "when"
   val wildcardImportName             = "*"

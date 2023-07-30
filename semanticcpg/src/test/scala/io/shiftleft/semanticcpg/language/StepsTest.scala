@@ -9,7 +9,6 @@ import org.json4s._
 import org.json4s.native.JsonMethods.parse
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import overflowdb.traversal.Traversal
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 

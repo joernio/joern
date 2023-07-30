@@ -66,4 +66,34 @@ class DotCfgGeneratorTests extends CCodeToCpgSuite {
 
   }
 
+  "DotCfgGeneratorTest3" should {
+    val cpg = code("""
+        |int example(int a, int b, int c) {
+        |  int x = 3;
+        |  if(a) {
+        |    foo();
+        |  }
+        |  if(b) {
+        |    foo_2();
+        |  }
+        |  if (c) {
+        |    foo_3();
+        |  }
+        |}
+        |""".stripMargin)
+
+    "contain identifiers as conditions" in {
+      inside(cpg.method.name("example").dotCfg.l) { case List(dotStr) =>
+        dotStr should (
+          startWith("digraph \"example\" {") and
+            include("<(IDENTIFIER,a,if (a))<SUB>4</SUB>>") and
+            include("<(IDENTIFIER,b,if (b))<SUB>7</SUB>>") and
+            include("<(IDENTIFIER,c,if (c))<SUB>10</SUB>>") and
+            endWith("}\n")
+        )
+      }
+    }
+
+  }
+
 }

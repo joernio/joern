@@ -10,7 +10,7 @@ class RegexTests extends RubyParserAbstractTest {
       "be parsed as a primary expression" in {
         printAst(_.primary(), code) shouldEqual
           """LiteralPrimary
-            | Literal
+            | RegularExpressionLiteral
             |  /
             |  /""".stripMargin
       }
@@ -33,36 +33,34 @@ class RegexTests extends RubyParserAbstractTest {
             |    ExpressionExpressionOrCommand
             |     PrimaryExpression
             |      LiteralPrimary
-            |       Literal
+            |       RegularExpressionLiteral
             |        /
             |        /""".stripMargin
       }
     }
 
-    // TODO: RubyLexer needs to properly identify regex literals as arguments to commands first.
-    "as the argument to a `puts` command" ignore {
+    "as the argument to a `puts` command" should {
       val code = "puts //"
 
       "be parsed as such" in {
         printAst(_.expressionOrCommand(), code) shouldEqual
-          """ExpressionExpressionOrCommand
-            | InvocationExpressionOrCommand
-            |  SingleCommandOnlyInvocationWithoutParentheses
-            |   Command
-            |    MethodIdentifier
-            |     puts
-            |    ArgumentsWithoutParentheses
-            |     BlockExprAssocTypeArguments
-            |      Expressions
-            |       PrimaryExpression
-            |        LiteralPrimary
-            |         Literal
-            |          /
-            |          /""".stripMargin
+          """InvocationExpressionOrCommand
+            | SingleCommandOnlyInvocationWithoutParentheses
+            |  SimpleMethodCommand
+            |   MethodIdentifier
+            |    puts
+            |   ArgumentsWithoutParentheses
+            |    Arguments
+            |     ExpressionArgument
+            |      PrimaryExpression
+            |       LiteralPrimary
+            |        RegularExpressionLiteral
+            |         /
+            |         /""".stripMargin
       }
     }
 
-    "as the argument to an parenthesized invocation" should {
+    "as the sole argument to a parenthesized invocation" should {
       val code = "puts(//)"
 
       "be parsed as such" in {
@@ -74,14 +72,138 @@ class RegexTests extends RubyParserAbstractTest {
             |    puts
             |   ArgsOnlyArgumentsWithParentheses
             |    (
-            |    BlockExprAssocTypeArguments
-            |     Expressions
+            |    Arguments
+            |     ExpressionArgument
             |      PrimaryExpression
             |       LiteralPrimary
-            |        Literal
+            |        RegularExpressionLiteral
             |         /
             |         /
             |    )""".stripMargin
+      }
+    }
+
+    "as the second argument to a parenthesized invocation" should {
+      val code = "puts(1, //)"
+
+      "be parsed as such" in {
+        printAst(_.expressionOrCommand(), code) shouldEqual
+          """ExpressionExpressionOrCommand
+            | PrimaryExpression
+            |  InvocationWithParenthesesPrimary
+            |   MethodIdentifier
+            |    puts
+            |   ArgsOnlyArgumentsWithParentheses
+            |    (
+            |    Arguments
+            |     ExpressionArgument
+            |      PrimaryExpression
+            |       LiteralPrimary
+            |        NumericLiteralLiteral
+            |         NumericLiteral
+            |          UnsignedNumericLiteral
+            |           1
+            |     ,
+            |     WsOrNl
+            |     ExpressionArgument
+            |      PrimaryExpression
+            |       LiteralPrimary
+            |        RegularExpressionLiteral
+            |         /
+            |         /
+            |    )""".stripMargin
+      }
+    }
+
+    "used in a `when` clause" should {
+      val code =
+        """case foo
+            |      when /^ch_/
+            |        bar
+            |end""".stripMargin
+
+      "be parsed as such" in {
+        printAst(_.primary(), code) shouldEqual
+          """CaseExpressionPrimary
+              | CaseExpression
+              |  case
+              |  WsOrNl
+              |  ExpressionExpressionOrCommand
+              |   PrimaryExpression
+              |    VariableReferencePrimary
+              |     VariableIdentifierVariableReference
+              |      VariableIdentifier
+              |       foo
+              |  Separators
+              |   Separator
+              |  WhenClause
+              |   when
+              |   WsOrNl
+              |   WhenArgument
+              |    Expressions
+              |     PrimaryExpression
+              |      LiteralPrimary
+              |       RegularExpressionLiteral
+              |        /
+              |        ^ch_
+              |        /
+              |   ThenClause
+              |    Separator
+              |    WsOrNl
+              |    CompoundStatement
+              |     Statements
+              |      ExpressionOrCommandStatement
+              |       ExpressionExpressionOrCommand
+              |        PrimaryExpression
+              |         VariableReferencePrimary
+              |          VariableIdentifierVariableReference
+              |           VariableIdentifier
+              |            bar
+              |     Separators
+              |      Separator
+              |  end""".stripMargin
+      }
+
+      "used in a `unless` clause" should {
+        val code =
+          """unless /\A([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})\z/i.match?(value)
+            |end""".stripMargin
+
+        "be parsed as such" in {
+          printAst(_.primary(), code) shouldEqual
+            """UnlessExpressionPrimary
+              | UnlessExpression
+              |  unless
+              |  WsOrNl
+              |  ExpressionExpressionOrCommand
+              |   PrimaryExpression
+              |    ChainedInvocationPrimary
+              |     LiteralPrimary
+              |      RegularExpressionLiteral
+              |       /
+              |       \A([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})\z
+              |       /i
+              |     .
+              |     MethodName
+              |      MethodIdentifier
+              |       MethodOnlyIdentifier
+              |        match
+              |        ?
+              |     ArgsOnlyArgumentsWithParentheses
+              |      (
+              |      Arguments
+              |       ExpressionArgument
+              |        PrimaryExpression
+              |         VariableReferencePrimary
+              |          VariableIdentifierVariableReference
+              |           VariableIdentifier
+              |            value
+              |      )
+              |  ThenClause
+              |   Separator
+              |   CompoundStatement
+              |  end""".stripMargin
+        }
       }
     }
   }
@@ -94,7 +216,7 @@ class RegexTests extends RubyParserAbstractTest {
       "be parsed as a primary expression" in {
         printAst(_.primary(), code) shouldEqual
           """LiteralPrimary
-            | Literal
+            | RegularExpressionLiteral
             |  /
             |  (eu|us)
             |  /""".stripMargin
@@ -118,34 +240,32 @@ class RegexTests extends RubyParserAbstractTest {
             |    ExpressionExpressionOrCommand
             |     PrimaryExpression
             |      LiteralPrimary
-            |       Literal
+            |       RegularExpressionLiteral
             |        /
             |        (eu|us)
             |        /""".stripMargin
       }
     }
 
-    // TODO: RubyLexer needs to properly identify regex literals as arguments to commands first.
-    "as the argument to a `puts` command" ignore {
+    "as the argument to a `puts` command" should {
       val code = "puts /(eu|us)/"
 
       "be parsed as such" in {
         printAst(_.expressionOrCommand(), code) shouldEqual
-          """ExpressionExpressionOrCommand
-            | InvocationExpressionOrCommand
-            |  SingleCommandOnlyInvocationWithoutParentheses
-            |   Command
-            |    MethodIdentifier
-            |     puts
-            |    ArgumentsWithoutParentheses
-            |     BlockExprAssocTypeArguments
-            |      Expressions
-            |       PrimaryExpression
-            |        LiteralPrimary
-            |         Literal
-            |          /
-            |          (eu|us)
-            |          /""".stripMargin
+          """InvocationExpressionOrCommand
+            | SingleCommandOnlyInvocationWithoutParentheses
+            |  SimpleMethodCommand
+            |   MethodIdentifier
+            |    puts
+            |   ArgumentsWithoutParentheses
+            |    Arguments
+            |     ExpressionArgument
+            |      PrimaryExpression
+            |       LiteralPrimary
+            |        RegularExpressionLiteral
+            |         /
+            |         (eu|us)
+            |         /""".stripMargin
       }
     }
 
@@ -161,11 +281,11 @@ class RegexTests extends RubyParserAbstractTest {
             |    puts
             |   ArgsOnlyArgumentsWithParentheses
             |    (
-            |    BlockExprAssocTypeArguments
-            |     Expressions
+            |    Arguments
+            |     ExpressionArgument
             |      PrimaryExpression
             |       LiteralPrimary
-            |        Literal
+            |        RegularExpressionLiteral
             |         /
             |         (eu|us)
             |         /
@@ -193,7 +313,7 @@ class RegexTests extends RubyParserAbstractTest {
               |      ExpressionExpressionOrCommand
               |       PrimaryExpression
               |        LiteralPrimary
-              |         Literal
+              |         NumericLiteralLiteral
               |          NumericLiteral
               |           UnsignedNumericLiteral
               |            1
@@ -231,7 +351,7 @@ class RegexTests extends RubyParserAbstractTest {
             |            ExpressionExpressionOrCommand
             |             PrimaryExpression
             |              LiteralPrimary
-            |               Literal
+            |               NumericLiteralLiteral
             |                NumericLiteral
             |                 UnsignedNumericLiteral
             |                  1
@@ -241,41 +361,39 @@ class RegexTests extends RubyParserAbstractTest {
       }
     }
 
-    // TODO: RubyLexer needs to properly identify regex literals as arguments to commands first.
-    "as the argument to a `puts` command" ignore {
+    "as the argument to a `puts` command" should {
       val code = "puts /x#{1}y/"
 
       "be parsed as such" in {
         printAst(_.expressionOrCommand(), code) shouldEqual
-          """ExpressionExpressionOrCommand
-            | InvocationExpressionOrCommand
-            |  SingleCommandOnlyInvocationWithoutParentheses
-            |   Command
-            |    MethodIdentifier
-            |     puts
-            |    ArgumentsWithoutParentheses
-            |     BlockExprAssocTypeArguments
-            |      Expressions
-            |       PrimaryExpression
-            |        RegexInterpolationPrimary
-            |         RegexInterpolation
-            |          /
-            |          x
-            |          InterpolatedRegexSequence
-            |           #{
-            |           CompoundStatement
-            |            Statements
-            |             ExpressionOrCommandStatement
-            |              ExpressionExpressionOrCommand
-            |               PrimaryExpression
-            |                LiteralPrimary
-            |                 Literal
-            |                  NumericLiteral
-            |                   UnsignedNumericLiteral
-            |                    1
-            |           }
-            |           y
-            |           /""".stripMargin
+          """InvocationExpressionOrCommand
+            | SingleCommandOnlyInvocationWithoutParentheses
+            |  SimpleMethodCommand
+            |   MethodIdentifier
+            |    puts
+            |   ArgumentsWithoutParentheses
+            |    Arguments
+            |     ExpressionArgument
+            |      PrimaryExpression
+            |       RegexInterpolationPrimary
+            |        RegexInterpolation
+            |         /
+            |         x
+            |         InterpolatedRegexSequence
+            |          #{
+            |          CompoundStatement
+            |           Statements
+            |            ExpressionOrCommandStatement
+            |             ExpressionExpressionOrCommand
+            |              PrimaryExpression
+            |               LiteralPrimary
+            |                NumericLiteralLiteral
+            |                 NumericLiteral
+            |                  UnsignedNumericLiteral
+            |                   1
+            |          }
+            |         y
+            |         /""".stripMargin
       }
     }
 
@@ -291,8 +409,8 @@ class RegexTests extends RubyParserAbstractTest {
             |    puts
             |   ArgsOnlyArgumentsWithParentheses
             |    (
-            |    BlockExprAssocTypeArguments
-            |     Expressions
+            |    Arguments
+            |     ExpressionArgument
             |      PrimaryExpression
             |       RegexInterpolationPrimary
             |        RegexInterpolation
@@ -306,7 +424,7 @@ class RegexTests extends RubyParserAbstractTest {
             |             ExpressionExpressionOrCommand
             |              PrimaryExpression
             |               LiteralPrimary
-            |                Literal
+            |                NumericLiteralLiteral
             |                 NumericLiteral
             |                  UnsignedNumericLiteral
             |                   1

@@ -1,10 +1,12 @@
 package io.joern.x2cpg.utils.dependency
 
 import better.files.File
+import io.joern.x2cpg.utils.ExternalCommand
 import io.joern.x2cpg.utils.dependency.GradleConfigKeys.GradleConfigKey
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Path
+import scala.util.{Failure, Success}
 
 object GradleConfigKeys extends Enumeration {
   type GradleConfigKey = Value
@@ -18,8 +20,46 @@ case class DependencyResolverParams(
 object DependencyResolver {
   private val logger                         = LoggerFactory.getLogger(getClass)
   private val defaultGradleProjectName       = "app"
-  private val defaultGradleConfigurationName = "releaseCompileClasspath"
+  private val defaultGradleConfigurationName = "compileClasspath"
   private val MaxSearchDepth: Int            = 4
+
+  def getCoordinates(
+    projectDir: Path,
+    params: DependencyResolverParams = new DependencyResolverParams
+  ): Option[collection.Seq[String]] = {
+    val coordinates = findSupportedBuildFiles(projectDir).flatMap { buildFile =>
+      if (isMavenBuildFile(buildFile))
+        // TODO: implement
+        None
+      else if (isGradleBuildFile(buildFile))
+        getCoordinatesForGradleProject(buildFile.getParent, defaultGradleConfigurationName)
+      else {
+        logger.warn(s"Found unsupported build file $buildFile")
+        Nil
+      }
+    }.flatten
+
+    Option.when(coordinates.nonEmpty)(coordinates)
+  }
+
+  private def getCoordinatesForGradleProject(
+    projectDir: Path,
+    configuration: String
+  ): Option[collection.Seq[String]] = {
+    val lines = ExternalCommand.run(s"gradle dependencies --configuration $configuration", projectDir.toString) match {
+      case Success(lines) => lines
+      case Failure(exception) =>
+        logger.warn(
+          s"Could not retrieve dependencies for Gradle project at path `$projectDir`\n" +
+            exception.getMessage
+        )
+        Seq()
+    }
+
+    val coordinates = MavenCoordinates.fromGradleOutput(lines)
+    logger.info("Got {} Maven coordinates", coordinates.size)
+    Some(coordinates)
+  }
 
   def getDependencies(
     projectDir: Path,

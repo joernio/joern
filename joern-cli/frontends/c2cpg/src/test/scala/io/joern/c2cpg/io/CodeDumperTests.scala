@@ -54,7 +54,9 @@ class CodeDumperTests extends CCodeToCpgSuite {
       val code = cpg.call.name("foo").dumpRaw.mkString("\n")
       code should (
         startWith("int")
-          and include regex (".*" + "int x = foo" + ".*" + Pattern.quote(CodeDumper.arrow.toString) + ".*")
+          and include regex (".*" + "int x = foo" + ".*" + Pattern.quote(
+            CodeDumper.arrow(Option("my_func")).toString
+          ) + ".*")
           and endWith("}")
       )
     }

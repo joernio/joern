@@ -4,7 +4,7 @@ import ghidra.app.util.template.TemplateSimplifier
 import ghidra.program.model.address.GenericAddress
 import ghidra.program.model.lang.Register
 import ghidra.program.model.listing.{CodeUnitFormat, CodeUnitFormatOptions, Function, Instruction, Program}
-import ghidra.program.model.pcode.HighFunction
+import ghidra.program.model.pcode.{HighFunction, HighSymbol}
 import ghidra.program.model.scalar.Scalar
 import io.joern.ghidra2cpg._
 import io.joern.ghidra2cpg.processors._
@@ -183,7 +183,7 @@ abstract class FunctionPass(
             .map { highFunction =>
               highFunction.getLocalSymbolMap.getSymbols.asScala.toSeq.filter(_.isParameter).toArray
             }
-            .getOrElse(Array.empty)
+            .getOrElse(Array.empty[HighSymbol])
 
           checkedParameters = parameters.map { parameter =>
             val checkedParameter =

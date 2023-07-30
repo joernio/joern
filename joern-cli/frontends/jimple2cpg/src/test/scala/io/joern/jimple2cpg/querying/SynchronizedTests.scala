@@ -27,7 +27,7 @@ class SynchronizedTests extends JimpleCode2CpgFixture {
     val List(method: Method) = cpg.method.name("foo").l
 
     method.astChildren.size shouldBe 7
-    val List("STATIC", "PUBLIC", "SYNCHRONIZED") = method.modifier.map(_.modifierType).l
+    val List("STATIC", "PUBLIC", "SYNCHRONIZED") = method.modifier.map(_.modifierType).l: @unchecked
     val List(param)                              = method.parameter.l
     val body                                     = method.block
     param.code shouldBe "java.lang.String s"

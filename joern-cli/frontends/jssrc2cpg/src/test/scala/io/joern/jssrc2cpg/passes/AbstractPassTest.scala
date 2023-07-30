@@ -19,9 +19,9 @@ abstract class AbstractPassTest extends AnyWordSpec with Matchers with Inside {
         val cpg  = newEmptyCpg()
         val file = dir / filename
         file.write(code)
-        val config       = Config(inputPath = dir.toString(), outputPath = dir.toString(), tsTypes = tsTypes)
-        val astgenResult = new AstGenRunner(config).execute(dir)
-        new AstCreationPass(cpg, astgenResult, config).createAndApply()
+        val config       = Config(tsTypes = tsTypes).withInputPath(dir.toString).withOutputPath(dir.toString)
+        val astGenResult = new AstGenRunner(config).execute(dir)
+        new AstCreationPass(cpg, astGenResult, config).createAndApply()
         f(cpg)
         file.delete()
       }
@@ -34,9 +34,9 @@ abstract class AbstractPassTest extends AnyWordSpec with Matchers with Inside {
         val cpg  = newEmptyCpg()
         val file = dir / filename
         file.write(code)
-        val config          = Config(inputPath = dir.toString(), outputPath = dir.toString(), tsTypes = tsTypes)
-        val astgenResult    = new AstGenRunner(config).execute(dir)
-        val astCreationPass = new AstCreationPass(cpg, astgenResult, config)
+        val config          = Config(tsTypes = tsTypes).withInputPath(dir.toString).withOutputPath(dir.toString)
+        val astGenResult    = new AstGenRunner(config).execute(dir)
+        val astCreationPass = new AstCreationPass(cpg, astGenResult, config)
         astCreationPass.createAndApply()
         new TypeNodePass(astCreationPass.allUsedTypes(), cpg).createAndApply()
         new BuiltinTypesPass(cpg).createAndApply()
@@ -54,9 +54,9 @@ abstract class AbstractPassTest extends AnyWordSpec with Matchers with Inside {
         file1.write(code1)
         val file2 = dir / filename2
         file2.write(code2)
-        val config          = Config(inputPath = dir.toString(), outputPath = dir.toString(), tsTypes = tsTypes)
-        val astgenResult    = new AstGenRunner(config).execute(dir)
-        val astCreationPass = new AstCreationPass(cpg, astgenResult, config)
+        val config          = Config(tsTypes = tsTypes).withInputPath(dir.toString).withOutputPath(dir.toString)
+        val astGenResult    = new AstGenRunner(config).execute(dir)
+        val astCreationPass = new AstCreationPass(cpg, astGenResult, config)
         astCreationPass.createAndApply()
         new TypeNodePass(astCreationPass.allUsedTypes(), cpg).createAndApply()
         new BuiltinTypesPass(cpg).createAndApply()

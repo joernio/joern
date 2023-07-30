@@ -207,24 +207,16 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       .foreach(prepopulateSymbolTableEntry)
   }
 
-  protected def getTypes(node: AstNode): Set[String] =
-    (node.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty) :+ node.property(
-      PropertyNames.TYPE_FULL_NAME,
-      "ANY"
-    )).filterNot(_.toUpperCase.matches("(UNKNOWN|ANY)")).toSet
-
   protected def prepopulateSymbolTableEntry(x: AstNode): Unit = x match {
-    case x @ (_: Identifier | _: Local | _: MethodParameterIn) => symbolTable.put(x, getTypes(x))
-    case x: Call => symbolTable.put(x, (x.methodFullName +: x.dynamicTypeHintFullName).toSet)
+    case x @ (_: Identifier | _: Local | _: MethodParameterIn) => symbolTable.append(x, x.getKnownTypes)
+    case x: Call => symbolTable.append(x, (x.methodFullName +: x.dynamicTypeHintFullName).toSet)
     case _       =>
   }
 
   protected def hasTypes(node: AstNode): Boolean = node match {
     case x: Call if !x.methodFullName.startsWith("<operator>") =>
       !x.methodFullName.toLowerCase().matches("(<unknownfullname>|any)")
-    case x =>
-      x.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty)
-        .nonEmpty || !x.property(PropertyNames.TYPE_FULL_NAME, "ANY").toUpperCase.matches("(UNKNOWN|ANY)")
+    case x => x.getKnownTypes.nonEmpty
   }
 
   protected def assignments: Traversal[Assignment] =
@@ -258,8 +250,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   }
 
   private def debugLocation(n: AstNode): String = {
-    val rootPath = cpg.metaData.root.headOption.getOrElse("")
-    val fileName = n.file.name.headOption.getOrElse("<unknown>").stripPrefix(rootPath)
+    val fileName = n.file.name.headOption.getOrElse("<unknown>").stripPrefix(codeRoot)
     val lineNo   = n.lineNumber.getOrElse("<unknown>")
     s"$fileName#L$lineNo"
   }
@@ -267,11 +258,31 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** Visits an import and stores references in the symbol table as both an identifier and call.
     */
   protected def visitImport(i: Import): Unit = for {
-    entity <- i.importedEntity
-    alias  <- i.importedAs
+    resolvedImport <- i.call.tag
+    alias          <- i.importedAs
   } {
-    symbolTable.append(LocalVar(alias), Set(entity))
-    symbolTable.append(CallAlias(alias), Set(entity))
+    import io.joern.x2cpg.passes.frontend.ImportsPass._
+
+    ResolvedImport.tagToResolvedImport(resolvedImport).foreach {
+      case ResolvedMethod(fullName, alias, receiver, _) =>
+        symbolTable.append(CallAlias(alias, receiver), fullName)
+      case ResolvedTypeDecl(fullName, _) =>
+        symbolTable.append(LocalVar(alias), fullName)
+      case ResolvedMember(basePath, memberName, _) =>
+        val matchingIdentifiers = cpg.method.fullNameExact(basePath).local
+        val matchingMembers     = cpg.typeDecl.fullNameExact(basePath).member
+        val memberTypes = (matchingMembers ++ matchingIdentifiers)
+          .nameExact(memberName)
+          .getKnownTypes
+        symbolTable.append(LocalVar(alias), memberTypes)
+      case UnknownMethod(fullName, alias, receiver, _) =>
+        symbolTable.append(CallAlias(alias, receiver), fullName)
+      case UnknownTypeDecl(fullName, _) =>
+        symbolTable.append(LocalVar(alias), fullName)
+      case UnknownImport(path, _) =>
+        symbolTable.append(CallAlias(alias), path)
+        symbolTable.append(LocalVar(alias), path)
+    }
   }
 
   /** The initial import setting is over-approximated, so this step checks the CPG for any matches and prunes against
@@ -784,7 +795,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           .member
           .nameExact(sym.identifier)
           .flatMap(m => m.typeFullName +: m.dynamicTypeHintFullName)
-          .filterNot(_ == "ANY")
+          .filterNot { x => x == "ANY" || x == "this" }
           .toSet
         if (cpgTypes.nonEmpty) cpgTypes
         else symbolTable.get(sym)
@@ -799,6 +810,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         symbolTable
           .get(head.argumentOut.head)
           .map(t => Seq(t, head.name, XTypeRecovery.DummyReturnType).mkString(pathSep.toString))
+      case ::(identifier: Identifier, Nil) if symbolTable.contains(identifier) =>
+        symbolTable.get(identifier)
       case ::(head: Call, Nil) =>
         extractTypes(head.argument.l)
       case _ => Set.empty
@@ -937,16 +950,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     baseTypes
       .map(t => if (t.endsWith(funcName)) t else s"$t$pathSep$funcName")
       .flatMap(p => cpg.method.fullNameExact(p))
-      .map { m =>
-        (
-          m,
-          NewMethodRef()
-            .code(s"${baseName.map(_.appended(pathSep)).getOrElse("")}$funcName")
-            .methodFullName(m.fullName)
-            .lineNumber(funcPtr.lineNumber)
-            .columnNumber(funcPtr.columnNumber)
-        )
-      }
+      .map(m => m -> createMethodRef(baseName, funcName, m.fullName, funcPtr.lineNumber, funcPtr.columnNumber))
       .filterNot { case (_, mRef) =>
         addedNodes.contains((funcPtr.id(), s"${mRef.label()}$pathSep${mRef.methodFullName}"))
       }
@@ -955,19 +959,40 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           .filterNot(_.astChildren.isMethodRef.methodFullNameExact(mRef.methodFullName).nonEmpty)
           .foreach { inCall =>
             state.changesWereMade.compareAndSet(false, true)
-            builder.addNode(mRef)
-            builder.addEdge(mRef, m, EdgeTypes.REF)
-            builder.addEdge(inCall, mRef, EdgeTypes.AST)
-            inCall match {
-              case x: Call =>
-                builder.addEdge(x, mRef, EdgeTypes.ARGUMENT)
-                mRef.argumentIndex(x.argumentOut.size + 1)
-              case x =>
-                mRef.argumentIndex(x.astChildren.size + 1)
-            }
+            integrateMethodRef(funcPtr, m, mRef, inCall)
           }
-        addedNodes.add((funcPtr.id(), s"${mRef.label()}$pathSep${mRef.methodFullName}"))
       }
+  }
+
+  private def createMethodRef(
+    baseName: Option[String],
+    funcName: String,
+    methodFullName: String,
+    lineNo: Option[Integer],
+    columnNo: Option[Integer]
+  ): NewMethodRef =
+    NewMethodRef()
+      .code(s"${baseName.map(_.appended(pathSep)).getOrElse("")}$funcName")
+      .methodFullName(methodFullName)
+      .lineNumber(lineNo)
+      .columnNumber(columnNo)
+
+  /** Integrate this method ref node into the CPG according to schema rules. Since we're adding this after the base
+    * passes, we need to add the necessary linking manually.
+    */
+  private def integrateMethodRef(funcPtr: Expression, m: Method, mRef: NewMethodRef, inCall: AstNode) = {
+    builder.addNode(mRef)
+    builder.addEdge(mRef, m, EdgeTypes.REF)
+    builder.addEdge(inCall, mRef, EdgeTypes.AST)
+    builder.addEdge(funcPtr.method, mRef, EdgeTypes.CONTAINS)
+    inCall match {
+      case x: Call =>
+        builder.addEdge(x, mRef, EdgeTypes.ARGUMENT)
+        mRef.argumentIndex(x.argumentOut.size + 1)
+      case x =>
+        mRef.argumentIndex(x.astChildren.size + 1)
+    }
+    addedNodes.add((funcPtr.id(), s"${mRef.label()}$pathSep${mRef.methodFullName}"))
   }
 
   protected def persistType(x: StoredNode, types: Set[String]): Unit = {
@@ -1056,10 +1081,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       )
     }
 
-  protected def nodeExistingTypes(storedNode: StoredNode): Seq[String] = (storedNode.property(
-    PropertyNames.TYPE_FULL_NAME,
-    "ANY"
-  ) +: storedNode.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty)).filterNot(_ == "ANY")
+  protected def nodeExistingTypes(storedNode: StoredNode): Seq[String] = storedNode.allTypes.filterNot(_ == "ANY").toSeq
 
   /** Allows one to modify the types assigned to identifiers.
     */
@@ -1090,5 +1112,25 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** Allows an implementation to perform an operation once type persistence is complete.
     */
   protected def postSetTypeInformation(): Unit = {}
+
+  // The below are convenience calls for accessing type properties, one day when this pass uses `Tag` nodes instead of
+  // the symbol table then perhaps this would work out better
+  implicit class AllNodeTypesFromNodeExt(x: StoredNode) {
+    def allTypes: Iterator[String] = (x.property(PropertyNames.TYPE_FULL_NAME, "ANY") +: x.property(
+      PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
+      Seq.empty
+    )).iterator
+
+    def getKnownTypes: Set[String] = {
+      x.allTypes.filterNot(_.toUpperCase.matches("(UNKNOWN|ANY)")).toSet
+    }
+  }
+
+  implicit class AllNodeTypesFromTraversalExt(x: Traversal[StoredNode]) {
+    def allTypes: Iterator[String] = x.flatMap(_.allTypes)
+
+    def getKnownTypes: Set[String] =
+      x.allTypes.filterNot(_.toUpperCase.matches("(UNKNOWN|ANY)")).toSet
+  }
 
 }

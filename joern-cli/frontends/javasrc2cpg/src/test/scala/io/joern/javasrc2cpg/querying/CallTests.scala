@@ -330,6 +330,35 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
       superReceiver.columnNumber shouldBe Some(12)
     }
   }
+
+  "call to method in derived class using external package" should {
+    lazy val cpg = code("""
+        |import org.hibernate.Query;
+        |import org.hibernate.Session;
+        |import org.hibernate.SessionFactory;
+        |
+        |class Base {
+        |  Session getCurrentSession() {
+        |		return this.sessionFactory.getCurrentSession();
+        |	}
+        |}
+        |
+        |class Derived extends Base{
+        | void foo() {
+        |		Query q = getCurrentSession().createQuery("FROM User");
+        |		return;
+        |	}
+        |}
+        |""".stripMargin)
+
+    "have correct methodFullName" in {
+      cpg.call.nameExact("createQuery").methodFullName.head.split(":").head shouldBe "org.hibernate.Session.createQuery"
+      cpg.call
+        .nameExact("getCurrentSession")
+        .methodFullName
+        .last shouldBe "Derived.getCurrentSession:org.hibernate.Session()"
+    }
+  }
 }
 
 class CallTests extends JavaSrcCode2CpgFixture {
@@ -454,7 +483,7 @@ class CallTests extends JavaSrcCode2CpgFixture {
     call.signature shouldBe "java.lang.String(java.lang.String)"
     call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
-    val List(objName: Identifier, argument: Literal) = call.astChildren.l
+    val List(objName: Identifier, argument: Literal) = call.astChildren.l: @unchecked
 
     objName.order shouldBe 1
     objName.argumentIndex shouldBe 0
@@ -475,7 +504,7 @@ class CallTests extends JavaSrcCode2CpgFixture {
     call.signature shouldBe "java.lang.String(test.MyObject)"
     call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
-    val List(identifier: Identifier, argument: Call) = call.argument.l
+    val List(identifier: Identifier, argument: Call) = call.argument.l: @unchecked
     identifier.order shouldBe 1
     identifier.argumentIndex shouldBe 0
     identifier.code shouldBe "this"
@@ -484,7 +513,7 @@ class CallTests extends JavaSrcCode2CpgFixture {
     argument.name shouldBe Operators.fieldAccess
     argument.typeFullName shouldBe "test.MyObject"
 
-    val List(ident: Identifier, fieldIdent: FieldIdentifier) = argument.argument.l
+    val List(ident: Identifier, fieldIdent: FieldIdentifier) = argument.argument.l: @unchecked
     ident.name shouldBe "this"
     fieldIdent.canonicalName shouldBe "obj"
   }
@@ -498,7 +527,7 @@ class CallTests extends JavaSrcCode2CpgFixture {
     call.signature shouldBe "java.lang.String(test.MyObject)"
     call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
-    val List(objName: Identifier, argument: Call) = call.astChildren.l
+    val List(objName: Identifier, argument: Call) = call.astChildren.l: @unchecked
 
     objName.order shouldBe 1
     objName.argumentIndex shouldBe 0
@@ -511,7 +540,7 @@ class CallTests extends JavaSrcCode2CpgFixture {
     argument.order shouldBe 2
     argument.argumentIndex shouldBe 1
 
-    val List(ident: Identifier, fieldIdent: FieldIdentifier) = argument.argument.l
+    val List(ident: Identifier, fieldIdent: FieldIdentifier) = argument.argument.l: @unchecked
     ident.name shouldBe "this"
     fieldIdent.canonicalName shouldBe "obj"
   }

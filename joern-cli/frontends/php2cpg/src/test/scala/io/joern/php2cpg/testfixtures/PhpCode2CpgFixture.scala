@@ -12,7 +12,7 @@ trait PhpFrontend extends LanguageFrontend {
   override val fileSuffix: String = ".php"
 
   override def execute(sourceCodeFile: File): Cpg = {
-    implicit val defaultConfig: Config = Config()
+    implicit val defaultConfig: Config = getConfig().map(_.asInstanceOf[Config]).getOrElse(Config())
     new Php2Cpg().createCpg(sourceCodeFile.getAbsolutePath).get
   }
 }

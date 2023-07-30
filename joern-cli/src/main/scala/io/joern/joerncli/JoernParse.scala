@@ -8,19 +8,20 @@ import io.shiftleft.codepropertygraph.generated.Languages
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 object JoernParse {
   // Special string used to separate joern-parse opts from frontend-specific opts
-  val ARGS_DELIMITER          = "--frontend-args"
-  val DEFAULT_CPG_OUT_FILE    = "cpg.bin"
+  val ArgsDelimitor           = "--frontend-args"
+  val DefaultCpgOutFile       = "cpg.bin"
   var generator: CpgGenerator = _
 
-  def main(args: Array[String]) = {
+  def main(args: Array[String]): Unit = {
     run(args) match {
-      case Right(msg) => println(msg)
-      case Left(errMsg) =>
-        println(s"Failure: $errMsg")
+      case Success(msg) =>
+        println(msg)
+      case Failure(err) =>
+        err.printStackTrace()
         System.exit(1)
     }
   }
@@ -45,7 +46,7 @@ object JoernParse {
 
     opt[String]("namespaces")
       .text("namespaces to include: comma separated string")
-      .action((x, c) => c.copy(namespaces = x.split(",").map(_.trim).toList))
+      .action((x, c) => c.copy(namespaces = x.split(",").map(_.trim).toSeq))
 
     note("Overlay application stage")
 
@@ -63,19 +64,18 @@ object JoernParse {
     note("Misc")
     help("help").text("display this help message")
 
-    note(s"Args specified after the $ARGS_DELIMITER separator will be passed to the front-end verbatim")
+    note(s"Args specified after the $ArgsDelimitor separator will be passed to the front-end verbatim")
   }
 
-  private def run(args: Array[String]): Either[String, String] = {
+  private def run(args: Array[String]): Try[String] = {
     val (parserArgs, frontendArgs) = CpgBasedTool.splitArgs(args)
     val installConfig              = new InstallConfig()
 
-    parseConfig(parserArgs) match {
-      case Right(config) =>
-        if (config.listLanguages) Right(buildLanguageList())
-        else run(config, frontendArgs, installConfig)
-
-      case Left(err) => Left(err)
+    parseConfig(parserArgs).flatMap { config =>
+      if (config.listLanguages)
+        Try(buildLanguageList())
+      else
+        run(config, frontendArgs, installConfig)
     }
   }
 
@@ -83,23 +83,23 @@ object JoernParse {
     config: ParserConfig,
     frontendArgs: List[String] = List.empty,
     installConfig: InstallConfig = InstallConfig()
-  ): Either[String, String] =
+  ): Try[String] = {
     for {
       _        <- checkInputPath(config)
       language <- getLanguage(config)
       _        <- generateCpg(installConfig, frontendArgs, config, language)
       _        <- applyDefaultOverlays(config)
     } yield newCpgCreatedString(config.outputCpgFile)
+  }
 
-  private def checkInputPath(config: ParserConfig): Either[String, Unit] = {
-
-    if (config.inputPath == "") {
-      println(optionParser.usage)
-      Left("Input path required")
-    } else if (!File(config.inputPath).exists) {
-      Left("Input path does not exist at `" + config.inputPath + "`, exiting.")
-    } else {
-      Right(())
+  private def checkInputPath(config: ParserConfig): Try[Unit] = {
+    Try {
+      if (config.inputPath == "") {
+        println(optionParser.usage)
+        throw new AssertionError(s"Input path required")
+      } else if (!File(config.inputPath).exists)
+        throw new AssertionError(s"Input path does not exist at `${config.inputPath}`, exiting.")
+      else ()
     }
   }
 
@@ -110,63 +110,69 @@ object JoernParse {
     s.toString()
   }
 
-  private def getLanguage(config: ParserConfig): Either[String, String] = {
-    if (config.language.isEmpty) {
-      val inputPath = config.inputPath
-      guessLanguage(inputPath) match {
-        case Some(guess) => Right(guess)
-
-        case None =>
-          Left(
-            s"Could not guess language from input path $inputPath. Please specify a language using the --language option."
+  private def getLanguage(config: ParserConfig): Try[String] = {
+    Try {
+      if (config.language.nonEmpty) {
+        config.language
+      } else {
+        guessLanguage(config.inputPath)
+          .getOrElse(
+            throw new AssertionError(
+              s"Could not guess language from input path ${config.inputPath}. Please specify a language using the --language option."
+            )
           )
       }
-    } else {
-      Right(config.language)
     }
   }
 
   private def generateCpg(
     installConfig: InstallConfig,
-    frontendArgs: List[String],
+    frontendArgs: Seq[String],
     config: ParserConfig,
     language: String
-  ): Either[String, String] = {
+  ): Try[String] = {
     if (config.enhanceOnly) {
-      Right("No generation required")
+      Success("No generation required")
     } else {
       println(s"Parsing code at: ${config.inputPath} - language: `$language`")
       println("[+] Running language frontend")
-      generator =
-        cpgGeneratorForLanguage(language.toUpperCase, FrontendConfig(), installConfig.rootPath.path, frontendArgs).get
-      generator.generate(config.inputPath, outputPath = config.outputCpgFile) match {
-        case Success(cmd) => Right(cmd)
-        case Failure(exception) =>
-          Left(
-            s"Could not generate CPG with language = $language and input = ${config.inputPath}: ${exception.getMessage}"
-          )
+      Try {
+        cpgGeneratorForLanguage(
+          language.toUpperCase,
+          FrontendConfig(),
+          installConfig.rootPath.path,
+          frontendArgs.toList
+        ).get
+      }.flatMap { newGenerator =>
+        generator = newGenerator
+        generator
+          .generate(config.inputPath, outputPath = config.outputCpgFile)
+          .recover { case exception =>
+            throw new RuntimeException(
+              s"Could not generate CPG with language = $language and input = ${config.inputPath}",
+              exception
+            )
+          }
       }
     }
   }
 
-  private def applyDefaultOverlays(config: ParserConfig): Either[String, String] = {
-    try {
+  private def applyDefaultOverlays(config: ParserConfig): Try[String] = {
+    Try {
       println("[+] Applying default overlays")
       if (config.enhance) {
         val cpg = DefaultOverlays.create(config.outputCpgFile, config.maxNumDef)
         generator.applyPostProcessingPasses(cpg)
         cpg.close()
       }
-      Right("Code property graph generation successful")
-    } catch {
-      case err: Throwable => Left(err.getMessage)
+      "Code property graph generation successful"
     }
   }
 
   case class ParserConfig(
     inputPath: String = "",
-    outputCpgFile: String = DEFAULT_CPG_OUT_FILE,
-    namespaces: List[String] = List.empty,
+    outputCpgFile: String = DefaultCpgOutFile,
+    namespaces: Seq[String] = Seq.empty,
     enhance: Boolean = true,
     enhanceOnly: Boolean = false,
     language: String = "",
@@ -174,13 +180,13 @@ object JoernParse {
     maxNumDef: Int = DefaultOverlays.defaultMaxNumberOfDefinitions
   )
 
-  private def parseConfig(parserArgs: List[String]): Either[String, ParserConfig] = {
-
-    optionParser.parse(parserArgs, ParserConfig()) match {
-      case Some(config) => Right(config)
-
-      case None =>
-        Left("Could not parse command line options")
+  private def parseConfig(parserArgs: Seq[String]): Try[ParserConfig] = {
+    Try {
+      optionParser
+        .parse(parserArgs, ParserConfig())
+        .getOrElse(
+          throw new RuntimeException(s"Error while not parsing command line options: `${parserArgs.mkString(",")}`")
+        )
     }
   }
 

@@ -12,9 +12,7 @@ dependsOn(
   Projects.kotlin2cpg  % "test->test"
 )
 
-libraryDependencies ++= Seq(
-  "org.scalatest"    %% "scalatest"  % Versions.scalatest % Test
-)
+libraryDependencies ++= Seq("org.scalatest" %% "scalatest" % Versions.scalatest % Test)
 
 topLevelDirectory := Some(name.value)
 
@@ -63,7 +61,7 @@ createDistribution := {
   dstArchive.toJava
 }
 
-Compile / scalacOptions ++= Seq("-Xfatal-warnings", "-feature", "-deprecation", "-language:implicitConversions")
+Compile / scalacOptions ++= Seq("-Xfatal-warnings", "-feature", "-language:implicitConversions")
 
 fork := true
 

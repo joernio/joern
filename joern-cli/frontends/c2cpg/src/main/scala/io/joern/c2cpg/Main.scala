@@ -5,38 +5,44 @@ import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
 import org.slf4j.LoggerFactory
 import scopt.OParser
 
-import java.nio.file.Paths
 import scala.util.control.NonFatal
-import scala.util.matching.Regex
 
 final case class Config(
-  inputPath: String = "",
-  outputPath: String = X2CpgConfig.defaultOutputPath,
   includePaths: Set[String] = Set.empty,
   defines: Set[String] = Set.empty,
-  ignoredFilesRegex: Regex = "".r,
-  ignoredFiles: Seq[String] = Seq.empty,
   includeComments: Boolean = false,
   logProblems: Boolean = false,
   logPreprocessor: Boolean = false,
   printIfDefsOnly: Boolean = false,
   includePathsAutoDiscovery: Boolean = false
 ) extends X2CpgConfig[Config] {
-
-  def createPathForIgnore(ignore: String): String = {
-    val path = Paths.get(ignore)
-    if (path.isAbsolute) {
-      path.toString
-    } else {
-      Paths.get(inputPath, ignore).toAbsolutePath.normalize().toString
-    }
+  def withIncludePaths(includePaths: Set[String]): Config = {
+    this.copy(includePaths = includePaths).withInheritedFields(this)
   }
 
-  override def withInputPath(inputPath: String): Config = {
-    val absoluteInputPath = Paths.get(inputPath).toAbsolutePath.normalize().toString
-    copy(inputPath = absoluteInputPath)
+  def withDefines(defines: Set[String]): Config = {
+    this.copy(defines = defines).withInheritedFields(this)
   }
-  override def withOutputPath(x: String): Config = copy(outputPath = x)
+
+  def withIncludeComments(value: Boolean): Config = {
+    this.copy(includeComments = value).withInheritedFields(this)
+  }
+
+  def withLogProblems(value: Boolean): Config = {
+    this.copy(logProblems = value).withInheritedFields(this)
+  }
+
+  def withLogPreprocessor(value: Boolean): Config = {
+    this.copy(logPreprocessor = value).withInheritedFields(this)
+  }
+
+  def withPrintIfDefsOnly(value: Boolean): Config = {
+    this.copy(printIfDefsOnly = value).withInheritedFields(this)
+  }
+
+  def withIncludePathsAutoDiscovery(value: Boolean): Config = {
+    this.copy(includePathsAutoDiscovery = value).withInheritedFields(this)
+  }
 }
 
 private object Frontend {
@@ -47,39 +53,32 @@ private object Frontend {
     import builder._
     OParser.sequence(
       programName(classOf[C2Cpg].getSimpleName),
-      opt[Seq[String]]("exclude")
-        .valueName("<file1>,<file2>,...")
-        .action((x, c) => c.copy(ignoredFiles = c.ignoredFiles ++ x.map(c.createPathForIgnore)))
-        .text("files or folders to exclude during CPG generation (paths relative to <input-dir> or absolute paths)"),
-      opt[String]("exclude-regex")
-        .action((x, c) => c.copy(ignoredFilesRegex = x.r))
-        .text("a regex specifying files to exclude during CPG generation (the absolute file path is matched)"),
       opt[Unit]("include-comments")
         .text(s"includes all comments into the CPG")
-        .action((_, c) => c.copy(includeComments = true)),
+        .action((_, c) => c.withIncludeComments(true)),
       opt[Unit]("log-problems")
         .text(s"enables logging of all parse problems while generating the CPG")
-        .action((_, c) => c.copy(logProblems = true)),
+        .action((_, c) => c.withLogProblems(true)),
       opt[Unit]("log-preprocessor")
         .text(s"enables logging of all preprocessor statements while generating the CPG")
-        .action((_, c) => c.copy(logPreprocessor = true)),
+        .action((_, c) => c.withLogPreprocessor(true)),
       opt[Unit]("print-ifdef-only")
         .text(s"prints a comma-separated list of all preprocessor ifdef and if statements; does not create a CPG")
-        .action((_, c) => c.copy(printIfDefsOnly = true)),
+        .action((_, c) => c.withPrintIfDefsOnly(true)),
       opt[String]("include")
         .unbounded()
         .text("header include paths")
-        .action((incl, c) => c.copy(includePaths = c.includePaths + incl)),
+        .action((incl, c) => c.withIncludePaths(c.includePaths + incl)),
       opt[Unit]("no-include-auto-discovery")
         .text("disables auto discovery of system header include paths")
         .hidden(),
       opt[Unit]("with-include-auto-discovery")
         .text("enables auto discovery of system header include paths")
-        .action((_, c) => c.copy(includePathsAutoDiscovery = true)),
+        .action((_, c) => c.withIncludePathsAutoDiscovery(true)),
       opt[String]("define")
         .unbounded()
         .text("define a name")
-        .action((d, c) => c.copy(defines = c.defines + d))
+        .action((d, c) => c.withDefines(c.defines + d))
     )
   }
 

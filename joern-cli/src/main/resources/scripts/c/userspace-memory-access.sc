@@ -1,3 +1,5 @@
+//> using file assertions.sc
+
 // Find more information at http://www.makelinux.net/ldd3/ (Chapter 3)
 // and https://www.kernel.org/doc/html/latest/core-api/mm-api.html
 private val calls: Set[String] = Set(
@@ -11,6 +13,10 @@ private val calls: Set[String] = Set(
   "vm_iomap_memory"
 )
 
-@main def main(): List[Call] = {
-  cpg.call.filter(call => calls.contains(call.name)).l
+@main def main(inputPath: String) = {
+  importCode(inputPath)
+  val calls0 = cpg.call.filter(call => calls.contains(call.name)).name
+
+  val expected = Set("get_user")
+  assertContains("calls", calls0, expected)
 }

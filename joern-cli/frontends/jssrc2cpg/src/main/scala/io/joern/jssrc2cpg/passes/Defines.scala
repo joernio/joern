@@ -12,8 +12,14 @@ object Defines {
   val Symbol: String            = "__ecma.Symbol"
   val Console: String           = "__whatwg.console"
   val Object: String            = "object"
+  val BigInt: String            = "bigint"
+  val Unknown: String           = "unknown"
+  val Void: String              = "void"
+  val Never: String             = "never"
+  val Undefined: String         = "undefined"
   val NodeModulesFolder: String = "node_modules"
   val GlobalNamespace: String   = NamespaceTraversal.globalNamespaceName
 
-  val JsTypes: List[String] = List(Any, Number, String, Boolean, Null, Math, Symbol, Console, Object)
+  val JsTypes: List[String] =
+    List(Any, Number, String, Boolean, Null, Math, Symbol, Console, Object, BigInt, Unknown, Never, Void, Undefined)
 }

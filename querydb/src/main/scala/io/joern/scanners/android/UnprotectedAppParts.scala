@@ -21,7 +21,7 @@ object UnprotectedAppParts extends QueryBundle {
       title = "Intent redirected without validation",
       description = "-",
       score = 4,
-      withStrRep({ cpg =>
+      withStrRep { cpg =>
         cpg.method
           .nameExact("getParcelableExtra")
           .callIn
@@ -31,9 +31,7 @@ object UnprotectedAppParts extends QueryBundle {
             def sink               = startActivityCalls.whereNot(_.controlledBy.astParent.isControlStructure).argument
             sink.reachableByFlows(c).nonEmpty
           }
-          .l
-          .iterator
-      }),
+      },
       tags = List(QueryTags.android),
       codeExamples = CodeExamples(
         List("""

@@ -16,10 +16,14 @@ class GhidraFrontend extends LanguageFrontend {
 
   override def execute(inputFile: java.io.File): Cpg = {
     val dir = Files.createTempDirectory("ghidra2cpg-tests").toFile
-    Runtime.getRuntime.addShutdownHook(new Thread(() => FileUtils.deleteQuietly(dir)))
+    Runtime.getRuntime.addShutdownHook(new Thread(new Runnable {
+      override def run(): Unit = FileUtils.deleteQuietly(dir)
+    }))
 
     val tempDir = Files.createTempDirectory("ghidra2cpg").toFile
-    Runtime.getRuntime.addShutdownHook(new Thread(() => FileUtils.deleteQuietly(tempDir)))
+    Runtime.getRuntime.addShutdownHook(new Thread(new Runnable {
+      override def run(): Unit = FileUtils.deleteQuietly(tempDir)
+    }))
 
     val cpgBin                         = dir.getAbsolutePath
     implicit val defaultConfig: Config = Config()

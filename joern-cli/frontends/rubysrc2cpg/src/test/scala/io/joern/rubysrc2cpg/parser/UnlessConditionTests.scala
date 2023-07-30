@@ -2,7 +2,7 @@ package io.joern.rubysrc2cpg.parser
 
 class UnlessConditionTests extends RubyParserAbstractTest {
 
-  "An unless statement" should {
+  "An unless expression" should {
     "be parsed as a primary expression" when {
 
       "it uses a newline instead of the keyword then" in {
@@ -20,7 +20,7 @@ class UnlessConditionTests extends RubyParserAbstractTest {
             |  ExpressionExpressionOrCommand
             |   PrimaryExpression
             |    VariableReferencePrimary
-            |     VariableReference
+            |     VariableIdentifierVariableReference
             |      VariableIdentifier
             |       foo
             |  ThenClause
@@ -32,7 +32,7 @@ class UnlessConditionTests extends RubyParserAbstractTest {
             |      ExpressionExpressionOrCommand
             |       PrimaryExpression
             |        VariableReferencePrimary
-            |         VariableReference
+            |         VariableIdentifierVariableReference
             |          VariableIdentifier
             |           bar
             |    Separators
@@ -54,7 +54,7 @@ class UnlessConditionTests extends RubyParserAbstractTest {
             |  ExpressionExpressionOrCommand
             |   PrimaryExpression
             |    VariableReferencePrimary
-            |     VariableReference
+            |     VariableIdentifierVariableReference
             |      VariableIdentifier
             |       foo
             |  ThenClause
@@ -67,7 +67,7 @@ class UnlessConditionTests extends RubyParserAbstractTest {
             |      ExpressionExpressionOrCommand
             |       PrimaryExpression
             |        VariableReferencePrimary
-            |         VariableReference
+            |         VariableIdentifierVariableReference
             |          VariableIdentifier
             |           bar
             |    Separators
@@ -90,7 +90,7 @@ class UnlessConditionTests extends RubyParserAbstractTest {
             |  ExpressionExpressionOrCommand
             |   PrimaryExpression
             |    VariableReferencePrimary
-            |     VariableReference
+            |     VariableIdentifierVariableReference
             |      VariableIdentifier
             |       foo
             |  ThenClause
@@ -103,12 +103,49 @@ class UnlessConditionTests extends RubyParserAbstractTest {
             |      ExpressionExpressionOrCommand
             |       PrimaryExpression
             |        VariableReferencePrimary
-            |         VariableReference
+            |         VariableIdentifierVariableReference
             |          VariableIdentifier
             |           bar
             |    Separators
             |     Separator
             |  end""".stripMargin
+      }
+    }
+  }
+
+  "An unless (modifier) statement" should {
+
+    "be parsed as a statement" when {
+
+      "it explicitly returns an identifier out of a method" in {
+        val code = "return(value) unless item"
+
+        printAst(_.statement(), code) shouldEqual
+          """ModifierStatement
+            | ExpressionOrCommandStatement
+            |  ExpressionExpressionOrCommand
+            |   PrimaryExpression
+            |    ReturnWithParenthesesPrimary
+            |     return
+            |     ArgsOnlyArgumentsWithParentheses
+            |      (
+            |      Arguments
+            |       ExpressionArgument
+            |        PrimaryExpression
+            |         VariableReferencePrimary
+            |          VariableIdentifierVariableReference
+            |           VariableIdentifier
+            |            value
+            |      )
+            | unless
+            | WsOrNl
+            | ExpressionOrCommandStatement
+            |  ExpressionExpressionOrCommand
+            |   PrimaryExpression
+            |    VariableReferencePrimary
+            |     VariableIdentifierVariableReference
+            |      VariableIdentifier
+            |       item""".stripMargin
       }
     }
   }

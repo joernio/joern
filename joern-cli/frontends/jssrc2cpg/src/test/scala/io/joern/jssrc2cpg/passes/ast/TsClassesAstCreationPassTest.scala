@@ -1,13 +1,26 @@
 package io.joern.jssrc2cpg.passes.ast
 
-import io.joern.jssrc2cpg.passes.AbstractPassTest
-import io.joern.jssrc2cpg.passes.Defines
+import io.joern.jssrc2cpg.passes.{AbstractPassTest, Defines}
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode, Declaration, Identifier}
+import io.shiftleft.semanticcpg.language.*
 
 class TsClassesAstCreationPassTest extends AbstractPassTest {
 
   "AST generation for TS classes" should {
+
+    "have correct structure for constructor parameter assignment" in TsAstFixture("""
+        |class D {
+        |  readonly noWiden = 1
+        |  constructor(readonly widen = 2) {
+        |    this.noWiden = 5;
+        |    this.widen = 6;
+        |  }
+        |}
+        |new D(7);
+        |""".stripMargin) { cpg =>
+      cpg.typeDecl.nameExact("D").method.isConstructor.parameter.name.l shouldBe List("this", "widen")
+    }
 
     "have correct structure for simple enum" in TsAstFixture("""
         |enum Direction {
@@ -280,6 +293,57 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
         c.fullName shouldBe "code.ts::program:A:B:C"
         c.typeDecl.name("Foo").head.fullName shouldBe "code.ts::program:A:B:C:Foo"
       }
+    }
+
+    "AST generation for dynamically exported and defined class" in TsAstFixture("""
+        |export type User = {
+        |    email: string;
+        |    organizationIds: string[];
+        |    username: string;
+        |    name: string;
+        |    gender: string;
+        |}
+        |""".stripMargin) { cpg =>
+      val List(userType) = cpg.typeDecl.name("User").l
+      userType.member.name.l shouldBe List("email", "organizationIds", "username", "name", "gender")
+      userType.member.typeFullName.toSet shouldBe Set("__ecma.String", "string[]")
+    }
+
+    "AST generation for dynamically defined type in a parameter" in TsAstFixture("""
+        |class Test {
+        |    run(credentials: { username: string; password: string; }): string {
+        |        console.log(credentials);
+        |        return ``;
+        |    }
+        |}
+        |""".stripMargin) { cpg =>
+      val List(credentialsType) = cpg.typeDecl.nameExact("_anon_cdecl").l
+      credentialsType.fullName shouldBe "code.ts::program:Test:run:_anon_cdecl"
+      credentialsType.member.name.l shouldBe List("username", "password")
+      credentialsType.member.typeFullName.toSet shouldBe Set("__ecma.String")
+      val List(credentialsParam) = cpg.parameter.nameExact("credentials").l
+      credentialsParam.typeFullName shouldBe "code.ts::program:Test:run:_anon_cdecl"
+      // should not produce dangling nodes that are meant to be inside procedures
+      cpg.all.collectAll[CfgNode].whereNot(_._astIn).size shouldBe 0
+      cpg.identifier.count(_.refsTo.size > 1) shouldBe 0
+      cpg.identifier.whereNot(_.refsTo).size shouldBe 0
+    }
+
+    "AST generation for destructured type in a parameter" in TsAstFixture("""
+        |function apiCall({ username, password }) {
+        |    log(`${username}: ${password}`);
+        |}
+        |""".stripMargin) { cpg =>
+      val List(credentialsType) = cpg.typeDecl.nameExact("_anon_cdecl").l
+      credentialsType.fullName shouldBe "code.ts::program:apiCall:_anon_cdecl"
+      credentialsType.member.name.l shouldBe List("username", "password")
+      credentialsType.member.typeFullName.toSet shouldBe Set(Defines.Any)
+      val List(credentialsParam) = cpg.parameter.nameExact("param1_0").l
+      credentialsParam.typeFullName shouldBe "code.ts::program:apiCall:_anon_cdecl"
+      // should not produce dangling nodes that are meant to be inside procedures
+      cpg.all.collectAll[CfgNode].whereNot(_._astIn).size shouldBe 0
+      cpg.identifier.count(_.refsTo.size > 1) shouldBe 0
+      cpg.identifier.whereNot(_.refsTo).size shouldBe 0
     }
 
   }

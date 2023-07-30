@@ -6,8 +6,6 @@ import io.shiftleft.semanticcpg.dotgenerator.DotSerializer.{Edge, Graph}
 import io.shiftleft.semanticcpg.language._
 import overflowdb.Node
 
-import scala.jdk.CollectionConverters._
-
 class CfgGenerator {
 
   val edgeType: String = EdgeTypes.CFG
@@ -43,19 +41,21 @@ class CfgGenerator {
     )
   }
 
-  protected def expand(v: StoredNode): Iterator[Edge] = {
-    v._cfgOut
-      .filter(_.isInstanceOf[StoredNode])
-      .map(node => Edge(v, node, edgeType = edgeType))
+  protected def expand(v: StoredNode): Iterator[Edge] =
+    v._cfgOut.map(node => Edge(v, node, edgeType = edgeType))
+
+  private def isConditionInControlStructure(v: Node): Boolean = v match {
+    case id: Identifier => id.astParent.isControlStructure
+    case _              => false
   }
 
-  def cfgNodeShouldBeDisplayed(v: Node): Boolean = !(
-    v.isInstanceOf[Literal] ||
-      v.isInstanceOf[Identifier] ||
-      v.isInstanceOf[Block] ||
-      v.isInstanceOf[ControlStructure] ||
-      v.isInstanceOf[JumpTarget] ||
-      v.isInstanceOf[MethodParameterIn]
-  )
+  private def cfgNodeShouldBeDisplayed(v: Node): Boolean =
+    isConditionInControlStructure(v) ||
+      !(v.isInstanceOf[Literal] ||
+        v.isInstanceOf[Identifier] ||
+        v.isInstanceOf[Block] ||
+        v.isInstanceOf[ControlStructure] ||
+        v.isInstanceOf[JumpTarget] ||
+        v.isInstanceOf[MethodParameterIn])
 
 }

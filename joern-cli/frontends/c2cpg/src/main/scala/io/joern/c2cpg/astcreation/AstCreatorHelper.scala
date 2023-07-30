@@ -9,9 +9,10 @@ import io.joern.x2cpg.utils.NodeBuilders.newDependencyNode
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.utils.IOUtils
 import org.apache.commons.lang.StringUtils
-import org.eclipse.cdt.core.dom.ast._
+import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.c.{ICASTArrayDesignator, ICASTDesignatedInitializer, ICASTFieldDesignator}
-import org.eclipse.cdt.core.dom.ast.cpp._
+import org.eclipse.cdt.core.dom.ast.c.ICASTTypedefNameSpecifier
+import org.eclipse.cdt.core.dom.ast.cpp.*
 import org.eclipse.cdt.core.dom.ast.gnu.c.ICASTKnRFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTArrayRangeDesignator
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalBinding
@@ -312,21 +313,19 @@ trait AstCreatorHelper { this: AstCreator =>
         s"${fullName(namespace.getParent)}.${ASTStringUtil.getSimpleName(namespace.getName)}"
       case namespace: ICPPASTNamespaceDefinition if ASTStringUtil.getSimpleName(namespace.getName).isEmpty =>
         s"${fullName(namespace.getParent)}.${uniqueName("namespace", "", "")._1}"
-      case cppClass: ICPPASTCompositeTypeSpecifier if ASTStringUtil.getSimpleName(cppClass.getName).nonEmpty =>
-        s"${fullName(cppClass.getParent)}.${ASTStringUtil.getSimpleName(cppClass.getName)}"
-      case cppClass: ICPPASTCompositeTypeSpecifier if ASTStringUtil.getSimpleName(cppClass.getName).isEmpty =>
-        val name = cppClass.getParent match {
+      case compType: IASTCompositeTypeSpecifier if ASTStringUtil.getSimpleName(compType.getName).nonEmpty =>
+        s"${fullName(compType.getParent)}.${ASTStringUtil.getSimpleName(compType.getName)}"
+      case compType: IASTCompositeTypeSpecifier if ASTStringUtil.getSimpleName(compType.getName).isEmpty =>
+        val name = compType.getParent match {
           case decl: IASTSimpleDeclaration =>
             decl.getDeclarators.headOption
               .map(n => ASTStringUtil.getSimpleName(n.getName))
               .getOrElse(uniqueName("composite_type", "", "")._1)
           case _ => uniqueName("composite_type", "", "")._1
         }
-        s"${fullName(cppClass.getParent)}.$name"
+        s"${fullName(compType.getParent)}.$name"
       case enumSpecifier: IASTEnumerationSpecifier =>
         s"${fullName(enumSpecifier.getParent)}.${ASTStringUtil.getSimpleName(enumSpecifier.getName)}"
-      case c: IASTCompositeTypeSpecifier =>
-        s"${fullName(c.getParent)}.${ASTStringUtil.getSimpleName(c.getName)}"
       case f: ICPPASTLambdaExpression =>
         s"${fullName(f.getParent)}."
       case f: IASTFunctionDeclarator
@@ -377,10 +376,15 @@ trait AstCreatorHelper { this: AstCreator =>
           case other =>
             other.getName
         }
-      case d: IASTIdExpression           => lastNameOfQualifiedName(ASTStringUtil.getSimpleName(d.getName))
-      case u: IASTUnaryExpression        => shortName(u.getOperand)
-      case c: IASTFunctionCallExpression => shortName(c.getFunctionNameExpression)
-      case other                         => notHandledYet(other); ""
+      case d: IASTIdExpression            => lastNameOfQualifiedName(ASTStringUtil.getSimpleName(d.getName))
+      case u: IASTUnaryExpression         => shortName(u.getOperand)
+      case c: IASTFunctionCallExpression  => shortName(c.getFunctionNameExpression)
+      case s: IASTSimpleDeclSpecifier     => s.getRawSignature
+      case e: IASTEnumerationSpecifier    => ASTStringUtil.getSimpleName(e.getName)
+      case c: IASTCompositeTypeSpecifier  => ASTStringUtil.getSimpleName(c.getName)
+      case e: IASTElaboratedTypeSpecifier => ASTStringUtil.getSimpleName(e.getName)
+      case s: IASTNamedTypeSpecifier      => ASTStringUtil.getSimpleName(s.getName)
+      case other                          => notHandledYet(other); ""
     }
     name
   }
@@ -404,7 +408,7 @@ trait AstCreatorHelper { this: AstCreator =>
     allIncludes.foreach { include =>
       val name            = include.getName.toString
       val _dependencyNode = newDependencyNode(name, name, IncludeKeyword)
-      val importNode      = newImportNode(nodeSignature(include), name, include)
+      val importNode      = newImportNode(nodeSignature(include), name, name, include)
       diffGraph.addNode(_dependencyNode)
       diffGraph.addEdge(importNode, _dependencyNode, EdgeTypes.IMPORTS)
     }

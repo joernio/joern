@@ -4,7 +4,8 @@ import io.joern.kotlin2cpg.psi.PsiUtils
 import io.joern.x2cpg.Defines
 import org.jetbrains.kotlin.descriptors.{ClassDescriptor, DeclarationDescriptor, SimpleFunctionDescriptor}
 import org.jetbrains.kotlin.resolve.{DescriptorToSourceUtils, DescriptorUtils}
-import org.jetbrains.kotlin.types.{ErrorUtils, ErrorType, KotlinType, TypeProjection, TypeUtils}
+import org.jetbrains.kotlin.types.{ErrorUtils, KotlinType, TypeProjection, TypeUtils}
+import org.jetbrains.kotlin.types.error.ErrorType
 import org.jetbrains.kotlin.builtins.jvm.JavaToKotlinClassMap
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.renderer.{DescriptorRenderer, DescriptorRendererImpl, DescriptorRendererOptionsImpl}
@@ -118,7 +119,8 @@ object TypeRenderer {
 
   def render(t: KotlinType, shouldMapPrimitiveArrayTypes: Boolean = true, unwrapPrimitives: Boolean = true): String = {
     val rendered =
-      if (TypeUtilsKt.isTypeParameter(t)) TypeConstants.javaLangObject
+      if (t.isInstanceOf[ErrorType]) TypeConstants.any
+      else if (TypeUtilsKt.isTypeParameter(t)) TypeConstants.javaLangObject
       else if (isFunctionXType(t)) TypeConstants.kotlinFunctionXPrefix + (t.getArguments.size() - 1).toString
       else
         Option(TypeUtils.getClassDescriptor(t))
@@ -169,6 +171,6 @@ object TypeRenderer {
       }
     }
 
-    stripTypeParams(stripOptionality(stripDebugInfo(stripOut(typeName))).trim().replaceAll(" ", ""))
+    stripTypeParams(stripOptionality(stripDebugInfo(stripOut(typeName))).trim().replaceAll(" ", "")).replaceAll("`", "")
   }
 }

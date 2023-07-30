@@ -7,12 +7,15 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewControlStructure,
   NewFieldIdentifier,
   NewIdentifier,
+  NewImport,
+  NewJumpTarget,
   NewLiteral,
   NewLocal,
   NewMember,
   NewMethod,
   NewMethodParameterIn,
   NewMethodRef,
+  NewMethodReturn,
   NewReturn,
   NewTypeDecl,
   NewTypeRef,
@@ -20,7 +23,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
 }
 import io.shiftleft.codepropertygraph.generated.nodes.Block.{PropertyDefaults => BlockDefaults}
 import org.apache.commons.lang.StringUtils
-
+import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
   protected def line(node: Node): Option[Integer]
   protected def column(node: Node): Option[Integer]
@@ -70,6 +73,15 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
       .dynamicTypeHintFullName(dynamicTypeHints)
       .lineNumber(line(node))
       .columnNumber(column(node))
+  }
+
+  protected def newImportNode(code: String, importedEntity: String, importedAs: String, include: Node): NewImport = {
+    NewImport()
+      .code(code)
+      .importedEntity(importedEntity)
+      .importedAs(importedAs)
+      .lineNumber(line(include))
+      .columnNumber(column(include))
   }
 
   protected def literalNode(
@@ -282,5 +294,23 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
         .columnNumberEnd(columnEnd(node))
     signature.foreach { s => node_.signature(StringUtils.normalizeSpace(s)) }
     node_
+  }
+
+  protected def methodReturnNode(node: Node, typeFullName: String): NewMethodReturn = {
+    newMethodReturnNode(typeFullName, None, line(node), column(node))
+  }
+
+  protected def jumpTargetNode(
+    node: Node,
+    name: String,
+    code: String,
+    parserTypeName: Option[String] = None
+  ): NewJumpTarget = {
+    NewJumpTarget()
+      .parserTypeName(parserTypeName.getOrElse(node.getClass.getSimpleName))
+      .name(name)
+      .code(code)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
   }
 }

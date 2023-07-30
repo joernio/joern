@@ -27,6 +27,8 @@ import org.jetbrains.kotlin.psi.{
 case class AnonymousObjectContext(declaration: KtNamedFunction)
 
 trait TypeInfoProvider {
+  def isExtensionFn(fn: KtNamedFunction): Boolean
+
   def usedAsExpression(expr: KtExpression): Option[Boolean]
 
   def containingTypeDeclFullName(ktFn: KtNamedFunction, defaultValue: String): String
@@ -71,8 +73,6 @@ trait TypeInfoProvider {
 
   def bindingKind(expr: KtQualifiedExpression): CallKinds.CallKind
 
-  def isReferencingMember(expr: KtNameReferenceExpression): Boolean
-
   def fullNameWithSignature(expr: KtQualifiedExpression, or: (String, String)): (String, String)
 
   def fullNameWithSignature(call: KtCallExpression, or: (String, String)): (String, String)
@@ -84,6 +84,8 @@ trait TypeInfoProvider {
   def fullNameWithSignature(call: KtBinaryExpression, or: (String, String)): (String, String)
 
   def fullNameWithSignature(expr: KtNamedFunction, or: (String, String)): (String, String)
+
+  def fullNameWithSignatureAsLambda(expr: KtNamedFunction, keyPool: KeyPool): (String, String)
 
   def fullNameWithSignature(expr: KtClassLiteralExpression, or: (String, String)): (String, String)
 

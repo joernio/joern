@@ -7,7 +7,10 @@ lexer grammar RubyLexer;
 tokens {
     STRING_INTERPOLATION_END,
     REGULAR_EXPRESSION_INTERPOLATION_END,
-    REGULAR_EXPRESSION_START
+    REGULAR_EXPRESSION_START,
+    QUOTED_NON_EXPANDED_STRING_LITERAL_END,
+    QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END,
+    QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END
 }
 
 options {
@@ -133,6 +136,7 @@ DOT2: '..';
 DOT3: '...';
 QMARK: '?';
 EQGT: '=>';
+MINUSGT: '->';
 
 fragment PUNCTUATOR
     :   LBRACK
@@ -189,8 +193,10 @@ SLASH: '/'
 ;
 PERCENT: '%';
 TILDE: '~';
-PLUSAT: '+@';
-MINUSAT: '-@';
+// These tokens should only occur after a DEF token, as they are solely used to (re)define unary + and - operators.
+// This way we won't emit the wrong token in e.g. `x+@y` (which means + between x and @y)
+PLUSAT: '+@'  {previousNonWsTokenTypeOrEOF() == DEF}?;
+MINUSAT: '-@' {previousNonWsTokenTypeOrEOF() == DEF}?;
 
 ASSIGNMENT_OPERATOR
     :   ASSIGNMENT_OPERATOR_NAME '='
@@ -276,6 +282,41 @@ fragment SINGLE_QUOTED_STRING_NON_ESCAPED_CHARACTER_SEQUENCE
 DOUBLE_QUOTED_STRING_START
     :   '"'
         -> pushMode(DOUBLE_QUOTED_STRING_MODE)
+    ;
+
+QUOTED_NON_EXPANDED_STRING_LITERAL_START
+    :   '%q' {!Character.isAlphabetic(_input.LA(1))}?
+    {
+        pushQuotedNonExpandedStringDelimiter(_input.LA(1));
+        _input.consume();
+        pushMode(QUOTED_NON_EXPANDED_STRING_MODE);
+    }
+    ;
+
+// --------------------------------------------------------
+// String (Word) array literals
+// --------------------------------------------------------
+
+QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_START
+    :   '%w' {!Character.isAlphabetic(_input.LA(1))}?
+    {
+        pushQuotedNonExpandedStringArrayDelimiter(_input.LA(1));
+        _input.consume();
+        pushMode(QUOTED_NON_EXPANDED_STRING_ARRAY_MODE);
+    }
+    ;
+
+// --------------------------------------------------------
+// Symbol array literals
+// --------------------------------------------------------
+
+QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_START
+    :   '%i' {!Character.isAlphabetic(_input.LA(1))}?
+    {
+        pushQuotedNonExpandedSymbolArrayDelimiter(_input.LA(1));
+        _input.consume();
+        pushMode(QUOTED_NON_EXPANDED_SYMBOL_ARRAY_MODE);
+    }
     ;
 
 // --------------------------------------------------------
@@ -389,7 +430,11 @@ fragment LINE_TERMINATOR
 // --------------------------------------------------------
 
 SYMBOL_LITERAL
-    :   ':' SYMBOL_NAME
+    :   ':' (SYMBOL_NAME | (CONSTANT_IDENTIFIER | LOCAL_VARIABLE_IDENTIFIER) '=')
+    // This check exists to prevent issuing a SYMBOL_LITERAL in whitespace-free associations, e.g. 
+    //      in `foo(x:y)`, so that `:y` is not a SYMBOL_LITERAL
+    // or   in `{:x=>1}`, so that `:x=` is not a SYMBOL_LITERAL
+    {previousTokenTypeOrEOF() != LOCAL_VARIABLE_IDENTIFIER && _input.LA(1) != '>'}?
     ;
 
 fragment SYMBOL_NAME
@@ -399,9 +444,13 @@ fragment SYMBOL_NAME
     |   CONSTANT_IDENTIFIER
     |   LOCAL_VARIABLE_IDENTIFIER
     |   METHOD_ONLY_IDENTIFIER
-    |   ASSIGNMENT_LIKE_METHOD_IDENTIFIER
     |   OPERATOR_METHOD_NAME
     |   KEYWORD
+    // NOTE: Even though we have PLUSAT and MINUSAT in OPERATOR_METHOD_NAME, the former
+    // are not emitted unless there's a DEF token before them, cf. their predicate.
+    // Thus, we need to add them explicitly here in order to recognize standalone SYMBOL_LITERAL tokens as well.
+    |   '+@'
+    |   '-@'
     ;
 
 // --------------------------------------------------------
@@ -414,6 +463,7 @@ LOCAL_VARIABLE_IDENTIFIER
 
 GLOBAL_VARIABLE_IDENTIFIER
     :   '$' IDENTIFIER_START_CHARACTER IDENTIFIER_CHARACTER*
+    |   '$' [0-9]+
     ;
 
 INSTANCE_VARIABLE_IDENTIFIER
@@ -432,8 +482,12 @@ fragment METHOD_ONLY_IDENTIFIER
     :   (CONSTANT_IDENTIFIER | LOCAL_VARIABLE_IDENTIFIER) ('!' | '?')
     ;
 
-fragment ASSIGNMENT_LIKE_METHOD_IDENTIFIER
-    :   (CONSTANT_IDENTIFIER | LOCAL_VARIABLE_IDENTIFIER) '='
+
+// Similarly to PLUSAT/MINUSAT, this should only occur after a DEF token.
+// Otherwise, the assignment `x=nil` would be parsed as (ASSIGNMENT_LIKE_METHOD_IDENTIFIER, NIL)
+// instead of the more appropriate (LOCAL_VARIABLE_IDENTIFIER, EQ, NIL).
+ASSIGNMENT_LIKE_METHOD_IDENTIFIER
+    :   (CONSTANT_IDENTIFIER | LOCAL_VARIABLE_IDENTIFIER) '=' {previousNonWsTokenTypeOrEOF() == DEF}?
     ;
 
 fragment IDENTIFIER_CHARACTER
@@ -564,8 +618,140 @@ fragment SIMPLE_ESCAPE_SEQUENCE
     ;
 
 fragment DOUBLE_ESCAPED_CHARACTER
-    :   [ntrfvaebs]
+    :   [ntrfvaebsu]
     ;
+
+// --------------------------------------------------------
+// %q string mode
+// --------------------------------------------------------
+
+mode QUOTED_NON_EXPANDED_STRING_MODE;
+
+fragment QUOTED_NON_EXPANDED_ESCAPED_CHARACTER
+    :   '\\' QUOTED_NON_EXPANDED_NON_ESCAPED_CHARACTER
+    ;
+
+fragment QUOTED_NON_EXPANDED_NON_ESCAPED_CHARACTER
+    :   ~[\r\n]
+    |   '\n' {_input.LA(1) != '\r'}?
+    ;
+
+QUOTED_NON_EXPANDED_CHARACTER
+    :   QUOTED_NON_EXPANDED_ESCAPED_CHARACTER
+    |   QUOTED_NON_EXPANDED_NON_ESCAPED_CHARACTER
+        {
+            int readChar = _input.LA(-1);
+            
+            if (isQuotedNonExpandedStringClosingDelimiter(readChar)) {
+                popQuotedNonExpandedStringDelimiter();
+                
+                if (isQuotedNonExpandedStringDelimitersEmpty()) {
+                    setType(QUOTED_NON_EXPANDED_STRING_LITERAL_END);
+                    popMode();
+                }
+            }
+            else if (isQuotedNonExpandedStringOpeningDelimiter(readChar)) {
+                pushQuotedNonExpandedStringDelimiter(readChar);
+            }
+        }
+    ;
+
+// --------------------------------------------------------
+// %w string (word) array mode
+// --------------------------------------------------------
+
+mode QUOTED_NON_EXPANDED_STRING_ARRAY_MODE;
+
+fragment QUOTED_NON_EXPANDED_ESCAPED_STRING_ARRAY_CHARACTER
+    :   '\\' QUOTED_NON_EXPANDED_NON_ESCAPED_STRING_ARRAY_CHARACTER
+    ;
+
+fragment QUOTED_NON_EXPANDED_NON_ESCAPED_STRING_ARRAY_CHARACTER
+    :   ~[\r\n]
+    |   '\n' {_input.LA(1) != '\r'}?
+    ;
+
+fragment QUOTED_NON_EXPANDED_STRING_ARRAY_DELIMITER
+    :   [\u0009]
+    |   [\u000b]
+    |   [\u000c]
+    |   [\u000d]
+    |   [\u0020]
+    |   '\\' ('\r'? '\n')
+    ;
+
+QUOTED_NON_EXPANDED_STRING_ARRAY_SEPARATOR
+    :   QUOTED_NON_EXPANDED_STRING_ARRAY_DELIMITER+
+    ;
+
+QUOTED_NON_EXPANDED_STRING_ARRAY_CHARACTER
+    :   QUOTED_NON_EXPANDED_ESCAPED_STRING_ARRAY_CHARACTER
+    |   QUOTED_NON_EXPANDED_NON_ESCAPED_STRING_ARRAY_CHARACTER
+    {
+        int readChar = _input.LA(-1);
+        
+        if (isQuotedNonExpandedStringArrayClosingDelimiter(readChar)) {
+            popQuotedNonExpandedStringArrayDelimiter();
+            
+            if (isQuotedNonExpandedStringArrayDelimitersEmpty()) {
+                setType(QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END);
+                popMode();
+            }
+        }
+        else if (isQuotedNonExpandedStringArrayOpeningDelimiter(readChar)) {
+            pushQuotedNonExpandedStringArrayDelimiter(readChar);
+        }
+    }
+    ;
+
+// --------------------------------------------------------
+// %i symbol array mode
+// --------------------------------------------------------
+
+mode QUOTED_NON_EXPANDED_SYMBOL_ARRAY_MODE;
+
+fragment QUOTED_NON_EXPANDED_ESCAPED_SYMBOL_ARRAY_CHARACTER
+    :   '\\' QUOTED_NON_EXPANDED_NON_ESCAPED_SYMBOL_ARRAY_CHARACTER
+    ;
+
+fragment QUOTED_NON_EXPANDED_NON_ESCAPED_SYMBOL_ARRAY_CHARACTER
+    :   ~[\r\n]
+    |   '\n' {_input.LA(1) != '\r'}?
+    ;
+
+fragment QUOTED_NON_EXPANDED_SYMBOL_ARRAY_DELIMITER
+    :   [\u0009]
+    |   [\u000b]
+    |   [\u000c]
+    |   [\u000d]
+    |   [\u0020]
+    |   '\\' ('\r'? '\n')
+    ;
+
+QUOTED_NON_EXPANDED_SYMBOL_ARRAY_SEPARATOR
+    :   QUOTED_NON_EXPANDED_SYMBOL_ARRAY_DELIMITER+
+    ;
+
+QUOTED_NON_EXPANDED_SYMBOL_ARRAY_CHARACTER
+    :   QUOTED_NON_EXPANDED_ESCAPED_SYMBOL_ARRAY_CHARACTER
+    |   QUOTED_NON_EXPANDED_NON_ESCAPED_SYMBOL_ARRAY_CHARACTER
+    {
+        int readChar = _input.LA(-1);
+        
+        if (isQuotedNonExpandedSymbolArrayClosingDelimiter(readChar)) {
+            popQuotedNonExpandedSymbolArrayDelimiter();
+            
+            if (isQuotedNonExpandedSymbolArrayDelimitersEmpty()) {
+                setType(QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END);
+                popMode();
+            }
+        }
+        else if (isQuotedNonExpandedSymbolArrayOpeningDelimiter(readChar)) {
+            pushQuotedNonExpandedSymbolArrayDelimiter(readChar);
+        }
+    }
+    ;
+
 
 // --------------------------------------------------------
 // Regex literal mode

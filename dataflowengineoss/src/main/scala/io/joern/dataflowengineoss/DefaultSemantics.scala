@@ -1,7 +1,6 @@
 package io.joern.dataflowengineoss
 
-import io.joern.dataflowengineoss.DefaultSemantics.F
-import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
+import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, PassThroughMapping, Semantics}
 import io.shiftleft.codepropertygraph.generated.Operators
 
 import scala.annotation.unused
@@ -17,6 +16,9 @@ object DefaultSemantics {
   }
 
   private def F = (x: String, y: List[(Int, Int)]) => FlowSemantic.from(x, y)
+
+  private def PTF(x: String, ys: List[(Int, Int)] = List.empty): FlowSemantic =
+    FlowSemantic(x).copy(mappings = FlowSemantic.from(x, ys).mappings :+ PassThroughMapping)
 
   def operatorFlows: List[FlowSemantic] = List(
     F(Operators.addition, List((1, -1), (2, -1))),
@@ -69,7 +71,12 @@ object DefaultSemantics {
     F("<operators>.assignmentAnd", List((2, 1), (1, 1))),
     F("<operators>.assignmentOr", List((2, 1), (1, 1))),
     F("<operators>.assignmentXor", List((2, 1), (1, 1))),
-    F("<operator>.tupleLiteral", List((1, 1), (2, 2), (3, 3), (4, 4), (1, -1), (2, -1), (3, -1), (4, -1)))
+
+    // Language specific operators
+    PTF("<operator>.tupleLiteral"),
+    PTF("<operator>.dictLiteral"),
+    PTF("<operator>.setLiteral"),
+    PTF("<operator>.listLiteral")
   )
 
   /** Semantic summaries for common external C/C++ calls.
@@ -95,7 +102,7 @@ object DefaultSemantics {
     F("ctime64_r", List((1, -1))),
     F("difftime", List((1, -1), (2, -1))),
     F("difftime64", List((1, -1), (2, -1))),
-    F("div", List((1, 1), (1, -1), (2, 2), (2, -1))),
+    PTF("div"),
     F("exit", List((1, 1))),
     F("exp", List((1, -1))),
     F("fabs", List((1, -1))),
@@ -118,16 +125,13 @@ object DefaultSemantics {
   /** Semantic summaries for common external Java calls.
     */
   def javaFlows: List[FlowSemantic] = List(
-    F("java.lang.String.split:java.lang.String[](java.lang.String)", List((0, 0), (0, -1), (1, 1), (1, -1))),
-    F(
-      "java.lang.String.split:java.lang.String[](java.lang.String,int)",
-      List((0, 0), (0, -1), (1, 1), (1, -1), (2, -1))
-    ),
-    F("java.lang.String.compareTo:int(java.lang.String)", List((0, 0), (0, -1), (0, -1), (1, -1))),
+    PTF("java.lang.String.split:java.lang.String[](java.lang.String)", List((0, 0))),
+    PTF("java.lang.String.split:java.lang.String[](java.lang.String,int)", List((0, 0))),
+    PTF("java.lang.String.compareTo:int(java.lang.String)", List((0, 0))),
     F("java.io.PrintWriter.print:void(java.lang.String)", List((0, 0), (1, 1))),
     F("java.io.PrintWriter.println:void(java.lang.String)", List((0, 0), (1, 1))),
     F("java.io.PrintStream.println:void(java.lang.String)", List((0, 0), (1, 1))),
-    F("java.io.PrintStream.print:void(java.lang.String)", List((0, 0), (0, -1), (1, 1))),
+    PTF("java.io.PrintStream.print:void(java.lang.String)", List((0, 0))),
     F("android.text.TextUtils.isEmpty:boolean(java.lang.String)", List((0, -1), (1, -1))),
     F("java.sql.PreparedStatement.prepareStatement:java.sql.PreparedStatement(java.lang.String)", List((1, -1))),
     F("java.sql.PreparedStatement.prepareStatement:setDouble(int,double)", List((1, 1), (2, 2))),

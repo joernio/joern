@@ -68,7 +68,7 @@ class ArrayTests extends JavaSrcCode2CpgFixture {
                        |""".stripMargin)
       def m = cpg.method(".*foo.*")
 
-      val List(arg1: Identifier, arg2: Call) = m.assignment.argument.l
+      val List(arg1: Identifier, arg2: Call) = m.assignment.argument.l: @unchecked
 
       arg1.code shouldBe "x"
       arg1.typeFullName shouldBe "int[]"
@@ -93,12 +93,12 @@ class ArrayTests extends JavaSrcCode2CpgFixture {
 
     def m = cpg.method(".*bar.*")
 
-    val List(arg1: Identifier, arg2: Call) = m.assignment.argument.l
+    val List(arg1: Identifier, arg2: Call) = m.assignment.argument.l: @unchecked
 
     arg1.typeFullName shouldBe "int[][]"
 
     arg2.code shouldBe "new int[5][2]"
-    val List(lvl1: Literal, lvl2: Literal) = arg2.argument.l
+    val List(lvl1: Literal, lvl2: Literal) = arg2.argument.l: @unchecked
     lvl1.code shouldBe "5"
     lvl2.code shouldBe "2"
   }
@@ -118,10 +118,10 @@ class ArrayTests extends JavaSrcCode2CpgFixture {
       def m                     = cpg.method(".*baz.*")
       val List(_, lhsAccess, _) = m.assignment.l
 
-      val List(indexAccess: Call, _: Literal) = lhsAccess.argument.l
+      val List(indexAccess: Call, _: Literal) = lhsAccess.argument.l: @unchecked
       indexAccess.name shouldBe Operators.indexAccess
       indexAccess.methodFullName shouldBe Operators.indexAccess
-      val List(arg1: Identifier, arg2: Literal) = indexAccess.argument.l
+      val List(arg1: Identifier, arg2: Literal) = indexAccess.argument.l: @unchecked
       arg1.code shouldBe "x"
       arg1.name shouldBe "x"
       arg1.typeFullName shouldBe "int[]"
@@ -132,9 +132,9 @@ class ArrayTests extends JavaSrcCode2CpgFixture {
       def m                     = cpg.method(".*baz.*")
       val List(_, _, rhsAccess) = m.assignment.l
 
-      val List(_, add: Call)                           = rhsAccess.argument.l
-      val List(access: Call, _: Literal)               = add.argument.l
-      val List(identifier: Identifier, index: Literal) = access.argument.l
+      val List(_, add: Call)                           = rhsAccess.argument.l: @unchecked
+      val List(access: Call, _: Literal)               = add.argument.l: @unchecked
+      val List(identifier: Identifier, index: Literal) = access.argument.l: @unchecked
       identifier.name shouldBe "x"
       identifier.typeFullName shouldBe "int[]"
       index.code shouldBe "0"

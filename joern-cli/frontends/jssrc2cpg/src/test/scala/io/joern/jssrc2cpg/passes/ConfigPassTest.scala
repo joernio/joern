@@ -19,7 +19,7 @@ class ConfigPassTest extends AnyWordSpec with Matchers {
         fileB.write("someCodeB();")
 
         val cpg = Cpg.emptyCpg
-        new ConfigPass(cpg, Config(inputPath = dir.pathAsString)).createAndApply()
+        new ConfigPass(cpg, Config().withInputPath(dir.pathAsString)).createAndApply()
 
         val List(configFileA, configFileB) = cpg.configFile.l
         configFileA.name shouldBe "a.vue"
@@ -43,7 +43,7 @@ class ConfigPassTest extends AnyWordSpec with Matchers {
         fileC.write("c")
 
         val cpg = Cpg.emptyCpg
-        new ConfigPass(cpg, Config(inputPath = dir.pathAsString)).createAndApply()
+        new ConfigPass(cpg, Config().withInputPath(dir.pathAsString)).createAndApply()
 
         val List(configFileA, configFileB, configFileC) = cpg.configFile.l
         configFileA.name shouldBe "a.conf.js"
@@ -69,7 +69,7 @@ class ConfigPassTest extends AnyWordSpec with Matchers {
         (d / "d.json").write("d")
 
         val cpg = Cpg.emptyCpg
-        new ConfigPass(cpg, Config(inputPath = dir.pathAsString)).createAndApply()
+        new ConfigPass(cpg, Config().withInputPath(dir.pathAsString)).createAndApply()
 
         val List(configFileA, configFileB, configFileC) = cpg.configFile.l
         configFileA.name shouldBe "a.conf.js"
@@ -93,7 +93,7 @@ class ConfigPassTest extends AnyWordSpec with Matchers {
         fileB.write("b")
 
         val cpg = Cpg.emptyCpg
-        new ConfigPass(cpg, Config(inputPath = dir.pathAsString)).createAndApply()
+        new ConfigPass(cpg, Config().withInputPath(dir.pathAsString)).createAndApply()
 
         val List(configFileA, configFileB) = cpg.configFile.l
         configFileA.name shouldBe "a.html"
@@ -115,7 +115,7 @@ class ConfigPassTest extends AnyWordSpec with Matchers {
         fileB.write("-----BEGIN SOME OTHER KEY-----\nthis is fine\n-----END SOME OTHER KEY-----")
 
         val cpg = Cpg.emptyCpg
-        new PrivateKeyFilePass(cpg, Config(inputPath = dir.pathAsString)).createAndApply()
+        new PrivateKeyFilePass(cpg, Config().withInputPath(dir.pathAsString)).createAndApply()
 
         val List(configFileA) = cpg.configFile.l
         configFileA.name shouldBe "a.key"
@@ -130,7 +130,7 @@ class ConfigPassTest extends AnyWordSpec with Matchers {
         fileA.write("-----BEGIN RSA PRIVATE KEY-----\n123456789\n-----END RSA PRIVATE KEY-----")
 
         val cpg = Cpg.emptyCpg
-        new PrivateKeyFilePass(cpg, Config(inputPath = dir.pathAsString)).createAndApply()
+        new PrivateKeyFilePass(cpg, Config().withInputPath(dir.pathAsString)).createAndApply()
 
         cpg.configFile shouldBe empty
       }
