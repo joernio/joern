@@ -5,6 +5,7 @@ import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
+import io.joern.rubysrc2cpg.astcreation.AstCreator
 
 class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
 
@@ -1118,5 +1119,21 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     val List(callNode) = cpg.call.name("<operator>.indexAccess").l
     callNode.lineNumber shouldBe Some(2)
     callNode.columnNumber shouldBe Some(9)
+  }
+
+  "have correct structure for regex match global variables" in {
+    val cpg = code("""
+        |content_filename =~ /filename="(.*)"/
+        |value = $1
+        |""".stripMargin)
+
+    cpg.call.size shouldBe 2
+    cpg.call.code(".*filename.*").head.methodFullName shouldBe "<operator>.patternMatch"
+
+    cpg.identifier.code("value").size shouldBe 1
+    cpg.identifier.name("\\$1").size shouldBe 1
+    cpg.identifier.name("\\$1").head.typeFullName shouldBe Defines.String
+
+    cpg.literal.code("/filename=\"(.*)\"/").head.typeFullName shouldBe Defines.Regexp
   }
 }
