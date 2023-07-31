@@ -1120,6 +1120,27 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     callNode.columnNumber shouldBe Some(9)
   }
 
+  "method defined inside a class using << operator" in {
+    val cpg = code("""
+        class MyClass
+        |
+        |  class << self
+        |    def print
+        |      puts "log #{self}"
+        |    end
+        |  end
+        |  class << self
+        |  end
+        |end
+        |
+        |MyClass.print""".stripMargin)
+
+    val List(callNode) = cpg.call.name("print").l
+    callNode.lineNumber shouldBe Some(13)
+    callNode.columnNumber shouldBe Some(7)
+    callNode.name shouldBe "print"
+  }
+
   "have correct structure for body statements inside a do block" in {
     val cpg = code("""
         |def foo
