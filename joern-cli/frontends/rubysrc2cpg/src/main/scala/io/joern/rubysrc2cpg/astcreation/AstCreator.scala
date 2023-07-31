@@ -1111,6 +1111,7 @@ class AstCreator(
     if (ctx == null) return Seq()
     val localVarList = ListBuffer[Option[TerminalNode]]()
     // NOT differentiating between the productions here since either way we get parameters
+    // TODO: Add more information other than just parameter names
     val mandatoryParameters = ctx
       .parameter()
       .asScala
@@ -1135,7 +1136,9 @@ class AstCreator(
       .parameter()
       .asScala
       .filter(ctx => Option(ctx.keywordParameter()).isDefined)
-      .map(ctx => Option(ctx.keywordParameter().LOCAL_VARIABLE_IDENTIFIER()))
+      .map(ctx => {
+        Option(ctx.keywordParameter().LOCAL_VARIABLE_IDENTIFIER())
+      })
 
     localVarList.addAll(mandatoryParameters)
     localVarList.addAll(optionalParameters)

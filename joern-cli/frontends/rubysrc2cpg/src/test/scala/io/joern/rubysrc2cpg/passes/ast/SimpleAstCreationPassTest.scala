@@ -1056,8 +1056,9 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
+    println(cpg.parameter.code.l)
     val List(parameterNode) = cpg.method("foo").parameter.l
-    parameterNode.name shouldBe "bar"
+    parameterNode.name shouldBe "ba12r"
     parameterNode.lineNumber shouldBe Some(2)
   }
 
@@ -1124,5 +1125,3 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     callNode.columnNumber shouldBe Some(9)
   }
 }
-
-class Test extends RubyCode2CpgFixture {}
