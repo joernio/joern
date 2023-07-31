@@ -174,8 +174,12 @@ trait AstForExpressionsCreator { this: AstCreator =>
   def astForRangeExpressionContext(ctx: RangeExpressionContext): Seq[Ast] =
     Seq(astForBinaryOperatorExpression(ctx, Operators.range, ctx.expression().asScala))
 
-  protected def astForSuperExpression(ctx: SuperExpressionPrimaryContext): Ast =
-    astForSuperCall(ctx, astForArgumentsWithParenthesesContext(ctx.argumentsWithParentheses))
+  protected def astForSuperExpression(ctx: SuperExpressionPrimaryContext): Ast = {
+    val argsAst = Option(ctx.argumentsWithParentheses()) match
+      case Some(ctxArgs) => astForArgumentsWithParenthesesContext(ctxArgs)
+      case None          => Seq()
+    astForSuperCall(ctx, argsAst)
+  }
 
   // TODO: Handle the optional block.
   // NOTE: `super` is quite complicated semantically speaking. We'll need
@@ -262,7 +266,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
      */
 
     val variableName      = ctx.getText
-    val isSelfFieldAccess = variableName.startsWith("@") || variableName.isAllUpperCase
+    val isSelfFieldAccess = variableName.startsWith("@")
     if (isSelfFieldAccess) {
       // Very basic field detection
       fieldReferences.updateWith(classStack.top) {
@@ -274,7 +278,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     } else if (definitelyIdentifier || scope.lookupVariable(variableName).isDefined) {
       val node = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List())
       Ast(node)
-    } else if (methodNames.contains(variableName)) {
+    } else if (methodNameToMethod.contains(variableName)) {
       astForCallNode(ctx, variableName)
     } else if (ModifierTypes.ALL.contains(variableName.toUpperCase)) {
       lastModifier = Option(variableName.toUpperCase)

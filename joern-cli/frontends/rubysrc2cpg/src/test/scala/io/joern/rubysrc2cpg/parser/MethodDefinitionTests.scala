@@ -552,8 +552,7 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |       SimpleMethodNamePart
             |        DefinedMethodName
             |         AssignmentLikeMethodIdentifier
-            |          foo2
-            |          =
+            |          foo2=
             |       MethodParameterPart
             |        (
             |        Parameters
@@ -568,6 +567,102 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             | Separators
             |  Separator""".stripMargin
 
+      }
+
+      // This test makes sure that the `end` after `def foo2=` is not parsed as part of its definition,
+      // which could happen if `foo2=` was parsed as two separate tokens (LOCAL_VARIABLE_IDENTIFIER, EQ)
+      // instead of just ASSIGNMENT_LIKE_METHOD_IDENTIFIER.
+      // Issue report: https://github.com/joernio/joern/issues/3270
+      "its name ends in `=` and the next keyword is `end`" in {
+        val code =
+          """module SomeModule
+            |def foo1
+            |    return unless true
+            |end
+            |def foo2=(arg)
+            |end
+            |end
+            |""".stripMargin
+        printAst(_.compoundStatement(), code) shouldEqual
+          """CompoundStatement
+            | Statements
+            |  ExpressionOrCommandStatement
+            |   ExpressionExpressionOrCommand
+            |    PrimaryExpression
+            |     ModuleDefinitionPrimary
+            |      ModuleDefinition
+            |       module
+            |       WsOrNl
+            |       ClassOrModuleReference
+            |        SomeModule
+            |       WsOrNl
+            |       BodyStatement
+            |        CompoundStatement
+            |         Statements
+            |          ExpressionOrCommandStatement
+            |           ExpressionExpressionOrCommand
+            |            PrimaryExpression
+            |             MethodDefinitionPrimary
+            |              MethodDefinition
+            |               def
+            |               WsOrNl
+            |               SimpleMethodNamePart
+            |                DefinedMethodName
+            |                 MethodName
+            |                  MethodIdentifier
+            |                   foo1
+            |               MethodParameterPart
+            |               Separator
+            |               WsOrNl
+            |               BodyStatement
+            |                CompoundStatement
+            |                 Statements
+            |                  ModifierStatement
+            |                   ExpressionOrCommandStatement
+            |                    InvocationExpressionOrCommand
+            |                     ReturnArgsInvocationWithoutParentheses
+            |                      return
+            |                   unless
+            |                   WsOrNl
+            |                   ExpressionOrCommandStatement
+            |                    ExpressionExpressionOrCommand
+            |                     PrimaryExpression
+            |                      VariableReferencePrimary
+            |                       PseudoVariableIdentifierVariableReference
+            |                        TruePseudoVariableIdentifier
+            |                         true
+            |                 Separators
+            |                  Separator
+            |               end
+            |          Separators
+            |           Separator
+            |          ExpressionOrCommandStatement
+            |           ExpressionExpressionOrCommand
+            |            PrimaryExpression
+            |             MethodDefinitionPrimary
+            |              MethodDefinition
+            |               def
+            |               WsOrNl
+            |               SimpleMethodNamePart
+            |                DefinedMethodName
+            |                 AssignmentLikeMethodIdentifier
+            |                  foo2=
+            |               MethodParameterPart
+            |                (
+            |                Parameters
+            |                 Parameter
+            |                  MandatoryParameter
+            |                   arg
+            |                )
+            |               Separator
+            |               BodyStatement
+            |                CompoundStatement
+            |               end
+            |         Separators
+            |          Separator
+            |       end
+            | Separators
+            |  Separator""".stripMargin
       }
     }
   }
@@ -781,8 +876,13 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |              sample_method
           |          MethodParameterPart
           |           (
+<<<<<<< HEAD
           |           Parameters
           |            WsOrNl
+=======
+          |           WsOrNl
+          |           Parameters
+>>>>>>> 9f4031533bd5c2765d3c72cd8de6ef72f2e2fdf5
           |            Parameter
           |             KeywordParameter
           |              first_param
@@ -841,9 +941,15 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |              initialize
           |          MethodParameterPart
           |           (
+<<<<<<< HEAD
           |           Parameters
           |            WsOrNl
           |            WsOrNl
+=======
+          |           WsOrNl
+          |           WsOrNl
+          |           Parameters
+>>>>>>> 9f4031533bd5c2765d3c72cd8de6ef72f2e2fdf5
           |            Parameter
           |             MandatoryParameter
           |              name
@@ -852,6 +958,137 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |            Parameter
           |             MandatoryParameter
           |              age
+          |           )
+          |          Separator
+          |          WsOrNl
+          |          BodyStatement
+          |           CompoundStatement
+          |          end
+          |    Separators
+          |     Separator
+          |  end""".stripMargin
+    }
+
+    "have correct structure when method parameters are defined using wsOrNL" in {
+      val code =
+        """
+          |class SomeClass
+          |  def initialize(
+          |              name, age
+          |              )
+          |  end
+          |end
+          |""".stripMargin
+
+      printAst(_.primary(), code) shouldBe
+        """ClassDefinitionPrimary
+          | ClassDefinition
+          |  class
+          |  WsOrNl
+          |  ClassOrModuleReference
+          |   SomeClass
+          |  Separators
+          |   Separator
+          |  WsOrNl
+          |  BodyStatement
+          |   CompoundStatement
+          |    Statements
+          |     ExpressionOrCommandStatement
+          |      ExpressionExpressionOrCommand
+          |       PrimaryExpression
+          |        MethodDefinitionPrimary
+          |         MethodDefinition
+          |          def
+          |          WsOrNl
+          |          SimpleMethodNamePart
+          |           DefinedMethodName
+          |            MethodName
+          |             MethodIdentifier
+          |              initialize
+          |          MethodParameterPart
+          |           (
+          |           WsOrNl
+          |           WsOrNl
+          |           Parameters
+          |            Parameter
+          |             MandatoryParameter
+          |              name
+          |            ,
+          |            WsOrNl
+          |            Parameter
+          |             MandatoryParameter
+          |              age
+          |           WsOrNl
+          |           WsOrNl
+          |           )
+          |          Separator
+          |          WsOrNl
+          |          BodyStatement
+          |           CompoundStatement
+          |          end
+          |    Separators
+          |     Separator
+          |  end""".stripMargin
+    }
+
+    "have correct structure when keyword parameters are defined using wsOrNL" in {
+      val code =
+        """
+          |class SomeClass
+          |  def initialize(
+          |              name: nil, age
+          |              )
+          |  end
+          |end
+          |""".stripMargin
+
+      printAst(_.primary(), code) shouldBe
+        """ClassDefinitionPrimary
+          | ClassDefinition
+          |  class
+          |  WsOrNl
+          |  ClassOrModuleReference
+          |   SomeClass
+          |  Separators
+          |   Separator
+          |  WsOrNl
+          |  BodyStatement
+          |   CompoundStatement
+          |    Statements
+          |     ExpressionOrCommandStatement
+          |      ExpressionExpressionOrCommand
+          |       PrimaryExpression
+          |        MethodDefinitionPrimary
+          |         MethodDefinition
+          |          def
+          |          WsOrNl
+          |          SimpleMethodNamePart
+          |           DefinedMethodName
+          |            MethodName
+          |             MethodIdentifier
+          |              initialize
+          |          MethodParameterPart
+          |           (
+          |           WsOrNl
+          |           WsOrNl
+          |           Parameters
+          |            Parameter
+          |             KeywordParameter
+          |              name
+          |              :
+          |              WsOrNl
+          |              PrimaryExpression
+          |               VariableReferencePrimary
+          |                PseudoVariableIdentifierVariableReference
+          |                 NilPseudoVariableIdentifier
+          |                  nil
+          |            ,
+          |            WsOrNl
+          |            Parameter
+          |             MandatoryParameter
+          |              age
+          |           WsOrNl
+          |           WsOrNl
           |           )
           |          Separator
           |          WsOrNl

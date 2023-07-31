@@ -31,7 +31,7 @@ class MiscTests extends RubyCode2CpgFixture {
       cpg.identifier.name("beginbool").size shouldBe 1
       cpg.identifier.name("endbool").size shouldBe 1
       cpg.call.name("puts").size shouldBe 1
-      cpg.identifier.size shouldBe 6
+      cpg.identifier.size shouldBe 7 // 1 identifier node is for `puts = typeDef(__builtin.puts)`
     }
   }
 
@@ -306,6 +306,26 @@ class MiscTests extends RubyCode2CpgFixture {
 
     "recognise all namespace nodes" in {
       cpg.namespace.name("SomeModule").size shouldBe 1
+    }
+  }
+
+  "CPG for code with super without arguments" should {
+    val cpg = code("""
+        |class Parent
+        |  def foo(arg)
+        |  end
+        |end
+        |
+        |class Child < Parent
+        |  def foo(arg)
+        |    super
+        |  end
+        |end
+        |""".stripMargin)
+
+    "recognise all call nodes" in {
+      cpg.call.name("<operator>.super").size shouldBe 1
+      cpg.method.name("foo").size shouldBe 2
     }
   }
 }
