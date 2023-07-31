@@ -1150,4 +1150,14 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     assocOperator.astChildren.code.l(1) shouldBe "/.*/"
     assocOperator.lineNumber shouldBe Some(4)
   }
+
+  "have correct structure for a endless method" in {
+    val cpg = code("""
+        |def foo(a,b) = a*b
+        |""".stripMargin)
+
+    val List(methodNode) = cpg.method.name("foo").l
+    methodNode.lineNumber shouldBe Some(2)
+    methodNode.columnNumber shouldBe Some(4)
+  }
 }
