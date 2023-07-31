@@ -430,7 +430,7 @@ fragment LINE_TERMINATOR
 // --------------------------------------------------------
 
 SYMBOL_LITERAL
-    :   ':' SYMBOL_NAME
+    :   ':' (SYMBOL_NAME | (CONSTANT_IDENTIFIER | LOCAL_VARIABLE_IDENTIFIER) '=')
     // This check exists to prevent issuing a SYMBOL_LITERAL in whitespace-free associations, e.g. 
     //      in `foo(x:y)`, so that `:y` is not a SYMBOL_LITERAL
     // or   in `{:x=>1}`, so that `:x=` is not a SYMBOL_LITERAL
@@ -444,7 +444,6 @@ fragment SYMBOL_NAME
     |   CONSTANT_IDENTIFIER
     |   LOCAL_VARIABLE_IDENTIFIER
     |   METHOD_ONLY_IDENTIFIER
-    |   ASSIGNMENT_LIKE_METHOD_IDENTIFIER
     |   OPERATOR_METHOD_NAME
     |   KEYWORD
     // NOTE: Even though we have PLUSAT and MINUSAT in OPERATOR_METHOD_NAME, the former
@@ -483,8 +482,12 @@ fragment METHOD_ONLY_IDENTIFIER
     :   (CONSTANT_IDENTIFIER | LOCAL_VARIABLE_IDENTIFIER) ('!' | '?')
     ;
 
-fragment ASSIGNMENT_LIKE_METHOD_IDENTIFIER
-    :   (CONSTANT_IDENTIFIER | LOCAL_VARIABLE_IDENTIFIER) '='
+
+// Similarly to PLUSAT/MINUSAT, this should only occur after a DEF token.
+// Otherwise, the assignment `x=nil` would be parsed as (ASSIGNMENT_LIKE_METHOD_IDENTIFIER, NIL)
+// instead of the more appropriate (LOCAL_VARIABLE_IDENTIFIER, EQ, NIL).
+ASSIGNMENT_LIKE_METHOD_IDENTIFIER
+    :   (CONSTANT_IDENTIFIER | LOCAL_VARIABLE_IDENTIFIER) '=' {previousNonWsTokenTypeOrEOF() == DEF}?
     ;
 
 fragment IDENTIFIER_CHARACTER

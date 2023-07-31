@@ -11,6 +11,8 @@ import io.joern.x2cpg.passes.frontend.ImportsPass.{
 }
 import io.shiftleft.semanticcpg.language.*
 
+import scala.collection.immutable.List
+
 object RubyTypeRecoveryTests {
   def getPackageTable: PackageTable = {
     val packageTable = PackageTable()
@@ -100,10 +102,9 @@ class RubyTypeRecoveryTests
       maxCall.methodFullName shouldBe "__builtin.puts"
     }
 
-    "conservatively present either option when an imported function uses the same name as a builtin" ignore {
+    "conservatively present either option when an imported function uses the same name as a builtin" in {
       val List(absCall) = cpg.call("sleep").l
-      absCall.methodFullName shouldBe "main.rb::program.sleep"
-      absCall.dynamicTypeHintFullName shouldBe Seq("main.rb::program.sleep")
+      absCall.dynamicTypeHintFullName.l shouldBe Seq("__builtin.sleep", "main.rb::program.sleep")
     }
   }
 
@@ -228,6 +229,26 @@ class RubyTypeRecoveryTests
     "resolved the type of identifier" in {
       val Some(customer) = cpg.identifier("customer").headOption: @unchecked
       customer.typeFullName shouldBe "stripe::program.Stripe.Customer.create.<returnValue>"
+    }
+  }
+
+  "recovery of type for call having a method with same name" should {
+    lazy val cpg = code("""
+        |require "dbi"
+        |
+        |def connect
+        |  puts "I am here"
+        |end
+        |
+        |d = DBI.connect("DBI:Mysql:TESTDB:localhost", "testuser", "test123")
+        |""".stripMargin)
+
+    "have a correct type for call `connect`" in {
+      cpg.call("connect").methodFullName.l shouldBe List("dbi::program.DBI.connect")
+    }
+
+    "have a correct type for identifier `d`" in {
+      cpg.identifier("d").typeFullName.l shouldBe List("dbi::program.DBI.connect.<returnValue>")
     }
   }
 }
