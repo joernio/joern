@@ -1171,4 +1171,13 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     assocOperator.astChildren.code.l(1) shouldBe "/.*/"
     assocOperator.lineNumber shouldBe Some(4)
   }
+
+  "Double-quoted string literals containing \\u character" in {
+    val cpg = code("""
+      |val fileName = "AB\u0003\u0004\u0014\u0000\u0000\u0000\b\u0000\u0000\u0000!\u0000file"
+      |""".stripMargin)
+
+    cpg.identifier.size shouldBe 1
+    cpg.identifier("fileName").name.head shouldBe "fileName"
+  }
 }
