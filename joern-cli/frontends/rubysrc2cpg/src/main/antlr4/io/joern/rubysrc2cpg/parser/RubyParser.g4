@@ -257,6 +257,10 @@ blockParameters
 
 arrayConstructor
     :   LBRACK wsOrNl* indexingArguments? wsOrNl* RBRACK
+    |   QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_START
+        (QUOTED_NON_EXPANDED_STRING_ARRAY_CHARACTER
+        |QUOTED_NON_EXPANDED_STRING_ARRAY_SEPARATOR)*
+        QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END
     ;
 
 // --------------------------------------------------------
