@@ -1131,11 +1131,17 @@ class AstCreator(
       .asScala
       .filter(ctx => Option(ctx.procParameter()).isDefined)
       .map(ctx => Option(ctx.procParameter().LOCAL_VARIABLE_IDENTIFIER()))
+    val keywordParameters = ctx
+      .parameter()
+      .asScala
+      .filter(ctx => Option(ctx.keywordParameter()).isDefined)
+      .map(ctx => Option(ctx.keywordParameter().LOCAL_VARIABLE_IDENTIFIER()))
 
     localVarList.addAll(mandatoryParameters)
     localVarList.addAll(optionalParameters)
     localVarList.addAll(arrayParameter)
     localVarList.addAll(procParameter)
+    localVarList.addAll(keywordParameters)
 
     localVarList.map {
       case localVar @ Some(paramContext) => {
