@@ -1119,7 +1119,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     callNode.lineNumber shouldBe Some(2)
     callNode.columnNumber shouldBe Some(9)
   }
-
+  
   "method defined inside a class using << operator" in {
     val cpg = code(
       """
@@ -1140,5 +1140,36 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     callNode.lineNumber shouldBe Some(13)
     callNode.columnNumber shouldBe Some(7)
     callNode.name shouldBe "print"
+   }
+
+  "have correct structure for body statements inside a do block" in {
+    val cpg = code("""
+        |def foo
+        |1/0
+        |rescue ZeroDivisionError => e
+        |end""".stripMargin)
+
+    val List(methodNode) = cpg.method.code(".*foo.*").l
+    methodNode.name shouldBe "foo"
+    methodNode.lineNumber shouldBe Some(2)
+
+    val List(divisionOperator, assignmentOperator) = cpg.method.name(".*operator.*").l
+    divisionOperator.name shouldBe "<operator>.division"
+    assignmentOperator.name shouldBe "<operator>.assignment"
+  }
+
+  "have correct structure when regex literal is used on RHS of association" in {
+    val cpg = code("""
+        |books = [
+        |   {
+        |       id: /.*/
+        |   }
+        |]
+        |""".stripMargin)
+
+    val List(assocOperator) = cpg.call(".*activeRecordAssociation.*").l
+    assocOperator.code shouldBe "id: /.*/"
+    assocOperator.astChildren.code.l(1) shouldBe "/.*/"
+    assocOperator.lineNumber shouldBe Some(4)
   }
 }
