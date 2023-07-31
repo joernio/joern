@@ -1039,22 +1039,26 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
   }
 
-  "have correct structure when no RHS for a mandatory parameter is provided" ignore {
+  "have correct structure when no RHS for a mandatory parameter is provided" in {
     val cpg = code("""
         |def foo(bar:)
         |end
         |""".stripMargin)
 
-    cpg.method("foo").parameter.size shouldBe 1
+    val List(parameterNode) = cpg.method("foo").parameter.l
+    parameterNode.name shouldBe "bar"
+    parameterNode.lineNumber shouldBe Some(2)
   }
 
-  "have correct structure when RHS for a mandatory parameter is provided" ignore {
+  "have correct structure when RHS for a mandatory parameter is provided" in {
     val cpg = code("""
         |def foo(bar: world)
         |end
         |""".stripMargin)
 
-    cpg.method("foo").parameter.size shouldBe 1
+    val List(parameterNode) = cpg.method("foo").parameter.l
+    parameterNode.name shouldBe "bar"
+    parameterNode.lineNumber shouldBe Some(2)
   }
 
   // Change below test cases to focus on the argument of call `foo`
