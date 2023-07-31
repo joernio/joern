@@ -91,7 +91,7 @@ trait AstForStatementsCreator {
     controlStructureAst(throwNode, rhs.headOption, lhs)
   }
 
-  private def lastStmtAsReturn(code: String, lastStmtAst: Ast): Ast = {
+  protected def lastStmtAsReturn(code: String, lastStmtAst: Ast): Ast = {
     val lastStmtIsAlreadyReturn = lastStmtAst.root match {
       case Some(value) => value.isInstanceOf[NewReturn]
       case None        => false
