@@ -1183,6 +1183,11 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
 
     cpg.identifier.size shouldBe 1
     cpg.identifier.name.head shouldBe "fileName"
+    cpg.literal.head.code
+      .stripPrefix("\"")
+      .stripSuffix("\"")
+      .trim shouldBe """AB\u0003\u0004\u0014\u0000\u0000\u0000\b\u0000\u0000\u0000!\u0000file"""
+
   }
 
   "have correct structure for a endless method" in {
