@@ -1183,7 +1183,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
 
     cpg.identifier.size shouldBe 1
     cpg.identifier("fileName").name.head shouldBe "fileName"
-   }
+  }
 
   "have correct structure for a endless method" in {
     val cpg = code("""
