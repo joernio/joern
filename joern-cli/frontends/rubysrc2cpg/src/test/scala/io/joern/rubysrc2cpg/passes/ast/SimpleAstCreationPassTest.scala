@@ -1118,4 +1118,17 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     callNode.name shouldBe "foo"
     operatorNode.name shouldBe "<operator>.activeRecordAssociation"
   }
+
+  "have correct structure parenthesised arguments in a return jump" in {
+    val cpg = code("""return(value) unless item""".stripMargin)
+
+    cpg.identifier.size shouldBe 2
+    cpg.identifier.name("value").size shouldBe 1
+    cpg.identifier.name("item").size shouldBe 1
+
+    val List(methodReturn) = cpg.ret.l
+    methodReturn.code shouldBe "return(value)"
+    methodReturn.lineNumber shouldBe Some(1)
+    methodReturn.columnNumber shouldBe Some(0)
+  }
 }
