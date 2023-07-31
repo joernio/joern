@@ -1120,15 +1120,12 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     callNode.columnNumber shouldBe Some(9)
   }
 
-}
-
-class Test extends RubyCode2CpgFixture {
   "have correct structure for body statements inside a do block" in {
     val cpg = code("""
-         |def foo
-         |1/0
-         |rescue ZeroDivisionError => e
-         |end""".stripMargin)
+        |def foo
+        |1/0
+        |rescue ZeroDivisionError => e
+        |end""".stripMargin)
 
     val List(methodNode) = cpg.method.code(".*foo.*").l
     methodNode.name shouldBe "foo"
@@ -1138,4 +1135,5 @@ class Test extends RubyCode2CpgFixture {
     divisionOperator.name shouldBe "<operator>.division"
     assignmentOperator.name shouldBe "<operator>.assignment"
   }
+
 }
