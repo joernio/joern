@@ -1120,13 +1120,34 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     callNode.columnNumber shouldBe Some(9)
   }
 
-  "have correct structure for a endless method" in {
+  "have correct structure for body statements inside a do block" in {
     val cpg = code("""
-        |def foo(a,b) = a*b
+        |def foo
+        |1/0
+        |rescue ZeroDivisionError => e
+        |end""".stripMargin)
+
+    val List(methodNode) = cpg.method.code(".*foo.*").l
+    methodNode.name shouldBe "foo"
+    methodNode.lineNumber shouldBe Some(2)
+
+    val List(divisionOperator, assignmentOperator) = cpg.method.name(".*operator.*").l
+    divisionOperator.name shouldBe "<operator>.division"
+    assignmentOperator.name shouldBe "<operator>.assignment"
+  }
+
+  "have correct structure when regex literal is used on RHS of association" in {
+    val cpg = code("""
+        |books = [
+        |   {
+        |       id: /.*/
+        |   }
+        |]
         |""".stripMargin)
 
-    val List(methodNode) = cpg.method.name("foo").l
-    methodNode.lineNumber shouldBe Some(2)
-    methodNode.columnNumber shouldBe Some(4)
+    val List(assocOperator) = cpg.call(".*activeRecordAssociation.*").l
+    assocOperator.code shouldBe "id: /.*/"
+    assocOperator.astChildren.code.l(1) shouldBe "/.*/"
+    assocOperator.lineNumber shouldBe Some(4)
   }
 }
