@@ -1,6 +1,6 @@
 package io.joern.rubysrc2cpg.astcreation
+import io.joern.rubysrc2cpg.parser.RubyParser
 import io.joern.rubysrc2cpg.parser.RubyParser.*
-import io.joern.rubysrc2cpg.parser.{RubyLexer, RubyParser}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.utils.PackageContext
 import io.joern.x2cpg.Ast.storeInDiffGraph
@@ -9,21 +9,22 @@ import io.joern.x2cpg.datastructures.{Global, Scope}
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import org.antlr.v4.runtime.{ParserRuleContext, Token}
 import org.antlr.v4.runtime.tree.TerminalNode
+import org.antlr.v4.runtime.{ParserRuleContext, Token}
 import org.slf4j.LoggerFactory
-import overflowdb.{BatchedUpdate, NodeOrDetachedNode}
+import overflowdb.BatchedUpdate
 
 import java.io.File as JFile
 import scala.collection.immutable.Seq
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters.*
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success, Using}
 
 class AstCreator(
   protected val filename: String,
   global: Global,
+  parser: ResourceManagedParser,
   packageContext: PackageContext,
   projectRoot: Option[String] = None
 ) extends AstCreatorBase(filename)
@@ -107,10 +108,9 @@ class AstCreator(
   protected def getActualMethodName(name: String): String = {
     methodAliases.getOrElse(name, name)
   }
+
   override def createAst(): BatchedUpdate.DiffGraphBuilder = {
-    Try {
-      new AntlrParser().parse(filename)
-    } match {
+    parser.parse(filename) match {
       case Success(programCtx) =>
         createAstForProgramCtx(programCtx)
       case Failure(exc) =>
