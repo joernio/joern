@@ -24,6 +24,7 @@ import scala.util.{Failure, Success, Using}
 class AstCreator(
   protected val filename: String,
   global: Global,
+  parser: ResourceManagedParser,
   packageContext: PackageContext,
   projectRoot: Option[String] = None
 ) extends AstCreatorBase(filename)
@@ -108,8 +109,8 @@ class AstCreator(
     methodAliases.getOrElse(name, name)
   }
 
-  override def createAst(): BatchedUpdate.DiffGraphBuilder = Using.resource(new AntlrParser(filename)) { parser =>
-    parser.parse() match {
+  override def createAst(): BatchedUpdate.DiffGraphBuilder = {
+    parser.parse(filename) match {
       case Success(programCtx) =>
         createAstForProgramCtx(programCtx)
       case Failure(exc) =>

@@ -5,12 +5,16 @@ import io.joern.x2cpg.passes.frontend.{XTypeRecovery, TypeRecoveryParserConfig}
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
 import scopt.OParser
 
-final case class Config(enableDependencyDownload: Boolean = false)
+final case class Config(enableDependencyDownload: Boolean = false, antlrCacheMemLimit: Double = 0.6d)
     extends X2CpgConfig[Config]
     with TypeRecoveryParserConfig[Config] {
 
   def withEnableDependencyDownload(value: Boolean): Config = {
     copy(enableDependencyDownload = value).withInheritedFields(this)
+  }
+
+  def withAntlrCacheMemoryLimit(value: Double): Config = {
+    copy(antlrCacheMemLimit = value).withInheritedFields(this)
   }
 }
 
@@ -27,6 +31,16 @@ private object Frontend {
         .hidden()
         .action((_, c) => c.withEnableDependencyDownload(true))
         .text("enable dependency download for Unix System only"),
+      opt[Double]("antlrCacheMemLimit")
+        .hidden()
+        .action((x, c) => c.withAntlrCacheMemoryLimit(x))
+        .validate { x =>
+          if (x < 0.3 || x > 0.8)
+            failure(s"$x is not a sufficient threshold, try a value between 0.3 - 0.8.")
+          else
+            success
+        }
+        .text("sets the heap usage threshold at which the ANTLR DFA cache is cleared during parsing (default 0.6)"),
       XTypeRecovery.parserOptions
     )
   }

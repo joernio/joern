@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.passes
 
 import better.files.File
-import io.joern.rubysrc2cpg.astcreation.AstCreator
+import io.joern.rubysrc2cpg.astcreation.{AstCreator, ResourceManagedParser}
 import io.joern.rubysrc2cpg.utils.{PackageContext, PackageTable}
 import io.joern.x2cpg.datastructures.Global
 import io.shiftleft.codepropertygraph.Cpg
@@ -9,8 +9,15 @@ import io.shiftleft.passes.ConcurrentWriterCpgPass
 
 import scala.util.Try
 
-class AstPackagePass(cpg: Cpg, tempExtDir: String, global: Global, packageTable: PackageTable, inputPath: String)
-    extends ConcurrentWriterCpgPass[String](cpg) {
+class AstPackagePass(
+  cpg: Cpg,
+  tempExtDir: String,
+  global: Global,
+  parser: ResourceManagedParser,
+  packageTable: PackageTable,
+  inputPath: String
+) extends ConcurrentWriterCpgPass[String](cpg) {
+
   override def generateParts(): Array[String] =
     getRubyDependenciesFile(inputPath) ++ getRubyDependenciesFile(tempExtDir)
 
@@ -19,6 +26,7 @@ class AstPackagePass(cpg: Cpg, tempExtDir: String, global: Global, packageTable:
       new AstCreator(
         filePath,
         global,
+        parser,
         PackageContext(resolveModuleNameFromPath(filePath), packageTable),
         Option(inputPath)
       ).createAst()

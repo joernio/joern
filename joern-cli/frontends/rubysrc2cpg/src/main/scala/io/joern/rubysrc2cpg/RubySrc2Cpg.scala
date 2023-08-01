@@ -1,14 +1,8 @@
 package io.joern.rubysrc2cpg
 
 import better.files.File
-import io.joern.rubysrc2cpg.passes.{
-  AstCreationPass,
-  AstPackagePass,
-  ConfigFileCreationPass,
-  ImportResolverPass,
-  RubyTypeHintCallLinker,
-  RubyTypeRecoveryPass
-}
+import io.joern.rubysrc2cpg.astcreation.ResourceManagedParser
+import io.joern.rubysrc2cpg.passes.*
 import io.joern.rubysrc2cpg.utils.PackageTable
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
@@ -23,7 +17,7 @@ import io.shiftleft.passes.CpgPassBase
 import org.slf4j.LoggerFactory
 
 import java.nio.file.{Files, Paths}
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Success, Try, Using}
 
 class RubySrc2Cpg extends X2CpgFrontend[Config] {
 
@@ -32,23 +26,24 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
 
   override def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
-
       new MetaDataPass(cpg, Languages.RUBYSRC, config.inputPath).createAndApply()
       new ConfigFileCreationPass(cpg).createAndApply()
-      if (config.enableDependencyDownload && !scala.util.Properties.isWin) {
-        val tempDir = File.newTemporaryDirectory()
-        try {
-          downloadDependency(config.inputPath, tempDir.toString())
-          new AstPackagePass(cpg, tempDir.toString(), global, RubySrc2Cpg.packageTableInfo, config.inputPath)
-            .createAndApply()
-        } finally {
-          tempDir.delete()
+      Using.resource(new ResourceManagedParser(config.antlrCacheMemLimit)) { parser =>
+        if (config.enableDependencyDownload && !scala.util.Properties.isWin) {
+          val tempDir = File.newTemporaryDirectory()
+          try {
+            downloadDependency(config.inputPath, tempDir.toString())
+            new AstPackagePass(cpg, tempDir.toString(), global, parser, RubySrc2Cpg.packageTableInfo, config.inputPath)
+              .createAndApply()
+          } finally {
+            tempDir.delete()
+          }
         }
-      }
 
-      val astCreationPass = new AstCreationPass(cpg, global, RubySrc2Cpg.packageTableInfo, config)
-      astCreationPass.createAndApply()
-      TypeNodePass.withRegisteredTypes(astCreationPass.allUsedTypes(), cpg).createAndApply()
+        val astCreationPass = new AstCreationPass(cpg, global, parser, RubySrc2Cpg.packageTableInfo, config)
+        astCreationPass.createAndApply()
+        TypeNodePass.withRegisteredTypes(astCreationPass.allUsedTypes(), cpg).createAndApply()
+      }
     }
   }
 
