@@ -1176,7 +1176,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     assocOperator.lineNumber shouldBe Some(4)
   }
 
-  "Double-quoted string literals containing \\u character" in {
+  "have double-quoted string literals containing \\u character" in {
     val cpg = code("""
       |val fileName = "AB\u0003\u0004\u0014\u0000\u0000\u0000\b\u0000\u0000\u0000!\u0000file"
       |""".stripMargin)
@@ -1201,8 +1201,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
   }
 
   "Parsing a binary expression having + and @" in {
-    val cpg = code(
-      """
+    val cpg = code("""
         |class MyClass
         |  def initialize(a)
         |    @a = a
