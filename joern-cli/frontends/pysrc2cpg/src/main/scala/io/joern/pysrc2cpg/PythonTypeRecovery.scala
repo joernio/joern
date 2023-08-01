@@ -148,9 +148,9 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
     if (fa.method.name == "<module>") {
       Set(fa.method.fullName)
     } else if (fa.method.typeDecl.nonEmpty) {
-      val parentTypes       = fa.method.typeDecl.fullName.toSeq
-      val baseTypeFullNames = cpg.typeDecl.fullNameExact(parentTypes: _*).inheritsFromTypeFullName.toSeq
-      (parentTypes ++ baseTypeFullNames).filterNot(_.toLowerCase.matches("(any|object)")).toSet
+      val parentTypes       = fa.method.typeDecl.fullName.toSet
+      val baseTypeFullNames = cpg.typeDecl.fullNameExact(parentTypes.toSeq: _*).inheritsFromTypeFullName.toSet
+      (parentTypes ++ baseTypeFullNames).filterNot(_.matches("(?i)(any|object)"))
     } else {
       super.getFieldParents(fa)
     }

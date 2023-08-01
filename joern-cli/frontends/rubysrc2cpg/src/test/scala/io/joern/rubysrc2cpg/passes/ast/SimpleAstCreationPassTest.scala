@@ -1188,7 +1188,8 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
   }
 
   "have binary expression having + and @" in {
-    val cpg = code("""
+    val cpg = code(
+      """
         |class MyClass
         |  def initialize(a)
         |    @a = a
@@ -1205,6 +1206,60 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     cpg.identifier("b").dedup.size shouldBe 1
     cpg.identifier("x").name.dedup.size shouldBe 1
     cpg.method("calculate_x").size shouldBe 1
+  }
+
+  "have correct structure for empty %w array" in {
+    val cpg = code("""
+        |a = %w[]
+        |""".stripMargin)
+
+    val List(assignmentCallNode) = cpg.call.name(Operators.assignment).l
+    assignmentCallNode.size shouldBe 1
+    val List(arrayCallNode) = cpg.call.name(Operators.arrayInitializer).l
+    arrayCallNode.size shouldBe 1
+    arrayCallNode.argument.size shouldBe 0
+  }
+
+  "have correct structure for %w array with %w()" in {
+    val cpg = code("""
+        |a = %w(b c d)
+        |""".stripMargin)
+
+    val List(assignmentCallNode) = cpg.call.name(Operators.assignment).l
+    assignmentCallNode.size shouldBe 1
+    val List(arrayCallNode) = cpg.call.name(Operators.arrayInitializer).l
+    arrayCallNode.size shouldBe 1
+    arrayCallNode.argument
+      .where(_.argumentIndex(1))
+      .code
+      .l shouldBe List("b")
+    arrayCallNode.argument
+      .where(_.argumentIndex(2))
+      .code
+      .l shouldBe List("c")
+    arrayCallNode.argument
+      .where(_.argumentIndex(3))
+      .code
+      .l shouldBe List("d")
+  }
+
+  "have correct structure for %w array with %w- -" in {
+    val cpg = code("""
+        |a = %w-b c-
+        |""".stripMargin)
+
+    val List(assignmentCallNode) = cpg.call.name(Operators.assignment).l
+    assignmentCallNode.size shouldBe 1
+    val List(arrayCallNode) = cpg.call.name(Operators.arrayInitializer).l
+    arrayCallNode.size shouldBe 1
+    arrayCallNode.argument
+      .where(_.argumentIndex(1))
+      .code
+      .l shouldBe List("b")
+    arrayCallNode.argument
+      .where(_.argumentIndex(2))
+      .code
+      .l shouldBe List("c")
   }
 
   "have correct structure for a hash containing splatting elements" in {
@@ -1238,5 +1293,24 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     cpg.identifier.name("\\$1").head.typeFullName shouldBe Defines.String
 
     cpg.literal.code("/filename=\"(.*)\"/").head.typeFullName shouldBe Defines.Regexp
+  }
+
+  "have correct structure of unless keyword and regex statement" in {
+    val cpg = code("""def contains_numbers?(string)
+                     |  # Define a regular expression pattern to match any digit
+                     |  regex_pattern = /\d/
+                     |
+                     |  # Check if the string contains any numbers using the 'unless' keyword
+                     |  unless string.match(regex_pattern).nil?
+                     |    return true
+                     |  end
+                     |
+                     |  return false
+                     |end""".stripMargin)
+
+    cpg.identifier.code("regex_pattern").name.dedup.size shouldBe 1
+    cpg.method.code("contains_numbers?").name.size shouldBe 1
+    cpg.call("<operator>.assignment").name.size shouldBe 2
+    cpg.call("match").name.size shouldBe 1
   }
 }
