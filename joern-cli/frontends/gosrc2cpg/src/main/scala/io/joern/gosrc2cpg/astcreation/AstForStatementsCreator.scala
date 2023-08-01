@@ -1,9 +1,10 @@
 package io.joern.gosrc2cpg.astcreation
 
-import io.joern.gosrc2cpg.parser.ParserAst._
+import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.gosrc2cpg.utils.Operator
 import io.joern.x2cpg.Ast
+import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 
 import scala.annotation.tailrec
@@ -25,13 +26,14 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   @tailrec
-  private def astsForStatement(statement: ParserNodeInfo, argIndex: Int = -1): Seq[Ast] = {
+  protected final def astsForStatement(statement: ParserNodeInfo, argIndex: Int = -1): Seq[Ast] = {
     statement.node match {
       case AssignStmt     => astForAssignStatement(statement)
       case BlockStmt      => Seq(astForBlockStatement(statement, argIndex))
       case CaseClause     => astForCaseClause(statement)
       case DeclStmt       => astForDeclStatement(statement)
       case ExprStmt       => astsForStatement(createParserNodeInfo(statement.json(ParserKeys.X)))
+      case ForStmt        => Seq(astForForStatement(statement))
       case IfStmt         => Seq(astForIfStatement(statement))
       case IncDecStmt     => Seq(astForIncDecStatement(statement))
       case SwitchStmt     => Seq(astForSwitchStatement(statement))
@@ -104,11 +106,16 @@ trait AstForStatementsCreator { this: AstCreator =>
     Seq(Ast(localNodes))
   }
 
-  private def astForConditionExpression(condStmt: ParserNodeInfo): Ast = {
-    condStmt.node match {
-      case ParenExpr => astForNode(condStmt.json(ParserKeys.X)).head
-      case _         => astsForStatement(condStmt).headOption.getOrElse(Ast())
+  private def astForConditionExpression(condStmt: ParserNodeInfo, explicitArgumentIndex: Option[Int] = None): Ast = {
+    val ast = condStmt.node match {
+      case ParenExpr   => astForNode(condStmt.json(ParserKeys.X)).headOption.getOrElse(Ast())
+      case _: BaseExpr => astForExpression(condStmt).headOption.getOrElse(Ast())
+      case _           => astsForStatement(condStmt).headOption.getOrElse(Ast())
     }
+    explicitArgumentIndex.foreach { i =>
+      ast.root.foreach { case expr: ExpressionNew => expr.argumentIndex = i }
+    }
+    ast
   }
 
   private def astForIfStatement(ifStmt: ParserNodeInfo): Ast = {
@@ -180,5 +187,26 @@ trait AstForStatementsCreator { this: AstCreator =>
 
     val caseBodyAst = caseStmt.json(ParserKeys.Body).arr.map(createParserNodeInfo).flatMap(astsForStatement(_)).toList
     caseClauseAst ++: caseBodyAst
+  }
+
+  private def astForForStatement(forStmt: ParserNodeInfo): Ast = {
+
+    val initParserNode = createParserNodeInfo(forStmt.json(ParserKeys.Init))
+    val condParserNode = createParserNodeInfo(forStmt.json(ParserKeys.Cond))
+    val iterParserNode = createParserNodeInfo(forStmt.json(ParserKeys.Post))
+
+    val code    = s"for (${iterParserNode.code};${condParserNode.code};${iterParserNode.code})"
+    val forNode = controlStructureNode(forStmt, ControlStructureTypes.FOR, code)
+
+    val initAstBlock = blockNode(forStmt, Defines.empty, registerType(Defines.voidTypeName))
+    scope.pushNewScope(initAstBlock)
+    val initAst = blockAst(initAstBlock, astsForStatement(initParserNode, 1).toList)
+    scope.popScope()
+
+    val compareAst = astForConditionExpression(condParserNode, Some(2))
+    val updateAst  = astsForStatement(iterParserNode, 3)
+    val bodyAsts   = astsForStatement(createParserNodeInfo(forStmt.json(ParserKeys.Body)), 4)
+    forAst(forNode, Seq(), Seq(initAst), Seq(compareAst), updateAst, bodyAsts)
+
   }
 }

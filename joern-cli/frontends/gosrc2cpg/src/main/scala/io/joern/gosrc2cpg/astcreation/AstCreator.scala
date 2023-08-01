@@ -81,12 +81,12 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)
   protected def astForNode(json: Value): Seq[Ast] = {
     val nodeInfo = createParserNodeInfo(json)
     val output = nodeInfo.node match {
-      case GenDecl         => astForGenDecl(nodeInfo)
-      case BasicLit        => astForLiteral(nodeInfo)
-      case Ident           => astForIdentifier(nodeInfo)
-      case FuncDecl        => astForFuncDecl(nodeInfo)
-      case _: BaseExprStmt => astForExpression(nodeInfo)
-      case _               => Seq()
+      case GenDecl     => astForGenDecl(nodeInfo)
+      case BasicLit    => astForLiteral(nodeInfo)
+      case Ident       => astForIdentifier(nodeInfo)
+      case FuncDecl    => astForFuncDecl(nodeInfo)
+      case _: BaseExpr => astForExpression(nodeInfo)
+      case _           => Seq()
     }
     output
   }

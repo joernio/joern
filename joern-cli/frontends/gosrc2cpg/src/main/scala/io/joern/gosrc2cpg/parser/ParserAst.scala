@@ -12,7 +12,7 @@ object ParserAst {
   sealed trait ParserNode {
     override def toString: String = this.getClass.getSimpleName.stripSuffix("$")
   }
-  sealed trait BaseExprStmt extends ParserNode
+  sealed trait BaseExpr extends ParserNode
 
   object File       extends ParserNode
   object GenDecl    extends ParserNode
@@ -24,23 +24,25 @@ object ParserAst {
   object ValueSpec  extends ParserNode
   object Ident      extends ParserNode
   object AssignStmt extends ParserNode
-  object ExprStmt   extends BaseExprStmt
-  object BinaryExpr extends BaseExprStmt
-  object UnaryExpr  extends BaseExprStmt
-  object StarExpr   extends BaseExprStmt
+  object ExprStmt   extends ParserNode
+  object BinaryExpr extends BaseExpr
+  object UnaryExpr  extends BaseExpr
+  object StarExpr   extends BaseExpr
 
   object IncDecStmt     extends ParserNode
   object IfStmt         extends ParserNode
-  object ParenExpr      extends BaseExprStmt
+  object ParenExpr      extends BaseExpr
   object SwitchStmt     extends ParserNode
   object CaseClause     extends ParserNode
   object TypeSwitchStmt extends ParserNode
-  object TypeAssertExpr extends BaseExprStmt
+  object TypeAssertExpr extends BaseExpr
   object InterfaceType  extends ParserNode
   object ReturnStmt     extends ParserNode
   object FuncType       extends ParserNode
   object Ellipsis       extends ParserNode
   object SelectorExpr   extends ParserNode
+  object ForStmt        extends ParserNode
+  object CallExpr       extends BaseExpr
 }
 
 object ParserKeys {
@@ -51,6 +53,7 @@ object ParserKeys {
   val Decl          = "Decl"
   val Decls         = "Decls"
   val Else          = "Else"
+  val Init          = "Init"
   val Kind          = "Kind"
   val List          = "List"
   val Lhs           = "Lhs"
@@ -64,6 +67,7 @@ object ParserKeys {
   val NodeType      = "node_type"
   val Op            = "Op"
   val Path          = "Path"
+  val Post          = "Post"
   val Rhs           = "Rhs"
   val Specs         = "Specs"
   val Tag           = "Tag"

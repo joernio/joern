@@ -1,5 +1,6 @@
 package io.joern.gosrc2cpg.astcreation
 
+import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.parser.ParserAst.{Ident, ParserNode, fromString}
 import ujson.Value
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
@@ -73,4 +74,13 @@ trait AstCreatorHelper { this: AstCreator =>
       case _     => Defines.anyTypeName
     }
   }
+
+  protected def registerType(typeName: String): String = {
+    val fixedTypeName = fixQualifiedName(StringUtils.normalizeSpace(typeName))
+    GoGlobal.usedTypes.putIfAbsent(fixedTypeName, true)
+    fixedTypeName
+  }
+
+  protected def fixQualifiedName(name: String): String =
+    name.stripPrefix(Defines.qualifiedNameSeparator).replace(Defines.qualifiedNameSeparator, ".")
 }
