@@ -1,20 +1,19 @@
 package io.joern.jssrc2cpg
 
-import io.joern.jssrc2cpg.Frontend._
+import io.joern.jssrc2cpg.Frontend.*
+import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery}
 import io.joern.x2cpg.utils.Environment
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
 import scopt.OParser
 
 import java.nio.file.Paths
 
-final case class Config(tsTypes: Boolean = true, disableDummyTypes: Boolean = false) extends X2CpgConfig[Config] {
+final case class Config(tsTypes: Boolean = true) extends X2CpgConfig[Config] with TypeRecoveryParserConfig[Config] {
+
   def withTsTypes(value: Boolean): Config = {
     copy(tsTypes = value).withInheritedFields(this)
   }
 
-  def withDisableDummyTypes(value: Boolean): Config = {
-    copy(disableDummyTypes = value).withInheritedFields(this)
-  }
 }
 
 object Frontend {
@@ -22,17 +21,14 @@ object Frontend {
 
   val cmdLineParser: OParser[Unit, Config] = {
     val builder = OParser.builder[Config]
-    import builder._
+    import builder.*
     OParser.sequence(
       programName("jssrc2cpg"),
       opt[Unit]("no-tsTypes")
         .hidden()
         .action((_, c) => c.withTsTypes(false))
         .text("disable generation of types via Typescript"),
-      opt[Unit]("no-dummyTypes")
-        .hidden()
-        .action((_, c) => c.withDisableDummyTypes(true))
-        .text("disable generation of dummy types during type recovery")
+      XTypeRecovery.parserOptions
     )
   }
 
