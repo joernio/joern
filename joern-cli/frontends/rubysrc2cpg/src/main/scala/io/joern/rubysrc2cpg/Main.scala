@@ -34,10 +34,12 @@ private object Frontend {
       opt[Double]("antlrCacheMemLimit")
         .hidden()
         .action((x, c) => c.withAntlrCacheMemoryLimit(x))
-        .validate { x =>
-          if (x < 0.3 || x > 0.8)
-            failure(s"$x is not a sufficient threshold, try a value between 0.3 - 0.8.")
-          else
+        .validate {
+          case x if x < 0.3 =>
+            failure(s"$x may result in too many evictions and reduce performance, try a value between 0.3 - 0.8.")
+          case x if x > 0.8 =>
+            failure(s"$x may result in too much memory usage and thrashing, try a value between 0.3 - 0.8.")
+          case x =>
             success
         }
         .text("sets the heap usage threshold at which the ANTLR DFA cache is cleared during parsing (default 0.6)"),
