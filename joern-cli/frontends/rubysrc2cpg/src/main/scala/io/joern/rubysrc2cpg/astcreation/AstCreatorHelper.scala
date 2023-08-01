@@ -86,10 +86,6 @@ trait AstCreatorHelper { this: AstCreator =>
     usedVariableNames.put(variableName, counter)
     currentVariableName
   }
-
-  protected def addReceiverEdge(dstNode: nodes.NewNode, srcNode: nodes.NewNode): Unit = {
-    diffGraph.addEdge(srcNode, dstNode, EdgeTypes.RECEIVER)
-  }
 }
 
 object GlobalTypes {
