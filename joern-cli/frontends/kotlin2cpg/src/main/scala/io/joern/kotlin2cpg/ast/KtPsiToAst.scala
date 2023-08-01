@@ -454,9 +454,16 @@ trait KtPsiToAst {
       case None =>
         Option(ktFn.getBodyExpression)
           .map { expr =>
-            val bodyBlock  = blockNode(expr, expr.getText, TypeConstants.any)
-            val returnAst_ = returnAst(returnNode(expr, Constants.retCode), astsForExpression(expr, Some(1)))
-            Seq(blockAst(bodyBlock, List(returnAst_)))
+            val bodyBlock = blockNode(expr, expr.getText, TypeConstants.any)
+            val asts      = astsForExpression(expr, Some(1))
+            val blockChildAsts =
+              if (asts.nonEmpty) {
+                val allStatementsButLast = asts.dropRight(1)
+                val lastStatementAst     = asts.last
+                val returnAst_           = returnAst(returnNode(expr, Constants.retCode), Seq(lastStatementAst))
+                (allStatementsButLast ++ Seq(returnAst_)).toList
+              } else List()
+            Seq(blockAst(bodyBlock, blockChildAsts))
           }
           .getOrElse {
             val bodyBlock = blockNode(ktFn, "<empty>", TypeConstants.any)
@@ -2099,9 +2106,9 @@ trait KtPsiToAst {
         .collect { case expr: KtObjectLiteralExpression => expr }
         .zipWithIndex
         .map { case (objectLiteral, idx) =>
+          val parentFn = KtPsiUtil.getTopmostParentOfTypes(objectLiteral, classOf[KtNamedFunction])
           val ctx =
-            Option(expr.getParent)
-              .map(_.getParent)
+            Option(parentFn)
               .collect { case namedFn: KtNamedFunction => namedFn }
               .map(AnonymousObjectContext(_))
           val typeDeclAsts     = astsForClassOrObject(objectLiteral.getObjectDeclaration, ctx)
