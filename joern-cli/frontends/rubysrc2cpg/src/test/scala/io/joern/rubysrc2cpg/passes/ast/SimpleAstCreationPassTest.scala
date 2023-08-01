@@ -1185,4 +1185,21 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     methodNode.lineNumber shouldBe Some(2)
     methodNode.columnNumber shouldBe Some(4)
   }
+
+  "have correct structure for a hash containing splatting elements" in {
+    val cpg = code("""
+        |bar={:x=>1}
+        |foo = {
+        |**bar
+        |}
+        |""".stripMargin)
+
+    val List(keyValueAssocOperator) = cpg.call(".*keyValueAssociation.*").l
+    keyValueAssocOperator.code shouldBe ":x=>1"
+    keyValueAssocOperator.astChildren.l(1).code shouldBe "1"
+
+    val List(actualIdentifier, pseudoIdentifier) = cpg.identifier("bar").l
+    pseudoIdentifier.lineNumber shouldBe Some(4)
+    pseudoIdentifier.columnNumber shouldBe Some(2)
+  }
 }
