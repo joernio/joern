@@ -1177,6 +1177,20 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     assocOperator.lineNumber shouldBe Some(4)
   }
 
+  "have double-quoted string literals containing \\u character" in {
+    val cpg = code("""
+      |val fileName = "AB\u0003\u0004\u0014\u0000\u0000\u0000\b\u0000\u0000\u0000!\u0000file"
+      |""".stripMargin)
+
+    cpg.identifier.size shouldBe 1
+    cpg.identifier.name.head shouldBe "fileName"
+    cpg.literal.head.code
+      .stripPrefix("\"")
+      .stripSuffix("\"")
+      .trim shouldBe """AB\u0003\u0004\u0014\u0000\u0000\u0000\b\u0000\u0000\u0000!\u0000file"""
+
+  }
+
   "have correct structure for a endless method" in {
     val cpg = code("""
         |def foo(a,b) = a*b
@@ -1196,6 +1210,26 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     keyValueAssocOperator.code shouldBe ":bar=>zoo"
     keyValueAssocOperator.astChildren.l.head.code shouldBe ":bar"
     keyValueAssocOperator.astChildren.l(1).code shouldBe "zoo"
+  }
+
+  "having a binary expression having + and @" in {
+    val cpg = code("""
+        |class MyClass
+        |  def initialize(a)
+        |    @a = a
+        |  end
+        |
+        |  def calculate_x(b)
+        |    x = b+@a
+        |    return x
+        |  end
+        |end
+        |""".stripMargin)
+
+    cpg.identifier("a").dedup.size shouldBe 1
+    cpg.identifier("b").dedup.size shouldBe 1
+    cpg.identifier("x").name.dedup.size shouldBe 1
+    cpg.method("calculate_x").size shouldBe 1
   }
 
   "have correct structure for empty %w array" in {

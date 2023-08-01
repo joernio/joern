@@ -1,9 +1,11 @@
 package io.joern.kotlin2cpg.querying
 
+import io.joern.kotlin2cpg.{Config, Kotlin2Cpg}
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Literal}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Literal, Local, Return, TypeDecl}
+import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.utils.ProjectRoot
 
 class IfExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with simple `if`-expression" should {
@@ -305,6 +307,41 @@ class IfExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
       a3.lineNumber shouldBe Some(12)
       a3.columnNumber shouldBe Some(18)
       a3.order shouldBe 3
+    }
+  }
+
+  "CPG for code with extension fn with single-expression body with object-expression inside it" should {
+    val cpg = code("""
+        |package mypkg
+        |
+        |interface SomeInterface {
+        |    fun doSomething()
+        |}
+        |
+        |class PClass {
+        |    fun addListener(o: SomeInterface) {
+        |        o.doSomething()
+        |    }
+        |}
+        |
+        |inline fun PClass.withFailListener(crossinline action: () -> Unit) =
+        |    addListener(object : SomeInterface {
+        |        override fun doSomething() {
+        |            println("did something")
+        |        }
+        |    })
+        | """.stripMargin)
+
+    "should contain a correctly lowered representation" in {
+      val List(objExpr: TypeDecl, l: Local, alloc: Call, init: Call, last: Return) =
+        cpg.method.nameExact("withFailListener").block.astChildren.l
+      objExpr.fullName shouldBe "mypkg.withFailListener$object$1"
+      l.code shouldBe "tmp_obj_1"
+      alloc.code shouldBe "tmp_obj_1 = <alloc>"
+      init.code shouldBe "<init>"
+
+      val List(returnCall: Call) = last.astChildren.l
+      returnCall.methodFullName shouldBe "mypkg.PClass.addListener:void(mypkg.SomeInterface)"
     }
   }
 }
