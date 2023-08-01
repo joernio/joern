@@ -1206,7 +1206,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     cpg.identifier("x").name.dedup.size shouldBe 1
     cpg.method("calculate_x").size shouldBe 1
   }
-  
+
   "have correct structure for regex match global variables" in {
     val cpg = code("""
         |content_filename =~ /filename="(.*)"/
