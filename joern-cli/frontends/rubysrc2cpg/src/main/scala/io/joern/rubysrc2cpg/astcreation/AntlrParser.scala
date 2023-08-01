@@ -1,16 +1,24 @@
 package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.parser.{RubyLexer, RubyParser}
-import org.antlr.v4.runtime.{CharStreams, CommonTokenStream, ParserRuleContext, Token}
+import org.antlr.v4.runtime.{CharStreams, CommonTokenStream}
 
-class AntlrParser {
+import scala.util.Try
 
-  def parse(filename: String): RubyParser.ProgramContext = {
-    val charStream  = CharStreams.fromFileName(filename)
-    val lexer       = new RubyLexer(charStream)
-    val tokenStream = new CommonTokenStream(lexer)
-    val parser      = new RubyParser(tokenStream)
-    parser.program()
-  }
+/** A consumable wrapper for the RubyParser class used to parse the given file and clear resources held onto by ANTLR.
+  * @param filename
+  *   the file path to the file to be parsed.
+  */
+class AntlrParser(filename: String) extends AutoCloseable {
+
+  private val charStream  = CharStreams.fromFileName(filename)
+  private val lexer       = new RubyLexer(charStream)
+  private val tokenStream = new CommonTokenStream(lexer)
+  private val parser      = new RubyParser(tokenStream)
+
+  def parse(): Try[RubyParser.ProgramContext] = Try(parser.program())
+
+  override def close(): Unit =
+    parser.getInterpreter.clearDFA()
 
 }
