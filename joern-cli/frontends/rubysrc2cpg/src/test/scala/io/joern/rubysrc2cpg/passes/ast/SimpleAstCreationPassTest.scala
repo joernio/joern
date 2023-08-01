@@ -1188,8 +1188,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
   }
 
   "have binary expression having + and @" in {
-    val cpg = code(
-      """
+    val cpg = code("""
         |class MyClass
         |  def initialize(a)
         |    @a = a
@@ -1309,7 +1308,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
                      |end""".stripMargin)
 
     cpg.identifier.code("regex_pattern").name.dedup.size shouldBe 1
-    cpg.method.code("contains_numbers?").name.size shouldBe 1
+    cpg.method("contains_numbers\\?").name.size shouldBe 1
     cpg.call("<operator>.assignment").name.size shouldBe 2
     cpg.call("match").name.size shouldBe 1
   }
