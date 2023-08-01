@@ -2555,4 +2555,26 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     val sink   = cpg.call.name("puts").l
     sink.reachableByFlows(source).size shouldBe 2
   }
+
+  "dataflow in method defined under class << self block" ignore {
+    //    Marked it ignored as flow from identifier "firstName" to call "puts" is missing
+    val cpg = code(
+      """
+       class MyClass
+        |
+        |  class << self
+        |    def printPII
+        |      firstName="somename"
+        |      puts "log PII #{firstName}"
+        |    end
+        |  end
+        |end
+        |
+        |MyClass.printPII""".stripMargin)
+
+    val source = cpg.identifier.name("firstName").l
+    val sink = cpg.call.name("puts").l
+    sink.reachableByFlows(source).size shouldBe 2
+  }
+
 }
