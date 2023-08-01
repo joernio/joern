@@ -1201,6 +1201,17 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     methodNode.columnNumber shouldBe Some(4)
   }
 
+  "have correct structure for symbol literal defined using \\:" in {
+    val cpg = code("""
+        |foo = {:bar=>zoo}
+        |""".stripMargin)
+
+    val List(keyValueAssocOperator) = cpg.call(".*keyValueAssociation.*").l
+    keyValueAssocOperator.code shouldBe ":bar=>zoo"
+    keyValueAssocOperator.astChildren.l.head.code shouldBe ":bar"
+    keyValueAssocOperator.astChildren.l(1).code shouldBe "zoo"
+  }
+
   "having a binary expression having + and @" in {
     val cpg = code("""
         |class MyClass
@@ -1320,4 +1331,5 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
 
     cpg.literal.code("/filename=\"(.*)\"/").head.typeFullName shouldBe Defines.Regexp
   }
+
 }
