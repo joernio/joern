@@ -830,7 +830,8 @@ class AstCreator(
     if (ctx.hashConstructor().hashConstructorElements() == null) return Seq(Ast())
     val hashCtorElemCtxs = ctx.hashConstructor().hashConstructorElements().hashConstructorElement().asScala
     val associationCtxs  = hashCtorElemCtxs.filter(_.association() != null).map(_.association()).toSeq
-    associationCtxs.flatMap(astForAssociationContext)
+    val expressionCtxs   = hashCtorElemCtxs.filter(_.expression() != null).map(_.expression()).toSeq
+    expressionCtxs.flatMap(astForExpressionContext) ++ associationCtxs.flatMap(astForAssociationContext)
   }
 
   def astForIndexingExpressionPrimaryContext(ctx: IndexingExpressionPrimaryContext): Seq[Ast] = {

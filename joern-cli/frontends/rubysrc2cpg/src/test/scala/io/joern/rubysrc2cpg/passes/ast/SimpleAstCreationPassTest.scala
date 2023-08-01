@@ -5,6 +5,7 @@ import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
+import io.joern.rubysrc2cpg.astcreation.AstCreator
 
 class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
 
@@ -1238,5 +1239,38 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       .where(_.argumentIndex(2))
       .code
       .l shouldBe List("c")
+  }
+
+  "have correct structure for a hash containing splatting elements" in {
+    val cpg = code("""
+        |bar={:x=>1}
+        |foo = {
+        |**bar
+        |}
+        |""".stripMargin)
+
+    val List(keyValueAssocOperator) = cpg.call(".*keyValueAssociation.*").l
+    keyValueAssocOperator.code shouldBe ":x=>1"
+    keyValueAssocOperator.astChildren.l(1).code shouldBe "1"
+
+    val List(actualIdentifier, pseudoIdentifier) = cpg.identifier("bar").l
+    pseudoIdentifier.lineNumber shouldBe Some(4)
+    pseudoIdentifier.columnNumber shouldBe Some(2)
+  }
+
+  "have correct structure for regex match global variables" in {
+    val cpg = code("""
+        |content_filename =~ /filename="(.*)"/
+        |value = $1
+        |""".stripMargin)
+
+    cpg.call.size shouldBe 2
+    cpg.call.code(".*filename.*").head.methodFullName shouldBe "<operator>.patternMatch"
+
+    cpg.identifier.code("value").size shouldBe 1
+    cpg.identifier.name("\\$1").size shouldBe 1
+    cpg.identifier.name("\\$1").head.typeFullName shouldBe Defines.String
+
+    cpg.literal.code("/filename=\"(.*)\"/").head.typeFullName shouldBe Defines.Regexp
   }
 }

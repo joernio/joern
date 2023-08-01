@@ -2542,4 +2542,17 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     val sink   = cpg.call.name("puts").l
     sink.reachableByFlows(source).size shouldBe 1
   }
+
+  "flow through hash containing splatting literal" in {
+    val cpg = code("""
+        |x={:y=>1}
+        |z = {
+        |**x
+        |}
+        |puts z
+        |""".stripMargin)
+    val source = cpg.identifier.name("x").l
+    val sink   = cpg.call.name("puts").l
+    sink.reachableByFlows(source).size shouldBe 2
+  }
 }

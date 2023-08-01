@@ -283,6 +283,9 @@ trait AstForExpressionsCreator { this: AstCreator =>
     } else if (ModifierTypes.ALL.contains(variableName.toUpperCase)) {
       lastModifier = Option(variableName.toUpperCase)
       Ast()
+    } else if (ctx.GLOBAL_VARIABLE_IDENTIFIER() != null) {
+      val globalVar = ctx.GLOBAL_VARIABLE_IDENTIFIER().getText
+      Ast(createIdentifierWithScope(ctx, globalVar, globalVar, Defines.String, List()))
     } else {
       val node = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List())
       Ast(node)
