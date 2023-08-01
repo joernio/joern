@@ -1187,8 +1187,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
   }
 
   "Parsing a binary expression having + and @" in {
-    val cpg = code(
-      """
+    val cpg = code("""
         |class MyClass
         |  def initialize(a)
         |    @a = a
