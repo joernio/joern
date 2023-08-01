@@ -1199,4 +1199,25 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     methodNode.lineNumber shouldBe Some(2)
     methodNode.columnNumber shouldBe Some(4)
   }
+
+  "Parsing a binary expression having + and @" in {
+    val cpg = code(
+      """
+        |class MyClass
+        |  def initialize(a)
+        |    @a = a
+        |  end
+        |
+        |  def calculate_x(b)
+        |    x = b+@a
+        |    return x
+        |  end
+        |end
+        |""".stripMargin)
+
+    cpg.identifier("a").dedup.size shouldBe 1
+    cpg.identifier("b").dedup.size shouldBe 1
+    cpg.identifier("x").name.dedup.size shouldBe 1
+    cpg.method("calculate_x").size shouldBe 1
+  }
 }
