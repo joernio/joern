@@ -7,6 +7,11 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 
 import java.io.File
+import io.joern.x2cpg.testfixtures.TestCpg
+import io.joern.x2cpg.X2Cpg
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
+import io.joern.dataflowengineoss.layers.dataflows.OssDataFlowOptions
+import io.joern.dataflowengineoss.layers.dataflows.OssDataFlow
 
 trait PhpFrontend extends LanguageFrontend {
   override val fileSuffix: String = ".php"
@@ -17,9 +22,21 @@ trait PhpFrontend extends LanguageFrontend {
   }
 }
 
-class DefaultTestCpgWithPhp extends DefaultTestCpg with PhpFrontend
+class PhpTestCpg(runOssDataflow: Boolean) extends TestCpg with PhpFrontend {
 
-class PhpCode2CpgFixture extends Code2CpgFixture(() => new DefaultTestCpgWithPhp) {
+  override protected def applyPasses(): Unit = {
+    X2Cpg.applyDefaultOverlays(this)
+    if (runOssDataflow) {
+      val context = new LayerCreatorContext(this)
+      val options = new OssDataFlowOptions()
+      new OssDataFlow(options).run(context)
+    }
+  }
+
+}
+
+class PhpCode2CpgFixture(runOssDataflow: Boolean = false)
+    extends Code2CpgFixture(() => new PhpTestCpg(runOssDataflow)) {
   implicit val resolver: ICallResolver           = NoResolve
   implicit lazy val engineContext: EngineContext = EngineContext()
 }
