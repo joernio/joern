@@ -1220,7 +1220,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     cpg.identifier("x").name.dedup.size shouldBe 1
     cpg.method("calculate_x").size shouldBe 1
   }
-  
+
   "have correct structure for empty %w array" in {
     val cpg = code("""
         |a = %w[]
