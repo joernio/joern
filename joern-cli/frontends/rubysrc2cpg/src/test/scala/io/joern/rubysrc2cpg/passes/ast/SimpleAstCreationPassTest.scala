@@ -1203,7 +1203,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     pseudoIdentifier.lineNumber shouldBe Some(4)
     pseudoIdentifier.columnNumber shouldBe Some(2)
   }
-  
+
   "have correct structure for regex match global variables" in {
     val cpg = code("""
         |content_filename =~ /filename="(.*)"/
