@@ -573,6 +573,33 @@ class AstCreator(
         .typeFullName(Defines.Any)
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
       Seq(callAst(arrayInitCallNode))
+    } else if (ctx.arrayConstructor().QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_START() != null) {
+      if (ctx.arrayConstructor().QUOTED_NON_EXPANDED_STRING_ARRAY_CHARACTER().size() == 0) {
+        /* Handle empty array*/
+        val arrayInitCallNode = NewCall()
+          .name(Operators.arrayInitializer)
+          .methodFullName(Operators.arrayInitializer)
+          .signature(Operators.arrayInitializer)
+          .typeFullName(Defines.Any)
+          .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        Seq(callAst(arrayInitCallNode))
+      } else {
+        ctx
+          .arrayConstructor()
+          .QUOTED_NON_EXPANDED_STRING_ARRAY_CHARACTER()
+          .asScala
+          .map { str =>
+            {
+              Ast(
+                NewLiteral()
+                  .code(str.getText)
+                  .typeFullName(Defines.String)
+                  .dynamicTypeHintFullName(List(Defines.String))
+              )
+            }
+          }
+          .toSeq
+      }
     } else {
       Option(ctx.arrayConstructor().indexingArguments).map(astForIndexingArgumentsContext).getOrElse(Seq())
     }
