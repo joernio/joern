@@ -3,7 +3,7 @@ package io.joern.jssrc2cpg
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.jssrc2cpg.JsSrc2Cpg.postProcessingPasses
-import io.joern.jssrc2cpg.passes._
+import io.joern.jssrc2cpg.passes.*
 import io.joern.jssrc2cpg.utils.AstGenRunner
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
@@ -57,11 +57,14 @@ class JsSrc2Cpg extends X2CpgFrontend[Config] {
 object JsSrc2Cpg {
 
   def postProcessingPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] = {
+    val typeRecoveryConfig = config match
+      case Some(config) => XTypeRecoveryConfig(config.typePropagationIterations, !config.disableDummyTypes)
+      case None         => XTypeRecoveryConfig()
     List(
       new JavaScriptInheritanceNamePass(cpg),
       new ConstClosurePass(cpg),
       new ImportResolverPass(cpg),
-      new JavaScriptTypeRecoveryPass(cpg, XTypeRecoveryConfig(enabledDummyTypes = !config.exists(_.disableDummyTypes))),
+      new JavaScriptTypeRecoveryPass(cpg, typeRecoveryConfig),
       new JavaScriptTypeHintCallLinker(cpg),
       new NaiveCallLinker(cpg)
     )

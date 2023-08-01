@@ -5,6 +5,7 @@ import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
+import io.joern.rubysrc2cpg.astcreation.AstCreator
 
 class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
 
@@ -1039,22 +1040,26 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
   }
 
-  "have correct structure when no RHS for a mandatory parameter is provided" ignore {
+  "have correct structure when no RHS for a mandatory parameter is provided" in {
     val cpg = code("""
         |def foo(bar:)
         |end
         |""".stripMargin)
 
-    cpg.method("foo").parameter.size shouldBe 1
+    val List(parameterNode) = cpg.method("foo").parameter.l
+    parameterNode.name shouldBe "bar"
+    parameterNode.lineNumber shouldBe Some(2)
   }
 
-  "have correct structure when RHS for a mandatory parameter is provided" ignore {
+  "have correct structure when RHS for a mandatory parameter is provided" in {
     val cpg = code("""
         |def foo(bar: world)
         |end
         |""".stripMargin)
 
-    cpg.method("foo").parameter.size shouldBe 1
+    val List(parameterNode) = cpg.method("foo").parameter.l
+    parameterNode.name shouldBe "bar"
+    parameterNode.lineNumber shouldBe Some(2)
   }
 
   // Change below test cases to focus on the argument of call `foo`
@@ -1118,5 +1123,154 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     val List(callNode) = cpg.call.name("<operator>.indexAccess").l
     callNode.lineNumber shouldBe Some(2)
     callNode.columnNumber shouldBe Some(9)
+  }
+
+  "method defined inside a class using << operator" in {
+    val cpg = code("""
+        class MyClass
+        |
+        |  class << self
+        |    def print
+        |      puts "log #{self}"
+        |    end
+        |  end
+        |  class << self
+        |  end
+        |end
+        |
+        |MyClass.print""".stripMargin)
+
+    val List(callNode) = cpg.call.name("print").l
+    callNode.lineNumber shouldBe Some(13)
+    callNode.columnNumber shouldBe Some(7)
+    callNode.name shouldBe "print"
+  }
+
+  "have correct structure for body statements inside a do block" in {
+    val cpg = code("""
+        |def foo
+        |1/0
+        |rescue ZeroDivisionError => e
+        |end""".stripMargin)
+
+    val List(methodNode) = cpg.method.code(".*foo.*").l
+    methodNode.name shouldBe "foo"
+    methodNode.lineNumber shouldBe Some(2)
+
+    val List(divisionOperator, assignmentOperator) = cpg.method.name(".*operator.*").l
+    divisionOperator.name shouldBe "<operator>.division"
+    assignmentOperator.name shouldBe "<operator>.assignment"
+  }
+
+  "have correct structure when regex literal is used on RHS of association" in {
+    val cpg = code("""
+        |books = [
+        |   {
+        |       id: /.*/
+        |   }
+        |]
+        |""".stripMargin)
+
+    val List(assocOperator) = cpg.call(".*activeRecordAssociation.*").l
+    assocOperator.code shouldBe "id: /.*/"
+    assocOperator.astChildren.code.l(1) shouldBe "/.*/"
+    assocOperator.lineNumber shouldBe Some(4)
+  }
+
+  "have correct structure for a endless method" in {
+    val cpg = code("""
+        |def foo(a,b) = a*b
+        |""".stripMargin)
+
+    val List(methodNode) = cpg.method.name("foo").l
+    methodNode.lineNumber shouldBe Some(2)
+    methodNode.columnNumber shouldBe Some(4)
+  }
+
+  "have correct structure for empty %w array" in {
+    val cpg = code("""
+        |a = %w[]
+        |""".stripMargin)
+
+    val List(assignmentCallNode) = cpg.call.name(Operators.assignment).l
+    assignmentCallNode.size shouldBe 1
+    val List(arrayCallNode) = cpg.call.name(Operators.arrayInitializer).l
+    arrayCallNode.size shouldBe 1
+    arrayCallNode.argument.size shouldBe 0
+  }
+
+  "have correct structure for %w array with %w()" in {
+    val cpg = code("""
+        |a = %w(b c d)
+        |""".stripMargin)
+
+    val List(assignmentCallNode) = cpg.call.name(Operators.assignment).l
+    assignmentCallNode.size shouldBe 1
+    val List(arrayCallNode) = cpg.call.name(Operators.arrayInitializer).l
+    arrayCallNode.size shouldBe 1
+    arrayCallNode.argument
+      .where(_.argumentIndex(1))
+      .code
+      .l shouldBe List("b")
+    arrayCallNode.argument
+      .where(_.argumentIndex(2))
+      .code
+      .l shouldBe List("c")
+    arrayCallNode.argument
+      .where(_.argumentIndex(3))
+      .code
+      .l shouldBe List("d")
+  }
+
+  "have correct structure for %w array with %w- -" in {
+    val cpg = code("""
+        |a = %w-b c-
+        |""".stripMargin)
+
+    val List(assignmentCallNode) = cpg.call.name(Operators.assignment).l
+    assignmentCallNode.size shouldBe 1
+    val List(arrayCallNode) = cpg.call.name(Operators.arrayInitializer).l
+    arrayCallNode.size shouldBe 1
+    arrayCallNode.argument
+      .where(_.argumentIndex(1))
+      .code
+      .l shouldBe List("b")
+    arrayCallNode.argument
+      .where(_.argumentIndex(2))
+      .code
+      .l shouldBe List("c")
+  }
+
+  "have correct structure for a hash containing splatting elements" in {
+    val cpg = code("""
+        |bar={:x=>1}
+        |foo = {
+        |**bar
+        |}
+        |""".stripMargin)
+
+    val List(keyValueAssocOperator) = cpg.call(".*keyValueAssociation.*").l
+    keyValueAssocOperator.code shouldBe ":x=>1"
+    keyValueAssocOperator.astChildren.l(1).code shouldBe "1"
+
+    val List(actualIdentifier, pseudoIdentifier) = cpg.identifier("bar").l
+    pseudoIdentifier.lineNumber shouldBe Some(4)
+    pseudoIdentifier.columnNumber shouldBe Some(2)
+  }
+
+  "have correct structure for regex match global variables" in {
+    val cpg = code("""
+        |content_filename =~ /filename="(.*)"/
+        |value = $1
+        |""".stripMargin)
+
+    cpg.call.size shouldBe 2
+    cpg.call.code(".*filename.*").head.methodFullName shouldBe "<operator>.patternMatch"
+
+    cpg.identifier.code("value").size shouldBe 1
+    cpg.identifier.name("\\$1").size shouldBe 1
+    cpg.identifier.name("\\$1").head.typeFullName shouldBe Defines.String
+
+    cpg.literal.code("/filename=\"(.*)\"/").head.typeFullName shouldBe Defines.Regexp
   }
 }

@@ -49,8 +49,9 @@ class AstCreator(
    */
   protected val methodNameAsIdentifierStack = mutable.Stack[Ast]()
 
-  protected val methodAliases      = mutable.HashMap[String, String]()
-  protected val methodNameToMethod = mutable.HashMap[String, nodes.NewMethod]()
+  protected val methodAliases       = mutable.HashMap[String, String]()
+  protected val methodNameToMethod  = mutable.HashMap[String, nodes.NewMethod]()
+  protected val methodDefInArgument = mutable.HashSet[Ast]()
 
   protected val typeDeclNameToTypeDecl = mutable.HashMap[String, nodes.NewTypeDecl]()
 
@@ -597,6 +598,33 @@ class AstCreator(
         .typeFullName(Defines.Any)
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
       Seq(callAst(arrayInitCallNode))
+    } else if (ctx.arrayConstructor().QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_START() != null) {
+      if (ctx.arrayConstructor().QUOTED_NON_EXPANDED_STRING_ARRAY_CHARACTER().size() == 0) {
+        /* Handle empty array*/
+        val arrayInitCallNode = NewCall()
+          .name(Operators.arrayInitializer)
+          .methodFullName(Operators.arrayInitializer)
+          .signature(Operators.arrayInitializer)
+          .typeFullName(Defines.Any)
+          .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        Seq(callAst(arrayInitCallNode))
+      } else {
+        ctx
+          .arrayConstructor()
+          .QUOTED_NON_EXPANDED_STRING_ARRAY_CHARACTER()
+          .asScala
+          .map { str =>
+            {
+              Ast(
+                NewLiteral()
+                  .code(str.getText)
+                  .typeFullName(Defines.String)
+                  .dynamicTypeHintFullName(List(Defines.String))
+              )
+            }
+          }
+          .toSeq
+      }
     } else {
       Option(ctx.arrayConstructor().indexingArguments).map(astForIndexingArgumentsContext).getOrElse(Seq())
     }
@@ -827,7 +855,8 @@ class AstCreator(
     if (ctx.hashConstructor().hashConstructorElements() == null) return Seq(Ast())
     val hashCtorElemCtxs = ctx.hashConstructor().hashConstructorElements().hashConstructorElement().asScala
     val associationCtxs  = hashCtorElemCtxs.filter(_.association() != null).map(_.association()).toSeq
-    associationCtxs.flatMap(astForAssociationContext)
+    val expressionCtxs   = hashCtorElemCtxs.filter(_.expression() != null).map(_.expression()).toSeq
+    expressionCtxs.flatMap(astForExpressionContext) ++ associationCtxs.flatMap(astForAssociationContext)
   }
 
   def astForIndexingExpressionPrimaryContext(ctx: IndexingExpressionPrimaryContext): Seq[Ast] = {
@@ -1093,23 +1122,11 @@ class AstCreator(
     }
   }
   def astForAssignmentLikeMethodIdentifierContext(ctx: AssignmentLikeMethodIdentifierContext): Seq[Ast] = {
-    if (ctx == null) return Seq(Ast())
-
-    val terminalNode = Option(ctx.LOCAL_VARIABLE_IDENTIFIER()) match
-      case Some(value) => value
-      case None        => ctx.CONSTANT_IDENTIFIER()
-
-    val methodName = terminalNode.getText + "="
-    val callNode = NewCall()
-      .name(methodName)
-      .code(ctx.getText)
-      .methodFullName(methodName)
-      .signature("")
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .typeFullName(Defines.Any)
-      .lineNumber(terminalNode.getSymbol().getLine())
-      .columnNumber(terminalNode.getSymbol().getCharPositionInLine())
-    Seq(callAst(callNode))
+    Seq(
+      callAst(
+        callNode(ctx, ctx.getText, ctx.getText, ctx.getText, DispatchTypes.STATIC_DISPATCH, Some(""), Some(Defines.Any))
+      )
+    )
   }
 
   def astForDefinedMethodNameContext(ctx: DefinedMethodNameContext): Seq[Ast] = {
@@ -1157,6 +1174,8 @@ class AstCreator(
         (Option(manCtx.mandatoryParameter().LOCAL_VARIABLE_IDENTIFIER()), false)
       case arrCtx if arrCtx.arrayParameter() != null =>
         (Option(arrCtx.arrayParameter().LOCAL_VARIABLE_IDENTIFIER()), arrCtx.arrayParameter().STAR() != null)
+      case keywordCtx if keywordCtx.keywordParameter() != null =>
+        (Option(keywordCtx.keywordParameter().LOCAL_VARIABLE_IDENTIFIER()), false)
       case _ => (None, false)
     }
 
@@ -1317,7 +1336,11 @@ class AstCreator(
 
   def astForMethodDefinitionContext(ctx: MethodDefinitionContext): Seq[Ast] = {
     scope.pushNewScope(())
-    val astMethodName = astForMethodNamePartContext(ctx.methodNamePart())
+    val astMethodName = Option(ctx.methodNamePart()) match
+      case Some(ctxMethodNamePart) =>
+        astForMethodNamePartContext(ctxMethodNamePart)
+      case None =>
+        astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText)
     val callNode      = astMethodName.head.nodes.filter(node => node.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
 
     // Create thisParameter if this is an instance method
@@ -1337,7 +1360,12 @@ class AstCreator(
     }
 
     // there can be only one call node
-    val astBody = astForBodyStatementContext(ctx.bodyStatement(), true)
+    val astBody = Option(ctx.bodyStatement()) match {
+      case Some(ctxBodyStmt) => astForBodyStatementContext(ctxBodyStmt, true)
+      case None =>
+        val expAst = astForExpressionContext(ctx.expression())
+        Seq(lastStmtAsReturn(ctx.expression().getText, expAst.head))
+    }
     scope.popScope()
 
     /*
@@ -1356,8 +1384,12 @@ class AstCreator(
       .fullName(methodFullName)
       .columnNumber(callNode.columnNumber)
       .lineNumber(callNode.lineNumber)
-      .lineNumberEnd(ctx.END().getSymbol.getLine)
       .filename(filename)
+
+    Option(ctx.END()) match
+      case Some(value) => methodNode.lineNumberEnd(value.getSymbol.getLine)
+      case None        =>
+
     callNode.methodFullName(methodFullName)
 
     val classType = if (classStack.isEmpty) "Standalone" else classStack.top

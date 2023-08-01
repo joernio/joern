@@ -1,6 +1,7 @@
 package io.joern.javasrc2cpg
 
-import io.joern.javasrc2cpg.Frontend._
+import io.joern.javasrc2cpg.Frontend.*
+import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery}
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
 import scopt.OParser
 
@@ -13,10 +14,10 @@ final case class Config(
   delombokJavaHome: Option[String] = None,
   delombokMode: Option[String] = None,
   enableTypeRecovery: Boolean = false,
-  disableDummyTypes: Boolean = false,
   jdkPath: Option[String] = None,
   showEnv: Boolean = false
-) extends X2CpgConfig[Config] {
+) extends X2CpgConfig[Config]
+    with TypeRecoveryParserConfig[Config] {
   def withInferenceJarPaths(paths: Set[String]): Config = {
     copy(inferenceJarPaths = paths).withInheritedFields(this)
   }
@@ -39,10 +40,6 @@ final case class Config(
 
   def withEnableTypeRecovery(value: Boolean): Config = {
     copy(enableTypeRecovery = value).withInheritedFields(this)
-  }
-
-  def withDisableDummyTypes(value: Boolean): Config = {
-    copy(disableDummyTypes = value).withInheritedFields(this)
   }
 
   def withJdkPath(path: String): Config = {
@@ -83,10 +80,7 @@ private object Frontend {
         .hidden()
         .action((_, c) => c.withEnableTypeRecovery(true))
         .text("enable generic type recovery"),
-      opt[Unit]("no-dummyTypes")
-        .hidden()
-        .action((_, c) => c.withDisableDummyTypes(true))
-        .text("disable generation of dummy types during type recovery"),
+      XTypeRecovery.parserOptions,
       opt[String]("jdk-path")
         .action((path, c) => c.withJdkPath(path))
         .text("JDK used for resolving builtin Java types. If not set, current classpath will be used"),
