@@ -1198,6 +1198,60 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     keyValueAssocOperator.astChildren.l(1).code shouldBe "zoo"
   }
 
+  "have correct structure for empty %w array" in {
+    val cpg = code("""
+        |a = %w[]
+        |""".stripMargin)
+
+    val List(assignmentCallNode) = cpg.call.name(Operators.assignment).l
+    assignmentCallNode.size shouldBe 1
+    val List(arrayCallNode) = cpg.call.name(Operators.arrayInitializer).l
+    arrayCallNode.size shouldBe 1
+    arrayCallNode.argument.size shouldBe 0
+  }
+
+  "have correct structure for %w array with %w()" in {
+    val cpg = code("""
+        |a = %w(b c d)
+        |""".stripMargin)
+
+    val List(assignmentCallNode) = cpg.call.name(Operators.assignment).l
+    assignmentCallNode.size shouldBe 1
+    val List(arrayCallNode) = cpg.call.name(Operators.arrayInitializer).l
+    arrayCallNode.size shouldBe 1
+    arrayCallNode.argument
+      .where(_.argumentIndex(1))
+      .code
+      .l shouldBe List("b")
+    arrayCallNode.argument
+      .where(_.argumentIndex(2))
+      .code
+      .l shouldBe List("c")
+    arrayCallNode.argument
+      .where(_.argumentIndex(3))
+      .code
+      .l shouldBe List("d")
+  }
+
+  "have correct structure for %w array with %w- -" in {
+    val cpg = code("""
+        |a = %w-b c-
+        |""".stripMargin)
+
+    val List(assignmentCallNode) = cpg.call.name(Operators.assignment).l
+    assignmentCallNode.size shouldBe 1
+    val List(arrayCallNode) = cpg.call.name(Operators.arrayInitializer).l
+    arrayCallNode.size shouldBe 1
+    arrayCallNode.argument
+      .where(_.argumentIndex(1))
+      .code
+      .l shouldBe List("b")
+    arrayCallNode.argument
+      .where(_.argumentIndex(2))
+      .code
+      .l shouldBe List("c")
+  }
+
   "have correct structure for a hash containing splatting elements" in {
     val cpg = code("""
         |bar={:x=>1}

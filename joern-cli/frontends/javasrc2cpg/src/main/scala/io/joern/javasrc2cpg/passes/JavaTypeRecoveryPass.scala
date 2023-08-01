@@ -51,9 +51,6 @@ private class RecoverForJavaFile(cpg: Cpg, cu: Method, builder: DiffGraphBuilder
     }
   }
 
-  override protected def nodeExistingTypes(storedNode: StoredNode): Seq[String] =
-    super.nodeExistingTypes(storedNode).filterNot(_.startsWith(Defines.UnresolvedNamespace))
-
   // There seems to be issues with inferring these, often due to situations where super and this are confused on name
   // and code properties.
   override protected def storeIdentifierTypeInfo(i: Identifier, types: Seq[String]): Unit = if (i.name != "this") {
