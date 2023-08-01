@@ -5,6 +5,7 @@ import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
+import io.joern.rubysrc2cpg.astcreation.AstCreator
 
 class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
 
@@ -1186,6 +1187,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     methodNode.columnNumber shouldBe Some(4)
   }
 
+
   "have correct structure for symbol literal defined using \\:" in {
     val cpg = code("""
         |foo = {:bar=>zoo}
@@ -1195,6 +1197,23 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     keyValueAssocOperator.code shouldBe ":bar=>zoo"
     keyValueAssocOperator.astChildren.l.head.code shouldBe ":bar"
     keyValueAssocOperator.astChildren.l(1).code shouldBe "zoo"
+  }
+
+
+  "have correct structure for regex match global variables" in {
+    val cpg = code("""
+        |content_filename =~ /filename="(.*)"/
+        |value = $1
+        |""".stripMargin)
+
+    cpg.call.size shouldBe 2
+    cpg.call.code(".*filename.*").head.methodFullName shouldBe "<operator>.patternMatch"
+
+    cpg.identifier.code("value").size shouldBe 1
+    cpg.identifier.name("\\$1").size shouldBe 1
+    cpg.identifier.name("\\$1").head.typeFullName shouldBe Defines.String
+
+    cpg.literal.code("/filename=\"(.*)\"/").head.typeFullName shouldBe Defines.Regexp
   }
 
 }
