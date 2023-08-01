@@ -15,12 +15,30 @@ class ControlStructureTests extends RubyCode2CpgFixture {
 
     "recognise all identifier nodes" in {
       cpg.identifier.name("n").size shouldBe 1
-      cpg.identifier.size shouldBe 1
+      cpg.identifier.size shouldBe 2 // 1 identifier node is for `puts = typeDef(__builtin.puts)`
     }
 
     "recognize all call nodes" in {
       cpg.call.name("each").size shouldBe 1
       cpg.call.name("puts").size shouldBe 1
+    }
+  }
+
+  "CPG for code iterating over hash discarding key using _" should {
+    val cpg = code("""
+        |x.each do |_, y|
+        |  puts y
+        |end
+        |""".stripMargin)
+
+    "have a valid each call and method" in {
+      cpg.call("each").size shouldBe 1
+      cpg.call("each").argument.where(_.isIdentifier).code.l shouldBe List("x")
+    }
+
+    "have valid identifiers" in {
+      cpg.identifier.name("x").size shouldBe 1
+      cpg.identifier.name("y").size shouldBe 1
     }
   }
 

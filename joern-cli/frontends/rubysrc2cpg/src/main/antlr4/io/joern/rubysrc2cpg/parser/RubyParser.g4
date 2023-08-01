@@ -86,6 +86,7 @@ primary
     |   whileExpression                                                                                                     # whileExpressionPrimary
     |   untilExpression                                                                                                     # untilExpressionPrimary
     |   forExpression                                                                                                       # forExpressionPrimary
+    |   RETURN argumentsWithParentheses                                                                                     # returnWithParenthesesPrimary
     |   jumpExpression                                                                                                      # jumpExpressionPrimary
     |   beginExpression                                                                                                     # beginExpressionPrimary
     |   LPAREN wsOrNl* compoundStatement wsOrNl* RPAREN                                                                     # groupingExpressionPrimary
@@ -154,7 +155,7 @@ expressionOrCommands
 invocationWithoutParentheses
     :   chainedCommandWithDoBlock                                                                                               # chainedCommandDoBlockInvocationWithoutParentheses
     |   command                                                                                                                 # singleCommandOnlyInvocationWithoutParentheses
-    |   RETURN WS arguments                                                                                                     # returnArgsInvocationWithoutParentheses
+    |   RETURN (WS arguments)?                                                                                                  # returnArgsInvocationWithoutParentheses
     |   BREAK WS arguments                                                                                                      # breakArgsInvocationWithoutParentheses
     |   NEXT WS arguments                                                                                                       # nextArgsInvocationWithoutParentheses
     ;
@@ -256,6 +257,10 @@ blockParameters
 
 arrayConstructor
     :   LBRACK wsOrNl* indexingArguments? wsOrNl* RBRACK
+    |   QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_START
+        (QUOTED_NON_EXPANDED_STRING_ARRAY_CHARACTER
+        |QUOTED_NON_EXPANDED_STRING_ARRAY_SEPARATOR)*
+        QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END
     ;
 
 // --------------------------------------------------------
@@ -280,7 +285,7 @@ associations
     ;
 
 association
-    :   (expression | keyword) WS* (EQGT|COLON) wsOrNl* expression
+    :   (expression | keyword) WS* (EQGT|COLON) (wsOrNl* expression)?
     ;
 
 // --------------------------------------------------------
@@ -289,7 +294,7 @@ association
 
 methodDefinition
     :   DEF wsOrNl* methodNamePart WS* methodParameterPart separator? wsOrNl* bodyStatement wsOrNl* END
-    |   DEF wsOrNl* methodNamePart WS* methodParameterPart WS* EQ wsOrNl* expression
+    |   DEF wsOrNl* methodIdentifier WS* methodParameterPart WS* EQ wsOrNl* expression
     ;
     
 
@@ -314,7 +319,7 @@ definedMethodName
     ;
 
 assignmentLikeMethodIdentifier
-    :   (CONSTANT_IDENTIFIER | LOCAL_VARIABLE_IDENTIFIER) EQ
+    :   ASSIGNMENT_LIKE_METHOD_IDENTIFIER
     ;
 
 methodName
@@ -334,7 +339,7 @@ methodOnlyIdentifier
     ;
 
 methodParameterPart
-    :   LPAREN parameters? RPAREN
+    :   LPAREN wsOrNl* parameters? wsOrNl* RPAREN
     |   parameters?
     ;
 
@@ -504,8 +509,7 @@ yieldWithOptionalArgument
 // --------------------------------------------------------
 
 jumpExpression
-    :   RETURN argumentsWithParentheses?
-    |   BREAK
+    :   BREAK
     |   NEXT
     |   REDO
     |   RETRY

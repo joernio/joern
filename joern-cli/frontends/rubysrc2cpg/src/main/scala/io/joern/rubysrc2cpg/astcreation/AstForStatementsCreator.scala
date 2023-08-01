@@ -14,6 +14,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewIdentifier,
   NewImport,
   NewLiteral,
+  NewMethod,
   NewReturn
 }
 import org.slf4j.LoggerFactory
@@ -91,7 +92,7 @@ trait AstForStatementsCreator {
     controlStructureAst(throwNode, rhs.headOption, lhs)
   }
 
-  private def lastStmtAsReturn(code: String, lastStmtAst: Ast): Ast = {
+  protected def lastStmtAsReturn(code: String, lastStmtAst: Ast): Ast = {
     val lastStmtIsAlreadyReturn = lastStmtAst.root match {
       case Some(value) => value.isInstanceOf[NewReturn]
       case None        => false
@@ -170,7 +171,7 @@ trait AstForStatementsCreator {
               }
             }
             val stAsts = astForStatement(stCtx)
-            if (canConsiderAsLeaf && processingLastMethodStatement) {
+            if (stAsts.size > 0 && canConsiderAsLeaf && processingLastMethodStatement) {
               blockChildHash.get(myBlockId) match {
                 case Some(value) =>
                   // this is a non-leaf block
@@ -249,6 +250,25 @@ trait AstForStatementsCreator {
     methodNameAsIdentifierStack.push(methodIdentifierAsts.head)
     val argsAsts = astForArguments(ctx.argumentsWithoutParentheses().arguments())
 
+    /* get args without the method def in it */
+    val argAstsWithoutMethods = argsAsts.filterNot(_.nodes.head.isInstanceOf[NewMethod])
+
+    /* isolate methods from the original args and create identifier ASTs from it */
+    val methodDefAsts = argsAsts.filter(_.nodes.head.isInstanceOf[NewMethod])
+    val methodToIdentifierAsts = methodDefAsts.map { ast =>
+      val id = NewIdentifier()
+        .name(ast.nodes.head.asInstanceOf[NewMethod].name)
+        .code(ast.nodes.head.asInstanceOf[NewMethod].name)
+        .typeFullName(Defines.Any)
+        .lineNumber(ast.nodes.head.asInstanceOf[NewMethod].lineNumber)
+      Ast(id)
+    }
+
+    /* TODO: we add the isolated method defs later on to the parent instead */
+    methodDefAsts.foreach { ast =>
+      methodDefInArgument.add(ast)
+    }
+
     val callNodes = methodIdentifierAsts.head.nodes.collect { case x: NewCall => x }
     if (callNodes.size == 1) {
       val callNode = callNodes.head
@@ -256,9 +276,9 @@ trait AstForStatementsCreator {
         resolveRequireOrLoadPath(argsAsts, callNode)
       } else if (callNode.name == "require_relative") {
         resolveRelativePath(filename, argsAsts, callNode)
-      } else if (methodNames.contains(getActualMethodName(callNode.name))) {
-        val thisNode = identifierNode(ctx, "this", "this", classStack.reverse.mkString(pathSep))
-        Seq(callAst(callNode, argsAsts, Some(Ast(thisNode))))
+      } else if (callNode.name == "attr_accessor") {
+        /* we remove the method definition AST from argument and add its corresponding identifier form */
+        Seq(callAst(callNode, argAstsWithoutMethods ++ methodToIdentifierAsts))
       } else {
         Seq(callAst(callNode, argsAsts))
       }

@@ -1259,6 +1259,33 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     }
   }
 
+  "Data flow for begin/rescue with sink in function within do block" ignore {
+    val cpg = code("""
+        |def foo(arg)
+        |  puts "in begin"
+        |  arg do |y|
+        |  return y
+        |rescue SomeException
+        |  puts "Caught SomeException"
+        |rescue => exvar
+        |  puts "Caught exception in variable #{exvar}"
+        |rescue
+        |  puts "Catch-all block"
+        |end
+        |
+        |x = 1
+        |z = foo x
+        |puts z
+        |
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").lineNumber(8).l
+      sink.reachableByFlows(source).size shouldBe 1
+    }
+  }
+
   "Data flow through array assignments" should {
     val cpg = code("""
         |x = 10
@@ -2335,7 +2362,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     "find flows to the sink" in {
       val source = cpg.identifier.name("x").l
       val sink   = cpg.call.name("puts").l
-      sink.reachableByFlows(source).size shouldBe 3
+      sink.reachableByFlows(source).size shouldBe 2
     }
   }
 
@@ -2352,7 +2379,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     "find flows to the sink" in {
       val source = cpg.identifier.name("x").l
       val sink   = cpg.call.name("puts").l
-      sink.reachableByFlows(source).size shouldBe 3
+      sink.reachableByFlows(source).size shouldBe 4
     }
   }
 
@@ -2459,5 +2486,49 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
       val sink   = cpg.call.name("puts").l
       sink.reachableByFlows(source).size shouldBe 2
     }
+  }
+
+  "flow through interpolated double-quoted string literal " should {
+    val cpg = code("""
+        |x = "foo"
+        |y = :"bar #{x}"
+        |puts y
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).size shouldBe 2
+    }
+  }
+
+  "flow through statement with ternary operator with multiple line" in {
+    val cpg = code("""
+        |x = 2
+        |y = 3
+        |z = 4
+        |
+        |w = x == 2 ?
+        | y
+        | : z
+        |puts y
+        |""".stripMargin)
+
+    val source = cpg.identifier.name("y").l
+    val sink   = cpg.call.name("puts").l
+    sink.reachableByFlows(source).size shouldBe 2
+  }
+
+  "flow through endless method" in {
+    val cpg = code("""
+        |def multiply(a,b) = a*b
+        |x = 10
+        |y = multiply(3,x)
+        |puts y
+        |""".stripMargin)
+
+    val source = cpg.identifier.name("x").l
+    val sink   = cpg.call.name("puts").l
+    sink.reachableByFlows(source).size shouldBe 2
   }
 }

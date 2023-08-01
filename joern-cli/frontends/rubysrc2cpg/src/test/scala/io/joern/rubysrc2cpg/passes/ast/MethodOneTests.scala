@@ -1,8 +1,7 @@
 package io.joern.rubysrc2cpg.passes.ast
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
-import io.shiftleft.codepropertygraph.generated.NodeTypes
+import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
@@ -43,7 +42,7 @@ class MethodOneTests extends RubyCode2CpgFixture {
     }
 
     "should allow traversing to method" in {
-      cpg.methodReturn.method.name.l shouldBe List("foo", ":program")
+      cpg.methodReturn.method.name.l shouldBe List("foo", ":program", "<operator>.assignment")
     }
 
     "should allow traversing to file" in {
@@ -119,6 +118,36 @@ class MethodOneTests extends RubyCode2CpgFixture {
         ret2.code shouldBe "return 2"
         ret2.lineNumber shouldBe Option(6)
       }
+    }
+  }
+
+  "Function with empty array in block" should {
+    val cpg = code("""
+        |def foo
+        |  []
+        |end
+        |""".stripMargin)
+
+    "contain empty array" in {
+      cpg.method.name("foo").size shouldBe 1
+      cpg.method.name("foo").block.containsCallTo(Operators.arrayInitializer).size shouldBe 1
+    }
+  }
+
+  "Function as a list element in accessor" should {
+    val cpg = code("""
+        |class Bar
+        |  attr_accessor :a,
+        |    :b,
+        |  def self.c
+        |    1
+        |  end
+        |end
+        |""".stripMargin)
+
+    "contain empty array" in {
+      // one from the METHOD_REF node and one on line `def self.c`
+      cpg.identifier("c").astParent.isCallTo("attr_accessor").size shouldBe 1
     }
   }
 }

@@ -31,7 +31,7 @@ class MiscTests extends RubyCode2CpgFixture {
       cpg.identifier.name("beginbool").size shouldBe 1
       cpg.identifier.name("endbool").size shouldBe 1
       cpg.call.name("puts").size shouldBe 1
-      cpg.identifier.size shouldBe 6
+      cpg.identifier.size shouldBe 7 // 1 identifier node is for `puts = typeDef(__builtin.puts)`
     }
   }
 
@@ -267,6 +267,65 @@ class MiscTests extends RubyCode2CpgFixture {
 
     "recognise all typedecl nodes" in {
       cpg.typeDecl.name("some_class").size shouldBe 1
+    }
+  }
+
+  // TODO obj.foo="arg" should be interpreted as obj.foo("arg"). code change pending
+  "CPG for code with method ending with =" should {
+    val cpg = code("""
+        |class MyClass
+        | def foo=(value)
+        | puts value
+        | end
+        |end
+        |
+        |obj = MyClass.new
+        |obj.foo="arg"
+        |""".stripMargin)
+
+    "recognise all call nodes" in {
+      cpg.call.name("puts").size shouldBe 1
+      cpg.call.name("<operator>.fieldAccess").size shouldBe 1
+    }
+
+    "recognise all method nodes" in {
+      cpg.method.name("foo=").size shouldBe 1
+    }
+  }
+
+  // expectation is that this should not cause a crash
+  "CPG for code with method having a singleton class" should {
+    val cpg = code("""
+        |module SomeModule
+        |    def self.someMethod(arg)
+        |      class << arg
+        |      end
+        |    end
+        |end
+        |""".stripMargin)
+
+    "recognise all namespace nodes" in {
+      cpg.namespace.name("SomeModule").size shouldBe 1
+    }
+  }
+
+  "CPG for code with super without arguments" should {
+    val cpg = code("""
+        |class Parent
+        |  def foo(arg)
+        |  end
+        |end
+        |
+        |class Child < Parent
+        |  def foo(arg)
+        |    super
+        |  end
+        |end
+        |""".stripMargin)
+
+    "recognise all call nodes" in {
+      cpg.call.name("<operator>.super").size shouldBe 1
+      cpg.method.name("foo").size shouldBe 2
     }
   }
 }

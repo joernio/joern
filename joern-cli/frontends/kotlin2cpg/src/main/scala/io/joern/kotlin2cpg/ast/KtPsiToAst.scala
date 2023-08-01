@@ -196,15 +196,22 @@ trait KtPsiToAst {
 
       val constructorParamsAsts = Seq(Ast(ctorThisParam)) ++
         withIndex(constructorParams) { (p, idx) => astForParameter(p, idx) }
-      val ctorMethodBlockAst =
-        astsForBlock(ctor.getBodyExpression, None, preStatements = Option(Seq(Ast(primaryCtorCall))))
+
+      val ctorMethodBlockAsts =
+        ctor.getBodyExpression match {
+          case b: KtBlockExpression =>
+            astsForBlock(b, None, preStatements = Option(Seq(Ast(primaryCtorCall))))
+          case null =>
+            val node = NewBlock().code(Constants.empty).typeFullName(TypeConstants.any)
+            Seq(blockAst(node, List(Ast(primaryCtorCall))))
+        }
       scope.popScope()
 
       val ctorMethodReturnNode =
         newMethodReturnNode(TypeConstants.void, None, line(ctor), column(ctor))
 
       // TODO: see if necessary to take the other asts for the ctorMethodBlock
-      methodAst(secondaryCtorMethodNode, constructorParamsAsts, ctorMethodBlockAst.head, ctorMethodReturnNode)
+      methodAst(secondaryCtorMethodNode, constructorParamsAsts, ctorMethodBlockAsts.head, ctorMethodReturnNode)
     }
   }
 
