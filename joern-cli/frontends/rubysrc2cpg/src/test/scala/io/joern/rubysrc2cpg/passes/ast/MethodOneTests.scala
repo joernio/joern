@@ -133,4 +133,21 @@ class MethodOneTests extends RubyCode2CpgFixture {
       cpg.method.name("foo").block.containsCallTo(Operators.arrayInitializer).size shouldBe 1
     }
   }
+
+  "Function as a list element in accessor" should {
+    val cpg = code("""
+        |class Bar
+        |  attr_accessor :a,
+        |    :b,
+        |  def self.c
+        |    1
+        |  end
+        |end
+        |""".stripMargin)
+
+    "contain empty array" in {
+      // one from the METHOD_REF node and one on line `def self.c`
+      cpg.identifier("c").astParent.isCallTo("attr_accessor").size shouldBe 1
+    }
+  }
 }

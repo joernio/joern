@@ -5,6 +5,7 @@ import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
+import io.joern.rubysrc2cpg.astcreation.AstCreator
 
 class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
 
@@ -1039,22 +1040,26 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
   }
 
-  "have correct structure when no RHS for a mandatory parameter is provided" ignore {
+  "have correct structure when no RHS for a mandatory parameter is provided" in {
     val cpg = code("""
         |def foo(bar:)
         |end
         |""".stripMargin)
 
-    cpg.method("foo").parameter.size shouldBe 1
+    val List(parameterNode) = cpg.method("foo").parameter.l
+    parameterNode.name shouldBe "bar"
+    parameterNode.lineNumber shouldBe Some(2)
   }
 
-  "have correct structure when RHS for a mandatory parameter is provided" ignore {
+  "have correct structure when RHS for a mandatory parameter is provided" in {
     val cpg = code("""
         |def foo(bar: world)
         |end
         |""".stripMargin)
 
-    cpg.method("foo").parameter.size shouldBe 1
+    val List(parameterNode) = cpg.method("foo").parameter.l
+    parameterNode.name shouldBe "bar"
+    parameterNode.lineNumber shouldBe Some(2)
   }
 
   // Change below test cases to focus on the argument of call `foo`
@@ -1182,6 +1187,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     methodNode.columnNumber shouldBe Some(4)
   }
 
+
   "have correct structure parenthesised arguments in a return jump" in {
     val cpg = code("""return(value) unless item""".stripMargin)
 
@@ -1193,5 +1199,21 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     methodReturn.code shouldBe "return(value)"
     methodReturn.lineNumber shouldBe Some(1)
     methodReturn.columnNumber shouldBe Some(0)
+  }
+  
+  "have correct structure for regex match global variables" in {
+    val cpg = code("""
+        |content_filename =~ /filename="(.*)"/
+        |value = $1
+        |""".stripMargin)
+
+    cpg.call.size shouldBe 2
+    cpg.call.code(".*filename.*").head.methodFullName shouldBe "<operator>.patternMatch"
+
+    cpg.identifier.code("value").size shouldBe 1
+    cpg.identifier.name("\\$1").size shouldBe 1
+    cpg.identifier.name("\\$1").head.typeFullName shouldBe Defines.String
+
+    cpg.literal.code("/filename=\"(.*)\"/").head.typeFullName shouldBe Defines.Regexp
   }
 }
