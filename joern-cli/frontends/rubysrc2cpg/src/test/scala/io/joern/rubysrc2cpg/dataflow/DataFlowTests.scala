@@ -2502,6 +2502,28 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     }
   }
 
+  "flow through conditional return statement" should {
+    val cpg = code("""
+        |class Foo
+        | def bar(value)
+        |   j = 0
+        |   return(value) unless j == 0
+        | end
+        |end
+        |
+        |x = 10
+        |foo = Foo.new
+        |y = foo.bar(x)
+        |puts y
+        |""".stripMargin)
+
+    "find flows to the sink" in {
+      val source = cpg.identifier.name("x").l
+      val sink   = cpg.call.name("puts").l
+      sink.reachableByFlows(source).size shouldBe 2
+    }
+  }
+
   "flow through statement with ternary operator with multiple line" in {
     val cpg = code("""
         |x = 2
