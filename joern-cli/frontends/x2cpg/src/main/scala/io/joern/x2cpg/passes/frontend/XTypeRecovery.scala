@@ -132,7 +132,7 @@ abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, state: XT
   override def run(builder: DiffGraphBuilder): Unit = {
     val changesWereMade = compilationUnit
       .map(unit => generateRecoveryForCompilationUnitTask(unit, builder).fork())
-      .map(_.get())
+      .map(_.get)
       .reduceOption((a, b) => a || b)
       .getOrElse(false)
     if (!changesWereMade) state.stopEarly.set(true)
