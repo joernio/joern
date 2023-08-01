@@ -297,7 +297,7 @@ private class UsageAnalyzer(
     inElement match {
       case call: Call if containerSet.contains(call.name) =>
         call.argument.headOption.exists { base =>
-          nodeToString(use).contains(base.code)
+          nodeToString(use) == nodeToString(base)
         }
       case _ => false
     }
@@ -311,11 +311,11 @@ private class UsageAnalyzer(
         inElement match {
           case param: MethodParameterIn =>
             call.argument.headOption.exists { base =>
-              base.code == param.name
+              nodeToString(base).contains(param.name)
             }
           case identifier: Identifier =>
             call.argument.headOption.exists { base =>
-              base.code == identifier.name
+              nodeToString(base).contains(identifier.name)
             }
           case _ => false
         }
@@ -364,6 +364,7 @@ private class UsageAnalyzer(
 
   private def nodeToString(node: StoredNode): Option[String] = {
     node match {
+      case ident: Identifier     => Some(ident.name)
       case exp: Expression       => Some(exp.code)
       case p: MethodParameterIn  => Some(p.name)
       case p: MethodParameterOut => Some(p.name)

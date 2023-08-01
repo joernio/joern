@@ -1,6 +1,6 @@
 package io.joern.rubysrc2cpg.passes
 import io.joern.rubysrc2cpg.Config
-import io.joern.rubysrc2cpg.astcreation.AstCreator
+import io.joern.rubysrc2cpg.astcreation.{AstCreator, ResourceManagedParser}
 import io.joern.rubysrc2cpg.utils.{PackageContext, PackageTable}
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.datastructures.Global
@@ -12,8 +12,13 @@ import overflowdb.BatchedUpdate
 
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
 
-class AstCreationPass(cpg: Cpg, global: Global, packageTable: PackageTable, config: Config)
-    extends ConcurrentWriterCpgPass[String](cpg) {
+class AstCreationPass(
+  cpg: Cpg,
+  global: Global,
+  parser: ResourceManagedParser,
+  packageTable: PackageTable,
+  config: Config
+) extends ConcurrentWriterCpgPass[String](cpg) {
 
   private val logger                        = LoggerFactory.getLogger(this.getClass)
   val RubySourceFileExtensions: Set[String] = Set(".rb")
@@ -27,7 +32,7 @@ class AstCreationPass(cpg: Cpg, global: Global, packageTable: PackageTable, conf
   override def runOnPart(diffGraph: DiffGraphBuilder, fileName: String): Unit = {
     try {
       diffGraph.absorb(
-        new AstCreator(fileName, global, PackageContext(fileName, packageTable), cpg.metaData.root.headOption)
+        new AstCreator(fileName, global, parser, PackageContext(fileName, packageTable), cpg.metaData.root.headOption)
           .createAst()
       )
     } catch {

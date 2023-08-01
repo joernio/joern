@@ -40,7 +40,9 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
       val tmpFile = File(imagePathStr).copyTo(File.newTemporaryFile(suffix = ".svg"), overwrite = true)
       tmpFile.deleteOnExit(swallowIOExceptions = true)
       Try {
-        Process(Seq(config.tools.imageViewer, tmpFile.path.toAbsolutePath.toString)).run()
+        val command = if (scala.util.Properties.isWin) { Seq("cmd.exe", "/C", config.tools.imageViewer) }
+        else { Seq(config.tools.imageViewer) }
+        Process(command :+ tmpFile.path.toAbsolutePath.toString).run()
       } match {
         case Success(_) =>
           // We never handle the actual result anywhere.
