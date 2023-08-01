@@ -2538,7 +2538,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     val sink   = cpg.call.name("puts").l
     sink.reachableByFlows(source).size shouldBe 2
   }
-  
+
   "flow through endless method" in {
     val cpg = code("""
         |def multiply(a,b) = a*b
@@ -2573,5 +2573,5 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
         |""".stripMargin)
     val source = cpg.identifier.name("x").l
   }
-    
+
 }
