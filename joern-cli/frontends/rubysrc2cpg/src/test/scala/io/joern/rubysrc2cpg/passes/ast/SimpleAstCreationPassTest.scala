@@ -1185,4 +1185,16 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     methodNode.lineNumber shouldBe Some(2)
     methodNode.columnNumber shouldBe Some(4)
   }
+
+  "have correct structure for symbol literal defined using \\:" in {
+    val cpg = code("""
+        |foo = {:bar=>zoo}
+        |""".stripMargin)
+
+    val List(keyValueAssocOperator) = cpg.call(".*keyValueAssociation.*").l
+    keyValueAssocOperator.code shouldBe ":bar=>zoo"
+    keyValueAssocOperator.astChildren.l.head.code shouldBe ":bar"
+    keyValueAssocOperator.astChildren.l(1).code shouldBe "zoo"
+  }
+
 }
