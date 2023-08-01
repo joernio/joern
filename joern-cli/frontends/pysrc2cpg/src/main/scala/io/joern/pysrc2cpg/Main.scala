@@ -2,6 +2,7 @@ package io.joern.pysrc2cpg
 
 import io.joern.pysrc2cpg.Frontend.cmdLineParser
 import io.joern.x2cpg.X2CpgMain
+import io.joern.x2cpg.passes.frontend.XTypeRecovery
 import scopt.OParser
 
 import java.nio.file.Paths
@@ -20,10 +21,7 @@ private object Frontend {
         // Default is specified in Py2CpgOFileSystemConfig because Scopt is a shit library.
         .text("Specifies whether venv-dir is ignored. Default to true.")
         .action(((value, config) => config.withIgnoreVenvDir(value))),
-      opt[Unit]("no-dummyTypes")
-        .hidden()
-        .action((_, c) => c.withDisableDummyTypes(true))
-        .text("disable generation of dummy types during type recovery")
+      XTypeRecovery.parserOptions
     )
   }
 }

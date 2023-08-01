@@ -429,4 +429,21 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
   }
 
+  "CPG for code with secondary ctor calling super" should {
+    val cpg = code("""
+      |package mypkg
+      |open class PClass(val x: Int) {}
+      |class QClass : PClass {
+      |    constructor(x: Int, y: Int) : super(x)
+      |}
+      |""".stripMargin)
+
+    "should contain a METHOD node for the secondary ctor with a call to the primary ctor as the first child of its BLOCK" in {
+      val List(secondaryCtor: Method) =
+        cpg.method.name("<init>").where(_.parameter.nameExact("y")).l
+      val List(firstCallOfSecondaryCtor: Call) =
+        secondaryCtor.block.astChildren.collectAll[Call].take(1).l
+      firstCallOfSecondaryCtor.methodFullName shouldBe "mypkg.QClass.<init>:void()"
+    }
+  }
 }

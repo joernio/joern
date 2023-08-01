@@ -1,10 +1,13 @@
 package io.joern.rubysrc2cpg
 
-import io.joern.rubysrc2cpg.Frontend._
+import io.joern.rubysrc2cpg.Frontend.*
+import io.joern.x2cpg.passes.frontend.{XTypeRecovery, TypeRecoveryParserConfig}
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
 import scopt.OParser
 
-final case class Config(enableDependencyDownload: Boolean = false) extends X2CpgConfig[Config] {
+final case class Config(enableDependencyDownload: Boolean = false)
+    extends X2CpgConfig[Config]
+    with TypeRecoveryParserConfig[Config] {
 
   def withEnableDependencyDownload(value: Boolean): Config = {
     copy(enableDependencyDownload = value).withInheritedFields(this)
@@ -23,7 +26,8 @@ private object Frontend {
       opt[Unit]("enableDependencyDownload")
         .hidden()
         .action((_, c) => c.withEnableDependencyDownload(true))
-        .text("enable dependency download for Unix System only")
+        .text("enable dependency download for Unix System only"),
+      XTypeRecovery.parserOptions
     )
   }
 }
