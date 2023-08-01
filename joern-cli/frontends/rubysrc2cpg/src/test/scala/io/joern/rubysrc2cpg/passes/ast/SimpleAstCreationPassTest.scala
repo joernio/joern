@@ -1187,7 +1187,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     methodNode.columnNumber shouldBe Some(4)
   }
 
-
   "have correct structure parenthesised arguments in a return jump" in {
     val cpg = code("""return(value) unless item""".stripMargin)
 
@@ -1200,7 +1199,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     methodReturn.lineNumber shouldBe Some(1)
     methodReturn.columnNumber shouldBe Some(0)
   }
-  
+
   "have correct structure for regex match global variables" in {
     val cpg = code("""
         |content_filename =~ /filename="(.*)"/
