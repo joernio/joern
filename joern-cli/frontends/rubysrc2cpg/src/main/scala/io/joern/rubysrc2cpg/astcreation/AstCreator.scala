@@ -49,8 +49,9 @@ class AstCreator(
    */
   protected val methodNameAsIdentifierStack = mutable.Stack[Ast]()
 
-  protected val methodAliases      = mutable.HashMap[String, String]()
-  protected val methodNameToMethod = mutable.HashMap[String, nodes.NewMethod]()
+  protected val methodAliases       = mutable.HashMap[String, String]()
+  protected val methodNameToMethod  = mutable.HashMap[String, nodes.NewMethod]()
+  protected val methodDefInArgument = mutable.HashSet[Ast]()
 
   protected val methodNamesWithYield = mutable.HashSet[String]()
 
@@ -572,6 +573,33 @@ class AstCreator(
         .typeFullName(Defines.Any)
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
       Seq(callAst(arrayInitCallNode))
+    } else if (ctx.arrayConstructor().QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_START() != null) {
+      if (ctx.arrayConstructor().QUOTED_NON_EXPANDED_STRING_ARRAY_CHARACTER().size() == 0) {
+        /* Handle empty array*/
+        val arrayInitCallNode = NewCall()
+          .name(Operators.arrayInitializer)
+          .methodFullName(Operators.arrayInitializer)
+          .signature(Operators.arrayInitializer)
+          .typeFullName(Defines.Any)
+          .dispatchType(DispatchTypes.STATIC_DISPATCH)
+        Seq(callAst(arrayInitCallNode))
+      } else {
+        ctx
+          .arrayConstructor()
+          .QUOTED_NON_EXPANDED_STRING_ARRAY_CHARACTER()
+          .asScala
+          .map { str =>
+            {
+              Ast(
+                NewLiteral()
+                  .code(str.getText)
+                  .typeFullName(Defines.String)
+                  .dynamicTypeHintFullName(List(Defines.String))
+              )
+            }
+          }
+          .toSeq
+      }
     } else {
       Option(ctx.arrayConstructor().indexingArguments).map(astForIndexingArgumentsContext).getOrElse(Seq())
     }
@@ -802,7 +830,8 @@ class AstCreator(
     if (ctx.hashConstructor().hashConstructorElements() == null) return Seq(Ast())
     val hashCtorElemCtxs = ctx.hashConstructor().hashConstructorElements().hashConstructorElement().asScala
     val associationCtxs  = hashCtorElemCtxs.filter(_.association() != null).map(_.association()).toSeq
-    associationCtxs.flatMap(astForAssociationContext)
+    val expressionCtxs   = hashCtorElemCtxs.filter(_.expression() != null).map(_.expression()).toSeq
+    expressionCtxs.flatMap(astForExpressionContext) ++ associationCtxs.flatMap(astForAssociationContext)
   }
 
   def astForIndexingExpressionPrimaryContext(ctx: IndexingExpressionPrimaryContext): Seq[Ast] = {

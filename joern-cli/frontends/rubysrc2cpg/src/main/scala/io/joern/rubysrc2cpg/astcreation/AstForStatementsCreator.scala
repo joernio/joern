@@ -14,6 +14,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewIdentifier,
   NewImport,
   NewLiteral,
+  NewMethod,
+  NewNode,
   NewReturn
 }
 import org.slf4j.LoggerFactory
@@ -249,6 +251,25 @@ trait AstForStatementsCreator {
     methodNameAsIdentifierStack.push(methodIdentifierAsts.head)
     val argsAsts = astForArguments(ctx.argumentsWithoutParentheses().arguments())
 
+    /* get args without the method def in it */
+    val argAstsWithoutMethods = argsAsts.filterNot(_.nodes.headOption.getOrElse(None).isInstanceOf[NewMethod])
+
+    /* isolate methods from the original args and create identifier ASTs from it */
+    val methodDefAsts = argsAsts.filter(_.nodes.headOption.getOrElse(None).isInstanceOf[NewMethod])
+    val methodToIdentifierAsts = methodDefAsts.map { ast =>
+      val id = NewIdentifier()
+        .name(ast.nodes.head.asInstanceOf[NewMethod].name)
+        .code(ast.nodes.head.asInstanceOf[NewMethod].name)
+        .typeFullName(Defines.Any)
+        .lineNumber(ast.nodes.head.asInstanceOf[NewMethod].lineNumber)
+      Ast(id)
+    }
+
+    /* TODO: we add the isolated method defs later on to the parent instead */
+    methodDefAsts.foreach { ast =>
+      methodDefInArgument.add(ast)
+    }
+
     val callNodes = methodIdentifierAsts.head.nodes.collect { case x: NewCall => x }
     if (callNodes.size == 1) {
       val callNode = callNodes.head
@@ -256,6 +277,9 @@ trait AstForStatementsCreator {
         resolveRequireOrLoadPath(argsAsts, callNode)
       } else if (callNode.name == "require_relative") {
         resolveRelativePath(filename, argsAsts, callNode)
+      } else if (callNode.name == "attr_accessor") {
+        /* we remove the method definition AST from argument and add its corresponding identifier form */
+        Seq(callAst(callNode, argAstsWithoutMethods ++ methodToIdentifierAsts))
       } else {
         Seq(callAst(callNode, argsAsts))
       }
