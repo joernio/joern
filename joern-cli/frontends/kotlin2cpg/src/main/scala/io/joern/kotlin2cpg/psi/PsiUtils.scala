@@ -23,8 +23,13 @@ object PsiUtils {
   def objectIdxMaybe(psiElem: PsiElement, containing: PsiElement) =
     containing match {
       case t: KtNamedFunction =>
+        val bodyStatements =
+          if (t.getBodyBlockExpression != null) t.getBodyBlockExpression.getStatements.asScala.toSeq
+          else if (t.getBodyExpression != null) Seq(t.getBodyExpression)
+          else Seq()
+
         val anonymousObjects =
-          t.getBodyBlockExpression.getStatements.asScala.toSeq.collect {
+          bodyStatements.collect {
             case pt: KtProperty =>
               pt.getDelegateExpressionOrInitializer match {
                 case ol: KtObjectLiteralExpression => Some(ol.getObjectDeclaration)
