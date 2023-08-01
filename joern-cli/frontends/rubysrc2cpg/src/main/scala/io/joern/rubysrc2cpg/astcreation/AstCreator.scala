@@ -1341,7 +1341,7 @@ class AstCreator(
         astForMethodNamePartContext(ctxMethodNamePart)
       case None =>
         astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText)
-    val callNode      = astMethodName.head.nodes.filter(node => node.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
+    val callNode = astMethodName.head.nodes.filter(node => node.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
 
     // Create thisParameter if this is an instance method
     // TODO may need to revisit to make this more robust
