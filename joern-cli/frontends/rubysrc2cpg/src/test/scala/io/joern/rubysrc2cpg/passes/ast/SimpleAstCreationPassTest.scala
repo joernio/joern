@@ -1187,7 +1187,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     methodNode.columnNumber shouldBe Some(4)
   }
 
-
   "have correct structure for symbol literal defined using \\:" in {
     val cpg = code("""
         |foo = {:bar=>zoo}
@@ -1198,7 +1197,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     keyValueAssocOperator.astChildren.l.head.code shouldBe ":bar"
     keyValueAssocOperator.astChildren.l(1).code shouldBe "zoo"
   }
-
 
   "have correct structure for regex match global variables" in {
     val cpg = code("""
