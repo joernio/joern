@@ -2520,6 +2520,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
   }
 
   "dataflow in method defined under class << self block" ignore {
+//    Marked it ignored as flow from identifier "firstName" to call "puts" is missing
     val cpg = code("""
        class MyClass
         |
