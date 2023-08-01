@@ -15,6 +15,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewImport,
   NewLiteral,
   NewMethod,
+  NewNode,
   NewReturn
 }
 import org.slf4j.LoggerFactory
@@ -251,10 +252,10 @@ trait AstForStatementsCreator {
     val argsAsts = astForArguments(ctx.argumentsWithoutParentheses().arguments())
 
     /* get args without the method def in it */
-    val argAstsWithoutMethods = argsAsts.filterNot(_.nodes.head.isInstanceOf[NewMethod])
+    val argAstsWithoutMethods = argsAsts.filterNot(_.nodes.headOption.getOrElse(None).isInstanceOf[NewMethod])
 
     /* isolate methods from the original args and create identifier ASTs from it */
-    val methodDefAsts = argsAsts.filter(_.nodes.head.isInstanceOf[NewMethod])
+    val methodDefAsts = argsAsts.filter(_.nodes.headOption.getOrElse(None).isInstanceOf[NewMethod])
     val methodToIdentifierAsts = methodDefAsts.map { ast =>
       val id = NewIdentifier()
         .name(ast.nodes.head.asInstanceOf[NewMethod].name)
