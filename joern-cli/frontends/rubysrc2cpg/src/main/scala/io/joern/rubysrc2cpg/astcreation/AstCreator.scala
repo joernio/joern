@@ -957,7 +957,9 @@ class AstCreator(
       )
     } else {
       val blockAst = Seq(astForBlock(ctx.block()))
-      blockAst ++ methodIdAst
+      // this is expected to be a call node
+      val callNode = methodIdAst.head.nodes.head.asInstanceOf[NewCall]
+      Seq(callAst(callNode, blockAst))
     }
   }
 

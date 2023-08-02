@@ -943,9 +943,11 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure when method called with safe navigation with parameters without parantheses" in {
       val cpg = code("foo&.bar 1,2")
 
-      val List(callNode)  = cpg.call.l
-      val List(actualArg) = callNode.argument.argumentIndex(2).l
-      actualArg.code shouldBe "1"
+      val List(callNode)   = cpg.call.l
+      val List(actualArg1) = callNode.argument.argumentIndex(1).l
+      actualArg1.code shouldBe "1"
+      val List(actualArg2) = callNode.argument.argumentIndex(2).l
+      actualArg2.code shouldBe "2"
       cpg.argument.size shouldBe 3
       cpg.call.size shouldBe 1
     }
