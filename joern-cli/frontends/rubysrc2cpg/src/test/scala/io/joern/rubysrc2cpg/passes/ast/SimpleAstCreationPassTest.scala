@@ -1212,7 +1212,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     keyValueAssocOperator.astChildren.l(1).code shouldBe "zoo"
   }
 
-  "having a binary expression having + and @" in {
+  "having a binary expression includes + and @" in {
     val cpg = code("""
         |class MyClass
         |  def initialize(a)
