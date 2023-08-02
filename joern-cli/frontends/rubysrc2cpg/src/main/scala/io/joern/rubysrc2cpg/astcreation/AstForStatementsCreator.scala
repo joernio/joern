@@ -267,7 +267,7 @@ trait AstForStatementsCreator {
 
     /* TODO: we add the isolated method defs later on to the parent instead */
     methodDefAsts.foreach { ast =>
-      methodDefInArgument.add(ast)
+      methodDefInArgument.addOne(ast)
     }
 
     val callNodes = methodIdentifierAsts.head.nodes.collect { case x: NewCall => x }
