@@ -208,6 +208,44 @@ class StringTests extends RubyParserAbstractTest {
             |   o
             |   )""".stripMargin
       }
+
+      "it contains an empty nested string using the `(`-`)` delimiters" in {
+        val code = "%q( () )"
+        printAst(_.primary(), code) shouldEqual
+          """StringExpressionPrimary
+            | SimpleStringExpression
+            |  NonExpandedQuotedStringLiteral
+            |   %q(
+            |   (
+            |   )
+            |   )""".stripMargin
+      }
+
+      "it contains an escaped single-character nested string using the `(`-`)` delimiters" in {
+        val code = "%q( (\\)) )"
+        printAst(_.primary(), code) shouldEqual
+          """StringExpressionPrimary
+            | SimpleStringExpression
+            |  NonExpandedQuotedStringLiteral
+            |   %q(
+            |   (
+            |   \)
+            |   )
+            |   )""".stripMargin
+      }
+
+      "it contains an escaped single-character nested string using the `<`-`>` delimiters" in {
+        val code = "%q< <\\>> >"
+        printAst(_.primary(), code) shouldEqual
+          """StringExpressionPrimary
+            | SimpleStringExpression
+            |  NonExpandedQuotedStringLiteral
+            |   %q<
+            |   <
+            |   \>
+            |   >
+            |   >""".stripMargin
+      }
     }
   }
 
