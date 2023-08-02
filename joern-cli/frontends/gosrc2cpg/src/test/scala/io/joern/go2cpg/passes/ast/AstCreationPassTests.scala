@@ -319,8 +319,6 @@ class AstCreationPassTests extends GoCodeToCpgSuite {
     val cpg = code("""
         |package main
         |
-        |import "fmt"
-        |
         |func main() {
         |   var b int
         |
@@ -344,6 +342,71 @@ class AstCreationPassTests extends GoCodeToCpgSuite {
       }
       inside(forStmt.astChildren.order(4).l) { case List(body: Block) =>
         body.astChildren.isCall.code.l shouldBe List("b += a")
+      }
+    }
+  }
+
+  "be correct for for-loop case 2" in {
+    val cpg = code("""
+        |package main
+        |
+        |func main() {
+        |   var b int = 15
+        |   var a int
+        |
+        |   /* for loop execution */
+        |   for a < b {
+        |       a++
+        |   }
+        |}
+        |""".stripMargin)
+
+    inside(cpg.method.name("main").controlStructure.l) { case List(forStmt) =>
+      forStmt.controlStructureType shouldBe ControlStructureTypes.FOR
+      inside(forStmt.astChildren.order(1).l) { case List(initializerBlock: Block) =>
+        initializerBlock.astChildren.size shouldBe 0
+      }
+      inside(forStmt.astChildren.order(2).l) { case List(lessThanCall: Call) =>
+        lessThanCall.code shouldBe "a < b"
+      }
+
+      forStmt.astChildren.order(3).size shouldBe 0
+
+      inside(forStmt.astChildren.order(4).l) { case List(body: Block) =>
+        body.astChildren.isCall.code.l shouldBe List("a++")
+      }
+    }
+  }
+
+  "be correct for for-loop case 3" in {
+    val cpg = code("""
+        |package main
+        |import "fmt"
+        |func main() {
+        |   message := "Hello, Gophers!"
+        |
+        |   var counter int
+        |   for index, char := range message {
+        |        counter++
+        |    }
+        |}
+        |""".stripMargin)
+
+    inside(cpg.method.name("main").controlStructure.l) { case List(forStmt) =>
+      forStmt.controlStructureType shouldBe ControlStructureTypes.FOR
+      inside(forStmt.astChildren.order(1).l) { case List(identifier: Identifier) =>
+        identifier.name shouldBe "message"
+      }
+      inside(forStmt.astChildren.order(2).l) { case List(localBlock: Block) =>
+        localBlock.astChildren.isLocal.code.l shouldBe List("index", "char")
+      }
+
+      inside(forStmt.astChildren.order(3).l) { case List(assignCall: Call) =>
+        assignCall.code shouldBe "index, char := range message"
+      }
+
+      inside(forStmt.astChildren.order(4).l) { case List(body: Block) =>
+        body.astChildren.isCall.code.l shouldBe List("counter++")
       }
     }
   }

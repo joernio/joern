@@ -52,12 +52,13 @@ trait AstForExpressionCreator { this: AstCreator =>
   }
   private def astForUnaryExpr(unaryExpr: ParserNodeInfo): Seq[Ast] = {
     val operatorMethod = unaryExpr.json(ParserKeys.Op).value match {
-      case "+" => Operators.plus
-      case "-" => Operators.minus
-      case "*" => Operators.indirection
-      case "&" => Operators.addressOf
-      case "!" => Operators.logicalNot
-      case _   => Operator.unknown
+      case "+"     => Operators.plus
+      case "-"     => Operators.minus
+      case "*"     => Operators.indirection
+      case "&"     => Operators.addressOf
+      case "!"     => Operators.logicalNot
+      case "range" => Operators.range
+      case _       => Operator.unknown
     }
 
     val cNode   = createCallNodeForOperator(unaryExpr, operatorMethod)
