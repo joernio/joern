@@ -314,4 +314,37 @@ class AstCreationPassTests extends GoCodeToCpgSuite {
       }
     }
   }
+
+  "be correct for for-loop case 1" in {
+    val cpg = code("""
+        |package main
+        |
+        |import "fmt"
+        |
+        |func main() {
+        |   var b int
+        |
+        |   /* for loop execution */
+        |   for a := 0; a < 10; a++ {
+        |       b += a
+        |   }
+        |}
+        |""".stripMargin)
+
+    inside(cpg.method.name("main").controlStructure.l) { case List(forStmt) =>
+      forStmt.controlStructureType shouldBe ControlStructureTypes.FOR
+      inside(forStmt.astChildren.order(1).l) { case List(initializerBlock: Block) =>
+        initializerBlock.astChildren.isCall.code.l shouldBe List("a := 0")
+      }
+      inside(forStmt.astChildren.order(2).l) { case List(lessThanCall: Call) =>
+        lessThanCall.code shouldBe "a < 10"
+      }
+      inside(forStmt.astChildren.order(3).l) { case List(increCall: Call) =>
+        increCall.code shouldBe "a++"
+      }
+      inside(forStmt.astChildren.order(4).l) { case List(body: Block) =>
+        body.astChildren.isCall.code.l shouldBe List("b += a")
+      }
+    }
+  }
 }
