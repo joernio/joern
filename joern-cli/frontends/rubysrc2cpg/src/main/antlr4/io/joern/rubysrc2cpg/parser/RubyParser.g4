@@ -256,12 +256,20 @@ blockParameters
 // --------------------------------------------------------
 
 arrayConstructor
-    :   LBRACK wsOrNl* indexingArguments? wsOrNl* RBRACK
+    :   LBRACK wsOrNl* indexingArguments? wsOrNl* RBRACK                                                            # bracketedArrayConstructor
     |   QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_START
-        (QUOTED_NON_EXPANDED_STRING_ARRAY_CHARACTER
-        |QUOTED_NON_EXPANDED_STRING_ARRAY_SEPARATOR)*
-        QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END
+        nonExpandedWordArrayElements?
+        QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END                                                                # nonExpandedWordArrayConstructor
     ;
+
+nonExpandedWordArrayElements
+    :   nonExpandedWordArrayElement (QUOTED_NON_EXPANDED_STRING_ARRAY_SEPARATOR nonExpandedWordArrayElement)*
+    ;
+
+nonExpandedWordArrayElement
+    :   QUOTED_NON_EXPANDED_STRING_ARRAY_CHARACTER+   
+    ;
+
 
 // --------------------------------------------------------
 // Hashes
