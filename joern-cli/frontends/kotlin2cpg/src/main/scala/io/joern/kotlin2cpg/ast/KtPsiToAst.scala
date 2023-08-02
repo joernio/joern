@@ -890,6 +890,7 @@ trait KtPsiToAst {
       case c: KtCallExpression           => c
       case dqe: KtDotQualifiedExpression => dqe
       case ac: KtArrayAccessExpression   => ac
+      case pf: KtPostfixExpression       => pf
     }
     if (typedInit.isEmpty) {
       logger.warn(
@@ -933,6 +934,8 @@ trait KtPsiToAst {
         callAst(assignmentNode, List(assignmentLhsAst, Ast(assignmentRhsNode)))
       } else if (expr.getInitializer.isInstanceOf[KtArrayAccessExpression]) {
         astForArrayAccess(expr.getInitializer.asInstanceOf[KtArrayAccessExpression], None, None)
+      } else if (expr.getInitializer.isInstanceOf[KtPostfixExpression]) {
+        astForPostfixExpression(expr.getInitializer.asInstanceOf[KtPostfixExpression], None, None)
       } else {
         val assignmentNode   = operatorCallNode(Operators.assignment, s"$tmpName = ${rhsCall.getText}", None)
         val assignmentRhsAst = astsForExpression(rhsCall, None).head

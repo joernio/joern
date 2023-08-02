@@ -590,4 +590,22 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
       c.methodFullName shouldBe Operators.indexAccess
     }
   }
+
+  "CPG for code with destructuring expression with a postfix expression RHS" should {
+    val cpg = code("""
+        |package mypkg
+        |fun x98() {
+        |    data class Entry(val p: String, val q: String)
+        |    val mrr = mapOf("one" to Entry("p1", "q1"), "two" to Entry("p2", "q2"))
+        |    val (p, q) = mrr.get("one")!!
+        |    println(p)
+        |    println(q)
+        |}
+        |""".stripMargin)
+
+    "should contain an `notNullAssert` CALL node for the RHS" in {
+      val List(c: Call) = cpg.call.codeExact("mrr.get(\"one\")!!").l
+      c.methodFullName shouldBe Operators.notNullAssert
+    }
+  }
 }
