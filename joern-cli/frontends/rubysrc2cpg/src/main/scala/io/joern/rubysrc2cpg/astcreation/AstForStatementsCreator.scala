@@ -302,7 +302,7 @@ trait AstForStatementsCreator {
       .typeFullName(Defines.Any)
       .lineNumber(methodCallNode.lineNumber)
       .columnNumber(methodCallNode.columnNumber)
-    Seq(callAst(callNode, primaryAst ++ argsAst))
+    Seq(callAst(callNode, argsAst, primaryAst.headOption))
   }
 
   protected def astForCommand(ctx: CommandContext): Seq[Ast] = ctx match {
