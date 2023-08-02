@@ -51,6 +51,8 @@ trait AstForTypesCreator { this: AstCreator =>
       val typeDeclNode = NewTypeDecl()
         .name(className)
         .fullName(fullName)
+
+      typeDeclNameToTypeDecl.put(className, typeDeclNode)
       Seq(Ast(typeDeclNode).withChildren(bodyAst))
     } else {
       Seq.empty

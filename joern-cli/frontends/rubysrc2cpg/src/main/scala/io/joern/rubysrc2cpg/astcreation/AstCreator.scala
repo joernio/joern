@@ -54,6 +54,8 @@ class AstCreator(
   protected val methodNameToMethod  = mutable.HashMap[String, nodes.NewMethod]()
   protected val methodDefInArgument = mutable.HashSet[Ast]()
 
+  protected val typeDeclNameToTypeDecl = mutable.HashMap[String, nodes.NewTypeDecl]()
+
   protected val methodNamesWithYield = mutable.HashSet[String]()
 
   /*
@@ -191,12 +193,35 @@ class AstCreator(
       methodRefAssignmentAst
     }.toList
 
+    val typeRefAssignmentAst = typeDeclNameToTypeDecl.values.map { typeDeclNode =>
+
+      val typeRefNode = NewTypeRef()
+        .code("class " + typeDeclNode.name + "(...)")
+        .typeFullName(typeDeclNode.fullName)
+        .lineNumber(typeDeclNode.lineNumber)
+        .columnNumber(typeDeclNode.columnNumber)
+
+      val typeDeclNameIdentifier = NewIdentifier()
+        .code(typeDeclNode.name)
+        .name(typeDeclNode.name)
+        .typeFullName(Defines.Any)
+        .lineNumber(lineColNum)
+        .columnNumber(lineColNum)
+
+      val typeRefAssignmentAst =
+        astForAssignment(typeDeclNameIdentifier, typeRefNode, typeDeclNode.lineNumber, typeDeclNode.columnNumber)
+      typeRefAssignmentAst
+    }
+
     val blockNode = NewBlock().typeFullName(Defines.Any)
     val programAst =
       methodAst(
         programMethod,
         Seq(Ast()),
-        blockAst(blockNode, statementAsts.toList ++ builtInMethodAst ++ methodRefAssignmentAsts),
+        blockAst(
+          blockNode,
+          statementAsts.toList ++ builtInMethodAst ++ methodRefAssignmentAsts ++ typeRefAssignmentAst
+        ),
         methodRetNode
       )
 
@@ -1145,74 +1170,45 @@ class AstCreator(
 
   private def astForParametersContext(ctx: ParametersContext): Seq[Ast] = {
     if (ctx == null) return Seq()
-    val localVarList = ListBuffer[Option[TerminalNode]]()
-    // NOT differentiating between the productions here since either way we get parameters
-    // TODO: Add more information other than just parameter names
-    val mandatoryParameters = ctx
-      .parameter()
-      .asScala
-      .filter(ctx => Option(ctx.mandatoryParameter()).isDefined)
-      .map(ctx => Option(ctx.mandatoryParameter().LOCAL_VARIABLE_IDENTIFIER()))
-    val optionalParameters = ctx
-      .parameter()
-      .asScala
-      .filter(ctx => Option(ctx.optionalParameter()).isDefined)
-      .map(ctx => Option(ctx.optionalParameter().LOCAL_VARIABLE_IDENTIFIER()))
-    val arrayParameter = ctx
-      .parameter()
-      .asScala
-      .filter(ctx => Option(ctx.arrayParameter()).isDefined)
-      .map(ctx => Option(ctx.arrayParameter().LOCAL_VARIABLE_IDENTIFIER()))
-    val procParameter = ctx
-      .parameter()
-      .asScala
-      .filter(ctx => Option(ctx.procParameter()).isDefined)
-      .map(ctx => Option(ctx.procParameter().LOCAL_VARIABLE_IDENTIFIER()))
-    val keywordParameters = ctx
-      .parameter()
-      .asScala
-      .filter(ctx => Option(ctx.keywordParameter()).isDefined)
-      .map(ctx => {
-        Option(ctx.keywordParameter().LOCAL_VARIABLE_IDENTIFIER())
-      })
 
-    localVarList.addAll(mandatoryParameters)
-    localVarList.addAll(optionalParameters)
-    localVarList.addAll(arrayParameter)
-    localVarList.addAll(procParameter)
-    localVarList.addAll(keywordParameters)
+    // the parameterTupleList holds the parameter terminal node and is the parameter a variadic parameter
+    val parameterTupleList = ctx.parameter().asScala.map {
+      case procCtx if procCtx.procParameter() != null =>
+        (Option(procCtx.procParameter().LOCAL_VARIABLE_IDENTIFIER()), false)
+      case optCtx if optCtx.optionalParameter() != null =>
+        (Option(optCtx.optionalParameter().LOCAL_VARIABLE_IDENTIFIER()), false)
+      case manCtx if manCtx.mandatoryParameter() != null =>
+        (Option(manCtx.mandatoryParameter().LOCAL_VARIABLE_IDENTIFIER()), false)
+      case arrCtx if arrCtx.arrayParameter() != null =>
+        (Option(arrCtx.arrayParameter().LOCAL_VARIABLE_IDENTIFIER()), arrCtx.arrayParameter().STAR() != null)
+      case keywordCtx if keywordCtx.keywordParameter() != null =>
+        (Option(keywordCtx.keywordParameter().LOCAL_VARIABLE_IDENTIFIER()), false)
+      case _ => (None, false)
+    }
 
-    localVarList.map {
-      case localVar @ Some(paramContext) => {
-        val varSymbol = paramContext.getSymbol
-        createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, Seq[String](Defines.Any))
-        val param = NewMethodParameterIn()
-          .name(varSymbol.getText)
-          .code(varSymbol.getText)
-          .lineNumber(varSymbol.getLine)
-          .typeFullName(Defines.Any)
-          .columnNumber(varSymbol.getCharPositionInLine)
-        if (Option(arrayParameter).isDefined) {
-          param.isVariadic = true
-        }
-        Ast(param)
-      }
-      case localVar @ _ => {
-        val identifierName = getUnusedVariableNames(usedVariableNames, Defines.TempIdentifier)
-        val parameterName  = getUnusedVariableNames(usedVariableNames, Defines.TempParameter)
-        createIdentifierWithScope(ctx, identifierName, identifierName, Defines.Any, Seq[String](Defines.Any))
-        val param = NewMethodParameterIn()
-          .name(parameterName)
-          .code(parameterName)
-          .lineNumber(None)
-          .typeFullName(Defines.Any)
-          .columnNumber(None)
-        if (Option(arrayParameter).isDefined) {
-          param.isVariadic = true
-        }
-        Ast(param)
-      }
-    }.toSeq
+    parameterTupleList.zipWithIndex.map { case (paraTuple, paraIndex) =>
+      paraTuple match
+        case (Some(paraValue), isVariadic) =>
+          val varSymbol = paraValue.getSymbol
+          createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, Seq[String](Defines.Any))
+          Ast(
+            createMethodParameterIn(
+              varSymbol.getText,
+              lineNumber = Some(varSymbol.getLine),
+              colNumber = Some(varSymbol.getCharPositionInLine),
+              order = paraIndex + 1,
+              index = paraIndex + 1
+            ).isVariadic(isVariadic)
+          )
+        case _ =>
+          Ast(
+            createMethodParameterIn(
+              getUnusedVariableNames(usedVariableNames, Defines.TempParameter),
+              order = paraIndex + 1,
+              index = paraIndex + 1
+            )
+          )
+    }.toList
   }
 
   // TODO: Rewrite for simplicity and take into account more than parameter names.
@@ -1347,14 +1343,29 @@ class AstCreator(
 
   def astForMethodDefinitionContext(ctx: MethodDefinitionContext): Seq[Ast] = {
     scope.pushNewScope(())
-    val astMethodParamSeq = astForMethodParameterPartContext(ctx.methodParameterPart())
     val astMethodName = Option(ctx.methodNamePart()) match
       case Some(ctxMethodNamePart) =>
         astForMethodNamePartContext(ctxMethodNamePart)
       case None =>
         astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText)
-
     val callNode = astMethodName.head.nodes.filter(node => node.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
+
+    // Create thisParameter if this is an instance method
+    // TODO may need to revisit to make this more robust
+    val astMethodParamSeq = ctx.methodNamePart() match {
+      case _: SimpleMethodNamePartContext if !classStack.top.endsWith(":program") =>
+        val thisParameterNode = createMethodParameterIn(
+          "this",
+          typeFullName = callNode.methodFullName,
+          lineNumber = callNode.lineNumber,
+          colNumber = callNode.columnNumber,
+          index = 0,
+          order = 0
+        )
+        Seq(Ast(thisParameterNode)) ++ astForMethodParameterPartContext(ctx.methodParameterPart())
+      case _ => astForMethodParameterPartContext(ctx.methodParameterPart())
+    }
+
     // there can be only one call node
     val astBody = Option(ctx.bodyStatement()) match {
       case Some(ctxBodyStmt) => astForBodyStatementContext(ctxBodyStmt, true)
@@ -1442,12 +1453,12 @@ class AstCreator(
           .filter(_.isInstanceOf[NewMethodParameterIn])
           .asInstanceOf[Seq[NewMethodParameterIn]]
       )
-      .foreach(paramNode => {
+      .foreach { paramNode =>
         val linkIdentifiers = identifiers.filter(_.name == paramNode.name)
-        identifiers.foreach { identifier =>
+        linkIdentifiers.foreach { identifier =>
           diffGraph.addEdge(identifier, paramNode, EdgeTypes.REF)
         }
-      })
+      }
 
     Seq(
       methodAst(

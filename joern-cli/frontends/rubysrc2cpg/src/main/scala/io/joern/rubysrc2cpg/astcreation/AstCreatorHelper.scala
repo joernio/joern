@@ -1,8 +1,15 @@
 package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.x2cpg.{Ast, Defines}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNodeNew, NewCall, NewNode}
+import io.joern.rubysrc2cpg.passes.Defines as RubyDefines
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators, nodes}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  AstNodeNew,
+  NewCall,
+  NewFieldIdentifier,
+  NewMethodParameterIn,
+  NewNode
+}
 import scala.collection.mutable
 trait AstCreatorHelper { this: AstCreator =>
 
@@ -24,6 +31,49 @@ trait AstCreatorHelper { this: AstCreator =>
       .methodFullName(Operators.assignment)
 
     callAst(callNode, Seq(Ast(lhs), Ast(rhs)))
+  }
+
+  protected def createFieldAccess(
+    baseNode: NewNode,
+    fieldName: String,
+    lineNumber: Option[Integer],
+    colNumber: Option[Integer]
+  ) = {
+    val fieldIdNode = NewFieldIdentifier()
+      .code(fieldName)
+      .canonicalName(fieldName)
+      .lineNumber(lineNumber)
+      .columnNumber(colNumber)
+
+    val baseNodeCopy = baseNode.copy
+    val code         = codeOf(baseNode) + "." + codeOf(fieldIdNode)
+    val callNode = NewCall()
+      .code(code)
+      .name(Operators.fieldAccess)
+      .methodFullName(Operators.fieldAccess)
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .lineNumber(lineNumber)
+      .columnNumber(colNumber)
+
+    callAst(callNode, Seq(Ast(baseNodeCopy), Ast(fieldIdNode)))
+  }
+
+  protected def createMethodParameterIn(
+    name: String,
+    lineNumber: Option[Integer] = None,
+    colNumber: Option[Integer] = None,
+    typeFullName: String = RubyDefines.Any,
+    order: Int = -1,
+    index: Int = -1
+  ) = {
+    NewMethodParameterIn()
+      .name(name)
+      .code(name)
+      .lineNumber(lineNumber)
+      .typeFullName(typeFullName)
+      .columnNumber(colNumber)
+      .order(order)
+      .index(index)
   }
 
   protected def codeOf(node: NewNode): String = {
