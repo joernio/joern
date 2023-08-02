@@ -2,12 +2,13 @@ package io.joern.gosrc2cpg.astcreation
 
 import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.parser.ParserAst.{Ident, ParserNode, fromString}
-import ujson.Value
-import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
+import io.joern.gosrc2cpg.parser.{ParserAst, ParserKeys, ParserNodeInfo}
 import org.apache.commons.lang.StringUtils
+import ujson.Value
 
+import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 trait AstCreatorHelper { this: AstCreator =>
 
@@ -15,14 +16,28 @@ trait AstCreatorHelper { this: AstCreator =>
   private val MaxCodeLength: Int = 1000
   private val MinCodeLength: Int = 50
 
+  private val parserNodeCache = mutable.TreeMap[Long, ParserNodeInfo]()
+
   protected def createParserNodeInfo(json: Value): ParserNodeInfo = {
-    val c     = shortenCode(code(json).toOption.getOrElse(""))
-    val ln    = line(json)
-    val cn    = column(json)
-    val lnEnd = lineEndNo(json)
-    val cnEnd = columnEndNo(json)
-    val node  = nodeType(json)
-    ParserNodeInfo(node, json, c, ln, cn, lnEnd, cnEnd)
+    Try(json(ParserKeys.NodeReferenceId).num.toLong) match
+      case Failure(_) =>
+        val c     = shortenCode(code(json).toOption.getOrElse(""))
+        val ln    = line(json)
+        val cn    = column(json)
+        val lnEnd = lineEndNo(json)
+        val cnEnd = columnEndNo(json)
+        val node  = nodeType(json)
+        val pni   = ParserNodeInfo(node, json, c, ln, cn, lnEnd, cnEnd)
+        parserNodeCache.addOne(json(ParserKeys.NodeId).num.toLong, pni)
+        pni
+      case Success(nodeReferenceId) => parserNodeCache(nodeReferenceId)
+
+  }
+
+  protected def nullSafeCreateParserNodeInfo(json: Option[Value]): ParserNodeInfo = {
+    json match
+      case Some(value) => createParserNodeInfo(value)
+      case None        => ParserNodeInfo(ParserAst.Unknown, ujson.Null, "", None, None, None, None)
   }
 
   private def nodeType(node: Value): ParserNode = fromString(node(ParserKeys.NodeType).str)
