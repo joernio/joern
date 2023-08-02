@@ -1351,4 +1351,17 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     cpg.call("match").name.size shouldBe 1
   }
 
+  "have correct structure for association identifier" in {
+    val cpg = code("""
+        |foo(a:b)
+        |""".stripMargin)
+
+    cpg.call.size shouldBe 2
+    cpg.call.name("<operator>.activeRecordAssociation").size shouldBe 1
+
+    cpg.identifier.size shouldBe 2
+    cpg.identifier.name("a").size shouldBe 1
+    cpg.identifier.name("b").size shouldBe 1
+  }
+
 }
