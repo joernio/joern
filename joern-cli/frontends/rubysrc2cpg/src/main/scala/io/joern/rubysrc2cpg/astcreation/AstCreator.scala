@@ -220,7 +220,8 @@ class AstCreator(
         Seq(Ast()),
         blockAst(
           blockNode,
-          statementAsts.toList ++ builtInMethodAst ++ methodRefAssignmentAsts ++ typeRefAssignmentAst
+          statementAsts.toList ++ builtInMethodAst ++ methodRefAssignmentAsts ++ typeRefAssignmentAst ++ methodDefInArgument
+            .map(ast => ast)
         ),
         methodRetNode
       )
