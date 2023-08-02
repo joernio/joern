@@ -1212,7 +1212,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     keyValueAssocOperator.astChildren.l(1).code shouldBe "zoo"
   }
 
-  "having a binary expression having + and @" in {
+  "having a binary expression includes + and @" in {
     val cpg = code("""
         |class MyClass
         |  def initialize(a)
@@ -1330,6 +1330,25 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     cpg.identifier.name("\\$1").head.typeFullName shouldBe Defines.String
 
     cpg.literal.code("/filename=\"(.*)\"/").head.typeFullName shouldBe Defines.Regexp
+  }
+
+  "have correct structure of unless keyword and regex statement" in {
+    val cpg = code("""def contains_numbers?(string)
+                     |  # Define a regular expression pattern to match any digit
+                     |  regex_pattern = /\d/
+                     |
+                     |  # Check if the string contains any numbers using the 'unless' keyword
+                     |  unless string.match(regex_pattern).nil?
+                     |    return true
+                     |  end
+                     |
+                     |  return false
+                     |end""".stripMargin)
+
+    cpg.identifier.code("regex_pattern").name.dedup.size shouldBe 1
+    cpg.method("contains_numbers\\?").name.size shouldBe 1
+    cpg.call("<operator>.assignment").name.size shouldBe 2
+    cpg.call("match").name.size shouldBe 1
   }
 
 }
