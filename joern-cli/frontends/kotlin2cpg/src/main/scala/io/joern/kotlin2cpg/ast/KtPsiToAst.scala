@@ -1750,10 +1750,17 @@ trait KtPsiToAst {
     val thenAsts      = astsForExpression(expr.getThen, None)
     val elseAsts      = astsForExpression(expr.getElse, None)
 
-    val returnTypeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
-    val node =
-      operatorCallNode(Operators.conditional, expr.getText, Option(returnTypeFullName), line(expr), column(expr))
-    callAst(withArgumentIndex(node, argIdx), (conditionAsts ++ thenAsts ++ elseAsts).toList)
+    val allAsts = (conditionAsts ++ thenAsts ++ elseAsts).toList
+    if (allAsts.nonEmpty) {
+      val returnTypeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+      val node =
+        operatorCallNode(Operators.conditional, expr.getText, Option(returnTypeFullName), line(expr), column(expr))
+      callAst(withArgumentIndex(node, argIdx), allAsts)
+    } else {
+      logger.warn("Could not create ASTs for condition-then-else of conditional.")
+      astForUnknown(expr, argIdx)
+    }
+
   }
 
   private def astForCtorCall(expr: KtCallExpression, argIdx: Option[Int])(implicit
