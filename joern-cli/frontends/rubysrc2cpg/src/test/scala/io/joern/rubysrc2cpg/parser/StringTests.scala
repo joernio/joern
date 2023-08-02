@@ -129,6 +129,85 @@ class StringTests extends RubyParserAbstractTest {
             |   %q#
             |   #""".stripMargin
       }
+      
+      "it contains a single non-escaped character and uses the `(`-`)` delimiters" in {
+        val code = "%q(x)"
+        printAst(_.primary(), code) shouldEqual
+          """StringExpressionPrimary
+            | SimpleStringExpression
+            |  NonExpandedQuotedStringLiteral
+            |   %q(
+            |   x
+            |   )""".stripMargin
+      }
+
+      "it contains a single non-escaped character and uses the `[`-`]` delimiters" in {
+        val code = "%q[x]"
+        printAst(_.primary(), code) shouldEqual
+          """StringExpressionPrimary
+            | SimpleStringExpression
+            |  NonExpandedQuotedStringLiteral
+            |   %q[
+            |   x
+            |   ]""".stripMargin
+      }
+
+      "it contains a single non-escaped character and uses the `#` delimiters" in {
+        val code = "%q#x#"
+        printAst(_.primary(), code) shouldEqual
+          """StringExpressionPrimary
+            | SimpleStringExpression
+            |  NonExpandedQuotedStringLiteral
+            |   %q#
+            |   x
+            |   #""".stripMargin
+      }
+
+      "it contains a single escaped character and uses the `(`-`)` delimiters" in {
+        val code = "%q(\\()"
+        printAst(_.primary(), code) shouldEqual
+          """StringExpressionPrimary
+            | SimpleStringExpression
+            |  NonExpandedQuotedStringLiteral
+            |   %q(
+            |   \(
+            |   )""".stripMargin
+      }
+
+      "it contains a single escaped character and uses the `[`-`]` delimiters" in {
+        val code = "%q[\\]]"
+        printAst(_.primary(), code) shouldEqual
+          """StringExpressionPrimary
+            | SimpleStringExpression
+            |  NonExpandedQuotedStringLiteral
+            |   %q[
+            |   \]
+            |   ]""".stripMargin
+      }
+
+      "it contains a single escaped character and uses the `#` delimiters" in {
+        val code = "%q#\\##"
+        printAst(_.primary(), code) shouldEqual
+          """StringExpressionPrimary
+            | SimpleStringExpression
+            |  NonExpandedQuotedStringLiteral
+            |   %q#
+            |   \#
+            |   #""".stripMargin
+      }
+
+      "it contains a word and uses the `(`-`)` delimiters" in {
+        val code = "%q(foo)"
+        printAst(_.primary(), code) shouldEqual
+          """StringExpressionPrimary
+            | SimpleStringExpression
+            |  NonExpandedQuotedStringLiteral
+            |   %q(
+            |   f
+            |   o
+            |   o
+            |   )""".stripMargin
+      }
     }
   }
   
