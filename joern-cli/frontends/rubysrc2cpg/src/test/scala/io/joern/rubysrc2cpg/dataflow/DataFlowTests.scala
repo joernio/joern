@@ -2610,4 +2610,19 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     sink.reachableByFlows(source).size shouldBe 2
   }
 
+  "flow through association identifier" in {
+    val cpg = code("""
+        |def foo(a:)
+        | puts a
+        |end
+        |
+        |x =1
+        |foo(a:x)
+        |""".stripMargin)
+
+    val source = cpg.identifier.name("x").l
+    val sink   = cpg.call.name("puts").l
+    sink.reachableByFlows(source).size shouldBe 2
+  }
+
 }
