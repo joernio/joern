@@ -4,8 +4,17 @@ import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes}
 import io.shiftleft.codepropertygraph.generated.edges.{Capture, Ref}
-import io.shiftleft.codepropertygraph.generated.nodes.{Binding, Block, ClosureBinding, MethodRef, Return}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  Binding,
+  Block,
+  Call,
+  ClosureBinding,
+  Local,
+  MethodRef,
+  Return,
+  TypeDecl
+}
+import io.shiftleft.semanticcpg.language.*
 import overflowdb.traversal.jIteratortoTraversal
 
 class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDefaultJars = true) {
@@ -551,6 +560,32 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       m.signature shouldBe "java.lang.Object(java.lang.Object)"
       val List(p) = m.parameter.l
       p.name shouldBe "it"
+    }
+  }
+
+  "CPG for lambda with a call return expression with object-expression as one of its arguments" should {
+    val cpg = code("""
+        |package mypkg
+        |interface SomeInterface { fun doSomething() }
+        |fun addListener(o: SomeInterface) { o.doSomething() }
+        |fun f1() {
+        |    val p = PClass()
+        |    1.let {
+        |        addListener(object : SomeInterface { override fun doSomething() { println("something") }})
+        |    }
+        |}
+        | """.stripMargin)
+
+    "should contain a correctly lowered representation" in {
+      val List(_: Local, objExpr: TypeDecl, l2: Local, alloc: Call, init: Call, last: Return) =
+        cpg.method.nameExact("<lambda>").block.astChildren.l
+      objExpr.fullName shouldBe "mypkg.f1.$object$1"
+      l2.code shouldBe "tmp_obj_1"
+      alloc.code shouldBe "tmp_obj_1 = <alloc>"
+      init.code shouldBe "<init>"
+
+      val List(returnCall: Call) = last.astChildren.l
+      returnCall.methodFullName shouldBe "mypkg.addListener:void(mypkg.SomeInterface)"
     }
   }
 }

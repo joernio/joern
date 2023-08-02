@@ -537,18 +537,24 @@ trait KtPsiToAst {
     val allStatementsButLast     = statements.dropRight(1)
     val allStatementsButLastAsts = allStatementsButLast.map(astsForExpression(_, None)).flatten
 
-    val lastStatementAsts =
+    val lastStatementAstWithTail =
       if (implicitReturnAroundLastStatement && statements.nonEmpty) {
-        val _returnNode = returnNode(statements.last, Constants.retCode)
-        Seq(returnAst(_returnNode, astsForExpression(statements.last, Some(1))))
-      } else if (statements.nonEmpty) astsForExpression(statements.last, None)
-      else Seq()
+        val _returnNode          = returnNode(statements.last, Constants.retCode)
+        val astsForLastStatement = astsForExpression(statements.last, Some(1))
+        (astsForLastStatement.dropRight(1), Some(returnAst(_returnNode, Seq(astsForLastStatement.last))))
+      } else if (statements.nonEmpty) {
+        val astsForLastStatement = astsForExpression(statements.last, None)
+        (astsForLastStatement.dropRight(1), Some(astsForLastStatement.last))
+      } else (Seq(), None)
 
     if (pushToScope) scope.popScope()
     Seq(
       blockAst(
         node,
-        localsForCaptures.map(Ast(_)) ++ preStatements.getOrElse(Seq()) ++ allStatementsButLastAsts ++ lastStatementAsts
+        localsForCaptures.map(Ast(_)) ++ preStatements
+          .getOrElse(Seq()) ++ allStatementsButLastAsts ++ lastStatementAstWithTail._1 ++ lastStatementAstWithTail._2
+          .map(Seq(_))
+          .getOrElse(Seq())
       )
     ) ++ declarationAsts
   }
@@ -1760,7 +1766,6 @@ trait KtPsiToAst {
       logger.warn("Could not create ASTs for condition-then-else of conditional.")
       astForUnknown(expr, argIdx)
     }
-
   }
 
   private def astForCtorCall(expr: KtCallExpression, argIdx: Option[Int])(implicit
