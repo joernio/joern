@@ -10,7 +10,7 @@ class ArrayTests extends RubyParserAbstractTest {
         val code = "[]"
         printAst(_.primary(), code) shouldEqual
           """ArrayConstructorPrimary
-            | ArrayConstructor
+            | BracketedArrayConstructor
             |  [
             |  ]""".stripMargin
       }
@@ -19,7 +19,7 @@ class ArrayTests extends RubyParserAbstractTest {
         val code = "%w[]"
         printAst(_.primary(), code) shouldEqual
           """ArrayConstructorPrimary
-            | ArrayConstructor
+            | NonExpandedWordArrayConstructor
             |  %w[
             |  ]""".stripMargin
 
@@ -35,11 +35,15 @@ class ArrayTests extends RubyParserAbstractTest {
         val code = "%w[x y z]"
         printAst(_.primary(), code) shouldEqual
           """ArrayConstructorPrimary
-            | ArrayConstructor
+            | NonExpandedWordArrayConstructor
             |  %w[
-            |  x
-            |  y
-            |  z
+            |  NonExpandedWordArrayElements
+            |   NonExpandedWordArrayElement
+            |    x
+            |   NonExpandedWordArrayElement
+            |    y
+            |   NonExpandedWordArrayElement
+            |    z
             |  ]""".stripMargin
       }
 
@@ -47,11 +51,15 @@ class ArrayTests extends RubyParserAbstractTest {
         val code = "%w(x y z)"
         printAst(_.primary(), code) shouldEqual
           """ArrayConstructorPrimary
-            | ArrayConstructor
+            | NonExpandedWordArrayConstructor
             |  %w(
-            |  x
-            |  y
-            |  z
+            |  NonExpandedWordArrayElements
+            |   NonExpandedWordArrayElement
+            |    x
+            |   NonExpandedWordArrayElement
+            |    y
+            |   NonExpandedWordArrayElement
+            |    z
             |  )""".stripMargin
       }
 
@@ -59,11 +67,15 @@ class ArrayTests extends RubyParserAbstractTest {
         val code = "%w{x y z}"
         printAst(_.primary(), code) shouldEqual
           """ArrayConstructorPrimary
-            | ArrayConstructor
+            | NonExpandedWordArrayConstructor
             |  %w{
-            |  x
-            |  y
-            |  z
+            |  NonExpandedWordArrayElements
+            |   NonExpandedWordArrayElement
+            |    x
+            |   NonExpandedWordArrayElement
+            |    y
+            |   NonExpandedWordArrayElement
+            |    z
             |  }""".stripMargin
       }
 
@@ -71,11 +83,15 @@ class ArrayTests extends RubyParserAbstractTest {
         val code = "%w-x y z-"
         printAst(_.primary(), code) shouldEqual
           """ArrayConstructorPrimary
-            | ArrayConstructor
+            | NonExpandedWordArrayConstructor
             |  %w-
-            |  x
-            |  y
-            |  z
+            |  NonExpandedWordArrayElements
+            |   NonExpandedWordArrayElement
+            |    x
+            |   NonExpandedWordArrayElement
+            |    y
+            |   NonExpandedWordArrayElement
+            |    z
             |  -""".stripMargin
       }
     }

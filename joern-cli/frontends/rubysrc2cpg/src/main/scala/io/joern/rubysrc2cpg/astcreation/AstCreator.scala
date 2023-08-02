@@ -443,7 +443,7 @@ class AstCreator(
       astForSimpleScopedConstantReferencePrimaryContext(ctx)
     case ctx: ChainedScopedConstantReferencePrimaryContext =>
       astForChainedScopedConstantReferencePrimaryContext(ctx)
-    case ctx: ArrayConstructorPrimaryContext => astForArrayConstructorPrimaryContext(ctx)
+    case ctx: ArrayConstructorPrimaryContext => astForArrayLiteral(ctx.arrayConstructor())
     case ctx: HashConstructorPrimaryContext  => astForHashConstructorPrimaryContext(ctx)
     case ctx: LiteralPrimaryContext          => astForLiteralPrimaryExpression(ctx)
     case ctx: StringExpressionPrimaryContext => astForStringExpression(ctx.stringExpression)
@@ -588,48 +588,6 @@ class AstCreator(
     case _ =>
       logger.error(s"astForIndexingArgumentsContext() $filename, ${ctx.getText} All contexts mismatched.")
       Seq(Ast())
-  }
-
-  def astForArrayConstructorPrimaryContext(ctx: ArrayConstructorPrimaryContext): Seq[Ast] = {
-    if (ctx.getText == "[]") {
-      /* we might have an empty array, so create an empty as there would be no indexing args */
-      val arrayInitCallNode = NewCall()
-        .name(Operators.arrayInitializer)
-        .methodFullName(Operators.arrayInitializer)
-        .signature(Operators.arrayInitializer)
-        .typeFullName(Defines.Any)
-        .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      Seq(callAst(arrayInitCallNode))
-    } else if (ctx.arrayConstructor().QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_START() != null) {
-      if (ctx.arrayConstructor().QUOTED_NON_EXPANDED_STRING_ARRAY_CHARACTER().size() == 0) {
-        /* Handle empty array*/
-        val arrayInitCallNode = NewCall()
-          .name(Operators.arrayInitializer)
-          .methodFullName(Operators.arrayInitializer)
-          .signature(Operators.arrayInitializer)
-          .typeFullName(Defines.Any)
-          .dispatchType(DispatchTypes.STATIC_DISPATCH)
-        Seq(callAst(arrayInitCallNode))
-      } else {
-        ctx
-          .arrayConstructor()
-          .QUOTED_NON_EXPANDED_STRING_ARRAY_CHARACTER()
-          .asScala
-          .map { str =>
-            {
-              Ast(
-                NewLiteral()
-                  .code(str.getText)
-                  .typeFullName(Defines.String)
-                  .dynamicTypeHintFullName(List(Defines.String))
-              )
-            }
-          }
-          .toSeq
-      }
-    } else {
-      Option(ctx.arrayConstructor().indexingArguments).map(astForIndexingArgumentsContext).getOrElse(Seq())
-    }
   }
 
   def astForBeginExpressionPrimaryContext(ctx: BeginExpressionPrimaryContext): Seq[Ast] = {
