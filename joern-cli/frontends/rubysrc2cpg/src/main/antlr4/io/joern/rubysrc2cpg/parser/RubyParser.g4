@@ -575,6 +575,9 @@ stringExpression
 simpleString
     :   SINGLE_QUOTED_STRING_LITERAL                                                                                # singleQuotedStringLiteral
     |   DOUBLE_QUOTED_STRING_START DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE? DOUBLE_QUOTED_STRING_END                # doubleQuotedStringLiteral
+    |   QUOTED_NON_EXPANDED_STRING_LITERAL_START 
+        QUOTED_NON_EXPANDED_CHARACTER* 
+        QUOTED_NON_EXPANDED_STRING_LITERAL_END                                                                      # nonExpandedQuotedStringLiteral
     ;
 
 stringInterpolation

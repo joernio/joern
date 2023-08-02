@@ -76,6 +76,179 @@ class StringTests extends RubyParserAbstractTest {
     }
   }
 
+  "A non-expanded `%q` string literal" should {
+
+    "be parsed as a primary expression" when {
+
+      "it is empty and uses the `(`-`)` delimiters" in {
+        val code = "%q()"
+        printAst(_.primary(), code) shouldEqual
+          """StringExpressionPrimary
+            | SimpleStringExpression
+            |  NonExpandedQuotedStringLiteral
+            |   %q(
+            |   )""".stripMargin
+      }
+
+      "it is empty and uses the `[`-`]` delimiters" in {
+        val code = "%q[]"
+        printAst(_.primary(), code) shouldEqual
+          """StringExpressionPrimary
+            | SimpleStringExpression
+            |  NonExpandedQuotedStringLiteral
+            |   %q[
+            |   ]""".stripMargin
+      }
+
+      "it is empty and uses the `{`-`}` delimiters" in {
+        val code = "%q{}"
+        printAst(_.primary(), code) shouldEqual
+          """StringExpressionPrimary
+            | SimpleStringExpression
+            |  NonExpandedQuotedStringLiteral
+            |   %q{
+            |   }""".stripMargin
+      }
+
+      "it is empty and uses the `<`-`>` delimiters" in {
+        val code = "%q<>"
+        printAst(_.primary(), code) shouldEqual
+          """StringExpressionPrimary
+            | SimpleStringExpression
+            |  NonExpandedQuotedStringLiteral
+            |   %q<
+            |   >""".stripMargin
+      }
+
+      "it is empty and uses the `#` delimiters" in {
+        val code = "%q##"
+        printAst(_.primary(), code) shouldEqual
+          """StringExpressionPrimary
+            | SimpleStringExpression
+            |  NonExpandedQuotedStringLiteral
+            |   %q#
+            |   #""".stripMargin
+      }
+
+      "it contains a single non-escaped character and uses the `(`-`)` delimiters" in {
+        val code = "%q(x)"
+        printAst(_.primary(), code) shouldEqual
+          """StringExpressionPrimary
+            | SimpleStringExpression
+            |  NonExpandedQuotedStringLiteral
+            |   %q(
+            |   x
+            |   )""".stripMargin
+      }
+
+      "it contains a single non-escaped character and uses the `[`-`]` delimiters" in {
+        val code = "%q[x]"
+        printAst(_.primary(), code) shouldEqual
+          """StringExpressionPrimary
+            | SimpleStringExpression
+            |  NonExpandedQuotedStringLiteral
+            |   %q[
+            |   x
+            |   ]""".stripMargin
+      }
+
+      "it contains a single non-escaped character and uses the `#` delimiters" in {
+        val code = "%q#x#"
+        printAst(_.primary(), code) shouldEqual
+          """StringExpressionPrimary
+            | SimpleStringExpression
+            |  NonExpandedQuotedStringLiteral
+            |   %q#
+            |   x
+            |   #""".stripMargin
+      }
+
+      "it contains a single escaped character and uses the `(`-`)` delimiters" in {
+        val code = "%q(\\()"
+        printAst(_.primary(), code) shouldEqual
+          """StringExpressionPrimary
+            | SimpleStringExpression
+            |  NonExpandedQuotedStringLiteral
+            |   %q(
+            |   \(
+            |   )""".stripMargin
+      }
+
+      "it contains a single escaped character and uses the `[`-`]` delimiters" in {
+        val code = "%q[\\]]"
+        printAst(_.primary(), code) shouldEqual
+          """StringExpressionPrimary
+            | SimpleStringExpression
+            |  NonExpandedQuotedStringLiteral
+            |   %q[
+            |   \]
+            |   ]""".stripMargin
+      }
+
+      "it contains a single escaped character and uses the `#` delimiters" in {
+        val code = "%q#\\##"
+        printAst(_.primary(), code) shouldEqual
+          """StringExpressionPrimary
+            | SimpleStringExpression
+            |  NonExpandedQuotedStringLiteral
+            |   %q#
+            |   \#
+            |   #""".stripMargin
+      }
+
+      "it contains a word and uses the `(`-`)` delimiters" in {
+        val code = "%q(foo)"
+        printAst(_.primary(), code) shouldEqual
+          """StringExpressionPrimary
+            | SimpleStringExpression
+            |  NonExpandedQuotedStringLiteral
+            |   %q(
+            |   f
+            |   o
+            |   o
+            |   )""".stripMargin
+      }
+
+      "it contains an empty nested string using the `(`-`)` delimiters" in {
+        val code = "%q( () )"
+        printAst(_.primary(), code) shouldEqual
+          """StringExpressionPrimary
+            | SimpleStringExpression
+            |  NonExpandedQuotedStringLiteral
+            |   %q(
+            |   (
+            |   )
+            |   )""".stripMargin
+      }
+
+      "it contains an escaped single-character nested string using the `(`-`)` delimiters" in {
+        val code = "%q( (\\)) )"
+        printAst(_.primary(), code) shouldEqual
+          """StringExpressionPrimary
+            | SimpleStringExpression
+            |  NonExpandedQuotedStringLiteral
+            |   %q(
+            |   (
+            |   \)
+            |   )
+            |   )""".stripMargin
+      }
+
+      "it contains an escaped single-character nested string using the `<`-`>` delimiters" in {
+        val code = "%q< <\\>> >"
+        printAst(_.primary(), code) shouldEqual
+          """StringExpressionPrimary
+            | SimpleStringExpression
+            |  NonExpandedQuotedStringLiteral
+            |   %q<
+            |   <
+            |   \>
+            |   >
+            |   >""".stripMargin
+      }
+    }
+  }
+
   "A double-quoted string literal" when {
 
     "empty" should {
