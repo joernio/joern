@@ -52,7 +52,7 @@ class AstCreator(
 
   protected val methodAliases       = mutable.HashMap[String, String]()
   protected val methodNameToMethod  = mutable.HashMap[String, nodes.NewMethod]()
-  protected val methodDefInArgument = mutable.HashSet[Ast]()
+  protected val methodDefInArgument = mutable.ListBuffer[Ast]()
 
   protected val typeDeclNameToTypeDecl = mutable.HashMap[String, nodes.NewTypeDecl]()
 
@@ -213,6 +213,8 @@ class AstCreator(
       typeRefAssignmentAst
     }
 
+    val methodDefInArgumentAsts = methodDefInArgument.toList
+
     val blockNode = NewBlock().typeFullName(Defines.Any)
     val programAst =
       methodAst(
@@ -220,7 +222,7 @@ class AstCreator(
         Seq(Ast()),
         blockAst(
           blockNode,
-          statementAsts.toList ++ builtInMethodAst ++ methodRefAssignmentAsts ++ typeRefAssignmentAst
+          statementAsts.toList ++ builtInMethodAst ++ methodRefAssignmentAsts ++ typeRefAssignmentAst ++ methodDefInArgumentAsts
         ),
         methodRetNode
       )

@@ -146,8 +146,21 @@ class MethodOneTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "contain empty array" in {
-      // one from the METHOD_REF node and one on line `def self.c`
       cpg.identifier("c").astParent.isCallTo("attr_accessor").size shouldBe 1
+    }
+  }
+
+  "Function for private_class_method" should {
+    val cpg = code("""
+        |private_class_method def foo(a)
+        |  b
+        |end
+        |""".stripMargin)
+
+    "have function identifier as argument and function definition" in {
+      // one from the METHOD_REF node and one on line `def self.c`
+      cpg.identifier("foo").astParent.isCallTo("private_class_method").size shouldBe 1
+      cpg.method.nameExact("foo").size shouldBe 1
     }
   }
 }
