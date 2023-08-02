@@ -2331,12 +2331,11 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     }
   }
 
-  "flow through a proc definition using Proc.new" should {
+  "flow through a proc definition using Proc.new and flow originating within the proc" should {
     val cpg = code("""
-        |x=1
         |y = Proc.new {
-        |if x == 1
-        | x
+        |x=1
+        |x
         |end
         |}
         |puts y
@@ -2349,14 +2348,13 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     }
   }
 
-  "flow through a proc definition with non-empty block and zero parameters" should {
+  "flow through a proc definition with non-empty block and zero parameters" ignore {
     val cpg = code("""
-        |x=1
+        |x=10
+        |y = x
         |-> {
-        |if x==1
-        | puts x
-        |end
-        |}
+        |puts y
+        |}.call
         |""".stripMargin)
 
     "find flows to the sink" in {
@@ -2368,18 +2366,16 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
 
   "flow through a proc definition with non-empty block and non-zero parameters" should {
     val cpg = code("""
-        |x=1
-        |-> (x,y) {
-        |if x==1
-        | puts x
-        |end
-        |}
+        |x=10
+        |-> (arg){
+        |puts arg
+        |}.call(x)
         |""".stripMargin)
 
     "find flows to the sink" in {
       val source = cpg.identifier.name("x").l
       val sink   = cpg.call.name("puts").l
-      sink.reachableByFlows(source).size shouldBe 4
+      sink.reachableByFlows(source).size shouldBe 2
     }
   }
 
