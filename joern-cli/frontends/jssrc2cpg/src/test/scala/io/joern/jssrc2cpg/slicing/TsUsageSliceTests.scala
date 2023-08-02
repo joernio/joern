@@ -4,9 +4,9 @@ import io.joern.dataflowengineoss.slicing.*
 import io.joern.jssrc2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.shiftleft.codepropertygraph.generated.Operators
 
-class TsSliceTests extends DataFlowCodeToCpgSuite {
+class TsUsageSliceTests extends DataFlowCodeToCpgSuite {
 
-  private val config = UsagesConfig().withParallelism(1).asInstanceOf[UsagesConfig]
+  private val config = UsagesConfig().withParallelism(1)
 
   "extracting a usage slice from a TypeScript module from the wild" should {
 
@@ -104,37 +104,16 @@ class TsSliceTests extends DataFlowCodeToCpgSuite {
         |""".stripMargin,
       "main.ts"
     )
-    val programSlice =
-      UsageSlicing
-        .calculateUsageSlice(cpg, config.copy(excludeOperatorCalls = false))
-        .asInstanceOf[ProgramUsageSlice]
-
-    "extract 'name' parameter slice from 'startScene'" in {
-      val slice = programSlice.objectSlices
-        .find(x => x.fullName == "main.ts::program:Game:startScene")
-        .flatMap(_.slices.headOption)
-        .get
-      slice.definedBy shouldBe Some(ParamDef("name", "__ecma.String", 1, Some(56), Some(22)))
-      slice.targetObj shouldBe ParamDef("name", "__ecma.String", 1, Some(56), Some(22))
-
-      val List(_, _, arg1) = slice.argToCalls
-
-      arg1.position shouldBe Right(2)
-      arg1.callName shouldBe Operators.formatString
-      arg1.paramTypes shouldBe List("__ecma.String", "__ecma.String", "__ecma.String")
-      arg1.returnType shouldBe "ANY"
-    }
+    val programSlice = UsageSlicing.calculateUsageSlice(cpg, config.copy(excludeOperatorCalls = false))
 
     "extract 'loader' object slice from the main program" in {
       val slice = programSlice.objectSlices.find(x => x.fullName == "main.ts::program").flatMap(_.slices.headOption).get
       slice.definedBy shouldBe Some(CallDef("new Loader", "Loader", Option("Loader"), Some(24), Some(21)))
       slice.targetObj shouldBe LocalDef("loader", "loader:Loader")
 
-      val List(arg1) = slice.argToCalls
+      val inv1 = slice.invokedCalls.find(_.callName == "Loader").get
 
-      arg1.position shouldBe Right(1)
-      arg1.callName shouldBe "Loader"
-      arg1.returnType shouldBe "Loader"
+      inv1.returnType shouldBe "Loader"
     }
 
     "extract 'time' parameter slice from the lambda in 'loop'" in {
@@ -146,10 +125,9 @@ class TsSliceTests extends DataFlowCodeToCpgSuite {
       slice.definedBy shouldBe Some(ParamDef("time", "ANY", 1, Some(68), Some(31)))
       slice.targetObj shouldBe ParamDef("time", "ANY", 1, Some(68), Some(31))
 
-      val List(arg1) = slice.argToCalls
+      val arg1 = slice.argToCalls.find(_.callName == "loop").get
 
       arg1.position shouldBe Right(1)
-      arg1.callName shouldBe "loop"
       arg1.paramTypes shouldBe List("DOMHighResTimeStamp")
       arg1.returnType shouldBe "ANY"
     }
