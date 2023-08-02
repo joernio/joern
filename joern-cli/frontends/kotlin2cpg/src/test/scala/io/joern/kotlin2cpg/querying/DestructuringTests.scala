@@ -572,4 +572,22 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
       cpg.local.codeNot(".*tmp.*").code(".*_.*").size shouldBe 0
     }
   }
+
+  "CPG for code with destructuring expression with an array access call RHS" should {
+    val cpg = code("""
+        |package mypkg
+        |fun f1() {
+        |    data class Entry(val p: String, val q: String)
+        |    val l = listOf(Entry("one", "two"), Entry("three", "four"))
+        |    val (p, q) = l[1]
+        |    println(p)
+        |    println(q)
+        |}
+        |""".stripMargin)
+
+    "should contain an `indexAccess` CALL node for the RHS" in {
+      val List(c: Call) = cpg.call.codeExact("l[1]").l
+      c.methodFullName shouldBe Operators.indexAccess
+    }
+  }
 }

@@ -889,6 +889,7 @@ trait KtPsiToAst {
     val typedInit = Option(expr.getInitializer).collect {
       case c: KtCallExpression           => c
       case dqe: KtDotQualifiedExpression => dqe
+      case ac: KtArrayAccessExpression   => ac
     }
     if (typedInit.isEmpty) {
       logger.warn(
@@ -911,7 +912,6 @@ trait KtPsiToAst {
       case _: KtCallExpression => typeInfoProvider.isConstructorCall(rhsCall).getOrElse(false)
       case _                   => false
     }
-
     val tmpName         = s"${Constants.tmpLocalPrefix}${tmpKeyPool.next}"
     val localForTmpNode = newLocalNode(tmpName, callRhsTypeFullName)
     scope.addToScope(localForTmpNode.name, localForTmpNode)
@@ -931,6 +931,8 @@ trait KtPsiToAst {
           )
         val assignmentNode = operatorCallNode(Operators.assignment, s"$tmpName  = ${Constants.alloc}", None)
         callAst(assignmentNode, List(assignmentLhsAst, Ast(assignmentRhsNode)))
+      } else if (expr.getInitializer.isInstanceOf[KtArrayAccessExpression]) {
+        astForArrayAccess(expr.getInitializer.asInstanceOf[KtArrayAccessExpression], None, None)
       } else {
         val assignmentNode   = operatorCallNode(Operators.assignment, s"$tmpName = ${rhsCall.getText}", None)
         val assignmentRhsAst = astsForExpression(rhsCall, None).head
