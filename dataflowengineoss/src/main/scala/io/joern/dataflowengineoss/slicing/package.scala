@@ -8,16 +8,16 @@ import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 import overflowdb.PropertyKey
 
+import java.util.concurrent.{ExecutorService, Executors}
 import java.util.regex.Pattern
 
 package object slicing {
 
   import cats.syntax.functor.*
-  import io.circe.generic.auto.*
   import io.circe.generic.semiauto.{deriveDecoder, deriveEncoder}
   import io.circe.syntax.EncoderOps
 
-  trait BaseConfig {
+  trait BaseConfig[T <: BaseConfig[T]] {
 
     var inputPath: File = File("cpg.bin")
 
@@ -35,61 +35,66 @@ package object slicing {
 
     var parallelism: Option[Int] = None
 
-    def withInputPath(x: File): BaseConfig = {
+    def withInputPath(x: File): T = {
       this.inputPath = x
-      this
+      this.asInstanceOf[T]
     }
 
-    def withOutputSliceFile(x: File): BaseConfig = {
+    def withOutputSliceFile(x: File): T = {
       this.outputSliceFile = x
-      this
+      this.asInstanceOf[T]
     }
 
-    def withDummyTypesEnabled(x: Boolean): BaseConfig = {
+    def withDummyTypesEnabled(x: Boolean): T = {
       this.dummyTypesEnabled = x
-      this
+      this.asInstanceOf[T]
     }
 
-    def withFileFilter(x: Option[String]): BaseConfig = {
+    def withFileFilter(x: Option[String]): T = {
       this.fileFilter = x
-      this
+      this.asInstanceOf[T]
     }
 
-    def withMethodNameFilter(x: Option[String]): BaseConfig = {
+    def withMethodNameFilter(x: Option[String]): T = {
       this.methodNameFilter = x
-      this
+      this.asInstanceOf[T]
     }
 
-    def withMethodParamTypeFilter(x: Option[String]): BaseConfig = {
+    def withMethodParamTypeFilter(x: Option[String]): T = {
       this.methodParamTypeFilter = x
-      this
+      this.asInstanceOf[T]
     }
 
-    def withMethodAnnotationFilter(x: Option[String]): BaseConfig = {
+    def withMethodAnnotationFilter(x: Option[String]): T = {
       this.methodParamTypeFilter = x
-      this
+      this.asInstanceOf[T]
     }
 
-    def withParallelism(x: Int): BaseConfig = {
+    def withParallelism(x: Int): T = {
       this.parallelism = Option(x)
-      this
+      this.asInstanceOf[T]
     }
 
   }
 
-  case class DefaultSliceConfig() extends BaseConfig
+  case class DefaultSliceConfig() extends BaseConfig[DefaultSliceConfig]
 
   case class DataFlowConfig(
     sinkPatternFilter: Option[String] = None,
     mustEndAtExternalMethod: Boolean = false,
     sliceDepth: Int = 20
-  ) extends BaseConfig
+  ) extends BaseConfig[DataFlowConfig]
 
   case class UsagesConfig(
     minNumCalls: Int = 1,
     excludeOperatorCalls: Boolean = false,
     excludeMethodSource: Boolean = false
-  ) extends BaseConfig
+  ) extends BaseConfig[UsagesConfig]
+
+  def poolFromConfig(config: BaseConfig[_]): ExecutorService = config.parallelism match
+    case Some(parallelism) if parallelism == 1 => Executors.newSingleThreadExecutor()
+    case Some(parallelism) if parallelism > 1  => Executors.newWorkStealingPool(parallelism)
+    case _                                     => Executors.newWorkStealingPool()
 
   /** Adds extensions to modify a call traversal based on config options.
     */
@@ -107,17 +112,18 @@ package object slicing {
     */
   implicit class MethodFilterExt(trav: Iterator[Method]) {
 
-    def withMethodNameFilter(implicit config: BaseConfig): Iterator[Method] = config.methodNameFilter match {
+    def withMethodNameFilter(implicit config: BaseConfig[_]): Iterator[Method] = config.methodNameFilter match {
       case Some(filter) => trav.name(filter)
       case None         => trav
     }
 
-    def withMethodParameterFilter(implicit config: BaseConfig): Iterator[Method] = config.methodParamTypeFilter match {
-      case Some(filter) => trav.where(_.parameter.evalType(filter))
-      case None         => trav
-    }
+    def withMethodParameterFilter(implicit config: BaseConfig[_]): Iterator[Method] =
+      config.methodParamTypeFilter match {
+        case Some(filter) => trav.where(_.parameter.evalType(filter))
+        case None         => trav
+      }
 
-    def withMethodAnnotationFilter(implicit config: BaseConfig): Iterator[Method] =
+    def withMethodAnnotationFilter(implicit config: BaseConfig[_]): Iterator[Method] =
       config.methodAnnotationFilter match {
         case Some(filter) => trav.where(_.annotation.code(filter))
         case None         => trav

@@ -27,24 +27,20 @@ object UsageSlicing {
     * @return
     *   a set of object slices.
     */
-  def calculateUsageSlice(cpg: Cpg, config: UsagesConfig): ProgramSlice = {
+  def calculateUsageSlice(cpg: Cpg, config: UsagesConfig): ProgramUsageSlice = {
     implicit val implicitConfig: UsagesConfig = config
     excludeOperatorCalls.set(config.excludeOperatorCalls)
 
-    def getDeclarations: Traversal[Declaration] = (config.fileFilter match {
+    lazy val declarations = (config.fileFilter match {
       case Some(fileName) => cpg.file.nameExact(fileName).method
       case None           => cpg.method
-    }).withMethodNameFilter.withMethodParameterFilter.withMethodAnnotationFilter.declaration
+    }).withMethodNameFilter.withMethodParameterFilter.withMethodAnnotationFilter.declaration.toList
 
     def typeMap = TrieMap.from(cpg.typeDecl.map(f => (f.name, f.fullName)).toMap)
 
-    val exec = config.parallelism match
-      case Some(parallelism) if parallelism == 1 => Executors.newSingleThreadExecutor()
-      case Some(parallelism) if parallelism > 1  => Executors.newWorkStealingPool(parallelism)
-      case _                                     => Executors.newWorkStealingPool()
-
+    val exec = poolFromConfig(config)
     try {
-      val slices       = usageSlices(exec, cpg, () => getDeclarations, typeMap)
+      val slices       = usageSlices(exec, cpg, declarations, typeMap)
       val userDefTypes = userDefinedTypes(cpg)
       ProgramUsageSlice(slices, userDefTypes)
     } finally {
@@ -57,16 +53,15 @@ object UsageSlicing {
   private def usageSlices(
     exec: ExecutorService,
     cpg: Cpg,
-    getDeclIdentifiers: () => Traversal[Declaration],
+    declarations: List[Declaration],
     typeMap: TrieMap[String, String]
   )(implicit config: UsagesConfig): List[MethodUsageSlice] = {
     val language = cpg.metaData.language.headOption
     val root     = cpg.metaData.root.headOption
-    getDeclIdentifiers()
-      .to(LazyList)
+    declarations
       .filter(a => atLeastNCalls(a, config.minNumCalls) && !a.name.startsWith("_tmp_"))
       .map(a => exec.submit(new TrackUsageTask(cpg, a, typeMap)))
-      .flatMap(_.get())
+      .flatMap(_.get)
       .groupBy { case (scope, _) => scope }
       .view
       .sortBy(_._1.fullName)
@@ -235,10 +230,12 @@ object UsageSlicing {
           if (arg.argumentName.isDefined) (c, arg, Left(arg.argumentName.get))
           else (c, arg, Right(arg.argumentIndex))
         }
-        .partition { case (_, _, argIdx) =>
+        .partition { case (c, _, argIdx) =>
           argIdx match {
-            case Left(_)       => false // receivers/bases are never named
-            case Right(argIdx) => argIdx == 0
+            case Left(_)                     => false // receivers/bases are never named
+            case Right(_) if c.isConstructor => true
+            case Right(_) if c.isOperator    => false
+            case Right(argIdx)               => argIdx == 0
           }
         }
       (
@@ -309,7 +306,8 @@ object UsageSlicing {
       .inCall
       .flatMap {
         case c if c.name.startsWith(Operators.assignment) && c.ast.isCall.name(Operators.alloc).nonEmpty => Some(c)
-        case c if excludeOperatorCalls.get() && c.name.startsWith("<operator")                           => None
+        case c if c.isFieldAccess                                                                        => None
+        case c if excludeOperatorCalls.get() && c.isOperator                                             => None
         case c                                                                                           => Some(c)
       }
       .dedup
@@ -371,6 +369,15 @@ object UsageSlicing {
     */
   implicit class MethodDataSourceExt(trav: Iterator[Method]) {
     def declaration: Iterator[Declaration] = trav.ast.collectAll[Declaration]
+
+  }
+
+  implicit class CallExt(node: Call) {
+    def isOperator: Boolean = node.name.startsWith("<operator")
+
+    def isFieldAccess: Boolean = node.name == Operators.fieldAccess
+
+    def isConstructor: Boolean = node.ast.isCall.name("<operator>\\.(new|alloc)").nonEmpty
 
   }
 

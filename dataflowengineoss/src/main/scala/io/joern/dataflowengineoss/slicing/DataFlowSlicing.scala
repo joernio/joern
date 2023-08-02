@@ -15,11 +15,7 @@ object DataFlowSlicing {
   def calculateDataFlowSlice(cpg: Cpg, config: DataFlowConfig): Option[DataFlowSlice] = {
     implicit val implicitConfig: DataFlowConfig = config
 
-    val exec = config.parallelism match
-      case Some(parallelism) if parallelism == 1 => Executors.newSingleThreadExecutor()
-      case Some(parallelism) if parallelism > 1  => Executors.newWorkStealingPool(parallelism)
-      case _                                     => Executors.newWorkStealingPool()
-
+    val exec = poolFromConfig(config)
     (config.fileFilter match {
       case Some(fileName) => cpg.file.nameExact(fileName).method.call
       case None           => cpg.call

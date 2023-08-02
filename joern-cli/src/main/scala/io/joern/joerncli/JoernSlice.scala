@@ -15,7 +15,7 @@ object JoernSlice {
 
   import io.joern.dataflowengineoss.slicing.*
 
-  private val configParser = new scopt.OptionParser[BaseConfig]("joern-slice") {
+  private val configParser = new scopt.OptionParser[BaseConfig[_]]("joern-slice") {
     head("Extract various slices from the CPG.")
     help("help")
     arg[String]("cpg")
@@ -153,7 +153,7 @@ object JoernSlice {
     }
   }
 
-  private def generateTempCpg(config: BaseConfig): Try[String] = {
+  private def generateTempCpg(config: BaseConfig[_]): Try[String] = {
     val tmpFile = File.newTemporaryFile("joern-slice", ".bin")
     println(s"Generating CPG from code at ${config.inputPath.pathAsString}")
 
@@ -168,7 +168,7 @@ object JoernSlice {
       }
   }
 
-  private def parseConfig(args: Array[String]): Option[BaseConfig] =
+  private def parseConfig(args: Array[String]): Option[BaseConfig[_]] =
     configParser.parse(args, DefaultSliceConfig())
 
   private def saveSlice(outFile: File, programSlice: ProgramSlice): Unit = {

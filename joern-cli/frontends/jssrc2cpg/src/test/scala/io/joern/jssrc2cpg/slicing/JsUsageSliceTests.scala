@@ -3,9 +3,9 @@ package io.joern.jssrc2cpg.slicing
 import io.joern.dataflowengineoss.slicing.*
 import io.joern.jssrc2cpg.testfixtures.DataFlowCodeToCpgSuite
 
-class JsSliceTests extends DataFlowCodeToCpgSuite {
+class JsUsageSliceTests extends DataFlowCodeToCpgSuite {
 
-  private val config = UsagesConfig(excludeOperatorCalls = true).withParallelism(1).asInstanceOf[UsagesConfig]
+  private val config = UsagesConfig(excludeOperatorCalls = true).withParallelism(1)
 
   "extracting a usage slice from a JavaScript module" should {
 
@@ -49,17 +49,16 @@ class JsSliceTests extends DataFlowCodeToCpgSuite {
       "main.js"
     )
 
-    val programSlice =
-      UsageSlicing
-        .calculateUsageSlice(cpg, config)
-        .asInstanceOf[ProgramUsageSlice]
+    val programSlice = UsageSlicing.calculateUsageSlice(cpg, config)
 
     "extract 'express.js' slice" in {
       val slice = programSlice.objectSlices.find(x => x.fullName == "main.js::program").flatMap(_.slices.headOption).get
       slice.definedBy shouldBe Some(CallDef("express", "ANY", Option("express"), Option(2), Option(12)))
       slice.targetObj shouldBe LocalDef("app", "express:<returnValue>")
 
-      val List(inv1, inv2) = slice.invokedCalls
+      val inv1 = slice.invokedCalls.find(_.callName == "get").get
+      val inv2 = slice.invokedCalls.find(_.callName == "listen").get
+
       inv1.callName shouldBe "get"
       inv1.paramTypes shouldBe List("__ecma.String", "LAMBDA")
       inv1.returnType shouldBe "ANY"
@@ -68,15 +67,14 @@ class JsSliceTests extends DataFlowCodeToCpgSuite {
       inv2.paramTypes shouldBe List("__ecma.Number", "LAMBDA")
       inv2.returnType shouldBe "ANY"
 
-      val List(arg1, arg2) = slice.argToCalls
+      val arg1 = slice.argToCalls.find(_.callName == "log").get
+      val arg2 = slice.argToCalls.find(_.callName == "debug").get
 
       arg1.position shouldBe Right(1)
-      arg1.callName shouldBe "log"
       arg1.paramTypes shouldBe List("express:<returnValue>")
       arg1.returnType shouldBe "ANY"
 
       arg2.position shouldBe Right(1)
-      arg2.callName shouldBe "debug"
       arg2.paramTypes shouldBe List("express:<returnValue>")
       arg2.returnType shouldBe "ANY"
     }
@@ -97,17 +95,14 @@ class JsSliceTests extends DataFlowCodeToCpgSuite {
       )
       slice.targetObj shouldBe LocalDef("c", "main.js::program:Car")
 
-      val List(inv1) = slice.invokedCalls
-      inv1.callName shouldBe "rev"
-      inv1.paramTypes shouldBe List.empty
-      inv1.returnType shouldBe "ANY"
+      val inv1 = slice.invokedCalls.find(_.callName == "Car").get
+      val inv2 = slice.invokedCalls.find(_.callName == "rev").get
 
-      val List(arg1: ObservedCallWithArgPos) = slice.argToCalls
+      inv1.paramTypes shouldBe List("__ecma.String", "__ecma.Number")
+      inv1.returnType shouldBe "main.js::program:Car"
 
-      arg1.position shouldBe Right(1)
-      arg1.callName shouldBe "Car"
-      arg1.paramTypes shouldBe List("__ecma.String", "__ecma.Number")
-      arg1.returnType shouldBe "main.js::program:Car"
+      inv2.paramTypes shouldBe List.empty
+      inv2.returnType shouldBe "ANY"
     }
 
   }
@@ -138,10 +133,7 @@ class JsSliceTests extends DataFlowCodeToCpgSuite {
       "main.js"
     )
 
-    val programSlice =
-      UsageSlicing
-        .calculateUsageSlice(cpg, config)
-        .asInstanceOf[ProgramUsageSlice]
+    val programSlice = UsageSlicing.calculateUsageSlice(cpg, config)
 
     "extract 'y' local variable" in {
       val slice =
@@ -149,9 +141,8 @@ class JsSliceTests extends DataFlowCodeToCpgSuite {
       slice.targetObj shouldBe ParamDef("y", "ANY", 1, Some(14), Some(13))
       slice.definedBy shouldBe Option(ParamDef("y", "ANY", 1, Some(14), Some(13)))
 
-      val List(inv1) = slice.invokedCalls
+      val inv1 = slice.invokedCalls.find(_.callName == "getA").get
 
-      inv1.callName shouldBe "getA"
       inv1.resolvedMethod shouldBe Some("main.js::program:Foo:getA")
       inv1.paramTypes shouldBe List.empty
       inv1.returnType shouldBe "ANY"
@@ -164,19 +155,16 @@ class JsSliceTests extends DataFlowCodeToCpgSuite {
         CallDef("new Foo", "main.js::program:Foo", Some("main.js::program:Foo"), Some(17), Some(10))
       )
 
-      val List(arg1, arg2) = slice.argToCalls
+      val inv1 = slice.invokedCalls.find(_.callName == "Foo").get
+
+      inv1.callName shouldBe "Foo"
+      inv1.resolvedMethod shouldBe Some("main.js::program:Foo")
+      inv1.paramTypes shouldBe List("__ecma.Number", "__ecma.Number")
+      inv1.returnType shouldBe "main.js::program:Foo"
+
+      val arg1 = slice.argToCalls.find(_.callName == "bar").get
 
       arg1 shouldBe ObservedCallWithArgPos(
-        "Foo",
-        Some("main.js::program:Foo"),
-        List("__ecma.Number", "__ecma.Number"),
-        "main.js::program:Foo",
-        Right(1),
-        Some(17),
-        Some(6)
-      )
-
-      arg2 shouldBe ObservedCallWithArgPos(
         "bar",
         Some("main.js::program:bar"),
         List("main.js::program:Foo"),
