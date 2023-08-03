@@ -18,17 +18,12 @@ import scala.util.Try
   */
 class AntlrParser(filename: String) {
 
-  private val logger         = LoggerFactory.getLogger(getClass)
-  private val erroneousLines = ArrayBuffer[Int]()
-  var parser: RubyParser     = generateParser()
+  private val logger      = LoggerFactory.getLogger(getClass)
+  private val sourceLines = IOUtils.readLinesInFile(Paths.get(filename)).to(ArrayBuffer)
+  var parser: RubyParser  = generateParser()
 
   private def generateParser(): RubyParser = {
-    val inputString = IOUtils
-      .readLinesInFile(Paths.get(filename))
-      .zipWithIndex
-      .filterNot { case (_, i) => erroneousLines.contains(i + 1) }
-      .map(_._1)
-      .mkString(System.lineSeparator)
+    val inputString = sourceLines.mkString(System.lineSeparator)
     val charStream  = CharStreams.fromString(inputString)
     val lexer       = new RubyLexer(charStream)
     val tokenStream = new CommonTokenStream(lexer)
@@ -43,7 +38,8 @@ class AntlrParser(filename: String) {
     var lastError = ErroneousLineListener.INSTANCE.getLastErrorAndReset
     while (lastError != -1) {
       logger.warn(s"Erroneous line reported at $lastError, removing and re-parsing")
-      erroneousLines.addOne(lastError)
+      sourceLines.remove(lastError - 1)
+      sourceLines.insert(lastError - 1, "")
       parser = generateParser()
       result = Try(parser.program())
       lastError = ErroneousLineListener.INSTANCE.getLastErrorAndReset
