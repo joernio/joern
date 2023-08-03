@@ -608,4 +608,24 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
       c.methodFullName shouldBe Operators.notNullAssert
     }
   }
+
+  "CPG for code with destructuring expression with a _when_ expression RHS" should {
+    val cpg = code("""
+        |package mypkg
+        |fun f1() {
+        |    data class Entry(val p: String, val q: String)
+        |    val (p, q) =
+        |        when(Random(1).nextInt()) {
+        |            1 -> Entry("p1", "q1")
+        |            else -> Entry("pelse", "qelse")
+        |        }
+        |}
+        |""".stripMargin)
+
+    "should contain an `when`-operator CALL node for the RHS" in {
+      val List(c: Call) = cpg.call.methodFullName("<operator>.when").l
+      c.methodFullName shouldBe "<operator>.when"
+    }
+  }
+
 }

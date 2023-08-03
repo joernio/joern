@@ -16,7 +16,7 @@ libraryDependencies ++= Seq(
   "com.michaelpollmeier"       % "versionsort"       % "1.0.11",
   "io.circe"                  %% "circe-core"        % Versions.circe,
   "io.circe"                  %% "circe-generic"     % Versions.circe,
-  "io.circe"                  %% "circe-parser"      % Versions.circe,
+  "io.circe"                  %% "circe-parser"      % Versions.circe
 )
 
 scalacOptions ++= Seq(
