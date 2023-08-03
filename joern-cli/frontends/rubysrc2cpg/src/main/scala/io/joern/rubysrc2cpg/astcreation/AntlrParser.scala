@@ -1,25 +1,51 @@
 package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.parser.{RubyLexer, RubyParser}
+import io.shiftleft.utils.IOUtils
+import org.antlr.v4.runtime.*
 import org.antlr.v4.runtime.atn.ATN
 import org.antlr.v4.runtime.dfa.DFA
-import org.antlr.v4.runtime.{CharStreams, CommonTokenStream}
 import org.slf4j.LoggerFactory
 
+import java.nio.file.Paths
+import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
 
-/** A consumable wrapper for the RubyParser class used to parse the given file and be disposed thereafter.
+/** A consumable wrapper for the RubyParser class used to parse the given file and be disposed thereafter. This includes
+  * a "hacky" recovery of the parser when unsupported constructs are encountered by simply not parsing those lines.
   * @param filename
   *   the file path to the file to be parsed.
   */
 class AntlrParser(filename: String) {
 
-  private val charStream  = CharStreams.fromFileName(filename)
-  private val lexer       = new RubyLexer(charStream)
-  private val tokenStream = new CommonTokenStream(lexer)
-  val parser: RubyParser  = new RubyParser(tokenStream)
+  private val logger      = LoggerFactory.getLogger(getClass)
+  private val sourceLines = IOUtils.readLinesInFile(Paths.get(filename)).to(ArrayBuffer)
+  var parser: RubyParser  = generateParser()
 
-  def parse(): Try[RubyParser.ProgramContext] = Try(parser.program())
+  private def generateParser(): RubyParser = {
+    val inputString = sourceLines.mkString(System.lineSeparator)
+    val charStream  = CharStreams.fromString(inputString)
+    val lexer       = new RubyLexer(charStream)
+    val tokenStream = new CommonTokenStream(lexer)
+    val parser      = new RubyParser(tokenStream)
+    parser.removeErrorListeners()
+    parser.addErrorListener(ErroneousLineListener.INSTANCE)
+    parser
+  }
+
+  def parse(): Try[RubyParser.ProgramContext] = {
+    var result    = Try(parser.program())
+    var lastError = ErroneousLineListener.INSTANCE.getLastErrorAndReset
+    while (lastError != -1) {
+      logger.warn(s"Erroneous line reported at $lastError, removing and re-parsing")
+      sourceLines.remove(lastError - 1)
+      sourceLines.insert(lastError - 1, "")
+      parser = generateParser()
+      result = Try(parser.program())
+      lastError = ErroneousLineListener.INSTANCE.getLastErrorAndReset
+    }
+    result
+  }
 
 }
 
@@ -65,4 +91,37 @@ class ResourceManagedParser(clearLimit: Double) extends AutoCloseable {
   }
 
   override def close(): Unit = clearDFA()
+}
+
+private class ErroneousLineListener extends BaseErrorListener {
+
+  private val logger         = LoggerFactory.getLogger(getClass)
+  private var lastError: Int = -1
+
+  def getLastErrorAndReset: Int = {
+    val tmp = lastError
+    lastError = -1
+    tmp
+  }
+
+  override def syntaxError(
+    recognizer: Recognizer[_, _],
+    offendingSymbol: Any,
+    line: Int,
+    charPositionInLine: Int,
+    msg: String,
+    e: RecognitionException
+  ): Unit = {
+    val tokenString = offendingSymbol match
+      case x: CommonToken => x.getText
+      case x              => x.getClass
+
+    lastError = line
+    logger.warn(s"$msg. Offending symbol '$tokenString' at $line:$charPositionInLine.")
+  }
+
+}
+
+object ErroneousLineListener {
+  val INSTANCE: ErroneousLineListener = new ErroneousLineListener()
 }
