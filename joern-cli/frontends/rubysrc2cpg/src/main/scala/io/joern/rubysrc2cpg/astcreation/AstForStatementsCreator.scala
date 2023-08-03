@@ -350,27 +350,41 @@ trait AstForStatementsCreator {
     }
   }
 
-  protected def astForBlock(ctx: BlockContext): Ast = ctx match
-    case ctx: DoBlockBlockContext    => astForDoBlock(ctx.doBlock())
-    case ctx: BraceBlockBlockContext => astForBraceBlock(ctx.braceBlock())
+  protected def astForBlock(ctx: BlockContext, blockMethodName: Option[String] = None): Ast = ctx match
+    case ctx: DoBlockBlockContext    => astForDoBlock(ctx.doBlock(), blockMethodName)
+    case ctx: BraceBlockBlockContext => astForBraceBlock(ctx.braceBlock(), blockMethodName)
 
   private def astForBlockHelper(
     ctx: ParserRuleContext,
     blockParamCtx: Option[BlockParameterContext],
-    compoundStmtCtx: CompoundStatementContext
+    compoundStmtCtx: CompoundStatementContext,
+    blockMethodName: Option[String] = None
   ) = {
-    val blockNode_    = blockNode(ctx, ctx.getText, Defines.Any)
-    val blockBodyAst  = astForCompoundStatement(compoundStmtCtx)
-    val blockParamAst = blockParamCtx.flatMap(astForBlockParameterContext)
-    blockAst(blockNode_, blockBodyAst.toList ++ blockParamAst)
+    blockMethodName match {
+      case Some(blockMethodName) =>
+        astForBlockMethod(
+          compoundStmtCtx.statements(),
+          blockParamCtx,
+          blockMethodName,
+          line(compoundStmtCtx).head,
+          lineEnd(compoundStmtCtx).head,
+          column(compoundStmtCtx).head,
+          columnEnd(compoundStmtCtx).head
+        ).head
+      case None =>
+        val blockNode_    = blockNode(ctx, ctx.getText, Defines.Any)
+        val blockBodyAst  = astForCompoundStatement(compoundStmtCtx)
+        val blockParamAst = blockParamCtx.flatMap(astForBlockParameterContext)
+        blockAst(blockNode_, blockBodyAst.toList ++ blockParamAst)
+    }
   }
 
-  protected def astForDoBlock(ctx: DoBlockContext): Ast = {
-    astForBlockHelper(ctx, Option(ctx.blockParameter), ctx.bodyStatement().compoundStatement())
+  protected def astForDoBlock(ctx: DoBlockContext, blockMethodName: Option[String] = None): Ast = {
+    astForBlockHelper(ctx, Option(ctx.blockParameter), ctx.bodyStatement().compoundStatement(), blockMethodName)
   }
 
-  protected def astForBraceBlock(ctx: BraceBlockContext): Ast = {
-    astForBlockHelper(ctx, Option(ctx.blockParameter), ctx.bodyStatement().compoundStatement())
+  protected def astForBraceBlock(ctx: BraceBlockContext, blockMethodName: Option[String] = None): Ast = {
+    astForBlockHelper(ctx, Option(ctx.blockParameter), ctx.bodyStatement().compoundStatement(), blockMethodName)
   }
 
   // TODO: This class shouldn't be required and will eventually be phased out.
