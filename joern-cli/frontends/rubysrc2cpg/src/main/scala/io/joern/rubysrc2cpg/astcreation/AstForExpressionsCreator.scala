@@ -106,6 +106,8 @@ trait AstForExpressionsCreator { this: AstCreator =>
     case ctx: NumericLiteralLiteralContext    => Seq(astForNumericLiteral(ctx.numericLiteral()))
     case ctx: SymbolLiteralContext            => astForSymbol(ctx.symbol())
     case ctx: RegularExpressionLiteralContext => Seq(astForRegularExpressionLiteral(ctx))
+    case ctx: NonExpandedQuotedRegularExpressionLiteralContext =>
+      Seq(astForNonExpandedQuotedRegularExpressionLiteral(ctx))
   }
 
   protected def astForSymbol(ctx: SymbolContext): Seq[Ast] = {
