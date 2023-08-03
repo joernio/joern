@@ -526,7 +526,7 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
   "empty `%r` regex literals" should "be recognized as such" in {
     val eg = Seq("%r()", "%r[]", "%r{}", "%r<>", "%r##", "%r!!", "%r--", "%r@@", "%r++", "%r**", "%r//", "%r&&")
     all(eg.map(tokenize)) shouldBe Seq(
-      QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_LITERAL_START,
+      QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_START,
       QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_END,
       EOF
     )
@@ -536,7 +536,7 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     val eg =
       Seq("%r(x)", "%r[y]", "%r{z}", "%r<w>", "%r#a#", "%r!b!", "%r-_-", "%r@c@", "%r+d+", "%r*e*", "%r/#/", "%r&!&")
     all(eg.map(tokenize)) shouldBe Seq(
-      QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_LITERAL_START,
+      QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_START,
       QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_CHARACTER,
       QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_END,
       EOF
@@ -559,7 +559,7 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       "%r&\\&&"
     )
     all(eg.map(tokenize)) shouldBe Seq(
-      QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_LITERAL_START,
+      QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_START,
       QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_CHARACTER,
       QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_END,
       EOF
@@ -569,7 +569,7 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
   "nested `%r` regex literals" should "be recognized as such" in {
     val eg = Seq("%r(()())", "%r[[][]]", "%r{{}{}}", "%r<<><>>")
     all(eg.map(tokenize)) shouldBe Seq(
-      QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_LITERAL_START,
+      QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_START,
       QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_CHARACTER,
       QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_CHARACTER,
       QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_CHARACTER,

@@ -294,6 +294,54 @@ class RegexTests extends RubyParserAbstractTest {
     }
   }
 
+  "A quoted non-interpolated (`%r`) regex literal" when {
+
+    "by itself and using the `{`-`}` delimiters" should {
+
+      "be parsed as a primary expression" in {
+        val code = "%r{a-z}"
+        printAst(_.primary(), code) shouldEqual
+          """LiteralPrimary
+            | NonExpandedQuotedRegularExpressionLiteral
+            |  %r{
+            |  a
+            |  -
+            |  z
+            |  }""".stripMargin
+      }
+    }
+
+    "by itself and using the `<`-`>` delimiters" should {
+
+      "be parsed as a primary expression" in {
+        val code = "%r<eu|us>"
+        printAst(_.primary(), code) shouldEqual
+          """LiteralPrimary
+            | NonExpandedQuotedRegularExpressionLiteral
+            |  %r<
+            |  e
+            |  u
+            |  |
+            |  u
+            |  s
+            |  >""".stripMargin
+      }
+    }
+
+    "by itself, empty and using the `[`-`]` delimiters" should {
+
+      "be parsed as a primary expression" in {
+        val code = "%r[]"
+        printAst(_.primary(), code) shouldEqual
+          """LiteralPrimary
+            | NonExpandedQuotedRegularExpressionLiteral
+            |  %r[
+            |  ]""".stripMargin
+      }
+    }
+
+  }
+
   "A (numeric literal)-interpolated regex literal" when {
 
     "by itself" should {

@@ -563,6 +563,9 @@ literal
     :   numericLiteral                                                                                              # numericLiteralLiteral
     |   symbol                                                                                                      # symbolLiteral
     |   REGULAR_EXPRESSION_START REGULAR_EXPRESSION_BODY? REGULAR_EXPRESSION_END                                    # regularExpressionLiteral
+    |   QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_START
+        QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_CHARACTER*
+        QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_END                                                                  # nonExpandedQuotedRegularExpressionLiteral
     ;
     
 symbol
