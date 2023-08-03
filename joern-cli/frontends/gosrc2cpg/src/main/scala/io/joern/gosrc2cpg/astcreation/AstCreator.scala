@@ -30,7 +30,7 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)
   protected val scope: Scope[String, (NewNode, String), NewNode] = new Scope()
   protected val fullyQualifiedPackage                            = new ThreadLocal[String]
 
-  protected val lineNumberMapping = positionLookupTables(parserResult.fileContent)
+  protected val lineNumberMapping: Map[Int, String] = positionLookupTables(parserResult.fileContent)
 
   override def createAst(): DiffGraphBuilder = {
     val rootNode = createParserNodeInfo(parserResult.json)
@@ -80,23 +80,15 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)
 
   protected def astForNode(nodeInfo: ParserNodeInfo): Seq[Ast] = {
     nodeInfo.node match {
-      case GenDecl     => astForGenDecl(nodeInfo)
-      case BasicLit    => astForLiteral(nodeInfo)
-      case Ident       => astForIdentifier(nodeInfo)
-      case FuncDecl    => astForFuncDecl(nodeInfo)
-      case _: BaseExpr => astForExpression(nodeInfo)
-      case Unknown     => Seq(Ast())
-      case _           => Seq()
+      case GenDecl          => astForGenDecl(nodeInfo)
+      case FuncDecl         => astForFuncDecl(nodeInfo)
+      case _: BasePrimitive => Seq(astForPrimitive(nodeInfo))
+      case _: BaseExpr      => astsForExpression(nodeInfo)
+      case _: BaseStmt      => astsForStatement(nodeInfo)
+      case _                => Seq()
     }
   }
   protected def astForNode(json: Value): Seq[Ast] = {
     astForNode(createParserNodeInfo(json))
   }
-  override protected def line(node: ParserNodeInfo): Option[Integer] = node.lineNumber
-
-  override protected def column(node: ParserNodeInfo): Option[Integer] = node.columnNumber
-
-  override protected def lineEnd(node: ParserNodeInfo): Option[Integer] = node.lineNumberEnd
-
-  override protected def columnEnd(node: ParserNodeInfo): Option[Integer] = node.columnNumberEnd
 }

@@ -410,4 +410,122 @@ class AstCreationPassTests extends GoCodeToCpgSuite {
       }
     }
   }
+
+  "be correct for for-loop nested structure" in {
+    val cpg = code("""
+        |package main
+        |import "fmt"
+        |func main() {
+        |   var i, j int
+        |   counter := 0
+        |   for i = 2; i < 100; i++ {
+        |      for j = 2; j <= (i/j); j++ {
+        |         if(i%j==0) {
+        |            counter++
+        |         }
+        |      }
+        |   }
+        |}
+        |""".stripMargin)
+
+    inside(cpg.method.name("main").controlStructure.l) { case List(outerForStmt, innerForStmt, ifStmt) =>
+      outerForStmt.controlStructureType shouldBe ControlStructureTypes.FOR
+      inside(outerForStmt.astChildren.order(1).l) { case List(initializerBlock: Block) =>
+        initializerBlock.astChildren.isCall.code.l shouldBe List("i = 2")
+      }
+      inside(outerForStmt.astChildren.order(2).l) { case List(lessThanCall: Call) =>
+        lessThanCall.code shouldBe "i < 100"
+      }
+      inside(outerForStmt.astChildren.order(3).l) { case List(increCall: Call) =>
+        increCall.code shouldBe "i++"
+      }
+
+      outerForStmt.astChildren.ast.isControlStructure.l shouldBe List(innerForStmt, ifStmt)
+
+      inside(innerForStmt.astChildren.order(1).l) { case List(initializerBlock: Block) =>
+        initializerBlock.astChildren.isCall.code.l shouldBe List("j = 2")
+      }
+      inside(innerForStmt.astChildren.order(2).l) { case List(lessThanCall: Call) =>
+        lessThanCall.code shouldBe "j <= (i/j)"
+      }
+      inside(innerForStmt.astChildren.order(3).l) { case List(increCall: Call) =>
+        increCall.code shouldBe "j++"
+      }
+
+      innerForStmt.astChildren.ast.isControlStructure.l shouldBe List(ifStmt)
+    }
+  }
+
+  "ast creation for break, continue, goto" should {
+
+    "be correct" in {
+
+      val cpg = code("""
+          |package main
+          |
+          |func main() {
+          |   var b int
+          |   for a := 0; a < 10; a++ {
+          |       b += a
+          |       if (b == 8) {
+          |         break;
+          |       }
+          |       if (b < 3) {
+          |         continue;
+          |       }
+          |       if (b == 5) {
+          |          goto End
+          |       }
+          |   }
+          |  End:
+          |     b = 9
+          |}
+          |""".stripMargin)
+
+      inside(cpg.method.name("main").controlStructure.l) {
+        case List(forStmt, ifStmtFirst, breakStmt, ifStmtSecond, continueStmt, ifStmtThird, gotoStmt) =>
+          breakStmt.controlStructureType shouldBe ControlStructureTypes.BREAK
+          breakStmt.code shouldBe "break"
+
+          continueStmt.controlStructureType shouldBe ControlStructureTypes.CONTINUE
+          continueStmt.code shouldBe "continue"
+
+          gotoStmt.controlStructureType shouldBe ControlStructureTypes.GOTO
+          gotoStmt.code shouldBe "goto End"
+      }
+    }
+
+  }
+
+  // TODO Need to handle `fallthrough` statements
+  "ast creation for fallthrough" ignore {
+    "be correct" in {
+
+      val cpg = code("""package main
+                       |import "fmt"
+                       |func main() {
+                       |	num := 2
+                       |
+                       |	switch num {
+                       |	case 1:
+                       |		fmt.Println("Number is 1.")
+                       |	case 2:
+                       |		fmt.Println("Number is 2.")
+                       |		fallthrough
+                       |	case 3:
+                       |		fmt.Println("Number is 3.")
+                       |	default:
+                       |		fmt.Println("Number is not 1, 2, or 3.")
+                       |	}
+                       |}""".stripMargin)
+
+      inside(cpg.method("main").controlStructure.l) { case List(switchStmt, fallThrough) =>
+        fallThrough.controlStructureType shouldBe "fallthrough"
+        fallThrough.code shouldBe "fallthrough"
+
+      }
+
+    }
+  }
+
 }
