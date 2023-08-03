@@ -23,7 +23,7 @@ class AntlrParser(filename: String) {
   var parser: RubyParser  = generateParser()
 
   private def generateParser(): RubyParser = {
-    val inputString = sourceLines.mkString("\n")
+    val inputString = sourceLines.mkString(System.lineSeparator)
     val charStream  = CharStreams.fromString(inputString)
     val lexer       = new RubyLexer(charStream)
     val tokenStream = new CommonTokenStream(lexer)
