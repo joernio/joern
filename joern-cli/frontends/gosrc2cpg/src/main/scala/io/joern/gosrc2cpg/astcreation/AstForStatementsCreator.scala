@@ -17,8 +17,9 @@ trait AstForStatementsCreator { this: AstCreator =>
     scope.pushNewScope(newBlockNode)
     var currOrder = 1
     val childAsts =
-      blockStmt.json(ParserKeys.List).arrOpt.getOrElse(List()).arr.map(createParserNodeInfo).flatMap { parserNode =>
-        val r = astsForStatement(parserNode, currOrder)
+      blockStmt.json(ParserKeys.List).arrOpt.getOrElse(List()).arr.flatMap { parserJsonValue =>
+        val parserNode = createParserNodeInfo(parserJsonValue)
+        val r          = astsForStatement(parserNode, currOrder)
         currOrder = currOrder + r.length
         r
       }
@@ -33,6 +34,7 @@ trait AstForStatementsCreator { this: AstCreator =>
   protected final def astsForStatement(statement: ParserNodeInfo, argIndex: Int = -1): Seq[Ast] = {
     statement.node match {
       case AssignStmt     => astForAssignStatement(statement)
+      case BranchStmt     => Seq(astForBranchStatement(statement))
       case BlockStmt      => Seq(astForBlockStatement(statement, argIndex))
       case CaseClause     => astForCaseClause(statement)
       case DeclStmt       => astForDeclStatement(statement)
@@ -45,6 +47,7 @@ trait AstForStatementsCreator { this: AstCreator =>
       case TypeAssertExpr => astForNode(statement.json(ParserKeys.X))
       case TypeSwitchStmt => Seq(astForTypeSwitchStatement(statement))
       case Unknown        => Seq(Ast())
+      case _: BaseStmt    => Seq(Ast())
       case _              => astForNode(statement.json)
     }
   }
@@ -124,7 +127,7 @@ trait AstForStatementsCreator { this: AstCreator =>
   private def astForConditionExpression(condStmt: ParserNodeInfo, explicitArgumentIndex: Option[Int] = None): Ast = {
     val ast = condStmt.node match {
       case ParenExpr   => astForNode(condStmt.json(ParserKeys.X)).headOption.getOrElse(Ast())
-      case _: BaseExpr => astForExpression(condStmt).headOption.getOrElse(Ast())
+      case _: BaseExpr => astsForExpression(condStmt).headOption.getOrElse(Ast())
       case _           => astsForStatement(condStmt).headOption.getOrElse(Ast())
     }
     explicitArgumentIndex.foreach { i =>
@@ -237,5 +240,18 @@ trait AstForStatementsCreator { this: AstCreator =>
     val initAst = astForNode(rangeStmt.json(ParserKeys.X))
     val stmtAst = astsForStatement(rangeStmt.json(ParserKeys.Body))
     controlStructureAst(forNode, None, initAst ++ declAst ++ stmtAst)
+  }
+
+  private def astForBranchStatement(branchStmt: ParserNodeInfo): Ast = {
+    branchStmt.json(ParserKeys.Tok).str match {
+      case "break"    => Ast(controlStructureNode(branchStmt, ControlStructureTypes.BREAK, branchStmt.code))
+      case "continue" => Ast(controlStructureNode(branchStmt, ControlStructureTypes.CONTINUE, branchStmt.code))
+      case "goto"     =>
+        // To update the cache of parserNode with the labelled statement
+        Try(createParserNodeInfo(branchStmt.json(ParserKeys.Label)(ParserKeys.Obj)(ParserKeys.Decl)))
+        Ast(controlStructureNode(branchStmt, ControlStructureTypes.GOTO, branchStmt.code))
+      case "fallthrough" => // TODO handling for FALLTHROUGH
+        Ast()
+    }
   }
 }

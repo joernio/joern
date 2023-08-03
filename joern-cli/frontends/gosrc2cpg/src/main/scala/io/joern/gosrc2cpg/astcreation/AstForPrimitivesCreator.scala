@@ -1,5 +1,6 @@
 package io.joern.gosrc2cpg.astcreation
 
+import io.joern.gosrc2cpg.parser.ParserAst.{BasePrimitive, BasicLit, Ident}
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.Ast
 
@@ -7,14 +8,22 @@ import scala.util.Try
 
 trait AstForPrimitivesCreator { this: AstCreator =>
 
-  protected def astForLiteral(stringLiteral: ParserNodeInfo): Seq[Ast] = {
+  protected def astForPrimitive(primitive: ParserNodeInfo): Ast = {
+    primitive.node match {
+      case BasicLit => astForLiteral(primitive)
+      case Ident    => astForIdentifier(primitive)
+      case _        => Ast()
+    }
+  }
+
+  private def astForLiteral(stringLiteral: ParserNodeInfo): Ast = {
     val code = stringLiteral.json(ParserKeys.Value).str
     // TODO May need to revisit this
     val typ = getTypeOfToken(stringLiteral)
-    Seq(Ast(literalNode(stringLiteral, code, typ)))
+    Ast(literalNode(stringLiteral, code, typ))
   }
 
-  protected def astForIdentifier(ident: ParserNodeInfo): Seq[Ast] = {
+  private def astForIdentifier(ident: ParserNodeInfo): Ast = {
     val identifierName = ident.json(ParserKeys.Name).str
 
     val variableOption = scope.lookupVariable(identifierName)
@@ -25,8 +34,8 @@ trait AstForPrimitivesCreator { this: AstCreator =>
     val node = identifierNode(ident, identifierName, ident.json(ParserKeys.Name).str, identifierType)
     variableOption match {
       case Some((variable, _)) =>
-        Seq(Ast(node).withRefEdge(node, variable))
-      case None => Seq(Ast(node))
+        Ast(node).withRefEdge(node, variable)
+      case None => Ast(node)
     }
   }
 
@@ -38,8 +47,8 @@ trait AstForPrimitivesCreator { this: AstCreator =>
       case "IMAG"   => "imag"
       case "CHAR"   => "char"
       case "STRING" => "string"
-      case _        => "ANY"
-    }).toOption.getOrElse("ANY")
+      case _        => Defines.anyTypeName
+    }).toOption.getOrElse(Defines.anyTypeName)
   }
 
 }

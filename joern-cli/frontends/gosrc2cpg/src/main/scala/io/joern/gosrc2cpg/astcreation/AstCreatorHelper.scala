@@ -19,6 +19,7 @@ trait AstCreatorHelper { this: AstCreator =>
   private val parserNodeCache = mutable.TreeMap[Long, ParserNodeInfo]()
 
   protected def createParserNodeInfo(json: Value): ParserNodeInfo = {
+    // TODO This can throw error if nodeReferenceId is not present in Cache, but have kept it open for now to know all the different cases
     Try(json(ParserKeys.NodeReferenceId).num.toLong) match
       case Failure(_) =>
         val c     = shortenCode(code(json).toOption.getOrElse(""))
@@ -98,4 +99,12 @@ trait AstCreatorHelper { this: AstCreator =>
 
   protected def fixQualifiedName(name: String): String =
     name.stripPrefix(Defines.qualifiedNameSeparator).replace(Defines.qualifiedNameSeparator, ".")
+
+  override protected def line(node: ParserNodeInfo): Option[Integer] = node.lineNumber
+
+  override protected def column(node: ParserNodeInfo): Option[Integer] = node.columnNumber
+
+  override protected def lineEnd(node: ParserNodeInfo): Option[Integer] = node.lineNumberEnd
+
+  override protected def columnEnd(node: ParserNodeInfo): Option[Integer] = node.columnNumberEnd
 }

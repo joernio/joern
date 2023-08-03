@@ -8,13 +8,13 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 
 trait AstForExpressionCreator { this: AstCreator =>
-  def astForExpression(expr: ParserNodeInfo): Seq[Ast] = {
+  def astsForExpression(expr: ParserNodeInfo): Seq[Ast] = {
     expr.node match {
       case BinaryExpr => astForBinaryExpr(expr)
       case StarExpr   => astForStarExpr(expr)
       case UnaryExpr  => astForUnaryExpr(expr)
-      case ParenExpr  => astForExpression(createParserNodeInfo(expr.json(ParserKeys.X)))
-      case _          => Seq()
+      case ParenExpr  => astsForExpression(createParserNodeInfo(expr.json(ParserKeys.X)))
+      case _          => Seq(Ast())
     }
   }
 
