@@ -260,8 +260,19 @@ arrayConstructor
     |   QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_START
         nonExpandedWordArrayElements?
         QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END                                                                # nonExpandedWordArrayConstructor
+    |   QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_START
+        nonExpandedSymbolArrayElements?
+        QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END                                                                # nonExpandedSymbolArrayConstructor
+    ;
+    
+nonExpandedSymbolArrayElements
+    :   nonExpandedSymbolArrayElement (QUOTED_NON_EXPANDED_SYMBOL_ARRAY_SEPARATOR nonExpandedSymbolArrayElement)*
     ;
 
+nonExpandedSymbolArrayElement
+    :   QUOTED_NON_EXPANDED_SYMBOL_ARRAY_CHARACTER+
+    ;
+    
 nonExpandedWordArrayElements
     :   nonExpandedWordArrayElement (QUOTED_NON_EXPANDED_STRING_ARRAY_SEPARATOR nonExpandedWordArrayElement)*
     ;
