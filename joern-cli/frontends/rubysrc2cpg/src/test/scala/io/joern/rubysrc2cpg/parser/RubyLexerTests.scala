@@ -625,6 +625,18 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     )
   }
 
+  "single word `%w` string array literal containing an escaped whitespace" should "be recognized as such" in {
+    val code = """%w[x\ y]"""
+    tokenize(code) shouldBe Seq(
+      QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_START,
+      QUOTED_NON_EXPANDED_STRING_ARRAY_CHARACTER,
+      QUOTED_NON_EXPANDED_STRING_ARRAY_CHARACTER,
+      QUOTED_NON_EXPANDED_STRING_ARRAY_CHARACTER,
+      QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END,
+      EOF
+    )
+  }
+
   "empty `%i` symbol array literals" should "be recognized as such" in {
     val eg = Seq("%i()", "%i[]", "%i{}", "%i<>", "%i##", "%i!!", "%i--", "%i@@", "%i++", "%i**", "%i//", "%i&&")
     all(eg.map(tokenize)) shouldBe Seq(
