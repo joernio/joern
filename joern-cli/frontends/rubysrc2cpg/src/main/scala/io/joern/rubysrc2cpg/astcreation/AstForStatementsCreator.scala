@@ -270,7 +270,7 @@ trait AstForStatementsCreator {
       methodDefInArgument.addOne(ast)
     }
 
-    val prefixMethods = List(
+    val prefixMethods = Set(
       "attr_reader",
       "attr_writer",
       "attr_accessor",
