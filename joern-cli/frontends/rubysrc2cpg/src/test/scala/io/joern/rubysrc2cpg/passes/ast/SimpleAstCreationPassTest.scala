@@ -272,6 +272,15 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.columnNumber shouldBe Some(0)
     }
 
+    "have correct structure for a single-line quoted (%r) regular expression literal" in {
+      val cpg               = code("%r{eu|us}")
+      val List(literalNode) = cpg.literal.l
+      literalNode.typeFullName shouldBe Defines.Regexp
+      literalNode.code shouldBe "%r{eu|us}"
+      literalNode.lineNumber shouldBe Some(1)
+      literalNode.columnNumber shouldBe Some(0)
+    }
+
     "have correct structure for an empty regular expression literal used as the second argument to a call" in {
       val cpg           = code("puts(x, //)")
       val List(literal) = cpg.literal.l
