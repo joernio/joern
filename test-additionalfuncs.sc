@@ -1,4 +1,3 @@
-
 // ./joern --import test-additionalfuncs.sc
 // joern> exportMethods("workspace/src/cpg.bin", "a.txt")
 
