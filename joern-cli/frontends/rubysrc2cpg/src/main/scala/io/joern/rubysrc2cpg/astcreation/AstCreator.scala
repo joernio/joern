@@ -955,8 +955,20 @@ class AstCreator(
     callNode.name(getActualMethodName(callNode.name))
 
     if (ctx.block() != null) {
-      val blockAst = Seq(astForBlock(ctx.block()))
-      Seq(callAst(callNode, parenAst ++ blockAst))
+      val isYieldMethod = if (callNode.name.endsWith(YIELD_SUFFIX)) {
+        val lookupMethodName = callNode.name.take(callNode.name.length - YIELD_SUFFIX.length)
+        methodNamesWithYield.contains(lookupMethodName)
+      } else {
+        false
+      }
+      if (isYieldMethod) {
+        val methAst = astForBlock(ctx.block(), Some(callNode.name))
+        blockMethods.addOne(methAst)
+        Seq(callAst(callNode, parenAst))
+      } else {
+        val blockAst = Seq(astForBlock(ctx.block()))
+        Seq(callAst(callNode, parenAst ++ blockAst))
+      }
     } else
       Seq(callAst(callNode, parenAst))
   }
