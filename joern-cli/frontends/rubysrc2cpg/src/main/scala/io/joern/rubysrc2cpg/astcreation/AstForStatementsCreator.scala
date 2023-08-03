@@ -270,6 +270,17 @@ trait AstForStatementsCreator {
       methodDefInArgument.addOne(ast)
     }
 
+    val prefixMethods = Set(
+      "attr_reader",
+      "attr_writer",
+      "attr_accessor",
+      "remove_method",
+      "public_class_method",
+      "private_class_method",
+      "private",
+      "protected"
+    )
+
     val callNodes = methodIdentifierAsts.head.nodes.collect { case x: NewCall => x }
     if (callNodes.size == 1) {
       val callNode = callNodes.head
@@ -277,7 +288,7 @@ trait AstForStatementsCreator {
         resolveRequireOrLoadPath(argsAsts, callNode)
       } else if (callNode.name == "require_relative") {
         resolveRelativePath(filename, argsAsts, callNode)
-      } else if (callNode.name == "attr_accessor" || callNode.name == "private_class_method") {
+      } else if (prefixMethods.contains(callNode.name)) {
         /* we remove the method definition AST from argument and add its corresponding identifier form */
         Seq(callAst(callNode, argAstsWithoutMethods ++ methodToIdentifierAsts))
       } else {

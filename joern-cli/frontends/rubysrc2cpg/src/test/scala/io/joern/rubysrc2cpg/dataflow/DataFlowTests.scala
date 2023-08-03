@@ -2634,4 +2634,31 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     sink.reachableByFlows(source).size shouldBe 2
   }
 
+  "flow through special prefix methods" in {
+    /* We only check private_class_method here. The mechanism is similar to others:
+     *     attr_reader
+     *     attr_writer
+     *     attr_accessor
+     *     remove_method
+     *     public_class_method
+     *     private
+     *     protected
+     */
+    val cpg = code("""
+        |class Foo
+        | z = 1
+        | private_class_method def self.bar(x)
+        |   x
+        | end
+        |
+        | y = self.bar(z)
+        | puts y
+        |end
+        |""".stripMargin)
+
+    val source = cpg.identifier.name("z").l
+    val sink   = cpg.call.name("puts").l
+    sink.reachableByFlows(source).size shouldBe 2
+  }
+
 }

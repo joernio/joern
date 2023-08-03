@@ -162,5 +162,25 @@ class MethodOneTests extends RubyCode2CpgFixture {
       cpg.identifier("foo").astParent.isCallTo("private_class_method").size shouldBe 1
       cpg.method.nameExact("foo").size shouldBe 1
     }
+
+    "Function for multiple function prefixes" should {
+      val cpg = code("""
+          |class Foo
+          |  private attr_reader :bar
+          |
+          |  def bar
+          |    x
+          |  end
+          |end
+          |""".stripMargin)
+
+      "have function identifier as argument and function definition" ignore {
+        /* FIXME: We are capturing the prefixes but order in ast is private -> attr_reader -> LITERAL(bar)
+         *   We should duplicate the bar node and set parent as both methods */
+        cpg.identifier("bar").astParent.isCallTo("private").size shouldBe 1
+        cpg.identifier("bar").astParent.isCallTo("attr_reader").size shouldBe 1
+        cpg.method.nameExact("bar").size shouldBe 1
+      }
+    }
   }
 }
