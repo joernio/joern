@@ -19,7 +19,7 @@ trait AstCreatorHelper { this: AstCreator =>
   private val parserNodeCache = mutable.TreeMap[Long, ParserNodeInfo]()
 
   protected def createParserNodeInfo(json: Value): ParserNodeInfo = {
-    // TODO This can throw error is nodeReferenceId is not present in Cache, but have kept it open for now to know all the different cases
+    // TODO This can throw error if nodeReferenceId is not present in Cache, but have kept it open for now to know all the different cases
     Try(json(ParserKeys.NodeReferenceId).num.toLong) match
       case Failure(_) =>
         val c     = shortenCode(code(json).toOption.getOrElse(""))

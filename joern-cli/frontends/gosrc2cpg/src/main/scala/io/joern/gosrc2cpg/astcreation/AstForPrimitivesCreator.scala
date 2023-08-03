@@ -10,10 +10,9 @@ trait AstForPrimitivesCreator { this: AstCreator =>
 
   protected def astForPrimitive(primitive: ParserNodeInfo): Ast = {
     primitive.node match {
-      case BasicLit         => astForLiteral(primitive)
-      case Ident            => astForIdentifier(primitive)
-      case _: BasePrimitive => Ast()
-      case _                => Ast()
+      case BasicLit => astForLiteral(primitive)
+      case Ident    => astForIdentifier(primitive)
+      case _        => Ast()
     }
   }
 
