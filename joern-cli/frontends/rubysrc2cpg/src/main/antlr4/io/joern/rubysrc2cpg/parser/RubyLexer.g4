@@ -9,6 +9,7 @@ tokens {
     REGULAR_EXPRESSION_INTERPOLATION_END,
     REGULAR_EXPRESSION_START,
     QUOTED_NON_EXPANDED_STRING_LITERAL_END,
+    QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_END,
     QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END,
     QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END
 }
@@ -292,6 +293,14 @@ QUOTED_NON_EXPANDED_STRING_LITERAL_START
         pushMode(QUOTED_NON_EXPANDED_STRING_MODE);
     }
     ;
+
+QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_LITERAL_START
+    :   '%r' {!Character.isAlphabetic(_input.LA(1))}?
+    {
+        pushQuotedNonExpandedRegularExpressionDelimiter(_input.LA(1));
+        _input.consume();
+        pushMode(QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_MODE);
+    };
 
 // --------------------------------------------------------
 // String (Word) array literals
@@ -652,6 +661,41 @@ QUOTED_NON_EXPANDED_CHARACTER
             }
             else if (isQuotedNonExpandedStringOpeningDelimiter(readChar)) {
                 pushQuotedNonExpandedStringDelimiter(readChar);
+            }
+        }
+    ;
+    
+// --------------------------------------------------------
+// %r regex mode
+// --------------------------------------------------------
+
+mode QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_MODE;
+
+fragment QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_ESCAPED_CHARACTER
+    :   '\\' QUOTED_NON_EXPANDED_NON_ESCAPED_REGULAR_EXPRESSION_CHARACTER
+    ;
+
+fragment QUOTED_NON_EXPANDED_NON_ESCAPED_REGULAR_EXPRESSION_CHARACTER
+    :   ~[\r\n]
+    |   '\n' {_input.LA(1) != '\r'}?
+    ;
+
+QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_CHARACTER
+    :   QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_ESCAPED_CHARACTER
+    |   QUOTED_NON_EXPANDED_NON_ESCAPED_REGULAR_EXPRESSION_CHARACTER
+        {
+            int readChar = _input.LA(-1);
+            
+            if (isQuotedNonExpandedRegularExpressionClosingDelimiter(readChar)) {
+                popQuotedNonExpandedRegularExpressionDelimiter();
+                
+                if (isQuotedNonExpandedRegularExpressionDelimitersEmpty()) {
+                    setType(QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_END);
+                    popMode();
+                }
+            }
+            else if (isQuotedNonExpandedRegularExpressionOpeningDelimiter(readChar)) {
+                pushQuotedNonExpandedRegularExpressionDelimiter(readChar);
             }
         }
     ;
