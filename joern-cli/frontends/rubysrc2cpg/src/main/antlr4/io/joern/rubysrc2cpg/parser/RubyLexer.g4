@@ -294,7 +294,7 @@ QUOTED_NON_EXPANDED_STRING_LITERAL_START
     }
     ;
 
-QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_LITERAL_START
+QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_START
     :   '%r' {!Character.isAlphabetic(_input.LA(1))}?
     {
         pushQuotedNonExpandedRegularExpressionDelimiter(_input.LA(1));
