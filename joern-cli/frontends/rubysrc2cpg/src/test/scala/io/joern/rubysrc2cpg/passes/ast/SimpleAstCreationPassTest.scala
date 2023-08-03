@@ -1290,6 +1290,21 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       .l shouldBe List("c")
   }
 
+  "have correct structure for %i() array with two elements" in {
+    val cpg = code("x = %i(yy zz)")
+
+    val List(arrayInit)                        = cpg.call.name(Operators.arrayInitializer).l
+    val List(yyNode: Literal, zzNode: Literal) = arrayInit.argument.l
+
+    yyNode.code shouldBe "yy"
+    yyNode.argumentIndex shouldBe 1
+    yyNode.typeFullName shouldBe Defines.Symbol
+
+    zzNode.code shouldBe "zz"
+    zzNode.argumentIndex shouldBe 2
+    zzNode.typeFullName shouldBe Defines.Symbol
+  }
+
   "have correct structure parenthesised arguments in a return jump" in {
     val cpg = code("""return(value) unless item""".stripMargin)
 

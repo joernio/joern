@@ -57,8 +57,9 @@ trait AstForPrimitivesCreator { this: AstCreator =>
 
   // TODO: Return Ast instead of Seq[Ast]
   protected def astForArrayLiteral(ctx: ArrayConstructorContext): Seq[Ast] = ctx match
-    case ctx: BracketedArrayConstructorContext       => astForBracketedArrayConstructor(ctx)
-    case ctx: NonExpandedWordArrayConstructorContext => astForNonExpandedWordArrayConstructor(ctx)
+    case ctx: BracketedArrayConstructorContext         => astForBracketedArrayConstructor(ctx)
+    case ctx: NonExpandedWordArrayConstructorContext   => astForNonExpandedWordArrayConstructor(ctx)
+    case ctx: NonExpandedSymbolArrayConstructorContext => astForNonExpandedSymbolArrayConstructor(ctx)
 
   private def astForBracketedArrayConstructor(ctx: BracketedArrayConstructorContext): Seq[Ast] = {
     Option(ctx.indexingArguments)
@@ -80,5 +81,15 @@ trait AstForPrimitivesCreator { this: AstCreator =>
 
   private def astForNonExpandedWordArrayElement(ctx: NonExpandedWordArrayElementContext): Ast = {
     Ast(literalNode(ctx, ctx.getText, Defines.String, List(Defines.String)))
+  }
+
+  private def astForNonExpandedSymbolArrayConstructor(ctx: NonExpandedSymbolArrayConstructorContext): Seq[Ast] = {
+    Option(ctx.nonExpandedSymbolArrayElements)
+      .map(_.nonExpandedSymbolArrayElement.asScala.map(astForNonExpandedSymbolArrayElement).toSeq)
+      .getOrElse(Seq(astForEmptyArrayInitializer(ctx)))
+  }
+
+  private def astForNonExpandedSymbolArrayElement(ctx: NonExpandedSymbolArrayElementContext): Ast = {
+    Ast(literalNode(ctx, ctx.getText, Defines.Symbol))
   }
 }
