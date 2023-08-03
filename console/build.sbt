@@ -5,7 +5,7 @@ enablePlugins(JavaAppPackaging)
 val ScoptVersion          = "4.1.0"
 val CaskVersion           = "0.9.1"
 val CirceVersion          = "0.14.5"
-val ZeroturnaroundVersion = "1.15"
+val ZeroturnaroundVersion = "1.16"
 
 dependsOn(
   Projects.semanticcpg,
