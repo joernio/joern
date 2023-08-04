@@ -683,6 +683,24 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     )
   }
 
+  "multi-line two-word `%i` symbol array literals" should "be recognized as such" in {
+    val code =
+      """%i(
+        |x
+        |y
+        |)""".stripMargin
+    tokenize(code) shouldBe Seq(
+      QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_START,
+      QUOTED_NON_EXPANDED_SYMBOL_ARRAY_SEPARATOR,
+      QUOTED_NON_EXPANDED_SYMBOL_ARRAY_CHARACTER,
+      QUOTED_NON_EXPANDED_SYMBOL_ARRAY_SEPARATOR,
+      QUOTED_NON_EXPANDED_SYMBOL_ARRAY_CHARACTER,
+      QUOTED_NON_EXPANDED_SYMBOL_ARRAY_SEPARATOR,
+      QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END,
+      EOF
+    )
+  }
+
   "identifier used in a keyword argument" should "not be mistaken for a symbol literal" in {
     // This test exists to check if RubyLexer properly decided between COLON and SYMBOL_LITERAL
     val code = "foo(x:y)"

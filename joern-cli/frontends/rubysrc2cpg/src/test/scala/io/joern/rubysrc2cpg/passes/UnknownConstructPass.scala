@@ -58,7 +58,7 @@ class UnknownConstructPass extends RubyCode2CpgFixture {
   "an attempted fix" should {
     val cpg = code("""
         |class DerivedClass < BaseClass
-        | KEYS = %i(
+        | KEYS = %w(
         |  id1
         |  id2
         |  id3
