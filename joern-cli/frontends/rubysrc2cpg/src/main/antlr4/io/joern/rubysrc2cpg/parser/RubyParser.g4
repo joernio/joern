@@ -261,12 +261,14 @@ arrayConstructor
         nonExpandedWordArrayElements?
         QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END                                                                # nonExpandedWordArrayConstructor
     |   QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_START
+        QUOTED_NON_EXPANDED_SYMBOL_ARRAY_SEPARATOR*
         nonExpandedSymbolArrayElements?
+        QUOTED_NON_EXPANDED_SYMBOL_ARRAY_SEPARATOR*
         QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END                                                                # nonExpandedSymbolArrayConstructor
     ;
     
 nonExpandedSymbolArrayElements
-    :   nonExpandedSymbolArrayElement (QUOTED_NON_EXPANDED_SYMBOL_ARRAY_SEPARATOR nonExpandedSymbolArrayElement)*
+    :   nonExpandedSymbolArrayElement (QUOTED_NON_EXPANDED_SYMBOL_ARRAY_SEPARATOR+ nonExpandedSymbolArrayElement)*
     ;
 
 nonExpandedSymbolArrayElement

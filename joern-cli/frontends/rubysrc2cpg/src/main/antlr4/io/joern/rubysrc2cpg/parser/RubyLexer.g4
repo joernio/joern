@@ -765,6 +765,7 @@ fragment QUOTED_NON_EXPANDED_NON_ESCAPED_SYMBOL_ARRAY_CHARACTER
 
 fragment QUOTED_NON_EXPANDED_SYMBOL_ARRAY_DELIMITER
     :   [\u0009]
+    |   [\u000a]
     |   [\u000b]
     |   [\u000c]
     |   [\u000d]

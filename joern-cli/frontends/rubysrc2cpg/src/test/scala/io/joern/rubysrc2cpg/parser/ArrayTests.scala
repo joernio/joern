@@ -167,6 +167,26 @@ class ArrayTests extends RubyParserAbstractTest {
             |  ]""".stripMargin
 
       }
+
+      "it uses the %i( ) delimiters in a multi-line fashion" in {
+        val code =
+          """%i(
+            |x y
+            |z
+            |)""".stripMargin
+        printAst(_.primary(), code) shouldEqual
+          """ArrayConstructorPrimary
+            | NonExpandedSymbolArrayConstructor
+            |  %i(
+            |  NonExpandedSymbolArrayElements
+            |   NonExpandedSymbolArrayElement
+            |    x
+            |   NonExpandedSymbolArrayElement
+            |    y
+            |   NonExpandedSymbolArrayElement
+            |    z
+            |  )""".stripMargin
+      }
     }
   }
 }
