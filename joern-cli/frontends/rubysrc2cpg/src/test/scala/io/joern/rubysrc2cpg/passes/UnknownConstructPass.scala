@@ -53,4 +53,20 @@ class UnknownConstructPass extends RubyCode2CpgFixture {
     }
   }
 
+  "an attempted fix" should {
+    val cpg = code("""
+        |class DerivedClass < BaseClass
+        | KEYS = %i(
+        |  id1
+        |  id2
+        |  id3
+        | ).freeze
+        |end
+        |""".stripMargin)
+
+    "not cause an infinite loop once the last line is blanked out, at the cost of the structure" in {
+      cpg.typeDecl("DerivedClass").size shouldBe 0
+    }
+  }
+
 }
