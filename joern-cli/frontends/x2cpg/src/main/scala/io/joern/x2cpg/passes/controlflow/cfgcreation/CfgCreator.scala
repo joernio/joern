@@ -1,9 +1,10 @@
 package io.joern.x2cpg.passes.controlflow.cfgcreation
 
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, Operators}
-import io.shiftleft.semanticcpg.language._
 import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.CfgEdgeType
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, Operators}
+import io.shiftleft.semanticcpg.language.*
+import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 /** Translation of abstract syntax trees into control flow graphs
@@ -40,8 +41,10 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
   */
 class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
 
-  import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg._
-  import io.joern.x2cpg.passes.controlflow.cfgcreation.CfgCreator._
+  private val logger = LoggerFactory.getLogger(getClass)
+
+  import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.*
+  import io.joern.x2cpg.passes.controlflow.cfgcreation.CfgCreator.*
 
   /** Control flow graph definitions often feature a designated entry and exit node for each method. While these nodes
     * are no-ops from a computational point of view, they are useful to guarantee that a method has exactly one entry
@@ -201,10 +204,12 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
         // indicates how many loop levels the continue shall apply to.
         val numberOfLevels = Integer.valueOf(literal.code)
         Cfg(entryNode = Option(node), continues = List((node, numberOfLevels)))
-      case Some(_) =>
-        throw new NotImplementedError(
-          "Only jump labels and integer literals are currently supported for continue statements."
+      case Some(x) =>
+        logger.warn(
+          s"Unexpected node ${x.label} (${x.code}) from ${x.file.headOption.map(_.name).getOrElse("unknown file")}.",
+          new NotImplementedError("Only jump labels and integer literals are currently supported for continue statements.")
         )
+        Cfg(entryNode = Option(node), continues = List((node, 1)))
       case None =>
         Cfg(entryNode = Option(node), continues = List((node, 1)))
     }
