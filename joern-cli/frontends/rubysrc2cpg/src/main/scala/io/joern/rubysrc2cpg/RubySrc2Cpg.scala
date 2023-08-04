@@ -28,7 +28,7 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
     withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
       new MetaDataPass(cpg, Languages.RUBYSRC, config.inputPath).createAndApply()
       new ConfigFileCreationPass(cpg).createAndApply()
-      Using.resource(new ResourceManagedParser(config.antlrCacheMemLimit)) { parser =>
+      Using.resource(new ResourceManagedParser(config.antlrCacheMemLimit, config.parserTimeoutMs)) { parser =>
         if (config.enableDependencyDownload && !scala.util.Properties.isWin) {
           val tempDir = File.newTemporaryDirectory()
           try {

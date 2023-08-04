@@ -1,6 +1,8 @@
 package io.joern.rubysrc2cpg.passes
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.joern.x2cpg.utils.Environment
+import io.joern.x2cpg.utils.Environment.OperatingSystemType
 import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.semanticcpg.language.*
 
@@ -50,6 +52,23 @@ class UnknownConstructPass extends RubyCode2CpgFixture {
       val List(m: Method) = cpg.method.nameExact("random").l
       val List(_y)        = m.assignment.l
       y.id() shouldBe _y.id()
+    }
+  }
+
+  "an attempted fix" should {
+    val cpg = code("""
+        |class DerivedClass < BaseClass
+        | KEYS = %i(
+        |  id1
+        |  id2
+        |  id3
+        | ).freeze
+        |end
+        |""".stripMargin)
+
+    "not cause an infinite loop once the last line is blanked out, at the cost of the structure (in Unix)" in {
+      cpg.typeDecl("DerivedClass").size shouldBe
+        (if (Environment.operatingSystem == OperatingSystemType.Windows) 1 else 0)
     }
   }
 
