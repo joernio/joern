@@ -46,6 +46,7 @@ import org.jetbrains.kotlin.psi.{
   KtParameter,
   KtPrimaryConstructor,
   KtProperty,
+  KtPsiUtil,
   KtQualifiedExpression,
   KtSecondaryConstructor,
   KtSuperExpression,
@@ -257,14 +258,8 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
   }
 
   def anonymousObjectIdx(obj: KtElement): Option[Int] = {
-    val mapForEntity = bindingsForEntity(bindingContext, obj)
-    Option(mapForEntity.get(BindingContext.CLASS.getKey))
-      .map { objectDesc =>
-        val parentDesc = objectDesc.getContainingDeclaration
-        val parentPsi  = DescriptorToSourceUtils.getSourceFromDescriptor(parentDesc)
-        PsiUtils.objectIdxMaybe(obj, parentPsi)
-      }
-      .getOrElse(None)
+    val parentFn = KtPsiUtil.getTopmostParentOfTypes(obj, classOf[KtNamedFunction])
+    PsiUtils.objectIdxMaybe(obj, parentFn)
   }
 
   def fullName(
