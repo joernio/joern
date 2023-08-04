@@ -20,6 +20,8 @@ object BabelAst {
 
   sealed trait TSType extends BabelNode
 
+  sealed trait Expression extends BabelNode
+
   sealed trait FunctionLike extends BabelNode
 
   object AnyTypeAnnotation               extends FlowType
@@ -39,7 +41,7 @@ object BabelAst {
   object BooleanLiteralTypeAnnotation    extends FlowType
   object BooleanTypeAnnotation           extends FlowType
   object BreakStatement                  extends BabelNode
-  object CallExpression                  extends BabelNode
+  object CallExpression                  extends Expression
   object CatchClause                     extends BabelNode
   object ClassAccessorProperty           extends BabelNode
   object ClassBody                       extends BabelNode
@@ -121,7 +123,7 @@ object BabelAst {
   object JSXExpressionContainer          extends BabelNode
   object JSXFragment                     extends BabelNode
   object JSXIdentifier                   extends BabelNode
-  object JSXMemberExpression             extends BabelNode
+  object JSXMemberExpression             extends Expression
   object JSXNamespacedName               extends BabelNode
   object JSXOpeningElement               extends BabelNode
   object JSXOpeningFragment              extends BabelNode
@@ -130,11 +132,11 @@ object BabelAst {
   object JSXText                         extends BabelNode
   object LabeledStatement                extends BabelNode
   object LogicalExpression               extends BabelNode
-  object MemberExpression                extends BabelNode
+  object MemberExpression                extends Expression
   object MetaProperty                    extends BabelNode
   object MixedTypeAnnotation             extends FlowType
   object ModuleExpression                extends BabelNode
-  object NewExpression                   extends BabelNode
+  object NewExpression                   extends Expression
   object Noop                            extends BabelNode
   object NullLiteral                     extends BabelNode
   object NullLiteralTypeAnnotation       extends FlowType
@@ -154,18 +156,18 @@ object BabelAst {
   object ObjectTypeProperty              extends BabelNode
   object ObjectTypeSpreadProperty        extends BabelNode
   object OpaqueType                      extends BabelNode
-  object OptionalCallExpression          extends BabelNode
+  object OptionalCallExpression          extends Expression
   object OptionalIndexedAccessType       extends FlowType
-  object OptionalMemberExpression        extends BabelNode
+  object OptionalMemberExpression        extends Expression
   object ParenthesizedExpression         extends BabelNode
   object PipelineBareFunction            extends BabelNode
   object PipelinePrimaryTopicReference   extends BabelNode
-  object PipelineTopicExpression         extends BabelNode
+  object PipelineTopicExpression         extends Expression
   object Placeholder                     extends BabelNode
   object PrivateName                     extends BabelNode
   object Program                         extends BabelNode
   object QualifiedTypeIdentifier         extends BabelNode
-  object RecordExpression                extends BabelNode
+  object RecordExpression                extends Expression
   object RegExpLiteral                   extends BabelNode
   object RegexLiteral                    extends BabelNode
   object RestElement                     extends BabelNode
@@ -184,7 +186,7 @@ object BabelAst {
   object SymbolTypeAnnotation            extends FlowType
   object TSAnyKeyword                    extends TSType
   object TSArrayType                     extends TSType
-  object TSAsExpression                  extends BabelNode
+  object TSAsExpression                  extends Expression
   object TSBigIntKeyword                 extends TSType
   object TSBooleanKeyword                extends TSType
   object TSCallSignatureDeclaration      extends BabelNode
@@ -216,17 +218,17 @@ object BabelAst {
   object TSNamedTupleMember              extends BabelNode
   object TSNamespaceExportDeclaration    extends BabelNode
   object TSNeverKeyword                  extends TSType
-  object TSNonNullExpression             extends BabelNode
+  object TSNonNullExpression             extends Expression
   object TSNullKeyword                   extends TSType
   object TSNumberKeyword                 extends TSType
   object TSObjectKeyword                 extends TSType
   object TSOptionalType                  extends TSType
-  object TSParameterProperty             extends BabelNode
+  object TSParameterProperty             extends Expression
   object TSParenthesizedType             extends TSType
   object TSPropertySignature             extends BabelNode
   object TSQualifiedName                 extends BabelNode
   object TSRestType                      extends TSType
-  object TSSatisfiesExpression           extends BabelNode
+  object TSSatisfiesExpression           extends Expression
   object TSStringKeyword                 extends TSType
   object TSSymbolKeyword                 extends TSType
   object TSThisType                      extends TSType
@@ -250,7 +252,7 @@ object BabelAst {
   object TaggedTemplateExpression        extends BabelNode
   object TemplateElement                 extends BabelNode
   object TemplateLiteral                 extends BabelNode
-  object ThisExpression                  extends BabelNode
+  object ThisExpression                  extends Expression
   object ThisTypeAnnotation              extends FlowType
   object ThrowStatement                  extends BabelNode
   object TopicReference                  extends BabelNode
@@ -267,7 +269,7 @@ object BabelAst {
   object TypeofTypeAnnotation            extends FlowType
   object UnaryExpression                 extends BabelNode
   object UnionTypeAnnotation             extends FlowType
-  object UpdateExpression                extends BabelNode
+  object UpdateExpression                extends Expression
   object V8IntrinsicIdentifier           extends BabelNode
   object VariableDeclaration             extends BabelNode
   object VariableDeclarator              extends BabelNode
