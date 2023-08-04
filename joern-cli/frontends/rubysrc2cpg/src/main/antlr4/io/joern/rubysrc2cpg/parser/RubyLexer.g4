@@ -557,6 +557,21 @@ fragment REST_OF_BEGIN_END_LINE
     ;
 
 // --------------------------------------------------------
+// Unrecognized characters
+// --------------------------------------------------------
+
+// Any other character shall still be recognized so that the
+// recovery mechanism in `io.joern.rubysrc2cpg.astcreation.AntlrParser`
+// also handles them. Otherwise, the lexer would complain, not emit
+// and the recovery mechanism would not be able to act.
+
+// Note: this must be the very last rule in this lexer specification, as
+// otherwise this token would take precedence over any token defined after.
+UNRECOGNIZED
+    :   .
+    ;
+
+// --------------------------------------------------------
 // Double quoted string mode
 // --------------------------------------------------------
 
