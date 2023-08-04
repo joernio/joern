@@ -1,12 +1,15 @@
 package io.joern.rubysrc2cpg
 
 import io.joern.rubysrc2cpg.Frontend.*
-import io.joern.x2cpg.passes.frontend.{XTypeRecovery, TypeRecoveryParserConfig}
+import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery}
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
 import scopt.OParser
 
-final case class Config(enableDependencyDownload: Boolean = false, antlrCacheMemLimit: Double = 0.6d)
-    extends X2CpgConfig[Config]
+final case class Config(
+  enableDependencyDownload: Boolean = false,
+  antlrCacheMemLimit: Double = 0.6d,
+  parserTimeoutMs: Long = 5000
+) extends X2CpgConfig[Config]
     with TypeRecoveryParserConfig[Config] {
 
   def withEnableDependencyDownload(value: Boolean): Config = {
@@ -16,6 +19,10 @@ final case class Config(enableDependencyDownload: Boolean = false, antlrCacheMem
   def withAntlrCacheMemoryLimit(value: Double): Config = {
     copy(antlrCacheMemLimit = value).withInheritedFields(this)
   }
+
+  def withParserTimeoutMs(value: Long): Config = {
+    copy(parserTimeoutMs = value).withInheritedFields(this)
+  }
 }
 
 private object Frontend {
@@ -24,7 +31,7 @@ private object Frontend {
 
   val cmdLineParser: OParser[Unit, Config] = {
     val builder = OParser.builder[Config]
-    import builder._
+    import builder.*
     OParser.sequence(
       programName("rubysrc2cpg"),
       opt[Unit]("enableDependencyDownload")
@@ -43,6 +50,16 @@ private object Frontend {
             success
         }
         .text("sets the heap usage threshold at which the ANTLR DFA cache is cleared during parsing (default 0.6)"),
+      opt[Long]("parserTimeoutMs")
+        .hidden()
+        .action((x, c) => c.withParserTimeoutMs(x))
+        .validate(x =>
+          if (x < 50)
+            failure(s"$x is far too low of a parser timeout limit")
+          else
+            success
+        )
+        .text("sets the timeout (in milliseconds) for how long ANTLR is allowed to parse a file for (default 5000ms)"),
       XTypeRecovery.parserOptions
     )
   }

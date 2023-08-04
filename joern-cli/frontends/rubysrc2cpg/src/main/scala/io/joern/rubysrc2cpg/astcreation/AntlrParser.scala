@@ -1,6 +1,7 @@
 package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.parser.{RubyLexer, RubyParser}
+import io.joern.x2cpg.utils.TimeUtils
 import io.shiftleft.utils.IOUtils
 import org.antlr.v4.runtime.*
 import org.antlr.v4.runtime.atn.ATN
@@ -8,15 +9,20 @@ import org.antlr.v4.runtime.dfa.DFA
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
+import java.util.concurrent.TimeoutException
+import scala.annotation.tailrec
 import scala.collection.mutable.ArrayBuffer
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 /** A consumable wrapper for the RubyParser class used to parse the given file and be disposed thereafter. This includes
   * a "hacky" recovery of the parser when unsupported constructs are encountered by simply not parsing those lines.
   * @param filename
   *   the file path to the file to be parsed.
+  * @param parsingTimeoutMs
+  *   grammar dependent, during development we may see input that would cause the parser to hang. To induce completion
+  *   we need a timeout.
   */
-class AntlrParser(filename: String) {
+class AntlrParser(filename: String, parsingTimeoutMs: Long = 5000) {
 
   private val logger      = LoggerFactory.getLogger(getClass)
   private val sourceLines = IOUtils.readLinesInFile(Paths.get(filename)).to(ArrayBuffer)
@@ -33,19 +39,27 @@ class AntlrParser(filename: String) {
     parser
   }
 
-  def parse(): Try[RubyParser.ProgramContext] = {
-    var result    = Try(parser.program())
-    var lastError = ErroneousLineListener.INSTANCE.getLastErrorAndReset
-    while (lastError != -1) {
-      logger.warn(s"Erroneous line reported at $lastError, removing and re-parsing")
-      sourceLines.remove(lastError - 1)
-      sourceLines.insert(lastError - 1, "")
-      parser = generateParser()
-      result = Try(parser.program())
-      lastError = ErroneousLineListener.INSTANCE.getLastErrorAndReset
-    }
-    result
+  def parse(): Try[RubyParser.ProgramContext] = parse(getProgramWithTimeout)
+
+  @tailrec
+  private def parse(lastResult: Try[RubyParser.ProgramContext]): Try[RubyParser.ProgramContext] = {
+    val lastError = ErroneousLineListener.INSTANCE.getLastErrorAndReset
+    lastResult match
+      case Failure(exception: TimeoutException) =>
+        Try[RubyParser.ProgramContext](
+          throw new TimeoutException(s"$filename timed out while parsing after [$parsingTimeoutMs milliseconds]")
+        )
+      case Failure(exception) => Failure(exception)
+      case Success(program) if lastError != -1 && lastError != sourceLines.size =>
+        logger.warn(s"Erroneous line reported at $lastError, removing and re-parsing")
+        sourceLines.remove(lastError - 1)
+        sourceLines.insert(lastError - 1, "")
+        parser = generateParser()
+        parse(getProgramWithTimeout)
+      case Success(program) => Success(program)
   }
+
+  private def getProgramWithTimeout = TimeUtils.runWithTimeout(5000) { parser.program() }
 
 }
 
@@ -58,8 +72,10 @@ class AntlrParser(filename: String) {
   *
   * @param clearLimit
   *   the percentage of used heap to clear the DFA-cache on.
+  * @param parserTimeoutMs
+  *   how long the parser may attempt parsing a file before bailing out.
   */
-class ResourceManagedParser(clearLimit: Double) extends AutoCloseable {
+class ResourceManagedParser(clearLimit: Double, parserTimeoutMs: Long) extends AutoCloseable {
 
   private val logger                                 = LoggerFactory.getLogger(getClass)
   private val runtime                                = Runtime.getRuntime
@@ -67,7 +83,7 @@ class ResourceManagedParser(clearLimit: Double) extends AutoCloseable {
   private var maybeAtn: Option[ATN]                  = None
 
   def parse(filename: String): Try[RubyParser.ProgramContext] = {
-    val antlrParser = AntlrParser(filename)
+    val antlrParser = AntlrParser(filename, parserTimeoutMs)
     val interp      = antlrParser.parser.getInterpreter
     // We need to grab a live instance in order to get the static variables as they are protected from static access
     maybeDecisionToDFA = Option(interp.decisionToDFA)
