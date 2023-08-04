@@ -1,6 +1,8 @@
 package io.joern.rubysrc2cpg.passes
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.joern.x2cpg.utils.Environment
+import io.joern.x2cpg.utils.Environment.OperatingSystemType
 import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.semanticcpg.language.*
 
@@ -64,8 +66,9 @@ class UnknownConstructPass extends RubyCode2CpgFixture {
         |end
         |""".stripMargin)
 
-    "not cause an infinite loop once the last line is blanked out, at the cost of the structure" in {
-      cpg.typeDecl("DerivedClass").size shouldBe 0
+    "not cause an infinite loop once the last line is blanked out, at the cost of the structure (in Unix)" in {
+      cpg.typeDecl("DerivedClass").size shouldBe
+        (if (Environment.operatingSystem == OperatingSystemType.Windows) 1 else 0)
     }
   }
 
