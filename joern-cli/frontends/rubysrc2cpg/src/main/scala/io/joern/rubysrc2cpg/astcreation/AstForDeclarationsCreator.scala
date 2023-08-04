@@ -6,10 +6,13 @@ import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.nodes.NewJumpTarget
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, ModifierTypes, Operators}
 import org.antlr.v4.runtime.ParserRuleContext
+import org.slf4j.LoggerFactory
+
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 trait AstForDeclarationsCreator { this: AstCreator =>
 
+  private val logger = LoggerFactory.getLogger(this.getClass)
   protected def astForArguments(ctx: ArgumentsContext): Seq[Ast] = {
     ctx.argument().asScala.flatMap(astForArgument).toSeq
   }
@@ -21,6 +24,9 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       case ctx: ExpressionArgumentContext        => astForExpressionContext(ctx.expression)
       case ctx: AssociationArgumentContext       => astForAssociationContext(ctx.association)
       case ctx: CommandArgumentContext           => astForCommand(ctx.command)
+      case _ =>
+        logger.error(s"astForArgument() $filename, ${ctx.getText} All contexts mismatched.")
+        Seq()
     }
   }
 }
