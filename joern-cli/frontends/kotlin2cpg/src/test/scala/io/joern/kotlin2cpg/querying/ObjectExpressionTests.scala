@@ -2,8 +2,8 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Local, Method, TypeDecl}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Local, Method, Return, TypeDecl}
+import io.shiftleft.semanticcpg.language.*
 
 class ObjectExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
@@ -108,11 +108,94 @@ class ObjectExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = fals
       val List(c: Call) = cpg.call.nameExact("<init>").l
       c.methodFullName shouldBe "mypkg.foo$object$1.<init>:void()"
     }
+  }
 
-    "contain an IDENTIFIER node for the argument representing the object literal" in {
-      val List(firstArg: Identifier, _: Identifier) = cpg.call.code("does.*").argument.l: @unchecked
-      firstArg.name shouldBe "tmp_obj_1"
-      firstArg.typeFullName shouldBe "mypkg.foo$object$1"
+  "CPG for code with object expressions used as argument of a call in an assignment" should {
+    val cpg = code("""
+        |package mypkg
+        |interface SomeInterface {
+        |    fun doSomething()
+        |}
+        |class QClass(var o: SomeInterface)
+        |fun f1() {
+        |    var x: QClass
+        |    x = QClass(object : SomeInterface { override fun doSomething() { println("something") } })
+        |}
+        |""".stripMargin)
+
+    "contain a TYPE_DECL node with the correct props set" in {
+      val List(_: TypeDecl, _: TypeDecl, thirdTd: TypeDecl) =
+        cpg.typeDecl.isExternal(false).nameNot("<global>").l
+      thirdTd.name shouldBe "anonymous_obj"
+      thirdTd.fullName shouldBe "mypkg.f1$object$1"
+      thirdTd.inheritsFromTypeFullName shouldBe Seq("mypkg.SomeInterface")
+    }
+  }
+
+  "CPG for code with extension fn with single-expression body with object-expression inside it" should {
+    val cpg = code("""
+      |package mypkg
+      |
+      |interface SomeInterface {
+      |    fun doSomething()
+      |}
+      |
+      |class PClass {
+      |    fun addListener(o: SomeInterface) {
+      |        o.doSomething()
+      |    }
+      |}
+      |
+      |inline fun PClass.withFailListener(crossinline action: () -> Unit) =
+      |    addListener(object : SomeInterface {
+      |        override fun doSomething() {
+      |            println("did something")
+      |        }
+      |    })
+      | """.stripMargin)
+
+    "should contain a correctly lowered representation" in {
+      val List(last: Return) =
+        cpg.method.nameExact("withFailListener").block.astChildren.l
+
+      val List(c: Call) = last.astChildren.l
+      c.methodFullName shouldBe "mypkg.PClass.addListener:void(mypkg.SomeInterface)"
+      val List(objExpr: TypeDecl, l: Local, alloc: Call, init: Call, i: Identifier) =
+        c.astChildren.isBlock.astChildren.l
+      objExpr.fullName shouldBe "mypkg.withFailListener$object$1"
+      l.code shouldBe "tmp_obj_1"
+      alloc.code shouldBe "tmp_obj_1 = <alloc>"
+      init.code shouldBe "<init>"
+      i.code shouldBe "tmp_obj_1"
+    }
+  }
+
+  "CPG for lambda with a call return expression with object-expression as one of its arguments" should {
+    val cpg = code("""
+        |package mypkg
+        |interface SomeInterface { fun doSomething() }
+        |fun addListener(o: SomeInterface) { o.doSomething() }
+        |fun f1() {
+        |    val p = PClass()
+        |    1.let {
+        |        addListener(object : SomeInterface { override fun doSomething() { println("something") }})
+        |    }
+        |}
+        | """.stripMargin)
+
+    "should contain a correctly lowered representation" in {
+      val List(_: Local, last: Return) =
+        cpg.method.nameExact("<lambda>").block.astChildren.l
+
+      val List(c: Call) = last.astChildren.l
+      c.methodFullName shouldBe "mypkg.addListener:void(mypkg.SomeInterface)"
+      val List(objExpr: TypeDecl, l: Local, alloc: Call, init: Call, i: Identifier) =
+        c.astChildren.isBlock.astChildren.l
+      objExpr.fullName shouldBe "mypkg.f1$object$1"
+      l.code shouldBe "tmp_obj_1"
+      alloc.code shouldBe "tmp_obj_1 = <alloc>"
+      init.code shouldBe "<init>"
+      i.code shouldBe "tmp_obj_1"
     }
   }
 }

@@ -563,29 +563,4 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     }
   }
 
-  "CPG for lambda with a call return expression with object-expression as one of its arguments" should {
-    val cpg = code("""
-        |package mypkg
-        |interface SomeInterface { fun doSomething() }
-        |fun addListener(o: SomeInterface) { o.doSomething() }
-        |fun f1() {
-        |    val p = PClass()
-        |    1.let {
-        |        addListener(object : SomeInterface { override fun doSomething() { println("something") }})
-        |    }
-        |}
-        | """.stripMargin)
-
-    "should contain a correctly lowered representation" in {
-      val List(_: Local, objExpr: TypeDecl, l2: Local, alloc: Call, init: Call, last: Return) =
-        cpg.method.nameExact("<lambda>").block.astChildren.l
-      objExpr.fullName shouldBe "mypkg.f1.$object$1"
-      l2.code shouldBe "tmp_obj_1"
-      alloc.code shouldBe "tmp_obj_1 = <alloc>"
-      init.code shouldBe "<init>"
-
-      val List(returnCall: Call) = last.astChildren.l
-      returnCall.methodFullName shouldBe "mypkg.addListener:void(mypkg.SomeInterface)"
-    }
-  }
 }

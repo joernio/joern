@@ -283,7 +283,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
             .map { containingDecl =>
               val idxMaybe = anonymousObjectIdx(expr)
               val idx      = idxMaybe.map(_.toString).getOrElse("nan")
-              s"${TypeRenderer.renderFqNameForDesc(containingDecl.getOriginal)}" + "$object$" + s"$idx"
+              s"${TypeRenderer.renderFqNameForDesc(containingDecl.getOriginal).stripSuffix(".")}" + "$object$" + s"$idx"
             }
             .getOrElse(nonLocalFullName)
         }

@@ -167,7 +167,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       case typedExpr: KtAnnotatedExpression   => astsForExpression(typedExpr.getBaseExpression, argIdxOpt)
       case typedExpr: KtArrayAccessExpression => Seq(astForArrayAccess(typedExpr, argIdxOpt, argNameOpt))
       case typedExpr: KtAnonymousInitializer  => astsForExpression(typedExpr.getBody, argIdxOpt)
-      case typedExpr: KtBinaryExpression      => Seq(astForBinaryExpr(typedExpr, argIdxOpt))
+      case typedExpr: KtBinaryExpression      => astsForBinaryExpr(typedExpr, argIdxOpt)
       case typedExpr: KtBlockExpression       => astsForBlock(typedExpr, argIdxOpt)
       case typedExpr: KtBinaryExpressionWithTypeRHS =>
         Seq(astForBinaryExprWithTypeRHS(typedExpr, argIdxOpt, argNameOpt))
@@ -190,7 +190,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         Seq(astForNameReference(typedExpr, argIdxOpt, argNameOpt))
       // TODO: callable reference
       case _: KtNameReferenceExpression               => Seq()
-      case typedExpr: KtObjectLiteralExpression       => Seq(astForUnknown(typedExpr, argIdxOpt))
+      case typedExpr: KtObjectLiteralExpression       => Seq(astForObjectLiteralExpr(typedExpr, argIdxOpt))
       case typedExpr: KtParenthesizedExpression       => astsForExpression(typedExpr.getExpression, argIdxOpt)
       case typedExpr: KtPostfixExpression             => Seq(astForPostfixExpression(typedExpr, argIdxOpt, argNameOpt))
       case typedExpr: KtPrefixExpression              => Seq(astForPrefixExpression(typedExpr, argIdxOpt, argNameOpt))
