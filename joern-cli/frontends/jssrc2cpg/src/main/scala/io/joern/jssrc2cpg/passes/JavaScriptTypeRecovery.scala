@@ -70,7 +70,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
         .map { t =>
           t.split("\\.").headOption match {
             case Some(base) if symbolTable.contains(LocalVar(base)) =>
-              (t, symbolTable.get(LocalVar(base)).map(x => x + t.stripPrefix(base)))
+              (t, symbolTable.get(LocalVar(base)).map(x => s"$x${t.stripPrefix(base)}"))
             case _ => (t, Set(t))
           }
         }

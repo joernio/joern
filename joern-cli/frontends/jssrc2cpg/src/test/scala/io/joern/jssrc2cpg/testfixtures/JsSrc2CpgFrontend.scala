@@ -15,7 +15,7 @@ trait JsSrc2CpgFrontend extends LanguageFrontend {
     val config = getConfig()
       .map(_.asInstanceOf[Config])
       .getOrElse(Config(tsTypes = false))
-      .withInputPath(sourceCodePath.getAbsolutePath())
+      .withInputPath(sourceCodePath.getAbsolutePath)
       .withOutputPath(cpgOutFile.pathAsString)
     jssrc2cpg.createCpg(config).get
   }

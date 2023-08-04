@@ -240,10 +240,10 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
        |  class Foo {};
        |}
        |""".stripMargin) { cpg =>
-      inside(cpg.namespaceBlock("A").l) { case List(a) =>
-        a.code should startWith("namespace A")
-        a.fullName shouldBe "code.ts::program:A"
-        a.typeDecl.name("Foo").head.fullName shouldBe "code.ts::program:A:Foo"
+      inside(cpg.namespaceBlock("A").l) { case List(namespaceBlockA) =>
+        namespaceBlockA.code should startWith("namespace A")
+        namespaceBlockA.fullName shouldBe "code.ts::program:A"
+        namespaceBlockA.typeDecl.name("Foo").head.fullName shouldBe "code.ts::program:A:Foo"
       }
     }
 
@@ -256,20 +256,20 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
         |  }
         |}
         |""".stripMargin) { cpg =>
-      inside(cpg.namespaceBlock("A").l) { case List(a) =>
-        a.code should startWith("namespace A")
-        a.fullName shouldBe "code.ts::program:A"
-        a.astChildren.astChildren.isNamespaceBlock.name("B").head shouldBe cpg.namespaceBlock("B").head
+      inside(cpg.namespaceBlock("A").l) { case List(namespaceBlockA) =>
+        namespaceBlockA.code should startWith("namespace A")
+        namespaceBlockA.fullName shouldBe "code.ts::program:A"
+        namespaceBlockA.astChildren.astChildren.isNamespaceBlock.name("B").head shouldBe cpg.namespaceBlock("B").head
       }
-      inside(cpg.namespaceBlock("B").l) { case List(b) =>
-        b.code should startWith("namespace B")
-        b.fullName shouldBe "code.ts::program:A:B"
-        b.astChildren.astChildren.isNamespaceBlock.name("C").head shouldBe cpg.namespaceBlock("C").head
+      inside(cpg.namespaceBlock("B").l) { case List(namespaceBlockB) =>
+        namespaceBlockB.code should startWith("namespace B")
+        namespaceBlockB.fullName shouldBe "code.ts::program:A:B"
+        namespaceBlockB.astChildren.astChildren.isNamespaceBlock.name("C").head shouldBe cpg.namespaceBlock("C").head
       }
-      inside(cpg.namespaceBlock("C").l) { case List(c) =>
-        c.code should startWith("namespace C")
-        c.fullName shouldBe "code.ts::program:A:B:C"
-        c.typeDecl.name("Foo").head.fullName shouldBe "code.ts::program:A:B:C:Foo"
+      inside(cpg.namespaceBlock("C").l) { case List(namespaceBlockC) =>
+        namespaceBlockC.code should startWith("namespace C")
+        namespaceBlockC.fullName shouldBe "code.ts::program:A:B:C"
+        namespaceBlockC.typeDecl.name("Foo").head.fullName shouldBe "code.ts::program:A:B:C:Foo"
       }
     }
 
@@ -278,20 +278,20 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
          |  class Foo {};
          |}
          |""".stripMargin) { cpg =>
-      inside(cpg.namespaceBlock("A").l) { case List(a) =>
-        a.code should startWith("namespace A")
-        a.fullName shouldBe "code.ts::program:A"
-        a.astChildren.isNamespaceBlock.name("B").head shouldBe cpg.namespaceBlock("B").head
+      inside(cpg.namespaceBlock("A").l) { case List(namespaceBlockA) =>
+        namespaceBlockA.code should startWith("namespace A")
+        namespaceBlockA.fullName shouldBe "code.ts::program:A"
+        namespaceBlockA.astChildren.isNamespaceBlock.name("B").head shouldBe cpg.namespaceBlock("B").head
       }
-      inside(cpg.namespaceBlock("B").l) { case List(b) =>
-        b.code should startWith("B.C")
-        b.fullName shouldBe "code.ts::program:A:B"
-        b.astChildren.isNamespaceBlock.name("C").head shouldBe cpg.namespaceBlock("C").head
+      inside(cpg.namespaceBlock("B").l) { case List(namespaceBlockB) =>
+        namespaceBlockB.code should startWith("B.C")
+        namespaceBlockB.fullName shouldBe "code.ts::program:A:B"
+        namespaceBlockB.astChildren.isNamespaceBlock.name("C").head shouldBe cpg.namespaceBlock("C").head
       }
-      inside(cpg.namespaceBlock("C").l) { case List(c) =>
-        c.code should startWith("C")
-        c.fullName shouldBe "code.ts::program:A:B:C"
-        c.typeDecl.name("Foo").head.fullName shouldBe "code.ts::program:A:B:C:Foo"
+      inside(cpg.namespaceBlock("C").l) { case List(namespaceBlockC) =>
+        namespaceBlockC.code should startWith("C")
+        namespaceBlockC.fullName shouldBe "code.ts::program:A:B:C"
+        namespaceBlockC.typeDecl.name("Foo").head.fullName shouldBe "code.ts::program:A:B:C:Foo"
       }
     }
 
