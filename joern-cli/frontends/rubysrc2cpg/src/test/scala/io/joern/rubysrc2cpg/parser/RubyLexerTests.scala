@@ -759,4 +759,9 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     all(eg.map(tokenize)) shouldBe Seq(DEF, WS, ASSIGNMENT_LIKE_METHOD_IDENTIFIER, EOF)
   }
 
+  "Unrecognized escape character" should "emit an UNRECOGNIZED token" in {
+    val code = "\\!"
+    tokenize(code) shouldBe Seq(UNRECOGNIZED, EMARK, EOF)
+  }
+
 }

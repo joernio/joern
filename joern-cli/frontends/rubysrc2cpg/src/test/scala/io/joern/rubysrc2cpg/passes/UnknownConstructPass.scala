@@ -55,6 +55,20 @@ class UnknownConstructPass extends RubyCode2CpgFixture {
     }
   }
 
+  "unrecognized token in the RHS of an assignment" should {
+    val cpg = code("""
+        |x = \!
+        |y = 1
+        |""".stripMargin)
+
+    "be ignored" in {
+      val List(y) = cpg.assignment.l
+
+      y.target.code shouldBe "y"
+      y.source.code shouldBe "1"
+    }
+  }
+
   "an attempted fix" should {
     val cpg = code("""
         |class DerivedClass < BaseClass
