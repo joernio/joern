@@ -885,39 +885,34 @@ trait AstForStatementsCreator { this: AstCreator =>
     blockAst(blockNode, blockNodeChildren)
   }
 
+  private def extractLoopVariableNodeInfo(nodeInfo: BabelNodeInfo): Option[BabelNodeInfo] =
+    nodeInfo.node match {
+      case AssignmentPattern =>
+        Option(createBabelNodeInfo(nodeInfo.json("left")))
+      case VariableDeclaration =>
+        val varDeclNodeInfo = createBabelNodeInfo(nodeInfo.json("declarations").arr.head)
+        if (varDeclNodeInfo.node == VariableDeclarator) Option(createBabelNodeInfo(varDeclNodeInfo.json("id")))
+        else None
+      case _ => None
+    }
+
   protected def astForInOfStatement(forInOfStmt: BabelNodeInfo): Ast = {
     val loopVariableNodeInfo = createBabelNodeInfo(forInOfStmt.json("left"))
     // check iteration loop variable type:
     loopVariableNodeInfo.node match {
-      case VariableDeclaration =>
-        val varDeclNodeInfo = createBabelNodeInfo(loopVariableNodeInfo.json("declarations").arr.head)
-        varDeclNodeInfo.node match {
-          case VariableDeclarator =>
-            val idNodeInfo = createBabelNodeInfo(varDeclNodeInfo.json("id"))
-            idNodeInfo.node match {
-              case ObjectPattern => astForInOfStatementWithObject(forInOfStmt, idNodeInfo)
-              case ArrayPattern  => astForInOfStatementWithArray(forInOfStmt, idNodeInfo)
-              case Identifier    => astForInOfStatementWithIdentifier(forInOfStmt, idNodeInfo)
-              case _             => notHandledYet(forInOfStmt)
-            }
-          case _ => notHandledYet(forInOfStmt)
+      case VariableDeclaration | AssignmentPattern =>
+        val idNodeInfo = extractLoopVariableNodeInfo(loopVariableNodeInfo)
+        idNodeInfo.map(_.node) match {
+          case Some(ObjectPattern) => astForInOfStatementWithObject(forInOfStmt, idNodeInfo.get)
+          case Some(ArrayPattern)  => astForInOfStatementWithArray(forInOfStmt, idNodeInfo.get)
+          case Some(Identifier)    => astForInOfStatementWithIdentifier(forInOfStmt, idNodeInfo.get)
+          case _                   => notHandledYet(forInOfStmt)
         }
       case ObjectPattern => astForInOfStatementWithObject(forInOfStmt, loopVariableNodeInfo)
       case ArrayPattern  => astForInOfStatementWithArray(forInOfStmt, loopVariableNodeInfo)
       case Identifier    => astForInOfStatementWithIdentifier(forInOfStmt, loopVariableNodeInfo)
-      case MemberExpression | CallExpression | UpdateExpression | NewExpression | TSParameterProperty | TSAsExpression |
-          TSSatisfiesExpression | TSNonNullExpression | ThisExpression | OptionalMemberExpression |
-          OptionalCallExpression =>
-        astForInOfStatementWithExpression(forInOfStmt, loopVariableNodeInfo)
-      case AssignmentPattern =>
-        val leftNodeInfo = createBabelNodeInfo(loopVariableNodeInfo.json("left"))
-        leftNodeInfo.node match {
-          case ObjectPattern => astForInOfStatementWithObject(forInOfStmt, leftNodeInfo)
-          case ArrayPattern  => astForInOfStatementWithArray(forInOfStmt, leftNodeInfo)
-          case Identifier    => astForInOfStatementWithIdentifier(forInOfStmt, leftNodeInfo)
-          case _             => notHandledYet(forInOfStmt)
-        }
-      case _ => notHandledYet(forInOfStmt)
+      case _: Expression => astForInOfStatementWithExpression(forInOfStmt, loopVariableNodeInfo)
+      case _             => notHandledYet(forInOfStmt)
     }
   }
 
