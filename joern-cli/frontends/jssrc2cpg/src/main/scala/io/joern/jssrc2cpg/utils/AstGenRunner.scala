@@ -224,7 +224,7 @@ class AstGenRunner(config: Config) {
   private def processEjsFiles(in: File, out: File, ejsFiles: List[String]): Try[Seq[String]] = {
     val tmpJsFiles = ejsFiles.map { ejsFilePath =>
       val ejsFile             = File(ejsFilePath)
-      val maybeTranspiledFile = File(ejsFilePath.stripSuffix(".ejs") + ".js")
+      val maybeTranspiledFile = File(s"${ejsFilePath.stripSuffix(".ejs")}.js")
       if (isTranspiledFile(maybeTranspiledFile.pathAsString)) {
         maybeTranspiledFile
       } else {
@@ -243,7 +243,7 @@ class AstGenRunner(config: Config) {
     val jsons = SourceFiles.determine(out.toString(), Set(".json"))
     jsons.foreach { jsonPath =>
       val jsonFile    = File(jsonPath)
-      val jsonContent = IOUtils.readLinesInFile(jsonFile.path).mkString
+      val jsonContent = IOUtils.readEntireFile(jsonFile.path)
       val json        = ujson.read(jsonContent)
       val fileName    = json("fullName").str
       val newFileName = fileName.patch(fileName.lastIndexOf(".js"), ".ejs", 3)

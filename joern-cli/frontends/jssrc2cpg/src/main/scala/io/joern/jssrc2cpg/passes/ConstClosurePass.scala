@@ -11,7 +11,7 @@ import io.shiftleft.semanticcpg.language._
 class ConstClosurePass(cpg: Cpg) extends CpgPass(cpg) {
 
   // Keeps track of how many times an identifier has been on the LHS of an assignment, by name
-  protected lazy val identifiersAssignedCount: Map[String, Int] =
+  private lazy val identifiersAssignedCount: Map[String, Int] =
     cpg.assignment.target.collectAll[Identifier].name.groupCount
 
   override def run(diffGraph: DiffGraphBuilder): Unit = {
@@ -20,7 +20,7 @@ class ConstClosurePass(cpg: Cpg) extends CpgPass(cpg) {
     handleClosuresAssignedToMutableVar(diffGraph)
   }
 
-  protected def handleConstClosures(diffGraph: DiffGraphBuilder): Unit =
+  private def handleConstClosures(diffGraph: DiffGraphBuilder): Unit =
     for {
       assignment      <- cpg.assignment
       name            <- assignment.filter(_.code.startsWith("const ")).target.isIdentifier.name
@@ -31,7 +31,7 @@ class ConstClosurePass(cpg: Cpg) extends CpgPass(cpg) {
       updateClosures(diffGraph, method, methodRef, enclosingMethod, name)
     }
 
-  protected def handleClosuresDefinedAtExport(diffGraph: DiffGraphBuilder): Unit =
+  private def handleClosuresDefinedAtExport(diffGraph: DiffGraphBuilder): Unit =
     for {
       assignment <- cpg.assignment
       name <- assignment.filter(_.code.startsWith("export")).target.isCall.argument.isFieldIdentifier.canonicalName.l
@@ -42,7 +42,7 @@ class ConstClosurePass(cpg: Cpg) extends CpgPass(cpg) {
       updateClosures(diffGraph, method, methodRef, enclosingMethod, name)
     }
 
-  protected def handleClosuresAssignedToMutableVar(diffGraph: DiffGraphBuilder): Unit =
+  private def handleClosuresAssignedToMutableVar(diffGraph: DiffGraphBuilder): Unit =
     // Handle closures assigned to mutable variables
     for {
       assignment      <- cpg.assignment

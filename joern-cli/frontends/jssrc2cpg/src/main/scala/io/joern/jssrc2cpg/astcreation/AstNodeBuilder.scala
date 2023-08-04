@@ -44,8 +44,8 @@ trait AstNodeBuilder { this: AstCreator =>
   }
 
   protected def codeOf(node: NewNode): String = node match {
-    case node: AstNodeNew => node.code
-    case _                => ""
+    case astNodeNew: AstNodeNew => astNodeNew.code
+    case _                      => ""
   }
 
   protected def createIndexAccessCallAst(
@@ -136,7 +136,7 @@ trait AstNodeBuilder { this: AstCreator =>
     callNode(node, code, name, fullName, dispatchType, None, Some(Defines.Any))
   }
 
-  protected def createCallNode(
+  private def createCallNode(
     code: String,
     callName: String,
     dispatchType: String,

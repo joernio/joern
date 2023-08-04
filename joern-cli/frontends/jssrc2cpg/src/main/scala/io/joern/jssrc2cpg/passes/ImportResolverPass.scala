@@ -27,7 +27,7 @@ class ImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
     val alias       = importedAs
     val matcher     = pathPattern.matcher(rawEntity)
     val sep         = Matcher.quoteReplacement(JFile.separator)
-    val root        = codeRoot + JFile.separator
+    val root        = s"$codeRoot${JFile.separator}"
     val currentFile = s"$root$fileName"
     // We want to know if the import is local since if an external name is used to match internal methods we may have
     // false paths.

@@ -175,7 +175,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
       val List(templateCall) = fooCall.astChildren.isCall.l
       templateCall.name shouldBe Operators.formatString
-      templateCall.code shouldBe Operators.formatString + "(\"Hello \", world, \"!\")"
+      templateCall.code shouldBe s"${Operators.formatString}(\"Hello \", world, \"!\")"
 
       val List(argument1) = templateCall.astChildren.isLiteral.order(1).l
       argument1.argumentIndex shouldBe 1
@@ -197,7 +197,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
       val List(call) = methodBlock.astChildren.isCall.l
       call.name shouldBe Operators.formatString
-      call.code shouldBe Operators.formatString + "(\"\", x + 1, \"\")"
+      call.code shouldBe s"${Operators.formatString}(\"\", x + 1, \"\")"
 
       val List(argument1) = call.astChildren.isLiteral.order(1).l
       argument1.argumentIndex shouldBe 1
@@ -217,12 +217,12 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(methodBlock) = method.astChildren.isBlock.l
 
       val List(rawCall) = methodBlock.astChildren.isCall.l
-      rawCall.code shouldBe "String.raw(" + Operators.formatString + """("../", 42, "\.."))"""
+      rawCall.code shouldBe s"String.raw(${Operators.formatString}(\"../\", 42, \"\\..\"))"
 
       val List(runtimeCall) = rawCall.astChildren.isCall.nameExact(Operators.formatString).l
       runtimeCall.order shouldBe 1
       runtimeCall.argumentIndex shouldBe 1
-      runtimeCall.code shouldBe Operators.formatString + """("../", 42, "\..")"""
+      runtimeCall.code shouldBe s"${Operators.formatString}(\"../\", 42, \"\\..\")"
 
       val List(argument1) = runtimeCall.astChildren.isLiteral.codeExact("\"../\"").l
       argument1.order shouldBe 1

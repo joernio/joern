@@ -498,7 +498,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     }
   }
 
-  def createImportNodeAndAttachToCall(
+  private def createImportNodeAndAttachToCall(
     impDecl: BabelNodeInfo,
     importedEntity: String,
     importedAs: String,
@@ -507,7 +507,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     createImportNodeAndAttachToCall(impDecl.code.stripSuffix(";"), importedEntity, importedAs, call)
   }
 
-  def createImportNodeAndAttachToCall(
+  private def createImportNodeAndAttachToCall(
     code: String,
     importedEntity: String,
     importedAs: String,

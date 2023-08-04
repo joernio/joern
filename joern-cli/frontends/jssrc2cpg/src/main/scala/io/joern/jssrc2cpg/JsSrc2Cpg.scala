@@ -57,9 +57,9 @@ class JsSrc2Cpg extends X2CpgFrontend[Config] {
 object JsSrc2Cpg {
 
   def postProcessingPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] = {
-    val typeRecoveryConfig = config match
-      case Some(config) => XTypeRecoveryConfig(config.typePropagationIterations, !config.disableDummyTypes)
-      case None         => XTypeRecoveryConfig()
+    val typeRecoveryConfig = config
+      .map(c => XTypeRecoveryConfig(c.typePropagationIterations, !c.disableDummyTypes))
+      .getOrElse(XTypeRecoveryConfig())
     List(
       new JavaScriptInheritanceNamePass(cpg),
       new ConstClosurePass(cpg),
