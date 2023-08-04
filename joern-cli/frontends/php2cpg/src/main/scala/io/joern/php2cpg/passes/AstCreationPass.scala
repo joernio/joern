@@ -21,7 +21,11 @@ class AstCreationPass(config: Config, cpg: Cpg, parser: PhpParser) extends Concu
   override def generateParts(): Array[String] = SourceFiles.determine(config.inputPath, PhpSourceFileExtensions).toArray
 
   override def runOnPart(diffGraph: DiffGraphBuilder, filename: String): Unit = {
-    val relativeFilename = File(config.inputPath).relativize(File(filename)).toString
+    val relativeFilename = if (filename == config.inputPath) {
+      File(filename).name
+    } else {
+      File(config.inputPath).relativize(File(filename)).toString
+    }
     parser.parseFile(filename, config.phpIni) match {
       case Some(parseResult) =>
         diffGraph.absorb(new AstCreator(relativeFilename, parseResult).createAst())
