@@ -36,7 +36,7 @@ case class Config(
   verbose: Boolean = false,
   dependencies: Seq[String] = Seq.empty,
   resolvers: Seq[String] = Seq.empty,
-  maxHeight: Option[Int] = None,
+  maxHeight: Option[Int] = None
 )
 
 /** Base class for ReplBridge, split by topic into multiple self types.
@@ -243,7 +243,7 @@ trait InteractiveShell { this: BridgeBase =>
         greeting = greeting,
         prompt = Option(promptStr),
         onExitCode = Option(onExitCode),
-        maxHeight = config.maxHeight,
+        maxHeight = config.maxHeight
       )
     )
   }
