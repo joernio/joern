@@ -21,8 +21,10 @@ object PsiUtils {
   def objectIdxMaybe(psiElem: PsiElement, containing: PsiElement) = {
     class ForEachTreeVisitor(block: (KtElement) => Unit) extends KtTreeVisitorVoid {
       override def visitKtElement(element: KtElement): Unit = {
-        super.visitKtElement(element)
-        block(element)
+        if (element != null) {
+          super.visitKtElement(element)
+          block(element)
+        }
       }
     }
 
