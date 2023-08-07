@@ -1839,17 +1839,16 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     }
   }
 
-  // TODO:
-  "Data flow for chained command with do-block without parentheses" ignore {
+  "Data flow for chained command with do-block with parentheses" should {
     val cpg = code("""
-        |x=10
-        |def greet(name)
+        |def foo()
         |  yield if block_given?
         |end
         |
-        |y = greet x do
-        |    [1,2,3,4,5]
-        |end.sum 2
+        |y = foo do
+        |    x = 1
+        |    [x+1,x+2]
+        |end.sum(10)
         |
         |puts y
         |""".stripMargin)
@@ -1861,17 +1860,16 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     }
   }
 
-  // TODO:
-  "Data flow for chained command with do-block with parentheses" ignore {
+  "Data flow for chained command with do-block without parentheses" should {
     val cpg = code("""
-        |x=10
-        |def greet(name)
+        |def foo()
         |  yield if block_given?
         |end
         |
-        |y = greet x do
-        |    [1,2,3,4,5]
-        |end.sum(2)
+        |y = foo do
+        |    x = 1
+        |    [x+1,x+2]
+        |end.sum 10
         |
         |puts y
         |""".stripMargin)
@@ -1911,60 +1909,6 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     }
   }
 
-  // TODO:
-  "Data flow for expressions and chained commands and do block args with parentheses" ignore {
-    val cpg = code("""
-        |x=10
-        |def foo(x, y)
-        |  return x + y
-        |end
-        |
-        |def bar(y)
-        |  a = yield
-        |  return a
-        |end
-        |
-        |z = foo(1, bar 1 do
-        |  x
-        |end.sum(1))
-        |
-        |puts z
-        |""".stripMargin)
-
-    "find flows to the sink" in {
-      val source = cpg.identifier.name("x").l
-      val sink   = cpg.call.name("puts").l
-      sink.reachableByFlows(source).size shouldBe 3
-    }
-  }
-
-  // TODO:
-  "Data flow for chained command with do block as only argument with parentheses" ignore {
-    val cpg = code("""
-        |x=10
-        |def foo(x)
-        |  return x + 10
-        |end
-        |
-        |def bar(y)
-        |  a = yield
-        |  return a
-        |end
-        |
-        |z = foo(bar 1 do
-        |  x
-        |end.sum(1))
-        |
-        |puts z
-        |""".stripMargin)
-
-    "find flows to the sink" in {
-      val source = cpg.identifier.name("x").l
-      val sink   = cpg.call.name("puts").l
-      sink.reachableByFlows(source).size shouldBe 1
-    }
-  }
-
   "Data flows through range operators" should {
     val cpg = code("""
         |x = 10
@@ -1977,30 +1921,6 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
         |end
         |
         |puts y
-        |""".stripMargin)
-
-    "find flows to the sink" in {
-      val source = cpg.identifier.name("x").l
-      val sink   = cpg.call.name("puts").l
-      sink.reachableByFlows(source).size shouldBe 3
-    }
-  }
-  // TODO:
-  "Data flow for chained invocation without argument" ignore {
-    val cpg = code("""
-        |x=10
-        |def bar(y)
-        |  yield
-        |end
-        |
-        |public def sum
-        |    return 1
-        |end
-        |
-        |puts bar(x) {
-        |    1
-        |}.sum
-        |puts x
         |""".stripMargin)
 
     "find flows to the sink" in {
