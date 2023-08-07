@@ -12,11 +12,17 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   Return
 }
 import io.shiftleft.semanticcpg.language.NoResolve
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
+import org.slf4j.{Logger, LoggerFactory}
 
 /** Creation of new tasks from results of completed tasks.
   */
 class TaskCreator(context: EngineContext) {
+
+  private val logger: Logger = LoggerFactory.getLogger(this.getClass)
+
+  private val MAX_ARGS_TO_ALLOW        = 1000
+  private val MAX_OUTPUT_ARG_EXPANSION = 1000
 
   /** For a given list of results and sources, generate new tasks.
     */
@@ -73,8 +79,16 @@ class TaskCreator(context: EngineContext) {
 
   /** For a given parameter of a method, determine all corresponding arguments at all call sites to the method.
     */
-  private def paramToArgs(param: MethodParameterIn): List[Expression] =
-    paramToArgsOfCallers(param) ++ paramToMethodRefCallReceivers(param)
+  private def paramToArgs(param: MethodParameterIn): List[Expression] = {
+    val args = paramToArgsOfCallers(param) ++ paramToMethodRefCallReceivers(param)
+    if (args.size > MAX_ARGS_TO_ALLOW) {
+      logger.warn(s"Too many arguments for parameter: ${args.size}. Not expanding")
+      logger.warn("Method name: " + param.method.fullName)
+      List()
+    } else {
+      args
+    }
+  }
 
   private def paramToArgsOfCallers(param: MethodParameterIn): List[Expression] =
     NoResolve
@@ -164,8 +178,16 @@ class TaskCreator(context: EngineContext) {
         case _ => Vector.empty
       }
     }
+    restrictSize(forCalls) ++ restrictSize(forArgs) ++ restrictSize(forMethodRefs)
+  }
 
-    forCalls ++ forArgs ++ forMethodRefs
+  private def restrictSize(l: Vector[ReachableByTask]): Vector[ReachableByTask] = {
+    if (l.size <= MAX_OUTPUT_ARG_EXPANSION) {
+      l
+    } else {
+      logger.warn("Too many new tasks in expansion of unresolved output arguments")
+      Vector()
+    }
   }
 
 }
