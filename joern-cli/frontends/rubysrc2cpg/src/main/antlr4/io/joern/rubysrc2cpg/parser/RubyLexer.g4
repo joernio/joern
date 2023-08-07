@@ -288,18 +288,20 @@ DOUBLE_QUOTED_STRING_START
 QUOTED_NON_EXPANDED_STRING_LITERAL_START
     :   '%q' {!Character.isAlphabetic(_input.LA(1))}?
     {
-        pushQuotedNonExpandedStringDelimiter(_input.LA(1));
+        pushNonExpandedDelimiter(_input.LA(1));
+        setNonExpandedDelimitedStringEndToken(QUOTED_NON_EXPANDED_STRING_LITERAL_END);
         _input.consume();
-        pushMode(QUOTED_NON_EXPANDED_STRING_MODE);
+        pushMode(NON_EXPANDED_DELIMITED_STRING_MODE);
     }
     ;
 
 QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_START
     :   '%r' {!Character.isAlphabetic(_input.LA(1))}?
     {
-        pushQuotedNonExpandedRegularExpressionDelimiter(_input.LA(1));
+        pushNonExpandedDelimiter(_input.LA(1));
+        setNonExpandedDelimitedStringEndToken(QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_END);
         _input.consume();
-        pushMode(QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_MODE);
+        pushMode(NON_EXPANDED_DELIMITED_STRING_MODE);
     };
 
 // --------------------------------------------------------
@@ -646,73 +648,39 @@ fragment DOUBLE_ESCAPED_CHARACTER
     ;
 
 // --------------------------------------------------------
-// %q string mode
+// Non-expanded delimited string mode
 // --------------------------------------------------------
 
-mode QUOTED_NON_EXPANDED_STRING_MODE;
+mode NON_EXPANDED_DELIMITED_STRING_MODE;
 
-fragment QUOTED_NON_EXPANDED_ESCAPED_CHARACTER
-    :   '\\' QUOTED_NON_EXPANDED_NON_ESCAPED_CHARACTER
+
+fragment NON_EXPANDED_LITERAL_ESCAPE_SEQUENCE
+    :   '\\' NON_ESCAPED_LITERAL_CHARACTER
     ;
 
-fragment QUOTED_NON_EXPANDED_NON_ESCAPED_CHARACTER
+fragment NON_ESCAPED_LITERAL_CHARACTER
     :   ~[\r\n]
     |   '\n' {_input.LA(1) != '\r'}?
     ;
 
-QUOTED_NON_EXPANDED_CHARACTER
-    :   QUOTED_NON_EXPANDED_ESCAPED_CHARACTER
-    |   QUOTED_NON_EXPANDED_NON_ESCAPED_CHARACTER
-        {
-            int readChar = _input.LA(-1);
+NON_EXPANDED_LITERAL_CHARACTER
+    :   NON_EXPANDED_LITERAL_ESCAPE_SEQUENCE
+    |   NON_ESCAPED_LITERAL_CHARACTER
+    {
+        int readChar = _input.LA(-1);
+        
+        if (isNonExpandedClosingDelimiter(readChar)) {
+            popNonExpandedDelimiter();
             
-            if (isQuotedNonExpandedStringClosingDelimiter(readChar)) {
-                popQuotedNonExpandedStringDelimiter();
-                
-                if (isQuotedNonExpandedStringDelimitersEmpty()) {
-                    setType(QUOTED_NON_EXPANDED_STRING_LITERAL_END);
-                    popMode();
-                }
-            }
-            else if (isQuotedNonExpandedStringOpeningDelimiter(readChar)) {
-                pushQuotedNonExpandedStringDelimiter(readChar);
+            if (isNonExpandedDelimitersStackEmpty()) {
+                setType(getNonExpandedDelimitedStringEndToken());
+                popMode();
             }
         }
-    ;
-    
-// --------------------------------------------------------
-// %r regex mode
-// --------------------------------------------------------
-
-mode QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_MODE;
-
-fragment QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_ESCAPED_CHARACTER
-    :   '\\' QUOTED_NON_EXPANDED_NON_ESCAPED_REGULAR_EXPRESSION_CHARACTER
-    ;
-
-fragment QUOTED_NON_EXPANDED_NON_ESCAPED_REGULAR_EXPRESSION_CHARACTER
-    :   ~[\r\n]
-    |   '\n' {_input.LA(1) != '\r'}?
-    ;
-
-QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_CHARACTER
-    :   QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_ESCAPED_CHARACTER
-    |   QUOTED_NON_EXPANDED_NON_ESCAPED_REGULAR_EXPRESSION_CHARACTER
-        {
-            int readChar = _input.LA(-1);
-            
-            if (isQuotedNonExpandedRegularExpressionClosingDelimiter(readChar)) {
-                popQuotedNonExpandedRegularExpressionDelimiter();
-                
-                if (isQuotedNonExpandedRegularExpressionDelimitersEmpty()) {
-                    setType(QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_END);
-                    popMode();
-                }
-            }
-            else if (isQuotedNonExpandedRegularExpressionOpeningDelimiter(readChar)) {
-                pushQuotedNonExpandedRegularExpressionDelimiter(readChar);
-            }
+        else if (isNonExpandedOpeningDelimiter(readChar)) {
+            pushNonExpandedDelimiter(readChar);
         }
+    }
     ;
 
 // --------------------------------------------------------
