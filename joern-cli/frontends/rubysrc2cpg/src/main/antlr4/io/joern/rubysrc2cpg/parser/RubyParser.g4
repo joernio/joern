@@ -577,7 +577,7 @@ literal
     |   symbol                                                                                                      # symbolLiteral
     |   REGULAR_EXPRESSION_START REGULAR_EXPRESSION_BODY? REGULAR_EXPRESSION_END                                    # regularExpressionLiteral
     |   QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_START
-        QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_CHARACTER*
+        NON_EXPANDED_LITERAL_CHARACTER*
         QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_END                                                                  # nonExpandedQuotedRegularExpressionLiteral
     ;
     
@@ -600,7 +600,7 @@ simpleString
     :   SINGLE_QUOTED_STRING_LITERAL                                                                                # singleQuotedStringLiteral
     |   DOUBLE_QUOTED_STRING_START DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE? DOUBLE_QUOTED_STRING_END                # doubleQuotedStringLiteral
     |   QUOTED_NON_EXPANDED_STRING_LITERAL_START 
-        QUOTED_NON_EXPANDED_CHARACTER* 
+        NON_EXPANDED_LITERAL_CHARACTER* 
         QUOTED_NON_EXPANDED_STRING_LITERAL_END                                                                      # nonExpandedQuotedStringLiteral
     ;
 
