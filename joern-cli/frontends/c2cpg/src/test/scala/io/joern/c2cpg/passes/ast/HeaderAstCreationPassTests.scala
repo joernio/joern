@@ -55,6 +55,21 @@ class HeaderAstCreationPassTests extends CCodeToCpgSuite {
       }
     }
 
+    "link includes correctly" in {
+      inside(cpg.dependency.l) { case List(mainDep) =>
+        mainDep.name shouldBe "main.h"
+        mainDep.version shouldBe "include"
+        mainDep.dependencyGroupId shouldBe Some("main.h")
+        inside(cpg.imports.l) { case List(mainImport) =>
+          mainImport.code shouldBe "#include \"main.h\""
+          mainImport.importedEntity shouldBe Some("main.h")
+          mainImport.importedAs shouldBe Some("main.h")
+          mainImport._dependencyViaImportsOut.head shouldBe mainDep
+          mainImport.file.name.l shouldBe List("main.c")
+        }
+      }
+    }
+
   }
 
 }
