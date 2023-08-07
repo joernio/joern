@@ -9,9 +9,7 @@ abstract class RubyLexerBase(input: CharStream)
     extends Lexer(input)
     with RubyLexerRegexHandling
     with RubyLexerStringInterpolationHandling
-    with RubyLexerQuotedNonExpandedStringArrayHandling
-    with RubyLexerQuotedNonExpandedSymbolArrayHandling
-    with NonExpandedDelimitedStringHandling {
+    with NonExpandedDelimiterHandling {
 
   /** The previously (non-WS) emitted token (in DEFAULT_CHANNEL.) */
   protected var previousNonWsToken: Option[Token] = None

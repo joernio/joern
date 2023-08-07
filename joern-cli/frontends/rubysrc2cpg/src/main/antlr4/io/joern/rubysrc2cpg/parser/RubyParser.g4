@@ -261,26 +261,26 @@ arrayConstructor
         nonExpandedWordArrayElements?
         QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END                                                                # nonExpandedWordArrayConstructor
     |   QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_START
-        QUOTED_NON_EXPANDED_SYMBOL_ARRAY_SEPARATOR*
+        NON_EXPANDED_ARRAY_ITEM_SEPARATOR*
         nonExpandedSymbolArrayElements?
-        QUOTED_NON_EXPANDED_SYMBOL_ARRAY_SEPARATOR*
+        NON_EXPANDED_ARRAY_ITEM_SEPARATOR*
         QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END                                                                # nonExpandedSymbolArrayConstructor
     ;
     
 nonExpandedSymbolArrayElements
-    :   nonExpandedSymbolArrayElement (QUOTED_NON_EXPANDED_SYMBOL_ARRAY_SEPARATOR+ nonExpandedSymbolArrayElement)*
+    :   nonExpandedSymbolArrayElement (NON_EXPANDED_ARRAY_ITEM_SEPARATOR+ nonExpandedSymbolArrayElement)*
     ;
 
 nonExpandedSymbolArrayElement
-    :   QUOTED_NON_EXPANDED_SYMBOL_ARRAY_CHARACTER+
+    :   NON_EXPANDED_ARRAY_ITEM_CHARACTER+
     ;
     
 nonExpandedWordArrayElements
-    :   nonExpandedWordArrayElement (QUOTED_NON_EXPANDED_STRING_ARRAY_SEPARATOR nonExpandedWordArrayElement)*
+    :   nonExpandedWordArrayElement (NON_EXPANDED_ARRAY_ITEM_SEPARATOR+ nonExpandedWordArrayElement)*
     ;
 
 nonExpandedWordArrayElement
-    :   QUOTED_NON_EXPANDED_STRING_ARRAY_CHARACTER+   
+    :   NON_EXPANDED_ARRAY_ITEM_CHARACTER+   
     ;
 
 
