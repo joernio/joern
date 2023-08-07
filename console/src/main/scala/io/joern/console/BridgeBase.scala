@@ -35,7 +35,8 @@ case class Config(
   frontendArgs: Array[String] = Array.empty,
   verbose: Boolean = false,
   dependencies: Seq[String] = Seq.empty,
-  resolvers: Seq[String] = Seq.empty
+  resolvers: Seq[String] = Seq.empty,
+  maxHeight: Option[Int] = None
 )
 
 /** Base class for ReplBridge, split by topic into multiple self types.
@@ -168,6 +169,10 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
         .action((_, c) => c.copy(verbose = true))
         .text("enable verbose output (predef, resolved dependency jars, ...)")
 
+      opt[Int]("maxHeight")
+        .action((x, c) => c.copy(maxHeight = Some(x)))
+        .text("Maximum number lines to print before output gets truncated (default: no limit)")
+
       help("help")
         .text("Print this help text")
     }
@@ -237,7 +242,8 @@ trait InteractiveShell { this: BridgeBase =>
         verbose = config.verbose,
         greeting = greeting,
         prompt = Option(promptStr),
-        onExitCode = Option(onExitCode)
+        onExitCode = Option(onExitCode),
+        maxHeight = config.maxHeight
       )
     )
   }
