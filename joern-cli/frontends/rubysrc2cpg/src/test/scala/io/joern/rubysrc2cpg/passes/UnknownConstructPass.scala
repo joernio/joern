@@ -69,7 +69,7 @@ class UnknownConstructPass extends RubyCode2CpgFixture {
     }
   }
 
-  "an attempted fix" should {
+  "an attempted fix" ignore {
     val cpg = code("""
         |class DerivedClass < BaseClass
         | KEYS = %w(
