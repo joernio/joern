@@ -15,6 +15,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewImport,
   NewLiteral,
   NewMethod,
+  NewMethodRef,
   NewNode,
   NewReturn
 }
@@ -313,7 +314,22 @@ trait AstForStatementsCreator {
       .typeFullName(Defines.Any)
       .lineNumber(methodCallNode.lineNumber)
       .columnNumber(methodCallNode.columnNumber)
-    Seq(callAst(callNode, argsAst, primaryAst.headOption))
+
+    primaryAst.headOption match {
+      case Some(value) =>
+        if (value.root.map(_.isInstanceOf[NewMethod]).getOrElse(false)) {
+          val methodNode = value.root.head.asInstanceOf[NewMethod]
+          val methodRefNode = NewMethodRef()
+            .code("def " + methodNode.name + "(...)")
+            .methodFullName(methodNode.fullName)
+            .typeFullName(methodNode.fullName)
+          blockMethods.addOne(primaryAst.head)
+          Seq(callAst(callNode, Seq(Ast(methodRefNode)) ++ argsAst))
+        } else {
+          Seq(callAst(callNode, argsAst, primaryAst.headOption))
+        }
+      case None => Seq(callAst(callNode, argsAst, primaryAst.headOption))
+    }
   }
 
   protected def astForCommand(ctx: CommandContext): Seq[Ast] = ctx match {

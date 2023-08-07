@@ -1839,17 +1839,16 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     }
   }
 
-  // TODO:
-  "Data flow for chained command with do-block without parentheses" ignore {
+  "Data flow for chained command with do-block with parentheses" ignore {
     val cpg = code("""
-        |x=10
-        |def greet(name)
+        |def foo()
         |  yield if block_given?
         |end
         |
-        |y = greet x do
-        |    [1,2,3,4,5]
-        |end.sum 2
+        |y = foo do
+        |    x = 1
+        |    [x+1,x+2]
+        |end.sum(10)
         |
         |puts y
         |""".stripMargin)
@@ -1861,17 +1860,16 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     }
   }
 
-  // TODO:
-  "Data flow for chained command with do-block with parentheses" ignore {
+  "Data flow for chained command with do-block without parentheses" should {
     val cpg = code("""
-        |x=10
-        |def greet(name)
+        |def foo()
         |  yield if block_given?
         |end
         |
-        |y = greet x do
-        |    [1,2,3,4,5]
-        |end.sum(2)
+        |y = foo do
+        |    x = 1
+        |    [x+1,x+2]
+        |end.sum 10
         |
         |puts y
         |""".stripMargin)
