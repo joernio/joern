@@ -1278,6 +1278,33 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       .l shouldBe List("d")
   }
 
+  "have correct structure for %w array with %w() with entries separated by whitespace" in {
+    val cpg = code("""
+        |a = %w(
+        | bob
+        | cod
+        | dod
+        |)
+        |""".stripMargin)
+
+    val List(assignmentCallNode) = cpg.call.name(Operators.assignment).l
+    assignmentCallNode.size shouldBe 1
+    val List(arrayCallNode) = cpg.call.name(Operators.arrayInitializer).l
+    arrayCallNode.size shouldBe 1
+    arrayCallNode.argument
+      .where(_.argumentIndex(1))
+      .code
+      .l shouldBe List("bob")
+    arrayCallNode.argument
+      .where(_.argumentIndex(2))
+      .code
+      .l shouldBe List("cod")
+    arrayCallNode.argument
+      .where(_.argumentIndex(3))
+      .code
+      .l shouldBe List("dod")
+  }
+
   "have correct structure for %w array with %w- -" in {
     val cpg = code("""
         |a = %w-b c-
