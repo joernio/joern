@@ -1930,31 +1930,6 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     }
   }
 
-  // TODO:
-  "Data flow for chained invocation without argument" ignore {
-    val cpg = code("""
-        |x=10
-        |def bar(y)
-        |  yield
-        |end
-        |
-        |public def sum
-        |    return 1
-        |end
-        |
-        |puts bar(x) {
-        |    1
-        |}.sum
-        |puts x
-        |""".stripMargin)
-
-    "find flows to the sink" in {
-      val source = cpg.identifier.name("x").l
-      val sink   = cpg.call.name("puts").l
-      sink.reachableByFlows(source).size shouldBe 3
-    }
-  }
-
   "Data flow through unless modifier" should {
     val cpg = code("""
         |x = 1
