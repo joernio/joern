@@ -4,8 +4,8 @@ import scala.collection.mutable
 
 trait NonExpandedDelimitedStringHandling { this: RubyLexerBase =>
 
-  private val delimiters = mutable.Stack[Int]()
-  private var nonExpandedDelimitedStringEndTokenType = 0
+  private val delimiters   = mutable.Stack[Int]()
+  private var endTokenType = 0
 
   def pushNonExpandedDelimiter(char: Int): Unit = {
     delimiters.push(char)
@@ -26,7 +26,7 @@ trait NonExpandedDelimitedStringHandling { this: RubyLexerBase =>
   def isNonExpandedClosingDelimiter(char: Int): Boolean = {
     char == currentClosingDelimiter()
   }
-  
+
   def isNonExpandedDelimiter(char: Int): Boolean = {
     isNonExpandedOpeningDelimiter(char) || isNonExpandedClosingDelimiter(char)
   }
@@ -34,20 +34,20 @@ trait NonExpandedDelimitedStringHandling { this: RubyLexerBase =>
   private def currentOpeningDelimiter(): Int = {
     delimiters.top
   }
-  
+
   def setNonExpandedDelimitedStringEndToken(endTokenType: Int): Unit = {
-    this.nonExpandedDelimitedStringEndTokenType = endTokenType
+    this.endTokenType = endTokenType
   }
-  
-  def getNonExpandedDelimitedStringEndToken: Int = nonExpandedDelimitedStringEndTokenType
-  
+
+  def getNonExpandedDelimitedStringEndToken: Int = endTokenType
+
   private def currentClosingDelimiter(): Int =
     currentOpeningDelimiter() match {
       case '(' => ')'
       case '[' => ']'
       case '{' => '}'
       case '<' => '>'
-      case c => c
+      case c   => c
     }
 
 }
