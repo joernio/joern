@@ -1392,4 +1392,26 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     cpg.identifier.name("b").size shouldBe 1
   }
 
+  "have correct structure for multiline %i" in {
+    val cpg = code("""
+        |w = %i(x y
+        |     z)
+        |""".stripMargin)
+
+    val List(arrayInit)                                      = cpg.call.name(Operators.arrayInitializer).l
+    val List(xNode: Literal, yNode: Literal, zNode: Literal) = arrayInit.argument.l
+
+    xNode.code shouldBe "x"
+    xNode.argumentIndex shouldBe 1
+    xNode.typeFullName shouldBe Defines.Symbol
+
+    yNode.code shouldBe "y"
+    yNode.argumentIndex shouldBe 2
+    yNode.typeFullName shouldBe Defines.Symbol
+
+    zNode.code shouldBe "z"
+    zNode.argumentIndex shouldBe 3
+    zNode.typeFullName shouldBe Defines.Symbol
+  }
+
 }
