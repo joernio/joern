@@ -22,45 +22,14 @@ import scala.util.{Failure, Success, Try}
   *   grammar dependent, during development we may see input that would cause the parser to hang. To induce completion
   *   we need a timeout.
   */
-class AntlrParser(filename: String, parsingTimeoutMs: Long = 5000) {
+class AntlrParser(filename: String) {
 
-  private val logger      = LoggerFactory.getLogger(getClass)
-  private val sourceLines = IOUtils.readLinesInFile(Paths.get(filename)).to(ArrayBuffer)
-  var parser: RubyParser  = generateParser()
+  private val charStream  = CharStreams.fromFileName(filename)
+  private val lexer       = new RubyLexer(charStream)
+  private val tokenStream = new CommonTokenStream(lexer)
+  val parser: RubyParser  = new RubyParser(tokenStream)
 
-  private def generateParser(): RubyParser = {
-    val inputString = sourceLines.mkString(System.lineSeparator)
-    val charStream  = CharStreams.fromString(inputString)
-    val lexer       = new RubyLexer(charStream)
-    val tokenStream = new CommonTokenStream(lexer)
-    val parser      = new RubyParser(tokenStream)
-    parser.removeErrorListeners()
-    parser.addErrorListener(ErroneousLineListener.INSTANCE)
-    parser
-  }
-
-  def parse(): Try[RubyParser.ProgramContext] = parse(getProgramWithTimeout)
-
-  @tailrec
-  private def parse(lastResult: Try[RubyParser.ProgramContext]): Try[RubyParser.ProgramContext] = {
-    val lastError = ErroneousLineListener.INSTANCE.getLastErrorAndReset
-    lastResult match
-      case Failure(exception: TimeoutException) =>
-        Try[RubyParser.ProgramContext](
-          throw new TimeoutException(s"$filename timed out while parsing after [$parsingTimeoutMs milliseconds]")
-        )
-      case Failure(exception) => Failure(exception)
-      case Success(program) if lastError != -1 && lastError != sourceLines.size =>
-        logger.warn(s"Erroneous line reported at $lastError, removing and re-parsing")
-        sourceLines.remove(lastError - 1)
-        sourceLines.insert(lastError - 1, "")
-        parser = generateParser()
-        parse(getProgramWithTimeout)
-      case Success(program) => Success(program)
-  }
-
-  private def getProgramWithTimeout = TimeUtils.runWithTimeout(5000) { parser.program() }
-
+  def parse(): Try[RubyParser.ProgramContext] = Try(parser.program())
 }
 
 /** A re-usable parser object that clears the ANTLR DFA-cache if it determines that the memory usage is becoming large.
@@ -75,7 +44,7 @@ class AntlrParser(filename: String, parsingTimeoutMs: Long = 5000) {
   * @param parserTimeoutMs
   *   how long the parser may attempt parsing a file before bailing out.
   */
-class ResourceManagedParser(clearLimit: Double, parserTimeoutMs: Long) extends AutoCloseable {
+class ResourceManagedParser(clearLimit: Double) extends AutoCloseable {
 
   private val logger                                 = LoggerFactory.getLogger(getClass)
   private val runtime                                = Runtime.getRuntime
@@ -83,7 +52,7 @@ class ResourceManagedParser(clearLimit: Double, parserTimeoutMs: Long) extends A
   private var maybeAtn: Option[ATN]                  = None
 
   def parse(filename: String): Try[RubyParser.ProgramContext] = {
-    val antlrParser = AntlrParser(filename, parserTimeoutMs)
+    val antlrParser = AntlrParser(filename)
     val interp      = antlrParser.parser.getInterpreter
     // We need to grab a live instance in order to get the static variables as they are protected from static access
     maybeDecisionToDFA = Option(interp.decisionToDFA)
@@ -107,37 +76,4 @@ class ResourceManagedParser(clearLimit: Double, parserTimeoutMs: Long) extends A
   }
 
   override def close(): Unit = clearDFA()
-}
-
-private class ErroneousLineListener extends BaseErrorListener {
-
-  private val logger         = LoggerFactory.getLogger(getClass)
-  private var lastError: Int = -1
-
-  def getLastErrorAndReset: Int = {
-    val tmp = lastError
-    lastError = -1
-    tmp
-  }
-
-  override def syntaxError(
-    recognizer: Recognizer[_, _],
-    offendingSymbol: Any,
-    line: Int,
-    charPositionInLine: Int,
-    msg: String,
-    e: RecognitionException
-  ): Unit = {
-    val tokenString = offendingSymbol match
-      case x: CommonToken => x.getText
-      case x              => x.getClass
-
-    lastError = line
-    logger.warn(s"$msg. Offending symbol '$tokenString' at $line:$charPositionInLine.")
-  }
-
-}
-
-object ErroneousLineListener {
-  val INSTANCE: ErroneousLineListener = new ErroneousLineListener()
 }
