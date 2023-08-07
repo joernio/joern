@@ -2661,4 +2661,16 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     sink.reachableByFlows(source).size shouldBe 2
   }
 
+  "flow through %i array" in {
+    val cpg = code("""
+        |a = %i[b
+        |    c]
+        |puts a
+        |""".stripMargin)
+
+    val source = cpg.literal.code("b").l
+    val sink   = cpg.call.name("puts").l
+    sink.reachableByFlows(source).size shouldBe 1
+  }
+
 }
