@@ -2,7 +2,7 @@ package io.joern.rubysrc2cpg.parser
 
 import scala.collection.mutable
 
-trait NonExpandedDelimitedStringHandling { this: RubyLexerBase =>
+trait NonExpandedDelimiterHandling { this: RubyLexerBase =>
 
   private val delimiters   = mutable.Stack[Int]()
   private var endTokenType = 0
@@ -27,15 +27,11 @@ trait NonExpandedDelimitedStringHandling { this: RubyLexerBase =>
     char == currentClosingDelimiter()
   }
 
-  def isNonExpandedDelimiter(char: Int): Boolean = {
-    isNonExpandedOpeningDelimiter(char) || isNonExpandedClosingDelimiter(char)
-  }
-
   private def currentOpeningDelimiter(): Int = {
     delimiters.top
   }
 
-  def setNonExpandedDelimitedStringEndToken(endTokenType: Int): Unit = {
+  def setNonExpandedDelimiterEndToken(endTokenType: Int): Unit = {
     this.endTokenType = endTokenType
   }
 
