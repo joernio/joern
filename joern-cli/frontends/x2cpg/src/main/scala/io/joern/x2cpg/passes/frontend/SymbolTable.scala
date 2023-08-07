@@ -1,7 +1,7 @@
 package io.joern.x2cpg.passes.frontend
 
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.MapView
@@ -69,6 +69,17 @@ class SymbolTable[K <: SBKey](val keyFromNode: AstNode => Option[K]) {
 
   private val table = TrieMap.empty[K, Set[String]]
 
+  /** The set limit is to bound the set of possible types, since by using dummy types we could have an unbounded number
+    * of permutations of various access paths
+    */
+  private val setLimit = 10
+
+  private def coalesce(oldEntries: Set[String], newEntries: Set[String]): Set[String] = {
+    val allTypes = (oldEntries ++ newEntries).toSeq // convert to ordered set to make `take` work predictably
+    val (dummies, noDummies) = allTypes.partition(XTypeRecovery.isDummyType)
+    (noDummies ++ dummies).take(setLimit).toSet
+  }
+
   def apply(sbKey: K): Set[String] = table(sbKey)
 
   def apply(node: AstNode): Set[String] =
@@ -83,8 +94,9 @@ class SymbolTable[K <: SBKey](val keyFromNode: AstNode => Option[K]) {
 
   def put(sbKey: K, typeFullNames: Set[String]): Set[String] =
     if (typeFullNames.nonEmpty) {
-      table.put(sbKey, typeFullNames)
-      typeFullNames
+      val newEntry = coalesce(Set.empty, typeFullNames)
+      table.put(sbKey, newEntry)
+      newEntry
     } else {
       Set.empty
     }
@@ -111,8 +123,8 @@ class SymbolTable[K <: SBKey](val keyFromNode: AstNode => Option[K]) {
   def append(sbKey: K, typeFullNames: Set[String]): Set[String] = {
     table.get(sbKey) match {
       case Some(ts) if ts == typeFullNames    => ts
-      case Some(ts) if typeFullNames.nonEmpty => put(sbKey, ts ++ typeFullNames)
-      case None if typeFullNames.nonEmpty     => put(sbKey, typeFullNames)
+      case Some(ts) if typeFullNames.nonEmpty => put(sbKey, coalesce(ts, typeFullNames))
+      case None if typeFullNames.nonEmpty     => put(sbKey, coalesce(Set.empty, typeFullNames))
       case _                                  => Set.empty
     }
   }
