@@ -9,8 +9,6 @@ import io.joern.rubysrc2cpg.astcreation.AstCreator
 
 class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
 
-  private val sep = System.lineSeparator
-
   "AST generation for simple fragments" should {
 
     "have correct structure for a single command call" in {
@@ -532,7 +530,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
 
     "have correct structure for a indexing expression" in {
-      val cpg            = code(s"def some_method(index)$sep some_map[index]${sep}end")
+      val cpg            = code("def some_method(index)\n some_map[index]\nend")
       val List(callNode) = cpg.call.name(Operators.indexAccess).l
       callNode.code shouldBe "some_map[index]"
       callNode.lineNumber shouldBe Some(2)
@@ -550,7 +548,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
 
       val List(methodNode) = cpg.method.name("\\[]").l
       methodNode.fullName shouldBe "Test0.rb::program.MyClass.[]"
-      methodNode.code shouldBe s"def [](key)$sep  @member_hash[key]${sep}end"
+      methodNode.code shouldBe "def [](key)\n  @member_hash[key]\nend"
       methodNode.lineNumber shouldBe Some(3)
       methodNode.lineNumberEnd shouldBe Some(5)
       methodNode.columnNumber shouldBe Some(4)
@@ -567,7 +565,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
 
       val List(methodNode) = cpg.method.name("==").l
       methodNode.fullName shouldBe "Test0.rb::program.MyClass.=="
-      methodNode.code shouldBe s"def ==(other)$sep  @my_member==other${sep}end"
+      methodNode.code shouldBe "def ==(other)\n  @my_member==other\nend"
       methodNode.lineNumber shouldBe Some(3)
       methodNode.lineNumberEnd shouldBe Some(5)
       methodNode.columnNumber shouldBe Some(4)
@@ -583,7 +581,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
 
       val List(methodNode) = cpg.method.name("some_method").l
       methodNode.fullName shouldBe "Test0.rb::program.MyClass.some_method"
-      methodNode.code shouldBe s"def some_method(param)${sep}end"
+      methodNode.code shouldBe "def some_method(param)\nend"
       methodNode.lineNumber shouldBe Some(3)
       methodNode.lineNumberEnd shouldBe Some(4)
       methodNode.columnNumber shouldBe Some(4)
@@ -645,15 +643,15 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
 
     "have correct structure for negation before block (invocationExpressionOrCommand)" in {
-      val cpg = code(s"!foo arg do${sep}puts arg${sep}end")
+      val cpg = code("!foo arg do\nputs arg\nend")
 
       val List(callNode1) = cpg.call.name(Operators.not).l
-      callNode1.code shouldBe s"!foo arg do${sep}puts arg${sep}end"
+      callNode1.code shouldBe "!foo arg do\nputs arg\nend"
       callNode1.lineNumber shouldBe Some(1)
       callNode1.columnNumber shouldBe Some(0)
 
       val List(callNode2) = cpg.call.name("foo").l
-      callNode2.code shouldBe s"foo arg do${sep}puts arg${sep}end"
+      callNode2.code shouldBe "foo arg do\nputs arg\nend"
       callNode2.lineNumber shouldBe Some(1)
       callNode2.columnNumber shouldBe Some(1)
 
@@ -709,7 +707,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
 
     "have correct structure for chainedInvocationWithoutArgumentsPrimary" in {
-      val cpg = code(s"object::foo do${sep}puts \"right here\"${sep}end")
+      val cpg = code("object::foo do\nputs \"right here\"\nend")
 
       val List(callNode1) = cpg.call.name("foo").l
       callNode1.code shouldBe "puts \"right here\""
@@ -812,7 +810,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
 
     "have correct structure for class definition with body having only identifiers" in {
-      val cpg = code(s"class MyClass${sep}identifier1${sep}identifier2${sep}end")
+      val cpg = code("class MyClass\nidentifier1\nidentifier2\nend")
 
       val List(identifierNode1) = cpg.identifier.name("identifier1").l
       identifierNode1.code shouldBe "identifier1"
@@ -964,11 +962,11 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
 
     "have correct structure when method call present in next line, with the second line starting with `.`" in {
-      val cpg = code(s"foo${sep}   .bar(1)")
+      val cpg = code("foo\n   .bar(1)")
 
       val List(callNode) = cpg.call.l
       cpg.call.size shouldBe 1
-      callNode.code shouldBe (s"foo${sep}   .bar(1)")
+      callNode.code shouldBe ("foo\n   .bar(1)")
       callNode.name shouldBe "bar"
       callNode.lineNumber shouldBe Some(2)
       val List(actualArg) = callNode.argument.argumentIndex(1).l
@@ -976,11 +974,11 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
 
     "have correct structure when method call present in next line, with the first line ending with `.`" in {
-      val cpg = code(s"foo.${sep}   bar(1)")
+      val cpg = code("foo.\n   bar(1)")
 
       val List(callNode) = cpg.call.l
       cpg.call.size shouldBe 1
-      callNode.code shouldBe (s"foo.${sep}   bar(1)")
+      callNode.code shouldBe ("foo.\n   bar(1)")
       callNode.name shouldBe "bar"
       callNode.lineNumber shouldBe Some(1)
       val List(actualArg) = callNode.argument.argumentIndex(1).l
@@ -1106,7 +1104,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
 
     val List(controlNode) = cpg.controlStructure.l
     controlNode.controlStructureType shouldBe ControlStructureTypes.IF
-    controlNode.code shouldBe s"a ?${sep} b${sep}: c"
+    controlNode.code shouldBe "a ?\n b\n: c"
     controlNode.lineNumber shouldBe Some(1)
     controlNode.columnNumber shouldBe Some(4)
 
