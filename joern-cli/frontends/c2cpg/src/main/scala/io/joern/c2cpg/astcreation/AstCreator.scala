@@ -53,11 +53,13 @@ class AstCreator(
   private def astForTranslationUnit(iASTTranslationUnit: IASTTranslationUnit): Ast = {
     val namespaceBlock = globalNamespaceBlock()
     methodAstParentStack.push(namespaceBlock)
-    val ast = Ast(namespaceBlock).withChild(
+    val translationUnitAst =
       astInFakeMethod(namespaceBlock.fullName, fileName(iASTTranslationUnit), iASTTranslationUnit)
-    )
-    attachDependenciesAndImports(iASTTranslationUnit)
-    ast.withChildren(astsForComments(iASTTranslationUnit))
+    val depsAndImportsAsts = astsForDependenciesAndImports(iASTTranslationUnit)
+    val commentsAsts       = astsForComments(iASTTranslationUnit)
+    val childrenAsts       = depsAndImportsAsts ++ Seq(translationUnitAst) ++ commentsAsts
+    setArgumentIndices(childrenAsts)
+    Ast(namespaceBlock).withChildren(childrenAsts)
   }
 
   /** Creates an AST of all declarations found in the translation unit - wrapped in a fake method.

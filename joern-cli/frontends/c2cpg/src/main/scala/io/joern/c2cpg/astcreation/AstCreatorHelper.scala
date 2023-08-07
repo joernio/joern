@@ -403,23 +403,21 @@ trait AstCreatorHelper { this: AstCreator =>
     }
   }
 
-  protected def attachDependenciesAndImports(iASTTranslationUnit: IASTTranslationUnit): Unit = {
+  protected def astsForDependenciesAndImports(iASTTranslationUnit: IASTTranslationUnit): Seq[Ast] = {
     val allIncludes = iASTTranslationUnit.getIncludeDirectives.toList.filterNot(isIncludedNode)
-    allIncludes.foreach { include =>
+    allIncludes.map { include =>
       val name            = include.getName.toString
       val _dependencyNode = newDependencyNode(name, name, IncludeKeyword)
       val importNode      = newImportNode(nodeSignature(include), name, name, include)
       diffGraph.addNode(_dependencyNode)
       diffGraph.addEdge(importNode, _dependencyNode, EdgeTypes.IMPORTS)
+      Ast(importNode)
     }
   }
 
   protected def astsForComments(iASTTranslationUnit: IASTTranslationUnit): Seq[Ast] = {
     if (config.includeComments) {
-      val commentsAsts =
-        iASTTranslationUnit.getComments.toList.filterNot(isIncludedNode).map(comment => astForComment(comment))
-      setArgumentIndices(commentsAsts)
-      commentsAsts
+      iASTTranslationUnit.getComments.toList.filterNot(isIncludedNode).map(comment => astForComment(comment))
     } else {
       Seq.empty
     }
