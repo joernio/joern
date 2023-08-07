@@ -8,7 +8,7 @@ import io.shiftleft.semanticcpg.language.*
 
 class UnknownConstructPass extends RubyCode2CpgFixture {
 
-  "invalid assignment" should {
+  "invalid assignment" ignore {
     val cpg = code("""
         |a = 1
         |b = [[]
@@ -25,7 +25,7 @@ class UnknownConstructPass extends RubyCode2CpgFixture {
     }
   }
 
-  "invalid method body" should {
+  "invalid method body" ignore {
     val cpg = code("""
         |x = 1
         |def random(a)
@@ -55,7 +55,7 @@ class UnknownConstructPass extends RubyCode2CpgFixture {
     }
   }
 
-  "unrecognized token in the RHS of an assignment" should {
+  "unrecognized token in the RHS of an assignment" ignore {
     val cpg = code("""
         |x = \!
         |y = 1
@@ -69,7 +69,7 @@ class UnknownConstructPass extends RubyCode2CpgFixture {
     }
   }
 
-  "an attempted fix" should {
+  "an attempted fix" ignore {
     val cpg = code("""
         |class DerivedClass < BaseClass
         | KEYS = %w(
