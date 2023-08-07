@@ -652,7 +652,7 @@ class AstCreator(
 
   def astForChainedInvocationPrimaryContext(ctx: ChainedInvocationPrimaryContext): Seq[Ast] = {
     val methodNameAst = astForMethodNameContext(ctx.methodName())
-    val baseAst       = astForPrimaryContext(ctx.primary())
+    val primaryAst    = astForPrimaryContext(ctx.primary())
 
     val terminalNode = if (ctx.COLON2() != null) {
       ctx.COLON2()
@@ -704,7 +704,7 @@ class AstCreator(
         .lineNumber(blockMethodNode.lineNumber)
         .columnNumber(blockMethodNode.columnNumber)
 
-      Seq(callAst(callNode, Seq(Ast(methodRefNode)), baseAst.headOption))
+      Seq(callAst(callNode, Seq(Ast(methodRefNode)), primaryAst.headOption))
     } else {
       val callNode = methodNameAst.head.nodes
         .filter(node => node.isInstanceOf[NewCall])
@@ -713,14 +713,30 @@ class AstCreator(
 
       if (callNode.name == "call" && ctx.primary().isInstanceOf[ProcDefinitionPrimaryContext]) {
         // this is a proc.call
-        val baseCallNode = baseAst.head.nodes.head.asInstanceOf[NewCall]
+        val baseCallNode = primaryAst.head.nodes.head.asInstanceOf[NewCall]
         Seq(callAst(baseCallNode, argsAst))
       } else {
         callNode
           .code(ctx.getText)
           .lineNumber(terminalNode.getSymbol().getLine())
           .columnNumber(terminalNode.getSymbol().getCharPositionInLine())
-        Seq(callAst(callNode, argsAst, baseAst.headOption))
+
+        primaryAst.headOption match {
+          case Some(value) =>
+            if (value.root.map(_.isInstanceOf[NewMethod]).getOrElse(false)) {
+              val methodNode = value.root.head.asInstanceOf[NewMethod]
+              val methodRefNode = NewMethodRef()
+                .code("def " + methodNode.name + "(...)")
+                .methodFullName(methodNode.fullName)
+                .typeFullName(methodNode.fullName)
+              blockMethods.addOne(primaryAst.head)
+              Seq(callAst(callNode, Seq(Ast(methodRefNode)) ++ argsAst))
+            } else {
+              Seq(callAst(callNode, argsAst, primaryAst.headOption))
+            }
+          case None =>
+            Seq(callAst(callNode, argsAst, primaryAst.headOption))
+        }
       }
     }
   }

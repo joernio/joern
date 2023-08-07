@@ -1839,7 +1839,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     }
   }
 
-  "Data flow for chained command with do-block with parentheses" ignore {
+  "Data flow for chained command with do-block with parentheses" should {
     val cpg = code("""
         |def foo()
         |  yield if block_given?
