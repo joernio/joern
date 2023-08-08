@@ -18,8 +18,8 @@ dependsOn(
 )
 
 libraryDependencies ++= Seq(
-  "com.michaelpollmeier" %% "scala-repl-pp-all" % "0.1.32",
   "io.shiftleft"         %% "codepropertygraph" % Versions.cpg,
+  "com.michaelpollmeier" %% "scala-repl-pp-all" % Versions.scalaReplPP,
   "com.github.scopt"     %% "scopt"             % ScoptVersion,
   "org.typelevel"        %% "cats-effect"       % Versions.cats,
   "io.circe"             %% "circe-generic"     % CirceVersion,
