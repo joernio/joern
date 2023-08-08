@@ -2,14 +2,14 @@ package io.shiftleft.semanticcpg.language
 
 import io.shiftleft.codepropertygraph.generated.nodes.{AbstractNode, NewNode, StoredNode}
 import org.json4s.native.Serialization.{write, writePretty}
-import org.json4s.{CustomSerializer, Extraction}
-import org.json4s.Formats
-import overflowdb.traversal._
+import org.json4s.{CustomSerializer, Extraction, Formats}
+import overflowdb.traversal.*
 import overflowdb.traversal.help.Doc
+import replpp.Operators.*
 
-import java.util.{List => JList}
+import java.util.List as JList
 import scala.collection.mutable
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 /** Base class for our DSL These are the base steps available in all steps of the query language. There are no
   * constraints on the element types, unlike e.g. [[NodeSteps]]
@@ -49,6 +49,11 @@ class Steps[A](val traversal: Traversal[A]) extends AnyVal {
   @Doc(info = "execute this traversal and pretty print the results")
   def p(implicit show: Show[A] = Show.default): List[String] =
     traversal.toList.map(show.apply)
+
+  @Doc(info = "execute this traversal and show the pretty-printed results in `less`")
+  // uses scala-repl-pp's `#|^` operator which let's `less` inherit stdin and stdout
+  def browse(implicit show: Show[A] = Show.default): Unit =
+    traversal.map(show.apply) #|^ "less"
 
   /** Execute traversal and convert the result to json. `toJson` (export) contains the exact same information as
     * `toList`, only in json format. Typically, the user will call this method upon inspection of the results of
