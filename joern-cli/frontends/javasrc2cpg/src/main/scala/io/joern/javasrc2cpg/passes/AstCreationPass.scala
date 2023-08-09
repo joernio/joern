@@ -1,18 +1,26 @@
 package io.joern.javasrc2cpg.passes
 
 import better.files.File
-import com.github.javaparser.{JavaParser, ParserConfiguration}
+import com.github.javaparser.JavaParser
+import com.github.javaparser.ParserConfiguration
 import com.github.javaparser.ParserConfiguration.LanguageLevel
 import com.github.javaparser.ast.CompilationUnit
 import com.github.javaparser.ast.Node.Parsedness
 import com.github.javaparser.symbolsolver.JavaSymbolSolver
-import com.github.javaparser.symbolsolver.resolution.typesolvers.JarTypeSolver
+import com.github.javaparser.symbolsolver.resolution.typesolvers.{
+  ClassLoaderTypeSolver,
+  JarTypeSolver,
+  ReflectionTypeSolver
+}
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
+import io.joern.javasrc2cpg.JavaSrc2Cpg.JavaSrcEnvVar
 import io.joern.javasrc2cpg.passes.AstCreationPass._
-import io.joern.javasrc2cpg.typesolvers.{EagerSourceTypeSolver, SimpleCombinedTypeSolver, JdkJarTypeSolver}
-import io.joern.javasrc2cpg.util.{Delombok, SourceParser}
+import io.joern.javasrc2cpg.typesolvers.{EagerSourceTypeSolver, JdkJarTypeSolver, SimpleCombinedTypeSolver}
+import io.joern.javasrc2cpg.typesolvers.noncaching.LazySourceTypeSolver
+import io.joern.javasrc2cpg.util.Delombok
 import io.joern.javasrc2cpg.util.Delombok.DelombokMode
 import io.joern.javasrc2cpg.util.Delombok.DelombokMode._
+import io.joern.javasrc2cpg.util.SourceParser
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
@@ -21,18 +29,14 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import org.slf4j.LoggerFactory
 
+import java.net.URLClassLoader
+import java.nio.file.Path
 import java.nio.file.Paths
 import scala.collection.parallel.CollectionConverters._
 import scala.jdk.CollectionConverters._
 import scala.jdk.OptionConverters.RichOptional
-import scala.util.{Success, Try}
-import com.github.javaparser.symbolsolver.resolution.typesolvers.ClassLoaderTypeSolver
-import java.net.URLClassLoader
-import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver
-import io.joern.javasrc2cpg.typesolvers.CachingReflectionTypeSolver
-import io.joern.javasrc2cpg.JavaSrc2Cpg.JavaSrcEnvVar
-import java.nio.file.Path
-import io.joern.javasrc2cpg.typesolvers.noncaching.LazySourceTypeSolver
+import scala.util.Success
+import scala.util.Try
 
 class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[String]] = None)
     extends ConcurrentWriterCpgPass[String](cpg) {
@@ -110,7 +114,7 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
         jdkPath
     }
 
-    combinedTypeSolver.add(JdkJarTypeSolver.fromJdkPath(jdkPath))
+    combinedTypeSolver.addNonCachingTypeSolver(JdkJarTypeSolver.fromJdkPath(jdkPath))
 
     val relativeSourceFilenames =
       sourceFilenames.map(filename => Path.of(config.inputPath).relativize(Path.of(filename)).toString)
@@ -118,7 +122,7 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
     val sourceTypeSolver =
       EagerSourceTypeSolver(relativeSourceFilenames, sourceParser, combinedTypeSolver, symbolSolver)
 
-    combinedTypeSolver.prepend(sourceTypeSolver)
+    combinedTypeSolver.addCachingTypeSolver(sourceTypeSolver)
 
     // Add solvers for inference jars
     val jarsList = config.inferenceJarPaths.flatMap(recursiveJarsFromPath).toList
@@ -126,7 +130,7 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
       .flatMap { path =>
         Try(new JarTypeSolver(path)).toOption
       }
-      .foreach { combinedTypeSolver.add(_) }
+      .foreach { combinedTypeSolver.addNonCachingTypeSolver(_) }
 
     symbolSolver
   }
