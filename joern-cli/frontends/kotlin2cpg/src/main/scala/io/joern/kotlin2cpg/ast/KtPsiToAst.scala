@@ -1840,12 +1840,13 @@ trait KtPsiToAst {
       Option(parentFn)
         .collect { case namedFn: KtNamedFunction => namedFn }
         .map(AnonymousObjectContext(_))
+        .getOrElse(AnonymousObjectContext(expr.getContainingKtFile))
 
     val idxOpt  = PsiUtils.objectIdxMaybe(expr.getObjectDeclaration, parentFn)
     val idx     = idxOpt.getOrElse(Random.nextInt())
     val tmpName = s"tmp_obj_$idx"
 
-    val typeDeclAsts     = astsForClassOrObject(expr.getObjectDeclaration, ctx)
+    val typeDeclAsts     = astsForClassOrObject(expr.getObjectDeclaration, Some(ctx))
     val typeDeclAst      = typeDeclAsts.head
     val typeDeclFullName = typeDeclAst.root.get.asInstanceOf[NewTypeDecl].fullName
 
@@ -1952,13 +1953,14 @@ trait KtPsiToAst {
       Seq(localAst, assignmentCallAst, initAst)
     } else if (hasRHSObjectLiteral) {
       val typedExpr = expr.getDelegateExpressionOrInitializer.asInstanceOf[KtObjectLiteralExpression]
+      val parentFn  = KtPsiUtil.getTopmostParentOfTypes(expr, classOf[KtNamedFunction])
       val ctx =
-        Option(expr.getParent)
-          .map(_.getParent)
+        Option(parentFn)
           .collect { case namedFn: KtNamedFunction => namedFn }
           .map(AnonymousObjectContext(_))
+          .getOrElse(AnonymousObjectContext(expr.getContainingKtFile))
 
-      val typeDeclAsts     = astsForClassOrObject(typedExpr.getObjectDeclaration, ctx)
+      val typeDeclAsts     = astsForClassOrObject(typedExpr.getObjectDeclaration, Some(ctx))
       val typeDeclAst      = typeDeclAsts.head
       val typeDeclFullName = typeDeclAst.root.get.asInstanceOf[NewTypeDecl].fullName
 
