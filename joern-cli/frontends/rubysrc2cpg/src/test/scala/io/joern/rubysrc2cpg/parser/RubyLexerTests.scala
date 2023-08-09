@@ -637,6 +637,34 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     )
   }
 
+  "multi-line `%w` string array literal" should "be recognized as such" in {
+    val code =
+      """%w(
+        | bob
+        | cod
+        | dod)""".stripMargin
+    tokenize(code) shouldBe Seq(
+      QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_START,
+      NON_EXPANDED_ARRAY_ITEM_SEPARATOR,
+      NON_EXPANDED_ARRAY_ITEM_SEPARATOR,
+      NON_EXPANDED_ARRAY_ITEM_CHARACTER,
+      NON_EXPANDED_ARRAY_ITEM_CHARACTER,
+      NON_EXPANDED_ARRAY_ITEM_CHARACTER,
+      NON_EXPANDED_ARRAY_ITEM_SEPARATOR,
+      NON_EXPANDED_ARRAY_ITEM_SEPARATOR,
+      NON_EXPANDED_ARRAY_ITEM_CHARACTER,
+      NON_EXPANDED_ARRAY_ITEM_CHARACTER,
+      NON_EXPANDED_ARRAY_ITEM_CHARACTER,
+      NON_EXPANDED_ARRAY_ITEM_SEPARATOR,
+      NON_EXPANDED_ARRAY_ITEM_SEPARATOR,
+      NON_EXPANDED_ARRAY_ITEM_CHARACTER,
+      NON_EXPANDED_ARRAY_ITEM_CHARACTER,
+      NON_EXPANDED_ARRAY_ITEM_CHARACTER,
+      QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END,
+      EOF
+    )
+  }
+
   "empty `%i` symbol array literals" should "be recognized as such" in {
     val eg = Seq("%i()", "%i[]", "%i{}", "%i<>", "%i##", "%i!!", "%i--", "%i@@", "%i++", "%i**", "%i//", "%i&&")
     all(eg.map(tokenize)) shouldBe Seq(
