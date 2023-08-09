@@ -116,7 +116,7 @@ class ArrayTests extends RubyParserAbstractTest {
             |    z
             |  -""".stripMargin
       }
-      
+
       "it spans multiple lines" in {
         val code =
           """%w(
@@ -142,7 +142,7 @@ class ArrayTests extends RubyParserAbstractTest {
             |    o
             |    d
             |  )""".stripMargin
-          
+
       }
     }
   }
