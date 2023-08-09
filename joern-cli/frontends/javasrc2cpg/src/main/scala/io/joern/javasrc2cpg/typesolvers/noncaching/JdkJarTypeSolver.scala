@@ -1,7 +1,6 @@
 package io.joern.javasrc2cpg.typesolvers
 
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration
-import com.github.javaparser.symbolsolver.model.resolution.{SymbolReference, TypeSolver}
 import com.github.javaparser.resolution.UnsolvedSymbolException
 import io.joern.javasrc2cpg.typesolvers.JdkJarTypeSolver._
 import javassist.ClassPool
@@ -22,6 +21,8 @@ import com.github.javaparser.symbolsolver.javassistmodel.JavassistFactory
 import javassist.NotFoundException
 import javassist.ClassPath
 import io.shiftleft.semanticcpg.language.singleToEvalTypeAccessorsParameterOut
+import com.github.javaparser.resolution.TypeSolver
+import com.github.javaparser.resolution.model.SymbolReference
 
 class JdkJarTypeSolver private (jdkPath: String) extends TypeSolver {
 

@@ -3,7 +3,8 @@ package io.joern.javasrc2cpg.typesolvers
 import com.github.javaparser.ast.body.TypeDeclaration
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration
 import com.github.javaparser.symbolsolver.javaparsermodel.JavaParserFacade
-import com.github.javaparser.symbolsolver.model.resolution.{SymbolReference, TypeSolver}
+import com.github.javaparser.resolution.model.SymbolReference
+import com.github.javaparser.resolution.TypeSolver
 import io.joern.javasrc2cpg.util.SourceParser
 import org.slf4j.LoggerFactory
 
