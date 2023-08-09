@@ -138,7 +138,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
       TypeNodePass.withRegisteredTypes(kotlinAstCreatorTypes, cpg).createAndApply()
 
       if (config.includeJavaSourceFiles && filesWithJavaExtension.nonEmpty) {
-        val javaAstCreator = JavasrcInterop.astCreationPass(filesWithJavaExtension, cpg)
+        val javaAstCreator = JavasrcInterop.astCreationPass(config.inputPath, filesWithJavaExtension, cpg)
         javaAstCreator.createAndApply()
         val javaAstCreatorTypes = javaAstCreator.global.usedTypes.keys().asScala.toList
         TypeNodePass

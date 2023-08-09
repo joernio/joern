@@ -8,7 +8,8 @@ import io.shiftleft.codepropertygraph.Cpg
 import org.slf4j.LoggerFactory
 
 object JavasrcInterop {
-  def astCreationPass(paths: List[String], cpg: Cpg): JavaSrcAstCreationPass = {
-    new JavaSrcAstCreationPass(JavaSrc2Cpg.DefaultConfig, cpg, Some(paths))
+  def astCreationPass(inputPath: String, paths: List[String], cpg: Cpg): JavaSrcAstCreationPass = {
+    val javasrcConfig = JavaSrc2Cpg.DefaultConfig.withInputPath(inputPath)
+    new JavaSrcAstCreationPass(javasrcConfig, cpg, Some(paths))
   }
 }
