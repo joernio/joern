@@ -44,7 +44,13 @@ object BindingTable {
 
     // Take over all binding table entries for parent class/interface binding tables.
     adapter.directParents(typeDecl).filterNot(adapter.typeDeclEquals(_, typeDecl)).foreach { parentTypeDecl =>
-      val parentBindingTable = getBindingTable(parentTypeDecl)
+      val parentBindingTable =
+        try {
+          getBindingTable(parentTypeDecl)
+        } catch {
+          case e: StackOverflowError =>
+            throw new RuntimeException(s"SOE getting binding table for $typeDeclFullName")
+        }
       parentBindingTable.getEntries.foreach { entry =>
         bindingTable.add(entry)
       }

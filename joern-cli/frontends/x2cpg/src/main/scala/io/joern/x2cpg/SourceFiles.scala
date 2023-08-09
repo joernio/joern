@@ -62,7 +62,14 @@ object SourceFiles {
     * according to the given config (by its ignoredFilesRegex and ignoredFiles).
     */
   def determine(inputPath: String, sourceFileExtensions: Set[String], config: X2CpgConfig[_]): List[String] = {
-    filterFiles(determine(Set(inputPath), sourceFileExtensions), config)
+    determine(Set(inputPath), sourceFileExtensions, config)
+  }
+
+  /** For given input paths, determine all source files by inspecting filename extensions and filter the result
+    * according to the given config (by its ignoredFilesRegex and ignoredFiles).
+    */
+  def determine(inputPaths: Set[String], sourceFileExtensions: Set[String], config: X2CpgConfig[_]): List[String] = {
+    filterFiles(determine(inputPaths, sourceFileExtensions), config)
   }
 
   /** For a given array of input paths, determine all source files by inspecting filename extensions.

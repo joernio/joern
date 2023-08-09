@@ -18,6 +18,7 @@ import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters._
 import scala.util.Try
+import scala.util.matching.Regex
 
 class JavaSrc2Cpg extends X2CpgFrontend[Config] {
   import JavaSrc2Cpg._
@@ -30,8 +31,10 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
       val astCreationPass = new AstCreationPass(config, cpg)
       astCreationPass.createAndApply()
       new ConfigFileCreationPass(cpg).createAndApply()
-      TypeNodePass.withRegisteredTypes(astCreationPass.global.usedTypes.keys().asScala.toList, cpg).createAndApply()
-      new TypeInferencePass(cpg).createAndApply()
+      if (!config.skipTypeInfPass) {
+        TypeNodePass.withRegisteredTypes(astCreationPass.global.usedTypes.keys().asScala.toList, cpg).createAndApply()
+        new TypeInferencePass(cpg).createAndApply()
+      }
     }
   }
 
@@ -42,7 +45,15 @@ object JavaSrc2Cpg {
   private val logger   = LoggerFactory.getLogger(this.getClass)
 
   val sourceFileExtensions: Set[String] = Set(".java")
-  def apply(): JavaSrc2Cpg              = new JavaSrc2Cpg()
+
+  val DefaultIgnoredFilesRegex: List[Regex] = List(".git", ".mvn", "test").flatMap { directory =>
+    List(s"(^|\\\\)$directory($$|\\\\)".r.unanchored, s"(^|/)$directory($$|/)".r.unanchored)
+  }
+
+  val DefaultConfig: Config =
+    Config().withDefaultIgnoredFilesRegex(DefaultIgnoredFilesRegex)
+
+  def apply(): JavaSrc2Cpg = new JavaSrc2Cpg()
 
   def typeRecoveryPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] = {
     List(

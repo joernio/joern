@@ -1898,7 +1898,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       // it shouldn't cause issues since resolvedType is only used where the extra type
       // information not available in typeName is necessary.
       val typeName     = expressionReturnTypeFullName(value)
-      val resolvedType = Try(value.calculateResolvedType()).toOption
+      val resolvedType = tryWithSafeStackOverflow(value.calculateResolvedType()).toOption
       ExpectedType(typeName, resolvedType)
     }
     val args = expr.getValues.asScala
@@ -2058,10 +2058,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   private def localsForVarDecl(varDecl: VariableDeclarationExpr): List[NewLocal] = {
     varDecl.getVariables.asScala.map { variable =>
       val name = variable.getName.toString
-      val typeFullName = typeInfoCalc
-        .fullName(variable.getType)
-        .orElse(scopeStack.lookupVariable(variable.getTypeAsString).flatMap(_.typeFullName))
-        .getOrElse(TypeConstants.Any)
+      val typeFullName =
+        tryWithSafeStackOverflow(typeInfoCalc.fullName(variable.getType)).toOption.flatten
+          .orElse(scopeStack.lookupVariable(variable.getTypeAsString).flatMap(_.typeFullName))
+          .getOrElse(TypeConstants.Any)
       val code = s"${variable.getType} $name"
       NewLocal()
         .name(name)
@@ -2112,8 +2112,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       val initializerTypeFullName = variable.getInitializer.toScala.flatMap(expressionReturnTypeFullName)
       val javaParserVarType       = variable.getTypeAsString
       val variableTypeFullName =
-        typeInfoCalc
-          .fullName(variable.getType)
+        tryWithSafeStackOverflow(typeInfoCalc.fullName(variable.getType)).toOption.flatten
           .orElse(scopeStack.lookupVariableType(name))
           .orElse(scopeStack.lookupVariableType(javaParserVarType, wildcardFallback = true))
 
@@ -2121,8 +2120,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
         variableTypeFullName.orElse(initializerTypeFullName)
 
       // Need the actual resolvedType here for when the RHS is a lambda expression.
-      val resolvedExpectedType = Try(symbolSolver.toResolvedType(variable.getType, classOf[ResolvedType])).toOption
-      val initializerAsts      = astsForExpression(initializer, ExpectedType(typeFullName, resolvedExpectedType))
+      val resolvedExpectedType =
+        tryWithSafeStackOverflow(symbolSolver.toResolvedType(variable.getType, classOf[ResolvedType])).toOption
+      val initializerAsts = astsForExpression(initializer, ExpectedType(typeFullName, resolvedExpectedType))
 
       val typeName = typeFullName
         .map(TypeNodePass.fullToShortName)

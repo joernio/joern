@@ -4,6 +4,8 @@ import io.joern.javasrc2cpg.Frontend.*
 import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery}
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
 import scopt.OParser
+import scala.util.matching.Regex
+import io.joern.javasrc2cpg.typesolvers.SimpleCombinedTypeSolver
 
 /** Command line configuration parameters
   */
@@ -15,7 +17,8 @@ final case class Config(
   delombokMode: Option[String] = None,
   enableTypeRecovery: Boolean = false,
   jdkPath: Option[String] = None,
-  showEnv: Boolean = false
+  showEnv: Boolean = false,
+  skipTypeInfPass: Boolean = false
 ) extends X2CpgConfig[Config]
     with TypeRecoveryParserConfig[Config] {
   def withInferenceJarPaths(paths: Set[String]): Config = {
@@ -49,11 +52,15 @@ final case class Config(
   def withShowEnv(value: Boolean): Config = {
     copy(showEnv = value).withInheritedFields(this)
   }
+
+  def withSkipTypeInfPass(value: Boolean): Config = {
+    copy(skipTypeInfPass = value).withInheritedFields(this)
+  }
 }
 
 private object Frontend {
 
-  implicit val defaultConfig: Config = Config()
+  implicit val defaultConfig: Config = JavaSrc2Cpg.DefaultConfig
 
   val cmdLineParser: OParser[Unit, Config] = {
     val builder = OParser.builder[Config]
@@ -70,11 +77,13 @@ private object Frontend {
         .text("Optional override to set java home used to run Delombok. Java 17 is recommended for the best results.")
         .action((path, c) => c.withDelombokJavaHome(path)),
       opt[String]("delombok-mode")
-        .text("""Specifies how delombok should be executed. Options are
-                 | no-delombok => to not run delombok under any circumstances.
+        .text(
+          """Specifies how delombok should be executed. Options are
+                 | no-delombok => do not use delombok for analysis or type information.
                  | default => run delombok if a lombok dependency is found and analyse delomboked code.
-                 | types-only => to run delombok, but use it for type information only
-                 | run-delombok => to force run delombok and analyse delomboked code.""".stripMargin)
+                 | types-only => run delombok, but use it for type information only
+                 | run-delombok => run delombok and use delomboked source for both analysis and type information.""".stripMargin
+        )
         .action((mode, c) => c.withDelombokMode(mode)),
       opt[Unit]("enable-type-recovery")
         .hidden()
@@ -86,7 +95,13 @@ private object Frontend {
         .text("JDK used for resolving builtin Java types. If not set, current classpath will be used"),
       opt[Unit]("show-env")
         .action((_, c) => c.withShowEnv(true))
-        .text("print information about environment variables used by javasrc2cpg and exit.")
+        .text("print information about environment variables used by javasrc2cpg and exit."),
+      opt[Unit]("skip-type-inf-pass")
+        .hidden()
+        .action((_, c) => c.withSkipTypeInfPass(true))
+        .text(
+          "Skip the type inference pass. Results will be much worse, so should only be used for development purposes"
+        )
     )
   }
 }

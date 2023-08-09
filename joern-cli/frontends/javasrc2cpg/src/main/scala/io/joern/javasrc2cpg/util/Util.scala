@@ -21,7 +21,7 @@ object Util {
 
   def safeGetAncestors(typeDecl: ResolvedReferenceTypeDeclaration): Seq[ResolvedReferenceType] = {
     Try(typeDecl.getAncestors(true)) match {
-      case Success(ancestors) => ancestors.asScala.toSeq
+      case Success(ancestors) => ancestors.asScala.filterNot(_ == typeDecl).toSeq
 
       case Failure(exception) =>
         logger.debug(s"Failed to get direct parents for typeDecl ${typeDecl.getQualifiedName}", exception)
