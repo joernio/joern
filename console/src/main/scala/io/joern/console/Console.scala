@@ -219,6 +219,12 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
     defaultProjectNameIfEmpty(name).flatMap(workspace.deleteProject)
   }
 
+  @Doc(info = "Exit the REPL")
+  def exit: Unit = {
+    workspace.projects.foreach(_.close)
+    System.exit(0)
+  }
+
   /** Delete the active project
     */
   def delete: Option[Unit] = delete("")
