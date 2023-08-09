@@ -65,15 +65,7 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
   private def initParserAndUtils(config: Config, sourceFilenames: Array[String]): (SourceParser, JavaSymbolSolver) = {
     val dependencies = getDependencyList(config.inputPath)
     val sourceParser = SourceParser(config, dependencies.exists(_.contains("lombok")))
-    val symbolSolver = createSymbolSolver(
-      config.inputPath,
-      config.inferenceJarPaths,
-      config.jdkPath,
-      dependencies,
-      sourceParser,
-      sourceFilenames,
-      config.typesCacheMaxSize
-    )
+    val symbolSolver = createSymbolSolver(config, dependencies, sourceParser, sourceFilenames)
     (sourceParser, symbolSolver)
   }
 
@@ -92,19 +84,16 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
   }
 
   private def createSymbolSolver(
-    inputPath: String,
-    inferenceJarPaths: Set[String],
-    configJdkPath: Option[String],
+    config: Config,
     dependencies: List[String],
     sourceParser: SourceParser,
-    sourceFilenames: Array[String],
-    typesCacheMaxSize: Option[Long]
+    sourceFilenames: Array[String]
   ): JavaSymbolSolver = {
-    val combinedTypeSolver = new SimpleCombinedTypeSolver(typesCacheMaxSize)
+    val combinedTypeSolver = new SimpleCombinedTypeSolver()
     val symbolSolver       = new JavaSymbolSolver(combinedTypeSolver)
 
     val jdkPathFromEnvVar = Option(System.getenv(JavaSrcEnvVar.JdkPath.name))
-    val jdkPath = (configJdkPath, jdkPathFromEnvVar) match {
+    val jdkPath = (config.jdkPath, jdkPathFromEnvVar) match {
       case (None, None) =>
         val javaHome = System.getProperty("java.home")
         logger.info(s"No explicit jdk-path set in , so using system java.home for JDK type information: $javaHome")
@@ -124,7 +113,7 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
     combinedTypeSolver.add(JdkJarTypeSolver.fromJdkPath(jdkPath))
 
     val relativeSourceFilenames =
-      sourceFilenames.map(filename => Path.of(inputPath).relativize(Path.of(filename)).toString)
+      sourceFilenames.map(filename => Path.of(config.inputPath).relativize(Path.of(filename)).toString)
 
     val sourceTypeSolver =
       EagerSourceTypeSolver(relativeSourceFilenames, sourceParser, combinedTypeSolver, symbolSolver)
@@ -132,7 +121,7 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
     combinedTypeSolver.prepend(sourceTypeSolver)
 
     // Add solvers for inference jars
-    val jarsList = inferenceJarPaths.flatMap(recursiveJarsFromPath).toList
+    val jarsList = config.inferenceJarPaths.flatMap(recursiveJarsFromPath).toList
     (jarsList ++ dependencies)
       .flatMap { path =>
         Try(new JarTypeSolver(path)).toOption

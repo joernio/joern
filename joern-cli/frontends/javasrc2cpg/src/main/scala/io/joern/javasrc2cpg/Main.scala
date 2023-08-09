@@ -18,7 +18,6 @@ final case class Config(
   enableTypeRecovery: Boolean = false,
   jdkPath: Option[String] = None,
   showEnv: Boolean = false,
-  typesCacheMaxSize: Option[Long] = None,
   skipTypeInfPass: Boolean = false
 ) extends X2CpgConfig[Config]
     with TypeRecoveryParserConfig[Config] {
@@ -56,10 +55,6 @@ final case class Config(
 
   def withSkipTypeInfPass(value: Boolean): Config = {
     copy(skipTypeInfPass = value).withInheritedFields(this)
-  }
-
-  def withTypesCacheMaxSize(size: Long): Config = {
-    copy(typesCacheMaxSize = Some(size)).withInheritedFields(this)
   }
 }
 
@@ -101,11 +96,6 @@ private object Frontend {
       opt[Unit]("show-env")
         .action((_, c) => c.withShowEnv(true))
         .text("print information about environment variables used by javasrc2cpg and exit."),
-      opt[Long]("types-cache-max-size")
-        .action((size, c) => c.withTypesCacheMaxSize(size))
-        .text(s"""
-          |Maximum size of the resolved types cache (unlimited by default). 
-          |Limiting the cache size could lead to decreased memory use at the cost of analysis speed""".stripMargin),
       opt[Unit]("skip-type-inf-pass")
         .hidden()
         .action((_, c) => c.withSkipTypeInfPass(true))

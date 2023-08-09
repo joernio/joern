@@ -12,16 +12,14 @@ import scala.jdk.OptionConverters.RichOptional
 import com.google.common.cache.Weigher
 import scala.util.Try
 
-class SimpleCombinedTypeSolver(maxSize: Option[Long]) extends TypeSolver {
+class SimpleCombinedTypeSolver extends TypeSolver {
 
   private val logger                                       = LoggerFactory.getLogger(this.getClass)
   private var parent: TypeSolver                           = _
   private val typeSolvers: mutable.ArrayBuffer[TypeSolver] = mutable.ArrayBuffer()
-  private val typeCache = {
-    val builder = CacheBuilder.newBuilder()
-    maxSize.foreach(builder.maximumSize(_))
-    new GuavaCache(builder.build[String, SymbolReference[ResolvedReferenceTypeDeclaration]]())
-  }
+  private val typeCache = new GuavaCache(
+    CacheBuilder.newBuilder().build[String, SymbolReference[ResolvedReferenceTypeDeclaration]]()
+  )
 
   def add(typeSolver: TypeSolver): Unit = {
     typeSolvers.append(typeSolver)
