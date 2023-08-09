@@ -7,7 +7,7 @@ import org.antlr.v4.runtime.{CharStream, Lexer, Token}
 /** Aggregates auxiliary features to RubyLexer in a single place. */
 abstract class RubyLexerBase(input: CharStream)
     extends Lexer(input)
-    with RubyLexerRegexHandling
+    with RegexLiteralHandling
     with NonExpandedDelimiterHandling
     with InterpolationHandling {
 
