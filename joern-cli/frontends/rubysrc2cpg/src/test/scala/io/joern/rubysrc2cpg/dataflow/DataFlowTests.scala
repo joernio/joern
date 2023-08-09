@@ -2264,7 +2264,6 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
         |y = Proc.new {
         |x=1
         |x
-        |end
         |}
         |puts y
         |""".stripMargin)
