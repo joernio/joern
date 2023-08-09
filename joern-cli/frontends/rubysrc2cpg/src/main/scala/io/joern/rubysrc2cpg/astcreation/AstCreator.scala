@@ -1462,12 +1462,21 @@ class AstCreator(
   }
 
   def getPackedRHS(astsToConcat: Seq[Ast]) = {
+    val code = astsToConcat
+      .flatMap(
+        _.nodes
+          .filter(_.isInstanceOf[NewIdentifier])
+      )
+      .map(_.asInstanceOf[NewIdentifier].code)
+      .mkString(",")
+
     val callNode = NewCall()
       .name(Operators.arrayInitializer)
       .methodFullName(Operators.arrayInitializer)
       .signature(Operators.arrayInitializer)
       .typeFullName(Defines.Any)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .code(code)
     Seq(callAst(callNode, astsToConcat))
   }
 
@@ -1507,6 +1516,7 @@ class AstCreator(
       val rhsCode = argPair._2.nodes.headOption match {
         case Some(id: NewIdentifier) => id.code
         case Some(lit: NewLiteral)   => lit.code
+        case Some(call: NewCall)     => call.code
         case _                       => ""
       }
 
