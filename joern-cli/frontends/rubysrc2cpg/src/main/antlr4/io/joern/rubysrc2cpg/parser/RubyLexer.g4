@@ -119,12 +119,9 @@ RPAREN: ')';
 LCURLY: '{';
 RCURLY: '}'
     {
-        if (isInStringInterpolationMode()) {
+        if (isEndOfInterpolation()) {
             popMode();
-            setType(STRING_INTERPOLATION_END);
-        } else if (isInRegularExpressionInterpolationMode()) {
-            popMode();
-            setType(REGULAR_EXPRESSION_INTERPOLATION_END);
+            setType(popInterpolationEndTokenType());
         }
     }
 ;
@@ -597,7 +594,11 @@ INTERPOLATED_CHARACTER_SEQUENCE
     ;
 
 STRING_INTERPOLATION_BEGIN
-    :   '#{' {pushMode(DEFAULT_MODE);}
+    :   '#{' 
+    {
+        pushInterpolationEndTokenType(STRING_INTERPOLATION_END);
+        pushMode(DEFAULT_MODE);
+    }
     ;
 
 fragment DOUBLE_QUOTED_STRING_CHARACTER
@@ -741,7 +742,11 @@ REGULAR_EXPRESSION_BODY
     ;
 
 REGULAR_EXPRESSION_INTERPOLATION_BEGIN
-    :   '#{' {pushMode(DEFAULT_MODE);}
+    :   '#{' 
+    {
+        pushInterpolationEndTokenType(REGULAR_EXPRESSION_INTERPOLATION_END);
+        pushMode(DEFAULT_MODE);
+    }
     ;
 
 fragment REGULAR_EXPRESSION_OPTION

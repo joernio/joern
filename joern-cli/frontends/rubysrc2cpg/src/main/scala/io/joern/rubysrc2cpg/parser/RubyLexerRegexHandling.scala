@@ -73,8 +73,4 @@ trait RubyLexerRegexHandling { this: RubyLexerBase =>
     previousNonWsIsIdentifier && previousIsWs && !nextIsWs
   }
 
-  /** To be invoked when in `DEFAULT_MODE`, to check if we are in the context of a regular expression interpolation. */
-  protected def isInRegularExpressionInterpolationMode: Boolean =
-    _modeStack.size > 1 && _modeStack.peek == REGULAR_EXPRESSION_MODE
-
 }

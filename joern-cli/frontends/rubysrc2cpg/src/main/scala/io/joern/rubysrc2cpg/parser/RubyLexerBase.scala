@@ -8,8 +8,8 @@ import org.antlr.v4.runtime.{CharStream, Lexer, Token}
 abstract class RubyLexerBase(input: CharStream)
     extends Lexer(input)
     with RubyLexerRegexHandling
-    with RubyLexerStringInterpolationHandling
-    with NonExpandedDelimiterHandling {
+    with NonExpandedDelimiterHandling
+    with InterpolationHandling {
 
   /** The previously (non-WS) emitted token (in DEFAULT_CHANNEL.) */
   protected var previousNonWsToken: Option[Token] = None
