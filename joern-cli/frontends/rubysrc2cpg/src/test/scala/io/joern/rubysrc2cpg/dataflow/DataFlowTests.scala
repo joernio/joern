@@ -1411,8 +1411,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     }
   }
 
-  // TODO:
-  "Data flow through packing left hand side with others" ignore {
+  "Data flow through packing left hand side with unequal RHS" should {
     val cpg = code("""
           |x = 1
           |y = 2

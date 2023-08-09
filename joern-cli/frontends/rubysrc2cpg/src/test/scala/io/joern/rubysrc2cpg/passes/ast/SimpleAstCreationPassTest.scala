@@ -2,7 +2,7 @@ package io.joern.rubysrc2cpg.passes.ast
 
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
+import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal, NewIdentifier}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 import io.joern.rubysrc2cpg.astcreation.AstCreator
@@ -1412,4 +1412,26 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     zNode.typeFullName shouldBe Defines.Symbol
   }
 
+  "have correct structure for packing LHS in multiple assignment" in {
+    val cpg = code("""
+        |some_lhs,*pack_lhs = some_rhs,pack_rhs1, pack_rhs2
+        |""".stripMargin)
+
+    cpg.call.name("<operator>.assignment").size shouldBe 2
+    val callNode1 = cpg.call.code("some_lhs = some_rhs").l.head
+    callNode1.lineNumber shouldBe Some(2)
+    callNode1.columnNumber shouldBe Some(19)
+    val args1 = callNode1.argument.l
+    args1.size shouldBe 2
+    args1.head.code shouldBe "some_lhs"
+    args1.tail.code.l.head shouldBe "some_rhs"
+
+    val callNode2 = cpg.call.code("pack_lhs = pack_rhs1,pack_rhs2").l.head
+    callNode2.lineNumber shouldBe Some(2)
+    callNode2.columnNumber shouldBe Some(19)
+    val args2 = callNode2.argument.l
+    args2.size shouldBe 2
+    args2.head.code shouldBe "pack_lhs"
+    args2.tail.code.l.head shouldBe "pack_rhs1,pack_rhs2"
+  }
 }

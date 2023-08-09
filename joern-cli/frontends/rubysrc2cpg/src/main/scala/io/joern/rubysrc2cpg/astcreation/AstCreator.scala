@@ -807,7 +807,7 @@ class AstCreator(
       val paramAsts =
         if (ctx.packingLeftHandSide() != null) {
           val packingLHSAst = astForPackingLeftHandSideContext(ctx.packingLeftHandSide())
-          packingLHSAst ++ multipleLHSAsts
+          multipleLHSAsts ++ packingLHSAst
         } else {
           multipleLHSAsts
         }
@@ -1462,12 +1462,21 @@ class AstCreator(
   }
 
   def getPackedRHS(astsToConcat: Seq[Ast]) = {
+    val code = astsToConcat
+      .flatMap(
+        _.nodes
+          .filter(_.isInstanceOf[NewIdentifier])
+      )
+      .map(_.asInstanceOf[NewIdentifier].code)
+      .mkString(",")
+
     val callNode = NewCall()
       .name(Operators.arrayInitializer)
       .methodFullName(Operators.arrayInitializer)
       .signature(Operators.arrayInitializer)
       .typeFullName(Defines.Any)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .code(code)
     Seq(callAst(callNode, astsToConcat))
   }
 
@@ -1476,54 +1485,51 @@ class AstCreator(
     val lhsAsts      = astForMultipleLeftHandSideContext(ctx.multipleLeftHandSide())
     val operatorName = getOperatorName(ctx.EQ().getSymbol)
 
-    if (lhsAsts.size == 1 && rhsAsts.size > 1) {
-      /*
-       * This is multiple RHS packed into a single LHS. That is, packing left hand side.
-       * This is as good as multiple RHS packed into an array and put into a single LHS
-       */
-      val callNode = NewCall()
+    /*
+     * This is multiple LHS and multiple RHS
+     *Since we have multiple LHS and RHS elements here, we will now create synthetic assignment
+     * call nodes to model how ruby assigns values from RHS elements to LHS elements. We create
+     * tuples for each assignment and then pass them to the assignment calls nodes
+     */
+    val assigns =
+      if (lhsAsts.size < rhsAsts.size) {
+        /* The rightmost AST in the LHS is a packed variable.
+         * Pack the extra ASTs and the rightmost AST in the RHS in one array like the if() part
+         */
+
+        val diff        = rhsAsts.size - lhsAsts.size
+        val packedRHS   = getPackedRHS(rhsAsts.takeRight(diff + 1)).head
+        val alignedAsts = lhsAsts.take(lhsAsts.size - 1).zip(rhsAsts.take(lhsAsts.size - 1))
+        val packedAsts  = lhsAsts.takeRight(1) zip Seq(packedRHS)
+        alignedAsts ++ packedAsts
+      } else {
+        lhsAsts.zip(rhsAsts)
+      }
+
+    assigns.map { argPair =>
+      val lhsCode = argPair._1.nodes.headOption match {
+        case Some(id: NewIdentifier) => id.code
+        case Some(lit: NewLiteral)   => lit.code
+        case _                       => ""
+      }
+
+      val rhsCode = argPair._2.nodes.headOption match {
+        case Some(id: NewIdentifier) => id.code
+        case Some(lit: NewLiteral)   => lit.code
+        case Some(call: NewCall)     => call.code
+        case _                       => ""
+      }
+
+      val syntheticCallNode = NewCall()
         .name(operatorName)
-        .code(ctx.getText)
+        .code(lhsCode + " = " + rhsCode)
         .methodFullName(operatorName)
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .typeFullName(Defines.Any)
         .lineNumber(ctx.EQ().getSymbol().getLine())
         .columnNumber(ctx.EQ().getSymbol().getCharPositionInLine())
 
-      val packedRHS = getPackedRHS(rhsAsts)
-      Seq(callAst(callNode, lhsAsts ++ packedRHS))
-    } else {
-      /*
-       * This is multiple LHS and multiple RHS
-       *Since we have multiple LHS and RHS elements here, we will now create synthetic assignment
-       * call nodes to model how ruby assigns values from RHS elements to LHS elements. We create
-       * tuples for each assignment and then pass them to the assignment calls nodes
-       */
-      val assigns = lhsAsts.zip(rhsAsts)
-      assigns.map { argPair =>
-        val lhsCode = argPair._1.nodes.headOption match {
-          case Some(id: NewIdentifier) => id.code
-          case Some(lit: NewLiteral)   => lit.code
-          case _                       => ""
-        }
-
-        val rhsCode = argPair._2.nodes.headOption match {
-          case Some(id: NewIdentifier) => id.code
-          case Some(lit: NewLiteral)   => lit.code
-          case _                       => ""
-        }
-
-        val syntheticCallNode = NewCall()
-          .name(operatorName)
-          .code(lhsCode + " = " + rhsCode)
-          .methodFullName(operatorName)
-          .dispatchType(DispatchTypes.STATIC_DISPATCH)
-          .typeFullName(Defines.Any)
-          .lineNumber(ctx.EQ().getSymbol().getLine())
-          .columnNumber(ctx.EQ().getSymbol().getCharPositionInLine())
-
-        callAst(syntheticCallNode, Seq(argPair._1, argPair._2))
-      }
+      callAst(syntheticCallNode, Seq(argPair._1, argPair._2))
     }
   }
 
