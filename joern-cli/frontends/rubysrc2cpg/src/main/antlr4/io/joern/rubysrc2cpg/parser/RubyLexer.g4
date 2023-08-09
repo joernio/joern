@@ -285,8 +285,7 @@ DOUBLE_QUOTED_STRING_START
 QUOTED_NON_EXPANDED_STRING_LITERAL_START
     :   '%q' {!Character.isAlphabetic(_input.LA(1))}?
     {
-        pushNonExpandedDelimiter(_input.LA(1));
-        setNonExpandedDelimiterEndToken(QUOTED_NON_EXPANDED_STRING_LITERAL_END);
+        pushNonExpandedStringDelimiter(_input.LA(1));
         _input.consume();
         pushMode(NON_EXPANDED_DELIMITED_STRING_MODE);
     }
@@ -295,8 +294,7 @@ QUOTED_NON_EXPANDED_STRING_LITERAL_START
 QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_START
     :   '%r' {!Character.isAlphabetic(_input.LA(1))}?
     {
-        pushNonExpandedDelimiter(_input.LA(1));
-        setNonExpandedDelimiterEndToken(QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_END);
+        pushNonExpandedRegexDelimiter(_input.LA(1));
         _input.consume();
         pushMode(NON_EXPANDED_DELIMITED_STRING_MODE);
     };
@@ -308,8 +306,7 @@ QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_START
 QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_START
     :   '%w' {!Character.isAlphabetic(_input.LA(1))}?
     {
-        pushNonExpandedDelimiter(_input.LA(1));
-        setNonExpandedDelimiterEndToken(QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END);
+        pushNonExpandedStringArrayDelimiter(_input.LA(1));
         _input.consume();
         pushMode(NON_EXPANDED_DELIMITED_ARRAY_MODE);
     }
@@ -322,8 +319,7 @@ QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_START
 QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_START
     :   '%i' {!Character.isAlphabetic(_input.LA(1))}?
     {
-        pushNonExpandedDelimiter(_input.LA(1));
-        setNonExpandedDelimiterEndToken(QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END);
+        pushNonExpandedSymbolArrayDelimiter(_input.LA(1));
         _input.consume();
         pushMode(NON_EXPANDED_DELIMITED_ARRAY_MODE);
     }
@@ -670,19 +666,7 @@ NON_EXPANDED_LITERAL_CHARACTER
     :   NON_EXPANDED_LITERAL_ESCAPE_SEQUENCE
     |   NON_ESCAPED_LITERAL_CHARACTER
     {
-        int readChar = _input.LA(-1);
-        
-        if (isNonExpandedClosingDelimiter(readChar)) {
-            popNonExpandedDelimiter();
-            
-            if (isNonExpandedDelimitersStackEmpty()) {
-                setType(getNonExpandedDelimitedStringEndToken());
-                popMode();
-            }
-        }
-        else if (isNonExpandedOpeningDelimiter(readChar)) {
-            pushNonExpandedDelimiter(readChar);
-        }
+        consumeNonExpandedCharAndMaybePopMode(_input.LA(-1));
     }
     ;
 
@@ -710,19 +694,7 @@ NON_EXPANDED_ARRAY_ITEM_CHARACTER
     :   NON_EXPANDED_LITERAL_ESCAPE_SEQUENCE
     |   NON_ESCAPED_LITERAL_CHARACTER
     {
-        int readChar = _input.LA(-1);
-        
-        if (isNonExpandedClosingDelimiter(readChar)) {
-            popNonExpandedDelimiter();
-            
-            if (isNonExpandedDelimitersStackEmpty()) {
-                setType(getNonExpandedDelimitedStringEndToken());
-                popMode();
-            }
-        }
-        else if (isNonExpandedOpeningDelimiter(readChar)) {
-            pushNonExpandedDelimiter(readChar);
-        }
+        consumeNonExpandedCharAndMaybePopMode(_input.LA(-1));
     }
     ;
 
