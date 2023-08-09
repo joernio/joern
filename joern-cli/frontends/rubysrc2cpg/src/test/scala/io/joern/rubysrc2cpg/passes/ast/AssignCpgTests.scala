@@ -138,7 +138,7 @@ class AssignCpgTests extends RubyCode2CpgFixture {
   }
 
   "multi target assign" should {
-    val cpg = code("""x = y = "abcd" """.stripMargin)
+    val cpg = code("""x = y = "abcd"""".stripMargin)
 
     def getSurroundingBlock: nodes.Block = {
       cpg.all.collect { case block: nodes.Block if block.code != "" => block }.head

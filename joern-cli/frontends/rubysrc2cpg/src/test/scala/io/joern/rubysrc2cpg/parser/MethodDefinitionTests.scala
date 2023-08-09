@@ -779,8 +779,7 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
 
     "have correct structure for a hash created using a method" in {
       val code =
-        """
-          |def data
+        """def data
           |    {
           |     first_link:,
           |     action_link_group:,
@@ -842,8 +841,7 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
 
     "have correct structure when a method parameter is defined using whitespace" in {
       val code =
-        """
-          |class SampleClass
+        """class SampleClass
           |  def sample_method( first_param:, second_param:)
           |  end
           |end
@@ -901,8 +899,7 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
 
     "have correct structure when method parameters are defined using new line" in {
       val code =
-        """
-          |class SomeClass
+        """class SomeClass
           |  def initialize(
           |              name, age)
           |  end
@@ -960,8 +957,7 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
 
     "have correct structure when method parameters are defined using wsOrNL" in {
       val code =
-        """
-          |class SomeClass
+        """class SomeClass
           |  def initialize(
           |              name, age
           |              )
@@ -1022,8 +1018,7 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
 
     "have correct structure when keyword parameters are defined using wsOrNL" in {
       val code =
-        """
-          |class SomeClass
+        """class SomeClass
           |  def initialize(
           |              name: nil, age
           |              )
