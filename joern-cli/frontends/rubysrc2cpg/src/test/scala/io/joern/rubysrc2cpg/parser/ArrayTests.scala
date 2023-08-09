@@ -116,6 +116,34 @@ class ArrayTests extends RubyParserAbstractTest {
             |    z
             |  -""".stripMargin
       }
+
+      "it spans multiple lines" in {
+        val code =
+          """%w(
+            | bob
+            | cod
+            | dod
+            |)""".stripMargin
+        printAst(_.primary(), code) shouldEqual
+          """ArrayConstructorPrimary
+            | NonExpandedWordArrayConstructor
+            |  %w(
+            |  NonExpandedWordArrayElements
+            |   NonExpandedWordArrayElement
+            |    b
+            |    o
+            |    b
+            |   NonExpandedWordArrayElement
+            |    c
+            |    o
+            |    d
+            |   NonExpandedWordArrayElement
+            |    d
+            |    o
+            |    d
+            |  )""".stripMargin
+
+      }
     }
   }
 
