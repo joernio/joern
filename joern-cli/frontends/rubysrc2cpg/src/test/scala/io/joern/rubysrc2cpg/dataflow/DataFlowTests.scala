@@ -2593,4 +2593,43 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     sink.reachableByFlows(source).size shouldBe 1
   }
 
+  "flow through .new when accompanies with loop" in {
+    val cpg = code("""
+        |class Foo
+        |  API_HOST = 'https://graph.facebook.com'
+        |
+        |  private
+        |
+        |  def bar(payload)
+        |    Faraday.new(API_HOST)
+        |  end
+        |end
+        |""".stripMargin)
+
+    val source = cpg.literal.code(".*https.*").l
+    val sink   = cpg.call.name("new").argument.l
+    sink.reachableByFlows(source).size shouldBe 2
+  }
+
+  "flow through .new" in {
+    val cpg = code("""
+        |class Foo
+        |  API_HOST = 'https://graph.facebook.com'
+        |
+        |  private
+        |
+        |  def bar(payload)
+        |    Faraday.new(API_HOST) do |x|
+        |     x
+        |    end
+        |  end
+        |end
+        |""".stripMargin)
+
+    val source = cpg.literal.code(".*https.*")
+    val sink   = cpg.call.name("new").argument
+    /* one flow as direct argument, other via do block's method return */
+    sink.reachableByFlows(source).size shouldBe 2
+  }
+
 }

@@ -693,7 +693,7 @@ class AstCreator(
         .name(blockName)
         .methodFullName(blockMethodNode.fullName)
         .typeFullName(Defines.Any)
-        .code(blockMethodNode.code)
+        .code(ctx.getText)
         .lineNumber(blockMethodNode.lineNumber)
         .columnNumber(blockMethodNode.columnNumber)
 
@@ -703,8 +703,7 @@ class AstCreator(
         .code(blockMethodNode.code)
         .lineNumber(blockMethodNode.lineNumber)
         .columnNumber(blockMethodNode.columnNumber)
-
-      Seq(callAst(callNode, Seq(Ast(methodRefNode)), primaryAst.headOption))
+      Seq(callAst(callNode, Seq(Ast(methodRefNode)), argsAst.headOption, primaryAst.headOption))
     } else {
       val callNode = methodNameAst.head.nodes
         .filter(node => node.isInstanceOf[NewCall])
