@@ -258,8 +258,9 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
   }
 
   def anonymousObjectIdx(obj: KtElement): Option[Int] = {
-    val parentFn = KtPsiUtil.getTopmostParentOfTypes(obj, classOf[KtNamedFunction])
-    PsiUtils.objectIdxMaybe(obj, parentFn)
+    val parentFn      = KtPsiUtil.getTopmostParentOfTypes(obj, classOf[KtNamedFunction])
+    val containingObj = Option(parentFn).getOrElse(obj.getContainingKtFile)
+    PsiUtils.objectIdxMaybe(obj, containingObj)
   }
 
   def fullName(

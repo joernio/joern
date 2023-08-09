@@ -9,6 +9,7 @@ import org.jetbrains.kotlin.psi.{
   KtClassLiteralExpression,
   KtClassOrObject,
   KtDestructuringDeclarationEntry,
+  KtElement,
   KtExpression,
   KtFile,
   KtLambdaArgument,
@@ -24,7 +25,7 @@ import org.jetbrains.kotlin.psi.{
   KtTypeReference
 }
 
-case class AnonymousObjectContext(declaration: KtNamedFunction)
+case class AnonymousObjectContext(declaration: KtElement)
 
 trait TypeInfoProvider {
   def isExtensionFn(fn: KtNamedFunction): Boolean
