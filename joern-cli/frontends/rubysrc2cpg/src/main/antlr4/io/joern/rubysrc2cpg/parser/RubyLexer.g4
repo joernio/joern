@@ -183,7 +183,7 @@ STAR: '*';
 STAR2: '**';
 SLASH: '/'
     {
-        if (isStartOfRegex()) {
+        if (isStartOfRegexLiteral()) {
             setType(REGULAR_EXPRESSION_START);
             pushMode(REGULAR_EXPRESSION_MODE);
         }
