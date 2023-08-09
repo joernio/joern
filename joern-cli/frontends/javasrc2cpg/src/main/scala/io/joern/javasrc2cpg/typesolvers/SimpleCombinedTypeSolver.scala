@@ -11,11 +11,15 @@ import scala.collection.mutable
 import scala.jdk.OptionConverters.RichOptional
 import com.google.common.cache.Weigher
 import scala.util.Try
+import io.shiftleft.semanticcpg.language.android.Constants.androidUri
 
 class SimpleCombinedTypeSolver extends TypeSolver {
 
-  private val logger                                                 = LoggerFactory.getLogger(this.getClass)
-  private var parent: TypeSolver                                     = _
+  private val logger             = LoggerFactory.getLogger(this.getClass)
+  private var parent: TypeSolver = _
+  // Ideally all types would be cached in the SimpleCombinedTypeSolver to avoid unnecessary unresolved types
+  // from being cached. The EagerSourceTypeSolver preloads all types, however, so separating caching and
+  // non-caching solvers avoids caching types twice.
   private val cachingTypeSolvers: mutable.ArrayBuffer[TypeSolver]    = mutable.ArrayBuffer()
   private val nonCachingTypeSolvers: mutable.ArrayBuffer[TypeSolver] = mutable.ArrayBuffer()
 
