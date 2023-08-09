@@ -16,7 +16,6 @@ import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.javasrc2cpg.JavaSrc2Cpg.JavaSrcEnvVar
 import io.joern.javasrc2cpg.passes.AstCreationPass._
 import io.joern.javasrc2cpg.typesolvers.{EagerSourceTypeSolver, JdkJarTypeSolver, SimpleCombinedTypeSolver}
-import io.joern.javasrc2cpg.typesolvers.noncaching.LazySourceTypeSolver
 import io.joern.javasrc2cpg.util.Delombok
 import io.joern.javasrc2cpg.util.Delombok.DelombokMode
 import io.joern.javasrc2cpg.util.Delombok.DelombokMode._
