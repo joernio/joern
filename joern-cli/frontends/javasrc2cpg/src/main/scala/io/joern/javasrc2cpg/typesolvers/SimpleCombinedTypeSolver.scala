@@ -9,9 +9,7 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 import scala.jdk.OptionConverters.RichOptional
-import com.google.common.cache.Weigher
 import scala.util.Try
-import io.shiftleft.semanticcpg.language.android.Constants.androidUri
 
 class SimpleCombinedTypeSolver extends TypeSolver {
 
