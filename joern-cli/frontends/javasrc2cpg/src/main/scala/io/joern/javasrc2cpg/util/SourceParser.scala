@@ -26,8 +26,6 @@ class SourceParser private (originalInputPath: Path, analysisRoot: Path, typesRo
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  val sourceStats = new ConcurrentHashMap[String, Int]()
-
   /** Parse the given file into a JavaParser CompliationUnit that will be used for creating the CPG AST.
     *
     * @param relativeFilename
@@ -67,15 +65,6 @@ class SourceParser private (originalInputPath: Path, analysisRoot: Path, typesRo
   }
 
   private def parse(file: File, storeTokens: Boolean): Option[CompilationUnit] = {
-    synchronized {
-      val canonicalPath = file.canonicalPath
-      if (sourceStats.contains(canonicalPath)) {
-        sourceStats.put(canonicalPath, sourceStats.get(canonicalPath) + 1)
-      } else {
-        sourceStats.put(canonicalPath, 1)
-      }
-    }
-
     val javaParserConfig =
       new ParserConfiguration()
         .setLanguageLevel(LanguageLevel.BLEEDING_EDGE)

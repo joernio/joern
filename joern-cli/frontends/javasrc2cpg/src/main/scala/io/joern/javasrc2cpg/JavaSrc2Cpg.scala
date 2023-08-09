@@ -30,10 +30,6 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
       new MetaDataPass(cpg, language, config.inputPath).createAndApply()
       val astCreationPass = new AstCreationPass(config, cpg)
       astCreationPass.createAndApply()
-      val statsFile = File("/tmp/sourceStats.txt").createFileIfNotExists().clear()
-      astCreationPass.sourceParser.sourceStats.asScala.foreach { case (file, count) =>
-        statsFile.appendLine(s"$count,$file")
-      }
       new ConfigFileCreationPass(cpg).createAndApply()
       if (!config.skipTypeInfPass) {
         TypeNodePass.withRegisteredTypes(astCreationPass.global.usedTypes.keys().asScala.toList, cpg).createAndApply()
