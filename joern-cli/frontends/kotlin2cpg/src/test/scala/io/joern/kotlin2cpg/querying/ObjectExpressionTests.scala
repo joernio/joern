@@ -198,4 +198,22 @@ class ObjectExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = fals
       i.code shouldBe "tmp_obj_1"
     }
   }
+
+  "CPG for code with object literal defined at the top-level of the package" should {
+    val cpg = code("""
+        |package mypkg
+        |interface SomeInterface {
+        |    fun doSomething()
+        |}
+        |val AN_OBJ = object : SomeInterface {
+        |    override fun doSomething() {
+        |        println("something")
+        |    }
+        |}
+        | """.stripMargin)
+
+    "contain a correctly lowered representation" in {
+      cpg.typeDecl.fullNameExact("mypkg.AN_OBJ$object$1").l should not be List()
+    }
+  }
 }
