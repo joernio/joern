@@ -807,7 +807,7 @@ class AstCreator(
       val paramAsts =
         if (ctx.packingLeftHandSide() != null) {
           val packingLHSAst = astForPackingLeftHandSideContext(ctx.packingLeftHandSide())
-          packingLHSAst ++ multipleLHSAsts
+          multipleLHSAsts ++ packingLHSAst
         } else {
           multipleLHSAsts
         }
@@ -1499,7 +1499,21 @@ class AstCreator(
        * call nodes to model how ruby assigns values from RHS elements to LHS elements. We create
        * tuples for each assignment and then pass them to the assignment calls nodes
        */
-      val assigns = lhsAsts.zip(rhsAsts)
+      val assigns =
+        if (lhsAsts.size < rhsAsts.size) {
+          /* The rightmost AST in the LHS is a packed variable.
+           * Pack the extra ASTs and the rightmost AST in the RHS in one array like the if() part
+           */
+
+          val diff        = rhsAsts.size - lhsAsts.size
+          val packedRHS   = getPackedRHS(rhsAsts.takeRight(diff + 1)).head
+          val alignedAsts = lhsAsts.take(lhsAsts.size - 1).zip(rhsAsts.take(lhsAsts.size - 1))
+          val packedAsts  = lhsAsts.takeRight(1) zip Seq(packedRHS)
+          alignedAsts ++ packedAsts
+        } else {
+          lhsAsts.zip(rhsAsts)
+        }
+
       assigns.map { argPair =>
         val lhsCode = argPair._1.nodes.headOption match {
           case Some(id: NewIdentifier) => id.code
