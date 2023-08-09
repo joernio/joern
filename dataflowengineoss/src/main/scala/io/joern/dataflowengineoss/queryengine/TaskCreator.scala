@@ -21,9 +21,6 @@ class TaskCreator(context: EngineContext) {
 
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
-  private val MAX_ARGS_TO_ALLOW        = 1000
-  private val MAX_OUTPUT_ARG_EXPANSION = 1000
-
   /** For a given list of results and sources, generate new tasks.
     */
   def createFromResults(results: Vector[ReachableByResult]): Vector[ReachableByTask] = {
@@ -81,7 +78,7 @@ class TaskCreator(context: EngineContext) {
     */
   private def paramToArgs(param: MethodParameterIn): List[Expression] = {
     val args = paramToArgsOfCallers(param) ++ paramToMethodRefCallReceivers(param)
-    if (args.size > MAX_ARGS_TO_ALLOW) {
+    if (args.size > context.config.maxArgsToAllow) {
       logger.warn(s"Too many arguments for parameter: ${args.size}. Not expanding")
       logger.warn("Method name: " + param.method.fullName)
       List()
@@ -182,7 +179,7 @@ class TaskCreator(context: EngineContext) {
   }
 
   private def restrictSize(l: Vector[ReachableByTask]): Vector[ReachableByTask] = {
-    if (l.size <= MAX_OUTPUT_ARG_EXPANSION) {
+    if (l.size <= context.config.maxOutputArgsExpansion) {
       l
     } else {
       logger.warn("Too many new tasks in expansion of unresolved output arguments")

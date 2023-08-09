@@ -313,11 +313,17 @@ case class EngineContext(semantics: Semantics = DefaultSemantics(), config: Engi
   *   an initial (starting node) -> (path-edges) cache to initiate data flow queries with.
   * @param shareCacheBetweenTasks
   *   enables sharing of previously calculated paths among other tasks.
+  * @param maxArgsToAllow
+  *   max limit to determine all corresponding arguments at all call sites to the method
+  * @param maxOutputArgsExpansion
+  *   max limit on number arguments for which tasks will be created for unresolved arguments
   */
 case class EngineConfig(
   var maxCallDepth: Int = 4,
   initialTable: Option[mutable.Map[TaskFingerprint, Vector[ReachableByResult]]] = None,
-  shareCacheBetweenTasks: Boolean = true
+  shareCacheBetweenTasks: Boolean = true,
+  maxArgsToAllow: Int = 1000,
+  maxOutputArgsExpansion: Int = 1000
 )
 
 /** Tracks various performance characteristics of the query engine.
