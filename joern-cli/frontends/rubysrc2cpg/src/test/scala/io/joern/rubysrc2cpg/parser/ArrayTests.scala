@@ -45,12 +45,12 @@ class ArrayTests extends RubyParserAbstractTest {
           """ArrayConstructorPrimary
             | NonExpandedWordArrayConstructor
             |  %w[
-            |  NonExpandedWordArrayElements
-            |   NonExpandedWordArrayElement
+            |  NonExpandedArrayElements
+            |   NonExpandedArrayElement
             |    x
-            |   NonExpandedWordArrayElement
+            |   NonExpandedArrayElement
             |    y
-            |   NonExpandedWordArrayElement
+            |   NonExpandedArrayElement
             |    z
             |  ]""".stripMargin
       }
@@ -61,12 +61,12 @@ class ArrayTests extends RubyParserAbstractTest {
           """ArrayConstructorPrimary
             | NonExpandedWordArrayConstructor
             |  %w(
-            |  NonExpandedWordArrayElements
-            |   NonExpandedWordArrayElement
+            |  NonExpandedArrayElements
+            |   NonExpandedArrayElement
             |    x
-            |   NonExpandedWordArrayElement
+            |   NonExpandedArrayElement
             |    y
-            |   NonExpandedWordArrayElement
+            |   NonExpandedArrayElement
             |    z
             |  )""".stripMargin
       }
@@ -77,12 +77,12 @@ class ArrayTests extends RubyParserAbstractTest {
           """ArrayConstructorPrimary
             | NonExpandedWordArrayConstructor
             |  %w{
-            |  NonExpandedWordArrayElements
-            |   NonExpandedWordArrayElement
+            |  NonExpandedArrayElements
+            |   NonExpandedArrayElement
             |    x
-            |   NonExpandedWordArrayElement
+            |   NonExpandedArrayElement
             |    y
-            |   NonExpandedWordArrayElement
+            |   NonExpandedArrayElement
             |    z
             |  }""".stripMargin
       }
@@ -93,8 +93,8 @@ class ArrayTests extends RubyParserAbstractTest {
           """ArrayConstructorPrimary
             | NonExpandedWordArrayConstructor
             |  %w<
-            |  NonExpandedWordArrayElements
-            |   NonExpandedWordArrayElement
+            |  NonExpandedArrayElements
+            |   NonExpandedArrayElement
             |    x
             |    \ 
             |    y
@@ -107,12 +107,12 @@ class ArrayTests extends RubyParserAbstractTest {
           """ArrayConstructorPrimary
             | NonExpandedWordArrayConstructor
             |  %w-
-            |  NonExpandedWordArrayElements
-            |   NonExpandedWordArrayElement
+            |  NonExpandedArrayElements
+            |   NonExpandedArrayElement
             |    x
-            |   NonExpandedWordArrayElement
+            |   NonExpandedArrayElement
             |    y
-            |   NonExpandedWordArrayElement
+            |   NonExpandedArrayElement
             |    z
             |  -""".stripMargin
       }
@@ -128,16 +128,16 @@ class ArrayTests extends RubyParserAbstractTest {
           """ArrayConstructorPrimary
             | NonExpandedWordArrayConstructor
             |  %w(
-            |  NonExpandedWordArrayElements
-            |   NonExpandedWordArrayElement
+            |  NonExpandedArrayElements
+            |   NonExpandedArrayElement
             |    b
             |    o
             |    b
-            |   NonExpandedWordArrayElement
+            |   NonExpandedArrayElement
             |    c
             |    o
             |    d
-            |   NonExpandedWordArrayElement
+            |   NonExpandedArrayElement
             |    d
             |    o
             |    d
@@ -157,10 +157,10 @@ class ArrayTests extends RubyParserAbstractTest {
           """ArrayConstructorPrimary
             | NonExpandedSymbolArrayConstructor
             |  %i<
-            |  NonExpandedSymbolArrayElements
-            |   NonExpandedSymbolArrayElement
+            |  NonExpandedArrayElements
+            |   NonExpandedArrayElement
             |    x
-            |   NonExpandedSymbolArrayElement
+            |   NonExpandedArrayElement
             |    y
             |  >""".stripMargin
       }
@@ -171,8 +171,8 @@ class ArrayTests extends RubyParserAbstractTest {
           """ArrayConstructorPrimary
             | NonExpandedSymbolArrayConstructor
             |  %i{
-            |  NonExpandedSymbolArrayElements
-            |   NonExpandedSymbolArrayElement
+            |  NonExpandedArrayElements
+            |   NonExpandedArrayElement
             |    x
             |    \ 
             |    y
@@ -185,10 +185,10 @@ class ArrayTests extends RubyParserAbstractTest {
           """ArrayConstructorPrimary
             | NonExpandedSymbolArrayConstructor
             |  %i[
-            |  NonExpandedSymbolArrayElements
-            |   NonExpandedSymbolArrayElement
+            |  NonExpandedArrayElements
+            |   NonExpandedArrayElement
             |    x
-            |   NonExpandedSymbolArrayElement
+            |   NonExpandedArrayElement
             |    [
             |    y
             |    ]
@@ -206,12 +206,12 @@ class ArrayTests extends RubyParserAbstractTest {
           """ArrayConstructorPrimary
             | NonExpandedSymbolArrayConstructor
             |  %i(
-            |  NonExpandedSymbolArrayElements
-            |   NonExpandedSymbolArrayElement
+            |  NonExpandedArrayElements
+            |   NonExpandedArrayElement
             |    x
-            |   NonExpandedSymbolArrayElement
+            |   NonExpandedArrayElement
             |    y
-            |   NonExpandedSymbolArrayElement
+            |   NonExpandedArrayElement
             |    z
             |  )""".stripMargin
       }
