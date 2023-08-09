@@ -258,7 +258,9 @@ blockParameters
 arrayConstructor
     :   LBRACK wsOrNl* indexingArguments? wsOrNl* RBRACK                                                            # bracketedArrayConstructor
     |   QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_START
+        NON_EXPANDED_ARRAY_ITEM_SEPARATOR*
         nonExpandedWordArrayElements?
+        NON_EXPANDED_ARRAY_ITEM_SEPARATOR*
         QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END                                                                # nonExpandedWordArrayConstructor
     |   QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_START
         NON_EXPANDED_ARRAY_ITEM_SEPARATOR*
@@ -267,6 +269,9 @@ arrayConstructor
         QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END                                                                # nonExpandedSymbolArrayConstructor
     ;
     
+// TODO: nonExpandedWordArrayElements and nonExpandedSymbolArrayElements
+// could be refactored into a single nonExpandedArrayElements rule. 
+
 nonExpandedSymbolArrayElements
     :   nonExpandedSymbolArrayElement (NON_EXPANDED_ARRAY_ITEM_SEPARATOR+ nonExpandedSymbolArrayElement)*
     ;
