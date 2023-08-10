@@ -9,7 +9,8 @@ abstract class RubyLexerBase(input: CharStream)
     extends Lexer(input)
     with RegexLiteralHandling
     with NonExpandedDelimiterHandling
-    with InterpolationHandling {
+    with InterpolationHandling
+    with ExpandedDelimiterHandling {
 
   /** The previously (non-WS) emitted token (in DEFAULT_CHANNEL.) */
   protected var previousNonWsToken: Option[Token] = None
@@ -35,4 +36,10 @@ abstract class RubyLexerBase(input: CharStream)
     previousToken.map(_.getType).getOrElse(EOF)
   }
 
+  def closingDelimiterFor(char: Int): Int = char match
+    case '(' => ')'
+    case '[' => ']'
+    case '{' => '}'
+    case '<' => '>'
+    case c   => c
 }

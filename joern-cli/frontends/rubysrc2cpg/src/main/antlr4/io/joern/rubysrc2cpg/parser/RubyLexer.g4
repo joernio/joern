@@ -11,7 +11,9 @@ tokens {
     QUOTED_NON_EXPANDED_STRING_LITERAL_END,
     QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_END,
     QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END,
-    QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END
+    QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END,
+    QUOTED_EXPANDED_STRING_LITERAL_END,
+    DELIMITED_STRING_INTERPOLATION_END
 }
 
 options {
@@ -288,6 +290,15 @@ QUOTED_NON_EXPANDED_STRING_LITERAL_START
         pushNonExpandedStringDelimiter(_input.LA(1));
         _input.consume();
         pushMode(NON_EXPANDED_DELIMITED_STRING_MODE);
+    }
+    ;
+    
+QUOTED_EXPANDED_STRING_LITERAL_START
+    :   '%Q' {!Character.isAlphabetic(_input.LA(1))}?
+    {
+        pushExpandedQuotedStringDelimiter(_input.LA(1));
+        _input.consume();
+        pushMode(EXPANDED_DELIMITED_STRING_MODE);
     }
     ;
 
@@ -644,6 +655,28 @@ fragment SIMPLE_ESCAPE_SEQUENCE
 
 fragment DOUBLE_ESCAPED_CHARACTER
     :   [ntrfvaebsu]
+    ;
+
+// --------------------------------------------------------
+// Expanded delimited string mode
+// --------------------------------------------------------
+
+mode EXPANDED_DELIMITED_STRING_MODE;
+
+DELIMITED_STRING_INTERPOLATION_BEGIN
+    :   '#{' 
+    {
+        pushInterpolationEndTokenType(DELIMITED_STRING_INTERPOLATION_END);
+        pushMode(DEFAULT_MODE);
+    }
+    ;
+
+EXPANDED_LITERAL_CHARACTER
+    :   NON_EXPANDED_LITERAL_ESCAPE_SEQUENCE
+    |   NON_ESCAPED_LITERAL_CHARACTER
+    {
+        consumeExpandedCharAndMaybePopMode(_input.LA(-1));
+    }
     ;
 
 // --------------------------------------------------------
