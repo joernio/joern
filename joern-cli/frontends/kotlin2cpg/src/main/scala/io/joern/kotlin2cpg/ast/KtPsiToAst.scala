@@ -941,7 +941,7 @@ trait KtPsiToAst {
       } else if (expr.getInitializer.isInstanceOf[KtPostfixExpression]) {
         astForPostfixExpression(expr.getInitializer.asInstanceOf[KtPostfixExpression], None, None)
       } else if (expr.getInitializer.isInstanceOf[KtWhenExpression]) {
-        astForWhenAsExpression(expr.getInitializer.asInstanceOf[KtWhenExpression], None)
+        astForWhenAsExpression(expr.getInitializer.asInstanceOf[KtWhenExpression], None, None)
       } else if (expr.getInitializer.isInstanceOf[KtIfExpression]) {
         astForIfAsExpression(expr.getInitializer.asInstanceOf[KtIfExpression], None, None)
       } else {
@@ -1703,10 +1703,12 @@ trait KtPsiToAst {
     }
   }
 
-  def astForWhenAsExpression(expr: KtWhenExpression, argIdx: Option[Int])(implicit
+  def astForWhenAsExpression(expr: KtWhenExpression, argIdx: Option[Int], argNameMaybe: Option[String])(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
-    val callNode = withArgumentIndex(operatorCallNode("<operator>.when", "<operator>.when", None), argIdx)
+    val callNode =
+      withArgumentIndex(operatorCallNode("<operator>.when", "<operator>.when", None), argIdx)
+        .argumentName(argNameMaybe)
 
     val subjectExpressionAsts = astsForExpression(expr.getSubjectExpression, None)
     val subjectBlock          = blockNode(expr.getSubjectExpression, "", "")
@@ -1727,9 +1729,11 @@ trait KtPsiToAst {
     callAst(callNode, List(subjectBlockAst) ++ argAsts)
   }
 
-  def astForWhen(expr: KtWhenExpression, argIdx: Option[Int])(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  def astForWhen(expr: KtWhenExpression, argIdx: Option[Int], argNameMaybe: Option[String])(implicit
+    typeInfoProvider: TypeInfoProvider
+  ): Ast = {
     typeInfoProvider.usedAsExpression(expr) match {
-      case Some(true) => astForWhenAsExpression(expr, argIdx)
+      case Some(true) => astForWhenAsExpression(expr, argIdx, argNameMaybe)
       case _          => astForWhenAsStatement(expr, argIdx)
     }
   }
