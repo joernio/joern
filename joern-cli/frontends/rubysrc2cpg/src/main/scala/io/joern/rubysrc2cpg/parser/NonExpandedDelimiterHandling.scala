@@ -44,14 +44,7 @@ trait NonExpandedDelimiterHandling { this: RubyLexerBase =>
 
   private def getNonExpandedDelimitedStringEndToken: Int = endTokenType
 
-  private def currentClosingDelimiter(): Int =
-    currentOpeningDelimiter() match {
-      case '(' => ')'
-      case '[' => ']'
-      case '{' => '}'
-      case '<' => '>'
-      case c   => c
-    }
+  private def currentClosingDelimiter(): Int = closingDelimiterFor(currentOpeningDelimiter())
 
   def pushNonExpandedStringDelimiter(char: Int): Unit = {
     pushNonExpandedDelimiter(char)

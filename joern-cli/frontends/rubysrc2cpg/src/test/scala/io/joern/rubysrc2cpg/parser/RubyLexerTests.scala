@@ -523,6 +523,70 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     )
   }
 
+  "empty `%Q` string literals" should "be recognized as such" in {
+    val eg = Seq("%Q()", "%Q[]", "%Q{}", "%Q<>", "%Q##", "%Q!!", "%Q--", "%Q@@", "%Q++", "%Q**", "%Q//", "%Q&&")
+    all(eg.map(tokenize)) shouldBe Seq(QUOTED_EXPANDED_STRING_LITERAL_START, QUOTED_EXPANDED_STRING_LITERAL_END, EOF)
+  }
+
+  "single-character `%Q` string literals" should "be recognized as such" in {
+    val eg =
+      Seq("%Q(x)", "%Q[y]", "%Q{z}", "%Q<w>", "%Q#a#", "%Q!b!", "%Q-_-", "%Q@c@", "%Q+d+", "%Q*e*", "%Q/#/", "%Q&!&")
+    all(eg.map(tokenize)) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_LITERAL_START,
+      EXPANDED_LITERAL_CHARACTER,
+      QUOTED_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
+  "delimiter-escaped-single-character `%Q` string literals" should "be recognized as such" in {
+    val eg = Seq(
+      "%Q(\\))",
+      "%Q[\\]]",
+      "%Q{\\}}",
+      "%Q<\\>>",
+      "%Q#\\##",
+      "%Q!\\!!",
+      "%Q-\\--",
+      "%Q@\\@@",
+      "%Q+\\++",
+      "%Q*\\**",
+      "%Q/\\//",
+      "%Q&\\&&"
+    )
+    all(eg.map(tokenize)) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_LITERAL_START,
+      EXPANDED_LITERAL_CHARACTER,
+      QUOTED_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
+  "nested `%Q` string literals" should "be recognized as such" in {
+    val eg = Seq("%Q(()())", "%Q[[][]]", "%Q{{}{}}", "%Q<<><>>")
+    all(eg.map(tokenize)) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_LITERAL_START,
+      EXPANDED_LITERAL_CHARACTER,
+      EXPANDED_LITERAL_CHARACTER,
+      EXPANDED_LITERAL_CHARACTER,
+      EXPANDED_LITERAL_CHARACTER,
+      QUOTED_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
+  "interpolated (with a numeric expression) `%Q` string literals" should "be recognized as such" in {
+    val code = "%Q(#{1})"
+    tokenize(code) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_LITERAL_START,
+      DELIMITED_STRING_INTERPOLATION_BEGIN,
+      DECIMAL_INTEGER_LITERAL,
+      DELIMITED_STRING_INTERPOLATION_END,
+      QUOTED_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
   "empty `%r` regex literals" should "be recognized as such" in {
     val eg = Seq("%r()", "%r[]", "%r{}", "%r<>", "%r##", "%r!!", "%r--", "%r@@", "%r++", "%r**", "%r//", "%r&&")
     all(eg.map(tokenize)) shouldBe Seq(
