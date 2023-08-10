@@ -628,4 +628,26 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
     }
   }
 
+  "CPG for code with destructuring expression with an _if_ expression RHS" should {
+    val cpg = code("""
+      |package mypkg
+      |import kotlin.random.Random
+      |fun f1() {
+      |    data class Entry(val p: String, val q: String)
+      |    val (p, q) =
+      |        if (Random(1).nextBoolean()) {
+      |            Entry("onep", "oneq")
+      |        } else {
+      |            Entry("twop", "twoq")
+      |        }
+      |    println(p)
+      |    println(q)
+      |}
+      |""".stripMargin)
+
+    "should contain a `conditional`-operator CALL node for the RHS" in {
+      cpg.call.methodFullName("<operator>.conditional").size shouldBe 1
+    }
+  }
+
 }
