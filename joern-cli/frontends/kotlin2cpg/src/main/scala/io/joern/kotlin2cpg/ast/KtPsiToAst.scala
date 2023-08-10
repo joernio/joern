@@ -1415,7 +1415,7 @@ trait KtPsiToAst {
     controlStructureAst(node, None, tryAstOption :: (clauseAsts ++ finallyAsts).toList)
   }
 
-  private def astForTryAsExpression(expr: KtTryExpression, argIdx: Option[Int])(implicit
+  private def astForTryAsExpression(expr: KtTryExpression, argIdx: Option[Int], argNameMaybe: Option[String])(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val typeFullName = registerType(
@@ -1426,14 +1426,19 @@ trait KtPsiToAst {
     val clauseAsts = expr.getCatchClauses.asScala.toSeq.map { entry =>
       astsForExpression(entry.getCatchBody, None)
     }.flatten
-    val node = operatorCallNode(Operators.tryCatch, expr.getText, Option(typeFullName), line(expr), column(expr))
+    val node =
+      operatorCallNode(Operators.tryCatch, expr.getText, Option(typeFullName), line(expr), column(expr))
+        .argumentName(argNameMaybe)
+
     callAst(withArgumentIndex(node, argIdx), List(tryBlockAst) ++ clauseAsts)
   }
 
   // TODO: handle parameters passed to the clauses
-  def astForTry(expr: KtTryExpression, argIdx: Option[Int])(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  def astForTry(expr: KtTryExpression, argIdx: Option[Int], argNameMaybe: Option[String])(implicit
+    typeInfoProvider: TypeInfoProvider
+  ): Ast = {
     if (KtPsiUtil.isStatement(expr)) astForTryAsStatement(expr)
-    else astForTryAsExpression(expr, argIdx)
+    else astForTryAsExpression(expr, argIdx, argNameMaybe)
   }
 
   def astForWhile(expr: KtWhileExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
