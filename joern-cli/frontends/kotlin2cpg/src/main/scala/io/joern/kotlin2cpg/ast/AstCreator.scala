@@ -191,7 +191,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       // TODO: callable reference
       case _: KtNameReferenceExpression         => Seq()
       case typedExpr: KtObjectLiteralExpression => Seq(astForObjectLiteralExpr(typedExpr, argIdxMaybe))
-      case typedExpr: KtParenthesizedExpression => astsForExpression(typedExpr.getExpression, argIdxMaybe)
+      case typedExpr: KtParenthesizedExpression => astsForExpression(typedExpr.getExpression, argIdxMaybe, argNameMaybe)
       case typedExpr: KtPostfixExpression       => Seq(astForPostfixExpression(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtPrefixExpression        => Seq(astForPrefixExpression(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtProperty if typedExpr.isLocal => astsForProperty(typedExpr)

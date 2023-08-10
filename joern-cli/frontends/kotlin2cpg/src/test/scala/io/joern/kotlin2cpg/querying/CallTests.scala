@@ -485,4 +485,19 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       c.argument.map(_.argumentName).flatten.l shouldBe List("two", "one")
     }
   }
+
+  "CPG for code with simple call having a parenthesized expression passed in with an argument name" should {
+    val cpg = code("""
+      |package mypkg
+      |class X(val p: String) {
+      |  fun f2() = f1(two = "this",  one = ("that"))
+      |}
+      |fun f1(one: String, two: String)  = println(one + " " + two)
+      |""".stripMargin)
+
+    "should contain a CALL node with arguments with their ARGUMENT_NAME property set" in {
+      val List(c: Call) = cpg.method.nameExact("f1").callIn.l
+      c.argument.map(_.argumentName).flatten.l shouldBe List("two", "one")
+    }
+  }
 }
