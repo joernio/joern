@@ -184,8 +184,8 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       case typedExpr: KtForExpression            => Seq(astForFor(typedExpr))
       case typedExpr: KtIfExpression             => Seq(astForIf(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtIsExpression             => Seq(astForIsExpression(typedExpr, argIdxMaybe, argNameMaybe))
-      case typedExpr: KtLabeledExpression        => astsForExpression(typedExpr.getBaseExpression, argIdxMaybe)
-      case typedExpr: KtLambdaExpression         => Seq(astForLambda(typedExpr, argIdxMaybe))
+      case typedExpr: KtLabeledExpression => astsForExpression(typedExpr.getBaseExpression, argIdxMaybe, argNameMaybe)
+      case typedExpr: KtLambdaExpression  => Seq(astForLambda(typedExpr, argIdxMaybe))
       case typedExpr: KtNameReferenceExpression if typedExpr.getReferencedNameElementType == KtTokens.IDENTIFIER =>
         Seq(astForNameReference(typedExpr, argIdxMaybe, argNameMaybe))
       // TODO: callable reference
