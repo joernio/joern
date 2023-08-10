@@ -584,7 +584,14 @@ symbol
 stringExpression
     :   simpleString                                                                                                # simpleStringExpression
     |   stringInterpolation                                                                                         # interpolatedStringExpression
+    |   quotedExpandedStringExpression                                                                              # quotedExpandedStringExpressionStringExpression
     |   stringExpression (WS stringExpression)+                                                                     # concatenatedStringExpression
+    ;
+
+quotedExpandedStringExpression
+    :   QUOTED_EXPANDED_STRING_LITERAL_START
+        (EXPANDED_LITERAL_CHARACTER | delimitedStringInterpolation)*
+        QUOTED_EXPANDED_STRING_LITERAL_END
     ;
 
 simpleString
@@ -593,6 +600,12 @@ simpleString
     |   QUOTED_NON_EXPANDED_STRING_LITERAL_START 
         NON_EXPANDED_LITERAL_CHARACTER* 
         QUOTED_NON_EXPANDED_STRING_LITERAL_END                                                                      # nonExpandedQuotedStringLiteral
+    ;
+
+delimitedStringInterpolation
+    :   DELIMITED_STRING_INTERPOLATION_BEGIN
+        compoundStatement
+        DELIMITED_STRING_INTERPOLATION_END
     ;
 
 stringInterpolation
