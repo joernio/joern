@@ -643,6 +643,59 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     )
   }
 
+  "Empty `%x` literals" should "be recognized as such" in {
+    val eg = Seq("%x()", "%x[]", "%x{}", "%x<>", "%x##", "%x!!", "%x--", "%x@@", "%x++", "%x**", "%x//", "%x&&")
+    all(eg.map(tokenize)) shouldBe Seq(
+      QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_START,
+      QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_END,
+      EOF
+    )
+  }
+
+  "`%x` literals containing `#`" should "not be mistaken for interpolations" in {
+    val code = "%x[#]"
+    tokenize(code) shouldBe Seq(
+      QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_START,
+      EXPANDED_LITERAL_CHARACTER,
+      QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_END,
+      EOF
+    )
+  }
+
+  "`%x` literals containing escaped `#` characters" should "not be mistaken for interpolations" in {
+    val code = """%x(\#$x)"""
+    tokenize(code) shouldBe Seq(
+      QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_START,
+      EXPANDED_LITERAL_CHARACTER,
+      EXPANDED_LITERAL_CHARACTER,
+      EXPANDED_LITERAL_CHARACTER,
+      QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_END,
+      EOF
+    )
+  }
+
+  "`%x` literals containing identifier interpolations" should "be recognized as such" in {
+    val eg = Seq("%x[#$x]", "%x{#@xyz}", "%x<#@@counter>")
+    all(eg.map(tokenize)) shouldBe Seq(
+      QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_START,
+      EXPANDED_VARIABLE_CHARACTER_SEQUENCE,
+      QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_END,
+      EOF
+    )
+  }
+
+  "Interpolated (with a local variable) `%x` literals" should "be recognized as such" in {
+    val code = "%x(#{ls})"
+    tokenize(code) shouldBe Seq(
+      QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_START,
+      DELIMITED_STRING_INTERPOLATION_BEGIN,
+      LOCAL_VARIABLE_IDENTIFIER,
+      DELIMITED_STRING_INTERPOLATION_END,
+      QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_END,
+      EOF
+    )
+  }
+
   "empty `%r` regex literals" should "be recognized as such" in {
     val eg = Seq("%r()", "%r[]", "%r{}", "%r<>", "%r##", "%r!!", "%r--", "%r@@", "%r++", "%r**", "%r//", "%r&&")
     all(eg.map(tokenize)) shouldBe Seq(

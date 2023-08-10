@@ -13,6 +13,7 @@ tokens {
     QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END,
     QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END,
     QUOTED_EXPANDED_STRING_LITERAL_END,
+    QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_END,
     DELIMITED_STRING_INTERPOLATION_END
 }
 
@@ -309,6 +310,15 @@ QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_START
         _input.consume();
         pushMode(NON_EXPANDED_DELIMITED_STRING_MODE);
     };
+    
+QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_START
+    :   '%x' {!Character.isAlphabetic(_input.LA(1))}?
+    {
+        pushExpandedQuotedExternalCommandDelimiter(_input.LA(1));
+        _input.consume();
+        pushMode(EXPANDED_DELIMITED_STRING_MODE);
+    }
+    ;
 
 // --------------------------------------------------------
 // String (Word) array literals
