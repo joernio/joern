@@ -1,9 +1,9 @@
 package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.Identifier
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
@@ -357,6 +357,47 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     "should contain a METHOD node with correct METHOD_FULL_NAME set" in {
       val List(c) = cpg.method.nameExact("mapIndexedNotNullTo").callIn.l
       c.methodFullName shouldBe "kotlin.sequences.Sequence.mapIndexedNotNullTo:java.lang.Object(java.util.Collection,kotlin.Function2)"
+    }
+  }
+
+  "CPG for code with simple call having literals passed in with argument names" should {
+    val cpg = code("""
+      |package mypkg
+      |fun f1(one: String, two: String)  = println(one + " " + two)
+      |fun f2() = f1(two = "this",  one = "that")
+      |""".stripMargin)
+
+    "should contain a CALL node with arguments with their ARGUMENT_NAME property set" in {
+      val List(c: Call) = cpg.method.nameExact("f1").callIn.l
+      c.argument.map(_.argumentName).flatten.l shouldBe List("two", "one")
+    }
+  }
+
+  "CPG for code with simple call having another call passed in with an argument name" should {
+    val cpg = code("""
+      |package mypkg
+      |fun f1(one: String, two: String)  = println(one + " " + two)
+      |fun f2() = f1(two = "this",  one = f3())
+      |fun f3() = "that"
+      |""".stripMargin)
+
+    "should contain a CALL node with arguments with their ARGUMENT_NAME property set" in {
+      val List(c: Call) = cpg.method.nameExact("f1").callIn.l
+      c.argument.map(_.argumentName).flatten.l shouldBe List("two", "one")
+    }
+  }
+
+  "CPG for code with simple call having a ctor call passed in with an argument name" should {
+    val cpg = code("""
+      |package mypkg
+      |data class X(val p: String)
+      |fun f1(one: X, two: String)  = println(one.p + " " + two)
+      |fun f2() = f1(two = "this",  one = X("that"))
+      |""".stripMargin)
+
+    "should contain a CALL node with arguments with their ARGUMENT_NAME property set" in {
+      val List(c: Call) = cpg.method.nameExact("f1").callIn.l
+      c.argument.map(_.argumentName).flatten.l shouldBe List("two", "one")
     }
   }
 }
