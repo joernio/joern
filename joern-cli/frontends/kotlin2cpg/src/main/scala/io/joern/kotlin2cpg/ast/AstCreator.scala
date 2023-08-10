@@ -164,7 +164,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     implicit typeInfoProvider: TypeInfoProvider
   ): Seq[Ast] = {
     expr match {
-      case typedExpr: KtAnnotatedExpression   => astsForExpression(typedExpr.getBaseExpression, argIdxMaybe)
+      case typedExpr: KtAnnotatedExpression => astsForExpression(typedExpr.getBaseExpression, argIdxMaybe, argNameMaybe)
       case typedExpr: KtArrayAccessExpression => Seq(astForArrayAccess(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtAnonymousInitializer  => astsForExpression(typedExpr.getBody, argIdxMaybe)
       case typedExpr: KtBinaryExpression      => astsForBinaryExpr(typedExpr, argIdxMaybe)
