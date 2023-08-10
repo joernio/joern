@@ -943,7 +943,7 @@ trait KtPsiToAst {
       } else if (expr.getInitializer.isInstanceOf[KtWhenExpression]) {
         astForWhenAsExpression(expr.getInitializer.asInstanceOf[KtWhenExpression], None)
       } else if (expr.getInitializer.isInstanceOf[KtIfExpression]) {
-        astForIfAsExpression(expr.getInitializer.asInstanceOf[KtIfExpression], None)
+        astForIfAsExpression(expr.getInitializer.asInstanceOf[KtIfExpression], None, None)
       } else {
         val assignmentNode   = operatorCallNode(Operators.assignment, s"$tmpName = ${rhsCall.getText}", None)
         val assignmentRhsAst = astsForExpression(rhsCall, None).head
@@ -1747,10 +1747,12 @@ trait KtPsiToAst {
     Seq(Ast(jumpNode), exprNode)
   }
 
-  def astForIf(expr: KtIfExpression, argIdx: Option[Int])(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  def astForIf(expr: KtIfExpression, argIdx: Option[Int], argNameMaybe: Option[String])(implicit
+    typeInfoProvider: TypeInfoProvider
+  ): Ast = {
     val isChildOfControlStructureBody = expr.getParent.isInstanceOf[KtContainerNodeForControlStructureBody]
     if (KtPsiUtil.isStatement(expr) && !isChildOfControlStructureBody) astForIfAsControlStructure(expr)
-    else astForIfAsExpression(expr, argIdx)
+    else astForIfAsExpression(expr, argIdx, argNameMaybe)
   }
 
   def astForIfAsControlStructure(expr: KtIfExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
@@ -1762,7 +1764,7 @@ trait KtPsiToAst {
     controlStructureAst(node, conditionAst, List(thenAsts ++ elseAsts).flatten)
   }
 
-  def astForIfAsExpression(expr: KtIfExpression, argIdx: Option[Int])(implicit
+  def astForIfAsExpression(expr: KtIfExpression, argIdx: Option[Int], argNameMaybe: Option[String])(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val conditionAsts = astsForExpression(expr.getCondition, None)
@@ -1774,7 +1776,7 @@ trait KtPsiToAst {
       val returnTypeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
       val node =
         operatorCallNode(Operators.conditional, expr.getText, Option(returnTypeFullName), line(expr), column(expr))
-      callAst(withArgumentIndex(node, argIdx), allAsts)
+      callAst(withArgumentIndex(node, argIdx).argumentName(argNameMaybe), allAsts)
     } else {
       logger.warn("Could not create ASTs for condition-then-else of conditional.")
       astForUnknown(expr, argIdx)

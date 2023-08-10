@@ -182,7 +182,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       case typedExpr: KtDotQualifiedExpression   => Seq(astForQualifiedExpression(typedExpr, argIdxMaybe))
       case typedExpr: KtDoWhileExpression        => Seq(astForDoWhile(typedExpr))
       case typedExpr: KtForExpression            => Seq(astForFor(typedExpr))
-      case typedExpr: KtIfExpression             => Seq(astForIf(typedExpr, argIdxMaybe))
+      case typedExpr: KtIfExpression             => Seq(astForIf(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtIsExpression             => Seq(astForIsExpression(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtLabeledExpression        => astsForExpression(typedExpr.getBaseExpression, argIdxMaybe)
       case typedExpr: KtLambdaExpression         => Seq(astForLambda(typedExpr, argIdxMaybe))
