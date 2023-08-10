@@ -249,6 +249,93 @@ class StringTests extends RubyParserAbstractTest {
     }
   }
 
+  "An expanded `%Q` string literal" when {
+
+    "empty" should {
+      val code = "%Q()"
+
+      "be parsed as a primary expression" in {
+        printAst(_.primary(), code) shouldEqual
+          """StringExpressionPrimary
+            | QuotedExpandedStringExpressionStringExpression
+            |  QuotedExpandedStringExpression
+            |   %Q(
+            |   )""".stripMargin
+      }
+    }
+
+    "containing text and a numeric literal interpolation" should {
+      val code = "%Q{text=#{1}}"
+
+      "be parsed as primary expression" in {
+        printAst(_.primary(), code) shouldEqual
+          """StringExpressionPrimary
+            | QuotedExpandedStringExpressionStringExpression
+            |  QuotedExpandedStringExpression
+            |   %Q{
+            |   t
+            |   e
+            |   x
+            |   t
+            |   =
+            |   DelimitedStringInterpolation
+            |    #{
+            |    CompoundStatement
+            |     Statements
+            |      ExpressionOrCommandStatement
+            |       ExpressionExpressionOrCommand
+            |        PrimaryExpression
+            |         LiteralPrimary
+            |          NumericLiteralLiteral
+            |           NumericLiteral
+            |            UnsignedNumericLiteral
+            |             1
+            |    }
+            |   }""".stripMargin
+      }
+    }
+
+    "containing two consecutive numeric literal interpolations" should {
+      val code = "%Q[#{1}#{2}]"
+
+      "be parsed as primary expression" in {
+        printAst(_.primary(), code) shouldEqual
+          """StringExpressionPrimary
+            | QuotedExpandedStringExpressionStringExpression
+            |  QuotedExpandedStringExpression
+            |   %Q[
+            |   DelimitedStringInterpolation
+            |    #{
+            |    CompoundStatement
+            |     Statements
+            |      ExpressionOrCommandStatement
+            |       ExpressionExpressionOrCommand
+            |        PrimaryExpression
+            |         LiteralPrimary
+            |          NumericLiteralLiteral
+            |           NumericLiteral
+            |            UnsignedNumericLiteral
+            |             1
+            |    }
+            |   DelimitedStringInterpolation
+            |    #{
+            |    CompoundStatement
+            |     Statements
+            |      ExpressionOrCommandStatement
+            |       ExpressionExpressionOrCommand
+            |        PrimaryExpression
+            |         LiteralPrimary
+            |          NumericLiteralLiteral
+            |           NumericLiteral
+            |            UnsignedNumericLiteral
+            |             2
+            |    }
+            |   ]""".stripMargin
+      }
+    }
+
+  }
+
   "A double-quoted string literal" when {
 
     "empty" should {
