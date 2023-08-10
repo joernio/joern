@@ -200,7 +200,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       case typedExpr: KtSuperExpression => Seq(astForSuperExpression(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtThisExpression  => Seq(astForThisExpression(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtThrowExpression => Seq(astForUnknown(typedExpr, argIdxMaybe))
-      case typedExpr: KtTryExpression   => Seq(astForTry(typedExpr, argIdxMaybe))
+      case typedExpr: KtTryExpression   => Seq(astForTry(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtWhenExpression  => Seq(astForWhen(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtWhileExpression => Seq(astForWhile(typedExpr))
       case typedExpr: KtNamedFunction if Option(typedExpr.getName).isEmpty =>
