@@ -80,14 +80,12 @@ trait AstForPrimitivesCreator { this: AstCreator =>
 
   private def astForNonExpandedWordArrayConstructor(ctx: NonExpandedWordArrayConstructorContext): Seq[Ast] = {
     Option(ctx.nonExpandedWordArrayElements)
-      .map(
-        _.nonExpandedWordArrayElement.asScala.filterNot(_.getText.isBlank).map(astForNonExpandedWordArrayElement).toSeq
-      )
+      .map(_.nonExpandedWordArrayElement.asScala.map(astForNonExpandedWordArrayElement).toSeq)
       .getOrElse(Seq(astForEmptyArrayInitializer(ctx)))
   }
 
   private def astForNonExpandedWordArrayElement(ctx: NonExpandedWordArrayElementContext): Ast = {
-    Ast(literalNode(ctx, ctx.getText.strip(), Defines.String, List(Defines.String)))
+    Ast(literalNode(ctx, ctx.getText, Defines.String, List(Defines.String)))
   }
 
   private def astForNonExpandedSymbolArrayConstructor(ctx: NonExpandedSymbolArrayConstructorContext): Seq[Ast] = {
@@ -97,6 +95,6 @@ trait AstForPrimitivesCreator { this: AstCreator =>
   }
 
   private def astForNonExpandedSymbolArrayElement(ctx: NonExpandedSymbolArrayElementContext): Ast = {
-    Ast(literalNode(ctx, ctx.getText.strip(), Defines.Symbol))
+    Ast(literalNode(ctx, ctx.getText, Defines.Symbol))
   }
 }
