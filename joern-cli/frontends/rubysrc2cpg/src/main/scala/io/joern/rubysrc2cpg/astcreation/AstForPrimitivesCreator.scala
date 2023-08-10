@@ -79,22 +79,29 @@ trait AstForPrimitivesCreator { this: AstCreator =>
   }
 
   private def astForNonExpandedWordArrayConstructor(ctx: NonExpandedWordArrayConstructorContext): Seq[Ast] = {
-    Option(ctx.nonExpandedWordArrayElements)
-      .map(_.nonExpandedWordArrayElement.asScala.map(astForNonExpandedWordArrayElement).toSeq)
+    Option(ctx.nonExpandedArrayElements)
+      .map(astForNonExpandedArrayElements(_, astForNonExpandedWordArrayElement))
       .getOrElse(Seq(astForEmptyArrayInitializer(ctx)))
   }
 
-  private def astForNonExpandedWordArrayElement(ctx: NonExpandedWordArrayElementContext): Ast = {
+  private def astForNonExpandedWordArrayElement(ctx: NonExpandedArrayElementContext): Ast = {
     Ast(literalNode(ctx, ctx.getText, Defines.String, List(Defines.String)))
   }
 
   private def astForNonExpandedSymbolArrayConstructor(ctx: NonExpandedSymbolArrayConstructorContext): Seq[Ast] = {
-    Option(ctx.nonExpandedSymbolArrayElements)
-      .map(_.nonExpandedSymbolArrayElement.asScala.map(astForNonExpandedSymbolArrayElement).toSeq)
+    Option(ctx.nonExpandedArrayElements)
+      .map(astForNonExpandedArrayElements(_, astForNonExpandedSymbolArrayElement))
       .getOrElse(Seq(astForEmptyArrayInitializer(ctx)))
   }
 
-  private def astForNonExpandedSymbolArrayElement(ctx: NonExpandedSymbolArrayElementContext): Ast = {
+  private def astForNonExpandedArrayElements(
+    ctx: NonExpandedArrayElementsContext,
+    astForNonExpandedArrayElement: NonExpandedArrayElementContext => Ast
+  ): Seq[Ast] = {
+    ctx.nonExpandedArrayElement.asScala.map(astForNonExpandedArrayElement).toSeq
+  }
+
+  private def astForNonExpandedSymbolArrayElement(ctx: NonExpandedArrayElementContext): Ast = {
     Ast(literalNode(ctx, ctx.getText, Defines.Symbol))
   }
 }
