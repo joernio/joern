@@ -426,4 +426,50 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       c.argument.map(_.argumentName).flatten.l shouldBe List("two", "one")
     }
   }
+
+  "CPG for code with simple call having a simple qualified-expression passed in with an argument name" should {
+    val cpg = code("""
+      |package mypkg
+      |data class X(val p: String)
+      |fun f1(one: String, two: String)  = println(one + " " + two)
+      |fun f2() = {
+      |  val x = X("that")
+      |  f1(two = "this",  one = x.p)
+      |}
+      |""".stripMargin)
+
+    "should contain a CALL node with arguments with their ARGUMENT_NAME property set" in {
+      val List(c: Call) = cpg.method.nameExact("f1").callIn.l
+      c.argument.map(_.argumentName).flatten.l shouldBe List("two", "one")
+    }
+  }
+
+  "CPG for code with simple call having a qualified-expression with ctor passed in with an argument name" should {
+    val cpg = code("""
+      |package mypkg
+      |data class X(val p: String)
+      |fun f1(one: String, two: String)  = println(one + " " + two)
+      |fun f2() = f1(two = "this",  one = X("that").p)
+      |""".stripMargin)
+
+    "should contain a CALL node with arguments with their ARGUMENT_NAME property set" in {
+      val List(c: Call) = cpg.method.nameExact("f1").callIn.l
+      c.argument.map(_.argumentName).flatten.l shouldBe List("two", "one")
+    }
+  }
+
+  "CPG for code with simple call having a qualified-expression for `super` passed in with an argument name" should {
+    val cpg = code("""
+      |package mypkg
+      |class X(val p: String) {
+      |  fun f2() = f1(two = "this",  one = super.toString())
+      |}
+      |fun f1(one: String, two: String)  = println(one + " " + two)
+      |""".stripMargin)
+
+    "should contain a CALL node with arguments with their ARGUMENT_NAME property set" in {
+      val List(c: Call) = cpg.method.nameExact("f1").callIn.l
+      c.argument.map(_.argumentName).flatten.l shouldBe List("two", "one")
+    }
+  }
 }
