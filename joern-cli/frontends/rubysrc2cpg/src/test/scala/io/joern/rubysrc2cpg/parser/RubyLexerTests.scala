@@ -254,6 +254,26 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     )
   }
 
+  "Escaped `\\)` in double-quoted string literal" should "be recognized as a single character" in {
+    val code = """"\)""""
+    tokenize(code) shouldBe Seq(
+      DOUBLE_QUOTED_STRING_START,
+      DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE,
+      DOUBLE_QUOTED_STRING_END,
+      EOF
+    )
+  }
+
+  "Escaped `\\)` in `%Q` string literal" should "be recognized as a single character" in {
+    val code = """%Q(\))"""
+    tokenize(code) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_LITERAL_START,
+      EXPANDED_LITERAL_CHARACTER,
+      QUOTED_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
   "Empty regex literal" should "be recognized as such" in {
     val code = "//"
     tokenize(code) shouldBe Seq(REGULAR_EXPRESSION_START, REGULAR_EXPRESSION_END, EOF)
@@ -582,6 +602,42 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       DELIMITED_STRING_INTERPOLATION_BEGIN,
       DECIMAL_INTEGER_LITERAL,
       DELIMITED_STRING_INTERPOLATION_END,
+      QUOTED_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
+  "`%Q` string literals containing identifier interpolations" should "be recognized as such" in {
+    val eg = Seq("%Q[x = #$x]", "%Q{x = #@xyz}", "%Q<x = #@@counter>")
+    all(eg.map(tokenize)) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_LITERAL_START,
+      EXPANDED_LITERAL_CHARACTER,
+      EXPANDED_LITERAL_CHARACTER,
+      EXPANDED_LITERAL_CHARACTER,
+      EXPANDED_LITERAL_CHARACTER,
+      EXPANDED_VARIABLE_CHARACTER_SEQUENCE,
+      QUOTED_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
+  "`%Q` string literals containing escaped `#` characters" should "not be mistaken for interpolations" in {
+    val code = """%Q(\#$x)"""
+    tokenize(code) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_LITERAL_START,
+      EXPANDED_LITERAL_CHARACTER,
+      EXPANDED_LITERAL_CHARACTER,
+      EXPANDED_LITERAL_CHARACTER,
+      QUOTED_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
+  "`%Q` string literals containing `#`" should "not be mistaken for interpolations" in {
+    val code = "%Q[#]"
+    tokenize(code) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_LITERAL_START,
+      EXPANDED_LITERAL_CHARACTER,
       QUOTED_EXPANDED_STRING_LITERAL_END,
       EOF
     )
