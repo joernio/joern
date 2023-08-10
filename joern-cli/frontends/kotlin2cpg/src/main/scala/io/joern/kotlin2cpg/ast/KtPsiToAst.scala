@@ -1102,9 +1102,11 @@ trait KtPsiToAst {
     }
   }
 
-  private def astForQualifiedExpressionFieldAccess(expr: KtQualifiedExpression, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  private def astForQualifiedExpressionFieldAccess(
+    expr: KtQualifiedExpression,
+    argIdx: Option[Int],
+    argNameMaybe: Option[String]
+  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val receiverAst = astsForExpression(expr.getReceiverExpression, Some(1)).head
     val argAsts     = selectorExpressionArgAsts(expr)
     registerType(typeInfoProvider.containingDeclType(expr, TypeConstants.any))
@@ -1112,13 +1114,15 @@ trait KtPsiToAst {
     val node = withArgumentIndex(
       operatorCallNode(Operators.fieldAccess, expr.getText, Option(retType), line(expr), column(expr)),
       argIdx
-    )
+    ).argumentName(argNameMaybe)
     callAst(node, List(receiverAst) ++ argAsts)
   }
 
-  private def astForQualifiedExpressionExtensionCall(expr: KtQualifiedExpression, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  private def astForQualifiedExpressionExtensionCall(
+    expr: KtQualifiedExpression,
+    argIdx: Option[Int],
+    argNameMaybe: Option[String]
+  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val receiverAst = astsForExpression(expr.getReceiverExpression, Some(0)).head
     val argAsts     = selectorExpressionArgAsts(expr)
 
@@ -1140,7 +1144,7 @@ trait KtPsiToAst {
           Some(retType)
         ),
         argIdx
-      )
+      ).argumentName(argNameMaybe)
     callAst(node, argAsts, Option(receiverAst))
   }
 
@@ -1159,9 +1163,11 @@ trait KtPsiToAst {
     }
   }
 
-  private def astForQualifiedExpressionCallToSuper(expr: KtQualifiedExpression, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  private def astForQualifiedExpressionCallToSuper(
+    expr: KtQualifiedExpression,
+    argIdx: Option[Int],
+    argNameMaybe: Option[String]
+  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val receiverAst = astsForExpression(expr.getReceiverExpression, Some(0)).head
     val argAsts     = selectorExpressionArgAsts(expr)
 
@@ -1183,13 +1189,15 @@ trait KtPsiToAst {
           Some(retType)
         ),
         argIdx
-      )
+      ).argumentName(argNameMaybe)
     callAst(node, argAsts, Option(receiverAst))
   }
 
-  private def astForQualifiedExpressionCtor(expr: KtQualifiedExpression, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  private def astForQualifiedExpressionCtor(
+    expr: KtQualifiedExpression,
+    argIdx: Option[Int],
+    argNameMaybe: Option[String]
+  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     expr.getSelectorExpression match {
       case callExpr: KtCallExpression =>
         val localName         = "tmp"
@@ -1236,14 +1244,14 @@ trait KtPsiToAst {
         val returningIdentifierNode = identifierNode(expr, identifier.name, identifier.name, identifier.typeFullName)
         val returningIdentifierAst  = Ast(returningIdentifierNode).withRefEdge(returningIdentifierNode, local)
 
-        val node = blockNode(expr, expr.getText, localTypeFullName)
+        val node = blockNode(expr, expr.getText, localTypeFullName).argumentName(argNameMaybe)
         argIdx match {
           case Some(idx) => node.argumentIndex(idx)
           case _         =>
         }
         blockAst(node, List(localAst, assignmentCallAst, initAst, returningIdentifierAst))
       case _ =>
-        val node = blockNode(expr, "", TypeConstants.any)
+        val node = blockNode(expr, "", TypeConstants.any).argumentName(argNameMaybe)
         argIdx match {
           case Some(idx) => node.argumentIndex(idx)
           case _         =>
@@ -1252,9 +1260,11 @@ trait KtPsiToAst {
     }
   }
 
-  private def astForQualifiedExpressionWithNoAstForReceiver(expr: KtQualifiedExpression, argIdx: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  private def astForQualifiedExpressionWithNoAstForReceiver(
+    expr: KtQualifiedExpression,
+    argIdx: Option[Int],
+    argNameMaybe: Option[String]
+  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val receiverAst = astsForExpression(expr.getReceiverExpression, Some(1)).head
     val argAsts     = selectorExpressionArgAsts(expr)
 
@@ -1269,7 +1279,7 @@ trait KtPsiToAst {
     val node = withArgumentIndex(
       callNode(expr, expr.getText, methodName, fullName, dispatchType, Some(signature), Some(retType)),
       argIdx
-    )
+    ).argumentName(argNameMaybe)
     Ast(node)
       .withChild(receiverAst)
       .withChildren(argAsts)
@@ -1279,7 +1289,8 @@ trait KtPsiToAst {
   private def astForQualifiedExpressionWithReceiverEdge(
     expr: KtQualifiedExpression,
     callKind: CallKinds.CallKind,
-    argIdx: Option[Int]
+    argIdx: Option[Int],
+    argNameMaybe: Option[String]
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val isDynamicCall = callKind == CallKinds.DynamicCall
     val isStaticCall  = callKind == CallKinds.StaticCall
@@ -1304,7 +1315,7 @@ trait KtPsiToAst {
     val node = withArgumentIndex(
       callNode(expr, expr.getText, methodName, fullName, dispatchType, Some(signature), Some(retType)),
       argIdx
-    )
+    ).argumentName(argNameMaybe)
     val receiverNode =
       if (argAsts.sizeIs == 1 && argAsts.head.root.get.isInstanceOf[NewMethodRef]) argAsts.head.root.get
       else receiverAst.root.get
@@ -1338,7 +1349,7 @@ trait KtPsiToAst {
   }
 
   // TODO: clean up this whole fn
-  def astForQualifiedExpression(expr: KtQualifiedExpression, argIdx: Option[Int])(implicit
+  def astForQualifiedExpression(expr: KtQualifiedExpression, argIdx: Option[Int], argNameMaybe: Option[String])(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val callKind        = typeInfoProvider.bindingKind(expr)
@@ -1366,17 +1377,17 @@ trait KtPsiToAst {
     val isCtorCtorCall   = typeInfoProvider.isConstructorCall(expr)
     val noAstForReceiver = isStaticMethodCall && hasRefToClassReceiver
     if (isCtorCtorCall.getOrElse(false)) {
-      astForQualifiedExpressionCtor(expr, argIdx)
+      astForQualifiedExpressionCtor(expr, argIdx, argNameMaybe)
     } else if (isFieldAccessCall) {
-      astForQualifiedExpressionFieldAccess(expr, argIdx)
+      astForQualifiedExpressionFieldAccess(expr, argIdx, argNameMaybe)
     } else if (isExtensionCall) {
-      astForQualifiedExpressionExtensionCall(expr, argIdx)
+      astForQualifiedExpressionExtensionCall(expr, argIdx, argNameMaybe)
     } else if (isCallToSuper) {
-      astForQualifiedExpressionCallToSuper(expr, argIdx)
+      astForQualifiedExpressionCallToSuper(expr, argIdx, argNameMaybe)
     } else if (noAstForReceiver) {
-      astForQualifiedExpressionWithNoAstForReceiver(expr, argIdx)
+      astForQualifiedExpressionWithNoAstForReceiver(expr, argIdx, argNameMaybe)
     } else {
-      astForQualifiedExpressionWithReceiverEdge(expr, callKind, argIdx)
+      astForQualifiedExpressionWithReceiverEdge(expr, callKind, argIdx, argNameMaybe)
     }
   }
 
