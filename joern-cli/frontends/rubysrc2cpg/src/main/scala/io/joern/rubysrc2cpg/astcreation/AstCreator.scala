@@ -845,10 +845,20 @@ class AstCreator(
   def astForIndexingExpressionPrimaryContext(ctx: IndexingExpressionPrimaryContext): Seq[Ast] = {
     val lhsExpressionAst = astForPrimaryContext(ctx.primary())
     val rhsExpressionAst = Option(ctx.indexingArguments).map(astForIndexingArgumentsContext).getOrElse(Seq())
+
+    val operator = lhsExpressionAst.flatMap(_.nodes.filter(_.isInstanceOf[NewIdentifier])).headOption match
+      case Some(node) =>
+        if (node.asInstanceOf[NewIdentifier].name == "Array") {
+          Operators.arrayInitializer
+        } else {
+          Operators.indexAccess
+        }
+      case None => Operators.indexAccess
+
     val callNode = NewCall()
-      .name(Operators.indexAccess)
+      .name(operator)
       .code(ctx.getText)
-      .methodFullName(Operators.indexAccess)
+      .methodFullName(operator)
       .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .typeFullName(Defines.Any)
