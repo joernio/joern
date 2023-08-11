@@ -637,7 +637,7 @@ trait KtPsiToAst {
     Ast(withArgumentName(withArgumentIndex(node, argIdx), argName))
   }
 
-  def astForAnonymousFunction(fn: KtNamedFunction, argIdx: Option[Int])(implicit
+  def astForAnonymousFunction(fn: KtNamedFunction, argIdxMaybe: Option[Int], argNameMaybe: Option[String])(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
     val (fullName, signature) = typeInfoProvider.fullNameWithSignatureAsLambda(fn, lambdaKeyPool)
@@ -696,7 +696,8 @@ trait KtPsiToAst {
     ).withChild(Ast(modifierNode(ModifierTypes.VIRTUAL)))
 
     val _methodRefNode =
-      withArgumentIndex(methodRefNode(fn, fn.getText, fullName, lambdaTypeDeclFullName), argIdx)
+      withArgumentIndex(methodRefNode(fn, fn.getText, fullName, lambdaTypeDeclFullName), argIdxMaybe)
+        .argumentName(argNameMaybe)
 
     val lambdaTypeDecl = typeDeclNode(
       fn,
@@ -722,7 +723,9 @@ trait KtPsiToAst {
     Ast(_methodRefNode)
   }
 
-  def astForLambda(expr: KtLambdaExpression, argIdx: Option[Int])(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  def astForLambda(expr: KtLambdaExpression, argIdxMaybe: Option[Int], argNameMaybe: Option[String])(implicit
+    typeInfoProvider: TypeInfoProvider
+  ): Ast = {
     val (fullName, signature) = typeInfoProvider.fullNameWithSignature(expr, lambdaKeyPool)
     val lambdaMethodNode      = methodNode(expr, Constants.lambdaName, fullName, signature, relativizedPath)
 
@@ -810,7 +813,8 @@ trait KtPsiToAst {
     ).withChild(Ast(modifierNode(ModifierTypes.VIRTUAL)))
 
     val _methodRefNode =
-      withArgumentIndex(methodRefNode(expr, expr.getText, fullName, lambdaTypeDeclFullName), argIdx)
+      withArgumentIndex(methodRefNode(expr, expr.getText, fullName, lambdaTypeDeclFullName), argIdxMaybe)
+        .argumentName(argNameMaybe)
 
     val lambdaTypeDecl = typeDeclNode(
       expr,

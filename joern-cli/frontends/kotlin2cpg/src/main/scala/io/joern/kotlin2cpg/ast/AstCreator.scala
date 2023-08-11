@@ -185,7 +185,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       case typedExpr: KtIfExpression             => Seq(astForIf(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtIsExpression             => Seq(astForIsExpression(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtLabeledExpression => astsForExpression(typedExpr.getBaseExpression, argIdxMaybe, argNameMaybe)
-      case typedExpr: KtLambdaExpression  => Seq(astForLambda(typedExpr, argIdxMaybe))
+      case typedExpr: KtLambdaExpression  => Seq(astForLambda(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtNameReferenceExpression if typedExpr.getReferencedNameElementType == KtTokens.IDENTIFIER =>
         Seq(astForNameReference(typedExpr, argIdxMaybe, argNameMaybe))
       // TODO: callable reference
@@ -204,7 +204,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       case typedExpr: KtWhenExpression  => Seq(astForWhen(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtWhileExpression => Seq(astForWhile(typedExpr))
       case typedExpr: KtNamedFunction if Option(typedExpr.getName).isEmpty =>
-        Seq(astForAnonymousFunction(typedExpr, argIdxMaybe))
+        Seq(astForAnonymousFunction(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtNamedFunction =>
         logger.debug(
           s"Creating empty AST node for unknown expression `${typedExpr.getClass}` with text `${typedExpr.getText}`."
