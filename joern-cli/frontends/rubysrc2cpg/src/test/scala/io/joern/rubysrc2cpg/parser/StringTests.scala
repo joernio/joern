@@ -83,168 +83,153 @@ class StringTests extends RubyParserAbstractTest {
       "it is empty and uses the `(`-`)` delimiters" in {
         val code = "%q()"
         printAst(_.primary(), code) shouldEqual
-          """StringExpressionPrimary
-            | SimpleStringExpression
-            |  NonExpandedQuotedStringLiteral
-            |   %q(
-            |   )""".stripMargin
+          """QuotedStringExpressionPrimary
+            | NonExpandedQuotedStringLiteral
+            |  %q(
+            |  )""".stripMargin
       }
 
       "it is empty and uses the `[`-`]` delimiters" in {
         val code = "%q[]"
         printAst(_.primary(), code) shouldEqual
-          """StringExpressionPrimary
-            | SimpleStringExpression
-            |  NonExpandedQuotedStringLiteral
-            |   %q[
-            |   ]""".stripMargin
+          """QuotedStringExpressionPrimary
+            | NonExpandedQuotedStringLiteral
+            |  %q[
+            |  ]""".stripMargin
       }
 
       "it is empty and uses the `{`-`}` delimiters" in {
         val code = "%q{}"
         printAst(_.primary(), code) shouldEqual
-          """StringExpressionPrimary
-            | SimpleStringExpression
-            |  NonExpandedQuotedStringLiteral
-            |   %q{
-            |   }""".stripMargin
+          """QuotedStringExpressionPrimary
+            | NonExpandedQuotedStringLiteral
+            |  %q{
+            |  }""".stripMargin
       }
 
       "it is empty and uses the `<`-`>` delimiters" in {
         val code = "%q<>"
         printAst(_.primary(), code) shouldEqual
-          """StringExpressionPrimary
-            | SimpleStringExpression
-            |  NonExpandedQuotedStringLiteral
-            |   %q<
-            |   >""".stripMargin
+          """QuotedStringExpressionPrimary
+            | NonExpandedQuotedStringLiteral
+            |  %q<
+            |  >""".stripMargin
       }
 
       "it is empty and uses the `#` delimiters" in {
         val code = "%q##"
         printAst(_.primary(), code) shouldEqual
-          """StringExpressionPrimary
-            | SimpleStringExpression
-            |  NonExpandedQuotedStringLiteral
-            |   %q#
-            |   #""".stripMargin
+          """QuotedStringExpressionPrimary
+            | NonExpandedQuotedStringLiteral
+            |  %q#
+            |  #""".stripMargin
       }
 
       "it contains a single non-escaped character and uses the `(`-`)` delimiters" in {
         val code = "%q(x)"
         printAst(_.primary(), code) shouldEqual
-          """StringExpressionPrimary
-            | SimpleStringExpression
-            |  NonExpandedQuotedStringLiteral
-            |   %q(
-            |   x
-            |   )""".stripMargin
+          """QuotedStringExpressionPrimary
+            | NonExpandedQuotedStringLiteral
+            |  %q(
+            |  x
+            |  )""".stripMargin
       }
 
       "it contains a single non-escaped character and uses the `[`-`]` delimiters" in {
         val code = "%q[x]"
         printAst(_.primary(), code) shouldEqual
-          """StringExpressionPrimary
-            | SimpleStringExpression
-            |  NonExpandedQuotedStringLiteral
-            |   %q[
-            |   x
-            |   ]""".stripMargin
+          """QuotedStringExpressionPrimary
+            | NonExpandedQuotedStringLiteral
+            |  %q[
+            |  x
+            |  ]""".stripMargin
       }
 
       "it contains a single non-escaped character and uses the `#` delimiters" in {
         val code = "%q#x#"
         printAst(_.primary(), code) shouldEqual
-          """StringExpressionPrimary
-            | SimpleStringExpression
-            |  NonExpandedQuotedStringLiteral
-            |   %q#
-            |   x
-            |   #""".stripMargin
+          """QuotedStringExpressionPrimary
+            | NonExpandedQuotedStringLiteral
+            |  %q#
+            |  x
+            |  #""".stripMargin
       }
 
       "it contains a single escaped character and uses the `(`-`)` delimiters" in {
         val code = "%q(\\()"
         printAst(_.primary(), code) shouldEqual
-          """StringExpressionPrimary
-            | SimpleStringExpression
-            |  NonExpandedQuotedStringLiteral
-            |   %q(
-            |   \(
-            |   )""".stripMargin
+          """QuotedStringExpressionPrimary
+            | NonExpandedQuotedStringLiteral
+            |  %q(
+            |  \(
+            |  )""".stripMargin
       }
 
       "it contains a single escaped character and uses the `[`-`]` delimiters" in {
         val code = "%q[\\]]"
         printAst(_.primary(), code) shouldEqual
-          """StringExpressionPrimary
-            | SimpleStringExpression
-            |  NonExpandedQuotedStringLiteral
-            |   %q[
-            |   \]
-            |   ]""".stripMargin
+          """QuotedStringExpressionPrimary
+            | NonExpandedQuotedStringLiteral
+            |  %q[
+            |  \]
+            |  ]""".stripMargin
       }
 
       "it contains a single escaped character and uses the `#` delimiters" in {
         val code = "%q#\\##"
         printAst(_.primary(), code) shouldEqual
-          """StringExpressionPrimary
-            | SimpleStringExpression
-            |  NonExpandedQuotedStringLiteral
-            |   %q#
-            |   \#
-            |   #""".stripMargin
+          """QuotedStringExpressionPrimary
+            | NonExpandedQuotedStringLiteral
+            |  %q#
+            |  \#
+            |  #""".stripMargin
       }
 
       "it contains a word and uses the `(`-`)` delimiters" in {
         val code = "%q(foo)"
         printAst(_.primary(), code) shouldEqual
-          """StringExpressionPrimary
-            | SimpleStringExpression
-            |  NonExpandedQuotedStringLiteral
-            |   %q(
-            |   f
-            |   o
-            |   o
-            |   )""".stripMargin
+          """QuotedStringExpressionPrimary
+            | NonExpandedQuotedStringLiteral
+            |  %q(
+            |  f
+            |  o
+            |  o
+            |  )""".stripMargin
       }
 
       "it contains an empty nested string using the `(`-`)` delimiters" in {
         val code = "%q( () )"
         printAst(_.primary(), code) shouldEqual
-          """StringExpressionPrimary
-            | SimpleStringExpression
-            |  NonExpandedQuotedStringLiteral
-            |   %q(
-            |   (
-            |   )
-            |   )""".stripMargin
+          """QuotedStringExpressionPrimary
+            | NonExpandedQuotedStringLiteral
+            |  %q(
+            |  (
+            |  )
+            |  )""".stripMargin
       }
 
       "it contains an escaped single-character nested string using the `(`-`)` delimiters" in {
         val code = "%q( (\\)) )"
         printAst(_.primary(), code) shouldEqual
-          """StringExpressionPrimary
-            | SimpleStringExpression
-            |  NonExpandedQuotedStringLiteral
-            |   %q(
-            |   (
-            |   \)
-            |   )
-            |   )""".stripMargin
+          """QuotedStringExpressionPrimary
+            | NonExpandedQuotedStringLiteral
+            |  %q(
+            |  (
+            |  \)
+            |  )
+            |  )""".stripMargin
       }
 
       "it contains an escaped single-character nested string using the `<`-`>` delimiters" in {
         val code = "%q< <\\>> >"
         printAst(_.primary(), code) shouldEqual
-          """StringExpressionPrimary
-            | SimpleStringExpression
-            |  NonExpandedQuotedStringLiteral
-            |   %q<
-            |   <
-            |   \>
-            |   >
-            |   >""".stripMargin
+          """QuotedStringExpressionPrimary
+            | NonExpandedQuotedStringLiteral
+            |  %q<
+            |  <
+            |  \>
+            |  >
+            |  >""".stripMargin
       }
     }
   }
@@ -256,11 +241,10 @@ class StringTests extends RubyParserAbstractTest {
 
       "be parsed as a primary expression" in {
         printAst(_.primary(), code) shouldEqual
-          """StringExpressionPrimary
-            | QuotedExpandedStringExpressionStringExpression
-            |  QuotedExpandedStringExpression
-            |   %Q(
-            |   )""".stripMargin
+          """QuotedStringExpressionPrimary
+            | ExpandedQuotedStringLiteral
+            |  %Q(
+            |  )""".stripMargin
       }
     }
 
@@ -269,29 +253,28 @@ class StringTests extends RubyParserAbstractTest {
 
       "be parsed as primary expression" in {
         printAst(_.primary(), code) shouldEqual
-          """StringExpressionPrimary
-            | QuotedExpandedStringExpressionStringExpression
-            |  QuotedExpandedStringExpression
-            |   %Q{
-            |   t
-            |   e
-            |   x
-            |   t
-            |   =
-            |   DelimitedStringInterpolation
-            |    #{
-            |    CompoundStatement
-            |     Statements
-            |      ExpressionOrCommandStatement
-            |       ExpressionExpressionOrCommand
-            |        PrimaryExpression
-            |         LiteralPrimary
-            |          NumericLiteralLiteral
-            |           NumericLiteral
-            |            UnsignedNumericLiteral
-            |             1
-            |    }
-            |   }""".stripMargin
+          """QuotedStringExpressionPrimary
+            | ExpandedQuotedStringLiteral
+            |  %Q{
+            |  t
+            |  e
+            |  x
+            |  t
+            |  =
+            |  DelimitedStringInterpolation
+            |   #{
+            |   CompoundStatement
+            |    Statements
+            |     ExpressionOrCommandStatement
+            |      ExpressionExpressionOrCommand
+            |       PrimaryExpression
+            |        LiteralPrimary
+            |         NumericLiteralLiteral
+            |          NumericLiteral
+            |           UnsignedNumericLiteral
+            |            1
+            |   }
+            |  }""".stripMargin
       }
     }
 
@@ -300,37 +283,36 @@ class StringTests extends RubyParserAbstractTest {
 
       "be parsed as primary expression" in {
         printAst(_.primary(), code) shouldEqual
-          """StringExpressionPrimary
-            | QuotedExpandedStringExpressionStringExpression
-            |  QuotedExpandedStringExpression
-            |   %Q[
-            |   DelimitedStringInterpolation
-            |    #{
-            |    CompoundStatement
-            |     Statements
-            |      ExpressionOrCommandStatement
-            |       ExpressionExpressionOrCommand
-            |        PrimaryExpression
-            |         LiteralPrimary
-            |          NumericLiteralLiteral
-            |           NumericLiteral
-            |            UnsignedNumericLiteral
-            |             1
-            |    }
-            |   DelimitedStringInterpolation
-            |    #{
-            |    CompoundStatement
-            |     Statements
-            |      ExpressionOrCommandStatement
-            |       ExpressionExpressionOrCommand
-            |        PrimaryExpression
-            |         LiteralPrimary
-            |          NumericLiteralLiteral
-            |           NumericLiteral
-            |            UnsignedNumericLiteral
-            |             2
-            |    }
-            |   ]""".stripMargin
+          """QuotedStringExpressionPrimary
+            | ExpandedQuotedStringLiteral
+            |  %Q[
+            |  DelimitedStringInterpolation
+            |   #{
+            |   CompoundStatement
+            |    Statements
+            |     ExpressionOrCommandStatement
+            |      ExpressionExpressionOrCommand
+            |       PrimaryExpression
+            |        LiteralPrimary
+            |         NumericLiteralLiteral
+            |          NumericLiteral
+            |           UnsignedNumericLiteral
+            |            1
+            |   }
+            |  DelimitedStringInterpolation
+            |   #{
+            |   CompoundStatement
+            |    Statements
+            |     ExpressionOrCommandStatement
+            |      ExpressionExpressionOrCommand
+            |       PrimaryExpression
+            |        LiteralPrimary
+            |         NumericLiteralLiteral
+            |          NumericLiteral
+            |           UnsignedNumericLiteral
+            |            2
+            |   }
+            |  ]""".stripMargin
       }
     }
 
