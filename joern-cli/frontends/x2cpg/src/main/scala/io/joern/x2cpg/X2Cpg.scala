@@ -57,6 +57,13 @@ trait X2CpgConfig[R <: X2CpgConfig[R]] {
     else { Paths.get(inputPath, ignore).toAbsolutePath.normalize().toString }
   }
 
+  var schemaValidation: Boolean = true
+
+  def withSchemaValidation(value: Boolean): R = {
+    this.schemaValidation = value
+    this.asInstanceOf[R]
+  }
+
   def withInheritedFields(config: R): R = {
     this.inputPath = config.inputPath
     this.outputPath = config.outputPath
@@ -218,9 +225,7 @@ object X2Cpg {
         }
         .text("a regex specifying files to exclude during CPG generation (paths relative to <input-dir> are matched)"),
       opt[Unit]("enable-early-schema-checking")
-        .action { (_, c) =>
-          Ast.setSchemaValidation(true); c
-        }
+        .action((_, c) => c.withSchemaValidation(true))
         .text("enables early schema validation during AST creation (disabled by default)"),
       help("help").text("display this help message"),
       frontendSpecific

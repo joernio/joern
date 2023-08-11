@@ -19,7 +19,7 @@ import scala.collection.immutable.Seq
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters.*
-import scala.util.{Failure, Success, Using}
+import scala.util.{Failure, Success}
 
 class AstCreator(
   protected val filename: String,
@@ -27,7 +27,8 @@ class AstCreator(
   parser: ResourceManagedParser,
   packageContext: PackageContext,
   projectRoot: Option[String] = None
-) extends AstCreatorBase(filename)
+)(implicit withSchemaValidation: Boolean = false)
+    extends AstCreatorBase(filename)
     with AstNodeBuilder[ParserRuleContext, AstCreator]
     with AstForPrimitivesCreator
     with AstForStatementsCreator

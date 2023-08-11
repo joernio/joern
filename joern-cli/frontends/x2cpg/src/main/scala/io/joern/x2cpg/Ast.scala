@@ -13,15 +13,10 @@ case class AstEdge(src: NewNode, dst: NewNode)
 
 object Ast {
 
-  private val logger               = LoggerFactory.getLogger(getClass)
-  private var withSchemaValidation = false
+  private val logger = LoggerFactory.getLogger(getClass)
 
   def apply(node: NewNode): Ast = Ast(Vector.empty :+ node)
   def apply(): Ast              = new Ast(Vector.empty)
-
-  def setSchemaValidation(value: Boolean): Unit = {
-    withSchemaValidation = value
-  }
 
   /** Copy nodes/edges of given `AST` into the given `diffGraph`.
     */
@@ -54,10 +49,13 @@ object Ast {
     }
   }
 
-  def neighbourValidation(src: NewNode, dst: NewNode, edge: String): Unit = if (
+  def neighbourValidation(src: NewNode, dst: NewNode, edge: String)(implicit withSchemaValidation: Boolean): Unit = if (
     withSchemaValidation && !(src.isValidOutNeighbor(edge, dst) && dst.isValidInNeighbor(edge, src))
   ) {
-    logger.warn("Malformed AST introduced!", new SchemaViolationException(s"(${src.label()}) -[$edge]-> (${dst.label()}) violates the schema."))
+    logger.warn(
+      "Malformed AST detected!",
+      new SchemaViolationException(s"(${src.label()}) -[$edge]-> (${dst.label()}) violates the schema.")
+    )
   }
 
   /** For all `order` fields that are unset, derive the `order` field automatically by determining the position of the
@@ -91,7 +89,7 @@ case class Ast(
   bindsEdges: collection.Seq[AstEdge] = Vector.empty,
   receiverEdges: collection.Seq[AstEdge] = Vector.empty,
   argEdges: collection.Seq[AstEdge] = Vector.empty
-) {
+)(implicit withSchemaValidation: Boolean = false) {
 
   def root: Option[NewNode] = nodes.headOption
 
