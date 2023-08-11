@@ -2122,7 +2122,7 @@ trait KtPsiToAst {
     Ast(withArgumentName(withArgumentIndex(node, argIdx), argName))
   }
 
-  def astsForBinaryExpr(expr: KtBinaryExpression, argIdx: Option[Int])(implicit
+  def astsForBinaryExpr(expr: KtBinaryExpression, argIdx: Option[Int], argNameMaybe: Option[String])(implicit
     typeInfoProvider: TypeInfoProvider
   ): Seq[Ast] = {
     val opRef = expr.getOperationReference
@@ -2198,7 +2198,7 @@ trait KtPsiToAst {
     val lhsArgs = astsForExpression(expr.getLeft, None)
     val rhsArgs = astsForExpression(expr.getRight, None)
     lhsArgs.dropRight(1) ++ rhsArgs.dropRight(1) ++ Seq(
-      callAst(withArgumentIndex(node, argIdx), List(lhsArgs.last, rhsArgs.last))
+      callAst(withArgumentIndex(node, argIdx).argumentName(argNameMaybe), List(lhsArgs.last, rhsArgs.last))
     )
   }
 
