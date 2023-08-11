@@ -127,7 +127,7 @@ trait KtPsiToAst {
         val isExtensionFn = typeInfoProvider.isExtensionFn(n)
         astsForMethod(n, isExtensionFn)
       case t: KtTypeAlias            => Seq(astForTypeAlias(t))
-      case s: KtSecondaryConstructor => Seq(astForUnknown(s, None))
+      case s: KtSecondaryConstructor => Seq(astForUnknown(s, None, None))
       case p: KtProperty             => astsForProperty(p)
       case unhandled =>
         logger.error(
@@ -202,7 +202,7 @@ trait KtPsiToAst {
       val ctorMethodBlockAsts =
         ctor.getBodyExpression match {
           case b: KtBlockExpression =>
-            astsForBlock(b, None, preStatements = Option(Seq(Ast(primaryCtorCall))))
+            astsForBlock(b, None, None, preStatements = Option(Seq(Ast(primaryCtorCall))))
           case null =>
             val node = NewBlock().code(Constants.empty).typeFullName(TypeConstants.any)
             Seq(blockAst(node, List(Ast(primaryCtorCall))))
@@ -452,7 +452,7 @@ trait KtPsiToAst {
     val methodParametersAsts =
       withIndex(ktFn.getValueParameters.asScala.toSeq) { (p, idx) => astForParameter(p, idx) }
     val bodyAsts = Option(ktFn.getBodyBlockExpression) match {
-      case Some(bodyBlockExpression) => astsForBlock(bodyBlockExpression, None)
+      case Some(bodyBlockExpression) => astsForBlock(bodyBlockExpression, None, None)
       case None =>
         Option(ktFn.getBodyExpression)
           .map { expr =>
@@ -518,7 +518,8 @@ trait KtPsiToAst {
 
   def astsForBlock(
     expr: KtBlockExpression,
-    argIdx: Option[Int],
+    argIdxMaybe: Option[Int],
+    argNameMaybe: Option[String],
     pushToScope: Boolean = true,
     localsForCaptures: List[NewLocal] = List(),
     implicitReturnAroundLastStatement: Boolean = false,
@@ -526,7 +527,11 @@ trait KtPsiToAst {
   )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
     val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val node =
-      withArgumentIndex(blockNode(expr, expr.getStatements.asScala.map(_.getText).mkString("\n"), typeFullName), argIdx)
+      withArgumentIndex(
+        blockNode(expr, expr.getStatements.asScala.map(_.getText).mkString("\n"), typeFullName),
+        argIdxMaybe
+      )
+        .argumentName(argNameMaybe)
     if (pushToScope) scope.pushNewScope(node)
     val statements = expr.getStatements.asScala.toSeq.filter { stmt =>
       !stmt.isInstanceOf[KtNamedFunction] && !stmt.isInstanceOf[KtClassOrObject]
@@ -665,7 +670,7 @@ trait KtPsiToAst {
         astForParameter(p, idx)
       }
     val bodyAsts = Option(fn.getBodyBlockExpression) match {
-      case Some(bodyBlockExpression) => astsForBlock(bodyBlockExpression, None)
+      case Some(bodyBlockExpression) => astsForBlock(bodyBlockExpression, None, None)
       case None =>
         Option(fn.getBodyExpression)
           .map { expr =>
@@ -784,6 +789,7 @@ trait KtPsiToAst {
       .map(
         astsForBlock(
           _,
+          None,
           None,
           pushToScope = false,
           localsForCaptured,
@@ -1072,9 +1078,9 @@ trait KtPsiToAst {
     else astsForDestructuringDeclarationWithVarRHS(expr)
   }
 
-  def astForUnknown(expr: KtExpression, argIdx: Option[Int]): Ast = {
+  def astForUnknown(expr: KtExpression, argIdx: Option[Int], argNameMaybe: Option[String]): Ast = {
     val node = unknownNode(expr, Option(expr).map(_.getText).getOrElse(Constants.codePropUndefinedValue))
-    Ast(withArgumentIndex(node, argIdx))
+    Ast(withArgumentIndex(node, argIdx).argumentName(argNameMaybe))
   }
 
   def astForStringTemplate(expr: KtStringTemplateExpression, argIdx: Option[Int], argName: Option[String])(implicit
@@ -1799,7 +1805,7 @@ trait KtPsiToAst {
       callAst(withArgumentIndex(node, argIdx).argumentName(argNameMaybe), allAsts)
     } else {
       logger.warn("Could not create ASTs for condition-then-else of conditional.")
-      astForUnknown(expr, argIdx)
+      astForUnknown(expr, argIdx, argNameMaybe)
     }
   }
 
@@ -1857,9 +1863,11 @@ trait KtPsiToAst {
     )
   }
 
-  protected def astForObjectLiteralExpr(expr: KtObjectLiteralExpression, argIdxOpt: Option[Int])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  protected def astForObjectLiteralExpr(
+    expr: KtObjectLiteralExpression,
+    argIdxMaybe: Option[Int],
+    argNameMaybe: Option[String]
+  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val parentFn = KtPsiUtil.getTopmostParentOfTypes(expr, classOf[KtNamedFunction])
     val ctx =
       Option(parentFn)
@@ -1902,14 +1910,15 @@ trait KtPsiToAst {
 
     val initReceiverNode = identifierNode(expr, identifier.name, identifier.name, identifier.typeFullName)
     val initReceiverAst =
-      Ast(argIdxOpt.map(initReceiverNode.argumentIndex(_)).getOrElse(initReceiverNode))
-        .withRefEdge(initReceiverNode, localForTmp)
+      Ast(initReceiverNode).withRefEdge(initReceiverNode, localForTmp)
     val initAst = callAst(initCallNode, Seq(), Option(initReceiverAst))
 
     val refTmpNode = identifierNode(expr, tmpName, tmpName, localForTmp.typeFullName)
     val refTmpAst  = astWithRefEdgeMaybe(refTmpNode.name, refTmpNode)
 
-    val blockNode_ = blockNode(expr, expr.getText, TypeConstants.any)
+    val blockNode_ =
+      withArgumentIndex(blockNode(expr, expr.getText, TypeConstants.any), argIdxMaybe)
+        .argumentName(argNameMaybe)
     blockAst(blockNode_, Seq(typeDeclAst, localAst, assignmentCallAst, initAst, refTmpAst).toList)
   }
 

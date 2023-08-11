@@ -168,7 +168,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       case typedExpr: KtArrayAccessExpression => Seq(astForArrayAccess(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtAnonymousInitializer  => astsForExpression(typedExpr.getBody, argIdxMaybe)
       case typedExpr: KtBinaryExpression      => astsForBinaryExpr(typedExpr, argIdxMaybe, argNameMaybe)
-      case typedExpr: KtBlockExpression       => astsForBlock(typedExpr, argIdxMaybe)
+      case typedExpr: KtBlockExpression       => astsForBlock(typedExpr, argIdxMaybe, argNameMaybe)
       case typedExpr: KtBinaryExpressionWithTypeRHS =>
         Seq(astForBinaryExprWithTypeRHS(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtBreakExpression          => Seq(astForBreak(typedExpr))
@@ -190,7 +190,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         Seq(astForNameReference(typedExpr, argIdxMaybe, argNameMaybe))
       // TODO: callable reference
       case _: KtNameReferenceExpression         => Seq()
-      case typedExpr: KtObjectLiteralExpression => Seq(astForObjectLiteralExpr(typedExpr, argIdxMaybe))
+      case typedExpr: KtObjectLiteralExpression => Seq(astForObjectLiteralExpr(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtParenthesizedExpression => astsForExpression(typedExpr.getExpression, argIdxMaybe, argNameMaybe)
       case typedExpr: KtPostfixExpression       => Seq(astForPostfixExpression(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtPrefixExpression        => Seq(astForPrefixExpression(typedExpr, argIdxMaybe, argNameMaybe))
@@ -199,7 +199,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       case typedExpr: KtStringTemplateExpression      => Seq(astForStringTemplate(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtSuperExpression => Seq(astForSuperExpression(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtThisExpression  => Seq(astForThisExpression(typedExpr, argIdxMaybe, argNameMaybe))
-      case typedExpr: KtThrowExpression => Seq(astForUnknown(typedExpr, argIdxMaybe))
+      case typedExpr: KtThrowExpression => Seq(astForUnknown(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtTryExpression   => Seq(astForTry(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtWhenExpression  => Seq(astForWhen(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtWhileExpression => Seq(astForWhile(typedExpr))
@@ -209,7 +209,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         logger.debug(
           s"Creating empty AST node for unknown expression `${typedExpr.getClass}` with text `${typedExpr.getText}`."
         )
-        Seq(astForUnknown(typedExpr, argIdxMaybe))
+        Seq(astForUnknown(typedExpr, argIdxMaybe, argNameMaybe))
       case null =>
         logger.trace("Received null expression! Skipping...")
         Seq()
@@ -218,7 +218,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         logger.debug(
           s"Creating empty AST node for unknown expression `${unknownExpr.getClass}` with text `${unknownExpr.getText}`."
         )
-        Seq(astForUnknown(unknownExpr, argIdxMaybe))
+        Seq(astForUnknown(unknownExpr, argIdxMaybe, argNameMaybe))
     }
   }
 }
