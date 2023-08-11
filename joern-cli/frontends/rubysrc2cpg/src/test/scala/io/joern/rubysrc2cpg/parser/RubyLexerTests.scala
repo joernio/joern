@@ -1031,6 +1031,62 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     )
   }
 
+  "empty `%I` symbol array literals" should "be recognized as such" in {
+    val eg = Seq("%I()", "%I[]", "%I{}", "%I<>", "%I##", "%I!!", "%I--", "%I@@", "%I++", "%I**", "%I//", "%I&&")
+    all(eg.map(tokenize)) shouldBe Seq(
+      QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_START,
+      QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_END,
+      EOF
+    )
+  }
+
+  "single-character `%I` symbol array literals" should "be recognized as such" in {
+    val eg =
+      Seq("%I(x)", "%I[y]", "%I{z}", "%I<w>", "%I#a#", "%I!b!", "%I-_-", "%I@c@", "%I+d+", "%I*e*", "%I/#/", "%I&!&")
+    all(eg.map(tokenize)) shouldBe Seq(
+      QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_START,
+      EXPANDED_ARRAY_ITEM_CHARACTER,
+      QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_END,
+      EOF
+    )
+  }
+
+  "two-word `%I` symbol array literal containing text and interpolated numerics" should "be recognized as such" in {
+    val code = "%I(x#{0} x#{1})"
+    tokenize(code) shouldBe Seq(
+      QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_START,
+      EXPANDED_ARRAY_ITEM_CHARACTER,
+      DELIMITED_ARRAY_ITEM_INTERPOLATION_BEGIN,
+      DECIMAL_INTEGER_LITERAL,
+      DELIMITED_ARRAY_ITEM_INTERPOLATION_END,
+      EXPANDED_ARRAY_ITEM_SEPARATOR,
+      EXPANDED_ARRAY_ITEM_CHARACTER,
+      DELIMITED_ARRAY_ITEM_INTERPOLATION_BEGIN,
+      DECIMAL_INTEGER_LITERAL,
+      DELIMITED_ARRAY_ITEM_INTERPOLATION_END,
+      QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_END,
+      EOF
+    )
+  }
+
+  "multi-line two-word `%I` symbol array literals" should "be recognized as such" in {
+    val code =
+      """%I(
+        |x
+        |y
+        |)""".stripMargin
+    tokenize(code) shouldBe Seq(
+      QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_START,
+      EXPANDED_ARRAY_ITEM_SEPARATOR,
+      EXPANDED_ARRAY_ITEM_CHARACTER,
+      EXPANDED_ARRAY_ITEM_SEPARATOR,
+      EXPANDED_ARRAY_ITEM_CHARACTER,
+      EXPANDED_ARRAY_ITEM_SEPARATOR,
+      QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_END,
+      EOF
+    )
+  }
+
   "identifier used in a keyword argument" should "not be mistaken for a symbol literal" in {
     // This test exists to check if RubyLexer properly decided between COLON and SYMBOL_LITERAL
     val code = "foo(x:y)"
