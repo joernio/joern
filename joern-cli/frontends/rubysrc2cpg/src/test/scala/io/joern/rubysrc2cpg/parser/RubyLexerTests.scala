@@ -838,6 +838,135 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     )
   }
 
+  "empty `%W` string array literals" should "be recognized as such" in {
+    val eg = Seq("%W()", "%W[]", "%W{}", "%W<>", "%W##", "%W!!", "%W--", "%W@@", "%W++", "%W**", "%W//", "%W&&")
+    all(eg.map(tokenize)) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_ARRAY_LITERAL_START,
+      QUOTED_EXPANDED_STRING_ARRAY_LITERAL_END,
+      EOF
+    )
+  }
+
+  "single-character `%W` string array literals" should "be recognized as such" in {
+    val eg =
+      Seq("%W(x)", "%W[y]", "%W{z}", "%W<w>", "%W#a#", "%W!b!", "%W-_-", "%W@c@", "%W+d+", "%W*e*", "%W/#/", "%W&!&")
+    all(eg.map(tokenize)) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_ARRAY_LITERAL_START,
+      EXPANDED_ARRAY_ITEM_CHARACTER,
+      QUOTED_EXPANDED_STRING_ARRAY_LITERAL_END,
+      EOF
+    )
+  }
+
+  "two-word `%W` string array literals" should "be recognized as such" in {
+    val eg = Seq(
+      "%W(xx y)",
+      "%W[yy z]",
+      "%W{z0 w}",
+      "%W<w; 1>",
+      "%W#a& ?#",
+      "%W!b_ c!",
+      "%W-_= +-",
+      "%W@c\" d@",
+      "%W+d/ *+",
+      "%W*ef <*",
+      "%W/#< >/",
+      "%W&!! %&"
+    )
+    all(eg.map(tokenize)) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_ARRAY_LITERAL_START,
+      EXPANDED_ARRAY_ITEM_CHARACTER,
+      EXPANDED_ARRAY_ITEM_CHARACTER,
+      EXPANDED_ARRAY_ITEM_SEPARATOR,
+      EXPANDED_ARRAY_ITEM_CHARACTER,
+      QUOTED_EXPANDED_STRING_ARRAY_LITERAL_END,
+      EOF
+    )
+  }
+
+  "single interpolated word `%W` string array literal" should "be recognized as such" in {
+    val code = "%W{#{0}}"
+    tokenize(code) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_ARRAY_LITERAL_START,
+      DELIMITED_ARRAY_ITEM_INTERPOLATION_BEGIN,
+      DECIMAL_INTEGER_LITERAL,
+      DELIMITED_ARRAY_ITEM_INTERPOLATION_END,
+      QUOTED_EXPANDED_STRING_ARRAY_LITERAL_END,
+      EOF
+    )
+  }
+
+  "single word `%W` string array literal containing text and an interpolated numeric" should "be recognized as such" in {
+    val code = "%W<x#{0}>"
+    tokenize(code) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_ARRAY_LITERAL_START,
+      EXPANDED_ARRAY_ITEM_CHARACTER,
+      DELIMITED_ARRAY_ITEM_INTERPOLATION_BEGIN,
+      DECIMAL_INTEGER_LITERAL,
+      DELIMITED_ARRAY_ITEM_INTERPOLATION_END,
+      QUOTED_EXPANDED_STRING_ARRAY_LITERAL_END,
+      EOF
+    )
+  }
+
+  "two-word `%W` string array literal containing text and interpolated numerics" should "be recognized as such" in {
+    val code = "%W(x#{0} x#{1})"
+    tokenize(code) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_ARRAY_LITERAL_START,
+      EXPANDED_ARRAY_ITEM_CHARACTER,
+      DELIMITED_ARRAY_ITEM_INTERPOLATION_BEGIN,
+      DECIMAL_INTEGER_LITERAL,
+      DELIMITED_ARRAY_ITEM_INTERPOLATION_END,
+      EXPANDED_ARRAY_ITEM_SEPARATOR,
+      EXPANDED_ARRAY_ITEM_CHARACTER,
+      DELIMITED_ARRAY_ITEM_INTERPOLATION_BEGIN,
+      DECIMAL_INTEGER_LITERAL,
+      DELIMITED_ARRAY_ITEM_INTERPOLATION_END,
+      QUOTED_EXPANDED_STRING_ARRAY_LITERAL_END,
+      EOF
+    )
+  }
+
+  "single word `%W` string array literal containing an escaped whitespace" should "be recognized as such" in {
+    val code = """%W[x\ y]"""
+    tokenize(code) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_ARRAY_LITERAL_START,
+      EXPANDED_ARRAY_ITEM_CHARACTER,
+      EXPANDED_ARRAY_ITEM_CHARACTER,
+      EXPANDED_ARRAY_ITEM_CHARACTER,
+      QUOTED_EXPANDED_STRING_ARRAY_LITERAL_END,
+      EOF
+    )
+  }
+
+  "multi-line `%W` string array literal" should "be recognized as such" in {
+    val code =
+      """%W(
+        | bob
+        | cod
+        | dod)""".stripMargin
+    tokenize(code) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_ARRAY_LITERAL_START,
+      EXPANDED_ARRAY_ITEM_SEPARATOR,
+      EXPANDED_ARRAY_ITEM_SEPARATOR,
+      EXPANDED_ARRAY_ITEM_CHARACTER,
+      EXPANDED_ARRAY_ITEM_CHARACTER,
+      EXPANDED_ARRAY_ITEM_CHARACTER,
+      EXPANDED_ARRAY_ITEM_SEPARATOR,
+      EXPANDED_ARRAY_ITEM_SEPARATOR,
+      EXPANDED_ARRAY_ITEM_CHARACTER,
+      EXPANDED_ARRAY_ITEM_CHARACTER,
+      EXPANDED_ARRAY_ITEM_CHARACTER,
+      EXPANDED_ARRAY_ITEM_SEPARATOR,
+      EXPANDED_ARRAY_ITEM_SEPARATOR,
+      EXPANDED_ARRAY_ITEM_CHARACTER,
+      EXPANDED_ARRAY_ITEM_CHARACTER,
+      EXPANDED_ARRAY_ITEM_CHARACTER,
+      QUOTED_EXPANDED_STRING_ARRAY_LITERAL_END,
+      EOF
+    )
+  }
+
   "empty `%i` symbol array literals" should "be recognized as such" in {
     val eg = Seq("%i()", "%i[]", "%i{}", "%i<>", "%i##", "%i!!", "%i--", "%i@@", "%i++", "%i**", "%i//", "%i&&")
     all(eg.map(tokenize)) shouldBe Seq(

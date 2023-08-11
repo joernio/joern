@@ -14,7 +14,9 @@ tokens {
     QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END,
     QUOTED_EXPANDED_STRING_LITERAL_END,
     QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_END,
-    DELIMITED_STRING_INTERPOLATION_END
+    QUOTED_EXPANDED_STRING_ARRAY_LITERAL_END,
+    DELIMITED_STRING_INTERPOLATION_END,
+    DELIMITED_ARRAY_ITEM_INTERPOLATION_END
 }
 
 options {
@@ -330,6 +332,15 @@ QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_START
         pushNonExpandedStringArrayDelimiter(_input.LA(1));
         _input.consume();
         pushMode(NON_EXPANDED_DELIMITED_ARRAY_MODE);
+    }
+    ;
+    
+QUOTED_EXPANDED_STRING_ARRAY_LITERAL_START
+    :   '%W' {!Character.isAlphabetic(_input.LA(1))}?
+    {
+        pushExpandedStringArrayDelimiter(_input.LA(1));
+        _input.consume();
+        pushMode(EXPANDED_DELIMITED_ARRAY_MODE);
     }
     ;
 
@@ -718,6 +729,32 @@ NON_EXPANDED_LITERAL_CHARACTER
     |   NON_ESCAPED_LITERAL_CHARACTER
     {
         consumeNonExpandedCharAndMaybePopMode(_input.LA(-1));
+    }
+    ;
+
+// --------------------------------------------------------
+// Expanded delimited array mode
+// --------------------------------------------------------
+
+mode EXPANDED_DELIMITED_ARRAY_MODE;
+
+DELIMITED_ARRAY_ITEM_INTERPOLATION_BEGIN
+    :   '#{'
+    {
+        pushInterpolationEndTokenType(DELIMITED_ARRAY_ITEM_INTERPOLATION_END);
+        pushMode(DEFAULT_MODE);
+    }
+    ;
+
+EXPANDED_ARRAY_ITEM_SEPARATOR
+    :   NON_EXPANDED_ARRAY_ITEM_DELIMITER
+    ;
+
+EXPANDED_ARRAY_ITEM_CHARACTER
+    :   NON_EXPANDED_LITERAL_ESCAPE_SEQUENCE
+    |   NON_ESCAPED_LITERAL_CHARACTER
+    {
+        consumeExpandedCharAndMaybePopMode(_input.LA(-1));
     }
     ;
 
