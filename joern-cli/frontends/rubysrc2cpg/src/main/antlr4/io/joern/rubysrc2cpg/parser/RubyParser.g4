@@ -98,6 +98,7 @@ primary
     |   literal                                                                                                             # literalPrimary
     |   stringExpression                                                                                                    # stringExpressionPrimary
     |   stringInterpolation                                                                                                 # stringInterpolationPrimary
+    |   quotedStringExpression                                                                                              # quotedStringExpressionPrimary
     |   regexInterpolation                                                                                                  # regexInterpolationPrimary
     |   IS_DEFINED LPAREN expressionOrCommand RPAREN                                                                        # isDefinedPrimary
     |   SUPER argumentsWithParentheses? block?                                                                              # superExpressionPrimary
@@ -584,22 +585,21 @@ symbol
 stringExpression
     :   simpleString                                                                                                # simpleStringExpression
     |   stringInterpolation                                                                                         # interpolatedStringExpression
-    |   quotedExpandedStringExpression                                                                              # quotedExpandedStringExpressionStringExpression
     |   stringExpression (WS stringExpression)+                                                                     # concatenatedStringExpression
     ;
 
-quotedExpandedStringExpression
-    :   QUOTED_EXPANDED_STRING_LITERAL_START
+quotedStringExpression
+    :   QUOTED_NON_EXPANDED_STRING_LITERAL_START 
+        NON_EXPANDED_LITERAL_CHARACTER* 
+        QUOTED_NON_EXPANDED_STRING_LITERAL_END                                                                      # nonExpandedQuotedStringLiteral
+    |   QUOTED_EXPANDED_STRING_LITERAL_START
         (EXPANDED_LITERAL_CHARACTER | delimitedStringInterpolation)*
-        QUOTED_EXPANDED_STRING_LITERAL_END
+        QUOTED_EXPANDED_STRING_LITERAL_END                                                                          # expandedQuotedStringLiteral
     ;
 
 simpleString
     :   SINGLE_QUOTED_STRING_LITERAL                                                                                # singleQuotedStringLiteral
     |   DOUBLE_QUOTED_STRING_START DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE? DOUBLE_QUOTED_STRING_END                # doubleQuotedStringLiteral
-    |   QUOTED_NON_EXPANDED_STRING_LITERAL_START 
-        NON_EXPANDED_LITERAL_CHARACTER* 
-        QUOTED_NON_EXPANDED_STRING_LITERAL_END                                                                      # nonExpandedQuotedStringLiteral
     ;
 
 delimitedStringInterpolation
