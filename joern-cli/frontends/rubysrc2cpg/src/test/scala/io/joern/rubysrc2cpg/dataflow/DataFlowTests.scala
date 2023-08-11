@@ -2591,7 +2591,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     sink.reachableByFlows(source).size shouldBe 1
   }
 
-  "flow through array constructor using []" ignore {
+  "flow through array constructor using []" in {
     val cpg = code("""
         |x=1
         |y=x
@@ -2599,12 +2599,12 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
         |puts "#{z}"
         |""".stripMargin)
 
-    val source = cpg.literal.code("x").l
+    val source = cpg.identifier.name("x").l
     val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).size shouldBe 1
+    sink.reachableByFlows(source).size shouldBe 2
   }
 
-  "flow through array constructor using [] and command in []" ignore {
+  "flow through array constructor using [] and command in []" in {
     val cpg = code("""
         |def foo(arg)
         |return arg
@@ -2616,8 +2616,8 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
         |puts "#{z}"
         |""".stripMargin)
 
-    val source = cpg.literal.code("x").l
+    val source = cpg.identifier.name("x").l
     val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).size shouldBe 1
+    sink.reachableByFlows(source).size shouldBe 2
   }
 }
