@@ -56,6 +56,11 @@ trait ExpandedDelimiterHandling { this: RubyLexerBase =>
     pushExpandedDelimiterEndToken(RubyLexer.QUOTED_EXPANDED_STRING_ARRAY_LITERAL_END)
   }
 
+  def pushExpandedSymbolArrayDelimiter(char: Int): Unit = {
+    pushExpandedStringDelimiter(char)
+    pushExpandedDelimiterEndToken(RubyLexer.QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_END)
+  }
+
   def consumeExpandedCharAndMaybePopMode(char: Int): Unit = {
     if (isExpandedClosingDelimiter(char)) {
       popExpandedStringDelimiter()

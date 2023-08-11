@@ -15,6 +15,7 @@ tokens {
     QUOTED_EXPANDED_STRING_LITERAL_END,
     QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_END,
     QUOTED_EXPANDED_STRING_ARRAY_LITERAL_END,
+    QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_END,
     DELIMITED_STRING_INTERPOLATION_END,
     DELIMITED_ARRAY_ITEM_INTERPOLATION_END
 }
@@ -354,6 +355,15 @@ QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_START
         pushNonExpandedSymbolArrayDelimiter(_input.LA(1));
         _input.consume();
         pushMode(NON_EXPANDED_DELIMITED_ARRAY_MODE);
+    }
+    ;
+
+QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_START
+    :   '%I' {!Character.isAlphabetic(_input.LA(1))}?
+    {
+        pushExpandedSymbolArrayDelimiter(_input.LA(1));
+        _input.consume();
+        pushMode(EXPANDED_DELIMITED_ARRAY_MODE);
     }
     ;
 
