@@ -11,6 +11,10 @@ import scala.util.{Failure, Success, Try}
 
 case class AstEdge(src: NewNode, dst: NewNode)
 
+enum ValidationMode {
+  case Enabled, Disabled
+}
+
 object Ast {
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -49,8 +53,11 @@ object Ast {
     }
   }
 
-  def neighbourValidation(src: NewNode, dst: NewNode, edge: String)(implicit withSchemaValidation: Boolean): Unit = if (
-    withSchemaValidation && !(src.isValidOutNeighbor(edge, dst) && dst.isValidInNeighbor(edge, src))
+  def neighbourValidation(src: NewNode, dst: NewNode, edge: String)(implicit
+    withSchemaValidation: ValidationMode
+  ): Unit = if (
+    withSchemaValidation == ValidationMode.Enabled &&
+    !(src.isValidOutNeighbor(edge, dst) && dst.isValidInNeighbor(edge, src))
   ) {
     logger.warn(
       "Malformed AST detected!",
@@ -89,7 +96,7 @@ case class Ast(
   bindsEdges: collection.Seq[AstEdge] = Vector.empty,
   receiverEdges: collection.Seq[AstEdge] = Vector.empty,
   argEdges: collection.Seq[AstEdge] = Vector.empty
-)(implicit withSchemaValidation: Boolean = false) {
+)(implicit withSchemaValidation: ValidationMode = ValidationMode.Disabled) {
 
   def root: Option[NewNode] = nodes.headOption
 

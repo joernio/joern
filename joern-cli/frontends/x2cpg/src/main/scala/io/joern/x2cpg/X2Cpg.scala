@@ -1,6 +1,7 @@
 package io.joern.x2cpg
 
 import better.files.File
+import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.X2Cpg.{applyDefaultOverlays, withErrorsToConsole}
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
 import io.shiftleft.codepropertygraph.Cpg
@@ -57,9 +58,9 @@ trait X2CpgConfig[R <: X2CpgConfig[R]] {
     else { Paths.get(inputPath, ignore).toAbsolutePath.normalize().toString }
   }
 
-  var schemaValidation: Boolean = true
+  var schemaValidation: ValidationMode = ValidationMode.Disabled
 
-  def withSchemaValidation(value: Boolean): R = {
+  def withSchemaValidation(value: ValidationMode): R = {
     this.schemaValidation = value
     this.asInstanceOf[R]
   }
@@ -225,7 +226,7 @@ object X2Cpg {
         }
         .text("a regex specifying files to exclude during CPG generation (paths relative to <input-dir> are matched)"),
       opt[Unit]("enable-early-schema-checking")
-        .action((_, c) => c.withSchemaValidation(true))
+        .action((_, c) => c.withSchemaValidation(ValidationMode.Enabled))
         .text("enables early schema validation during AST creation (disabled by default)"),
       help("help").text("display this help message"),
       frontendSpecific
