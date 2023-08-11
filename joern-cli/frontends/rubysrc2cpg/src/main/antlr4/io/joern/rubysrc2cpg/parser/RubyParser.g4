@@ -595,6 +595,9 @@ quotedStringExpression
     |   QUOTED_EXPANDED_STRING_LITERAL_START
         (EXPANDED_LITERAL_CHARACTER | delimitedStringInterpolation)*
         QUOTED_EXPANDED_STRING_LITERAL_END                                                                          # expandedQuotedStringLiteral
+    |   QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_START
+        (EXPANDED_LITERAL_CHARACTER | delimitedStringInterpolation)*
+        QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_END                                                                # expandedExternalCommandLiteral
     ;
 
 simpleString
