@@ -42,4 +42,15 @@ abstract class RubyLexerBase(input: CharStream)
     case '{' => '}'
     case '<' => '>'
     case c   => c
+
+  def isNumericTokenType(tokenType: Int): Boolean = {
+    val numericTokenTypes = Set(
+      DECIMAL_INTEGER_LITERAL,
+      OCTAL_INTEGER_LITERAL,
+      HEXADECIMAL_INTEGER_LITERAL,
+      FLOAT_LITERAL_WITHOUT_EXPONENT,
+      FLOAT_LITERAL_WITH_EXPONENT
+    )
+    numericTokenTypes.contains(tokenType)
+  }
 }

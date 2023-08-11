@@ -304,6 +304,16 @@ QUOTED_EXPANDED_STRING_LITERAL_START
         _input.consume();
         pushMode(EXPANDED_DELIMITED_STRING_MODE);
     }
+    //  This check exists to prevent issuing a QUOTED_EXPANDED_STRING_LITERAL_START
+    //  in obvious arithmetic expressions, such as `20 %(x+1)`.
+    //  Note, however, that we can't have a perfect test at this stage. For instance,
+    //  in `x = 1; x %(2)`, it's clear that's an arithmetic expression, but we
+    //  will still emit a QUOTED_EXPANDED_STRING_LITERAL_START.
+    |   '%(' {!isNumericTokenType(previousTokenTypeOrEOF())}?
+    {
+        pushExpandedQuotedStringDelimiter('(');
+        pushMode(EXPANDED_DELIMITED_STRING_MODE);
+    }
     ;
 
 QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_START

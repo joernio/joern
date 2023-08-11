@@ -643,6 +643,117 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     )
   }
 
+  "empty `%(` string literals" should "be recognized as such" in {
+    val code = "%()"
+    tokenize(code) shouldBe Seq(QUOTED_EXPANDED_STRING_LITERAL_START, QUOTED_EXPANDED_STRING_LITERAL_END, EOF)
+  }
+
+  "single-character `%(` string literals" should "be recognized as such" in {
+    val code = "%(-)"
+    tokenize(code) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_LITERAL_START,
+      EXPANDED_LITERAL_CHARACTER,
+      QUOTED_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
+  "delimiter-escaped-single-character `%(` string literals" should "be recognized as such" in {
+    val code = "%(\\))"
+    tokenize(code) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_LITERAL_START,
+      EXPANDED_LITERAL_CHARACTER,
+      QUOTED_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
+  "nested `%(` string literals" should "be recognized as such" in {
+    val code = "%(()())"
+    tokenize(code) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_LITERAL_START,
+      EXPANDED_LITERAL_CHARACTER,
+      EXPANDED_LITERAL_CHARACTER,
+      EXPANDED_LITERAL_CHARACTER,
+      EXPANDED_LITERAL_CHARACTER,
+      QUOTED_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
+  "interpolated (with a numeric expression) `%(` string literals" should "be recognized as such" in {
+    val code = "%(#{1})"
+    tokenize(code) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_LITERAL_START,
+      DELIMITED_STRING_INTERPOLATION_BEGIN,
+      DECIMAL_INTEGER_LITERAL,
+      DELIMITED_STRING_INTERPOLATION_END,
+      QUOTED_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
+  "`%(` string literals containing identifier interpolations" should "be recognized as such" in {
+    val eg = Seq("%(x = #$x)", "%(x = #@xyz)", "%(x = #@@counter)")
+    all(eg.map(tokenize)) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_LITERAL_START,
+      EXPANDED_LITERAL_CHARACTER,
+      EXPANDED_LITERAL_CHARACTER,
+      EXPANDED_LITERAL_CHARACTER,
+      EXPANDED_LITERAL_CHARACTER,
+      EXPANDED_VARIABLE_CHARACTER_SEQUENCE,
+      QUOTED_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
+  "`%(` after a decimal literal" should "not be mistaken for an expanded string literal" in {
+    val code = "100%(x+1)"
+    tokenize(code) shouldBe Seq(
+      DECIMAL_INTEGER_LITERAL,
+      PERCENT,
+      LPAREN,
+      LOCAL_VARIABLE_IDENTIFIER,
+      PLUS,
+      DECIMAL_INTEGER_LITERAL,
+      RPAREN,
+      EOF
+    )
+  }
+
+  "`%(` in a `puts` argument" should "be recognized as such" in {
+    val code = "puts %()"
+    tokenize(code) shouldBe Seq(
+      LOCAL_VARIABLE_IDENTIFIER,
+      WS,
+      QUOTED_EXPANDED_STRING_LITERAL_START,
+      QUOTED_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
+  "`%(` string literals containing escaped `#` characters" should "not be mistaken for interpolations" in {
+    val code = """%(\#$x)"""
+    tokenize(code) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_LITERAL_START,
+      EXPANDED_LITERAL_CHARACTER,
+      EXPANDED_LITERAL_CHARACTER,
+      EXPANDED_LITERAL_CHARACTER,
+      QUOTED_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
+  "`%(` string literals containing `#`" should "not be mistaken for interpolations" in {
+    val code = "%(#)"
+    tokenize(code) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_LITERAL_START,
+      EXPANDED_LITERAL_CHARACTER,
+      QUOTED_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
   "Empty `%x` literals" should "be recognized as such" in {
     val eg = Seq("%x()", "%x[]", "%x{}", "%x<>", "%x##", "%x!!", "%x--", "%x@@", "%x++", "%x**", "%x//", "%x&&")
     all(eg.map(tokenize)) shouldBe Seq(
