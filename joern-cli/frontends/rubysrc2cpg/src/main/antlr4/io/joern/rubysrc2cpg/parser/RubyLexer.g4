@@ -291,16 +291,18 @@ DOUBLE_QUOTED_STRING_START
 QUOTED_NON_EXPANDED_STRING_LITERAL_START
     :   '%q' {!Character.isAlphabetic(_input.LA(1))}?
     {
-        pushNonExpandedStringDelimiter(_input.LA(1));
+        pushNonExpandedDelimiter(_input.LA(1));
+        setNonExpandedDelimiterEndToken(QUOTED_NON_EXPANDED_STRING_LITERAL_END);
         _input.consume();
-        pushMode(NON_EXPANDED_DELIMITED_STRING_MODE);
     }
+        -> pushMode(NON_EXPANDED_DELIMITED_STRING_MODE)
     ;
     
 QUOTED_EXPANDED_STRING_LITERAL_START
     :   '%Q' {!Character.isAlphabetic(_input.LA(1))}?
     {
-        pushExpandedQuotedStringDelimiter(_input.LA(1));
+        pushExpandedDelimiter(_input.LA(1));
+        pushExpandedDelimiterEndToken(QUOTED_EXPANDED_STRING_LITERAL_END);
         _input.consume();
         pushMode(EXPANDED_DELIMITED_STRING_MODE);
     }
@@ -311,7 +313,8 @@ QUOTED_EXPANDED_STRING_LITERAL_START
     //  will still emit a QUOTED_EXPANDED_STRING_LITERAL_START.
     |   '%(' {!isNumericTokenType(previousTokenTypeOrEOF())}?
     {
-        pushExpandedQuotedStringDelimiter('(');
+        pushExpandedDelimiter('(');
+        pushExpandedDelimiterEndToken(QUOTED_EXPANDED_STRING_LITERAL_END);
         pushMode(EXPANDED_DELIMITED_STRING_MODE);
     }
     ;
@@ -319,18 +322,21 @@ QUOTED_EXPANDED_STRING_LITERAL_START
 QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_START
     :   '%r' {!Character.isAlphabetic(_input.LA(1))}?
     {
-        pushNonExpandedRegexDelimiter(_input.LA(1));
+        pushNonExpandedDelimiter(_input.LA(1));
+        setNonExpandedDelimiterEndToken(QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_END);
         _input.consume();
-        pushMode(NON_EXPANDED_DELIMITED_STRING_MODE);
-    };
+    }
+        -> pushMode(NON_EXPANDED_DELIMITED_STRING_MODE)
+    ;
     
 QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_START
     :   '%x' {!Character.isAlphabetic(_input.LA(1))}?
     {
-        pushExpandedQuotedExternalCommandDelimiter(_input.LA(1));
+        pushExpandedDelimiter(_input.LA(1));
+        pushExpandedDelimiterEndToken(QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_END);
         _input.consume();
-        pushMode(EXPANDED_DELIMITED_STRING_MODE);
     }
+        -> pushMode(EXPANDED_DELIMITED_STRING_MODE)
     ;
 
 // --------------------------------------------------------
@@ -340,19 +346,21 @@ QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_START
 QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_START
     :   '%w' {!Character.isAlphabetic(_input.LA(1))}?
     {
-        pushNonExpandedStringArrayDelimiter(_input.LA(1));
+        pushNonExpandedDelimiter(_input.LA(1));
+        setNonExpandedDelimiterEndToken(QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END);
         _input.consume();
-        pushMode(NON_EXPANDED_DELIMITED_ARRAY_MODE);
     }
+        -> pushMode(NON_EXPANDED_DELIMITED_ARRAY_MODE)
     ;
     
 QUOTED_EXPANDED_STRING_ARRAY_LITERAL_START
     :   '%W' {!Character.isAlphabetic(_input.LA(1))}?
     {
-        pushExpandedStringArrayDelimiter(_input.LA(1));
+        pushExpandedDelimiter(_input.LA(1));
+        pushExpandedDelimiterEndToken(QUOTED_EXPANDED_STRING_ARRAY_LITERAL_END);
         _input.consume();
-        pushMode(EXPANDED_DELIMITED_ARRAY_MODE);
     }
+        -> pushMode(EXPANDED_DELIMITED_ARRAY_MODE)
     ;
 
 // --------------------------------------------------------
@@ -362,19 +370,21 @@ QUOTED_EXPANDED_STRING_ARRAY_LITERAL_START
 QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_START
     :   '%i' {!Character.isAlphabetic(_input.LA(1))}?
     {
-        pushNonExpandedSymbolArrayDelimiter(_input.LA(1));
+        pushNonExpandedDelimiter(_input.LA(1));
+        setNonExpandedDelimiterEndToken(QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END);
         _input.consume();
-        pushMode(NON_EXPANDED_DELIMITED_ARRAY_MODE);
     }
+        -> pushMode(NON_EXPANDED_DELIMITED_ARRAY_MODE)
     ;
 
 QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_START
     :   '%I' {!Character.isAlphabetic(_input.LA(1))}?
     {
-        pushExpandedSymbolArrayDelimiter(_input.LA(1));
+        pushExpandedDelimiter(_input.LA(1));
+        pushExpandedDelimiterEndToken(QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_END);
         _input.consume();
-        pushMode(EXPANDED_DELIMITED_ARRAY_MODE);
     }
+        -> pushMode(EXPANDED_DELIMITED_ARRAY_MODE)
     ;
 
 // --------------------------------------------------------

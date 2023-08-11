@@ -1,12 +1,5 @@
 package io.joern.rubysrc2cpg.parser
 
-import io.joern.rubysrc2cpg.parser.RubyLexer.{
-  QUOTED_NON_EXPANDED_STRING_LITERAL_END,
-  QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_END,
-  QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END,
-  QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END
-}
-
 import scala.collection.mutable
 
 trait NonExpandedDelimiterHandling { this: RubyLexerBase =>
@@ -14,11 +7,11 @@ trait NonExpandedDelimiterHandling { this: RubyLexerBase =>
   private val delimiters   = mutable.Stack[Int]()
   private var endTokenType = 0
 
-  private def pushNonExpandedDelimiter(char: Int): Unit = {
+  def pushNonExpandedDelimiter(char: Int): Unit = {
     delimiters.push(char)
   }
 
-  private def popNonExpandedDelimiter(): Unit = {
+  def popNonExpandedDelimiter(): Unit = {
     delimiters.pop()
   }
 
@@ -45,26 +38,6 @@ trait NonExpandedDelimiterHandling { this: RubyLexerBase =>
   private def getNonExpandedDelimitedStringEndToken: Int = endTokenType
 
   private def currentClosingDelimiter(): Int = closingDelimiterFor(currentOpeningDelimiter())
-
-  def pushNonExpandedStringDelimiter(char: Int): Unit = {
-    pushNonExpandedDelimiter(char)
-    setNonExpandedDelimiterEndToken(QUOTED_NON_EXPANDED_STRING_LITERAL_END)
-  }
-
-  def pushNonExpandedRegexDelimiter(char: Int): Unit = {
-    pushNonExpandedDelimiter(char)
-    setNonExpandedDelimiterEndToken(QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_END)
-  }
-
-  def pushNonExpandedStringArrayDelimiter(char: Int): Unit = {
-    pushNonExpandedDelimiter(char)
-    setNonExpandedDelimiterEndToken(QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END)
-  }
-
-  def pushNonExpandedSymbolArrayDelimiter(char: Int): Unit = {
-    pushNonExpandedDelimiter(char)
-    setNonExpandedDelimiterEndToken(QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END)
-  }
 
   def consumeNonExpandedCharAndMaybePopMode(char: Int): Unit = {
     if (isNonExpandedClosingDelimiter(char)) {
