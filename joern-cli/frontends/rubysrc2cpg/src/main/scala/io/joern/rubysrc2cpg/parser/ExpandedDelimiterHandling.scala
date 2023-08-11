@@ -7,11 +7,11 @@ trait ExpandedDelimiterHandling { this: RubyLexerBase =>
   private val delimiters    = mutable.Stack[Int]()
   private val endTokenTypes = mutable.Stack[Int]()
 
-  private def pushExpandedStringDelimiter(char: Int): Unit = {
+  def pushExpandedDelimiter(char: Int): Unit = {
     delimiters.push(char)
   }
 
-  private def popExpandedStringDelimiter(): Unit = {
+  def popExpandedDelimiter(): Unit = {
     delimiters.pop()
   }
 
@@ -31,46 +31,26 @@ trait ExpandedDelimiterHandling { this: RubyLexerBase =>
     delimiters.top
   }
 
-  private def pushExpandedDelimiterEndToken(endTokenType: Int): Unit = {
+  def pushExpandedDelimiterEndToken(endTokenType: Int): Unit = {
     endTokenTypes.push(endTokenType)
   }
 
-  private def popExpandedDelimiterEndToken(): Int = {
+  def popExpandedDelimiterEndToken(): Int = {
     endTokenTypes.pop()
   }
 
   private def currentClosingDelimiter(): Int = closingDelimiterFor(currentOpeningDelimiter())
 
-  def pushExpandedQuotedStringDelimiter(char: Int): Unit = {
-    pushExpandedStringDelimiter(char)
-    pushExpandedDelimiterEndToken(RubyLexer.QUOTED_EXPANDED_STRING_LITERAL_END)
-  }
-
-  def pushExpandedQuotedExternalCommandDelimiter(char: Int): Unit = {
-    pushExpandedQuotedStringDelimiter(char)
-    pushExpandedDelimiterEndToken(RubyLexer.QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_END)
-  }
-
-  def pushExpandedStringArrayDelimiter(char: Int): Unit = {
-    pushExpandedStringDelimiter(char)
-    pushExpandedDelimiterEndToken(RubyLexer.QUOTED_EXPANDED_STRING_ARRAY_LITERAL_END)
-  }
-
-  def pushExpandedSymbolArrayDelimiter(char: Int): Unit = {
-    pushExpandedStringDelimiter(char)
-    pushExpandedDelimiterEndToken(RubyLexer.QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_END)
-  }
-
   def consumeExpandedCharAndMaybePopMode(char: Int): Unit = {
     if (isExpandedClosingDelimiter(char)) {
-      popExpandedStringDelimiter()
+      popExpandedDelimiter()
 
       if (isExpandedDelimitersStackEmpty) {
         setType(popExpandedDelimiterEndToken())
         popMode()
       }
     } else if (isExpandedOpeningDelimiter(char)) {
-      pushExpandedQuotedStringDelimiter(char)
+      pushExpandedDelimiter(char)
     }
   }
 
