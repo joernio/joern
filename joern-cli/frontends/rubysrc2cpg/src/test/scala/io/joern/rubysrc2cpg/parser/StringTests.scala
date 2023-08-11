@@ -318,6 +318,111 @@ class StringTests extends RubyParserAbstractTest {
 
   }
 
+  "An expanded `%(` string literal" when {
+
+    "empty" should {
+      val code = "%()"
+
+      "be parsed as a primary expression" in {
+        printAst(_.primary(), code) shouldEqual
+          """QuotedStringExpressionPrimary
+            | ExpandedQuotedStringLiteral
+            |  %(
+            |  )""".stripMargin
+      }
+    }
+
+    "containing text and a numeric literal interpolation" should {
+      val code = "%(text=#{1})"
+
+      "be parsed as primary expression" in {
+        printAst(_.primary(), code) shouldEqual
+          """QuotedStringExpressionPrimary
+            | ExpandedQuotedStringLiteral
+            |  %(
+            |  t
+            |  e
+            |  x
+            |  t
+            |  =
+            |  DelimitedStringInterpolation
+            |   #{
+            |   CompoundStatement
+            |    Statements
+            |     ExpressionOrCommandStatement
+            |      ExpressionExpressionOrCommand
+            |       PrimaryExpression
+            |        LiteralPrimary
+            |         NumericLiteralLiteral
+            |          NumericLiteral
+            |           UnsignedNumericLiteral
+            |            1
+            |   }
+            |  )""".stripMargin
+      }
+    }
+
+    "containing two consecutive numeric literal interpolations" should {
+      val code = "%(#{1}#{2})"
+
+      "be parsed as primary expression" in {
+        printAst(_.primary(), code) shouldEqual
+          """QuotedStringExpressionPrimary
+            | ExpandedQuotedStringLiteral
+            |  %(
+            |  DelimitedStringInterpolation
+            |   #{
+            |   CompoundStatement
+            |    Statements
+            |     ExpressionOrCommandStatement
+            |      ExpressionExpressionOrCommand
+            |       PrimaryExpression
+            |        LiteralPrimary
+            |         NumericLiteralLiteral
+            |          NumericLiteral
+            |           UnsignedNumericLiteral
+            |            1
+            |   }
+            |  DelimitedStringInterpolation
+            |   #{
+            |   CompoundStatement
+            |    Statements
+            |     ExpressionOrCommandStatement
+            |      ExpressionExpressionOrCommand
+            |       PrimaryExpression
+            |        LiteralPrimary
+            |         NumericLiteralLiteral
+            |          NumericLiteral
+            |           UnsignedNumericLiteral
+            |            2
+            |   }
+            |  )""".stripMargin
+      }
+    }
+
+    "used as the argument to a `puts` command" should {
+
+      "be parsed as a statement" in {
+        val code = "puts %()"
+        printAst(_.statement(), code) shouldEqual
+          """ExpressionOrCommandStatement
+            | InvocationExpressionOrCommand
+            |  SingleCommandOnlyInvocationWithoutParentheses
+            |   SimpleMethodCommand
+            |    MethodIdentifier
+            |     puts
+            |    ArgumentsWithoutParentheses
+            |     Arguments
+            |      ExpressionArgument
+            |       PrimaryExpression
+            |        QuotedStringExpressionPrimary
+            |         ExpandedQuotedStringLiteral
+            |          %(
+            |          )""".stripMargin
+      }
+    }
+  }
+
   "A double-quoted string literal" when {
 
     "empty" should {
