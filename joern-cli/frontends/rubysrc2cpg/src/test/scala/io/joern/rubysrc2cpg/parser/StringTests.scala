@@ -498,4 +498,44 @@ class StringTests extends RubyParserAbstractTest {
       }
     }
   }
+
+  "An expanded `%x` external command literal" when {
+
+    "empty" should {
+      val code = "%x//"
+
+      "be parsed as a primary expression" in {
+        printAst(_.primary(), code) shouldEqual
+          """QuotedStringExpressionPrimary
+            | ExpandedExternalCommandLiteral
+            |  %x/
+            |  /""".stripMargin
+      }
+    }
+
+    "containing text and a string literal interpolation" should {
+      val code = "%x{l#{'s'}}"
+
+      "be parsed as primary expression" in {
+        printAst(_.primary(), code) shouldEqual
+          """QuotedStringExpressionPrimary
+            | ExpandedExternalCommandLiteral
+            |  %x{
+            |  l
+            |  DelimitedStringInterpolation
+            |   #{
+            |   CompoundStatement
+            |    Statements
+            |     ExpressionOrCommandStatement
+            |      ExpressionExpressionOrCommand
+            |       PrimaryExpression
+            |        StringExpressionPrimary
+            |         SimpleStringExpression
+            |          SingleQuotedStringLiteral
+            |           's'
+            |   }
+            |  }""".stripMargin
+      }
+    }
+  }
 }
