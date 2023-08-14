@@ -17,7 +17,7 @@ class AnnotationsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         |}
         |""".stripMargin)
 
-    "should contain two CALL nodes with identical CODE,MFN & DISPATCH_TYPE props" in {
+    "contain two CALL nodes with identical CODE,METHOD_FULL_NAME & DISPATCH_TYPE props" in {
       val List(c1, c2) = cpg.call.code("println.*").l
       c1.code shouldBe c2.code
       c1.methodFullName shouldBe c2.methodFullName
@@ -46,7 +46,7 @@ class AnnotationsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         |}
         |""".stripMargin)
 
-    "should contain an ANNOTATION node attached to the annotated class" in {
+    "contain an ANNOTATION node attached to the annotated class" in {
       val List(td)    = cpg.typeDecl.nameExact("HealthController").l
       def annotations = td.astChildren.collect { case c: Annotation => c }
       annotations.size shouldBe 1
@@ -56,7 +56,7 @@ class AnnotationsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       annotation.fullName shouldBe "mypkg.Controller"
     }
 
-    "should contain an ANNOTATION node attached to the annotated method" in {
+    "contain an ANNOTATION node attached to the annotated method" in {
       val List(m)     = cpg.method.nameExact("health").l
       def annotations = m.astChildren.collect { case c: Annotation => c }
       annotations.size shouldBe 1
@@ -66,7 +66,7 @@ class AnnotationsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       annotation.fullName shouldBe "mypkg.Route"
     }
 
-    "should contain an ANNOTATION node for the annotated parameter" in {
+    "contain an ANNOTATION node for the annotated parameter" in {
       val List(p)     = cpg.method.parameter.nameExact("username").l
       def annotations = p.astChildren.collect { case c: Annotation => c }
       annotations.size shouldBe 1
@@ -77,6 +77,39 @@ class AnnotationsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
       val List(annotationLiteral) = annotation.astChildren.collectAll[AnnotationLiteral].l
       annotationLiteral.code shouldBe "\"username\""
+    }
+  }
+
+  "CPG for code with an annotation on a simple call" should {
+    val cpg = code("""
+        |package mypkg
+        |@Target(AnnotationTarget.EXPRESSION)
+        |@Retention(AnnotationRetention.SOURCE)
+        |annotation class Fancy
+        |fun fn1() {
+        |    @Fancy println("something")
+        |}
+        |""".stripMargin)
+
+    "contain an ANNOTATION node for the annotation" in {
+      cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
+    }
+  }
+
+  "CPG for code with an annotation on a simple ctor call" should {
+    val cpg = code("""
+        |package mypkg
+        |class X(val p: String)
+        |@Target(AnnotationTarget.EXPRESSION)
+        |@Retention(AnnotationRetention.SOURCE)
+        |annotation class Fancy
+        |fun fn1() {
+        |    @Fancy X("something")
+        |}
+        |""".stripMargin)
+
+    "contain an ANNOTATION node for the annotation" in {
+      cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
     }
   }
 }

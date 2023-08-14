@@ -19,6 +19,7 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.annotation.tailrec
 import scala.collection.mutable
+import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 case class BindingInfo(node: NewBinding, edgeMeta: Seq[(NewNode, NewNode, String)])
 case class ClosureBindingDef(node: NewClosureBinding, captureEdgeTo: NewMethodRef, refEdgeTo: NewNode)
@@ -160,11 +161,20 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   }
 
   @tailrec
-  final def astsForExpression(expr: KtExpression, argIdxMaybe: Option[Int], argNameMaybe: Option[String] = None)(
-    implicit typeInfoProvider: TypeInfoProvider
-  ): Seq[Ast] = {
+  final def astsForExpression(
+    expr: KtExpression,
+    argIdxMaybe: Option[Int],
+    argNameMaybe: Option[String] = None,
+    annotations: Seq[KtAnnotationEntry] = Seq()
+  )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
     expr match {
-      case typedExpr: KtAnnotatedExpression => astsForExpression(typedExpr.getBaseExpression, argIdxMaybe, argNameMaybe)
+      case typedExpr: KtAnnotatedExpression =>
+        astsForExpression(
+          typedExpr.getBaseExpression,
+          argIdxMaybe,
+          argNameMaybe,
+          typedExpr.getAnnotationEntries.asScala.toSeq
+        )
       case typedExpr: KtArrayAccessExpression => Seq(astForArrayAccess(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtAnonymousInitializer  => astsForExpression(typedExpr.getBody, argIdxMaybe)
       case typedExpr: KtBinaryExpression      => astsForBinaryExpr(typedExpr, argIdxMaybe, argNameMaybe)
@@ -172,7 +182,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       case typedExpr: KtBinaryExpressionWithTypeRHS =>
         Seq(astForBinaryExprWithTypeRHS(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtBreakExpression          => Seq(astForBreak(typedExpr))
-      case typedExpr: KtCallExpression           => astsForCall(typedExpr, argIdxMaybe, argNameMaybe)
+      case typedExpr: KtCallExpression           => astsForCall(typedExpr, argIdxMaybe, argNameMaybe, annotations)
       case typedExpr: KtConstantExpression       => Seq(astForLiteral(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtClass                    => astsForClassOrObject(typedExpr)
       case typedExpr: KtClassLiteralExpression   => Seq(astForClassLiteral(typedExpr, argIdxMaybe, argNameMaybe))
