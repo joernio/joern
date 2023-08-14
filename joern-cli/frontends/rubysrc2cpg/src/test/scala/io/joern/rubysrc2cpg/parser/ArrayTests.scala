@@ -24,6 +24,15 @@ class ArrayTests extends RubyParserAbstractTest {
             |  ]""".stripMargin
       }
 
+      "it uses the %W< > delimiters" in {
+        val code = "%W<>"
+        printAst(_.primary(), code) shouldEqual
+          """ArrayConstructorPrimary
+            | ExpandedWordArrayConstructor
+            |  %W<
+            |  >""".stripMargin
+      }
+
       "it uses the %i[ ] delimiters" in {
         val code = "%i[]"
         printAst(_.primary(), code) shouldEqual
@@ -152,6 +161,59 @@ class ArrayTests extends RubyParserAbstractTest {
             |    d
             |  )""".stripMargin
 
+      }
+
+      "it uses the %W( ) delimiters and contains a numeric interpolation" in {
+        val code = "%W(x#{1})"
+        printAst(_.primary(), code) shouldEqual
+          """ArrayConstructorPrimary
+            | ExpandedWordArrayConstructor
+            |  %W(
+            |  ExpandedArrayElements
+            |   ExpandedArrayElement
+            |    x
+            |    DelimitedArrayItemInterpolation
+            |     #{
+            |     CompoundStatement
+            |      Statements
+            |       ExpressionOrCommandStatement
+            |        ExpressionExpressionOrCommand
+            |         PrimaryExpression
+            |          LiteralPrimary
+            |           NumericLiteralLiteral
+            |            NumericLiteral
+            |             UnsignedNumericLiteral
+            |              1
+            |     }
+            |  )""".stripMargin
+      }
+
+      "it spans multiple lines and contains a numeric interpolation" in {
+        val code =
+          """%W[
+            | x#{0}
+            |]""".stripMargin
+        printAst(_.primary(), code) shouldEqual
+          """ArrayConstructorPrimary
+            | ExpandedWordArrayConstructor
+            |  %W[
+            |  ExpandedArrayElements
+            |   ExpandedArrayElement
+            |    x
+            |    DelimitedArrayItemInterpolation
+            |     #{
+            |     CompoundStatement
+            |      Statements
+            |       ExpressionOrCommandStatement
+            |        ExpressionExpressionOrCommand
+            |         PrimaryExpression
+            |          LiteralPrimary
+            |           NumericLiteralLiteral
+            |            NumericLiteral
+            |             UnsignedNumericLiteral
+            |              0
+            |     }
+            |  ]""".stripMargin
       }
     }
   }
