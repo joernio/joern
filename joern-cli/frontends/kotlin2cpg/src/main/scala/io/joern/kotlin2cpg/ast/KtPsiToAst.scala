@@ -1813,9 +1813,12 @@ trait KtPsiToAst {
     }
   }
 
-  private def astsForCtorCall(expr: KtCallExpression, argIdx: Option[Int], argNameMaybe: Option[String])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Seq[Ast] = {
+  private def astsForCtorCall(
+    expr: KtCallExpression,
+    argIdx: Option[Int],
+    argNameMaybe: Option[String],
+    annotations: Seq[KtAnnotationEntry] = Seq()
+  )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
     val typeFullName = registerType(typeInfoProvider.expressionType(expr, Defines.UnresolvedNamespace))
     val tmpBlockNode = blockNode(expr, "", typeFullName)
     val tmpName      = s"${Constants.tmpLocalPrefix}${tmpKeyPool.next}"
@@ -1859,11 +1862,12 @@ trait KtPsiToAst {
     val lastIdentifier    = identifierNode(expr, tmpName, tmpName, typeFullName)
     val lastIdentifierAst = astWithRefEdgeMaybe(tmpName, lastIdentifier)
 
+    val annotationsAsts = annotations.map(astForAnnotationEntry)
     astsForNonTrails ++ Seq(
       blockAst(
         withArgumentIndex(tmpBlockNode, argIdx).argumentName(argNameMaybe),
         List(tmpLocalAst, assignmentAst, initCallAst, lastIdentifierAst)
-      )
+      ).withChildren(annotationsAsts)
     )
   }
 
@@ -2215,17 +2219,23 @@ trait KtPsiToAst {
     )
   }
 
-  def astsForCall(expr: KtCallExpression, argIdx: Option[Int], argNameMaybe: Option[String])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Seq[Ast] = {
+  def astsForCall(
+    expr: KtCallExpression,
+    argIdx: Option[Int],
+    argNameMaybe: Option[String],
+    annotations: Seq[KtAnnotationEntry] = Seq()
+  )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
     val isCtorCall = typeInfoProvider.isConstructorCall(expr)
-    if (isCtorCall.getOrElse(false)) astsForCtorCall(expr, argIdx, argNameMaybe)
-    else astsForNonCtorCall(expr, argIdx, argNameMaybe)
+    if (isCtorCall.getOrElse(false)) astsForCtorCall(expr, argIdx, argNameMaybe, annotations)
+    else astsForNonCtorCall(expr, argIdx, argNameMaybe, annotations)
   }
 
-  private def astsForNonCtorCall(expr: KtCallExpression, argIdx: Option[Int], argNameMaybe: Option[String])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Seq[Ast] = {
+  private def astsForNonCtorCall(
+    expr: KtCallExpression,
+    argIdx: Option[Int],
+    argNameMaybe: Option[String],
+    annotations: Seq[KtAnnotationEntry] = Seq()
+  )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
     val declFullNameOption = typeInfoProvider.containingDeclFullName(expr)
     declFullNameOption.foreach(registerType)
 
@@ -2271,7 +2281,11 @@ trait KtPsiToAst {
       Some(signature),
       Some(returnType)
     )
-    List(callAst(withArgumentIndex(node, argIdx).argumentName(argNameMaybe), argAsts.toList))
+    val annotationsAsts = annotations.map(astForAnnotationEntry)
+    val astWithAnnotations =
+      callAst(withArgumentIndex(node, argIdx).argumentName(argNameMaybe), argAsts.toList)
+        .withChildren(annotationsAsts)
+    List(astWithAnnotations)
   }
 
   def astForMember(decl: KtDeclaration)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
