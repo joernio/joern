@@ -132,7 +132,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
       val typeInfoProvider = new DefaultTypeInfoProvider(environment)
 
       new MetaDataPass(cpg, Languages.KOTLIN, config.inputPath).createAndApply()
-      val astCreator = new AstCreationPass(sources, typeInfoProvider, cpg)
+      val astCreator = new AstCreationPass(sources, typeInfoProvider, cpg)(config.schemaValidation)
       astCreator.createAndApply()
       val kotlinAstCreatorTypes = astCreator.global.usedTypes.keys().asScala.toList
       TypeNodePass.withRegisteredTypes(kotlinAstCreatorTypes, cpg).createAndApply()

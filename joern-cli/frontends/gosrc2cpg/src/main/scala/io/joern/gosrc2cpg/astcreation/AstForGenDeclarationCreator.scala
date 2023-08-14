@@ -1,14 +1,14 @@
 package io.joern.gosrc2cpg.astcreation
 
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
-import io.joern.x2cpg.Ast
-import io.joern.gosrc2cpg.parser.ParserAst._
+import io.joern.x2cpg.{Ast, ValidationMode}
+import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import ujson.Value
 
 import scala.util.Try
 
-trait AstForGenDeclarationCreator { this: AstCreator =>
+trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
   def astForGenDecl(genDecl: ParserNodeInfo): Seq[Ast] = {
     genDecl.json(ParserKeys.Tok).str match {
       case "import" => astForImport(genDecl)

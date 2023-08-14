@@ -1,6 +1,6 @@
 package io.joern.jimple2cpg.passes
 
-import io.joern.jimple2cpg.Jimple2Cpg
+import io.joern.jimple2cpg.{Config, Jimple2Cpg}
 import io.joern.x2cpg.datastructures.Global
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
@@ -11,7 +11,7 @@ import soot.SourceLocator
 
 /** Creates the AST layer from the given class file and stores all types in the given global parameter.
   */
-class SootAstCreationPass(cpg: Cpg) extends ConcurrentWriterCpgPass[SootClass](cpg) {
+class SootAstCreationPass(cpg: Cpg, config: Config) extends ConcurrentWriterCpgPass[SootClass](cpg) {
 
   val global: Global = new Global()
   private val logger = LoggerFactory.getLogger(classOf[AstCreationPass])
@@ -22,7 +22,7 @@ class SootAstCreationPass(cpg: Cpg) extends ConcurrentWriterCpgPass[SootClass](c
     val jimpleFile = SourceLocator.v().getSourceForClass(part.getName())
     try {
       // sootClass.setApplicationClass()
-      val localDiff = new AstCreator(jimpleFile, part, global).createAst()
+      val localDiff = new AstCreator(jimpleFile, part, global)(config.schemaValidation).createAst()
       builder.absorb(localDiff)
     } catch {
       case e: Exception =>

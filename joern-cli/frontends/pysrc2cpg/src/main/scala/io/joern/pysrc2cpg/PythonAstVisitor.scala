@@ -1,9 +1,10 @@
 package io.joern.pysrc2cpg
 
 import io.joern.pysrc2cpg.PythonAstVisitor.{builtinPrefix, metaClassSuffix}
-import io.joern.pysrc2cpg.memop._
+import io.joern.pysrc2cpg.memop.*
 import io.joern.pythonparser.ast
-import io.shiftleft.codepropertygraph.generated._
+import io.joern.x2cpg.ValidationMode
+import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.{NewNode, NewTypeDecl}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
@@ -26,7 +27,8 @@ class PythonAstVisitor(
   relFileName: String,
   protected val nodeToCode: NodeToCode,
   version: PythonVersion
-) extends PythonAstVisitorHelpers {
+)(implicit withSchemaValidation: ValidationMode)
+    extends PythonAstVisitorHelpers {
 
   private val diffGraph     = new DiffGraphBuilder()
   protected val nodeBuilder = new NodeBuilder(diffGraph)

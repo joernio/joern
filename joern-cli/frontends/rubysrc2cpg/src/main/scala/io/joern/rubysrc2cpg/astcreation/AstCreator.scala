@@ -28,7 +28,7 @@ class AstCreator(
   parser: ResourceManagedParser,
   packageContext: PackageContext,
   projectRoot: Option[String] = None
-)(implicit withSchemaValidation: ValidationMode = ValidationMode.Disabled)
+)(implicit withSchemaValidation: ValidationMode)
     extends AstCreatorBase(filename)
     with AstNodeBuilder[ParserRuleContext, AstCreator]
     with AstForPrimitivesCreator

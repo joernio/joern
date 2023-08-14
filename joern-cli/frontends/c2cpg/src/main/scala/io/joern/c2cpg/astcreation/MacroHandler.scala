@@ -9,7 +9,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewFieldIdentifier,
   NewNode
 }
-import io.joern.x2cpg.{Ast, AstEdge}
+import io.joern.x2cpg.{Ast, AstEdge, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
 import org.apache.commons.lang.StringUtils
 import org.eclipse.cdt.core.dom.ast.{IASTMacroExpansionLocation, IASTNode, IASTPreprocessorMacroDefinition}
@@ -20,7 +20,7 @@ import org.eclipse.cdt.internal.core.parser.scanner.MacroArgumentExtractor
 import scala.annotation.nowarn
 import scala.collection.mutable
 
-trait MacroHandler { this: AstCreator =>
+trait MacroHandler(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   private val nodeOffsetMacroPairs: mutable.Stack[(Int, IASTPreprocessorMacroDefinition)] = {
     mutable.Stack.from(

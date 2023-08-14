@@ -13,14 +13,14 @@ import io.joern.rubysrc2cpg.parser.RubyParser.{
 }
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.x2cpg.Ast
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.antlr.v4.runtime.ParserRuleContext
 import io.joern.x2cpg.utils.*
 
 import scala.collection.mutable
 
-trait AstForTypesCreator { this: AstCreator =>
+trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   // Maps field references of known types
   protected val fieldReferences = mutable.HashMap.empty[String, Set[ParserRuleContext]]
