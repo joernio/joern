@@ -109,8 +109,6 @@ trait AstForExpressionsCreator { this: AstCreator =>
     case ctx: NumericLiteralLiteralContext    => Seq(astForNumericLiteral(ctx.numericLiteral()))
     case ctx: SymbolLiteralContext            => astForSymbol(ctx.symbol())
     case ctx: RegularExpressionLiteralContext => Seq(astForRegularExpressionLiteral(ctx))
-    case ctx: NonExpandedQuotedRegularExpressionLiteralContext =>
-      Seq(astForNonExpandedQuotedRegularExpressionLiteral(ctx))
     case _ =>
       logger.error(s"astForLiteralPrimaryExpression() $filename, ${ctx.getText} All contexts mismatched.")
       Seq()
@@ -335,5 +333,10 @@ trait AstForExpressionsCreator { this: AstCreator =>
 
   private def astForNonExpandedQuotedString(ctx: NonExpandedQuotedStringLiteralContext): Ast = {
     Ast(literalNode(ctx, ctx.getText, getBuiltInType(Defines.String)))
+  }
+
+  // TODO: handle interpolation
+  protected def astForQuotedRegexInterpolation(ctx: QuotedRegexInterpolationContext): Seq[Ast] = {
+    Seq(Ast(literalNode(ctx, ctx.getText, Defines.Regexp)))
   }
 }
