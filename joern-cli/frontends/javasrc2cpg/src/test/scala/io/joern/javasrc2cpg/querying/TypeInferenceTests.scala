@@ -50,6 +50,47 @@ class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
     }
   }
 
+  "method names should be inferred correctly based on call argument type information" in {
+    val cpg = code(
+      """
+      |package foo;
+      |
+      |import a.b.Bar;
+      |
+      |public class Foo {
+      |  public static Bar test(String s) {
+      |    return new Bar(s);
+      |  }
+      |
+      |  public static Bar test(Integer i) {
+      |    return new Bar(s);
+      |  }
+      |  public void sink(Bar b) {}
+      |}
+      |""".stripMargin,
+      fileName = "Foo.java"
+    ).moreCode("""
+      |import foo.Foo;
+      |
+      |class Test {
+      |  public static Bar stringCall(String s) {
+      |    sink(Foo.test(s));
+      |  }
+      |
+      |  public static Bar intCall(Integer i) {
+      |    sink(Foo.test(i));
+      |  }
+      |}
+      |""".stripMargin)
+
+    cpg.method.name("stringCall").call.name("test").methodFullName.l shouldBe List(
+      "foo.Foo.test:a.b.Bar(java.lang.String)"
+    )
+    cpg.method.name("intCall").call.name("test").methodFullName.l shouldBe List(
+      "foo.Foo.test:a.b.Bar(java.lang.Integer)"
+    )
+  }
+
   "type information for constructor invocations" should {
 
     "be found for constructor invocations at the start of a call chain" in {

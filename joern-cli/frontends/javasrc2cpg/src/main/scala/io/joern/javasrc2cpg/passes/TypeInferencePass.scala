@@ -5,7 +5,6 @@ import com.google.common.cache.CacheBuilder
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
-import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.shiftleft.semanticcpg.language._
@@ -13,6 +12,7 @@ import org.slf4j.LoggerFactory
 
 import scala.jdk.OptionConverters.RichOptional
 import io.joern.x2cpg.Defines.UnresolvedNamespace
+import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyNames
 
 class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[Call](cpg) {
 
@@ -36,7 +36,24 @@ class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[Call](cpg) {
     val argSizeMod           = if (method.modifier.modifierType.iterator.contains(ModifierTypes.STATIC)) 1 else 0
     lazy val methodNameParts = getNameParts(method.name, method.fullName)
 
-    (method.parameter.size == (call.argument.size - argSizeMod)) && (callNameParts.typeDecl == methodNameParts.typeDecl)
+    val parameterSizesMatch =
+      (method.parameter.size == (call.argument.size - argSizeMod))
+
+    lazy val argTypesMatch = doArgumentTypesMatch(method: Method, call: Call, skipCallThis = argSizeMod == 1)
+
+    lazy val typeDeclMatches = (callNameParts.typeDecl == methodNameParts.typeDecl)
+
+    parameterSizesMatch && argTypesMatch && typeDeclMatches
+  }
+
+  def doArgumentTypesMatch(method: Method, call: Call, skipCallThis: Boolean): Boolean = {
+    val callArgs = if (skipCallThis) call.argument.toList.tail else call.argument.toList
+
+    val hasDifferingArg = method.parameter.zip(callArgs).exists { case (parameter, argument) =>
+      !Option(argument.property(PropertyNames.TypeFullName).toString()).contains(parameter.typeFullName)
+    }
+
+    !hasDifferingArg
   }
 
   private def getNameParts(name: String, fullName: String): NameParts = {
