@@ -264,8 +264,28 @@ arrayConstructor
     |   QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_START
         nonExpandedArrayElements?
         QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END                                                                # nonExpandedSymbolArrayConstructor
+    |   QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_START
+        expandedArrayElements?
+        QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_END                                                                    # expandedSymbolArrayConstructor
+    ;
+
+
+expandedArrayElements
+    :   EXPANDED_ARRAY_ITEM_SEPARATOR*
+        expandedArrayElement (EXPANDED_ARRAY_ITEM_SEPARATOR+ expandedArrayElement)*
+        EXPANDED_ARRAY_ITEM_SEPARATOR*
     ;
     
+expandedArrayElement
+    :   (EXPANDED_ARRAY_ITEM_CHARACTER | delimitedArrayItemInterpolation)+
+    ;
+
+delimitedArrayItemInterpolation
+    :   DELIMITED_ARRAY_ITEM_INTERPOLATION_BEGIN
+        compoundStatement
+        DELIMITED_ARRAY_ITEM_INTERPOLATION_END
+    ;
+
 nonExpandedArrayElements
     :   NON_EXPANDED_ARRAY_ITEM_SEPARATOR*
         nonExpandedArrayElement (NON_EXPANDED_ARRAY_ITEM_SEPARATOR+ nonExpandedArrayElement)*
