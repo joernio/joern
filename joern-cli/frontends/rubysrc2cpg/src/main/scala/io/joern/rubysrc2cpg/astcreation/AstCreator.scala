@@ -7,6 +7,7 @@ import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
 import io.joern.x2cpg.datastructures.{Global, Scope}
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, Defines as XDefines}
+import io.joern.x2cpg.ValidationMode
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.antlr.v4.runtime.tree.TerminalNode
@@ -19,7 +20,7 @@ import scala.collection.immutable.Seq
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters.*
-import scala.util.{Failure, Success, Using}
+import scala.util.{Failure, Success}
 
 class AstCreator(
   protected val filename: String,
@@ -27,7 +28,8 @@ class AstCreator(
   parser: ResourceManagedParser,
   packageContext: PackageContext,
   projectRoot: Option[String] = None
-) extends AstCreatorBase(filename)
+)(implicit withSchemaValidation: ValidationMode)
+    extends AstCreatorBase(filename)
     with AstNodeBuilder[ParserRuleContext, AstCreator]
     with AstForPrimitivesCreator
     with AstForStatementsCreator

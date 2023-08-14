@@ -1,12 +1,15 @@
 package io.joern.x2cpg
 
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNodeNew, NewCall, NewIdentifier}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNodeNew, NewCall, NewClosureBinding, NewIdentifier}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import overflowdb.SchemaViolationException
 
 class AstTests extends AnyWordSpec with Matchers {
 
   "subTreeCopy" should {
+
+    implicit val mode: ValidationMode = ValidationMode.Disabled
 
     val foo        = NewCall().name("foo")
     val bar        = NewCall().name("bar").order(1)
@@ -76,6 +79,28 @@ class AstTests extends AnyWordSpec with Matchers {
         case node: NewCall       => node.name
         case node: NewIdentifier => node.name
       } shouldBe List("moo", "callincall", "leaf")
+    }
+
+  }
+
+  "early AST validation" should {
+
+    val call           = NewCall().name("foo")
+    val closureBinding = NewClosureBinding().closureBindingId("bar")
+
+    "not throw error if disabled on AST violations" in {
+      implicit val mode: ValidationMode = ValidationMode.Disabled
+      Ast(call).withChild(Ast(closureBinding))
+    }
+
+    "should throw error if enabled on AST violations" in {
+      implicit val mode: ValidationMode = ValidationMode.Enabled
+      assertThrows[SchemaViolationException](Ast(call).withChild(Ast(closureBinding)))
+    }
+
+    "should throw error if enabled on REF violations" in {
+      implicit val mode: ValidationMode = ValidationMode.Enabled
+      assertThrows[SchemaViolationException](Ast(call).withRefEdge(call, closureBinding))
     }
 
   }

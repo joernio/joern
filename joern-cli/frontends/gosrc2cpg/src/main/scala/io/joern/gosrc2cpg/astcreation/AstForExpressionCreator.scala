@@ -1,13 +1,13 @@
 package io.joern.gosrc2cpg.astcreation
 
-import io.joern.gosrc2cpg.parser.ParserAst._
+import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.gosrc2cpg.utils.Operator
-import io.joern.x2cpg.Ast
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 
-trait AstForExpressionCreator { this: AstCreator =>
+trait AstForExpressionCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
   def astsForExpression(expr: ParserNodeInfo): Seq[Ast] = {
     expr.node match {
       case BinaryExpr => astForBinaryExpr(expr)

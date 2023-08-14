@@ -5,12 +5,14 @@ import io.joern.x2cpg.X2Cpg.newEmptyCpg
 import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.passes.AstCreationPass
 import io.joern.jssrc2cpg.utils.AstGenRunner
+import io.joern.x2cpg.ValidationMode
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class MinifiedFileDetectionTest extends AnyWordSpec with Matchers {
+
+  private implicit val schemaValidationMode: ValidationMode = ValidationMode.Enabled
 
   "Detecting minified files" should {
     "skip minified files by name correctly" in {

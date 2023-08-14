@@ -1,5 +1,6 @@
 package io.joern.pysrc2cpg
 
+import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.X2Cpg.defaultOverlayCreators
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
@@ -33,8 +34,14 @@ class Py2CpgTestContext {
 
   def buildCpg: Cpg = {
     if (buildResult.isEmpty) {
-      val cpg    = new Cpg()
-      val py2Cpg = new Py2Cpg(codeAndFile.map(inputPair => () => inputPair), cpg, absTestFilePath)
+      val cpg = new Cpg()
+      val py2Cpg =
+        new Py2Cpg(
+          codeAndFile.map(inputPair => () => inputPair),
+          cpg,
+          absTestFilePath,
+          schemaValidationMode = ValidationMode.Enabled
+        )
       py2Cpg.buildCpg()
 
       val context = new LayerCreatorContext(cpg)

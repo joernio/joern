@@ -48,7 +48,7 @@ class Php2Cpg extends X2CpgFrontend[Config] {
     if (errorMessages.isEmpty) {
       withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
         new MetaDataPass(cpg, Languages.PHP, config.inputPath).createAndApply()
-        new AstCreationPass(config, cpg, parser.get).createAndApply()
+        new AstCreationPass(config, cpg, parser.get)(config.schemaValidation).createAndApply()
         new AstParentInfoPass(cpg).createAndApply()
         new AnyTypePass(cpg).createAndApply()
         TypeNodePass.withTypesFromCpg(cpg).createAndApply()

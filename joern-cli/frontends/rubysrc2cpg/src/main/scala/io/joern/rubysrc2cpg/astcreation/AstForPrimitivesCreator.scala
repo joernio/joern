@@ -4,14 +4,14 @@ import io.joern.rubysrc2cpg.parser.RubyParser
 import io.joern.rubysrc2cpg.parser.RubyParser.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
-import io.joern.x2cpg.Ast
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import org.antlr.v4.runtime.ParserRuleContext
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-trait AstForPrimitivesCreator { this: AstCreator =>
+trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def astForNilLiteral(ctx: RubyParser.NilPseudoVariableIdentifierContext): Ast =
     Ast(literalNode(ctx, ctx.getText, Defines.NilClass))

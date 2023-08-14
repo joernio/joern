@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.astcreation
 import better.files.File
 import io.joern.rubysrc2cpg.parser.RubyParser.*
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.x2cpg.Ast
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
 import io.joern.x2cpg.Imports.createImportNodeAndLink
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
@@ -24,7 +24,7 @@ import org.antlr.v4.runtime.ParserRuleContext
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-trait AstForStatementsCreator {
+trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
   private val logger = LoggerFactory.getLogger(this.getClass)

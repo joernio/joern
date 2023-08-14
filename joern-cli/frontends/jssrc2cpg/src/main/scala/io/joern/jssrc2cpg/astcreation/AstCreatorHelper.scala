@@ -1,10 +1,10 @@
 package io.joern.jssrc2cpg.astcreation
 
-import io.joern.jssrc2cpg.datastructures._
-import io.joern.jssrc2cpg.parser.BabelAst._
+import io.joern.jssrc2cpg.datastructures.*
+import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
-import io.joern.x2cpg.Ast
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.utils.NodeBuilders.{newClosureBindingNode, newLocalNode}
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies}
@@ -21,7 +21,7 @@ import scala.jdk.CollectionConverters.EnumerationHasAsScala
 import scala.util.Success
 import scala.util.Try
 
-trait AstCreatorHelper { this: AstCreator =>
+trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   // maximum length of code fields in number of characters
   private val MaxCodeLength: Int = 1000

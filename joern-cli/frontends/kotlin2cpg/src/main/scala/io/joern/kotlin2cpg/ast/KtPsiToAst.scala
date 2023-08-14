@@ -10,7 +10,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.shiftleft.semanticcpg.language.*
-import io.joern.x2cpg.{Ast, Defines}
+import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.utils.NodeBuilders.{
@@ -31,7 +31,7 @@ import scala.annotation.unused
 import scala.jdk.CollectionConverters.*
 import scala.util.Random
 
-trait KtPsiToAst {
+trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
   def astForFile(fileWithMeta: KtFileWithMeta)(implicit typeInfoProvider: TypeInfoProvider): Ast = {

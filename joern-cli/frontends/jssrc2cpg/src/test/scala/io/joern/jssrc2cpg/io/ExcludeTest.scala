@@ -4,8 +4,9 @@ import better.files.File
 import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.passes.AstCreationPass
 import io.joern.jssrc2cpg.utils.AstGenRunner
+import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.prop.TableDrivenPropertyChecks
 import org.scalatest.wordspec.AnyWordSpec
@@ -14,6 +15,8 @@ import org.scalatest.BeforeAndAfterAll
 import java.util.regex.Pattern
 
 class ExcludeTest extends AnyWordSpec with Matchers with TableDrivenPropertyChecks with BeforeAndAfterAll {
+
+  private implicit val schemaValidationMode: ValidationMode = ValidationMode.Enabled
 
   private val testFiles: List[String] = List(
     ".sub/e.js",

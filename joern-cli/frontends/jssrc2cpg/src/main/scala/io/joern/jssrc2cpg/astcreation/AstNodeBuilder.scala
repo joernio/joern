@@ -3,13 +3,13 @@ package io.joern.jssrc2cpg.astcreation
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg
-import io.joern.x2cpg.Ast
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 
-trait AstNodeBuilder { this: AstCreator =>
+trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
   protected def createMethodReturnNode(func: BabelNodeInfo): NewMethodReturn = {
     newMethodReturnNode(typeFor(func), line = func.lineNumber, column = func.columnNumber)
   }

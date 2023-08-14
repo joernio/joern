@@ -44,7 +44,8 @@ class AstCreationPass(cpg: Cpg, config: Config, report: Report = new Report())
       parseResult match {
         case Some(translationUnit) =>
           report.addReportInfo(relPath, fileLOC, parsed = true)
-          val localDiff = new AstCreator(relPath, config, translationUnit, file2OffsetTable).createAst()
+          val localDiff =
+            new AstCreator(relPath, config, translationUnit, file2OffsetTable)(config.schemaValidation).createAst()
           diffGraph.absorb(localDiff)
           true
         case None =>

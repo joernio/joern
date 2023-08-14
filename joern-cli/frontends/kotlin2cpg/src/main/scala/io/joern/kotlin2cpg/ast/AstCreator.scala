@@ -6,10 +6,9 @@ import io.joern.kotlin2cpg.types.{TypeConstants, TypeInfoProvider, TypeRenderer}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.passes.IntervalKeyPool
-import io.joern.x2cpg.{Ast, AstCreatorBase}
+import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode}
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.AstNodeBuilder
 import io.joern.kotlin2cpg.datastructures.Scope
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.psi.*
@@ -24,8 +23,9 @@ import scala.jdk.CollectionConverters.CollectionHasAsScala
 case class BindingInfo(node: NewBinding, edgeMeta: Seq[(NewNode, NewNode, String)])
 case class ClosureBindingDef(node: NewClosureBinding, captureEdgeTo: NewMethodRef, refEdgeTo: NewNode)
 
-class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvider, global: Global)
-    extends AstCreatorBase(fileWithMeta.filename)
+class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvider, global: Global)(implicit
+  withSchemaValidation: ValidationMode
+) extends AstCreatorBase(fileWithMeta.filename)
     with KtPsiToAst
     with AstNodeBuilder[PsiElement, AstCreator] {
 

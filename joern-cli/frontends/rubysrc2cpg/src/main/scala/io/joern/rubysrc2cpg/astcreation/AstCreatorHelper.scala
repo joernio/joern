@@ -1,6 +1,6 @@
 package io.joern.rubysrc2cpg.astcreation
 
-import io.joern.x2cpg.{Ast, Defines}
+import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.joern.rubysrc2cpg.passes.Defines as RubyDefines
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators, nodes}
 import io.shiftleft.codepropertygraph.generated.nodes.{
@@ -10,8 +10,9 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewMethodParameterIn,
   NewNode
 }
+
 import scala.collection.mutable
-trait AstCreatorHelper { this: AstCreator =>
+trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   import GlobalTypes._
 

@@ -1,8 +1,7 @@
 package io.joern.javasrc2cpg.passes
 
 import better.files.File
-import com.github.javaparser.JavaParser
-import com.github.javaparser.ParserConfiguration
+import com.github.javaparser.{JavaParser, ParserConfiguration}
 import com.github.javaparser.ParserConfiguration.LanguageLevel
 import com.github.javaparser.ast.CompilationUnit
 import com.github.javaparser.ast.Node.Parsedness
@@ -12,14 +11,13 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.{
   JarTypeSolver,
   ReflectionTypeSolver
 }
-import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.javasrc2cpg.JavaSrc2Cpg.JavaSrcEnvVar
-import io.joern.javasrc2cpg.passes.AstCreationPass._
+import io.joern.javasrc2cpg.passes.AstCreationPass.*
 import io.joern.javasrc2cpg.typesolvers.{EagerSourceTypeSolver, JdkJarTypeSolver, SimpleCombinedTypeSolver}
-import io.joern.javasrc2cpg.util.Delombok
 import io.joern.javasrc2cpg.util.Delombok.DelombokMode
-import io.joern.javasrc2cpg.util.Delombok.DelombokMode._
-import io.joern.javasrc2cpg.util.SourceParser
+import io.joern.javasrc2cpg.util.Delombok.DelombokMode.*
+import io.joern.javasrc2cpg.util.{Delombok, SourceParser}
+import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
@@ -29,13 +27,11 @@ import io.shiftleft.passes.ConcurrentWriterCpgPass
 import org.slf4j.LoggerFactory
 
 import java.net.URLClassLoader
-import java.nio.file.Path
-import java.nio.file.Paths
-import scala.collection.parallel.CollectionConverters._
-import scala.jdk.CollectionConverters._
+import java.nio.file.{Path, Paths}
+import scala.collection.parallel.CollectionConverters.*
+import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
-import scala.util.Success
-import scala.util.Try
+import scala.util.{Success, Try}
 
 class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[String]] = None)
     extends ConcurrentWriterCpgPass[String](cpg) {
@@ -54,7 +50,9 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
     sourceParser.parseAnalysisFile(relativeFilename) match {
       case Some(compilationUnit) =>
         symbolSolver.inject(compilationUnit)
-        diffGraph.absorb(new AstCreator(relativeFilename, compilationUnit, global, symbolSolver).createAst())
+        diffGraph.absorb(
+          new AstCreator(relativeFilename, compilationUnit, global, symbolSolver)(config.schemaValidation).createAst()
+        )
 
       case None => logger.warn(s"Skipping AST creation for $filename")
     }

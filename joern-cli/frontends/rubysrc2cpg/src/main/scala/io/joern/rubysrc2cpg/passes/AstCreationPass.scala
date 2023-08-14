@@ -32,8 +32,9 @@ class AstCreationPass(
   override def runOnPart(diffGraph: DiffGraphBuilder, fileName: String): Unit = {
     try {
       diffGraph.absorb(
-        new AstCreator(fileName, global, parser, PackageContext(fileName, packageTable), cpg.metaData.root.headOption)
-          .createAst()
+        new AstCreator(fileName, global, parser, PackageContext(fileName, packageTable), cpg.metaData.root.headOption)(
+          config.schemaValidation
+        ).createAst()
       )
     } catch {
       case ex: Exception =>

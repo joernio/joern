@@ -2,16 +2,16 @@ package io.joern.gosrc2cpg.astcreation
 
 import io.joern.gosrc2cpg.parser.ParserAst.{BlockStmt, Ellipsis, Ident, SelectorExpr}
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
-import io.joern.x2cpg.Ast
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
-import io.joern.x2cpg.datastructures.Stack._
+import io.joern.x2cpg.datastructures.Stack.*
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethodParameterIn
 import ujson.Value
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
-trait AstForFunctionsCreator { this: AstCreator =>
+trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
   def astForFuncDecl(funcDecl: ParserNodeInfo): Seq[Ast] = {
 
     val filename = relPathFileName

@@ -1,21 +1,21 @@
 package io.joern.c2cpg.astcreation
 
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.joern.x2cpg.Ast
-import org.eclipse.cdt.core.dom.ast._
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.joern.x2cpg.{Ast, ValidationMode}
+import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression
 import org.eclipse.cdt.core.dom.ast.gnu.c.ICASTKnRFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.c.{CASTFunctionDeclarator, CASTParameterDeclaration}
 import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTFunctionDeclarator, CPPASTParameterDeclaration}
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
-import io.joern.x2cpg.datastructures.Stack._
+import io.joern.x2cpg.datastructures.Stack.*
 import org.apache.commons.lang.StringUtils
 
 import scala.annotation.tailrec
 import scala.collection.mutable
 
-trait AstForFunctionsCreator { this: AstCreator =>
+trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   private val seenFunctionSignatures = mutable.HashSet.empty[String]
 

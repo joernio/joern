@@ -3,9 +3,9 @@ package io.joern.javasrc2cpg.util
 import io.joern.javasrc2cpg.passes.ExpectedType
 import io.joern.javasrc2cpg.util.Scope.ScopeTypes.{MethodScope, NamespaceScope, ScopeType, TypeDeclScope}
 import io.joern.javasrc2cpg.util.Scope.WildcardImportName
-import io.joern.x2cpg.Ast
-import io.joern.x2cpg.datastructures.{ScopeElement, Scope => X2CpgScope}
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.joern.x2cpg.{Ast, ValidationMode}
+import io.joern.x2cpg.datastructures.{ScopeElement, Scope as X2CpgScope}
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
@@ -18,7 +18,7 @@ case class NodeTypeInfo(
   isStatic: Boolean = false
 )
 
-class Scope extends X2CpgScope[String, NodeTypeInfo, ScopeType] {
+class Scope(implicit withSchemaValidation: ValidationMode) extends X2CpgScope[String, NodeTypeInfo, ScopeType] {
 
   private val logger                                        = LoggerFactory.getLogger(this.getClass)
   private var typeDeclStack: List[NewTypeDecl]              = Nil
@@ -171,5 +171,5 @@ object Scope {
     case object NamespaceScope                       extends ScopeType
   }
 
-  def apply(): Scope = new Scope()
+  def apply()(implicit withSchemaValidation: ValidationMode): Scope = new Scope()
 }

@@ -2,11 +2,11 @@ package io.joern.gosrc2cpg.astcreation
 
 import io.joern.gosrc2cpg.parser.ParserAst.{BasePrimitive, BasicLit, Ident}
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
-import io.joern.x2cpg.Ast
+import io.joern.x2cpg.{Ast, ValidationMode}
 
 import scala.util.Try
 
-trait AstForPrimitivesCreator { this: AstCreator =>
+trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def astForPrimitive(primitive: ParserNodeInfo): Ast = {
     primitive.node match {

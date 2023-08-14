@@ -25,7 +25,7 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
       val relPathFileName = SourceFiles.toRelativePath(parseResult.fullPath, config.inputPath)
       report.addReportInfo(parseResult.filename, fileLOC, parsed = true)
       Try {
-        val localDiff = new AstCreator(relPathFileName, parseResult).createAst()
+        val localDiff = new AstCreator(relPathFileName, parseResult)(config.schemaValidation).createAst()
         diffGraph.absorb(localDiff)
       } match {
         case Failure(exception) =>
