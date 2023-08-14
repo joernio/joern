@@ -327,4 +327,13 @@ trait AstForExpressionsCreator { this: AstCreator =>
       .columnNumber(ctx.start.getCharPositionInLine)
   }
 
+  protected def astForQuotedStringExpression(ctx: QuotedStringExpressionContext): Seq[Ast] = ctx match
+    case ctx: NonExpandedQuotedStringLiteralContext => Seq(astForNonExpandedQuotedString(ctx))
+    case _ =>
+      logger.error(s"Translation for ${ctx.getText} not implemented yet")
+      Seq()
+
+  private def astForNonExpandedQuotedString(ctx: NonExpandedQuotedStringLiteralContext): Ast = {
+    Ast(literalNode(ctx, ctx.getText, getBuiltInType(Defines.String)))
+  }
 }

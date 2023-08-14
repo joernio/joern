@@ -443,10 +443,11 @@ class AstCreator(
       astForSimpleScopedConstantReferencePrimaryContext(ctx)
     case ctx: ChainedScopedConstantReferencePrimaryContext =>
       astForChainedScopedConstantReferencePrimaryContext(ctx)
-    case ctx: ArrayConstructorPrimaryContext => astForArrayLiteral(ctx.arrayConstructor())
-    case ctx: HashConstructorPrimaryContext  => astForHashConstructorPrimaryContext(ctx)
-    case ctx: LiteralPrimaryContext          => astForLiteralPrimaryExpression(ctx)
-    case ctx: StringExpressionPrimaryContext => astForStringExpression(ctx.stringExpression)
+    case ctx: ArrayConstructorPrimaryContext       => astForArrayLiteral(ctx.arrayConstructor())
+    case ctx: HashConstructorPrimaryContext        => astForHashConstructorPrimaryContext(ctx)
+    case ctx: LiteralPrimaryContext                => astForLiteralPrimaryExpression(ctx)
+    case ctx: StringExpressionPrimaryContext       => astForStringExpression(ctx.stringExpression)
+    case ctx: QuotedStringExpressionPrimaryContext => astForQuotedStringExpression(ctx.quotedStringExpression)
     case ctx: RegexInterpolationPrimaryContext =>
       astForRegexInterpolationPrimaryContext(ctx.regexInterpolation)
     case ctx: IsDefinedPrimaryContext                 => Seq(astForIsDefinedPrimaryExpression(ctx))
