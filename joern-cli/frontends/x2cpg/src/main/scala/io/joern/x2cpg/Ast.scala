@@ -19,8 +19,8 @@ object Ast {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  def apply(node: NewNode): Ast = Ast(Vector.empty :+ node)
-  def apply(): Ast              = new Ast(Vector.empty)
+  def apply(node: NewNode)(implicit withSchemaValidation: ValidationMode): Ast = Ast(Vector.empty :+ node)
+  def apply()(implicit withSchemaValidation: ValidationMode): Ast              = new Ast(Vector.empty)
 
   /** Copy nodes/edges of given `AST` into the given `diffGraph`.
     */
@@ -59,9 +59,8 @@ object Ast {
     withSchemaValidation == ValidationMode.Enabled &&
     !(src.isValidOutNeighbor(edge, dst) && dst.isValidInNeighbor(edge, src))
   ) {
-    logger.warn(
-      "Malformed AST detected!",
-      new SchemaViolationException(s"(${src.label()}) -[$edge]-> (${dst.label()}) violates the schema.")
+    throw new SchemaViolationException(
+      s"Malformed AST detected: (${src.label()}) -[$edge]-> (${dst.label()}) violates the schema."
     )
   }
 
@@ -109,6 +108,7 @@ case class Ast(
       nodes ++ other.nodes,
       edges = edges ++ other.edges ++ root.toList.flatMap(r =>
         other.root.toList.map { rc =>
+          Ast.neighbourValidation(r, rc, EdgeTypes.AST)
           AstEdge(r, rc)
         }
       ),
@@ -148,30 +148,37 @@ case class Ast(
   }
 
   def withConditionEdge(src: NewNode, dst: NewNode): Ast = {
+    Ast.neighbourValidation(src, dst, EdgeTypes.CONDITION)
     this.copy(conditionEdges = conditionEdges ++ List(AstEdge(src, dst)))
   }
 
   def withRefEdge(src: NewNode, dst: NewNode): Ast = {
+    Ast.neighbourValidation(src, dst, EdgeTypes.REF)
     this.copy(refEdges = refEdges ++ List(AstEdge(src, dst)))
   }
 
   def withBindsEdge(src: NewNode, dst: NewNode): Ast = {
+    Ast.neighbourValidation(src, dst, EdgeTypes.BINDS)
     this.copy(bindsEdges = bindsEdges ++ List(AstEdge(src, dst)))
   }
 
   def withReceiverEdge(src: NewNode, dst: NewNode): Ast = {
+    Ast.neighbourValidation(src, dst, EdgeTypes.RECEIVER)
     this.copy(receiverEdges = receiverEdges ++ List(AstEdge(src, dst)))
   }
 
   def withArgEdge(src: NewNode, dst: NewNode): Ast = {
+    Ast.neighbourValidation(src, dst, EdgeTypes.ARGUMENT)
     this.copy(argEdges = argEdges ++ List(AstEdge(src, dst)))
   }
 
   def withArgEdges(src: NewNode, dsts: Seq[NewNode]): Ast = {
+    dsts.foreach(dst => Ast.neighbourValidation(src, dst, EdgeTypes.ARGUMENT))
     this.copy(argEdges = argEdges ++ dsts.map(AstEdge(src, _)))
   }
 
   def withArgEdges(src: NewNode, dsts: Seq[NewNode], argIndexStart: Int): Ast = {
+    dsts.foreach(dst => Ast.neighbourValidation(src, dst, EdgeTypes.CONDITION))
     var index = argIndexStart
     this.copy(argEdges = argEdges ++ dsts.map { dst =>
       addArgumentIndex(dst, index)
@@ -179,7 +186,6 @@ case class Ast(
       AstEdge(src, dst)
     })
   }
-
   private def addArgumentIndex(node: NewNode, argIndex: Int): Unit = node match {
     case n: NewBlock            => n.argumentIndex = argIndex
     case n: NewCall             => n.argumentIndex = argIndex
@@ -194,18 +200,22 @@ case class Ast(
   }
 
   def withConditionEdges(src: NewNode, dsts: List[NewNode]): Ast = {
+    dsts.foreach(dst => Ast.neighbourValidation(src, dst, EdgeTypes.CONDITION))
     this.copy(conditionEdges = conditionEdges ++ dsts.map(AstEdge(src, _)))
   }
 
   def withRefEdges(src: NewNode, dsts: List[NewNode]): Ast = {
+    dsts.foreach(dst => Ast.neighbourValidation(src, dst, EdgeTypes.REF))
     this.copy(refEdges = refEdges ++ dsts.map(AstEdge(src, _)))
   }
 
   def withBindsEdges(src: NewNode, dsts: List[NewNode]): Ast = {
+    dsts.foreach(dst => Ast.neighbourValidation(src, dst, EdgeTypes.BINDS))
     this.copy(bindsEdges = bindsEdges ++ dsts.map(AstEdge(src, _)))
   }
 
   def withReceiverEdges(src: NewNode, dsts: List[NewNode]): Ast = {
+    dsts.foreach(dst => Ast.neighbourValidation(src, dst, EdgeTypes.RECEIVER))
     this.copy(receiverEdges = receiverEdges ++ dsts.map(AstEdge(src, _)))
   }
 

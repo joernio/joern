@@ -7,7 +7,9 @@ import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Modifier
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
-abstract class AstCreatorBase(filename: String)(implicit withSchemaValidation: Boolean = false) {
+abstract class AstCreatorBase(filename: String)(implicit
+  withSchemaValidation: ValidationMode = ValidationMode.Disabled
+) {
   val diffGraph: DiffGraphBuilder = new DiffGraphBuilder
 
   def createAst(): DiffGraphBuilder
