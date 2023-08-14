@@ -17,7 +17,7 @@ import io.joern.x2cpg.Defines.UnresolvedNamespace
 class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[(String, List[Call])](cpg) {
 
   private val cache = new GuavaCache(CacheBuilder.newBuilder().build[String, Option[Method]]())
-  private val resolvedMethodIndex = cpg.method.internal
+  private val resolvedMethodIndex = cpg.method
     .filterNot(_.fullName.startsWith(Defines.UnresolvedNamespace))
     .filterNot(_.signature.startsWith(Defines.UnresolvedSignature))
     .groupBy(_.name)
@@ -49,6 +49,7 @@ class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[(String, List[
       case typeDeclName => Some(typeDeclName)
     }
 
+    println(s"Got name parts ${typeDeclName}, ${signature}")
     NameParts(typeDeclName, signature)
   }
 
@@ -56,11 +57,13 @@ class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[(String, List[
     cache.get(call.methodFullName).toScala.getOrElse {
       val callNameParts = getNameParts(call.name, call.methodFullName)
       resolvedMethodIndex.get(call.name).flatMap { candidateMethods =>
-        val uniqueMatchingMethod = candidateMethods.find(isMatchingMethod(_, call, callNameParts)).flatMap { method =>
-          val otherMatchingMethod = candidateMethods.find(isMatchingMethod(_, call, callNameParts))
-          // Only return a resulting method if exactly one matching method is found.
-          Option.when(otherMatchingMethod.isEmpty)(method)
-        }
+        val candidateMethodsIter = candidateMethods.iterator
+        val uniqueMatchingMethod =
+          candidateMethodsIter.find(isMatchingMethod(_, call, callNameParts)).flatMap { method =>
+            val otherMatchingMethod = candidateMethodsIter.find(isMatchingMethod(_, call, callNameParts))
+            // Only return a resulting method if exactly one matching method is found.
+            Option.when(otherMatchingMethod.isEmpty)(method)
+          }
         cache.put(call.methodFullName, uniqueMatchingMethod)
         uniqueMatchingMethod
       }
