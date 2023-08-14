@@ -16,16 +16,13 @@ import io.joern.x2cpg.Defines.UnresolvedNamespace
 
 class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[(String, List[Call])](cpg) {
 
-  private val logger = LoggerFactory.getLogger(this.getClass)
-  private val cache  = new GuavaCache(CacheBuilder.newBuilder().build[String, Option[Method]]())
+  private val cache = new GuavaCache(CacheBuilder.newBuilder().build[String, Option[Method]]())
   private val resolvedMethodIndex = cpg.method.internal
     .filterNot(_.fullName.startsWith(Defines.UnresolvedNamespace))
     .filterNot(_.signature.startsWith(Defines.UnresolvedSignature))
     .groupBy(_.name)
 
   private case class NameParts(typeDecl: Option[String], signature: String)
-
-  private val NamePartsPattern = raw"(.*\.)*.*:(.+\(.*\))".r
 
   override def generateParts(): Array[(String, List[Call])] = {
     cpg.call
@@ -37,21 +34,14 @@ class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[(String, List[
 
   private def isMatchingMethod(method: Method, call: Call, callNameParts: NameParts): Boolean = {
     // An erroneous `this` argument is added for unresolved calls to static methods.
-    val argSizeMod = if (method.modifier.modifierType.iterator.contains(ModifierTypes.STATIC)) 1 else 0
-    if (method.parameter.size != (call.argument.size - argSizeMod)) {
-      false
-    } else {
-      val methodNameParts = getNameParts(method.name, method.fullName)
-      callNameParts.typeDecl == methodNameParts.typeDecl
-    }
+    val argSizeMod           = if (method.modifier.modifierType.iterator.contains(ModifierTypes.STATIC)) 1 else 0
+    lazy val methodNameParts = getNameParts(method.name, method.fullName)
+
+    (method.parameter.size == (call.argument.size - argSizeMod)) && (callNameParts.typeDecl == methodNameParts.typeDecl)
   }
 
   private def getNameParts(name: String, fullName: String): NameParts = {
-    val Array(qualifiedName, signature) = fullName.split(":", 2) match {
-      case Array(qualifiedName, signature) => Array(qualifiedName, signature)
-
-      case _ => throw new RuntimeException(s"Invalid name string $fullName")
-    }
+    val Array(qualifiedName, signature) = fullName.split(":", 2)
 
     val typeDeclName = qualifiedName.stripSuffix(name) match {
       case "" => None
