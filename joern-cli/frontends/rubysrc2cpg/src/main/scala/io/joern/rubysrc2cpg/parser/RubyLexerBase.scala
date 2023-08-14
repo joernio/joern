@@ -8,9 +8,8 @@ import org.antlr.v4.runtime.{CharStream, Lexer, Token}
 abstract class RubyLexerBase(input: CharStream)
     extends Lexer(input)
     with RegexLiteralHandling
-    with NonExpandedDelimiterHandling
     with InterpolationHandling
-    with ExpandedDelimiterHandling {
+    with QuotedLiteralHandling {
 
   /** The previously (non-WS) emitted token (in DEFAULT_CHANNEL.) */
   protected var previousNonWsToken: Option[Token] = None
@@ -35,13 +34,6 @@ abstract class RubyLexerBase(input: CharStream)
   def previousTokenTypeOrEOF(): Int = {
     previousToken.map(_.getType).getOrElse(EOF)
   }
-
-  def closingDelimiterFor(char: Int): Int = char match
-    case '(' => ')'
-    case '[' => ']'
-    case '{' => '}'
-    case '<' => '>'
-    case c   => c
 
   def isNumericTokenType(tokenType: Int): Boolean = {
     val numericTokenTypes = Set(

@@ -291,8 +291,8 @@ DOUBLE_QUOTED_STRING_START
 QUOTED_NON_EXPANDED_STRING_LITERAL_START
     :   '%q' {!Character.isAlphabetic(_input.LA(1))}?
     {
-        pushNonExpandedDelimiter(_input.LA(1));
-        setNonExpandedDelimiterEndToken(QUOTED_NON_EXPANDED_STRING_LITERAL_END);
+        pushQuotedDelimiter(_input.LA(1));
+        pushQuotedEndTokenType(QUOTED_NON_EXPANDED_STRING_LITERAL_END);
         _input.consume();
     }
         -> pushMode(NON_EXPANDED_DELIMITED_STRING_MODE)
@@ -301,8 +301,8 @@ QUOTED_NON_EXPANDED_STRING_LITERAL_START
 QUOTED_EXPANDED_STRING_LITERAL_START
     :   '%Q' {!Character.isAlphabetic(_input.LA(1))}?
     {
-        pushExpandedDelimiter(_input.LA(1));
-        pushExpandedDelimiterEndToken(QUOTED_EXPANDED_STRING_LITERAL_END);
+        pushQuotedDelimiter(_input.LA(1));
+        pushQuotedEndTokenType(QUOTED_EXPANDED_STRING_LITERAL_END);
         _input.consume();
         pushMode(EXPANDED_DELIMITED_STRING_MODE);
     }
@@ -313,8 +313,8 @@ QUOTED_EXPANDED_STRING_LITERAL_START
     //  will still emit a QUOTED_EXPANDED_STRING_LITERAL_START.
     |   '%(' {!isNumericTokenType(previousTokenTypeOrEOF())}?
     {
-        pushExpandedDelimiter('(');
-        pushExpandedDelimiterEndToken(QUOTED_EXPANDED_STRING_LITERAL_END);
+        pushQuotedDelimiter('(');
+        pushQuotedEndTokenType(QUOTED_EXPANDED_STRING_LITERAL_END);
         pushMode(EXPANDED_DELIMITED_STRING_MODE);
     }
     ;
@@ -322,8 +322,8 @@ QUOTED_EXPANDED_STRING_LITERAL_START
 QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_START
     :   '%r' {!Character.isAlphabetic(_input.LA(1))}?
     {
-        pushNonExpandedDelimiter(_input.LA(1));
-        setNonExpandedDelimiterEndToken(QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_END);
+        pushQuotedDelimiter(_input.LA(1));
+        pushQuotedEndTokenType(QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_END);
         _input.consume();
     }
         -> pushMode(NON_EXPANDED_DELIMITED_STRING_MODE)
@@ -332,8 +332,8 @@ QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_START
 QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_START
     :   '%x' {!Character.isAlphabetic(_input.LA(1))}?
     {
-        pushExpandedDelimiter(_input.LA(1));
-        pushExpandedDelimiterEndToken(QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_END);
+        pushQuotedDelimiter(_input.LA(1));
+        pushQuotedEndTokenType(QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_END);
         _input.consume();
     }
         -> pushMode(EXPANDED_DELIMITED_STRING_MODE)
@@ -346,8 +346,8 @@ QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_START
 QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_START
     :   '%w' {!Character.isAlphabetic(_input.LA(1))}?
     {
-        pushNonExpandedDelimiter(_input.LA(1));
-        setNonExpandedDelimiterEndToken(QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END);
+        pushQuotedDelimiter(_input.LA(1));
+        pushQuotedEndTokenType(QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END);
         _input.consume();
     }
         -> pushMode(NON_EXPANDED_DELIMITED_ARRAY_MODE)
@@ -356,8 +356,8 @@ QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_START
 QUOTED_EXPANDED_STRING_ARRAY_LITERAL_START
     :   '%W' {!Character.isAlphabetic(_input.LA(1))}?
     {
-        pushExpandedDelimiter(_input.LA(1));
-        pushExpandedDelimiterEndToken(QUOTED_EXPANDED_STRING_ARRAY_LITERAL_END);
+        pushQuotedDelimiter(_input.LA(1));
+        pushQuotedEndTokenType(QUOTED_EXPANDED_STRING_ARRAY_LITERAL_END);
         _input.consume();
     }
         -> pushMode(EXPANDED_DELIMITED_ARRAY_MODE)
@@ -370,8 +370,8 @@ QUOTED_EXPANDED_STRING_ARRAY_LITERAL_START
 QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_START
     :   '%i' {!Character.isAlphabetic(_input.LA(1))}?
     {
-        pushNonExpandedDelimiter(_input.LA(1));
-        setNonExpandedDelimiterEndToken(QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END);
+        pushQuotedDelimiter(_input.LA(1));
+        pushQuotedEndTokenType(QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END);
         _input.consume();
     }
         -> pushMode(NON_EXPANDED_DELIMITED_ARRAY_MODE)
@@ -380,8 +380,8 @@ QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_START
 QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_START
     :   '%I' {!Character.isAlphabetic(_input.LA(1))}?
     {
-        pushExpandedDelimiter(_input.LA(1));
-        pushExpandedDelimiterEndToken(QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_END);
+        pushQuotedDelimiter(_input.LA(1));
+        pushQuotedEndTokenType(QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_END);
         _input.consume();
     }
         -> pushMode(EXPANDED_DELIMITED_ARRAY_MODE)
@@ -734,7 +734,7 @@ EXPANDED_LITERAL_CHARACTER
     :   NON_EXPANDED_LITERAL_ESCAPE_SEQUENCE
     |   NON_ESCAPED_LITERAL_CHARACTER
     {
-        consumeExpandedCharAndMaybePopMode(_input.LA(-1));
+        consumeQuotedCharAndMaybePopMode(_input.LA(-1));
     }
     ;
 
@@ -758,7 +758,7 @@ NON_EXPANDED_LITERAL_CHARACTER
     :   NON_EXPANDED_LITERAL_ESCAPE_SEQUENCE
     |   NON_ESCAPED_LITERAL_CHARACTER
     {
-        consumeNonExpandedCharAndMaybePopMode(_input.LA(-1));
+        consumeQuotedCharAndMaybePopMode(_input.LA(-1));
     }
     ;
 
@@ -784,7 +784,7 @@ EXPANDED_ARRAY_ITEM_CHARACTER
     :   NON_EXPANDED_LITERAL_ESCAPE_SEQUENCE
     |   NON_ESCAPED_LITERAL_CHARACTER
     {
-        consumeExpandedCharAndMaybePopMode(_input.LA(-1));
+        consumeQuotedCharAndMaybePopMode(_input.LA(-1));
     }
     ;
 
@@ -812,7 +812,7 @@ NON_EXPANDED_ARRAY_ITEM_CHARACTER
     :   NON_EXPANDED_LITERAL_ESCAPE_SEQUENCE
     |   NON_ESCAPED_LITERAL_CHARACTER
     {
-        consumeNonExpandedCharAndMaybePopMode(_input.LA(-1));
+        consumeQuotedCharAndMaybePopMode(_input.LA(-1));
     }
     ;
 
