@@ -267,6 +267,9 @@ arrayConstructor
     |   QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_START
         expandedArrayElements?
         QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_END                                                                    # expandedSymbolArrayConstructor
+    |   QUOTED_EXPANDED_STRING_ARRAY_LITERAL_START
+        expandedArrayElements?
+        QUOTED_EXPANDED_STRING_ARRAY_LITERAL_END                                                                    # expandedWordArrayConstructor
     ;
 
 
