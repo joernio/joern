@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory
 import scala.jdk.OptionConverters.RichOptional
 import io.joern.x2cpg.Defines.UnresolvedNamespace
 
-class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[(String, List[Call])](cpg) {
+class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[Call](cpg) {
 
   private val cache = new GuavaCache(CacheBuilder.newBuilder().build[String, Option[Method]]())
   private val resolvedMethodIndex = cpg.method
@@ -24,11 +24,10 @@ class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[(String, List[
 
   private case class NameParts(typeDecl: Option[String], signature: String)
 
-  override def generateParts(): Array[(String, List[Call])] = {
+  override def generateParts(): Array[Call] = {
     cpg.call
       .filter(_.signature.startsWith(Defines.UnresolvedSignature))
-      .groupBy(_.methodFullName)
-      .filterNot { case (name, _) => name.startsWith(UnresolvedNamespace) }
+      .filterNot { _.name.startsWith(UnresolvedNamespace) }
       .toArray
   }
 
@@ -49,7 +48,6 @@ class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[(String, List[
       case typeDeclName => Some(typeDeclName)
     }
 
-    println(s"Got name parts ${typeDeclName}, ${signature}")
     NameParts(typeDeclName, signature)
   }
 
@@ -70,18 +68,11 @@ class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[(String, List[
     }
   }
 
-  override def runOnPart(diffGraph: DiffGraphBuilder, part: (String, List[Call])): Unit = {
-    part match {
-      case (_, Nil)      => // This should never happen
-      case (name, calls) =>
-        // Since call full names match, the replacement method for each will be the same
-        getReplacementMethod(calls.head) foreach { replacementMethod =>
-          calls.foreach { call =>
-            diffGraph.setNodeProperty(call, PropertyNames.MethodFullName, replacementMethod.fullName)
-            diffGraph.setNodeProperty(call, PropertyNames.Signature, replacementMethod.signature)
-            diffGraph.setNodeProperty(call, PropertyNames.TypeFullName, replacementMethod.methodReturn.typeFullName)
-          }
-        }
+  override def runOnPart(diffGraph: DiffGraphBuilder, call: Call): Unit = {
+    getReplacementMethod(call).foreach { replacementMethod =>
+      diffGraph.setNodeProperty(call, PropertyNames.MethodFullName, replacementMethod.fullName)
+      diffGraph.setNodeProperty(call, PropertyNames.Signature, replacementMethod.signature)
+      diffGraph.setNodeProperty(call, PropertyNames.TypeFullName, replacementMethod.methodReturn.typeFullName)
     }
   }
 }
