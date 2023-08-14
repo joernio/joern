@@ -1,11 +1,13 @@
 package io.joern
 
 import replpp.Operators.*
+import replpp.Colors
 
 // TODO remove any time after the end of 2023 - this is completely deprecated
 package object console {
 
   implicit class UnixUtils[A](content: Iterable[A]) {
+    given Colors = Colors.Default
 
     /** Iterate over left hand side operand and write to file. Think of it as the Ocular version of the Unix `>` shell
       * redirection.
@@ -23,6 +25,7 @@ package object console {
   }
 
   implicit class StringOps(value: String) {
+    given Colors = Colors.Default
 
     /** Pipe string to file. Think of it as the Ocular version of the Unix `>` shell redirection.
       */
