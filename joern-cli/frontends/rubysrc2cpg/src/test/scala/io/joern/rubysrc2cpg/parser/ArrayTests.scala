@@ -32,6 +32,15 @@ class ArrayTests extends RubyParserAbstractTest {
             |  %i[
             |  ]""".stripMargin
       }
+
+      "it uses the %I{ } delimiters" in {
+        val code = "%I{}"
+        printAst(_.primary(), code) shouldEqual
+          """ArrayConstructorPrimary
+            | ExpandedSymbolArrayConstructor
+            |  %I{
+            |  }""".stripMargin
+      }
     }
   }
 
@@ -213,6 +222,34 @@ class ArrayTests extends RubyParserAbstractTest {
             |    y
             |   NonExpandedArrayElement
             |    z
+            |  )""".stripMargin
+      }
+
+      "it uses the %I( ) delimiters and contains a numeric interpolation" in {
+        val code = "%I(x#{0} x1)"
+        printAst(_.primary(), code) shouldEqual
+          """ArrayConstructorPrimary
+            | ExpandedSymbolArrayConstructor
+            |  %I(
+            |  ExpandedArrayElements
+            |   ExpandedArrayElement
+            |    x
+            |    DelimitedArrayItemInterpolation
+            |     #{
+            |     CompoundStatement
+            |      Statements
+            |       ExpressionOrCommandStatement
+            |        ExpressionExpressionOrCommand
+            |         PrimaryExpression
+            |          LiteralPrimary
+            |           NumericLiteralLiteral
+            |            NumericLiteral
+            |             UnsignedNumericLiteral
+            |              0
+            |     }
+            |   ExpandedArrayElement
+            |    x
+            |    1
             |  )""".stripMargin
       }
     }
