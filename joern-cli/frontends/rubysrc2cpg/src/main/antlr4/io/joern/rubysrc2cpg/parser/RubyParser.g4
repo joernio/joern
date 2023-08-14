@@ -100,6 +100,7 @@ primary
     |   stringInterpolation                                                                                                 # stringInterpolationPrimary
     |   quotedStringExpression                                                                                              # quotedStringExpressionPrimary
     |   regexInterpolation                                                                                                  # regexInterpolationPrimary
+    |   quotedRegexInterpolation                                                                                            # quotedRegexInterpolationPrimary
     |   IS_DEFINED LPAREN expressionOrCommand RPAREN                                                                        # isDefinedPrimary
     |   SUPER argumentsWithParentheses? block?                                                                              # superExpressionPrimary
     |   primary LBRACK WS* indexingArguments? WS* RBRACK                                                                    # indexingExpressionPrimary
@@ -591,9 +592,6 @@ literal
     :   numericLiteral                                                                                              # numericLiteralLiteral
     |   symbol                                                                                                      # symbolLiteral
     |   REGULAR_EXPRESSION_START REGULAR_EXPRESSION_BODY? REGULAR_EXPRESSION_END                                    # regularExpressionLiteral
-    |   QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_START
-        NON_EXPANDED_LITERAL_CHARACTER*
-        QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_END                                                                  # nonExpandedQuotedRegularExpressionLiteral
     ;
     
 symbol
@@ -656,6 +654,12 @@ regexInterpolation
 
 interpolatedRegexSequence
     :   REGULAR_EXPRESSION_INTERPOLATION_BEGIN compoundStatement REGULAR_EXPRESSION_INTERPOLATION_END
+    ;
+
+quotedRegexInterpolation
+    :   QUOTED_EXPANDED_REGULAR_EXPRESSION_START
+        (EXPANDED_LITERAL_CHARACTER | delimitedStringInterpolation)*
+        QUOTED_EXPANDED_REGULAR_EXPRESSION_END
     ;
 
 

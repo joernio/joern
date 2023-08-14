@@ -301,8 +301,8 @@ class RegexTests extends RubyParserAbstractTest {
       "be parsed as a primary expression" in {
         val code = "%r{a-z}"
         printAst(_.primary(), code) shouldEqual
-          """LiteralPrimary
-            | NonExpandedQuotedRegularExpressionLiteral
+          """QuotedRegexInterpolationPrimary
+            | QuotedRegexInterpolation
             |  %r{
             |  a
             |  -
@@ -316,8 +316,8 @@ class RegexTests extends RubyParserAbstractTest {
       "be parsed as a primary expression" in {
         val code = "%r<eu|us>"
         printAst(_.primary(), code) shouldEqual
-          """LiteralPrimary
-            | NonExpandedQuotedRegularExpressionLiteral
+          """QuotedRegexInterpolationPrimary
+            | QuotedRegexInterpolation
             |  %r<
             |  e
             |  u
@@ -333,8 +333,8 @@ class RegexTests extends RubyParserAbstractTest {
       "be parsed as a primary expression" in {
         val code = "%r[]"
         printAst(_.primary(), code) shouldEqual
-          """LiteralPrimary
-            | NonExpandedQuotedRegularExpressionLiteral
+          """QuotedRegexInterpolationPrimary
+            | QuotedRegexInterpolation
             |  %r[
             |  ]""".stripMargin
       }
@@ -480,6 +480,38 @@ class RegexTests extends RubyParserAbstractTest {
             |         y
             |         /
             |    )""".stripMargin
+      }
+    }
+  }
+
+  "An interpolated quoted (`%r`) regex" when {
+
+    "by itself, containing a numeric literal interpolation and text" should {
+
+      "be parsed as a primary expression" in {
+        val code = """%r{x#{0}|y}"""
+        printAst(_.primary(), code) shouldEqual
+          """QuotedRegexInterpolationPrimary
+            | QuotedRegexInterpolation
+            |  %r{
+            |  x
+            |  DelimitedStringInterpolation
+            |   #{
+            |   CompoundStatement
+            |    Statements
+            |     ExpressionOrCommandStatement
+            |      ExpressionExpressionOrCommand
+            |       PrimaryExpression
+            |        LiteralPrimary
+            |         NumericLiteralLiteral
+            |          NumericLiteral
+            |           UnsignedNumericLiteral
+            |            0
+            |   }
+            |  |
+            |  y
+            |  }""".stripMargin
+
       }
     }
   }

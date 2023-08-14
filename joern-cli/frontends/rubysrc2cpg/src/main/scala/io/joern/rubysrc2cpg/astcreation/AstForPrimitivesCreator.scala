@@ -52,11 +52,6 @@ trait AstForPrimitivesCreator { this: AstCreator =>
   protected def astForRegularExpressionLiteral(ctx: RubyParser.RegularExpressionLiteralContext): Ast =
     Ast(literalNode(ctx, ctx.getText, Defines.Regexp))
 
-  protected def astForNonExpandedQuotedRegularExpressionLiteral(
-    ctx: RubyParser.NonExpandedQuotedRegularExpressionLiteralContext
-  ): Ast =
-    Ast(literalNode(ctx, ctx.getText, Defines.Regexp))
-
   private def isFloatLiteral(ctx: RubyParser.UnsignedNumericLiteralContext): Boolean =
     Option(ctx.FLOAT_LITERAL_WITH_EXPONENT).isDefined || Option(ctx.FLOAT_LITERAL_WITHOUT_EXPONENT).isDefined
 
