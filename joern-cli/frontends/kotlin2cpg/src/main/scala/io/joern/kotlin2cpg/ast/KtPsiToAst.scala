@@ -581,13 +581,17 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
     callAst(withArgumentName(withArgumentIndex(node, argIdx), argName), args.toList)
   }
 
-  def astForBinaryExprWithTypeRHS(expr: KtBinaryExpressionWithTypeRHS, argIdx: Option[Int], argName: Option[String])(
-    implicit typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  def astForBinaryExprWithTypeRHS(
+    expr: KtBinaryExpressionWithTypeRHS,
+    argIdx: Option[Int],
+    argName: Option[String],
+    annotations: Seq[KtAnnotationEntry] = Seq()
+  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val args = astsForExpression(expr.getLeft, None) ++ Seq(astForTypeReference(expr.getRight, None, None))
     val node = operatorCallNode(Operators.cast, expr.getText, None, line(expr), column(expr))
     callAst(withArgumentName(withArgumentIndex(node, argIdx), argName), args.toList)
+      .withChildren(annotations.map(astForAnnotationEntry))
   }
 
   def astForTypeReference(expr: KtTypeReference, argIdx: Option[Int], argName: Option[String])(implicit
@@ -2144,9 +2148,12 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
       .withChildren(annotationAsts)
   }
 
-  def astsForBinaryExpr(expr: KtBinaryExpression, argIdx: Option[Int], argNameMaybe: Option[String])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Seq[Ast] = {
+  def astsForBinaryExpr(
+    expr: KtBinaryExpression,
+    argIdx: Option[Int],
+    argNameMaybe: Option[String],
+    annotations: Seq[KtAnnotationEntry] = Seq()
+  )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
     val opRef = expr.getOperationReference
 
     // TODO: add the rest of the operators
@@ -2221,6 +2228,7 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
     val rhsArgs = astsForExpression(expr.getRight, None)
     lhsArgs.dropRight(1) ++ rhsArgs.dropRight(1) ++ Seq(
       callAst(withArgumentIndex(node, argIdx).argumentName(argNameMaybe), List(lhsArgs.last, rhsArgs.last))
+        .withChildren(annotations.map(astForAnnotationEntry))
     )
   }
 
