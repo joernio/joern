@@ -128,4 +128,36 @@ class AnnotationsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
     }
   }
+
+  "CPG for code with an annotation on a binary expression" should {
+    val cpg = code("""
+      |package mypkg
+      |@Target(AnnotationTarget.EXPRESSION)
+      |@Retention(AnnotationRetention.SOURCE)
+      |annotation class Fancy
+      |fun fn1() {
+      |    @Fancy 1 + 1
+      |}
+      |""".stripMargin)
+
+    "contain an ANNOTATION node" in {
+      cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
+    }
+  }
+
+  "CPG for code with an annotation on a binary expression with type RHS" should {
+    val cpg = code("""
+      |package mypkg
+      |@Target(AnnotationTarget.EXPRESSION)
+      |@Retention(AnnotationRetention.SOURCE)
+      |annotation class Fancy
+      |fun fn1() {
+      |    @Fancy 1 is Int
+      |}
+      |""".stripMargin)
+
+    "contain an ANNOTATION node" in {
+      cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
+    }
+  }
 }
