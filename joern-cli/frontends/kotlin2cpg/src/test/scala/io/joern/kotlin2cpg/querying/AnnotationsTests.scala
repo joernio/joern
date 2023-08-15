@@ -96,6 +96,38 @@ class AnnotationsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
   }
 
+  "CPG for code with an annotation on a simple qualified expression" should {
+    val cpg = code("""
+      |package mypkg
+      |@Target(AnnotationTarget.EXPRESSION)
+      |@Retention(AnnotationRetention.SOURCE)
+      |annotation class Fancy
+      |fun fn1() {
+      |    @Fancy 1.toString()
+      |}
+      |""".stripMargin)
+
+    "contain an ANNOTATION node for the annotation" in {
+      cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
+    }
+  }
+
+  "CPG for code with an annotation on a safe qualified expression" should {
+    val cpg = code("""
+      |package mypkg
+      |@Target(AnnotationTarget.EXPRESSION)
+      |@Retention(AnnotationRetention.SOURCE)
+      |annotation class Fancy
+      |fun fn1() {
+      |    @Fancy 1?.toString()
+      |}
+      |""".stripMargin)
+
+    "contain an ANNOTATION node for the annotation" in {
+      cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
+    }
+  }
+
   "CPG for code with an annotation on a simple ctor call" should {
     val cpg = code("""
         |package mypkg

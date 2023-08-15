@@ -1369,9 +1369,12 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
   }
 
   // TODO: clean up this whole fn
-  def astForQualifiedExpression(expr: KtQualifiedExpression, argIdx: Option[Int], argNameMaybe: Option[String])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  def astForQualifiedExpression(
+    expr: KtQualifiedExpression,
+    argIdx: Option[Int],
+    argNameMaybe: Option[String],
+    annotations: Seq[KtAnnotationEntry] = Seq()
+  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val callKind        = typeInfoProvider.bindingKind(expr)
     val isExtensionCall = callKind == CallKinds.ExtensionCall
 
@@ -1396,19 +1399,22 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
     }
     val isCtorCtorCall   = typeInfoProvider.isConstructorCall(expr)
     val noAstForReceiver = isStaticMethodCall && hasRefToClassReceiver
-    if (isCtorCtorCall.getOrElse(false)) {
-      astForQualifiedExpressionCtor(expr, argIdx, argNameMaybe)
-    } else if (isFieldAccessCall) {
-      astForQualifiedExpressionFieldAccess(expr, argIdx, argNameMaybe)
-    } else if (isExtensionCall) {
-      astForQualifiedExpressionExtensionCall(expr, argIdx, argNameMaybe)
-    } else if (isCallToSuper) {
-      astForQualifiedExpressionCallToSuper(expr, argIdx, argNameMaybe)
-    } else if (noAstForReceiver) {
-      astForQualifiedExpressionWithNoAstForReceiver(expr, argIdx, argNameMaybe)
-    } else {
-      astForQualifiedExpressionWithReceiverEdge(expr, callKind, argIdx, argNameMaybe)
-    }
+
+    val outAst =
+      if (isCtorCtorCall.getOrElse(false)) {
+        astForQualifiedExpressionCtor(expr, argIdx, argNameMaybe)
+      } else if (isFieldAccessCall) {
+        astForQualifiedExpressionFieldAccess(expr, argIdx, argNameMaybe)
+      } else if (isExtensionCall) {
+        astForQualifiedExpressionExtensionCall(expr, argIdx, argNameMaybe)
+      } else if (isCallToSuper) {
+        astForQualifiedExpressionCallToSuper(expr, argIdx, argNameMaybe)
+      } else if (noAstForReceiver) {
+        astForQualifiedExpressionWithNoAstForReceiver(expr, argIdx, argNameMaybe)
+      } else {
+        astForQualifiedExpressionWithReceiverEdge(expr, callKind, argIdx, argNameMaybe)
+      }
+    outAst.withChildren(annotations.map(astForAnnotationEntry))
   }
 
   def astForBreak(expr: KtBreakExpression): Ast = {
