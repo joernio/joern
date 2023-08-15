@@ -5,7 +5,7 @@ set -u # Treat unset variables as an error
 # set -x # Uncomment this for debugging
 
 # Define log file path
-LOG_FILE="/var/log/my_script.log"
+LOG_FILE="target/test_distro.log"
 
 # Function to log messages with timestamp
 log() {
