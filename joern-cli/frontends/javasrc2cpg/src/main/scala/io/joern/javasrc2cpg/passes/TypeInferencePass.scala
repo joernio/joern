@@ -71,7 +71,11 @@ class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[Call](cpg) {
   }
 
   private def getReplacementMethod(call: Call): Option[Method] = {
-    cache.get(call.methodFullName).toScala.getOrElse {
+    val argTypes =
+      call.argument.flatMap(arg => Option(arg.property(PropertyNames.TypeFullName)).map(_.toString)).mkString(":")
+    val callKey =
+      s"${call.methodFullName}:$argTypes"
+    cache.get(callKey).toScala.getOrElse {
       val callNameParts = getNameParts(call.name, call.methodFullName)
       resolvedMethodIndex.get(call.name).flatMap { candidateMethods =>
         val candidateMethodsIter = candidateMethods.iterator
@@ -81,7 +85,7 @@ class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[Call](cpg) {
             // Only return a resulting method if exactly one matching method is found.
             Option.when(otherMatchingMethod.isEmpty)(method)
           }
-        cache.put(call.methodFullName, uniqueMatchingMethod)
+        cache.put(callKey, uniqueMatchingMethod)
         uniqueMatchingMethod
       }
     }
