@@ -2131,12 +2131,17 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
     astWithRefEdgeMaybe(name, node)
   }
 
-  def astForLiteral(expr: KtConstantExpression, argIdx: Option[Int], argName: Option[String])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
-    val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
-    val node         = literalNode(expr, expr.getText, typeFullName)
+  def astForLiteral(
+    expr: KtConstantExpression,
+    argIdx: Option[Int],
+    argName: Option[String],
+    annotations: Seq[KtAnnotationEntry] = Seq()
+  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+    val typeFullName   = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+    val node           = literalNode(expr, expr.getText, typeFullName)
+    val annotationAsts = annotations.map(astForAnnotationEntry)
     Ast(withArgumentName(withArgumentIndex(node, argIdx), argName))
+      .withChildren(annotationAsts)
   }
 
   def astsForBinaryExpr(expr: KtBinaryExpression, argIdx: Option[Int], argNameMaybe: Option[String])(implicit
