@@ -187,14 +187,16 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       case typedExpr: KtClass              => astsForClassOrObject(typedExpr, None, annotations)
       case typedExpr: KtClassLiteralExpression =>
         Seq(astForClassLiteral(typedExpr, argIdxMaybe, argNameMaybe, annotations))
-      case typedExpr: KtSafeQualifiedExpression  => Seq(astForQualifiedExpression(typedExpr, argIdxMaybe, argNameMaybe))
+      case typedExpr: KtSafeQualifiedExpression =>
+        Seq(astForQualifiedExpression(typedExpr, argIdxMaybe, argNameMaybe, annotations))
       case typedExpr: KtContinueExpression       => Seq(astForContinue(typedExpr))
       case typedExpr: KtDestructuringDeclaration => astsForDestructuringDeclaration(typedExpr)
-      case typedExpr: KtDotQualifiedExpression   => Seq(astForQualifiedExpression(typedExpr, argIdxMaybe, argNameMaybe))
-      case typedExpr: KtDoWhileExpression        => Seq(astForDoWhile(typedExpr))
-      case typedExpr: KtForExpression            => Seq(astForFor(typedExpr))
-      case typedExpr: KtIfExpression             => Seq(astForIf(typedExpr, argIdxMaybe, argNameMaybe))
-      case typedExpr: KtIsExpression             => Seq(astForIsExpression(typedExpr, argIdxMaybe, argNameMaybe))
+      case typedExpr: KtDotQualifiedExpression =>
+        Seq(astForQualifiedExpression(typedExpr, argIdxMaybe, argNameMaybe, annotations))
+      case typedExpr: KtDoWhileExpression => Seq(astForDoWhile(typedExpr))
+      case typedExpr: KtForExpression     => Seq(astForFor(typedExpr))
+      case typedExpr: KtIfExpression      => Seq(astForIf(typedExpr, argIdxMaybe, argNameMaybe))
+      case typedExpr: KtIsExpression      => Seq(astForIsExpression(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtLabeledExpression => astsForExpression(typedExpr.getBaseExpression, argIdxMaybe, argNameMaybe)
       case typedExpr: KtLambdaExpression  => Seq(astForLambda(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtNameReferenceExpression if typedExpr.getReferencedNameElementType == KtTokens.IDENTIFIER =>
