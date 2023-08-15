@@ -253,4 +253,20 @@ class AnnotationsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
     }
   }
+
+  "CPG for code with an annotation on an if-expression" should {
+    val cpg = code("""
+      |package mypkg
+      |@Target(AnnotationTarget.EXPRESSION)
+      |@Retention(AnnotationRetention.SOURCE)
+      |annotation class Fancy
+      |fun fn1() {
+      |    @Fancy if (true) println("this") else println("that")
+      |}
+      |""".stripMargin)
+
+    "contain an ANNOTATION node" in {
+      cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
+    }
+  }
 }

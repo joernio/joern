@@ -1793,12 +1793,15 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
     Seq(Ast(jumpNode), exprNode)
   }
 
-  def astForIf(expr: KtIfExpression, argIdx: Option[Int], argNameMaybe: Option[String])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  def astForIf(
+    expr: KtIfExpression,
+    argIdx: Option[Int],
+    argNameMaybe: Option[String],
+    annotations: Seq[KtAnnotationEntry] = Seq()
+  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val isChildOfControlStructureBody = expr.getParent.isInstanceOf[KtContainerNodeForControlStructureBody]
     if (KtPsiUtil.isStatement(expr) && !isChildOfControlStructureBody) astForIfAsControlStructure(expr)
-    else astForIfAsExpression(expr, argIdx, argNameMaybe)
+    else astForIfAsExpression(expr, argIdx, argNameMaybe, annotations)
   }
 
   def astForIfAsControlStructure(expr: KtIfExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
@@ -1810,9 +1813,12 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
     controlStructureAst(node, conditionAst, List(thenAsts ++ elseAsts).flatten)
   }
 
-  def astForIfAsExpression(expr: KtIfExpression, argIdx: Option[Int], argNameMaybe: Option[String])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  def astForIfAsExpression(
+    expr: KtIfExpression,
+    argIdx: Option[Int],
+    argNameMaybe: Option[String],
+    annotations: Seq[KtAnnotationEntry] = Seq()
+  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val conditionAsts = astsForExpression(expr.getCondition, None)
     val thenAsts      = astsForExpression(expr.getThen, None)
     val elseAsts      = astsForExpression(expr.getElse, None)
@@ -1823,6 +1829,7 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
       val node =
         operatorCallNode(Operators.conditional, expr.getText, Option(returnTypeFullName), line(expr), column(expr))
       callAst(withArgumentIndex(node, argIdx).argumentName(argNameMaybe), allAsts)
+        .withChildren(annotations.map(astForAnnotationEntry))
     } else {
       logger.warn("Could not create ASTs for condition-then-else of conditional.")
       astForUnknown(expr, argIdx, argNameMaybe)
