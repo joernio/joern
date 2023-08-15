@@ -160,4 +160,65 @@ class AnnotationsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
     }
   }
+
+  "CPG for code with an annotation on a simple class declaration" should {
+    val cpg = code("""
+       |package mypkg
+       |@Target(AnnotationTarget.CLASS)
+       |@Retention(AnnotationRetention.SOURCE)
+       |annotation class Fancy
+       |@Fancy class A
+       |""".stripMargin)
+
+    "contain an ANNOTATION node" in {
+      cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
+    }
+  }
+
+  "CPG for code with an annotation on an object declaration" should {
+    val cpg = code("""
+      |package mypkg
+      |@Target(AnnotationTarget.CLASS)
+      |@Retention(AnnotationRetention.SOURCE)
+      |annotation class Fancy
+      |@Fancy object O {}
+      |""".stripMargin)
+
+    "contain an ANNOTATION node" in {
+      cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
+    }
+  }
+
+  "CPG for code with an annotation on an object expression" should {
+    val cpg = code("""
+      |package mypkg
+      |@Target(AnnotationTarget.CLASS)
+      |@Retention(AnnotationRetention.SOURCE)
+      |annotation class Fancy
+      |fun fn1() {
+      |    @Fancy object {}
+      |}
+      |""".stripMargin)
+
+    "contain an ANNOTATION node" in {
+      cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
+    }
+  }
+
+  "CPG for code with an annotation on a class literal expression" should {
+    val cpg = code("""
+      |package mypkg
+      |@Target(AnnotationTarget.EXPRESSION)
+      |@Retention(AnnotationRetention.SOURCE)
+      |annotation class Fancy
+      |class A
+      |fun fn1() {
+      |    @Fancy A::class
+      |}
+      |""".stripMargin)
+
+    "contain an ANNOTATION node" in {
+      cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
+    }
+  }
 }

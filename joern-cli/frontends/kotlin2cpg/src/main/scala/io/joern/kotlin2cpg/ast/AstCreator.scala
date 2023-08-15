@@ -181,13 +181,14 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       case typedExpr: KtBlockExpression       => astsForBlock(typedExpr, argIdxMaybe, argNameMaybe)
       case typedExpr: KtBinaryExpressionWithTypeRHS =>
         Seq(astForBinaryExprWithTypeRHS(typedExpr, argIdxMaybe, argNameMaybe, annotations))
-      case typedExpr: KtBreakExpression         => Seq(astForBreak(typedExpr))
-      case typedExpr: KtCallExpression          => astsForCall(typedExpr, argIdxMaybe, argNameMaybe, annotations)
-      case typedExpr: KtConstantExpression      => Seq(astForLiteral(typedExpr, argIdxMaybe, argNameMaybe, annotations))
-      case typedExpr: KtClass                   => astsForClassOrObject(typedExpr)
-      case typedExpr: KtClassLiteralExpression  => Seq(astForClassLiteral(typedExpr, argIdxMaybe, argNameMaybe))
-      case typedExpr: KtSafeQualifiedExpression => Seq(astForQualifiedExpression(typedExpr, argIdxMaybe, argNameMaybe))
-      case typedExpr: KtContinueExpression      => Seq(astForContinue(typedExpr))
+      case typedExpr: KtBreakExpression    => Seq(astForBreak(typedExpr))
+      case typedExpr: KtCallExpression     => astsForCall(typedExpr, argIdxMaybe, argNameMaybe, annotations)
+      case typedExpr: KtConstantExpression => Seq(astForLiteral(typedExpr, argIdxMaybe, argNameMaybe, annotations))
+      case typedExpr: KtClass              => astsForClassOrObject(typedExpr, None, annotations)
+      case typedExpr: KtClassLiteralExpression =>
+        Seq(astForClassLiteral(typedExpr, argIdxMaybe, argNameMaybe, annotations))
+      case typedExpr: KtSafeQualifiedExpression  => Seq(astForQualifiedExpression(typedExpr, argIdxMaybe, argNameMaybe))
+      case typedExpr: KtContinueExpression       => Seq(astForContinue(typedExpr))
       case typedExpr: KtDestructuringDeclaration => astsForDestructuringDeclaration(typedExpr)
       case typedExpr: KtDotQualifiedExpression   => Seq(astForQualifiedExpression(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtDoWhileExpression        => Seq(astForDoWhile(typedExpr))
@@ -199,8 +200,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
       case typedExpr: KtNameReferenceExpression if typedExpr.getReferencedNameElementType == KtTokens.IDENTIFIER =>
         Seq(astForNameReference(typedExpr, argIdxMaybe, argNameMaybe))
       // TODO: callable reference
-      case _: KtNameReferenceExpression         => Seq()
-      case typedExpr: KtObjectLiteralExpression => Seq(astForObjectLiteralExpr(typedExpr, argIdxMaybe, argNameMaybe))
+      case _: KtNameReferenceExpression => Seq()
+      case typedExpr: KtObjectLiteralExpression =>
+        Seq(astForObjectLiteralExpr(typedExpr, argIdxMaybe, argNameMaybe, annotations))
       case typedExpr: KtParenthesizedExpression => astsForExpression(typedExpr.getExpression, argIdxMaybe, argNameMaybe)
       case typedExpr: KtPostfixExpression       => Seq(astForPostfixExpression(typedExpr, argIdxMaybe, argNameMaybe))
       case typedExpr: KtPrefixExpression        => Seq(astForPrefixExpression(typedExpr, argIdxMaybe, argNameMaybe))

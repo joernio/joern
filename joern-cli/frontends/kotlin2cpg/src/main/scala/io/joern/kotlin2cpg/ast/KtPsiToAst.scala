@@ -235,9 +235,11 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
     callAst(assignmentNode, List(fieldAccessCallAst, paramIdentifierAst))
   }
 
-  def astsForClassOrObject(ktClass: KtClassOrObject, ctx: Option[AnonymousObjectContext] = None)(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Seq[Ast] = {
+  def astsForClassOrObject(
+    ktClass: KtClassOrObject,
+    ctx: Option[AnonymousObjectContext] = None,
+    annotations: Seq[KtAnnotationEntry] = Seq()
+  )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
     val className = ctx match {
       case Some(_) => "anonymous_obj"
       case None    => ktClass.getName
@@ -405,7 +407,7 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
     val companionObjectAsts = ktClass.getCompanionObjects.asScala.flatMap(astsForClassOrObject(_, None))
     scope.popScope()
 
-    Seq(finalAst) ++ companionObjectAsts ++ innerTypeDeclAsts
+    Seq(finalAst.withChildren(annotations.map(astForAnnotationEntry))) ++ companionObjectAsts ++ innerTypeDeclAsts
   }
 
   def astForAnnotationEntry(entry: KtAnnotationEntry)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
@@ -624,9 +626,12 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
     astWithRefEdgeMaybe(expr.getText, node)
   }
 
-  def astForClassLiteral(expr: KtClassLiteralExpression, argIdx: Option[Int], argName: Option[String])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  def astForClassLiteral(
+    expr: KtClassLiteralExpression,
+    argIdx: Option[Int],
+    argName: Option[String],
+    annotations: Seq[KtAnnotationEntry] = Seq()
+  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val (fullName, signature) = typeInfoProvider.fullNameWithSignature(expr, ("", "")) // TODO: fix the fallback names
     val typeFullName          = registerType(typeInfoProvider.expressionType(expr, TypeConstants.javaLangObject))
     val node = callNode(
@@ -639,6 +644,7 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
       Some(typeFullName)
     )
     Ast(withArgumentName(withArgumentIndex(node, argIdx), argName))
+      .withChildren(annotations.map(astForAnnotationEntry))
   }
 
   def astForAnonymousFunction(fn: KtNamedFunction, argIdxMaybe: Option[Int], argNameMaybe: Option[String])(implicit
@@ -1878,7 +1884,8 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
   protected def astForObjectLiteralExpr(
     expr: KtObjectLiteralExpression,
     argIdxMaybe: Option[Int],
-    argNameMaybe: Option[String]
+    argNameMaybe: Option[String],
+    annotations: Seq[KtAnnotationEntry] = Seq()
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val parentFn = KtPsiUtil.getTopmostParentOfTypes(expr, classOf[KtNamedFunction])
     val ctx =
@@ -1932,6 +1939,7 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
       withArgumentIndex(blockNode(expr, expr.getText, TypeConstants.any), argIdxMaybe)
         .argumentName(argNameMaybe)
     blockAst(blockNode_, Seq(typeDeclAst, localAst, assignmentCallAst, initAst, refTmpAst).toList)
+      .withChildren(annotations.map(astForAnnotationEntry))
   }
 
   def astsForProperty(expr: KtProperty)(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
