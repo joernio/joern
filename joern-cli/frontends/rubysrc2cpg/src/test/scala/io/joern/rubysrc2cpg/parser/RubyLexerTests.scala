@@ -21,11 +21,11 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       errors += 1
   }
 
-  def tokenize(code: String): Iterable[Int] = {
+  private def tokenizer(code: String, postProcessor: TokenSource => TokenSource): Iterable[Int] = {
     val lexer               = new RubyLexer(CharStreams.fromString(code))
     val syntaxErrorListener = new RubySyntaxErrorListener
     lexer.addErrorListener(syntaxErrorListener)
-    val stream = new CommonTokenStream(lexer)
+    val stream = new CommonTokenStream(postProcessor(lexer))
     stream.fill() // Run the lexer
     if (syntaxErrorListener.errors > 0) {
       Seq()
@@ -34,6 +34,10 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       stream.getTokens.asScala.map(_.getType)
     }
   }
+
+  def tokenize(code: String): Iterable[Int] = tokenizer(code, identity)
+
+  def tokenizeOpt(code: String): Iterable[Int] = tokenizer(code, RubyLexerPostProcessor.apply)
 
   "Single-line comments" should "be discarded" in {
     val code =
@@ -1261,4 +1265,23 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     tokenize(code) shouldBe Seq(UNRECOGNIZED, EMARK, EOF)
   }
 
+  "Single NON_EXPANDED_LITERAL_CHARACTER token" should "be rewritten into a single NON_EXPANDED_LITERAL_CHARACTER_SEQUENCE token" in {
+    val code = "%q{ }"
+    tokenizeOpt(code) shouldBe Seq(
+      QUOTED_NON_EXPANDED_STRING_LITERAL_START,
+      NON_EXPANDED_LITERAL_CHARACTER_SEQUENCE,
+      QUOTED_NON_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
+  "Consecutive NON_EXPANDED_LITERAL_CHARACTER tokens" should "be rewritten into a single NON_EXPANDED_LITERAL_CHARACTER_SEQUENCE token" in {
+    val code = "%q(1 2 3 4)"
+    tokenizeOpt(code) shouldBe Seq(
+      QUOTED_NON_EXPANDED_STRING_LITERAL_START,
+      NON_EXPANDED_LITERAL_CHARACTER_SEQUENCE,
+      QUOTED_NON_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
 }
