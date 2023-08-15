@@ -46,7 +46,9 @@ class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[Call](cpg) {
     parameterSizesMatch && argTypesMatch && typeDeclMatches
   }
 
-  def doArgumentTypesMatch(method: Method, call: Call, skipCallThis: Boolean): Boolean = {
+  /** Check if argument types match by comparing exact full names. TODO: Take inheritance hierarchies into account
+    */
+  private def doArgumentTypesMatch(method: Method, call: Call, skipCallThis: Boolean): Boolean = {
     val callArgs = if (skipCallThis) call.argument.toList.tail else call.argument.toList
 
     val hasDifferingArg = method.parameter.zip(callArgs).exists { case (parameter, argument) =>
