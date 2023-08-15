@@ -175,10 +175,11 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           argNameMaybe,
           typedExpr.getAnnotationEntries.asScala.toSeq
         )
-      case typedExpr: KtArrayAccessExpression => Seq(astForArrayAccess(typedExpr, argIdxMaybe, argNameMaybe))
-      case typedExpr: KtAnonymousInitializer  => astsForExpression(typedExpr.getBody, argIdxMaybe)
-      case typedExpr: KtBinaryExpression      => astsForBinaryExpr(typedExpr, argIdxMaybe, argNameMaybe, annotations)
-      case typedExpr: KtBlockExpression       => astsForBlock(typedExpr, argIdxMaybe, argNameMaybe)
+      case typedExpr: KtArrayAccessExpression =>
+        Seq(astForArrayAccess(typedExpr, argIdxMaybe, argNameMaybe, annotations))
+      case typedExpr: KtAnonymousInitializer => astsForExpression(typedExpr.getBody, argIdxMaybe)
+      case typedExpr: KtBinaryExpression     => astsForBinaryExpr(typedExpr, argIdxMaybe, argNameMaybe, annotations)
+      case typedExpr: KtBlockExpression      => astsForBlock(typedExpr, argIdxMaybe, argNameMaybe)
       case typedExpr: KtBinaryExpressionWithTypeRHS =>
         Seq(astForBinaryExprWithTypeRHS(typedExpr, argIdxMaybe, argNameMaybe, annotations))
       case typedExpr: KtBreakExpression    => Seq(astForBreak(typedExpr))
@@ -189,41 +190,48 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         Seq(astForClassLiteral(typedExpr, argIdxMaybe, argNameMaybe, annotations))
       case typedExpr: KtSafeQualifiedExpression =>
         Seq(astForQualifiedExpression(typedExpr, argIdxMaybe, argNameMaybe, annotations))
-      case typedExpr: KtContinueExpression       => Seq(astForContinue(typedExpr))
+      case typedExpr: KtContinueExpression => Seq(astForContinue(typedExpr))
+      // note: annotations are not currently (Kotlin 1.9.0) supported on destructuring declarations
       case typedExpr: KtDestructuringDeclaration => astsForDestructuringDeclaration(typedExpr)
       case typedExpr: KtDotQualifiedExpression =>
         Seq(astForQualifiedExpression(typedExpr, argIdxMaybe, argNameMaybe, annotations))
-      case typedExpr: KtDoWhileExpression => Seq(astForDoWhile(typedExpr))
-      case typedExpr: KtForExpression     => Seq(astForFor(typedExpr))
+      case typedExpr: KtDoWhileExpression => Seq(astForDoWhile(typedExpr, annotations))
+      case typedExpr: KtForExpression     => Seq(astForFor(typedExpr, annotations))
       case typedExpr: KtIfExpression      => Seq(astForIf(typedExpr, argIdxMaybe, argNameMaybe, annotations))
-      case typedExpr: KtIsExpression      => Seq(astForIsExpression(typedExpr, argIdxMaybe, argNameMaybe))
-      case typedExpr: KtLabeledExpression => astsForExpression(typedExpr.getBaseExpression, argIdxMaybe, argNameMaybe)
-      case typedExpr: KtLambdaExpression  => Seq(astForLambda(typedExpr, argIdxMaybe, argNameMaybe))
+      case typedExpr: KtIsExpression      => Seq(astForIsExpression(typedExpr, argIdxMaybe, argNameMaybe, annotations))
+      case typedExpr: KtLabeledExpression =>
+        astsForExpression(typedExpr.getBaseExpression, argIdxMaybe, argNameMaybe, annotations)
+      case typedExpr: KtLambdaExpression => Seq(astForLambda(typedExpr, argIdxMaybe, argNameMaybe, annotations))
       case typedExpr: KtNameReferenceExpression if typedExpr.getReferencedNameElementType == KtTokens.IDENTIFIER =>
-        Seq(astForNameReference(typedExpr, argIdxMaybe, argNameMaybe))
+        Seq(astForNameReference(typedExpr, argIdxMaybe, argNameMaybe, annotations))
       // TODO: callable reference
       case _: KtNameReferenceExpression => Seq()
       case typedExpr: KtObjectLiteralExpression =>
         Seq(astForObjectLiteralExpr(typedExpr, argIdxMaybe, argNameMaybe, annotations))
-      case typedExpr: KtParenthesizedExpression => astsForExpression(typedExpr.getExpression, argIdxMaybe, argNameMaybe)
-      case typedExpr: KtPostfixExpression       => Seq(astForPostfixExpression(typedExpr, argIdxMaybe, argNameMaybe))
-      case typedExpr: KtPrefixExpression        => Seq(astForPrefixExpression(typedExpr, argIdxMaybe, argNameMaybe))
-      case typedExpr: KtProperty if typedExpr.isLocal => astsForProperty(typedExpr)
-      case typedExpr: KtReturnExpression              => Seq(astForReturnExpression(typedExpr))
-      case typedExpr: KtStringTemplateExpression      => Seq(astForStringTemplate(typedExpr, argIdxMaybe, argNameMaybe))
-      case typedExpr: KtSuperExpression => Seq(astForSuperExpression(typedExpr, argIdxMaybe, argNameMaybe))
-      case typedExpr: KtThisExpression  => Seq(astForThisExpression(typedExpr, argIdxMaybe, argNameMaybe))
-      case typedExpr: KtThrowExpression => Seq(astForUnknown(typedExpr, argIdxMaybe, argNameMaybe))
-      case typedExpr: KtTryExpression   => Seq(astForTry(typedExpr, argIdxMaybe, argNameMaybe))
-      case typedExpr: KtWhenExpression  => Seq(astForWhen(typedExpr, argIdxMaybe, argNameMaybe))
-      case typedExpr: KtWhileExpression => Seq(astForWhile(typedExpr))
+      case typedExpr: KtParenthesizedExpression =>
+        astsForExpression(typedExpr.getExpression, argIdxMaybe, argNameMaybe, annotations)
+      case typedExpr: KtPostfixExpression =>
+        Seq(astForPostfixExpression(typedExpr, argIdxMaybe, argNameMaybe, annotations))
+      case typedExpr: KtPrefixExpression =>
+        Seq(astForPrefixExpression(typedExpr, argIdxMaybe, argNameMaybe, annotations))
+      case typedExpr: KtProperty if typedExpr.isLocal =>
+        astsForProperty(typedExpr, annotations ++ typedExpr.getAnnotationEntries.asScala.toSeq)
+      case typedExpr: KtReturnExpression => Seq(astForReturnExpression(typedExpr))
+      case typedExpr: KtStringTemplateExpression =>
+        Seq(astForStringTemplate(typedExpr, argIdxMaybe, argNameMaybe, annotations))
+      case typedExpr: KtSuperExpression => Seq(astForSuperExpression(typedExpr, argIdxMaybe, argNameMaybe, annotations))
+      case typedExpr: KtThisExpression  => Seq(astForThisExpression(typedExpr, argIdxMaybe, argNameMaybe, annotations))
+      case typedExpr: KtThrowExpression => Seq(astForUnknown(typedExpr, argIdxMaybe, argNameMaybe, annotations))
+      case typedExpr: KtTryExpression   => Seq(astForTry(typedExpr, argIdxMaybe, argNameMaybe, annotations))
+      case typedExpr: KtWhenExpression  => Seq(astForWhen(typedExpr, argIdxMaybe, argNameMaybe, annotations))
+      case typedExpr: KtWhileExpression => Seq(astForWhile(typedExpr, annotations))
       case typedExpr: KtNamedFunction if Option(typedExpr.getName).isEmpty =>
-        Seq(astForAnonymousFunction(typedExpr, argIdxMaybe, argNameMaybe))
+        Seq(astForAnonymousFunction(typedExpr, argIdxMaybe, argNameMaybe, annotations))
       case typedExpr: KtNamedFunction =>
         logger.debug(
           s"Creating empty AST node for unknown expression `${typedExpr.getClass}` with text `${typedExpr.getText}`."
         )
-        Seq(astForUnknown(typedExpr, argIdxMaybe, argNameMaybe))
+        Seq(astForUnknown(typedExpr, argIdxMaybe, argNameMaybe, annotations))
       case null =>
         logger.trace("Received null expression! Skipping...")
         Seq()
@@ -232,7 +240,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         logger.debug(
           s"Creating empty AST node for unknown expression `${unknownExpr.getClass}` with text `${unknownExpr.getText}`."
         )
-        Seq(astForUnknown(unknownExpr, argIdxMaybe, argNameMaybe))
+        Seq(astForUnknown(unknownExpr, argIdxMaybe, argNameMaybe, annotations))
     }
   }
 }

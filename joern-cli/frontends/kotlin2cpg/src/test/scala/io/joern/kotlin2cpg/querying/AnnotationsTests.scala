@@ -269,4 +269,340 @@ class AnnotationsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
     }
   }
+
+  "CPG for code with an annotation on an is-expression" should {
+    val cpg = code("""
+      |package mypkg
+      |@Target(AnnotationTarget.EXPRESSION)
+      |@Retention(AnnotationRetention.SOURCE)
+      |annotation class Fancy
+      |fun fn1() {
+      |    @Fancy 1 is Int
+      |}
+      |""".stripMargin)
+
+    "contain an ANNOTATION node" in {
+      cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
+    }
+  }
+
+  "CPG for code with an annotation on a labeled expression" should {
+    val cpg = code("""
+      |package mypkg
+      |@Target(AnnotationTarget.EXPRESSION)
+      |@Retention(AnnotationRetention.SOURCE)
+      |annotation class Fancy
+      |fun fn1() {
+      |    @Fancy albel@ 1
+      |}
+      |""".stripMargin)
+
+    "contain an ANNOTATION node" in {
+      cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
+    }
+  }
+
+  "CPG for code with an annotation on a parenthesized expression" should {
+    val cpg = code("""
+      |package mypkg
+      |@Target(AnnotationTarget.EXPRESSION)
+      |@Retention(AnnotationRetention.SOURCE)
+      |annotation class Fancy
+      |fun fn1() {
+      |    @Fancy() (1)
+      |}
+      |""".stripMargin)
+
+    "contain an ANNOTATION node" in {
+      cpg.all.collectAll[Annotation].codeExact("@Fancy()").size shouldBe 1
+    }
+  }
+
+  "CPG for code with an annotation on a prefix expression" should {
+    val cpg = code("""
+        |package mypkg
+        |@Target(AnnotationTarget.EXPRESSION)
+        |@Retention(AnnotationRetention.SOURCE)
+        |annotation class Fancy
+        |fun fn1() {
+        |    @Fancy ++1
+        |}
+        |""".stripMargin)
+
+    "contain an ANNOTATION node" in {
+      cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
+    }
+  }
+
+  "CPG for code with an annotation on a postfix expression" should {
+    val cpg = code("""
+      |package mypkg
+      |@Target(AnnotationTarget.EXPRESSION)
+      |@Retention(AnnotationRetention.SOURCE)
+      |annotation class Fancy
+      |fun fn1() {
+      |    @Fancy 1++
+      |}
+      |""".stripMargin)
+
+    "contain an ANNOTATION node" in {
+      cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
+    }
+  }
+
+  "CPG for code with an annotation on a string template" should {
+    val cpg = code("""
+      |package mypkg
+      |@Target(AnnotationTarget.EXPRESSION)
+      |@Retention(AnnotationRetention.SOURCE)
+      |annotation class Fancy
+      |fun fn1() {
+      |    @Fancy "something"
+      |}
+      |""".stripMargin)
+
+    "contain an ANNOTATION node" in {
+      cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
+    }
+  }
+
+  "CPG for code with an annotation on a try expression" should {
+    val cpg = code("""
+      |package mypkg
+      |@Target(AnnotationTarget.EXPRESSION)
+      |@Retention(AnnotationRetention.SOURCE)
+      |annotation class Fancy
+      |fun fn1() {
+      |    @Fancy try { "a" } catch (e: Exception) { "b" }
+      |}
+      |""".stripMargin)
+
+    "contain an ANNOTATION node" in {
+      cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
+    }
+  }
+
+  "CPG for code with an annotation on a super expression" should {
+    val cpg = code("""
+      |package mypkg
+      |@Target(AnnotationTarget.EXPRESSION)
+      |@Retention(AnnotationRetention.SOURCE)
+      |annotation class Fancy
+      |class A {
+      |   fun fn1() {
+      |       println(@Fancy super.toString())
+      |   }
+      |}
+      |""".stripMargin)
+
+    "contain an ANNOTATION node" in {
+      cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
+    }
+  }
+
+  "CPG for code with an annotation on a this expression" should {
+    val cpg = code("""
+      |package mypkg
+      |@Target(AnnotationTarget.EXPRESSION)
+      |@Retention(AnnotationRetention.SOURCE)
+      |annotation class Fancy
+      |class A {
+      |   fun fn1() {
+      |       println(@Fancy this.toString())
+      |   }
+      |}
+      |""".stripMargin)
+
+    "contain an ANNOTATION node" in {
+      cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
+    }
+  }
+
+  "CPG for code with an annotation on a simple identifier expression" should {
+    val cpg = code("""
+      |package mypkg
+      |@Target(AnnotationTarget.EXPRESSION)
+      |@Retention(AnnotationRetention.SOURCE)
+      |annotation class Fancy
+      |fun fn1() {
+      |    val i = 1
+      |    @Fancy i
+      |}
+      |""".stripMargin)
+
+    "contain an ANNOTATION node" in {
+      cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
+    }
+  }
+
+  "CPG for code with an annotation on a do-while control structure" should {
+    val cpg = code("""
+      |package mypkg
+      |@Target(AnnotationTarget.EXPRESSION)
+      |@Retention(AnnotationRetention.SOURCE)
+      |annotation class Fancy
+      |fun fn1() {
+      |    var i = 10
+      |    @Fancy
+      |    do {
+      |        println("tick")
+      |        --i
+      |    } while (i > 0)
+      |}
+      |""".stripMargin)
+
+    "contain an ANNOTATION node" in {
+      cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
+    }
+  }
+
+  "CPG for code with an annotation on a while control structure" should {
+    val cpg = code("""
+      |package mypkg
+      |@Target(AnnotationTarget.EXPRESSION)
+      |@Retention(AnnotationRetention.SOURCE)
+      |annotation class Fancy
+      |fun fn1() {
+      |    var i = 10
+      |    @Fancy
+      |    while (i > 0) {
+      |        println("tick")
+      |        --i
+      |    }
+      |}
+      |""".stripMargin)
+
+    "contain an ANNOTATION node" in {
+      cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
+    }
+  }
+
+  "CPG for code with an annotation on a for control structure" should {
+    val cpg = code("""
+      |package mypkg
+      |@Target(AnnotationTarget.EXPRESSION)
+      |@Retention(AnnotationRetention.SOURCE)
+      |annotation class Fancy
+      |fun fn1() {
+      |    @Fancy
+      |    for (i in 1..10) {
+      |        println("tick")
+      |    }
+      |}
+      |""".stripMargin)
+
+    "contain an ANNOTATION node" in {
+      cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
+    }
+  }
+
+  "CPG for code with an annotation on a when control structure" should {
+    val cpg = code("""
+      |package mypkg
+      |@Target(AnnotationTarget.EXPRESSION)
+      |@Retention(AnnotationRetention.SOURCE)
+      |annotation class Fancy
+      |fun fn1() {
+      |    @Fancy
+      |    when (Random(1).nextInt() % 2) {
+      |        1 -> println("this")
+      |        else -> println("that")
+      |    }
+      |}
+      |""".stripMargin)
+
+    "contain an ANNOTATION node" in {
+      cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
+    }
+  }
+
+  "CPG for code with an annotation on a when expression" should {
+    val cpg = code("""
+      |package mypkg
+      |@Target(AnnotationTarget.EXPRESSION)
+      |@Retention(AnnotationRetention.SOURCE)
+      |annotation class Fancy
+      |fun fn1() {
+      |  val x =
+      |    @Fancy
+      |    when (Random(1).nextInt() % 2) {
+      |        1 -> "this"
+      |        else -> "that"
+      |    }
+      |}
+      |""".stripMargin)
+
+    "contain an ANNOTATION node" in {
+      cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
+    }
+  }
+
+  "CPG for code with an annotation on a local declaration" should {
+    val cpg = code("""
+      |package mypkg
+      |@Target(AnnotationTarget.EXPRESSION)
+      |@Retention(AnnotationRetention.SOURCE)
+      |annotation class Fancy
+      |fun fn1() {
+      |    @Fancy
+      |    var i = 1
+      |}
+      |""".stripMargin)
+
+    "contain an ANNOTATION node" in {
+      cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
+    }
+  }
+
+  "CPG for code with an annotation on an array access expression" should {
+    val cpg = code("""
+      |package mypkg
+      |@Target(AnnotationTarget.EXPRESSION)
+      |@Retention(AnnotationRetention.SOURCE)
+      |annotation class Fancy
+      |fun fn1() {
+      |    val l = arrayOf(1, 2, 3)
+      |    @Fancy
+      |    l[0]
+      |}
+      |""".stripMargin)
+
+    "contain an ANNOTATION node" in {
+      cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
+    }
+  }
+
+  "CPG for code with an annotation on a lambda" should {
+    val cpg = code("""
+      |package mypkg
+      |@Target(AnnotationTarget.EXPRESSION)
+      |@Retention(AnnotationRetention.SOURCE)
+      |annotation class Fancy
+      |fun fn1() {
+      |    @Fancy
+      |    { println("this") }
+      |}
+      |""".stripMargin)
+
+    "contain an ANNOTATION node" in {
+      cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
+    }
+  }
+
+  "CPG for code with an annotation on an anonymous function" should {
+    val cpg = code("""
+      |package mypkg
+      |@Target(AnnotationTarget.EXPRESSION)
+      |@Retention(AnnotationRetention.SOURCE)
+      |annotation class Fancy
+      |fun fn1() {
+      |    @Fancy
+      |    fun() { println("this") }
+      |}
+      |""".stripMargin)
+
+    "contain an ANNOTATION node" in {
+      cpg.all.collectAll[Annotation].codeExact("@Fancy").size shouldBe 1
+    }
+  }
 }
