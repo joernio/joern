@@ -16,8 +16,16 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
 }
 import io.shiftleft.semanticcpg.language.*
 import overflowdb.traversal.jIteratortoTraversal
+import io.joern.kotlin2cpg.Config
+import io.joern.x2cpg.X2CpgConfig
 
-class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDefaultJars = true) {
+class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
+
+  override def getOverrideConfig(): Option[X2CpgConfig[?]] = {
+    val config = Config().withClasspath(getTestResourcesPaths())
+    Some(config)
+  }
+
   "CPG for code with a simple lambda which captures a method parameter" should {
     val cpg = code("fun f1(p: String) { 1.let { println(p) } }")
 

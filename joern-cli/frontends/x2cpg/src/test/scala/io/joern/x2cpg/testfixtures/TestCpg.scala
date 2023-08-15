@@ -40,6 +40,11 @@ abstract class TestCpg extends Cpg() with LanguageFrontend {
     this
   }
 
+  def withConfig(config: Option[X2CpgConfig[_]]): this.type = {
+    config.foreach(setConfig)
+    this
+  }
+
   private def checkGraphEmpty(): Unit = {
     if (_graph.isDefined) {
       throw new RuntimeException("Modifying test data is not allowed after accessing graph.")

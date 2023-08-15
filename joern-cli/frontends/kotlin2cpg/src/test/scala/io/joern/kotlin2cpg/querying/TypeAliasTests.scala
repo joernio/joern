@@ -1,10 +1,18 @@
 package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
+import io.joern.kotlin2cpg.Config
 import io.joern.x2cpg.Defines
 import io.shiftleft.semanticcpg.language._
+import io.joern.x2cpg.X2CpgConfig
 
-class TypeAliasTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDefaultJars = true) {
+class TypeAliasTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
+
+  override def getOverrideConfig(): Option[X2CpgConfig[?]] = {
+    val config = Config().withClasspath(getTestResourcesPaths())
+    Some(config)
+  }
+
   "CPG for code with simple typealias to Int" should {
     val cpg = code("""
         |package mypkg

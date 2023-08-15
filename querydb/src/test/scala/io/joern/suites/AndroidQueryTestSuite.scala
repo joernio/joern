@@ -7,9 +7,16 @@ import io.joern.util.QueryUtil
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.ConfigFile
 import io.shiftleft.semanticcpg.language._
+import io.joern.x2cpg.X2CpgConfig
+import io.joern.kotlin2cpg.Config
 
 class AndroidQueryTestSuite[QB <: QueryBundle](val queryBundle: QB)
-    extends KotlinCode2CpgFixture(withOssDataflow = true, withDefaultJars = true) {
+    extends KotlinCode2CpgFixture(withOssDataflow = true) {
+
+  override def getOverrideConfig(): Option[X2CpgConfig[_]] = {
+    val config = Config().withClasspath(getTestResourcesPaths())
+    Some(config)
+  }
 
   val argumentProvider = new QDBArgumentProvider(3)
 

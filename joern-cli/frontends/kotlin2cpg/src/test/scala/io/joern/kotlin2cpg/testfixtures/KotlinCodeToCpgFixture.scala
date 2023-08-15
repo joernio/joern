@@ -14,23 +14,22 @@ import io.shiftleft.utils.ProjectRoot
 import java.io.File
 
 trait KotlinFrontend extends LanguageFrontend {
-  protected val withTestResourcePaths: Boolean
 
   override val fileSuffix: String = ".kt"
 
   override def execute(sourceCodeFile: File): Cpg = {
-    val defaultContentRoot =
-      BFile(ProjectRoot.relativise("joern-cli/frontends/kotlin2cpg/src/test/resources/jars/"))
-    implicit val defaultConfig: Config =
-      Config(
-        classpath = if (withTestResourcePaths) Set(defaultContentRoot.path.toAbsolutePath.toString) else Set(),
-        includeJavaSourceFiles = true
+    implicit val defaultConfig: Config = getConfig()
+      .map(_.asInstanceOf[Config])
+      .getOrElse(
+        Config(
+          includeJavaSourceFiles = true
+        )
       )
     new Kotlin2Cpg().createCpg(sourceCodeFile.getAbsolutePath).get
   }
 }
 
-class KotlinTestCpg(override protected val withTestResourcePaths: Boolean) extends TestCpg with KotlinFrontend {
+class KotlinTestCpg() extends TestCpg with KotlinFrontend {
   private var _withOssDataflow = false
 
   def withOssDataflow(value: Boolean = true): this.type = {
@@ -49,10 +48,17 @@ class KotlinTestCpg(override protected val withTestResourcePaths: Boolean) exten
   }
 }
 
-class KotlinCode2CpgFixture(withOssDataflow: Boolean = false, withDefaultJars: Boolean = false)
-    extends Code2CpgFixture(() => new KotlinTestCpg(withDefaultJars).withOssDataflow(withOssDataflow)) {
+class KotlinCode2CpgFixture(withOssDataflow: Boolean = false)
+    extends Code2CpgFixture(() => new KotlinTestCpg().withOssDataflow(withOssDataflow)) {
 
   implicit val context: EngineContext = EngineContext()
 
   protected def flowToResultPairs(path: Path): List[(String, Option[Integer])] = path.resultPairs()
+
+  protected def getTestResourcesPaths(): Set[String] = {
+    val defaultContentRoot =
+      BFile(ProjectRoot.relativise("joern-cli/frontends/kotlin2cpg/src/test/resources/jars/"))
+
+    Set(defaultContentRoot.path.toAbsolutePath().toString)
+  }
 }

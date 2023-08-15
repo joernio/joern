@@ -3,8 +3,15 @@ package io.joern.kotlin2cpg.querying
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language._
+import io.joern.kotlin2cpg.Config
+import io.joern.x2cpg.X2CpgConfig
 
-class DefaultContentRootsTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDefaultJars = true) {
+class DefaultContentRootsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
+
+  override def getOverrideConfig(): Option[X2CpgConfig[?]] = {
+    val config = Config().withClasspath(getTestResourcesPaths())
+    Some(config)
+  }
 
   "CPG for code with a simple function declaration with parameters of stdlib types, but not fully specified" should {
     val cpg = code("""
