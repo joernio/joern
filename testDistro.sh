@@ -6,6 +6,7 @@ set -u # Treat unset variables as an error
 
 # Define log file path
 LOG_FILE="target/test_distro.log"
+mkdir -p target
 
 # Function to log messages with timestamp
 log() {
