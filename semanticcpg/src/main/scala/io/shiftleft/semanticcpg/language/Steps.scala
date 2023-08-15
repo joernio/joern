@@ -53,9 +53,9 @@ class Steps[A](val traversal: Traversal[A]) extends AnyVal {
 
   @Doc(info = "execute this traversal and show the pretty-printed results in `less`")
   // uses scala-repl-pp's `#|^` operator which let's `less` inherit stdin and stdout
-  def browse(implicit show: Show[A] = Show.default): Unit = {
+  def browse: Unit = {
     given Colors = Colors.Default
-    traversal.map(show.apply) #|^ "less"
+    traversal #|^ "less"
   }
 
   /** Execute traversal and convert the result to json. `toJson` (export) contains the exact same information as
