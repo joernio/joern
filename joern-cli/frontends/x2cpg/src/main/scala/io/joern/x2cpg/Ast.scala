@@ -178,11 +178,11 @@ case class Ast(
   }
 
   def withArgEdges(src: NewNode, dsts: Seq[NewNode], argIndexStart: Int): Ast = {
-    dsts.foreach(dst => Ast.neighbourValidation(src, dst, EdgeTypes.CONDITION))
     var index = argIndexStart
     this.copy(argEdges = argEdges ++ dsts.map { dst =>
       addArgumentIndex(dst, index)
       index += 1
+      Ast.neighbourValidation(src, dst, EdgeTypes.ARGUMENT)
       AstEdge(src, dst)
     })
   }
