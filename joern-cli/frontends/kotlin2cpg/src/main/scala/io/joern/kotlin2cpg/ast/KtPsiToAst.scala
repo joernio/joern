@@ -573,14 +573,18 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
     returnAst(returnNode(expr, expr.getText), children.toList)
   }
 
-  def astForIsExpression(expr: KtIsExpression, argIdx: Option[Int], argName: Option[String])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  def astForIsExpression(
+    expr: KtIsExpression,
+    argIdx: Option[Int],
+    argName: Option[String],
+    annotations: Seq[KtAnnotationEntry] = Seq()
+  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val args = astsForExpression(expr.getLeftHandSide, None) ++
       Seq(astForTypeReference(expr.getTypeReference, None, argName))
     val node = operatorCallNode(Operators.is, expr.getText, None, line(expr), column(expr))
     callAst(withArgumentName(withArgumentIndex(node, argIdx), argName), args.toList)
+      .withChildren(annotations.map(astForAnnotationEntry))
   }
 
   def astForBinaryExprWithTypeRHS(
@@ -604,26 +608,34 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
     Ast(withArgumentName(withArgumentIndex(node, argIdx), argName))
   }
 
-  def astForSuperExpression(expr: KtSuperExpression, argIdx: Option[Int], argName: Option[String])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  def astForSuperExpression(
+    expr: KtSuperExpression,
+    argIdx: Option[Int],
+    argName: Option[String],
+    annotations: Seq[KtAnnotationEntry] = Seq()
+  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val node = withArgumentName(
       withArgumentIndex(identifierNode(expr, expr.getText, expr.getText, typeFullName), argIdx),
       argName
     )
     astWithRefEdgeMaybe(expr.getText, node)
+      .withChildren(annotations.map(astForAnnotationEntry))
   }
 
-  def astForThisExpression(expr: KtThisExpression, argIdx: Option[Int], argName: Option[String])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  def astForThisExpression(
+    expr: KtThisExpression,
+    argIdx: Option[Int],
+    argName: Option[String],
+    annotations: Seq[KtAnnotationEntry] = Seq()
+  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val node = withArgumentName(
       withArgumentIndex(identifierNode(expr, expr.getText, expr.getText, typeFullName), argIdx),
       argName
     )
     astWithRefEdgeMaybe(expr.getText, node)
+      .withChildren(annotations.map(astForAnnotationEntry))
   }
 
   def astForClassLiteral(
@@ -647,9 +659,12 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
       .withChildren(annotations.map(astForAnnotationEntry))
   }
 
-  def astForAnonymousFunction(fn: KtNamedFunction, argIdxMaybe: Option[Int], argNameMaybe: Option[String])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  def astForAnonymousFunction(
+    fn: KtNamedFunction,
+    argIdxMaybe: Option[Int],
+    argNameMaybe: Option[String],
+    annotations: Seq[KtAnnotationEntry] = Seq()
+  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val (fullName, signature) = typeInfoProvider.fullNameWithSignatureAsLambda(fn, lambdaKeyPool)
     val lambdaMethodNode      = methodNode(fn, Constants.lambdaName, fullName, signature, relativizedPath)
 
@@ -731,11 +746,15 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
     lambdaBindingInfoQueue.prepend(bindingInfo)
     lambdaAstQueue.prepend(lambdaMethodAst)
     Ast(_methodRefNode)
+      .withChildren(annotations.map(astForAnnotationEntry))
   }
 
-  def astForLambda(expr: KtLambdaExpression, argIdxMaybe: Option[Int], argNameMaybe: Option[String])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  def astForLambda(
+    expr: KtLambdaExpression,
+    argIdxMaybe: Option[Int],
+    argNameMaybe: Option[String],
+    annotations: Seq[KtAnnotationEntry] = Seq()
+  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val (fullName, signature) = typeInfoProvider.fullNameWithSignature(expr, lambdaKeyPool)
     val lambdaMethodNode      = methodNode(expr, Constants.lambdaName, fullName, signature, relativizedPath)
 
@@ -848,11 +867,15 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
     lambdaBindingInfoQueue.prepend(bindingInfo)
     lambdaAstQueue.prepend(lambdaMethodAst)
     Ast(_methodRefNode)
+      .withChildren(annotations.map(astForAnnotationEntry))
   }
 
-  def astForArrayAccess(expression: KtArrayAccessExpression, argIdx: Option[Int], argName: Option[String])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  def astForArrayAccess(
+    expression: KtArrayAccessExpression,
+    argIdx: Option[Int],
+    argName: Option[String],
+    annotations: Seq[KtAnnotationEntry] = Seq()
+  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val arrayExpr     = expression.getArrayExpression
     val typeFullName  = registerType(typeInfoProvider.expressionType(expression, TypeConstants.any))
     val identifier    = identifierNode(arrayExpr, arrayExpr.getText, arrayExpr.getText, typeFullName)
@@ -869,11 +892,15 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
         column(expression)
       )
     callAst(withArgumentName(withArgumentIndex(callNode, argIdx), argName), List(identifierAst) ++ astsForIndexExpr)
+      .withChildren(annotations.map(astForAnnotationEntry))
   }
 
-  def astForPostfixExpression(expr: KtPostfixExpression, argIdx: Option[Int], argName: Option[String])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  def astForPostfixExpression(
+    expr: KtPostfixExpression,
+    argIdx: Option[Int],
+    argName: Option[String],
+    annotations: Seq[KtAnnotationEntry] = Seq()
+  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val operatorType = ktTokenToOperator(forPostfixExpr = true).applyOrElse(
       KtPsiUtil.getOperationToken(expr),
       { (token: KtToken) =>
@@ -886,11 +913,15 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
       .filterNot(_.root == null)
     val node = operatorCallNode(operatorType, expr.getText, Option(typeFullName), line(expr), column(expr))
     callAst(withArgumentName(withArgumentIndex(node, argIdx), argName), args)
+      .withChildren(annotations.map(astForAnnotationEntry))
   }
 
-  def astForPrefixExpression(expr: KtPrefixExpression, argIdx: Option[Int], argName: Option[String])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  def astForPrefixExpression(
+    expr: KtPrefixExpression,
+    argIdx: Option[Int],
+    argName: Option[String],
+    annotations: Seq[KtAnnotationEntry] = Seq()
+  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val operatorType = ktTokenToOperator(forPostfixExpr = false).applyOrElse(
       KtPsiUtil.getOperationToken(expr),
       { (token: KtToken) =>
@@ -903,6 +934,7 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
       .filterNot(_.root == null)
     val node = operatorCallNode(operatorType, expr.getText, Option(typeFullName), line(expr), column(expr))
     callAst(withArgumentName(withArgumentIndex(node, argIdx), argName), args)
+      .withChildren(annotations.map(astForAnnotationEntry))
   }
 
   private def astsForDestructuringDeclarationWithRHS(
@@ -1092,34 +1124,46 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
     else astsForDestructuringDeclarationWithVarRHS(expr)
   }
 
-  def astForUnknown(expr: KtExpression, argIdx: Option[Int], argNameMaybe: Option[String]): Ast = {
+  def astForUnknown(
+    expr: KtExpression,
+    argIdx: Option[Int],
+    argNameMaybe: Option[String],
+    annotations: Seq[KtAnnotationEntry] = Seq()
+  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val node = unknownNode(expr, Option(expr).map(_.getText).getOrElse(Constants.codePropUndefinedValue))
     Ast(withArgumentIndex(node, argIdx).argumentName(argNameMaybe))
+      .withChildren(annotations.map(astForAnnotationEntry))
   }
 
-  def astForStringTemplate(expr: KtStringTemplateExpression, argIdx: Option[Int], argName: Option[String])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  def astForStringTemplate(
+    expr: KtStringTemplateExpression,
+    argIdx: Option[Int],
+    argName: Option[String],
+    annotations: Seq[KtAnnotationEntry] = Seq()
+  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
-    if (expr.hasInterpolation) {
-      val args = expr.getEntries.filter(_.getExpression != null).zipWithIndex.map { case (entry, idx) =>
-        val entryTypeFullName = registerType(typeInfoProvider.expressionType(entry.getExpression, TypeConstants.any))
-        val valueCallNode = operatorCallNode(
-          Operators.formattedValue,
-          entry.getExpression.getText,
-          Option(entryTypeFullName),
-          line(entry.getExpression),
-          column(entry.getExpression)
-        )
-        val valueArgs = astsForExpression(entry.getExpression, Some(idx + 1))
-        callAst(valueCallNode, valueArgs.toList)
+    val outAst =
+      if (expr.hasInterpolation) {
+        val args = expr.getEntries.filter(_.getExpression != null).zipWithIndex.map { case (entry, idx) =>
+          val entryTypeFullName = registerType(typeInfoProvider.expressionType(entry.getExpression, TypeConstants.any))
+          val valueCallNode = operatorCallNode(
+            Operators.formattedValue,
+            entry.getExpression.getText,
+            Option(entryTypeFullName),
+            line(entry.getExpression),
+            column(entry.getExpression)
+          )
+          val valueArgs = astsForExpression(entry.getExpression, Some(idx + 1))
+          callAst(valueCallNode, valueArgs.toList)
+        }
+        val node =
+          operatorCallNode(Operators.formatString, expr.getText, Option(typeFullName), line(expr), column(expr))
+        callAst(withArgumentName(withArgumentIndex(node, argIdx), argName), args.toIndexedSeq.toList)
+      } else {
+        val node = literalNode(expr, expr.getText, typeFullName)
+        Ast(withArgumentName(withArgumentIndex(node, argIdx), argName))
       }
-      val node = operatorCallNode(Operators.formatString, expr.getText, Option(typeFullName), line(expr), column(expr))
-      callAst(withArgumentName(withArgumentIndex(node, argIdx), argName), args.toIndexedSeq.toList)
-    } else {
-      val node = literalNode(expr, expr.getText, typeFullName)
-      Ast(withArgumentName(withArgumentIndex(node, argIdx), argName))
-    }
+    outAst.withChildren(annotations.map(astForAnnotationEntry))
   }
 
   private def astForQualifiedExpressionFieldAccess(
@@ -1441,9 +1485,12 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
     controlStructureAst(node, None, tryAstOption :: (clauseAsts ++ finallyAsts).toList)
   }
 
-  private def astForTryAsExpression(expr: KtTryExpression, argIdx: Option[Int], argNameMaybe: Option[String])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  private def astForTryAsExpression(
+    expr: KtTryExpression,
+    argIdx: Option[Int],
+    argNameMaybe: Option[String],
+    annotations: Seq[KtAnnotationEntry] = Seq()
+  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val typeFullName = registerType(
       // TODO: remove the `last`
       typeInfoProvider.expressionType(expr.getTryBlock.getStatements.asScala.last, TypeConstants.any)
@@ -1457,17 +1504,23 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
         .argumentName(argNameMaybe)
 
     callAst(withArgumentIndex(node, argIdx), List(tryBlockAst) ++ clauseAsts)
+      .withChildren(annotations.map(astForAnnotationEntry))
   }
 
   // TODO: handle parameters passed to the clauses
-  def astForTry(expr: KtTryExpression, argIdx: Option[Int], argNameMaybe: Option[String])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  def astForTry(
+    expr: KtTryExpression,
+    argIdx: Option[Int],
+    argNameMaybe: Option[String],
+    annotations: Seq[KtAnnotationEntry] = Seq()
+  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     if (KtPsiUtil.isStatement(expr)) astForTryAsStatement(expr)
-    else astForTryAsExpression(expr, argIdx, argNameMaybe)
+    else astForTryAsExpression(expr, argIdx, argNameMaybe, annotations)
   }
 
-  def astForWhile(expr: KtWhileExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  def astForWhile(expr: KtWhileExpression, annotations: Seq[KtAnnotationEntry] = Seq())(implicit
+    typeInfoProvider: TypeInfoProvider
+  ): Ast = {
     val conditionAst = astsForExpression(expr.getCondition, None).headOption
     val stmtAsts     = astsForExpression(expr.getBody, None)
     val code         = Option(expr.getText)
@@ -1475,9 +1528,12 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
     val columnNumber = column(expr)
 
     whileAst(conditionAst, stmtAsts, code, lineNumber, columnNumber)
+      .withChildren(annotations.map(astForAnnotationEntry))
   }
 
-  def astForDoWhile(expr: KtDoWhileExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  def astForDoWhile(expr: KtDoWhileExpression, annotations: Seq[KtAnnotationEntry] = Seq())(implicit
+    typeInfoProvider: TypeInfoProvider
+  ): Ast = {
     val conditionAst = astsForExpression(expr.getCondition, None).headOption
     val stmtAsts     = astsForExpression(expr.getBody, None)
     val code         = Option(expr.getText)
@@ -1485,6 +1541,7 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
     val columnNumber = column(expr)
 
     doWhileAst(conditionAst, stmtAsts, code, lineNumber, columnNumber)
+      .withChildren(annotations.map(astForAnnotationEntry))
   }
 
   // e.g. lowering:
@@ -1709,9 +1766,13 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
     )
   }
 
-  def astForFor(expr: KtForExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    if (expr.getDestructuringDeclaration != null) astForForWithDestructuringLHS(expr)
-    else astForForWithSimpleVarLHS(expr)
+  def astForFor(expr: KtForExpression, annotations: Seq[KtAnnotationEntry] = Seq())(implicit
+    typeInfoProvider: TypeInfoProvider
+  ): Ast = {
+    val outAst =
+      if (expr.getDestructuringDeclaration != null) astForForWithDestructuringLHS(expr)
+      else astForForWithSimpleVarLHS(expr)
+    outAst.withChildren(annotations.map(astForAnnotationEntry))
   }
 
   def astForWhenAsStatement(expr: KtWhenExpression, argIdx: Option[Int])(implicit
@@ -1771,13 +1832,18 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
     callAst(callNode, List(subjectBlockAst) ++ argAsts)
   }
 
-  def astForWhen(expr: KtWhenExpression, argIdx: Option[Int], argNameMaybe: Option[String])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
-    typeInfoProvider.usedAsExpression(expr) match {
-      case Some(true) => astForWhenAsExpression(expr, argIdx, argNameMaybe)
-      case _          => astForWhenAsStatement(expr, argIdx)
-    }
+  def astForWhen(
+    expr: KtWhenExpression,
+    argIdx: Option[Int],
+    argNameMaybe: Option[String],
+    annotations: Seq[KtAnnotationEntry] = Seq()
+  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+    val outAst =
+      typeInfoProvider.usedAsExpression(expr) match {
+        case Some(true) => astForWhenAsExpression(expr, argIdx, argNameMaybe)
+        case _          => astForWhenAsStatement(expr, argIdx)
+      }
+    outAst.withChildren(annotations.map(astForAnnotationEntry))
   }
 
   private def astsForWhenEntry(entry: KtWhenEntry, argIdx: Int)(implicit
@@ -1800,17 +1866,20 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
     annotations: Seq[KtAnnotationEntry] = Seq()
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val isChildOfControlStructureBody = expr.getParent.isInstanceOf[KtContainerNodeForControlStructureBody]
-    if (KtPsiUtil.isStatement(expr) && !isChildOfControlStructureBody) astForIfAsControlStructure(expr)
+    if (KtPsiUtil.isStatement(expr) && !isChildOfControlStructureBody) astForIfAsControlStructure(expr, annotations)
     else astForIfAsExpression(expr, argIdx, argNameMaybe, annotations)
   }
 
-  def astForIfAsControlStructure(expr: KtIfExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+  def astForIfAsControlStructure(expr: KtIfExpression, annotations: Seq[KtAnnotationEntry] = Seq())(implicit
+    typeInfoProvider: TypeInfoProvider
+  ): Ast = {
     val conditionAst = astsForExpression(expr.getCondition, None).headOption
     val thenAsts     = astsForExpression(expr.getThen, None)
     val elseAsts     = astsForExpression(expr.getElse, None)
 
     val node = controlStructureNode(expr, ControlStructureTypes.IF, expr.getText)
     controlStructureAst(node, conditionAst, List(thenAsts ++ elseAsts).flatten)
+      .withChildren(annotations.map(astForAnnotationEntry))
   }
 
   def astForIfAsExpression(
@@ -1955,7 +2024,9 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
       .withChildren(annotations.map(astForAnnotationEntry))
   }
 
-  def astsForProperty(expr: KtProperty)(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
+  def astsForProperty(expr: KtProperty, annotations: Seq[KtAnnotationEntry] = Seq())(implicit
+    typeInfoProvider: TypeInfoProvider
+  ): Seq[Ast] = {
     val explicitTypeName = Option(expr.getTypeReference).map(_.getText).getOrElse(TypeConstants.any)
     val elem             = expr.getIdentifyingElement
 
@@ -2016,7 +2087,9 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
         astsForExpression(arg.getArgumentExpression, Option(idx), argNameOpt)
       }.flatten
 
-      val initAst = callAst(initCallNode, argAsts, Option(initReceiverAst))
+      val initAst =
+        callAst(initCallNode, argAsts, Option(initReceiverAst))
+          .withChildren(annotations.map(astForAnnotationEntry))
       Seq(localAst, assignmentCallAst, initAst)
     } else if (hasRHSObjectLiteral) {
       val typedExpr = expr.getDelegateExpressionOrInitializer.asInstanceOf[KtObjectLiteralExpression]
@@ -2059,9 +2132,10 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
       val initReceiverNode = identifierNode(expr, identifier.name, identifier.name, identifier.typeFullName)
       val initReceiverAst  = Ast(initReceiverNode).withRefEdge(initReceiverNode, node)
 
-      val initAst = callAst(initCallNode, Seq(), Option(initReceiverAst))
+      val initAst =
+        callAst(initCallNode, Seq(), Option(initReceiverAst))
+          .withChildren(annotations.map(astForAnnotationEntry))
       Seq(typeDeclAst, localAst, assignmentCallAst, initAst)
-
     } else {
       val typeFullName = registerType(typeInfoProvider.propertyType(expr, explicitTypeName))
       val node         = localNode(expr, expr.getName, expr.getName, typeFullName)
@@ -2072,27 +2146,30 @@ trait KtPsiToAst(implicit withSchemaValidation: ValidationMode) {
       val identifier     = identifierNode(elem, elem.getText, elem.getText, typeFullName)
       val identifierAst  = astWithRefEdgeMaybe(identifier.name, identifier)
       val assignmentNode = operatorCallNode(Operators.assignment, expr.getText, None, line(expr), column(expr))
-      val call           = callAst(assignmentNode, List(identifierAst) ++ rhsAsts)
-
+      val call =
+        callAst(assignmentNode, List(identifierAst) ++ rhsAsts)
+          .withChildren(annotations.map(astForAnnotationEntry))
       Seq(localAst, call)
     }
   }
 
-  def astForNameReference(expr: KtNameReferenceExpression, argIdx: Option[Int], argName: Option[String])(implicit
-    typeInfoProvider: TypeInfoProvider
-  ): Ast = {
+  def astForNameReference(
+    expr: KtNameReferenceExpression,
+    argIdx: Option[Int],
+    argName: Option[String],
+    annotations: Seq[KtAnnotationEntry] = Seq()
+  )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val isReferencingMember =
       scope.lookupVariable(expr.getIdentifier.getText) match {
         case Some(_: NewMember) => true
         case _                  => false
       }
 
-    if (typeInfoProvider.isReferenceToClass(expr)) astForNameReferenceToType(expr, argIdx)
-    else if (isReferencingMember) {
-      astForNameReferenceToMember(expr, argIdx)
-    } else {
-      astForNonSpecialNameReference(expr, argIdx, argName)
-    }
+    val outAst =
+      if (typeInfoProvider.isReferenceToClass(expr)) astForNameReferenceToType(expr, argIdx)
+      else if (isReferencingMember) astForNameReferenceToMember(expr, argIdx)
+      else astForNonSpecialNameReference(expr, argIdx, argName)
+    outAst.withChildren(annotations.map(astForAnnotationEntry))
   }
 
   private def astForNameReferenceToType(expr: KtNameReferenceExpression, argIdx: Option[Int])(implicit
