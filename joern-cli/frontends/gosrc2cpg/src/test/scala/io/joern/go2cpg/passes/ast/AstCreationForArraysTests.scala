@@ -59,6 +59,31 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
       identifierNode.code shouldBe "a"
     }
 
+    "be correct when a dynamic length array is initialized" in {
+      val cpg = code("""
+          |package main
+          |func main() {
+          |	a := [...]int{1,2}
+          |}
+          |""".stripMargin)
+
+      val List(assignmentCallNode, arrayInitializerCallNode) = cpg.call.l
+      assignmentCallNode.name shouldBe Operators.assignment
+      assignmentCallNode.code shouldBe "a := [...]int{1,2}"
+
+      arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
+      arrayInitializerCallNode.code shouldBe "[...]int{1,2}"
+
+      cpg.literal.size shouldBe 2
+      val List(literal1, literal2) = cpg.literal.l
+      literal1.code shouldBe "1"
+      literal2.code shouldBe "2"
+
+      cpg.identifier.size shouldBe 1
+      val List(identifierNode) = cpg.identifier.l
+      identifierNode.code shouldBe "a"
+    }
+
     "be correct when an empty array is initialized" in {
       val cpg = code("""
           |package main
