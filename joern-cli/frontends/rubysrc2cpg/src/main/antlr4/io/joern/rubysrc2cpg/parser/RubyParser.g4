@@ -611,7 +611,7 @@ stringExpression
 
 quotedStringExpression
     :   QUOTED_NON_EXPANDED_STRING_LITERAL_START 
-        NON_EXPANDED_LITERAL_CHARACTER* 
+        NON_EXPANDED_LITERAL_CHARACTER_SEQUENCE? 
         QUOTED_NON_EXPANDED_STRING_LITERAL_END                                                                      # nonExpandedQuotedStringLiteral
     |   QUOTED_EXPANDED_STRING_LITERAL_START
         (EXPANDED_LITERAL_CHARACTER | delimitedStringInterpolation)*

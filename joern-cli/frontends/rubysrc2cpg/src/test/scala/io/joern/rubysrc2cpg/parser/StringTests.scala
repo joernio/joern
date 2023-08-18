@@ -191,9 +191,7 @@ class StringTests extends RubyParserAbstractTest {
           """QuotedStringExpressionPrimary
             | NonExpandedQuotedStringLiteral
             |  %q(
-            |  f
-            |  o
-            |  o
+            |  foo
             |  )""".stripMargin
       }
 
@@ -203,8 +201,7 @@ class StringTests extends RubyParserAbstractTest {
           """QuotedStringExpressionPrimary
             | NonExpandedQuotedStringLiteral
             |  %q(
-            |  (
-            |  )
+            |   () 
             |  )""".stripMargin
       }
 
@@ -214,9 +211,7 @@ class StringTests extends RubyParserAbstractTest {
           """QuotedStringExpressionPrimary
             | NonExpandedQuotedStringLiteral
             |  %q(
-            |  (
-            |  \)
-            |  )
+            |   (\)) 
             |  )""".stripMargin
       }
 
@@ -226,9 +221,7 @@ class StringTests extends RubyParserAbstractTest {
           """QuotedStringExpressionPrimary
             | NonExpandedQuotedStringLiteral
             |  %q<
-            |  <
-            |  \>
-            |  >
+            |   <\>> 
             |  >""".stripMargin
       }
     }
