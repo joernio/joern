@@ -23,6 +23,7 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
 
       arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
       arrayInitializerCallNode.code shouldBe "[5]int{1,2}"
+      arrayInitializerCallNode.typeFullName shouldBe "int[]"
 
       cpg.method("main").ast.isLiteral.l.size shouldBe 2
       val List(literal1, literal2) = cpg.method("main").ast.isLiteral.l
@@ -50,6 +51,7 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
 
       arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
       arrayInitializerCallNode.code shouldBe "[5]string{\"hello\",\"world\"}"
+      arrayInitializerCallNode.typeFullName shouldBe "string[]"
 
       cpg.method("main").ast.isLiteral.l.size shouldBe 2
       val List(literal1, literal2) = cpg.method("main").ast.isLiteral.l
@@ -77,6 +79,7 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
 
       arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
       arrayInitializerCallNode.code shouldBe "[...]int{1,2}"
+      arrayInitializerCallNode.typeFullName shouldBe "int[]"
 
       cpg.method("main").ast.isLiteral.l.size shouldBe 2
       val List(literal1, literal2) = cpg.method("main").ast.isLiteral.l
@@ -105,6 +108,7 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
       arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
       arrayInitializerCallNode.code shouldBe "[2]string{}"
       arrayInitializerCallNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      arrayInitializerCallNode.typeFullName shouldBe "string[]"
 
       cpg.method("main").ast.isLiteral.l.size shouldBe 0
 
@@ -132,6 +136,8 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
       arrayInitializerNode.code shouldBe "[2]int"
       arrayInitializerNode.lineNumber shouldBe Some(4)
       arrayInitializerNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      arrayInitializerNode.typeFullName shouldBe "int[]"
+
     }
   }
 }
