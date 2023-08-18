@@ -49,14 +49,16 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)(im
       .fullName(s"$relPathFileName:${fullyQualifiedPackage.get()}")
       .filename(relPathFileName)
     methodAstParentStack.push(namespaceBlock)
-    Ast(namespaceBlock).withChild(
+    val rootAst = Ast(namespaceBlock).withChild(
       astInFakeMethod(
         fullyQualifiedPackage.get() + "." + NamespaceTraversal.globalNamespaceName,
-        namespaceBlock.fullName,
+        namespaceBlock.fullName + "." + NamespaceTraversal.globalNamespaceName,
         relPathFileName,
         rootNode
       )
     )
+    methodAstParentStack.pop()
+    rootAst
   }
 
   /** Creates an AST of all declarations found in the translation unit - wrapped in a fake method.
@@ -74,9 +76,13 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)(im
 
     val methodReturn = methodReturnNode(rootNode, Defines.anyTypeName)
     val declsAsts    = rootNode.json(ParserKeys.Decls).arr.flatMap(item => astForNode(item)).toList
-    Ast(fakeGlobalTypeDecl).withChild(
+    val ast = Ast(fakeGlobalTypeDecl).withChild(
       methodAst(fakeGlobalMethod, Seq.empty, blockAst(blockNode_, declsAsts), methodReturn)
     )
+    methodAstParentStack.pop()
+    methodAstParentStack.pop()
+    scope.popScope()
+    ast
   }
 
   protected def astForNode(nodeInfo: ParserNodeInfo): Seq[Ast] = {

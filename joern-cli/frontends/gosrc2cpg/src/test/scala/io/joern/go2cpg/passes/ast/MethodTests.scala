@@ -1,6 +1,7 @@
 package io.joern.go2cpg.passes.ast
 
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
+import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.semanticcpg.language.*
 
 import java.io.File
@@ -15,17 +16,18 @@ class MethodTests extends GoCodeToCpgSuite {
         |""".stripMargin)
 
     "should contain exactly one method node with correct fields" in {
-      inside(cpg.method.name("foo").l) { case List(x) =>
-        x.name shouldBe "foo"
-        x.fullName shouldBe "main.foo"
-        x.code should startWith("func foo() {")
-        x.signature shouldBe "main.foo ()"
-        x.isExternal shouldBe false
-        x.order shouldBe 1
-        x.filename shouldBe "Test0.go"
-        x.lineNumber shouldBe Option(3)
-        x.lineNumberEnd shouldBe Option(4)
-      }
+      val List(x) = cpg.method.name("foo").l
+      x.name shouldBe "foo"
+      x.fullName shouldBe "main.foo"
+      x.code should startWith("func foo() {")
+      x.signature shouldBe "main.foo ()"
+      x.isExternal shouldBe false
+      x.astParentType shouldBe NodeTypes.TYPE_DECL
+      x.astParentFullName shouldBe "Test0.go:main.<global>"
+      x.order shouldBe 1
+      x.filename shouldBe "Test0.go"
+      x.lineNumber shouldBe Option(3)
+      x.lineNumberEnd shouldBe Option(4)
     }
   }
 
@@ -37,17 +39,18 @@ class MethodTests extends GoCodeToCpgSuite {
                      |""".stripMargin)
 
     "should contain exactly one method node with correct fields" in {
-      inside(cpg.method.name("foo").l) { case List(x) =>
-        x.name shouldBe "foo"
-        x.fullName shouldBe "main.foo"
-        x.code should startWith("func foo(argc int, argv string)")
-        x.signature shouldBe "main.foo (int, string)"
-        x.isExternal shouldBe false
-        x.order shouldBe 1
-        x.filename shouldBe "Test0.go"
-        x.lineNumber shouldBe Option(3)
-        x.lineNumberEnd shouldBe Option(4)
-      }
+      val List(x) = cpg.method.name("foo").l
+      x.name shouldBe "foo"
+      x.fullName shouldBe "main.foo"
+      x.code should startWith("func foo(argc int, argv string)")
+      x.signature shouldBe "main.foo (int, string)"
+      x.isExternal shouldBe false
+      x.astParentType shouldBe NodeTypes.TYPE_DECL
+      x.astParentFullName shouldBe "Test0.go:main.<global>"
+      x.order shouldBe 1
+      x.filename shouldBe "Test0.go"
+      x.lineNumber shouldBe Option(3)
+      x.lineNumberEnd shouldBe Option(4)
     }
   }
 
@@ -59,17 +62,18 @@ class MethodTests extends GoCodeToCpgSuite {
         |""".stripMargin)
 
     "should contain exactly one method node with correct fields" in {
-      inside(cpg.method.name("foo").l) { case List(x) =>
-        x.name shouldBe "foo"
-        x.fullName shouldBe "main.foo"
-        x.code should startWith("func foo(argc, arga int, argv string)")
-        x.signature shouldBe "main.foo (int, int, string)"
-        x.isExternal shouldBe false
-        x.order shouldBe 1
-        x.filename shouldBe "Test0.go"
-        x.lineNumber shouldBe Option(3)
-        x.lineNumberEnd shouldBe Option(4)
-      }
+      val List(x) = cpg.method.name("foo").l
+      x.name shouldBe "foo"
+      x.fullName shouldBe "main.foo"
+      x.code should startWith("func foo(argc, arga int, argv string)")
+      x.signature shouldBe "main.foo (int, int, string)"
+      x.isExternal shouldBe false
+      x.astParentType shouldBe NodeTypes.TYPE_DECL
+      x.astParentFullName shouldBe "Test0.go:main.<global>"
+      x.order shouldBe 1
+      x.filename shouldBe "Test0.go"
+      x.lineNumber shouldBe Option(3)
+      x.lineNumberEnd shouldBe Option(4)
     }
   }
 
@@ -81,17 +85,18 @@ class MethodTests extends GoCodeToCpgSuite {
         |""".stripMargin)
 
     "should contain exactly one method node with correct fields" in {
-      inside(cpg.method.name("foo").l) { case List(x) =>
-        x.name shouldBe "foo"
-        x.fullName shouldBe "main.foo"
-        x.code should startWith("func foo(argc, arga int, argv ...string)")
-        x.signature shouldBe "main.foo (int, int, ...string)"
-        x.isExternal shouldBe false
-        x.order shouldBe 1
-        x.filename shouldBe "Test0.go"
-        x.lineNumber shouldBe Option(3)
-        x.lineNumberEnd shouldBe Option(4)
-      }
+      val List(x) = cpg.method.name("foo").l
+      x.name shouldBe "foo"
+      x.fullName shouldBe "main.foo"
+      x.code should startWith("func foo(argc, arga int, argv ...string)")
+      x.signature shouldBe "main.foo (int, int, ...string)"
+      x.isExternal shouldBe false
+      x.astParentType shouldBe NodeTypes.TYPE_DECL
+      x.astParentFullName shouldBe "Test0.go:main.<global>"
+      x.order shouldBe 1
+      x.filename shouldBe "Test0.go"
+      x.lineNumber shouldBe Option(3)
+      x.lineNumberEnd shouldBe Option(4)
     }
   }
 
@@ -121,18 +126,18 @@ class MethodTests extends GoCodeToCpgSuite {
     )
 
     "should contain exactly one method node with correct fields" in {
-      inside(cpg.method.name("foo").l) { case List(x) =>
-        x.name shouldBe "foo"
-        x.fullName shouldBe "main.foo"
-        x.code should startWith("func foo(argc int, argv fpkg.Sample)")
-        x.signature shouldBe "main.foo (int, fpkg.Sample)"
-        x.isExternal shouldBe false
-        x.order shouldBe 2
-        x.filename shouldBe "main.go"
-        x.lineNumber shouldBe Option(4)
-        x.lineNumberEnd shouldBe Option(5)
-      }
+      val List(x) = cpg.method.name("foo").l
+      x.name shouldBe "foo"
+      x.fullName shouldBe "main.foo"
+      x.code should startWith("func foo(argc int, argv fpkg.Sample)")
+      x.signature shouldBe "main.foo (int, fpkg.Sample)"
+      x.isExternal shouldBe false
+      x.astParentType shouldBe NodeTypes.TYPE_DECL
+      x.astParentFullName shouldBe "main.go:main.<global>"
+      x.order shouldBe 2
+      x.filename shouldBe "main.go"
+      x.lineNumber shouldBe Option(4)
+      x.lineNumberEnd shouldBe Option(5)
     }
   }
-
 }

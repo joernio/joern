@@ -2,16 +2,40 @@ package io.joern.gosrc2cpg.astcreation
 
 import io.joern.gosrc2cpg.parser.ParserAst.{BlockStmt, Ellipsis, Ident, SelectorExpr}
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
-import io.joern.x2cpg.{Ast, ValidationMode}
-import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.joern.x2cpg.datastructures.Stack.*
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethodParameterIn
+import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
+import io.joern.x2cpg.utils.StringUtils
+import io.joern.x2cpg.{Ast, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import ujson.Value
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+  private def createFunctionTypeAndTypeDecl(
+    node: ParserNodeInfo,
+    method: NewMethod,
+    methodName: String,
+    methodFullName: String,
+    signature: String
+  ): Ast = {
+
+    val parentNode: NewTypeDecl = methodAstParentStack.collectFirst { case t: NewTypeDecl => t }.getOrElse {
+      // TODO: Need to add respective Unit test to test this possibility, as looks to me as dead code. Replicated it from 'c2cpg' by referring AstForFunctionsCreator.
+      val astParentType     = methodAstParentStack.head.label
+      val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
+      val typeDeclNode_ =
+        typeDeclNode(node, methodName, methodFullName, method.filename, methodName, astParentType, astParentFullName)
+      Ast.storeInDiffGraph(Ast(typeDeclNode_), diffGraph)
+      typeDeclNode_
+    }
+
+    method.astParentFullName = parentNode.fullName
+    method.astParentType = parentNode.label
+    val functionBinding = NewBinding().name(methodName).methodFullName(methodFullName).signature(signature)
+    Ast(functionBinding).withBindsEdge(parentNode, functionBinding).withRefEdge(functionBinding, method)
+  }
   def astForFuncDecl(funcDecl: ParserNodeInfo): Seq[Ast] = {
 
     val filename = relPathFileName
@@ -35,8 +59,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     )
     scope.popScope()
     methodAstParentStack.pop()
-    // TODO register type above
-    Seq(astForMethod)
+    val typeDeclAst = createFunctionTypeAndTypeDecl(funcDecl, methodNode_, name, fullname, signature)
+    Seq(astForMethod.merge(typeDeclAst))
   }
 
   private def astForMethodParameter(paramType: ParserNodeInfo): Seq[Ast] = {
