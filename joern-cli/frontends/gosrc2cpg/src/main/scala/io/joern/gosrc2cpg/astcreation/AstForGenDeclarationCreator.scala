@@ -47,6 +47,13 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
       .flatMap { valueSpec =>
         valueSpec.node match {
           case ValueSpec =>
+            val typeInfoNode = createParserNodeInfo(valueSpec.json(ParserKeys.Type))
+            val arrayInitializerNode: Ast = typeInfoNode.node match
+              case ArrayType =>
+                astForEmptyArrayInitializer(typeInfoNode)
+              case _ =>
+                Ast()
+
             val localNodes = valueSpec.json(ParserKeys.Names).arr.map { parserNode =>
               val localParserNode = createParserNodeInfo(parserNode)
 
@@ -72,10 +79,11 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
                     val arguments = astForNode(lhsParserNode.json) ++: astForNode(rhsParserNode.json)
                     callAst(cNode, arguments)
                   }
-              localNodes.toList ::: callNodes
+              localNodes.toList ::: callNodes ++ Seq(arrayInitializerNode)
             } else
-              localNodes.toList
-          case _ => Seq()
+              localNodes.toList ++ Seq(arrayInitializerNode)
+          case _ =>
+            Seq()
         }
       }
       .toList
