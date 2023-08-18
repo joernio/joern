@@ -5,10 +5,12 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import java.util.stream.Collectors
 
+// TODO: Should share the same lexer/token stream/parser as the frontend itself.
+//  See `io.joern.rubysrc2cpg.astcreation.AntlrParser`
 abstract class RubyParserAbstractTest extends AnyWordSpec with Matchers {
 
   def rubyStream(code: String): CommonTokenStream =
-    new CommonTokenStream(new RubyLexer(CharStreams.fromString(code)))
+    new CommonTokenStream(RubyLexerPostProcessor(new RubyLexer(CharStreams.fromString(code))))
 
   def rubyParser(code: String): RubyParser =
     new RubyParser(rubyStream(code))

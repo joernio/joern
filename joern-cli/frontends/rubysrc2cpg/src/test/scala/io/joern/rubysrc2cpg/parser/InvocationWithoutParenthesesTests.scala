@@ -174,7 +174,7 @@ class InvocationWithoutParenthesesTests extends RubyParserAbstractTest {
           |              VariableIdentifier
           |               bar
           |           :
-          | <EOF>""".stripMargin
+          | EOF""".stripMargin
     }
   }
 
