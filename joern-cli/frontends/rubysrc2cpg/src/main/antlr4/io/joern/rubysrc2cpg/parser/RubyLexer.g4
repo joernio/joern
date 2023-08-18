@@ -20,7 +20,8 @@ tokens {
     DELIMITED_ARRAY_ITEM_INTERPOLATION_END,
     
     // The following tokens are created by `RubyLexerPostProcessor` only.
-    NON_EXPANDED_LITERAL_CHARACTER_SEQUENCE
+    NON_EXPANDED_LITERAL_CHARACTER_SEQUENCE,
+    EXPANDED_LITERAL_CHARACTER_SEQUENCE
 }
 
 options {

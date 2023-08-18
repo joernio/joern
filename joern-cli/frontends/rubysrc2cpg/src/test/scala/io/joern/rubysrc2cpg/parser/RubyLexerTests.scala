@@ -1284,4 +1284,24 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       EOF
     )
   }
+
+  "Single EXPANDED_LITERAL_CHARACTER token" should "be rewritten into a single EXPANDED_LITERAL_CHARACTER_SEQUENCE token" in {
+    val code = "%Q( )"
+    tokenizeOpt(code) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_LITERAL_START,
+      EXPANDED_LITERAL_CHARACTER_SEQUENCE,
+      QUOTED_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
+  "Consecutive EXPANDED_LITERAL_CHARACTER tokens" should "be rewritten into a single EXPANDED_LITERAL_CHARACTER_SEQUENCE token" in {
+    val code = "%Q{1 2 3 4 5}"
+    tokenizeOpt(code) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_LITERAL_START,
+      EXPANDED_LITERAL_CHARACTER_SEQUENCE,
+      QUOTED_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
 }
