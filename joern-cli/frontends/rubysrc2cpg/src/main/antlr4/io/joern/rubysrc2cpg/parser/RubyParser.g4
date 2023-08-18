@@ -614,10 +614,10 @@ quotedStringExpression
         NON_EXPANDED_LITERAL_CHARACTER_SEQUENCE? 
         QUOTED_NON_EXPANDED_STRING_LITERAL_END                                                                      # nonExpandedQuotedStringLiteral
     |   QUOTED_EXPANDED_STRING_LITERAL_START
-        (EXPANDED_LITERAL_CHARACTER | delimitedStringInterpolation)*
+        (EXPANDED_LITERAL_CHARACTER_SEQUENCE | delimitedStringInterpolation)*
         QUOTED_EXPANDED_STRING_LITERAL_END                                                                          # expandedQuotedStringLiteral
     |   QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_START
-        (EXPANDED_LITERAL_CHARACTER | delimitedStringInterpolation)*
+        (EXPANDED_LITERAL_CHARACTER_SEQUENCE | delimitedStringInterpolation)*
         QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_END                                                                # expandedExternalCommandLiteral
     ;
 
@@ -658,7 +658,7 @@ interpolatedRegexSequence
 
 quotedRegexInterpolation
     :   QUOTED_EXPANDED_REGULAR_EXPRESSION_START
-        (EXPANDED_LITERAL_CHARACTER | delimitedStringInterpolation)*
+        (EXPANDED_LITERAL_CHARACTER_SEQUENCE | delimitedStringInterpolation)*
         QUOTED_EXPANDED_REGULAR_EXPRESSION_END
     ;
 

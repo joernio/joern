@@ -249,11 +249,7 @@ class StringTests extends RubyParserAbstractTest {
           """QuotedStringExpressionPrimary
             | ExpandedQuotedStringLiteral
             |  %Q{
-            |  t
-            |  e
-            |  x
-            |  t
-            |  =
+            |  text=
             |  DelimitedStringInterpolation
             |   #{
             |   CompoundStatement
@@ -333,11 +329,7 @@ class StringTests extends RubyParserAbstractTest {
           """QuotedStringExpressionPrimary
             | ExpandedQuotedStringLiteral
             |  %(
-            |  t
-            |  e
-            |  x
-            |  t
-            |  =
+            |  text=
             |  DelimitedStringInterpolation
             |   #{
             |   CompoundStatement

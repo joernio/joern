@@ -304,9 +304,7 @@ class RegexTests extends RubyParserAbstractTest {
           """QuotedRegexInterpolationPrimary
             | QuotedRegexInterpolation
             |  %r{
-            |  a
-            |  -
-            |  z
+            |  a-z
             |  }""".stripMargin
       }
     }
@@ -319,11 +317,7 @@ class RegexTests extends RubyParserAbstractTest {
           """QuotedRegexInterpolationPrimary
             | QuotedRegexInterpolation
             |  %r<
-            |  e
-            |  u
-            |  |
-            |  u
-            |  s
+            |  eu|us
             |  >""".stripMargin
       }
     }
@@ -508,8 +502,7 @@ class RegexTests extends RubyParserAbstractTest {
             |           UnsignedNumericLiteral
             |            0
             |   }
-            |  |
-            |  y
+            |  |y
             |  }""".stripMargin
 
       }

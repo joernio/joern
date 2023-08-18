@@ -16,6 +16,7 @@ object RubyLexerPostProcessor {
     var tokens = tokenSource.toSeq
 
     tokens = tokens.mergeConsecutive(NON_EXPANDED_LITERAL_CHARACTER, NON_EXPANDED_LITERAL_CHARACTER_SEQUENCE)
+    tokens = tokens.mergeConsecutive(EXPANDED_LITERAL_CHARACTER, EXPANDED_LITERAL_CHARACTER_SEQUENCE)
 
     new ListTokenSource(tokens.asJava)
   }
