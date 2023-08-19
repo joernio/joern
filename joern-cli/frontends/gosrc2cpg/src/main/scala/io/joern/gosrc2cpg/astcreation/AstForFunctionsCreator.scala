@@ -44,16 +44,16 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     // TODO: handle multiple return type or tuple (int, int)
     val returnType     = getReturnType(funcDecl.json(ParserKeys.Type)).headOption.getOrElse("")
     val templateParams = ""
-    val methodType     = createParserNodeInfo(funcDecl.json(ParserKeys.Type))
+    val params         = createParserNodeInfo(funcDecl.json(ParserKeys.Type)(ParserKeys.Params))
     val signature =
-      s"$fullname$templateParams (${parameterSignature(methodType)})$returnType "
+      s"$fullname$templateParams (${parameterSignature(params)})$returnType "
 
     val methodNode_ = methodNode(funcDecl, name, funcDecl.code, fullname, Some(signature), filename)
     methodAstParentStack.push(methodNode_)
     scope.pushNewScope(methodNode_)
     val astForMethod = methodAst(
       methodNode_,
-      astForMethodParameter(methodType),
+      astForMethodParameter(params),
       astForMethodBody(funcDecl.json(ParserKeys.Body)),
       newMethodReturnNode(returnType, None, line(funcDecl), column(funcDecl))
     )
@@ -63,34 +63,76 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     Seq(astForMethod.merge(typeDeclAst))
   }
 
-  private def astForMethodParameter(paramType: ParserNodeInfo): Seq[Ast] = {
-    Seq(Ast(NewMethodParameterIn()))
-  }
-
-  private def parameterSignature(paramType: ParserNodeInfo): String = {
-    //    func foo(argc, something int, argv string) int {
-    // We get params -> list -> names [argc, something], type (int)
-    paramType
-      .json(ParserKeys.Params)(ParserKeys.List)
+  private def astForMethodParameter(params: ParserNodeInfo): Seq[Ast] = {
+    var index = 1
+    params
+      .json(ParserKeys.List)
       .arrOpt
-      .map(a =>
-        a.map(x =>
-          x(ParserKeys.Names).arr
-            .map(y => {
-              // We are returning same type from x object for each name in the names array.
-              val typeInfo = createParserNodeInfo(x(ParserKeys.Type))
-              typeInfo.node match {
-                case Ident    => typeInfo.json(ParserKeys.Name).str
-                case Ellipsis => "..." + typeInfo.json(ParserKeys.Elt)(ParserKeys.Name).str
-                case SelectorExpr =>
+      .getOrElse(ArrayBuffer())
+      .flatMap(x =>
+        val typeInfo = createParserNodeInfo(x(ParserKeys.Type))
+        x(ParserKeys.Names).arrOpt
+          .getOrElse(ArrayBuffer())
+          .map(y => {
+            // We are returning same type from x object for each name in the names array.
+            val parameterInfo      = createParserNodeInfo(y)
+            var isVariadic         = false
+            val evaluationStrategy = ""
+            val typeStr = typeInfo.node match {
+              case Ident => Some(typeInfo.json(ParserKeys.Name).str)
+              case Ellipsis =>
+                isVariadic = true
+                Some(typeInfo.json(ParserKeys.Elt)(ParserKeys.Name).str)
+              case SelectorExpr =>
+                // TODO: Generate fully qualified name along with the current string. We have to use tuple
+                Some(
                   typeInfo.json(ParserKeys.X)(ParserKeys.Name).str + "." + typeInfo
                     .json(ParserKeys.Sel)(ParserKeys.Name)
                     .str
-              }
-            }) mkString (", ")
-        )
+                )
+              case _ => None
+            }
+            val paramName = parameterInfo.json(ParserKeys.Name).str
+            val parameterNode = parameterInNode(
+              parameterInfo,
+              paramName,
+              paramName + " " + typeStr.getOrElse(""),
+              index,
+              isVariadic,
+              evaluationStrategy,
+              typeStr
+            )
+            index += 1
+            Ast(parameterNode)
+          })
       )
+      .toSeq
+  }
+
+  private def parameterSignature(params: ParserNodeInfo): String = {
+    //    func foo(argc, something int, argv string) int {
+    // We get params -> list -> names [argc, something], type (int)
+    params
+      .json(ParserKeys.List)
+      .arrOpt
       .getOrElse(ArrayBuffer())
+      .map(x =>
+        val typeInfo = createParserNodeInfo(x(ParserKeys.Type))
+        x(ParserKeys.Names).arrOpt
+          .getOrElse(ArrayBuffer())
+          .map(y => {
+            // We are returning same type from x object for each name in the names array.
+            typeInfo.node match {
+              case Ident    => typeInfo.json(ParserKeys.Name).str
+              case Ellipsis => "..." + typeInfo.json(ParserKeys.Elt)(ParserKeys.Name).str
+              case SelectorExpr =>
+                typeInfo.json(ParserKeys.X)(ParserKeys.Name).str + "." + typeInfo
+                  .json(ParserKeys.Sel)(ParserKeys.Name)
+                  .str
+            }
+          })
+          .mkString(", ")
+      )
       .mkString(", ")
   }
 

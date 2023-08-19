@@ -52,6 +52,7 @@ object ParserAst {
 
   object BranchStmt  extends BaseStmt
   object LabeledStmt extends BaseStmt
+  object FieldList   extends ParserNode
 }
 
 object ParserKeys {

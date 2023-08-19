@@ -29,9 +29,15 @@ class MethodTests extends GoCodeToCpgSuite {
       x.lineNumber shouldBe Option(3)
       x.lineNumberEnd shouldBe Option(4)
     }
+
+    "check binding Node" in {
+      val List(x) = cpg.method.name("foo").bindingTypeDecl.l
+      x.name shouldBe "main.<global>"
+      x.fullName shouldBe "Test0.go:main.<global>"
+    }
   }
 
-  "Method Test 1" should {
+  "Method arguments with primitive types" should {
     val cpg = code("""
                      |package main
                      |func foo(argc int, argv string) {
@@ -52,9 +58,33 @@ class MethodTests extends GoCodeToCpgSuite {
       x.lineNumber shouldBe Option(3)
       x.lineNumberEnd shouldBe Option(4)
     }
+
+    "be correct for parameter nodes" in {
+      cpg.parameter.name.l shouldBe List("argc", "argv")
+      val List(argc) = cpg.parameter.name("argc").l
+      argc.code shouldBe "argc int"
+      argc.order shouldBe 1
+      argc.typeFullName shouldBe "int"
+
+      val List(argv) = cpg.parameter.name("argv").l
+      argv.code shouldBe "argv string"
+      argv.order shouldBe 2
+      argv.typeFullName shouldBe "string"
+    }
+
+    "traversing from parameter to method" in {
+      cpg.parameter.name("argc").method.name.l shouldBe List("foo")
+      cpg.parameter.name("argv").method.name.l shouldBe List("foo")
+    }
+
+    "traversing from method to parameter" in {
+      val List(argc, argv) = cpg.method.name("foo").parameter.l
+      argc.name shouldBe "argc"
+      argv.name shouldBe "argv"
+    }
   }
 
-  "Method Test 2" should {
+  "More than one arguments of same Type" should {
     val cpg = code("""
         |package main
         |func foo(argc, arga int, argv string) {
@@ -75,9 +105,40 @@ class MethodTests extends GoCodeToCpgSuite {
       x.lineNumber shouldBe Option(3)
       x.lineNumberEnd shouldBe Option(4)
     }
+
+    "be correct for parameter nodes" in {
+      cpg.parameter.name.l shouldBe List("argc", "arga", "argv")
+      val List(argc) = cpg.parameter.name("argc").l
+      argc.code shouldBe "argc int"
+      argc.order shouldBe 1
+      argc.typeFullName shouldBe "int"
+
+      val List(arga) = cpg.parameter.name("arga").l
+      arga.code shouldBe "arga int"
+      arga.order shouldBe 2
+      arga.typeFullName shouldBe "int"
+
+      val List(argv) = cpg.parameter.name("argv").l
+      argv.code shouldBe "argv string"
+      argv.order shouldBe 3
+      argv.typeFullName shouldBe "string"
+    }
+
+    "traversing from parameter to method" in {
+      cpg.parameter.name("argc").method.name.l shouldBe List("foo")
+      cpg.parameter.name("arga").method.name.l shouldBe List("foo")
+      cpg.parameter.name("argv").method.name.l shouldBe List("foo")
+    }
+
+    "traversing from method to parameter" in {
+      val List(argc, arga, argv) = cpg.method.name("foo").parameter.l
+      argc.name shouldBe "argc"
+      arga.name shouldBe "arga"
+      argv.name shouldBe "argv"
+    }
   }
 
-  "Method Test 3" should {
+  "Variable argument use case" should {
     val cpg = code("""
         |package main
         |func foo(argc, arga int, argv ...string) {
@@ -98,9 +159,42 @@ class MethodTests extends GoCodeToCpgSuite {
       x.lineNumber shouldBe Option(3)
       x.lineNumberEnd shouldBe Option(4)
     }
+    "be correct for parameter nodes" in {
+      cpg.parameter.name.l shouldBe List("argc", "arga", "argv")
+      val List(argc) = cpg.parameter.name("argc").l
+      argc.code shouldBe "argc int"
+      argc.order shouldBe 1
+      argc.typeFullName shouldBe "int"
+      argc.isVariadic shouldBe false
+
+      val List(arga) = cpg.parameter.name("arga").l
+      arga.code shouldBe "arga int"
+      arga.order shouldBe 2
+      arga.typeFullName shouldBe "int"
+      arga.isVariadic shouldBe false
+
+      val List(argv) = cpg.parameter.name("argv").l
+      argv.code shouldBe "argv string"
+      argv.order shouldBe 3
+      argv.typeFullName shouldBe "string"
+      argv.isVariadic shouldBe true
+    }
+
+    "traversing from parameter to method" in {
+      cpg.parameter.name("argc").method.name.l shouldBe List("foo")
+      cpg.parameter.name("arga").method.name.l shouldBe List("foo")
+      cpg.parameter.name("argv").method.name.l shouldBe List("foo")
+    }
+
+    "traversing from method to parameter" in {
+      val List(argc, arga, argv) = cpg.method.name("foo").parameter.l
+      argc.name shouldBe "argc"
+      arga.name shouldBe "arga"
+      argv.name shouldBe "argv"
+    }
   }
 
-  "Method Test 4" should {
+  "struct type argument from other package" should {
     val cpg = code(
       """
         |module joern.io/sample
@@ -140,4 +234,8 @@ class MethodTests extends GoCodeToCpgSuite {
       x.lineNumberEnd shouldBe Option(5)
     }
   }
+
+  // TODO: Add unit tests for Array of primitives as well as struct.
+  // TODO: Add unit test for tuple return
+  // TODO: Add unit test with pointers
 }
