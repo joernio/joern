@@ -51,7 +51,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     Ast(functionBinding).withBindsEdge(parentNode, functionBinding).withRefEdge(functionBinding, method)
   }
 
-  private def parameters(funct: IASTNode): Seq[IASTNode] = funct match {
+  private def parameters(functionNode: IASTNode): Seq[IASTNode] = functionNode match {
     case arr: IASTArrayDeclarator       => parameters(arr.getNestedDeclarator)
     case decl: CPPASTFunctionDeclarator => decl.getParameters.toIndexedSeq ++ parameters(decl.getNestedDeclarator)
     case decl: CASTFunctionDeclarator   => decl.getParameters.toIndexedSeq ++ parameters(decl.getNestedDeclarator)
@@ -64,7 +64,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   @tailrec
-  private def isVariadic(funct: IASTNode): Boolean = funct match {
+  private def isVariadic(functionNode: IASTNode): Boolean = functionNode match {
     case decl: CPPASTFunctionDeclarator            => decl.takesVarArgs()
     case decl: CASTFunctionDeclarator              => decl.takesVarArgs()
     case defn: IASTFunctionDefinition              => isVariadic(defn.getDeclarator)
@@ -114,10 +114,14 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     scope.popScope()
 
-    val stubAst =
-      methodStubAst(methodNode_, parameterNodes, newMethodReturnNode(lambdaExpression, registerType(returnType)))
+    val astForLambda = methodAst(
+      methodNode_,
+      parameterNodes.map(Ast(_)),
+      astForMethodBody(Option(lambdaExpression.getBody)),
+      newMethodReturnNode(lambdaExpression, registerType(returnType))
+    )
     val typeDeclAst = createFunctionTypeAndTypeDecl(lambdaExpression, methodNode_, name, fullname, signature)
-    Ast.storeInDiffGraph(stubAst.merge(typeDeclAst), diffGraph)
+    Ast.storeInDiffGraph(astForLambda.merge(typeDeclAst), diffGraph)
 
     Ast(methodRefNode(lambdaExpression, code, fullname, methodNode_.astParentFullName))
   }
