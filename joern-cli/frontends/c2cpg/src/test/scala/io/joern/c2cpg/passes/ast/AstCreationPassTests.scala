@@ -98,13 +98,9 @@ class AstCreationPassTests extends AbstractPassTest {
     "be correct for simple lambda expressions" in AstFixture(
       """
         |auto x = [] (int a, int b) -> int
-        |{
-        |    return a + b;
-        |};
+        | { return a + b; };
         |auto y = [] (string a, string b) -> string
-        |{
-        |    return a + b;
-        |};
+        | { return a + b; };
         |""".stripMargin,
       "test.cpp"
     ) { cpg =>
@@ -129,12 +125,14 @@ class AstCreationPassTests extends AbstractPassTest {
         l1.name shouldBe lambda1FullName
         l1.code should startWith("[] (int a, int b) -> int")
         l1.signature shouldBe "int anonymous_lambda_0 (int,int)"
+        l1.body.code shouldBe "{ return a + b; }"
       }
 
       inside(cpg.method.fullNameExact(lambda2FullName).l) { case List(l2) =>
         l2.name shouldBe lambda2FullName
         l2.code should startWith("[] (string a, string b) -> string")
         l2.signature shouldBe "string anonymous_lambda_1 (string,string)"
+        l2.body.code shouldBe "{ return a + b; }"
       }
 
       inside(cpg.typeDecl(NamespaceTraversal.globalNamespaceName).head.bindsOut.l) {

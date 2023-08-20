@@ -16,7 +16,11 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   import io.joern.c2cpg.astcreation.AstCreatorHelper.OptionSafeAst
 
   protected def astForBlockStatement(blockStmt: IASTCompoundStatement, order: Int = -1): Ast = {
-    val node = blockNode(blockStmt, Defines.empty, registerType(Defines.voidTypeName)).order(order).argumentIndex(order)
+    val code      = nodeSignature(blockStmt)
+    val blockCode = if (code == "{}" || code.isEmpty) Defines.empty else code
+    val node = blockNode(blockStmt, blockCode, registerType(Defines.voidTypeName))
+      .order(order)
+      .argumentIndex(order)
     scope.pushNewScope(node)
     var currOrder = 1
     val childAsts = blockStmt.getStatements.flatMap { stmt =>
