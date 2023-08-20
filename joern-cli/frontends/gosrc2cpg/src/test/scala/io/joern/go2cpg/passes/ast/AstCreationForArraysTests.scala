@@ -139,5 +139,56 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
       arrayInitializerNode.typeFullName shouldBe "int[]"
 
     }
+
+    "be correct when global variable is initialized using array length" in {
+      val cpg = code("""
+          |package main
+          |var a[2]int
+          |func main() {
+          |}
+          |""".stripMargin)
+
+      cpg.local.size shouldBe 1
+      val List(localNode) = cpg.local.l
+      localNode.code shouldBe "a"
+      localNode.lineNumber shouldBe Some(3)
+
+      val List(arrayInitializerNode) = cpg.call.l
+      arrayInitializerNode.name shouldBe Operators.arrayInitializer
+      arrayInitializerNode.code shouldBe "[2]int"
+      arrayInitializerNode.lineNumber shouldBe Some(3)
+      arrayInitializerNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      arrayInitializerNode.typeFullName shouldBe "int[]"
+
+    }
+
+    // Might need to change comparisons of this test case
+    "be correct when a global array is initialized" in {
+      val cpg = code("""
+          |package main
+          |var a = [5]int{1,2}
+          |func main() {
+          |}
+          |""".stripMargin)
+
+      val List(assignmentCallNode, arrayInitializerCallNode) = cpg.call(".*operator.*").l
+      assignmentCallNode.name shouldBe Operators.assignment
+      assignmentCallNode.code shouldBe "a[5]int{1,2}" // TODO: Fix the code format - there should be a = in between
+
+      arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
+      arrayInitializerCallNode.code shouldBe "[5]int{1,2}"
+      arrayInitializerCallNode.typeFullName shouldBe "int[]"
+
+      cpg.literal.l.size shouldBe 2
+      val List(literal1, literal2) = cpg.literal.l
+      literal1.code shouldBe "1"
+      literal2.code shouldBe "2"
+      literal1.typeFullName shouldBe "int"
+      literal2.typeFullName shouldBe "int"
+
+      cpg.identifier.l.size shouldBe 1
+      val List(identifierNode) = cpg.identifier.l
+      identifierNode.code shouldBe "a"
+    }
   }
 }

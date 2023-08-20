@@ -18,12 +18,21 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     }
   }
 
-  private def astForCompositeLiteral(primitive: ParserNodeInfo): Seq[Ast] = {
+  protected def astForCompositeLiteral(primitive: ParserNodeInfo): Seq[Ast] = {
     var elementAsts = Seq(Ast())
     if (!primitive.json(ParserKeys.Elts).isNull) {
       elementAsts = primitive.json(ParserKeys.Elts).arr.flatMap(e => astForElts(createParserNodeInfo(e))).toSeq
-      val arrayCallNode = Seq(astForEmptyArrayInitializer(primitive))
-      elementAsts ++ arrayCallNode
+      val typeNodeJson = Try(createParserNodeInfo(primitive.json(ParserKeys.Type)))
+      val typeNode = if (typeNodeJson.isSuccess) {
+        typeNodeJson.get.node match
+          case ArrayType =>
+            Seq(astForEmptyArrayInitializer(primitive))
+          case _ =>
+            Seq(Ast())
+      } else {
+        Seq(Ast())
+      }
+      elementAsts ++ typeNode
     } else {
       // Empty array
       Seq(astForEmptyArrayInitializer(primitive))
