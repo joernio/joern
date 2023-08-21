@@ -90,7 +90,6 @@ class UnlessConditionTests extends RubyParserAbstractTest {
             |       foo
             |  ThenClause
             |   then
-            |   WsOrNl
             |   CompoundStatement
             |    Statements
             |     ExpressionOrCommandStatement

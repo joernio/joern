@@ -95,7 +95,6 @@ class CaseConditionTests extends RubyParserAbstractTest {
             |    CompoundStatement
             |  ElseClause
             |   else
-            |   WsOrNl
             |   CompoundStatement
             |  end""".stripMargin
       }
@@ -131,7 +130,6 @@ class CaseConditionTests extends RubyParserAbstractTest {
             |          1
             |   ThenClause
             |    then
-            |    WsOrNl
             |    CompoundStatement
             |  end""".stripMargin
       }
