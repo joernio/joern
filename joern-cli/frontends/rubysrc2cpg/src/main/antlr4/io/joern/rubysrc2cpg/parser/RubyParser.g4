@@ -606,7 +606,7 @@ symbol
 stringExpression
     :   simpleString                                                                                                # simpleStringExpression
     |   stringInterpolation                                                                                         # interpolatedStringExpression
-    |   stringExpression (WS stringExpression)+                                                                     # concatenatedStringExpression
+    |   stringExpression stringExpression+                                                                          # concatenatedStringExpression
     ;
 
 quotedStringExpression

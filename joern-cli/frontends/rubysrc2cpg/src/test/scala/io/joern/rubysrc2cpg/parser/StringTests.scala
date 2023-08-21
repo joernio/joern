@@ -43,7 +43,6 @@ class StringTests extends RubyParserAbstractTest {
             |  SimpleStringExpression
             |   SingleQuotedStringLiteral
             |    'x'
-            |   \
             |  SimpleStringExpression
             |   SingleQuotedStringLiteral
             |    'y'""".stripMargin
@@ -63,12 +62,10 @@ class StringTests extends RubyParserAbstractTest {
             |  SimpleStringExpression
             |   SingleQuotedStringLiteral
             |    'x'
-            |   \
             |  ConcatenatedStringExpression
             |   SimpleStringExpression
             |    SingleQuotedStringLiteral
             |     'y'
-            |    \
             |   SimpleStringExpression
             |    SingleQuotedStringLiteral
             |     'z'""".stripMargin
