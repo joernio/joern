@@ -91,15 +91,7 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)(im
   }
 
   protected def astForEmptyArrayInitializer(primitive: ParserNodeInfo): Ast = {
-    val arrayType: String = primitive.node match {
-      case ArrayType =>
-        s"${primitive.json(ParserKeys.Elt)(ParserKeys.Name)}[]"
-      case CompositeLit =>
-        s"${primitive.json(ParserKeys.Type)(ParserKeys.Elt)(ParserKeys.Name)}[]"
-      case _ =>
-        Defines.empty
-    }
-
+    val arrayType: String = getTypeForJsonNode(primitive.json)
     Ast(
       callNode(
         primitive,
@@ -108,7 +100,7 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)(im
         Operators.arrayInitializer,
         DispatchTypes.STATIC_DISPATCH,
         Option(Defines.empty),
-        Option(arrayType.replaceAll("\"", "")) // The "" around the typename is eliminated
+        Option(arrayType) // The "" around the typename is eliminated
       )
     )
   }
