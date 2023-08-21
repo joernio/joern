@@ -1,8 +1,9 @@
 package io.joern.gosrc2cpg.astcreation
 
-import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
-import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.gosrc2cpg.parser.ParserAst.*
+import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
+import io.joern.gosrc2cpg.utils.UtilityConstants.fileSeparateorPattern
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import ujson.Value
 
@@ -28,9 +29,11 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
         nodeInfo.node match {
           case ImportSpec =>
             val basicLit       = createParserNodeInfo(nodeInfo.json(ParserKeys.Path))
-            val importedEntity = nodeInfo.json(ParserKeys.Path).obj(ParserKeys.Value).str
+            val importedEntity = nodeInfo.json(ParserKeys.Path).obj(ParserKeys.Value).str.replaceAll("\"", "")
             val importedAs =
-              Try(nodeInfo.json(ParserKeys.Name).obj(ParserKeys.Name).str).toOption.getOrElse(importedEntity)
+              Try(nodeInfo.json(ParserKeys.Name).obj(ParserKeys.Name).str).toOption
+                .getOrElse(importedEntity.split(fileSeparateorPattern).last)
+            aliasToNameSpaceMapping.put(importedAs, importedEntity)
             val importedAsReplacement = if (importedEntity.equals(importedAs)) "" else s"$importedAs "
             // This may be better way to add code for import node
             Ast(newImportNode(s"import $importedAsReplacement$importedEntity", importedEntity, importedAs, basicLit))
@@ -62,7 +65,7 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
               val localParserNode = createParserNodeInfo(parserNode)
 
               val name = parserNode(ParserKeys.Name).str
-              val typ  = getTypeForJsonNode(typeJson)
+              val typ  = getTypeFullName(typeJson)
               val node = localNode(localParserNode, name, localParserNode.code, typ)
               scope.addToScope(name, (node, typ))
               Ast(node)

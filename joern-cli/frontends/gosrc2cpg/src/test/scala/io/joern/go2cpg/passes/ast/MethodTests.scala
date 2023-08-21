@@ -174,7 +174,7 @@ class MethodTests extends GoCodeToCpgSuite {
       arga.isVariadic shouldBe false
 
       val List(argv) = cpg.parameter.name("argv").l
-      argv.code shouldBe "argv string"
+      argv.code shouldBe "argv ...string"
       argv.order shouldBe 3
       argv.typeFullName shouldBe "string"
       argv.isVariadic shouldBe true

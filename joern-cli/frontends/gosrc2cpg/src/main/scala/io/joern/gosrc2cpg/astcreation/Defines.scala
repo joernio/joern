@@ -5,4 +5,5 @@ object Defines {
   val voidTypeName: String           = "void"
   val qualifiedNameSeparator: String = "::"
   val empty                          = "<empty>"
+
 }

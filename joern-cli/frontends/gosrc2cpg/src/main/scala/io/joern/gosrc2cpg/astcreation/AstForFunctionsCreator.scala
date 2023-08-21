@@ -40,7 +40,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     val filename = relPathFileName
     val name     = funcDecl.json(ParserKeys.Name).obj(ParserKeys.Name).str
-    val fullname = s"${fullyQualifiedPackage.get()}.${name}"
+    val fullname = s"${fullyQualifiedPackage}.${name}"
     // TODO: handle multiple return type or tuple (int, int)
     val returnType     = getReturnType(funcDecl.json(ParserKeys.Type)).headOption.getOrElse("")
     val templateParams = ""
@@ -70,37 +70,29 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       .arrOpt
       .getOrElse(ArrayBuffer())
       .flatMap(x =>
-        val typeInfo = createParserNodeInfo(x(ParserKeys.Type))
+        val typeInfo           = createParserNodeInfo(x(ParserKeys.Type))
+        var isVariadic         = false
+        val evaluationStrategy = ""
+        val typeFullName       = getTypeFullName(typeInfo.json)
+        typeInfo.node match {
+          case Ellipsis =>
+            isVariadic = true
+          case _ =>
+        }
         x(ParserKeys.Names).arrOpt
           .getOrElse(ArrayBuffer())
           .map(y => {
             // We are returning same type from x object for each name in the names array.
-            val parameterInfo      = createParserNodeInfo(y)
-            var isVariadic         = false
-            val evaluationStrategy = ""
-            val typeStr = typeInfo.node match {
-              case Ident => Some(typeInfo.json(ParserKeys.Name).str)
-              case Ellipsis =>
-                isVariadic = true
-                Some(typeInfo.json(ParserKeys.Elt)(ParserKeys.Name).str)
-              case SelectorExpr =>
-                // TODO: Generate fully qualified name along with the current string. We have to use tuple
-                Some(
-                  typeInfo.json(ParserKeys.X)(ParserKeys.Name).str + "." + typeInfo
-                    .json(ParserKeys.Sel)(ParserKeys.Name)
-                    .str
-                )
-              case _ => None
-            }
-            val paramName = parameterInfo.json(ParserKeys.Name).str
+            val parameterInfo = createParserNodeInfo(y)
+            val paramName     = parameterInfo.json(ParserKeys.Name).str
             val parameterNode = parameterInNode(
               parameterInfo,
               paramName,
-              paramName + " " + typeStr.getOrElse(""),
+              paramName + " " + typeFullName,
               index,
               isVariadic,
               evaluationStrategy,
-              typeStr
+              typeFullName
             )
             index += 1
             Ast(parameterNode)
@@ -118,7 +110,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       .getOrElse(ArrayBuffer())
       .map(x =>
         val typeInfo     = createParserNodeInfo(x(ParserKeys.Type))
-        val typeFullName = getTypeForJsonNode(typeInfo.json)
+        val typeFullName = getTypeFullName(typeInfo.json)
         x(ParserKeys.Names).arrOpt
           .getOrElse(ArrayBuffer())
           .map(y => {

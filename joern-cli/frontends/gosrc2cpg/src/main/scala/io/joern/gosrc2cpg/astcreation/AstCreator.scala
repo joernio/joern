@@ -7,12 +7,14 @@ import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.datastructures.Scope
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, AstNodeBuilder as X2CpgAstNodeBuilder}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, NodeTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewNamespaceBlock, NewNode}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, NodeTypes, Operators}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import ujson.Value
+
+import scala.collection.mutable
 
 class AstCreator(val relPathFileName: String, val parserResult: ParserResult)(implicit
   withSchemaValidation: ValidationMode
@@ -27,11 +29,12 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)(im
 
   protected val logger: Logger = LoggerFactory.getLogger(classOf[AstCreator])
 
-  protected val methodAstParentStack: Stack[NewNode]             = new Stack()
-  protected val scope: Scope[String, (NewNode, String), NewNode] = new Scope()
-  protected val fullyQualifiedPackage                            = new ThreadLocal[String]
-
-  protected val lineNumberMapping: Map[Int, String] = positionLookupTables(parserResult.fileContent)
+  protected val methodAstParentStack: Stack[NewNode]                 = new Stack()
+  protected val scope: Scope[String, (NewNode, String), NewNode]     = new Scope()
+  protected val aliasToNameSpaceMapping: mutable.Map[String, String] = mutable.Map.empty
+  protected val lineNumberMapping: Map[Int, String]                  = positionLookupTables(parserResult.fileContent)
+  protected val fullyQualifiedPackage =
+    GoMod.getNameSpace(parserResult.filename, parserResult.json(ParserKeys.Name)(ParserKeys.Name).str)
 
   override def createAst(): DiffGraphBuilder = {
     val rootNode = createParserNodeInfo(parserResult.json)
@@ -41,17 +44,14 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)(im
   }
 
   private def astForTranslationUnit(rootNode: ParserNodeInfo): Ast = {
-    fullyQualifiedPackage.set(
-      GoMod.getNameSpace(parserResult.filename, parserResult.json(ParserKeys.Name)(ParserKeys.Name).str)
-    )
     val namespaceBlock = NewNamespaceBlock()
-      .name(fullyQualifiedPackage.get())
-      .fullName(s"$relPathFileName:${fullyQualifiedPackage.get()}")
+      .name(fullyQualifiedPackage)
+      .fullName(s"$relPathFileName:${fullyQualifiedPackage}")
       .filename(relPathFileName)
     methodAstParentStack.push(namespaceBlock)
     val rootAst = Ast(namespaceBlock).withChild(
       astInFakeMethod(
-        fullyQualifiedPackage.get() + "." + NamespaceTraversal.globalNamespaceName,
+        fullyQualifiedPackage + "." + NamespaceTraversal.globalNamespaceName,
         namespaceBlock.fullName + "." + NamespaceTraversal.globalNamespaceName,
         relPathFileName,
         rootNode
@@ -97,7 +97,7 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)(im
   }
 
   protected def astForEmptyArrayInitializer(primitive: ParserNodeInfo): Ast = {
-    val arrayType: String = getTypeForJsonNode(primitive.json)
+    val arrayType: String = getTypeFullName(primitive.json)
     Ast(
       callNode(
         primitive,

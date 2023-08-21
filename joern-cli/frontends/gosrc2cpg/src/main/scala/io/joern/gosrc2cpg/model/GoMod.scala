@@ -3,6 +3,7 @@ package io.joern.gosrc2cpg.model
 import io.circe.Decoder.Result
 import io.circe.{Decoder, HCursor}
 import io.joern.gosrc2cpg.Config
+import io.joern.gosrc2cpg.utils.UtilityConstants.fileSeparateorPattern
 
 import java.io.File
 import scala.collection.mutable.ListBuffer
@@ -11,7 +12,6 @@ object GoMod {
 
   import java.util.regex.Pattern
 
-  val fileSeparateorPattern           = Pattern.quote(File.separator)
   var meta: Option[GoMod]             = None
   var config: Option[Config]          = None
   def getModMetaData(): Option[GoMod] = meta

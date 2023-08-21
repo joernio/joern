@@ -91,7 +91,7 @@ trait AstCreatorHelper { this: AstCreator =>
       }
       .toMap
   }
-  protected def getTypeForJsonNode(jsonNode: Value): String = {
+  protected def getTypeFullName(jsonNode: Value): String = {
     val nodeInfo = createParserNodeInfo(jsonNode)
     nodeInfo.node match {
       case Ident        => jsonNode.obj(ParserKeys.Name).str
