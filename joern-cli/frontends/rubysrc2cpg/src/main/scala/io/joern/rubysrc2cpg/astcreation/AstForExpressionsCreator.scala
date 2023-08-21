@@ -101,7 +101,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
   // TODO: Maybe merge (in RubyParser.g4) isDefinedExpression with isDefinedPrimaryExpression?
   protected def astForIsDefinedPrimaryExpression(ctx: IsDefinedPrimaryContext): Ast = {
     val argsAst = astForExpressionOrCommand(ctx.expressionOrCommand())
-    val call = callNode(ctx, text(ctx), RubyOperators.defined, RubyOperators.defined, DispatchTypes.STATIC_DISPATCH)
+    val call    = callNode(ctx, text(ctx), RubyOperators.defined, RubyOperators.defined, DispatchTypes.STATIC_DISPATCH)
     callAst(call, argsAst.toList)
   }
 

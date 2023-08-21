@@ -270,9 +270,9 @@ class AstCreator(
   protected def lineEnd(ctx: ParserRuleContext): Option[Integer]   = Option(ctx.getStop.getLine)
   protected def columnEnd(ctx: ParserRuleContext): Option[Integer] = Option(ctx.getStop.getCharPositionInLine)
   protected def text(ctx: ParserRuleContext): String = {
-    val a = ctx.getStart.getStartIndex
-    val b = ctx.getStop.getStopIndex
-    val intv = new Interval(a, b)
+    val a     = ctx.getStart.getStartIndex
+    val b     = ctx.getStop.getStopIndex
+    val intv  = new Interval(a, b)
     val input = ctx.getStart.getInputStream
     input.getText(intv)
   }
@@ -440,9 +440,7 @@ class AstCreator(
     case ctx: UntilExpressionPrimaryContext  => Seq(astForUntilExpression(ctx.untilExpression()))
     case ctx: ForExpressionPrimaryContext    => Seq(astForForExpression(ctx.forExpression()))
     case ctx: ReturnWithParenthesesPrimaryContext =>
-      Seq(
-        returnAst(returnNode(ctx, text(ctx)), astForArgumentsWithParenthesesContext(ctx.argumentsWithParentheses()))
-      )
+      Seq(returnAst(returnNode(ctx, text(ctx)), astForArgumentsWithParenthesesContext(ctx.argumentsWithParentheses())))
     case ctx: JumpExpressionPrimaryContext     => astForJumpExpressionPrimaryContext(ctx)
     case ctx: BeginExpressionPrimaryContext    => astForBeginExpressionPrimaryContext(ctx)
     case ctx: GroupingExpressionPrimaryContext => astForCompoundStatement(ctx.compoundStatement(), false, false)

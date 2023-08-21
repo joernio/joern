@@ -28,7 +28,7 @@ class AssignmentTests extends RubyParserAbstractTest {
       }
     }
   }
-  
+
   "multiple assignment" should {
 
     "be parsed as a statement" when {
@@ -77,6 +77,5 @@ class AssignmentTests extends RubyParserAbstractTest {
       }
     }
   }
-  
 
 }

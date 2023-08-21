@@ -68,9 +68,7 @@ trait AstForPrimitivesCreator { this: AstCreator =>
   }
 
   private def astForEmptyArrayInitializer(ctx: ParserRuleContext): Ast = {
-    Ast(
-      callNode(ctx, text(ctx), Operators.arrayInitializer, Operators.arrayInitializer, DispatchTypes.STATIC_DISPATCH)
-    )
+    Ast(callNode(ctx, text(ctx), Operators.arrayInitializer, Operators.arrayInitializer, DispatchTypes.STATIC_DISPATCH))
   }
 
   private def astForNonExpandedWordArrayConstructor(ctx: NonExpandedWordArrayConstructorContext): Seq[Ast] = {
