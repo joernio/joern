@@ -217,14 +217,14 @@ indexingArguments
     ;
 
 argumentsWithParentheses
-    :   LPAREN wsOrNl* RPAREN                                                                                                   # blankArgsArgumentsWithParentheses
-    |   LPAREN wsOrNl* arguments (WS* COMMA)? wsOrNl* RPAREN                                                                    # argsOnlyArgumentsWithParentheses
-    |   LPAREN wsOrNl* expressions WS* COMMA wsOrNl* chainedCommandWithDoBlock wsOrNl* RPAREN                                   # expressionsAndChainedCommandWithDoBlockArgumentsWithParentheses
-    |   LPAREN wsOrNl* chainedCommandWithDoBlock wsOrNl* RPAREN                                                                 # chainedCommandWithDoBlockOnlyArgumentsWithParentheses
+    :   LPAREN NL* RPAREN                                                                                                       # blankArgsArgumentsWithParentheses
+    |   LPAREN NL* arguments (COMMA)? NL* RPAREN                                                                                # argsOnlyArgumentsWithParentheses
+    |   LPAREN NL* expressions COMMA NL* chainedCommandWithDoBlock NL* RPAREN                                                   # expressionsAndChainedCommandWithDoBlockArgumentsWithParentheses
+    |   LPAREN NL* chainedCommandWithDoBlock NL* RPAREN                                                                         # chainedCommandWithDoBlockOnlyArgumentsWithParentheses
     ;
 
 expressions
-    :   expression (WS* COMMA wsOrNl* expression)*
+    :   expression (COMMA NL* expression)*
     ;
 
 // --------------------------------------------------------
