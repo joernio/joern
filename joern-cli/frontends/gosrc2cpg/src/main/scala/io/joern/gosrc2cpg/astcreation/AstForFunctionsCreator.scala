@@ -117,19 +117,13 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       .arrOpt
       .getOrElse(ArrayBuffer())
       .map(x =>
-        val typeInfo = createParserNodeInfo(x(ParserKeys.Type))
+        val typeInfo     = createParserNodeInfo(x(ParserKeys.Type))
+        val typeFullName = getTypeForJsonNode(typeInfo.json)
         x(ParserKeys.Names).arrOpt
           .getOrElse(ArrayBuffer())
           .map(y => {
             // We are returning same type from x object for each name in the names array.
-            typeInfo.node match {
-              case Ident    => typeInfo.json(ParserKeys.Name).str
-              case Ellipsis => "..." + typeInfo.json(ParserKeys.Elt)(ParserKeys.Name).str
-              case SelectorExpr =>
-                typeInfo.json(ParserKeys.X)(ParserKeys.Name).str + "." + typeInfo
-                  .json(ParserKeys.Sel)(ParserKeys.Name)
-                  .str
-            }
+            typeFullName
           })
           .mkString(", ")
       )

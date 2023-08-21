@@ -1,7 +1,15 @@
 package io.joern.gosrc2cpg.astcreation
 
 import io.joern.gosrc2cpg.datastructures.GoGlobal
-import io.joern.gosrc2cpg.parser.ParserAst.{Ident, ParserNode, fromString}
+import io.joern.gosrc2cpg.parser.ParserAst.{
+  ArrayType,
+  CompositeLit,
+  Ellipsis,
+  Ident,
+  ParserNode,
+  SelectorExpr,
+  fromString
+}
 import io.joern.gosrc2cpg.parser.{ParserAst, ParserKeys, ParserNodeInfo}
 import org.apache.commons.lang.StringUtils
 import ujson.Value
@@ -86,8 +94,13 @@ trait AstCreatorHelper { this: AstCreator =>
   protected def getTypeForJsonNode(jsonNode: Value): String = {
     val nodeInfo = createParserNodeInfo(jsonNode)
     nodeInfo.node match {
-      case Ident => jsonNode.obj(ParserKeys.Name).str
-      case _     => Defines.anyTypeName
+      case Ident        => jsonNode.obj(ParserKeys.Name).str
+      case ArrayType    => s"${jsonNode.obj(ParserKeys.Elt)(ParserKeys.Name).str}[]"
+      case CompositeLit => s"${jsonNode.obj(ParserKeys.Type)(ParserKeys.Elt)(ParserKeys.Name).str}[]"
+      case Ellipsis     => "..." + jsonNode.obj(ParserKeys.Elt)(ParserKeys.Name).str
+      case SelectorExpr =>
+        jsonNode.obj(ParserKeys.X)(ParserKeys.Name).str + "." + jsonNode.obj(ParserKeys.Sel)(ParserKeys.Name).str
+      case _ => Defines.anyTypeName
     }
   }
 

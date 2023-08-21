@@ -47,11 +47,22 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
       .flatMap { valueSpec =>
         valueSpec.node match {
           case ValueSpec =>
+            // If global array is initialized, type info is present in values > type
+            val typeJson = Try(valueSpec.json(ParserKeys.Type))
+              .getOrElse(valueSpec.json(ParserKeys.Values).arr.head)
+            val typeInfoNode = createParserNodeInfo(typeJson)
+
+            val arrayInitializerNode: Seq[Ast] = typeInfoNode.node match
+              case ArrayType =>
+                Seq(astForEmptyArrayInitializer(typeInfoNode))
+              case _ =>
+                Seq(Ast())
+
             val localNodes = valueSpec.json(ParserKeys.Names).arr.map { parserNode =>
               val localParserNode = createParserNodeInfo(parserNode)
 
               val name = parserNode(ParserKeys.Name).str
-              val typ  = getTypeForJsonNode(valueSpec.json(ParserKeys.Type))
+              val typ  = getTypeForJsonNode(typeJson)
               val node = localNode(localParserNode, name, localParserNode.code, typ)
               scope.addToScope(name, (node, typ))
               Ast(node)
@@ -72,10 +83,11 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
                     val arguments = astForNode(lhsParserNode.json) ++: astForNode(rhsParserNode.json)
                     callAst(cNode, arguments)
                   }
-              localNodes.toList ::: callNodes
+              localNodes.toList ::: callNodes ::: arrayInitializerNode.toList
             } else
-              localNodes.toList
-          case _ => Seq()
+              localNodes.toList ++ arrayInitializerNode.toList
+          case _ =>
+            Seq()
         }
       }
       .toList
