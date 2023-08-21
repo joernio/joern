@@ -280,7 +280,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
       "public_class_method",
       "private_class_method",
       "private",
-      "protected"
+      "protected",
+      "module_function"
     )
 
     val callNodes = methodIdentifierAsts.head.nodes.collect { case x: NewCall => x }
