@@ -480,7 +480,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       callNode.argument
         .where(_.argumentIndex(2))
         .code
-        .l shouldBe List("foo()", "bar() ")
+        .l shouldBe List("foo()", "bar()")
       callNode.lineNumber.l shouldBe List(1, 1)
     }
 

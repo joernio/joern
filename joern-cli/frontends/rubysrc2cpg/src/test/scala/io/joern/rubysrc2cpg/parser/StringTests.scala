@@ -43,7 +43,6 @@ class StringTests extends RubyParserAbstractTest {
             |  SimpleStringExpression
             |   SingleQuotedStringLiteral
             |    'x'
-            |   \
             |  SimpleStringExpression
             |   SingleQuotedStringLiteral
             |    'y'""".stripMargin
@@ -63,12 +62,10 @@ class StringTests extends RubyParserAbstractTest {
             |  SimpleStringExpression
             |   SingleQuotedStringLiteral
             |    'x'
-            |   \
             |  ConcatenatedStringExpression
             |   SimpleStringExpression
             |    SingleQuotedStringLiteral
             |     'y'
-            |    \
             |   SimpleStringExpression
             |    SingleQuotedStringLiteral
             |     'z'""".stripMargin
@@ -456,7 +453,6 @@ class StringTests extends RubyParserAbstractTest {
               |    "
               |    x
               |    "
-              |   \
               |  SimpleStringExpression
               |   DoubleQuotedStringLiteral
               |    "
@@ -545,7 +541,6 @@ class StringTests extends RubyParserAbstractTest {
               |    "
               |    x
               |    "
-              |   \
               |  SimpleStringExpression
               |   DoubleQuotedStringLiteral
               |    "
@@ -578,7 +573,6 @@ class StringTests extends RubyParserAbstractTest {
               |              10
               |     }
               |    "
-              |   \
               |  SimpleStringExpression
               |   DoubleQuotedStringLiteral
               |    "

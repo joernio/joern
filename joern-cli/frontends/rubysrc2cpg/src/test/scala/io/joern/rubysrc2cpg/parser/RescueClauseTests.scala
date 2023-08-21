@@ -16,7 +16,6 @@ class RescueClauseTests extends RubyParserAbstractTest {
         printAst(_.beginExpression(), code) shouldEqual
           """BeginExpression
             | begin
-            | WsOrNl
             | BodyStatement
             |  CompoundStatement
             |   Statements
@@ -46,7 +45,6 @@ class RescueClauseTests extends RubyParserAbstractTest {
             |      VariableIdentifierVariableReference
             |       VariableIdentifier
             |        ZeroDivisionError
-            |   WsOrNl
             |   ExceptionVariableAssignment
             |    =>
             |    VariableIdentifierOnlySingleLeftHandSide
@@ -68,7 +66,6 @@ class RescueClauseTests extends RubyParserAbstractTest {
         printAst(_.methodDefinition(), code) shouldEqual
           """MethodDefinition
             | def
-            | WsOrNl
             | SimpleMethodNamePart
             |  DefinedMethodName
             |   MethodName
@@ -107,7 +104,6 @@ class RescueClauseTests extends RubyParserAbstractTest {
             |      VariableIdentifierVariableReference
             |       VariableIdentifier
             |        ZeroDivisionError
-            |   WsOrNl
             |   ExceptionVariableAssignment
             |    =>
             |    VariableIdentifierOnlySingleLeftHandSide
@@ -144,7 +140,6 @@ class RescueClauseTests extends RubyParserAbstractTest {
             |            x
             |     DoBlock
             |      do
-            |      WsOrNl
             |      BlockParameter
             |       |
             |       BlockParameters
@@ -182,7 +177,6 @@ class RescueClauseTests extends RubyParserAbstractTest {
             |           VariableIdentifierVariableReference
             |            VariableIdentifier
             |             ZeroDivisionError
-            |        WsOrNl
             |        ExceptionVariableAssignment
             |         =>
             |         VariableIdentifierOnlySingleLeftHandSide

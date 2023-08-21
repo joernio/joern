@@ -16,15 +16,12 @@ class TernaryConditionalTests extends RubyParserAbstractTest {
             |    VariableIdentifier
             |     x
             | ?
-            | WsOrNl
             | PrimaryExpression
             |  VariableReferencePrimary
             |   VariableIdentifierVariableReference
             |    VariableIdentifier
             |     y
-            | WsOrNl
             | :
-            | WsOrNl
             | PrimaryExpression
             |  VariableReferencePrimary
             |   VariableIdentifierVariableReference
@@ -47,16 +44,12 @@ class TernaryConditionalTests extends RubyParserAbstractTest {
             |    VariableIdentifier
             |     x
             | ?
-            | WsOrNl
-            | WsOrNl
             | PrimaryExpression
             |  VariableReferencePrimary
             |   VariableIdentifierVariableReference
             |    VariableIdentifier
             |     y
-            | WsOrNl
             | :
-            | WsOrNl
             | PrimaryExpression
             |  VariableReferencePrimary
             |   VariableIdentifierVariableReference

@@ -36,7 +36,7 @@ statements
 statement
     :   ALIAS wsOrNl* definedMethodNameOrSymbol wsOrNl* definedMethodNameOrSymbol                                   # aliasStatement
     |   UNDEF wsOrNl* definedMethodNameOrSymbol (wsOrNl* COMMA wsOrNl* definedMethodNameOrSymbol)*                  # undefStatement
-    |   statement WS* mod=(IF | UNLESS | WHILE | UNTIL | RESCUE) wsOrNl* statement                                  # modifierStatement
+    |   statement mod=(IF | UNLESS | WHILE | UNTIL | RESCUE) NL* statement                                          # modifierStatement
     |   BEGIN_ wsOrNl* LCURLY wsOrNl* statements? wsOrNl* RCURLY                                                    # beginStatement
     |   END_ wsOrNl* LCURLY wsOrNl* statements? wsOrNl* RCURLY                                                      # endStatement
     |   expressionOrCommand                                                                                         # expressionOrCommandStatement
@@ -68,8 +68,8 @@ expression
     |   expression WS* op=AMP2 wsOrNl* expression                                                                   # operatorAndExpression
     |   expression WS* op=BAR2 wsOrNl* expression                                                                   # operatorOrExpression
     |   expression WS* op=(DOT2 | DOT3) wsOrNl* expression?                                                         # rangeExpression
-    |   expression WS* QMARK wsOrNl* expression wsOrNl* COLON wsOrNl* expression                                    # conditionalOperatorExpression
-    |   <assoc=right> singleLeftHandSide WS* op=(EQ | ASSIGNMENT_OPERATOR) wsOrNl* multipleRightHandSide            # singleAssignmentExpression
+    |   expression QMARK NL* expression NL* COLON NL* expression                                                    # conditionalOperatorExpression
+    |   <assoc=right> singleLeftHandSide op=(EQ | ASSIGNMENT_OPERATOR) NL* multipleRightHandSide                    # singleAssignmentExpression
     |   <assoc=right> multipleLeftHandSide WS* EQ wsOrNl* multipleRightHandSide                                     # multipleAssignmentExpression
     |   IS_DEFINED wsOrNl* expression                                                                               # isDefinedExpression
     ;
@@ -157,9 +157,9 @@ expressionOrCommands
 invocationWithoutParentheses
     :   chainedCommandWithDoBlock                                                                                               # chainedCommandDoBlockInvocationWithoutParentheses
     |   command                                                                                                                 # singleCommandOnlyInvocationWithoutParentheses
-    |   RETURN (WS arguments)?                                                                                                  # returnArgsInvocationWithoutParentheses
-    |   BREAK WS arguments                                                                                                      # breakArgsInvocationWithoutParentheses
-    |   NEXT WS arguments                                                                                                       # nextArgsInvocationWithoutParentheses
+    |   RETURN arguments?                                                                                                       # returnArgsInvocationWithoutParentheses
+    |   BREAK arguments                                                                                                         # breakArgsInvocationWithoutParentheses
+    |   NEXT arguments                                                                                                          # nextArgsInvocationWithoutParentheses
     ;
 
 command
@@ -180,7 +180,7 @@ commandWithDoBlock
     ;
 
 argumentsWithoutParentheses
-    :   WS+ arguments
+    :   arguments
     ;
 
 arguments
@@ -209,22 +209,22 @@ splattingArgument
     ;
 
 indexingArguments
-    :   command                                                                                                                 # commandOnlyIndexingArguments
-    |   expressions (WS* COMMA wsOrNl*)?                                                                                        # expressionsOnlyIndexingArguments
+    :   expressions (WS* COMMA wsOrNl*)?                                                                                        # expressionsOnlyIndexingArguments
     |   expressions WS* COMMA wsOrNl* splattingArgument                                                                         # expressionsAndSplattingIndexingArguments
     |   associations (WS* COMMA wsOrNl*)?                                                                                       # associationsOnlyIndexingArguments
     |   splattingArgument                                                                                                       # splattingOnlyIndexingArguments
+    |   command                                                                                                                 # commandOnlyIndexingArguments
     ;
 
 argumentsWithParentheses
-    :   LPAREN wsOrNl* RPAREN                                                                                                   # blankArgsArgumentsWithParentheses
-    |   LPAREN wsOrNl* arguments (WS* COMMA)? wsOrNl* RPAREN                                                                    # argsOnlyArgumentsWithParentheses
-    |   LPAREN wsOrNl* expressions WS* COMMA wsOrNl* chainedCommandWithDoBlock wsOrNl* RPAREN                                   # expressionsAndChainedCommandWithDoBlockArgumentsWithParentheses
-    |   LPAREN wsOrNl* chainedCommandWithDoBlock wsOrNl* RPAREN                                                                 # chainedCommandWithDoBlockOnlyArgumentsWithParentheses
+    :   LPAREN NL* RPAREN                                                                                                       # blankArgsArgumentsWithParentheses
+    |   LPAREN NL* arguments (COMMA)? NL* RPAREN                                                                                # argsOnlyArgumentsWithParentheses
+    |   LPAREN NL* expressions COMMA NL* chainedCommandWithDoBlock NL* RPAREN                                                   # expressionsAndChainedCommandWithDoBlockArgumentsWithParentheses
+    |   LPAREN NL* chainedCommandWithDoBlock NL* RPAREN                                                                         # chainedCommandWithDoBlockOnlyArgumentsWithParentheses
     ;
 
 expressions
-    :   expression (WS* COMMA wsOrNl* expression)*
+    :   expression (COMMA NL* expression)*
     ;
 
 // --------------------------------------------------------
@@ -237,15 +237,15 @@ block
     ;
 
 braceBlock
-    :   LCURLY wsOrNl* blockParameter? wsOrNl* bodyStatement wsOrNl* RCURLY
+    :   LCURLY NL* blockParameter? NL* bodyStatement NL* RCURLY
     ;
 
 doBlock
-    :   DO wsOrNl* blockParameter? separators wsOrNl* bodyStatement wsOrNl* END
+    :   DO NL* blockParameter? separators NL* bodyStatement NL* END
     ;
 
 blockParameter
-    :   BAR WS* blockParameters? WS* BAR
+    :   BAR blockParameters? BAR
     ;
 
 blockParameters
@@ -305,24 +305,24 @@ nonExpandedArrayElement
 // --------------------------------------------------------
 
 hashConstructor
-    :   LCURLY wsOrNl* (hashConstructorElements WS* COMMA?)? wsOrNl* RCURLY
+    :   LCURLY NL* (hashConstructorElements COMMA?)? NL* RCURLY
     ;
 
 hashConstructorElements
-    :   hashConstructorElement (WS* COMMA wsOrNl* hashConstructorElement)*
+    :   hashConstructorElement (COMMA NL* hashConstructorElement)*
     ;
 
 hashConstructorElement
     :   association
-    |   STAR2 WS* expression
+    |   STAR2 expression
     ;
 
 associations
-    :   association (WS* COMMA wsOrNl* association)*
+    :   association (COMMA NL* association)*
     ;
 
 association
-    :   (expression | keyword) WS* (EQGT|COLON) (wsOrNl* expression)?
+    :   (expression | keyword) (EQGT|COLON) (NL* expression)?
     ;
 
 // --------------------------------------------------------
@@ -440,11 +440,11 @@ elseClause
     ;
 
 unlessExpression
-    :   UNLESS wsOrNl* expressionOrCommand WS* thenClause wsOrNl* elseClause? wsOrNl* END
+    :   UNLESS NL* expressionOrCommand thenClause NL* elseClause? NL* END
     ;
 
 caseExpression
-    :   CASE (wsOrNl* expressionOrCommand)? separators? (WS* whenClause WS*)+ elseClause? wsOrNl* END
+    :   CASE (NL* expressionOrCommand)? separators? whenClause+ elseClause? NL* END
     ;
 
 whenClause
@@ -487,7 +487,7 @@ forVariable
 // --------------------------------------------------------
 
 beginExpression
-    :   BEGIN wsOrNl* bodyStatement wsOrNl* END
+    :   BEGIN NL* bodyStatement NL* END
     ;
 
 bodyStatement
@@ -516,8 +516,8 @@ ensureClause
 // --------------------------------------------------------
 
 classDefinition
-    :   CLASS wsOrNl* classOrModuleReference WS* (LT wsOrNl* expressionOrCommand)? separators wsOrNl* bodyStatement wsOrNl* END
-    |   CLASS wsOrNl* LT2 wsOrNl* expressionOrCommand separators wsOrNl* bodyStatement wsOrNl* END
+    :   CLASS NL* classOrModuleReference (LT NL* expressionOrCommand)? separators NL* bodyStatement NL* END
+    |   CLASS NL* LT2 NL* expressionOrCommand separators NL* bodyStatement NL* END
     ;
 
 classOrModuleReference
@@ -606,7 +606,7 @@ symbol
 stringExpression
     :   simpleString                                                                                                # simpleStringExpression
     |   stringInterpolation                                                                                         # interpolatedStringExpression
-    |   stringExpression (WS stringExpression)+                                                                     # concatenatedStringExpression
+    |   stringExpression stringExpression+                                                                          # concatenatedStringExpression
     ;
 
 quotedStringExpression

@@ -12,7 +12,6 @@ class HashLiteralTests extends RubyParserAbstractTest {
           """HashConstructorPrimary
             | HashConstructor
             |  {
-            |  WsOrNl
             |  }""".stripMargin
       }
 
@@ -22,7 +21,6 @@ class HashLiteralTests extends RubyParserAbstractTest {
           """HashConstructorPrimary
             | HashConstructor
             |  {
-            |  WsOrNl
             |  HashConstructorElements
             |   HashConstructorElement
             |    **
@@ -49,7 +47,6 @@ class HashLiteralTests extends RubyParserAbstractTest {
             |       VariableIdentifier
             |        x
             |   ,
-            |   WsOrNl
             |   HashConstructorElement
             |    **
             |    PrimaryExpression
@@ -76,7 +73,6 @@ class HashLiteralTests extends RubyParserAbstractTest {
             |       VariableIdentifier
             |        x
             |   ,
-            |   WsOrNl
             |   HashConstructorElement
             |    Association
             |     PrimaryExpression
@@ -85,7 +81,6 @@ class HashLiteralTests extends RubyParserAbstractTest {
             |        VariableIdentifier
             |         y
             |     =>
-            |     WsOrNl
             |     PrimaryExpression
             |      LiteralPrimary
             |       NumericLiteralLiteral
@@ -93,7 +88,6 @@ class HashLiteralTests extends RubyParserAbstractTest {
             |         UnsignedNumericLiteral
             |          1
             |   ,
-            |   WsOrNl
             |   HashConstructorElement
             |    **
             |    PrimaryExpression
