@@ -560,8 +560,6 @@ class AstCreator(
   }
 
   def astForIndexingArgumentsContext(ctx: IndexingArgumentsContext): Seq[Ast] = ctx match {
-    case ctx: RubyParser.CommandOnlyIndexingArgumentsContext =>
-      astForCommand(ctx.command())
     case ctx: RubyParser.ExpressionsOnlyIndexingArgumentsContext =>
       ctx
         .expressions()
