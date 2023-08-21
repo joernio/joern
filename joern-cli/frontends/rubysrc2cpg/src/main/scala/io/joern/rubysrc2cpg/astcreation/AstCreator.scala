@@ -274,7 +274,6 @@ class AstCreator(
     val b = ctx.getStop.getStopIndex
     val intv = new Interval(a, b)
     val input = ctx.getStart.getInputStream
-    
     input.getText(intv)
   }
 
@@ -286,7 +285,7 @@ class AstCreator(
       val argsAsts    = astForArguments(ctx.arguments())
       val callNode = NewCall()
         .name(Operators.indexAccess)
-        .code(ctx.getText)
+        .code(text(ctx))
         .methodFullName(Operators.indexAccess)
         .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -327,7 +326,7 @@ class AstCreator(
       val node = createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
       Seq(Ast(node))
     case _ =>
-      logger.error(s"astForSingleLeftHandSideContext() $filename, ${ctx.getText} All contexts mismatched.")
+      logger.error(s"astForSingleLeftHandSideContext() $filename, ${text(ctx)} All contexts mismatched.")
       Seq(Ast())
 
   }
@@ -365,7 +364,7 @@ class AstCreator(
        */
       val callNode = NewCall()
         .name(operatorName)
-        .code(ctx.getText)
+        .code(text(ctx))
         .methodFullName(operatorName)
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .typeFullName(Defines.Any)
@@ -442,7 +441,7 @@ class AstCreator(
     case ctx: ForExpressionPrimaryContext    => Seq(astForForExpression(ctx.forExpression()))
     case ctx: ReturnWithParenthesesPrimaryContext =>
       Seq(
-        returnAst(returnNode(ctx, ctx.getText), astForArgumentsWithParenthesesContext(ctx.argumentsWithParentheses()))
+        returnAst(returnNode(ctx, text(ctx)), astForArgumentsWithParenthesesContext(ctx.argumentsWithParentheses()))
       )
     case ctx: JumpExpressionPrimaryContext     => astForJumpExpressionPrimaryContext(ctx)
     case ctx: BeginExpressionPrimaryContext    => astForBeginExpressionPrimaryContext(ctx)
@@ -470,7 +469,7 @@ class AstCreator(
     case ctx: ChainedInvocationWithoutArgumentsPrimaryContext =>
       astForChainedInvocationWithoutArgumentsPrimaryContext(ctx)
     case _ =>
-      logger.error(s"astForPrimaryContext() $filename, ${ctx.getText} All contexts mismatched.")
+      logger.error(s"astForPrimaryContext() $filename, ${text(ctx)} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -494,7 +493,7 @@ class AstCreator(
     case ctx: MultipleAssignmentExpressionContext  => astForMultipleAssignmentExpressionContext(ctx)
     case ctx: IsDefinedExpressionContext           => Seq(astForIsDefinedExpression(ctx))
     case _ =>
-      logger.error(s"astForExpressionContext() $filename, ${ctx.getText} All contexts mismatched.")
+      logger.error(s"astForExpressionContext() $filename, ${text(ctx)} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -514,7 +513,7 @@ class AstCreator(
 
     val methodFullName = classStack.reverse :+ procMethodName mkString pathSep
     val methodNode = NewMethod()
-      .code(ctx.getText)
+      .code(text(ctx))
       .name(procMethodName)
       .fullName(methodFullName)
       .filename(filename)
@@ -546,7 +545,7 @@ class AstCreator(
       .methodFullName(methodFullName)
       .typeFullName(Defines.Any)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .code(ctx.getText)
+      .code(text(ctx))
     Seq(callAst(callNode, callArgs))
   }
 
@@ -588,7 +587,7 @@ class AstCreator(
         .signature(Operators.arrayInitializer)
         .typeFullName(Defines.Any)
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
-        .code(ctx.getText)
+        .code(text(ctx))
         .lineNumber(ctx.COMMA().getSymbol.getLine)
         .columnNumber(ctx.COMMA().getSymbol.getCharPositionInLine)
       Seq(callAst(callNode, expAsts ++ splatAsts))
@@ -597,7 +596,7 @@ class AstCreator(
     case ctx: RubyParser.SplattingOnlyIndexingArgumentsContext =>
       astForExpressionOrCommand(ctx.splattingArgument().expressionOrCommand())
     case _ =>
-      logger.error(s"astForIndexingArgumentsContext() $filename, ${ctx.getText} All contexts mismatched.")
+      logger.error(s"astForIndexingArgumentsContext() $filename, ${text(ctx)} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -728,7 +727,7 @@ class AstCreator(
         Seq(callAst(baseCallNode, argsAst))
       } else {
         callNode
-          .code(ctx.getText)
+          .code(text(ctx))
           .lineNumber(terminalNode.getSymbol().getLine())
           .columnNumber(terminalNode.getSymbol().getCharPositionInLine())
 
@@ -765,7 +764,7 @@ class AstCreator(
     }
     val callNode = methodNameAst.head.nodes.filter(node => node.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
     callNode
-      .code(ctx.getText)
+      .code(text(ctx))
       .lineNumber(ctx.COLON2().getSymbol().getLine())
       .columnNumber(ctx.COLON2().getSymbol().getCharPositionInLine())
     Seq(callAst(callNode, baseAst ++ blocksAst))
@@ -783,7 +782,7 @@ class AstCreator(
     val operatorName = getOperatorName(ctx.COLON2().getSymbol)
     val callNode = NewCall()
       .name(operatorName)
-      .code(ctx.getText)
+      .code(text(ctx))
       .methodFullName(operatorName)
       .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -830,7 +829,7 @@ class AstCreator(
     case ctx: GroupedLeftHandSideOnlyMultipleLeftHandSideContext =>
       astForGroupedLeftHandSideContext(ctx.groupedLeftHandSide())
     case _ =>
-      logger.error(s"astForMultipleLeftHandSideContext() $filename, ${ctx.getText} All contexts mismatched.")
+      logger.error(s"astForMultipleLeftHandSideContext() $filename, ${text(ctx)} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -868,7 +867,7 @@ class AstCreator(
 
     val callNode = NewCall()
       .name(operator)
-      .code(ctx.getText)
+      .code(text(ctx))
       .methodFullName(operator)
       .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -885,7 +884,7 @@ class AstCreator(
       val operatorName     = getOperatorName(ctx.EMARK().getSymbol)
       val callNode = NewCall()
         .name(operatorName)
-        .code(ctx.getText)
+        .code(text(ctx))
         .methodFullName(operatorName)
         .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -904,7 +903,7 @@ class AstCreator(
       astForChainedCommandWithDoBlockContext(ctx.chainedCommandWithDoBlock())
     case ctx: ReturnArgsInvocationWithoutParenthesesContext =>
       val retNode = NewReturn()
-        .code(ctx.getText)
+        .code(text(ctx))
         .lineNumber(ctx.RETURN().getSymbol().getLine)
         .columnNumber(ctx.RETURN().getSymbol().getCharPositionInLine)
       val argAst = Option(ctx.arguments).map(astForArguments).getOrElse(Seq())
@@ -918,7 +917,7 @@ class AstCreator(
            * Model this as a return since this is effectively a  return
            */
           val retNode = NewReturn()
-            .code(ctx.getText)
+            .code(text(ctx))
             .lineNumber(ctx.BREAK().getSymbol().getLine)
             .columnNumber(ctx.BREAK().getSymbol().getCharPositionInLine)
           val argAst = astForArguments(args)
@@ -928,7 +927,7 @@ class AstCreator(
             .controlStructureType(ControlStructureTypes.BREAK)
             .lineNumber(ctx.BREAK().getSymbol.getLine)
             .columnNumber(ctx.BREAK().getSymbol.getCharPositionInLine)
-            .code(ctx.getText)
+            .code(text(ctx))
           Seq(
             Ast(node)
               .withChildren(astForArguments(ctx.arguments()))
@@ -947,12 +946,12 @@ class AstCreator(
           .withChildren(astForArguments(ctx.arguments()))
       )
     case _ =>
-      logger.error(s"astForInvocationWithoutParenthesesContext() $filename, ${ctx.getText} All contexts mismatched.")
+      logger.error(s"astForInvocationWithoutParenthesesContext() $filename, ${text(ctx)} All contexts mismatched.")
       Seq(Ast())
   }
 
   def astForInvocationWithBlockOnlyPrimaryContext(ctx: InvocationWithBlockOnlyPrimaryContext): Seq[Ast] = {
-    val methodIdAst = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText)
+    val methodIdAst = astForMethodIdentifierContext(ctx.methodIdentifier(), text(ctx))
     val blockName = methodIdAst.head.nodes.head
       .asInstanceOf[NewCall]
       .name
@@ -986,7 +985,7 @@ class AstCreator(
   }
 
   def astForInvocationWithParenthesesPrimaryContext(ctx: InvocationWithParenthesesPrimaryContext): Seq[Ast] = {
-    val methodIdAst = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText)
+    val methodIdAst = astForMethodIdentifierContext(ctx.methodIdentifier(), text(ctx))
     val parenAst    = astForArgumentsWithParenthesesContext(ctx.argumentsWithParentheses())
     val callNode    = methodIdAst.head.nodes.filter(_.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
     callNode.name(getActualMethodName(callNode.name))
@@ -1016,7 +1015,7 @@ class AstCreator(
         .controlStructureType(ControlStructureTypes.BREAK)
         .lineNumber(ctx.jumpExpression().BREAK().getSymbol.getLine)
         .columnNumber(ctx.jumpExpression().BREAK().getSymbol.getCharPositionInLine)
-        .code(ctx.getText)
+        .code(text(ctx))
       Seq(Ast(node))
     } else if (ctx.jumpExpression().NEXT() != null) {
       val node = NewControlStructure()
@@ -1055,7 +1054,7 @@ class AstCreator(
       } else {
         ""
       }
-    val name = s"${getActualMethodName(ctx.getText)}$nameSuffix"
+    val name = s"${getActualMethodName(text(ctx))}$nameSuffix"
     // Add the call name to the global builtIn callNames set
     if (isBuiltin(name))
       builtInCallNames.add(name)
@@ -1065,9 +1064,9 @@ class AstCreator(
 
   def astForMethodOnlyIdentifier(ctx: MethodOnlyIdentifierContext): Seq[Ast] = {
     if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
-      Seq(astForCallNode(ctx, ctx.getText))
+      Seq(astForCallNode(ctx, text(ctx)))
     } else if (ctx.CONSTANT_IDENTIFIER() != null) {
-      Seq(astForCallNode(ctx, ctx.getText))
+      Seq(astForCallNode(ctx, text(ctx)))
     } else if (ctx.keyword() != null) {
       Seq(astForCallNode(ctx, ctx.keyword().getText))
     } else {
@@ -1098,12 +1097,12 @@ class AstCreator(
     val terminalNode = ctx.children.asScala.head
       .asInstanceOf[TerminalNode]
 
-    val name           = ctx.getText
+    val name           = text(ctx)
     val methodFullName = classStack.reverse :+ name mkString pathSep
 
     val callNode = NewCall()
       .name(name)
-      .code(ctx.getText)
+      .code(text(ctx))
       .methodFullName(methodFullName)
       .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -1115,7 +1114,7 @@ class AstCreator(
 
   def astForMethodNameContext(ctx: MethodNameContext): Seq[Ast] = {
     if (ctx.methodIdentifier() != null) {
-      astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText)
+      astForMethodIdentifierContext(ctx.methodIdentifier(), text(ctx))
     } else if (ctx.operatorMethodName() != null) {
       astForOperatorMethodNameContext(ctx.operatorMethodName())
     } else if (ctx.keyword() != null) {
@@ -1127,7 +1126,7 @@ class AstCreator(
         .asInstanceOf[TerminalNode]
       val callNode = NewCall()
         .name(terminalNode.getText)
-        .code(ctx.getText)
+        .code(text(ctx))
         .methodFullName(terminalNode.getText)
         .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -1142,7 +1141,7 @@ class AstCreator(
   def astForAssignmentLikeMethodIdentifierContext(ctx: AssignmentLikeMethodIdentifierContext): Seq[Ast] = {
     Seq(
       callAst(
-        callNode(ctx, ctx.getText, ctx.getText, ctx.getText, DispatchTypes.STATIC_DISPATCH, Some(""), Some(Defines.Any))
+        callNode(ctx, text(ctx), text(ctx), text(ctx), DispatchTypes.STATIC_DISPATCH, Some(""), Some(Defines.Any))
       )
     )
   }
@@ -1175,7 +1174,7 @@ class AstCreator(
     case ctx: SimpleMethodNamePartContext    => astForSimpleMethodNamePartContext(ctx)
     case ctx: SingletonMethodNamePartContext => astForSingletonMethodNamePartContext(ctx)
     case _ =>
-      logger.error(s"astForMethodNamePartContext() $filename, ${ctx.getText} All contexts mismatched.")
+      logger.error(s"astForMethodNamePartContext() $filename, ${text(ctx)} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -1358,7 +1357,7 @@ class AstCreator(
       case Some(ctxMethodNamePart) =>
         astForMethodNamePartContext(ctxMethodNamePart)
       case None =>
-        astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText)
+        astForMethodIdentifierContext(ctx.methodIdentifier(), text(ctx))
     val callNode = astMethodName.head.nodes.filter(node => node.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
 
     // Create thisParameter if this is an instance method
@@ -1397,7 +1396,7 @@ class AstCreator(
 
     val methodFullName = classStack.reverse :+ callNode.name mkString pathSep
     val methodNode = NewMethod()
-      .code(ctx.getText)
+      .code(text(ctx))
       .name(callNode.name)
       .fullName(methodFullName)
       .columnNumber(callNode.columnNumber)
@@ -1562,7 +1561,7 @@ class AstCreator(
     val operatorName = getOperatorName(ctx.COLON2().getSymbol)
     val callNode = NewCall()
       .name(operatorName)
-      .code(ctx.getText)
+      .code(text(ctx))
       .methodFullName(operatorName)
       .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -1582,7 +1581,7 @@ class AstCreator(
     case ctx: RubyParser.ArgsAndDoBlockAndMethodIdCommandWithDoBlockContext =>
       val argsAsts     = astForArguments(ctx.argumentsWithoutParentheses().arguments())
       val doBlockAsts  = Seq(astForDoBlock(ctx.doBlock()))
-      val methodIdAsts = astForMethodIdentifierContext(ctx.methodIdentifier(), ctx.getText)
+      val methodIdAsts = astForMethodIdentifierContext(ctx.methodIdentifier(), text(ctx))
       methodIdAsts ++ argsAsts ++ doBlockAsts
     case ctx: RubyParser.PrimaryMethodArgsDoBlockCommandWithDoBlockContext =>
       val argsAsts       = astForArguments(ctx.argumentsWithoutParentheses().arguments())
@@ -1591,7 +1590,7 @@ class AstCreator(
       val primaryAsts    = astForPrimaryContext(ctx.primary())
       primaryAsts ++ methodNameAsts ++ argsAsts ++ doBlockAsts
     case _ =>
-      logger.error(s"astForCommandWithDoBlockContext() $filename, ${ctx.getText} All contexts mismatched.")
+      logger.error(s"astForCommandWithDoBlockContext() $filename, ${text(ctx)} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -1625,7 +1624,7 @@ class AstCreator(
     case ctx: ChainedCommandWithDoBlockOnlyArgumentsWithParenthesesContext =>
       astForChainedCommandWithDoBlockContext(ctx.chainedCommandWithDoBlock())
     case _ =>
-      logger.error(s"astForArgumentsWithParenthesesContext() $filename, ${ctx.getText} All contexts mismatched.")
+      logger.error(s"astForArgumentsWithParenthesesContext() $filename, ${text(ctx)} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -1735,7 +1734,7 @@ class AstCreator(
 
     val callNode = NewCall()
       .name(operatorText)
-      .code(ctx.getText)
+      .code(text(ctx))
       .methodFullName(operatorText)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .typeFullName(Defines.Any)
