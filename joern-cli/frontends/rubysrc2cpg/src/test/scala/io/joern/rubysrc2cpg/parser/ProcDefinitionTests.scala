@@ -30,10 +30,22 @@ class ProcDefinitionTests extends RubyParserAbstractTest {
             |   DoBlock
             |    do
             |    Separators
-            |     Separator
-            |      ;
+            |     ;
             |    BodyStatement
             |     CompoundStatement
+            |    end""".stripMargin
+      }
+
+      "it contains no parameters and returns a literal in a do block" in {
+        val code = "-> do 1 end"
+        printAst(_.primary(), code) shouldBe
+          """ProcDefinitionPrimary
+            | ProcDefinition
+            |  ->
+            |  DoBlockBlock
+            |   DoBlock
+            |    do
+            |    1
             |    end""".stripMargin
       }
 
@@ -73,8 +85,7 @@ class ProcDefinitionTests extends RubyParserAbstractTest {
             |   DoBlock
             |    do
             |    Separators
-            |     Separator
-            |      ;
+            |     ;
             |    BodyStatement
             |     CompoundStatement
             |    end""".stripMargin
@@ -130,8 +141,7 @@ class ProcDefinitionTests extends RubyParserAbstractTest {
             |   DoBlock
             |    do
             |    Separators
-            |     Separator
-            |      ;
+            |     ;
             |    BodyStatement
             |     CompoundStatement
             |    end""".stripMargin
@@ -174,8 +184,7 @@ class ProcDefinitionTests extends RubyParserAbstractTest {
             |                 VariableIdentifier
             |                  x
             |       Separators
-            |        Separator
-            |         ;
+            |        ;
             |       ExpressionOrCommandStatement
             |        InvocationExpressionOrCommand
             |         SingleCommandOnlyInvocationWithoutParentheses

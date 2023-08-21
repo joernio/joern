@@ -36,7 +36,6 @@ class RescueClauseTests extends RubyParserAbstractTest {
             |           UnsignedNumericLiteral
             |            0
             |   Separators
-            |    Separator
             |  RescueClause
             |   rescue
             |   ExceptionClass
@@ -51,7 +50,7 @@ class RescueClauseTests extends RubyParserAbstractTest {
             |     VariableIdentifier
             |      e
             |   ThenClause
-            |    Separator
+            |    Separators
             |    CompoundStatement
             | end""".stripMargin
       }
@@ -72,7 +71,7 @@ class RescueClauseTests extends RubyParserAbstractTest {
             |    MethodIdentifier
             |     foo
             | MethodParameterPart
-            | Separator
+            | Separators
             |  ;
             | BodyStatement
             |  CompoundStatement
@@ -94,7 +93,6 @@ class RescueClauseTests extends RubyParserAbstractTest {
             |           UnsignedNumericLiteral
             |            0
             |   Separators
-            |    Separator
             |  RescueClause
             |   rescue
             |   ExceptionClass
@@ -109,7 +107,7 @@ class RescueClauseTests extends RubyParserAbstractTest {
             |     VariableIdentifier
             |      e
             |   ThenClause
-            |    Separator
+            |    Separators
             |    CompoundStatement
             | end""".stripMargin
       }
@@ -147,7 +145,6 @@ class RescueClauseTests extends RubyParserAbstractTest {
             |          y
             |       |
             |      Separators
-            |       Separator
             |      BodyStatement
             |       CompoundStatement
             |        Statements
@@ -167,7 +164,6 @@ class RescueClauseTests extends RubyParserAbstractTest {
             |                UnsignedNumericLiteral
             |                 0
             |        Separators
-            |         Separator
             |       RescueClause
             |        rescue
             |        ExceptionClass
@@ -182,7 +178,7 @@ class RescueClauseTests extends RubyParserAbstractTest {
             |          VariableIdentifier
             |           e
             |        ThenClause
-            |         Separator
+            |         Separators
             |         CompoundStatement
             |      end""".stripMargin
       }

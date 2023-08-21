@@ -17,12 +17,7 @@ compoundStatement
     ;
 
 separators
-    :   separator+
-    ;
-
-separator
-    :   SEMI
-    |   NL
+    :   (SEMI | NL)+
     ;
 
 // --------------------------------------------------------
@@ -330,7 +325,7 @@ association
 // --------------------------------------------------------
 
 methodDefinition
-    :   DEF NL* methodNamePart methodParameterPart separator? NL* bodyStatement NL* END
+    :   DEF NL* methodNamePart methodParameterPart separators? bodyStatement NL* END
     |   DEF NL* methodIdentifier methodParameterPart EQ NL* expression
     ;
     
@@ -427,8 +422,8 @@ ifExpression
     ;
 
 thenClause
-    :   separator NL* compoundStatement
-    |   separator? THEN NL* compoundStatement
+    :   separators compoundStatement
+    |   separators? THEN NL* compoundStatement
     ;
 
 elsifClause
@@ -465,8 +460,8 @@ whileExpression
     ;
 
 doClause
-    :   separator NL* compoundStatement
-    |   DO NL* compoundStatement
+    :   separators compoundStatement
+    |   DO separators? compoundStatement
     ;
 
 untilExpression

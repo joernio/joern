@@ -20,8 +20,7 @@ class ClassDefinitionTests extends RubyParserAbstractTest {
             |      SelfPseudoVariableIdentifier
             |       self
             |  Separators
-            |   Separator
-            |    ;
+            |   ;
             |  BodyStatement
             |   CompoundStatement
             |  end""".stripMargin
@@ -50,7 +49,6 @@ class ClassDefinitionTests extends RubyParserAbstractTest {
             |      VariableIdentifier
             |       x
             |  Separators
-            |   Separator
             |  BodyStatement
             |   CompoundStatement
             |    Statements
@@ -66,7 +64,7 @@ class ClassDefinitionTests extends RubyParserAbstractTest {
             |             MethodIdentifier
             |              show
             |          MethodParameterPart
-            |          Separator
+            |          Separators
             |           ;
             |          BodyStatement
             |           CompoundStatement
@@ -86,11 +84,9 @@ class ClassDefinitionTests extends RubyParserAbstractTest {
             |                       SelfPseudoVariableIdentifier
             |                        self
             |            Separators
-            |             Separator
-            |              ;
+            |             ;
             |          end
             |    Separators
-            |     Separator
             |  end""".stripMargin
       }
     }
