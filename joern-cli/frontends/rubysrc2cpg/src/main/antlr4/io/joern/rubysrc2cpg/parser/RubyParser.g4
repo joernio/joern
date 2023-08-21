@@ -487,7 +487,7 @@ forVariable
 // --------------------------------------------------------
 
 beginExpression
-    :   BEGIN wsOrNl* bodyStatement wsOrNl* END
+    :   BEGIN NL* bodyStatement NL* END
     ;
 
 bodyStatement
