@@ -491,6 +491,13 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     tokenize(code) shouldBe Seq(SINGLE_QUOTED_STRING_LITERAL, WS, SINGLE_QUOTED_STRING_LITERAL, EOF)
   }
 
+  "Multi-line string literal concatenation" should "be optimized as two consecutive string literals" in {
+    val code =
+      """'abc' \
+        |'cde'""".stripMargin
+    tokenizeOpt(code) shouldBe Seq(SINGLE_QUOTED_STRING_LITERAL, SINGLE_QUOTED_STRING_LITERAL, EOF)
+  }
+
   "empty `%q` string literals" should "be recognized as such" in {
     val eg = Seq("%q()", "%q[]", "%q{}", "%q<>", "%q##", "%q!!", "%q--", "%q@@", "%q++", "%q**", "%q//", "%q&&")
     all(eg.map(tokenize)) shouldBe Seq(
