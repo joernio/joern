@@ -9,7 +9,7 @@ options {
 // --------------------------------------------------------
 
 program
-    :   wsOrNl* compoundStatement EOF
+    :   NL* compoundStatement EOF
     ;
 
 compoundStatement
@@ -17,7 +17,7 @@ compoundStatement
     ;
 
 separators
-    :   WS* separator (WS* separator)*
+    :   separator+
     ;
 
 separator
@@ -30,15 +30,15 @@ separator
 // --------------------------------------------------------
 
 statements
-    :   statement (separators WS* statement)*
+    :   statement (separators statement)*
     ;
 
 statement
-    :   ALIAS wsOrNl* definedMethodNameOrSymbol wsOrNl* definedMethodNameOrSymbol                                   # aliasStatement
-    |   UNDEF wsOrNl* definedMethodNameOrSymbol (wsOrNl* COMMA wsOrNl* definedMethodNameOrSymbol)*                  # undefStatement
+    :   ALIAS NL* definedMethodNameOrSymbol NL* definedMethodNameOrSymbol                                           # aliasStatement
+    |   UNDEF NL* definedMethodNameOrSymbol (COMMA NL* definedMethodNameOrSymbol)*                                  # undefStatement
+    |   BEGIN_ LCURLY NL* statements? NL* RCURLY                                                                    # beginStatement
+    |   END_ LCURLY NL* statements? NL* RCURLY                                                                      # endStatement
     |   statement mod=(IF | UNLESS | WHILE | UNTIL | RESCUE) NL* statement                                          # modifierStatement
-    |   BEGIN_ wsOrNl* LCURLY wsOrNl* statements? wsOrNl* RCURLY                                                    # beginStatement
-    |   END_ wsOrNl* LCURLY wsOrNl* statements? wsOrNl* RCURLY                                                      # endStatement
     |   expressionOrCommand                                                                                         # expressionOrCommandStatement
     ;
 
@@ -48,30 +48,30 @@ statement
 
 expressionOrCommand
     :   expression                                                                                                  # expressionExpressionOrCommand
-    |   (EMARK wsOrNl*)? invocationWithoutParentheses                                                               # invocationExpressionOrCommand
-    |   NOT wsOrNl* expressionOrCommand                                                                             # notExpressionOrCommand
-    |   <assoc=right> expressionOrCommand WS* op=(OR | AND) wsOrNl* expressionOrCommand                             # orAndExpressionOrCommand
+    |   (EMARK NL*)? invocationWithoutParentheses                                                                   # invocationExpressionOrCommand
+    |   NOT NL* expressionOrCommand                                                                                 # notExpressionOrCommand
+    |   <assoc=right> expressionOrCommand op=(OR | AND) NL* expressionOrCommand                                     # orAndExpressionOrCommand
     ;
 
 expression
     :   primary                                                                                                     # primaryExpression
-    |   op=(TILDE | PLUS | EMARK) wsOrNl* expression                                                                # unaryExpression
-    |   <assoc=right> expression WS* STAR2 wsOrNl* expression                                                       # powerExpression
-    |   MINUS wsOrNl* expression                                                                                    # unaryMinusExpression
-    |   expression WS* op=(STAR | SLASH | PERCENT) wsOrNl* expression                                               # multiplicativeExpression
-    |   expression WS* op=(PLUS | MINUS) wsOrNl* expression                                                         # additiveExpression
-    |   expression WS* op=(LT2 | GT2) wsOrNl* expression                                                            # bitwiseShiftExpression
-    |   expression WS* op=AMP wsOrNl* expression                                                                    # bitwiseAndExpression
-    |   expression WS* op=(BAR | CARET) wsOrNl* expression                                                          # bitwiseOrExpression
-    |   expression WS* op=(GT | GTEQ | LT | LTEQ) wsOrNl* expression                                                # relationalExpression
-    |   expression WS* op=(LTEQGT | EQ2 | EQ3 | EMARKEQ | EQTILDE | EMARKTILDE) wsOrNl* expression?                 # equalityExpression
-    |   expression WS* op=AMP2 wsOrNl* expression                                                                   # operatorAndExpression
-    |   expression WS* op=BAR2 wsOrNl* expression                                                                   # operatorOrExpression
-    |   expression WS* op=(DOT2 | DOT3) wsOrNl* expression?                                                         # rangeExpression
+    |   op=(TILDE | PLUS | EMARK) NL* expression                                                                    # unaryExpression
+    |   <assoc=right> expression STAR2 NL* expression                                                               # powerExpression
+    |   MINUS NL* expression                                                                                        # unaryMinusExpression
+    |   expression op=(STAR | SLASH | PERCENT) NL* expression                                                       # multiplicativeExpression
+    |   expression op=(PLUS | MINUS) NL* expression                                                                 # additiveExpression
+    |   expression op=(LT2 | GT2) NL* expression                                                                    # bitwiseShiftExpression
+    |   expression op=AMP NL* expression                                                                            # bitwiseAndExpression
+    |   expression op=(BAR | CARET) NL* expression                                                                  # bitwiseOrExpression
+    |   expression op=(GT | GTEQ | LT | LTEQ) NL* expression                                                        # relationalExpression
+    |   expression op=(LTEQGT | EQ2 | EQ3 | EMARKEQ | EQTILDE | EMARKTILDE) NL* expression?                         # equalityExpression
+    |   expression op=AMP2 NL* expression                                                                           # operatorAndExpression
+    |   expression op=BAR2 NL* expression                                                                           # operatorOrExpression
+    |   expression op=(DOT2 | DOT3) NL* expression?                                                                 # rangeExpression
     |   expression QMARK NL* expression NL* COLON NL* expression                                                    # conditionalOperatorExpression
     |   <assoc=right> singleLeftHandSide op=(EQ | ASSIGNMENT_OPERATOR) NL* multipleRightHandSide                    # singleAssignmentExpression
-    |   <assoc=right> multipleLeftHandSide WS* EQ wsOrNl* multipleRightHandSide                                     # multipleAssignmentExpression
-    |   IS_DEFINED wsOrNl* expression                                                                               # isDefinedExpression
+    |   <assoc=right> multipleLeftHandSide EQ NL* multipleRightHandSide                                             # multipleAssignmentExpression
+    |   IS_DEFINED NL* expression                                                                                   # isDefinedExpression
     ;
 
 primary
@@ -89,7 +89,7 @@ primary
     |   RETURN argumentsWithParentheses                                                                                     # returnWithParenthesesPrimary
     |   jumpExpression                                                                                                      # jumpExpressionPrimary
     |   beginExpression                                                                                                     # beginExpressionPrimary
-    |   LPAREN wsOrNl* compoundStatement wsOrNl* RPAREN                                                                     # groupingExpressionPrimary
+    |   LPAREN NL* compoundStatement NL* RPAREN                                                                             # groupingExpressionPrimary
     |   variableReference                                                                                                   # variableReferencePrimary
     |   COLON2 CONSTANT_IDENTIFIER                                                                                          # simpleScopedConstantReferencePrimary
     |   primary COLON2 CONSTANT_IDENTIFIER                                                                                  # chainedScopedConstantReferencePrimary
@@ -103,11 +103,11 @@ primary
     |   quotedRegexInterpolation                                                                                            # quotedRegexInterpolationPrimary
     |   IS_DEFINED LPAREN expressionOrCommand RPAREN                                                                        # isDefinedPrimary
     |   SUPER argumentsWithParentheses? block?                                                                              # superExpressionPrimary
-    |   primary LBRACK WS* indexingArguments? WS* RBRACK                                                                    # indexingExpressionPrimary
+    |   primary LBRACK indexingArguments? RBRACK                                                                            # indexingExpressionPrimary
     |   methodOnlyIdentifier                                                                                                # methodOnlyIdentifierPrimary
-    |   methodIdentifier WS? block                                                                                          # invocationWithBlockOnlyPrimary
-    |   methodIdentifier argumentsWithParentheses WS* block?                                                                # invocationWithParenthesesPrimary
-    |   primary wsOrNl* (DOT | COLON2| AMPDOT) wsOrNl* methodName argumentsWithParentheses? WS? block?                      # chainedInvocationPrimary
+    |   methodIdentifier block                                                                                              # invocationWithBlockOnlyPrimary
+    |   methodIdentifier argumentsWithParentheses block?                                                                    # invocationWithParenthesesPrimary
+    |   primary NL* (DOT | COLON2| AMPDOT) NL* methodName argumentsWithParentheses? block?                                  # chainedInvocationPrimary
     |   primary COLON2 methodName block?                                                                                    # chainedInvocationWithoutArgumentsPrimary
     ;
 
@@ -123,7 +123,7 @@ singleLeftHandSide
     ;
 
 multipleLeftHandSide
-    :   (multipleLeftHandSideItem COMMA wsOrNl*)+ (multipleLeftHandSideItem | packingLeftHandSide)?                 # multipleLeftHandSideAndpackingLeftHandSideMultipleLeftHandSide
+    :   (multipleLeftHandSideItem COMMA NL*)+ (multipleLeftHandSideItem | packingLeftHandSide)?                     # multipleLeftHandSideAndpackingLeftHandSideMultipleLeftHandSide
     |   packingLeftHandSide                                                                                         # packingLeftHandSideOnlyMultipleLeftHandSide
     |   groupedLeftHandSide                                                                                         # groupedLeftHandSideOnlyMultipleLeftHandSide
     ;
@@ -142,12 +142,12 @@ groupedLeftHandSide
     ;
 
 multipleRightHandSide
-    :   expressionOrCommands (WS* COMMA wsOrNl* splattingArgument)?
+    :   expressionOrCommands (COMMA NL* splattingArgument)?
     |   splattingArgument
     ;
 
 expressionOrCommands
-    :   expressionOrCommand (WS* COMMA wsOrNl* expressionOrCommand)*
+    :   expressionOrCommand (COMMA NL* expressionOrCommand)*
     ;
 
 // --------------------------------------------------------
@@ -166,7 +166,7 @@ command
     :   SUPER argumentsWithoutParentheses                                                                                               # superCommand
     |   YIELD argumentsWithoutParentheses                                                                                               # yieldCommand
     |   methodIdentifier argumentsWithoutParentheses                                                                                    # simpleMethodCommand
-    |   primary WS* (DOT | COLON2| AMPDOT) wsOrNl* methodName argumentsWithoutParentheses                                               # memberAccessCommand
+    |   primary (DOT | COLON2| AMPDOT) NL* methodName argumentsWithoutParentheses                                                       # memberAccessCommand
     ;
 
 chainedCommandWithDoBlock
@@ -174,9 +174,9 @@ chainedCommandWithDoBlock
     ;
 
 commandWithDoBlock
-    :   SUPER argumentsWithoutParentheses WS* doBlock                                                                           # argsAndDoBlockCommandWithDoBlock
-    |   methodIdentifier argumentsWithoutParentheses WS* doBlock                                                                # argsAndDoBlockAndMethodIdCommandWithDoBlock
-    |   primary WS* (DOT | COLON2) methodName argumentsWithoutParentheses WS* doBlock                                           # primaryMethodArgsDoBlockCommandWithDoBlock
+    :   SUPER argumentsWithoutParentheses doBlock                                                                               # argsAndDoBlockCommandWithDoBlock
+    |   methodIdentifier argumentsWithoutParentheses doBlock                                                                    # argsAndDoBlockAndMethodIdCommandWithDoBlock
+    |   primary (DOT | COLON2) methodName argumentsWithoutParentheses doBlock                                                   # primaryMethodArgsDoBlockCommandWithDoBlock
     ;
 
 argumentsWithoutParentheses
@@ -184,7 +184,7 @@ argumentsWithoutParentheses
     ;
 
 arguments
-    :   argument (WS* COMMA wsOrNl* argument)*
+    :   argument (COMMA NL* argument)*
     ;
     
 argument
@@ -204,14 +204,14 @@ blockArgument
 // --------------------------------------------------------
 
 splattingArgument
-    :   STAR WS* expressionOrCommand
-    |   STAR2 WS* expressionOrCommand
+    :   STAR expressionOrCommand
+    |   STAR2 expressionOrCommand
     ;
 
 indexingArguments
-    :   expressions (WS* COMMA wsOrNl*)?                                                                                        # expressionsOnlyIndexingArguments
-    |   expressions WS* COMMA wsOrNl* splattingArgument                                                                         # expressionsAndSplattingIndexingArguments
-    |   associations (WS* COMMA wsOrNl*)?                                                                                       # associationsOnlyIndexingArguments
+    :   expressions (COMMA NL*)?                                                                                                # expressionsOnlyIndexingArguments
+    |   expressions COMMA NL* splattingArgument                                                                                 # expressionsAndSplattingIndexingArguments
+    |   associations (COMMA NL*)?                                                                                               # associationsOnlyIndexingArguments
     |   splattingArgument                                                                                                       # splattingOnlyIndexingArguments
     |   command                                                                                                                 # commandOnlyIndexingArguments
     ;
@@ -258,7 +258,7 @@ blockParameters
 // --------------------------------------------------------
 
 arrayConstructor
-    :   LBRACK wsOrNl* indexingArguments? wsOrNl* RBRACK                                                            # bracketedArrayConstructor
+    :   LBRACK NL* indexingArguments? NL* RBRACK                                                                    # bracketedArrayConstructor
     |   QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_START
         nonExpandedArrayElements?
         QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END                                                                # nonExpandedWordArrayConstructor
@@ -330,18 +330,18 @@ association
 // --------------------------------------------------------
 
 methodDefinition
-    :   DEF wsOrNl* methodNamePart WS* methodParameterPart separator? wsOrNl* bodyStatement wsOrNl* END
-    |   DEF wsOrNl* methodIdentifier WS* methodParameterPart WS* EQ wsOrNl* expression
+    :   DEF NL* methodNamePart methodParameterPart separator? NL* bodyStatement NL* END
+    |   DEF NL* methodIdentifier methodParameterPart EQ NL* expression
     ;
     
 
 procDefinition
-    :   MINUSGT WS? (LPAREN parameters? RPAREN)? WS? block
+    :   MINUSGT (LPAREN parameters? RPAREN)? block
     ;
 
 methodNamePart
     :   definedMethodName                                                                                           # simpleMethodNamePart
-    |   singletonObject wsOrNl* (DOT | COLON2) wsOrNl* definedMethodName                                            # singletonMethodNamePart
+    |   singletonObject NL* (DOT | COLON2) NL* definedMethodName                                                    # singletonMethodNamePart
     ;
 
 singletonObject
@@ -376,12 +376,12 @@ methodOnlyIdentifier
     ;
 
 methodParameterPart
-    :   LPAREN wsOrNl* parameters? wsOrNl* RPAREN
+    :   LPAREN NL* parameters? NL* RPAREN
     |   parameters?
     ;
 
 parameters
-    :   parameter (WS* COMMA wsOrNl* parameter)*
+    :   parameter (COMMA NL* parameter)*
     ;
     
 parameter
@@ -398,7 +398,7 @@ mandatoryParameter
     ;
 
 optionalParameter
-    :   LOCAL_VARIABLE_IDENTIFIER WS* EQ wsOrNl* expression
+    :   LOCAL_VARIABLE_IDENTIFIER EQ NL* expression
     ;
 
 arrayParameter
@@ -410,7 +410,7 @@ hashParameter
     ;
 
 keywordParameter
-    :   LOCAL_VARIABLE_IDENTIFIER WS* COLON (wsOrNl* expression)?
+    :   LOCAL_VARIABLE_IDENTIFIER COLON (NL* expression)?
     ;
 
 procParameter
@@ -423,20 +423,20 @@ procParameter
 // --------------------------------------------------------
 
 ifExpression
-    :   IF wsOrNl* expressionOrCommand WS* thenClause (wsOrNl* elsifClause)* (wsOrNl* elseClause)? wsOrNl* END
+    :   IF NL* expressionOrCommand thenClause (NL* elsifClause)* (NL* elseClause)? NL* END
     ;
 
 thenClause
-    :   separator wsOrNl* compoundStatement
-    |   separator? THEN wsOrNl* compoundStatement
+    :   separator NL* compoundStatement
+    |   separator? THEN NL* compoundStatement
     ;
 
 elsifClause
-    :   ELSIF wsOrNl* expressionOrCommand WS? thenClause
+    :   ELSIF NL* expressionOrCommand thenClause
     ;
 
 elseClause
-    :   ELSE wsOrNl* compoundStatement
+    :   ELSE NL* compoundStatement
     ;
 
 unlessExpression
@@ -448,11 +448,11 @@ caseExpression
     ;
 
 whenClause
-    :   WHEN wsOrNl* whenArgument WS* thenClause
+    :   WHEN NL* whenArgument thenClause
     ;
 
 whenArgument
-    :   expressions (WS* COMMA splattingArgument)?
+    :   expressions (COMMA splattingArgument)?
     |   splattingArgument
     ;
 
@@ -461,20 +461,20 @@ whenArgument
 // --------------------------------------------------------
 
 whileExpression
-    :   WHILE wsOrNl* expressionOrCommand doClause wsOrNl* END
+    :   WHILE NL* expressionOrCommand doClause NL* END
     ;
 
 doClause
-    :   separator wsOrNl* compoundStatement
-    |   WS? DO wsOrNl* compoundStatement
+    :   separator NL* compoundStatement
+    |   DO NL* compoundStatement
     ;
 
 untilExpression
-    :   UNTIL wsOrNl* expressionOrCommand doClause wsOrNl* END
+    :   UNTIL NL* expressionOrCommand doClause NL* END
     ;
 
 forExpression
-    :   FOR wsOrNl* forVariable WS* IN wsOrNl* expressionOrCommand doClause wsOrNl* END
+    :   FOR NL* forVariable IN NL* expressionOrCommand doClause NL* END
     ;
 
 forVariable
@@ -491,11 +491,11 @@ beginExpression
     ;
 
 bodyStatement
-    :   compoundStatement (wsOrNl* rescueClause)* (wsOrNl* elseClause)? (wsOrNl* ensureClause)?
+    :   compoundStatement (NL* rescueClause)* (NL* elseClause)? (NL* ensureClause)?
     ;
 
 rescueClause
-    :   RESCUE WS* exceptionClass? wsOrNl* exceptionVariableAssignment? wsOrNl* thenClause
+    :   RESCUE exceptionClass? NL* exceptionVariableAssignment? NL* thenClause
     ;
 
 exceptionClass
@@ -504,11 +504,11 @@ exceptionClass
     ;
 
 exceptionVariableAssignment
-    :   EQGT WS* singleLeftHandSide
+    :   EQGT singleLeftHandSide
     ;
 
 ensureClause
-    :   ENSURE wsOrNl* compoundStatement
+    :   ENSURE NL* compoundStatement
     ;
 
 // --------------------------------------------------------
@@ -530,7 +530,7 @@ classOrModuleReference
 // --------------------------------------------------------
 
 moduleDefinition
-    :   MODULE wsOrNl* classOrModuleReference wsOrNl* bodyStatement wsOrNl* END
+    :   MODULE NL* classOrModuleReference NL* bodyStatement NL* END
     ;
 
 // --------------------------------------------------------
@@ -687,11 +687,6 @@ unsignedNumericLiteral
 definedMethodNameOrSymbol
     :   definedMethodName
     |   symbol
-    ;
-
-wsOrNl
-    :   WS
-    |   NL
     ;
 
 keyword

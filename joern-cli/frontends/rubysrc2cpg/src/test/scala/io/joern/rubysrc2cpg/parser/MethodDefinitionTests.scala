@@ -417,7 +417,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |   foo
             |  MethodParameterPart
             |  =
-            |  WsOrNl
             |  PrimaryExpression
             |   VariableReferencePrimary
             |    VariableIdentifierVariableReference
@@ -552,7 +551,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |       module
             |       ClassOrModuleReference
             |        SomeModule
-            |       WsOrNl
             |       BodyStatement
             |        CompoundStatement
             |         Statements
@@ -863,7 +861,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |              initialize
           |          MethodParameterPart
           |           (
-          |           WsOrNl
           |           Parameters
           |            Parameter
           |             MandatoryParameter
@@ -916,7 +913,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |              initialize
           |          MethodParameterPart
           |           (
-          |           WsOrNl
           |           Parameters
           |            Parameter
           |             MandatoryParameter
@@ -925,7 +921,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |            Parameter
           |             MandatoryParameter
           |              age
-          |           WsOrNl
           |           )
           |          Separator
           |          BodyStatement
@@ -970,7 +965,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |              initialize
           |          MethodParameterPart
           |           (
-          |           WsOrNl
           |           Parameters
           |            Parameter
           |             KeywordParameter
@@ -985,7 +979,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |            Parameter
           |             MandatoryParameter
           |              age
-          |           WsOrNl
           |           )
           |          Separator
           |          BodyStatement

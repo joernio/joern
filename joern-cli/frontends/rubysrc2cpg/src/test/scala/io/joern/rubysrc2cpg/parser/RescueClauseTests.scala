@@ -74,7 +74,6 @@ class RescueClauseTests extends RubyParserAbstractTest {
             | MethodParameterPart
             | Separator
             |  ;
-            | WsOrNl
             | BodyStatement
             |  CompoundStatement
             |   Statements

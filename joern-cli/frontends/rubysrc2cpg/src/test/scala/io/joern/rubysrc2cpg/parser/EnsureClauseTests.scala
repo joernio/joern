@@ -26,7 +26,6 @@ class EnsureClauseTests extends RubyParserAbstractTest {
             |  CompoundStatement
             |  EnsureClause
             |   ensure
-            |   WsOrNl
             |   CompoundStatement
             |    Statements
             |     ExpressionOrCommandStatement

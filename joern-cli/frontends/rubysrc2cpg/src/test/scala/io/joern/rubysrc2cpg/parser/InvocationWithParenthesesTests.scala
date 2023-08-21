@@ -287,7 +287,6 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
             |  VariableIdentifierVariableReference
             |   VariableIdentifier
             |    foo
-            | WsOrNl
             | .
             | MethodName
             |  MethodIdentifier
@@ -303,7 +302,6 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
             |   VariableIdentifier
             |    foo
             | .
-            | WsOrNl
             | MethodName
             |  MethodIdentifier
             |   bar""".stripMargin
