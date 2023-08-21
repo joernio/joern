@@ -54,7 +54,9 @@ expressionOrCommand
     ;
 
 expression
-    :   primary                                                                                                     # primaryExpression
+    :   <assoc=right> singleLeftHandSide op=(EQ | ASSIGNMENT_OPERATOR) NL* multipleRightHandSide                    # singleAssignmentExpression
+    |   <assoc=right> multipleLeftHandSide EQ NL* multipleRightHandSide                                             # multipleAssignmentExpression
+    |   primary                                                                                                     # primaryExpression
     |   op=(TILDE | PLUS | EMARK) NL* expression                                                                    # unaryExpression
     |   <assoc=right> expression STAR2 NL* expression                                                               # powerExpression
     |   MINUS NL* expression                                                                                        # unaryMinusExpression
@@ -69,8 +71,7 @@ expression
     |   expression op=BAR2 NL* expression                                                                           # operatorOrExpression
     |   expression op=(DOT2 | DOT3) NL* expression?                                                                 # rangeExpression
     |   expression QMARK NL* expression NL* COLON NL* expression                                                    # conditionalOperatorExpression
-    |   <assoc=right> singleLeftHandSide op=(EQ | ASSIGNMENT_OPERATOR) NL* multipleRightHandSide                    # singleAssignmentExpression
-    |   <assoc=right> multipleLeftHandSide EQ NL* multipleRightHandSide                                             # multipleAssignmentExpression
+
     |   IS_DEFINED NL* expression                                                                                   # isDefinedExpression
     ;
 
@@ -190,8 +191,8 @@ arguments
 argument
     :   blockArgument                                                                                                           # blockArgumentArgument
     |   splattingArgument                                                                                                       # splattingArgumentArgument
-    |   expression                                                                                                              # expressionArgument
     |   association                                                                                                             # associationArgument
+    |   expression                                                                                                              # expressionArgument
     |   command                                                                                                                 # commandArgument
     ;
 
@@ -385,8 +386,8 @@ parameters
     ;
     
 parameter
-    :   mandatoryParameter
-    |   optionalParameter
+    :   optionalParameter   
+    |   mandatoryParameter
     |   arrayParameter
     |   hashParameter
     |   keywordParameter
