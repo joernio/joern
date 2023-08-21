@@ -69,7 +69,7 @@ expression
     |   expression WS* op=BAR2 wsOrNl* expression                                                                   # operatorOrExpression
     |   expression WS* op=(DOT2 | DOT3) wsOrNl* expression?                                                         # rangeExpression
     |   expression QMARK NL* expression NL* COLON NL* expression                                                    # conditionalOperatorExpression
-    |   <assoc=right> singleLeftHandSide WS* op=(EQ | ASSIGNMENT_OPERATOR) wsOrNl* multipleRightHandSide            # singleAssignmentExpression
+    |   <assoc=right> singleLeftHandSide op=(EQ | ASSIGNMENT_OPERATOR) NL* multipleRightHandSide                    # singleAssignmentExpression
     |   <assoc=right> multipleLeftHandSide WS* EQ wsOrNl* multipleRightHandSide                                     # multipleAssignmentExpression
     |   IS_DEFINED wsOrNl* expression                                                                               # isDefinedExpression
     ;

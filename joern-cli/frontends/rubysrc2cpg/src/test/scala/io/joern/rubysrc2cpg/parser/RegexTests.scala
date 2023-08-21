@@ -27,7 +27,6 @@ class RegexTests extends RubyParserAbstractTest {
             |   VariableIdentifier
             |    x
             |  =
-            |  WsOrNl
             |  MultipleRightHandSide
             |   ExpressionOrCommands
             |    ExpressionExpressionOrCommand
@@ -234,7 +233,6 @@ class RegexTests extends RubyParserAbstractTest {
             |   VariableIdentifier
             |    x
             |  =
-            |  WsOrNl
             |  MultipleRightHandSide
             |   ExpressionOrCommands
             |    ExpressionExpressionOrCommand
@@ -376,7 +374,6 @@ class RegexTests extends RubyParserAbstractTest {
             |   VariableIdentifier
             |    x
             |  =
-            |  WsOrNl
             |  MultipleRightHandSide
             |   ExpressionOrCommands
             |    ExpressionExpressionOrCommand
