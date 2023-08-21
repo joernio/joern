@@ -157,9 +157,9 @@ expressionOrCommands
 invocationWithoutParentheses
     :   chainedCommandWithDoBlock                                                                                               # chainedCommandDoBlockInvocationWithoutParentheses
     |   command                                                                                                                 # singleCommandOnlyInvocationWithoutParentheses
-    |   RETURN (WS arguments)?                                                                                                  # returnArgsInvocationWithoutParentheses
-    |   BREAK WS arguments                                                                                                      # breakArgsInvocationWithoutParentheses
-    |   NEXT WS arguments                                                                                                       # nextArgsInvocationWithoutParentheses
+    |   RETURN arguments?                                                                                                       # returnArgsInvocationWithoutParentheses
+    |   BREAK arguments                                                                                                         # breakArgsInvocationWithoutParentheses
+    |   NEXT arguments                                                                                                          # nextArgsInvocationWithoutParentheses
     ;
 
 command
