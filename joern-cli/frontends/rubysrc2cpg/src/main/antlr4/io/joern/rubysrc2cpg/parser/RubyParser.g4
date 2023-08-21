@@ -305,24 +305,24 @@ nonExpandedArrayElement
 // --------------------------------------------------------
 
 hashConstructor
-    :   LCURLY wsOrNl* (hashConstructorElements WS* COMMA?)? wsOrNl* RCURLY
+    :   LCURLY NL* (hashConstructorElements COMMA?)? NL* RCURLY
     ;
 
 hashConstructorElements
-    :   hashConstructorElement (WS* COMMA wsOrNl* hashConstructorElement)*
+    :   hashConstructorElement (COMMA NL* hashConstructorElement)*
     ;
 
 hashConstructorElement
     :   association
-    |   STAR2 WS* expression
+    |   STAR2 expression
     ;
 
 associations
-    :   association (WS* COMMA wsOrNl* association)*
+    :   association (COMMA NL* association)*
     ;
 
 association
-    :   (expression | keyword) WS* (EQGT|COLON) (wsOrNl* expression)?
+    :   (expression | keyword) (EQGT|COLON) (NL* expression)?
     ;
 
 // --------------------------------------------------------
