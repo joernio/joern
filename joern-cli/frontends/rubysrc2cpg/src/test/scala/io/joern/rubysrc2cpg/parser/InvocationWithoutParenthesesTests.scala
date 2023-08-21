@@ -77,7 +77,6 @@ class InvocationWithoutParenthesesTests extends RubyParserAbstractTest {
             |     DoBlock
             |      do
             |      Separators
-            |       Separator
             |      BodyStatement
             |       CompoundStatement
             |        Statements
@@ -97,7 +96,6 @@ class InvocationWithoutParenthesesTests extends RubyParserAbstractTest {
             |                    UnsignedNumericLiteral
             |                     1
             |        Separators
-            |         Separator
             |      end""".stripMargin
 
       }

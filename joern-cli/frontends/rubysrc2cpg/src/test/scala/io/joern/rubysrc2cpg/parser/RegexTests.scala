@@ -132,7 +132,6 @@ class RegexTests extends RubyParserAbstractTest {
               |      VariableIdentifier
               |       foo
               |  Separators
-              |   Separator
               |  WhenClause
               |   when
               |   WhenArgument
@@ -144,7 +143,7 @@ class RegexTests extends RubyParserAbstractTest {
               |        ^ch_
               |        /
               |   ThenClause
-              |    Separator
+              |    Separators
               |    CompoundStatement
               |     Statements
               |      ExpressionOrCommandStatement
@@ -155,7 +154,6 @@ class RegexTests extends RubyParserAbstractTest {
               |           VariableIdentifier
               |            bar
               |     Separators
-              |      Separator
               |  end""".stripMargin
       }
 
@@ -194,7 +192,7 @@ class RegexTests extends RubyParserAbstractTest {
               |            value
               |      )
               |  ThenClause
-              |   Separator
+              |   Separators
               |   CompoundStatement
               |  end""".stripMargin
         }

@@ -21,7 +21,7 @@ class EnsureClauseTests extends RubyParserAbstractTest {
             |    MethodIdentifier
             |     refund
             | MethodParameterPart
-            | Separator
+            | Separators
             | BodyStatement
             |  CompoundStatement
             |  EnsureClause
@@ -52,7 +52,6 @@ class EnsureClauseTests extends RubyParserAbstractTest {
             |                     @charge
             |               )
             |    Separators
-            |     Separator
             | end""".stripMargin
       }
     }
