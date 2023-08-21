@@ -4,7 +4,7 @@ import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOpti
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.rubysrc2cpg.utils.PackageTable
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
-import io.joern.x2cpg.X2Cpg
+import io.joern.x2cpg.{ValidationMode, X2Cpg}
 import io.joern.x2cpg.testfixtures.{CfgTestCpg, Code2CpgFixture, DefaultTestCpg, LanguageFrontend, TestCpg}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
@@ -19,7 +19,7 @@ trait RubyFrontend extends LanguageFrontend {
     implicit val defaultConfig: Config =
       getConfig()
         .map(_.asInstanceOf[Config])
-        .getOrElse(Config())
+        .getOrElse(Config().withSchemaValidation(ValidationMode.Enabled))
     new RubySrc2Cpg().createCpg(sourceCodeFile.getAbsolutePath).get
   }
 
