@@ -12,9 +12,7 @@ class ClassDefinitionTests extends RubyParserAbstractTest {
           """ClassDefinitionPrimary
             | ClassDefinition
             |  class
-            |  WsOrNl
             |  <<
-            |  WsOrNl
             |  ExpressionExpressionOrCommand
             |   PrimaryExpression
             |    VariableReferencePrimary
@@ -24,7 +22,6 @@ class ClassDefinitionTests extends RubyParserAbstractTest {
             |  Separators
             |   Separator
             |    ;
-            |  WsOrNl
             |  BodyStatement
             |   CompoundStatement
             |  end""".stripMargin
