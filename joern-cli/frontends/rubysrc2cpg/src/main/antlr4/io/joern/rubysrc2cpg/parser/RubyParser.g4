@@ -440,7 +440,7 @@ elseClause
     ;
 
 unlessExpression
-    :   UNLESS wsOrNl* expressionOrCommand WS* thenClause wsOrNl* elseClause? wsOrNl* END
+    :   UNLESS NL* expressionOrCommand thenClause NL* elseClause? NL* END
     ;
 
 caseExpression
