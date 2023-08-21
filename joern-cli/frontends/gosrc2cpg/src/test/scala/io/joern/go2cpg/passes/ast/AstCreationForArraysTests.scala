@@ -17,7 +17,9 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
           |}
           |""".stripMargin)
 
-      val List(assignmentCallNode, arrayInitializerCallNode) = cpg.method("main").ast.isCall.l
+      val List(assignmentCallNode) = cpg.call(Operators.assignment).lineNumber(4).l
+
+      val List(arrayInitializerCallNode) = assignmentCallNode.astChildren.isCall.l
       assignmentCallNode.name shouldBe Operators.assignment
       assignmentCallNode.code shouldBe "a := [5]int{1,2}"
 
@@ -25,15 +27,15 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
       arrayInitializerCallNode.code shouldBe "[5]int{1,2}"
       arrayInitializerCallNode.typeFullName shouldBe "int[]"
 
-      cpg.method("main").ast.isLiteral.l.size shouldBe 2
-      val List(literal1, literal2) = cpg.method("main").ast.isLiteral.l
+      assignmentCallNode.astChildren.isLiteral.l.size shouldBe 2
+      val List(literal1, literal2) = assignmentCallNode.astChildren.isLiteral.l
       literal1.code shouldBe "1"
       literal2.code shouldBe "2"
       literal1.typeFullName shouldBe "int"
       literal2.typeFullName shouldBe "int"
 
-      cpg.method("main").ast.isIdentifier.l.size shouldBe 1
-      val List(identifierNode) = cpg.method("main").ast.isIdentifier.l.l
+      assignmentCallNode.astChildren.isIdentifier.l.size shouldBe 1
+      val List(identifierNode) = assignmentCallNode.astChildren.isIdentifier.l.l
       identifierNode.code shouldBe "a"
     }
 
@@ -45,7 +47,9 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
           |}
           |""".stripMargin)
 
-      val List(assignmentCallNode, arrayInitializerCallNode) = cpg.method("main").ast.isCall.l
+      val List(assignmentCallNode) = cpg.call(Operators.assignment).lineNumber(4).l
+
+      val List(arrayInitializerCallNode) = assignmentCallNode.astChildren.isCall.l
       assignmentCallNode.name shouldBe Operators.assignment
       assignmentCallNode.code shouldBe "a := [5]string{\"hello\",\"world\"}"
 
@@ -53,15 +57,15 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
       arrayInitializerCallNode.code shouldBe "[5]string{\"hello\",\"world\"}"
       arrayInitializerCallNode.typeFullName shouldBe "string[]"
 
-      cpg.method("main").ast.isLiteral.l.size shouldBe 2
-      val List(literal1, literal2) = cpg.method("main").ast.isLiteral.l
+      assignmentCallNode.astChildren.isLiteral.l.size shouldBe 2
+      val List(literal1, literal2) = assignmentCallNode.astChildren.isLiteral.l
       literal1.code shouldBe "\"hello\""
       literal2.code shouldBe "\"world\""
       literal1.typeFullName shouldBe "string"
       literal2.typeFullName shouldBe "string"
 
-      cpg.method("main").ast.isIdentifier.l.size shouldBe 1
-      val List(identifierNode) = cpg.method("main").ast.isIdentifier.l.l
+      assignmentCallNode.astChildren.isIdentifier.l.size shouldBe 1
+      val List(identifierNode) = assignmentCallNode.astChildren.isIdentifier.l
       identifierNode.code shouldBe "a"
     }
 
@@ -73,7 +77,8 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
           |}
           |""".stripMargin)
 
-      val List(assignmentCallNode, arrayInitializerCallNode) = cpg.method("main").ast.isCall.l
+      val List(assignmentCallNode)       = cpg.call(Operators.assignment).lineNumber(4).l
+      val List(arrayInitializerCallNode) = assignmentCallNode.astChildren.isCall.l
       assignmentCallNode.name shouldBe Operators.assignment
       assignmentCallNode.code shouldBe "a := [...]int{1,2}"
 
@@ -81,15 +86,15 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
       arrayInitializerCallNode.code shouldBe "[...]int{1,2}"
       arrayInitializerCallNode.typeFullName shouldBe "int[]"
 
-      cpg.method("main").ast.isLiteral.l.size shouldBe 2
-      val List(literal1, literal2) = cpg.method("main").ast.isLiteral.l
+      assignmentCallNode.astChildren.isLiteral.l.size shouldBe 2
+      val List(literal1, literal2) = assignmentCallNode.astChildren.isLiteral.l
       literal1.code shouldBe "1"
       literal2.code shouldBe "2"
       literal1.typeFullName shouldBe "int"
       literal2.typeFullName shouldBe "int"
 
-      cpg.method("main").ast.isIdentifier.l.size shouldBe 1
-      val List(identifierNode) = cpg.method("main").ast.isIdentifier.l
+      assignmentCallNode.astChildren.isIdentifier.l.size shouldBe 1
+      val List(identifierNode) = assignmentCallNode.astChildren.isIdentifier.l
       identifierNode.code shouldBe "a"
     }
 
@@ -101,7 +106,8 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
           |}
           |""".stripMargin)
 
-      val List(assignmentCallNode, arrayInitializerCallNode) = cpg.method("main").ast.isCall.l
+      val List(assignmentCallNode)       = cpg.call(Operators.assignment).lineNumber(4).l
+      val List(arrayInitializerCallNode) = assignmentCallNode.astChildren.isCall.l
       assignmentCallNode.name shouldBe Operators.assignment
       assignmentCallNode.code shouldBe "a := [2]string{}"
 
@@ -110,10 +116,10 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
       arrayInitializerCallNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       arrayInitializerCallNode.typeFullName shouldBe "string[]"
 
-      cpg.method("main").ast.isLiteral.l.size shouldBe 0
+      assignmentCallNode.astChildren.isLiteral.l.size shouldBe 0
 
-      cpg.method("main").ast.isIdentifier.l.size shouldBe 1
-      val List(identifierNode) = cpg.method("main").ast.isIdentifier.l.l
+      assignmentCallNode.astChildren.isIdentifier.l.size shouldBe 1
+      val List(identifierNode) = assignmentCallNode.astChildren.isIdentifier.l
       identifierNode.code shouldBe "a"
 
     }
@@ -171,24 +177,38 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
           |}
           |""".stripMargin)
 
-      val List(assignmentCallNode, arrayInitializerCallNode) = cpg.call(".*operator.*").l
+      val List(assignmentCallNode)       = cpg.call(Operators.assignment).lineNumber(3).l
+      val List(arrayInitializerCallNode) = assignmentCallNode.astChildren.isCall.l
       assignmentCallNode.name shouldBe Operators.assignment
-      assignmentCallNode.code shouldBe "a[5]int{1,2}" // TODO: Fix the code format - there should be a = in between
 
       arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
       arrayInitializerCallNode.code shouldBe "[5]int{1,2}"
       arrayInitializerCallNode.typeFullName shouldBe "int[]"
 
-      cpg.literal.l.size shouldBe 2
-      val List(literal1, literal2) = cpg.literal.l
+      assignmentCallNode.astChildren.isLiteral.l.size shouldBe 2
+      val List(literal1, literal2) = assignmentCallNode.astChildren.isLiteral.l
       literal1.code shouldBe "1"
       literal2.code shouldBe "2"
       literal1.typeFullName shouldBe "int"
       literal2.typeFullName shouldBe "int"
 
-      cpg.identifier.l.size shouldBe 1
-      val List(identifierNode) = cpg.identifier.l
+      assignmentCallNode.astChildren.isIdentifier.l.size shouldBe 1
+      val List(identifierNode) = assignmentCallNode.astChildren.isIdentifier.l
       identifierNode.code shouldBe "a"
+    }
+  }
+
+  "code field for assignment operator" should {
+    "be correct" ignore {
+      val cpg = code("""
+          |package main
+          |var a = [5]int{1,2}
+          |func main() {
+          |}
+          |""".stripMargin)
+      val List(assignmentCallNode) = cpg.call(Operators.assignment).l
+      // TODO: Fix the code format - there should be a = in between
+      assignmentCallNode.code shouldBe "var a = [5]int{1,2}"
     }
   }
 }
