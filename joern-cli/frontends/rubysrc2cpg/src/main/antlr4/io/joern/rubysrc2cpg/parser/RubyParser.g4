@@ -444,7 +444,7 @@ unlessExpression
     ;
 
 caseExpression
-    :   CASE (wsOrNl* expressionOrCommand)? separators? (WS* whenClause WS*)+ elseClause? wsOrNl* END
+    :   CASE (NL* expressionOrCommand)? separators? whenClause+ elseClause? NL* END
     ;
 
 whenClause
