@@ -15,7 +15,6 @@ import scala.util.{Failure, Left, Success, Try, Using}
 /** Responsible for handling JAR unpacking and handling the temporary build directory.
   */
 object ProgramHandlingUtil {
-
   private val logger = LoggerFactory.getLogger(ProgramHandlingUtil.getClass)
 
   /** Common properties of a File and ZipEntry, used to determine whether a file in a directory or an entry in an
@@ -25,12 +24,14 @@ object ProgramHandlingUtil {
 
     def this(file: File) = this(Left(file))
     def this(entry: ZipEntry) = this(Right(entry))
-    private def file: File            = entry.fold(identity, e => File(e.getName))
+    def fold[C]: (File => C, ZipEntry => C) => C = entry.fold[C]
+    private def file: File            = fold(identity, e => File(e.getName))
     def name: String                  = file.name
+    def zipName: Option[String] = fold(_ => None, e => Some(e.getName))
     def fullExtension: Option[String] = file.extension(includeAll = true)
     def extension: Option[String]     = file.extension
-    def isDirectory: Boolean          = entry.fold(_.isDirectory, _.isDirectory)
-    def maybeRegularFile(): Boolean   = entry.fold(_.isRegularFile, !_.isDirectory)
+    def isDirectory: Boolean          = fold(_.isDirectory, _.isDirectory)
+    def maybeRegularFile(): Boolean   = fold(_.isRegularFile, !_.isDirectory)
 
     /** Determines whether a zip entry is potentially malicious.
       * @return
@@ -80,7 +81,15 @@ object ProgramHandlingUtil {
     isClass: Entry => Boolean
   ): IterableOnce[ClassFile] = {
 
-    def shouldExtract(e: Entry) = !e.isZipSlip && e.maybeRegularFile() && (isArchive(e) || isClass(e))
+    def shouldExtract(e: Entry) = {
+      val wanted = e.maybeRegularFile() && (isArchive(e) || isClass(e))
+      val dodgy = e.isZipSlip
+      if(dodgy) {
+        logger.warn(s"Excluded entry '${e.zipName.get}' since it may be a zipslip'")
+      }
+      !dodgy && wanted
+    }
+
     unfoldArchives(
       src,
       {
@@ -90,11 +99,12 @@ object ProgramHandlingUtil {
           val files = f.listRecursively.filterNot(_.isDirectory).toList
           Right(files)
         case f if isArchive(Entry(f)) =>
+          logger.info(s"Extracting archive '${f.name}'")
           val xTmp = File.newTemporaryDirectory("extract-archive-", parent = Some(tmpDir))
           val unzipDirs = Try(f.unzipTo(xTmp, e => shouldExtract(Entry(e)))) match {
             case Success(dir) => List(dir)
             case Failure(e) =>
-              logger.warn(s"Failed to extract archive", e)
+              logger.warn(s"Failed to extract archive ${f.name}", e)
               List.empty
           }
           Right(unzipDirs)

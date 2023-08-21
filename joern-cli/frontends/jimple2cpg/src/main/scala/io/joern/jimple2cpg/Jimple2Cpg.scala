@@ -71,7 +71,11 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
   private def sootLoadRecursively(input: File, tmpDir: File): List[ClassFile] = {
     Options.v().set_soot_classpath(tmpDir.canonicalPath)
     Options.v().set_prepend_classpath(true)
-    val classFiles               = loadClassFiles(input, tmpDir)
+    def packageFilter(classFile: ClassFile) = List(
+      "de"
+    ).exists(classFile.fullyQualifiedClassName.get.startsWith)
+
+    val classFiles               = loadClassFiles(input, tmpDir).filter(packageFilter)
     val fullyQualifiedClassNames = classFiles.flatMap(_.fullyQualifiedClassName)
     logger.info(s"Loading ${classFiles.size} program files")
     logger.debug(s"Source files are: ${classFiles.map(_.file.canonicalPath)}")

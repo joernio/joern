@@ -2,10 +2,10 @@ package io.joern.x2cpg.passes.frontend
 
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators, PropertyNames}
 import io.shiftleft.passes.CpgPass
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
 import org.slf4j.{Logger, LoggerFactory}
@@ -17,7 +17,7 @@ import java.util.concurrent.RecursiveTask
 import java.util.concurrent.atomic.AtomicBoolean
 import scala.annotation.tailrec
 import scala.collection.concurrent.TrieMap
-import scala.collection.mutable
+import scala.collection.{Iterator, mutable}
 
 /** @param iterations
   *   the number of iterations to run.
@@ -37,7 +37,7 @@ case class XTypeRecoveryConfig(iterations: Int = 2, enabledDummyTypes: Boolean =
   * @param stopEarly
   *   indicates that we may stop type propagation earlier than the specified number of iterations.
   */
-case class XTypeRecoveryState(
+case class XTypeRecoveryState (
   config: XTypeRecoveryConfig = XTypeRecoveryConfig(),
   currentIteration: Int = 0,
   isFieldCache: TrieMap[Long, Boolean] = TrieMap.empty[Long, Boolean],
@@ -69,19 +69,17 @@ abstract class XTypeRecoveryPass[CompilationUnitType <: AstNode](
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
     val stopEarly = new AtomicBoolean(false)
     val state     = XTypeRecoveryState(config, stopEarly = stopEarly)
-    try {
-      Iterator.from(0).takeWhile(_ < config.iterations).foreach { i =>
-        val newState = state.copy(currentIteration = i)
-        generateRecoveryPass(newState).createAndApply()
-      }
-      // If dummy values are enabled and we are stopping early, we need one more round to propagate these dummy values
-      if (stopEarly.get() && config.enabledDummyTypes)
-        generateRecoveryPass(state.copy(currentIteration = config.iterations - 1)).createAndApply()
-    } finally {
-      state.clear()
-    }
+    Iterator.iterate(XTypeRecoveryState(config, stopEarly = stopEarly)){ state =>
+      generateRecoveryPass(state).createAndApply()
+      val skipTo =
+        (config.enabledDummyTypes, stopEarly.get()) match {
+          case (false, true) => config.iterations
+          case (true, true) => config.iterations - 1
+          case _ => 0
+        }
+      state.copy(currentIteration = Math.max(state.currentIteration + 1, skipTo))
+    }.takeWhile(_.currentIteration < config.iterations).last.clear()
   }
-
   protected def generateRecoveryPass(state: XTypeRecoveryState): XTypeRecovery[CompilationUnitType]
 
 }
@@ -109,6 +107,7 @@ abstract class XTypeRecoveryPass[CompilationUnitType <: AstNode](
   *   the AstNode type used to represent a compilation unit of the language.
   */
 abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, state: XTypeRecoveryState) extends CpgPass(cpg) {
+  type TCache <: Cache
 
   override def run(builder: DiffGraphBuilder): Unit = {
     val changesWereMade = compilationUnit
@@ -136,7 +135,11 @@ abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, state: XT
   def generateRecoveryForCompilationUnitTask(
     unit: CompilationUnitType,
     builder: DiffGraphBuilder
-  ): RecoverForXCompilationUnit[CompilationUnitType]
+  ): RecoverForXCompilationUnit[TCache, CompilationUnitType]
+
+  def generateCacheForCompilationUnit(
+    unit: CompilationUnitType
+  ): TCache
 
 }
 
@@ -167,12 +170,18 @@ object XTypeRecovery {
   * @tparam CompilationUnitType
   *   the AstNode type used to represent a compilation unit of the language.
   */
-abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
+
+class Cache(
+) {
+}
+abstract class RecoverForXCompilationUnit[TCache <: Cache, CompilationUnitType <: AstNode](
   cpg: Cpg,
   cu: CompilationUnitType,
   builder: DiffGraphBuilder,
-  state: XTypeRecoveryState
+  state: XTypeRecoveryState,
+  cache: TCache
 ) extends RecursiveTask[Boolean] {
+
 
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
 

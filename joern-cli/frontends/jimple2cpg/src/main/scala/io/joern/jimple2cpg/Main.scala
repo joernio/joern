@@ -1,7 +1,9 @@
 package io.joern.jimple2cpg
 
-import io.joern.jimple2cpg.Frontend._
+import io.joern.jimple2cpg.Frontend.*
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
+import org.apache.logging.log4j.Level
+import org.apache.logging.log4j.core.config.Configurator
 import scopt.OParser
 
 /** Command line configuration parameters

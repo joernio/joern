@@ -65,9 +65,12 @@ case class CallAlias(override val identifier: String, receiverName: Option[Strin
   * The [[SymbolTable]] operates like a map with a few convenient methods that are designed for this structure's
   * purpose.
   */
-class SymbolTable[K <: SBKey](val keyFromNode: AstNode => Option[K]) {
+class SymbolTable[K <: SBKey] private(
+   val keyFromNode: AstNode => Option[K],
+   private val table: TrieMap[K, Set[String]]
+) {
 
-  private val table = TrieMap.empty[K, Set[String]]
+  def this(keyFromNode: AstNode => Option[K]) = this(keyFromNode, TrieMap.empty[K, Set[String]])
 
   def apply(sbKey: K): Set[String] = table(sbKey)
 
@@ -139,6 +142,8 @@ class SymbolTable[K <: SBKey](val keyFromNode: AstNode => Option[K]) {
   }
 
   def view: MapView[K, Set[String]] = table.view
+
+  override def clone(): SymbolTable[K] = SymbolTable[K](keyFromNode, table.clone())
 
   def clear(): Unit = table.clear()
 
