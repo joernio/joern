@@ -91,7 +91,7 @@ trait AstForExpressionsCreator { this: AstCreator =>
     arguments: Iterable[ExpressionContext]
   ): Ast = {
     val argsAst = arguments.flatMap(astForExpressionContext)
-    val call    = callNode(ctx, ctx.getText, name, name, DispatchTypes.STATIC_DISPATCH)
+    val call    = callNode(ctx, text(ctx), name, name, DispatchTypes.STATIC_DISPATCH)
     callAst(call, argsAst.toList)
   }
 
