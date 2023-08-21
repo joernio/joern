@@ -560,6 +560,8 @@ class AstCreator(
   }
 
   def astForIndexingArgumentsContext(ctx: IndexingArgumentsContext): Seq[Ast] = ctx match {
+    case ctx: RubyParser.CommandOnlyIndexingArgumentsContext =>
+      astForCommand(ctx.command())
     case ctx: RubyParser.ExpressionsOnlyIndexingArgumentsContext =>
       ctx
         .expressions()
@@ -1664,7 +1666,7 @@ class AstCreator(
 
     val methodFullName = classStack.reverse :+ blockMethodName mkString pathSep
     val methodNode = NewMethod()
-      .code(ctxStmt.getText)
+      .code(text(ctxStmt))
       .name(blockMethodName)
       .fullName(methodFullName)
       .filename(filename)
