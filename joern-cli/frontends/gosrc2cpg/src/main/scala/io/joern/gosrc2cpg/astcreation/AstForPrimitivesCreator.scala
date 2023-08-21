@@ -1,19 +1,46 @@
 package io.joern.gosrc2cpg.astcreation
 
-import io.joern.gosrc2cpg.parser.ParserAst.{BasePrimitive, BasicLit, Ident}
+import io.joern.gosrc2cpg.parser.ParserAst.{ArrayType, BasePrimitive, BasicLit, CompositeLit, Ident}
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.{Ast, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 
 import scala.util.Try
 
 trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  protected def astForPrimitive(primitive: ParserNodeInfo): Ast = {
+  protected def astForPrimitive(primitive: ParserNodeInfo): Seq[Ast] = {
     primitive.node match {
-      case BasicLit => astForLiteral(primitive)
-      case Ident    => astForIdentifier(primitive)
-      case _        => Ast()
+      case BasicLit     => Seq(astForLiteral(primitive))
+      case CompositeLit => astForCompositeLiteral(primitive)
+      case Ident        => Seq(astForIdentifier(primitive))
+      case _            => Seq(Ast())
     }
+  }
+
+  protected def astForCompositeLiteral(primitive: ParserNodeInfo): Seq[Ast] = {
+    var elementAsts = Seq(Ast())
+    if (!primitive.json(ParserKeys.Elts).isNull) {
+      elementAsts = primitive.json(ParserKeys.Elts).arr.flatMap(e => astForElts(createParserNodeInfo(e))).toSeq
+      val typeNodeJson = Try(createParserNodeInfo(primitive.json(ParserKeys.Type)))
+      val typeNode = if (typeNodeJson.isSuccess) {
+        typeNodeJson.get.node match
+          case ArrayType =>
+            Seq(astForEmptyArrayInitializer(primitive))
+          case _ =>
+            Seq(Ast())
+      } else {
+        Seq(Ast())
+      }
+      elementAsts ++ typeNode
+    } else {
+      // Empty array
+      Seq(astForEmptyArrayInitializer(primitive))
+    }
+  }
+
+  private def astForElts(node: ParserNodeInfo): Seq[Ast] = {
+    astForNode(node)
   }
 
   private def astForLiteral(stringLiteral: ParserNodeInfo): Ast = {

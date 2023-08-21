@@ -52,6 +52,10 @@ object ParserAst {
 
   object BranchStmt  extends BaseStmt
   object LabeledStmt extends BaseStmt
+
+  object ArrayType extends ParserNode
+
+  object CompositeLit extends BasePrimitive
 }
 
 object ParserKeys {
@@ -95,4 +99,5 @@ object ParserKeys {
   val Params          = "Params"
   val Elt             = "Elt"
   val Sel             = "Sel"
+  val Elts            = "Elts"
 }

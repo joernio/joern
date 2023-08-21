@@ -7,7 +7,7 @@ import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.datastructures.Scope
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, AstNodeBuilder as X2CpgAstNodeBuilder}
-import io.shiftleft.codepropertygraph.generated.NodeTypes
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, NodeTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewNamespaceBlock, NewNode}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.{Logger, LoggerFactory}
@@ -83,12 +83,28 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)(im
     nodeInfo.node match {
       case GenDecl          => astForGenDecl(nodeInfo)
       case FuncDecl         => astForFuncDecl(nodeInfo)
-      case _: BasePrimitive => Seq(astForPrimitive(nodeInfo))
+      case _: BasePrimitive => astForPrimitive(nodeInfo)
       case _: BaseExpr      => astsForExpression(nodeInfo)
       case _: BaseStmt      => astsForStatement(nodeInfo)
       case _                => Seq()
     }
   }
+
+  protected def astForEmptyArrayInitializer(primitive: ParserNodeInfo): Ast = {
+    val arrayType: String = getTypeForJsonNode(primitive.json)
+    Ast(
+      callNode(
+        primitive,
+        primitive.code,
+        Operators.arrayInitializer,
+        Operators.arrayInitializer,
+        DispatchTypes.STATIC_DISPATCH,
+        Option(Defines.empty),
+        Option(arrayType) // The "" around the typename is eliminated
+      )
+    )
+  }
+
   protected def astForNode(json: Value): Seq[Ast] = {
     astForNode(createParserNodeInfo(json))
   }
