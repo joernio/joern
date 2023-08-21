@@ -36,7 +36,7 @@ statements
 statement
     :   ALIAS wsOrNl* definedMethodNameOrSymbol wsOrNl* definedMethodNameOrSymbol                                   # aliasStatement
     |   UNDEF wsOrNl* definedMethodNameOrSymbol (wsOrNl* COMMA wsOrNl* definedMethodNameOrSymbol)*                  # undefStatement
-    |   statement WS* mod=(IF | UNLESS | WHILE | UNTIL | RESCUE) wsOrNl* statement                                  # modifierStatement
+    |   statement mod=(IF | UNLESS | WHILE | UNTIL | RESCUE) NL* statement                                          # modifierStatement
     |   BEGIN_ wsOrNl* LCURLY wsOrNl* statements? wsOrNl* RCURLY                                                    # beginStatement
     |   END_ wsOrNl* LCURLY wsOrNl* statements? wsOrNl* RCURLY                                                      # endStatement
     |   expressionOrCommand                                                                                         # expressionOrCommandStatement

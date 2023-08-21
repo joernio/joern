@@ -132,7 +132,6 @@ class UnlessConditionTests extends RubyParserAbstractTest {
             |            value
             |      )
             | unless
-            | WsOrNl
             | ExpressionOrCommandStatement
             |  ExpressionExpressionOrCommand
             |   PrimaryExpression
