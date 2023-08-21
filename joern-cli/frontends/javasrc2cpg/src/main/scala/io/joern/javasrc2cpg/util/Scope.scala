@@ -23,7 +23,7 @@ class Scope(implicit withSchemaValidation: ValidationMode) extends X2CpgScope[St
   private val logger                                        = LoggerFactory.getLogger(this.getClass)
   private var typeDeclStack: List[NewTypeDecl]              = Nil
   private var lambdaMethods: List[mutable.ArrayBuffer[Ast]] = Nil
-  private var lambdaDecls: List[mutable.ArrayBuffer[Ast]]   = Nil
+  private var localDecls: List[mutable.ArrayBuffer[Ast]]    = Nil
   private var memberInits: List[mutable.ArrayBuffer[Ast]]   = Nil
 
   override def pushNewScope(scope: ScopeType): Unit = {
@@ -32,8 +32,7 @@ class Scope(implicit withSchemaValidation: ValidationMode) extends X2CpgScope[St
         typeDeclStack = declNode :: typeDeclStack
         lambdaMethods = mutable.ArrayBuffer[Ast]() :: lambdaMethods
         memberInits = mutable.ArrayBuffer[Ast]() :: memberInits
-      case NamespaceScope =>
-        lambdaDecls = mutable.ArrayBuffer[Ast]() :: lambdaMethods
+        localDecls = mutable.ArrayBuffer[Ast]() :: localDecls
       case _ => // Nothing to do in this case
     }
 
@@ -55,11 +54,8 @@ class Scope(implicit withSchemaValidation: ValidationMode) extends X2CpgScope[St
         typeDeclStack = typeDeclStack.tail
         lambdaMethods = lambdaMethods.tail
         memberInits = memberInits.tail
+        localDecls = localDecls.tail
         Some(TypeDeclScope(typeDecl))
-
-      case Some(NamespaceScope) =>
-        lambdaDecls = lambdaDecls.tail
-        None
 
       case _ => None
     }
@@ -92,8 +88,8 @@ class Scope(implicit withSchemaValidation: ValidationMode) extends X2CpgScope[St
     }
   }
 
-  def getLambdaDeclsInScope: Iterable[Ast] = {
-    lambdaDecls match {
+  def getLocalDeclsInScope: Iterable[Ast] = {
+    localDecls match {
       case declsInScope :: _ => declsInScope
 
       case Nil =>
@@ -102,8 +98,8 @@ class Scope(implicit withSchemaValidation: ValidationMode) extends X2CpgScope[St
     }
   }
 
-  def addLambdaDecl(ast: Ast): Unit = {
-    lambdaDecls match {
+  def addLocalDecl(ast: Ast): Unit = {
+    localDecls match {
       case declsInScope :: _ => declsInScope.addOne(ast)
 
       case Nil =>
@@ -153,10 +149,12 @@ class Scope(implicit withSchemaValidation: ValidationMode) extends X2CpgScope[St
     }
   }
 
+  private def getEnclosingMethodScope(): Option[MethodScope] = {
+    stack.collectFirst { case ScopeElement(scope: MethodScope, _) => scope }
+  }
+
   def getEnclosingMethodReturnType: Option[ExpectedType] = {
-    stack.collectFirst { case ScopeElement(MethodScope(expectedType), _) =>
-      expectedType
-    }
+    getEnclosingMethodScope().map(_.returnType)
   }
 }
 
