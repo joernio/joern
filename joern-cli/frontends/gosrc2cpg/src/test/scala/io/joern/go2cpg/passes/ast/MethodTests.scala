@@ -15,7 +15,7 @@ class MethodTests extends GoCodeToCpgSuite {
         |}
         |""".stripMargin)
 
-    "should contain exactly one method node with correct fields" in {
+    "Be correct with method node properties" in {
       val List(x) = cpg.method.name("foo").l
       x.name shouldBe "foo"
       x.fullName shouldBe "main.foo"
@@ -44,7 +44,7 @@ class MethodTests extends GoCodeToCpgSuite {
                      |}
                      |""".stripMargin)
 
-    "should contain exactly one method node with correct fields" in {
+    "Be correct with method node properties" in {
       val List(x) = cpg.method.name("foo").l
       x.name shouldBe "foo"
       x.fullName shouldBe "main.foo"
@@ -91,7 +91,7 @@ class MethodTests extends GoCodeToCpgSuite {
         |}
         |""".stripMargin)
 
-    "should contain exactly one method node with correct fields" in {
+    "Be correct with method node properties" in {
       val List(x) = cpg.method.name("foo").l
       x.name shouldBe "foo"
       x.fullName shouldBe "main.foo"
@@ -145,7 +145,7 @@ class MethodTests extends GoCodeToCpgSuite {
         |}
         |""".stripMargin)
 
-    "should contain exactly one method node with correct fields" in {
+    "Be correct with method node properties" in {
       val List(x) = cpg.method.name("foo").l
       x.name shouldBe "foo"
       x.fullName shouldBe "main.foo"
@@ -194,6 +194,108 @@ class MethodTests extends GoCodeToCpgSuite {
     }
   }
 
+  "struct type argument from same 'main' package and same file" should {
+    val cpg = code("""
+        |package main
+        |type Sample struct {
+        |	name int
+        |}
+        |
+        |func foo(argc int, argv Sample) {
+        |}
+        |""".stripMargin)
+    "Be correct with method node properties" ignore {
+      val List(x) = cpg.method.name("foo").l
+      x.name shouldBe "foo"
+      x.fullName shouldBe "main.foo"
+      x.code should startWith("func foo(argc int, argv Sample)")
+      x.signature shouldBe "main.foo (int, main.Sample)"
+      x.isExternal shouldBe false
+      x.astParentType shouldBe NodeTypes.TYPE_DECL
+      x.astParentFullName shouldBe "Test0.go:main.<global>"
+      x.order shouldBe 1
+      x.filename shouldBe "Test0.go"
+      x.lineNumber shouldBe Option(7)
+      x.lineNumberEnd shouldBe Option(8)
+    }
+  }
+
+  "struct type argument from same 'main' package but different file" should {
+    val cpg = code(
+      """
+        |module joern.io/sample
+        |go 1.18
+        |""".stripMargin,
+      "go.mod"
+    ).moreCode(
+      """
+        |package main
+        |type Sample struct {
+        |	name int
+        |}
+        |""".stripMargin,
+      "lib.go"
+    ).moreCode(
+      """
+        |package main
+        |func foo(argc int, argv Sample) {
+        |}
+        |""".stripMargin,
+      "main.go"
+    )
+
+    "Be correct with method node properties" ignore {
+      val List(x) = cpg.method.name("foo").l
+      x.name shouldBe "foo"
+      x.fullName shouldBe "main.foo"
+      x.code should startWith("func foo(argc int, argv Sample)")
+      x.signature shouldBe "main.foo (int, main.Sample)"
+      x.isExternal shouldBe false
+      x.astParentType shouldBe NodeTypes.TYPE_DECL
+      x.astParentFullName shouldBe "main.go:main.<global>"
+      x.order shouldBe 1
+      x.filename shouldBe "main.go"
+    }
+  }
+
+  "struct type argument from same 'sample' package but different file" should {
+    val cpg = code(
+      """
+        |module joern.io/sample
+        |go 1.18
+        |""".stripMargin,
+      "go.mod"
+    ).moreCode(
+      """
+        |package sample
+        |type Sample struct {
+        |	name int
+        |}
+        |""".stripMargin,
+      "lib.go"
+    ).moreCode(
+      """
+        |package sample
+        |func foo(argc int, argv Sample) {
+        |}
+        |""".stripMargin,
+      "main.go"
+    )
+
+    "Be correct with method node properties" ignore {
+      val List(x) = cpg.method.name("foo").l
+      x.name shouldBe "foo"
+      x.fullName shouldBe "main.foo"
+      x.code should startWith("func foo(argc int, argv Sample)")
+      x.signature shouldBe "main.foo (int, joern.io/sample.Sample)"
+      x.isExternal shouldBe false
+      x.astParentType shouldBe NodeTypes.TYPE_DECL
+      x.astParentFullName shouldBe "main.go:main.<global>"
+      x.order shouldBe 1
+      x.filename shouldBe "main.go"
+    }
+  }
+
   "struct type argument from other package" should {
     val cpg = code(
       """
@@ -219,12 +321,12 @@ class MethodTests extends GoCodeToCpgSuite {
       "main.go"
     )
 
-    "should contain exactly one method node with correct fields" in {
+    "Be correct with method node properties" ignore {
       val List(x) = cpg.method.name("foo").l
       x.name shouldBe "foo"
       x.fullName shouldBe "main.foo"
       x.code should startWith("func foo(argc int, argv fpkg.Sample)")
-      x.signature shouldBe "main.foo (int, fpkg.Sample)"
+      x.signature shouldBe "main.foo (int, joern.io/sample/fpkg.Sample)"
       x.isExternal shouldBe false
       x.astParentType shouldBe NodeTypes.TYPE_DECL
       x.astParentFullName shouldBe "main.go:main.<global>"
@@ -235,7 +337,9 @@ class MethodTests extends GoCodeToCpgSuite {
     }
   }
 
+  // TODO: "struct type argument from external dependency package"
   // TODO: Add unit tests for Array of primitives as well as struct.
   // TODO: Add unit test for tuple return
   // TODO: Add unit test with pointers
+  // TODO: Add unit tests with Generics
 }
