@@ -29,11 +29,9 @@ class ProcDefinitionTests extends RubyParserAbstractTest {
             |  DoBlockBlock
             |   DoBlock
             |    do
-            |    WsOrNl
             |    Separators
             |     Separator
             |      ;
-            |    WsOrNl
             |    BodyStatement
             |     CompoundStatement
             |    end""".stripMargin
@@ -74,11 +72,9 @@ class ProcDefinitionTests extends RubyParserAbstractTest {
             |  DoBlockBlock
             |   DoBlock
             |    do
-            |    WsOrNl
             |    Separators
             |     Separator
             |      ;
-            |    WsOrNl
             |    BodyStatement
             |     CompoundStatement
             |    end""".stripMargin
@@ -96,7 +92,6 @@ class ProcDefinitionTests extends RubyParserAbstractTest {
             |    OptionalParameter
             |     x
             |     =
-            |     WsOrNl
             |     PrimaryExpression
             |      LiteralPrimary
             |       NumericLiteralLiteral
@@ -124,7 +119,6 @@ class ProcDefinitionTests extends RubyParserAbstractTest {
             |    KeywordParameter
             |     foo
             |     :
-            |     WsOrNl
             |     PrimaryExpression
             |      LiteralPrimary
             |       NumericLiteralLiteral
@@ -135,11 +129,9 @@ class ProcDefinitionTests extends RubyParserAbstractTest {
             |  DoBlockBlock
             |   DoBlock
             |    do
-            |    WsOrNl
             |    Separators
             |     Separator
             |      ;
-            |    WsOrNl
             |    BodyStatement
             |     CompoundStatement
             |    end""".stripMargin
@@ -157,7 +149,6 @@ class ProcDefinitionTests extends RubyParserAbstractTest {
             |    MandatoryParameter
             |     x
             |   ,
-            |   WsOrNl
             |   Parameter
             |    MandatoryParameter
             |     y
