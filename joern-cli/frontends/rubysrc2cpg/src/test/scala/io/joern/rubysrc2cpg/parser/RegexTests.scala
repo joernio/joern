@@ -103,7 +103,6 @@ class RegexTests extends RubyParserAbstractTest {
             |          UnsignedNumericLiteral
             |           1
             |     ,
-            |     WsOrNl
             |     ExpressionArgument
             |      PrimaryExpression
             |       LiteralPrimary
@@ -126,7 +125,6 @@ class RegexTests extends RubyParserAbstractTest {
           """CaseExpressionPrimary
               | CaseExpression
               |  case
-              |  WsOrNl
               |  ExpressionExpressionOrCommand
               |   PrimaryExpression
               |    VariableReferencePrimary
@@ -137,7 +135,6 @@ class RegexTests extends RubyParserAbstractTest {
               |   Separator
               |  WhenClause
               |   when
-              |   WsOrNl
               |   WhenArgument
               |    Expressions
               |     PrimaryExpression
@@ -148,7 +145,6 @@ class RegexTests extends RubyParserAbstractTest {
               |        /
               |   ThenClause
               |    Separator
-              |    WsOrNl
               |    CompoundStatement
               |     Statements
               |      ExpressionOrCommandStatement
@@ -173,7 +169,6 @@ class RegexTests extends RubyParserAbstractTest {
             """UnlessExpressionPrimary
               | UnlessExpression
               |  unless
-              |  WsOrNl
               |  ExpressionExpressionOrCommand
               |   PrimaryExpression
               |    ChainedInvocationPrimary

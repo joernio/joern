@@ -42,9 +42,7 @@ class ClassDefinitionTests extends RubyParserAbstractTest {
           """ClassDefinitionPrimary
             | ClassDefinition
             |  class
-            |  WsOrNl
             |  <<
-            |  WsOrNl
             |  ExpressionExpressionOrCommand
             |   PrimaryExpression
             |    VariableReferencePrimary
@@ -53,7 +51,6 @@ class ClassDefinitionTests extends RubyParserAbstractTest {
             |       x
             |  Separators
             |   Separator
-            |  WsOrNl
             |  BodyStatement
             |   CompoundStatement
             |    Statements
@@ -63,7 +60,6 @@ class ClassDefinitionTests extends RubyParserAbstractTest {
             |        MethodDefinitionPrimary
             |         MethodDefinition
             |          def
-            |          WsOrNl
             |          SimpleMethodNamePart
             |           DefinedMethodName
             |            MethodName
@@ -72,7 +68,6 @@ class ClassDefinitionTests extends RubyParserAbstractTest {
             |          MethodParameterPart
             |          Separator
             |           ;
-            |          WsOrNl
             |          BodyStatement
             |           CompoundStatement
             |            Statements
@@ -93,7 +88,6 @@ class ClassDefinitionTests extends RubyParserAbstractTest {
             |            Separators
             |             Separator
             |              ;
-            |          WsOrNl
             |          end
             |    Separators
             |     Separator

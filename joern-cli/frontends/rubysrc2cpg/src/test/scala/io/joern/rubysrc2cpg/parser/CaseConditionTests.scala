@@ -18,7 +18,6 @@ class CaseConditionTests extends RubyParserAbstractTest {
           """CaseExpressionPrimary
             | CaseExpression
             |  case
-            |  WsOrNl
             |  ExpressionExpressionOrCommand
             |   PrimaryExpression
             |    VariableReferencePrimary
@@ -29,7 +28,6 @@ class CaseConditionTests extends RubyParserAbstractTest {
             |   Separator
             |  WhenClause
             |   when
-            |   WsOrNl
             |   WhenArgument
             |    Expressions
             |     PrimaryExpression
@@ -40,7 +38,6 @@ class CaseConditionTests extends RubyParserAbstractTest {
             |          1
             |   ThenClause
             |    Separator
-            |    WsOrNl
             |    CompoundStatement
             |     Statements
             |      ExpressionOrCommandStatement

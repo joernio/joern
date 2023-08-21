@@ -180,7 +180,7 @@ commandWithDoBlock
     ;
 
 argumentsWithoutParentheses
-    :   WS+ arguments
+    :   arguments
     ;
 
 arguments

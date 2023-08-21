@@ -453,7 +453,6 @@ class StringTests extends RubyParserAbstractTest {
               |    "
               |    x
               |    "
-              |   \
               |  SimpleStringExpression
               |   DoubleQuotedStringLiteral
               |    "
@@ -542,7 +541,6 @@ class StringTests extends RubyParserAbstractTest {
               |    "
               |    x
               |    "
-              |   \
               |  SimpleStringExpression
               |   DoubleQuotedStringLiteral
               |    "
@@ -575,7 +573,6 @@ class StringTests extends RubyParserAbstractTest {
               |              10
               |     }
               |    "
-              |   \
               |  SimpleStringExpression
               |   DoubleQuotedStringLiteral
               |    "

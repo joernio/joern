@@ -78,7 +78,6 @@ class InvocationWithoutParenthesesTests extends RubyParserAbstractTest {
             |      do
             |      Separators
             |       Separator
-            |      WsOrNl
             |      BodyStatement
             |       CompoundStatement
             |        Statements
