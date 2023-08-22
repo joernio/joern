@@ -16,10 +16,6 @@ compoundStatement
     :   (SEMI | NL)* statements? (SEMI | NL)*
     ;
 
-separators
-    :   (SEMI | NL)+
-    ;
-
 // --------------------------------------------------------
 // Statements
 // --------------------------------------------------------
@@ -84,7 +80,7 @@ primary
     |   RETURN argumentsWithParentheses                                                                                     # returnWithParenthesesPrimary
     |   jumpExpression                                                                                                      # jumpExpressionPrimary
     |   beginExpression                                                                                                     # beginExpressionPrimary
-    |   LPAREN NL* compoundStatement NL* RPAREN                                                                             # groupingExpressionPrimary
+    |   LPAREN compoundStatement RPAREN                                                                                     # groupingExpressionPrimary
     |   variableReference                                                                                                   # variableReferencePrimary
     |   COLON2 CONSTANT_IDENTIFIER                                                                                          # simpleScopedConstantReferencePrimary
     |   primary COLON2 CONSTANT_IDENTIFIER                                                                                  # chainedScopedConstantReferencePrimary
@@ -418,12 +414,12 @@ procParameter
 // --------------------------------------------------------
 
 ifExpression
-    :   IF NL* expressionOrCommand thenClause (NL* elsifClause)* (NL* elseClause)? NL* END
+    :   IF NL* expressionOrCommand thenClause elsifClause* elseClause? END
     ;
 
 thenClause
-    :   separators compoundStatement
-    |   separators? THEN compoundStatement
+    :   (SEMI | NL)+ compoundStatement
+    |   (SEMI | NL)? THEN compoundStatement
     ;
 
 elsifClause
@@ -431,15 +427,15 @@ elsifClause
     ;
 
 elseClause
-    :   ELSE NL* compoundStatement
+    :   ELSE compoundStatement
     ;
 
 unlessExpression
-    :   UNLESS NL* expressionOrCommand thenClause NL* elseClause? NL* END
+    :   UNLESS NL* expressionOrCommand thenClause elseClause? END
     ;
 
 caseExpression
-    :   CASE (NL* expressionOrCommand)? separators? whenClause+ elseClause? NL* END
+    :   CASE (NL* expressionOrCommand)? (SEMI | NL)* whenClause+ elseClause? END
     ;
 
 whenClause
@@ -456,11 +452,11 @@ whenArgument
 // --------------------------------------------------------
 
 whileExpression
-    :   WHILE NL* expressionOrCommand doClause NL* END
+    :   WHILE NL* expressionOrCommand doClause END
     ;
 
 doClause
-    :   separators compoundStatement
+    :   (SEMI | NL)+ compoundStatement
     |   DO compoundStatement
     ;
 
@@ -486,11 +482,11 @@ beginExpression
     ;
 
 bodyStatement
-    :   compoundStatement (NL* rescueClause)* (NL* elseClause)? (NL* ensureClause)?
+    :   compoundStatement rescueClause* elseClause? ensureClause?
     ;
 
 rescueClause
-    :   RESCUE exceptionClass? NL* exceptionVariableAssignment? NL* thenClause
+    :   RESCUE exceptionClass? NL* exceptionVariableAssignment? thenClause
     ;
 
 exceptionClass
@@ -503,7 +499,7 @@ exceptionVariableAssignment
     ;
 
 ensureClause
-    :   ENSURE NL* compoundStatement
+    :   ENSURE compoundStatement
     ;
 
 // --------------------------------------------------------
@@ -512,7 +508,7 @@ ensureClause
 
 classDefinition
     :   CLASS NL* classOrModuleReference (LT NL* expressionOrCommand)? bodyStatement END
-    |   CLASS NL* LT2 NL* expressionOrCommand separators bodyStatement END
+    |   CLASS NL* LT2 NL* expressionOrCommand (SEMI | NL)+ bodyStatement END
     ;
 
 classOrModuleReference

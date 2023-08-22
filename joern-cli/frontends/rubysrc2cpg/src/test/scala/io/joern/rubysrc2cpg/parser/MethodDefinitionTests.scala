@@ -363,7 +363,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |      VariableIdentifier
             |       e
             |    ThenClause
-            |     Separators
             |     CompoundStatement
             |  end""".stripMargin
 
