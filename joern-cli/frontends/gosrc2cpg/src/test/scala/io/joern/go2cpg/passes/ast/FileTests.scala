@@ -33,7 +33,7 @@ class FileTests extends GoCodeToCpgSuite {
 
   "should allow traversing from file to its methods via namespace block" in {
     cpg.file.nameNot(FileTraversal.UNKNOWN).method.name.toSetMutable shouldBe Set(
-      "main." + NamespaceTraversal.globalNamespaceName,
+      s"main.${NamespaceTraversal.globalNamespaceName}",
       "foo",
       "bar"
     )
@@ -51,8 +51,8 @@ class FileTests extends GoCodeToCpgSuite {
 
   "should allow traversing to namespaces" in {
     val List(ns1, ns2) = cpg.file.namespaceBlock.l
-    ns1.filename shouldBe "<unknown>"
-    ns1.fullName shouldBe "<global>"
+    ns1.filename shouldBe FileTraversal.UNKNOWN
+    ns1.fullName shouldBe NamespaceTraversal.globalNamespaceName
     ns2.filename shouldBe "Test0.go"
     ns2.fullName shouldBe "Test0.go:main"
     cpg.file.namespace.l.size shouldBe 2

@@ -1,16 +1,9 @@
 package io.joern.gosrc2cpg.astcreation
 
 import io.joern.gosrc2cpg.datastructures.GoGlobal
-import io.joern.gosrc2cpg.parser.ParserAst.{
-  ArrayType,
-  CompositeLit,
-  Ellipsis,
-  Ident,
-  ParserNode,
-  SelectorExpr,
-  fromString
-}
+import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserAst, ParserKeys, ParserNodeInfo}
+import io.joern.x2cpg.Defines as XDefines
 import org.apache.commons.lang.StringUtils
 import ujson.Value
 
@@ -91,16 +84,48 @@ trait AstCreatorHelper { this: AstCreator =>
       }
       .toMap
   }
-  protected def getTypeFullName(jsonNode: Value): String = {
+
+  protected def generateTypeFullName(typeName: String = "", aliasName: Option[String] = None): String = {
+    // NOTE: There is an assumption that the import nodes have been processed before this method is being called
+    // and mapping of alias to their respective namespace is already done.
+    typeName match
+      case "" =>
+        Defines.anyTypeName
+      case _ =>
+        aliasName match
+          case None =>
+            // NOTE: If the given type is not found in primitiveTypeMap.
+            // Then we are assuming the type is custom type defined inside same pacakge as that of current file's package.
+            // This assumption will be invalid when another package is imported with alias "."
+            Defines.primitiveTypeMap.getOrElse(typeName, s"${fullyQualifiedPackage}.${typeName}")
+          case Some(alias) =>
+            s"${aliasToNameSpaceMapping.getOrElse(alias, s"${XDefines.Uknown}.<${alias}>")}.${typeName}"
+
+  }
+  protected def getTypeFullName(jsonNode: Value): (String, String, Boolean) = {
     val nodeInfo = createParserNodeInfo(jsonNode)
     nodeInfo.node match {
-      case Ident        => jsonNode.obj(ParserKeys.Name).str
-      case ArrayType    => s"${jsonNode.obj(ParserKeys.Elt)(ParserKeys.Name).str}[]"
-      case CompositeLit => s"${jsonNode.obj(ParserKeys.Type)(ParserKeys.Elt)(ParserKeys.Name).str}[]"
-      case Ellipsis     => "..." + jsonNode.obj(ParserKeys.Elt)(ParserKeys.Name).str
+      case Ident =>
+        val fullName = generateTypeFullName(jsonNode.obj(ParserKeys.Name).str)
+        (fullName, fullName, false)
+      case ArrayType =>
+        val fullName = s"${generateTypeFullName(jsonNode.obj(ParserKeys.Elt)(ParserKeys.Name).str)}[]"
+        (fullName, fullName, false)
+      case CompositeLit =>
+        val fullName = s"${generateTypeFullName(jsonNode.obj(ParserKeys.Type)(ParserKeys.Elt)(ParserKeys.Name).str)}[]"
+        (fullName, fullName, false)
+      case Ellipsis =>
+        val fullName = generateTypeFullName(jsonNode.obj(ParserKeys.Elt)(ParserKeys.Name).str)
+        (s"${fullName}[]", s"...${fullName}", true)
       case SelectorExpr =>
-        jsonNode.obj(ParserKeys.X)(ParserKeys.Name).str + "." + jsonNode.obj(ParserKeys.Sel)(ParserKeys.Name).str
-      case _ => Defines.anyTypeName
+        val fullName = generateTypeFullName(
+          typeName = jsonNode.obj(ParserKeys.Sel)(ParserKeys.Name).str,
+          aliasName = Some(jsonNode.obj(ParserKeys.X)(ParserKeys.Name).str)
+        )
+        (fullName, fullName, false)
+      case _ =>
+        val fullName = generateTypeFullName()
+        (fullName, fullName, false)
     }
   }
 

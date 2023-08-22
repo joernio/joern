@@ -64,10 +64,10 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
             val localNodes = valueSpec.json(ParserKeys.Names).arr.map { parserNode =>
               val localParserNode = createParserNodeInfo(parserNode)
 
-              val name = parserNode(ParserKeys.Name).str
-              val typ  = getTypeFullName(typeJson)
-              val node = localNode(localParserNode, name, localParserNode.code, typ)
-              scope.addToScope(name, (node, typ))
+              val name                                            = parserNode(ParserKeys.Name).str
+              val (typeFullName, typeFullNameForcode, isVariadic) = getTypeFullName(typeJson)
+              val node = localNode(localParserNode, name, localParserNode.code, typeFullName)
+              scope.addToScope(name, (node, typeFullName))
               Ast(node)
             }
 

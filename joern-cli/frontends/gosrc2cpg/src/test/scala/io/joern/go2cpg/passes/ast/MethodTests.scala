@@ -150,7 +150,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.name shouldBe "foo"
       x.fullName shouldBe "main.foo"
       x.code should startWith("func foo(argc, arga int, argv ...string)")
-      x.signature shouldBe "main.foo (int, int, ...string)"
+      x.signature shouldBe "main.foo (int, int, string[])"
       x.isExternal shouldBe false
       x.astParentType shouldBe NodeTypes.TYPE_DECL
       x.astParentFullName shouldBe "Test0.go:main.<global>"
@@ -176,7 +176,7 @@ class MethodTests extends GoCodeToCpgSuite {
       val List(argv) = cpg.parameter.name("argv").l
       argv.code shouldBe "argv ...string"
       argv.order shouldBe 3
-      argv.typeFullName shouldBe "string"
+      argv.typeFullName shouldBe "string[]"
       argv.isVariadic shouldBe true
     }
 
@@ -204,7 +204,7 @@ class MethodTests extends GoCodeToCpgSuite {
         |func foo(argc int, argv Sample) {
         |}
         |""".stripMargin)
-    "Be correct with method node properties" ignore {
+    "Be correct with method node properties" in {
       val List(x) = cpg.method.name("foo").l
       x.name shouldBe "foo"
       x.fullName shouldBe "main.foo"
@@ -244,7 +244,7 @@ class MethodTests extends GoCodeToCpgSuite {
       "main.go"
     )
 
-    "Be correct with method node properties" ignore {
+    "Be correct with method node properties" in {
       val List(x) = cpg.method.name("foo").l
       x.name shouldBe "foo"
       x.fullName shouldBe "main.foo"
@@ -282,15 +282,15 @@ class MethodTests extends GoCodeToCpgSuite {
       "main.go"
     )
 
-    "Be correct with method node properties" ignore {
+    "Be correct with method node properties" in {
       val List(x) = cpg.method.name("foo").l
       x.name shouldBe "foo"
-      x.fullName shouldBe "main.foo"
+      x.fullName shouldBe "joern.io/sample.foo"
       x.code should startWith("func foo(argc int, argv Sample)")
-      x.signature shouldBe "main.foo (int, joern.io/sample.Sample)"
+      x.signature shouldBe "joern.io/sample.foo (int, joern.io/sample.Sample)"
       x.isExternal shouldBe false
       x.astParentType shouldBe NodeTypes.TYPE_DECL
-      x.astParentFullName shouldBe "main.go:main.<global>"
+      x.astParentFullName shouldBe "main.go:joern.io/sample.<global>"
       x.order shouldBe 1
       x.filename shouldBe "main.go"
     }
@@ -321,7 +321,7 @@ class MethodTests extends GoCodeToCpgSuite {
       "main.go"
     )
 
-    "Be correct with method node properties" ignore {
+    "Be correct with method node properties" in {
       val List(x) = cpg.method.name("foo").l
       x.name shouldBe "foo"
       x.fullName shouldBe "main.foo"
@@ -337,6 +337,7 @@ class MethodTests extends GoCodeToCpgSuite {
     }
   }
 
+  // TODO: Variable argument of composite type.
   // TODO: "struct type argument from external dependency package"
   // TODO: Add unit tests for Array of primitives as well as struct.
   // TODO: Add unit test for tuple return
