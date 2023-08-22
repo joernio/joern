@@ -102,30 +102,71 @@ trait AstCreatorHelper { this: AstCreator =>
             s"${aliasToNameSpaceMapping.getOrElse(alias, s"${XDefines.Uknown}.<${alias}>")}.${typeName}"
 
   }
+  private def internalTypeFullName(nodeInfo: ParserNodeInfo): (String, String) = {
+    nodeInfo.node match {
+      case Ident =>
+        val typeNameForcode = nodeInfo.json(ParserKeys.Name).str
+        val fullName        = generateTypeFullName(typeNameForcode)
+        (fullName, typeNameForcode)
+      case SelectorExpr =>
+        val typeNameForcode =
+          s"${nodeInfo.json(ParserKeys.X)(ParserKeys.Name).str}.${nodeInfo.json(ParserKeys.Sel)(ParserKeys.Name).str}"
+        val fullName = generateTypeFullName(
+          typeName = nodeInfo.json(ParserKeys.Sel)(ParserKeys.Name).str,
+          aliasName = Some(nodeInfo.json(ParserKeys.X)(ParserKeys.Name).str)
+        )
+        (fullName, typeNameForcode)
+      case _ =>
+        val fullName = generateTypeFullName()
+        (fullName, fullName)
+    }
+  }
+
+  private def internalArrayTypeHandler(nodeInfo: ParserNodeInfo): (String, String) = {
+    nodeInfo.node match {
+      case ArrayType =>
+        val (fullName, typeNameForcode) = internalTypeFullName(createParserNodeInfo(nodeInfo.json(ParserKeys.Elt)))
+        (s"[]${fullName}", s"[]${typeNameForcode}")
+      case CompositeLit =>
+        val (fullName, typeNameForcode) = internalTypeFullName(
+          createParserNodeInfo(nodeInfo.json(ParserKeys.Type)(ParserKeys.Elt))
+        )
+        (s"[]${fullName}", s"[]${typeNameForcode}")
+      case _ =>
+        val (fullName, typeNameForcode) = internalTypeFullName(nodeInfo)
+        (fullName, typeNameForcode)
+    }
+  }
+
+  private def internalStarExpHandler(nodeInfo: ParserNodeInfo): (String, String) = {
+    nodeInfo.node match {
+      case StarExpr =>
+        // TODO: Need to handle pointer to pointer use case.
+        val (fullName, typeNameForcode) = internalArrayTypeHandler(createParserNodeInfo(nodeInfo.json(ParserKeys.X)))
+        (s"*${fullName}", s"*${typeNameForcode}")
+      case _ =>
+        val (fullName, typeNameForcode) = internalArrayTypeHandler(nodeInfo)
+        (fullName, typeNameForcode)
+    }
+  }
+
   protected def getTypeFullName(jsonNode: Value): (String, String, Boolean) = {
     val nodeInfo = createParserNodeInfo(jsonNode)
     nodeInfo.node match {
-      case Ident =>
-        val fullName = generateTypeFullName(jsonNode.obj(ParserKeys.Name).str)
-        (fullName, fullName, false)
       case ArrayType =>
-        val fullName = s"${generateTypeFullName(jsonNode.obj(ParserKeys.Elt)(ParserKeys.Name).str)}[]"
-        (fullName, fullName, false)
+        val (fullName, typeNameForcode) = internalStarExpHandler(createParserNodeInfo(jsonNode.obj(ParserKeys.Elt)))
+        (s"[]${fullName}", s"[]${typeNameForcode}", false)
       case CompositeLit =>
-        val fullName = s"${generateTypeFullName(jsonNode.obj(ParserKeys.Type)(ParserKeys.Elt)(ParserKeys.Name).str)}[]"
-        (fullName, fullName, false)
-      case Ellipsis =>
-        val fullName = generateTypeFullName(jsonNode.obj(ParserKeys.Elt)(ParserKeys.Name).str)
-        (s"${fullName}[]", s"...${fullName}", true)
-      case SelectorExpr =>
-        val fullName = generateTypeFullName(
-          typeName = jsonNode.obj(ParserKeys.Sel)(ParserKeys.Name).str,
-          aliasName = Some(jsonNode.obj(ParserKeys.X)(ParserKeys.Name).str)
+        val (fullName, typeNameForcode) = internalStarExpHandler(
+          createParserNodeInfo(jsonNode.obj(ParserKeys.Type)(ParserKeys.Elt))
         )
-        (fullName, fullName, false)
+        (s"[]${fullName}", s"[]${typeNameForcode}", false)
+      case Ellipsis =>
+        val (fullName, typeNameForcode) = internalStarExpHandler(createParserNodeInfo(jsonNode.obj(ParserKeys.Elt)))
+        (s"[]${fullName}", s"...${typeNameForcode}", true)
       case _ =>
-        val fullName = generateTypeFullName()
-        (fullName, fullName, false)
+        val (fullName, typeNameForcode) = internalStarExpHandler(nodeInfo)
+        (fullName, typeNameForcode, false)
     }
   }
 

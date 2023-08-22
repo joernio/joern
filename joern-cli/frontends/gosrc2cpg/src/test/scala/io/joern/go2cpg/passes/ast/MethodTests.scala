@@ -65,11 +65,13 @@ class MethodTests extends GoCodeToCpgSuite {
       argc.code shouldBe "argc int"
       argc.order shouldBe 1
       argc.typeFullName shouldBe "int"
+      argc.isVariadic shouldBe false
 
       val List(argv) = cpg.parameter.name("argv").l
       argv.code shouldBe "argv string"
       argv.order shouldBe 2
       argv.typeFullName shouldBe "string"
+      argv.isVariadic shouldBe false
     }
 
     "traversing from parameter to method" in {
@@ -112,16 +114,19 @@ class MethodTests extends GoCodeToCpgSuite {
       argc.code shouldBe "argc int"
       argc.order shouldBe 1
       argc.typeFullName shouldBe "int"
+      argc.isVariadic shouldBe false
 
       val List(arga) = cpg.parameter.name("arga").l
       arga.code shouldBe "arga int"
       arga.order shouldBe 2
       arga.typeFullName shouldBe "int"
+      arga.isVariadic shouldBe false
 
       val List(argv) = cpg.parameter.name("argv").l
       argv.code shouldBe "argv string"
       argv.order shouldBe 3
       argv.typeFullName shouldBe "string"
+      argv.isVariadic shouldBe false
     }
 
     "traversing from parameter to method" in {
@@ -150,7 +155,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.name shouldBe "foo"
       x.fullName shouldBe "main.foo"
       x.code should startWith("func foo(argc, arga int, argv ...string)")
-      x.signature shouldBe "main.foo (int, int, string[])"
+      x.signature shouldBe "main.foo (int, int, []string)"
       x.isExternal shouldBe false
       x.astParentType shouldBe NodeTypes.TYPE_DECL
       x.astParentFullName shouldBe "Test0.go:main.<global>"
@@ -176,7 +181,7 @@ class MethodTests extends GoCodeToCpgSuite {
       val List(argv) = cpg.parameter.name("argv").l
       argv.code shouldBe "argv ...string"
       argv.order shouldBe 3
-      argv.typeFullName shouldBe "string[]"
+      argv.typeFullName shouldBe "[]string"
       argv.isVariadic shouldBe true
     }
 
@@ -190,6 +195,258 @@ class MethodTests extends GoCodeToCpgSuite {
       val List(argc, arga, argv) = cpg.method.name("foo").parameter.l
       argc.name shouldBe "argc"
       arga.name shouldBe "arga"
+      argv.name shouldBe "argv"
+    }
+  }
+
+  "Primitive Array argument use case" should {
+    val cpg = code("""
+        |package main
+        |func foo(argc, arga int, argv []int) {
+        |}
+        |""".stripMargin)
+
+    "Be correct with method node properties" in {
+      val List(x) = cpg.method.name("foo").l
+      x.name shouldBe "foo"
+      x.fullName shouldBe "main.foo"
+      x.code should startWith("func foo(argc, arga int, argv []int)")
+      x.signature shouldBe "main.foo (int, int, []int)"
+      x.isExternal shouldBe false
+      x.astParentType shouldBe NodeTypes.TYPE_DECL
+      x.astParentFullName shouldBe "Test0.go:main.<global>"
+      x.order shouldBe 1
+      x.filename shouldBe "Test0.go"
+      x.lineNumber shouldBe Option(3)
+      x.lineNumberEnd shouldBe Option(4)
+    }
+    "be correct for parameter nodes" in {
+      cpg.parameter.name.l shouldBe List("argc", "arga", "argv")
+      val List(argc) = cpg.parameter.name("argc").l
+      argc.code shouldBe "argc int"
+      argc.order shouldBe 1
+      argc.typeFullName shouldBe "int"
+      argc.isVariadic shouldBe false
+
+      val List(arga) = cpg.parameter.name("arga").l
+      arga.code shouldBe "arga int"
+      arga.order shouldBe 2
+      arga.typeFullName shouldBe "int"
+      arga.isVariadic shouldBe false
+
+      val List(argv) = cpg.parameter.name("argv").l
+      argv.code shouldBe "argv []int"
+      argv.order shouldBe 3
+      argv.typeFullName shouldBe "[]int"
+      argv.isVariadic shouldBe false
+    }
+
+    "traversing from parameter to method" in {
+      cpg.parameter.name("argc").method.name.l shouldBe List("foo")
+      cpg.parameter.name("arga").method.name.l shouldBe List("foo")
+      cpg.parameter.name("argv").method.name.l shouldBe List("foo")
+    }
+
+    "traversing from method to parameter" in {
+      val List(argc, arga, argv) = cpg.method.name("foo").parameter.l
+      argc.name shouldBe "argc"
+      arga.name shouldBe "arga"
+      argv.name shouldBe "argv"
+    }
+  }
+
+  "Method arguments with primitive pointer" should {
+    val cpg = code("""
+        |package main
+        |func foo(argc int, argv *string) {
+        |}
+        |""".stripMargin)
+
+    "Be correct with method node properties" in {
+      val List(x) = cpg.method.name("foo").l
+      x.name shouldBe "foo"
+      x.fullName shouldBe "main.foo"
+      x.code should startWith("func foo(argc int, argv *string)")
+      x.signature shouldBe "main.foo (int, *string)"
+      x.isExternal shouldBe false
+      x.astParentType shouldBe NodeTypes.TYPE_DECL
+      x.astParentFullName shouldBe "Test0.go:main.<global>"
+      x.order shouldBe 1
+      x.filename shouldBe "Test0.go"
+      x.lineNumber shouldBe Option(3)
+      x.lineNumberEnd shouldBe Option(4)
+    }
+
+    "be correct for parameter nodes" in {
+      cpg.parameter.name.l shouldBe List("argc", "argv")
+      val List(argc) = cpg.parameter.name("argc").l
+      argc.code shouldBe "argc int"
+      argc.order shouldBe 1
+      argc.typeFullName shouldBe "int"
+      argc.isVariadic shouldBe false
+
+      val List(argv) = cpg.parameter.name("argv").l
+      argv.code shouldBe "argv *string"
+      argv.order shouldBe 2
+      argv.typeFullName shouldBe "*string"
+      argv.isVariadic shouldBe false
+    }
+
+    "traversing from parameter to method" in {
+      cpg.parameter.name("argc").method.name.l shouldBe List("foo")
+      cpg.parameter.name("argv").method.name.l shouldBe List("foo")
+    }
+
+    "traversing from method to parameter" in {
+      val List(argc, argv) = cpg.method.name("foo").parameter.l
+      argc.name shouldBe "argc"
+      argv.name shouldBe "argv"
+    }
+  }
+
+  "Method arguments with array of primitive pointer" should {
+    val cpg = code("""
+        |package main
+        |func foo(argc int, argv []*string) {
+        |}
+        |""".stripMargin)
+
+    "Be correct with method node properties" in {
+      val List(x) = cpg.method.name("foo").l
+      x.name shouldBe "foo"
+      x.fullName shouldBe "main.foo"
+      x.code should startWith("func foo(argc int, argv []*string)")
+      x.signature shouldBe "main.foo (int, []*string)"
+      x.isExternal shouldBe false
+      x.astParentType shouldBe NodeTypes.TYPE_DECL
+      x.astParentFullName shouldBe "Test0.go:main.<global>"
+      x.order shouldBe 1
+      x.filename shouldBe "Test0.go"
+      x.lineNumber shouldBe Option(3)
+      x.lineNumberEnd shouldBe Option(4)
+    }
+
+    "be correct for parameter nodes" in {
+      cpg.parameter.name.l shouldBe List("argc", "argv")
+      val List(argc) = cpg.parameter.name("argc").l
+      argc.code shouldBe "argc int"
+      argc.order shouldBe 1
+      argc.typeFullName shouldBe "int"
+      argc.isVariadic shouldBe false
+
+      val List(argv) = cpg.parameter.name("argv").l
+      argv.code shouldBe "argv []*string"
+      argv.order shouldBe 2
+      argv.typeFullName shouldBe "[]*string"
+      argv.isVariadic shouldBe false
+    }
+
+    "traversing from parameter to method" in {
+      cpg.parameter.name("argc").method.name.l shouldBe List("foo")
+      cpg.parameter.name("argv").method.name.l shouldBe List("foo")
+    }
+
+    "traversing from method to parameter" in {
+      val List(argc, argv) = cpg.method.name("foo").parameter.l
+      argc.name shouldBe "argc"
+      argv.name shouldBe "argv"
+    }
+  }
+
+  "Variable argument of primitive pointer" should {
+    val cpg = code("""
+        |package main
+        |func foo(argc int, argv ...*string) {
+        |}
+        |""".stripMargin)
+
+    "Be correct with method node properties" in {
+      val List(x) = cpg.method.name("foo").l
+      x.name shouldBe "foo"
+      x.fullName shouldBe "main.foo"
+      x.code should startWith("func foo(argc int, argv ...*string)")
+      x.signature shouldBe "main.foo (int, []*string)"
+      x.isExternal shouldBe false
+      x.astParentType shouldBe NodeTypes.TYPE_DECL
+      x.astParentFullName shouldBe "Test0.go:main.<global>"
+      x.order shouldBe 1
+      x.filename shouldBe "Test0.go"
+      x.lineNumber shouldBe Option(3)
+      x.lineNumberEnd shouldBe Option(4)
+    }
+
+    "be correct for parameter nodes" in {
+      cpg.parameter.name.l shouldBe List("argc", "argv")
+      val List(argc) = cpg.parameter.name("argc").l
+      argc.code shouldBe "argc int"
+      argc.order shouldBe 1
+      argc.typeFullName shouldBe "int"
+      argc.isVariadic shouldBe false
+
+      val List(argv) = cpg.parameter.name("argv").l
+      argv.code shouldBe "argv ...*string"
+      argv.order shouldBe 2
+      argv.typeFullName shouldBe "[]*string"
+      argv.isVariadic shouldBe true
+    }
+
+    "traversing from parameter to method" in {
+      cpg.parameter.name("argc").method.name.l shouldBe List("foo")
+      cpg.parameter.name("argv").method.name.l shouldBe List("foo")
+    }
+
+    "traversing from method to parameter" in {
+      val List(argc, argv) = cpg.method.name("foo").parameter.l
+      argc.name shouldBe "argc"
+      argv.name shouldBe "argv"
+    }
+  }
+
+  "Method arguments with pointer of primitive array" should {
+    val cpg = code("""
+        |package main
+        |func foo(argc int, argv *[]string) {
+        |}
+        |""".stripMargin)
+
+    "Be correct with method node properties" in {
+      val List(x) = cpg.method.name("foo").l
+      x.name shouldBe "foo"
+      x.fullName shouldBe "main.foo"
+      x.code should startWith("func foo(argc int, argv *[]string)")
+      x.signature shouldBe "main.foo (int, *[]string)"
+      x.isExternal shouldBe false
+      x.astParentType shouldBe NodeTypes.TYPE_DECL
+      x.astParentFullName shouldBe "Test0.go:main.<global>"
+      x.order shouldBe 1
+      x.filename shouldBe "Test0.go"
+      x.lineNumber shouldBe Option(3)
+      x.lineNumberEnd shouldBe Option(4)
+    }
+
+    "be correct for parameter nodes" in {
+      cpg.parameter.name.l shouldBe List("argc", "argv")
+      val List(argc) = cpg.parameter.name("argc").l
+      argc.code shouldBe "argc int"
+      argc.order shouldBe 1
+      argc.typeFullName shouldBe "int"
+      argc.isVariadic shouldBe false
+
+      val List(argv) = cpg.parameter.name("argv").l
+      argv.code shouldBe "argv *[]string"
+      argv.order shouldBe 2
+      argv.typeFullName shouldBe "*[]string"
+      argv.isVariadic shouldBe false
+    }
+
+    "traversing from parameter to method" in {
+      cpg.parameter.name("argc").method.name.l shouldBe List("foo")
+      cpg.parameter.name("argv").method.name.l shouldBe List("foo")
+    }
+
+    "traversing from method to parameter" in {
+      val List(argc, argv) = cpg.method.name("foo").parameter.l
+      argc.name shouldBe "argc"
       argv.name shouldBe "argv"
     }
   }
@@ -217,6 +474,32 @@ class MethodTests extends GoCodeToCpgSuite {
       x.filename shouldBe "Test0.go"
       x.lineNumber shouldBe Option(7)
       x.lineNumberEnd shouldBe Option(8)
+    }
+
+    "be correct for parameter nodes" in {
+      cpg.parameter.name.l shouldBe List("argc", "argv")
+      val List(argc) = cpg.parameter.name("argc").l
+      argc.code shouldBe "argc int"
+      argc.order shouldBe 1
+      argc.typeFullName shouldBe "int"
+      argc.isVariadic shouldBe false
+
+      val List(argv) = cpg.parameter.name("argv").l
+      argv.code shouldBe "argv Sample"
+      argv.order shouldBe 2
+      argv.typeFullName shouldBe "main.Sample"
+      argv.isVariadic shouldBe false
+    }
+
+    "traversing from parameter to method" in {
+      cpg.parameter.name("argc").method.name.l shouldBe List("foo")
+      cpg.parameter.name("argv").method.name.l shouldBe List("foo")
+    }
+
+    "traversing from method to parameter" in {
+      val List(argc, argv) = cpg.method.name("foo").parameter.l
+      argc.name shouldBe "argc"
+      argv.name shouldBe "argv"
     }
   }
 
@@ -256,6 +539,32 @@ class MethodTests extends GoCodeToCpgSuite {
       x.order shouldBe 1
       x.filename shouldBe "main.go"
     }
+
+    "be correct for parameter nodes" in {
+      cpg.parameter.name.l shouldBe List("argc", "argv")
+      val List(argc) = cpg.parameter.name("argc").l
+      argc.code shouldBe "argc int"
+      argc.order shouldBe 1
+      argc.typeFullName shouldBe "int"
+      argc.isVariadic shouldBe false
+
+      val List(argv) = cpg.parameter.name("argv").l
+      argv.code shouldBe "argv Sample"
+      argv.order shouldBe 2
+      argv.typeFullName shouldBe "main.Sample"
+      argv.isVariadic shouldBe false
+    }
+
+    "traversing from parameter to method" in {
+      cpg.parameter.name("argc").method.name.l shouldBe List("foo")
+      cpg.parameter.name("argv").method.name.l shouldBe List("foo")
+    }
+
+    "traversing from method to parameter" in {
+      val List(argc, argv) = cpg.method.name("foo").parameter.l
+      argc.name shouldBe "argc"
+      argv.name shouldBe "argv"
+    }
   }
 
   "struct type argument from same 'sample' package but different file" should {
@@ -294,9 +603,35 @@ class MethodTests extends GoCodeToCpgSuite {
       x.order shouldBe 1
       x.filename shouldBe "main.go"
     }
+
+    "be correct for parameter nodes" in {
+      cpg.parameter.name.l shouldBe List("argc", "argv")
+      val List(argc) = cpg.parameter.name("argc").l
+      argc.code shouldBe "argc int"
+      argc.order shouldBe 1
+      argc.typeFullName shouldBe "int"
+      argc.isVariadic shouldBe false
+
+      val List(argv) = cpg.parameter.name("argv").l
+      argv.code shouldBe "argv Sample"
+      argv.order shouldBe 2
+      argv.typeFullName shouldBe "joern.io/sample.Sample"
+      argv.isVariadic shouldBe false
+    }
+
+    "traversing from parameter to method" in {
+      cpg.parameter.name("argc").method.name.l shouldBe List("foo")
+      cpg.parameter.name("argv").method.name.l shouldBe List("foo")
+    }
+
+    "traversing from method to parameter" in {
+      val List(argc, argv) = cpg.method.name("foo").parameter.l
+      argc.name shouldBe "argc"
+      argv.name shouldBe "argv"
+    }
   }
 
-  "struct type argument from other package" should {
+  "struct type argument from other package from same project" should {
     val cpg = code(
       """
         |module joern.io/sample
@@ -335,12 +670,455 @@ class MethodTests extends GoCodeToCpgSuite {
       x.lineNumber shouldBe Option(4)
       x.lineNumberEnd shouldBe Option(5)
     }
+
+    "be correct for parameter nodes" in {
+      cpg.parameter.name.l shouldBe List("argc", "argv")
+      val List(argc) = cpg.parameter.name("argc").l
+      argc.code shouldBe "argc int"
+      argc.order shouldBe 1
+      argc.typeFullName shouldBe "int"
+      argc.isVariadic shouldBe false
+
+      val List(argv) = cpg.parameter.name("argv").l
+      argv.code shouldBe "argv fpkg.Sample"
+      argv.order shouldBe 2
+      argv.typeFullName shouldBe "joern.io/sample/fpkg.Sample"
+      argv.isVariadic shouldBe false
+    }
+
+    "traversing from parameter to method" in {
+      cpg.parameter.name("argc").method.name.l shouldBe List("foo")
+      cpg.parameter.name("argv").method.name.l shouldBe List("foo")
+    }
+
+    "traversing from method to parameter" in {
+      val List(argc, argv) = cpg.method.name("foo").parameter.l
+      argc.name shouldBe "argc"
+      argv.name shouldBe "argv"
+    }
   }
 
-  // TODO: Variable argument of composite type.
-  // TODO: "struct type argument from external dependency package"
-  // TODO: Add unit tests for Array of primitives as well as struct.
+  "struct type argument from other package as variable argument" should {
+    val cpg = code(
+      """
+        |module joern.io/sample
+        |go 1.18
+        |""".stripMargin,
+      "go.mod"
+    ).moreCode(
+      """
+        |package fpkg
+        |type Sample struct {
+        |	name int
+        |}
+        |""".stripMargin,
+      Seq("fpkg", "lib.go").mkString(File.separator)
+    ).moreCode(
+      """
+        |package main
+        |import "joern.io/sample/fpkg"
+        |func foo(argc int, argv ...fpkg.Sample) {
+        |}
+        |""".stripMargin,
+      "main.go"
+    )
+
+    "Be correct with method node properties" in {
+      val List(x) = cpg.method.name("foo").l
+      x.name shouldBe "foo"
+      x.fullName shouldBe "main.foo"
+      x.code should startWith("func foo(argc int, argv ...fpkg.Sample)")
+      x.signature shouldBe "main.foo (int, []joern.io/sample/fpkg.Sample)"
+      x.isExternal shouldBe false
+      x.astParentType shouldBe NodeTypes.TYPE_DECL
+      x.astParentFullName shouldBe "main.go:main.<global>"
+      x.order shouldBe 2
+      x.filename shouldBe "main.go"
+      x.lineNumber shouldBe Option(4)
+      x.lineNumberEnd shouldBe Option(5)
+    }
+
+    "be correct for parameter nodes" in {
+      cpg.parameter.name.l shouldBe List("argc", "argv")
+      val List(argc) = cpg.parameter.name("argc").l
+      argc.code shouldBe "argc int"
+      argc.order shouldBe 1
+      argc.typeFullName shouldBe "int"
+      argc.isVariadic shouldBe false
+
+      val List(argv) = cpg.parameter.name("argv").l
+      argv.code shouldBe "argv ...fpkg.Sample"
+      argv.order shouldBe 2
+      argv.typeFullName shouldBe "[]joern.io/sample/fpkg.Sample"
+      argv.isVariadic shouldBe true
+    }
+
+    "traversing from parameter to method" in {
+      cpg.parameter.name("argc").method.name.l shouldBe List("foo")
+      cpg.parameter.name("argv").method.name.l shouldBe List("foo")
+    }
+
+    "traversing from method to parameter" in {
+      val List(argc, argv) = cpg.method.name("foo").parameter.l
+      argc.name shouldBe "argc"
+      argv.name shouldBe "argv"
+    }
+  }
+
+  "struct type argument from third party dependency" should {
+    val cpg = code(
+      """
+        |module joern.io/sample
+        |go 1.18
+        |""".stripMargin,
+      "go.mod"
+    ).moreCode(
+      """
+        |package main
+        |import "privado.ai/test/fpkg"
+        |func foo(argc int, argv fpkg.Sample) {
+        |}
+        |""".stripMargin,
+      "main.go"
+    )
+
+    "Be correct with method node properties" in {
+      val List(x) = cpg.method.name("foo").l
+      x.name shouldBe "foo"
+      x.fullName shouldBe "main.foo"
+      x.code should startWith("func foo(argc int, argv fpkg.Sample)")
+      x.signature shouldBe "main.foo (int, privado.ai/test/fpkg.Sample)"
+      x.isExternal shouldBe false
+      x.astParentType shouldBe NodeTypes.TYPE_DECL
+      x.astParentFullName shouldBe "main.go:main.<global>"
+      x.order shouldBe 2
+      x.filename shouldBe "main.go"
+      x.lineNumber shouldBe Option(4)
+      x.lineNumberEnd shouldBe Option(5)
+    }
+
+    "be correct for parameter nodes" in {
+      cpg.parameter.name.l shouldBe List("argc", "argv")
+      val List(argc) = cpg.parameter.name("argc").l
+      argc.code shouldBe "argc int"
+      argc.order shouldBe 1
+      argc.typeFullName shouldBe "int"
+      argc.isVariadic shouldBe false
+
+      val List(argv) = cpg.parameter.name("argv").l
+      argv.code shouldBe "argv fpkg.Sample"
+      argv.order shouldBe 2
+      argv.typeFullName shouldBe "privado.ai/test/fpkg.Sample"
+      argv.isVariadic shouldBe false
+    }
+
+    "traversing from parameter to method" in {
+      cpg.parameter.name("argc").method.name.l shouldBe List("foo")
+      cpg.parameter.name("argv").method.name.l shouldBe List("foo")
+    }
+
+    "traversing from method to parameter" in {
+      val List(argc, argv) = cpg.method.name("foo").parameter.l
+      argc.name shouldBe "argc"
+      argv.name shouldBe "argv"
+    }
+  }
+
+  "struct type array argument from third party dependency" should {
+    val cpg = code(
+      """
+        |module joern.io/sample
+        |go 1.18
+        |""".stripMargin,
+      "go.mod"
+    ).moreCode(
+      """
+        |package main
+        |import "privado.ai/test/fpkg"
+        |func foo(argc int, argv []fpkg.Sample) {
+        |}
+        |""".stripMargin,
+      "main.go"
+    )
+
+    "Be correct with method node properties" in {
+      val List(x) = cpg.method.name("foo").l
+      x.name shouldBe "foo"
+      x.fullName shouldBe "main.foo"
+      x.code should startWith("func foo(argc int, argv []fpkg.Sample)")
+      x.signature shouldBe "main.foo (int, []privado.ai/test/fpkg.Sample)"
+      x.isExternal shouldBe false
+      x.astParentType shouldBe NodeTypes.TYPE_DECL
+      x.astParentFullName shouldBe "main.go:main.<global>"
+      x.order shouldBe 2
+      x.filename shouldBe "main.go"
+      x.lineNumber shouldBe Option(4)
+      x.lineNumberEnd shouldBe Option(5)
+    }
+
+    "be correct for parameter nodes" in {
+      cpg.parameter.name.l shouldBe List("argc", "argv")
+      val List(argc) = cpg.parameter.name("argc").l
+      argc.code shouldBe "argc int"
+      argc.order shouldBe 1
+      argc.typeFullName shouldBe "int"
+      argc.isVariadic shouldBe false
+
+      val List(argv) = cpg.parameter.name("argv").l
+      argv.code shouldBe "argv []fpkg.Sample"
+      argv.order shouldBe 2
+      argv.typeFullName shouldBe "[]privado.ai/test/fpkg.Sample"
+      argv.isVariadic shouldBe false
+    }
+
+    "traversing from parameter to method" in {
+      cpg.parameter.name("argc").method.name.l shouldBe List("foo")
+      cpg.parameter.name("argv").method.name.l shouldBe List("foo")
+    }
+
+    "traversing from method to parameter" in {
+      val List(argc, argv) = cpg.method.name("foo").parameter.l
+      argc.name shouldBe "argc"
+      argv.name shouldBe "argv"
+    }
+  }
+
+  "pointer of struct type argument from third party dependency" should {
+    val cpg = code(
+      """
+        |module joern.io/sample
+        |go 1.18
+        |""".stripMargin,
+      "go.mod"
+    ).moreCode(
+      """
+        |package main
+        |import "privado.ai/test/fpkg"
+        |func foo(argc int, argv *fpkg.Sample) {
+        |}
+        |""".stripMargin,
+      "main.go"
+    )
+
+    "Be correct with method node properties" in {
+      val List(x) = cpg.method.name("foo").l
+      x.name shouldBe "foo"
+      x.fullName shouldBe "main.foo"
+      x.code should startWith("func foo(argc int, argv *fpkg.Sample)")
+      x.signature shouldBe "main.foo (int, *privado.ai/test/fpkg.Sample)"
+      x.isExternal shouldBe false
+      x.astParentType shouldBe NodeTypes.TYPE_DECL
+      x.astParentFullName shouldBe "main.go:main.<global>"
+      x.order shouldBe 2
+      x.filename shouldBe "main.go"
+      x.lineNumber shouldBe Option(4)
+      x.lineNumberEnd shouldBe Option(5)
+    }
+
+    "be correct for parameter nodes" in {
+      cpg.parameter.name.l shouldBe List("argc", "argv")
+      val List(argc) = cpg.parameter.name("argc").l
+      argc.code shouldBe "argc int"
+      argc.order shouldBe 1
+      argc.typeFullName shouldBe "int"
+      argc.isVariadic shouldBe false
+
+      val List(argv) = cpg.parameter.name("argv").l
+      argv.code shouldBe "argv *fpkg.Sample"
+      argv.order shouldBe 2
+      argv.typeFullName shouldBe "*privado.ai/test/fpkg.Sample"
+      argv.isVariadic shouldBe false
+    }
+
+    "traversing from parameter to method" in {
+      cpg.parameter.name("argc").method.name.l shouldBe List("foo")
+      cpg.parameter.name("argv").method.name.l shouldBe List("foo")
+    }
+
+    "traversing from method to parameter" in {
+      val List(argc, argv) = cpg.method.name("foo").parameter.l
+      argc.name shouldBe "argc"
+      argv.name shouldBe "argv"
+    }
+  }
+
+  "Array of struct pointer argument from third party dependency" should {
+    val cpg = code(
+      """
+        |module joern.io/sample
+        |go 1.18
+        |""".stripMargin,
+      "go.mod"
+    ).moreCode(
+      """
+        |package main
+        |import "privado.ai/test/fpkg"
+        |func foo(argc int, argv []*fpkg.Sample) {
+        |}
+        |""".stripMargin,
+      "main.go"
+    )
+
+    "Be correct with method node properties" in {
+      val List(x) = cpg.method.name("foo").l
+      x.name shouldBe "foo"
+      x.fullName shouldBe "main.foo"
+      x.code should startWith("func foo(argc int, argv []*fpkg.Sample)")
+      x.signature shouldBe "main.foo (int, []*privado.ai/test/fpkg.Sample)"
+      x.isExternal shouldBe false
+      x.astParentType shouldBe NodeTypes.TYPE_DECL
+      x.astParentFullName shouldBe "main.go:main.<global>"
+      x.order shouldBe 2
+      x.filename shouldBe "main.go"
+      x.lineNumber shouldBe Option(4)
+      x.lineNumberEnd shouldBe Option(5)
+    }
+
+    "be correct for parameter nodes" in {
+      cpg.parameter.name.l shouldBe List("argc", "argv")
+      val List(argc) = cpg.parameter.name("argc").l
+      argc.code shouldBe "argc int"
+      argc.order shouldBe 1
+      argc.typeFullName shouldBe "int"
+      argc.isVariadic shouldBe false
+
+      val List(argv) = cpg.parameter.name("argv").l
+      argv.code shouldBe "argv []*fpkg.Sample"
+      argv.order shouldBe 2
+      argv.typeFullName shouldBe "[]*privado.ai/test/fpkg.Sample"
+      argv.isVariadic shouldBe false
+    }
+
+    "traversing from parameter to method" in {
+      cpg.parameter.name("argc").method.name.l shouldBe List("foo")
+      cpg.parameter.name("argv").method.name.l shouldBe List("foo")
+    }
+
+    "traversing from method to parameter" in {
+      val List(argc, argv) = cpg.method.name("foo").parameter.l
+      argc.name shouldBe "argc"
+      argv.name shouldBe "argv"
+    }
+  }
+
+  "Pointer to struct array argument from third party dependency" should {
+    val cpg = code(
+      """
+        |module joern.io/sample
+        |go 1.18
+        |""".stripMargin,
+      "go.mod"
+    ).moreCode(
+      """
+        |package main
+        |import "privado.ai/test/fpkg"
+        |func foo(argc int, argv *[]fpkg.Sample) {
+        |}
+        |""".stripMargin,
+      "main.go"
+    )
+
+    "Be correct with method node properties" in {
+      val List(x) = cpg.method.name("foo").l
+      x.name shouldBe "foo"
+      x.fullName shouldBe "main.foo"
+      x.code should startWith("func foo(argc int, argv *[]fpkg.Sample)")
+      x.signature shouldBe "main.foo (int, *[]privado.ai/test/fpkg.Sample)"
+      x.isExternal shouldBe false
+      x.astParentType shouldBe NodeTypes.TYPE_DECL
+      x.astParentFullName shouldBe "main.go:main.<global>"
+      x.order shouldBe 2
+      x.filename shouldBe "main.go"
+      x.lineNumber shouldBe Option(4)
+      x.lineNumberEnd shouldBe Option(5)
+    }
+
+    "be correct for parameter nodes" in {
+      cpg.parameter.name.l shouldBe List("argc", "argv")
+      val List(argc) = cpg.parameter.name("argc").l
+      argc.code shouldBe "argc int"
+      argc.order shouldBe 1
+      argc.typeFullName shouldBe "int"
+      argc.isVariadic shouldBe false
+
+      val List(argv) = cpg.parameter.name("argv").l
+      argv.code shouldBe "argv *[]fpkg.Sample"
+      argv.order shouldBe 2
+      argv.typeFullName shouldBe "*[]privado.ai/test/fpkg.Sample"
+      argv.isVariadic shouldBe false
+    }
+
+    "traversing from parameter to method" in {
+      cpg.parameter.name("argc").method.name.l shouldBe List("foo")
+      cpg.parameter.name("argv").method.name.l shouldBe List("foo")
+    }
+
+    "traversing from method to parameter" in {
+      val List(argc, argv) = cpg.method.name("foo").parameter.l
+      argc.name shouldBe "argc"
+      argv.name shouldBe "argv"
+    }
+  }
+
+  "Variable argument of struct pointer from third party dependency" should {
+    val cpg = code(
+      """
+        |module joern.io/sample
+        |go 1.18
+        |""".stripMargin,
+      "go.mod"
+    ).moreCode(
+      """
+        |package main
+        |import "privado.ai/test/fpkg"
+        |func foo(argc int, argv ...*fpkg.Sample) {
+        |}
+        |""".stripMargin,
+      "main.go"
+    )
+
+    "Be correct with method node properties" in {
+      val List(x) = cpg.method.name("foo").l
+      x.name shouldBe "foo"
+      x.fullName shouldBe "main.foo"
+      x.code should startWith("func foo(argc int, argv ...*fpkg.Sample)")
+      x.signature shouldBe "main.foo (int, []*privado.ai/test/fpkg.Sample)"
+      x.isExternal shouldBe false
+      x.astParentType shouldBe NodeTypes.TYPE_DECL
+      x.astParentFullName shouldBe "main.go:main.<global>"
+      x.order shouldBe 2
+      x.filename shouldBe "main.go"
+      x.lineNumber shouldBe Option(4)
+      x.lineNumberEnd shouldBe Option(5)
+    }
+
+    "be correct for parameter nodes" in {
+      cpg.parameter.name.l shouldBe List("argc", "argv")
+      val List(argc) = cpg.parameter.name("argc").l
+      argc.code shouldBe "argc int"
+      argc.order shouldBe 1
+      argc.typeFullName shouldBe "int"
+      argc.isVariadic shouldBe false
+
+      val List(argv) = cpg.parameter.name("argv").l
+      argv.code shouldBe "argv ...*fpkg.Sample"
+      argv.order shouldBe 2
+      argv.typeFullName shouldBe "[]*privado.ai/test/fpkg.Sample"
+      argv.isVariadic shouldBe true
+    }
+
+    "traversing from parameter to method" in {
+      cpg.parameter.name("argc").method.name.l shouldBe List("foo")
+      cpg.parameter.name("argv").method.name.l shouldBe List("foo")
+    }
+
+    "traversing from method to parameter" in {
+      val List(argc, argv) = cpg.method.name("foo").parameter.l
+      argc.name shouldBe "argc"
+      argv.name shouldBe "argv"
+    }
+  }
+  // TODO: Add pointer to pointer use case.
   // TODO: Add unit test for tuple return
-  // TODO: Add unit test with pointers
   // TODO: Add unit tests with Generics
 }

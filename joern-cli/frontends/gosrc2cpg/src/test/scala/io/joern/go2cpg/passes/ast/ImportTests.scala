@@ -78,4 +78,19 @@ class ImportTests extends GoCodeToCpgSuite {
       imports.importedEntity.l shouldBe List("math")
     }
   }
+
+  "external package import sample" should {
+    val cpg = code("""
+        |package main
+        |import "joern.io/sample/fpkg"
+        |func main() {}
+        |""".stripMargin)
+    "have import node created" in {
+      val imports = cpg.imports.l
+      imports.size shouldBe 1
+      imports.importedAs.l shouldBe List("fpkg")
+      imports.importedEntity.l shouldBe List("joern.io/sample/fpkg")
+    }
+  }
+  // TODO: Add unit tests for external imports.
 }

@@ -106,7 +106,7 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)(im
         Operators.arrayInitializer,
         DispatchTypes.STATIC_DISPATCH,
         Option(Defines.empty),
-        Option(typeFullNameForcode) // The "" around the typename is eliminated
+        Option(typeFullName) // The "" around the typename is eliminated
       )
     )
   }

@@ -2,7 +2,6 @@ package io.joern.gosrc2cpg.astcreation
 
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
-import io.joern.gosrc2cpg.utils.UtilityConstants.fileSeparateorPattern
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import ujson.Value
@@ -32,7 +31,7 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
             val importedEntity = nodeInfo.json(ParserKeys.Path).obj(ParserKeys.Value).str.replaceAll("\"", "")
             val importedAs =
               Try(nodeInfo.json(ParserKeys.Name).obj(ParserKeys.Name).str).toOption
-                .getOrElse(importedEntity.split(fileSeparateorPattern).last)
+                .getOrElse(importedEntity.split("/").last)
             aliasToNameSpaceMapping.put(importedAs, importedEntity)
             val importedAsReplacement = if (importedEntity.equals(importedAs)) "" else s"$importedAs "
             // This may be better way to add code for import node
@@ -59,7 +58,7 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
               case ArrayType =>
                 Seq(astForEmptyArrayInitializer(typeInfoNode))
               case _ =>
-                Seq(Ast())
+                Seq.empty
 
             val localNodes = valueSpec.json(ParserKeys.Names).arr.map { parserNode =>
               val localParserNode = createParserNodeInfo(parserNode)
@@ -90,7 +89,7 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
             } else
               localNodes.toList ++ arrayInitializerNode.toList
           case _ =>
-            Seq()
+            Seq.empty
         }
       }
       .toList
