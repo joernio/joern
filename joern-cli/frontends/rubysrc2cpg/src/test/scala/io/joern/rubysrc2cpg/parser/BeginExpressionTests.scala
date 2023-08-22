@@ -35,7 +35,6 @@ class BeginExpressionTests extends RubyParserAbstractTest {
             |           NumericLiteral
             |            UnsignedNumericLiteral
             |             0
-            |    Separators
             |   RescueClause
             |    rescue
             |    ExceptionClass
@@ -50,7 +49,6 @@ class BeginExpressionTests extends RubyParserAbstractTest {
             |      VariableIdentifier
             |       e
             |    ThenClause
-            |     Separators
             |     CompoundStatement
             |  end""".stripMargin
       }

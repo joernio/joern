@@ -76,7 +76,6 @@ class InvocationWithoutParenthesesTests extends RubyParserAbstractTest {
             |            'should print 1'
             |     DoBlock
             |      do
-            |      Separators
             |      BodyStatement
             |       CompoundStatement
             |        Statements
@@ -95,7 +94,6 @@ class InvocationWithoutParenthesesTests extends RubyParserAbstractTest {
             |                   NumericLiteral
             |                    UnsignedNumericLiteral
             |                     1
-            |        Separators
             |      end""".stripMargin
 
       }

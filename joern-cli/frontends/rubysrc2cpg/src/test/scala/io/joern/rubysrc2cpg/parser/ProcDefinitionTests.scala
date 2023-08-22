@@ -29,10 +29,9 @@ class ProcDefinitionTests extends RubyParserAbstractTest {
             |  DoBlockBlock
             |   DoBlock
             |    do
-            |    Separators
-            |     ;
             |    BodyStatement
             |     CompoundStatement
+            |      ;
             |    end""".stripMargin
       }
 
@@ -45,7 +44,17 @@ class ProcDefinitionTests extends RubyParserAbstractTest {
             |  DoBlockBlock
             |   DoBlock
             |    do
-            |    1
+            |    BodyStatement
+            |     CompoundStatement
+            |      Statements
+            |       ExpressionOrCommandStatement
+            |        ExpressionExpressionOrCommand
+            |         PrimaryExpression
+            |          LiteralPrimary
+            |           NumericLiteralLiteral
+            |            NumericLiteral
+            |             UnsignedNumericLiteral
+            |              1
             |    end""".stripMargin
       }
 
@@ -84,10 +93,9 @@ class ProcDefinitionTests extends RubyParserAbstractTest {
             |  DoBlockBlock
             |   DoBlock
             |    do
-            |    Separators
-            |     ;
             |    BodyStatement
             |     CompoundStatement
+            |      ;
             |    end""".stripMargin
       }
 
@@ -140,10 +148,9 @@ class ProcDefinitionTests extends RubyParserAbstractTest {
             |  DoBlockBlock
             |   DoBlock
             |    do
-            |    Separators
-            |     ;
             |    BodyStatement
             |     CompoundStatement
+            |      ;
             |    end""".stripMargin
       }
 
@@ -183,8 +190,7 @@ class ProcDefinitionTests extends RubyParserAbstractTest {
             |                VariableIdentifierVariableReference
             |                 VariableIdentifier
             |                  x
-            |       Separators
-            |        ;
+            |       ;
             |       ExpressionOrCommandStatement
             |        InvocationExpressionOrCommand
             |         SingleCommandOnlyInvocationWithoutParentheses

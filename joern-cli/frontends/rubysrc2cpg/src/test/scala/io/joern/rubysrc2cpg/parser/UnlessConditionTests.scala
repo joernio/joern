@@ -23,7 +23,6 @@ class UnlessConditionTests extends RubyParserAbstractTest {
             |      VariableIdentifier
             |       foo
             |  ThenClause
-            |   Separators
             |   CompoundStatement
             |    Statements
             |     ExpressionOrCommandStatement
@@ -33,7 +32,6 @@ class UnlessConditionTests extends RubyParserAbstractTest {
             |         VariableIdentifierVariableReference
             |          VariableIdentifier
             |           bar
-            |    Separators
             |  end""".stripMargin
       }
 
@@ -54,8 +52,7 @@ class UnlessConditionTests extends RubyParserAbstractTest {
             |      VariableIdentifier
             |       foo
             |  ThenClause
-            |   Separators
-            |    ;
+            |   ;
             |   CompoundStatement
             |    Statements
             |     ExpressionOrCommandStatement
@@ -65,7 +62,6 @@ class UnlessConditionTests extends RubyParserAbstractTest {
             |         VariableIdentifierVariableReference
             |          VariableIdentifier
             |           bar
-            |    Separators
             |  end""".stripMargin
       }
 
@@ -97,7 +93,6 @@ class UnlessConditionTests extends RubyParserAbstractTest {
             |         VariableIdentifierVariableReference
             |          VariableIdentifier
             |           bar
-            |    Separators
             |  end""".stripMargin
       }
     }
