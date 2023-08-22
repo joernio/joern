@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory
 import scala.jdk.OptionConverters.RichOptional
 import io.joern.x2cpg.Defines.UnresolvedNamespace
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyNames
+import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 
 class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[Call](cpg) {
 
@@ -46,13 +47,21 @@ class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[Call](cpg) {
     parameterSizesMatch && argTypesMatch && typeDeclMatches
   }
 
-  /** Check if argument types match by comparing exact full names. TODO: Take inheritance hierarchies into account
+  /** Check if argument types match by comparing exact full names. An argument type of `ANY` always matches.
+    *
+    * TODO: Take inheritance hierarchies into account
     */
   private def doArgumentTypesMatch(method: Method, call: Call, skipCallThis: Boolean): Boolean = {
     val callArgs = if (skipCallThis) call.argument.toList.tail else call.argument.toList
 
     val hasDifferingArg = method.parameter.zip(callArgs).exists { case (parameter, argument) =>
-      !Option(argument.property(PropertyNames.TypeFullName).toString()).contains(parameter.typeFullName)
+      val maybeArgumentType = Option(argument.property(PropertyNames.TypeFullName))
+        .map(_.toString())
+        .getOrElse(TypeConstants.Any)
+
+      val argMatches = maybeArgumentType == TypeConstants.Any || maybeArgumentType == parameter.typeFullName
+
+      !argMatches
     }
 
     !hasDifferingArg

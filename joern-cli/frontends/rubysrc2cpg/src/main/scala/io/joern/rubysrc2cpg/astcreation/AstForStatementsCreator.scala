@@ -103,9 +103,10 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     if (lastStmtIsAlreadyReturn) {
       lastStmtAst
     } else {
-      val retNode = NewReturn()
-        .code(code)
-      returnAst(retNode, Seq[Ast](lastStmtAst))
+      val retNode = NewReturn().code(code)
+      lastStmtAst.root match
+        case Some(method: NewMethod) => returnAst(retNode, Seq(Ast(methodToMethodRef(method))))
+        case _                       => returnAst(retNode, Seq[Ast](lastStmtAst))
     }
   }
 
@@ -279,7 +280,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
       "public_class_method",
       "private_class_method",
       "private",
-      "protected"
+      "protected",
+      "module_function"
     )
 
     val callNodes = methodIdentifierAsts.head.nodes.collect { case x: NewCall => x }
@@ -318,11 +320,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     primaryAst.headOption match {
       case Some(value) =>
         if (value.root.map(_.isInstanceOf[NewMethod]).getOrElse(false)) {
-          val methodNode = value.root.head.asInstanceOf[NewMethod]
-          val methodRefNode = NewMethodRef()
-            .code("def " + methodNode.name + "(...)")
-            .methodFullName(methodNode.fullName)
-            .typeFullName(methodNode.fullName)
+          val methodNode    = value.root.head.asInstanceOf[NewMethod]
+          val methodRefNode = methodToMethodRef(methodNode)
           blockMethods.addOne(primaryAst.head)
           Seq(callAst(callNode, Seq(Ast(methodRefNode)) ++ argsAst))
         } else {
@@ -330,6 +329,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
         }
       case None => Seq(callAst(callNode, argsAst, primaryAst.headOption))
     }
+  }
+
+  private def methodToMethodRef(methodNode: NewMethod): NewMethodRef = {
+    NewMethodRef()
+      .code("def " + methodNode.name + "(...)")
+      .methodFullName(methodNode.fullName)
+      .typeFullName(methodNode.fullName)
   }
 
   protected def astForCommand(ctx: CommandContext): Seq[Ast] = ctx match {

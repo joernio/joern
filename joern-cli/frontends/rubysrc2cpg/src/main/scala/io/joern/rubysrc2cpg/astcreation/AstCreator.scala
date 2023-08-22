@@ -698,6 +698,7 @@ class AstCreator(
         .code(blockMethodNode.code)
         .lineNumber(blockMethodNode.lineNumber)
         .columnNumber(blockMethodNode.columnNumber)
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
 
       val methodRefNode = NewMethodRef()
         .methodFullName(blockMethodNode.fullName)
