@@ -525,7 +525,7 @@ classOrModuleReference
 // --------------------------------------------------------
 
 moduleDefinition
-    :   MODULE NL* classOrModuleReference NL* bodyStatement NL* END
+    :   MODULE NL* classOrModuleReference bodyStatement END
     ;
 
 // --------------------------------------------------------

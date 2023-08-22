@@ -550,6 +550,7 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |        SomeModule
             |       BodyStatement
             |        CompoundStatement
+            |         Separators
             |         Statements
             |          ExpressionOrCommandStatement
             |           ExpressionExpressionOrCommand
