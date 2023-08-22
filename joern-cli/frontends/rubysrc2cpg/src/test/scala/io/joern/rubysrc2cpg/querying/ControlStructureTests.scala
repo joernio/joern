@@ -1,6 +1,7 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.nodes.Block
 import io.shiftleft.semanticcpg.language.*
 
@@ -350,6 +351,30 @@ class ControlStructureTests extends RubyCode2CpgFixture {
 
     "recognise all call nodes" in {
       cpg.call.name("puts").size shouldBe 1
+    }
+  }
+
+  "Next statements used as a conditional return" should {
+    val cpg = code("""
+        |grouped_currencies = Money::Currency.all.group_by do |currency|
+        |  next "Major" if MAJOR_CURRENCY_CODES.include?(currency.iso_code)
+        |  "Exotic"
+        |end
+        |""".stripMargin)
+
+    "convert the CONTINUE to a RETURN" in {
+      cpg.controlStructure.controlStructureType(ControlStructureTypes.CONTINUE).size shouldBe 0
+      cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).size shouldBe 1
+    }
+
+    "return `Major` under the if-statement but return `Exotic` otherwise" in {
+      val List(ifStmt)       = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).l: @unchecked
+      val List(ifReturn)     = ifStmt.astChildren.isReturn.l: @unchecked
+      val List(majorLiteral) = ifReturn.astChildren.isLiteral.l: @unchecked
+      majorLiteral.code shouldBe "\"Major\""
+      val List(blockReturn)   = ifStmt.astSiblings.isReturn.l: @unchecked
+      val List(exoticLiteral) = blockReturn.astChildren.isLiteral.l: @unchecked
+      exoticLiteral.code shouldBe "\"Exotic\""
     }
   }
 }
