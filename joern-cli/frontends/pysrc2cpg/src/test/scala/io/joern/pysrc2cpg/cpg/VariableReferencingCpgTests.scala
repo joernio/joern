@@ -294,4 +294,20 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
       localInMyClassNode.referencingIdentifiers.lineNumber(4).code.head shouldBe "x"
     }
   }
+
+  "delete wildcard imported variable" - {
+    lazy val cpg = Py2CpgTestContext.buildCpg("""from foo import *
+        |del someImportedVariable
+        |""".stripMargin)
+
+    "test local variable exists in module method" in {
+      val localNode = cpg.method.name("<module>").local.name("someImportedVariable").head
+    }
+
+    "test reference to local variable" in {
+      val localNode        = cpg.method.name("<module>").local.name("someImportedVariable").head
+      val List(identifier) = localNode.referencingIdentifiers.l
+      identifier.name shouldBe "someImportedVariable"
+    }
+  }
 }
