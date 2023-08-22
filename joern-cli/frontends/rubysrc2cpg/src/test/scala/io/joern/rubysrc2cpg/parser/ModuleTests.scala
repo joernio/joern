@@ -15,8 +15,7 @@ class ModuleTests extends RubyParserAbstractTest {
             |  Bar
             | BodyStatement
             |  CompoundStatement
-            |   Separators
-            |    ;
+            |   ;
             | end""".stripMargin
       }
     }

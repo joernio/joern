@@ -153,7 +153,6 @@ class RegexTests extends RubyParserAbstractTest {
               |          VariableIdentifierVariableReference
               |           VariableIdentifier
               |            bar
-              |     Separators
               |  end""".stripMargin
       }
 

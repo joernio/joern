@@ -13,7 +13,7 @@ program
     ;
 
 compoundStatement
-    :   separators? statements? separators?
+    :   (SEMI | NL)* statements? (SEMI | NL)*
     ;
 
 separators
@@ -25,7 +25,7 @@ separators
 // --------------------------------------------------------
 
 statements
-    :   statement (separators statement)*
+    :   statement ((SEMI | NL)+ statement)*
     ;
 
 statement
@@ -232,11 +232,11 @@ block
     ;
 
 braceBlock
-    :   LCURLY NL* blockParameter? NL* bodyStatement NL* RCURLY
+    :   LCURLY NL* blockParameter? bodyStatement RCURLY
     ;
 
 doBlock
-    :   DO NL* blockParameter? separators NL* bodyStatement NL* END
+    :   DO NL* blockParameter? bodyStatement END
     ;
 
 blockParameter
@@ -325,7 +325,7 @@ association
 // --------------------------------------------------------
 
 methodDefinition
-    :   DEF NL* methodNamePart methodParameterPart separators? bodyStatement NL* END
+    :   DEF NL* methodNamePart methodParameterPart bodyStatement END
     |   DEF NL* methodIdentifier methodParameterPart EQ NL* expression
     ;
     
@@ -423,7 +423,7 @@ ifExpression
 
 thenClause
     :   separators compoundStatement
-    |   separators? THEN NL* compoundStatement
+    |   separators? THEN compoundStatement
     ;
 
 elsifClause
@@ -461,15 +461,15 @@ whileExpression
 
 doClause
     :   separators compoundStatement
-    |   DO separators? compoundStatement
+    |   DO compoundStatement
     ;
 
 untilExpression
-    :   UNTIL NL* expressionOrCommand doClause NL* END
+    :   UNTIL NL* expressionOrCommand doClause END
     ;
 
 forExpression
-    :   FOR NL* forVariable IN NL* expressionOrCommand doClause NL* END
+    :   FOR NL* forVariable IN NL* expressionOrCommand doClause END
     ;
 
 forVariable
@@ -482,7 +482,7 @@ forVariable
 // --------------------------------------------------------
 
 beginExpression
-    :   BEGIN NL* bodyStatement NL* END
+    :   BEGIN bodyStatement END
     ;
 
 bodyStatement
@@ -511,8 +511,8 @@ ensureClause
 // --------------------------------------------------------
 
 classDefinition
-    :   CLASS NL* classOrModuleReference (LT NL* expressionOrCommand)? separators NL* bodyStatement NL* END
-    |   CLASS NL* LT2 NL* expressionOrCommand separators NL* bodyStatement NL* END
+    :   CLASS NL* classOrModuleReference (LT NL* expressionOrCommand)? bodyStatement END
+    |   CLASS NL* LT2 NL* expressionOrCommand separators bodyStatement END
     ;
 
 classOrModuleReference

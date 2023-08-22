@@ -54,7 +54,6 @@ class CaseConditionTests extends RubyParserAbstractTest {
             |                NumericLiteral
             |                 UnsignedNumericLiteral
             |                  2
-            |     Separators
             |  end""".stripMargin
       }
 
@@ -171,7 +170,6 @@ class CaseConditionTests extends RubyParserAbstractTest {
             |           NumericLiteral
             |            UnsignedNumericLiteral
             |             2
-            |     Separators
             |  WhenClause
             |   when
             |   WhenArgument
@@ -194,7 +192,6 @@ class CaseConditionTests extends RubyParserAbstractTest {
             |           NumericLiteral
             |            UnsignedNumericLiteral
             |             3
-            |     Separators
             |  end""".stripMargin
       }
     }
