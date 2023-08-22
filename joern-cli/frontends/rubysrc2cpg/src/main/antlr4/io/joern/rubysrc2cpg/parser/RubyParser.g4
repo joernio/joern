@@ -9,11 +9,11 @@ options {
 // --------------------------------------------------------
 
 program
-    :   NL* compoundStatement EOF
+    :   compoundStatement EOF
     ;
 
 compoundStatement
-    :   statements? separators?
+    :   separators? statements? separators?
     ;
 
 separators
@@ -31,8 +31,8 @@ statements
 statement
     :   ALIAS NL* definedMethodNameOrSymbol NL* definedMethodNameOrSymbol                                           # aliasStatement
     |   UNDEF NL* definedMethodNameOrSymbol (COMMA NL* definedMethodNameOrSymbol)*                                  # undefStatement
-    |   BEGIN_ LCURLY NL* statements? NL* RCURLY                                                                    # beginStatement
-    |   END_ LCURLY NL* statements? NL* RCURLY                                                                      # endStatement
+    |   BEGIN_ LCURLY compoundStatement RCURLY                                                                      # beginStatement
+    |   END_ LCURLY compoundStatement RCURLY                                                                        # endStatement
     |   statement mod=(IF | UNLESS | WHILE | UNTIL | RESCUE) NL* statement                                          # modifierStatement
     |   expressionOrCommand                                                                                         # expressionOrCommandStatement
     ;
@@ -66,7 +66,6 @@ expression
     |   expression op=BAR2 NL* expression                                                                           # operatorOrExpression
     |   expression op=(DOT2 | DOT3) NL* expression?                                                                 # rangeExpression
     |   expression QMARK NL* expression NL* COLON NL* expression                                                    # conditionalOperatorExpression
-
     |   IS_DEFINED NL* expression                                                                                   # isDefinedExpression
     ;
 

@@ -42,13 +42,13 @@ trait AstForStatementsCreator {
   }
 
   protected def astForBeginStatement(ctx: BeginStatementContext): Ast = {
-    val stmts     = astForStatements(ctx.statements())
+    val stmts     = Option(ctx.compoundStatement).map(astForCompoundStatement(_)).getOrElse(Seq())
     val blockNode = NewBlock().typeFullName(Defines.Any)
     blockAst(blockNode, stmts.toList)
   }
 
   protected def astForEndStatement(ctx: EndStatementContext): Ast = {
-    val stmts     = astForStatements(ctx.statements())
+    val stmts     = Option(ctx.compoundStatement).map(astForCompoundStatement(_)).getOrElse(Seq())
     val blockNode = NewBlock().typeFullName(Defines.Any)
     blockAst(blockNode, stmts.toList)
   }
