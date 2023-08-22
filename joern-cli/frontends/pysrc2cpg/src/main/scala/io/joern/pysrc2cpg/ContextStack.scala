@@ -235,9 +235,18 @@ class ContextStack {
             case Some(variableNode) =>
               createRefEdge(variableNode, identifier)
             case None =>
-              logger.warn("Unable to link identifier. Resulting CPG will have invalid format.")
+              // When we could not find a matching variable we get here and create a local in
+              // the method context so that we can link something and fullfil the CPG
+              // format requirements.
+              // For example this happens when there are wildcard imports directly into the
+              // modules namespace.
+              val localNode = createLocal(name, None)
+              transferLineColInfo(identifier, localNode)
+              val methodContext = findEnclosingMethodContext(contextStack)
+              createAstEdge(localNode, methodContext.methodBlockNode.get, methodContext.order.getAndInc)
+              methodContext.variables.put(name, localNode)
+              createRefEdge(localNode, identifier)
           }
-
         }
       }
     }
