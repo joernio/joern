@@ -25,11 +25,11 @@ statements
     ;
 
 statement
-    :   ALIAS NL* definedMethodNameOrSymbol NL* definedMethodNameOrSymbol                                           # aliasStatement
-    |   UNDEF NL* definedMethodNameOrSymbol (COMMA NL* definedMethodNameOrSymbol)*                                  # undefStatement
+    :   ALIAS NL? definedMethodNameOrSymbol NL? definedMethodNameOrSymbol                                           # aliasStatement
+    |   UNDEF NL? definedMethodNameOrSymbol (COMMA NL? definedMethodNameOrSymbol)*                                  # undefStatement
     |   BEGIN_ LCURLY compoundStatement RCURLY                                                                      # beginStatement
     |   END_ LCURLY compoundStatement RCURLY                                                                        # endStatement
-    |   statement mod=(IF | UNLESS | WHILE | UNTIL | RESCUE) NL* statement                                          # modifierStatement
+    |   statement mod=(IF | UNLESS | WHILE | UNTIL | RESCUE) NL? statement                                          # modifierStatement
     |   expressionOrCommand                                                                                         # expressionOrCommandStatement
     ;
 
@@ -39,30 +39,30 @@ statement
 
 expressionOrCommand
     :   expression                                                                                                  # expressionExpressionOrCommand
-    |   (EMARK NL*)? invocationWithoutParentheses                                                                   # invocationExpressionOrCommand
-    |   NOT NL* expressionOrCommand                                                                                 # notExpressionOrCommand
-    |   <assoc=right> expressionOrCommand op=(OR | AND) NL* expressionOrCommand                                     # orAndExpressionOrCommand
+    |   (EMARK NL?)? invocationWithoutParentheses                                                                   # invocationExpressionOrCommand
+    |   NOT NL? expressionOrCommand                                                                                 # notExpressionOrCommand
+    |   <assoc=right> expressionOrCommand op=(OR | AND) NL? expressionOrCommand                                     # orAndExpressionOrCommand
     ;
 
 expression
-    :   <assoc=right> singleLeftHandSide op=(EQ | ASSIGNMENT_OPERATOR) NL* multipleRightHandSide                    # singleAssignmentExpression
-    |   <assoc=right> multipleLeftHandSide EQ NL* multipleRightHandSide                                             # multipleAssignmentExpression
+    :   <assoc=right> singleLeftHandSide op=(EQ | ASSIGNMENT_OPERATOR) NL? multipleRightHandSide                    # singleAssignmentExpression
+    |   <assoc=right> multipleLeftHandSide EQ NL? multipleRightHandSide                                             # multipleAssignmentExpression
     |   primary                                                                                                     # primaryExpression
-    |   op=(TILDE | PLUS | EMARK) NL* expression                                                                    # unaryExpression
-    |   <assoc=right> expression STAR2 NL* expression                                                               # powerExpression
-    |   MINUS NL* expression                                                                                        # unaryMinusExpression
-    |   expression op=(STAR | SLASH | PERCENT) NL* expression                                                       # multiplicativeExpression
-    |   expression op=(PLUS | MINUS) NL* expression                                                                 # additiveExpression
-    |   expression op=(LT2 | GT2) NL* expression                                                                    # bitwiseShiftExpression
-    |   expression op=AMP NL* expression                                                                            # bitwiseAndExpression
-    |   expression op=(BAR | CARET) NL* expression                                                                  # bitwiseOrExpression
-    |   expression op=(GT | GTEQ | LT | LTEQ) NL* expression                                                        # relationalExpression
-    |   expression op=(LTEQGT | EQ2 | EQ3 | EMARKEQ | EQTILDE | EMARKTILDE) NL* expression?                         # equalityExpression
-    |   expression op=AMP2 NL* expression                                                                           # operatorAndExpression
-    |   expression op=BAR2 NL* expression                                                                           # operatorOrExpression
-    |   expression op=(DOT2 | DOT3) NL* expression?                                                                 # rangeExpression
-    |   expression QMARK NL* expression NL* COLON NL* expression                                                    # conditionalOperatorExpression
-    |   IS_DEFINED NL* expression                                                                                   # isDefinedExpression
+    |   op=(TILDE | PLUS | EMARK) NL? expression                                                                    # unaryExpression
+    |   <assoc=right> expression STAR2 NL? expression                                                               # powerExpression
+    |   MINUS NL? expression                                                                                        # unaryMinusExpression
+    |   expression op=(STAR | SLASH | PERCENT) NL? expression                                                       # multiplicativeExpression
+    |   expression op=(PLUS | MINUS) NL? expression                                                                 # additiveExpression
+    |   expression op=(LT2 | GT2) NL? expression                                                                    # bitwiseShiftExpression
+    |   expression op=AMP NL? expression                                                                            # bitwiseAndExpression
+    |   expression op=(BAR | CARET) NL? expression                                                                  # bitwiseOrExpression
+    |   expression op=(GT | GTEQ | LT | LTEQ) NL? expression                                                        # relationalExpression
+    |   expression op=(LTEQGT | EQ2 | EQ3 | EMARKEQ | EQTILDE | EMARKTILDE) NL? expression?                         # equalityExpression
+    |   expression op=AMP2 NL? expression                                                                           # operatorAndExpression
+    |   expression op=BAR2 NL? expression                                                                           # operatorOrExpression
+    |   expression op=(DOT2 | DOT3) NL? expression?                                                                 # rangeExpression
+    |   expression QMARK NL? expression NL? COLON NL? expression                                                    # conditionalOperatorExpression
+    |   IS_DEFINED NL? expression                                                                                   # isDefinedExpression
     ;
 
 primary
@@ -98,7 +98,7 @@ primary
     |   methodOnlyIdentifier                                                                                                # methodOnlyIdentifierPrimary
     |   methodIdentifier block                                                                                              # invocationWithBlockOnlyPrimary
     |   methodIdentifier argumentsWithParentheses block?                                                                    # invocationWithParenthesesPrimary
-    |   primary NL* (DOT | COLON2| AMPDOT) NL* methodName argumentsWithParentheses? block?                                  # chainedInvocationPrimary
+    |   primary NL? (DOT | COLON2| AMPDOT) NL? methodName argumentsWithParentheses? block?                                  # chainedInvocationPrimary
     |   primary COLON2 methodName block?                                                                                    # chainedInvocationWithoutArgumentsPrimary
     ;
 
@@ -114,7 +114,7 @@ singleLeftHandSide
     ;
 
 multipleLeftHandSide
-    :   (multipleLeftHandSideItem COMMA NL*)+ (multipleLeftHandSideItem | packingLeftHandSide)?                     # multipleLeftHandSideAndpackingLeftHandSideMultipleLeftHandSide
+    :   (multipleLeftHandSideItem COMMA NL?)+ (multipleLeftHandSideItem | packingLeftHandSide)?                     # multipleLeftHandSideAndpackingLeftHandSideMultipleLeftHandSide
     |   packingLeftHandSide                                                                                         # packingLeftHandSideOnlyMultipleLeftHandSide
     |   groupedLeftHandSide                                                                                         # groupedLeftHandSideOnlyMultipleLeftHandSide
     ;
@@ -133,12 +133,12 @@ groupedLeftHandSide
     ;
 
 multipleRightHandSide
-    :   expressionOrCommands (COMMA NL* splattingArgument)?
+    :   expressionOrCommands (COMMA NL? splattingArgument)?
     |   splattingArgument
     ;
 
 expressionOrCommands
-    :   expressionOrCommand (COMMA NL* expressionOrCommand)*
+    :   expressionOrCommand (COMMA NL? expressionOrCommand)*
     ;
 
 // --------------------------------------------------------
@@ -157,7 +157,7 @@ command
     :   SUPER argumentsWithoutParentheses                                                                                               # superCommand
     |   YIELD argumentsWithoutParentheses                                                                                               # yieldCommand
     |   methodIdentifier argumentsWithoutParentheses                                                                                    # simpleMethodCommand
-    |   primary (DOT | COLON2| AMPDOT) NL* methodName argumentsWithoutParentheses                                                       # memberAccessCommand
+    |   primary (DOT | COLON2| AMPDOT) NL? methodName argumentsWithoutParentheses                                                       # memberAccessCommand
     ;
 
 chainedCommandWithDoBlock
@@ -175,7 +175,7 @@ argumentsWithoutParentheses
     ;
 
 arguments
-    :   argument (COMMA NL* argument)*
+    :   argument (COMMA NL? argument)*
     ;
     
 argument
@@ -200,22 +200,22 @@ splattingArgument
     ;
 
 indexingArguments
-    :   expressions (COMMA NL*)?                                                                                                # expressionsOnlyIndexingArguments
-    |   expressions COMMA NL* splattingArgument                                                                                 # expressionsAndSplattingIndexingArguments
-    |   associations (COMMA NL*)?                                                                                               # associationsOnlyIndexingArguments
+    :   expressions (COMMA NL?)?                                                                                                # expressionsOnlyIndexingArguments
+    |   expressions COMMA NL? splattingArgument                                                                                 # expressionsAndSplattingIndexingArguments
+    |   associations (COMMA NL?)?                                                                                               # associationsOnlyIndexingArguments
     |   splattingArgument                                                                                                       # splattingOnlyIndexingArguments
     |   command                                                                                                                 # commandOnlyIndexingArguments
     ;
 
 argumentsWithParentheses
-    :   LPAREN NL* RPAREN                                                                                                       # blankArgsArgumentsWithParentheses
-    |   LPAREN NL* arguments (COMMA)? NL* RPAREN                                                                                # argsOnlyArgumentsWithParentheses
-    |   LPAREN NL* expressions COMMA NL* chainedCommandWithDoBlock NL* RPAREN                                                   # expressionsAndChainedCommandWithDoBlockArgumentsWithParentheses
-    |   LPAREN NL* chainedCommandWithDoBlock NL* RPAREN                                                                         # chainedCommandWithDoBlockOnlyArgumentsWithParentheses
+    :   LPAREN NL? RPAREN                                                                                                       # blankArgsArgumentsWithParentheses
+    |   LPAREN NL? arguments (COMMA)? NL? RPAREN                                                                                # argsOnlyArgumentsWithParentheses
+    |   LPAREN NL? expressions COMMA NL? chainedCommandWithDoBlock NL? RPAREN                                                   # expressionsAndChainedCommandWithDoBlockArgumentsWithParentheses
+    |   LPAREN NL? chainedCommandWithDoBlock NL? RPAREN                                                                         # chainedCommandWithDoBlockOnlyArgumentsWithParentheses
     ;
 
 expressions
-    :   expression (COMMA NL* expression)*
+    :   expression (COMMA NL? expression)*
     ;
 
 // --------------------------------------------------------
@@ -228,11 +228,11 @@ block
     ;
 
 braceBlock
-    :   LCURLY NL* blockParameter? bodyStatement RCURLY
+    :   LCURLY NL? blockParameter? bodyStatement RCURLY
     ;
 
 doBlock
-    :   DO NL* blockParameter? bodyStatement END
+    :   DO NL? blockParameter? bodyStatement END
     ;
 
 blockParameter
@@ -249,7 +249,7 @@ blockParameters
 // --------------------------------------------------------
 
 arrayConstructor
-    :   LBRACK NL* indexingArguments? NL* RBRACK                                                                    # bracketedArrayConstructor
+    :   LBRACK NL? indexingArguments? NL? RBRACK                                                                    # bracketedArrayConstructor
     |   QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_START
         nonExpandedArrayElements?
         QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END                                                                # nonExpandedWordArrayConstructor
@@ -296,11 +296,11 @@ nonExpandedArrayElement
 // --------------------------------------------------------
 
 hashConstructor
-    :   LCURLY NL* (hashConstructorElements COMMA?)? NL* RCURLY
+    :   LCURLY NL? (hashConstructorElements COMMA?)? NL? RCURLY
     ;
 
 hashConstructorElements
-    :   hashConstructorElement (COMMA NL* hashConstructorElement)*
+    :   hashConstructorElement (COMMA NL? hashConstructorElement)*
     ;
 
 hashConstructorElement
@@ -309,11 +309,11 @@ hashConstructorElement
     ;
 
 associations
-    :   association (COMMA NL* association)*
+    :   association (COMMA NL? association)*
     ;
 
 association
-    :   (expression | keyword) (EQGT|COLON) (NL* expression)?
+    :   (expression | keyword) (EQGT|COLON) (NL? expression)?
     ;
 
 // --------------------------------------------------------
@@ -321,8 +321,8 @@ association
 // --------------------------------------------------------
 
 methodDefinition
-    :   DEF NL* methodNamePart methodParameterPart bodyStatement END
-    |   DEF NL* methodIdentifier methodParameterPart EQ NL* expression
+    :   DEF NL? methodNamePart methodParameterPart bodyStatement END
+    |   DEF NL? methodIdentifier methodParameterPart EQ NL? expression
     ;
     
 
@@ -332,7 +332,7 @@ procDefinition
 
 methodNamePart
     :   definedMethodName                                                                                           # simpleMethodNamePart
-    |   singletonObject NL* (DOT | COLON2) NL* definedMethodName                                                    # singletonMethodNamePart
+    |   singletonObject NL? (DOT | COLON2) NL? definedMethodName                                                    # singletonMethodNamePart
     ;
 
 singletonObject
@@ -367,12 +367,12 @@ methodOnlyIdentifier
     ;
 
 methodParameterPart
-    :   LPAREN NL* parameters? NL* RPAREN
+    :   LPAREN NL? parameters? NL? RPAREN
     |   parameters?
     ;
 
 parameters
-    :   parameter (COMMA NL* parameter)*
+    :   parameter (COMMA NL? parameter)*
     ;
     
 parameter
@@ -389,7 +389,7 @@ mandatoryParameter
     ;
 
 optionalParameter
-    :   LOCAL_VARIABLE_IDENTIFIER EQ NL* expression
+    :   LOCAL_VARIABLE_IDENTIFIER EQ NL? expression
     ;
 
 arrayParameter
@@ -401,7 +401,7 @@ hashParameter
     ;
 
 keywordParameter
-    :   LOCAL_VARIABLE_IDENTIFIER COLON (NL* expression)?
+    :   LOCAL_VARIABLE_IDENTIFIER COLON (NL? expression)?
     ;
 
 procParameter
@@ -414,7 +414,7 @@ procParameter
 // --------------------------------------------------------
 
 ifExpression
-    :   IF NL* expressionOrCommand thenClause elsifClause* elseClause? END
+    :   IF NL? expressionOrCommand thenClause elsifClause* elseClause? END
     ;
 
 thenClause
@@ -423,7 +423,7 @@ thenClause
     ;
 
 elsifClause
-    :   ELSIF NL* expressionOrCommand thenClause
+    :   ELSIF NL? expressionOrCommand thenClause
     ;
 
 elseClause
@@ -431,15 +431,15 @@ elseClause
     ;
 
 unlessExpression
-    :   UNLESS NL* expressionOrCommand thenClause elseClause? END
+    :   UNLESS NL? expressionOrCommand thenClause elseClause? END
     ;
 
 caseExpression
-    :   CASE (NL* expressionOrCommand)? (SEMI | NL)* whenClause+ elseClause? END
+    :   CASE NL? expressionOrCommand? (SEMI | NL)* whenClause+ elseClause? END
     ;
 
 whenClause
-    :   WHEN NL* whenArgument thenClause
+    :   WHEN NL? whenArgument thenClause
     ;
 
 whenArgument
@@ -452,7 +452,7 @@ whenArgument
 // --------------------------------------------------------
 
 whileExpression
-    :   WHILE NL* expressionOrCommand doClause END
+    :   WHILE NL? expressionOrCommand doClause END
     ;
 
 doClause
@@ -461,11 +461,11 @@ doClause
     ;
 
 untilExpression
-    :   UNTIL NL* expressionOrCommand doClause END
+    :   UNTIL NL? expressionOrCommand doClause END
     ;
 
 forExpression
-    :   FOR NL* forVariable IN NL* expressionOrCommand doClause END
+    :   FOR NL? forVariable IN NL? expressionOrCommand doClause END
     ;
 
 forVariable
@@ -486,7 +486,7 @@ bodyStatement
     ;
 
 rescueClause
-    :   RESCUE exceptionClass? NL* exceptionVariableAssignment? thenClause
+    :   RESCUE exceptionClass? NL? exceptionVariableAssignment? thenClause
     ;
 
 exceptionClass
@@ -507,8 +507,8 @@ ensureClause
 // --------------------------------------------------------
 
 classDefinition
-    :   CLASS NL* classOrModuleReference (LT NL* expressionOrCommand)? bodyStatement END
-    |   CLASS NL* LT2 NL* expressionOrCommand (SEMI | NL)+ bodyStatement END
+    :   CLASS NL? classOrModuleReference (LT NL? expressionOrCommand)? bodyStatement END
+    |   CLASS NL? LT2 NL? expressionOrCommand (SEMI | NL)+ bodyStatement END
     ;
 
 classOrModuleReference
@@ -521,7 +521,7 @@ classOrModuleReference
 // --------------------------------------------------------
 
 moduleDefinition
-    :   MODULE NL* classOrModuleReference bodyStatement END
+    :   MODULE NL? classOrModuleReference bodyStatement END
     ;
 
 // --------------------------------------------------------
