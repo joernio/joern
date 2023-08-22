@@ -63,8 +63,8 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
             val localNodes = valueSpec.json(ParserKeys.Names).arr.map { parserNode =>
               val localParserNode = createParserNodeInfo(parserNode)
 
-              val name                                            = parserNode(ParserKeys.Name).str
-              val (typeFullName, typeFullNameForcode, isVariadic) = getTypeFullName(typeJson)
+              val name                                               = parserNode(ParserKeys.Name).str
+              val (typeFullName, typeFullNameForcode, isVariadic, _) = processTypeInfo(typeJson)
               val node = localNode(localParserNode, name, localParserNode.code, typeFullName)
               scope.addToScope(name, (node, typeFullName))
               Ast(node)

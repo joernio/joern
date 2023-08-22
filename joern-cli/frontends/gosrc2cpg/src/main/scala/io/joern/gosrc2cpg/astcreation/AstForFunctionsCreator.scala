@@ -70,9 +70,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       .arrOpt
       .getOrElse(ArrayBuffer())
       .flatMap(x =>
-        val typeInfo                                        = createParserNodeInfo(x(ParserKeys.Type))
-        val evaluationStrategy                              = ""
-        val (typeFullName, typeFullNameForcode, isVariadic) = getTypeFullName(typeInfo.json)
+        val typeInfo = createParserNodeInfo(x(ParserKeys.Type))
+        val (typeFullName, typeFullNameForcode, isVariadic, evaluationStrategy) = processTypeInfo(typeInfo.json)
         x(ParserKeys.Names).arrOpt
           .getOrElse(ArrayBuffer())
           .map(y => {
@@ -103,8 +102,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       .arrOpt
       .getOrElse(ArrayBuffer())
       .map(x =>
-        val typeInfo                                        = createParserNodeInfo(x(ParserKeys.Type))
-        val (typeFullName, typeFullNameForcode, isVariadic) = getTypeFullName(typeInfo.json)
+        val typeInfo                                           = createParserNodeInfo(x(ParserKeys.Type))
+        val (typeFullName, typeFullNameForcode, isVariadic, _) = processTypeInfo(typeInfo.json)
         x(ParserKeys.Names).arrOpt
           .getOrElse(ArrayBuffer())
           .map(y => {

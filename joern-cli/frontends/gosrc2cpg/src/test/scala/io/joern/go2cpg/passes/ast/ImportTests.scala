@@ -92,5 +92,4 @@ class ImportTests extends GoCodeToCpgSuite {
       imports.importedEntity.l shouldBe List("joern.io/sample/fpkg")
     }
   }
-  // TODO: Add unit tests for external imports.
 }

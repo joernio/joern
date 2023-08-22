@@ -1,7 +1,7 @@
 package io.joern.go2cpg.passes.ast
 
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
-import io.shiftleft.codepropertygraph.generated.NodeTypes
+import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
 import io.shiftleft.semanticcpg.language.*
 
 import java.io.File
@@ -66,12 +66,14 @@ class MethodTests extends GoCodeToCpgSuite {
       argc.order shouldBe 1
       argc.typeFullName shouldBe "int"
       argc.isVariadic shouldBe false
+      argc.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
 
       val List(argv) = cpg.parameter.name("argv").l
       argv.code shouldBe "argv string"
       argv.order shouldBe 2
       argv.typeFullName shouldBe "string"
       argv.isVariadic shouldBe false
+      argv.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
     }
 
     "traversing from parameter to method" in {
@@ -115,18 +117,21 @@ class MethodTests extends GoCodeToCpgSuite {
       argc.order shouldBe 1
       argc.typeFullName shouldBe "int"
       argc.isVariadic shouldBe false
+      argc.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
 
       val List(arga) = cpg.parameter.name("arga").l
       arga.code shouldBe "arga int"
       arga.order shouldBe 2
       arga.typeFullName shouldBe "int"
       arga.isVariadic shouldBe false
+      arga.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
 
       val List(argv) = cpg.parameter.name("argv").l
       argv.code shouldBe "argv string"
       argv.order shouldBe 3
       argv.typeFullName shouldBe "string"
       argv.isVariadic shouldBe false
+      argv.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
     }
 
     "traversing from parameter to method" in {
@@ -171,18 +176,21 @@ class MethodTests extends GoCodeToCpgSuite {
       argc.order shouldBe 1
       argc.typeFullName shouldBe "int"
       argc.isVariadic shouldBe false
+      argc.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
 
       val List(arga) = cpg.parameter.name("arga").l
       arga.code shouldBe "arga int"
       arga.order shouldBe 2
       arga.typeFullName shouldBe "int"
       arga.isVariadic shouldBe false
+      arga.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
 
       val List(argv) = cpg.parameter.name("argv").l
       argv.code shouldBe "argv ...string"
       argv.order shouldBe 3
       argv.typeFullName shouldBe "[]string"
       argv.isVariadic shouldBe true
+      argv.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
     }
 
     "traversing from parameter to method" in {
@@ -227,18 +235,21 @@ class MethodTests extends GoCodeToCpgSuite {
       argc.order shouldBe 1
       argc.typeFullName shouldBe "int"
       argc.isVariadic shouldBe false
+      argc.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
 
       val List(arga) = cpg.parameter.name("arga").l
       arga.code shouldBe "arga int"
       arga.order shouldBe 2
       arga.typeFullName shouldBe "int"
       arga.isVariadic shouldBe false
+      arga.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
 
       val List(argv) = cpg.parameter.name("argv").l
       argv.code shouldBe "argv []int"
       argv.order shouldBe 3
       argv.typeFullName shouldBe "[]int"
       argv.isVariadic shouldBe false
+      argv.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
     }
 
     "traversing from parameter to method" in {
@@ -284,12 +295,14 @@ class MethodTests extends GoCodeToCpgSuite {
       argc.order shouldBe 1
       argc.typeFullName shouldBe "int"
       argc.isVariadic shouldBe false
+      argc.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
 
       val List(argv) = cpg.parameter.name("argv").l
       argv.code shouldBe "argv *string"
       argv.order shouldBe 2
       argv.typeFullName shouldBe "*string"
       argv.isVariadic shouldBe false
+      argv.evaluationStrategy shouldBe EvaluationStrategies.BY_SHARING
     }
 
     "traversing from parameter to method" in {
@@ -333,12 +346,14 @@ class MethodTests extends GoCodeToCpgSuite {
       argc.order shouldBe 1
       argc.typeFullName shouldBe "int"
       argc.isVariadic shouldBe false
+      argc.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
 
       val List(argv) = cpg.parameter.name("argv").l
       argv.code shouldBe "argv []*string"
       argv.order shouldBe 2
       argv.typeFullName shouldBe "[]*string"
       argv.isVariadic shouldBe false
+      argv.evaluationStrategy shouldBe EvaluationStrategies.BY_SHARING
     }
 
     "traversing from parameter to method" in {
@@ -382,12 +397,14 @@ class MethodTests extends GoCodeToCpgSuite {
       argc.order shouldBe 1
       argc.typeFullName shouldBe "int"
       argc.isVariadic shouldBe false
+      argc.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
 
       val List(argv) = cpg.parameter.name("argv").l
       argv.code shouldBe "argv ...*string"
       argv.order shouldBe 2
       argv.typeFullName shouldBe "[]*string"
       argv.isVariadic shouldBe true
+      argv.evaluationStrategy shouldBe EvaluationStrategies.BY_SHARING
     }
 
     "traversing from parameter to method" in {
@@ -431,12 +448,14 @@ class MethodTests extends GoCodeToCpgSuite {
       argc.order shouldBe 1
       argc.typeFullName shouldBe "int"
       argc.isVariadic shouldBe false
+      argc.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
 
       val List(argv) = cpg.parameter.name("argv").l
       argv.code shouldBe "argv *[]string"
       argv.order shouldBe 2
       argv.typeFullName shouldBe "*[]string"
       argv.isVariadic shouldBe false
+      argv.evaluationStrategy shouldBe EvaluationStrategies.BY_SHARING
     }
 
     "traversing from parameter to method" in {
@@ -483,12 +502,14 @@ class MethodTests extends GoCodeToCpgSuite {
       argc.order shouldBe 1
       argc.typeFullName shouldBe "int"
       argc.isVariadic shouldBe false
+      argc.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
 
       val List(argv) = cpg.parameter.name("argv").l
       argv.code shouldBe "argv Sample"
       argv.order shouldBe 2
       argv.typeFullName shouldBe "main.Sample"
       argv.isVariadic shouldBe false
+      argv.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
     }
 
     "traversing from parameter to method" in {
@@ -547,12 +568,14 @@ class MethodTests extends GoCodeToCpgSuite {
       argc.order shouldBe 1
       argc.typeFullName shouldBe "int"
       argc.isVariadic shouldBe false
+      argc.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
 
       val List(argv) = cpg.parameter.name("argv").l
       argv.code shouldBe "argv Sample"
       argv.order shouldBe 2
       argv.typeFullName shouldBe "main.Sample"
       argv.isVariadic shouldBe false
+      argv.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
     }
 
     "traversing from parameter to method" in {
@@ -611,12 +634,14 @@ class MethodTests extends GoCodeToCpgSuite {
       argc.order shouldBe 1
       argc.typeFullName shouldBe "int"
       argc.isVariadic shouldBe false
+      argc.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
 
       val List(argv) = cpg.parameter.name("argv").l
       argv.code shouldBe "argv Sample"
       argv.order shouldBe 2
       argv.typeFullName shouldBe "joern.io/sample.Sample"
       argv.isVariadic shouldBe false
+      argv.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
     }
 
     "traversing from parameter to method" in {
@@ -678,12 +703,14 @@ class MethodTests extends GoCodeToCpgSuite {
       argc.order shouldBe 1
       argc.typeFullName shouldBe "int"
       argc.isVariadic shouldBe false
+      argc.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
 
       val List(argv) = cpg.parameter.name("argv").l
       argv.code shouldBe "argv fpkg.Sample"
       argv.order shouldBe 2
       argv.typeFullName shouldBe "joern.io/sample/fpkg.Sample"
       argv.isVariadic shouldBe false
+      argv.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
     }
 
     "traversing from parameter to method" in {
@@ -745,12 +772,14 @@ class MethodTests extends GoCodeToCpgSuite {
       argc.order shouldBe 1
       argc.typeFullName shouldBe "int"
       argc.isVariadic shouldBe false
+      argc.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
 
       val List(argv) = cpg.parameter.name("argv").l
       argv.code shouldBe "argv ...fpkg.Sample"
       argv.order shouldBe 2
       argv.typeFullName shouldBe "[]joern.io/sample/fpkg.Sample"
       argv.isVariadic shouldBe true
+      argv.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
     }
 
     "traversing from parameter to method" in {
@@ -804,12 +833,14 @@ class MethodTests extends GoCodeToCpgSuite {
       argc.order shouldBe 1
       argc.typeFullName shouldBe "int"
       argc.isVariadic shouldBe false
+      argc.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
 
       val List(argv) = cpg.parameter.name("argv").l
       argv.code shouldBe "argv fpkg.Sample"
       argv.order shouldBe 2
       argv.typeFullName shouldBe "privado.ai/test/fpkg.Sample"
       argv.isVariadic shouldBe false
+      argv.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
     }
 
     "traversing from parameter to method" in {
@@ -863,12 +894,14 @@ class MethodTests extends GoCodeToCpgSuite {
       argc.order shouldBe 1
       argc.typeFullName shouldBe "int"
       argc.isVariadic shouldBe false
+      argc.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
 
       val List(argv) = cpg.parameter.name("argv").l
       argv.code shouldBe "argv []fpkg.Sample"
       argv.order shouldBe 2
       argv.typeFullName shouldBe "[]privado.ai/test/fpkg.Sample"
       argv.isVariadic shouldBe false
+      argv.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
     }
 
     "traversing from parameter to method" in {
@@ -922,12 +955,14 @@ class MethodTests extends GoCodeToCpgSuite {
       argc.order shouldBe 1
       argc.typeFullName shouldBe "int"
       argc.isVariadic shouldBe false
+      argc.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
 
       val List(argv) = cpg.parameter.name("argv").l
       argv.code shouldBe "argv *fpkg.Sample"
       argv.order shouldBe 2
       argv.typeFullName shouldBe "*privado.ai/test/fpkg.Sample"
       argv.isVariadic shouldBe false
+      argv.evaluationStrategy shouldBe EvaluationStrategies.BY_SHARING
     }
 
     "traversing from parameter to method" in {
@@ -981,12 +1016,14 @@ class MethodTests extends GoCodeToCpgSuite {
       argc.order shouldBe 1
       argc.typeFullName shouldBe "int"
       argc.isVariadic shouldBe false
+      argc.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
 
       val List(argv) = cpg.parameter.name("argv").l
       argv.code shouldBe "argv []*fpkg.Sample"
       argv.order shouldBe 2
       argv.typeFullName shouldBe "[]*privado.ai/test/fpkg.Sample"
       argv.isVariadic shouldBe false
+      argv.evaluationStrategy shouldBe EvaluationStrategies.BY_SHARING
     }
 
     "traversing from parameter to method" in {
@@ -1040,12 +1077,14 @@ class MethodTests extends GoCodeToCpgSuite {
       argc.order shouldBe 1
       argc.typeFullName shouldBe "int"
       argc.isVariadic shouldBe false
+      argc.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
 
       val List(argv) = cpg.parameter.name("argv").l
       argv.code shouldBe "argv *[]fpkg.Sample"
       argv.order shouldBe 2
       argv.typeFullName shouldBe "*[]privado.ai/test/fpkg.Sample"
       argv.isVariadic shouldBe false
+      argv.evaluationStrategy shouldBe EvaluationStrategies.BY_SHARING
     }
 
     "traversing from parameter to method" in {
@@ -1099,12 +1138,14 @@ class MethodTests extends GoCodeToCpgSuite {
       argc.order shouldBe 1
       argc.typeFullName shouldBe "int"
       argc.isVariadic shouldBe false
+      argc.evaluationStrategy shouldBe EvaluationStrategies.BY_VALUE
 
       val List(argv) = cpg.parameter.name("argv").l
       argv.code shouldBe "argv ...*fpkg.Sample"
       argv.order shouldBe 2
       argv.typeFullName shouldBe "[]*privado.ai/test/fpkg.Sample"
       argv.isVariadic shouldBe true
+      argv.evaluationStrategy shouldBe EvaluationStrategies.BY_SHARING
     }
 
     "traversing from parameter to method" in {
@@ -1118,6 +1159,8 @@ class MethodTests extends GoCodeToCpgSuite {
       argv.name shouldBe "argv"
     }
   }
+
+  // TODO: add unit tests with interface{} along with 'any'
   // TODO: Add pointer to pointer use case.
   // TODO: Add unit test for tuple return
   // TODO: Add unit tests with Generics

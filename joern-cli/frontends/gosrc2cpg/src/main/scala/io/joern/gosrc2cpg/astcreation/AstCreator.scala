@@ -97,7 +97,7 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)(im
   }
 
   protected def astForEmptyArrayInitializer(primitive: ParserNodeInfo): Ast = {
-    val (typeFullName, typeFullNameForcode, isVariadic) = getTypeFullName(primitive.json)
+    val (typeFullName, typeFullNameForcode, isVariadic, _) = processTypeInfo(primitive.json)
     Ast(
       callNode(
         primitive,
