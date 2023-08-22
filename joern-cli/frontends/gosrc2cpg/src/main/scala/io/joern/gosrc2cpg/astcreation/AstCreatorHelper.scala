@@ -117,6 +117,10 @@ trait AstCreatorHelper { this: AstCreator =>
           aliasName = Some(nodeInfo.json(ParserKeys.X)(ParserKeys.Name).str)
         )
         (fullName, typeNameForcode)
+      case InterfaceType =>
+        val typeNameForcode = "interface{}"
+        val fullName        = generateTypeFullName(typeNameForcode)
+        (fullName, typeNameForcode)
       case _ =>
         val fullName = generateTypeFullName()
         (fullName, fullName)
