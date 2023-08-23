@@ -6,6 +6,7 @@ import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.joern.x2cpg.utils.StringUtils
 import io.joern.x2cpg.{Ast, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import ujson.Value
 
@@ -24,7 +25,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val parentNode: NewTypeDecl = methodAstParentStack.collectFirst { case t: NewTypeDecl => t }.getOrElse {
       // TODO: Need to add respective Unit test to test this possibility, as looks to me as dead code. Replicated it from 'c2cpg' by referring AstForFunctionsCreator.
       val astParentType     = methodAstParentStack.head.label
-      val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
+      val astParentFullName = methodAstParentStack.head.properties(PropertyNames.FULL_NAME).toString
       val typeDeclNode_ =
         typeDeclNode(node, methodName, methodFullName, method.filename, methodName, astParentType, astParentFullName)
       Ast.storeInDiffGraph(Ast(typeDeclNode_), diffGraph)
@@ -46,7 +47,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val templateParams = ""
     val params         = createParserNodeInfo(funcDecl.json(ParserKeys.Type)(ParserKeys.Params))
     val signature =
-      s"$fullname$templateParams (${parameterSignature(params)})$returnType "
+      s"$fullname$templateParams (${parameterSignature(params)})$returnType"
 
     val methodNode_ = methodNode(funcDecl, name, funcDecl.code, fullname, Some(signature), filename)
     methodAstParentStack.push(methodNode_)
@@ -106,7 +107,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         val (typeFullName, typeFullNameForcode, isVariadic, _) = processTypeInfo(typeInfo.json)
         x(ParserKeys.Names).arrOpt
           .getOrElse(ArrayBuffer())
-          .map(y => {
+          .map(_ => {
             // We are returning same type from x object for each name in the names array.
             typeFullName
           })

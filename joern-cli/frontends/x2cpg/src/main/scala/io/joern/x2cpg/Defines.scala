@@ -27,5 +27,5 @@ object Defines {
   val DynamicCallUnknownFullName = "<unknownFullName>"
 
   val LeftAngularBracket = "<"
-  val Uknown             = "<unknown>"
+  val Unknown            = "<unknown>"
 }
