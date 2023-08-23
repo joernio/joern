@@ -162,16 +162,12 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
           .flatMap(stCtx => {
             stmtCounter += 1
             if (isMethodBody) {
-              if (stmtCounter == stmtCount) {
-                processingLastMethodStatement = true
-              } else {
-                processingLastMethodStatement = false
-              }
+              processingLastMethodStatement = stmtCounter == stmtCount
             }
             val stAsts = astForStatement(stCtx)
-            if (stAsts.size > 0 && canConsiderAsLeaf && processingLastMethodStatement) {
+            if (stAsts.nonEmpty && canConsiderAsLeaf && processingLastMethodStatement) {
               blockChildHash.get(myBlockId) match {
-                case Some(value) =>
+                case Some(_) =>
                   // this is a non-leaf block
                   stAsts
                 case None =>
@@ -401,7 +397,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
         ).head
       case None =>
         val blockNode_    = blockNode(ctx, ctx.getText, Defines.Any)
-        val blockBodyAst  = astForCompoundStatement(compoundStmtCtx)
+        val blockBodyAst  = astForCompoundStatement(compoundStmtCtx, true)
         val blockParamAst = blockParamCtx.flatMap(astForBlockParameterContext)
         blockAst(blockNode_, blockBodyAst.toList ++ blockParamAst)
     }
