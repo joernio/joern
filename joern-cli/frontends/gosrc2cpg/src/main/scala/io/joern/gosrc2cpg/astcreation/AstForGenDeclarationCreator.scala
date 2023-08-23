@@ -2,9 +2,11 @@ package io.joern.gosrc2cpg.astcreation
 
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
+import io.joern.x2cpg
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
 import ujson.Value
+import io.joern.x2cpg.datastructures.Stack.StackWrapper
 
 import scala.util.Try
 
@@ -13,10 +15,50 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
     genDecl.json(ParserKeys.Tok).str match {
       case "import" => astForImport(genDecl)
       case "const"  => List[Ast]()
-      case "type"   => List[Ast]()
+      case "type"   => astForTypeSpec(genDecl)
       case "var"    => astForValueSpec(genDecl)
 
     }
+  }
+
+  def astForTypeSpec(genDecl: ParserNodeInfo): Seq[Ast] = {
+    genDecl
+      .json(ParserKeys.Specs)
+      .arr
+      .map(createParserNodeInfo)
+      .flatMap { typeSpec =>
+        typeSpec.node match {
+          // TODO: Add support for member variables and methods
+          case TypeSpec =>
+            val nameNode          = typeSpec.json(ParserKeys.Name)
+            val typeNode          = typeSpec.json(ParserKeys.Type)
+            val astParentType     = methodAstParentStack.head.label
+            val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
+            val typeDeclNode_ =
+              typeDeclNode(
+                typeSpec,
+                nameNode(ParserKeys.Name).str,
+                x2cpg.Defines.DynamicCallUnknownFullName, // TODO: Fill in fullName
+                parserResult.filename,
+                typeSpec.code,
+                astParentType,
+                astParentFullName
+              )
+
+            addModifier(typeDeclNode_, nameNode(ParserKeys.Name).str)
+
+            // TODO: Fill in typeFullName
+            val typeRefNode_ =
+              typeRefNode(typeSpec, s"type ${nameNode(ParserKeys.Name).str} struct", Defines.anyTypeName)
+
+            diffGraph.addEdge(methodAstParentStack.head, typeDeclNode_, EdgeTypes.AST)
+            Seq(Ast(typeRefNode_))
+          case _ =>
+            Seq(Ast())
+        }
+      }
+
+    Seq(Ast())
   }
 
   def astForImport(imports: ParserNodeInfo): Seq[Ast] = {
