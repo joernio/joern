@@ -2,9 +2,8 @@ package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
-import io.shiftleft.codepropertygraph.generated.nodes.Block
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, ControlStructure}
 import io.shiftleft.semanticcpg.language.*
-
 class ControlStructureTests extends RubyCode2CpgFixture {
 
   "CPG for code with doBlock iterating over a constant array" should {
@@ -354,7 +353,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     }
   }
 
-  "Next statements used as a conditional return" should {
+  "Next statements used as a conditional return for literals" should {
     val cpg = code("""
         |grouped_currencies = Money::Currency.all.group_by do |currency|
         |  next "Major" if MAJOR_CURRENCY_CODES.include?(currency.iso_code)
@@ -376,5 +375,22 @@ class ControlStructureTests extends RubyCode2CpgFixture {
       val List(exoticLiteral) = blockReturn.astChildren.isLiteral.l: @unchecked
       exoticLiteral.code shouldBe "\"Exotic\""
     }
+  }
+
+  "Next statements used as a conditional continue for calls" should {
+    val cpg = code("""
+        |for i in 1..10
+        |  next if i % 2 == 0
+        |  puts i
+        |end
+        |""".stripMargin)
+
+    "retain the CONTINUE under the `next` with no return value" in {
+      val List(cont: ControlStructure) =
+        cpg.controlStructure.controlStructureType(ControlStructureTypes.CONTINUE).l: @unchecked
+      val ifStmt = cont.astParent.asInstanceOf[ControlStructure]: @unchecked
+      ifStmt.controlStructureType shouldBe ControlStructureTypes.IF
+    }
+
   }
 }

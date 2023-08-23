@@ -55,12 +55,11 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     val rhs    = astForStatement(ctx.statement(1)).headOption
     val ifNode = controlStructureNode(ctx, ControlStructureTypes.IF, ctx.getText)
     lhs.headOption.flatMap(_.root) match
-      // If the LHS is a `next` command, then this if statement is its condition and it becomes a `return`
-      case Some(x: NewControlStructure) if x.code == Defines.ModifierNext =>
-        val children = lhs.head.nodes.filterNot(_ == x).map(Ast.apply)
-        val retNode  = NewReturn().code(Defines.ModifierNext).lineNumber(x.lineNumber).columnNumber(x.columnNumber)
-        val retAst   = Ast(retNode).withChildren(children)
-        controlStructureAst(ifNode, rhs, Seq(retAst))
+      // If the LHS is a `next` command with a return value, then this if statement is its condition and it becomes a
+      // `return`
+      case Some(x: NewControlStructure) if x.code == Defines.ModifierNext && lhs.head.nodes.size > 1 =>
+        val retNode = NewReturn().code(Defines.ModifierNext).lineNumber(x.lineNumber).columnNumber(x.columnNumber)
+        controlStructureAst(ifNode, rhs, Seq(lhs.head.subTreeCopy(x, replacementNode = Option(retNode))))
       case _ => controlStructureAst(ifNode, rhs, lhs)
   }
 
