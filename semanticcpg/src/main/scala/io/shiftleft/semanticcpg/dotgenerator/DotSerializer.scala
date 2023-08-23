@@ -1,8 +1,8 @@
 package io.shiftleft.semanticcpg.dotgenerator
 
 import io.shiftleft.codepropertygraph.generated.PropertyNames
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.utils.MemberAccess
 
 import java.util.Optional
@@ -64,6 +64,7 @@ object DotSerializer {
     val maybeLineNo: Optional[AnyRef] = vertex.propertyOption(PropertyNames.LINE_NUMBER)
     escape(vertex match {
       case call: Call                            => (call.name, call.code).toString
+      case contrl: ControlStructure              => (contrl.label, contrl.controlStructureType, contrl.code).toString()
       case expr: Expression                      => (expr.label, expr.code, toCfgNode(expr).code).toString
       case method: Method                        => (method.label, method.name).toString
       case ret: MethodReturn                     => (ret.label, ret.typeFullName).toString
