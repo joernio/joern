@@ -89,6 +89,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
               typeFullName
             )
             index += 1
+            scope.addToScope(paramName, (parameterNode, typeFullName))
             Ast(parameterNode)
           })
       )
