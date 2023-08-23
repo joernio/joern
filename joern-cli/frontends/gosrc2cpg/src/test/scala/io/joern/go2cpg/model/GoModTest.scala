@@ -129,7 +129,7 @@ class GoModTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     )
     val namespace =
       GoMod.getNameSpace(File(config.inputPath) / "test.go" pathAsString, "foo")
-    namespace shouldBe "joern.io/trial>foo"
+    namespace shouldBe "joern.io/trial"
   }
 
   "with .mod file, pkg other than main, one level child folder, and package not matching with last folder" in {
@@ -145,6 +145,6 @@ class GoModTest extends AnyWordSpec with Matchers with BeforeAndAfterAll {
     )
     val namespace =
       GoMod.getNameSpace(File(config.inputPath) / "first" / "test.go" pathAsString, "bar")
-    namespace shouldBe "joern.io/trial/first>bar"
+    namespace shouldBe "joern.io/trial/first"
   }
 }

@@ -1,16 +1,10 @@
 package io.joern.gosrc2cpg.astcreation
 
 import io.joern.gosrc2cpg.datastructures.GoGlobal
-import io.joern.gosrc2cpg.parser.ParserAst.{
-  ArrayType,
-  CompositeLit,
-  Ellipsis,
-  Ident,
-  ParserNode,
-  SelectorExpr,
-  fromString
-}
+import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserAst, ParserKeys, ParserNodeInfo}
+import io.joern.x2cpg.Defines as XDefines
+import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import org.apache.commons.lang.StringUtils
 import ujson.Value
 
@@ -91,16 +85,97 @@ trait AstCreatorHelper { this: AstCreator =>
       }
       .toMap
   }
-  protected def getTypeForJsonNode(jsonNode: Value): String = {
+
+  protected def generateTypeFullName(typeName: String = "", aliasName: Option[String] = None): String = {
+    // NOTE: There is an assumption that the import nodes have been processed before this method is being called
+    // and mapping of alias to their respective namespace is already done.
+    typeName match
+      case "" =>
+        Defines.anyTypeName
+      case _ =>
+        aliasName match
+          case None =>
+            // NOTE: If the given type is not found in primitiveTypeMap.
+            // Then we are assuming the type is custom type defined inside same pacakge as that of current file's package.
+            // This assumption will be invalid when another package is imported with alias "."
+            Defines.primitiveTypeMap.getOrElse(typeName, s"${fullyQualifiedPackage}.${typeName}")
+          case Some(alias) =>
+            s"${aliasToNameSpaceMapping.getOrElse(alias, s"${XDefines.Unknown}.<${alias}>")}.${typeName}"
+
+  }
+  private def internalTypeFullName(nodeInfo: ParserNodeInfo): (String, String) = {
+    nodeInfo.node match {
+      case Ident =>
+        val typeNameForcode = nodeInfo.json(ParserKeys.Name).str
+        val fullName        = generateTypeFullName(typeNameForcode)
+        (fullName, typeNameForcode)
+      case SelectorExpr =>
+        val typeNameForcode =
+          s"${nodeInfo.json(ParserKeys.X)(ParserKeys.Name).str}.${nodeInfo.json(ParserKeys.Sel)(ParserKeys.Name).str}"
+        val fullName = generateTypeFullName(
+          typeName = nodeInfo.json(ParserKeys.Sel)(ParserKeys.Name).str,
+          aliasName = Some(nodeInfo.json(ParserKeys.X)(ParserKeys.Name).str)
+        )
+        (fullName, typeNameForcode)
+      case InterfaceType =>
+        val typeNameForcode = "interface{}"
+        val fullName        = generateTypeFullName(typeNameForcode)
+        (fullName, typeNameForcode)
+      case _ =>
+        val fullName = generateTypeFullName()
+        (fullName, fullName)
+    }
+  }
+
+  private def internalArrayTypeHandler(nodeInfo: ParserNodeInfo): (String, String) = {
+    nodeInfo.node match {
+      case ArrayType =>
+        val (fullName, typeNameForcode) = internalTypeFullName(createParserNodeInfo(nodeInfo.json(ParserKeys.Elt)))
+        (s"[]$fullName", s"[]$typeNameForcode")
+      case CompositeLit =>
+        val (fullName, typeNameForcode) = internalTypeFullName(
+          createParserNodeInfo(nodeInfo.json(ParserKeys.Type)(ParserKeys.Elt))
+        )
+        (s"[]$fullName", s"[]$typeNameForcode")
+      case _ =>
+        val (fullName, typeNameForcode) = internalTypeFullName(nodeInfo)
+        (fullName, typeNameForcode)
+    }
+  }
+
+  private def internalStarExpHandler(nodeInfo: ParserNodeInfo): (String, String, String) = {
+    nodeInfo.node match {
+      case StarExpr =>
+        // TODO: Need to handle pointer to pointer use case.
+        val (fullName, typeNameForcode) = internalArrayTypeHandler(createParserNodeInfo(nodeInfo.json(ParserKeys.X)))
+        (s"*$fullName", s"*$typeNameForcode", EvaluationStrategies.BY_SHARING)
+      case _ =>
+        val (fullName, typeNameForcode) = internalArrayTypeHandler(nodeInfo)
+        (fullName, typeNameForcode, EvaluationStrategies.BY_VALUE)
+    }
+  }
+
+  protected def processTypeInfo(jsonNode: Value): (String, String, Boolean, String) = {
     val nodeInfo = createParserNodeInfo(jsonNode)
     nodeInfo.node match {
-      case Ident        => jsonNode.obj(ParserKeys.Name).str
-      case ArrayType    => s"${jsonNode.obj(ParserKeys.Elt)(ParserKeys.Name).str}[]"
-      case CompositeLit => s"${jsonNode.obj(ParserKeys.Type)(ParserKeys.Elt)(ParserKeys.Name).str}[]"
-      case Ellipsis     => "..." + jsonNode.obj(ParserKeys.Elt)(ParserKeys.Name).str
-      case SelectorExpr =>
-        jsonNode.obj(ParserKeys.X)(ParserKeys.Name).str + "." + jsonNode.obj(ParserKeys.Sel)(ParserKeys.Name).str
-      case _ => Defines.anyTypeName
+      case ArrayType =>
+        val (fullName, typeNameForcode, evaluationStrategy) = internalStarExpHandler(
+          createParserNodeInfo(jsonNode.obj(ParserKeys.Elt))
+        )
+        (s"[]$fullName", s"[]$typeNameForcode", false, evaluationStrategy)
+      case CompositeLit =>
+        val (fullName, typeNameForcode, evaluationStrategy) = internalStarExpHandler(
+          createParserNodeInfo(jsonNode.obj(ParserKeys.Type)(ParserKeys.Elt))
+        )
+        (s"[]$fullName", s"[]$typeNameForcode", false, evaluationStrategy)
+      case Ellipsis =>
+        val (fullName, typeNameForcode, evaluationStrategy) = internalStarExpHandler(
+          createParserNodeInfo(jsonNode.obj(ParserKeys.Elt))
+        )
+        (s"[]$fullName", s"...$typeNameForcode", true, evaluationStrategy)
+      case _ =>
+        val (fullName, typeNameForcode, evaluationStrategy) = internalStarExpHandler(nodeInfo)
+        (fullName, typeNameForcode, false, evaluationStrategy)
     }
   }
 

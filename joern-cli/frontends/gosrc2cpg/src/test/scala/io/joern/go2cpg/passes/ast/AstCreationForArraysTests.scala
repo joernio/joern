@@ -1,11 +1,10 @@
 package io.joern.go2cpg.passes.ast
 
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
-import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
 
 class AstCreationForArraysTests extends GoCodeToCpgSuite {
   "AST Creation for Array Initialization" should {
@@ -25,7 +24,7 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
 
       arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
       arrayInitializerCallNode.code shouldBe "[5]int{1,2}"
-      arrayInitializerCallNode.typeFullName shouldBe "int[]"
+      arrayInitializerCallNode.typeFullName shouldBe "[]int"
 
       assignmentCallNode.astChildren.isLiteral.l.size shouldBe 2
       val List(literal1, literal2) = assignmentCallNode.astChildren.isLiteral.l
@@ -55,7 +54,7 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
 
       arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
       arrayInitializerCallNode.code shouldBe "[5]string{\"hello\",\"world\"}"
-      arrayInitializerCallNode.typeFullName shouldBe "string[]"
+      arrayInitializerCallNode.typeFullName shouldBe "[]string"
 
       assignmentCallNode.astChildren.isLiteral.l.size shouldBe 2
       val List(literal1, literal2) = assignmentCallNode.astChildren.isLiteral.l
@@ -84,7 +83,7 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
 
       arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
       arrayInitializerCallNode.code shouldBe "[...]int{1,2}"
-      arrayInitializerCallNode.typeFullName shouldBe "int[]"
+      arrayInitializerCallNode.typeFullName shouldBe "[]int"
 
       assignmentCallNode.astChildren.isLiteral.l.size shouldBe 2
       val List(literal1, literal2) = assignmentCallNode.astChildren.isLiteral.l
@@ -114,7 +113,7 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
       arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
       arrayInitializerCallNode.code shouldBe "[2]string{}"
       arrayInitializerCallNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      arrayInitializerCallNode.typeFullName shouldBe "string[]"
+      arrayInitializerCallNode.typeFullName shouldBe "[]string"
 
       assignmentCallNode.astChildren.isLiteral.l.size shouldBe 0
 
@@ -142,7 +141,7 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
       arrayInitializerNode.code shouldBe "[2]int"
       arrayInitializerNode.lineNumber shouldBe Some(4)
       arrayInitializerNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      arrayInitializerNode.typeFullName shouldBe "int[]"
+      arrayInitializerNode.typeFullName shouldBe "[]int"
 
     }
 
@@ -164,7 +163,7 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
       arrayInitializerNode.code shouldBe "[2]int"
       arrayInitializerNode.lineNumber shouldBe Some(3)
       arrayInitializerNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      arrayInitializerNode.typeFullName shouldBe "int[]"
+      arrayInitializerNode.typeFullName shouldBe "[]int"
 
     }
 
@@ -183,7 +182,7 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
 
       arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
       arrayInitializerCallNode.code shouldBe "[5]int{1,2}"
-      arrayInitializerCallNode.typeFullName shouldBe "int[]"
+      arrayInitializerCallNode.typeFullName shouldBe "[]int"
 
       assignmentCallNode.astChildren.isLiteral.l.size shouldBe 2
       val List(literal1, literal2) = assignmentCallNode.astChildren.isLiteral.l
@@ -212,3 +211,7 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
     }
   }
 }
+
+//TODO: add unit test for Array of struct type (within package same file, within package different file,
+// different package but same project, and from third party dependency).
+//TODO: Add unit tests for pointer combinations for primitives as well as struct type

@@ -39,7 +39,7 @@ class NamespaceBlockTests extends GoCodeToCpgSuite {
       .nameNot(NamespaceTraversal.globalNamespaceName)
       .fullName
       .l
-      .sorted shouldBe List(s"Test0.go:main")
+      .sorted shouldBe List(s"Test0.go:main.<global>")
   }
 
   "should allow traversing from namespace block to namespace" in {

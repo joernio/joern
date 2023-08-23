@@ -46,16 +46,14 @@ object ParserAst {
   object SelectorExpr   extends BaseExpr
   object ForStmt        extends BaseStmt
   object CallExpr       extends BaseExpr
-
-  object RangeStmt extends BaseStmt
-  object Unknown   extends ParserNode
-
-  object BranchStmt  extends BaseStmt
-  object LabeledStmt extends BaseStmt
-
-  object ArrayType extends ParserNode
-
-  object CompositeLit extends BasePrimitive
+  object RangeStmt      extends BaseStmt
+  object Unknown        extends ParserNode
+  object BranchStmt     extends BaseStmt
+  object LabeledStmt    extends BaseStmt
+  object FieldList      extends ParserNode
+  object ArrayType      extends ParserNode
+  object CompositeLit   extends BasePrimitive
+  object Field          extends ParserNode
 }
 
 object ParserKeys {
