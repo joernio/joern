@@ -212,4 +212,6 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
   }
 }
 
-//TODO: add unit test for Array of struct type.
+//TODO: add unit test for Array of struct type (within package same file, within package different file,
+// different package but same project, and from third party dependency).
+//TODO: Add unit tests for pointer combinations for primitives as well as struct type
