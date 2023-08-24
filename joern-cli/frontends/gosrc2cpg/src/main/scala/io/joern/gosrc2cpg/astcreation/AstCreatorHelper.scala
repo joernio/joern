@@ -4,6 +4,7 @@ import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserAst, ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.Defines as XDefines
+import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.shiftleft.codepropertygraph.generated.nodes.{NewModifier, NewNode}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes}
 import org.apache.commons.lang.StringUtils
@@ -38,15 +39,15 @@ trait AstCreatorHelper { this: AstCreator =>
 
   }
 
-  protected def addModifier(node: NewNode, name: String): Unit = {
+  protected def addModifier(node: NewNode, name: String): NewModifier = {
     // NOTE: In golang, the access modifiers are exported and un-exported.
     // If the first letter of the node (function, typeDecl, etc) is uppercase, then it is exported.
     // Else, it is un-exported
     // The scope of the node is the package it is defined in.
     if (name(0).isUpper) {
-      diffGraph.addEdge(node, NewModifier().modifierType(ModifierTypes.PUBLIC), EdgeTypes.AST)
+      newModifierNode(ModifierTypes.PUBLIC)
     } else {
-      diffGraph.addEdge(node, NewModifier().modifierType(ModifierTypes.PRIVATE), EdgeTypes.AST)
+      newModifierNode(ModifierTypes.PRIVATE)
     }
   }
 
