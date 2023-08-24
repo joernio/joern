@@ -23,7 +23,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   ): Ast = {
 
     val parentNode: NewTypeDecl = methodAstParentStack.collectFirst { case t: NewTypeDecl => t }.getOrElse {
-      // TODO: Need to add respective Unit test to test this possibility, as looks to me as dead code. Replicated it from 'c2cpg' by referring AstForFunctionsCreator.
+      // TODO: Need to add respective Unit test to test this possibility, as looks to me as dead code.
+      //  Replicated it from 'c2cpg' by referring AstForFunctionsCreator.
       val astParentType     = methodAstParentStack.head.label
       val astParentFullName = methodAstParentStack.head.properties(PropertyNames.FULL_NAME).toString
       val typeDeclNode_ =
