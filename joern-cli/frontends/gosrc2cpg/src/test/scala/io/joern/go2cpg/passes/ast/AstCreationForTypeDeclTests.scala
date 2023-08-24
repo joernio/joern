@@ -24,8 +24,6 @@ class AstCreationForTypeDeclTests extends GoCodeToCpgSuite {
       "test.go"
     )
 
-    println(cpg.typeDecl("Foo").astParent.isMethod.l)
-
     val List(typeDeclNode) = cpg.typeDecl.nameExact("Foo").l
     "test basic ast structure" in {
       typeDeclNode.code shouldBe "Foo struct {\n\tbar string\n}"
@@ -34,10 +32,8 @@ class AstCreationForTypeDeclTests extends GoCodeToCpgSuite {
     }
 
     "test parent ast structure" in {
-      println(cpg.typeDecl("Foo").astParent.isMethod.l)
-      cpg.typeDecl("Foo").astParent.isTypeDecl.name.l.head shouldBe "main.<global>"
-      cpg.typeDecl("Foo").astParent.isTypeDecl.fullName.l.head shouldBe "test.go:main.<global>"
-      cpg.typeDecl("Foo").astParentType.l.head shouldBe NodeTypes.METHOD
+      cpg.typeDecl("Foo").astParentFullName.l.head shouldBe "test.go:main.<global>"
+      cpg.typeDecl("Foo").astParentType.l.head shouldBe NodeTypes.TYPE_DECL
     }
 
     "test fullName of TypeDecl nodes" ignore {
@@ -66,9 +62,8 @@ class AstCreationForTypeDeclTests extends GoCodeToCpgSuite {
     }
 
     "test ast parent structure" in {
-      cpg.typeDecl("Foo").astParent.isMethod.name.l.head shouldBe "main.<global>"
-      cpg.typeDecl("Foo").astParent.isMethod.fullName.l.head shouldBe "test.go:main.<global>"
-      cpg.typeDecl("Foo").astParentType.l.head shouldBe NodeTypes.METHOD
+      cpg.typeDecl("Foo").astParentFullName.l.head shouldBe "test.go:main.<global>"
+      cpg.typeDecl("Foo").astParentType.l.head shouldBe NodeTypes.TYPE_DECL
     }
 
     "test fullName of TypeDecl nodes" ignore {
@@ -97,9 +92,8 @@ class AstCreationForTypeDeclTests extends GoCodeToCpgSuite {
     }
 
     "test parent ast structure" in {
-      cpg.typeDecl("Foo").astParent.isMethod.name.l.head shouldBe "main.<global>"
-      cpg.typeDecl("Foo").astParent.isMethod.fullName.l.head shouldBe "test.go:main.<global>"
-      cpg.typeDecl("Foo").astParentType.l.head shouldBe NodeTypes.METHOD
+      cpg.typeDecl("Foo").astParentFullName.l.head shouldBe "test.go:main.<global>"
+      cpg.typeDecl("Foo").astParentType.l.head shouldBe NodeTypes.TYPE_DECL
     }
 
     "test fullName of TypeDecl nodes" ignore {
@@ -129,9 +123,8 @@ class AstCreationForTypeDeclTests extends GoCodeToCpgSuite {
     }
 
     "test ast parent structure" in {
-      cpg.typeDecl("foo").astParent.isMethod.name.l.head shouldBe "main.<global>"
-      cpg.typeDecl("foo").astParent.isMethod.fullName.l.head shouldBe "test.go:main.<global>"
-      cpg.typeDecl("foo").astParentType.l.head shouldBe NodeTypes.METHOD
+      cpg.typeDecl("foo").astParentFullName.l.head shouldBe "test.go:main.<global>"
+      cpg.typeDecl("foo").astParentType.l.head shouldBe NodeTypes.TYPE_DECL
     }
 
     "test fullName of TypeDecl nodes" ignore {
@@ -162,9 +155,8 @@ class AstCreationForTypeDeclTests extends GoCodeToCpgSuite {
     }
 
     "test ast parent structure" in {
-      cpg.typeDecl("Sample").astParent.isMethod.name.l.head shouldBe "main"
-      cpg.typeDecl("Sample").astParent.isMethod.fullName.l.head shouldBe "main.main" // TODO: Fix this
-      cpg.typeDecl("Sample").astParentType.l.head shouldBe NodeTypes.METHOD
+      cpg.typeDecl("Sample").astParentFullName.l.head shouldBe "test.go:main.<global>"
+      cpg.typeDecl("Sample").astParentType.l.head shouldBe NodeTypes.TYPE_DECL
     }
 
     "test fullName of TypeDecl nodes" ignore {
@@ -195,9 +187,8 @@ class AstCreationForTypeDeclTests extends GoCodeToCpgSuite {
     }
 
     "test ast parent structure" in {
-      cpg.typeDecl("Foo").astParent.isMethod.name.l.head shouldBe "main.<global>"
-      cpg.typeDecl("Foo").astParent.isMethod.fullName.l.head shouldBe "test.go:main.<global>" // TODO: Fix this
-      cpg.typeDecl("Foo").astParentType.l.head shouldBe NodeTypes.METHOD
+      cpg.typeDecl("Foo").astParentFullName.l.head shouldBe "test.go:main.<global>"
+      cpg.typeDecl("Foo").astParentType.l.head shouldBe NodeTypes.TYPE_DECL
     }
 
     "test fullName of TypeDecl nodes" ignore {
@@ -228,9 +219,8 @@ class AstCreationForTypeDeclTests extends GoCodeToCpgSuite {
     }
 
     "test ast parent structure for Foo" in {
-      cpg.typeDecl("Foo").astParent.isMethod.name.l.head shouldBe "main.<global>"
-      cpg.typeDecl("Foo").astParent.isMethod.fullName.l.head shouldBe "test.go:main.<global>" // TODO: Fix this
-      cpg.typeDecl("Foo").astParentType.l.head shouldBe NodeTypes.METHOD
+      cpg.typeDecl("Foo").astParentFullName.l.head shouldBe "test.go:main.<global>"
+      cpg.typeDecl("Foo").astParentType.l.head shouldBe NodeTypes.TYPE_DECL
     }
 
     "test fullName of TypeDecl nodes for Foo" ignore {
@@ -250,9 +240,8 @@ class AstCreationForTypeDeclTests extends GoCodeToCpgSuite {
     }
 
     "test parent ast structure for bar" in {
-      cpg.typeDecl("bar").astParent.isMethod.name.l.head shouldBe "main.<global>"
-      cpg.typeDecl("bar").astParent.isMethod.fullName.l.head shouldBe "test.go:main.<global>"
-      cpg.typeDecl("bar").astParentType.l.head shouldBe NodeTypes.METHOD
+      cpg.typeDecl("bar").astParentFullName.l.head shouldBe "test.go:main.<global>"
+      cpg.typeDecl("bar").astParentType.l.head shouldBe NodeTypes.TYPE_DECL
     }
 
     "test fullName of TypeDecl nodes for bar" ignore {

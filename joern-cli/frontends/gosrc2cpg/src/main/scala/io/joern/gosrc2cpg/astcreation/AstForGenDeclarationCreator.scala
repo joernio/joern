@@ -34,8 +34,6 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
     val a: NewTypeDecl    = methodAstParentStack.collectFirst { case t: NewTypeDecl => t }.get
     val astParentType     = a.label
     val astParentFullName = a.fullName
-    println(astParentType)
-    println(astParentFullName)
     val typeDeclNode_ =
       typeDeclNode(
         typeSpec,
