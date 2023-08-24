@@ -141,4 +141,124 @@ class AstCreationForTypeDeclTests extends GoCodeToCpgSuite {
     }
   }
 
+  "when a TypeDecl node is defined inside a function" should {
+    val cpg = code(
+      """package main
+       |func main() {
+       |	type Sample struct {
+       |		foo string
+       |	}
+       |}""".stripMargin,
+      "test.go"
+    )
+    val List(typeDeclNode) = cpg.typeDecl.nameExact("Sample").l
+    "test basic ast structure" in {
+      typeDeclNode.code shouldBe "Sample struct {\n\t\tfoo string\n\t}"
+      typeDeclNode.lineNumber shouldBe Some(3)
+      typeDeclNode.columnNumber shouldBe Some(7)
+    }
+
+    "test ast parent structure" in {
+      cpg.typeDecl("Sample").astParent.isMethod.name.l.head shouldBe "main"
+      cpg.typeDecl("Sample").astParent.isMethod.fullName.l.head shouldBe "main.main" // TODO: Fix this
+      cpg.typeDecl("Sample").astParentType.l.head shouldBe NodeTypes.METHOD
+    }
+
+    "test fullName of TypeDecl nodes" ignore {
+      typeDeclNode.fullName shouldBe "test.go::main.<global>::main::Sample"
+    }
+
+    "test the modifier" in {
+      typeDeclNode.modifier.head.modifierType shouldBe ModifierTypes.PUBLIC
+      typeDeclNode.astOut.isModifier.l.size shouldBe 1
+    }
+
+  }
+
+  "when a single TypeDecl is defined using a prefix" should {
+    val cpg = code(
+      """package main
+        |type (
+        | Foo struct {}
+        |)""".stripMargin,
+      "test.go"
+    )
+
+    val List(typeDeclNode) = cpg.typeDecl.nameExact("Foo").l
+    "test basic ast structure" in {
+      typeDeclNode.code shouldBe "Foo struct {}"
+      typeDeclNode.lineNumber shouldBe Some(3)
+      typeDeclNode.columnNumber shouldBe Some(2)
+    }
+
+    "test ast parent structure" in {
+      cpg.typeDecl("Foo").astParent.isMethod.name.l.head shouldBe "main.<global>"
+      cpg.typeDecl("Foo").astParent.isMethod.fullName.l.head shouldBe "test.go:main.<global>" // TODO: Fix this
+      cpg.typeDecl("Foo").astParentType.l.head shouldBe NodeTypes.METHOD
+    }
+
+    "test fullName of TypeDecl nodes" ignore {
+      typeDeclNode.fullName shouldBe "test.go::main.<global>::main::Foo"
+    }
+
+    "test the modifier" in {
+      typeDeclNode.modifier.head.modifierType shouldBe ModifierTypes.PUBLIC
+      typeDeclNode.astOut.isModifier.l.size shouldBe 1
+    }
+
+  }
+
+  "when multiple TypeDecls are defined using a prefix" should {
+    val cpg = code(
+      """package main
+        |type (
+        | Foo struct {}
+        | bar interface {}
+        |)""".stripMargin,
+      "test.go"
+    )
+    val List(typeDeclNode) = cpg.typeDecl.nameExact("Foo").l
+    "test basic ast structure for Foo" in {
+      typeDeclNode.code shouldBe "Foo struct {}"
+      typeDeclNode.lineNumber shouldBe Some(3)
+      typeDeclNode.columnNumber shouldBe Some(2)
+    }
+
+    "test ast parent structure for Foo" in {
+      cpg.typeDecl("Foo").astParent.isMethod.name.l.head shouldBe "main.<global>"
+      cpg.typeDecl("Foo").astParent.isMethod.fullName.l.head shouldBe "test.go:main.<global>" // TODO: Fix this
+      cpg.typeDecl("Foo").astParentType.l.head shouldBe NodeTypes.METHOD
+    }
+
+    "test fullName of TypeDecl nodes for Foo" ignore {
+      typeDeclNode.fullName shouldBe "test.go::main.<global>::main::Foo"
+    }
+
+    "test the modifier for Foo" in {
+      typeDeclNode.modifier.head.modifierType shouldBe ModifierTypes.PUBLIC
+      typeDeclNode.astOut.isModifier.l.size shouldBe 1
+    }
+
+    val List(typeDeclNodeBar) = cpg.typeDecl.nameExact("bar").l
+    "test basic ast structure for bar" in {
+      typeDeclNodeBar.code shouldBe "bar interface {}"
+      typeDeclNodeBar.lineNumber shouldBe Some(4)
+      typeDeclNodeBar.columnNumber shouldBe Some(2)
+    }
+
+    "test parent ast structure for bar" in {
+      cpg.typeDecl("bar").astParent.isMethod.name.l.head shouldBe "main.<global>"
+      cpg.typeDecl("bar").astParent.isMethod.fullName.l.head shouldBe "test.go:main.<global>"
+      cpg.typeDecl("bar").astParentType.l.head shouldBe NodeTypes.METHOD
+    }
+
+    "test fullName of TypeDecl nodes for bar" ignore {
+      typeDeclNodeBar.fullName shouldBe "test.go::main.<global>::bar"
+    }
+
+    "test the modifier for bar" in {
+      typeDeclNodeBar.modifier.head.modifierType shouldBe ModifierTypes.PRIVATE
+      typeDeclNodeBar.astOut.isModifier.l.size shouldBe 1
+    }
+  }
 }
