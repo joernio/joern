@@ -7,7 +7,7 @@ import overflowdb.BatchedUpdate
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 object Py2Cpg {
-  case class InputPair(content: String, absFileName: String, relFileName: String)
+  case class InputPair(content: String, relFileName: String)
   type InputProvider = () => InputPair
 }
 
