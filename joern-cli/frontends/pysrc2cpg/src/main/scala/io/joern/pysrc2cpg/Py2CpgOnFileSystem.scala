@@ -55,7 +55,7 @@ class Py2CpgOnFileSystem extends X2CpgFrontend[Py2CpgOnFileSystemConfig] {
       val inputProviders = inputFiles.map { inputFile => () =>
         {
           val content = IOUtils.readLinesInFile(inputFile).mkString("\n")
-          Py2Cpg.InputPair(content, inputFile.toString, Paths.get(config.inputPath).relativize(inputFile).toString)
+          Py2Cpg.InputPair(content, Paths.get(config.inputPath).relativize(inputFile).toString)
         }
       }
       val py2Cpg = new Py2Cpg(inputProviders, cpg, config.inputPath, config.requirementsTxt, config.schemaValidation)
