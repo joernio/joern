@@ -24,6 +24,8 @@ class AstCreationForTypeDeclTests extends GoCodeToCpgSuite {
       "test.go"
     )
 
+    println(cpg.typeDecl("Foo").astParent.isMethod.l)
+
     val List(typeDeclNode) = cpg.typeDecl.nameExact("Foo").l
     "test basic ast structure" in {
       typeDeclNode.code shouldBe "Foo struct {\n\tbar string\n}"
@@ -32,8 +34,9 @@ class AstCreationForTypeDeclTests extends GoCodeToCpgSuite {
     }
 
     "test parent ast structure" in {
-      cpg.typeDecl("Foo").astParent.isMethod.name.l.head shouldBe "main.<global>"
-      cpg.typeDecl("Foo").astParent.isMethod.fullName.l.head shouldBe "test.go:main.<global>"
+      println(cpg.typeDecl("Foo").astParent.isMethod.l)
+      cpg.typeDecl("Foo").astParent.isTypeDecl.name.l.head shouldBe "main.<global>"
+      cpg.typeDecl("Foo").astParent.isTypeDecl.fullName.l.head shouldBe "test.go:main.<global>"
       cpg.typeDecl("Foo").astParentType.l.head shouldBe NodeTypes.METHOD
     }
 
