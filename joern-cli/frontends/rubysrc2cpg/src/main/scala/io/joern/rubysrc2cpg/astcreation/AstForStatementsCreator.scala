@@ -3,24 +3,13 @@ package io.joern.rubysrc2cpg.astcreation
 import better.files.File
 import io.joern.rubysrc2cpg.parser.RubyParser.*
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
 import io.joern.x2cpg.Imports.createImportNodeAndLink
+import io.joern.x2cpg.{Ast, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  NewBlock,
-  NewCall,
-  NewControlStructure,
-  NewIdentifier,
-  NewImport,
-  NewLiteral,
-  NewMethod,
-  NewMethodRef,
-  NewNode,
-  NewReturn
-}
-import org.slf4j.LoggerFactory
 import org.antlr.v4.runtime.ParserRuleContext
+import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
@@ -65,7 +54,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     val lhs    = astForStatement(ctx.statement(0))
     val rhs    = astForStatement(ctx.statement(1)).headOption
     val ifNode = controlStructureNode(ctx, ControlStructureTypes.IF, ctx.getText)
-    controlStructureAst(ifNode, rhs, lhs)
+    lhs.headOption.flatMap(_.root) match
+      // If the LHS is a `next` command with a return value, then this if statement is its condition and it becomes a
+      // `return`
+      case Some(x: NewControlStructure) if x.code == Defines.ModifierNext && lhs.head.nodes.size > 1 =>
+        val retNode = NewReturn().code(Defines.ModifierNext).lineNumber(x.lineNumber).columnNumber(x.columnNumber)
+        controlStructureAst(ifNode, rhs, Seq(lhs.head.subTreeCopy(x, replacementNode = Option(retNode))))
+      case _ => controlStructureAst(ifNode, rhs, lhs)
   }
 
   protected def astForUnlessModifierStatement(ctx: ModifierStatementContext): Ast = {

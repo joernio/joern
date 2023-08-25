@@ -20,15 +20,13 @@ class CodeToCpg(cpg: Cpg, inputProvider: Iterable[InputProvider], schemaValidati
       val lineBreakCorrectedCode = inputPair.content.replace("\r\n", "\n").replace("\r", "\n")
       val astRoot                = parser.parse(lineBreakCorrectedCode)
       val nodeToCode             = new NodeToCode(lineBreakCorrectedCode)
-      val astVisitor = new PythonAstVisitor(inputPair.absFileName, inputPair.relFileName, nodeToCode, PythonV2AndV3)(
-        schemaValidationMode
-      )
+      val astVisitor = new PythonAstVisitor(inputPair.relFileName, nodeToCode, PythonV2AndV3)(schemaValidationMode)
       astVisitor.convert(astRoot)
 
       diffGraph.absorb(astVisitor.getDiffGraph)
     } catch {
       case exception: Throwable =>
-        logger.warn(s"Failed to convert file ${inputPair.absFileName}", exception)
+        logger.warn(s"Failed to convert file ${inputPair.relFileName}", exception)
         Iterator.empty
     }
   }

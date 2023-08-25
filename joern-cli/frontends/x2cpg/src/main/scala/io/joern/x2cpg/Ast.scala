@@ -7,8 +7,6 @@ import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import overflowdb.SchemaViolationException
 
-import scala.util.{Failure, Success, Try}
-
 case class AstEdge(src: NewNode, dst: NewNode)
 
 enum ValidationMode {
@@ -220,10 +218,13 @@ case class Ast(
   }
 
   /** Returns a deep copy of the sub tree rooted in `node`. If `order` is set, then the `order` and `argumentIndex`
-    * fields of the new root node are set to `order`.
+    * fields of the new root node are set to `order`. If `replacementNode` is set, then this replaces `node` in the new
+    * copy.
     */
-  def subTreeCopy(node: AstNodeNew, argIndex: Int = -1): Ast = {
-    val newNode = node.copy
+  def subTreeCopy(node: AstNodeNew, argIndex: Int = -1, replacementNode: Option[AstNodeNew] = None): Ast = {
+    val newNode = replacementNode match
+      case Some(n) => n
+      case None    => node.copy
     if (argIndex != -1) {
       // newNode.order = argIndex
       newNode match {
