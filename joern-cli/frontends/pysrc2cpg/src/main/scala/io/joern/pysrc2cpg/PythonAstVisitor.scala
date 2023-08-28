@@ -22,13 +22,9 @@ object PythonV2      extends PythonVersion
 object PythonV3      extends PythonVersion
 object PythonV2AndV3 extends PythonVersion
 
-class PythonAstVisitor(
-  absFileName: String,
-  relFileName: String,
-  protected val nodeToCode: NodeToCode,
-  version: PythonVersion
-)(implicit withSchemaValidation: ValidationMode)
-    extends PythonAstVisitorHelpers {
+class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode, version: PythonVersion)(implicit
+  withSchemaValidation: ValidationMode
+) extends PythonAstVisitorHelpers {
 
   private val diffGraph     = new DiffGraphBuilder()
   protected val nodeBuilder = new NodeBuilder(diffGraph)
@@ -76,12 +72,12 @@ class PythonAstVisitor(
     module.accept(memOpCalculator)
     memOpMap = memOpCalculator.astNodeToMemOp
 
-    val fileNode = nodeBuilder.fileNode(absFileName)
+    val fileNode = nodeBuilder.fileNode(relFileName)
     val namespaceBlockNode =
       nodeBuilder.namespaceBlockNode(
         Constants.GLOBAL_NAMESPACE,
         relFileName + ":" + Constants.GLOBAL_NAMESPACE,
-        absFileName
+        relFileName
       )
     edgeBuilder.astEdge(namespaceBlockNode, fileNode, 1)
     contextStack.setFileNamespaceBlock(namespaceBlockNode)
@@ -346,7 +342,7 @@ class PythonAstVisitor(
     returnTypeHint: Option[String],
     lineAndColumn: LineAndColumn
   ): nodes.NewMethod = {
-    val methodNode = nodeBuilder.methodNode(name, fullName, absFileName, lineAndColumn)
+    val methodNode = nodeBuilder.methodNode(name, fullName, relFileName, lineAndColumn)
     edgeBuilder.astEdge(methodNode, contextStack.astParent, contextStack.order.getAndInc)
 
     val blockNode = nodeBuilder.blockNode("", lineAndColumn)
@@ -377,7 +373,7 @@ class PythonAstVisitor(
     // For every method we create a corresponding TYPE and TYPE_DECL and
     // a binding for the method into TYPE_DECL.
     val typeNode     = nodeBuilder.typeNode(name, fullName)
-    val typeDeclNode = nodeBuilder.typeDeclNode(name, fullName, absFileName, Seq(Constants.ANY), lineAndColumn)
+    val typeDeclNode = nodeBuilder.typeDeclNode(name, fullName, relFileName, Seq(Constants.ANY), lineAndColumn)
 
     // For every method that is a module, the local variables can be imported by other modules. This behaviour is
     // much like fields so they are to be linked as fields to this method type
@@ -407,7 +403,7 @@ class PythonAstVisitor(
       nodeBuilder.typeDeclNode(
         metaTypeDeclName,
         metaTypeDeclFullName,
-        absFileName,
+        relFileName,
         Seq(Constants.ANY),
         lineAndColOf(classDef)
       )
@@ -439,7 +435,7 @@ class PythonAstVisitor(
       nodeBuilder.typeDeclNode(
         instanceTypeDeclName,
         instanceTypeDeclFullName,
-        absFileName,
+        relFileName,
         inheritsFrom,
         lineAndColOf(classDef)
       )
