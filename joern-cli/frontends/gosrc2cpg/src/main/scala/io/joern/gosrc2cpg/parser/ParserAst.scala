@@ -54,6 +54,8 @@ object ParserAst {
   object ArrayType      extends ParserNode
   object CompositeLit   extends BasePrimitive
   object Field          extends ParserNode
+  object TypeSpec       extends ParserNode
+  object StructType     extends BaseExpr
 }
 
 object ParserKeys {
@@ -98,4 +100,5 @@ object ParserKeys {
   val Elt             = "Elt"
   val Sel             = "Sel"
   val Elts            = "Elts"
+  val Fields          = "Fields"
 }

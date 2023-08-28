@@ -7,6 +7,8 @@ import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 
+import scala.collection.immutable.Seq
+
 trait AstForExpressionCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
   def astsForExpression(expr: ParserNodeInfo): Seq[Ast] = {
     expr.node match {
@@ -14,10 +16,34 @@ trait AstForExpressionCreator(implicit withSchemaValidation: ValidationMode) { t
       case StarExpr   => astForStarExpr(expr)
       case UnaryExpr  => astForUnaryExpr(expr)
       case ParenExpr  => astsForExpression(createParserNodeInfo(expr.json(ParserKeys.X)))
+      case StructType => astForStructType(expr)
       case _          => Seq(Ast())
     }
   }
 
+  private def astForStructType(expr: ParserNodeInfo): Seq[Ast] = {
+    val fieldListAsts = astForFieldList(createParserNodeInfo(expr.json(ParserKeys.Fields)))
+    Seq(Ast())
+  }
+
+  private def astForFieldList(fieldList: ParserNodeInfo): Seq[Ast] = {
+    val fieldAsts = fieldList
+      .json(ParserKeys.List)
+      .arr
+      .map(createParserNodeInfo)
+      .map(astForField)
+    Seq(Ast())
+  }
+
+  private def astForField(field: ParserNodeInfo): Ast = {
+    field.node match
+      case Field => {
+        Ast()
+      }
+      case _ => {
+        Ast()
+      }
+  }
   private def astForBinaryExpr(binaryExpr: ParserNodeInfo): Seq[Ast] = {
     val op = binaryExpr.json(ParserKeys.Op).value match {
       case "*"  => Operators.multiplication
@@ -50,6 +76,7 @@ trait AstForExpressionCreator(implicit withSchemaValidation: ValidationMode) { t
     val operand = astForNode(starExpr.json(ParserKeys.X))
     Seq(callAst(cNode, operand))
   }
+
   private def astForUnaryExpr(unaryExpr: ParserNodeInfo): Seq[Ast] = {
     val operatorMethod = unaryExpr.json(ParserKeys.Op).value match {
       case "+"     => Operators.plus

@@ -489,7 +489,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.isExternal shouldBe false
       x.astParentType shouldBe NodeTypes.TYPE_DECL
       x.astParentFullName shouldBe "Test0.go:main.<global>"
-      x.order shouldBe 1
+      x.order shouldBe 2
       x.filename shouldBe "Test0.go"
       x.lineNumber shouldBe Option(7)
       x.lineNumberEnd shouldBe Option(8)
