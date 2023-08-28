@@ -457,7 +457,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       )
     }
 
-    "correctly determine that, despite being unable to resolve the correct method full name, that it is an internal method" in {
+    "make no assumption that, despite the file being internal, that unless the entity is resolved, it is external" in {
       val Some(selfFindFound) = cpg.typeDecl(".*InstallationsDAO.*").ast.isCall.name("find_one").headOption: @unchecked
       selfFindFound.callee.isExternal.toSeq shouldBe Seq(true, true)
     }
