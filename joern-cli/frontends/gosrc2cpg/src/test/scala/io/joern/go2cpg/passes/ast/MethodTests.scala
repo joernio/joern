@@ -37,6 +37,51 @@ class MethodTests extends GoCodeToCpgSuite {
     }
   }
 
+  "Method called from another method first in the code" should {
+    val cpg = code("""
+        |package main
+        |func foo() {
+        |  bar()
+        |}
+        |func bar() {
+        |}
+        |""".stripMargin)
+
+    "Be correct with method node properties" in {
+      val List(x) = cpg.method.name("foo").l
+      x.name shouldBe "foo"
+      x.fullName shouldBe "main.foo"
+      x.code should startWith("func foo() {")
+      x.signature shouldBe "main.foo ()"
+      x.isExternal shouldBe false
+      x.astParentType shouldBe NodeTypes.TYPE_DECL
+      x.astParentFullName shouldBe "Test0.go:main.<global>"
+      x.order shouldBe 1
+      x.filename shouldBe "Test0.go"
+      x.lineNumber shouldBe Option(3)
+      x.lineNumberEnd shouldBe Option(5)
+
+      val List(y) = cpg.method.name("bar").l
+      y.name shouldBe "bar"
+      y.fullName shouldBe "main.bar"
+      y.code should startWith("func bar() {")
+      y.signature shouldBe "main.bar ()"
+      y.isExternal shouldBe false
+      y.astParentType shouldBe NodeTypes.TYPE_DECL
+      y.astParentFullName shouldBe "Test0.go:main.<global>"
+      y.order shouldBe 2
+      y.filename shouldBe "Test0.go"
+      y.lineNumber shouldBe Option(6)
+      y.lineNumberEnd shouldBe Option(7)
+    }
+
+    "check binding Node" in {
+      val List(x) = cpg.method.name("foo").bindingTypeDecl.l
+      x.name shouldBe "main.<global>"
+      x.fullName shouldBe "Test0.go:main.<global>"
+    }
+  }
+
   "Method arguments with primitive types" should {
     val cpg = code("""
                      |package main
