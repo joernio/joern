@@ -42,7 +42,7 @@ class AstCreationForTypeDeclTests extends GoCodeToCpgSuite {
 
     "test the modifier" in {
       typeDeclNode.modifier.head.modifierType shouldBe ModifierTypes.PUBLIC
-      typeDeclNode.astOut.isModifier.l.size shouldBe 1
+      typeDeclNode.astOut.isModifier.size shouldBe 1
     }
   }
 
@@ -72,7 +72,7 @@ class AstCreationForTypeDeclTests extends GoCodeToCpgSuite {
 
     "test the modifier" in {
       typeDeclNode.modifier.head.modifierType shouldBe ModifierTypes.PUBLIC
-      typeDeclNode.astOut.isModifier.l.size shouldBe 1
+      typeDeclNode.astOut.isModifier.size shouldBe 1
     }
   }
 
@@ -102,7 +102,7 @@ class AstCreationForTypeDeclTests extends GoCodeToCpgSuite {
 
     "test the modifier" in {
       typeDeclNode.modifier.head.modifierType shouldBe ModifierTypes.PUBLIC
-      typeDeclNode.astOut.isModifier.l.size shouldBe 1
+      typeDeclNode.astOut.isModifier.size shouldBe 1
     }
   }
 
@@ -133,7 +133,7 @@ class AstCreationForTypeDeclTests extends GoCodeToCpgSuite {
 
     "test the modifier" in {
       typeDeclNode.modifier.head.modifierType shouldBe ModifierTypes.PRIVATE
-      typeDeclNode.astOut.isModifier.l.size shouldBe 1
+      typeDeclNode.astOut.isModifier.size shouldBe 1
     }
   }
 
@@ -165,7 +165,7 @@ class AstCreationForTypeDeclTests extends GoCodeToCpgSuite {
 
     "test the modifier" in {
       typeDeclNode.modifier.head.modifierType shouldBe ModifierTypes.PUBLIC
-      typeDeclNode.astOut.isModifier.l.size shouldBe 1
+      typeDeclNode.astOut.isModifier.size shouldBe 1
     }
 
   }
@@ -197,7 +197,7 @@ class AstCreationForTypeDeclTests extends GoCodeToCpgSuite {
 
     "test the modifier" in {
       typeDeclNode.modifier.head.modifierType shouldBe ModifierTypes.PUBLIC
-      typeDeclNode.astOut.isModifier.l.size shouldBe 1
+      typeDeclNode.astOut.isModifier.size shouldBe 1
     }
 
   }
@@ -229,7 +229,7 @@ class AstCreationForTypeDeclTests extends GoCodeToCpgSuite {
 
     "test the modifier for Foo" in {
       typeDeclNode.modifier.head.modifierType shouldBe ModifierTypes.PUBLIC
-      typeDeclNode.astOut.isModifier.l.size shouldBe 1
+      typeDeclNode.astOut.isModifier.size shouldBe 1
     }
 
     val List(typeDeclNodeBar) = cpg.typeDecl.nameExact("bar").l
@@ -250,7 +250,7 @@ class AstCreationForTypeDeclTests extends GoCodeToCpgSuite {
 
     "test the modifier for bar" in {
       typeDeclNodeBar.modifier.head.modifierType shouldBe ModifierTypes.PRIVATE
-      typeDeclNodeBar.astOut.isModifier.l.size shouldBe 1
+      typeDeclNodeBar.astOut.isModifier.size shouldBe 1
     }
   }
 }

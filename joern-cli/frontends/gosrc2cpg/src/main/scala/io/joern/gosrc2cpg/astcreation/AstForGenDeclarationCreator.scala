@@ -22,30 +22,35 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
           case ImportSpec => astForImport(genDeclNode)
           case TypeSpec   => astForTypeSpec(genDeclNode)
           case ValueSpec  => astForValueSpec(genDeclNode)
-          case _          => List[Ast]()
+          case _          => Seq[Ast]()
       }
       .toSeq
   }
 
-  private def astForTypeSpec(typeSpec: ParserNodeInfo): Seq[Ast] = {
+  private def astForTypeSpec(typeSpecNode: ParserNodeInfo): Seq[Ast] = {
     // TODO: Add support for member variables and methods
-    val nameNode          = typeSpec.json(ParserKeys.Name)
-    val typeNode          = typeSpec.json(ParserKeys.Type)
-    val a: NewTypeDecl    = methodAstParentStack.collectFirst { case t: NewTypeDecl => t }.get
-    val astParentType     = a.label
-    val astParentFullName = a.fullName
-    val typeDeclNode_ =
-      typeDeclNode(
-        typeSpec,
-        nameNode(ParserKeys.Name).str,
-        x2cpg.Defines.DynamicCallUnknownFullName, // TODO: Fill in fullName
-        parserResult.filename,
-        typeSpec.code,
-        astParentType,
-        astParentFullName
-      )
-    val modifier = addModifier(typeDeclNode_, nameNode(ParserKeys.Name).str)
-    Seq(Ast(typeDeclNode_).withChild(Ast(modifier)))
+    Option(typeSpecNode) match {
+      case Some(typeSpec) =>
+        val nameNode          = typeSpec.json(ParserKeys.Name)
+        val typeNode          = typeSpec.json(ParserKeys.Type)
+        val a: NewTypeDecl    = methodAstParentStack.collectFirst { case t: NewTypeDecl => t }.get
+        val astParentType     = a.label
+        val astParentFullName = a.fullName
+        val typeDeclNode_ =
+          typeDeclNode(
+            typeSpec,
+            nameNode(ParserKeys.Name).str,
+            x2cpg.Defines.DynamicCallUnknownFullName, // TODO: Fill in fullName
+            parserResult.filename,
+            typeSpec.code,
+            astParentType,
+            astParentFullName
+          )
+        val modifier = addModifier(typeDeclNode_, nameNode(ParserKeys.Name).str)
+        Seq(Ast(typeDeclNode_).withChild(Ast(modifier)))
+      case None =>
+        Seq.empty
+    }
   }
 
   private def astForImport(nodeInfo: ParserNodeInfo): Seq[Ast] = {
