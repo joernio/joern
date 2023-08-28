@@ -6,8 +6,7 @@ import io.joern.rubysrc2cpg.utils.PackageContext
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
 import io.joern.x2cpg.datastructures.{Global, Scope}
-import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, Defines as XDefines}
-import io.joern.x2cpg.ValidationMode
+import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.antlr.v4.runtime.tree.TerminalNode
@@ -927,8 +926,9 @@ class AstCreator(
           )
       }
     case ctx: NextArgsInvocationWithoutParenthesesContext =>
-      // failing test case. Exception:  Only jump labels and integer literals are currently supported for continue statements.
-      // this overlaps with the problem if returning a value from a block
+      /*
+       * While this is a `CONTINUE` for now, if we detect that this is the LHS of an `IF` then this becomes a `RETURN`
+       */
       val node = NewControlStructure()
         .controlStructureType(ControlStructureTypes.CONTINUE)
         .lineNumber(ctx.NEXT().getSymbol.getLine)
