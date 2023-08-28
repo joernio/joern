@@ -1400,6 +1400,7 @@ class MethodTests extends GoCodeToCpgSuite {
       argv.name shouldBe "argv"
     }
   }
+
   // TODO: Add unit test for tuple return
   // TODO: Add unit tests with Generics
 }
