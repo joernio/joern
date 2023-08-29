@@ -1,18 +1,12 @@
 package io.joern.rubysrc2cpg.astcreation
 
-import io.joern.rubysrc2cpg.parser.{RubyLexer, RubyParser}
-import io.joern.x2cpg.utils.TimeUtils
-import io.shiftleft.utils.IOUtils
+import io.joern.rubysrc2cpg.parser.{RubyLexer, RubyLexerPostProcessor, RubyParser}
 import org.antlr.v4.runtime.*
 import org.antlr.v4.runtime.atn.ATN
 import org.antlr.v4.runtime.dfa.DFA
 import org.slf4j.LoggerFactory
 
-import java.nio.file.Paths
-import java.util.concurrent.TimeoutException
-import scala.annotation.tailrec
-import scala.collection.mutable.ArrayBuffer
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 /** A consumable wrapper for the RubyParser class used to parse the given file and be disposed thereafter. This includes
   * a "hacky" recovery of the parser when unsupported constructs are encountered by simply not parsing those lines.
@@ -26,7 +20,7 @@ class AntlrParser(filename: String) {
 
   private val charStream  = CharStreams.fromFileName(filename)
   private val lexer       = new RubyLexer(charStream)
-  private val tokenStream = new CommonTokenStream(lexer)
+  private val tokenStream = new CommonTokenStream(RubyLexerPostProcessor(lexer))
   val parser: RubyParser  = new RubyParser(tokenStream)
 
   def parse(): Try[RubyParser.ProgramContext] = Try(parser.program())

@@ -30,7 +30,6 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
             |  foo
             | BlankArgsArgumentsWithParentheses
             |  (
-            |  WsOrNl
             |  )""".stripMargin
       }
 
@@ -72,7 +71,6 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
              |        VariableIdentifier
              |         region
              |     :
-             |     WsOrNl
              |     PrimaryExpression
              |      LiteralPrimary
              |       NumericLiteralLiteral
@@ -125,7 +123,6 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
             |        VariableIdentifier
             |         id
             |     :
-            |     WsOrNl
             |     PrimaryExpression
             |      LiteralPrimary
             |       RegularExpressionLiteral
@@ -193,7 +190,6 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
             |         VariableIdentifier
             |          x
             |   ,
-            |   WsOrNl
             |   AssociationArgument
             |    Association
             |     PrimaryExpression
@@ -202,7 +198,6 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
             |        VariableIdentifier
             |         y
             |     :
-            |     WsOrNl
             |     PrimaryExpression
             |      LiteralPrimary
             |       NumericLiteralLiteral
@@ -226,7 +221,6 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
             |     Keyword
             |      if
             |     :
-            |     WsOrNl
             |     PrimaryExpression
             |      VariableReferencePrimary
             |       PseudoVariableIdentifierVariableReference
@@ -275,7 +269,6 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
             |        UnsignedNumericLiteral
             |         1
             |   ,
-            |   WsOrNl
             |   ExpressionArgument
             |    PrimaryExpression
             |     LiteralPrimary
@@ -294,8 +287,6 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
             |  VariableIdentifierVariableReference
             |   VariableIdentifier
             |    foo
-            | WsOrNl
-            | WsOrNl
             | .
             | MethodName
             |  MethodIdentifier
@@ -311,8 +302,6 @@ class InvocationWithParenthesesTests extends RubyParserAbstractTest {
             |   VariableIdentifier
             |    foo
             | .
-            | WsOrNl
-            | WsOrNl
             | MethodName
             |  MethodIdentifier
             |   bar""".stripMargin

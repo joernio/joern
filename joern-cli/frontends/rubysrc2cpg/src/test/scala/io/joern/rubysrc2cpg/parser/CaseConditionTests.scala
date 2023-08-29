@@ -18,18 +18,14 @@ class CaseConditionTests extends RubyParserAbstractTest {
           """CaseExpressionPrimary
             | CaseExpression
             |  case
-            |  WsOrNl
             |  ExpressionExpressionOrCommand
             |   PrimaryExpression
             |    VariableReferencePrimary
             |     VariableIdentifierVariableReference
             |      VariableIdentifier
             |       something
-            |  Separators
-            |   Separator
             |  WhenClause
             |   when
-            |   WsOrNl
             |   WhenArgument
             |    Expressions
             |     PrimaryExpression
@@ -39,8 +35,6 @@ class CaseConditionTests extends RubyParserAbstractTest {
             |         UnsignedNumericLiteral
             |          1
             |   ThenClause
-            |    Separator
-            |    WsOrNl
             |    CompoundStatement
             |     Statements
             |      ExpressionOrCommandStatement
@@ -58,8 +52,6 @@ class CaseConditionTests extends RubyParserAbstractTest {
             |                NumericLiteral
             |                 UnsignedNumericLiteral
             |                  2
-            |     Separators
-            |      Separator
             |  end""".stripMargin
       }
 
@@ -75,18 +67,14 @@ class CaseConditionTests extends RubyParserAbstractTest {
           """CaseExpressionPrimary
             | CaseExpression
             |  case
-            |  WsOrNl
             |  ExpressionExpressionOrCommand
             |   PrimaryExpression
             |    VariableReferencePrimary
             |     VariableIdentifierVariableReference
             |      VariableIdentifier
             |       something
-            |  Separators
-            |   Separator
             |  WhenClause
             |   when
-            |   WsOrNl
             |   WhenArgument
             |    Expressions
             |     PrimaryExpression
@@ -96,13 +84,9 @@ class CaseConditionTests extends RubyParserAbstractTest {
             |         UnsignedNumericLiteral
             |          1
             |   ThenClause
-            |    Separator
-            |    WsOrNl
             |    CompoundStatement
             |  ElseClause
             |   else
-            |   WsOrNl
-            |   WsOrNl
             |   CompoundStatement
             |  end""".stripMargin
       }
@@ -118,18 +102,14 @@ class CaseConditionTests extends RubyParserAbstractTest {
           """CaseExpressionPrimary
             | CaseExpression
             |  case
-            |  WsOrNl
             |  ExpressionExpressionOrCommand
             |   PrimaryExpression
             |    VariableReferencePrimary
             |     VariableIdentifierVariableReference
             |      VariableIdentifier
             |       something
-            |  Separators
-            |   Separator
             |  WhenClause
             |   when
-            |   WsOrNl
             |   WhenArgument
             |    Expressions
             |     PrimaryExpression
@@ -140,8 +120,6 @@ class CaseConditionTests extends RubyParserAbstractTest {
             |          1
             |   ThenClause
             |    then
-            |    WsOrNl
-            |    WsOrNl
             |    CompoundStatement
             |  end""".stripMargin
       }
@@ -158,18 +136,14 @@ class CaseConditionTests extends RubyParserAbstractTest {
           """CaseExpressionPrimary
             | CaseExpression
             |  case
-            |  WsOrNl
             |  ExpressionExpressionOrCommand
             |   PrimaryExpression
             |    VariableReferencePrimary
             |     VariableIdentifierVariableReference
             |      VariableIdentifier
             |       x
-            |  Separators
-            |   Separator
             |  WhenClause
             |   when
-            |   WsOrNl
             |   WhenArgument
             |    Expressions
             |     PrimaryExpression
@@ -180,7 +154,6 @@ class CaseConditionTests extends RubyParserAbstractTest {
             |          1
             |   ThenClause
             |    then
-            |    WsOrNl
             |    CompoundStatement
             |     Statements
             |      ExpressionOrCommandStatement
@@ -191,11 +164,8 @@ class CaseConditionTests extends RubyParserAbstractTest {
             |           NumericLiteral
             |            UnsignedNumericLiteral
             |             2
-            |     Separators
-            |      Separator
             |  WhenClause
             |   when
-            |   WsOrNl
             |   WhenArgument
             |    Expressions
             |     PrimaryExpression
@@ -206,7 +176,6 @@ class CaseConditionTests extends RubyParserAbstractTest {
             |          2
             |   ThenClause
             |    then
-            |    WsOrNl
             |    CompoundStatement
             |     Statements
             |      ExpressionOrCommandStatement
@@ -217,8 +186,6 @@ class CaseConditionTests extends RubyParserAbstractTest {
             |           NumericLiteral
             |            UnsignedNumericLiteral
             |             3
-            |     Separators
-            |      Separator
             |  end""".stripMargin
       }
     }

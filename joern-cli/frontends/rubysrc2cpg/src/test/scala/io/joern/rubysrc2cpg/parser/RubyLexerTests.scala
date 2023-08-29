@@ -21,11 +21,11 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       errors += 1
   }
 
-  def tokenize(code: String): Iterable[Int] = {
+  private def tokenizer(code: String, postProcessor: TokenSource => TokenSource): Iterable[Int] = {
     val lexer               = new RubyLexer(CharStreams.fromString(code))
     val syntaxErrorListener = new RubySyntaxErrorListener
     lexer.addErrorListener(syntaxErrorListener)
-    val stream = new CommonTokenStream(lexer)
+    val stream = new CommonTokenStream(postProcessor(lexer))
     stream.fill() // Run the lexer
     if (syntaxErrorListener.errors > 0) {
       Seq()
@@ -34,6 +34,10 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       stream.getTokens.asScala.map(_.getType)
     }
   }
+
+  def tokenize(code: String): Iterable[Int] = tokenizer(code, identity)
+
+  def tokenizeOpt(code: String): Iterable[Int] = tokenizer(code, RubyLexerPostProcessor.apply)
 
   "Single-line comments" should "be discarded" in {
     val code =
@@ -487,6 +491,13 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     tokenize(code) shouldBe Seq(SINGLE_QUOTED_STRING_LITERAL, WS, SINGLE_QUOTED_STRING_LITERAL, EOF)
   }
 
+  "Multi-line string literal concatenation" should "be optimized as two consecutive string literals" in {
+    val code =
+      """'abc' \
+        |'cde'""".stripMargin
+    tokenizeOpt(code) shouldBe Seq(SINGLE_QUOTED_STRING_LITERAL, SINGLE_QUOTED_STRING_LITERAL, EOF)
+  }
+
   "empty `%q` string literals" should "be recognized as such" in {
     val eg = Seq("%q()", "%q[]", "%q{}", "%q<>", "%q##", "%q!!", "%q--", "%q@@", "%q++", "%q**", "%q//", "%q&&")
     all(eg.map(tokenize)) shouldBe Seq(
@@ -643,6 +654,117 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     )
   }
 
+  "empty `%(` string literals" should "be recognized as such" in {
+    val code = "%()"
+    tokenize(code) shouldBe Seq(QUOTED_EXPANDED_STRING_LITERAL_START, QUOTED_EXPANDED_STRING_LITERAL_END, EOF)
+  }
+
+  "single-character `%(` string literals" should "be recognized as such" in {
+    val code = "%(-)"
+    tokenize(code) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_LITERAL_START,
+      EXPANDED_LITERAL_CHARACTER,
+      QUOTED_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
+  "delimiter-escaped-single-character `%(` string literals" should "be recognized as such" in {
+    val code = "%(\\))"
+    tokenize(code) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_LITERAL_START,
+      EXPANDED_LITERAL_CHARACTER,
+      QUOTED_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
+  "nested `%(` string literals" should "be recognized as such" in {
+    val code = "%(()())"
+    tokenize(code) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_LITERAL_START,
+      EXPANDED_LITERAL_CHARACTER,
+      EXPANDED_LITERAL_CHARACTER,
+      EXPANDED_LITERAL_CHARACTER,
+      EXPANDED_LITERAL_CHARACTER,
+      QUOTED_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
+  "interpolated (with a numeric expression) `%(` string literals" should "be recognized as such" in {
+    val code = "%(#{1})"
+    tokenize(code) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_LITERAL_START,
+      DELIMITED_STRING_INTERPOLATION_BEGIN,
+      DECIMAL_INTEGER_LITERAL,
+      DELIMITED_STRING_INTERPOLATION_END,
+      QUOTED_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
+  "`%(` string literals containing identifier interpolations" should "be recognized as such" in {
+    val eg = Seq("%(x = #$x)", "%(x = #@xyz)", "%(x = #@@counter)")
+    all(eg.map(tokenize)) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_LITERAL_START,
+      EXPANDED_LITERAL_CHARACTER,
+      EXPANDED_LITERAL_CHARACTER,
+      EXPANDED_LITERAL_CHARACTER,
+      EXPANDED_LITERAL_CHARACTER,
+      EXPANDED_VARIABLE_CHARACTER_SEQUENCE,
+      QUOTED_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
+  "`%(` after a decimal literal" should "not be mistaken for an expanded string literal" in {
+    val code = "100%(x+1)"
+    tokenize(code) shouldBe Seq(
+      DECIMAL_INTEGER_LITERAL,
+      PERCENT,
+      LPAREN,
+      LOCAL_VARIABLE_IDENTIFIER,
+      PLUS,
+      DECIMAL_INTEGER_LITERAL,
+      RPAREN,
+      EOF
+    )
+  }
+
+  "`%(` in a `puts` argument" should "be recognized as such" in {
+    val code = "puts %()"
+    tokenize(code) shouldBe Seq(
+      LOCAL_VARIABLE_IDENTIFIER,
+      WS,
+      QUOTED_EXPANDED_STRING_LITERAL_START,
+      QUOTED_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
+  "`%(` string literals containing escaped `#` characters" should "not be mistaken for interpolations" in {
+    val code = """%(\#$x)"""
+    tokenize(code) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_LITERAL_START,
+      EXPANDED_LITERAL_CHARACTER,
+      EXPANDED_LITERAL_CHARACTER,
+      EXPANDED_LITERAL_CHARACTER,
+      QUOTED_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
+  "`%(` string literals containing `#`" should "not be mistaken for interpolations" in {
+    val code = "%(#)"
+    tokenize(code) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_LITERAL_START,
+      EXPANDED_LITERAL_CHARACTER,
+      QUOTED_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
   "Empty `%x` literals" should "be recognized as such" in {
     val eg = Seq("%x()", "%x[]", "%x{}", "%x<>", "%x##", "%x!!", "%x--", "%x@@", "%x++", "%x**", "%x//", "%x&&")
     all(eg.map(tokenize)) shouldBe Seq(
@@ -699,8 +821,8 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
   "empty `%r` regex literals" should "be recognized as such" in {
     val eg = Seq("%r()", "%r[]", "%r{}", "%r<>", "%r##", "%r!!", "%r--", "%r@@", "%r++", "%r**", "%r//", "%r&&")
     all(eg.map(tokenize)) shouldBe Seq(
-      QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_START,
-      QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_END,
+      QUOTED_EXPANDED_REGULAR_EXPRESSION_START,
+      QUOTED_EXPANDED_REGULAR_EXPRESSION_END,
       EOF
     )
   }
@@ -709,9 +831,9 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     val eg =
       Seq("%r(x)", "%r[y]", "%r{z}", "%r<w>", "%r#a#", "%r!b!", "%r-_-", "%r@c@", "%r+d+", "%r*e*", "%r/#/", "%r&!&")
     all(eg.map(tokenize)) shouldBe Seq(
-      QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_START,
-      NON_EXPANDED_LITERAL_CHARACTER,
-      QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_END,
+      QUOTED_EXPANDED_REGULAR_EXPRESSION_START,
+      EXPANDED_LITERAL_CHARACTER,
+      QUOTED_EXPANDED_REGULAR_EXPRESSION_END,
       EOF
     )
   }
@@ -732,9 +854,9 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
       "%r&\\&&"
     )
     all(eg.map(tokenize)) shouldBe Seq(
-      QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_START,
-      NON_EXPANDED_LITERAL_CHARACTER,
-      QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_END,
+      QUOTED_EXPANDED_REGULAR_EXPRESSION_START,
+      EXPANDED_LITERAL_CHARACTER,
+      QUOTED_EXPANDED_REGULAR_EXPRESSION_END,
       EOF
     )
   }
@@ -742,12 +864,12 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
   "nested `%r` regex literals" should "be recognized as such" in {
     val eg = Seq("%r(()())", "%r[[][]]", "%r{{}{}}", "%r<<><>>")
     all(eg.map(tokenize)) shouldBe Seq(
-      QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_START,
-      NON_EXPANDED_LITERAL_CHARACTER,
-      NON_EXPANDED_LITERAL_CHARACTER,
-      NON_EXPANDED_LITERAL_CHARACTER,
-      NON_EXPANDED_LITERAL_CHARACTER,
-      QUOTED_NON_EXPANDED_REGULAR_EXPRESSION_END,
+      QUOTED_EXPANDED_REGULAR_EXPRESSION_START,
+      EXPANDED_LITERAL_CHARACTER,
+      EXPANDED_LITERAL_CHARACTER,
+      EXPANDED_LITERAL_CHARACTER,
+      EXPANDED_LITERAL_CHARACTER,
+      QUOTED_EXPANDED_REGULAR_EXPRESSION_END,
       EOF
     )
   }
@@ -1150,4 +1272,43 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
     tokenize(code) shouldBe Seq(UNRECOGNIZED, EMARK, EOF)
   }
 
+  "Single NON_EXPANDED_LITERAL_CHARACTER token" should "be rewritten into a single NON_EXPANDED_LITERAL_CHARACTER_SEQUENCE token" in {
+    val code = "%q{ }"
+    tokenizeOpt(code) shouldBe Seq(
+      QUOTED_NON_EXPANDED_STRING_LITERAL_START,
+      NON_EXPANDED_LITERAL_CHARACTER_SEQUENCE,
+      QUOTED_NON_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
+  "Consecutive NON_EXPANDED_LITERAL_CHARACTER tokens" should "be rewritten into a single NON_EXPANDED_LITERAL_CHARACTER_SEQUENCE token" in {
+    val code = "%q(1 2 3 4)"
+    tokenizeOpt(code) shouldBe Seq(
+      QUOTED_NON_EXPANDED_STRING_LITERAL_START,
+      NON_EXPANDED_LITERAL_CHARACTER_SEQUENCE,
+      QUOTED_NON_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
+  "Single EXPANDED_LITERAL_CHARACTER token" should "be rewritten into a single EXPANDED_LITERAL_CHARACTER_SEQUENCE token" in {
+    val code = "%Q( )"
+    tokenizeOpt(code) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_LITERAL_START,
+      EXPANDED_LITERAL_CHARACTER_SEQUENCE,
+      QUOTED_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
+
+  "Consecutive EXPANDED_LITERAL_CHARACTER tokens" should "be rewritten into a single EXPANDED_LITERAL_CHARACTER_SEQUENCE token" in {
+    val code = "%Q{1 2 3 4 5}"
+    tokenizeOpt(code) shouldBe Seq(
+      QUOTED_EXPANDED_STRING_LITERAL_START,
+      EXPANDED_LITERAL_CHARACTER_SEQUENCE,
+      QUOTED_EXPANDED_STRING_LITERAL_END,
+      EOF
+    )
+  }
 }

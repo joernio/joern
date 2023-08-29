@@ -24,6 +24,15 @@ class ArrayTests extends RubyParserAbstractTest {
             |  ]""".stripMargin
       }
 
+      "it uses the %W< > delimiters" in {
+        val code = "%W<>"
+        printAst(_.primary(), code) shouldEqual
+          """ArrayConstructorPrimary
+            | ExpandedWordArrayConstructor
+            |  %W<
+            |  >""".stripMargin
+      }
+
       "it uses the %i[ ] delimiters" in {
         val code = "%i[]"
         printAst(_.primary(), code) shouldEqual
@@ -31,6 +40,15 @@ class ArrayTests extends RubyParserAbstractTest {
             | NonExpandedSymbolArrayConstructor
             |  %i[
             |  ]""".stripMargin
+      }
+
+      "it uses the %I{ } delimiters" in {
+        val code = "%I{}"
+        printAst(_.primary(), code) shouldEqual
+          """ArrayConstructorPrimary
+            | ExpandedSymbolArrayConstructor
+            |  %I{
+            |  }""".stripMargin
       }
     }
   }
@@ -144,6 +162,59 @@ class ArrayTests extends RubyParserAbstractTest {
             |  )""".stripMargin
 
       }
+
+      "it uses the %W( ) delimiters and contains a numeric interpolation" in {
+        val code = "%W(x#{1})"
+        printAst(_.primary(), code) shouldEqual
+          """ArrayConstructorPrimary
+            | ExpandedWordArrayConstructor
+            |  %W(
+            |  ExpandedArrayElements
+            |   ExpandedArrayElement
+            |    x
+            |    DelimitedArrayItemInterpolation
+            |     #{
+            |     CompoundStatement
+            |      Statements
+            |       ExpressionOrCommandStatement
+            |        ExpressionExpressionOrCommand
+            |         PrimaryExpression
+            |          LiteralPrimary
+            |           NumericLiteralLiteral
+            |            NumericLiteral
+            |             UnsignedNumericLiteral
+            |              1
+            |     }
+            |  )""".stripMargin
+      }
+
+      "it spans multiple lines and contains a numeric interpolation" in {
+        val code =
+          """%W[
+            | x#{0}
+            |]""".stripMargin
+        printAst(_.primary(), code) shouldEqual
+          """ArrayConstructorPrimary
+            | ExpandedWordArrayConstructor
+            |  %W[
+            |  ExpandedArrayElements
+            |   ExpandedArrayElement
+            |    x
+            |    DelimitedArrayItemInterpolation
+            |     #{
+            |     CompoundStatement
+            |      Statements
+            |       ExpressionOrCommandStatement
+            |        ExpressionExpressionOrCommand
+            |         PrimaryExpression
+            |          LiteralPrimary
+            |           NumericLiteralLiteral
+            |            NumericLiteral
+            |             UnsignedNumericLiteral
+            |              0
+            |     }
+            |  ]""".stripMargin
+      }
     }
   }
 
@@ -213,6 +284,34 @@ class ArrayTests extends RubyParserAbstractTest {
             |    y
             |   NonExpandedArrayElement
             |    z
+            |  )""".stripMargin
+      }
+
+      "it uses the %I( ) delimiters and contains a numeric interpolation" in {
+        val code = "%I(x#{0} x1)"
+        printAst(_.primary(), code) shouldEqual
+          """ArrayConstructorPrimary
+            | ExpandedSymbolArrayConstructor
+            |  %I(
+            |  ExpandedArrayElements
+            |   ExpandedArrayElement
+            |    x
+            |    DelimitedArrayItemInterpolation
+            |     #{
+            |     CompoundStatement
+            |      Statements
+            |       ExpressionOrCommandStatement
+            |        ExpressionExpressionOrCommand
+            |         PrimaryExpression
+            |          LiteralPrimary
+            |           NumericLiteralLiteral
+            |            NumericLiteral
+            |             UnsignedNumericLiteral
+            |              0
+            |     }
+            |   ExpandedArrayElement
+            |    x
+            |    1
             |  )""".stripMargin
       }
     }

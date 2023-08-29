@@ -64,7 +64,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val astExprOfCommand = astForExpressionOrCommand(ctx.classDefinition().expressionOrCommand())
     val astBodyStatement = astForBodyStatementContext(ctx.classDefinition().bodyStatement())
     val blockNode = NewBlock()
-      .code(ctx.getText)
+      .code(text(ctx))
     val bodyBlockAst = blockAst(blockNode, astBodyStatement.toList)
     astExprOfCommand ++ Seq(bodyBlockAst)
   }
