@@ -10,7 +10,8 @@ abstract class RubyLexerBase(input: CharStream)
     with RegexLiteralHandling
     with NonExpandedDelimiterHandling
     with InterpolationHandling
-    with ExpandedDelimiterHandling {
+    with ExpandedDelimiterHandling
+    with HereDocHandling {
 
   /** The previously (non-WS) emitted token (in DEFAULT_CHANNEL.) */
   protected var previousNonWsToken: Option[Token] = None
