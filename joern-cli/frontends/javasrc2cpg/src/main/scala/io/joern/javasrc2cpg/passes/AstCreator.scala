@@ -291,11 +291,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     } catch {
       case t: UnsolvedSymbolException =>
         logger.error(s"Unsolved symbol exception caught in $filename")
-        throw t
+        Ast()
       case t: Throwable =>
         logger.error(s"Parsing file $filename failed with $t")
         logger.error(s"Caused by ${t.getCause}")
-        throw t
+        Ast()
     }
   }
 
