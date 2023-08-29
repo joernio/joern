@@ -100,5 +100,6 @@ object ParserKeys {
   val Elt             = "Elt"
   val Sel             = "Sel"
   val Elts            = "Elts"
+  val Fun             = "Fun"
   val Fields          = "Fields"
 }

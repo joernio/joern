@@ -23,7 +23,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   ): Ast = {
 
     val parentNode: NewTypeDecl = methodAstParentStack.collectFirst { case t: NewTypeDecl => t }.getOrElse {
-      // TODO: Need to add respective Unit test to test this possibility, as looks to me as dead code. Replicated it from 'c2cpg' by referring AstForFunctionsCreator.
+      // TODO: Need to add respective Unit test to test this possibility, as looks to me as dead code.
+      //  Replicated it from 'c2cpg' by referring AstForFunctionsCreator.
       val astParentType     = methodAstParentStack.head.label
       val astParentFullName = methodAstParentStack.head.properties(PropertyNames.FULL_NAME).toString
       val typeDeclNode_ =
@@ -45,7 +46,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     // TODO: handle multiple return type or tuple (int, int)
     val returnType     = getReturnType(funcDecl.json(ParserKeys.Type)).headOption.getOrElse("")
     val templateParams = ""
-    val params         = createParserNodeInfo(funcDecl.json(ParserKeys.Type)(ParserKeys.Params))
+    val params         = funcDecl.json(ParserKeys.Type)(ParserKeys.Params)(ParserKeys.List)
     val signature =
       s"$fullname$templateParams (${parameterSignature(params)})$returnType"
 
@@ -64,17 +65,15 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     Seq(astForMethod.merge(typeDeclAst))
   }
 
-  private def astForMethodParameter(params: ParserNodeInfo): Seq[Ast] = {
+  private def astForMethodParameter(params: Value): Seq[Ast] = {
     var index = 1
-    params
-      .json(ParserKeys.List)
-      .arrOpt
-      .getOrElse(ArrayBuffer())
+    params.arrOpt
+      .getOrElse(List())
       .flatMap(x =>
         val typeInfo = createParserNodeInfo(x(ParserKeys.Type))
         val (typeFullName, typeFullNameForcode, isVariadic, evaluationStrategy) = processTypeInfo(typeInfo.json)
         x(ParserKeys.Names).arrOpt
-          .getOrElse(ArrayBuffer())
+          .getOrElse(List())
           .map(y => {
             // We are returning same type from x object for each name in the names array.
             val parameterInfo = createParserNodeInfo(y)
@@ -89,24 +88,23 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
               typeFullName
             )
             index += 1
+            scope.addToScope(paramName, (parameterNode, typeFullName))
             Ast(parameterNode)
           })
       )
       .toSeq
   }
 
-  private def parameterSignature(params: ParserNodeInfo): String = {
+  private def parameterSignature(params: Value): String = {
     //    func foo(argc, something int, argv string) int {
     // We get params -> list -> names [argc, something], type (int)
-    params
-      .json(ParserKeys.List)
-      .arrOpt
+    params.arrOpt
       .getOrElse(ArrayBuffer())
       .map(x =>
         val typeInfo                                           = createParserNodeInfo(x(ParserKeys.Type))
         val (typeFullName, typeFullNameForcode, isVariadic, _) = processTypeInfo(typeInfo.json)
         x(ParserKeys.Names).arrOpt
-          .getOrElse(ArrayBuffer())
+          .getOrElse(List())
           .map(_ => {
             // We are returning same type from x object for each name in the names array.
             typeFullName

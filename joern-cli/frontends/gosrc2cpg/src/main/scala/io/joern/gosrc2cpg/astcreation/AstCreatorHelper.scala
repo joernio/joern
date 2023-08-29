@@ -34,6 +34,13 @@ trait AstCreatorHelper { this: AstCreator =>
         val node  = nodeType(json)
         val pni   = ParserNodeInfo(node, json, c, ln, cn, lnEnd, cnEnd)
         parserNodeCache.addOne(json(ParserKeys.NodeId).num.toLong, pni)
+        node match
+          case CallExpr =>
+            json(ParserKeys.Fun)(ParserKeys.Obj).objOpt.map(obj => {
+              createParserNodeInfo(obj(ParserKeys.Decl))
+            })
+          case _ =>
+        // Do nothing
         pni
       case Success(nodeReferenceId) => parserNodeCache(nodeReferenceId)
 
