@@ -1,6 +1,7 @@
 package io.joern.x2cpg
 
 import better.files.File
+import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.X2Cpg.{applyDefaultOverlays, withErrorsToConsole}
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
 import io.shiftleft.codepropertygraph.Cpg
@@ -10,10 +11,9 @@ import overflowdb.Config
 import scopt.OParser
 
 import java.io.PrintWriter
-import java.nio.file.Files
-import java.nio.file.Paths
-import scala.util.{Failure, Success, Try}
+import java.nio.file.{Files, Paths}
 import scala.util.matching.Regex
+import scala.util.{Failure, Success, Try}
 
 object X2CpgConfig {
   def defaultOutputPath: String = "cpg.bin"
@@ -56,6 +56,13 @@ trait X2CpgConfig[R <: X2CpgConfig[R]] {
     val path = Paths.get(ignore)
     if (path.isAbsolute) { path.toString }
     else { Paths.get(inputPath, ignore).toAbsolutePath.normalize().toString }
+  }
+
+  var schemaValidation: ValidationMode = ValidationMode.Disabled
+
+  def withSchemaValidation(value: ValidationMode): R = {
+    this.schemaValidation = value
+    this.asInstanceOf[R]
   }
 
   def withInheritedFields(config: R): R = {
@@ -194,7 +201,7 @@ object X2Cpg {
     */
   private def commandLineParser[R <: X2CpgConfig[R]](frontendSpecific: OParser[_, R]): OParser[_, R] = {
     val builder = OParser.builder[R]
-    import builder._
+    import builder.*
     OParser.sequence(
       arg[String]("input-dir")
         .text("source directory")
@@ -218,6 +225,9 @@ object X2Cpg {
           c
         }
         .text("a regex specifying files to exclude during CPG generation (paths relative to <input-dir> are matched)"),
+      opt[Unit]("enable-early-schema-checking")
+        .action((_, c) => c.withSchemaValidation(ValidationMode.Enabled))
+        .text("enables early schema validation during AST creation (disabled by default)"),
       help("help").text("display this help message"),
       frontendSpecific
     )

@@ -1,11 +1,11 @@
 package io.joern.jssrc2cpg.astcreation
 
 import io.joern.jssrc2cpg.datastructures.{BlockScope, MethodScope, ScopeType}
-import io.joern.jssrc2cpg.parser.BabelAst._
+import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
-import io.joern.x2cpg.Ast
-import io.joern.x2cpg.datastructures.Stack._
+import io.joern.x2cpg.{Ast, ValidationMode}
+import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders.{newDependencyNode, newLocalNode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewImport}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes}
@@ -13,7 +13,7 @@ import ujson.Value
 
 import scala.util.Try
 
-trait AstForDeclarationsCreator { this: AstCreator =>
+trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   private val DefaultsKey    = "default"
   private val ExportKeyword  = "exports"

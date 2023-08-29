@@ -1,5 +1,6 @@
 package io.joern.pysrc2cpg
 
+import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.X2Cpg.defaultOverlayCreators
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
@@ -24,17 +25,23 @@ class Py2CpgTestContext {
     if (buildResult.nonEmpty) {
       throw new RuntimeException("Not allowed to add sources after buildCpg() was called.")
     }
-    if (codeAndFile.exists(_.absFileName == file)) {
+    if (codeAndFile.exists(_.relFileName == file)) {
       throw new RuntimeException(s"Add more than one source under file name $file.")
     }
-    codeAndFile.append(Py2Cpg.InputPair(code, absTestFilePath + file, file))
+    codeAndFile.append(Py2Cpg.InputPair(code, file))
     this
   }
 
   def buildCpg: Cpg = {
     if (buildResult.isEmpty) {
-      val cpg    = new Cpg()
-      val py2Cpg = new Py2Cpg(codeAndFile.map(inputPair => () => inputPair), cpg, absTestFilePath)
+      val cpg = new Cpg()
+      val py2Cpg =
+        new Py2Cpg(
+          codeAndFile.map(inputPair => () => inputPair),
+          cpg,
+          absTestFilePath,
+          schemaValidationMode = ValidationMode.Enabled
+        )
       py2Cpg.buildCpg()
 
       val context = new LayerCreatorContext(cpg)

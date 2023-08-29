@@ -3,15 +3,15 @@ package io.joern.jimple2cpg.passes
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.utils.NodeBuilders
-import io.joern.x2cpg.{Ast, AstCreatorBase}
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.*
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
-import soot.jimple._
+import soot.jimple.*
 import soot.jimple.internal.JimpleLocal
-import soot.tagkit._
-import soot.{Local => _, _}
+import soot.tagkit.*
+import soot.{Local as _, *}
 
 import scala.collection.immutable.HashSet
 import scala.collection.mutable
@@ -19,9 +19,10 @@ import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
 
-class AstCreator(filename: String, cls: SootClass, global: Global) extends AstCreatorBase(filename) {
+class AstCreator(filename: String, cls: SootClass, global: Global)(implicit withSchemaValidation: ValidationMode)
+    extends AstCreatorBase(filename) {
 
-  import AstCreator._
+  import AstCreator.*
 
   private val logger         = LoggerFactory.getLogger(classOf[AstCreationPass])
   private val unitToAsts     = mutable.HashMap[soot.Unit, Seq[Ast]]()

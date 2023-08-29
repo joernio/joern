@@ -26,7 +26,7 @@ class JsSrc2Cpg extends X2CpgFrontend[Config] {
         val astGenResult = new AstGenRunner(config).execute(tmpDir)
         val hash         = HashUtil.sha256(astGenResult.parsedFiles.map { case (_, file) => File(file).path })
 
-        val astCreationPass = new AstCreationPass(cpg, astGenResult, config, report)
+        val astCreationPass = new AstCreationPass(cpg, astGenResult, config, report)(config.schemaValidation)
         astCreationPass.createAndApply()
 
         new TypeNodePass(astCreationPass.allUsedTypes(), cpg).createAndApply()

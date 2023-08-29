@@ -1,7 +1,6 @@
 package io.joern.jimple2cpg.passes
 
-import better.files.File
-import io.joern.jimple2cpg.Jimple2Cpg
+import io.joern.jimple2cpg.Config
 import io.joern.jimple2cpg.util.ProgramHandlingUtil.ClassFile
 import io.joern.x2cpg.datastructures.Global
 import io.shiftleft.codepropertygraph.Cpg
@@ -15,7 +14,8 @@ import soot.Scene
   * @param cpg
   *   The CPG to add to
   */
-class AstCreationPass(classFiles: List[ClassFile], cpg: Cpg) extends ConcurrentWriterCpgPass[ClassFile](cpg) {
+class AstCreationPass(classFiles: List[ClassFile], cpg: Cpg, config: Config)
+    extends ConcurrentWriterCpgPass[ClassFile](cpg) {
 
   val global: Global = new Global()
   private val logger = LoggerFactory.getLogger(classOf[AstCreationPass])
@@ -26,7 +26,7 @@ class AstCreationPass(classFiles: List[ClassFile], cpg: Cpg) extends ConcurrentW
     try {
       val sootClass = Scene.v().loadClassAndSupport(classFile.fullyQualifiedClassName.get)
       sootClass.setApplicationClass()
-      val localDiff = AstCreator(classFile.file.canonicalPath, sootClass, global).createAst()
+      val localDiff = AstCreator(classFile.file.canonicalPath, sootClass, global)(config.schemaValidation).createAst()
       builder.absorb(localDiff)
     } catch {
       case e: Exception =>

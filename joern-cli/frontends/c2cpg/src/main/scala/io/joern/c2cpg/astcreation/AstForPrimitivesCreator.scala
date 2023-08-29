@@ -1,12 +1,12 @@
 package io.joern.c2cpg.astcreation
 
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
-import io.joern.x2cpg.Ast
-import org.eclipse.cdt.core.dom.ast._
+import io.joern.x2cpg.{Ast, ValidationMode}
+import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTQualifiedName
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
-trait AstForPrimitivesCreator { this: AstCreator =>
+trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def astForComment(comment: IASTComment): Ast =
     Ast(newCommentNode(comment, nodeSignature(comment), fileName(comment)))

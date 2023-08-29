@@ -4,15 +4,16 @@ import better.files.File
 import io.joern.php2cpg.Config
 import io.joern.php2cpg.astcreation.AstCreator
 import io.joern.php2cpg.parser.PhpParser
-import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.datastructures.Global
+import io.joern.x2cpg.{SourceFiles, ValidationMode}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import org.slf4j.LoggerFactory
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
-class AstCreationPass(config: Config, cpg: Cpg, parser: PhpParser) extends ConcurrentWriterCpgPass[String](cpg) {
+class AstCreationPass(config: Config, cpg: Cpg, parser: PhpParser)(implicit withSchemaValidation: ValidationMode)
+    extends ConcurrentWriterCpgPass[String](cpg) {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
@@ -28,7 +29,7 @@ class AstCreationPass(config: Config, cpg: Cpg, parser: PhpParser) extends Concu
     }
     parser.parseFile(filename, config.phpIni) match {
       case Some(parseResult) =>
-        diffGraph.absorb(new AstCreator(relativeFilename, parseResult).createAst())
+        diffGraph.absorb(new AstCreator(relativeFilename, parseResult)(config.schemaValidation).createAst())
 
       case None =>
         logger.warn(s"Could not parse file $filename. Results will be missing!")

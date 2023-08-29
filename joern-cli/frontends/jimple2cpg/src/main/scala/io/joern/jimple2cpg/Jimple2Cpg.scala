@@ -88,8 +88,6 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
   }
 
   /** Apply the soot passes
-    * @param cpg
-    * @param config
     * @param tmpDir
     *   A temporary directory that will be used as the classpath for extracted class files
     */
@@ -102,14 +100,14 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
       case Some(".apk" | ".dex") if input.isRegularFile =>
         sootLoadApk(input, config.android)
         { () =>
-          val astCreator = SootAstCreationPass(cpg)
+          val astCreator = SootAstCreationPass(cpg, config)
           astCreator.createAndApply()
           astCreator.global
         }
       case _ =>
         val classFiles = sootLoad(input, tmpDir, config.recurse)
         { () =>
-          val astCreator = AstCreationPass(classFiles, cpg)
+          val astCreator = AstCreationPass(classFiles, cpg, config)
           astCreator.createAndApply()
           astCreator.global
         }

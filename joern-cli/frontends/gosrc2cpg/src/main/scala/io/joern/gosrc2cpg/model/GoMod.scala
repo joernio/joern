@@ -3,6 +3,7 @@ package io.joern.gosrc2cpg.model
 import io.circe.Decoder.Result
 import io.circe.{Decoder, HCursor}
 import io.joern.gosrc2cpg.Config
+import io.joern.gosrc2cpg.utils.UtilityConstants.fileSeparateorPattern
 
 import java.io.File
 import scala.collection.mutable.ListBuffer
@@ -11,7 +12,6 @@ object GoMod {
 
   import java.util.regex.Pattern
 
-  val fileSeparateorPattern           = Pattern.quote(File.separator)
   var meta: Option[GoMod]             = None
   var config: Option[Config]          = None
   def getModMetaData(): Option[GoMod] = meta
@@ -22,9 +22,9 @@ object GoMod {
       // In this case we will use package name as a namespace
       return pkg
     } else if (pkg == "main") {
-      // 'main' in go is specially treated package. One right the code in this package for entry point.
+      // 'main' in go is specially treated package. One write the code in this package for entry point.
       // One cannot import and use the exported methods and variables from this package.
-      // Having said the one can define a 'main' within any folder structure.
+      // Having said that one can define a 'main' within any folder structure.
       // In order to isolate the main package from the root folder main package. We are using folder structure from
       // root project path appended with main
       //
@@ -41,18 +41,12 @@ object GoMod {
     // go.mod (module jorn.io/trial) and <root project path>/foo.go (package trial) => jorn.io/trial
     // go.mod (module jorn.io/trial) and <root project path>/foo.go (package foo) => jorn.io/trial>foo
     // go.mod (module jorn.io/trial) and <root project path>/first/foo.go (package first) => jorn.io/trial/first
-    // go.mod (module jorn.io/trial) and <root project path>/first/foo.go (package bar) => jorn.io/trial/first>bar
+    // go.mod (module jorn.io/trial) and <root project path>/first/foo.go (package bar) => jorn.io/trial/first
     val remainingpath = compilationUnitFilePath.stripPrefix(config.get.inputPath)
     val pathTokens    = remainingpath.split(fileSeparateorPattern)
     // prefixing module name i.e. jorn.io/trial
-    val tokens    = meta.get.module.name +: pathTokens.dropRight(1).filterNot(x => x == null || x.trim.isEmpty)
-    var nameSpace = tokens.mkString("/")
-    // check if last token of path is matching with package name if it is matching, we have formed the namespace.
-    // If it is not matching we need to append the package name as alias.
-    val moduleTokens = meta.get.module.name.split("/")
-    if ((tokens.length > 1 && tokens.last != pkg) || (tokens.length == 1 && moduleTokens.last != pkg))
-      nameSpace = nameSpace + ">" + pkg
-    nameSpace
+    val tokens = meta.get.module.name +: pathTokens.dropRight(1).filterNot(x => x == null || x.trim.isEmpty)
+    tokens.mkString("/")
   }
 }
 

@@ -6,7 +6,7 @@ import io.joern.rubysrc2cpg.utils.PackageContext
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
 import io.joern.x2cpg.datastructures.{Global, Scope}
-import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, Defines as XDefines}
+import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.antlr.v4.runtime.misc.Interval
@@ -20,7 +20,7 @@ import scala.collection.immutable.Seq
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters.*
-import scala.util.{Failure, Success, Using}
+import scala.util.{Failure, Success}
 
 class AstCreator(
   protected val filename: String,
@@ -28,7 +28,8 @@ class AstCreator(
   parser: ResourceManagedParser,
   packageContext: PackageContext,
   projectRoot: Option[String] = None
-) extends AstCreatorBase(filename)
+)(implicit withSchemaValidation: ValidationMode)
+    extends AstCreatorBase(filename)
     with AstNodeBuilder[ParserRuleContext, AstCreator]
     with AstForPrimitivesCreator
     with AstForStatementsCreator
@@ -704,6 +705,7 @@ class AstCreator(
         .code(blockMethodNode.code)
         .lineNumber(blockMethodNode.lineNumber)
         .columnNumber(blockMethodNode.columnNumber)
+        .dispatchType(DispatchTypes.STATIC_DISPATCH)
 
       val methodRefNode = NewMethodRef()
         .methodFullName(blockMethodNode.fullName)
@@ -932,8 +934,9 @@ class AstCreator(
           )
       }
     case ctx: NextArgsInvocationWithoutParenthesesContext =>
-      // failing test case. Exception:  Only jump labels and integer literals are currently supported for continue statements.
-      // this overlaps with the problem if returning a value from a block
+      /*
+       * While this is a `CONTINUE` for now, if we detect that this is the LHS of an `IF` then this becomes a `RETURN`
+       */
       val node = NewControlStructure()
         .controlStructureType(ControlStructureTypes.CONTINUE)
         .lineNumber(ctx.NEXT().getSymbol.getLine)

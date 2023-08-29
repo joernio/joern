@@ -14,7 +14,8 @@ class ImportTests extends GoCodeToCpgSuite {
     "have import node created" in {
       val imports = cpg.imports.l
       imports.size shouldBe 1
-      imports.importedAs.l shouldBe List("\"math\"")
+      imports.importedAs.l shouldBe List("math")
+      imports.importedEntity.l shouldBe List("math")
       imports.lineNumber.l shouldBe List(3)
     }
   }
@@ -31,7 +32,8 @@ class ImportTests extends GoCodeToCpgSuite {
     "have import node created" in {
       val imports = cpg.imports.l
       imports.size shouldBe 2
-      imports.importedAs.l shouldBe List("\"fmt\"", "\"math\"")
+      imports.importedAs.l shouldBe List("fmt", "math")
+      imports.importedEntity.l shouldBe List("fmt", "math")
     }
   }
 
@@ -44,7 +46,8 @@ class ImportTests extends GoCodeToCpgSuite {
     "have import node created" in {
       val imports = cpg.imports.l
       imports.size shouldBe 1
-      imports.importedAs.l shouldBe List("\"math/rand\"")
+      imports.importedEntity.l shouldBe List("math/rand")
+      imports.importedAs.l shouldBe List("rand")
     }
   }
 
@@ -58,7 +61,7 @@ class ImportTests extends GoCodeToCpgSuite {
       val imports = cpg.imports.l
       imports.size shouldBe 1
       imports.importedAs.l shouldBe List("m")
-      imports.importedEntity.l shouldBe List("\"math\"")
+      imports.importedEntity.l shouldBe List("math")
     }
   }
 
@@ -72,7 +75,21 @@ class ImportTests extends GoCodeToCpgSuite {
       val imports = cpg.imports.l
       imports.size shouldBe 1
       imports.importedAs.l shouldBe List(".")
-      imports.importedEntity.l shouldBe List("\"math\"")
+      imports.importedEntity.l shouldBe List("math")
+    }
+  }
+
+  "external package import sample" should {
+    val cpg = code("""
+        |package main
+        |import "joern.io/sample/fpkg"
+        |func main() {}
+        |""".stripMargin)
+    "have import node created" in {
+      val imports = cpg.imports.l
+      imports.size shouldBe 1
+      imports.importedAs.l shouldBe List("fpkg")
+      imports.importedEntity.l shouldBe List("joern.io/sample/fpkg")
     }
   }
 }

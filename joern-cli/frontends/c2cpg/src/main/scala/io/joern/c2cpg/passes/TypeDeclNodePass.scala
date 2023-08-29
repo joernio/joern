@@ -2,16 +2,16 @@ package io.joern.c2cpg.passes
 
 import io.joern.c2cpg.astcreation.Defines
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.joern.x2cpg.passes.frontend.MetaDataPass
-import io.joern.x2cpg.Ast
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 
-class TypeDeclNodePass(cpg: Cpg) extends CpgPass(cpg) {
+class TypeDeclNodePass(cpg: Cpg)(implicit withSchemaValidation: ValidationMode) extends CpgPass(cpg) {
 
   private val filename: String   = "<includes>"
   private val globalName: String = NamespaceTraversal.globalNamespaceName

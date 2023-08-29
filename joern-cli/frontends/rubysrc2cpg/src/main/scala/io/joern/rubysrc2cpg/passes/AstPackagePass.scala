@@ -3,6 +3,7 @@ package io.joern.rubysrc2cpg.passes
 import better.files.File
 import io.joern.rubysrc2cpg.astcreation.{AstCreator, ResourceManagedParser}
 import io.joern.rubysrc2cpg.utils.{PackageContext, PackageTable}
+import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Global
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
@@ -16,7 +17,8 @@ class AstPackagePass(
   parser: ResourceManagedParser,
   packageTable: PackageTable,
   inputPath: String
-) extends ConcurrentWriterCpgPass[String](cpg) {
+)(implicit withSchemaValidation: ValidationMode)
+    extends ConcurrentWriterCpgPass[String](cpg) {
 
   override def generateParts(): Array[String] =
     getRubyDependenciesFile(inputPath) ++ getRubyDependenciesFile(tempExtDir)

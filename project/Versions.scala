@@ -7,11 +7,11 @@ object Versions {
   val scalatest     = "3.2.16"
   val cats          = "3.5.0"
   val json4s        = "4.0.6"
-  val gradleTooling = "8.2.1"
+  val gradleTooling = "8.3"
   val circe         = "0.14.5"
   val requests      = "0.8.0"
   val upickle       = "3.1.2"
-  val scalaReplPP   = "0.1.36"
+  val scalaReplPP   = "0.1.46"
 
   private def parseVersion(key: String): String = {
     val versionRegexp = s""".*val $key[ ]+=[ ]?"(.*?)"""".r

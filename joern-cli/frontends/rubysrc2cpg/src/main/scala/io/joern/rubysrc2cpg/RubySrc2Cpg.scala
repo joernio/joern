@@ -33,8 +33,9 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
           val tempDir = File.newTemporaryDirectory()
           try {
             downloadDependency(config.inputPath, tempDir.toString())
-            new AstPackagePass(cpg, tempDir.toString(), global, parser, RubySrc2Cpg.packageTableInfo, config.inputPath)
-              .createAndApply()
+            new AstPackagePass(cpg, tempDir.toString(), global, parser, RubySrc2Cpg.packageTableInfo, config.inputPath)(
+              config.schemaValidation
+            ).createAndApply()
           } finally {
             tempDir.delete()
           }

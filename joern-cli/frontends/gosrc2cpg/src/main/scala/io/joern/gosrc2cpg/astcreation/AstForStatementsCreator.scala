@@ -3,7 +3,7 @@ package io.joern.gosrc2cpg.astcreation
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.gosrc2cpg.utils.Operator
-import io.joern.x2cpg.Ast
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import ujson.Value
@@ -11,7 +11,7 @@ import ujson.Value
 import scala.annotation.tailrec
 import scala.util.Try
 
-trait AstForStatementsCreator { this: AstCreator =>
+trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
   def astForBlockStatement(blockStmt: ParserNodeInfo, order: Int = -1): Ast = {
     val newBlockNode = blockNode(blockStmt, Defines.empty, Defines.voidTypeName).order(order).argumentIndex(order)
     scope.pushNewScope(newBlockNode)

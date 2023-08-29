@@ -2,13 +2,13 @@ package io.joern.jssrc2cpg.astcreation
 
 import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.datastructures.{MethodScope, Scope}
-import io.joern.jssrc2cpg.parser.BabelAst._
+import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelJsonParser.ParseResult
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
-import io.joern.x2cpg.datastructures.Stack._
+import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
-import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder => X2CpgAstNodeBuilder}
+import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, AstNodeBuilder as X2CpgAstNodeBuilder}
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 import io.shiftleft.codepropertygraph.generated.nodes.NewFile
@@ -27,7 +27,8 @@ class AstCreator(
   val config: Config,
   val parserResult: ParseResult,
   val usedTypes: ConcurrentHashMap[(String, String), Boolean]
-) extends AstCreatorBase(parserResult.filename)
+)(implicit withSchemaValidation: ValidationMode)
+    extends AstCreatorBase(parserResult.filename)
     with AstForExpressionsCreator
     with AstForPrimitivesCreator
     with AstForTypesCreator

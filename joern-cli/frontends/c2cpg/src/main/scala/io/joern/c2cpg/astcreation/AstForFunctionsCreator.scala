@@ -1,21 +1,21 @@
 package io.joern.c2cpg.astcreation
 
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.joern.x2cpg.Ast
-import org.eclipse.cdt.core.dom.ast._
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.joern.x2cpg.{Ast, ValidationMode}
+import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression
 import org.eclipse.cdt.core.dom.ast.gnu.c.ICASTKnRFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.c.{CASTFunctionDeclarator, CASTParameterDeclaration}
 import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTFunctionDeclarator, CPPASTParameterDeclaration}
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
-import io.joern.x2cpg.datastructures.Stack._
+import io.joern.x2cpg.datastructures.Stack.*
 import org.apache.commons.lang.StringUtils
 
 import scala.annotation.tailrec
 import scala.collection.mutable
 
-trait AstForFunctionsCreator { this: AstCreator =>
+trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   private val seenFunctionSignatures = mutable.HashSet.empty[String]
 
@@ -51,7 +51,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
     Ast(functionBinding).withBindsEdge(parentNode, functionBinding).withRefEdge(functionBinding, method)
   }
 
-  private def parameters(funct: IASTNode): Seq[IASTNode] = funct match {
+  private def parameters(functionNode: IASTNode): Seq[IASTNode] = functionNode match {
     case arr: IASTArrayDeclarator       => parameters(arr.getNestedDeclarator)
     case decl: CPPASTFunctionDeclarator => decl.getParameters.toIndexedSeq ++ parameters(decl.getNestedDeclarator)
     case decl: CASTFunctionDeclarator   => decl.getParameters.toIndexedSeq ++ parameters(decl.getNestedDeclarator)
@@ -64,7 +64,7 @@ trait AstForFunctionsCreator { this: AstCreator =>
   }
 
   @tailrec
-  private def isVariadic(funct: IASTNode): Boolean = funct match {
+  private def isVariadic(functionNode: IASTNode): Boolean = functionNode match {
     case decl: CPPASTFunctionDeclarator            => decl.takesVarArgs()
     case decl: CASTFunctionDeclarator              => decl.takesVarArgs()
     case defn: IASTFunctionDefinition              => isVariadic(defn.getDeclarator)
@@ -114,10 +114,14 @@ trait AstForFunctionsCreator { this: AstCreator =>
 
     scope.popScope()
 
-    val stubAst =
-      methodStubAst(methodNode_, parameterNodes, newMethodReturnNode(lambdaExpression, registerType(returnType)))
+    val astForLambda = methodAst(
+      methodNode_,
+      parameterNodes.map(Ast(_)),
+      astForMethodBody(Option(lambdaExpression.getBody)),
+      newMethodReturnNode(lambdaExpression, registerType(returnType))
+    )
     val typeDeclAst = createFunctionTypeAndTypeDecl(lambdaExpression, methodNode_, name, fullname, signature)
-    Ast.storeInDiffGraph(stubAst.merge(typeDeclAst), diffGraph)
+    Ast.storeInDiffGraph(astForLambda.merge(typeDeclAst), diffGraph)
 
     Ast(methodRefNode(lambdaExpression, code, fullname, methodNode_.astParentFullName))
   }

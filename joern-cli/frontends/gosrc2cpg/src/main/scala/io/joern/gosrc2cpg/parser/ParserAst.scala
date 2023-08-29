@@ -46,12 +46,16 @@ object ParserAst {
   object SelectorExpr   extends BaseExpr
   object ForStmt        extends BaseStmt
   object CallExpr       extends BaseExpr
-
-  object RangeStmt extends BaseStmt
-  object Unknown   extends ParserNode
-
-  object BranchStmt  extends BaseStmt
-  object LabeledStmt extends BaseStmt
+  object RangeStmt      extends BaseStmt
+  object Unknown        extends ParserNode
+  object BranchStmt     extends BaseStmt
+  object LabeledStmt    extends BaseStmt
+  object FieldList      extends ParserNode
+  object ArrayType      extends ParserNode
+  object CompositeLit   extends BasePrimitive
+  object Field          extends ParserNode
+  object TypeSpec       extends ParserNode
+  object StructType     extends BaseExpr
 }
 
 object ParserKeys {
@@ -95,4 +99,7 @@ object ParserKeys {
   val Params          = "Params"
   val Elt             = "Elt"
   val Sel             = "Sel"
+  val Elts            = "Elts"
+  val Fun             = "Fun"
+  val Fields          = "Fields"
 }
