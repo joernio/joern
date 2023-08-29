@@ -150,7 +150,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.name shouldBe "foo"
       x.fullName shouldBe "main.foo"
       x.code should startWith("func foo() (fpkg.Sample,error){")
-      // TODO: Touple handling needs to be done properly to return both the types.
+      // TODO: Tuple handling needs to be done properly to return both the types.
       x.signature shouldBe "main.foo()(joern.io/sample/fpkg.Sample,error)"
       x.isExternal shouldBe false
       x.astParentType shouldBe NodeTypes.TYPE_DECL
@@ -164,7 +164,7 @@ class MethodTests extends GoCodeToCpgSuite {
     "Be correct with return node" in {
       cpg.method.name("foo").methodReturn.size shouldBe 1
       val List(x) = cpg.method.name("foo").methodReturn.l
-      // TODO: Touple handling needs to be done properly to return both the types.
+      // TODO: Tuple handling needs to be done properly to return both the types.
       x.typeFullName shouldBe "joern.io/sample/fpkg.Sample"
     }
   }

@@ -122,11 +122,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       case Success(returnType) =>
         returnType(ParserKeys.List).arrOpt
           .getOrElse(List())
-          .map(x => {
+          .map(x =>
             val typeInfo                                           = createParserNodeInfo(x(ParserKeys.Type))
             val (typeFullName, typeFullNameForcode, isVariadic, _) = processTypeInfo(typeInfo)
             (typeFullName, methodReturnNode(typeInfo, typeFullName))
-          })
+          )
           .toSeq
       case Failure(exception) => Seq.empty
   }
