@@ -2,8 +2,17 @@ package io.joern.rubysrc2cpg.parser
 
 import better.files.EOF
 
+import scala.collection.mutable
+
 trait HereDocHandling { this: RubyLexerBase =>
 
+  private def hereDocStack = mutable.Stack[String]()
+
+  /** @see
+    *   <a
+    *   href="https://stackoverflow.com/questions/66406688/antlr-lexing-bash-files-especially-heredoc/66407350#66407350">Stack
+    *   Overflow</a>
+    */
   def heredocEndAhead(partialHeredoc: String): Boolean =
     if (this.getCharPositionInLine != 0) {
       // If the lexer is not at the start of a line, no end-delimiter can be possible
@@ -23,5 +32,14 @@ trait HereDocHandling { this: RubyLexerBase =>
         charAfterDelimiter == EOF || Character.isWhitespace(charAfterDelimiter)
       }
     }
+
+  def heredocEndAhead(): Boolean = hereDocStack.headOption match
+    case Some(_) => heredocEndAhead(hereDocStack.pop())
+    case None    => false
+
+  def pushHereDocStack(hereDocIdentifier: String): Unit = {
+    val delimiter = hereDocIdentifier.replaceAll("^<<-\\s*", "")
+    hereDocStack.push(delimiter)
+  }
 
 }

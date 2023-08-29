@@ -561,6 +561,27 @@ class StringTests extends RubyParserAbstractTest {
 
     }
 
-  }
+    "used to generate a single string parameter for a function call" should {
+      val code =
+        """foo(<<-SQL)
+          |SELECT * FROM food
+          |WHERE healthy = true
+          |SQL
+          |""".stripMargin
 
+      // TODO: The rest of the HERE_DOC should probably be parsed somehow
+      "be parsed as a primary expression" in {
+        printAst(_.primary(), code) shouldEqual
+          """InvocationWithParenthesesPrimary
+            | MethodIdentifier
+            |  foo
+            | ArgsOnlyArgumentsWithParentheses
+            |  (
+            |  Arguments
+            |   HereDocArgument
+            |    <<-SQL
+            |  )""".stripMargin
+      }
+    }
+  }
 }
