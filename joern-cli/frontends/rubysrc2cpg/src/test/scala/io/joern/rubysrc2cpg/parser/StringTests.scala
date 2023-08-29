@@ -538,4 +538,25 @@ class StringTests extends RubyParserAbstractTest {
       }
     }
   }
+
+  "A HERE_DOCs expression" when {
+
+    "used to generate a single string assigned to an identifier" should {
+      val code =
+        """<<-SQL
+          |SELECT * FROM food
+          |WHERE healthy = true
+          |SQL
+          |""".stripMargin
+
+      "be parsed as a primary expression" in {
+        printAst(_.primary(), code) shouldEqual
+          """QuotedStringExpressionPrimary
+            | ExpandedExternalCommandLiteral
+            |  %x/
+            |  /""".stripMargin
+      }
+    }
+  }
+
 }
