@@ -4,14 +4,14 @@ import better.files.EOF
 
 trait HereDocHandling { this: RubyLexerBase =>
 
-  private def heredocEndAhead(partialHeredoc: String): Boolean =
-    if (this.getCharPositionInLine ne 0) {
+  def heredocEndAhead(partialHeredoc: String): Boolean =
+    if (this.getCharPositionInLine != 0) {
       // If the lexer is not at the start of a line, no end-delimiter can be possible
       false
     } else {
       // Get the delimiter
       val firstLine = partialHeredoc.split("\r?\n|\r")(0)
-      val delimiter = firstLine.replaceAll("^<<-?\\s*", "")
+      val delimiter = firstLine.replaceAll("^<<-\\s*", "")
 
       if (delimiter.zipWithIndex.exists { case (c, idx) => this._input.LA(idx + 1) != c }) {
         false
