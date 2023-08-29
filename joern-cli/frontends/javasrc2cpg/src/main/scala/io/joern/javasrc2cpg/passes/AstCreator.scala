@@ -2675,7 +2675,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .zipWithIndex
       .map { case ((param, maybeType), idx) =>
         val name         = param.getNameAsString
-        val typeFullName = maybeType.getOrElse(s"${Defines.UnresolvedNamespace}")
+        val typeFullName = maybeType.getOrElse(TypeConstants.Any)
         val code         = s"$typeFullName $name"
         val evalStrat =
           if (param.getType.isPrimitiveType) EvaluationStrategies.BY_VALUE else EvaluationStrategies.BY_SHARING
