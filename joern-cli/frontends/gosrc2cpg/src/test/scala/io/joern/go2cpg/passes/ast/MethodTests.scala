@@ -74,6 +74,37 @@ class MethodTests extends GoCodeToCpgSuite {
     }
   }
 
+  "Empty parameters with int array return" should {
+    val cpg = code("""
+        |package main
+        |func foo() [5]int {
+        |	a := [5]int{1, 2}
+        |	return a
+        |}
+        |""".stripMargin)
+
+    "Be correct with method node properties" in {
+      val List(x) = cpg.method.name("foo").l
+      x.name shouldBe "foo"
+      x.fullName shouldBe "main.foo"
+      x.code should startWith("func foo() [5]int {")
+      x.signature shouldBe "main.foo()[]int"
+      x.isExternal shouldBe false
+      x.astParentType shouldBe NodeTypes.TYPE_DECL
+      x.astParentFullName shouldBe "Test0.go:main.<global>"
+      x.order shouldBe 1
+      x.filename shouldBe "Test0.go"
+      x.lineNumber shouldBe Option(3)
+      x.lineNumberEnd shouldBe Option(6)
+    }
+
+    "Be correct with return node" in {
+      cpg.method.name("foo").methodReturn.size shouldBe 1
+      val List(x) = cpg.method.name("foo").methodReturn.l
+      x.typeFullName shouldBe "[]int"
+    }
+  }
+
   "Empty parameters with struct type return" should {
     val cpg = code("""
         |package main
