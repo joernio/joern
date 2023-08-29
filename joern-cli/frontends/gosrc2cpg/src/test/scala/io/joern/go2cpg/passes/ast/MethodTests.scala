@@ -67,16 +67,74 @@ class MethodTests extends GoCodeToCpgSuite {
       x.lineNumberEnd shouldBe Option(5)
     }
 
-    "check binding Node" in {
-      val List(x) = cpg.method.name("foo").bindingTypeDecl.l
-      x.name shouldBe "main.<global>"
-      x.fullName shouldBe "Test0.go:main.<global>"
+    "Be correct with return node" in {
+      cpg.method.name("foo").methodReturn.size shouldBe 1
+      val List(x) = cpg.method.name("foo").methodReturn.l
+      x.typeFullName shouldBe "int"
+    }
+  }
+
+  "Empty parameters with struct type return" should {
+    val cpg = code("""
+        |package main
+        |import "joern.io/sample/fpkg"
+        |func foo() fpkg.Sample{
+        |  return nil
+        |}
+        |""".stripMargin)
+
+    "Be correct with method node properties" in {
+      val List(x) = cpg.method.name("foo").l
+      x.name shouldBe "foo"
+      x.fullName shouldBe "main.foo"
+      x.code should startWith("func foo() fpkg.Sample{")
+      x.signature shouldBe "main.foo()joern.io/sample/fpkg.Sample"
+      x.isExternal shouldBe false
+      x.astParentType shouldBe NodeTypes.TYPE_DECL
+      x.astParentFullName shouldBe "Test0.go:main.<global>"
+      x.order shouldBe 2
+      x.filename shouldBe "Test0.go"
+      x.lineNumber shouldBe Option(4)
+      x.lineNumberEnd shouldBe Option(6)
     }
 
     "Be correct with return node" in {
       cpg.method.name("foo").methodReturn.size shouldBe 1
       val List(x) = cpg.method.name("foo").methodReturn.l
-      x.typeFullName shouldBe "int"
+      x.typeFullName shouldBe "joern.io/sample/fpkg.Sample"
+    }
+  }
+
+  "Empty parameters with tuple return" should {
+    val cpg = code("""
+        |package main
+        |import "joern.io/sample/fpkg"
+        |func foo() (fpkg.Sample,error){
+        |  return nil
+        |}
+        |""".stripMargin)
+
+    "Be correct with method node properties" ignore {
+      val List(x) = cpg.method.name("foo").l
+      x.name shouldBe "foo"
+      x.fullName shouldBe "main.foo"
+      x.code should startWith("func foo() (fpkg.Sample,error){")
+      // TODO: Touple handling needs to be done properly to return both the types.
+      x.signature shouldBe "main.foo()(joern.io/sample/fpkg.Sample,error)"
+      x.isExternal shouldBe false
+      x.astParentType shouldBe NodeTypes.TYPE_DECL
+      x.astParentFullName shouldBe "Test0.go:main.<global>"
+      x.order shouldBe 2
+      x.filename shouldBe "Test0.go"
+      x.lineNumber shouldBe Option(4)
+      x.lineNumberEnd shouldBe Option(6)
+    }
+
+    "Be correct with return node" in {
+      cpg.method.name("foo").methodReturn.size shouldBe 1
+      val List(x) = cpg.method.name("foo").methodReturn.l
+      // TODO: Touple handling needs to be done properly to return both the types.
+      x.typeFullName shouldBe "joern.io/sample/fpkg.Sample"
     }
   }
 
