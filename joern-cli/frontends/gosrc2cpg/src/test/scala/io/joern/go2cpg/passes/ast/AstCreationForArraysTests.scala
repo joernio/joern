@@ -215,15 +215,15 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
     val cpg = code("""
         |package main
         |
-        |type node struct {
+        |type Node struct {
         |name string
         |}
         |
         |func main() {
-        | a = node{"value1"}
-        | b = node{"value2"}
+        | var a Node = Node{"value1"}
+        | var b Node = Node{"value2"}
         |
-        | c := []node{a, b}
+        | c := []Node{a, b}
         |}
         |""".stripMargin)
 
@@ -233,11 +233,11 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
 
     val List(arrayInitializerCallNode) = assignmentCallNode.astChildren.isCall.l
     assignmentCallNode.name shouldBe Operators.assignment
-    assignmentCallNode.code shouldBe "c := []node{a, b}"
+    assignmentCallNode.code shouldBe "c := []Node{a, b}"
 
     arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
-    arrayInitializerCallNode.code shouldBe "[]node{a, b}"
-    arrayInitializerCallNode.typeFullName shouldBe "[]main.node"
+    arrayInitializerCallNode.code shouldBe "[]Node{a, b}"
+    arrayInitializerCallNode.typeFullName shouldBe "[]main.Node"
 
     assignmentCallNode.astChildren.isIdentifier.l.size shouldBe 3
     val List(identifier1, identifier2, identifier3) = assignmentCallNode.astChildren.isIdentifier.l
@@ -251,7 +251,7 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
       """
         |package main
         |
-        |type node struct {
+        |type Node struct {
         |name string
         |}
         |
@@ -263,10 +263,10 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
           |package main
           |
           |func main() {
-          | a = node{"value1"}
-          | b = node{"value2"}
+          | var a Node = Node{"value1"}
+          | var b Node = Node{"value2"}
           |
-          | c := []node{a, b}
+          | c := []Node{a, b}
           |}
           |""".stripMargin,
         "second.go"
@@ -278,11 +278,11 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
 
     val List(arrayInitializerCallNode) = assignmentCallNode.astChildren.isCall.l
     assignmentCallNode.name shouldBe Operators.assignment
-    assignmentCallNode.code shouldBe "c := []node{a, b}"
+    assignmentCallNode.code shouldBe "c := []Node{a, b}"
 
     arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
-    arrayInitializerCallNode.code shouldBe "[]node{a, b}"
-    arrayInitializerCallNode.typeFullName shouldBe "[]main.node"
+    arrayInitializerCallNode.code shouldBe "[]Node{a, b}"
+    arrayInitializerCallNode.typeFullName shouldBe "[]main.Node"
 
     assignmentCallNode.astChildren.isIdentifier.l.size shouldBe 3
     val List(identifier1, identifier2, identifier3) = assignmentCallNode.astChildren.isIdentifier.l
@@ -297,7 +297,7 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
       """
         |package mypackage
         |
-        |type node struct {
+        |type Node struct {
         |name string
         |}
         |
@@ -313,10 +313,10 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
           |)
           |
           |func main() {
-          | a = node{"value1"}
-          | b = node{"value2"}
+          | var a mypackage.Node = mypackage.Node{"value1"}
+          | var b mypackage.Node = mypackage.Node{"value2"}
           |
-          | c := []mypackage.node{a, b}
+          | c := []mypackage.Node{a, b}
           |}
           |""".stripMargin,
         "second.go"
@@ -328,11 +328,11 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
 
     val List(arrayInitializerCallNode) = assignmentCallNode.astChildren.isCall.l
     assignmentCallNode.name shouldBe Operators.assignment
-    assignmentCallNode.code shouldBe "c := []mypackage.node{a, b}"
+    assignmentCallNode.code shouldBe "c := []mypackage.Node{a, b}"
 
     arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
-    arrayInitializerCallNode.code shouldBe "[]mypackage.node{a, b}"
-    arrayInitializerCallNode.typeFullName shouldBe "[]mypackage.node"
+    arrayInitializerCallNode.code shouldBe "[]mypackage.Node{a, b}"
+    arrayInitializerCallNode.typeFullName shouldBe "[]mypackage.Node"
 
     assignmentCallNode.astChildren.isIdentifier.l.size shouldBe 3
     val List(identifier1, identifier2, identifier3) = assignmentCallNode.astChildren.isIdentifier.l
@@ -345,8 +345,8 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
     val cpg = code("""
         |package main
         |func main() {
-        | a := 1
-        | b := 2
+        | var a int = 1
+        | var b int = 2
         | c := [5]*int{&a,&b}
         |}
         |""".stripMargin)
@@ -375,15 +375,15 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
     val cpg = code("""
         |package main
         |
-        |type node struct {
+        |type Node struct {
         | name string
         |}
         |
         |func main() {
-        | a := node{"value1"}
-        | b := node{"value2"}
+        | var a Node = Node{"value1"}
+        | var b Node = Node{"value2"}
         |
-        | c := []*node{&a,&b}
+        | c := []*Node{&a,&b}
         |}
         |""".stripMargin)
 
@@ -391,11 +391,11 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
 
     val List(arrayInitializerCallNode) = assignmentCallNode.astChildren.isCall.name(Operators.arrayInitializer).l
     assignmentCallNode.name shouldBe Operators.assignment
-    assignmentCallNode.code shouldBe "c := []*node{&a,&b}"
+    assignmentCallNode.code shouldBe "c := []*Node{&a,&b}"
 
     arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
-    arrayInitializerCallNode.code shouldBe "[]*node{&a,&b}"
-    arrayInitializerCallNode.typeFullName shouldBe "[]*main.node"
+    arrayInitializerCallNode.code shouldBe "[]*Node{&a,&b}"
+    arrayInitializerCallNode.typeFullName shouldBe "[]*main.Node"
 
     assignmentCallNode.astChildren.isCall.name(Operators.addressOf).l.size shouldBe 2
     val List(call1, call2) = assignmentCallNode.astChildren.isCall.name(Operators.addressOf).l
