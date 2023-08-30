@@ -30,7 +30,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   protected def astsForStatement(statementJson: Value): Seq[Ast] = {
     astsForStatement(createParserNodeInfo(statementJson))
   }
-  @tailrec
   protected final def astsForStatement(statement: ParserNodeInfo, argIndex: Int = -1): Seq[Ast] = {
     statement.node match {
       case AssignStmt     => astForAssignStatement(statement)
@@ -38,13 +37,12 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case BlockStmt      => Seq(astForBlockStatement(statement, argIndex))
       case CaseClause     => astForCaseClause(statement)
       case DeclStmt       => astForDeclStatement(statement)
-      case ExprStmt       => astsForStatement(createParserNodeInfo(statement.json(ParserKeys.X)))
+      case ExprStmt       => astsForExpression(createParserNodeInfo(statement.json(ParserKeys.X)))
       case ForStmt        => Seq(astForForStatement(statement))
       case IfStmt         => Seq(astForIfStatement(statement))
       case IncDecStmt     => Seq(astForIncDecStatement(statement))
       case RangeStmt      => Seq(astForRangeStatement(statement))
       case SwitchStmt     => Seq(astForSwitchStatement(statement))
-      case TypeAssertExpr => astForNode(statement.json(ParserKeys.X))
       case TypeSwitchStmt => Seq(astForTypeSwitchStatement(statement))
       case Unknown        => Seq(Ast())
       case _: BaseStmt    => Seq(Ast())
