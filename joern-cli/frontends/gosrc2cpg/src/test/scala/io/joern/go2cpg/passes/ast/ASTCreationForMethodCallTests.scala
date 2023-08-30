@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language.*
 
 class ASTCreationForMethodCallTests extends GoCodeToCpgSuite {
 
-  "Simple method call use case" ignore {
+  "Simple method call use case" should {
     val cpg = code("""
         |package main
         |func foo() {
@@ -21,8 +21,9 @@ class ASTCreationForMethodCallTests extends GoCodeToCpgSuite {
       val List(x) = cpg.call("bar").l
       x.code shouldBe "bar()"
       x.methodFullName shouldBe "main.bar"
-      x.order shouldBe 2
-      x.lineNumber shouldBe Option(3)
+      x.signature shouldBe "main.bar()"
+      x.order shouldBe 1
+      x.lineNumber shouldBe Option(4)
     }
   }
 }
