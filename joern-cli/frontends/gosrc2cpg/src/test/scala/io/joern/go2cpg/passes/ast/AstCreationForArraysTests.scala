@@ -341,36 +341,37 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
     identifier3.code shouldBe "b"
   }
 
-  "be correct when when a int array id initialized having pointer" ignore {
+  "be correct when when a int array id initialized having pointer" in {
     val cpg = code("""
         |package main
         |func main() {
-        | a := [5]*int{1,2}
+        | a := 1
+        | b := 2
+        | c := [5]*int{&a,&b}
+        |}
         |""".stripMargin)
 
-    val List(assignmentCallNode) = cpg.call(Operators.assignment).lineNumber(4).l
+    val List(assignmentCallNode) = cpg.call(Operators.assignment).lineNumber(6).l
 
-    val List(arrayInitializerCallNode) = assignmentCallNode.astChildren.isCall.l
+    val List(arrayInitializerCallNode) = assignmentCallNode.astChildren.isCall.name(Operators.arrayInitializer).l
     assignmentCallNode.name shouldBe Operators.assignment
-    assignmentCallNode.code shouldBe "a := [5]int{1,2}"
+    assignmentCallNode.code shouldBe "c := [5]*int{&a,&b}"
 
     arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
-    arrayInitializerCallNode.code shouldBe "[5]*int{1,2}"
-    arrayInitializerCallNode.typeFullName shouldBe "[]int"
+    arrayInitializerCallNode.code shouldBe "[5]*int{&a,&b}"
+    arrayInitializerCallNode.typeFullName shouldBe "[]*int"
 
-    assignmentCallNode.astChildren.isLiteral.l.size shouldBe 2
-    val List(literal1, literal2) = assignmentCallNode.astChildren.isLiteral.l
-    literal1.code shouldBe "1"
-    literal2.code shouldBe "2"
-    literal1.typeFullName shouldBe "int"
-    literal2.typeFullName shouldBe "int"
+    assignmentCallNode.astChildren.isCall.name(Operators.addressOf).l.size shouldBe 2
+    val List(call1, call2) = assignmentCallNode.astChildren.isCall.name(Operators.addressOf).l
+    call1.code shouldBe "&a"
+    call2.code shouldBe "&b"
 
     assignmentCallNode.astChildren.isIdentifier.l.size shouldBe 1
     val List(identifierNode) = assignmentCallNode.astChildren.isIdentifier.l.l
-    identifierNode.code shouldBe "a"
+    identifierNode.code shouldBe "c"
   }
 
-  "be correct when array of struct having pointer within package same file" ignore {
+  "be correct when array of struct having pointer within package same file" in {
     val cpg = code("""
         |package main
         |
@@ -379,26 +380,30 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
         |}
         |
         |func main() {
-        | a = node{"value1"}
-        | b = node{"value2"}
+        | a := node{"value1"}
+        | b := node{"value2"}
         |
-        | c := []*node{a,b}
+        | c := []*node{&a,&b}
+        |}
         |""".stripMargin)
 
     val List(assignmentCallNode) = cpg.call(Operators.assignment).lineNumber(12).l
 
-    val List(arrayInitializerCallNode) = assignmentCallNode.astChildren.isCall.l
+    val List(arrayInitializerCallNode) = assignmentCallNode.astChildren.isCall.name(Operators.arrayInitializer).l
     assignmentCallNode.name shouldBe Operators.assignment
-    assignmentCallNode.code shouldBe "c := []*node{a,b}"
+    assignmentCallNode.code shouldBe "c := []*node{&a,&b}"
 
     arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
-    arrayInitializerCallNode.code shouldBe "[]*node{a,b}"
-    arrayInitializerCallNode.typeFullName shouldBe "[]main.node"
+    arrayInitializerCallNode.code shouldBe "[]*node{&a,&b}"
+    arrayInitializerCallNode.typeFullName shouldBe "[]*main.node"
 
-    assignmentCallNode.astChildren.isIdentifier.l.size shouldBe 3
-    val List(identifier1, identifier2, identifier3) = assignmentCallNode.astChildren.isIdentifier.l
-    identifier1.code shouldBe "c"
-    identifier2.code shouldBe "a"
-    identifier3.code shouldBe "b"
+    assignmentCallNode.astChildren.isCall.name(Operators.addressOf).l.size shouldBe 2
+    val List(call1, call2) = assignmentCallNode.astChildren.isCall.name(Operators.addressOf).l
+    call1.code shouldBe "&a"
+    call2.code shouldBe "&b"
+
+    assignmentCallNode.astChildren.isIdentifier.l.size shouldBe 1
+    val List(identifierNode) = assignmentCallNode.astChildren.isIdentifier.l.l
+    identifierNode.code shouldBe "c"
   }
 }
