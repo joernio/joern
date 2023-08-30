@@ -176,22 +176,21 @@ trait AstCreatorHelper { this: AstCreator =>
     }
   }
 
-  protected def processTypeInfo(jsonNode: Value): (String, String, Boolean, String) = {
-    val nodeInfo = createParserNodeInfo(jsonNode)
+  protected def processTypeInfo(nodeInfo: ParserNodeInfo): (String, String, Boolean, String) = {
     nodeInfo.node match {
       case ArrayType =>
         val (fullName, typeNameForcode, evaluationStrategy) = internalStarExpHandler(
-          createParserNodeInfo(jsonNode.obj(ParserKeys.Elt))
+          createParserNodeInfo(nodeInfo.json(ParserKeys.Elt))
         )
         (s"[]$fullName", s"[]$typeNameForcode", false, evaluationStrategy)
       case CompositeLit =>
         val (fullName, typeNameForcode, evaluationStrategy) = internalStarExpHandler(
-          createParserNodeInfo(jsonNode.obj(ParserKeys.Type)(ParserKeys.Elt))
+          createParserNodeInfo(nodeInfo.json(ParserKeys.Type)(ParserKeys.Elt))
         )
         (s"[]$fullName", s"[]$typeNameForcode", false, evaluationStrategy)
       case Ellipsis =>
         val (fullName, typeNameForcode, evaluationStrategy) = internalStarExpHandler(
-          createParserNodeInfo(jsonNode.obj(ParserKeys.Elt))
+          createParserNodeInfo(nodeInfo.json(ParserKeys.Elt))
         )
         (s"[]$fullName", s"...$typeNameForcode", true, evaluationStrategy)
       case _ =>

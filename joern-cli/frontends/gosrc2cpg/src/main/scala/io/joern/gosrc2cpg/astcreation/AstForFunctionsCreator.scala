@@ -3,7 +3,6 @@ package io.joern.gosrc2cpg.astcreation
 import io.joern.gosrc2cpg.parser.ParserAst.{BlockStmt, Ellipsis, Ident, SelectorExpr}
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.joern.x2cpg.utils.StringUtils
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.PropertyNames
@@ -12,6 +11,7 @@ import ujson.Value
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer
+import scala.util.{Failure, Success, Try}
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
   private def createFunctionTypeAndTypeDecl(
@@ -44,21 +44,24 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val name     = funcDecl.json(ParserKeys.Name).obj(ParserKeys.Name).str
     val fullname = s"${fullyQualifiedPackage}.${name}"
     // TODO: handle multiple return type or tuple (int, int)
-    val returnType     = getReturnType(funcDecl.json(ParserKeys.Type)).headOption.getOrElse("")
+    val (returnTypeStr, methodReturn) =
+      getReturnType(funcDecl.json(ParserKeys.Type)).headOption
+        .getOrElse(("", methodReturnNode(funcDecl, Defines.voidTypeName)))
     val templateParams = ""
     val params         = funcDecl.json(ParserKeys.Type)(ParserKeys.Params)(ParserKeys.List)
     val signature =
-      s"$fullname$templateParams (${parameterSignature(params)})$returnType"
+      s"$fullname$templateParams(${parameterSignature(params)})$returnTypeStr"
 
     val methodNode_ = methodNode(funcDecl, name, funcDecl.code, fullname, Some(signature), filename)
     methodAstParentStack.push(methodNode_)
     scope.pushNewScope(methodNode_)
-    val astForMethod = methodAst(
-      methodNode_,
-      astForMethodParameter(params),
-      astForMethodBody(funcDecl.json(ParserKeys.Body)),
-      newMethodReturnNode(returnType, None, line(funcDecl), column(funcDecl))
-    )
+    val astForMethod =
+      methodAst(
+        methodNode_,
+        astForMethodParameter(params),
+        astForMethodBody(funcDecl.json(ParserKeys.Body)),
+        methodReturn
+      )
     scope.popScope()
     methodAstParentStack.pop()
     val typeDeclAst = createFunctionTypeAndTypeDecl(funcDecl, methodNode_, name, fullname, signature)
@@ -71,7 +74,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       .getOrElse(List())
       .flatMap(x =>
         val typeInfo = createParserNodeInfo(x(ParserKeys.Type))
-        val (typeFullName, typeFullNameForcode, isVariadic, evaluationStrategy) = processTypeInfo(typeInfo.json)
+        val (typeFullName, typeFullNameForcode, isVariadic, evaluationStrategy) = processTypeInfo(typeInfo)
         x(ParserKeys.Names).arrOpt
           .getOrElse(List())
           .map(y => {
@@ -102,7 +105,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       .getOrElse(ArrayBuffer())
       .map(x =>
         val typeInfo                                           = createParserNodeInfo(x(ParserKeys.Type))
-        val (typeFullName, typeFullNameForcode, isVariadic, _) = processTypeInfo(typeInfo.json)
+        val (typeFullName, typeFullNameForcode, isVariadic, _) = processTypeInfo(typeInfo)
         x(ParserKeys.Names).arrOpt
           .getOrElse(List())
           .map(_ => {
@@ -114,10 +117,18 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       .mkString(", ")
   }
 
-  private def getReturnType(methodTypes: Value): Seq[String] = {
-    if (methodTypes.obj.contains(ParserKeys.Results))
-      methodTypes(ParserKeys.Results)(ParserKeys.List).arr.map(x => x(ParserKeys.Type)(ParserKeys.Name))
-    Seq()
+  private def getReturnType(methodTypes: Value): Seq[(String, NewMethodReturn)] = {
+    Try(methodTypes(ParserKeys.Results)) match
+      case Success(returnType) =>
+        returnType(ParserKeys.List).arrOpt
+          .getOrElse(List())
+          .map(x =>
+            val typeInfo                                           = createParserNodeInfo(x(ParserKeys.Type))
+            val (typeFullName, typeFullNameForcode, isVariadic, _) = processTypeInfo(typeInfo)
+            (typeFullName, methodReturnNode(typeInfo, typeFullName))
+          )
+          .toSeq
+      case Failure(exception) => Seq.empty
   }
 
   def astForMethodBody(body: Value): Ast = {
