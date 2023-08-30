@@ -12,18 +12,15 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           """MethodDefinitionPrimary
             | MethodDefinition
             |  def
-            |  WsOrNl
             |  SimpleMethodNamePart
             |   DefinedMethodName
             |    MethodName
             |     MethodIdentifier
             |      foo
             |  MethodParameterPart
-            |  Separator
-            |   ;
-            |  WsOrNl
             |  BodyStatement
             |   CompoundStatement
+            |    ;
             |  end""".stripMargin
       }
 
@@ -33,7 +30,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           """MethodDefinitionPrimary
             | MethodDefinition
             |  def
-            |  WsOrNl
             |  SimpleMethodNamePart
             |   DefinedMethodName
             |    MethodName
@@ -46,10 +42,9 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |     MandatoryParameter
             |      x
             |   )
-            |  Separator
-            |   ;
             |  BodyStatement
             |   CompoundStatement
+            |    ;
             |  end""".stripMargin
       }
 
@@ -59,7 +54,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           """MethodDefinitionPrimary
             | MethodDefinition
             |  def
-            |  WsOrNl
             |  SimpleMethodNamePart
             |   DefinedMethodName
             |    MethodName
@@ -79,10 +73,9 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |          UnsignedNumericLiteral
             |           1
             |   )
-            |  Separator
-            |   ;
             |  BodyStatement
             |   CompoundStatement
+            |    ;
             |  end""".stripMargin
       }
 
@@ -92,7 +85,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           """MethodDefinitionPrimary
             | MethodDefinition
             |  def
-            |  WsOrNl
             |  SimpleMethodNamePart
             |   DefinedMethodName
             |    MethodName
@@ -105,17 +97,14 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |     MandatoryParameter
             |      x
             |    ,
-            |    WsOrNl
             |    Parameter
             |     ProcParameter
             |      &
             |      y
             |   )
-            |  Separator
-            |   ;
-            |  WsOrNl
             |  BodyStatement
             |   CompoundStatement
+            |    ;
             |  end""".stripMargin
       }
 
@@ -125,7 +114,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           """MethodDefinitionPrimary
             | MethodDefinition
             |  def
-            |  WsOrNl
             |  SimpleMethodNamePart
             |   DefinedMethodName
             |    MethodName
@@ -139,11 +127,9 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |      *
             |      arr
             |   )
-            |  Separator
-            |   ;
-            |  WsOrNl
             |  BodyStatement
             |   CompoundStatement
+            |    ;
             |  end""".stripMargin
       }
 
@@ -153,7 +139,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           """MethodDefinitionPrimary
             | MethodDefinition
             |  def
-            |  WsOrNl
             |  SimpleMethodNamePart
             |   DefinedMethodName
             |    MethodName
@@ -167,11 +152,9 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |      **
             |      hash
             |   )
-            |  Separator
-            |   ;
-            |  WsOrNl
             |  BodyStatement
             |   CompoundStatement
+            |    ;
             |  end""".stripMargin
       }
 
@@ -181,7 +164,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           """MethodDefinitionPrimary
             | MethodDefinition
             |  def
-            |  WsOrNl
             |  SimpleMethodNamePart
             |   DefinedMethodName
             |    MethodName
@@ -195,17 +177,14 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |      *
             |      arr
             |    ,
-            |    WsOrNl
             |    Parameter
             |     HashParameter
             |      **
             |      hash
             |   )
-            |  Separator
-            |   ;
-            |  WsOrNl
             |  BodyStatement
             |   CompoundStatement
+            |    ;
             |  end""".stripMargin
       }
 
@@ -215,7 +194,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           """MethodDefinitionPrimary
             | MethodDefinition
             |  def
-            |  WsOrNl
             |  SimpleMethodNamePart
             |   DefinedMethodName
             |    MethodName
@@ -239,11 +217,9 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |     MandatoryParameter
             |      y
             |   )
-            |  Separator
-            |   ;
-            |  WsOrNl
             |  BodyStatement
             |   CompoundStatement
+            |    ;
             |  end""".stripMargin
       }
 
@@ -253,7 +229,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           """MethodDefinitionPrimary
             | MethodDefinition
             |  def
-            |  WsOrNl
             |  SimpleMethodNamePart
             |   DefinedMethodName
             |    MethodName
@@ -266,7 +241,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |     KeywordParameter
             |      x
             |      :
-            |      WsOrNl
             |      PrimaryExpression
             |       LiteralPrimary
             |        NumericLiteralLiteral
@@ -274,11 +248,9 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |          UnsignedNumericLiteral
             |           1
             |   )
-            |  Separator
-            |   ;
-            |  WsOrNl
             |  BodyStatement
             |   CompoundStatement
+            |    ;
             |  end""".stripMargin
       }
 
@@ -288,7 +260,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           """MethodDefinitionPrimary
             | MethodDefinition
             |  def
-            |  WsOrNl
             |  SimpleMethodNamePart
             |   DefinedMethodName
             |    MethodName
@@ -302,13 +273,9 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |      x
             |      :
             |   )
-            |  WsOrNl
             |  BodyStatement
             |   CompoundStatement
-            |    Separators
-            |     Separator
-            |      ;
-            |  WsOrNl
+            |    ;
             |  end""".stripMargin
       }
 
@@ -318,7 +285,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           """MethodDefinitionPrimary
             | MethodDefinition
             |  def
-            |  WsOrNl
             |  SimpleMethodNamePart
             |   DefinedMethodName
             |    MethodName
@@ -332,19 +298,14 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |      name
             |      :
             |    ,
-            |    WsOrNl
             |    Parameter
             |     KeywordParameter
             |      surname
             |      :
             |   )
-            |  WsOrNl
             |  BodyStatement
             |   CompoundStatement
-            |    Separators
-            |     Separator
-            |      ;
-            |  WsOrNl
+            |    ;
             |  end""".stripMargin
       }
     }
@@ -363,15 +324,12 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           """MethodDefinitionPrimary
             | MethodDefinition
             |  def
-            |  WsOrNl
             |  SimpleMethodNamePart
             |   DefinedMethodName
             |    MethodName
             |     MethodIdentifier
             |      foo
             |  MethodParameterPart
-            |  Separator
-            |  WsOrNl
             |  BodyStatement
             |   CompoundStatement
             |    Statements
@@ -391,9 +349,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |           NumericLiteral
             |            UnsignedNumericLiteral
             |             0
-            |    Separators
-            |     Separator
-            |   WsOrNl
             |   RescueClause
             |    rescue
             |    ExceptionClass
@@ -402,14 +357,12 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |       VariableIdentifierVariableReference
             |        VariableIdentifier
             |         ZeroDivisionError
-            |    WsOrNl
             |    ExceptionVariableAssignment
             |     =>
             |     VariableIdentifierOnlySingleLeftHandSide
             |      VariableIdentifier
             |       e
             |    ThenClause
-            |     Separator
             |     CompoundStatement
             |  end""".stripMargin
 
@@ -428,12 +381,10 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           """MethodDefinitionPrimary
             | MethodDefinition
             |  def
-            |  WsOrNl
             |  MethodIdentifier
             |   foo
             |  MethodParameterPart
             |  =
-            |  WsOrNl
             |  PrimaryExpression
             |   VariableReferencePrimary
             |    VariableIdentifierVariableReference
@@ -447,13 +398,10 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           """MethodDefinitionPrimary
             | MethodDefinition
             |  def
-            |  WsOrNl
             |  MethodIdentifier
             |   foo
             |  MethodParameterPart
             |  =
-            |  WsOrNl
-            |  WsOrNl
             |  PrimaryExpression
             |   VariableReferencePrimary
             |    VariableIdentifierVariableReference
@@ -467,12 +415,10 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           """MethodDefinitionPrimary
             | MethodDefinition
             |  def
-            |  WsOrNl
             |  MethodIdentifier
             |   foo
             |  MethodParameterPart
             |  =
-            |  WsOrNl
             |  PrimaryExpression
             |   StringExpressionPrimary
             |    SimpleStringExpression
@@ -488,7 +434,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           """MethodDefinitionPrimary
             | MethodDefinition
             |  def
-            |  WsOrNl
             |  MethodIdentifier
             |   id
             |  MethodParameterPart
@@ -499,7 +444,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |      x
             |   )
             |  =
-            |  WsOrNl
             |  PrimaryExpression
             |   VariableReferencePrimary
             |    VariableIdentifierVariableReference
@@ -529,26 +473,21 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |     MethodDefinitionPrimary
             |      MethodDefinition
             |       def
-            |       WsOrNl
             |       SimpleMethodNamePart
             |        DefinedMethodName
             |         MethodName
             |          MethodIdentifier
             |           foo1
             |       MethodParameterPart
-            |       Separator
             |       BodyStatement
             |        CompoundStatement
             |       end
-            |  Separators
-            |   Separator
             |  ExpressionOrCommandStatement
             |   ExpressionExpressionOrCommand
             |    PrimaryExpression
             |     MethodDefinitionPrimary
             |      MethodDefinition
             |       def
-            |       WsOrNl
             |       SimpleMethodNamePart
             |        DefinedMethodName
             |         AssignmentLikeMethodIdentifier
@@ -560,12 +499,9 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |          MandatoryParameter
             |           arg
             |        )
-            |       Separator
             |       BodyStatement
             |        CompoundStatement
-            |       end
-            | Separators
-            |  Separator""".stripMargin
+            |       end""".stripMargin
 
       }
 
@@ -592,10 +528,8 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |     ModuleDefinitionPrimary
             |      ModuleDefinition
             |       module
-            |       WsOrNl
             |       ClassOrModuleReference
             |        SomeModule
-            |       WsOrNl
             |       BodyStatement
             |        CompoundStatement
             |         Statements
@@ -605,15 +539,12 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |             MethodDefinitionPrimary
             |              MethodDefinition
             |               def
-            |               WsOrNl
             |               SimpleMethodNamePart
             |                DefinedMethodName
             |                 MethodName
             |                  MethodIdentifier
             |                   foo1
             |               MethodParameterPart
-            |               Separator
-            |               WsOrNl
             |               BodyStatement
             |                CompoundStatement
             |                 Statements
@@ -623,7 +554,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |                     ReturnArgsInvocationWithoutParentheses
             |                      return
             |                   unless
-            |                   WsOrNl
             |                   ExpressionOrCommandStatement
             |                    ExpressionExpressionOrCommand
             |                     PrimaryExpression
@@ -631,18 +561,13 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |                       PseudoVariableIdentifierVariableReference
             |                        TruePseudoVariableIdentifier
             |                         true
-            |                 Separators
-            |                  Separator
             |               end
-            |          Separators
-            |           Separator
             |          ExpressionOrCommandStatement
             |           ExpressionExpressionOrCommand
             |            PrimaryExpression
             |             MethodDefinitionPrimary
             |              MethodDefinition
             |               def
-            |               WsOrNl
             |               SimpleMethodNamePart
             |                DefinedMethodName
             |                 AssignmentLikeMethodIdentifier
@@ -654,15 +579,10 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
             |                  MandatoryParameter
             |                   arg
             |                )
-            |               Separator
             |               BodyStatement
             |                CompoundStatement
             |               end
-            |         Separators
-            |          Separator
-            |       end
-            | Separators
-            |  Separator""".stripMargin
+            |       end""".stripMargin
       }
     }
   }
@@ -679,7 +599,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
         """MethodDefinitionPrimary
           | MethodDefinition
           |  def
-          |  WsOrNl
           |  SimpleMethodNamePart
           |   DefinedMethodName
           |    MethodName
@@ -693,8 +612,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |      &
           |      block
           |   )
-          |  Separator
-          |  WsOrNl
           |  BodyStatement
           |   CompoundStatement
           |    Statements
@@ -704,8 +621,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |        YieldWithOptionalArgumentPrimary
           |         YieldWithOptionalArgument
           |          yield
-          |    Separators
-          |     Separator
           |  end""".stripMargin
     }
 
@@ -720,7 +635,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
         """MethodDefinitionPrimary
           | MethodDefinition
           |  def
-          |  WsOrNl
           |  SimpleMethodNamePart
           |   DefinedMethodName
           |    MethodName
@@ -733,8 +647,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |     ProcParameter
           |      &
           |   )
-          |  Separator
-          |  WsOrNl
           |  BodyStatement
           |   CompoundStatement
           |    Statements
@@ -744,8 +656,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |        YieldWithOptionalArgumentPrimary
           |         YieldWithOptionalArgument
           |          yield
-          |    Separators
-          |     Separator
           |  end""".stripMargin
     }
   }
@@ -757,7 +667,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
         """MethodDefinitionPrimary
           | MethodDefinition
           |  def
-          |  WsOrNl
           |  SimpleMethodNamePart
           |   DefinedMethodName
           |    MethodName
@@ -771,7 +680,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |      bar
           |      :
           |   )
-          |  WsOrNl
           |  BodyStatement
           |   CompoundStatement
           |  end""".stripMargin
@@ -790,15 +698,12 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
         """MethodDefinitionPrimary
           | MethodDefinition
           |  def
-          |  WsOrNl
           |  SimpleMethodNamePart
           |   DefinedMethodName
           |    MethodName
           |     MethodIdentifier
           |      data
           |  MethodParameterPart
-          |  Separator
-          |  WsOrNl
           |  BodyStatement
           |   CompoundStatement
           |    Statements
@@ -808,8 +713,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |        HashConstructorPrimary
           |         HashConstructor
           |          {
-          |          WsOrNl
-          |          WsOrNl
           |          HashConstructorElements
           |           HashConstructorElement
           |            Association
@@ -820,8 +723,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |                 first_link
           |             :
           |           ,
-          |           WsOrNl
-          |           WsOrNl
           |           HashConstructorElement
           |            Association
           |             PrimaryExpression
@@ -831,11 +732,7 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |                 action_link_group
           |             :
           |          ,
-          |          WsOrNl
-          |          WsOrNl
           |          }
-          |    Separators
-          |     Separator
           |  end""".stripMargin
     }
 
@@ -851,12 +748,8 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
         """ClassDefinitionPrimary
           | ClassDefinition
           |  class
-          |  WsOrNl
           |  ClassOrModuleReference
           |   SampleClass
-          |  Separators
-          |   Separator
-          |  WsOrNl
           |  BodyStatement
           |   CompoundStatement
           |    Statements
@@ -866,7 +759,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |        MethodDefinitionPrimary
           |         MethodDefinition
           |          def
-          |          WsOrNl
           |          SimpleMethodNamePart
           |           DefinedMethodName
           |            MethodName
@@ -874,26 +766,20 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |              sample_method
           |          MethodParameterPart
           |           (
-          |           WsOrNl
           |           Parameters
           |            Parameter
           |             KeywordParameter
           |              first_param
           |              :
           |            ,
-          |            WsOrNl
           |            Parameter
           |             KeywordParameter
           |              second_param
           |              :
           |           )
-          |          Separator
-          |          WsOrNl
           |          BodyStatement
           |           CompoundStatement
           |          end
-          |    Separators
-          |     Separator
           |  end""".stripMargin
     }
 
@@ -910,12 +796,8 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
         """ClassDefinitionPrimary
           | ClassDefinition
           |  class
-          |  WsOrNl
           |  ClassOrModuleReference
           |   SomeClass
-          |  Separators
-          |   Separator
-          |  WsOrNl
           |  BodyStatement
           |   CompoundStatement
           |    Statements
@@ -925,7 +807,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |        MethodDefinitionPrimary
           |         MethodDefinition
           |          def
-          |          WsOrNl
           |          SimpleMethodNamePart
           |           DefinedMethodName
           |            MethodName
@@ -933,25 +814,18 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |              initialize
           |          MethodParameterPart
           |           (
-          |           WsOrNl
-          |           WsOrNl
           |           Parameters
           |            Parameter
           |             MandatoryParameter
           |              name
           |            ,
-          |            WsOrNl
           |            Parameter
           |             MandatoryParameter
           |              age
           |           )
-          |          Separator
-          |          WsOrNl
           |          BodyStatement
           |           CompoundStatement
           |          end
-          |    Separators
-          |     Separator
           |  end""".stripMargin
     }
 
@@ -969,12 +843,8 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
         """ClassDefinitionPrimary
           | ClassDefinition
           |  class
-          |  WsOrNl
           |  ClassOrModuleReference
           |   SomeClass
-          |  Separators
-          |   Separator
-          |  WsOrNl
           |  BodyStatement
           |   CompoundStatement
           |    Statements
@@ -984,7 +854,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |        MethodDefinitionPrimary
           |         MethodDefinition
           |          def
-          |          WsOrNl
           |          SimpleMethodNamePart
           |           DefinedMethodName
           |            MethodName
@@ -992,27 +861,18 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |              initialize
           |          MethodParameterPart
           |           (
-          |           WsOrNl
-          |           WsOrNl
           |           Parameters
           |            Parameter
           |             MandatoryParameter
           |              name
           |            ,
-          |            WsOrNl
           |            Parameter
           |             MandatoryParameter
           |              age
-          |           WsOrNl
-          |           WsOrNl
           |           )
-          |          Separator
-          |          WsOrNl
           |          BodyStatement
           |           CompoundStatement
           |          end
-          |    Separators
-          |     Separator
           |  end""".stripMargin
     }
 
@@ -1030,12 +890,8 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
         """ClassDefinitionPrimary
           | ClassDefinition
           |  class
-          |  WsOrNl
           |  ClassOrModuleReference
           |   SomeClass
-          |  Separators
-          |   Separator
-          |  WsOrNl
           |  BodyStatement
           |   CompoundStatement
           |    Statements
@@ -1045,7 +901,6 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |        MethodDefinitionPrimary
           |         MethodDefinition
           |          def
-          |          WsOrNl
           |          SimpleMethodNamePart
           |           DefinedMethodName
           |            MethodName
@@ -1053,34 +908,24 @@ class MethodDefinitionTests extends RubyParserAbstractTest {
           |              initialize
           |          MethodParameterPart
           |           (
-          |           WsOrNl
-          |           WsOrNl
           |           Parameters
           |            Parameter
           |             KeywordParameter
           |              name
           |              :
-          |              WsOrNl
           |              PrimaryExpression
           |               VariableReferencePrimary
           |                PseudoVariableIdentifierVariableReference
           |                 NilPseudoVariableIdentifier
           |                  nil
           |            ,
-          |            WsOrNl
           |            Parameter
           |             MandatoryParameter
           |              age
-          |           WsOrNl
-          |           WsOrNl
           |           )
-          |          Separator
-          |          WsOrNl
           |          BodyStatement
           |           CompoundStatement
           |          end
-          |    Separators
-          |     Separator
           |  end""".stripMargin
     }
   }

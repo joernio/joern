@@ -15,21 +15,16 @@ class EnsureClauseTests extends RubyParserAbstractTest {
         printAst(_.methodDefinition(), code) shouldEqual
           """MethodDefinition
             | def
-            | WsOrNl
             | SimpleMethodNamePart
             |  DefinedMethodName
             |   MethodName
             |    MethodIdentifier
             |     refund
             | MethodParameterPart
-            | Separator
-            | WsOrNl
             | BodyStatement
             |  CompoundStatement
             |  EnsureClause
             |   ensure
-            |   WsOrNl
-            |   WsOrNl
             |   CompoundStatement
             |    Statements
             |     ExpressionOrCommandStatement
@@ -55,8 +50,6 @@ class EnsureClauseTests extends RubyParserAbstractTest {
             |                    VariableIdentifier
             |                     @charge
             |               )
-            |    Separators
-            |     Separator
             | end""".stripMargin
       }
     }

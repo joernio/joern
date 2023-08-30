@@ -234,6 +234,29 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       literal.columnNumber shouldBe Some(0)
     }
 
+    "have correct structure for a single-line quoted non-expanded string literal" in {
+      val cpg           = code("%q(hello)")
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe "__builtin.String"
+      literal.code shouldBe "%q(hello)"
+      literal.lineNumber shouldBe Some(1)
+    }
+
+    "have correct structure for a multi-line quoted non-expanded string literal" in {
+      val cpg = code("""%q<
+          |xyz
+          |123
+          |>""".stripMargin)
+      val List(literal) = cpg.literal.l
+      literal.typeFullName shouldBe "__builtin.String"
+      literal.code shouldBe
+        """%q<
+          |xyz
+          |123
+          |>""".stripMargin
+      literal.lineNumber shouldBe Some(1)
+    }
+
     "have correct structure for an identifier symbol literal" in {
       val cpg           = code(":someSymbolName")
       val List(literal) = cpg.literal.l
@@ -457,7 +480,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       callNode.argument
         .where(_.argumentIndex(2))
         .code
-        .l shouldBe List("foo()", "bar() ")
+        .l shouldBe List("foo()", "bar()")
       callNode.lineNumber.l shouldBe List(1, 1)
     }
 

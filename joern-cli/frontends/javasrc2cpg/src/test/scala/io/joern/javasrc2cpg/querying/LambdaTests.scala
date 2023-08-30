@@ -17,6 +17,20 @@ import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.jIteratortoTraversal
 
 class LambdaTests extends JavaSrcCode2CpgFixture {
+  "unresolved lambda parameters should have an ANY type" in {
+    val cpg = code("""
+        |public class Test {
+        |  public void method() {
+        |    unresolvedCall().foreach(lambdaParam -> {
+        |       foo(lambdaParam);
+        |    });
+        |  }
+        |}
+        |""".stripMargin)
+
+    cpg.call.name("foo").argument.collectAll[Identifier].name("lambdaParam").typeFullName.toList shouldBe List("ANY")
+  }
+
   "nested lambdas" should {
     val cpg = code("""
         |import java.util.ArrayList;

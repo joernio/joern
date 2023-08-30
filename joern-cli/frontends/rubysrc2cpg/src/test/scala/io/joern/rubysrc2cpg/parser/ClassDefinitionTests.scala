@@ -12,21 +12,38 @@ class ClassDefinitionTests extends RubyParserAbstractTest {
           """ClassDefinitionPrimary
             | ClassDefinition
             |  class
-            |  WsOrNl
             |  <<
-            |  WsOrNl
             |  ExpressionExpressionOrCommand
             |   PrimaryExpression
             |    VariableReferencePrimary
             |     PseudoVariableIdentifierVariableReference
             |      SelfPseudoVariableIdentifier
             |       self
-            |  Separators
-            |   Separator
-            |    ;
-            |  WsOrNl
+            |  ;
             |  BodyStatement
             |   CompoundStatement
+            |  end""".stripMargin
+      }
+
+      "it contains a single numeric literal in its body" in {
+        val code = "class X 1 end"
+        printAst(_.primary(), code) shouldBe
+          """ClassDefinitionPrimary
+            | ClassDefinition
+            |  class
+            |  ClassOrModuleReference
+            |   X
+            |  BodyStatement
+            |   CompoundStatement
+            |    Statements
+            |     ExpressionOrCommandStatement
+            |      ExpressionExpressionOrCommand
+            |       PrimaryExpression
+            |        LiteralPrimary
+            |         NumericLiteralLiteral
+            |          NumericLiteral
+            |           UnsignedNumericLiteral
+            |            1
             |  end""".stripMargin
       }
     }
@@ -45,18 +62,13 @@ class ClassDefinitionTests extends RubyParserAbstractTest {
           """ClassDefinitionPrimary
             | ClassDefinition
             |  class
-            |  WsOrNl
             |  <<
-            |  WsOrNl
             |  ExpressionExpressionOrCommand
             |   PrimaryExpression
             |    VariableReferencePrimary
             |     VariableIdentifierVariableReference
             |      VariableIdentifier
             |       x
-            |  Separators
-            |   Separator
-            |  WsOrNl
             |  BodyStatement
             |   CompoundStatement
             |    Statements
@@ -66,18 +78,15 @@ class ClassDefinitionTests extends RubyParserAbstractTest {
             |        MethodDefinitionPrimary
             |         MethodDefinition
             |          def
-            |          WsOrNl
             |          SimpleMethodNamePart
             |           DefinedMethodName
             |            MethodName
             |             MethodIdentifier
             |              show
             |          MethodParameterPart
-            |          Separator
-            |           ;
-            |          WsOrNl
             |          BodyStatement
             |           CompoundStatement
+            |            ;
             |            Statements
             |             ExpressionOrCommandStatement
             |              InvocationExpressionOrCommand
@@ -93,13 +102,8 @@ class ClassDefinitionTests extends RubyParserAbstractTest {
             |                      PseudoVariableIdentifierVariableReference
             |                       SelfPseudoVariableIdentifier
             |                        self
-            |            Separators
-            |             Separator
-            |              ;
-            |          WsOrNl
+            |            ;
             |          end
-            |    Separators
-            |     Separator
             |  end""".stripMargin
       }
     }

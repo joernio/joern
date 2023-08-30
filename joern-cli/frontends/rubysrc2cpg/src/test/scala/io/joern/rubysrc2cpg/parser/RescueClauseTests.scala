@@ -16,7 +16,6 @@ class RescueClauseTests extends RubyParserAbstractTest {
         printAst(_.beginExpression(), code) shouldEqual
           """BeginExpression
             | begin
-            | WsOrNl
             | BodyStatement
             |  CompoundStatement
             |   Statements
@@ -36,8 +35,6 @@ class RescueClauseTests extends RubyParserAbstractTest {
             |          NumericLiteral
             |           UnsignedNumericLiteral
             |            0
-            |   Separators
-            |    Separator
             |  RescueClause
             |   rescue
             |   ExceptionClass
@@ -46,14 +43,12 @@ class RescueClauseTests extends RubyParserAbstractTest {
             |      VariableIdentifierVariableReference
             |       VariableIdentifier
             |        ZeroDivisionError
-            |   WsOrNl
             |   ExceptionVariableAssignment
             |    =>
             |    VariableIdentifierOnlySingleLeftHandSide
             |     VariableIdentifier
             |      e
             |   ThenClause
-            |    Separator
             |    CompoundStatement
             | end""".stripMargin
       }
@@ -68,18 +63,15 @@ class RescueClauseTests extends RubyParserAbstractTest {
         printAst(_.methodDefinition(), code) shouldEqual
           """MethodDefinition
             | def
-            | WsOrNl
             | SimpleMethodNamePart
             |  DefinedMethodName
             |   MethodName
             |    MethodIdentifier
             |     foo
             | MethodParameterPart
-            | Separator
-            |  ;
-            | WsOrNl
             | BodyStatement
             |  CompoundStatement
+            |   ;
             |   Statements
             |    ExpressionOrCommandStatement
             |     ExpressionExpressionOrCommand
@@ -97,8 +89,6 @@ class RescueClauseTests extends RubyParserAbstractTest {
             |          NumericLiteral
             |           UnsignedNumericLiteral
             |            0
-            |   Separators
-            |    Separator
             |  RescueClause
             |   rescue
             |   ExceptionClass
@@ -107,14 +97,12 @@ class RescueClauseTests extends RubyParserAbstractTest {
             |      VariableIdentifierVariableReference
             |       VariableIdentifier
             |        ZeroDivisionError
-            |   WsOrNl
             |   ExceptionVariableAssignment
             |    =>
             |    VariableIdentifierOnlySingleLeftHandSide
             |     VariableIdentifier
             |      e
             |   ThenClause
-            |    Separator
             |    CompoundStatement
             | end""".stripMargin
       }
@@ -144,7 +132,6 @@ class RescueClauseTests extends RubyParserAbstractTest {
             |            x
             |     DoBlock
             |      do
-            |      WsOrNl
             |      BlockParameter
             |       |
             |       BlockParameters
@@ -152,8 +139,6 @@ class RescueClauseTests extends RubyParserAbstractTest {
             |         VariableIdentifier
             |          y
             |       |
-            |      Separators
-            |       Separator
             |      BodyStatement
             |       CompoundStatement
             |        Statements
@@ -172,8 +157,6 @@ class RescueClauseTests extends RubyParserAbstractTest {
             |               NumericLiteral
             |                UnsignedNumericLiteral
             |                 0
-            |        Separators
-            |         Separator
             |       RescueClause
             |        rescue
             |        ExceptionClass
@@ -182,14 +165,12 @@ class RescueClauseTests extends RubyParserAbstractTest {
             |           VariableIdentifierVariableReference
             |            VariableIdentifier
             |             ZeroDivisionError
-            |        WsOrNl
             |        ExceptionVariableAssignment
             |         =>
             |         VariableIdentifierOnlySingleLeftHandSide
             |          VariableIdentifier
             |           e
             |        ThenClause
-            |         Separator
             |         CompoundStatement
             |      end""".stripMargin
       }

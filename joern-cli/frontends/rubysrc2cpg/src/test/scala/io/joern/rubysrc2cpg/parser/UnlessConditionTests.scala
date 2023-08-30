@@ -16,7 +16,6 @@ class UnlessConditionTests extends RubyParserAbstractTest {
           """UnlessExpressionPrimary
             | UnlessExpression
             |  unless
-            |  WsOrNl
             |  ExpressionExpressionOrCommand
             |   PrimaryExpression
             |    VariableReferencePrimary
@@ -24,8 +23,6 @@ class UnlessConditionTests extends RubyParserAbstractTest {
             |      VariableIdentifier
             |       foo
             |  ThenClause
-            |   Separator
-            |   WsOrNl
             |   CompoundStatement
             |    Statements
             |     ExpressionOrCommandStatement
@@ -35,8 +32,6 @@ class UnlessConditionTests extends RubyParserAbstractTest {
             |         VariableIdentifierVariableReference
             |          VariableIdentifier
             |           bar
-            |    Separators
-            |     Separator
             |  end""".stripMargin
       }
 
@@ -50,7 +45,6 @@ class UnlessConditionTests extends RubyParserAbstractTest {
           """UnlessExpressionPrimary
             | UnlessExpression
             |  unless
-            |  WsOrNl
             |  ExpressionExpressionOrCommand
             |   PrimaryExpression
             |    VariableReferencePrimary
@@ -58,9 +52,7 @@ class UnlessConditionTests extends RubyParserAbstractTest {
             |      VariableIdentifier
             |       foo
             |  ThenClause
-            |   Separator
-            |    ;
-            |   WsOrNl
+            |   ;
             |   CompoundStatement
             |    Statements
             |     ExpressionOrCommandStatement
@@ -70,8 +62,6 @@ class UnlessConditionTests extends RubyParserAbstractTest {
             |         VariableIdentifierVariableReference
             |          VariableIdentifier
             |           bar
-            |    Separators
-            |     Separator
             |  end""".stripMargin
       }
 
@@ -86,7 +76,6 @@ class UnlessConditionTests extends RubyParserAbstractTest {
           """UnlessExpressionPrimary
             | UnlessExpression
             |  unless
-            |  WsOrNl
             |  ExpressionExpressionOrCommand
             |   PrimaryExpression
             |    VariableReferencePrimary
@@ -95,8 +84,6 @@ class UnlessConditionTests extends RubyParserAbstractTest {
             |       foo
             |  ThenClause
             |   then
-            |   WsOrNl
-            |   WsOrNl
             |   CompoundStatement
             |    Statements
             |     ExpressionOrCommandStatement
@@ -106,8 +93,6 @@ class UnlessConditionTests extends RubyParserAbstractTest {
             |         VariableIdentifierVariableReference
             |          VariableIdentifier
             |           bar
-            |    Separators
-            |     Separator
             |  end""".stripMargin
       }
     }
@@ -138,7 +123,6 @@ class UnlessConditionTests extends RubyParserAbstractTest {
             |            value
             |      )
             | unless
-            | WsOrNl
             | ExpressionOrCommandStatement
             |  ExpressionExpressionOrCommand
             |   PrimaryExpression

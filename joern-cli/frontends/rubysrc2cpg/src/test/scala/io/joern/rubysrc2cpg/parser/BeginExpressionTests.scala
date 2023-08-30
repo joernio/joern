@@ -16,7 +16,6 @@ class BeginExpressionTests extends RubyParserAbstractTest {
           """BeginExpressionPrimary
             | BeginExpression
             |  begin
-            |  WsOrNl
             |  BodyStatement
             |   CompoundStatement
             |    Statements
@@ -36,8 +35,6 @@ class BeginExpressionTests extends RubyParserAbstractTest {
             |           NumericLiteral
             |            UnsignedNumericLiteral
             |             0
-            |    Separators
-            |     Separator
             |   RescueClause
             |    rescue
             |    ExceptionClass
@@ -46,14 +43,12 @@ class BeginExpressionTests extends RubyParserAbstractTest {
             |       VariableIdentifierVariableReference
             |        VariableIdentifier
             |         ZeroDivisionError
-            |    WsOrNl
             |    ExceptionVariableAssignment
             |     =>
             |     VariableIdentifierOnlySingleLeftHandSide
             |      VariableIdentifier
             |       e
             |    ThenClause
-            |     Separator
             |     CompoundStatement
             |  end""".stripMargin
       }

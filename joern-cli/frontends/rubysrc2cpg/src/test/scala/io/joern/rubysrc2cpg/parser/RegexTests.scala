@@ -27,7 +27,6 @@ class RegexTests extends RubyParserAbstractTest {
             |   VariableIdentifier
             |    x
             |  =
-            |  WsOrNl
             |  MultipleRightHandSide
             |   ExpressionOrCommands
             |    ExpressionExpressionOrCommand
@@ -104,7 +103,6 @@ class RegexTests extends RubyParserAbstractTest {
             |          UnsignedNumericLiteral
             |           1
             |     ,
-            |     WsOrNl
             |     ExpressionArgument
             |      PrimaryExpression
             |       LiteralPrimary
@@ -127,18 +125,14 @@ class RegexTests extends RubyParserAbstractTest {
           """CaseExpressionPrimary
               | CaseExpression
               |  case
-              |  WsOrNl
               |  ExpressionExpressionOrCommand
               |   PrimaryExpression
               |    VariableReferencePrimary
               |     VariableIdentifierVariableReference
               |      VariableIdentifier
               |       foo
-              |  Separators
-              |   Separator
               |  WhenClause
               |   when
-              |   WsOrNl
               |   WhenArgument
               |    Expressions
               |     PrimaryExpression
@@ -148,8 +142,6 @@ class RegexTests extends RubyParserAbstractTest {
               |        ^ch_
               |        /
               |   ThenClause
-              |    Separator
-              |    WsOrNl
               |    CompoundStatement
               |     Statements
               |      ExpressionOrCommandStatement
@@ -159,8 +151,6 @@ class RegexTests extends RubyParserAbstractTest {
               |          VariableIdentifierVariableReference
               |           VariableIdentifier
               |            bar
-              |     Separators
-              |      Separator
               |  end""".stripMargin
       }
 
@@ -174,7 +164,6 @@ class RegexTests extends RubyParserAbstractTest {
             """UnlessExpressionPrimary
               | UnlessExpression
               |  unless
-              |  WsOrNl
               |  ExpressionExpressionOrCommand
               |   PrimaryExpression
               |    ChainedInvocationPrimary
@@ -200,7 +189,6 @@ class RegexTests extends RubyParserAbstractTest {
               |            value
               |      )
               |  ThenClause
-              |   Separator
               |   CompoundStatement
               |  end""".stripMargin
         }
@@ -234,7 +222,6 @@ class RegexTests extends RubyParserAbstractTest {
             |   VariableIdentifier
             |    x
             |  =
-            |  WsOrNl
             |  MultipleRightHandSide
             |   ExpressionOrCommands
             |    ExpressionExpressionOrCommand
@@ -301,12 +288,10 @@ class RegexTests extends RubyParserAbstractTest {
       "be parsed as a primary expression" in {
         val code = "%r{a-z}"
         printAst(_.primary(), code) shouldEqual
-          """LiteralPrimary
-            | NonExpandedQuotedRegularExpressionLiteral
+          """QuotedRegexInterpolationPrimary
+            | QuotedRegexInterpolation
             |  %r{
-            |  a
-            |  -
-            |  z
+            |  a-z
             |  }""".stripMargin
       }
     }
@@ -316,14 +301,10 @@ class RegexTests extends RubyParserAbstractTest {
       "be parsed as a primary expression" in {
         val code = "%r<eu|us>"
         printAst(_.primary(), code) shouldEqual
-          """LiteralPrimary
-            | NonExpandedQuotedRegularExpressionLiteral
+          """QuotedRegexInterpolationPrimary
+            | QuotedRegexInterpolation
             |  %r<
-            |  e
-            |  u
-            |  |
-            |  u
-            |  s
+            |  eu|us
             |  >""".stripMargin
       }
     }
@@ -333,8 +314,8 @@ class RegexTests extends RubyParserAbstractTest {
       "be parsed as a primary expression" in {
         val code = "%r[]"
         printAst(_.primary(), code) shouldEqual
-          """LiteralPrimary
-            | NonExpandedQuotedRegularExpressionLiteral
+          """QuotedRegexInterpolationPrimary
+            | QuotedRegexInterpolation
             |  %r[
             |  ]""".stripMargin
       }
@@ -382,7 +363,6 @@ class RegexTests extends RubyParserAbstractTest {
             |   VariableIdentifier
             |    x
             |  =
-            |  WsOrNl
             |  MultipleRightHandSide
             |   ExpressionOrCommands
             |    ExpressionExpressionOrCommand
@@ -480,6 +460,37 @@ class RegexTests extends RubyParserAbstractTest {
             |         y
             |         /
             |    )""".stripMargin
+      }
+    }
+  }
+
+  "An interpolated quoted (`%r`) regex" when {
+
+    "by itself, containing a numeric literal interpolation and text" should {
+
+      "be parsed as a primary expression" in {
+        val code = """%r{x#{0}|y}"""
+        printAst(_.primary(), code) shouldEqual
+          """QuotedRegexInterpolationPrimary
+            | QuotedRegexInterpolation
+            |  %r{
+            |  x
+            |  DelimitedStringInterpolation
+            |   #{
+            |   CompoundStatement
+            |    Statements
+            |     ExpressionOrCommandStatement
+            |      ExpressionExpressionOrCommand
+            |       PrimaryExpression
+            |        LiteralPrimary
+            |         NumericLiteralLiteral
+            |          NumericLiteral
+            |           UnsignedNumericLiteral
+            |            0
+            |   }
+            |  |y
+            |  }""".stripMargin
+
       }
     }
   }
