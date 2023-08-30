@@ -210,8 +210,195 @@ class AstCreationForArraysTests extends GoCodeToCpgSuite {
       assignmentCallNode.code shouldBe "var a = [5]int{1,2}"
     }
   }
-}
 
-//TODO: add unit test for Array of struct type (within package same file, within package different file,
-// different package but same project, and from third party dependency).
-//TODO: Add unit tests for pointer combinations for primitives as well as struct type
+  "be correct when array of struct within package same file" in {
+    val cpg = code("""
+        |package main
+        |
+        |type node struct {
+        |name string
+        |}
+        |
+        |func main() {
+        | a = node{"value1"}
+        | b = node{"value2"}
+        |
+        | c := []node{a, b}
+        |}
+        |""".stripMargin)
+
+    cpg.file.size shouldBe 2
+
+    val List(assignmentCallNode) = cpg.call(Operators.assignment).lineNumber(12).l
+
+    val List(arrayInitializerCallNode) = assignmentCallNode.astChildren.isCall.l
+    assignmentCallNode.name shouldBe Operators.assignment
+    assignmentCallNode.code shouldBe "c := []node{a, b}"
+
+    arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
+    arrayInitializerCallNode.code shouldBe "[]node{a, b}"
+    arrayInitializerCallNode.typeFullName shouldBe "[]main.node"
+
+    assignmentCallNode.astChildren.isIdentifier.l.size shouldBe 3
+    val List(identifier1, identifier2, identifier3) = assignmentCallNode.astChildren.isIdentifier.l
+    identifier1.code shouldBe "c"
+    identifier2.code shouldBe "a"
+    identifier3.code shouldBe "b"
+  }
+
+  "be correct when array of struct within package but different file" in {
+    val cpg = code(
+      """
+        |package main
+        |
+        |type node struct {
+        |name string
+        |}
+        |
+        |""".stripMargin,
+      "first.go"
+    )
+      .moreCode(
+        """
+          |package main
+          |
+          |func main() {
+          | a = node{"value1"}
+          | b = node{"value2"}
+          |
+          | c := []node{a, b}
+          |}
+          |""".stripMargin,
+        "second.go"
+      )
+
+    cpg.file.size shouldBe 3
+
+    val List(assignmentCallNode) = cpg.call(Operators.assignment).lineNumber(8).l
+
+    val List(arrayInitializerCallNode) = assignmentCallNode.astChildren.isCall.l
+    assignmentCallNode.name shouldBe Operators.assignment
+    assignmentCallNode.code shouldBe "c := []node{a, b}"
+
+    arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
+    arrayInitializerCallNode.code shouldBe "[]node{a, b}"
+    arrayInitializerCallNode.typeFullName shouldBe "[]main.node"
+
+    assignmentCallNode.astChildren.isIdentifier.l.size shouldBe 3
+    val List(identifier1, identifier2, identifier3) = assignmentCallNode.astChildren.isIdentifier.l
+    identifier1.code shouldBe "c"
+    identifier2.code shouldBe "a"
+    identifier3.code shouldBe "b"
+  }
+
+  "be correct when array of struct in different package but same project" in {
+
+    val cpg = code(
+      """
+        |package mypackage
+        |
+        |type node struct {
+        |name string
+        |}
+        |
+        |""".stripMargin,
+      "first.go"
+    )
+      .moreCode(
+        """
+          |package main
+          |
+          |import (
+          | "mypackage"
+          |)
+          |
+          |func main() {
+          | a = node{"value1"}
+          | b = node{"value2"}
+          |
+          | c := []mypackage.node{a, b}
+          |}
+          |""".stripMargin,
+        "second.go"
+      )
+
+    cpg.file.size shouldBe 3
+
+    val List(assignmentCallNode) = cpg.call(Operators.assignment).lineNumber(12).l
+
+    val List(arrayInitializerCallNode) = assignmentCallNode.astChildren.isCall.l
+    assignmentCallNode.name shouldBe Operators.assignment
+    assignmentCallNode.code shouldBe "c := []mypackage.node{a, b}"
+
+    arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
+    arrayInitializerCallNode.code shouldBe "[]mypackage.node{a, b}"
+    arrayInitializerCallNode.typeFullName shouldBe "[]mypackage.node"
+
+    assignmentCallNode.astChildren.isIdentifier.l.size shouldBe 3
+    val List(identifier1, identifier2, identifier3) = assignmentCallNode.astChildren.isIdentifier.l
+    identifier1.code shouldBe "c"
+    identifier2.code shouldBe "a"
+    identifier3.code shouldBe "b"
+  }
+
+  "be correct when when a int array id initialized having pointer" ignore {
+    val cpg = code("""
+        |package main
+        |func main() {
+        | a := [5]*int{1,2}
+        |""".stripMargin)
+
+    val List(assignmentCallNode) = cpg.call(Operators.assignment).lineNumber(4).l
+
+    val List(arrayInitializerCallNode) = assignmentCallNode.astChildren.isCall.l
+    assignmentCallNode.name shouldBe Operators.assignment
+    assignmentCallNode.code shouldBe "a := [5]int{1,2}"
+
+    arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
+    arrayInitializerCallNode.code shouldBe "[5]*int{1,2}"
+    arrayInitializerCallNode.typeFullName shouldBe "[]int"
+
+    assignmentCallNode.astChildren.isLiteral.l.size shouldBe 2
+    val List(literal1, literal2) = assignmentCallNode.astChildren.isLiteral.l
+    literal1.code shouldBe "1"
+    literal2.code shouldBe "2"
+    literal1.typeFullName shouldBe "int"
+    literal2.typeFullName shouldBe "int"
+
+    assignmentCallNode.astChildren.isIdentifier.l.size shouldBe 1
+    val List(identifierNode) = assignmentCallNode.astChildren.isIdentifier.l.l
+    identifierNode.code shouldBe "a"
+  }
+
+  "be correct when array of struct having pointer within package same file" ignore {
+    val cpg = code("""
+        |package main
+        |
+        |type node struct {
+        | name string
+        |}
+        |
+        |func main() {
+        | a = node{"value1"}
+        | b = node{"value2"}
+        |
+        | c := []*node{a,b}
+        |""".stripMargin)
+
+    val List(assignmentCallNode) = cpg.call(Operators.assignment).lineNumber(12).l
+
+    val List(arrayInitializerCallNode) = assignmentCallNode.astChildren.isCall.l
+    assignmentCallNode.name shouldBe Operators.assignment
+    assignmentCallNode.code shouldBe "c := []*node{a,b}"
+
+    arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
+    arrayInitializerCallNode.code shouldBe "[]*node{a,b}"
+    arrayInitializerCallNode.typeFullName shouldBe "[]main.node"
+
+    assignmentCallNode.astChildren.isIdentifier.l.size shouldBe 3
+    val List(identifier1, identifier2, identifier3) = assignmentCallNode.astChildren.isIdentifier.l
+    identifier1.code shouldBe "c"
+    identifier2.code shouldBe "a"
+    identifier3.code shouldBe "b"
+  }
+}
