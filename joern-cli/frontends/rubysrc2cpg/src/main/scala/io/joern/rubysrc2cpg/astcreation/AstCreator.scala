@@ -35,7 +35,8 @@ class AstCreator(
     with AstForExpressionsCreator
     with AstForDeclarationsCreator
     with AstForTypesCreator
-    with AstCreatorHelper {
+    with AstCreatorHelper
+    with AstForHereDocsCreator {
 
   protected val scope: Scope[String, NewIdentifier, Unit] = new Scope()
 
