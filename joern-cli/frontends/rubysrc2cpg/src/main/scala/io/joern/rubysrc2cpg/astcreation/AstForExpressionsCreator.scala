@@ -2,6 +2,7 @@ package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.parser.RubyParser.*
 import io.joern.rubysrc2cpg.passes.Defines
+import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewFieldIdentifier, NewNode}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, ModifierTypes, Operators}
