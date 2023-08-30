@@ -6,7 +6,7 @@ import io.shiftleft.semanticcpg.language.*
 
 class ParameterInDataFlowTests extends GoCodeToCpgSuite(withOssDataflow = true) {
 
-  "parameter in test" should {
+  "Simple parameter in to identifier data flow use case" should {
     val cpg = code("""
         |package main
         |func foo(argv string) {

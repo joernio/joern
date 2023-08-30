@@ -73,7 +73,7 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
 
     val arrayInitializerNode: Seq[Ast] = typeInfoNode.node match
       case ArrayType =>
-        Seq(astForEmptyArrayInitializer(typeInfoNode))
+        Seq(astForArrayInitializer(typeInfoNode))
       case _ =>
         Seq.empty
 
