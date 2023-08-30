@@ -36,7 +36,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case BranchStmt     => Seq(astForBranchStatement(statement))
       case BlockStmt      => Seq(astForBlockStatement(statement, argIndex))
       case CaseClause     => astForCaseClause(statement)
-      case DeclStmt       => astForDeclStatement(statement)
+      case DeclStmt       => astForNode(statement.json(ParserKeys.Decl))
       case ExprStmt       => astsForExpression(createParserNodeInfo(statement.json(ParserKeys.X)))
       case ForStmt        => Seq(astForForStatement(statement))
       case IfStmt         => Seq(astForIfStatement(statement))
@@ -47,13 +47,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case Unknown        => Seq(Ast())
       case _: BaseStmt    => Seq(Ast())
       case _              => astForNode(statement.json)
-    }
-  }
-
-  private def astForDeclStatement(declStmt: ParserNodeInfo): Seq[Ast] = {
-    val nodeInfo = createParserNodeInfo(declStmt.json(ParserKeys.Decl))
-    nodeInfo.node match {
-      case GenDecl => astForGenDecl(nodeInfo)
     }
   }
 
