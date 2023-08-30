@@ -194,14 +194,14 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   // TODO: return Ast instead of Seq[Ast].
-  protected def astForStatement(ctx: StatementContext): Seq[Ast] = ctx match {
+  protected def astForStatement(ctx: StatementContext): Seq[Ast] = scanStmtForHereDoc(ctx match {
     case ctx: AliasStatementContext               => Seq(astForAliasStatement(ctx))
     case ctx: UndefStatementContext               => Seq(astForUndefStatement(ctx))
     case ctx: BeginStatementContext               => Seq(astForBeginStatement(ctx))
     case ctx: EndStatementContext                 => Seq(astForEndStatement(ctx))
     case ctx: ModifierStatementContext            => Seq(astForModifierStatement(ctx))
     case ctx: ExpressionOrCommandStatementContext => astForExpressionOrCommand(ctx.expressionOrCommand())
-  }
+  })
 
   // TODO: return Ast instead of Seq[Ast]
   protected def astForExpressionOrCommand(ctx: ExpressionOrCommandContext): Seq[Ast] = ctx match {
