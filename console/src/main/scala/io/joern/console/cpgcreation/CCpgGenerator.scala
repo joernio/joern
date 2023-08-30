@@ -14,7 +14,7 @@ case class CCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGene
   /** Generate a CPG for the given input path. Returns the output path, or None, if no CPG was generated.
     */
   override def generate(inputPath: String, outputPath: String = "cpg.bin"): Try[String] = {
-    val arguments = config.cmdLineParams.toSeq ++ Seq(inputPath, "--output", outputPath)
+    val arguments = Seq(inputPath, "--output", outputPath) ++ config.cmdLineParams
     runShellCommand(command.toString, arguments).map(_ => outputPath)
   }
 
