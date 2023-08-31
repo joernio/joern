@@ -25,7 +25,7 @@ object ParserAst {
   object BlockStmt  extends BaseStmt
   object DeclStmt   extends BaseStmt
   object ValueSpec  extends ParserNode
-  object Ident      extends BasePrimitive
+  object Ident      extends ParserNode
   object AssignStmt extends BaseStmt
   object ExprStmt   extends BaseStmt
   object BinaryExpr extends BaseExpr

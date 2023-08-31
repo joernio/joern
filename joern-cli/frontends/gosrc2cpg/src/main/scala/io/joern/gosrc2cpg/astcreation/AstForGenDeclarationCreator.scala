@@ -32,22 +32,31 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
     Option(typeSpecNode) match {
       case Some(typeSpec) =>
         val nameNode          = typeSpec.json(ParserKeys.Name)
-        val typeNode          = typeSpec.json(ParserKeys.Type)
+        val typeNode          = createParserNodeInfo(typeSpec.json(ParserKeys.Type))
         val a: NewTypeDecl    = methodAstParentStack.collectFirst { case t: NewTypeDecl => t }.get
         val astParentType     = a.label
         val astParentFullName = a.fullName
+        val fullName          = nameNode(ParserKeys.Name).str // TODO: Discuss fullName structure
         val typeDeclNode_ =
           typeDeclNode(
             typeSpec,
             nameNode(ParserKeys.Name).str,
-            x2cpg.Defines.DynamicCallUnknownFullName, // TODO: Fill in fullName
+            fullName,
             parserResult.filename,
             typeSpec.code,
             astParentType,
             astParentFullName
           )
+
+        methodAstParentStack.push(typeDeclNode_)
+        scope.pushNewScope(typeDeclNode_)
+        val memberAsts = astForStructType(typeNode)
+
+        methodAstParentStack.pop()
+        scope.popScope()
+
         val modifier = addModifier(typeDeclNode_, nameNode(ParserKeys.Name).str)
-        Seq(Ast(typeDeclNode_).withChild(Ast(modifier)))
+        Seq(Ast(typeDeclNode_).withChild(Ast(modifier)).withChildren(memberAsts.toSeq))
       case None =>
         Seq.empty
     }
