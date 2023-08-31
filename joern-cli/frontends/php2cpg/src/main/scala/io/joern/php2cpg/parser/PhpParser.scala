@@ -37,7 +37,7 @@ class PhpParser private (phpParserPath: String, phpIniPath: String) {
   }
 
   private def processParserOutput(output: String, filename: String): Option[PhpFile] = {
-    val maybeJson = linesToJsonValue(output.split(System.lineSeparator()), filename)
+    val maybeJson = linesToJsonValue(output.split(System.lineSeparator()).toIndexedSeq, filename)
 
     maybeJson.flatMap(jsonValueToPhpFile(_, filename))
   }
