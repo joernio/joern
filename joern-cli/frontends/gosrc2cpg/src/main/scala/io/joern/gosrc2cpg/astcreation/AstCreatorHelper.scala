@@ -107,7 +107,7 @@ trait AstCreatorHelper { this: AstCreator =>
       .toMap
   }
 
-  protected def generateTypeFullName(typeName: String = "", aliasName: Option[String] = None): String = {
+  private def generateTypeFullName(typeName: String = "", aliasName: Option[String] = None): String = {
     // NOTE: There is an assumption that the import nodes have been processed before this method is being called
     // and mapping of alias to their respective namespace is already done.
     typeName match

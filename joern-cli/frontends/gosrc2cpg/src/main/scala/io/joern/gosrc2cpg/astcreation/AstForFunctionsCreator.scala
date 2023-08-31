@@ -42,7 +42,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     val filename = relPathFileName
     val name     = funcDecl.json(ParserKeys.Name).obj(ParserKeys.Name).str
-    val fullname = s"${fullyQualifiedPackage}.${name}"
+    val fullname = s"$fullyQualifiedPackage.$name"
     // TODO: handle multiple return type or tuple (int, int)
     val (returnTypeStr, methodReturn) =
       getReturnType(funcDecl.json(ParserKeys.Type)).headOption

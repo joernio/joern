@@ -1,9 +1,10 @@
 package io.joern.rubysrc2cpg.passes.ast
 
+import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes, DispatchTypes, Operators, nodes}
+import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, MethodRef}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, nodes}
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 class CallCpgTests extends RubyCode2CpgFixture {
   "simple call method" should {
@@ -114,6 +115,71 @@ class CallCpgTests extends RubyCode2CpgFixture {
       callNode.lineNumber shouldBe Some(14)
       callNode.astChildren.last.code shouldBe "books_and_articles_we_love"
       callNode.argument.last.code shouldBe "books_and_articles_we_love"
+    }
+  }
+
+  "call with a heredoc parameter" should {
+    val cpg = code("""foo(<<~SQL)
+        |SELECT * FROM food
+        |WHERE healthy = true
+        |SQL
+        |""".stripMargin)
+
+    "take note of the here doc location and construct a literal from the following statements" in {
+      val List(sql) = cpg.call.nameExact("foo").argument.isLiteral.l: @unchecked
+      sql.code shouldBe
+        """SELECT * FROM food
+          |WHERE healthy = true
+          |""".stripMargin.trim
+      sql.lineNumber shouldBe Option(1)
+      sql.columnNumber shouldBe Option(4)
+      sql.typeFullName shouldBe Defines.String
+    }
+  }
+
+  // TODO: Handle multiple heredoc parameters
+  "call with multiple heredoc parameters" ignore {
+    val cpg = code("""puts(<<-ONE, <<-TWO)
+        |content for heredoc one
+        |ONE
+        |content for heredoc two
+        |TWO
+        |""".stripMargin)
+
+    "take note of the here doc locations and construct the literals respectively from the following statements" in {
+      cpg.method(":program").dotAst.foreach(println)
+      val List(one, two) = cpg.call.nameExact("puts").argument.isLiteral.l: @unchecked
+      one.code shouldBe "content for heredoc one"
+      one.lineNumber shouldBe Option(1)
+      one.columnNumber shouldBe Option(5)
+      one.typeFullName shouldBe Defines.String
+      two.code shouldBe "content for heredoc two"
+      two.lineNumber shouldBe Option(1)
+      two.columnNumber shouldBe Option(13)
+      two.typeFullName shouldBe Defines.String
+    }
+  }
+
+  "a call with a normal and a do block argument" should {
+    val cpg = code("""
+        |def client
+        |    Faraday.new(API_HOST) do |builder|
+        |      builder.request :json
+        |      builder.options[:timeout] = READ_TIMEOUT
+        |      builder.options[:open_timeout] = OPEN_TIMEOUT
+        |    end
+        |end
+        |""".stripMargin)
+
+    "have the correct arguments in the correct ordering" in {
+      val List(n)                                                          = cpg.call.nameExact("new").l: @unchecked
+      val List(faraday: Identifier, apiHost: Identifier, doRef: MethodRef) = n.argument.l: @unchecked
+      faraday.name shouldBe "Faraday"
+      faraday.argumentIndex shouldBe 0
+      apiHost.name shouldBe "API_HOST"
+      apiHost.argumentIndex shouldBe 1
+      doRef.methodFullName shouldBe "Test0.rb::program.new3"
+      doRef.argumentIndex shouldBe 2
     }
   }
 }
