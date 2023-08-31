@@ -48,7 +48,7 @@ class ASTCreationForStructureTests extends GoCodeToCpgSuite {
       cpg.typeDecl("Person").member.name("Age").typeFullName.head shouldBe "int"
     }
 
-    "structure with element of type anaother structure" in {
+    "structure with element of type another structure" in {
 
       val cpg = code("""
           package main
