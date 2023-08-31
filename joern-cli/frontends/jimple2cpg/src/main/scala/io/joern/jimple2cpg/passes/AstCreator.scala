@@ -17,7 +17,7 @@ import scala.collection.immutable.HashSet
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters.CollectionHasAsScala
-import scala.util.{Failure, Success, Try}
+import scala.util.{boundary, Failure, Success, Try}
 
 class AstCreator(filename: String, cls: SootClass, global: Global)(implicit withSchemaValidation: ValidationMode)
     extends AstCreatorBase(filename) {
@@ -1180,25 +1180,28 @@ object AstCreator {
   def parseAsmType(signature: String): String = {
     val sigArr = signature.toCharArray
     val sb     = new mutable.StringBuilder()
-    sigArr.toSeq.foreach { (c: Char) =>
-      if (c == ';') {
-        val prefix = sb
-          .toString()
-          .replace("[", "")
-          .substring(1)
-          .replace("/", ".")
-        val suffix = sb.toSeq
-          .filter { _ == '[' }
-          .map { _ => "[]" }
-          .mkString("")
-        return s"$prefix$suffix"
-      } else if (isPrimitive(c) && sb.indexOf("L") == -1) {
-        return s"${primitives(c)}${sb.toString().toSeq.filter { _ == '[' }.map { _ => "[]" }.mkString("")}"
-      } else if (isObject(c)) {
-        sb.append(c)
-      } else if (isArray(c)) {
-        sb.append(c)
-      } else sb.append(c)
+
+    boundary {
+      sigArr.toSeq.foreach { (c: Char) =>
+        if (c == ';') {
+          val prefix = sb
+            .toString()
+            .replace("[", "")
+            .substring(1)
+            .replace("/", ".")
+          val suffix = sb.toSeq
+            .filter { _ == '[' }
+            .map { _ => "[]" }
+            .mkString("")
+          boundary.break(s"$prefix$suffix")
+        } else if (isPrimitive(c) && sb.indexOf("L") == -1) {
+          boundary.break(s"${primitives(c)}${sb.toString().toSeq.filter { _ == '[' }.map { _ => "[]" }.mkString("")}")
+        } else if (isObject(c)) {
+          sb.append(c)
+        } else if (isArray(c)) {
+          sb.append(c)
+        } else sb.append(c)
+      }
     }
     sb.toString()
   }
