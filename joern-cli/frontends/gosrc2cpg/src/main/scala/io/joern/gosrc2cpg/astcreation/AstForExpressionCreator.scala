@@ -12,12 +12,14 @@ import scala.collection.immutable.Seq
 trait AstForExpressionCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
   def astsForExpression(expr: ParserNodeInfo): Seq[Ast] = {
     expr.node match {
-      case BinaryExpr => astForBinaryExpr(expr)
-      case StarExpr   => astForStarExpr(expr)
-      case UnaryExpr  => astForUnaryExpr(expr)
-      case ParenExpr  => astsForExpression(createParserNodeInfo(expr.json(ParserKeys.X)))
-      case StructType => astForStructType(expr)
-      case _          => Seq(Ast())
+      case BinaryExpr     => astForBinaryExpr(expr)
+      case StarExpr       => astForStarExpr(expr)
+      case UnaryExpr      => astForUnaryExpr(expr)
+      case ParenExpr      => astsForExpression(createParserNodeInfo(expr.json(ParserKeys.X)))
+      case StructType     => astForStructType(expr)
+      case TypeAssertExpr => astForNode(expr.json(ParserKeys.X))
+      case CallExpr       => astForCallExpression(expr)
+      case _              => Seq(Ast())
     }
   }
 

@@ -25,6 +25,7 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)(im
     with AstForFunctionsCreator
     with AstForPrimitivesCreator
     with AstForStatementsCreator
+    with AstForMethodCallExpressionCreator
     with X2CpgAstNodeBuilder[ParserNodeInfo, AstCreator] {
 
   protected val logger: Logger = LoggerFactory.getLogger(classOf[AstCreator])
@@ -94,21 +95,6 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)(im
       case _: BaseStmt      => astsForStatement(nodeInfo)
       case _                => Seq()
     }
-  }
-
-  protected def astForEmptyArrayInitializer(primitive: ParserNodeInfo): Ast = {
-    val (typeFullName, typeFullNameForcode, isVariadic, _) = processTypeInfo(primitive)
-    Ast(
-      callNode(
-        primitive,
-        primitive.code,
-        Operators.arrayInitializer,
-        Operators.arrayInitializer,
-        DispatchTypes.STATIC_DISPATCH,
-        Option(Defines.empty),
-        Option(typeFullName) // The "" around the typename is eliminated
-      )
-    )
   }
 
   protected def astForNode(json: Value): Seq[Ast] = {

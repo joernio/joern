@@ -5,7 +5,7 @@ import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -19,28 +19,16 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   protected def astForCompositeLiteral(primitive: ParserNodeInfo): Seq[Ast] = {
-    var elementAsts = Seq(Ast())
-    if (!primitive.json(ParserKeys.Elts).isNull) {
-      elementAsts = primitive.json(ParserKeys.Elts).arr.flatMap(e => astForElts(createParserNodeInfo(e))).toSeq
-      val typeNodeJson = Try(createParserNodeInfo(primitive.json(ParserKeys.Type)))
-      val typeNode = if (typeNodeJson.isSuccess) {
-        typeNodeJson.get.node match
-          case ArrayType =>
-            Seq(astForEmptyArrayInitializer(primitive))
-          case _ =>
-            Seq(Ast())
-      } else {
-        Seq(Ast())
-      }
-      elementAsts ++ typeNode
-    } else {
-      // Empty array
-      Seq(astForEmptyArrayInitializer(primitive))
-    }
-  }
-
-  private def astForElts(node: ParserNodeInfo): Seq[Ast] = {
-    astForNode(node)
+    val elementsAsts = Try(primitive.json(ParserKeys.Elts)) match
+      case Success(value) if !value.isNull => value.arr.flatMap(e => astForNode(createParserNodeInfo(e))).toSeq
+      case _                               => Seq.empty
+    val typeNode = createParserNodeInfo(primitive.json(ParserKeys.Type))
+    val typeAst = typeNode.node match
+      case ArrayType =>
+        Seq(astForArrayInitializer(primitive))
+      case _ =>
+        Seq.empty
+    elementsAsts ++ typeAst
   }
 
   private def astForLiteral(stringLiteral: ParserNodeInfo): Ast = {
@@ -78,4 +66,18 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     }).toOption.getOrElse(Defines.anyTypeName)
   }
 
+  protected def astForArrayInitializer(primitive: ParserNodeInfo): Ast = {
+    val (typeFullName, typeFullNameForcode, isVariadic, _) = processTypeInfo(primitive)
+    Ast(
+      callNode(
+        primitive,
+        primitive.code,
+        Operators.arrayInitializer,
+        Operators.arrayInitializer,
+        DispatchTypes.STATIC_DISPATCH,
+        Option(Defines.empty),
+        Option(typeFullName) // The "" around the typename is eliminated
+      )
+    )
+  }
 }

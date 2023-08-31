@@ -12,50 +12,48 @@ object ParserAst {
   sealed trait ParserNode {
     override def toString: String = this.getClass.getSimpleName.stripSuffix("$")
   }
-  sealed trait BaseExpr extends ParserNode
-  sealed trait BaseStmt extends ParserNode
-
+  sealed trait BaseExpr      extends ParserNode
+  object BinaryExpr          extends BaseExpr
+  object UnaryExpr           extends BaseExpr
+  object StarExpr            extends BaseExpr
+  object ParenExpr           extends BaseExpr
+  object TypeAssertExpr      extends BaseExpr
+  object SelectorExpr        extends BaseExpr
+  object CallExpr            extends BaseExpr
+  object StructType          extends BaseExpr
+  sealed trait BaseStmt      extends ParserNode
+  object BlockStmt           extends BaseStmt
+  object DeclStmt            extends BaseStmt
+  object AssignStmt          extends BaseStmt
+  object ExprStmt            extends BaseStmt
+  object IncDecStmt          extends BaseStmt
+  object IfStmt              extends BaseStmt
+  object SwitchStmt          extends BaseStmt
+  object TypeSwitchStmt      extends BaseStmt
+  object ReturnStmt          extends BaseStmt
+  object ForStmt             extends BaseStmt
+  object RangeStmt           extends BaseStmt
+  object BranchStmt          extends BaseStmt
+  object LabeledStmt         extends BaseStmt
   sealed trait BasePrimitive extends ParserNode
+  object BasicLit            extends BasePrimitive
+  object Ident               extends BasePrimitive
+  object CompositeLit        extends BasePrimitive
+  object File                extends ParserNode
+  object GenDecl             extends ParserNode
+  object ImportSpec          extends ParserNode
+  object FuncDecl            extends ParserNode
+  object ValueSpec           extends ParserNode
+  object CaseClause          extends ParserNode
+  object InterfaceType       extends ParserNode
+  object FuncType            extends ParserNode
+  object Ellipsis            extends ParserNode
+  object Unknown             extends ParserNode
+  object FieldList           extends ParserNode
+  object ArrayType           extends ParserNode
+  object Field               extends ParserNode
+  object TypeSpec            extends ParserNode
 
-  object File       extends ParserNode
-  object GenDecl    extends ParserNode
-  object ImportSpec extends ParserNode
-  object BasicLit   extends BasePrimitive
-  object FuncDecl   extends ParserNode
-  object BlockStmt  extends BaseStmt
-  object DeclStmt   extends BaseStmt
-  object ValueSpec  extends ParserNode
-  object Ident      extends BasePrimitive
-  object AssignStmt extends BaseStmt
-  object ExprStmt   extends BaseStmt
-  object BinaryExpr extends BaseExpr
-  object UnaryExpr  extends BaseExpr
-  object StarExpr   extends BaseExpr
-
-  object IncDecStmt     extends BaseStmt
-  object IfStmt         extends BaseStmt
-  object ParenExpr      extends BaseExpr
-  object SwitchStmt     extends BaseStmt
-  object CaseClause     extends ParserNode
-  object TypeSwitchStmt extends BaseStmt
-  object TypeAssertExpr extends BaseExpr
-  object InterfaceType  extends ParserNode
-  object ReturnStmt     extends BaseStmt
-  object FuncType       extends ParserNode
-  object Ellipsis       extends ParserNode
-  object SelectorExpr   extends BaseExpr
-  object ForStmt        extends BaseStmt
-  object CallExpr       extends BaseExpr
-  object RangeStmt      extends BaseStmt
-  object Unknown        extends ParserNode
-  object BranchStmt     extends BaseStmt
-  object LabeledStmt    extends BaseStmt
-  object FieldList      extends ParserNode
-  object ArrayType      extends ParserNode
-  object CompositeLit   extends BasePrimitive
-  object Field          extends ParserNode
-  object TypeSpec       extends ParserNode
-  object StructType     extends BaseExpr
 }
 
 object ParserKeys {
@@ -102,4 +100,5 @@ object ParserKeys {
   val Elts            = "Elts"
   val Fun             = "Fun"
   val Fields          = "Fields"
+  val Args            = "Args"
 }
