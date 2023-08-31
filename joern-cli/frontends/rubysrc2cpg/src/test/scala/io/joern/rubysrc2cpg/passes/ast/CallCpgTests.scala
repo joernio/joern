@@ -1,10 +1,10 @@
 package io.joern.rubysrc2cpg.passes.ast
 
-import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes, DispatchTypes, Operators, nodes}
 import io.joern.rubysrc2cpg.passes.Defines
+import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, MethodRef}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, nodes}
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 class CallCpgTests extends RubyCode2CpgFixture {
   "simple call method" should {
@@ -157,6 +157,29 @@ class CallCpgTests extends RubyCode2CpgFixture {
       two.lineNumber shouldBe Option(1)
       two.columnNumber shouldBe Option(13)
       two.typeFullName shouldBe Defines.String
+    }
+  }
+
+  "a call with a normal and a do block argument" should {
+    val cpg = code("""
+        |def client
+        |    Faraday.new(API_HOST) do |builder|
+        |      builder.request :json
+        |      builder.options[:timeout] = READ_TIMEOUT
+        |      builder.options[:open_timeout] = OPEN_TIMEOUT
+        |    end
+        |end
+        |""".stripMargin)
+
+    "have the correct arguments in the correct ordering" in {
+      val List(n)                                                          = cpg.call.nameExact("new").l: @unchecked
+      val List(faraday: Identifier, apiHost: Identifier, doRef: MethodRef) = n.argument.l: @unchecked
+      faraday.name shouldBe "Faraday"
+      faraday.argumentIndex shouldBe 0
+      apiHost.name shouldBe "API_HOST"
+      apiHost.argumentIndex shouldBe 1
+      doRef.methodFullName shouldBe "Test0.rb::program.new3"
+      doRef.argumentIndex shouldBe 2
     }
   }
 }
