@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 import scala.jdk.OptionConverters.RichOptional
-import scala.util.Try
 
 class SimpleCombinedTypeSolver extends TypeSolver {
 
@@ -25,8 +24,6 @@ class SimpleCombinedTypeSolver extends TypeSolver {
   private val typeCache = new GuavaCache(
     CacheBuilder.newBuilder().build[String, SymbolReference[ResolvedReferenceTypeDeclaration]]()
   )
-
-  private val unsolvedType = SymbolReference.unsolved(classOf[ResolvedReferenceTypeDeclaration])
 
   def addCachingTypeSolver(typeSolver: TypeSolver): Unit = {
     cachingTypeSolvers.append(typeSolver)
@@ -45,7 +42,7 @@ class SimpleCombinedTypeSolver extends TypeSolver {
       case None =>
         findSolvedTypeWithSolvers(cachingTypeSolvers, name)
           .getOrElse {
-            val result = findSolvedTypeWithSolvers(nonCachingTypeSolvers, name).getOrElse(unsolvedType)
+            val result = findSolvedTypeWithSolvers(nonCachingTypeSolvers, name).getOrElse(SymbolReference.unsolved())
             typeCache.put(name, result)
             result
           }
@@ -98,9 +95,4 @@ class SimpleCombinedTypeSolver extends TypeSolver {
       this.parent = parent
     }
   }
-}
-
-object SimpleCombinedTypeSolver {
-  val unsolvedType: SymbolReference[ResolvedReferenceTypeDeclaration] =
-    SymbolReference.unsolved(classOf[ResolvedReferenceTypeDeclaration])
 }

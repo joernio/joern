@@ -1,30 +1,21 @@
 package io.joern.javasrc2cpg.typesolvers
 
+import com.github.javaparser.resolution.{TypeSolver, UnsolvedSymbolException}
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration
-import com.github.javaparser.resolution.UnsolvedSymbolException
-import io.joern.javasrc2cpg.typesolvers.JdkJarTypeSolver._
-import javassist.ClassPool
-
-import scala.jdk.CollectionConverters._
-import scala.collection.mutable
-import scala.util.Using
-import org.slf4j.LoggerFactory
-import java.util.jar.JarFile
-import java.io.IOException
-import java.util.jar.JarEntry
-import scala.util.Success
-import scala.util.Try
-import scala.util.Failure
-import io.joern.x2cpg.SourceFiles
-import javassist.CtClass
-import com.github.javaparser.symbolsolver.javassistmodel.JavassistFactory
-import javassist.NotFoundException
-import javassist.ClassPath
-import io.shiftleft.semanticcpg.language.singleToEvalTypeAccessorsParameterOut
-import com.github.javaparser.resolution.TypeSolver
 import com.github.javaparser.resolution.model.SymbolReference
+import com.github.javaparser.symbolsolver.javassistmodel.JavassistFactory
+import io.joern.javasrc2cpg.typesolvers.JdkJarTypeSolver.*
+import io.joern.x2cpg.SourceFiles
+import javassist.{ClassPath, CtClass}
+import org.slf4j.LoggerFactory
 
-class JdkJarTypeSolver private (jdkPath: String) extends TypeSolver {
+import java.io.IOException
+import java.util.jar.JarFile
+import scala.collection.mutable
+import scala.jdk.CollectionConverters.*
+import scala.util.{Failure, Success, Try, Using}
+
+class JdkJarTypeSolver extends TypeSolver {
 
   private val logger = LoggerFactory.getLogger(this.getClass())
 
@@ -52,7 +43,7 @@ class JdkJarTypeSolver private (jdkPath: String) extends TypeSolver {
     if (knownPackagePrefixes.contains(packagePrefix)) {
       lookupType(javaParserName)
     } else {
-      SymbolReference.unsolved(classOf[RefType])
+      SymbolReference.unsolved()
     }
   }
 
@@ -64,7 +55,7 @@ class JdkJarTypeSolver private (jdkPath: String) extends TypeSolver {
         refTypeToSymbolReference(refType)
 
       case Failure(e) =>
-        SymbolReference.unsolved(classOf[RefType])
+        SymbolReference.unsolved()
     }
   }
 
@@ -147,7 +138,7 @@ object JdkJarTypeSolver {
     if (jarPaths.isEmpty) {
       throw new IllegalArgumentException(s"No .jar or .jmod files found at JDK path ${jdkPath}")
     }
-    new JdkJarTypeSolver(jdkPath).withJars(jarPaths)
+    new JdkJarTypeSolver().withJars(jarPaths)
   }
 
   /** Convert JavaParser class name foo.bar.qux.Baz to package prefix foo.bar Only use first 2 parts since this is
