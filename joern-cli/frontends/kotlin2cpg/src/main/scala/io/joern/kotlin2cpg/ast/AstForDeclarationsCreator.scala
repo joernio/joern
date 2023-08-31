@@ -514,10 +514,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val explicitTypeName = Option(expr.getTypeReference).map(_.getText).getOrElse(TypeConstants.any)
     val elem             = expr.getIdentifyingElement
 
-    val hasRHSCtorCall = expr.getDelegateExpressionOrInitializer match {
-      case typed: KtExpression => typeInfoProvider.isConstructorCall(typed).getOrElse(false)
-      case _                   => false
-    }
+    val hasRHSCtorCall =
+      Option(expr.getDelegateExpressionOrInitializer).flatMap(typeInfoProvider.isConstructorCall).getOrElse(false)
     val ctorCallExprMaybe =
       if (hasRHSCtorCall) {
         expr.getDelegateExpressionOrInitializer match {
