@@ -12,6 +12,8 @@ import scala.language.postfixOps
 
 object DotSerializer {
 
+  private val charLimit = 50
+
   case class Graph(
     vertices: List[StoredNode],
     edges: List[Edge],
@@ -60,12 +62,18 @@ object DotSerializer {
     sb.append(s"""digraph "$name" {  \n""")
   }
 
+  private def limit(str: String): String = if (str.length > charLimit) {
+    s"${str.take(charLimit - 3)}..."
+  } else {
+    str
+  }
+
   private def stringRepr(vertex: StoredNode): String = {
     val maybeLineNo: Optional[AnyRef] = vertex.propertyOption(PropertyNames.LINE_NUMBER)
     escape(vertex match {
-      case call: Call                            => (call.name, call.code).toString
-      case contrl: ControlStructure              => (contrl.label, contrl.controlStructureType, contrl.code).toString()
-      case expr: Expression                      => (expr.label, expr.code, toCfgNode(expr).code).toString
+      case call: Call                            => (call.name, limit(call.code)).toString
+      case contrl: ControlStructure              => (contrl.label, contrl.controlStructureType, contrl.code).toString
+      case expr: Expression                      => (expr.label, limit(expr.code), limit(toCfgNode(expr).code)).toString
       case method: Method                        => (method.label, method.name).toString
       case ret: MethodReturn                     => (ret.label, ret.typeFullName).toString
       case param: MethodParameterIn              => ("PARAM", param.code).toString

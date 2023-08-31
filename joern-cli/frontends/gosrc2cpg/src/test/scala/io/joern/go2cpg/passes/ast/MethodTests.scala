@@ -1,6 +1,7 @@
 package io.joern.go2cpg.passes.ast
 
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
+import io.joern.gosrc2cpg.astcreation.Defines
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
 import io.shiftleft.semanticcpg.language.*
 
@@ -8,7 +9,7 @@ import java.io.File
 
 class MethodTests extends GoCodeToCpgSuite {
 
-  "Empty parameters" should {
+  "Empty parameters with no return" should {
     val cpg = code("""
         |package main
         |func foo() {
@@ -20,7 +21,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.name shouldBe "foo"
       x.fullName shouldBe "main.foo"
       x.code should startWith("func foo() {")
-      x.signature shouldBe "main.foo ()"
+      x.signature shouldBe "main.foo()"
       x.isExternal shouldBe false
       x.astParentType shouldBe NodeTypes.TYPE_DECL
       x.astParentFullName shouldBe "Test0.go:main.<global>"
@@ -34,6 +35,137 @@ class MethodTests extends GoCodeToCpgSuite {
       val List(x) = cpg.method.name("foo").bindingTypeDecl.l
       x.name shouldBe "main.<global>"
       x.fullName shouldBe "Test0.go:main.<global>"
+    }
+
+    "check empty return node" in {
+      cpg.method.name("foo").methodReturn.size shouldBe 1
+      val List(x) = cpg.method.name("foo").methodReturn.l
+      x.typeFullName shouldBe Defines.voidTypeName
+    }
+  }
+
+  "Empty parameters with int return" should {
+    val cpg = code("""
+        |package main
+        |func foo() int{
+        |  return 0
+        |}
+        |""".stripMargin)
+
+    "Be correct with method node properties" in {
+      val List(x) = cpg.method.name("foo").l
+      x.name shouldBe "foo"
+      x.fullName shouldBe "main.foo"
+      x.code should startWith("func foo()")
+      x.signature shouldBe "main.foo()int"
+      x.isExternal shouldBe false
+      x.astParentType shouldBe NodeTypes.TYPE_DECL
+      x.astParentFullName shouldBe "Test0.go:main.<global>"
+      x.order shouldBe 1
+      x.filename shouldBe "Test0.go"
+      x.lineNumber shouldBe Option(3)
+      x.lineNumberEnd shouldBe Option(5)
+    }
+
+    "Be correct with return node" in {
+      cpg.method.name("foo").methodReturn.size shouldBe 1
+      val List(x) = cpg.method.name("foo").methodReturn.l
+      x.typeFullName shouldBe "int"
+    }
+  }
+
+  "Empty parameters with int array return" should {
+    val cpg = code("""
+        |package main
+        |func foo() [5]int {
+        |	a := [5]int{1, 2}
+        |	return a
+        |}
+        |""".stripMargin)
+
+    "Be correct with method node properties" in {
+      val List(x) = cpg.method.name("foo").l
+      x.name shouldBe "foo"
+      x.fullName shouldBe "main.foo"
+      x.code should startWith("func foo() [5]int {")
+      x.signature shouldBe "main.foo()[]int"
+      x.isExternal shouldBe false
+      x.astParentType shouldBe NodeTypes.TYPE_DECL
+      x.astParentFullName shouldBe "Test0.go:main.<global>"
+      x.order shouldBe 1
+      x.filename shouldBe "Test0.go"
+      x.lineNumber shouldBe Option(3)
+      x.lineNumberEnd shouldBe Option(6)
+    }
+
+    "Be correct with return node" in {
+      cpg.method.name("foo").methodReturn.size shouldBe 1
+      val List(x) = cpg.method.name("foo").methodReturn.l
+      x.typeFullName shouldBe "[]int"
+    }
+  }
+
+  "Empty parameters with struct type return" should {
+    val cpg = code("""
+        |package main
+        |import "joern.io/sample/fpkg"
+        |func foo() fpkg.Sample{
+        |  return nil
+        |}
+        |""".stripMargin)
+
+    "Be correct with method node properties" in {
+      val List(x) = cpg.method.name("foo").l
+      x.name shouldBe "foo"
+      x.fullName shouldBe "main.foo"
+      x.code should startWith("func foo() fpkg.Sample{")
+      x.signature shouldBe "main.foo()joern.io/sample/fpkg.Sample"
+      x.isExternal shouldBe false
+      x.astParentType shouldBe NodeTypes.TYPE_DECL
+      x.astParentFullName shouldBe "Test0.go:main.<global>"
+      x.order shouldBe 2
+      x.filename shouldBe "Test0.go"
+      x.lineNumber shouldBe Option(4)
+      x.lineNumberEnd shouldBe Option(6)
+    }
+
+    "Be correct with return node" in {
+      cpg.method.name("foo").methodReturn.size shouldBe 1
+      val List(x) = cpg.method.name("foo").methodReturn.l
+      x.typeFullName shouldBe "joern.io/sample/fpkg.Sample"
+    }
+  }
+
+  "Empty parameters with tuple return" should {
+    val cpg = code("""
+        |package main
+        |import "joern.io/sample/fpkg"
+        |func foo() (fpkg.Sample,error){
+        |  return nil
+        |}
+        |""".stripMargin)
+
+    "Be correct with method node properties" ignore {
+      val List(x) = cpg.method.name("foo").l
+      x.name shouldBe "foo"
+      x.fullName shouldBe "main.foo"
+      x.code should startWith("func foo() (fpkg.Sample,error){")
+      // TODO: Tuple handling needs to be done properly to return both the types.
+      x.signature shouldBe "main.foo()(joern.io/sample/fpkg.Sample,error)"
+      x.isExternal shouldBe false
+      x.astParentType shouldBe NodeTypes.TYPE_DECL
+      x.astParentFullName shouldBe "Test0.go:main.<global>"
+      x.order shouldBe 2
+      x.filename shouldBe "Test0.go"
+      x.lineNumber shouldBe Option(4)
+      x.lineNumberEnd shouldBe Option(6)
+    }
+
+    "Be correct with return node" in {
+      cpg.method.name("foo").methodReturn.size shouldBe 1
+      val List(x) = cpg.method.name("foo").methodReturn.l
+      // TODO: Tuple handling needs to be done properly to return both the types.
+      x.typeFullName shouldBe "joern.io/sample/fpkg.Sample"
     }
   }
 
@@ -52,7 +184,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.name shouldBe "foo"
       x.fullName shouldBe "main.foo"
       x.code should startWith("func foo() {")
-      x.signature shouldBe "main.foo ()"
+      x.signature shouldBe "main.foo()"
       x.isExternal shouldBe false
       x.astParentType shouldBe NodeTypes.TYPE_DECL
       x.astParentFullName shouldBe "Test0.go:main.<global>"
@@ -65,7 +197,7 @@ class MethodTests extends GoCodeToCpgSuite {
       y.name shouldBe "bar"
       y.fullName shouldBe "main.bar"
       y.code should startWith("func bar() {")
-      y.signature shouldBe "main.bar ()"
+      y.signature shouldBe "main.bar()"
       y.isExternal shouldBe false
       y.astParentType shouldBe NodeTypes.TYPE_DECL
       y.astParentFullName shouldBe "Test0.go:main.<global>"
@@ -94,7 +226,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.name shouldBe "foo"
       x.fullName shouldBe "main.foo"
       x.code should startWith("func foo(argc int, argv string)")
-      x.signature shouldBe "main.foo (int, string)"
+      x.signature shouldBe "main.foo(int, string)"
       x.isExternal shouldBe false
       x.astParentType shouldBe NodeTypes.TYPE_DECL
       x.astParentFullName shouldBe "Test0.go:main.<global>"
@@ -145,7 +277,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.name shouldBe "foo"
       x.fullName shouldBe "main.foo"
       x.code should startWith("func foo(argc, arga int, argv string)")
-      x.signature shouldBe "main.foo (int, int, string)"
+      x.signature shouldBe "main.foo(int, int, string)"
       x.isExternal shouldBe false
       x.astParentType shouldBe NodeTypes.TYPE_DECL
       x.astParentFullName shouldBe "Test0.go:main.<global>"
@@ -205,7 +337,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.name shouldBe "foo"
       x.fullName shouldBe "main.foo"
       x.code should startWith("func foo(argc, arga int, argv ...string)")
-      x.signature shouldBe "main.foo (int, int, []string)"
+      x.signature shouldBe "main.foo(int, int, []string)"
       x.isExternal shouldBe false
       x.astParentType shouldBe NodeTypes.TYPE_DECL
       x.astParentFullName shouldBe "Test0.go:main.<global>"
@@ -264,7 +396,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.name shouldBe "foo"
       x.fullName shouldBe "main.foo"
       x.code should startWith("func foo(argc, arga int, argv []int)")
-      x.signature shouldBe "main.foo (int, int, []int)"
+      x.signature shouldBe "main.foo(int, int, []int)"
       x.isExternal shouldBe false
       x.astParentType shouldBe NodeTypes.TYPE_DECL
       x.astParentFullName shouldBe "Test0.go:main.<global>"
@@ -323,7 +455,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.name shouldBe "foo"
       x.fullName shouldBe "main.foo"
       x.code should startWith("func foo(argc int, argv *string)")
-      x.signature shouldBe "main.foo (int, *string)"
+      x.signature shouldBe "main.foo(int, *string)"
       x.isExternal shouldBe false
       x.astParentType shouldBe NodeTypes.TYPE_DECL
       x.astParentFullName shouldBe "Test0.go:main.<global>"
@@ -375,7 +507,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.fullName shouldBe "main.foo"
       x.code should startWith("func foo(argc int, argv **string)")
       // TODO: pointer to pointer use cae need to be hanled
-      x.signature shouldBe "main.foo (int, **string)"
+      x.signature shouldBe "main.foo(int, **string)"
       x.isExternal shouldBe false
       x.astParentType shouldBe NodeTypes.TYPE_DECL
       x.astParentFullName shouldBe "Test0.go:main.<global>"
@@ -427,7 +559,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.name shouldBe "foo"
       x.fullName shouldBe "main.foo"
       x.code should startWith("func foo(argc int, argv []*string)")
-      x.signature shouldBe "main.foo (int, []*string)"
+      x.signature shouldBe "main.foo(int, []*string)"
       x.isExternal shouldBe false
       x.astParentType shouldBe NodeTypes.TYPE_DECL
       x.astParentFullName shouldBe "Test0.go:main.<global>"
@@ -478,7 +610,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.name shouldBe "foo"
       x.fullName shouldBe "main.foo"
       x.code should startWith("func foo(argc int, argv ...*string)")
-      x.signature shouldBe "main.foo (int, []*string)"
+      x.signature shouldBe "main.foo(int, []*string)"
       x.isExternal shouldBe false
       x.astParentType shouldBe NodeTypes.TYPE_DECL
       x.astParentFullName shouldBe "Test0.go:main.<global>"
@@ -529,7 +661,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.name shouldBe "foo"
       x.fullName shouldBe "main.foo"
       x.code should startWith("func foo(argc int, argv *[]string)")
-      x.signature shouldBe "main.foo (int, *[]string)"
+      x.signature shouldBe "main.foo(int, *[]string)"
       x.isExternal shouldBe false
       x.astParentType shouldBe NodeTypes.TYPE_DECL
       x.astParentFullName shouldBe "Test0.go:main.<global>"
@@ -583,7 +715,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.name shouldBe "foo"
       x.fullName shouldBe "main.foo"
       x.code should startWith("func foo(argc int, argv Sample)")
-      x.signature shouldBe "main.foo (int, main.Sample)"
+      x.signature shouldBe "main.foo(int, main.Sample)"
       x.isExternal shouldBe false
       x.astParentType shouldBe NodeTypes.TYPE_DECL
       x.astParentFullName shouldBe "Test0.go:main.<global>"
@@ -651,7 +783,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.name shouldBe "foo"
       x.fullName shouldBe "main.foo"
       x.code should startWith("func foo(argc int, argv Sample)")
-      x.signature shouldBe "main.foo (int, main.Sample)"
+      x.signature shouldBe "main.foo(int, main.Sample)"
       x.isExternal shouldBe false
       x.astParentType shouldBe NodeTypes.TYPE_DECL
       x.astParentFullName shouldBe "main.go:main.<global>"
@@ -717,7 +849,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.name shouldBe "foo"
       x.fullName shouldBe "joern.io/sample.foo"
       x.code should startWith("func foo(argc int, argv Sample)")
-      x.signature shouldBe "joern.io/sample.foo (int, joern.io/sample.Sample)"
+      x.signature shouldBe "joern.io/sample.foo(int, joern.io/sample.Sample)"
       x.isExternal shouldBe false
       x.astParentType shouldBe NodeTypes.TYPE_DECL
       x.astParentFullName shouldBe "main.go:joern.io/sample.<global>"
@@ -784,7 +916,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.name shouldBe "foo"
       x.fullName shouldBe "main.foo"
       x.code should startWith("func foo(argc int, argv fpkg.Sample)")
-      x.signature shouldBe "main.foo (int, joern.io/sample/fpkg.Sample)"
+      x.signature shouldBe "main.foo(int, joern.io/sample/fpkg.Sample)"
       x.isExternal shouldBe false
       x.astParentType shouldBe NodeTypes.TYPE_DECL
       x.astParentFullName shouldBe "main.go:main.<global>"
@@ -853,7 +985,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.name shouldBe "foo"
       x.fullName shouldBe "main.foo"
       x.code should startWith("func foo(argc int, argv ...fpkg.Sample)")
-      x.signature shouldBe "main.foo (int, []joern.io/sample/fpkg.Sample)"
+      x.signature shouldBe "main.foo(int, []joern.io/sample/fpkg.Sample)"
       x.isExternal shouldBe false
       x.astParentType shouldBe NodeTypes.TYPE_DECL
       x.astParentFullName shouldBe "main.go:main.<global>"
@@ -914,7 +1046,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.name shouldBe "foo"
       x.fullName shouldBe "main.foo"
       x.code should startWith("func foo(argc int, argv fpkg.Sample)")
-      x.signature shouldBe "main.foo (int, privado.ai/test/fpkg.Sample)"
+      x.signature shouldBe "main.foo(int, privado.ai/test/fpkg.Sample)"
       x.isExternal shouldBe false
       x.astParentType shouldBe NodeTypes.TYPE_DECL
       x.astParentFullName shouldBe "main.go:main.<global>"
@@ -975,7 +1107,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.name shouldBe "foo"
       x.fullName shouldBe "main.foo"
       x.code should startWith("func foo(argc int, argv []fpkg.Sample)")
-      x.signature shouldBe "main.foo (int, []privado.ai/test/fpkg.Sample)"
+      x.signature shouldBe "main.foo(int, []privado.ai/test/fpkg.Sample)"
       x.isExternal shouldBe false
       x.astParentType shouldBe NodeTypes.TYPE_DECL
       x.astParentFullName shouldBe "main.go:main.<global>"
@@ -1036,7 +1168,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.name shouldBe "foo"
       x.fullName shouldBe "main.foo"
       x.code should startWith("func foo(argc int, argv *fpkg.Sample)")
-      x.signature shouldBe "main.foo (int, *privado.ai/test/fpkg.Sample)"
+      x.signature shouldBe "main.foo(int, *privado.ai/test/fpkg.Sample)"
       x.isExternal shouldBe false
       x.astParentType shouldBe NodeTypes.TYPE_DECL
       x.astParentFullName shouldBe "main.go:main.<global>"
@@ -1097,7 +1229,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.name shouldBe "foo"
       x.fullName shouldBe "main.foo"
       x.code should startWith("func foo(argc int, argv []*fpkg.Sample)")
-      x.signature shouldBe "main.foo (int, []*privado.ai/test/fpkg.Sample)"
+      x.signature shouldBe "main.foo(int, []*privado.ai/test/fpkg.Sample)"
       x.isExternal shouldBe false
       x.astParentType shouldBe NodeTypes.TYPE_DECL
       x.astParentFullName shouldBe "main.go:main.<global>"
@@ -1158,7 +1290,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.name shouldBe "foo"
       x.fullName shouldBe "main.foo"
       x.code should startWith("func foo(argc int, argv *[]fpkg.Sample)")
-      x.signature shouldBe "main.foo (int, *[]privado.ai/test/fpkg.Sample)"
+      x.signature shouldBe "main.foo(int, *[]privado.ai/test/fpkg.Sample)"
       x.isExternal shouldBe false
       x.astParentType shouldBe NodeTypes.TYPE_DECL
       x.astParentFullName shouldBe "main.go:main.<global>"
@@ -1219,7 +1351,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.name shouldBe "foo"
       x.fullName shouldBe "main.foo"
       x.code should startWith("func foo(argc int, argv ...*fpkg.Sample)")
-      x.signature shouldBe "main.foo (int, []*privado.ai/test/fpkg.Sample)"
+      x.signature shouldBe "main.foo(int, []*privado.ai/test/fpkg.Sample)"
       x.isExternal shouldBe false
       x.astParentType shouldBe NodeTypes.TYPE_DECL
       x.astParentFullName shouldBe "main.go:main.<global>"
@@ -1272,7 +1404,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.code should startWith(
         "func foo(argc any, argv interface{}, arga []interface{}, argb *interface{}, argd ...interface{})"
       )
-      x.signature shouldBe "main.foo (any, any, []any, *any, []any)"
+      x.signature shouldBe "main.foo(any, any, []any, *any, []any)"
       x.isExternal shouldBe false
       x.astParentType shouldBe NodeTypes.TYPE_DECL
       x.astParentFullName shouldBe "Test0.go:main.<global>"
@@ -1361,7 +1493,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.fullName shouldBe "main.foo"
       x.code should startWith("func foo(argc int, argv Sample)")
       // TODO: wrong methodfull name being genearted when the packaged is imported with '.'
-      x.signature shouldBe "main.foo (int, privado.ai/test/fpkg.Sample)"
+      x.signature shouldBe "main.foo(int, privado.ai/test/fpkg.Sample)"
       x.isExternal shouldBe false
       x.astParentType shouldBe NodeTypes.TYPE_DECL
       x.astParentFullName shouldBe "main.go:main.<global>"

@@ -1,9 +1,8 @@
 package io.joern.go2cpg.dataflow
 
+import io.joern.dataflowengineoss.language.*
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
-import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
-import io.shiftleft.semanticcpg.language._
-import io.joern.dataflowengineoss.language._
+import io.shiftleft.semanticcpg.language.*
 
 class OperatorDataflowTests extends GoCodeToCpgSuite(withOssDataflow = true) {
   "Source to sink dataflow through operators" should {
@@ -127,6 +126,27 @@ class OperatorDataflowTests extends GoCodeToCpgSuite(withOssDataflow = true) {
       val source = cpg.identifier("a")
       val sink   = cpg.identifier("c")
       sink.reachableByFlows(source).size shouldBe 4
+    }
+
+  }
+
+  "dataflows across type casting operation" ignore {
+    val cpg = code("""
+        |package main
+        |func main() {
+        |	var m interface{} = "a"
+        |	str, ok := m.(string)
+        |}
+        |""".stripMargin)
+    "data flow from identifier to type casted identifier" in {
+      val source = cpg.identifier("m")
+      val sink   = cpg.identifier("str")
+      sink.reachableByFlows(source).size shouldBe 1
+    }
+    "data flow from literal to type casted identifier" in {
+      val source = cpg.literal("a")
+      val sink   = cpg.identifier("str")
+      sink.reachableByFlows(source).size shouldBe 1
     }
   }
 

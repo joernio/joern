@@ -291,11 +291,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     } catch {
       case t: UnsolvedSymbolException =>
         logger.error(s"Unsolved symbol exception caught in $filename")
-        throw t
+        Ast()
       case t: Throwable =>
         logger.error(s"Parsing file $filename failed with $t")
         logger.error(s"Caused by ${t.getCause}")
-        throw t
+        Ast()
     }
   }
 
@@ -2675,7 +2675,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .zipWithIndex
       .map { case ((param, maybeType), idx) =>
         val name         = param.getNameAsString
-        val typeFullName = maybeType.getOrElse(s"${Defines.UnresolvedNamespace}")
+        val typeFullName = maybeType.getOrElse(TypeConstants.Any)
         val code         = s"$typeFullName $name"
         val evalStrat =
           if (param.getType.isPrimitiveType) EvaluationStrategies.BY_VALUE else EvaluationStrategies.BY_SHARING

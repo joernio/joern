@@ -179,7 +179,8 @@ arguments
     ;
     
 argument
-    :   blockArgument                                                                                                           # blockArgumentArgument
+    :   HERE_DOC_IDENTIFIER                                                                                                     # hereDocArgument
+    |   blockArgument                                                                                                           # blockArgumentArgument
     |   splattingArgument                                                                                                       # splattingArgumentArgument
     |   association                                                                                                             # associationArgument
     |   expression                                                                                                              # expressionArgument
@@ -580,7 +581,8 @@ scopedConstantReference
 // --------------------------------------------------------
 
 literal
-    :   numericLiteral                                                                                              # numericLiteralLiteral
+    :   HERE_DOC                                                                                                    # hereDocLiteral
+    |   numericLiteral                                                                                              # numericLiteralLiteral
     |   symbol                                                                                                      # symbolLiteral
     |   REGULAR_EXPRESSION_START REGULAR_EXPRESSION_BODY? REGULAR_EXPRESSION_END                                    # regularExpressionLiteral
     ;

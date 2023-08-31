@@ -4,10 +4,9 @@ import io.joern.rubysrc2cpg.parser.RubyParser.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewFieldIdentifier, NewJumpTarget, NewLiteral, NewNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewFieldIdentifier, NewNode}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, ModifierTypes, Operators}
 import org.antlr.v4.runtime.ParserRuleContext
-import io.joern.x2cpg.utils.*
 import org.slf4j.LoggerFactory
 
 import scala.collection.immutable.Set
@@ -109,6 +108,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case ctx: NumericLiteralLiteralContext    => Seq(astForNumericLiteral(ctx.numericLiteral()))
     case ctx: SymbolLiteralContext            => astForSymbol(ctx.symbol())
     case ctx: RegularExpressionLiteralContext => Seq(astForRegularExpressionLiteral(ctx))
+    case ctx: HereDocLiteralContext           => Seq(astForHereDocLiteral(ctx))
     case _ =>
       logger.error(s"astForLiteralPrimaryExpression() $filename, ${text(ctx)} All contexts mismatched.")
       Seq()
