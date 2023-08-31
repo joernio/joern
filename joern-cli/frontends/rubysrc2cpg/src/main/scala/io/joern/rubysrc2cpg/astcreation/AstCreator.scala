@@ -715,7 +715,7 @@ class AstCreator(
         .lineNumber(blockMethodNode.lineNumber)
         .columnNumber(blockMethodNode.columnNumber)
 
-      Seq(callAst(callNode, Seq(Ast(methodRefNode)), primaryAst.headOption))
+      Seq(callAst(callNode, argsAst ++ Seq(Ast(methodRefNode)), primaryAst.headOption))
     } else {
       val callNode = methodNameAst.head.nodes
         .filter(node => node.isInstanceOf[NewCall])
