@@ -25,6 +25,7 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)(im
     with AstForFunctionsCreator
     with AstForPrimitivesCreator
     with AstForStatementsCreator
+    with AstForStructuresCreator
     with X2CpgAstNodeBuilder[ParserNodeInfo, AstCreator] {
 
   protected val logger: Logger = LoggerFactory.getLogger(classOf[AstCreator])

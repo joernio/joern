@@ -24,6 +24,7 @@ class ASTCreationForStructureTests extends GoCodeToCpgSuite {
       cpg.typeDecl.name("Person").head.fullName shouldBe "Person"
       cpg.typeDecl.name("Person").member.size shouldBe 1
       cpg.typeDecl("Person").member.name("Name").size shouldBe 1
+      cpg.typeDecl("Person").member.name("Name").typeFullName.head shouldBe "string"
     }
 
     "structure with multiple element" in {
@@ -38,9 +39,48 @@ class ASTCreationForStructureTests extends GoCodeToCpgSuite {
   """.stripMargin)
       cpg.typeDecl.name("Person").size shouldBe 1
       cpg.typeDecl.name("Person").head.fullName shouldBe "Person"
+
       cpg.typeDecl.name("Person").member.size shouldBe 2
       cpg.typeDecl("Person").member.name("Name").size shouldBe 1
+
       cpg.typeDecl("Person").member.name("Age").size shouldBe 1
+      cpg.typeDecl("Person").member.name("Name").typeFullName.head shouldBe "string"
+      cpg.typeDecl("Person").member.name("Age").typeFullName.head shouldBe "int"
+    }
+
+    "structure with element of type anaother structure" in {
+
+      val cpg = code("""
+          package main
+          |
+          |type Person struct {
+          |    Name string
+          |    Age  int
+          |}
+          |
+          |type Employee struct {
+          |    person Person
+          |    Salary  int
+          |}
+  """.stripMargin)
+      cpg.typeDecl.name("Person").size shouldBe 1
+      cpg.typeDecl.name("Employee").size shouldBe 1
+
+      cpg.typeDecl.name("Person").head.fullName shouldBe "Person"
+      cpg.typeDecl.name("Employee").head.fullName shouldBe "Employee"
+
+      cpg.typeDecl.name("Person").member.size shouldBe 2
+      cpg.typeDecl.name("Employee").member.size shouldBe 2
+
+      cpg.typeDecl("Person").member.name("Name").size shouldBe 1
+      cpg.typeDecl("Person").member.name("Age").size shouldBe 1
+      cpg.typeDecl("Employee").member.name("Salary").size shouldBe 1
+
+      cpg.typeDecl("Person").member.name("Name").typeFullName.head shouldBe "string"
+      cpg.typeDecl("Person").member.name("Age").typeFullName.head shouldBe "int"
+
+      cpg.typeDecl("Employee").member.name("Salary").typeFullName.head shouldBe "int"
+      cpg.typeDecl("Employee").member.name("person").typeFullName.head shouldBe "main.Person"
     }
   }
 }

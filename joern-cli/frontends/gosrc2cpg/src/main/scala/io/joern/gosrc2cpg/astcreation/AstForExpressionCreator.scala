@@ -21,20 +21,7 @@ trait AstForExpressionCreator(implicit withSchemaValidation: ValidationMode) { t
     }
   }
 
-  protected def astForStructType(expr: ParserNodeInfo): Seq[Ast] = {
-    astForFieldList(createParserNodeInfo(expr.json(ParserKeys.Fields)))
-  }
-
-  private def astForFieldList(fieldList: ParserNodeInfo): Seq[Ast] = {
-    fieldList
-      .json(ParserKeys.List)
-      .arr
-      .map(createParserNodeInfo)
-      .map(astForField)
-      .toSeq
-  }
-
-  private def astForField(field: ParserNodeInfo): Ast = {
+  protected def astForField(field: ParserNodeInfo): Ast = {
     field.node match
       case Field => {
         val typeInfo = createParserNodeInfo(field.json(ParserKeys.Type))
