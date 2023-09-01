@@ -19,9 +19,12 @@ trait AstForStructuresCreator(implicit withSchemaValidation: ValidationMode) { t
     // TODO: Add support for member variables and methods
     Option(typeSpecNode) match {
       case Some(typeSpec) =>
-        val nameNode          = typeSpec.json(ParserKeys.Name)
-        val typeNode          = createParserNodeInfo(typeSpec.json(ParserKeys.Type))
-        val a: NewTypeDecl    = methodAstParentStack.collectFirst { case t: NewTypeDecl => t }.get
+        val nameNode = typeSpec.json(ParserKeys.Name)
+        val typeNode = createParserNodeInfo(typeSpec.json(ParserKeys.Type))
+        val a = methodAstParentStack.collectFirst { case t: NewTypeDecl => t } match {
+          case Some(value) => value
+          case None        => NewTypeDecl()
+        }
         val astParentType     = a.label
         val astParentFullName = a.fullName
         val fullName          = nameNode(ParserKeys.Name).str // TODO: Discuss fullName structure
