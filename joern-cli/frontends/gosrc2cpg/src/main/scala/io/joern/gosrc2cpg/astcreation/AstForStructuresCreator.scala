@@ -17,24 +17,21 @@ trait AstForStructuresCreator(implicit withSchemaValidation: ValidationMode) { t
 
   def astForTypeSpec(typeSpecNode: ParserNodeInfo): Seq[Ast] = {
     // TODO: Add support for member variables and methods
-    Option(typeSpecNode) match {
-      case Some(typeSpec) =>
-        val nameNode = typeSpec.json(ParserKeys.Name)
-        val typeNode = createParserNodeInfo(typeSpec.json(ParserKeys.Type))
-        val a = methodAstParentStack.collectFirst { case t: NewTypeDecl => t } match {
-          case Some(value) => value
-          case None        => NewTypeDecl()
-        }
-        val astParentType     = a.label
-        val astParentFullName = a.fullName
+    methodAstParentStack.collectFirst { case t: NewTypeDecl => t } match {
+      case Some(methodAstNode) =>
+        val nameNode = typeSpecNode.json(ParserKeys.Name)
+        val typeNode = createParserNodeInfo(typeSpecNode.json(ParserKeys.Type))
+
+        val astParentType     = methodAstNode.label
+        val astParentFullName = methodAstNode.fullName
         val fullName          = nameNode(ParserKeys.Name).str // TODO: Discuss fullName structure
         val typeDeclNode_ =
           typeDeclNode(
-            typeSpec,
+            typeSpecNode,
             nameNode(ParserKeys.Name).str,
             fullName,
             parserResult.filename,
-            typeSpec.code,
+            typeSpecNode.code,
             astParentType,
             astParentFullName
           )
@@ -48,9 +45,9 @@ trait AstForStructuresCreator(implicit withSchemaValidation: ValidationMode) { t
 
         val modifier = addModifier(typeDeclNode_, nameNode(ParserKeys.Name).str)
         Seq(Ast(typeDeclNode_).withChild(Ast(modifier)).withChildren(memberAsts.toSeq))
-      case None =>
-        Seq.empty
+      case None => Seq.empty
     }
+
   }
 
   protected def astForStructType(expr: ParserNodeInfo): Seq[Ast] = {
