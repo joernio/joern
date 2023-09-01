@@ -14,7 +14,7 @@ class CustomAssignmentTests extends RubyCode2CpgFixture(withPostProcessing = tru
       val List(_, putsAssignmentCall) = cpg.call.l
       putsAssignmentCall.name shouldBe "<operator>.assignment"
 
-      val List(putsIdentifier: Identifier, putsBuiltInTypeRef: TypeRef) = putsAssignmentCall.argument.l
+      val List(putsIdentifier: Identifier, putsBuiltInTypeRef: TypeRef) = putsAssignmentCall.argument.l: @unchecked
 
       putsIdentifier.name shouldBe "puts"
       putsBuiltInTypeRef.code shouldBe "__builtin.puts"
@@ -40,7 +40,7 @@ class CustomAssignmentTests extends RubyCode2CpgFixture(withPostProcessing = tru
       val List(_, fooAssignmentCall) = cpg.call.l
       fooAssignmentCall.name shouldBe "<operator>.assignment"
 
-      val List(fooIdentifier: Identifier, fooMethodRef: MethodRef) = fooAssignmentCall.argument.l
+      val List(fooIdentifier: Identifier, fooMethodRef: MethodRef) = fooAssignmentCall.argument.l: @unchecked
 
       fooIdentifier.name shouldBe "foo"
       fooMethodRef.methodFullName shouldBe "Test0.rb::program.foo"
