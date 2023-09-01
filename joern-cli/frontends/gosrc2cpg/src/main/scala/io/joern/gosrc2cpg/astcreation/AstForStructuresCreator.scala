@@ -9,6 +9,7 @@ import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Opera
 import ujson.Value
 import io.joern.x2cpg.datastructures.Stack.StackWrapper
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
+import scala.util.{Failure, Success, Try}
 
 import scala.util.Try
 
@@ -50,13 +51,16 @@ trait AstForStructuresCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   protected def astForStructType(expr: ParserNodeInfo): Seq[Ast] = {
-    astForFieldList(createParserNodeInfo(expr.json(ParserKeys.Fields)))
+    Try(expr.json(ParserKeys.Fields)) match
+      case Success(fields) if fields != null =>
+        astForFieldList(createParserNodeInfo(fields))
+      case _ => Seq.empty
   }
 
   private def astForFieldList(fieldList: ParserNodeInfo): Seq[Ast] = {
     fieldList
       .json(ParserKeys.List)
-      .arr
+      .arrOpt.getOrElse(List())
       .map(createParserNodeInfo)
       .map(astForField)
       .toSeq

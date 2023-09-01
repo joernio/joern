@@ -37,7 +37,7 @@ object ParserAst {
   object LabeledStmt         extends BaseStmt
   sealed trait BasePrimitive extends ParserNode
   object BasicLit            extends BasePrimitive
-  object Ident               extends ParserNode
+  object Ident               extends BasePrimitive
   object CompositeLit        extends BasePrimitive
   object File                extends ParserNode
   object GenDecl             extends ParserNode
