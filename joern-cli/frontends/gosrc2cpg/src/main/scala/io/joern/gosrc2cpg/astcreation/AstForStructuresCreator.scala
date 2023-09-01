@@ -18,12 +18,12 @@ trait AstForStructuresCreator(implicit withSchemaValidation: ValidationMode) { t
   def astForTypeSpec(typeSpecNode: ParserNodeInfo): Seq[Ast] = {
     // TODO: Add support for member variables and methods
     methodAstParentStack.collectFirst { case t: NewTypeDecl => t } match {
-      case Some(methodAstNode) =>
+      case Some(parentMethodAstNode) =>
         val nameNode = typeSpecNode.json(ParserKeys.Name)
         val typeNode = createParserNodeInfo(typeSpecNode.json(ParserKeys.Type))
 
-        val astParentType     = methodAstNode.label
-        val astParentFullName = methodAstNode.fullName
+        val astParentType     = parentMethodAstNode.label
+        val astParentFullName = parentMethodAstNode.fullName
         val fullName          = nameNode(ParserKeys.Name).str // TODO: Discuss fullName structure
         val typeDeclNode_ =
           typeDeclNode(
