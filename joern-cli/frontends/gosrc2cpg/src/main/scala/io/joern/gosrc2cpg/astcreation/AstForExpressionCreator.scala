@@ -27,10 +27,10 @@ trait AstForExpressionCreator(implicit withSchemaValidation: ValidationMode) { t
     field.node match
       case Field => {
         val typeInfo = createParserNodeInfo(field.json(ParserKeys.Type))
-        val (typeFullName, typeFullNameForcode, isVariadic, evaluationStrategy) = processTypeInfo(typeInfo)
+        val (typeFullName, typeFullNameForCode, isVariadic, evaluationStrategy) = processTypeInfo(typeInfo)
         val fieldNodeInfo = createParserNodeInfo(field.json(ParserKeys.Names).arr.head)
         val fieldName     = fieldNodeInfo.json(ParserKeys.Name).str
-        Ast(memberNode(typeInfo, fieldName, s"${fieldName} ${typeFullNameForcode}", typeFullName, Seq()))
+        Ast(memberNode(typeInfo, fieldName, s"$fieldName $typeFullNameForCode", typeFullName, Seq()))
       }
       case _ => {
         Ast()
