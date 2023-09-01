@@ -60,7 +60,8 @@ trait AstForStructuresCreator(implicit withSchemaValidation: ValidationMode) { t
   private def astForFieldList(fieldList: ParserNodeInfo): Seq[Ast] = {
     fieldList
       .json(ParserKeys.List)
-      .arrOpt.getOrElse(List())
+      .arrOpt
+      .getOrElse(List())
       .map(createParserNodeInfo)
       .map(astForField)
       .toSeq
