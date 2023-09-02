@@ -24,7 +24,7 @@ trait AstForStructuresCreator(implicit withSchemaValidation: ValidationMode) { t
 
         val astParentType     = parentMethodAstNode.label
         val astParentFullName = parentMethodAstNode.fullName
-        val fullName          = nameNode(ParserKeys.Name).str // TODO: Discuss fullName structure
+        val fullName          = fullyQualifiedPackage + Defines.qualifiedNameSeparator + nameNode(ParserKeys.Name).str
         val typeDeclNode_ =
           typeDeclNode(
             typeSpecNode,
