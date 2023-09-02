@@ -23,19 +23,6 @@ trait AstForExpressionCreator(implicit withSchemaValidation: ValidationMode) { t
     }
   }
 
-  protected def astForField(field: ParserNodeInfo): Ast = {
-    field.node match
-      case Field => {
-        val typeInfo = createParserNodeInfo(field.json(ParserKeys.Type))
-        val (typeFullName, typeFullNameForCode, isVariadic, evaluationStrategy) = processTypeInfo(typeInfo)
-        val fieldNodeInfo = createParserNodeInfo(field.json(ParserKeys.Names).arr.head)
-        val fieldName     = fieldNodeInfo.json(ParserKeys.Name).str
-        Ast(memberNode(typeInfo, fieldName, s"$fieldName $typeFullNameForCode", typeFullName, Seq()))
-      }
-      case _ => {
-        Ast()
-      }
-  }
   private def astForBinaryExpr(binaryExpr: ParserNodeInfo): Seq[Ast] = {
     val op = binaryExpr.json(ParserKeys.Op).value match {
       case "*"  => Operators.multiplication

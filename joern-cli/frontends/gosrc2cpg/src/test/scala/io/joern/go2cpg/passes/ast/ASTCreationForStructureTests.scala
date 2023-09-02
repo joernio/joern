@@ -22,7 +22,7 @@ class ASTCreationForStructureTests extends GoCodeToCpgSuite {
           |}
   """.stripMargin)
     cpg.typeDecl.name("Person").size shouldBe 1
-    cpg.typeDecl.name("Person").head.fullName shouldBe "main"+Defines.qualifiedNameSeparator+"Person"
+    cpg.typeDecl.name("Person").head.fullName shouldBe "main" + Defines.qualifiedNameSeparator + "Person"
     cpg.typeDecl.name("Person").member.size shouldBe 1
 
     "Check member node under type decl node" in {
@@ -44,7 +44,7 @@ class ASTCreationForStructureTests extends GoCodeToCpgSuite {
           |}
   """.stripMargin)
     cpg.typeDecl.name("Person").size shouldBe 1
-    cpg.typeDecl.name("Person").head.fullName shouldBe "main"+Defines.qualifiedNameSeparator+"Person"
+    cpg.typeDecl.name("Person").head.fullName shouldBe "main" + Defines.qualifiedNameSeparator + "Person"
     cpg.typeDecl.name("Person").member.size shouldBe 2
 
     "Check member node under type decl node" in {
@@ -57,7 +57,7 @@ class ASTCreationForStructureTests extends GoCodeToCpgSuite {
 
     "Traversing member node to typedecl node" in {
       val typeDeclNode = cpg.member.name("Name").typeDecl.head
-      typeDeclNode.fullName shouldBe "main"+Defines.qualifiedNameSeparator+"Person"
+      typeDeclNode.fullName shouldBe "main" + Defines.qualifiedNameSeparator + "Person"
     }
   }
 
@@ -79,8 +79,8 @@ class ASTCreationForStructureTests extends GoCodeToCpgSuite {
     cpg.typeDecl.name("Person").size shouldBe 1
     cpg.typeDecl.name("Employee").size shouldBe 1
 
-    cpg.typeDecl.name("Person").head.fullName shouldBe "main"+Defines.qualifiedNameSeparator+"Person"
-    cpg.typeDecl.name("Employee").head.fullName shouldBe "main"+Defines.qualifiedNameSeparator+"Employee"
+    cpg.typeDecl.name("Person").head.fullName shouldBe "main" + Defines.qualifiedNameSeparator + "Person"
+    cpg.typeDecl.name("Employee").head.fullName shouldBe "main" + Defines.qualifiedNameSeparator + "Employee"
 
     "Check member node under type decl node for Person typeDecl" in {
       val personNode = cpg.typeDecl.name("Person").l
@@ -102,11 +102,11 @@ class ASTCreationForStructureTests extends GoCodeToCpgSuite {
 
     "traverse from member node to typedecl node" in {
       val memberNodes = cpg.member.l
-      memberNodes.name("person").typeDecl.head.fullName shouldBe "main"+Defines.qualifiedNameSeparator+"Employee"
-      memberNodes.name("Salary").typeDecl.head.fullName shouldBe "main"+Defines.qualifiedNameSeparator+"Employee"
+      memberNodes.name("person").typeDecl.head.fullName shouldBe "main" + Defines.qualifiedNameSeparator + "Employee"
+      memberNodes.name("Salary").typeDecl.head.fullName shouldBe "main" + Defines.qualifiedNameSeparator + "Employee"
 
-      memberNodes.name("Name").typeDecl.head.fullName shouldBe "main"+Defines.qualifiedNameSeparator+"Person"
-      memberNodes.name("Age").typeDecl.head.fullName shouldBe "main"+Defines.qualifiedNameSeparator+"Person"
+      memberNodes.name("Name").typeDecl.head.fullName shouldBe "main" + Defines.qualifiedNameSeparator + "Person"
+      memberNodes.name("Age").typeDecl.head.fullName shouldBe "main" + Defines.qualifiedNameSeparator + "Person"
 
     }
 
