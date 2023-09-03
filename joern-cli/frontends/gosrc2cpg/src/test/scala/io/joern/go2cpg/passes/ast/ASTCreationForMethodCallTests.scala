@@ -248,6 +248,61 @@ class ASTCreationForMethodCallTests extends GoCodeToCpgSuite {
     }
   }
 
+  "Method call to method with struct type return from the same project but another package" should {
+    val cpg = code(
+      """
+        |module joern.io/sample
+        |go 1.18
+        |""".stripMargin,
+      "go.mod"
+    ).moreCode(
+      """
+        |package lib
+        |type StringAlias string
+        |""".stripMargin,
+      Seq("lib", "typelib.go").mkString(File.separator)
+    ).moreCode(
+      """
+        |package fpkg
+        |import "joern.io/sample/lib"
+        |func bar() lib.StringAlias{
+        |  return ""
+        |}
+        |""".stripMargin,
+      Seq("fpkg", "mainlib.go").mkString(File.separator)
+    ).moreCode(
+      """
+        |package main
+        |import "joern.io/sample/fpkg"
+        |func foo() {
+        |  var a = fpkg.bar()
+        |}
+        |""".stripMargin,
+      "main.go"
+    )
+    "Check call node properties" in {
+      cpg.call("bar").size shouldBe 1
+      val List(x) = cpg.call("bar").l
+      x.code shouldBe "fpkg.bar()"
+      x.methodFullName shouldBe "joern.io/sample/fpkg.bar"
+      x.signature shouldBe "joern.io/sample/fpkg.bar()joern.io/sample/lib.StringAlias"
+      x.order shouldBe 2
+      x.lineNumber shouldBe Option(5)
+      x.typeFullName shouldBe "joern.io/sample/lib.StringAlias"
+    }
+
+    "traversal from call to caller method node" in {
+      val List(x) = cpg.call("bar").method.l
+      x.name shouldBe "foo"
+    }
+
+    "traversal from call to callee method node" in {
+      val List(x) = cpg.call("bar").callee.l
+      x.name shouldBe "bar"
+      x.isExternal shouldBe false
+    }
+  }
+
   "Method call to method imported from another third party package" should {
     val cpg = code("""
         |package main
