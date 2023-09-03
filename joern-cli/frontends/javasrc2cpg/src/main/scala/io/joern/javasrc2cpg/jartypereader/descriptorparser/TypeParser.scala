@@ -2,8 +2,11 @@ package io.joern.javasrc2cpg.jartypereader.descriptorparser
 
 import io.joern.javasrc2cpg.jartypereader.model.Bound.{BoundAbove, BoundBelow}
 import io.joern.javasrc2cpg.jartypereader.model._
+import org.slf4j.LoggerFactory
 
 trait TypeParser extends TokenParser {
+
+  private val logger = LoggerFactory.getLogger(this.getClass)
 
   def unboundWildcard: Parser[UnboundWildcard.type] = "*" ^^ (_ => UnboundWildcard)
 
@@ -28,6 +31,10 @@ trait TypeParser extends TokenParser {
       case Some("-") ~ typeSignature => BoundWildcard(BoundBelow, typeSignature)
 
       case Some("+") ~ typeSignature => BoundWildcard(BoundAbove, typeSignature)
+
+      case Some(symbol) ~ typeSignature =>
+        logger.error(s"Invalid wildcard indicator `$symbol`. Treating as unbound wildcard")
+        UnboundWildcard
 
       case None ~ typeSignature => SimpleTypeArgument(typeSignature)
     }

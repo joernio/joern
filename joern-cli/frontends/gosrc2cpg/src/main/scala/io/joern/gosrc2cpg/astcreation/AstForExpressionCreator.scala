@@ -23,24 +23,14 @@ trait AstForExpressionCreator(implicit withSchemaValidation: ValidationMode) { t
     }
   }
 
-  private def astForStructType(expr: ParserNodeInfo): Seq[Ast] = {
-    val fieldListAsts = astForFieldList(createParserNodeInfo(expr.json(ParserKeys.Fields)))
-    Seq(Ast())
-  }
-
-  private def astForFieldList(fieldList: ParserNodeInfo): Seq[Ast] = {
-    val fieldAsts = fieldList
-      .json(ParserKeys.List)
-      .arr
-      .map(createParserNodeInfo)
-      .map(astForField)
-    Seq(Ast())
-  }
-
-  private def astForField(field: ParserNodeInfo): Ast = {
+  protected def astForField(field: ParserNodeInfo): Ast = {
     field.node match
       case Field => {
-        Ast()
+        val typeInfo = createParserNodeInfo(field.json(ParserKeys.Type))
+        val (typeFullName, typeFullNameForCode, isVariadic, evaluationStrategy) = processTypeInfo(typeInfo)
+        val fieldNodeInfo = createParserNodeInfo(field.json(ParserKeys.Names).arr.head)
+        val fieldName     = fieldNodeInfo.json(ParserKeys.Name).str
+        Ast(memberNode(typeInfo, fieldName, s"$fieldName $typeFullNameForCode", typeFullName, Seq()))
       }
       case _ => {
         Ast()

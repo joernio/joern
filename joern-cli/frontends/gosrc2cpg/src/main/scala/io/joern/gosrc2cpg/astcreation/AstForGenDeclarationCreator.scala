@@ -27,32 +27,6 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
       .toSeq
   }
 
-  private def astForTypeSpec(typeSpecNode: ParserNodeInfo): Seq[Ast] = {
-    // TODO: Add support for member variables and methods
-    Option(typeSpecNode) match {
-      case Some(typeSpec) =>
-        val nameNode          = typeSpec.json(ParserKeys.Name)
-        val typeNode          = typeSpec.json(ParserKeys.Type)
-        val a: NewTypeDecl    = methodAstParentStack.collectFirst { case t: NewTypeDecl => t }.get
-        val astParentType     = a.label
-        val astParentFullName = a.fullName
-        val typeDeclNode_ =
-          typeDeclNode(
-            typeSpec,
-            nameNode(ParserKeys.Name).str,
-            x2cpg.Defines.DynamicCallUnknownFullName, // TODO: Fill in fullName
-            parserResult.filename,
-            typeSpec.code,
-            astParentType,
-            astParentFullName
-          )
-        val modifier = addModifier(typeDeclNode_, nameNode(ParserKeys.Name).str)
-        Seq(Ast(typeDeclNode_).withChild(Ast(modifier)))
-      case None =>
-        Seq.empty
-    }
-  }
-
   private def astForImport(nodeInfo: ParserNodeInfo): Seq[Ast] = {
     val basicLit       = createParserNodeInfo(nodeInfo.json(ParserKeys.Path))
     val importedEntity = nodeInfo.json(ParserKeys.Path).obj(ParserKeys.Value).str.replaceAll("\"", "")

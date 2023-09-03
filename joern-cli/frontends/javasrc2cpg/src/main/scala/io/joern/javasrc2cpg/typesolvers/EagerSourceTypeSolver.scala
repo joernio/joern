@@ -1,17 +1,17 @@
 package io.joern.javasrc2cpg.typesolvers
 
 import com.github.javaparser.ast.body.TypeDeclaration
-import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration
-import com.github.javaparser.symbolsolver.javaparsermodel.JavaParserFacade
-import com.github.javaparser.resolution.model.SymbolReference
 import com.github.javaparser.resolution.TypeSolver
+import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration
+import com.github.javaparser.resolution.model.SymbolReference
+import com.github.javaparser.symbolsolver.JavaSymbolSolver
+import com.github.javaparser.symbolsolver.javaparsermodel.JavaParserFacade
 import io.joern.javasrc2cpg.util.SourceParser
 import org.slf4j.LoggerFactory
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
 import scala.util.Try
-import com.github.javaparser.symbolsolver.JavaSymbolSolver
 
 class EagerSourceTypeSolver(
   filenames: Array[String],
@@ -43,7 +43,7 @@ class EagerSourceTypeSolver(
               SymbolReference.solved(
                 JavaParserFacade.get(combinedTypeSolver).getTypeDeclaration(typeDeclaration)
               ): SymbolReference[ResolvedReferenceTypeDeclaration]
-            ).getOrElse(SymbolReference.unsolved(classOf[ResolvedReferenceTypeDeclaration]))
+            ).getOrElse(SymbolReference.unsolved())
             name -> resolvedSymbol
           }
           .toList
@@ -66,7 +66,7 @@ class EagerSourceTypeSolver(
   }
 
   override def tryToSolveType(name: String): SymbolReference[ResolvedReferenceTypeDeclaration] = {
-    foundTypes.getOrElse(name, SymbolReference.unsolved(classOf[ResolvedReferenceTypeDeclaration]))
+    foundTypes.getOrElse(name, SymbolReference.unsolved())
   }
 }
 
