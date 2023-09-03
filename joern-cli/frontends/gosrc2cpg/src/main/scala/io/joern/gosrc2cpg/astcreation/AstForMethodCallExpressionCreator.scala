@@ -16,7 +16,7 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
       case SelectorExpr =>
         (funcDetails.json(ParserKeys.X)(ParserKeys.Name).strOpt, funcDetails.json(ParserKeys.Sel)(ParserKeys.Name).str)
     val (signature, fullName, typeFullName) =
-      callMethodFullNameAndSignature(methodName, alias, expr.json(ParserKeys.Args))
+      callMethodFullNameTypeFullNameAndSignature(methodName, alias, expr.json(ParserKeys.Args))
     val cpgCall = callNode(
       expr,
       expr.code,
@@ -31,10 +31,7 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
   private def astForArgs(args: Value): Seq[Ast] = {
     Seq.empty
   }
-  private def returnTypeFullName(): String = {
-    ""
-  }
-  private def callMethodFullNameAndSignature(
+  private def callMethodFullNameTypeFullNameAndSignature(
     methodName: String,
     aliasName: Option[String] = None,
     args: Value

@@ -36,7 +36,7 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)(im
   protected val aliasToNameSpaceMapping: mutable.Map[String, String] = mutable.Map.empty
   protected val lineNumberMapping: Map[Int, String]                  = positionLookupTables(parserResult.fileContent)
   protected val fullyQualifiedPackage =
-    GoMod.getNameSpace(parserResult.filename, parserResult.json(ParserKeys.Name)(ParserKeys.Name).str)
+    GoMod.getNameSpace(parserResult.fullPath, parserResult.json(ParserKeys.Name)(ParserKeys.Name).str)
 
   override def createAst(): DiffGraphBuilder = {
     val rootNode = createParserNodeInfo(parserResult.json)

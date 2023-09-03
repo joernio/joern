@@ -7,6 +7,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
 import io.shiftleft.semanticcpg.language.*
 import overflowdb.traversal.{jIteratortoTraversal, toNodeTraversal}
+
+import java.io.File
 class ASTCreationForMethodCallTests extends GoCodeToCpgSuite {
 
   "Simple method call use case" should {
@@ -106,7 +108,7 @@ class ASTCreationForMethodCallTests extends GoCodeToCpgSuite {
     }
   }
 
-  "Method call to method from the same package but from other file" should {
+  "Method call to method with void return from the same package but from other file" should {
     val cpg = code(
       """
         |module joern.io/sample
@@ -151,7 +153,102 @@ class ASTCreationForMethodCallTests extends GoCodeToCpgSuite {
     }
   }
 
-  "Method call to method imported from another package" should {
+  "Method call to method with int return from the same package but from other file" should {
+    val cpg = code(
+      """
+        |module joern.io/sample
+        |go 1.18
+        |""".stripMargin,
+      "go.mod"
+    ).moreCode(
+      """
+        |package main
+        |func bar() int{
+        |  return 0
+        |}
+        |""".stripMargin,
+      "mainlib.go"
+    ).moreCode(
+      """
+        |package main
+        |func foo() {
+        |  var a = bar()
+        |}
+        |""".stripMargin,
+      "main.go"
+    )
+    "Check call node properties" in {
+      cpg.call("bar").size shouldBe 1
+      val List(x) = cpg.call("bar").l
+      x.code shouldBe "bar()"
+      x.methodFullName shouldBe "main.bar"
+      x.signature shouldBe "main.bar()int"
+      x.order shouldBe 2
+      x.lineNumber shouldBe Option(4)
+      x.typeFullName shouldBe "int"
+    }
+
+    "traversal from call to caller method node" in {
+      val List(x) = cpg.call("bar").method.l
+      x.name shouldBe "foo"
+    }
+
+    "traversal from call to callee method node" in {
+      val List(x) = cpg.call("bar").callee.l
+      x.name shouldBe "bar"
+      x.isExternal shouldBe false
+    }
+  }
+
+  "Method call to method with int return from the same project but another package" should {
+    val cpg = code(
+      """
+        |module joern.io/sample
+        |go 1.18
+        |""".stripMargin,
+      "go.mod"
+    ).moreCode(
+      """
+        |package fpkg
+        |func bar() int{
+        |  return 0
+        |}
+        |""".stripMargin,
+      Seq("fpkg", "mainlib.go").mkString(File.separator)
+    ).moreCode(
+      """
+        |package main
+        |import "joern.io/sample/fpkg"
+        |func foo() {
+        |  var a = fpkg.bar()
+        |}
+        |""".stripMargin,
+      "main.go"
+    )
+    "Check call node properties" in {
+      cpg.call("bar").size shouldBe 1
+      val List(x) = cpg.call("bar").l
+      x.code shouldBe "fpkg.bar()"
+      x.methodFullName shouldBe "joern.io/sample/fpkg.bar"
+      x.signature shouldBe "joern.io/sample/fpkg.bar()int"
+      x.order shouldBe 2
+      x.lineNumber shouldBe Option(5)
+      x.typeFullName shouldBe "int"
+    }
+
+    "traversal from call to caller method node" in {
+      val List(x) = cpg.call("bar").method.l
+      x.name shouldBe "foo"
+    }
+
+    "traversal from call to callee method node" in {
+      val List(x) = cpg.call("bar").callee.l
+      x.name shouldBe "bar"
+      x.isExternal shouldBe false
+    }
+  }
+
+  "Method call to method imported from another third party package" should {
     val cpg = code("""
         |package main
         |import "joern.io/sample/fpkg"
@@ -195,7 +292,7 @@ class ASTCreationForMethodCallTests extends GoCodeToCpgSuite {
       val List(x) = cpg.call("recover").l
       x.code shouldBe "recover()"
       x.methodFullName shouldBe "recover"
-      x.signature shouldBe "recover() any"
+      x.signature shouldBe "recover()any"
       x.order shouldBe 1
       x.lineNumber shouldBe Option(4)
     }
