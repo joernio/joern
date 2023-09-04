@@ -7,9 +7,9 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
 import io.shiftleft.semanticcpg.language.*
 import overflowdb.traversal.{jIteratortoTraversal, toNodeTraversal}
-
+import io.joern.dataflowengineoss.language._
 import java.io.File
-class ASTCreationForMethodCallTests extends GoCodeToCpgSuite {
+class ASTCreationForMethodCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
 
   "Simple method call use case" should {
     val cpg = code("""
@@ -334,7 +334,7 @@ class ASTCreationForMethodCallTests extends GoCodeToCpgSuite {
     }
   }
 
-  "Method call to method from builtin packages" should {
+  "Method call to builtin method recover()" should {
     val cpg = code("""
         |package main
         |func foo() {
@@ -361,6 +361,71 @@ class ASTCreationForMethodCallTests extends GoCodeToCpgSuite {
       val List(x) = cpg.call("recover").callee.l
       x.name shouldBe "recover"
       x.isExternal shouldBe true
+    }
+  }
+
+  "Method call to builtin method cap() and println" should {
+    val cpg = code("""
+        |package main
+        |func foo() {
+        |   var a []int = []int{10, 20}
+        |	var b = cap(a)
+        |	println(b)
+        |}
+        |""".stripMargin)
+
+    "Check call node properties cap" in {
+      cpg.call("cap").size shouldBe 1
+      val List(x) = cpg.call("cap").l
+      x.code shouldBe "cap(a)"
+      x.methodFullName shouldBe "cap"
+      x.signature shouldBe "cap(any)int"
+      x.order shouldBe 2
+      x.lineNumber shouldBe Option(5)
+    }
+
+    "Check call node properties println" in {
+      cpg.call("println").size shouldBe 1
+      val List(x) = cpg.call("println").l
+      x.code shouldBe "println(b)"
+      x.methodFullName shouldBe "println"
+      x.signature shouldBe "println([]any)"
+      x.order shouldBe 6
+      x.lineNumber shouldBe Option(6)
+    }
+
+    "traversal from call to caller method node" in {
+      val List(x) = cpg.call("cap").method.l
+      x.name shouldBe "foo"
+    }
+
+    "traversal from call to callee method node" in {
+      val List(x) = cpg.call("cap").callee.l
+      x.name shouldBe "cap"
+      x.isExternal shouldBe true
+    }
+
+    "traversal from call to argument node" in {
+      cpg.call("cap").argument.size shouldBe 1
+      val List(arg1) = cpg.call("cap").argument.l
+      arg1.isInstanceOf[nodes.Identifier] shouldBe true
+      arg1.asInstanceOf[nodes.Identifier].name shouldBe "a"
+      arg1.code shouldBe "a"
+      arg1.order shouldBe 1
+    }
+
+    "traversal from argument to call node" in {
+      val List(call) = cpg.argument("a").inCall.lineNumber(5).l
+      call.name shouldBe "cap"
+
+      val List(printlnCall) = cpg.argument("b").inCall.lineNumber(6).l
+      printlnCall.name shouldBe "println"
+    }
+
+    "data flow test" in {
+      val src  = cpg.identifier("a").lineNumber(4).l
+      val sink = cpg.call("println").l
+      sink.reachableByFlows(src).size shouldBe 1
     }
   }
 

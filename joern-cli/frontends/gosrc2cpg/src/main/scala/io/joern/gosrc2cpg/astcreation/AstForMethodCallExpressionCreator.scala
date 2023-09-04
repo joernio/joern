@@ -29,7 +29,13 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
     Seq(callAst(cpgCall, astForArgs(expr.json(ParserKeys.Args))))
   }
   private def astForArgs(args: Value): Seq[Ast] = {
-    Seq.empty
+    args.arrOpt
+      .getOrElse(Seq.empty)
+      .flatMap(x => {
+        val primitiveNode = createParserNodeInfo(x)
+        astForPrimitive(primitiveNode)
+      })
+      .toSeq
   }
   private def callMethodFullNameTypeFullNameAndSignature(
     methodName: String,
