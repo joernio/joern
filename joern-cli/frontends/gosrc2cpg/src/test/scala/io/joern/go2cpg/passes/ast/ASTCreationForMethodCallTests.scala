@@ -247,6 +247,7 @@ class ASTCreationForMethodCallTests extends GoCodeToCpgSuite(withOssDataflow = t
       x.isExternal shouldBe false
     }
   }
+
   "Method call to method with int return and argument from the same project but another package" should {
     val cpg = code(
       """
@@ -386,6 +387,7 @@ class ASTCreationForMethodCallTests extends GoCodeToCpgSuite(withOssDataflow = t
       x.signature shouldBe "joern.io/sample/fpkg.bar()"
       x.order shouldBe 1
       x.lineNumber shouldBe Option(5)
+      x.typeFullName shouldBe Defines.anyTypeName
     }
 
     "traversal from call to caller method node" in {
