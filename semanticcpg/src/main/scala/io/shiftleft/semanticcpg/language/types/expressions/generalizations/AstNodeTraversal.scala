@@ -96,6 +96,15 @@ class AstNodeTraversal[A <: AstNode](val traversal: Traversal[A]) extends AnyVal
   def isCfgNode: Traversal[CfgNode] =
     traversal.collectAll[CfgNode]
 
+  def isAnnotation: Traversal[Annotation] =
+    traversal.collectAll[Annotation]
+
+  def isAnnotationLiteral: Traversal[AnnotationLiteral] =
+    traversal.collectAll[AnnotationLiteral]
+
+  def isArrayInitializer: Traversal[ArrayInitializer] =
+    traversal.collectAll[ArrayInitializer]
+
   /** Traverse only to those AST nodes that are blocks
     */
   def isBlock: Traversal[Block] =
