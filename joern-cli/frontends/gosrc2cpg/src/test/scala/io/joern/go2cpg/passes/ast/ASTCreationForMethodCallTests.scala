@@ -247,6 +247,72 @@ class ASTCreationForMethodCallTests extends GoCodeToCpgSuite(withOssDataflow = t
       x.isExternal shouldBe false
     }
   }
+  "Method call to method with int return and argument from the same project but another package" should {
+    val cpg = code(
+      """
+        |module joern.io/sample
+        |go 1.18
+        |""".stripMargin,
+      "go.mod"
+    ).moreCode(
+      """
+        |package fpkg
+        |func bar(a int, b string) int{
+        |  return 0
+        |}
+        |""".stripMargin,
+      Seq("fpkg", "mainlib.go").mkString(File.separator)
+    ).moreCode(
+      """
+        |package main
+        |import "joern.io/sample/fpkg"
+        |func foo() {
+        |  var a = fpkg.bar(10, "somestr")
+        |}
+        |""".stripMargin,
+      "main.go"
+    )
+    "Check call node properties" in {
+      cpg.call("bar").size shouldBe 1
+      val List(x) = cpg.call("bar").l
+      x.code shouldBe "fpkg.bar(10, \"somestr\")"
+      x.methodFullName shouldBe "joern.io/sample/fpkg.bar"
+      x.signature shouldBe "joern.io/sample/fpkg.bar(int, string)int"
+      x.order shouldBe 2
+      x.lineNumber shouldBe Option(5)
+      x.typeFullName shouldBe "int"
+    }
+
+    "traversal from call to caller method node" in {
+      val List(x) = cpg.call("bar").method.l
+      x.name shouldBe "foo"
+    }
+
+    "traversal from call to callee method node" in {
+      val List(x) = cpg.call("bar").callee.l
+      x.name shouldBe "bar"
+      x.isExternal shouldBe false
+    }
+
+    "traversal from call to arguments" in {
+      val List(a, b) = cpg.call("bar").argument.l
+      a.isInstanceOf[nodes.Literal] shouldBe true
+      a.code shouldBe "10"
+      a.order shouldBe 1
+
+      b.isInstanceOf[nodes.Literal] shouldBe true
+      b.code shouldBe "\"somestr\""
+      b.order shouldBe 2
+    }
+
+    "traversal from argument to call node" in {
+      val List(x) = cpg.argument("10").inCall.l
+      x.name shouldBe "bar"
+
+      val List(y) = cpg.argument("\"somestr\"").inCall.l
+      x.name shouldBe "bar"
+    }
+  }
 
   "Method call to method with struct type return from the same project but another package" should {
     val cpg = code(
@@ -415,7 +481,8 @@ class ASTCreationForMethodCallTests extends GoCodeToCpgSuite(withOssDataflow = t
     }
 
     "traversal from argument to call node" in {
-      val List(call) = cpg.argument("a").inCall.lineNumber(5).l
+      val List(assignment, call) = cpg.argument("a").inCall.l
+      assignment.name shouldBe "<operator>.assignment"
       call.name shouldBe "cap"
 
       val List(printlnCall) = cpg.argument("b").inCall.lineNumber(6).l

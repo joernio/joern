@@ -52,7 +52,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val params         = funcDecl.json(ParserKeys.Type)(ParserKeys.Params)(ParserKeys.List)
     val signature =
       s"$fullname$templateParams(${parameterSignature(params)})$returnTypeStr"
-    GoGlobal.recordFullNameToReturnType(fullname, returnTypeStr, signature)
+    GoGlobal.recordFullNameToReturnType(fullname, returnTypeStr, Some(signature))
     val methodNode_ = methodNode(funcDecl, name, funcDecl.code, fullname, Some(signature), filename)
     methodAstParentStack.push(methodNode_)
     scope.pushNewScope(methodNode_)

@@ -14,9 +14,12 @@ class CallTypeAndSigntureLinkerPass(cpg: Cpg) extends CpgPass(cpg) {
       .typeFullNameExact(Defines.tobeFilled)
       .foreach(call => {
         val (returnTypeFullName, signature) =
-          GoGlobal.methodFullNameReturnTypeMap.getOrDefault(call.methodFullName, (Defines.anyTypeName, null))
+          GoGlobal.methodFullNameReturnTypeMap
+            .getOrDefault(call.methodFullName, (Defines.anyTypeName, Option.empty[String]))
         builder.setNodeProperty(call, PropertyNames.TYPE_FULL_NAME, returnTypeFullName)
-        if (signature != null)
-          builder.setNodeProperty(call, PropertyNames.SIGNATURE, signature)
+        signature match
+          case Some(sig) =>
+            builder.setNodeProperty(call, PropertyNames.SIGNATURE, sig)
+          case _ =>
       })
 }
