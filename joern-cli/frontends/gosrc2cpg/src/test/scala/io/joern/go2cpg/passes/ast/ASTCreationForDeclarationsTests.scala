@@ -55,8 +55,13 @@ class ASTCreationForDeclarationsTests extends GoCodeToCpgSuite {
           ("salary", "float32")
         )
 
-        identifiers.size shouldBe 2
-        identifiers.map(loc => (loc.name, loc.typeFullName)).l shouldBe List(("f", "float32"), ("salary", "float32"))
+        identifiers.size shouldBe 4
+        identifiers.map(loc => (loc.name, loc.typeFullName)).l shouldBe List(
+          ("i", "int"),
+          ("j", "int"),
+          ("f", "float32"),
+          ("salary", "float32")
+        )
       }
     }
 

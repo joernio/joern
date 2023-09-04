@@ -8,6 +8,18 @@ import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 
 class AstCreationForArraysTests extends GoCodeToCpgSuite {
   "AST Creation for Array Initialization" should {
+    "be correct when a int array is declared" in {
+      val cpg = code("""
+          |package main
+          |func main() {
+          |	var a []int 
+          |}
+          |""".stripMargin)
+      cpg.local("a").size shouldBe 1
+      cpg.identifier("a").size shouldBe 1
+      val List(x) = cpg.identifier("a").l
+      x.code shouldBe "a"
+    }
     "be correct when a int array is initialized" in {
       val cpg = code("""
           |package main

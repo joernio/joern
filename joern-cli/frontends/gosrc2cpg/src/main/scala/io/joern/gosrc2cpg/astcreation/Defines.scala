@@ -2,6 +2,7 @@ package io.joern.gosrc2cpg.astcreation
 
 object Defines {
   val anyTypeName: String            = "ANY"
+  val tobeFilled: String             = "<TO_BE_FILLED>"
   val voidTypeName: String           = "void"
   val qualifiedNameSeparator: String = "::"
   val empty                          = "<empty>"
@@ -32,5 +33,26 @@ object Defines {
       ("uint32", "uint32"),
       ("uint64", "uint64"),
       ("uintptr", "uintptr")
+    )
+  val builtinFunctions: Map[String, (String, String, String)] =
+    // Prepared referring to this - https://pkg.go.dev/builtin#pkg-functions
+    Map(
+      ("append", ("append([]any, []any)[]any", "append", "[]any")),
+      ("cap", ("cap(any)int", "cap", "int")),
+      ("clear", ("clear[[]any|map[any]any](any)", "clear", voidTypeName)),
+      ("close", ("close(chan<-any)", "close", voidTypeName)),
+      ("complex", ("complex(FloatType)ComplexType", "complex", "ComplexType")),
+      ("copy", ("copy([]any, []any)int", "copy", "int")),
+      ("delete", ("delete(map[any]any, any)", "delete", voidTypeName)),
+      ("imag", ("imag(ComplexType)FloatType", "imag", "FloatType")),
+      ("len", ("len(any)int", "len", "int")),
+      ("max", ("max[cmp.Ordered](cmp.Ordered, []cmp.Ordered)cmp.Ordered", "max", "cmp.Ordered")),
+      ("min", ("min[cmp.Ordered](cmp.Ordered, []cmp.Ordered)cmp.Ordered", "min", "cmp.Ordered")),
+      ("new", ("new(any)*any", "new", "*any")),
+      ("panic", ("panic(any)", "panic", voidTypeName)),
+      ("print", ("print([]any)", "print", voidTypeName)),
+      ("println", ("println([]any)", "println", voidTypeName)),
+      ("real", ("real(ComplexType)", "real", voidTypeName)),
+      ("recover", ("recover()any", "recover", "any"))
     )
 }
