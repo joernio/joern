@@ -32,6 +32,7 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)(im
 
   protected val methodAstParentStack: Stack[NewNode]                 = new Stack()
   protected val scope: Scope[String, (NewNode, String), NewNode]     = new Scope()
+  protected val genericTypeMapping: mutable.Map[String, String]      = mutable.Map.empty
   protected val aliasToNameSpaceMapping: mutable.Map[String, String] = mutable.Map.empty
   protected val lineNumberMapping: Map[Int, String]                  = positionLookupTables(parserResult.fileContent)
   protected val fullyQualifiedPackage =

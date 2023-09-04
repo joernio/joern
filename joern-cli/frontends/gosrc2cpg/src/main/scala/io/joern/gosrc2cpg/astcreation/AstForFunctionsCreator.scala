@@ -49,6 +49,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         .getOrElse(("", methodReturnNode(funcDecl, Defines.voidTypeName)))
     val templateParams = ""
     val params         = funcDecl.json(ParserKeys.Type)(ParserKeys.Params)(ParserKeys.List)
+    processTypeParams(funcDecl.json(ParserKeys.Type))
     val signature =
       s"$fullname$templateParams(${parameterSignature(params)})$returnTypeStr"
 
@@ -138,5 +139,26 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       case BlockStmt => astForBlockStatement(nodeInfo)
       case _         => Ast()
     }
+  }
+
+  private def processTypeParams(funDecl: Value): Unit = {
+    // TODO Add Support for multi generic type
+    Try(funDecl(ParserKeys.TypeParams)) match
+      case Success(typeParams) =>
+        if (
+          typeParams.obj.contains(ParserKeys.List) && typeParams(ParserKeys.List).arr.headOption.get.obj
+            .contains(ParserKeys.Type)
+        ) {
+          val genericTypeName = typeParams(ParserKeys.List).arr.headOption.get
+            .obj(ParserKeys.Names)
+            .arr
+            .headOption
+            .get
+            .obj(ParserKeys.Name)
+            .str
+          val genericType = typeParams(ParserKeys.List).arr.headOption.get.obj(ParserKeys.Type)(ParserKeys.Name).str
+          genericTypeMapping.put(genericTypeName, genericType)
+        }
+      case _ =>
   }
 }

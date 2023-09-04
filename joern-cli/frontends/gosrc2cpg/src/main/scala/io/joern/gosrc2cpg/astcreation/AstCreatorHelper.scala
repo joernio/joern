@@ -36,9 +36,12 @@ trait AstCreatorHelper { this: AstCreator =>
         parserNodeCache.addOne(json(ParserKeys.NodeId).num.toLong, pni)
         node match
           case CallExpr =>
-            json(ParserKeys.Fun)(ParserKeys.Obj).objOpt.map(obj => {
-              createParserNodeInfo(obj(ParserKeys.Decl))
-            })
+            Try(json(ParserKeys.Fun)(ParserKeys.Obj)) match
+              case Success(funObj) =>
+                funObj.objOpt.map(obj => {
+                  createParserNodeInfo(obj(ParserKeys.Decl))
+                })
+              case _ =>
           case _ =>
         // Do nothing
         pni
@@ -119,7 +122,11 @@ trait AstCreatorHelper { this: AstCreator =>
             // NOTE: If the given type is not found in primitiveTypeMap.
             // Then we are assuming the type is custom type defined inside same pacakge as that of current file's package.
             // This assumption will be invalid when another package is imported with alias "."
-            Defines.primitiveTypeMap.getOrElse(typeName, s"${fullyQualifiedPackage}.${typeName}")
+            if (genericTypeMapping.contains(typeName)) {
+              genericTypeMapping(typeName)
+            } else {
+              Defines.primitiveTypeMap.getOrElse(typeName, s"${fullyQualifiedPackage}.${typeName}")
+            }
           case Some(alias) =>
             s"${aliasToNameSpaceMapping.getOrElse(alias, s"${XDefines.Unknown}.<${alias}>")}.${typeName}"
 
