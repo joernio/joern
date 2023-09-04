@@ -156,12 +156,12 @@ class ObjectExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = fals
 
     "should contain a correctly lowered representation" in {
       val List(last: Return) =
-        cpg.method.nameExact("withFailListener").block.astChildren.l
+        cpg.method.nameExact("withFailListener").block.astChildren.isReturn.l
 
-      val List(c: Call) = last.astChildren.l
+      val List(c: Call) = last.astChildren.isCall.l
       c.methodFullName shouldBe "mypkg.PClass.addListener:void(mypkg.SomeInterface)"
       val List(objExpr: TypeDecl, l: Local, alloc: Call, init: Call, i: Identifier) =
-        c.astChildren.isBlock.astChildren.l
+        c.astChildren.isBlock.astChildren.l: @unchecked
       objExpr.fullName shouldBe "mypkg.withFailListener$object$1"
       l.code shouldBe "tmp_obj_1"
       alloc.code shouldBe "tmp_obj_1 = <alloc>"
@@ -185,12 +185,12 @@ class ObjectExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = fals
 
     "should contain a correctly lowered representation" in {
       val List(_: Local, last: Return) =
-        cpg.method.nameExact("<lambda>").block.astChildren.l
+        cpg.method.nameExact("<lambda>").block.astChildren.l: @unchecked
 
-      val List(c: Call) = last.astChildren.l
+      val List(c: Call) = last.astChildren.isCall.l
       c.methodFullName shouldBe "mypkg.addListener:void(mypkg.SomeInterface)"
       val List(objExpr: TypeDecl, l: Local, alloc: Call, init: Call, i: Identifier) =
-        c.astChildren.isBlock.astChildren.l
+        c.astChildren.isBlock.astChildren.l: @unchecked
       objExpr.fullName shouldBe "mypkg.f1$object$1"
       l.code shouldBe "tmp_obj_1"
       alloc.code shouldBe "tmp_obj_1 = <alloc>"

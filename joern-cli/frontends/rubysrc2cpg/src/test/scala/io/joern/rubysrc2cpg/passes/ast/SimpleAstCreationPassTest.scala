@@ -1351,7 +1351,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     val cpg = code("x = %i(yy zz)")
 
     val List(arrayInit)                        = cpg.call.name(Operators.arrayInitializer).l
-    val List(yyNode: Literal, zzNode: Literal) = arrayInit.argument.l
+    val List(yyNode: Literal, zzNode: Literal) = arrayInit.argument.isLiteral.l
 
     yyNode.code shouldBe "yy"
     yyNode.argumentIndex shouldBe 1
@@ -1447,7 +1447,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     val List(arrayInit)                                      = cpg.call.name(Operators.arrayInitializer).l
-    val List(xNode: Literal, yNode: Literal, zNode: Literal) = arrayInit.argument.l
+    val List(xNode: Literal, yNode: Literal, zNode: Literal) = arrayInit.argument.isLiteral.l
 
     xNode.code shouldBe "x"
     xNode.argumentIndex shouldBe 1

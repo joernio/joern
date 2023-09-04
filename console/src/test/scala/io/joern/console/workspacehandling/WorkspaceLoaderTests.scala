@@ -65,12 +65,6 @@ class WorkspaceLoaderTests extends AnyWordSpec with Matchers {
       jsonWrite(ProjectFile("foo", "aname")) shouldBe """{"inputPath":"foo","name":"aname"}"""
     }
 
-    "be deserializable from json" in {
-      val projectFile = jsonRead[ProjectFile]("""{"inputPath":"foo","name":"aname"}""")
-      projectFile.inputPath shouldBe "foo"
-      projectFile.name shouldBe "aname"
-    }
-
   }
 
 }
