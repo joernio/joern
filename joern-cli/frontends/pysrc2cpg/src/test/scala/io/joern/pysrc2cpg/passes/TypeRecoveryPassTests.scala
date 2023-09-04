@@ -145,7 +145,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
 
     "resolve the 'SQLAlchemy' constructor in the module" in {
-      val Some(client) = cpg.call("SQLAlchemy").headOption: @unchecked
+      val client = cpg.call("SQLAlchemy").head
       client.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.__init__"
     }
 

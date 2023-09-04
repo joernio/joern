@@ -52,7 +52,7 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
       firstDestructRHSCall.typeFullName shouldBe "java.lang.String"
 
       val List(firstDestructRHSCallArgument: Identifier) =
-        firstDestructAssignment.argument(2).asInstanceOf[Call].argument.l: @unchecked
+        firstDestructAssignment.argument(2).asInstanceOf[Call].argument.isIdentifier.l
       firstDestructRHSCallArgument.argumentIndex shouldBe 0
       firstDestructRHSCallArgument.code shouldBe "aClass"
       firstDestructRHSCallArgument.name shouldBe "aClass"
@@ -74,7 +74,7 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
       secondDestructRHSCall.typeFullName shouldBe "int"
 
       val List(secondDestructRHSCallArgument: Identifier) =
-        secondDestructAssignment.argument(2).asInstanceOf[Call].argument.l: @unchecked
+        secondDestructAssignment.argument(2).asInstanceOf[Call].argument.isIdentifier.l
       secondDestructRHSCallArgument.argumentIndex shouldBe 0
       secondDestructRHSCallArgument.code shouldBe "aClass"
       secondDestructRHSCallArgument.typeFullName shouldBe "main.AClass"
@@ -209,7 +209,7 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
       firstDestructRHSCall.typeFullName shouldBe "java.lang.String"
 
       val List(firstDestructRHSCallArgument: Identifier) =
-        firstDestructAssignment.argument(2).asInstanceOf[Call].argument.l: @unchecked
+        firstDestructAssignment.argument(2).asInstanceOf[Call].argument.isIdentifier.l
       firstDestructRHSCallArgument.argumentIndex shouldBe 0
       firstDestructRHSCallArgument.code should startWith("tmp_")
       firstDestructRHSCallArgument.typeFullName shouldBe "main.AClass"
@@ -232,7 +232,7 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
       secondDestructRHSCall.typeFullName shouldBe "int"
 
       val List(secondDestructRHSCallArgument: Identifier) =
-        secondDestructAssignment.argument(2).asInstanceOf[Call].argument.l: @unchecked
+        secondDestructAssignment.argument(2).asInstanceOf[Call].argument.isIdentifier.l
       secondDestructRHSCallArgument.argumentIndex shouldBe 0
       secondDestructRHSCallArgument.code should startWith("tmp_")
       secondDestructRHSCallArgument.typeFullName shouldBe "main.AClass"
@@ -322,7 +322,7 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
       rhsCall.argumentIndex shouldBe 2
 
       rhsCall.argument.size shouldBe 1
-      val List(rhsCallFirstArg: Identifier) = rhsCall.argument.l: @unchecked
+      val List(rhsCallFirstArg: Identifier) = rhsCall.argument.isIdentifier.l
       rhsCallFirstArg.argumentIndex shouldBe 1
       rhsCallFirstArg.code shouldBe "aMessage"
       rhsCallFirstArg.typeFullName shouldBe "java.lang.String"
@@ -344,7 +344,7 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
       firstDestructRHSCall.typeFullName shouldBe "java.lang.String"
 
       val List(firstDestructRHSCallArgument: Identifier) =
-        firstDestructAssignment.argument(2).asInstanceOf[Call].argument.l: @unchecked
+        firstDestructAssignment.argument(2).asInstanceOf[Call].argument.isIdentifier.l
       firstDestructRHSCallArgument.argumentIndex shouldBe 0
       firstDestructRHSCallArgument.code should startWith("tmp_")
       firstDestructRHSCallArgument.typeFullName shouldBe "mypkg.AClass"
@@ -367,7 +367,7 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
       secondDestructRHSCall.typeFullName shouldBe "int"
 
       val List(secondDestructRHSCallArgument: Identifier) =
-        secondDestructAssignment.argument(2).asInstanceOf[Call].argument.l: @unchecked
+        secondDestructAssignment.argument(2).asInstanceOf[Call].argument.isIdentifier.l
       secondDestructRHSCallArgument.argumentIndex shouldBe 0
       secondDestructRHSCallArgument.code should startWith("tmp_")
       secondDestructRHSCallArgument.typeFullName shouldBe "mypkg.AClass"
@@ -482,7 +482,7 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
       rhsCall.argumentIndex shouldBe 2
       rhsCall.argument.size shouldBe 2
 
-      val List(rhsCallFirstArg: Identifier, rhsCallSecondArg: Identifier) = rhsCall.argument.l: @unchecked
+      val List(rhsCallFirstArg: Identifier, rhsCallSecondArg: Identifier) = rhsCall.argument.isIdentifier.l
       rhsCallFirstArg.argumentIndex shouldBe 0
       rhsCallFirstArg.code shouldBe "aFactory"
       rhsCallFirstArg.typeFullName shouldBe "mypkg.AFactory"
@@ -507,7 +507,7 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
       firstDestructRHSCall.typeFullName shouldBe "java.lang.String"
 
       val List(firstDestructRHSCallArgument: Identifier) =
-        firstDestructAssignment.argument(2).asInstanceOf[Call].argument.l: @unchecked
+        firstDestructAssignment.argument(2).asInstanceOf[Call].argument.isIdentifier.l
       firstDestructRHSCallArgument.argumentIndex shouldBe 0
       firstDestructRHSCallArgument.code should startWith("tmp_")
       firstDestructRHSCallArgument.typeFullName shouldBe "mypkg.AClass"
@@ -530,7 +530,7 @@ class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
       secondDestructRHSCall.typeFullName shouldBe "int"
 
       val List(secondDestructRHSCallArgument: Identifier) =
-        secondDestructAssignment.argument(2).asInstanceOf[Call].argument.l: @unchecked
+        secondDestructAssignment.argument(2).asInstanceOf[Call].argument.isIdentifier.l
       secondDestructRHSCallArgument.argumentIndex shouldBe 0
       secondDestructRHSCallArgument.code should startWith("tmp_")
       secondDestructRHSCallArgument.typeFullName shouldBe "mypkg.AClass"

@@ -60,7 +60,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           frAssignRhs.typeFullName shouldBe "java.io.FileReader"
 
           frInit.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
-          val List(frInitThis: Identifier, frInitArg: Identifier) = frInit.argument.l: @unchecked
+          val List(frInitThis: Identifier, frInitArg: Identifier) = frInit.argument.isIdentifier.l
           frInitThis.name shouldBe "fr"
           frInitThis.typeFullName shouldBe "java.io.FileReader"
           frInitArg.name shouldBe "path"
@@ -78,7 +78,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           brAssignRhs.typeFullName shouldBe "java.io.BufferedReader"
 
           brInit.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
-          val List(brInitThis: Identifier, brInitArg: Identifier) = brInit.argument.l: @unchecked
+          val List(brInitThis: Identifier, brInitArg: Identifier) = brInit.argument.isIdentifier.l
           brInitThis.name shouldBe "br"
           brInitThis.typeFullName shouldBe "java.io.BufferedReader"
           brInitArg.name shouldBe "fr"
@@ -87,7 +87,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           tryBlock.controlStructureType shouldBe ControlStructureTypes.TRY
           tryBlock.astChildren.l match {
             case List(block: Block) =>
-              val List(returnStmt: Return) = block.astChildren.l: @unchecked
+              val List(returnStmt: Return) = block.astChildren.isReturn.l
               returnStmt.code shouldBe "return br.readLine();"
 
             case result => fail(s"Expected single block as try body but got $result")
@@ -330,7 +330,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           indexAccess.typeFullName shouldBe "java.lang.String"
           indexAccess.order shouldBe 2
           indexAccess.argumentIndex shouldBe 2
-          val (iterLocal: Identifier, idx: Identifier) = (indexAccess.argument.l match {
+          val (iterLocal: Identifier, idx: Identifier) = (indexAccess.argument.isIdentifier.l match {
             case List(items: Identifier, idx: Identifier) => (items, idx)
             case result                                   => s"Expected iterLocal0[idx] args but got $result"
           }): @unchecked

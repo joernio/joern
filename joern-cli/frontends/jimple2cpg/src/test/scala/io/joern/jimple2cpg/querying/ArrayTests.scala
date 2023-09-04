@@ -87,7 +87,7 @@ class ArrayTests extends JimpleCode2CpgFixture {
     arg1.typeFullName shouldBe "int[][]"
 
     arg2.code shouldBe "new int[5][2]"
-    val List(lvl1: Literal, lvl2: Literal) = arg2.argument.l: @unchecked
+    val List(lvl1: Literal, lvl2: Literal) = arg2.argument.isLiteral.l
     lvl1.code shouldBe "5"
     lvl2.code shouldBe "2"
   }

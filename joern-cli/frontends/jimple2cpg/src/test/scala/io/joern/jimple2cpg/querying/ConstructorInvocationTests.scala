@@ -231,7 +231,7 @@ class ConstructorInvocationTests extends JimpleCode2CpgFixture {
 
         add.code shouldBe "x + y"
 
-        val List(obj: Identifier, additionResultPointer: Identifier) = init.argument.l: @unchecked
+        val List(obj: Identifier, additionResultPointer: Identifier) = init.argument.isIdentifier.l
         obj.name shouldBe "this"
         obj.order shouldBe 0
         obj.argumentIndex shouldBe 0

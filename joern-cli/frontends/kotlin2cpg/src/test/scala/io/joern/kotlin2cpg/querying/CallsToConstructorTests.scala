@@ -76,12 +76,12 @@ class CallsToConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = fa
       loweredBlock.code shouldBe ""
       loweredBlock.argumentIndex shouldBe 0
 
-      val List(firstBlockChild: Local) = loweredBlock.astChildren.take(1).l: @unchecked
+      val List(firstBlockChild: Local) = loweredBlock.astChildren.take(1).isLocal.l
       firstBlockChild.name shouldBe "tmp_1"
       firstBlockChild.typeFullName shouldBe "java.io.File"
 
-      val List(secondBlockChild: Call) = loweredBlock.astChildren.slice(1, 2).l: @unchecked
-      val allocAssignment              = secondBlockChild
+      val List(secondBlockChild: Call)                                   = loweredBlock.astChildren.slice(1, 2).isCall.l
+      val allocAssignment                                                = secondBlockChild
       val List(allocAssignmentLhs: Identifier, allocAssignmentRhs: Call) = allocAssignment.argument.l: @unchecked
       allocAssignmentLhs.code shouldBe "tmp_1"
       allocAssignmentLhs.typeFullName shouldBe "java.io.File"
@@ -94,7 +94,7 @@ class CallsToConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = fa
       allocAssignmentRhs.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       allocAssignmentRhs.argumentIndex shouldBe 2
 
-      val List(thirdBlockChild: Call) = loweredBlock.astChildren.slice(2, 3).l: @unchecked
+      val List(thirdBlockChild: Call) = loweredBlock.astChildren.slice(2, 3).isCall.l
       val initCall                    = thirdBlockChild
       initCall.code shouldBe "File(\"/tmp/myfile.txt\")"
       initCall.signature shouldBe "void(java.lang.String)"
@@ -111,7 +111,7 @@ class CallsToConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = fa
       initCallRhs.typeFullName shouldBe "java.lang.String"
       initCallRhs.argumentIndex shouldBe 1
 
-      val List(fourthBlockChild: Identifier) = loweredBlock.astChildren.slice(3, 4).l: @unchecked
+      val List(fourthBlockChild: Identifier) = loweredBlock.astChildren.slice(3, 4).isIdentifier.l
       fourthBlockChild.code shouldBe "tmp_1"
       fourthBlockChild.typeFullName shouldBe "java.io.File"
       firstBlockChild.referencingIdentifiers.id.l.contains(fourthBlockChild.id) shouldBe true

@@ -198,7 +198,7 @@ class ConstructorTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       secondParam.name shouldBe "bar"
 
       val b                                     = m.block
-      val List(_: Call, secondBlockChild: Call) = b.astChildren.l: @unchecked
+      val List(_: Call, secondBlockChild: Call) = b.astChildren.isCall.l
       secondBlockChild.methodFullName shouldBe Operators.assignment
       secondBlockChild.code shouldBe "this.bar = bar"
       secondBlockChild.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH

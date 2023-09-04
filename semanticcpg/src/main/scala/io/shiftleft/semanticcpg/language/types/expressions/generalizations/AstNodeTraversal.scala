@@ -183,6 +183,12 @@ class AstNodeTraversal[A <: AstNode](val traversal: Traversal[A]) extends AnyVal
   def isMethod: Traversal[Method] =
     traversal.collectAll[Method]
 
+  def isMethodParameterIn: Traversal[MethodParameterIn] =
+    traversal.collectAll[MethodParameterIn]
+
+  def isMethodParameterOut: Traversal[MethodParameterOut] =
+    traversal.collectAll[MethodParameterOut]
+
   /** Traverse only to AST nodes that are MODIFIER
     */
   def isModifier: Traversal[Modifier] =

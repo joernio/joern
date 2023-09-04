@@ -355,14 +355,14 @@ class JavaTypeRecoveryPassTests extends JavaSrcCode2CpgFixture(enableTypeRecover
     )
 
     "should be resolved using dummy return values" in {
-      val Some(getResultList) = cpg.call("getResultList").headOption: @unchecked
+      val getResultList = cpg.call("getResultList").head
       // Changes the below from <unresolvedNamespace>.getResultList:<unresolvedSignature>(0) to:
       getResultList.methodFullName shouldBe "org.hibernate.Session.createNamedQuery:<unresolvedSignature>(2).<returnValue>.getResultList:<unresolvedSignature>(0)"
       getResultList.dynamicTypeHintFullName shouldBe Seq()
     }
 
     "hint that `transaction` may be of the null type" in {
-      val Some(transaction) = cpg.identifier("transaction").headOption: @unchecked
+      val transaction = cpg.identifier("transaction").head
       transaction.typeFullName shouldBe "org.hibernate.Transaction"
       transaction.dynamicTypeHintFullName.contains("null")
     }

@@ -172,7 +172,7 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
   "it should create joint `alloc` and `init` calls for a constructor invocation in an assignment" in {
     cpg.typeDecl.name("Bar").method.name("test2").l match {
       case List(method) =>
-        val List(assign: Call, init: Call) = method.astChildren.isBlock.astChildren.l: @unchecked
+        val List(assign: Call, init: Call) = method.astChildren.isBlock.astChildren.isCall.l
 
         assign.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
         assign.name shouldBe Operators.assignment
@@ -307,7 +307,7 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
       .fullNameExact(s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)")
       .l match {
       case List(method) =>
-        val List(init: Call) = method.astChildren.isBlock.astChildren.l: @unchecked
+        val List(init: Call) = method.astChildren.isBlock.astChildren.isCall.l
         init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
         init.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
@@ -335,14 +335,14 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
       .fullNameExact(s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)")
       .l match {
       case List(method) =>
-        val List(init: Call) = method.astChildren.isBlock.astChildren.l: @unchecked
+        val List(init: Call) = method.astChildren.isBlock.astChildren.isCall.l
         init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
         init.methodFullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
         init.typeFullName shouldBe "void"
         init.signature shouldBe "void(int)"
 
-        val List(obj: Identifier, initArg: Identifier) = init.argument.l: @unchecked
+        val List(obj: Identifier, initArg: Identifier) = init.argument.isIdentifier.l
         obj.name shouldBe "this"
         obj.typeFullName shouldBe "Foo"
         obj.argumentIndex shouldBe 0
