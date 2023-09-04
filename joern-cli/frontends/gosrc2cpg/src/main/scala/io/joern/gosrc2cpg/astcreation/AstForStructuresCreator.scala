@@ -24,7 +24,7 @@ trait AstForStructuresCreator(implicit withSchemaValidation: ValidationMode) { t
 
         val astParentType     = parentMethodAstNode.label
         val astParentFullName = parentMethodAstNode.fullName
-        val fullName          = nameNode(ParserKeys.Name).str // TODO: Discuss fullName structure
+        val fullName          = fullyQualifiedPackage + Defines.qualifiedNameSeparator + nameNode(ParserKeys.Name).str
         val typeDeclNode_ =
           typeDeclNode(
             typeSpecNode,
@@ -65,6 +65,19 @@ trait AstForStructuresCreator(implicit withSchemaValidation: ValidationMode) { t
       .map(createParserNodeInfo)
       .map(astForField)
       .toSeq
+  }
+  protected def astForField(field: ParserNodeInfo): Ast = {
+    field.node match
+      case Field => {
+        val typeInfo = createParserNodeInfo(field.json(ParserKeys.Type))
+        val (typeFullName, typeFullNameForCode, isVariadic, evaluationStrategy) = processTypeInfo(typeInfo)
+        val fieldNodeInfo = createParserNodeInfo(field.json(ParserKeys.Names).arr.head)
+        val fieldName     = fieldNodeInfo.json(ParserKeys.Name).str
+        Ast(memberNode(typeInfo, fieldName, s"$fieldName $typeFullNameForCode", typeFullName, Seq()))
+      }
+      case _ => {
+        Ast()
+      }
   }
 
 }

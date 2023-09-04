@@ -8,6 +8,7 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import scala.collection.immutable.List
+import io.joern.gosrc2cpg.astcreation.Defines
 
 class ASTCreationForStructureTests extends GoCodeToCpgSuite {
 
@@ -20,15 +21,13 @@ class ASTCreationForStructureTests extends GoCodeToCpgSuite {
           |    Name string
           |}
   """.stripMargin)
-    cpg.typeDecl.name("Person").size shouldBe 1
-    cpg.typeDecl.name("Person").head.fullName shouldBe "Person"
-    cpg.typeDecl.name("Person").member.size shouldBe 1
+    val List(typeDeclNode) = cpg.typeDecl.name("Person").l
+    typeDeclNode.fullName shouldBe "main" + Defines.qualifiedNameSeparator + "Person"
+    typeDeclNode.member.size shouldBe 1
 
     "Check member node under type decl node" in {
-      val typeDeclNodes = cpg.typeDecl("Person").l
-      typeDeclNodes.member.name("Name").size shouldBe 1
-      typeDeclNodes.member.name("Name").typeFullName.head shouldBe "string"
-
+      val List(memberNode) = typeDeclNode.member.name("Name").l
+      memberNode.typeFullName shouldBe "string"
     }
   }
 
@@ -42,21 +41,25 @@ class ASTCreationForStructureTests extends GoCodeToCpgSuite {
           |    Age  int
           |}
   """.stripMargin)
-    cpg.typeDecl.name("Person").size shouldBe 1
-    cpg.typeDecl.name("Person").head.fullName shouldBe "Person"
-    cpg.typeDecl.name("Person").member.size shouldBe 2
+    val List(typeDeclNode) = cpg.typeDecl.name("Person").l
+    typeDeclNode.fullName shouldBe "main" + Defines.qualifiedNameSeparator + "Person"
+    typeDeclNode.member.size shouldBe 2
 
     "Check member node under type decl node" in {
-      val typeDeclNodes = cpg.typeDecl("Person").l
-      typeDeclNodes.member.name("Name").size shouldBe 1
-      typeDeclNodes.member.name("Age").size shouldBe 1
-      typeDeclNodes.member.name("Name").typeFullName.head shouldBe "string"
-      typeDeclNodes.member.name("Age").typeFullName.head shouldBe "int"
+      val List(typeDeclNode) = cpg.typeDecl("Person").l
+      typeDeclNode.member.name("Name").size shouldBe 1
+      typeDeclNode.member.name("Age").size shouldBe 1
+
+      val List(memberNodeName) = typeDeclNode.member.name("Name").l
+      memberNodeName.typeFullName shouldBe "string"
+
+      val List(memberNodeAge) = typeDeclNode.member.name("Age").l
+      memberNodeAge.typeFullName shouldBe "int"
     }
 
     "Traversing member node to typedecl node" in {
-      val typeDeclNode = cpg.member.name("Name").typeDecl.head
-      typeDeclNode.fullName shouldBe "Person"
+      val List(memberNameNode) = cpg.member.name("Name").typeDecl.l
+      memberNameNode.fullName shouldBe "main" + Defines.qualifiedNameSeparator + "Person"
     }
   }
 
@@ -75,37 +78,48 @@ class ASTCreationForStructureTests extends GoCodeToCpgSuite {
           |    Salary  int
           |}
   """.stripMargin)
-    cpg.typeDecl.name("Person").size shouldBe 1
-    cpg.typeDecl.name("Employee").size shouldBe 1
+    val List(typeDeclPersonNode)   = cpg.typeDecl.name("Person").l
+    val List(typeDeclEmployeeNode) = cpg.typeDecl.name("Employee").l
 
-    cpg.typeDecl.name("Person").head.fullName shouldBe "Person"
-    cpg.typeDecl.name("Employee").head.fullName shouldBe "Employee"
+    typeDeclPersonNode.fullName shouldBe "main" + Defines.qualifiedNameSeparator + "Person"
+    typeDeclEmployeeNode.fullName shouldBe "main" + Defines.qualifiedNameSeparator + "Employee"
 
     "Check member node under type decl node for Person typeDecl" in {
-      val personNode = cpg.typeDecl.name("Person").l
 
-      personNode.member.size shouldBe 2
-      personNode.member.name("Name").size shouldBe 1
-      personNode.member.name("Age").size shouldBe 1
-      personNode.member.name("Name").typeFullName.head shouldBe "string"
-      personNode.member.name("Age").typeFullName.head shouldBe "int"
+      typeDeclPersonNode.member.size shouldBe 2
+      typeDeclPersonNode.member.name("Name").size shouldBe 1
+      typeDeclPersonNode.member.name("Age").size shouldBe 1
+
+      val List(memberNodeName) = typeDeclPersonNode.member.name("Name").l
+      memberNodeName.typeFullName shouldBe "string"
+
+      val List(memberNodeAge) = typeDeclPersonNode.member.name("Age").l
+      memberNodeAge.typeFullName shouldBe "int"
     }
 
     "Check member node under type decl node for Employee typeDecl" in {
-      val employeeNode = cpg.typeDecl("Employee").l
-      employeeNode.member.size shouldBe 2
-      employeeNode.member.name("Salary").size shouldBe 1
-      employeeNode.member.name("Salary").typeFullName.head shouldBe "int"
-      employeeNode.member.name("person").typeFullName.head shouldBe "main.Person"
+      typeDeclEmployeeNode.member.size shouldBe 2
+      typeDeclEmployeeNode.member.name("Salary").size shouldBe 1
+
+      val List(memberNodeSalary) = typeDeclEmployeeNode.member.name("Salary").l
+      memberNodeSalary.typeFullName shouldBe "int"
+
+      val List(memberNodePerson) = typeDeclEmployeeNode.member.name("person").l
+      memberNodePerson.typeFullName shouldBe "main.Person"
     }
 
     "traverse from member node to typedecl node" in {
-      val memberNodes = cpg.member.l
-      memberNodes.name("person").typeDecl.head.fullName shouldBe "Employee"
-      memberNodes.name("Salary").typeDecl.head.fullName shouldBe "Employee"
+      val List(memberPersonNode) = cpg.member.name("person").l
+      memberPersonNode.typeDecl.fullName shouldBe "main" + Defines.qualifiedNameSeparator + "Employee"
 
-      memberNodes.name("Name").typeDecl.head.fullName shouldBe "Person"
-      memberNodes.name("Age").typeDecl.head.fullName shouldBe "Person"
+      val List(memberSalaryNode) = cpg.member.name("Salary").l
+      memberSalaryNode.typeDecl.fullName shouldBe "main" + Defines.qualifiedNameSeparator + "Employee"
+
+      val List(memberNameNode) = cpg.member.name("Name").l
+      memberNameNode.typeDecl.fullName shouldBe "main" + Defines.qualifiedNameSeparator + "Person"
+
+      val List(memberAgeNode) = cpg.member.name("Age").l
+      memberAgeNode.typeDecl.fullName shouldBe "main" + Defines.qualifiedNameSeparator + "Person"
 
     }
 
