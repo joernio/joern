@@ -188,6 +188,10 @@ class ASTCreationForStructureMemberTests extends GoCodeToCpgSuite {
       val List(typeDeclNode) = cpg.typeDecl.name("Rect").l
       typeDeclNode.member.size shouldBe 2
 
+      val List(lenMemberNode, widMemberNode) = typeDeclNode.member.l
+      lenMemberNode.typeFullName shouldBe "int"
+      widMemberNode.typeFullName shouldBe "int"
+
     }
   }
 }
