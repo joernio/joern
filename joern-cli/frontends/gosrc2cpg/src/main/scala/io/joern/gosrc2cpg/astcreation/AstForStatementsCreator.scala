@@ -44,10 +44,24 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case RangeStmt      => Seq(astForRangeStatement(statement))
       case SwitchStmt     => Seq(astForSwitchStatement(statement))
       case TypeSwitchStmt => Seq(astForTypeSwitchStatement(statement))
+      case ReturnStmt     => Seq(astForReturnStatement(statement))
       case Unknown        => Seq(Ast())
       case _: BaseStmt    => Seq(Ast())
       case _              => astForNode(statement.json)
     }
+  }
+
+  private def astForReturnStatement(returnStmt: ParserNodeInfo): Ast = {
+    // TODO: Need to handle the tuple return node handling
+    val cpgReturn = returnNode(returnStmt, returnStmt.code)
+    val expast = returnStmt
+      .json(ParserKeys.Results)
+      .arrOpt
+      .getOrElse(Seq.empty)
+      .flatMap(x => astForNode(x))
+      .toSeq
+
+    returnAst(cpgReturn, expast)
   }
 
   private def astForAssignStatement(assignStmt: ParserNodeInfo): Seq[Ast] = {

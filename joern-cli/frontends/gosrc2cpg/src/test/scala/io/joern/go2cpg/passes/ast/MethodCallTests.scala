@@ -1,5 +1,6 @@
 package io.joern.go2cpg.passes.ast
 
+import io.joern.dataflowengineoss.language.*
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
 import io.joern.gosrc2cpg.astcreation.Defines
 import io.shiftleft.codepropertygraph.generated.edges.Ref
@@ -7,7 +8,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
 import io.shiftleft.semanticcpg.language.*
 import overflowdb.traversal.{jIteratortoTraversal, toNodeTraversal}
-import io.joern.dataflowengineoss.language._
+
 import java.io.File
 class MethodCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
 
@@ -200,7 +201,7 @@ class MethodCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
     }
   }
 
-  "Method call to method with int return from the same project but another package" should {
+  "Method call to method with int array return from the same project but another package" should {
     val cpg = code(
       """
         |module joern.io/sample
@@ -210,8 +211,8 @@ class MethodCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
     ).moreCode(
       """
         |package fpkg
-        |func bar() int{
-        |  return 0
+        |func bar() []int{
+        |  return [2]int{0,10}
         |}
         |""".stripMargin,
       Seq("fpkg", "mainlib.go").mkString(File.separator)
@@ -230,10 +231,10 @@ class MethodCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
       val List(x) = cpg.call("bar").l
       x.code shouldBe "fpkg.bar()"
       x.methodFullName shouldBe "joern.io/sample/fpkg.bar"
-      x.signature shouldBe "joern.io/sample/fpkg.bar()int"
+      x.signature shouldBe "joern.io/sample/fpkg.bar()[]int"
       x.order shouldBe 2
       x.lineNumber shouldBe Option(5)
-      x.typeFullName shouldBe "int"
+      x.typeFullName shouldBe "[]int"
     }
 
     "traversal from call to caller method node" in {
@@ -259,7 +260,7 @@ class MethodCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
       """
         |package fpkg
         |func bar(a int, b string) int{
-        |  return 0
+        |  return a
         |}
         |""".stripMargin,
       Seq("fpkg", "mainlib.go").mkString(File.separator)
@@ -268,7 +269,7 @@ class MethodCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
         |package main
         |import "joern.io/sample/fpkg"
         |func foo() {
-        |  var a = fpkg.bar(10, "somestr")
+        |  var c = fpkg.bar(10, "somestr")
         |}
         |""".stripMargin,
       "main.go"
@@ -312,6 +313,12 @@ class MethodCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
 
       val List(y) = cpg.argument("\"somestr\"").inCall.l
       x.name shouldBe "bar"
+    }
+
+    "simple data flow test" in {
+      val src  = cpg.literal("10").l
+      val sink = cpg.identifier("c").l
+      sink.reachableByFlows(src).size shouldBe 1
     }
   }
 
@@ -388,6 +395,45 @@ class MethodCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
       x.order shouldBe 1
       x.lineNumber shouldBe Option(5)
       x.typeFullName shouldBe Defines.anyTypeName
+    }
+
+    "traversal from call to caller method node" in {
+      val List(x) = cpg.call("bar").method.l
+      x.name shouldBe "foo"
+    }
+
+    "traversal from call to callee method node" in {
+      val List(x) = cpg.call("bar").callee.l
+      x.name shouldBe "bar"
+      x.isExternal shouldBe true
+    }
+  }
+
+  "Method call to method with arguments imported from another third party package" should {
+    val cpg = code("""
+        |package main
+        |import "joern.io/sample/fpkg"
+        |func foo() {
+        |  var a = 10
+        |  var b = "somestr"
+        |  fpkg.bar(a, b)
+        |}
+        |""".stripMargin)
+
+    "Check call node properties" in {
+      cpg.call("bar").size shouldBe 1
+      val List(x) = cpg.call("bar").l
+      x.code shouldBe "fpkg.bar(a, b)"
+      x.methodFullName shouldBe "joern.io/sample/fpkg.bar"
+      x.order shouldBe 5
+      x.lineNumber shouldBe Option(7)
+      x.typeFullName shouldBe Defines.anyTypeName
+    }
+
+    "Signature property should be updated with argument types" ignore {
+      // TODO: update the signature, keeping it on low priority until we find it is required for flows.
+      val List(x) = cpg.call("bar").l
+      x.signature shouldBe "joern.io/sample/fpkg.bar(int, string)"
     }
 
     "traversal from call to caller method node" in {
