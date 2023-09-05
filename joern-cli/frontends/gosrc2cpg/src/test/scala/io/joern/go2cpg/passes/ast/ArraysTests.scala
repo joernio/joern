@@ -6,7 +6,7 @@ import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Dispatch
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 
-class AstCreationForArraysTests extends GoCodeToCpgSuite {
+class ArraysTests extends GoCodeToCpgSuite {
   "AST Creation for Array Initialization" should {
     "be correct when a int array is declared" in {
       val cpg = code("""

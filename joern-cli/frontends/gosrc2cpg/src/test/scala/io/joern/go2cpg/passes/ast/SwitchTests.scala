@@ -8,7 +8,7 @@ import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
 
-class AstCreationForSwitchTests extends GoCodeToCpgSuite {
+class SwitchTests extends GoCodeToCpgSuite {
   "AST Creation for switch case" should {
     "be correct for switch case 1" in {
       val cpg = code("""

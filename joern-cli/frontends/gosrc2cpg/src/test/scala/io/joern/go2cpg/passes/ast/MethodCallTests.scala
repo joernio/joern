@@ -10,7 +10,7 @@ import io.shiftleft.semanticcpg.language.*
 import overflowdb.traversal.{jIteratortoTraversal, toNodeTraversal}
 
 import java.io.File
-class ASTCreationForMethodCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
+class MethodCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
 
   "Simple method call use case" should {
     val cpg = code("""
