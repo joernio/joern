@@ -100,13 +100,17 @@ class Scope {
   }
 
   def lookupType(simpleName: String): Option[String] = {
+    lookupType(simpleName, includeWildcards = true)
+  }
+
+  private def lookupType(simpleName: String, includeWildcards: Boolean): Option[String] = {
     scopeStack.iterator
-      .map(_.lookupType(simpleName))
+      .map(_.lookupType(simpleName, includeWildcards))
       .collectFirst { case Some(typeFullName) => typeFullName }
   }
 
   def lookupVariableOrType(name: String): Option[String] = {
-    lookupVariable(name).typeFullName.orElse(lookupType(name))
+    lookupVariable(name).typeFullName.orElse(lookupType(name, includeWildcards = false))
   }
 
   private def lookupResultFromFound(

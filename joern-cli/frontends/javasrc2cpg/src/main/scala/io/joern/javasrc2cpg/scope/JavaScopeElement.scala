@@ -32,10 +32,11 @@ trait JavaScopeElement {
     types.put(name, typeFullName)
   }
 
-  def lookupType(name: String): Option[String] = {
-    types
-      .get(name)
-      .orElse(getNameWithWildcardPrefix(name))
+  def lookupType(name: String, includeWildcards: Boolean): Option[String] = {
+    types.get(name) match {
+      case None if includeWildcards => getNameWithWildcardPrefix(name)
+      case result                   => result
+    }
   }
 
   def getNameWithWildcardPrefix(name: String): Option[String] = {
