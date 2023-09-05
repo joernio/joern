@@ -7,7 +7,7 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 
-class ASTCreationForExpressionsTests extends GoCodeToCpgSuite {
+class ExpressionsTests extends GoCodeToCpgSuite {
   "AST Creation for expressions" should {
     "be correct for nested expression" in {
       val cpg = code("""

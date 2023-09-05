@@ -9,7 +9,7 @@ import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import scala.collection.immutable.List
 
-class ASTCreationForConditionalsTests extends GoCodeToCpgSuite {
+class ConditionalsTests extends GoCodeToCpgSuite {
   "AST Creation for conditionals" should {
     "be correct for if" in {
 
