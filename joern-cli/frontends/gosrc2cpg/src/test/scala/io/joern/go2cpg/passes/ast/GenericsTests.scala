@@ -3,7 +3,7 @@ package io.joern.go2cpg.passes.ast
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
 import io.shiftleft.semanticcpg.language.*
 
-class AstCreationForGenericTests extends GoCodeToCpgSuite {
+class GenericsTests extends GoCodeToCpgSuite {
 
   "AST Creation for generic method having single type" should {
     "no generic method having single Type" in {
