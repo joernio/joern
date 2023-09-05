@@ -520,8 +520,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     }
   }
 
-  // TODO: case-when-else is not correctly modelled
-  "Data flow through case statement" ignore {
+  "Data flow through case statement" should {
     val cpg = code("""
         |x = 2
         |b = x
