@@ -3,11 +3,11 @@ package io.joern.gosrc2cpg.astcreation
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg
+import io.joern.x2cpg.datastructures.Stack.StackWrapper
 import io.joern.x2cpg.{Ast, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
 import ujson.Value
-import io.joern.x2cpg.datastructures.Stack.StackWrapper
-import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 
 import scala.util.Try
 
@@ -25,32 +25,6 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
           case _          => Seq[Ast]()
       }
       .toSeq
-  }
-
-  private def astForTypeSpec(typeSpecNode: ParserNodeInfo): Seq[Ast] = {
-    // TODO: Add support for member variables and methods
-    Option(typeSpecNode) match {
-      case Some(typeSpec) =>
-        val nameNode          = typeSpec.json(ParserKeys.Name)
-        val typeNode          = typeSpec.json(ParserKeys.Type)
-        val a: NewTypeDecl    = methodAstParentStack.collectFirst { case t: NewTypeDecl => t }.get
-        val astParentType     = a.label
-        val astParentFullName = a.fullName
-        val typeDeclNode_ =
-          typeDeclNode(
-            typeSpec,
-            nameNode(ParserKeys.Name).str,
-            x2cpg.Defines.DynamicCallUnknownFullName, // TODO: Fill in fullName
-            parserResult.filename,
-            typeSpec.code,
-            astParentType,
-            astParentFullName
-          )
-        val modifier = addModifier(typeDeclNode_, nameNode(ParserKeys.Name).str)
-        Seq(Ast(typeDeclNode_).withChild(Ast(modifier)))
-      case None =>
-        Seq.empty
-    }
   }
 
   private def astForImport(nodeInfo: ParserNodeInfo): Seq[Ast] = {
@@ -77,14 +51,14 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
       case _ =>
         Seq.empty
 
-    val localNodes = valueSpec.json(ParserKeys.Names).arr.map { parserNode =>
-      val localParserNode = createParserNodeInfo(parserNode)
-
+    val localNodes = valueSpec.json(ParserKeys.Names).arr.flatMap { parserNode =>
+      val localParserNode                                    = createParserNodeInfo(parserNode)
       val name                                               = parserNode(ParserKeys.Name).str
       val (typeFullName, typeFullNameForcode, isVariadic, _) = processTypeInfo(typeInfoNode)
       val node = localNode(localParserNode, name, localParserNode.code, typeFullName)
       scope.addToScope(name, (node, typeFullName))
-      Ast(node)
+      val identifierAst = if (valueSpec.json(ParserKeys.Values).isNull) then astForNode(localParserNode) else Seq.empty
+      identifierAst ++: Seq(Ast(node))
     }
 
     if (!valueSpec.json(ParserKeys.Values).isNull) {
@@ -99,12 +73,11 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
               Operators.assignment,
               DispatchTypes.STATIC_DISPATCH
             )
-            val arguments = astForNode(lhsParserNode.json) ++: astForNode(rhsParserNode.json)
+            val arguments = astForNode(lhsParserNode) ++: astForNode(rhsParserNode)
             callAst(cNode, arguments)
           }
       localNodes.toList ::: callNodes ::: arrayInitializerNode.toList
     } else
       localNodes.toList ++ arrayInitializerNode.toList
   }
-
 }

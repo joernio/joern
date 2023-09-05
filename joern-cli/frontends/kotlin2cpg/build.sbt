@@ -1,6 +1,6 @@
 name := "kotlin2cpg"
 
-val kotlinVersion = "1.9.0"
+val kotlinVersion = "1.9.10"
 
 dependsOn(
   Projects.dataflowengineoss,

@@ -36,9 +36,11 @@ trait AstCreatorHelper { this: AstCreator =>
         parserNodeCache.addOne(json(ParserKeys.NodeId).num.toLong, pni)
         node match
           case CallExpr =>
-            json(ParserKeys.Fun)(ParserKeys.Obj).objOpt.map(obj => {
-              createParserNodeInfo(obj(ParserKeys.Decl))
-            })
+            Try(json(ParserKeys.Fun)(ParserKeys.Obj)(ParserKeys.Decl)) match
+              case Success(obj) =>
+                // This is being called only to cache this objects
+                createParserNodeInfo(obj)
+              case _ =>
           case _ =>
         // Do nothing
         pni

@@ -21,11 +21,11 @@ class ASTCreationForExpressionsTests extends GoCodeToCpgSuite {
           |}
   """.stripMargin)
 
-      val localX = cpg.local.order(1)
+      val localX = cpg.local.order(2)
       localX.name.l shouldBe List("x")
-      val localY = cpg.local.order(2)
+      val localY = cpg.local.order(4)
       localY.name.l shouldBe List("y")
-      val localZ = cpg.local.order(3)
+      val localZ = cpg.local.order(6)
       localZ.name.l shouldBe List("z")
 
       inside(cpg.method.name("method").ast.isCall.name(Operators.assignment).map(new OpNodes.Assignment(_)).l) {

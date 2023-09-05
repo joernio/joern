@@ -3,10 +3,12 @@ package io.joern.go2cpg.testfixtures
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
+import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.{Config, GoSrc2Cpg}
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, DefaultTestCpg, LanguageFrontend}
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.scalatest.Inside
 trait Go2CpgFrontend extends LanguageFrontend {
@@ -43,5 +45,10 @@ class DefaultTestCpgWithGo(val fileSuffix: String) extends DefaultTestCpg with G
 class GoCodeToCpgSuite(fileSuffix: String = ".go", withOssDataflow: Boolean = false)
     extends Code2CpgFixture(() => new DefaultTestCpgWithGo(fileSuffix).withOssDataflow(withOssDataflow))
     with Inside {
+  implicit val resolver: ICallResolver           = NoResolve
   implicit lazy val engineContext: EngineContext = EngineContext()
+
+  override def beforeEach(): Unit = {
+    GoGlobal.methodFullNameReturnTypeMap.clear()
+  }
 }

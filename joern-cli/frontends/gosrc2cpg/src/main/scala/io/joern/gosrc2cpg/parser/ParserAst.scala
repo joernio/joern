@@ -53,7 +53,6 @@ object ParserAst {
   object ArrayType           extends ParserNode
   object Field               extends ParserNode
   object TypeSpec            extends ParserNode
-
 }
 
 object ParserKeys {

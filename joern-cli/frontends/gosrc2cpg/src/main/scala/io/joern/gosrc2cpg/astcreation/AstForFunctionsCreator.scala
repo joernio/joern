@@ -1,5 +1,6 @@
 package io.joern.gosrc2cpg.astcreation
 
+import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.parser.ParserAst.{BlockStmt, Ellipsis, Ident, SelectorExpr}
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.datastructures.Stack.*
@@ -52,7 +53,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val genericTypeMethodMap = processTypeParams(funcDecl.json(ParserKeys.Type))
     val signature =
       s"$fullname$templateParams(${parameterSignature(params, genericTypeMethodMap)})$returnTypeStr"
-
+    GoGlobal.recordFullNameToReturnType(fullname, returnTypeStr, Some(signature))
     val methodNode_ = methodNode(funcDecl, name, funcDecl.code, fullname, Some(signature), filename)
     methodAstParentStack.push(methodNode_)
     scope.pushNewScope(methodNode_)

@@ -1532,7 +1532,11 @@ class MethodTests extends GoCodeToCpgSuite {
       argv.name shouldBe "argv"
     }
   }
-
+  // TODO: add unit test for "sem chan int"
+  //        resultErrChan := make(chan error)
+  //		sem := make(chan int, concurrency)
+  // As well as example of "map"
+  // TODO: Add unit tests for lambda expression as a parameter
   // TODO: Add unit test for tuple return
   // TODO: Add unit tests with Generics
 }
