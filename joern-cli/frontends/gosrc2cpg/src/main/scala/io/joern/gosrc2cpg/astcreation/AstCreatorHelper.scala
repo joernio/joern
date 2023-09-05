@@ -128,7 +128,7 @@ trait AstCreatorHelper { this: AstCreator =>
             if (genericTypeMethodMap.contains(typeName)) {
               genericTypeMethodMap(typeName).mkString("|")
             } else {
-              Defines.primitiveTypeMap.getOrElse(typeName, s"${fullyQualifiedPackage}.${typeName}")
+              Defines.primitiveTypeMap.getOrElse(typeName, s"$fullyQualifiedPackage.$typeName")
             }
           case Some(alias) =>
             s"${aliasToNameSpaceMapping.getOrElse(alias, s"${XDefines.Unknown}.<${alias}>")}.${typeName}"
