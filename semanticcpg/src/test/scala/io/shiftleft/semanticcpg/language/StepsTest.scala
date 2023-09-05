@@ -179,6 +179,16 @@ class StepsTest extends AnyWordSpec with Matchers {
     }
   }
 
+  "should work on both Iterator (e.g. Traversal) and IterableOnce (e.g. Seq)" in {
+    val values  = Seq("a", "b")
+    val stream1 = values.iterator.s
+    val stream2 = values.s
+    // most importantly we want to verify that it compiles ^
+
+    stream1 shouldBe values
+    stream2 shouldBe values
+  }
+
   ".help step" should {
     "show domain overview" in {
       val domainStartersHelp = Cpg.emptyCpg.help
