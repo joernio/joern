@@ -11,7 +11,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import ujson.Value
 
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scala.util.{Failure, Success, Try}
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -48,10 +48,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val (returnTypeStr, methodReturn) =
       getReturnType(funcDecl.json(ParserKeys.Type)).headOption
         .getOrElse(("", methodReturnNode(funcDecl, Defines.voidTypeName)))
-    val templateParams = ""
-    val params         = funcDecl.json(ParserKeys.Type)(ParserKeys.Params)(ParserKeys.List)
+    val templateParams       = ""
+    val params               = funcDecl.json(ParserKeys.Type)(ParserKeys.Params)(ParserKeys.List)
+    val genericTypeMethodMap = processTypeParams(funcDecl.json(ParserKeys.Type))
     val signature =
-      s"$fullname$templateParams(${parameterSignature(params)})$returnTypeStr"
+      s"$fullname$templateParams(${parameterSignature(params, genericTypeMethodMap)})$returnTypeStr"
     GoGlobal.recordFullNameToReturnType(fullname, returnTypeStr, Some(signature))
     val methodNode_ = methodNode(funcDecl, name, funcDecl.code, fullname, Some(signature), filename)
     methodAstParentStack.push(methodNode_)
@@ -59,7 +60,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val astForMethod =
       methodAst(
         methodNode_,
-        astForMethodParameter(params),
+        astForMethodParameter(params, genericTypeMethodMap),
         astForMethodBody(funcDecl.json(ParserKeys.Body)),
         methodReturn
       )
@@ -69,13 +70,14 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     Seq(astForMethod.merge(typeDeclAst))
   }
 
-  private def astForMethodParameter(params: Value): Seq[Ast] = {
+  private def astForMethodParameter(params: Value, genericTypeMethodMap: Map[String, List[String]]): Seq[Ast] = {
     var index = 1
     params.arrOpt
       .getOrElse(List())
       .flatMap(x =>
         val typeInfo = createParserNodeInfo(x(ParserKeys.Type))
-        val (typeFullName, typeFullNameForcode, isVariadic, evaluationStrategy) = processTypeInfo(typeInfo)
+        val (typeFullName, typeFullNameForcode, isVariadic, evaluationStrategy) =
+          processTypeInfo(typeInfo, genericTypeMethodMap)
         x(ParserKeys.Names).arrOpt
           .getOrElse(List())
           .map(y => {
@@ -99,14 +101,14 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       .toSeq
   }
 
-  private def parameterSignature(params: Value): String = {
+  private def parameterSignature(params: Value, genericTypeMethodMap: Map[String, List[String]]): String = {
     //    func foo(argc, something int, argv string) int {
     // We get params -> list -> names [argc, something], type (int)
     params.arrOpt
       .getOrElse(ArrayBuffer())
       .map(x =>
         val typeInfo                                           = createParserNodeInfo(x(ParserKeys.Type))
-        val (typeFullName, typeFullNameForcode, isVariadic, _) = processTypeInfo(typeInfo)
+        val (typeFullName, typeFullNameForcode, isVariadic, _) = processTypeInfo(typeInfo, genericTypeMethodMap)
         x(ParserKeys.Names).arrOpt
           .getOrElse(List())
           .map(_ => {
@@ -138,6 +140,42 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     nodeInfo.node match {
       case BlockStmt => astForBlockStatement(nodeInfo)
       case _         => Ast()
+    }
+  }
+
+  private def processTypeParams(funDecl: Value): Map[String, List[String]] = {
+    val genericTypeMethodMap = new mutable.HashMap[String, List[String]]()
+    Try(funDecl(ParserKeys.TypeParams)) match {
+      case Success(typeParams) =>
+        if (
+          typeParams.obj.contains(ParserKeys.List) && typeParams(ParserKeys.List).arr.headOption.get.obj
+            .contains(ParserKeys.Type)
+        ) {
+          val genericTypeName = typeParams(ParserKeys.List).arr.headOption.get
+            .obj(ParserKeys.Names)
+            .arr
+            .headOption
+            .get
+            .obj(ParserKeys.Name)
+            .str
+          typeParams(ParserKeys.List).arr.foreach(typeDecl => {
+            val genericMethodList = ListBuffer[String]()
+            processGenericType(typeDecl(ParserKeys.Type), genericMethodList)
+            genericTypeMethodMap.put(genericTypeName, genericMethodList.toList)
+          })
+        }
+      case _ =>
+        Map()
+    }
+    genericTypeMethodMap.toMap
+  }
+
+  private def processGenericType(typeDecl: Value, genericTypeList: ListBuffer[String]): Unit = {
+    if (typeDecl.obj.contains(ParserKeys.Name)) {
+      genericTypeList.addOne(typeDecl(ParserKeys.Name).str)
+    } else if (typeDecl.obj.contains(ParserKeys.Op)) {
+      processGenericType(typeDecl(ParserKeys.X), genericTypeList)
+      processGenericType(typeDecl(ParserKeys.Y), genericTypeList)
     }
   }
 }
