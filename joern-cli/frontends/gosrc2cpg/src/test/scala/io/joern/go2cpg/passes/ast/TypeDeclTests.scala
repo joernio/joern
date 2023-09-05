@@ -12,7 +12,7 @@ import io.shiftleft.codepropertygraph.generated.{
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 
-class AstCreationForTypeDeclTests extends GoCodeToCpgSuite {
+class TypeDeclTests extends GoCodeToCpgSuite {
   "when struct type is declared with a member node" should {
     val cpg = code(
       """package main
