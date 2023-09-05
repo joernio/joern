@@ -90,6 +90,7 @@ import com.github.javaparser.symbolsolver.JavaSymbolSolver
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.{ObjectMethodSignatures, TypeConstants}
 import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
+import io.joern.javasrc2cpg.util.Scope.WildcardImportName
 import io.joern.x2cpg.utils.NodeBuilders.{
   newAnnotationLiteralNode,
   newBindingNode,
@@ -256,8 +257,10 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val asteriskImportNodes = asteriskImports match {
       case imp :: Nil =>
+        val name         = WildcardImportName
         val typeFullName = imp.getNameAsString
         val importNode = NewImport()
+          .importedAs(name)
           .importedEntity(typeFullName)
           .isWildcard(true)
         scope.addWildcardImport(typeFullName)
@@ -883,9 +886,9 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     case annotation: AnnotationExpr =>
       scope.lookupType(annotation.getNameAsString)
     case namedExpr: NodeWithName[_] =>
-      scope.lookupVariable(namedExpr.getNameAsString).typeFullName
+      scope.lookupVariableOrType(namedExpr.getNameAsString)
     case namedExpr: NodeWithSimpleName[_] =>
-      scope.lookupVariable(namedExpr.getNameAsString).typeFullName
+      scope.lookupVariableOrType(namedExpr.getNameAsString)
     // JavaParser doesn't handle literals well for some reason
     case _: BooleanLiteralExpr   => Some("boolean")
     case _: CharLiteralExpr      => Some("char")
@@ -2323,7 +2326,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       case _ =>
         val identifier = identifierNode(nameExpr, name, name, typeFullName.getOrElse(TypeConstants.Any))
 
-        // TODO: Why isn't a field handled here? Is there an assumption that fields must be resolvable?
         val variableOption = scope
           .lookupVariable(name)
           .variableNode
@@ -2508,8 +2510,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     )
 
     val thisNode = newIdentifierNode(NameConstants.This, typeFullName.getOrElse(TypeConstants.Any))
-    scope.lookupVariable(NameConstants.This).variableNode.foreach { thisNode =>
-      diffGraph.addEdge(thisNode, thisNode, EdgeTypes.REF)
+    scope.lookupVariable(NameConstants.This).variableNode.foreach { thisParam =>
+      diffGraph.addEdge(thisNode, thisParam, EdgeTypes.REF)
     }
     val thisAst = Ast(thisNode)
 

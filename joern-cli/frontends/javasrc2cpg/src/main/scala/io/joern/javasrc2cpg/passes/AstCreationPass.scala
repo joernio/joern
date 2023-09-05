@@ -39,7 +39,7 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
   val global: Global = new Global()
   private val logger = LoggerFactory.getLogger(classOf[AstCreationPass])
 
-  private val sourceFilenames = getSourceFilenames(config)
+  private val sourceFilenames = SourceParser.getSourceFilenames(config, sourcesOverride)
 
   val (sourceParser, symbolSolver) = initParserAndUtils(config, sourceFilenames)
 
@@ -56,11 +56,6 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
 
       case None => logger.warn(s"Skipping AST creation for $filename")
     }
-  }
-
-  private def getSourceFilenames(config: Config): Array[String] = {
-    val inputPaths = sourcesOverride.getOrElse(config.inputPath :: Nil).toSet
-    SourceFiles.determine(inputPaths, JavaSrc2Cpg.sourceFileExtensions, config).toArray
   }
 
   private def initParserAndUtils(config: Config, sourceFilenames: Array[String]): (SourceParser, JavaSymbolSolver) = {

@@ -105,6 +105,10 @@ class Scope {
       .collectFirst { case Some(typeFullName) => typeFullName }
   }
 
+  def lookupVariableOrType(name: String): Option[String] = {
+    lookupVariable(name).typeFullName.orElse(lookupType(name))
+  }
+
   private def lookupResultFromFound(
     foundSubstack: List[JavaScopeElement],
     variable: ScopeVariable
