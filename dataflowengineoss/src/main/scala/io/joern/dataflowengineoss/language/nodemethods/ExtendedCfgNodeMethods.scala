@@ -1,15 +1,15 @@
 package io.joern.dataflowengineoss.language.nodemethods
 
 import io.joern.dataflowengineoss.DefaultSemantics
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.joern.dataflowengineoss.language._
+import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.queryengine.{Engine, EngineContext, PathElement}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
-import io.shiftleft.semanticcpg.language.{toExpressionMethods, _}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.{Traversal, toExpressionMethods, *}
 import io.shiftleft.semanticcpg.utils.MemberAccess
 
 import scala.collection.mutable
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 class ExtendedCfgNodeMethods[NodeType <: CfgNode](val node: NodeType) extends AnyVal {
 
@@ -17,10 +17,10 @@ class ExtendedCfgNodeMethods[NodeType <: CfgNode](val node: NodeType) extends An
     */
   def astNode: AstNode = node
 
-  def reachableBy[NodeType](sourceTravs: IterableOnce[NodeType]*)(implicit
+  def reachableBy[NodeType](sourceTrav: Traversal[NodeType], sourceTravs: IterableOnce[NodeType]*)(implicit
     context: EngineContext
   ): Traversal[NodeType] =
-    node.start.reachableBy(sourceTravs: _*)
+    node.start.reachableBy(sourceTrav, sourceTravs: _*)
 
   def ddgIn(implicit semantics: Semantics = DefaultSemantics()): Traversal[CfgNode] = {
     val cache  = mutable.HashMap[CfgNode, Vector[PathElement]]()
