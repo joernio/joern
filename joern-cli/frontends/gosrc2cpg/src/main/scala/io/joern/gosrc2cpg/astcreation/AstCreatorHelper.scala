@@ -110,28 +110,28 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   private def generateTypeFullName(
-    typeName: String = "",
+    typeName: Option[String] = None,
     genericTypeMethodMap: Map[String, List[String]] = Map.empty,
     aliasName: Option[String] = None
   ): String = {
     // NOTE: There is an assumption that the import nodes have been processed before this method is being called
     // and mapping of alias to their respective namespace is already done.
     typeName match
-      case "" =>
+      case None =>
         Defines.anyTypeName
-      case _ =>
+      case Some(typname) =>
         aliasName match
           case None =>
             // NOTE: If the given type is not found in primitiveTypeMap.
             // Then we are assuming the type is custom type defined inside same pacakge as that of current file's package.
             // This assumption will be invalid when another package is imported with alias "."
-            if (genericTypeMethodMap.contains(typeName)) {
-              genericTypeMethodMap(typeName).mkString("|")
+            if (genericTypeMethodMap.contains(typname)) {
+              genericTypeMethodMap(typname).mkString("|")
             } else {
-              Defines.primitiveTypeMap.getOrElse(typeName, s"$fullyQualifiedPackage.$typeName")
+              Defines.primitiveTypeMap.getOrElse(typname, s"$fullyQualifiedPackage.$typname")
             }
           case Some(alias) =>
-            s"${aliasToNameSpaceMapping.getOrElse(alias, s"${XDefines.Unknown}.<${alias}>")}.${typeName}"
+            s"${aliasToNameSpaceMapping.getOrElse(alias, s"${XDefines.Unknown}.<$alias>")}.$typname"
 
   }
   private def internalTypeFullName(
@@ -141,19 +141,20 @@ trait AstCreatorHelper { this: AstCreator =>
     nodeInfo.node match {
       case Ident =>
         val typeNameForcode = nodeInfo.json(ParserKeys.Name).str
-        val fullName        = generateTypeFullName(typeNameForcode, genericTypeMethodMap)
+        val fullName =
+          generateTypeFullName(typeName = Some(typeNameForcode), genericTypeMethodMap = genericTypeMethodMap)
         (fullName, typeNameForcode)
       case SelectorExpr =>
         val typeNameForcode =
           s"${nodeInfo.json(ParserKeys.X)(ParserKeys.Name).str}.${nodeInfo.json(ParserKeys.Sel)(ParserKeys.Name).str}"
         val fullName = generateTypeFullName(
-          typeName = nodeInfo.json(ParserKeys.Sel)(ParserKeys.Name).str,
+          typeName = Some(nodeInfo.json(ParserKeys.Sel)(ParserKeys.Name).str),
           aliasName = Some(nodeInfo.json(ParserKeys.X)(ParserKeys.Name).str)
         )
         (fullName, typeNameForcode)
       case InterfaceType =>
         val typeNameForcode = "interface{}"
-        val fullName        = generateTypeFullName(typeNameForcode)
+        val fullName        = generateTypeFullName(typeName = Some(typeNameForcode))
         (fullName, typeNameForcode)
       case _ =>
         val fullName = generateTypeFullName()
