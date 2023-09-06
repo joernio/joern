@@ -7,9 +7,8 @@ import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, LanguageFrontend, TestCpg}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Expression, Literal}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
-import overflowdb.traversal.Traversal
 
 import java.io.File
 
@@ -53,7 +52,7 @@ class JavaSrcCode2CpgFixture(withOssDataflow: Boolean = false, enableTypeRecover
     methodName: String,
     sourceCode: String = "\"MALICIOUS\"",
     sinkPattern: String = ".*println.*"
-  ): (Traversal[Literal], Traversal[Expression]) = {
+  ): (Iterator[Literal], Iterator[Expression]) = {
     getMultiFnSourceSink(cpg, methodName, methodName, sourceCode, sinkPattern)
   }
 
@@ -63,7 +62,7 @@ class JavaSrcCode2CpgFixture(withOssDataflow: Boolean = false, enableTypeRecover
     sinkMethodName: String,
     sourceCode: String = "\"MALICIOUS\"",
     sinkPattern: String = ".*println.*"
-  ): (Traversal[Literal], Traversal[Expression]) = {
+  ): (Iterator[Literal], Iterator[Expression]) = {
     val sourceMethod = cpg.method(s".*$sourceMethodName.*").head
     val sinkMethod   = cpg.method(s".*$sinkMethodName.*").head
     def source       = sourceMethod.literal.code(sourceCode)

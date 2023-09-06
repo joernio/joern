@@ -5,30 +5,30 @@ import overflowdb.traversal._
 
 /** An (Java-) annotation, e.g., @Test.
   */
-class AnnotationTraversal(val traversal: Traversal[nodes.Annotation]) extends AnyVal {
+class AnnotationTraversal(val traversal: Iterator[nodes.Annotation]) extends AnyVal {
 
   /** Traverse to parameter assignments
     */
-  def parameterAssign: Traversal[nodes.AnnotationParameterAssign] =
+  def parameterAssign: Iterator[nodes.AnnotationParameterAssign] =
     traversal.flatMap(_._annotationParameterAssignViaAstOut)
 
   /** Traverse to methods annotated with this annotation.
     */
-  def method: Traversal[nodes.Method] =
+  def method: Iterator[nodes.Method] =
     traversal.flatMap(_._methodViaAstIn)
 
   /** Traverse to type declarations annotated by this annotation
     */
-  def typeDecl: Traversal[nodes.TypeDecl] =
+  def typeDecl: Iterator[nodes.TypeDecl] =
     traversal.flatMap(_._typeDeclViaAstIn)
 
   /** Traverse to member annotated by this annotation
     */
-  def member: Traversal[nodes.Member] =
+  def member: Iterator[nodes.Member] =
     traversal.flatMap(_._memberViaAstIn)
 
   /** Traverse to parameter annotated by this annotation
     */
-  def parameter: Traversal[nodes.MethodParameterIn] =
+  def parameter: Iterator[nodes.MethodParameterIn] =
     traversal.flatMap(_._methodParameterInViaAstIn)
 }

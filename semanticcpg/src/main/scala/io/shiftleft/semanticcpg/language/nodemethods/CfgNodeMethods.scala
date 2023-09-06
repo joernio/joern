@@ -1,44 +1,43 @@
 package io.shiftleft.semanticcpg.language.nodemethods
 
 import io.shiftleft.Implicits.IterableOnceDeco
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.NodeExtension
-import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.Traversal
+import io.shiftleft.semanticcpg.language.*
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
 
   /** Successors in the CFG
     */
-  def cfgNext: Traversal[CfgNode] = {
+  def cfgNext: Iterator[CfgNode] = {
     Iterator.single(node).cfgNext
   }
 
   /** Maps each node in the traversal to a traversal returning its n successors.
     */
-  def cfgNext(n: Int): Traversal[CfgNode] = n match {
+  def cfgNext(n: Int): Iterator[CfgNode] = n match {
     case 0 => Iterator.empty
     case _ => cfgNext.flatMap(x => List(x) ++ x.cfgNext(n - 1))
   }
 
   /** Maps each node in the traversal to a traversal returning its n predecessors.
     */
-  def cfgPrev(n: Int): Traversal[CfgNode] = n match {
+  def cfgPrev(n: Int): Iterator[CfgNode] = n match {
     case 0 => Iterator.empty
     case _ => cfgPrev.flatMap(x => List(x) ++ x.cfgPrev(n - 1))
   }
 
   /** Predecessors in the CFG
     */
-  def cfgPrev: Traversal[CfgNode] = {
+  def cfgPrev: Iterator[CfgNode] = {
     Iterator.single(node).cfgPrev
   }
 
   /** Recursively determine all nodes on which this CFG node is control-dependent.
     */
-  def controlledBy: Traversal[CfgNode] = {
+  def controlledBy: Iterator[CfgNode] = {
     expandExhaustively { v =>
       v._cdgIn
     }
@@ -46,7 +45,7 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
 
   /** Recursively determine all nodes which this CFG node controls
     */
-  def controls: Traversal[CfgNode] = {
+  def controls: Iterator[CfgNode] = {
     expandExhaustively { v =>
       v._cdgOut
     }
@@ -54,7 +53,7 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
 
   /** Recursively determine all nodes by which this node is dominated
     */
-  def dominatedBy: Traversal[CfgNode] = {
+  def dominatedBy: Iterator[CfgNode] = {
     expandExhaustively { v =>
       v._dominateIn
     }
@@ -62,7 +61,7 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
 
   /** Recursively determine all nodes which are dominated by this node
     */
-  def dominates: Traversal[CfgNode] = {
+  def dominates: Iterator[CfgNode] = {
     expandExhaustively { v =>
       v._dominateOut
     }
@@ -70,7 +69,7 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
 
   /** Recursively determine all nodes by which this node is post dominated
     */
-  def postDominatedBy: Traversal[CfgNode] = {
+  def postDominatedBy: Iterator[CfgNode] = {
     expandExhaustively { v =>
       v._postDominateIn
     }
@@ -78,7 +77,7 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
 
   /** Recursively determine all nodes which are post dominated by this node
     */
-  def postDominates: Traversal[CfgNode] = {
+  def postDominates: Iterator[CfgNode] = {
     expandExhaustively { v =>
       v._postDominateOut
     }
@@ -91,7 +90,7 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
     * @return
     *   the traversal of this node if it passes through the included set.
     */
-  def passes(included: Set[CfgNode]): Traversal[CfgNode] =
+  def passes(included: Set[CfgNode]): Iterator[CfgNode] =
     Iterator.single(node).filter(_.postDominatedBy.exists(included.contains))
 
   /** Using the post dominator tree, will determine if this node passes through the excluded set of nodes and filter it
@@ -101,10 +100,10 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
     * @return
     *   the traversal of this node if it does not pass through the excluded set.
     */
-  def passesNot(excluded: Set[CfgNode]): Traversal[CfgNode] =
+  def passesNot(excluded: Set[CfgNode]): Iterator[CfgNode] =
     Iterator.single(node).filterNot(_.postDominatedBy.exists(excluded.contains))
 
-  private def expandExhaustively(expand: CfgNode => Iterator[StoredNode]): Traversal[CfgNode] = {
+  private def expandExhaustively(expand: CfgNode => Iterator[StoredNode]): Iterator[CfgNode] = {
     var controllingNodes = List.empty[CfgNode]
     var visited          = Set.empty + node
     var worklist         = node :: Nil

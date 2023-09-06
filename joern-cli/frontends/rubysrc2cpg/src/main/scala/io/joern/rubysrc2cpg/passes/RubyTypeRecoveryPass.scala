@@ -1,13 +1,9 @@
 package io.joern.rubysrc2cpg.passes
 
+import io.joern.x2cpg.passes.frontend.*
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.joern.x2cpg.passes.frontend.*
 import io.shiftleft.semanticcpg.language.*
-import io.joern.x2cpg.Defines.{ConstructorMethodName, DynamicCallUnknownFullName}
-import io.joern.x2cpg.Defines as XDefines
-import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
-import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 class RubyTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
@@ -18,7 +14,7 @@ class RubyTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecovery
 
 private class RubyTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTypeRecovery[File](cpg, state) {
 
-  override def compilationUnit: Traversal[File] = cpg.file.iterator
+  override def compilationUnit: Iterator[File] = cpg.file.iterator
 
   override def generateRecoveryForCompilationUnitTask(
     unit: File,
@@ -47,7 +43,7 @@ private class RecoverForRubyFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, 
     resolvedImport <- i.call.tag
     alias          <- i.importedAs
   } {
-    import io.joern.x2cpg.passes.frontend.ImportsPass._
+    import io.joern.x2cpg.passes.frontend.ImportsPass.*
     ResolvedImport.tagToResolvedImport(resolvedImport).foreach {
       case ResolvedTypeDecl(fullName, _) =>
         symbolTable.append(LocalVar(fullName.split("\\.").lastOption.getOrElse(alias)), fullName)

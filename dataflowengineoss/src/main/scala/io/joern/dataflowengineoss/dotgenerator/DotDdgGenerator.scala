@@ -1,14 +1,13 @@
 package io.joern.dataflowengineoss.dotgenerator
 
 import io.joern.dataflowengineoss.DefaultSemantics
-import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.joern.dataflowengineoss.semanticsloader.Semantics
+import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.semanticcpg.dotgenerator.DotSerializer
-import overflowdb.traversal._
 
 object DotDdgGenerator {
 
-  def toDotDdg(traversal: Traversal[Method])(implicit semantics: Semantics = DefaultSemantics()): Traversal[String] =
+  def toDotDdg(traversal: Iterator[Method])(implicit semantics: Semantics = DefaultSemantics()): Iterator[String] =
     traversal.map(dotGraphForMethod)
 
   private def dotGraphForMethod(method: Method)(implicit semantics: Semantics): String = {

@@ -1,88 +1,87 @@
 package io.shiftleft.semanticcpg.language.types.structure
 
 import io.shiftleft.codepropertygraph.generated.nodes
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.Traversal
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.*
 
 /** Type declaration - possibly a template that requires instantiation
   */
-class TypeDeclTraversal(val traversal: Traversal[TypeDecl]) extends AnyVal {
-  import TypeDeclTraversal._
+class TypeDeclTraversal(val traversal: Iterator[TypeDecl]) extends AnyVal {
+  import TypeDeclTraversal.*
 
   /** Annotations of the type declaration
     */
-  def annotation: Traversal[nodes.Annotation] =
+  def annotation: Iterator[nodes.Annotation] =
     traversal.flatMap(_._annotationViaAstOut)
 
   /** Types referencing to this type declaration.
     */
-  def referencingType: Traversal[Type] =
+  def referencingType: Iterator[Type] =
     traversal.flatMap(_.refIn)
 
   /** Namespace in which this type declaration is defined
     */
-  def namespace: Traversal[Namespace] =
+  def namespace: Iterator[Namespace] =
     traversal.flatMap(_.namespaceBlock).namespace
 
   /** Methods defined as part of this type
     */
-  def method: Traversal[Method] =
+  def method: Iterator[Method] =
     canonicalType.flatMap(_._methodViaAstOut)
 
   /** Filter for type declarations contained in the analyzed code.
     */
-  def internal: Traversal[TypeDecl] =
+  def internal: Iterator[TypeDecl] =
     canonicalType.isExternal(false)
 
   /** Filter for type declarations not contained in the analyzed code.
     */
-  def external: Traversal[TypeDecl] =
+  def external: Iterator[TypeDecl] =
     canonicalType.isExternal(true)
 
   /** Member variables
     */
-  def member: Traversal[Member] =
+  def member: Iterator[Member] =
     canonicalType.flatMap(_._memberViaAstOut)
 
   /** Direct base types in the inheritance graph.
     */
-  def baseType: Traversal[Type] =
+  def baseType: Iterator[Type] =
     canonicalType.flatMap(_._typeViaInheritsFromOut)
 
   /** Direct base type declaration.
     */
-  def derivedTypeDecl: Traversal[TypeDecl] =
+  def derivedTypeDecl: Iterator[TypeDecl] =
     referencingType.derivedTypeDecl
 
   /** Direct and transitive base type declaration.
     */
-  def derivedTypeDeclTransitive: Traversal[TypeDecl] =
+  def derivedTypeDeclTransitive: Iterator[TypeDecl] =
     traversal.repeat(_.derivedTypeDecl)(_.emitAllButFirst)
 
   /** Direct base type declaration.
     */
-  def baseTypeDecl: Traversal[TypeDecl] =
+  def baseTypeDecl: Iterator[TypeDecl] =
     traversal.baseType.referencedTypeDecl
 
   /** Direct and transitive base type declaration.
     */
-  def baseTypeDeclTransitive: Traversal[TypeDecl] =
+  def baseTypeDeclTransitive: Iterator[TypeDecl] =
     traversal.repeat(_.baseTypeDecl)(_.emitAllButFirst)
 
   /** Traverse to alias type declarations.
     */
-  def isAlias: Traversal[TypeDecl] =
+  def isAlias: Iterator[TypeDecl] =
     traversal.filter(_.aliasTypeFullName.isDefined)
 
   /** Traverse to canonical type declarations.
     */
-  def isCanonical: Traversal[TypeDecl] =
+  def isCanonical: Iterator[TypeDecl] =
     traversal.filter(_.aliasTypeFullName.isEmpty)
 
   /** If this is an alias type declaration, go to its underlying type declaration else unchanged.
     */
-  def unravelAlias: Traversal[TypeDecl] = {
+  def unravelAlias: Iterator[TypeDecl] = {
     traversal.map { typeDecl =>
       val alias = for {
         tpe      <- typeDecl.aliasedType.nextOption()
@@ -95,17 +94,17 @@ class TypeDeclTraversal(val traversal: Traversal[TypeDecl]) extends AnyVal {
 
   /** Traverse to canonical type which means unravel aliases until we find a non alias type declaration.
     */
-  def canonicalType: Traversal[TypeDecl] =
+  def canonicalType: Iterator[TypeDecl] =
     traversal.repeat(_.unravelAlias)(_.until(_.isCanonical).maxDepth(maxAliasExpansions))
 
   /** Direct alias type declarations.
     */
-  def aliasTypeDecl: Traversal[TypeDecl] =
+  def aliasTypeDecl: Iterator[TypeDecl] =
     referencingType.aliasTypeDecl
 
   /** Direct and transitive alias type declarations.
     */
-  def aliasTypeDeclTransitive: Traversal[TypeDecl] =
+  def aliasTypeDeclTransitive: Iterator[TypeDecl] =
     traversal.repeat(_.aliasTypeDecl)(_.emitAllButFirst)
 
 }

@@ -1,21 +1,20 @@
 package io.shiftleft.semanticcpg.language
 
-import io.shiftleft.codepropertygraph.generated.nodes.{AbstractNode, NewNode, StoredNode}
+import io.shiftleft.codepropertygraph.generated.nodes.AbstractNode
 import org.json4s.native.Serialization.{write, writePretty}
 import org.json4s.{CustomSerializer, Extraction, Formats}
-import overflowdb.traversal.*
 import overflowdb.traversal.help.Doc
+import replpp.Colors
 import replpp.Operators.*
 
 import java.util.List as JList
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
-import replpp.Colors
 
 /** Base class for our DSL These are the base steps available in all steps of the query language. There are no
   * constraints on the element types, unlike e.g. [[NodeSteps]]
   */
-class Steps[A](val traversal: Traversal[A]) extends AnyVal {
+class Steps[A](val traversal: Iterator[A]) extends AnyVal {
 
   /** Execute the traversal and convert it to a mutable buffer
     */

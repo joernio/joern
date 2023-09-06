@@ -19,7 +19,6 @@ import io.shiftleft.semanticcpg.language.types.expressions.generalizations.{
 import io.shiftleft.semanticcpg.language.types.expressions.{CallTraversal => OriginalCall, _}
 import io.shiftleft.semanticcpg.language.types.propertyaccessors._
 import io.shiftleft.semanticcpg.language.types.structure.{MethodTraversal => OriginalMethod, _}
-import overflowdb.traversal.Traversal
 import overflowdb.NodeOrDetachedNode
 
 /** Language for traversing the code property graph
@@ -178,22 +177,22 @@ package object language extends operatorextension.Implicits with LowPrioImplicit
     *
     * In most places you should explicitly call `Iterator.single` instead of relying on this implicit.
     */
-  implicit def toTraversal[NodeType <: StoredNode](node: NodeType): Traversal[NodeType] =
+  implicit def toTraversal[NodeType <: StoredNode](node: NodeType): Iterator[NodeType] =
     Iterator.single(node)
 
   implicit def iterableOnceToSteps[A](iterableOnce: IterableOnce[A]): Steps[A] =
     new Steps(iterableOnce.iterator)
 
-  implicit def traversalToSteps[A](trav: Traversal[A]): Steps[A] =
+  implicit def traversalToSteps[A](trav: Iterator[A]): Steps[A] =
     new Steps(trav)
   implicit def iterOnceToNodeSteps[A <: StoredNode](a: IterableOnce[A]): NodeSteps[A] =
     new NodeSteps[A](a.iterator)
 
-  implicit def toNewNodeTrav[NodeType <: NewNode](trav: Traversal[NodeType]): NewNodeSteps[NodeType] =
+  implicit def toNewNodeTrav[NodeType <: NewNode](trav: Iterator[NodeType]): NewNodeSteps[NodeType] =
     new NewNodeSteps[NodeType](trav)
 
-  implicit def toNodeTypeStarters(cpg: Cpg): NodeTypeStarters     = new NodeTypeStarters(cpg)
-  implicit def toTagTraversal(trav: Traversal[Tag]): TagTraversal = new TagTraversal(trav)
+  implicit def toNodeTypeStarters(cpg: Cpg): NodeTypeStarters    = new NodeTypeStarters(cpg)
+  implicit def toTagTraversal(trav: Iterator[Tag]): TagTraversal = new TagTraversal(trav)
 
   // ~ EvalType accessors
   implicit def singleToEvalTypeAccessorsLocal[A <: Local](a: A): EvalTypeAccessors[A] =
@@ -258,7 +257,7 @@ package object language extends operatorextension.Implicits with LowPrioImplicit
 
     /** Start a new traversal from this node
       */
-    def start: Traversal[NodeType] =
+    def start: Iterator[NodeType] =
       Iterator.single(node)
   }
 

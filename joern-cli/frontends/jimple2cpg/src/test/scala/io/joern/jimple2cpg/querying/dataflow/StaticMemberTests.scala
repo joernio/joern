@@ -1,10 +1,9 @@
 package io.joern.jimple2cpg.querying.dataflow
 
-import io.joern.dataflowengineoss.language._
+import io.joern.dataflowengineoss.language.*
 import io.joern.jimple2cpg.testfixtures.JimpleDataFlowCodeToCpgSuite
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.Traversal
+import io.shiftleft.semanticcpg.language.*
 
 /** These tests are added as a wishlist for static member accesses. These results are consistent with static members in
   * C++ using c2cgp, however. For practical reasons, only handling `final` static members is probably the way to go, so

@@ -17,7 +17,6 @@ import io.shiftleft.utils.ProjectRoot
 import org.scalatest._
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
-import overflowdb.traversal.Traversal
 
 import scala.util.Failure
 
@@ -62,7 +61,7 @@ abstract class BenchmarkFixture(
 
   /** Makes sure there are flows between the source and the sink
     */
-  def assertIsInsecure(source: Traversal[CfgNode], sink: Traversal[CfgNode]): Assertion =
+  def assertIsInsecure(source: Iterator[CfgNode], sink: Iterator[CfgNode]): Assertion =
     if (sink.reachableBy(source).isEmpty) {
       fail("[False Negative] Source was not found to taint the sink")
     } else {
@@ -71,7 +70,7 @@ abstract class BenchmarkFixture(
 
   /** Makes sure there are no flows between the source and the sink.
     */
-  def assertIsSecure(source: Traversal[CfgNode], sink: Traversal[CfgNode]): Assertion =
+  def assertIsSecure(source: Iterator[CfgNode], sink: Iterator[CfgNode]): Assertion =
     if (sink.reachableBy(source).nonEmpty) {
       fail("[False positive] Source was found to taint the sink")
     } else {

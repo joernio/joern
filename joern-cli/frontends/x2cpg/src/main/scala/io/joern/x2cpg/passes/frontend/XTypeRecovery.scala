@@ -11,7 +11,6 @@ import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, 
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate
 import overflowdb.BatchedUpdate.DiffGraphBuilder
-import overflowdb.traversal.Traversal
 import scopt.OParser
 
 import java.util.concurrent.RecursiveTask
@@ -267,14 +266,14 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     case x => x.getKnownTypes.nonEmpty
   }
 
-  protected def assignments: Traversal[Assignment] =
+  protected def assignments: Iterator[Assignment] =
     cu.ast.isCall.nameExact(Operators.assignment).map(new OpNodes.Assignment(_))
 
-  protected def members: Traversal[Member] = cu.ast.isMember
+  protected def members: Iterator[Member] = cu.ast.isMember
 
-  protected def returns: Traversal[Return] = cu.ast.isReturn
+  protected def returns: Iterator[Return] = cu.ast.isReturn
 
-  protected def importNodes: Traversal[Import] = cu.ast.isCall.referencedImports
+  protected def importNodes: Iterator[Import] = cu.ast.isCall.referencedImports
 
   override def compute(): Boolean = try {
     // Set known aliases that point to imports for local and external methods/modules
@@ -824,7 +823,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def getFieldBaseType(baseName: String, fieldName: String): Set[String] =
     symbolTable
       .get(LocalVar(baseName))
-      .flatMap(t => typeDeclTraversal(t).member.nameExact(fieldName))
+      .flatMap(t => typeDeclIterator(t).member.nameExact(fieldName))
       .typeFullNameNot("ANY")
       .flatMap(m => m.typeFullName +: m.dynamicTypeHintFullName)
       .toSet
@@ -1070,7 +1069,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     * @return
     *   the type full name that has member children.
     */
-  protected def typeDeclTraversal(typeFullName: String): Traversal[TypeDecl] = cpg.typeDecl.fullNameExact(typeFullName)
+  protected def typeDeclIterator(typeFullName: String): Iterator[TypeDecl] = cpg.typeDecl.fullNameExact(typeFullName)
 
   /** Given a type full name and member name, will persist the given types to the member.
     * @param typeFullName
@@ -1081,7 +1080,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     *   the types to associate.
     */
   protected def persistMemberWithTypeDecl(typeFullName: String, memberName: String, types: Set[String]): Unit =
-    typeDeclTraversal(typeFullName).member.nameExact(memberName).headOption.foreach { m =>
+    typeDeclIterator(typeFullName).member.nameExact(memberName).headOption.foreach { m =>
       storeNodeTypeInfo(m, types.toSeq)
     }
 
@@ -1093,7 +1092,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     *   the corresponding member, if found
     */
   protected def getLocalMember(i: Identifier): Option[Member] =
-    typeDeclTraversal(i.method.typeDecl.fullName.headOption.getOrElse(i.method.fullName)).member
+    typeDeclIterator(i.method.typeDecl.fullName.headOption.getOrElse(i.method.fullName)).member
       .nameExact(i.name)
       .headOption
 
@@ -1174,7 +1173,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     }
   }
 
-  implicit class AllNodeTypesFromTraversalExt(x: Traversal[StoredNode]) {
+  implicit class AllNodeTypesFromIteratorExt(x: Iterator[StoredNode]) {
     def allTypes: Iterator[String] = x.flatMap(_.allTypes)
 
     def getKnownTypes: Set[String] =

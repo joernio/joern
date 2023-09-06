@@ -3,13 +3,12 @@ package io.joern.pysrc2cpg
 import io.joern.x2cpg.passes.frontend.XTypeHintCallLinker
 import io.joern.x2cpg.passes.frontend.XTypeRecovery.isDummyType
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, MethodBase}
-import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.Traversal
+import io.shiftleft.codepropertygraph.generated.nodes.Call
+import io.shiftleft.semanticcpg.language.*
 
 class PythonTypeHintCallLinker(cpg: Cpg) extends XTypeHintCallLinker(cpg) {
 
-  override def calls: Traversal[Call] = super.calls.nameNot("^(import).*")
+  override def calls: Iterator[Call] = super.calls.nameNot("^(import).*")
 
   override def calleeNames(c: Call): Seq[String] = super.calleeNames(c).map {
     // Python call from  a type

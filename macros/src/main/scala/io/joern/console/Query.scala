@@ -2,7 +2,6 @@ package io.joern.console
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
-import overflowdb.traversal.Traversal
 
 case class CodeSnippet(content: String, filename: String)
 case class MultiFileCodeExamples(positive: List[List[CodeSnippet]], negative: List[List[CodeSnippet]])
@@ -14,7 +13,7 @@ case class Query(
   title: String,
   description: String,
   score: Double,
-  traversal: Cpg => Traversal[_ <: StoredNode],
+  traversal: Cpg => Iterator[_ <: StoredNode],
   traversalAsString: String = "",
   tags: List[String] = List(),
   language: String = "",
@@ -49,4 +48,4 @@ object Query {
   }
 }
 
-case class TraversalWithStrRep(traversal: Cpg => Traversal[_ <: StoredNode], strRep: String = "")
+case class TraversalWithStrRep(traversal: Cpg => Iterator[_ <: StoredNode], strRep: String = "")
