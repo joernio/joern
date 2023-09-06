@@ -101,4 +101,5 @@ object ParserKeys {
   val Fields          = "Fields"
   val TypeParams      = "TypeParams"
   val Args            = "Args"
+  val Recv            = "Recv"
 }

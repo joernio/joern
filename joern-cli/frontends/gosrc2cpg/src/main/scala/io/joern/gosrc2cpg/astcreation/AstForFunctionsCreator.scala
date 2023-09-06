@@ -6,7 +6,7 @@ import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.StringUtils
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.PropertyNames
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import ujson.Value
 
@@ -34,8 +34,6 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       typeDeclNode_
     }
 
-    method.astParentFullName = parentNode.fullName
-    method.astParentType = parentNode.label
     val functionBinding = NewBinding().name(methodName).methodFullName(methodFullName).signature(signature)
     Ast(functionBinding).withBindsEdge(parentNode, functionBinding).withRefEdge(functionBinding, method)
   }
@@ -66,8 +64,17 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       )
     scope.popScope()
     methodAstParentStack.pop()
-    val typeDeclAst = createFunctionTypeAndTypeDecl(funcDecl, methodNode_, name, fullname, signature)
-    Seq(astForMethod.merge(typeDeclAst))
+//    if method is related to Struct then fill astParentFullName and astParentType
+    if (funcDecl.json.obj.contains(ParserKeys.Recv)) {
+      val receiverTypeDeclType =
+        parameterSignature(funcDecl.json(ParserKeys.Recv)(ParserKeys.List), Map.empty[String, List[String]])
+      methodNode_.astParentFullName = receiverTypeDeclType.replace("*", "")
+      methodNode_.astParentType = NodeTypes.TYPE_DECL
+      Ast.storeInDiffGraph(astForMethod, diffGraph)
+      Seq.empty
+    } else {
+      Seq(astForMethod)
+    }
   }
 
   private def astForMethodParameter(params: Value, genericTypeMethodMap: Map[String, List[String]]): Seq[Ast] = {

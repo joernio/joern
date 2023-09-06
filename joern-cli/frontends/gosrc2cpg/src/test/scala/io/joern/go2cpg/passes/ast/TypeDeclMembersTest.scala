@@ -10,7 +10,7 @@ import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import scala.collection.immutable.List
 import io.joern.gosrc2cpg.astcreation.Defines
 
-class ASTCreationForStructureTests extends GoCodeToCpgSuite {
+class TypeDeclMembersTest extends GoCodeToCpgSuite {
 
   "structure with single element" should {
 
@@ -22,7 +22,7 @@ class ASTCreationForStructureTests extends GoCodeToCpgSuite {
           |}
   """.stripMargin)
     val List(typeDeclNode) = cpg.typeDecl.name("Person").l
-    typeDeclNode.fullName shouldBe "main" + Defines.qualifiedNameSeparator + "Person"
+    typeDeclNode.fullName shouldBe "main" + Defines.dot + "Person"
     typeDeclNode.member.size shouldBe 1
 
     "Check member node under type decl node" in {
@@ -42,7 +42,7 @@ class ASTCreationForStructureTests extends GoCodeToCpgSuite {
           |}
   """.stripMargin)
     val List(typeDeclNode) = cpg.typeDecl.name("Person").l
-    typeDeclNode.fullName shouldBe "main" + Defines.qualifiedNameSeparator + "Person"
+    typeDeclNode.fullName shouldBe "main" + Defines.dot + "Person"
     typeDeclNode.member.size shouldBe 2
 
     "Check member node under type decl node" in {
@@ -59,7 +59,7 @@ class ASTCreationForStructureTests extends GoCodeToCpgSuite {
 
     "Traversing member node to typedecl node" in {
       val List(memberNameNode) = cpg.member.name("Name").typeDecl.l
-      memberNameNode.fullName shouldBe "main" + Defines.qualifiedNameSeparator + "Person"
+      memberNameNode.fullName shouldBe "main" + Defines.dot + "Person"
     }
   }
 
@@ -81,8 +81,8 @@ class ASTCreationForStructureTests extends GoCodeToCpgSuite {
     val List(typeDeclPersonNode)   = cpg.typeDecl.name("Person").l
     val List(typeDeclEmployeeNode) = cpg.typeDecl.name("Employee").l
 
-    typeDeclPersonNode.fullName shouldBe "main" + Defines.qualifiedNameSeparator + "Person"
-    typeDeclEmployeeNode.fullName shouldBe "main" + Defines.qualifiedNameSeparator + "Employee"
+    typeDeclPersonNode.fullName shouldBe "main" + Defines.dot + "Person"
+    typeDeclEmployeeNode.fullName shouldBe "main" + Defines.dot + "Employee"
 
     "Check member node under type decl node for Person typeDecl" in {
 
@@ -110,18 +110,88 @@ class ASTCreationForStructureTests extends GoCodeToCpgSuite {
 
     "traverse from member node to typedecl node" in {
       val List(memberPersonNode) = cpg.member.name("person").l
-      memberPersonNode.typeDecl.fullName shouldBe "main" + Defines.qualifiedNameSeparator + "Employee"
+      memberPersonNode.typeDecl.fullName shouldBe "main" + Defines.dot + "Employee"
 
       val List(memberSalaryNode) = cpg.member.name("Salary").l
-      memberSalaryNode.typeDecl.fullName shouldBe "main" + Defines.qualifiedNameSeparator + "Employee"
+      memberSalaryNode.typeDecl.fullName shouldBe "main" + Defines.dot + "Employee"
 
       val List(memberNameNode) = cpg.member.name("Name").l
-      memberNameNode.typeDecl.fullName shouldBe "main" + Defines.qualifiedNameSeparator + "Person"
+      memberNameNode.typeDecl.fullName shouldBe "main" + Defines.dot + "Person"
 
       val List(memberAgeNode) = cpg.member.name("Age").l
-      memberAgeNode.typeDecl.fullName shouldBe "main" + Defines.qualifiedNameSeparator + "Person"
+      memberAgeNode.typeDecl.fullName shouldBe "main" + Defines.dot + "Person"
 
     }
 
+  }
+
+  "structure with associated method" should {
+
+    val cpg = code("""
+        package main
+        |
+        |type Rect struct {
+        |  len, wid int
+        |}
+        |
+        |func (re Rect) Area_by_value() int {
+        |  return re.len * re.wid
+        |}
+        |
+        |func (re *Rect) Area_by_reference() int {
+        |  return re.len * re.wid
+        |}
+        |""".stripMargin)
+
+    "Check method node under type decl node" in {
+      val List(typeDeclNode) = cpg.typeDecl.name("Rect").l
+      typeDeclNode.astChildren.isMethod.size shouldBe 2
+
+      val List(areaByValueNode, areaByReferenceNode) = typeDeclNode.astChildren.isMethod.l
+      areaByValueNode.name shouldBe "Area_by_value"
+      areaByReferenceNode.name shouldBe "Area_by_reference"
+    }
+  }
+
+  "structure with no associated method" should {
+
+    val cpg = code("""
+        package main
+        |
+        |type Rect struct {
+        |  len, wid int
+        |}
+        |
+        |func (c Circle) Area() float64 {
+        |    return 3.14 * c.radius * c.radius
+        |}
+        |""".stripMargin)
+
+    "Check method node under type decl node" in {
+      val List(typeDeclNode) = cpg.typeDecl.name("Rect").l
+      typeDeclNode.astChildren.isMethod.size shouldBe 0
+
+    }
+  }
+
+  "structure with comma separated member" should {
+
+    val cpg = code("""
+        package main
+        |
+        |type Rect struct {
+        |  len, wid int
+        |}
+        |""".stripMargin)
+
+    "Check number of member nodes" ignore {
+      val List(typeDeclNode) = cpg.typeDecl.name("Rect").l
+      typeDeclNode.member.size shouldBe 2
+
+      val List(lenMemberNode, widMemberNode) = typeDeclNode.member.l
+      lenMemberNode.typeFullName shouldBe "int"
+      widMemberNode.typeFullName shouldBe "int"
+
+    }
   }
 }

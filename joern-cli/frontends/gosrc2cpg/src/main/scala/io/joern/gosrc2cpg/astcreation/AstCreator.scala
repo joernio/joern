@@ -25,7 +25,7 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)(im
     with AstForFunctionsCreator
     with AstForPrimitivesCreator
     with AstForStatementsCreator
-    with AstForStructuresCreator
+    with AstForTypeDeclCreator
     with AstForMethodCallExpressionCreator
     with X2CpgAstNodeBuilder[ParserNodeInfo, AstCreator] {
 

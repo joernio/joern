@@ -6,6 +6,7 @@ object Defines {
   val voidTypeName: String           = "void"
   val qualifiedNameSeparator: String = "::"
   val empty                          = "<empty>"
+  val dot                            = "."
 
   val primitiveTypeMap: Map[String, String] =
     // This list is prepared with reference to primitives defined at https://pkg.go.dev/builtin#pkg-types

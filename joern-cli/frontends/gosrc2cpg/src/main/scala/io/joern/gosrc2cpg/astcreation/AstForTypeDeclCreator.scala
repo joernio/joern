@@ -13,7 +13,7 @@ import scala.util.{Failure, Success, Try}
 
 import scala.util.Try
 
-trait AstForStructuresCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   def astForTypeSpec(typeSpecNode: ParserNodeInfo): Seq[Ast] = {
     // TODO: Add support for member variables and methods
@@ -24,7 +24,7 @@ trait AstForStructuresCreator(implicit withSchemaValidation: ValidationMode) { t
 
         val astParentType     = parentMethodAstNode.label
         val astParentFullName = parentMethodAstNode.fullName
-        val fullName          = fullyQualifiedPackage + Defines.qualifiedNameSeparator + nameNode(ParserKeys.Name).str
+        val fullName          = fullyQualifiedPackage + Defines.dot + nameNode(ParserKeys.Name).str
         val typeDeclNode_ =
           typeDeclNode(
             typeSpecNode,
@@ -44,7 +44,7 @@ trait AstForStructuresCreator(implicit withSchemaValidation: ValidationMode) { t
         scope.popScope()
 
         val modifier = addModifier(typeDeclNode_, nameNode(ParserKeys.Name).str)
-        Seq(Ast(typeDeclNode_).withChild(Ast(modifier)).withChildren(memberAsts.toSeq))
+        Seq(Ast(typeDeclNode_).withChild(Ast(modifier)).withChildren(memberAsts))
       case None => Seq.empty
     }
 
