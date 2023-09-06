@@ -623,7 +623,7 @@ class AstCreator(
   }
 
   def astForCaseExpressionPrimaryContext(ctx: CaseExpressionPrimaryContext): Seq[Ast] = {
-    val code       = s"case ${ctx.caseExpression().expressionOrCommand.getText}"
+    val code = s"case ${Option(ctx.caseExpression().expressionOrCommand).map(_.getText).getOrElse("")}".stripTrailing()
     val switchNode = controlStructureNode(ctx, ControlStructureTypes.SWITCH, code)
     val conditionAst = Option(ctx.caseExpression().expressionOrCommand()).toList
       .flatMap(astForExpressionOrCommand)
