@@ -142,14 +142,16 @@ object NodeBuilders {
   }
 
   def newThisParameterNode(
+    name: String = "this",
+    code: String = "this",
     typeFullName: String,
     dynamicTypeHintFullName: Seq[String] = Seq.empty,
     line: Option[Integer] = None,
     column: Option[Integer] = None
   ): NewMethodParameterIn = {
     NewMethodParameterIn()
-      .name("this")
-      .code("this")
+      .name(name)
+      .code(code)
       .lineNumber(line)
       .columnNumber(column)
       .dynamicTypeHintFullName(dynamicTypeHintFullName)

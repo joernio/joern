@@ -36,7 +36,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val thisParameterMaybe = if (needsThisParameter) {
       val typeDeclFullName = registerType(typeInfoProvider.containingTypeDeclFullName(ktFn, TypeConstants.any))
-      val node             = NodeBuilders.newThisParameterNode(typeDeclFullName, Seq(typeDeclFullName))
+      val node = NodeBuilders.newThisParameterNode(
+        typeFullName = typeDeclFullName,
+        dynamicTypeHintFullName = Seq(typeDeclFullName)
+      )
       scope.addToScope(Constants.this_, node)
       Option(node)
     } else None
