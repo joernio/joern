@@ -522,7 +522,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
 
     val diffGraphs = tryToCatchEdges ++ catchToFinallyEdges ++ tryToFinallyEdges
 
-    val struff = if (maybeTryBlock.isEmpty) {
+    if (maybeTryBlock.isEmpty) {
       // This case deals with the situation where the try block is empty. In this case,
       // no catch block can be executed since nothing can be thrown, but the finally block
       // will still be executed.
@@ -541,7 +541,6 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
           }
         )
     }
-    struff
   }
 
   /** The CFGs for match cases are modeled after PHP match expressions and assumes that a case will always consist of
