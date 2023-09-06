@@ -1,9 +1,9 @@
 package io.joern.x2cpg.passes.controlflow.cfgcreation
 
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, Operators}
-import io.shiftleft.semanticcpg.language._
 import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.CfgEdgeType
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, Operators}
+import io.shiftleft.semanticcpg.language.*
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 /** Translation of abstract syntax trees into control flow graphs
@@ -40,8 +40,8 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
   */
 class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
 
-  import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg._
-  import io.joern.x2cpg.passes.controlflow.cfgcreation.CfgCreator._
+  import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.*
+  import io.joern.x2cpg.passes.controlflow.cfgcreation.CfgCreator.*
 
   /** Control flow graph definitions often feature a designated entry and exit node for each method. While these nodes
     * are no-ops from a computational point of view, they are useful to guarantee that a method has exactly one entry
@@ -83,6 +83,11 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
   private def cfgForChildren(node: AstNode): Cfg =
     node.astChildren.l.map(cfgFor).reduceOption((x, y) => x ++ y).getOrElse(Cfg.empty)
 
+  /** Returns true if this node is a child to some `try` control structure, false if otherwise.
+    */
+  private def withinATryBlock(x: AstNode): Boolean =
+    x.inAst.isControlStructure.exists(_.controlStructureType == ControlStructureTypes.TRY)
+
   /** This method dispatches AST nodes by type and calls corresponding conversion methods.
     */
   protected def cfgFor(node: AstNode): Cfg =
@@ -95,6 +100,8 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
         cfgForControlStructure(controlStructure)
       case jumpTarget: JumpTarget =>
         cfgForJumpTarget(jumpTarget)
+      case ret: Return if withinATryBlock(ret) =>
+        cfgForReturn(ret, inheritFringe = true)
       case ret: Return =>
         cfgForReturn(ret)
       case call: Call if call.name == Operators.logicalAnd =>
@@ -244,10 +251,18 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
   /** Return statements may contain expressions as return values, and therefore, the CFG for a return statement consists
     * of the CFG for calculation of that expression, appended to a CFG containing only the return node, connected with a
     * single edge to the method exit node. The fringe is empty.
+    *
+    * @param inheritFringe
+    *   indicates if the resulting Cfg object must contain the fringe value of the return value's children.
     */
-  protected def cfgForReturn(actualRet: Return): Cfg = {
-    cfgForChildren(actualRet) ++
-      Cfg(entryNode = Option(actualRet), edges = singleEdge(actualRet, exitNode), List())
+  protected def cfgForReturn(actualRet: Return, inheritFringe: Boolean = false): Cfg = {
+    val childrenCfg = cfgForChildren(actualRet)
+    childrenCfg ++
+      Cfg(
+        entryNode = Option(actualRet),
+        edges = singleEdge(actualRet, exitNode),
+        if (inheritFringe) childrenCfg.fringe else List()
+      )
   }
 
   /** The right hand side of a logical AND expression is only evaluated if the left hand side is true as the entire
