@@ -43,12 +43,12 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val name     = funcDecl.json(ParserKeys.Name).obj(ParserKeys.Name).str
     val fullname = s"$fullyQualifiedPackage.$name"
     // TODO: handle multiple return type or tuple (int, int)
-    val (returnTypeStr, methodReturn) =
-      getReturnType(funcDecl.json(ParserKeys.Type)).headOption
-        .getOrElse(("", methodReturnNode(funcDecl, Defines.voidTypeName)))
-    val templateParams       = ""
-    val params               = funcDecl.json(ParserKeys.Type)(ParserKeys.Params)(ParserKeys.List)
     val genericTypeMethodMap = processTypeParams(funcDecl.json(ParserKeys.Type))
+    val (returnTypeStr, methodReturn) =
+      getReturnType(funcDecl.json(ParserKeys.Type), genericTypeMethodMap).headOption
+        .getOrElse(("", methodReturnNode(funcDecl, Defines.voidTypeName)))
+    val templateParams = ""
+    val params         = funcDecl.json(ParserKeys.Type)(ParserKeys.Params)(ParserKeys.List)
     val signature =
       s"$fullname$templateParams(${parameterSignature(params, genericTypeMethodMap)})$returnTypeStr"
     GoGlobal.recordFullNameToReturnType(fullname, returnTypeStr, Some(signature))
@@ -127,14 +127,17 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       .mkString(", ")
   }
 
-  private def getReturnType(methodTypes: Value): Seq[(String, NewMethodReturn)] = {
+  private def getReturnType(
+    methodTypes: Value,
+    genericTypeMethodMap: Map[String, List[String]] = Map.empty
+  ): Seq[(String, NewMethodReturn)] = {
     Try(methodTypes(ParserKeys.Results)) match
       case Success(returnType) =>
         returnType(ParserKeys.List).arrOpt
           .getOrElse(List())
           .map(x =>
             val typeInfo                                           = createParserNodeInfo(x(ParserKeys.Type))
-            val (typeFullName, typeFullNameForcode, isVariadic, _) = processTypeInfo(typeInfo)
+            val (typeFullName, typeFullNameForcode, isVariadic, _) = processTypeInfo(typeInfo, genericTypeMethodMap)
             (typeFullName, methodReturnNode(typeInfo, typeFullName))
           )
           .toSeq
@@ -154,22 +157,24 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val genericTypeMethodMap = new mutable.HashMap[String, List[String]]()
     Try(funDecl(ParserKeys.TypeParams)) match {
       case Success(typeParams) =>
-        if (
-          typeParams.obj.contains(ParserKeys.List) && typeParams(ParserKeys.List).arr.headOption.get.obj
-            .contains(ParserKeys.Type)
-        ) {
-          val genericTypeName = typeParams(ParserKeys.List).arr.headOption.get
-            .obj(ParserKeys.Names)
+        if (typeParams.obj.contains(ParserKeys.List)) {
+          typeParams
+            .obj(ParserKeys.List)
             .arr
-            .headOption
-            .get
-            .obj(ParserKeys.Name)
-            .str
-          typeParams(ParserKeys.List).arr.foreach(typeDecl => {
-            val genericMethodList = ListBuffer[String]()
-            processGenericType(typeDecl(ParserKeys.Type), genericMethodList)
-            genericTypeMethodMap.put(genericTypeName, genericMethodList.toList)
-          })
+            .foreach(params => {
+              if (params.obj.contains(ParserKeys.Type)) {
+                val genericTypeName = params
+                  .obj(ParserKeys.Names)
+                  .arr
+                  .headOption
+                  .get
+                  .obj(ParserKeys.Name)
+                  .str
+                val genericMethodList = ListBuffer[String]()
+                processGenericType(params(ParserKeys.Type), genericMethodList)
+                genericTypeMethodMap.put(genericTypeName, genericMethodList.toList)
+              }
+            })
         }
       case _ =>
         Map()

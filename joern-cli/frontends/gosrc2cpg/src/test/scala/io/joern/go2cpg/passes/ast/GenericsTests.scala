@@ -102,5 +102,49 @@ class GenericsTests extends GoCodeToCpgSuite {
       val param2 = method.parameter.head
       param2.typeFullName shouldBe "float32|int64"
     }
+
+    "be correct method bounded type parameter with multiple type and single parameter" in {
+      val cpg = code("""
+          |package main
+          |func foo[T float32, U int64](p1 U) {}
+          |""".stripMargin)
+
+      val List(method) = cpg.method.name("foo").l
+      method.signature shouldBe "main.foo(int64)"
+      val List(param) = method.parameter.name("p1").l
+      param.typeFullName shouldBe "int64"
+    }
+  }
+
+  "AST Creation for generic class having return type" should {
+    "no generic return" in {
+      val cpg = code("""
+          |package main
+          |func foo(value int64) string {}
+          |""".stripMargin)
+
+      val List(method) = cpg.method.name("foo").l
+      method.signature shouldBe "main.foo(int64)string"
+    }
+
+    "be correct method with bounded generic type return" in {
+      val cpg = code("""
+          |package main
+          |func foo[T int64](value T) T {}
+          |""".stripMargin)
+
+      val List(method) = cpg.method.name("foo").l
+      method.signature shouldBe "main.foo(int64)int64"
+    }
+
+    "be correct method with multiple generic type having single return" in {
+      val cpg = code("""
+          |package main
+          |func foo[T int64, U float32](value T) U {}
+          |""".stripMargin)
+
+      val List(method) = cpg.method.name("foo").l
+      method.signature shouldBe "main.foo(int64)float32"
+    }
   }
 }
