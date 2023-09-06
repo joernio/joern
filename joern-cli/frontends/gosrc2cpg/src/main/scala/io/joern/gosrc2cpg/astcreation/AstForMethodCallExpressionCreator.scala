@@ -5,6 +5,7 @@ import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import ujson.Value
+import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 
 trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -16,7 +17,7 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
       case SelectorExpr =>
         (funcDetails.json(ParserKeys.X)(ParserKeys.Name).strOpt, funcDetails.json(ParserKeys.Sel)(ParserKeys.Name).str)
     val (signature, fullName, typeFullName) =
-      callMethodFullNameTypeFullNameAndSignature(methodName, alias, expr.json(ParserKeys.Args))
+      callMethodFullNameTypeFullNameAndSignature(methodName, alias)
     val cpgCall = callNode(
       expr,
       expr.code,
@@ -28,6 +29,38 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
     )
     Seq(callAst(cpgCall, astForArgs(expr.json(ParserKeys.Args))))
   }
+
+  protected def astForStructureDeclaration(compositeLit: ParserNodeInfo): Seq[Ast] = {
+    val methodName = compositeLit.json(ParserKeys.Type)(ParserKeys.Name).str
+    val (signature, fullName, typeFullName) =
+      callMethodFullNameTypeFullNameAndSignature(methodName, None)
+    val cpgCall = callNode(
+      compositeLit,
+      compositeLit.code,
+      methodName,
+      fullName,
+      DispatchTypes.STATIC_DISPATCH,
+      Some(signature),
+      Some(fullName)
+    )
+    Seq(callAst(cpgCall, astForStructureDeclarationParameter(compositeLit.json(ParserKeys.Elts))))
+  }
+
+  private def astForStructureDeclarationParameter(args: Value): Seq[Ast] = {
+
+    args.arrOpt
+      .getOrElse(Seq.empty)
+      .flatMap(x => {
+        val keyNode = createParserNodeInfo(createParserNodeInfo(x).json(ParserKeys.Key))
+        val valueNode = createParserNodeInfo(createParserNodeInfo(x).json(ParserKeys.Value))
+        val argumentType = valueNode.json(ParserKeys.Kind).str
+        val argumentName = keyNode.json(ParserKeys.Name).str
+        scope.addToScope(argumentName, (localNode(keyNode, "", "", ""), argumentType))
+        astForPrimitive(keyNode)
+      })
+      .toSeq
+  }
+
   private def astForArgs(args: Value): Seq[Ast] = {
     args.arrOpt
       .getOrElse(Seq.empty)
@@ -39,8 +72,7 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
   }
   private def callMethodFullNameTypeFullNameAndSignature(
     methodName: String,
-    aliasName: Option[String] = None,
-    args: Value
+    aliasName: Option[String] = None
   ): (String, String, String) = {
     // NOTE: There is an assumption that the import nodes have been processed before this method is being called
     // and mapping of alias to their respective namespace is already done.
