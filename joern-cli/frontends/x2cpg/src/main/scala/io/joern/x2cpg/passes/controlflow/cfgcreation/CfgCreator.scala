@@ -83,6 +83,11 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
   private def cfgForChildren(node: AstNode): Cfg =
     node.astChildren.l.map(cfgFor).reduceOption((x, y) => x ++ y).getOrElse(Cfg.empty)
 
+  /** Returns true if this node is a child to some `try` control structure, false if otherwise.
+    */
+  private def withinATryBlock(x: AstNode): Boolean =
+    x.inAst.isControlStructure.exists(_.controlStructureType == ControlStructureTypes.TRY)
+
   /** This method dispatches AST nodes by type and calls corresponding conversion methods.
     */
   protected def cfgFor(node: AstNode): Cfg =
@@ -95,6 +100,8 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
         cfgForControlStructure(controlStructure)
       case jumpTarget: JumpTarget =>
         cfgForJumpTarget(jumpTarget)
+      case ret: Return if withinATryBlock(ret) =>
+        cfgForReturn(ret, inheritFringe = true)
       case ret: Return =>
         cfgForReturn(ret)
       case call: Call if call.name == Operators.logicalAnd =>
@@ -245,9 +252,14 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     * of the CFG for calculation of that expression, appended to a CFG containing only the return node, connected with a
     * single edge to the method exit node. The fringe is empty.
     */
-  protected def cfgForReturn(actualRet: Return): Cfg = {
-    cfgForChildren(actualRet) ++
-      Cfg(entryNode = Option(actualRet), edges = singleEdge(actualRet, exitNode), List())
+  protected def cfgForReturn(actualRet: Return, inheritFringe: Boolean = false): Cfg = {
+    val childrenCfg = cfgForChildren(actualRet)
+    childrenCfg ++
+      Cfg(
+        entryNode = Option(actualRet),
+        edges = singleEdge(actualRet, exitNode),
+        if (inheritFringe) childrenCfg.fringe else List()
+      )
   }
 
   /** The right hand side of a logical AND expression is only evaluated if the left hand side is true as the entire
@@ -510,7 +522,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
 
     val diffGraphs = tryToCatchEdges ++ catchToFinallyEdges ++ tryToFinallyEdges
 
-    if (maybeTryBlock.isEmpty) {
+    val struff = if (maybeTryBlock.isEmpty) {
       // This case deals with the situation where the try block is empty. In this case,
       // no catch block can be executed since nothing can be thrown, but the finally block
       // will still be executed.
@@ -529,6 +541,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
           }
         )
     }
+    struff
   }
 
   /** The CFGs for match cases are modeled after PHP match expressions and assumes that a case will always consist of

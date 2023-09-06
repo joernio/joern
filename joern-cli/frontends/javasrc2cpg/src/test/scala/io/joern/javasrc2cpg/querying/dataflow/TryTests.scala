@@ -120,6 +120,23 @@ class TryTests extends JavaDataflowFixture {
       |
       |        System.out.println(s);
       |    }
+      |
+      |    public static int tryWithExplicitReturn(String args) {
+      |        try {
+      |            var x = 1;
+      |            System.out.println("in begin");
+      |            return x;
+      |         } catch (Exception e) {
+      |            System.out.println("Something went wrong." + args);
+      |         }
+      |         return 1;
+      |    }
+      |
+      |    public static void test10(String[] args) {
+      |       String s = "MALICIOUS";
+      |       tryWithExplicitReturn(s);
+      |    }
+      |
       |}
       |""".stripMargin
 
@@ -167,5 +184,10 @@ class TryTests extends JavaDataflowFixture {
   it should "not find a path if `MALICIOUS` is reassigned in FINALLY" in {
     val (source, sink) = getConstSourceSink("test9")
     sink.reachableBy(source).size shouldBe 0
+  }
+
+  it should "find a path if `MALICIOUS` is given to a call in CATCH" in {
+    val (source, sink) = getMultiFnSourceSink("test10", "tryWithExplicitReturn")
+    sink.reachableBy(source).size shouldBe 2
   }
 }
