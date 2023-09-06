@@ -1,9 +1,9 @@
 package io.joern.x2cpg.passes.controlflow.cfgcreation
 
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, Operators}
-import io.shiftleft.semanticcpg.language._
 import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.CfgEdgeType
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, Operators}
+import io.shiftleft.semanticcpg.language.*
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 /** Translation of abstract syntax trees into control flow graphs
@@ -40,8 +40,8 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
   */
 class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
 
-  import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg._
-  import io.joern.x2cpg.passes.controlflow.cfgcreation.CfgCreator._
+  import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.*
+  import io.joern.x2cpg.passes.controlflow.cfgcreation.CfgCreator.*
 
   /** Control flow graph definitions often feature a designated entry and exit node for each method. While these nodes
     * are no-ops from a computational point of view, they are useful to guarantee that a method has exactly one entry
@@ -251,6 +251,9 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
   /** Return statements may contain expressions as return values, and therefore, the CFG for a return statement consists
     * of the CFG for calculation of that expression, appended to a CFG containing only the return node, connected with a
     * single edge to the method exit node. The fringe is empty.
+    *
+    * @param inheritFringe
+    *   indicates if the resulting Cfg object must contain the fringe value of the return value's children.
     */
   protected def cfgForReturn(actualRet: Return, inheritFringe: Boolean = false): Cfg = {
     val childrenCfg = cfgForChildren(actualRet)
