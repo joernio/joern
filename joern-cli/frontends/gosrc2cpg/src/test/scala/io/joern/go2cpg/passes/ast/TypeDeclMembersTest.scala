@@ -10,7 +10,7 @@ import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import scala.collection.immutable.List
 import io.joern.gosrc2cpg.astcreation.Defines
 
-class ASTCreationForStructureMemberTests extends GoCodeToCpgSuite {
+class TypeDeclMembersTest extends GoCodeToCpgSuite {
 
   "structure with single element" should {
 

@@ -13,7 +13,7 @@ import scala.util.{Failure, Success, Try}
 
 import scala.util.Try
 
-trait AstForStructuresCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   def astForTypeSpec(typeSpecNode: ParserNodeInfo): Seq[Ast] = {
     // TODO: Add support for member variables and methods
