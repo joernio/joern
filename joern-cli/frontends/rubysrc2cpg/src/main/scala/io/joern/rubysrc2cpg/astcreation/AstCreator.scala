@@ -615,19 +615,15 @@ class AstCreator(
         })
         .toList
 
-    val asts =
-      if (ctx.splattingArgument() != null) {
-        expAsts ++ astForExpressionOrCommand(ctx.splattingArgument().expressionOrCommand())
-      } else {
-        expAsts
-      }
-
-    val blockNode = NewBlock().typeFullName(Defines.Any)
-    Seq(blockAst(blockNode, asts))
+    if (ctx.splattingArgument() != null) {
+      expAsts ++ astForExpressionOrCommand(ctx.splattingArgument().expressionOrCommand())
+    } else {
+      expAsts
+    }
   }
 
   def astForCaseExpressionPrimaryContext(ctx: CaseExpressionPrimaryContext): Seq[Ast] = {
-    val code       = ctx.caseExpression().CASE().getText
+    val code = s"case ${Option(ctx.caseExpression().expressionOrCommand).map(_.getText).getOrElse("")}".stripTrailing()
     val switchNode = controlStructureNode(ctx, ControlStructureTypes.SWITCH, code)
     val conditionAst = Option(ctx.caseExpression().expressionOrCommand()).toList
       .flatMap(astForExpressionOrCommand)
@@ -638,24 +634,27 @@ class AstCreator(
       .whenClause()
       .asScala
       .flatMap(wh => {
-        val whenNode = NewJumpTarget()
-          .parserTypeName(wh.getClass.getSimpleName)
-          .name("case " + wh.getText)
-          .code(wh.getText)
-          .lineNumber(wh.WHEN().getSymbol.getLine)
-          .columnNumber(wh.WHEN().getSymbol.getCharPositionInLine)
+        val whenNode =
+          jumpTargetNode(wh, "case", s"case ${wh.getText}", Option(wh.getClass.getSimpleName))
 
         val whenACondAsts = astForWhenArgumentContext(wh.whenArgument())
-        val thenAsts = astForCompoundStatement(wh.thenClause().compoundStatement()) ++ Seq(
-          Ast(NewControlStructure().controlStructureType(ControlStructureTypes.BREAK))
-        )
+        val thenAsts = astForCompoundStatement(
+          wh.thenClause().compoundStatement(),
+          isMethodBody = true,
+          canConsiderAsLeaf = false
+        ) ++ Seq(Ast(NewControlStructure().controlStructureType(ControlStructureTypes.BREAK)))
         Seq(Ast(whenNode)) ++ whenACondAsts ++ thenAsts
       })
       .toList
 
-    val stmtAsts = whenThenAstsList ++ Option(ctx.caseExpression().elseClause())
-      .map(ctx => astForCompoundStatement(ctx.compoundStatement()))
-      .getOrElse(Seq())
+    val stmtAsts = whenThenAstsList ++ (Option(ctx.caseExpression().elseClause()) match
+      case Some(elseClause) =>
+        Ast(
+          // name = "default" for behaviour determined by CfgCreator.cfgForJumpTarget
+          jumpTargetNode(elseClause, "default", "else", Option(elseClause.getClass.getSimpleName))
+        ) +: astForCompoundStatement(elseClause.compoundStatement(), isMethodBody = true, canConsiderAsLeaf = false)
+      case None => Seq.empty[Ast]
+    )
     val block = blockNode(ctx.caseExpression())
     Seq(controlStructureAst(switchNode, conditionAst, Seq(Ast(block).withChildren(stmtAsts))))
   }
