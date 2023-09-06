@@ -66,7 +66,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     methodAstParentStack.pop()
 //    if method is related to Struct then fill astParentFullName and astParentType
     if (funcDecl.json.obj.contains(ParserKeys.Recv)) {
-      val receiverTypeDeclType = parameterSignature(funcDecl.json(ParserKeys.Recv)(ParserKeys.List))
+      val receiverTypeDeclType = parameterSignature(funcDecl.json(ParserKeys.Recv)(ParserKeys.List), Map.empty[String, List[String]])
       methodNode_.astParentFullName = receiverTypeDeclType.replace("*", "")
       methodNode_.astParentType = NodeTypes.TYPE_DECL
       Ast.storeInDiffGraph(astForMethod, diffGraph)
