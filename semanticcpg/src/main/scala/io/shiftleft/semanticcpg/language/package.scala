@@ -181,7 +181,11 @@ package object language extends operatorextension.Implicits with LowPrioImplicit
   implicit def toTraversal[NodeType <: StoredNode](node: NodeType): Traversal[NodeType] =
     Iterator.single(node)
 
-  implicit def toSteps[A](trav: Traversal[A]): Steps[A] = new Steps(trav)
+  implicit def iterableOnceToSteps[A](iterableOnce: IterableOnce[A]): Steps[A] =
+    new Steps(iterableOnce.iterator)
+
+  implicit def traversalToSteps[A](trav: Traversal[A]): Steps[A] =
+    new Steps(trav)
   implicit def iterOnceToNodeSteps[A <: StoredNode](a: IterableOnce[A]): NodeSteps[A] =
     new NodeSteps[A](a.iterator)
 

@@ -5,7 +5,7 @@ import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
 import io.shiftleft.semanticcpg.language._
 
-class AstCreationForOperatorsTests extends GoCodeToCpgSuite {
+class OperatorsTests extends GoCodeToCpgSuite {
 
   "Ast nodes for Operators" should {
     "be created for binary operators" in {
