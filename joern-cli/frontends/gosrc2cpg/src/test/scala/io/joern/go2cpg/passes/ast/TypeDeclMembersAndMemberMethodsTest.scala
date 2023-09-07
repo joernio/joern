@@ -149,25 +149,27 @@ class TypeDeclMembersAndMemberMethodsTest extends GoCodeToCpgSuite {
 
       val List(areaByValueNode, areaByReferenceNode) = typeDeclNode.astChildren.isMethod.l
       areaByValueNode.name shouldBe "Area_by_value"
+      areaByValueNode.fullName shouldBe "main.Rect.Area_by_value"
       areaByReferenceNode.name shouldBe "Area_by_reference"
+      areaByReferenceNode.fullName shouldBe "main.Rect.Area_by_reference"
     }
 
-//    "Check 'this' parameter node" in {
-//      cpg.parameter.name("this").size shouldBe 2
-//      val List(thisParam, thisParamsec) = cpg.parameter.name("this").l
-//      thisParam.order shouldBe 0
-//      thisParam.index shouldBe 0
-//      thisParamsec.order shouldBe 0
-//      thisParamsec.index shouldBe 0
-//    }
+    "Check 'this'/receiver parameter node" in {
+      cpg.parameter.name("re").size shouldBe 2
+      val List(thisParam, thisParamsec) = cpg.parameter.name("re").l
+      thisParam.order shouldBe 0
+      thisParam.index shouldBe 0
+      thisParamsec.order shouldBe 0
+      thisParamsec.index shouldBe 0
+    }
 
-//    "Traversal from 'this'/receiver parameter to method node" in {
-//      cpg.parameter.name("re").method.name.l shouldBe List("Area_by_value", "Area_by_reference")
-//    }
-//
-//    "Traversal from method to 'this'/receiver parameter node" in {
-//      cpg.method("Area_by_value").parameter.name.l shouldBe List("re")
-//    }
+    "Traversal from 'this'/receiver parameter to method node" in {
+      cpg.parameter.name("re").method.name.l shouldBe List("Area_by_value", "Area_by_reference")
+    }
+
+    "Traversal from method to 'this'/receiver parameter node" in {
+      cpg.method("Area_by_value").parameter.name.l shouldBe List("re")
+    }
   }
 
   "structure with no associated method" should {

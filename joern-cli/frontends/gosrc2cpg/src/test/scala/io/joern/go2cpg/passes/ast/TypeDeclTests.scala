@@ -2,13 +2,7 @@ package io.joern.go2cpg.passes.ast
 
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{
-  ControlStructureTypes,
-  DispatchTypes,
-  ModifierTypes,
-  NodeTypes,
-  Operators
-}
+import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 
@@ -36,8 +30,8 @@ class TypeDeclTests extends GoCodeToCpgSuite {
       cpg.typeDecl("Foo").astParentType.l.head shouldBe NodeTypes.TYPE_DECL
     }
 
-    "test fullName of TypeDecl nodes" ignore {
-      typeDeclNode.fullName shouldBe "test.go::main.<global>::Foo"
+    "test fullName of TypeDecl nodes" in {
+      typeDeclNode.fullName shouldBe "main.Foo"
     }
 
     "test the modifier" in {
@@ -66,8 +60,8 @@ class TypeDeclTests extends GoCodeToCpgSuite {
       cpg.typeDecl("Foo").astParentType.l.head shouldBe NodeTypes.TYPE_DECL
     }
 
-    "test fullName of TypeDecl nodes" ignore {
-      typeDeclNode.fullName shouldBe "test.go::main.<global>::Foo"
+    "test fullName of TypeDecl nodes" in {
+      typeDeclNode.fullName shouldBe "main.Foo"
     }
 
     "test the modifier" in {
@@ -96,8 +90,8 @@ class TypeDeclTests extends GoCodeToCpgSuite {
       cpg.typeDecl("Foo").astParentType.l.head shouldBe NodeTypes.TYPE_DECL
     }
 
-    "test fullName of TypeDecl nodes" ignore {
-      typeDeclNode.fullName shouldBe "test.go::main.<global>::Foo"
+    "test fullName of TypeDecl nodes" in {
+      typeDeclNode.fullName shouldBe "main.Foo"
     }
 
     "test the modifier" in {
@@ -127,8 +121,8 @@ class TypeDeclTests extends GoCodeToCpgSuite {
       cpg.typeDecl("foo").astParentType.l.head shouldBe NodeTypes.TYPE_DECL
     }
 
-    "test fullName of TypeDecl nodes" ignore {
-      typeDeclNode.fullName shouldBe "test.go::main.<global>::foo"
+    "test fullName of TypeDecl nodes" in {
+      typeDeclNode.fullName shouldBe "main.foo"
     }
 
     "test the modifier" in {
@@ -160,7 +154,7 @@ class TypeDeclTests extends GoCodeToCpgSuite {
     }
 
     "test fullName of TypeDecl nodes" ignore {
-      typeDeclNode.fullName shouldBe "test.go::main.<global>::main::Sample"
+      typeDeclNode.fullName shouldBe "main.main.Sample"
     }
 
     "test the modifier" in {
@@ -191,8 +185,8 @@ class TypeDeclTests extends GoCodeToCpgSuite {
       cpg.typeDecl("Foo").astParentType.l.head shouldBe NodeTypes.TYPE_DECL
     }
 
-    "test fullName of TypeDecl nodes" ignore {
-      typeDeclNode.fullName shouldBe "test.go::main.<global>::main::Foo"
+    "test fullName of TypeDecl nodes" in {
+      typeDeclNode.fullName shouldBe "main.Foo"
     }
 
     "test the modifier" in {
@@ -223,8 +217,8 @@ class TypeDeclTests extends GoCodeToCpgSuite {
       cpg.typeDecl("Foo").astParentType.l.head shouldBe NodeTypes.TYPE_DECL
     }
 
-    "test fullName of TypeDecl nodes for Foo" ignore {
-      typeDeclNode.fullName shouldBe "test.go::main.<global>::main::Foo"
+    "test fullName of TypeDecl nodes for Foo" in {
+      typeDeclNode.fullName shouldBe "main.Foo"
     }
 
     "test the modifier for Foo" in {
@@ -244,8 +238,8 @@ class TypeDeclTests extends GoCodeToCpgSuite {
       cpg.typeDecl("bar").astParentType.l.head shouldBe NodeTypes.TYPE_DECL
     }
 
-    "test fullName of TypeDecl nodes for bar" ignore {
-      typeDeclNodeBar.fullName shouldBe "test.go::main.<global>::bar"
+    "test fullName of TypeDecl nodes for bar" in {
+      typeDeclNodeBar.fullName shouldBe "main.bar"
     }
 
     "test the modifier for bar" in {
@@ -254,3 +248,12 @@ class TypeDeclTests extends GoCodeToCpgSuite {
     }
   }
 }
+
+//TODO: Add unit tests for nested struct within a block
+//func bar (x int) int {
+//  if true {
+//    type mx struct {
+//      something string
+//    }
+//  }
+//}

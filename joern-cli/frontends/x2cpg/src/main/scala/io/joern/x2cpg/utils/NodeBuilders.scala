@@ -147,7 +147,8 @@ object NodeBuilders {
     typeFullName: String,
     dynamicTypeHintFullName: Seq[String] = Seq.empty,
     line: Option[Integer] = None,
-    column: Option[Integer] = None
+    column: Option[Integer] = None,
+    evaluationStrategy: String = EvaluationStrategies.BY_SHARING
   ): NewMethodParameterIn = {
     NewMethodParameterIn()
       .name(name)
@@ -155,7 +156,7 @@ object NodeBuilders {
       .lineNumber(line)
       .columnNumber(column)
       .dynamicTypeHintFullName(dynamicTypeHintFullName)
-      .evaluationStrategy(EvaluationStrategies.BY_SHARING)
+      .evaluationStrategy(evaluationStrategy)
       .typeFullName(typeFullName)
       .index(0)
       .order(0)
