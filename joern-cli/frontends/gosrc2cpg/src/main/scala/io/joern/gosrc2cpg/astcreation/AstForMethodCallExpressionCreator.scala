@@ -59,8 +59,10 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
     args.arrOpt
       .getOrElse(Seq.empty)
       .flatMap(x => {
-        val valueNode = createParserNodeInfo(createParserNodeInfo(x).json(ParserKeys.Value))
-        astForPrimitive(valueNode)
+        val argument = createParserNodeInfo(x)
+        argument.node match
+          case BasicLit => astForPrimitive(argument)
+          case _        => astForPrimitive(createParserNodeInfo(argument.json(ParserKeys.Value)))
       })
       .toSeq
   }

@@ -50,7 +50,7 @@ class StructureCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
     )
 
     "check no call node present" in {
-      cpg.call.nameExact("Rectangle").size shouldBe 0
+      cpg.call.nameExact("Rectangle").size shouldBe 1
     }
   }
 
@@ -108,7 +108,7 @@ class StructureCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
     }
   }
 
-  "when structure is defined via var keyword" should {
+  "when structure is defined via var keyword with argument keyword(length)" should {
     val cpg = code(
       """
         package main
@@ -135,7 +135,76 @@ class StructureCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
     }
 
     "Single call node getting created for Structure declaration" ignore {
-      val List(squareCallNode) = cpg.call("Square").l
+      cpg.call("Square").size shouldBe 1
+    }
+  }
+
+  "when structure is defined via var keyword without argument name keyword" should {
+    val cpg = code(
+      """
+        package main
+        |
+        |type Square struct {
+        |	length float64
+        |}
+        |
+        |func main() {
+        |	var square = Square{10}
+        |	fmt.Println(square)
+        |
+        |}
+        |""".stripMargin,
+      "test.go"
+    )
+
+    val List(squareCallNode, _) = cpg.call("Square").l
+    "check argument of Square call node" in {
+      val List(squareArgument) = squareCallNode.argument.isLiteral.l
+      squareArgument.argumentIndex shouldBe 1
+      squareArgument.order shouldBe 1
+      squareArgument.code shouldBe "10"
+      squareArgument.typeFullName shouldBe "int"
+    }
+
+    "Single call node getting created for Structure declaration" ignore {
+      cpg.call("Square").size shouldBe 1
+    }
+  }
+
+  "when structure is defined via var keyword without argument name keyword and multiple argument" should {
+    val cpg = code(
+      """
+        package main
+        |
+        |type Rectangle struct {
+        |	length float64
+        |   width float64
+        |}
+        |
+        |func main() {
+        |	var rectangle = Rectangle{10, 20}
+        |	fmt.Println(rectangle)
+        |}
+        |""".stripMargin,
+      "test.go"
+    )
+
+    val List(squareCallNode, _) = cpg.call("Rectangle").l
+    "check argument of Rectangle call node" in {
+      val List(rectangleArgumentFirst, squareArgumentSecond) = squareCallNode.argument.isLiteral.l
+      rectangleArgumentFirst.argumentIndex shouldBe 1
+      rectangleArgumentFirst.order shouldBe 1
+      rectangleArgumentFirst.code shouldBe "10"
+      rectangleArgumentFirst.typeFullName shouldBe "int"
+
+      squareArgumentSecond.argumentIndex shouldBe 2
+      squareArgumentSecond.order shouldBe 2
+      squareArgumentSecond.code shouldBe "20"
+      squareArgumentSecond.typeFullName shouldBe "int"
+    }
+
+    "Single call node getting created for Structure declaration" ignore {
+      cpg.call("Square").size shouldBe 1
     }
   }
 

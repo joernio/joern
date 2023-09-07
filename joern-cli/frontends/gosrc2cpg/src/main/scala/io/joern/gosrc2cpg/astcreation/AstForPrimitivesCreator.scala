@@ -27,10 +27,10 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
           case _                               => Seq.empty
         elementsAsts ++ Seq(astForArrayInitializer(primitive))
       // Handling structure initialisation by creating a call node and arguments
-      case Ident if primitive.json(ParserKeys.Elts).apply(0).obj.contains("Colon") =>
+      case Ident =>
         astForStructureDeclaration(primitive)
       // Handling structure initialisation(alias present) by creating a call node and arguments
-      case SelectorExpr if primitive.json(ParserKeys.Elts).apply(0).obj.contains("Colon") =>
+      case SelectorExpr =>
         astForStructureDeclaration(primitive)
       case _ =>
         Seq.empty
