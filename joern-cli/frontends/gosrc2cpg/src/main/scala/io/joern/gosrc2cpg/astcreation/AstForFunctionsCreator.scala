@@ -52,7 +52,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
             typeFullName
         (s"$typeFullName.$name", s"($signatureStr)")
       case _ =>
-        (s"${fullyQualifiedPackage}.$name", "")
+        (s"$fullyQualifiedPackage.$name", "")
     // TODO: handle multiple return type or tuple (int, int)
     val genericTypeMethodMap = processTypeParams(funcDecl.json(ParserKeys.Type))
     val (returnTypeStr, methodReturn) =
@@ -78,8 +78,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     receiverInfo match
       case Some(_, typeFullName, _, _) =>
         // if method is related to Struct then fill astParentFullName and astParentType
-        methodNode_.astParentFullName = typeFullName
-        methodNode_.astParentType = NodeTypes.TYPE_DECL
+        methodNode_.astParentType(NodeTypes.TYPE_DECL).astParentFullName(typeFullName)
         Ast.storeInDiffGraph(astForMethod, diffGraph)
         Seq.empty
       case _ =>
