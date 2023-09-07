@@ -1,17 +1,15 @@
 package io.joern.gosrc2cpg.astcreation
 
-import io.joern.x2cpg.ValidationMode
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg
+import io.joern.x2cpg.datastructures.Stack.StackWrapper
 import io.joern.x2cpg.{Ast, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
 import ujson.Value
-import io.joern.x2cpg.datastructures.Stack.StackWrapper
-import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
-import scala.util.{Failure, Success, Try}
 
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -62,22 +60,17 @@ trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { thi
       .json(ParserKeys.List)
       .arrOpt
       .getOrElse(List())
-      .map(createParserNodeInfo)
-      .map(astForField)
+      .flatMap(x => {
+        val typeInfo = createParserNodeInfo(x(ParserKeys.Type))
+        val (typeFullName, typeFullNameForCode, isVariadic, evaluationStrategy) = processTypeInfo(typeInfo)
+        x(ParserKeys.Names).arrOpt
+          .getOrElse(List())
+          .map(fieldInfo => {
+            val fieldNodeInfo = createParserNodeInfo(fieldInfo)
+            val fieldName     = fieldNodeInfo.json(ParserKeys.Name).str
+            Ast(memberNode(typeInfo, fieldName, fieldNodeInfo.code, typeFullName, Seq()))
+          })
+      })
       .toSeq
   }
-  protected def astForField(field: ParserNodeInfo): Ast = {
-    field.node match
-      case Field => {
-        val typeInfo = createParserNodeInfo(field.json(ParserKeys.Type))
-        val (typeFullName, typeFullNameForCode, isVariadic, evaluationStrategy) = processTypeInfo(typeInfo)
-        val fieldNodeInfo = createParserNodeInfo(field.json(ParserKeys.Names).arr.head)
-        val fieldName     = fieldNodeInfo.json(ParserKeys.Name).str
-        Ast(memberNode(typeInfo, fieldName, s"$fieldName $typeFullNameForCode", typeFullName, Seq()))
-      }
-      case _ => {
-        Ast()
-      }
-  }
-
 }

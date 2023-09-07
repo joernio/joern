@@ -196,14 +196,14 @@ class TypeDeclMembersAndMemberMethodsTest extends GoCodeToCpgSuite {
   "structure with comma separated member" should {
 
     val cpg = code("""
-        package main
+        |package main
         |
         |type Rect struct {
         |  len, wid int
         |}
         |""".stripMargin)
 
-    "Check number of member nodes" ignore {
+    "Check number of member nodes" in {
       val List(typeDeclNode) = cpg.typeDecl.name("Rect").l
       typeDeclNode.member.size shouldBe 2
 
