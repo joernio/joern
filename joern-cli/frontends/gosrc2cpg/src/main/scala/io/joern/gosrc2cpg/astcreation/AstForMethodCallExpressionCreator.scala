@@ -1,6 +1,6 @@
 package io.joern.gosrc2cpg.astcreation
 
-import io.joern.gosrc2cpg.parser.ParserAst.{Ident, SelectorExpr}
+import io.joern.gosrc2cpg.parser.ParserAst.{BasicLit, Ident, SelectorExpr}
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
@@ -31,9 +31,14 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
   }
 
   protected def astForStructureDeclaration(compositeLit: ParserNodeInfo): Seq[Ast] = {
-    val methodName = compositeLit.json(ParserKeys.Type)(ParserKeys.Name).str
-    val (signature, fullName, typeFullName) =
-      callMethodFullNameTypeFullNameAndSignature(methodName, None)
+    val typeNode = createParserNodeInfo(compositeLit.json(ParserKeys.Type))
+    val (alias, methodName) = typeNode.node match
+      case Ident =>
+        (None, typeNode.json(ParserKeys.Name).str)
+      case SelectorExpr =>
+        (typeNode.json(ParserKeys.X)(ParserKeys.Name).strOpt, typeNode.json(ParserKeys.Sel)(ParserKeys.Name).str)
+    val (signature, fullName, _) = callMethodFullNameTypeFullNameAndSignature(methodName, alias)
+
     val cpgCall = callNode(
       compositeLit,
       compositeLit.code,
@@ -43,20 +48,15 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
       Some(signature),
       Some(fullName)
     )
-    Seq(callAst(cpgCall, astForStructureDeclarationParameter(compositeLit.json(ParserKeys.Elts))))
+    Seq(callAst(cpgCall, astForStructureDeclarationArgument(compositeLit.json(ParserKeys.Elts))))
   }
 
-  private def astForStructureDeclarationParameter(args: Value): Seq[Ast] = {
-
+  private def astForStructureDeclarationArgument(args: Value): Seq[Ast] = {
     args.arrOpt
       .getOrElse(Seq.empty)
       .flatMap(x => {
-        val keyNode = createParserNodeInfo(createParserNodeInfo(x).json(ParserKeys.Key))
         val valueNode = createParserNodeInfo(createParserNodeInfo(x).json(ParserKeys.Value))
-        val argumentType = valueNode.json(ParserKeys.Kind).str
-        val argumentName = keyNode.json(ParserKeys.Name).str
-        scope.addToScope(argumentName, (localNode(keyNode, "", "", ""), argumentType))
-        astForPrimitive(keyNode)
+        astForPrimitive(valueNode)
       })
       .toSeq
   }

@@ -1,6 +1,6 @@
 package io.joern.gosrc2cpg.astcreation
 
-import io.joern.gosrc2cpg.parser.ParserAst.{ArrayType, BasePrimitive, BasicLit, CompositeLit, Ident}
+import io.joern.gosrc2cpg.parser.ParserAst.{ArrayType, BasePrimitive, BasicLit, CompositeLit, Ident, SelectorExpr}
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
@@ -28,6 +28,9 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
         elementsAsts ++ Seq(astForArrayInitializer(primitive))
       // Handling structure initialisation by creating a call node and arguments
       case Ident if primitive.json(ParserKeys.Elts).apply(0).obj.contains("Colon") =>
+        astForStructureDeclaration(primitive)
+      // Handling structure initialisation(alias present) by creating a call node and arguments
+      case SelectorExpr if primitive.json(ParserKeys.Elts).apply(0).obj.contains("Colon") =>
         astForStructureDeclaration(primitive)
       case _ =>
         Seq.empty
