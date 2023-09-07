@@ -1,10 +1,9 @@
 package io.shiftleft.semanticcpg.language
 
 import io.shiftleft.codepropertygraph.generated.nodes.{CallRepr, Method}
-import overflowdb.traversal._
 
 import scala.collection.mutable
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 trait ICallResolver {
 
@@ -28,7 +27,7 @@ trait ICallResolver {
 
   /** Same as getCalledMethods but with traversal return type.
     */
-  def getCalledMethodsAsTraversal(callsite: CallRepr): Traversal[Method] =
+  def getCalledMethodsAsTraversal(callsite: CallRepr): Iterator[Method] =
     getCalledMethods(callsite).iterator
 
   /** Get callsites of the given method. This internally calls triggerMethodResolution.
@@ -48,7 +47,7 @@ trait ICallResolver {
 
   /** Same as getMethodCallsites but with traversal return type.
     */
-  def getMethodCallsitesAsTraversal(method: Method): Traversal[CallRepr] =
+  def getMethodCallsitesAsTraversal(method: Method): Iterator[CallRepr] =
     getMethodCallsites(method).iterator
 
   /** Starts data flow tracking to find all method which could be called at the given callsite. The result is stored in

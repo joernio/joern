@@ -1,29 +1,29 @@
 package io.shiftleft.semanticcpg.language.types.structure
 
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.*
 import overflowdb.traversal.help
 import overflowdb.traversal.help.Doc
 
 @help.Traversal(elementType = classOf[MethodReturn])
-class MethodReturnTraversal(val traversal: Traversal[MethodReturn]) extends AnyVal {
+class MethodReturnTraversal(val traversal: Iterator[MethodReturn]) extends AnyVal {
 
   @Doc(info = "traverse to parent method")
-  def method: Traversal[Method] =
+  def method: Iterator[Method] =
     traversal.flatMap(_._methodViaAstIn)
 
-  def returnUser(implicit callResolver: ICallResolver): Traversal[Call] =
+  def returnUser(implicit callResolver: ICallResolver): Iterator[Call] =
     traversal.flatMap(_.returnUser)
 
   /** Traverse to last expressions in CFG. Can be multiple.
     */
   @Doc(info = "traverse to last expressions in CFG (can be multiple)")
-  def cfgLast: Traversal[CfgNode] =
+  def cfgLast: Iterator[CfgNode] =
     traversal.flatMap(_.cfgIn)
 
   /** Traverse to return type
     */
   @Doc(info = "traverse to return type")
-  def typ: Traversal[Type] =
+  def typ: Iterator[Type] =
     traversal.flatMap(_.evalTypeOut)
 }

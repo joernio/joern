@@ -1,40 +1,40 @@
 package io.shiftleft.semanticcpg.language.types.expressions
 
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.*
 
 /** A call site
   */
-class CallTraversal(val traversal: Traversal[Call]) extends AnyVal {
+class CallTraversal(val traversal: Iterator[Call]) extends AnyVal {
 
   /** Only statically dispatched calls
     */
-  def isStatic: Traversal[Call] =
+  def isStatic: Iterator[Call] =
     traversal.dispatchType("STATIC_DISPATCH")
 
   /** Only dynamically dispatched calls
     */
-  def isDynamic: Traversal[Call] =
+  def isDynamic: Iterator[Call] =
     traversal.dispatchType("DYNAMIC_DISPATCH")
 
   /** The receiver of a call if the call has a receiver associated.
     */
-  def receiver: Traversal[Expression] =
+  def receiver: Iterator[Expression] =
     traversal.flatMap(_.receiver)
 
   /** Arguments of the call
     */
-  def argument: Traversal[Expression] =
+  def argument: Iterator[Expression] =
     traversal.flatMap(_.argument)
 
   /** `i'th` arguments of the call
     */
-  def argument(i: Integer): Traversal[Expression] =
+  def argument(i: Integer): Iterator[Expression] =
     traversal.flatMap(_.arguments(i))
 
   /** To formal method return parameter
     */
-  def toMethodReturn(implicit callResolver: ICallResolver): Traversal[MethodReturn] =
+  def toMethodReturn(implicit callResolver: ICallResolver): Iterator[MethodReturn] =
     traversal
       .flatMap(callResolver.getCalledMethodsAsTraversal)
       .flatMap(_.methodReturn)

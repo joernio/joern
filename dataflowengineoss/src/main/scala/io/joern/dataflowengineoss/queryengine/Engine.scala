@@ -1,18 +1,18 @@
 package io.joern.dataflowengineoss.queryengine
 
 import io.joern.dataflowengineoss.DefaultSemantics
-import io.joern.dataflowengineoss.language._
+import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.passes.reachingdef.EdgeValidator
 import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Properties}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.Edge
-import overflowdb.traversal.{NodeOps, Traversal}
-import java.util.concurrent._
+
+import java.util.concurrent.*
 import scala.collection.mutable
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
 
 /** The data flow engine allows determining paths to a set of sinks from a set of sources. To this end, it solves tasks
@@ -22,7 +22,7 @@ import scala.util.{Failure, Success, Try}
   */
 class Engine(context: EngineContext) {
 
-  import Engine._
+  import Engine.*
 
   private val logger: Logger                   = LoggerFactory.getLogger(this.getClass)
   private val executorService: ExecutorService = Executors.newWorkStealingPool()
@@ -267,7 +267,7 @@ object Engine {
       .toVector
   }
 
-  def argToOutputParams(arg: Expression): Traversal[MethodParameterOut] = {
+  def argToOutputParams(arg: Expression): Iterator[MethodParameterOut] = {
     argToMethods(arg).parameter
       .index(arg.argumentIndex)
       .asOutput

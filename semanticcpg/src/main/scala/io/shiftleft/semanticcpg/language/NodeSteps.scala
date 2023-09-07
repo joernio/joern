@@ -13,7 +13,7 @@ import overflowdb.traversal.help.Doc
   * This is the base class for all steps defined on
   */
 @help.Traversal(elementType = classOf[StoredNode])
-class NodeSteps[NodeType <: StoredNode](val traversal: Traversal[NodeType]) extends AnyVal {
+class NodeSteps[NodeType <: StoredNode](val traversal: Iterator[NodeType]) extends AnyVal {
 
   @Doc(
     info = "The source file this code is in",
@@ -23,7 +23,7 @@ class NodeSteps[NodeType <: StoredNode](val traversal: Traversal[NodeType]) exte
       |the file node that represents that source file.
       |"""
   )
-  def file: Traversal[File] =
+  def file: Iterator[File] =
     traversal
       .choose(_.label) {
         case NodeTypes.NAMESPACE => _.in(EdgeTypes.REF).out(EdgeTypes.SOURCE_FILE)
@@ -45,7 +45,7 @@ class NodeSteps[NodeType <: StoredNode](val traversal: Traversal[NodeType]) exte
       |on the user's side.
       |"""
   )
-  def location(implicit finder: NodeExtensionFinder): Traversal[NewLocation] =
+  def location(implicit finder: NodeExtensionFinder): Iterator[NewLocation] =
     traversal.map(_.location)
 
   @Doc(
@@ -85,7 +85,7 @@ class NodeSteps[NodeType <: StoredNode](val traversal: Traversal[NodeType]) exte
   }
 
   /* follow the incoming edges of the given type as long as possible */
-  protected def walkIn(edgeType: String): Traversal[Node] =
+  protected def walkIn(edgeType: String): Iterator[Node] =
     traversal
       .repeat(_.in(edgeType))(_.until(_.in(edgeType).countTrav.filter(_ == 0)))
 
@@ -119,7 +119,7 @@ class NodeSteps[NodeType <: StoredNode](val traversal: Traversal[NodeType]) exte
     }.l
 
   @Doc(info = "Tags attached to this node")
-  def tag: Traversal[Tag] = {
+  def tag: Iterator[Tag] = {
     traversal.flatMap { node =>
       node.tag
     }

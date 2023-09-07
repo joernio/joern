@@ -1,11 +1,10 @@
 package io.joern.scanners.java
 
+import io.joern.console.*
+import io.joern.macros.QueryMacros.*
 import io.joern.scanners.{Crew, QueryTags}
-import io.shiftleft.codepropertygraph.generated._
-import io.joern.console._
-import io.joern.macros.QueryMacros._
-import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.Traversal
+import io.shiftleft.codepropertygraph.generated.*
+import io.shiftleft.semanticcpg.language.*
 
 object CertificateChecks extends QueryBundle {
 
@@ -41,7 +40,7 @@ object CertificateChecks extends QueryBundle {
             c.methodFullName == Operators.assignment && c.argument.forall(isPrologue)
           case _ => false
         }
-        def skipPrologue(node: nodes.CfgNode): Traversal[nodes.CfgNode] =
+        def skipPrologue(node: nodes.CfgNode): Iterator[nodes.CfgNode] =
           node.start.repeat(_.cfgNext)(_.until(_.filter(!isPrologue(_))))
 
         cpg.method

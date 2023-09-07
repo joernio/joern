@@ -2,10 +2,10 @@ package io.shiftleft.semanticcpg.language
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.Cpg.docSearchPackages
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{NodeTypes, Properties}
 import io.shiftleft.semanticcpg.testing.MockCpg
-import org.json4s._
+import org.json4s.*
 import org.json4s.native.JsonMethods.parse
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -151,7 +151,7 @@ class StepsTest extends AnyWordSpec with Matchers {
     }
 
     "render nodes as `(label,id): properties`" in {
-      def mainMethods: Traversal[Method] = cpg.method.name("woo")
+      def mainMethods: Iterator[Method] = cpg.method.name("woo")
 
       val nodeId  = mainMethods.head.id
       val printed = mainMethods.p.head
@@ -173,7 +173,7 @@ class StepsTest extends AnyWordSpec with Matchers {
         }
       }
 
-      import SomePackage._
+      import SomePackage.*
       def mainMethods: Steps[Method] = cpg.method.name("woo")
       mainMethods.p.head shouldBe "package defined pretty printer"
     }
@@ -310,13 +310,13 @@ class StepsTest extends AnyWordSpec with Matchers {
     methodRef.referencedMethod
     methodRef.headOption.map(_.referencedMethod)
 
-    def expression: Traversal[Expression] = cpg.identifier.name("anidentifier").cast[Expression]
+    def expression: Iterator[Expression] = cpg.identifier.name("anidentifier").cast[Expression]
     expression.expressionUp.isCall.size shouldBe 1
     expression.head.expressionUp.isCall.size shouldBe 1
 
-//    def cfg: Traversal[CfgNode] = cpg.method.name("add")
+//    def cfg: Iterator[CfgNode] = cpg.method.name("add")
 
-    def ast: Traversal[AstNode] = cpg.method.name("foo").cast[AstNode]
+    def ast: Iterator[AstNode] = cpg.method.name("foo").cast[AstNode]
     ast.astParent.property(Properties.NAME).head shouldBe "AClass"
     ast.head.astParent.property(Properties.NAME) shouldBe "AClass"
 

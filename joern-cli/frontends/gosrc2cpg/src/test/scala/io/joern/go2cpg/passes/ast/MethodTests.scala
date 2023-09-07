@@ -1498,5 +1498,4 @@ class MethodTests extends GoCodeToCpgSuite {
   // As well as example of "map"
   // TODO: Add unit tests for lambda expression as a parameter
   // TODO: Add unit test for tuple return
-  // TODO: Add unit tests with Generics
 }

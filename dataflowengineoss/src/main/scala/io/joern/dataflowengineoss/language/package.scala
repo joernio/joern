@@ -3,7 +3,6 @@ package io.joern.dataflowengineoss
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.joern.dataflowengineoss.language.dotextension.DdgNodeDot
 import io.joern.dataflowengineoss.language.nodemethods.{ExpressionMethods, ExtendedCfgNodeMethods}
-import overflowdb.traversal._
 
 package object language {
 
@@ -20,6 +19,6 @@ package object language {
     new DdgNodeDot(traversal.iterator)
 
   implicit def toDdgNodeDotSingle(method: Method): DdgNodeDot =
-    new DdgNodeDot(method.start)
+    new DdgNodeDot(Iterator.single(method))
 
 }

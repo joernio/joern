@@ -3,17 +3,16 @@ package io.joern.console
 import io.joern.console.Query
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.NodeTypes
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.{Logger, LoggerFactory}
-import overflowdb.traversal.Traversal
 
 package object scan {
 
   private val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
   implicit class ScannerStarters(val cpg: Cpg) extends AnyVal {
-    def finding: Traversal[Finding] =
+    def finding: Iterator[Finding] =
       overflowdb.traversal.InitialTraversal.from[Finding](cpg.graph, NodeTypes.FINDING)
   }
 
@@ -52,17 +51,17 @@ package object scan {
     val score       = "score"
   }
 
-  implicit class ScannerFindingStep(val traversal: Traversal[Finding]) extends AnyRef {
+  implicit class ScannerFindingStep(val traversal: Iterator[Finding]) extends AnyRef {
 
-    def name: Traversal[String] = traversal.map(_.name)
+    def name: Iterator[String] = traversal.map(_.name)
 
-    def author: Traversal[String] = traversal.map(_.author)
+    def author: Iterator[String] = traversal.map(_.author)
 
-    def title: Traversal[String] = traversal.map(_.title)
+    def title: Iterator[String] = traversal.map(_.title)
 
-    def description: Traversal[String] = traversal.map(_.description)
+    def description: Iterator[String] = traversal.map(_.description)
 
-    def score: Traversal[Double] = traversal.map(_.score)
+    def score: Iterator[Double] = traversal.map(_.score)
 
   }
 

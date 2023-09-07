@@ -1,13 +1,12 @@
 package io.joern.scanners.android
 
-import io.joern.scanners._
-import io.joern.console._
+import io.joern.console.*
 import io.joern.dataflowengineoss.language.toExtendedCfgNode
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.Semantics
-import io.joern.macros.QueryMacros._
-import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.Traversal
+import io.joern.macros.QueryMacros.*
+import io.joern.scanners.*
+import io.shiftleft.semanticcpg.language.*
 
 object UnprotectedAppParts extends QueryBundle {
   implicit val engineContext: EngineContext = EngineContext(Semantics.empty)

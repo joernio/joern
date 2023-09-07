@@ -76,7 +76,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val defaultFullName       = s"$classFullName.${TypeConstants.initPrefix}:$defaultSignature"
     val (fullName, signature) = typeInfoProvider.fullNameWithSignature(primaryCtor, (defaultFullName, defaultSignature))
     val primaryCtorMethodNode = methodNode(primaryCtor, TypeConstants.initPrefix, fullName, signature, relativizedPath)
-    val ctorThisParam         = NodeBuilders.newThisParameterNode(classFullName, Seq(classFullName))
+    val ctorThisParam =
+      NodeBuilders.newThisParameterNode(typeFullName = classFullName, dynamicTypeHintFullName = Seq(classFullName))
     scope.addToScope(Constants.this_, ctorThisParam)
 
     val constructorParamsAsts = Seq(Ast(ctorThisParam)) ++ withIndex(constructorParams) { (p, idx) =>
@@ -385,7 +386,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     parameters.zipWithIndex.map { case (valueParam, idx) =>
       val typeFullName = registerType(typeInfoProvider.typeFullName(valueParam, TypeConstants.any))
 
-      val thisParam      = NodeBuilders.newThisParameterNode(typeDecl.fullName, Seq())
+      val thisParam =
+        NodeBuilders.newThisParameterNode(typeFullName = typeDecl.fullName, dynamicTypeHintFullName = Seq())
       val thisIdentifier = newIdentifierNode(Constants.this_, typeDecl.fullName, Seq(typeDecl.fullName))
       val thisAst        = Ast(thisIdentifier).withRefEdge(thisIdentifier, thisParam)
 
@@ -423,7 +425,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         methodNode(ctor, Constants.init, fullName, signature, relativizedPath)
       scope.pushNewScope(secondaryCtorMethodNode)
 
-      val ctorThisParam = NodeBuilders.newThisParameterNode(classFullName, Seq(classFullName))
+      val ctorThisParam =
+        NodeBuilders.newThisParameterNode(typeFullName = classFullName, dynamicTypeHintFullName = Seq(classFullName))
       scope.addToScope(Constants.this_, ctorThisParam)
 
       val constructorParamsAsts = Seq(Ast(ctorThisParam)) ++

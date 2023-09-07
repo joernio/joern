@@ -4,6 +4,7 @@ import io.joern.gosrc2cpg.parser.ParserAst.{BasicLit, Ident, SelectorExpr}
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import org.slf4j.LoggerFactory
 import ujson.Value
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 
@@ -16,6 +17,9 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
         (None, funcDetails.json(ParserKeys.Name).str)
       case SelectorExpr =>
         (funcDetails.json(ParserKeys.X)(ParserKeys.Name).strOpt, funcDetails.json(ParserKeys.Sel)(ParserKeys.Name).str)
+      case x =>
+        logger.warn(s"Unhandled class ${x.getClass} under astForCallExpression!")
+        (None, "")
     val (signature, fullName, typeFullName) =
       callMethodFullNameTypeFullNameAndSignature(methodName, alias)
     val cpgCall = callNode(

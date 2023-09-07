@@ -1,15 +1,14 @@
 package io.joern.scanners.c
 
 import io.shiftleft.codepropertygraph.generated.nodes
-import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.Traversal
+import io.shiftleft.semanticcpg.language.*
 
 import scala.util.Try
 
 object QueryLangExtensions {
 
-  implicit class CallExtension(callTrav: Traversal[nodes.Call]) {
-    def returnValueNotChecked: Traversal[nodes.Call] = {
+  implicit class CallExtension(callTrav: Iterator[nodes.Call]) {
+    def returnValueNotChecked: Iterator[nodes.Call] = {
       val notDirectlyChecked = callTrav.filterNot { y =>
         val code = y.code
         y.inAstMinusLeaf.isControlStructure.condition.code.exists { x =>
@@ -28,9 +27,9 @@ object QueryLangExtensions {
     }
   }
 
-  implicit class LiteralExtension(litTrav: Traversal[nodes.Literal]) {
+  implicit class LiteralExtension(litTrav: Iterator[nodes.Literal]) {
 
-    def toInt: Traversal[Int] = {
+    def toInt: Iterator[Int] = {
       litTrav.code.flatMap { lit => Try(Integer.decode(lit).intValue()).toOption }
     }
   }

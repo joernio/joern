@@ -1,15 +1,14 @@
 package io.shiftleft.semanticcpg.language.nodemethods
 
 import io.shiftleft.Implicits.IterableOnceDeco
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.ICallResolver
 import io.shiftleft.semanticcpg.utils.MemberAccess
-import overflowdb.traversal._
+import io.shiftleft.semanticcpg.language.*
 
 import scala.annotation.tailrec
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 // Many method of this class should return individual nodes instead of Traversal[...].
 // But over time through some opague implicits the versions returning Traversal[...]
@@ -36,30 +35,30 @@ class ExpressionMethods(val node: Expression) extends AnyVal with NodeExtension 
     }
   }
 
-  def expressionUp: Traversal[Expression] = {
+  def expressionUp: Iterator[Expression] = {
     node._astIn.collectAll[Expression]
   }
 
-  def expressionDown: Traversal[Expression] = {
+  def expressionDown: Iterator[Expression] = {
     node._astOut.collectAll[Expression]
   }
 
-  def receivedCall: Traversal[Call] = {
+  def receivedCall: Iterator[Call] = {
     node._receiverIn.cast[Call]
   }
 
-  def isArgument: Traversal[Expression] = {
+  def isArgument: Iterator[Expression] = {
     if (node._argumentIn.hasNext) Iterator.single(node)
     else Iterator.empty
   }
 
-  def inCall: Traversal[Call] =
+  def inCall: Iterator[Call] =
     node._argumentIn.headOption match {
       case Some(c: Call) => Iterator.single(c)
       case _             => Iterator.empty
     }
 
-  def parameter(implicit callResolver: ICallResolver): Traversal[MethodParameterIn] = {
+  def parameter(implicit callResolver: ICallResolver): Iterator[MethodParameterIn] = {
     // Expressions can have incoming argument edges not just from CallRepr nodes but also
     // from Return nodes for which an expansion to parameter makes no sense. So we filter
     // for CallRepr.
@@ -71,7 +70,7 @@ class ExpressionMethods(val node: Expression) extends AnyVal with NodeExtension 
     } yield paramIn
   }
 
-  def typ: Traversal[Type] =
+  def typ: Iterator[Type] =
     node._evalTypeOut.cast[Type]
 
 }
