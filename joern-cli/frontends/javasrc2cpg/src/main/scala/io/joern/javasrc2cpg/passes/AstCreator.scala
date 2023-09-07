@@ -101,6 +101,7 @@ import io.joern.x2cpg.utils.NodeBuilders.{
   newModifierNode,
   newOperatorCallNode
 }
+import io.joern.javasrc2cpg.scope.NodeTypeInfo
 import io.joern.javasrc2cpg.scope.Scope
 import io.joern.javasrc2cpg.scope.Scope.*
 import io.joern.javasrc2cpg.util.{
@@ -109,8 +110,7 @@ import io.joern.javasrc2cpg.util.{
   BindingTableAdapterForLambdas,
   BindingTableEntry,
   LambdaBindingInfo,
-  NameConstants,
-  NodeTypeInfo
+  NameConstants
 }
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.{ObjectMethodSignatures, TypeConstants}
 import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, composeMethodLikeSignature, composeUnresolvedSignature}

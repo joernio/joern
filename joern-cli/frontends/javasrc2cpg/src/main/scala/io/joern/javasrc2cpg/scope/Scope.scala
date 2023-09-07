@@ -19,9 +19,18 @@ import scala.collection.mutable
 import io.joern.x2cpg.utils.ListUtils._
 import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
 import io.joern.x2cpg.Ast
-import io.joern.javasrc2cpg.util.NodeTypeInfo
 import io.joern.javasrc2cpg.util.NameConstants
 
+// TODO: Added for backwards compatibility with old scope methods, but is no longer
+//  strictly necessary due to stricter scope variable classes. Refactor AstCreator
+//  to make use of those and remove this instead.
+case class NodeTypeInfo(
+  node: NewNode,
+  name: String,
+  typeFullName: Option[String],
+  isField: Boolean = false,
+  isStatic: Boolean = false
+)
 class Scope {
   private var scopeStack: List[JavaScopeElement] = Nil
 
