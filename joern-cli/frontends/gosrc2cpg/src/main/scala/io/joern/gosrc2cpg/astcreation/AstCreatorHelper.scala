@@ -170,7 +170,7 @@ trait AstCreatorHelper { this: AstCreator =>
       case ArrayType =>
         val (fullName, typeNameForcode) = internalTypeFullName(createParserNodeInfo(nodeInfo.json(ParserKeys.Elt)))
         (s"[]$fullName", s"[]$typeNameForcode")
-      case CompositeLit =>
+      case CompositeLit if createParserNodeInfo(nodeInfo.json(ParserKeys.Type)).json.obj.contains(ParserKeys.Elt) =>
         val (fullName, typeNameForcode) = internalTypeFullName(
           createParserNodeInfo(nodeInfo.json(ParserKeys.Type)(ParserKeys.Elt))
         )
@@ -206,7 +206,7 @@ trait AstCreatorHelper { this: AstCreator =>
           createParserNodeInfo(nodeInfo.json(ParserKeys.Elt))
         )
         (s"[]$fullName", s"[]$typeNameForcode", false, evaluationStrategy)
-      case CompositeLit =>
+      case CompositeLit if createParserNodeInfo(nodeInfo.json(ParserKeys.Type)).json.obj.contains(ParserKeys.Elt) =>
         val (fullName, typeNameForcode, evaluationStrategy) = internalStarExpHandler(
           createParserNodeInfo(nodeInfo.json(ParserKeys.Type)(ParserKeys.Elt))
         )

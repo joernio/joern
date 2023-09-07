@@ -3,6 +3,8 @@ package io.joern.go2cpg.passes.ast
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
 import io.shiftleft.semanticcpg.language.*
 
+import scala.collection.immutable.List
+
 class StructureCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
 
   "when structure declared with multiple argument" should {
@@ -97,10 +99,43 @@ class StructureCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
     "check argument of Rectangle call node" in {
       squareArgument.name shouldBe "square"
       squareArgument.argumentIndex shouldBe 1
+      squareArgument.order shouldBe 1
+      squareArgument.code shouldBe "square"
     }
 
     "type full name of argument" ignore {
       squareArgument.typeFullName shouldBe "main.Square"
+    }
+  }
+
+  "when structure is defined via var keyword" should {
+    val cpg = code(
+      """
+        package main
+        |
+        |type Square struct {
+        |	length float64
+        |}
+        |
+        |func main() {
+        |	var square = Square{length: 10}
+        |	fmt.Println(square)
+        |}
+        |""".stripMargin,
+      "test.go"
+    )
+
+    val List(squareCallNode, _) = cpg.call("Square").l
+    "check argument of Square call node" in {
+      val List(squareArgument) = squareCallNode.argument.isLiteral.l
+      squareArgument.argumentIndex shouldBe 1
+      squareArgument.order shouldBe 1
+      squareArgument.code shouldBe "10"
+      squareArgument.typeFullName shouldBe "int"
+    }
+
+    "Single call node getting created for Structure declaration" ignore {
+      val List(squareCallNode) = cpg.call("Square").l
     }
   }
 

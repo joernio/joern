@@ -48,6 +48,8 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
     val arrayInitializerNode: Seq[Ast] = typeInfoNode.node match
       case ArrayType =>
         Seq(astForArrayInitializer(typeInfoNode))
+      case CompositeLit =>
+        astForNode(typeInfoNode)
       case _ =>
         Seq.empty
 

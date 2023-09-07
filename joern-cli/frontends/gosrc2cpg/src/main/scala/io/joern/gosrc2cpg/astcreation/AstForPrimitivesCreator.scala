@@ -24,7 +24,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
       case ArrayType =>
         val elementsAsts = Try(primitive.json(ParserKeys.Elts)) match
           case Success(value) if !value.isNull => value.arr.flatMap(e => astForNode(createParserNodeInfo(e))).toSeq
-          case _ => Seq.empty
+          case _                               => Seq.empty
         elementsAsts ++ Seq(astForArrayInitializer(primitive))
       // Handling structure initialisation by creating a call node and arguments
       case Ident if primitive.json(ParserKeys.Elts).apply(0).obj.contains("Colon") =>
