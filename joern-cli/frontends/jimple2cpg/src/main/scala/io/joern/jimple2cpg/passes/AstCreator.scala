@@ -6,6 +6,7 @@ import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import org.objectweb.asm.Type
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import soot.jimple.*
@@ -285,7 +286,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global)(implicit with
   }
 
   private def astsForAnnotations(annotation: AnnotationTag, order: Int, host: AbstractHost): Ast = {
-    val annoType = registerType(parseAsmType(annotation.getType))
+    val annoType = registerType(annotation.getType.parseAsJavaType)
     val name     = annoType.split('.').last
     val elementNodes = withOrder(annotation.getElems.asScala) { case (a, order) =>
       astForAnnotationElement(a, order, host)
@@ -302,7 +303,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global)(implicit with
   private def astForAnnotationElement(annoElement: AnnotationElem, order: Int, parent: AbstractHost): Ast = {
     def getLiteralElementNameAndCode(annoElement: AnnotationElem): (String, String) = annoElement match {
       case x: AnnotationClassElem =>
-        val desc = registerType(parseAsmType(x.getDesc))
+        val desc = registerType(x.getDesc.parseAsJavaType)
         (desc, desc)
       case x: AnnotationBooleanElem => (x.getValue.toString, x.getValue.toString)
       case x: AnnotationDoubleElem  => (x.getValue.toString, x.getValue.toString)
@@ -1025,7 +1026,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global)(implicit with
           NewLiteral()
             .order(order)
             .argumentIndex(order)
-            .code(s"${parseAsmType(x.value)}.class")
+            .code(s"${x.value.parseAsJavaType}.class")
             .typeFullName(registerType(x.getType.toQuotedString))
         )
       case _: NullConstant =>
@@ -1165,72 +1166,16 @@ object AstCreator {
     }.toSeq
   }
 
-  private val primitives: Map[Char, String] = Map[Char, String](
-    'Z' -> "boolean",
-    'C' -> "char",
-    'B' -> "byte",
-    'S' -> "short",
-    'I' -> "int",
-    'F' -> "float",
-    'J' -> "long",
-    'D' -> "double",
-    'V' -> "void"
-  )
+}
 
-  def parseAsmType(signature: String): String = {
-    val sigArr = signature.toCharArray
-    val sb     = new mutable.StringBuilder()
-    sigArr.toSeq.foreach { (c: Char) =>
-      if (c == ';') {
-        val prefix = sb
-          .toString()
-          .replace("[", "")
-          .substring(1)
-          .replace("/", ".")
-        val suffix = sb.toSeq
-          .filter { _ == '[' }
-          .map { _ => "[]" }
-          .mkString("")
-        return s"$prefix$suffix"
-      } else if (isPrimitive(c) && sb.indexOf("L") == -1) {
-        return s"${primitives(c)}${sb.toString().toSeq.filter { _ == '[' }.map { _ => "[]" }.mkString("")}"
-      } else if (isObject(c)) {
-        sb.append(c)
-      } else if (isArray(c)) {
-        sb.append(c)
-      } else sb.append(c)
-    }
-    sb.toString()
-  }
+/** String extensions for strings describing JVM operators.
+  */
+implicit class JvmStringOpts(s: String) {
 
-  /** Checks if the given character is associated with a primitive or not according to Section 2.1.3 of the ASM docs.
-    *
-    * @param c
-    *   the character e.g. I, D, F, etc.
+  /** Parses the string as a ASM Java type descriptor and returns a fully qualified type. Also converts symbols such as
+    * <code>I</code> to <code>int</code>.
     * @return
-    *   true if the character is associated with a primitive, false if otherwise.
     */
-  def isPrimitive(c: Char): Boolean =
-    primitives.contains(c)
-
-  /** Checks if the given character is associated an object or not according to Section 2.1.3 of the ASM docs.
-    *
-    * @param c
-    *   the character e.g. L
-    * @return
-    *   true if the character is associated with an object, false if otherwise.
-    */
-  def isObject(c: Char): Boolean =
-    c == 'L'
-
-  /** Checks if the given character is associated an array or not according to Section 2.1.3 of the ASM docs.
-    *
-    * @param c
-    *   the character e.g. [
-    * @return
-    *   true if the character is associated with an array, false if otherwise.
-    */
-  def isArray(c: Char): Boolean =
-    c == '['
+  def parseAsJavaType: String = Type.getType(s).getClassName.replaceAll("/", ".")
 
 }

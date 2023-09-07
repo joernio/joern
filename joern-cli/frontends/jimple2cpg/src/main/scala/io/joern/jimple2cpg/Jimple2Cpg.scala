@@ -4,16 +4,14 @@ import better.files.File
 import io.joern.jimple2cpg.passes.{AstCreationPass, SootAstCreationPass}
 import io.joern.jimple2cpg.util.ProgramHandlingUtil.{ClassFile, extractClassesInPackageLayout}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
+import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
-import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.Cpg
-import org.apache.commons.io.FileUtils
 import org.slf4j.LoggerFactory
 import soot.options.Options
-import soot.{G, PackManager, Scene}
+import soot.{G, Scene}
 
-import java.nio.file.Paths
 import scala.jdk.CollectionConverters.{EnumerationHasAsScala, SeqHasAsJava}
 import scala.language.postfixOps
 import scala.util.Try
@@ -30,16 +28,14 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
 
   private val logger = LoggerFactory.getLogger(classOf[Jimple2Cpg])
 
-  def sootLoadApk(input: File, framework: Option[String] = None): Unit = {
+  private def sootLoadApk(input: File, framework: Option[String] = None): Unit = {
     Options.v().set_process_dir(List(input.canonicalPath).asJava)
     framework match {
-      case Some(value) if value.nonEmpty => {
+      case Some(value) if value.nonEmpty =>
         Options.v().set_src_prec(Options.src_prec_apk)
         Options.v().set_force_android_jar(value)
-      }
-      case _ => {
+      case _ =>
         Options.v().set_src_prec(Options.src_prec_apk_c_j)
-      }
     }
     Options.v().set_process_multiple_dex(true)
     // workaround for Soot's bug while parsing large apk.
@@ -59,7 +55,7 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
     extractClassesInPackageLayout(
       src,
       tmpDir,
-      isClass = e => e.extension.exists(_ == ".class"),
+      isClass = e => e.extension.contains(".class"),
       isArchive = e => e.extension.exists(archiveFileExtensions.contains),
       recurse
     )
@@ -115,7 +111,7 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
 
     logger.info("Loading classes to soot")
     Scene.v().loadNecessaryClasses()
-    logger.info(s"Loaded ${Scene.v().getApplicationClasses().size()} classes")
+    logger.info(s"Loaded ${Scene.v().getApplicationClasses.size()} classes")
 
     val global = globalFromAstCreation()
     TypeNodePass
