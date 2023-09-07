@@ -1,6 +1,6 @@
 package io.joern.x2cpg.utils
 
-import scala.annotation.tailrec
+import scala.collection.mutable
 
 object ListUtils {
   extension [T](list: List[T]) {
@@ -13,20 +13,10 @@ object ListUtils {
       * List(1, 2, 3, 4, 1, 2).takeUntil(_ >= 5) => Nil
       */
     def takeUntil(predicate: T => Boolean): List[T] = {
-      takeUntilRec(list, Nil, predicate).reverse
-    }
-
-    @tailrec private def takeUntilRec(
-      originalListSegment: List[T],
-      resultAcc: List[T],
-      predicate: T => Boolean
-    ): List[T] = {
-      originalListSegment match {
-        case Nil => Nil
-
-        case head :: _ if predicate(head) => head :: resultAcc
-
-        case head :: tail => takeUntilRec(tail, head :: resultAcc, predicate)
+      val output = mutable.ListBuffer[T]()
+      list.indexWhere(predicate) match {
+        case index if index >= 0 => list.take(index + 1)
+        case _                   => Nil
       }
     }
   }
