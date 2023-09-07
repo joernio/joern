@@ -3,17 +3,16 @@ package io.joern.macros
 import io.joern.console.TraversalWithStrRep
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
-import overflowdb.traversal.Traversal
 
 import scala.quoted.{Expr, Quotes}
 
 object QueryMacros {
 
-  inline def withStrRep(inline traversal: Cpg => Traversal[_ <: StoredNode]): TraversalWithStrRep =
+  inline def withStrRep(inline traversal: Cpg => Iterator[_ <: StoredNode]): TraversalWithStrRep =
     ${ withStrRepImpl('{ traversal }) }
 
   private def withStrRepImpl(
-    travExpr: Expr[Cpg => Traversal[_ <: StoredNode]]
+    travExpr: Expr[Cpg => Iterator[_ <: StoredNode]]
   )(using quotes: Quotes): Expr[TraversalWithStrRep] = {
     import quotes.reflect._
     val pos  = travExpr.asTerm.pos

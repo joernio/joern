@@ -1,77 +1,76 @@
 package io.shiftleft.semanticcpg.language.types.expressions
 
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, ControlStructure, Expression}
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, EdgeTypes, Properties}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Properties}
+import io.shiftleft.semanticcpg.language.*
 import overflowdb.traversal.help.Doc
-import overflowdb.traversal.{Traversal, toElementTraversal, toNodeTraversal}
 
 object ControlStructureTraversal {
   val secondChildIndex = 2
   val thirdChildIndex  = 3
 }
 
-class ControlStructureTraversal(val traversal: Traversal[ControlStructure]) extends AnyVal {
-  import ControlStructureTraversal._
+class ControlStructureTraversal(val traversal: Iterator[ControlStructure]) extends AnyVal {
+  import ControlStructureTraversal.*
 
   @Doc(info = "The condition associated with this control structure")
-  def condition: Traversal[Expression] =
+  def condition: Iterator[Expression] =
     traversal.flatMap(_.conditionOut).collectAll[Expression]
 
   @Doc(info = "Control structures where condition.code matches regex")
-  def condition(regex: String): Traversal[ControlStructure] =
+  def condition(regex: String): Iterator[ControlStructure] =
     traversal.where(_.condition.code(regex))
 
   @Doc(info = "Sub tree taken when condition evaluates to true")
-  def whenTrue: Traversal[AstNode] =
+  def whenTrue: Iterator[AstNode] =
     traversal.out.has(Properties.ORDER, secondChildIndex: Int).cast[AstNode]
 
   @Doc(info = "Sub tree taken when condition evaluates to false")
-  def whenFalse: Traversal[AstNode] =
+  def whenFalse: Iterator[AstNode] =
     traversal.out.has(Properties.ORDER, thirdChildIndex).cast[AstNode]
 
   @Doc(info = "Only `Try` control structures")
-  def isTry: Traversal[ControlStructure] =
+  def isTry: Iterator[ControlStructure] =
     traversal.controlStructureTypeExact(ControlStructureTypes.TRY)
 
   @Doc(info = "Only `If` control structures")
-  def isIf: Traversal[ControlStructure] =
+  def isIf: Iterator[ControlStructure] =
     traversal.controlStructureTypeExact(ControlStructureTypes.IF)
 
   @Doc(info = "Only `Else` control structures")
-  def isElse: Traversal[ControlStructure] =
+  def isElse: Iterator[ControlStructure] =
     traversal.controlStructureTypeExact(ControlStructureTypes.ELSE)
 
   @Doc(info = "Only `Switch` control structures")
-  def isSwitch: Traversal[ControlStructure] =
+  def isSwitch: Iterator[ControlStructure] =
     traversal.controlStructureTypeExact(ControlStructureTypes.SWITCH)
 
   @Doc(info = "Only `Do` control structures")
-  def isDo: Traversal[ControlStructure] =
+  def isDo: Iterator[ControlStructure] =
     traversal.controlStructureTypeExact(ControlStructureTypes.DO)
 
   @Doc(info = "Only `For` control structures")
-  def isFor: Traversal[ControlStructure] =
+  def isFor: Iterator[ControlStructure] =
     traversal.controlStructureTypeExact(ControlStructureTypes.FOR)
 
   @Doc(info = "Only `While` control structures")
-  def isWhile: Traversal[ControlStructure] =
+  def isWhile: Iterator[ControlStructure] =
     traversal.controlStructureTypeExact(ControlStructureTypes.WHILE)
 
   @Doc(info = "Only `Goto` control structures")
-  def isGoto: Traversal[ControlStructure] =
+  def isGoto: Iterator[ControlStructure] =
     traversal.controlStructureTypeExact(ControlStructureTypes.GOTO)
 
   @Doc(info = "Only `Break` control structures")
-  def isBreak: Traversal[ControlStructure] =
+  def isBreak: Iterator[ControlStructure] =
     traversal.controlStructureTypeExact(ControlStructureTypes.BREAK)
 
   @Doc(info = "Only `Continue` control structures")
-  def isContinue: Traversal[ControlStructure] =
+  def isContinue: Iterator[ControlStructure] =
     traversal.controlStructureTypeExact(ControlStructureTypes.CONTINUE)
 
   @Doc(info = "Only `Throw` control structures")
-  def isThrow: Traversal[ControlStructure] =
+  def isThrow: Iterator[ControlStructure] =
     traversal.controlStructureTypeExact(ControlStructureTypes.THROW)
 
 }

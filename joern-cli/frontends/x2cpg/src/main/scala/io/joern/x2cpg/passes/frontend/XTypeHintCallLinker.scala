@@ -3,12 +3,11 @@ package io.joern.x2cpg.passes.frontend
 import io.joern.x2cpg.passes.base.MethodStubCreator
 import io.joern.x2cpg.passes.frontend.XTypeRecovery.isDummyType
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, PropertyNames}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.proto.cpg.Cpg.DispatchTypes
-import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.Traversal
+import io.shiftleft.semanticcpg.language.*
 
 import java.util.regex.Pattern
 import scala.collection.mutable
@@ -26,7 +25,7 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
   private val fileNamePattern                     = Pattern.compile("^(.*(.py|.js|.rb)).*$")
   protected val pathSep: Char                     = '.'
 
-  protected def calls: Traversal[Call] = cpg.call
+  protected def calls: Iterator[Call] = cpg.call
     .nameNot("<operator>.*", "<operators>.*")
     .filter(c => calleeNames(c).nonEmpty && c.callee.isEmpty)
 

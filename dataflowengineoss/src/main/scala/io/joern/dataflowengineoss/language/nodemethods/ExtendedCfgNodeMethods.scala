@@ -5,8 +5,7 @@ import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.queryengine.{Engine, EngineContext, PathElement}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.semanticcpg.language.{Traversal, toExpressionMethods, *}
-import io.shiftleft.semanticcpg.utils.MemberAccess
+import io.shiftleft.semanticcpg.language.*
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
@@ -17,12 +16,12 @@ class ExtendedCfgNodeMethods[NodeType <: CfgNode](val node: NodeType) extends An
     */
   def astNode: AstNode = node
 
-  def reachableBy[NodeType](sourceTrav: Traversal[NodeType], sourceTravs: IterableOnce[NodeType]*)(implicit
+  def reachableBy[NodeType](sourceTrav: Iterator[NodeType], sourceTravs: IterableOnce[NodeType]*)(implicit
     context: EngineContext
-  ): Traversal[NodeType] =
+  ): Iterator[NodeType] =
     node.start.reachableBy(sourceTrav, sourceTravs: _*)
 
-  def ddgIn(implicit semantics: Semantics = DefaultSemantics()): Traversal[CfgNode] = {
+  def ddgIn(implicit semantics: Semantics = DefaultSemantics()): Iterator[CfgNode] = {
     val cache  = mutable.HashMap[CfgNode, Vector[PathElement]]()
     val result = ddgIn(Vector(PathElement(node)), withInvisible = false, cache)
     cache.clear()
@@ -32,10 +31,10 @@ class ExtendedCfgNodeMethods[NodeType <: CfgNode](val node: NodeType) extends An
   def ddgInPathElem(
     withInvisible: Boolean,
     cache: mutable.HashMap[CfgNode, Vector[PathElement]] = mutable.HashMap[CfgNode, Vector[PathElement]]()
-  )(implicit semantics: Semantics): Traversal[PathElement] =
+  )(implicit semantics: Semantics): Iterator[PathElement] =
     ddgInPathElem(Vector(PathElement(node)), withInvisible, cache)
 
-  def ddgInPathElem(implicit semantics: Semantics): Traversal[PathElement] = {
+  def ddgInPathElem(implicit semantics: Semantics): Iterator[PathElement] = {
     val cache  = mutable.HashMap[CfgNode, Vector[PathElement]]()
     val result = ddgInPathElem(Vector(PathElement(node)), withInvisible = false, cache)
     cache.clear()
@@ -48,7 +47,7 @@ class ExtendedCfgNodeMethods[NodeType <: CfgNode](val node: NodeType) extends An
     */
   def ddgIn(path: Vector[PathElement], withInvisible: Boolean, cache: mutable.HashMap[CfgNode, Vector[PathElement]])(
     implicit semantics: Semantics
-  ): Traversal[CfgNode] = {
+  ): Iterator[CfgNode] = {
     ddgInPathElem(path, withInvisible, cache).map(_.node.asInstanceOf[CfgNode])
   }
 
@@ -61,7 +60,7 @@ class ExtendedCfgNodeMethods[NodeType <: CfgNode](val node: NodeType) extends An
     path: Vector[PathElement],
     withInvisible: Boolean,
     cache: mutable.HashMap[CfgNode, Vector[PathElement]]
-  )(implicit semantics: Semantics): Traversal[PathElement] = {
+  )(implicit semantics: Semantics): Iterator[PathElement] = {
     val result = ddgInPathElemInternal(path, withInvisible, cache).iterator
     result
   }

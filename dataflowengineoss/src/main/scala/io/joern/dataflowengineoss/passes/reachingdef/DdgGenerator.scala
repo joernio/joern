@@ -8,7 +8,6 @@ import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators, PropertyN
 import io.shiftleft.semanticcpg.accesspath.MatchResult
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate.DiffGraphBuilder
-import overflowdb.traversal.Traversal
 
 import scala.collection.{Set, mutable}
 

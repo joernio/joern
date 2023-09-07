@@ -1,14 +1,14 @@
 package io.joern.x2cpg.passes.frontend
 
 import io.joern.x2cpg.passes.frontend.ImportsPass.ResolvedImport
-import io.joern.x2cpg.passes.frontend.ImportsPass.ResolvedImport._
+import io.joern.x2cpg.passes.frontend.ImportsPass.ResolvedImport.*
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Import, Tag}
 import io.shiftleft.passes.ConcurrentWriterCpgPass
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.{Logger, LoggerFactory}
 
-import java.io.{File => JFile}
+import java.io.File as JFile
 
 abstract class XImportResolverPass(cpg: Cpg) extends ConcurrentWriterCpgPass[Import](cpg) {
 
@@ -47,8 +47,8 @@ object ImportsPass {
     def serialize: String
   }
 
-  implicit class TagToResolvedImportExt(traversal: Traversal[Tag]) {
-    def toResolvedImport: Traversal[ResolvedImport] =
+  implicit class TagToResolvedImportExt(traversal: Iterator[Tag]) {
+    def toResolvedImport: Iterator[ResolvedImport] =
       traversal.flatMap(ResolvedImport.tagToResolvedImport)
   }
 

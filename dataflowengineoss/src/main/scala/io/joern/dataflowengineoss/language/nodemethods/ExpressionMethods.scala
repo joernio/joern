@@ -1,8 +1,8 @@
 package io.joern.dataflowengineoss.language.nodemethods
 
-import io.joern.dataflowengineoss.semanticsloader._
+import io.joern.dataflowengineoss.semanticsloader.*
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Expression, Method}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class ExpressionMethods[NodeType <: Expression](val node: NodeType) extends AnyVal {
 
@@ -72,13 +72,13 @@ class ExpressionMethods[NodeType <: Expression](val node: NodeType) extends AnyV
 
   /** Retrieve flow semantic for the call this argument is a part of.
     */
-  def semanticsForCallByArg(implicit semantics: Semantics): Traversal[FlowSemantic] = {
+  def semanticsForCallByArg(implicit semantics: Semantics): Iterator[FlowSemantic] = {
     argToMethods(node).flatMap { method =>
       semantics.forMethod(method.fullName)
     }
   }
 
-  private def argToMethods(arg: Expression): Traversal[Method] = {
+  private def argToMethods(arg: Expression): Iterator[Method] = {
     arg.inCall.flatMap { call =>
       NoResolve.getCalledMethods(call)
     }

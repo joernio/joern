@@ -1,8 +1,8 @@
 package io.joern.dataflowengineoss.language
 
 import io.joern.dataflowengineoss.DefaultSemantics
-import io.joern.dataflowengineoss.queryengine.SourcesToStartingPoints.sourceTravsToStartingPoints
 import io.joern.dataflowengineoss.queryengine.*
+import io.joern.dataflowengineoss.queryengine.SourcesToStartingPoints.sourceTravsToStartingPoints
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
@@ -12,16 +12,16 @@ import scala.collection.parallel.CollectionConverters.*
 
 /** Base class for nodes that can occur in data flows
   */
-class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
+class ExtendedCfgNode(val traversal: Iterator[CfgNode]) extends AnyVal {
 
-  def ddgIn(implicit semantics: Semantics = DefaultSemantics()): Traversal[CfgNode] = {
+  def ddgIn(implicit semantics: Semantics = DefaultSemantics()): Iterator[CfgNode] = {
     val cache  = mutable.HashMap[CfgNode, Vector[PathElement]]()
     val result = traversal.flatMap(x => x.ddgIn(Vector(PathElement(x)), withInvisible = false, cache))
     cache.clear()
     result
   }
 
-  def ddgInPathElem(implicit semantics: Semantics = DefaultSemantics()): Traversal[PathElement] = {
+  def ddgInPathElem(implicit semantics: Semantics = DefaultSemantics()): Iterator[PathElement] = {
     val cache  = mutable.HashMap[CfgNode, Vector[PathElement]]()
     val result = traversal.flatMap(x => x.ddgInPathElem(Vector(PathElement(x)), withInvisible = false, cache))
     cache.clear()
@@ -30,7 +30,7 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
 
   def reachableBy[NodeType](sourceTrav: IterableOnce[NodeType], sourceTravs: IterableOnce[NodeType]*)(implicit
     context: EngineContext
-  ): Traversal[NodeType] = {
+  ): Iterator[NodeType] = {
     val sources = sourceTravsToStartingPoints(sourceTrav +: sourceTravs: _*)
     val reachedSources =
       reachableByInternal(sources).map(_.path.head.node)
@@ -39,7 +39,7 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
 
   def reachableByFlows[A](sourceTrav: IterableOnce[A], sourceTravs: IterableOnce[A]*)(implicit
     context: EngineContext
-  ): Traversal[Path] = {
+  ): Iterator[Path] = {
     val sources        = sourceTravsToStartingPoints(sourceTrav +: sourceTravs: _*)
     val startingPoints = sources.map(_.startingPoint)
     val paths = reachableByInternal(sources).par
@@ -62,7 +62,7 @@ class ExtendedCfgNode(val traversal: Traversal[CfgNode]) extends AnyVal {
     paths.iterator
   }
 
-  def reachableByDetailed[NodeType](sourceTrav: Traversal[NodeType], sourceTravs: Traversal[NodeType]*)(implicit
+  def reachableByDetailed[NodeType](sourceTrav: Iterator[NodeType], sourceTravs: Iterator[NodeType]*)(implicit
     context: EngineContext
   ): Vector[TableEntry] = {
     val sources = SourcesToStartingPoints.sourceTravsToStartingPoints(sourceTrav +: sourceTravs: _*)

@@ -2,20 +2,19 @@ package io.shiftleft.semanticcpg.language.nodemethods
 
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Expression, NewLocation}
 import io.shiftleft.semanticcpg.NodeExtension
-import io.shiftleft.semanticcpg.language.{HasLocation, LocationCreator, _}
-import overflowdb.traversal.Traversal
+import io.shiftleft.semanticcpg.language.*
 
 class CallMethods(val node: Call) extends AnyVal with NodeExtension with HasLocation {
-  def receiver: Traversal[Expression] =
+  def receiver: Iterator[Expression] =
     node.receiverOut
 
-  def arguments(index: Int): Traversal[Expression] =
+  def arguments(index: Int): Iterator[Expression] =
     node._argumentOut
       .collect {
         case expr: Expression if expr.argumentIndex == index => expr
       }
 
-  def argument: Traversal[Expression] =
+  def argument: Iterator[Expression] =
     node._argumentOut.collectAll[Expression]
 
   def argument(index: Int): Expression =

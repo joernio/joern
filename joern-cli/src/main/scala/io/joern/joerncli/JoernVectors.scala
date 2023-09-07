@@ -5,19 +5,18 @@ import io.joern.joerncli.CpgBasedTool.exitIfInvalid
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Method}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import org.json4s.DefaultFormats
 import org.json4s.native.Serialization
-import overflowdb.traversal.Traversal
 
 import scala.collection.mutable
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import scala.util.Using
 import scala.util.hashing.MurmurHash3
 
 class BagOfPropertiesForNodes extends EmbeddingGenerator[AstNode, (String, String)] {
   override def structureToString(pair: (String, String)): String = pair._1 + ":" + pair._2
-  override def extractObjects(cpg: Cpg): Traversal[AstNode]      = cpg.graph.V.collect { case x: AstNode => x }
+  override def extractObjects(cpg: Cpg): Iterator[AstNode]       = cpg.graph.V.collect { case x: AstNode => x }
   override def enumerateSubStructures(obj: AstNode): List[(String, String)] = {
     val relevantFieldTypes = Set(PropertyNames.NAME, PropertyNames.FULL_NAME, PropertyNames.CODE)
     val relevantFields = obj
@@ -44,7 +43,7 @@ class BagOfPropertiesForNodes extends EmbeddingGenerator[AstNode, (String, Strin
 }
 
 class BagOfAPISymbolsForMethods extends EmbeddingGenerator[Method, AstNode] {
-  override def extractObjects(cpg: Cpg): Traversal[Method]           = cpg.method
+  override def extractObjects(cpg: Cpg): Iterator[Method]            = cpg.method
   override def enumerateSubStructures(method: Method): List[AstNode] = method.ast.l
   override def structureToString(astNode: AstNode): String           = astNode.code
   override def objectToString(method: Method): String                = method.fullName
@@ -63,9 +62,9 @@ object EmbeddingGenerator {
   * T: Object type S: Sub structure type
   */
 trait EmbeddingGenerator[T, S] {
-  import EmbeddingGenerator._
+  import EmbeddingGenerator.*
 
-  case class Embedding(data: () => Traversal[(T, SparseVectorWithExplicitFeature[S])]) {
+  case class Embedding(data: () => Iterator[(T, SparseVectorWithExplicitFeature[S])]) {
     lazy val dimToStructure: Map[String, S] = {
       val m = mutable.HashMap[String, S]()
       data().foreach { case (_, vector) =>
@@ -78,9 +77,9 @@ trait EmbeddingGenerator[T, S] {
 
     lazy val structureToDim: Map[S, String] = for ((k, v) <- dimToStructure) yield (v, k)
 
-    def objects: Traversal[String] = data().map { case (obj, _) => objectToString(obj) }
+    def objects: Iterator[String] = data().map { case (obj, _) => objectToString(obj) }
 
-    def vectors: Traversal[Map[S, Double]] = data().map { case (_, vector) =>
+    def vectors: Iterator[Map[S, Double]] = data().map { case (_, vector) =>
       vector.map { case (_, (v, structure)) => structure -> v }
     }
 
@@ -115,7 +114,7 @@ trait EmbeddingGenerator[T, S] {
 
   /** A function that creates a sequence of objects from a CPG
     */
-  def extractObjects(cpg: Cpg): Traversal[T]
+  def extractObjects(cpg: Cpg): Iterator[T]
 
   /** A function that, for a given object, extracts its sub structures
     */
@@ -179,7 +178,7 @@ object JoernVectors {
         .action((_, c) => c.copy(dimToFeature = true))
     }.parse(args, Config())
 
-  private def traversalToJson[X](trav: Traversal[X], vectorToString: X => String): Unit = {
+  private def traversalToJson[X](trav: Iterator[X], vectorToString: X => String): Unit = {
     println("[")
     trav.nextOption().foreach { vector => print(vectorToString(vector)) }
     trav.foreach { vector => print(",\n" + vectorToString(vector)) }

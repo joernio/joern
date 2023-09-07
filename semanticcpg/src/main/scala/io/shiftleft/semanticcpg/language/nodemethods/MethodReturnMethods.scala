@@ -2,14 +2,14 @@ package io.shiftleft.semanticcpg.language.nodemethods
 
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, MethodReturn, NewLocation, Type}
 import io.shiftleft.semanticcpg.NodeExtension
-import io.shiftleft.semanticcpg.language.{HasLocation, LocationCreator, _}
+import io.shiftleft.semanticcpg.language.*
 
 class MethodReturnMethods(val node: MethodReturn) extends AnyVal with NodeExtension with HasLocation {
   override def location: NewLocation = {
     LocationCreator(node, "$ret", node.label, node.lineNumber, node.method)
   }
 
-  def returnUser(implicit callResolver: ICallResolver): Traversal[Call] = {
+  def returnUser(implicit callResolver: ICallResolver): Iterator[Call] = {
     val method    = node._methodViaAstIn
     val callsites = callResolver.getMethodCallsites(method)
     // TODO for now we filter away all implicit calls because a change of the
@@ -19,5 +19,5 @@ class MethodReturnMethods(val node: MethodReturn) extends AnyVal with NodeExtens
     callsites.collectAll[Call]
   }
 
-  def typ: Traversal[Type] = node.evalTypeOut
+  def typ: Iterator[Type] = node.evalTypeOut
 }
