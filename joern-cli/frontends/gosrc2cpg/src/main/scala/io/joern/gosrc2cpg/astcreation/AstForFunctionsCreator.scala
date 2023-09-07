@@ -1,13 +1,13 @@
 package io.joern.gosrc2cpg.astcreation
 
 import io.joern.gosrc2cpg.datastructures.GoGlobal
-import io.joern.gosrc2cpg.parser.ParserAst.{BlockStmt, Ellipsis, Ident, SelectorExpr}
+import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.utils.StringUtils
+import io.joern.x2cpg.utils.{NodeBuilders, StringUtils}
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, NodeTypes, PropertyNames}
 import ujson.Value
 
 import scala.collection.mutable
@@ -37,44 +37,90 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val functionBinding = NewBinding().name(methodName).methodFullName(methodFullName).signature(signature)
     Ast(functionBinding).withBindsEdge(parentNode, functionBinding).withRefEdge(functionBinding, method)
   }
+
   def astForFuncDecl(funcDecl: ParserNodeInfo): Seq[Ast] = {
 
-    val filename = relPathFileName
-    val name     = funcDecl.json(ParserKeys.Name).obj(ParserKeys.Name).str
-    val fullname = s"$fullyQualifiedPackage.$name"
+    val filename     = relPathFileName
+    val name         = funcDecl.json(ParserKeys.Name).obj(ParserKeys.Name).str
+    val receiverInfo = getReceiverInfo(Try(funcDecl.json(ParserKeys.Recv)))
+    val (methodFullname, recSignStr) = receiverInfo match
+      case Some(_, typeFullName, evaluationStrategy, _) =>
+        val signatureStr = evaluationStrategy match
+          case EvaluationStrategies.BY_SHARING =>
+            s"*$typeFullName"
+          case EvaluationStrategies.BY_VALUE =>
+            typeFullName
+        (s"$typeFullName.$name", s"($signatureStr)")
+      case _ =>
+        (s"$fullyQualifiedPackage.$name", "")
     // TODO: handle multiple return type or tuple (int, int)
     val genericTypeMethodMap = processTypeParams(funcDecl.json(ParserKeys.Type))
     val (returnTypeStr, methodReturn) =
       getReturnType(funcDecl.json(ParserKeys.Type), genericTypeMethodMap).headOption
         .getOrElse(("", methodReturnNode(funcDecl, Defines.voidTypeName)))
-    val templateParams = ""
-    val params         = funcDecl.json(ParserKeys.Type)(ParserKeys.Params)(ParserKeys.List)
+    val params = funcDecl.json(ParserKeys.Type)(ParserKeys.Params)(ParserKeys.List)
     val signature =
-      s"$fullname$templateParams(${parameterSignature(params, genericTypeMethodMap)})$returnTypeStr"
-    GoGlobal.recordFullNameToReturnType(fullname, returnTypeStr, Some(signature))
-    val methodNode_ = methodNode(funcDecl, name, funcDecl.code, fullname, Some(signature), filename)
+      s"$methodFullname$recSignStr(${parameterSignature(params, genericTypeMethodMap)})$returnTypeStr"
+    GoGlobal.recordFullNameToReturnType(methodFullname, returnTypeStr, Some(signature))
+    val methodNode_ = methodNode(funcDecl, name, funcDecl.code, methodFullname, Some(signature), filename)
     methodAstParentStack.push(methodNode_)
     scope.pushNewScope(methodNode_)
+    val receiverNode = astForReceiver(receiverInfo)
     val astForMethod =
       methodAst(
         methodNode_,
-        astForMethodParameter(params, genericTypeMethodMap),
+        receiverNode ++ astForMethodParameter(params, genericTypeMethodMap),
         astForMethodBody(funcDecl.json(ParserKeys.Body)),
         methodReturn
       )
     scope.popScope()
     methodAstParentStack.pop()
-//    if method is related to Struct then fill astParentFullName and astParentType
-    if (funcDecl.json.obj.contains(ParserKeys.Recv)) {
-      val receiverTypeDeclType =
-        parameterSignature(funcDecl.json(ParserKeys.Recv)(ParserKeys.List), Map.empty[String, List[String]])
-      methodNode_.astParentFullName = receiverTypeDeclType.replace("*", "")
-      methodNode_.astParentType = NodeTypes.TYPE_DECL
-      Ast.storeInDiffGraph(astForMethod, diffGraph)
-      Seq.empty
-    } else {
-      Seq(astForMethod)
-    }
+    receiverInfo match
+      case Some(_, typeFullName, _, _) =>
+        // if method is related to Struct then fill astParentFullName and astParentType
+        methodNode_.astParentType(NodeTypes.TYPE_DECL).astParentFullName(typeFullName)
+        Ast.storeInDiffGraph(astForMethod, diffGraph)
+        Seq.empty
+      case _ =>
+        Seq(astForMethod)
+  }
+
+  private def astForReceiver(receiverInfo: Option[(String, String, String, ParserNodeInfo)]): Seq[Ast] = {
+    receiverInfo match
+      case Some(recName, typeFullName, evaluationStrategy, recNode) =>
+        val recParamNode = NodeBuilders.newThisParameterNode(
+          name = recName,
+          code = recNode.code,
+          typeFullName = typeFullName,
+          line = line(recNode),
+          column = column(recNode),
+          evaluationStrategy = evaluationStrategy
+        )
+        scope.addToScope(recName, (recParamNode, typeFullName))
+        Seq(Ast(recParamNode))
+      case _ => Seq.empty
+  }
+
+  private def getReceiverInfo(receiver: Try[Value]): Option[(String, String, String, ParserNodeInfo)] = {
+    receiver match
+      case Success(rec) if rec != null =>
+        val recnode        = createParserNodeInfo(rec)
+        val recValue       = rec(ParserKeys.List).arr.head
+        val recName        = recValue(ParserKeys.Names).arr.head(ParserKeys.Name).str
+        val typeParserNode = createParserNodeInfo(recValue(ParserKeys.Type))
+        val (typeFullName, evaluationStrategy) = typeParserNode.node match
+          case Ident =>
+            (
+              generateTypeFullName(typeName = typeParserNode.json(ParserKeys.Name).strOpt),
+              EvaluationStrategies.BY_VALUE
+            )
+          case StarExpr =>
+            (
+              generateTypeFullName(typeName = typeParserNode.json(ParserKeys.X)(ParserKeys.Name).strOpt),
+              EvaluationStrategies.BY_SHARING
+            )
+        Some(recName, typeFullName, evaluationStrategy, recnode)
+      case _ => None
   }
 
   private def astForMethodParameter(params: Value, genericTypeMethodMap: Map[String, List[String]]): Seq[Ast] = {

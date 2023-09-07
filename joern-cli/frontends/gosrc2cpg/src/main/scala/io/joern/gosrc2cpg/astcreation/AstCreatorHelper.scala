@@ -109,7 +109,7 @@ trait AstCreatorHelper { this: AstCreator =>
       .toMap
   }
 
-  private def generateTypeFullName(
+  protected def generateTypeFullName(
     typeName: Option[String] = None,
     genericTypeMethodMap: Map[String, List[String]] = Map.empty,
     aliasName: Option[String] = None

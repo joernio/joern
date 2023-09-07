@@ -727,7 +727,11 @@ class AstCreator(filename: String, cls: SootClass, global: Global)(implicit with
             .argumentIndex(0)
             .dynamicTypeHintFullName(Seq(parentType))
         case _: NewMethodParameterIn =>
-          NodeBuilders.newThisParameterNode(parentType, Seq(parentType), line(Try(method.tryResolve()).getOrElse(null)))
+          NodeBuilders.newThisParameterNode(
+            typeFullName = parentType,
+            dynamicTypeHintFullName = Seq(parentType),
+            line = line(Try(method.tryResolve()).getOrElse(null))
+          )
         case x => x
       })
     } else {

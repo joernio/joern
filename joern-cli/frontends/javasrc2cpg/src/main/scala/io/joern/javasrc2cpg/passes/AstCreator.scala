@@ -834,7 +834,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     lineNumber: Option[Integer]
   ): NewMethodParameterIn = {
     val typeFullName = typeInfoCalc.registerType(maybeTypeFullName.getOrElse(TypeConstants.Any))
-    NodeBuilders.newThisParameterNode(typeFullName, maybeTypeFullName.toSeq, lineNumber)
+    NodeBuilders.newThisParameterNode(
+      typeFullName = typeFullName,
+      dynamicTypeHintFullName = maybeTypeFullName.toSeq,
+      line = lineNumber
+    )
   }
 
   private def convertAnnotationValueExpr(expr: Expression): Option[Ast] = {
