@@ -20,6 +20,7 @@ import io.joern.x2cpg.utils.ListUtils._
 import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
 import io.joern.x2cpg.Ast
 import io.joern.javasrc2cpg.util.NodeTypeInfo
+import io.joern.javasrc2cpg.util.NameConstants
 
 class Scope {
   private var scopeStack: List[JavaScopeElement] = Nil
@@ -61,6 +62,10 @@ class Scope {
 
   def addMember(member: NewMember, isStatic: Boolean): Unit = {
     addVariable(ScopeMember(member, isStatic))
+  }
+
+  def addStaticImport(importNode: NewImport): Unit = {
+    addVariable(ScopeStaticImport(importNode))
   }
 
   private def addVariable(variable: ScopeVariable): Unit = {
@@ -138,6 +143,14 @@ class Scope {
     methodScope.returnType
   }
 
+  def addLocalDecl(decl: Ast): Unit = {
+    scopeStack.collectFirst { case typeDeclContainer: TypeDeclContainer => typeDeclContainer.registerTypeDecl(decl) }
+  }
+
+  // TODO: The below section of todos are all methods that have been added for simple compatibility with the old
+  //  scope. The plan is to refactor the code to handle these directly in the AstCreator to make the code easier
+  //  to reason about, so these should be removed when that happens.
+
   // TODO: Refactor and remove this
   def addMemberInitializers(initializers: Seq[Ast]): Unit = {
     scopeStack.collectFirst { case typeDeclScope: TypeDeclScope => typeDeclScope.addMemberInitializers(initializers) }
@@ -176,34 +189,49 @@ class Scope {
   }
 
   // TODO: Refactor and remove this
-  def addLocalDecl(decl: Ast): Unit = {
-    scopeStack.collectFirst { case typeDeclContainer: TypeDeclContainer => typeDeclContainer.registerTypeDecl(decl) }
+  def capturedVariables: List[ScopeVariable] = {
+    scopeStack
+      .flatMap(_.getVariables())
+      .collect {
+        case local: ScopeLocal => local
+
+        case parameter: ScopeParameter if parameter.name != NameConstants.This => parameter
+      }
   }
 }
 
 object Scope {
   type NewScopeNode    = NewBlock | NewMethod | NewTypeDecl | NewNamespaceBlock
-  type NewVariableNode = NewLocal | NewMethodParameterIn | NewMember
+  type NewVariableNode = NewLocal | NewMethodParameterIn | NewMember | NewImport
 
   sealed trait ScopeVariable {
     def node: NewVariableNode
     def typeFullName: String
+    def name: String
   }
   final case class ScopeLocal(override val node: NewLocal) extends ScopeVariable {
     val typeFullName: String = node.typeFullName
+    val name                 = node.name
   }
   final case class ScopeParameter(override val node: NewMethodParameterIn) extends ScopeVariable {
     val typeFullName: String = node.typeFullName
+    val name                 = node.name
   }
   final case class ScopeMember(override val node: NewMember, isStatic: Boolean) extends ScopeVariable {
     val typeFullName: String = node.typeFullName
+    val name                 = node.name
+  }
+  final case class ScopeStaticImport(override val node: NewImport) extends ScopeVariable {
+    val typeFullName: String = node.importedEntity.get
+    val name                 = node.importedAs.get
   }
 
   sealed trait VariableLookupResult {
     def typeFullName: Option[String]          = None
     def variableNode: Option[NewVariableNode] = None
 
-    // TODO: Added for convenience, but when proper capture logic is implemented, much of this will be removed.
+    // TODO: Added for convenience, but when proper capture logic is implemented the found
+    //  variable cases will have to be handled separately which would render this unnecessary.
     def getVariable(): Option[ScopeVariable] = None
 
     // TODO: Refactor and remove this
@@ -217,14 +245,10 @@ object Scope {
 
     override def asNodeInfoOption: Option[NodeTypeInfo] = {
       val nodeTypeInfo = variable match {
-        case ScopeLocal(localNode) =>
-          NodeTypeInfo(localNode, localNode.name, Some(localNode.typeFullName), false, false)
-
-        case ScopeParameter(parameterNode) =>
-          NodeTypeInfo(parameterNode, parameterNode.name, Some(parameterNode.typeFullName), false, false)
-
         case ScopeMember(memberNode, isStatic) =>
           NodeTypeInfo(memberNode, memberNode.name, Some(memberNode.typeFullName), true, isStatic)
+
+        case variable => NodeTypeInfo(variable.node, variable.name, Some(variable.typeFullName), false, false)
       }
 
       Some(nodeTypeInfo)

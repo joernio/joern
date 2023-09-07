@@ -90,7 +90,6 @@ import com.github.javaparser.symbolsolver.JavaSymbolSolver
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.{ObjectMethodSignatures, TypeConstants}
 import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
-import io.joern.javasrc2cpg.util.Scope.WildcardImportName
 import io.joern.x2cpg.utils.NodeBuilders.{
   newAnnotationLiteralNode,
   newBindingNode,
@@ -171,7 +170,7 @@ import com.github.javaparser.ast.stmt.LocalClassDeclarationStmt
 import io.joern.x2cpg.Defines.StaticInitMethodName
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeParameter
 
-case class ClosureBindingEntry(nodeTypeInfo: NodeTypeInfo, binding: NewClosureBinding)
+case class ClosureBindingEntry(node: ScopeVariable, binding: NewClosureBinding)
 
 case class LambdaImplementedInfo(
   implementedInterface: Option[ResolvedReferenceType],
@@ -242,6 +241,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
   protected def lineEnd(node: Node): Option[Integer]   = node.getEnd.map(x => Integer.valueOf(x.line)).toScala
   protected def columnEnd(node: Node): Option[Integer] = node.getEnd.map(x => Integer.valueOf(x.line)).toScala
 
+  // TODO: Handle static imports correctly.
   private def addImportsToScope(compilationUnit: CompilationUnit): Seq[NewImport] = {
     val (asteriskImports, specificImports) = compilationUnit.getImports.asScala.toList.partition(_.isAsterisk)
     val specificImportNodes = specificImports.map { importStmt =>
@@ -251,13 +251,18 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       val importNode = NewImport()
         .importedAs(name)
         .importedEntity(typeFullName)
-      scope.addType(name, typeFullName)
+
+      if (importStmt.isStatic()) {
+        scope.addStaticImport(importNode)
+      } else {
+        scope.addType(name, typeFullName)
+      }
       importNode
     }
 
     val asteriskImportNodes = asteriskImports match {
       case imp :: Nil =>
-        val name         = WildcardImportName
+        val name         = NameConstants.WildcardImportName
         val typeFullName = imp.getNameAsString
         val importNode = NewImport()
           .importedAs(name)
@@ -2715,11 +2720,8 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     returnType.flatMap(typeInfoCalc.fullName)
   }
 
-  private def closureBindingsForCapturedNodes(
-    captured: List[NodeTypeInfo],
-    lambdaMethodName: String
-  ): List[ClosureBindingEntry] = {
-    captured.map { capturedNode =>
+  private def closureBindingsForCapturedNodes(lambdaMethodName: String): List[ClosureBindingEntry] = {
+    scope.capturedVariables.map { capturedNode =>
       val closureBindingId = s"$filename:$lambdaMethodName:${capturedNode.name}"
       val closureBindingNode =
         newClosureBindingNode(closureBindingId, capturedNode.name, EvaluationStrategies.BY_SHARING)
@@ -2729,13 +2731,12 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   private def localsForCapturedNodes(closureBindingEntries: List[ClosureBindingEntry]): List[NewLocal] = {
     val localsForCaptured =
-      closureBindingEntries.map { case ClosureBindingEntry(nodeTypeInfo, binding) =>
-        val typeFullName = nodeTypeInfo.typeFullName.getOrElse(TypeConstants.Any)
+      closureBindingEntries.map { case ClosureBindingEntry(node, binding) =>
         val local = NewLocal()
-          .name(nodeTypeInfo.name)
-          .code(nodeTypeInfo.name)
+          .name(node.name)
+          .code(node.name)
           .closureBindingId(binding.closureBindingId)
-          .typeFullName(typeFullName)
+          .typeFullName(node.typeFullName)
         local
       }
     localsForCaptured.foreach { local => scope.addLocal(local) }
@@ -2936,9 +2937,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val lambdaMethodName = nextLambdaName()
 
-    // val capturedVariables              = scopeStack.getCapturedVariables
-    val capturedVariables              = Nil
-    val closureBindingsForCapturedVars = closureBindingsForCapturedNodes(capturedVariables, lambdaMethodName)
+    val closureBindingsForCapturedVars = closureBindingsForCapturedNodes(lambdaMethodName)
     val localsForCaptured              = localsForCapturedNodes(closureBindingsForCapturedVars)
     val implementedInfo                = getLambdaImplementedInfo(expr, expectedType)
     val lambdaMethodNode =

@@ -21,7 +21,7 @@ trait JavaScopeElement {
   private var wildcardImports: WildcardImports = NoWildcard
 
   def addVariableToScope(variable: ScopeVariable): Unit = {
-    variables.put(variable.node.name, variable)
+    variables.put(variable.name, variable)
   }
 
   def lookupVariable(name: String): Option[ScopeVariable] = {
@@ -56,6 +56,9 @@ trait JavaScopeElement {
       case MultipleWildcards => // Already MultipleWildcards, so change nothing
     }
   }
+
+  // TODO: Refactor and remove this
+  def getVariables(): List[ScopeVariable] = variables.values.toList
 }
 
 private object JavaScopeElement {
