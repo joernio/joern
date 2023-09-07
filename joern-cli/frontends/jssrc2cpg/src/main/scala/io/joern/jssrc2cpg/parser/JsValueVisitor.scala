@@ -37,6 +37,11 @@ object JsValueVisitor extends AstTransformer[Value] {
   override def visitJsonableObject(length: Int, index: Int): ObjVisitor[Value, Value] =
     new JsAstObjVisitor[upickle.core.LinkedHashMap[String, Value]](xs => ujson.Obj(xs))
 
+  /** @param index
+    *   json source position at the start of the `[` being visited
+    * @return
+    *   a [[upickle.core.Visitor]] used for visiting the elements of the array
+    */
   override def visitArray(length: Int, index: Int): ArrVisitor[Value, Value] =
     new JsAstArrVisitor[ArrayBuffer](xs => ujson.Arr(xs))
 
