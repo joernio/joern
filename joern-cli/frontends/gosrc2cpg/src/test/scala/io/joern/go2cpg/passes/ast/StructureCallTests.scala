@@ -21,7 +21,7 @@ class StructureCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
     "test basic cpg properties for call node of structure declaration" in {
       rectangleCallNode.name shouldBe "Rectangle"
       rectangleCallNode.methodFullName shouldBe "main.Rectangle"
-      rectangleCallNode.typeFullName shouldBe "main.Rectangle"
+      rectangleCallNode.typeFullName shouldBe "main.Rectangle.<init>"
     }
 
     "test argument of structure declaration node(call node)" in {
@@ -71,7 +71,7 @@ class StructureCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
     "test basic cpg properties for call node of structure declaration" in {
       rectangleCallNode.name shouldBe "Rectangle"
       rectangleCallNode.methodFullName shouldBe "path/to/somepackage.Rectangle"
-      rectangleCallNode.typeFullName shouldBe "path/to/somepackage.Rectangle"
+      rectangleCallNode.typeFullName shouldBe "path/to/somepackage.Rectangle.<init>"
       rectangleCallNode.signature shouldBe "path/to/somepackage.Rectangle()"
     }
 
@@ -104,7 +104,7 @@ class StructureCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
     }
 
     "type full name of argument" ignore {
-      squareArgument.typeFullName shouldBe "main.Square"
+      squareArgument.typeFullName shouldBe "main.Square.<init>"
     }
   }
 

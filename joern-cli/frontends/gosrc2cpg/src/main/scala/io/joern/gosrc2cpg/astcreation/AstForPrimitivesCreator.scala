@@ -28,10 +28,10 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
         elementsAsts ++ Seq(astForArrayInitializer(primitive))
       // Handling structure initialisation by creating a call node and arguments
       case Ident =>
-        astForStructureDeclaration(primitive)
+        astForConstructorCall(primitive)
       // Handling structure initialisation(alias present) by creating a call node and arguments
       case SelectorExpr =>
-        astForStructureDeclaration(primitive)
+        astForConstructorCall(primitive)
       case _ =>
         Seq.empty
   }

@@ -34,7 +34,7 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
     Seq(callAst(cpgCall, astForArgs(expr.json(ParserKeys.Args))))
   }
 
-  protected def astForStructureDeclaration(compositeLit: ParserNodeInfo): Seq[Ast] = {
+  protected def astForConstructorCall(compositeLit: ParserNodeInfo): Seq[Ast] = {
     val typeNode = createParserNodeInfo(compositeLit.json(ParserKeys.Type))
     val (alias, methodName) = typeNode.node match
       case Ident =>
@@ -50,7 +50,7 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
       fullName,
       DispatchTypes.STATIC_DISPATCH,
       Some(signature),
-      Some(fullName)
+      Some(fullName + "." + XDefines.ConstructorMethodName)
     )
     Seq(callAst(cpgCall, astForStructureDeclarationArgument(compositeLit.json(ParserKeys.Elts))))
   }
