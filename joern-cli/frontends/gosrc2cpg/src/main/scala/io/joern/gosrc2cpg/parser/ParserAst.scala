@@ -14,6 +14,7 @@ object ParserAst {
   }
   sealed trait BaseExpr      extends ParserNode
   object BinaryExpr          extends BaseExpr
+  object KeyValueExpr        extends BaseExpr
   object UnaryExpr           extends BaseExpr
   object StarExpr            extends BaseExpr
   object ParenExpr           extends BaseExpr

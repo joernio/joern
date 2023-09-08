@@ -1,6 +1,6 @@
 package io.joern.gosrc2cpg.astcreation
 
-import io.joern.gosrc2cpg.parser.ParserAst.{ArrayType, BasePrimitive, BasicLit, CompositeLit, Ident}
+import io.joern.gosrc2cpg.parser.ParserAst.{ArrayType, BasePrimitive, BasicLit, CompositeLit, Ident, SelectorExpr}
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
@@ -19,16 +19,21 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   protected def astForCompositeLiteral(primitive: ParserNodeInfo): Seq[Ast] = {
-    val elementsAsts = Try(primitive.json(ParserKeys.Elts)) match
-      case Success(value) if !value.isNull => value.arr.flatMap(e => astForNode(createParserNodeInfo(e))).toSeq
-      case _                               => Seq.empty
     val typeNode = createParserNodeInfo(primitive.json(ParserKeys.Type))
-    val typeAst = typeNode.node match
+    typeNode.node match
       case ArrayType =>
-        Seq(astForArrayInitializer(primitive))
+        val elementsAsts = Try(primitive.json(ParserKeys.Elts)) match
+          case Success(value) if !value.isNull => value.arr.flatMap(e => astForNode(createParserNodeInfo(e))).toSeq
+          case _                               => Seq.empty
+        elementsAsts ++ Seq(astForArrayInitializer(primitive))
+      // Handling structure initialisation by creating a call node and arguments
+      case Ident =>
+        astForConstructorCall(primitive)
+      // Handling structure initialisation(alias present) by creating a call node and arguments
+      case SelectorExpr =>
+        astForConstructorCall(primitive)
       case _ =>
         Seq.empty
-    elementsAsts ++ typeAst
   }
 
   private def astForLiteral(stringLiteral: ParserNodeInfo): Ast = {
