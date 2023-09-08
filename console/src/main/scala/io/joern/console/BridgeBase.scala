@@ -240,7 +240,7 @@ trait InteractiveShell { this: BridgeBase =>
         dependencies = config.dependencies,
         resolvers = config.resolvers,
         verbose = config.verbose,
-        greeting = greeting,
+        greeting = Option(greeting),
         prompt = Option(promptStr),
         onExitCode = Option(onExitCode),
         maxHeight = config.maxHeight
@@ -396,12 +396,16 @@ trait ServerHandling { this: BridgeBase =>
   protected def startHttpServer(config: Config): Unit = {
     val predefFile = createPredefFile(Nil)
 
+    val baseConfig = replpp.Config(
+      predefFiles = predefFile +: config.additionalImports,
+      dependencies = config.dependencies,
+      resolvers = config.resolvers,
+      verbose = true // always print what's happening - helps debugging
+    )
+
     replpp.server.ReplServer.startHttpServer(
-      replpp.Config(
-        predefFiles = predefFile +: config.additionalImports,
-        dependencies = config.dependencies,
-        resolvers = config.resolvers,
-        verbose = true, // always print what's happening - helps debugging
+      replpp.server.Config(
+        baseConfig,
         serverHost = config.serverHost,
         serverPort = config.serverPort,
         serverAuthUsername = config.serverAuthUsername,
