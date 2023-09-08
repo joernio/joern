@@ -45,17 +45,14 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private def astForIdentifier(ident: ParserNodeInfo): Ast = {
     val identifierName = ident.json(ParserKeys.Name).str
-
     val variableOption = scope.lookupVariable(identifierName)
-    val identifierType = variableOption match {
-      case Some((_, variableTypeName)) => variableTypeName
-      case _                           => ""
-    }
-    val node = identifierNode(ident, identifierName, ident.json(ParserKeys.Name).str, identifierType)
     variableOption match {
-      case Some((variable, _)) =>
+      case Some((variable, variableTypeName)) =>
+        val node = identifierNode(ident, identifierName, ident.json(ParserKeys.Name).str, variableTypeName)
         Ast(node).withRefEdge(node, variable)
-      case None => Ast(node)
+      case _ =>
+        // TODO: something is wrong here. Refer to SwitchTests -> "be correct for switch case 4"
+        Ast(identifierNode(ident, identifierName, ident.json(ParserKeys.Name).str, Defines.anyTypeName))
     }
   }
 

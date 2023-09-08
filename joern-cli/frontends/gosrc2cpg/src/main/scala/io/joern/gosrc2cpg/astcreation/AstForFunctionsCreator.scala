@@ -43,16 +43,16 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val filename     = relPathFileName
     val name         = funcDecl.json(ParserKeys.Name).obj(ParserKeys.Name).str
     val receiverInfo = getReceiverInfo(Try(funcDecl.json(ParserKeys.Recv)))
-    val (methodFullname, recSignStr) = receiverInfo match
+    val methodFullname = receiverInfo match
       case Some(_, typeFullName, evaluationStrategy, _) =>
         val signatureStr = evaluationStrategy match
           case EvaluationStrategies.BY_SHARING =>
             s"*$typeFullName"
           case EvaluationStrategies.BY_VALUE =>
             typeFullName
-        (s"$typeFullName.$name", s"($signatureStr)")
+        s"$typeFullName.$name"
       case _ =>
-        (s"$fullyQualifiedPackage.$name", "")
+        s"$fullyQualifiedPackage.$name"
     // TODO: handle multiple return type or tuple (int, int)
     val genericTypeMethodMap = processTypeParams(funcDecl.json(ParserKeys.Type))
     val (returnTypeStr, methodReturn) =
@@ -60,7 +60,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         .getOrElse(("", methodReturnNode(funcDecl, Defines.voidTypeName)))
     val params = funcDecl.json(ParserKeys.Type)(ParserKeys.Params)(ParserKeys.List)
     val signature =
-      s"$methodFullname$recSignStr(${parameterSignature(params, genericTypeMethodMap)})$returnTypeStr"
+      s"$methodFullname(${parameterSignature(params, genericTypeMethodMap)})$returnTypeStr"
     GoGlobal.recordFullNameToReturnType(methodFullname, returnTypeStr, Some(signature))
     val methodNode_ = methodNode(funcDecl, name, funcDecl.code, methodFullname, Some(signature), filename)
     methodAstParentStack.push(methodNode_)

@@ -41,6 +41,16 @@ class MethodCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
       x.name shouldBe "bar"
       x.isExternal shouldBe false
     }
+
+    "traversal from method to call node" in {
+      val List(x) = cpg.method("bar").callIn.l
+      x.name shouldBe "bar"
+    }
+
+    "traversal from method to all the child call nodes" in {
+      val List(x) = cpg.method("foo").call.l
+      x.name shouldBe "bar"
+    }
   }
 
   "Method defined in the same file and after method is called." should {
