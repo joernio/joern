@@ -92,10 +92,17 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
           (s"$fullyQualifiedPackage.$methodName()", s"$fullyQualifiedPackage.$methodName", Defines.tobeFilled)
         )
       case Some(alias) =>
-        (
-          s"${aliasToNameSpaceMapping.getOrElse(alias, s"${XDefines.Unknown}.<$alias>")}.$methodName()",
-          s"${aliasToNameSpaceMapping.getOrElse(alias, s"${XDefines.Unknown}.<$alias>")}.$methodName",
-          Defines.tobeFilled
-        )
+        // Note check if given alias is an object, in that case we will find the expected variable in scope.
+        val variableOption = scope.lookupVariable(alias)
+        variableOption match {
+          case Some((_, variableTypeName)) =>
+            (s"$variableTypeName.$methodName()", s"$variableTypeName.$methodName", Defines.tobeFilled)
+          case _ =>
+            (
+              s"${aliasToNameSpaceMapping.getOrElse(alias, s"${XDefines.Unknown}.<$alias>")}.$methodName()",
+              s"${aliasToNameSpaceMapping.getOrElse(alias, s"${XDefines.Unknown}.<$alias>")}.$methodName",
+              Defines.tobeFilled
+            )
+        }
   }
 }

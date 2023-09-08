@@ -1,12 +1,10 @@
 package io.joern.go2cpg.passes.ast
 
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
-
-import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
 
 class SwitchTests extends GoCodeToCpgSuite {
   "AST Creation for switch case" should {
@@ -134,25 +132,24 @@ class SwitchTests extends GoCodeToCpgSuite {
         |   }
         |}
     """.stripMargin)
-    inside(cpg.method.name("method").controlStructure.l) { case List(controlStruct: ControlStructure) =>
-      controlStruct.code shouldBe "switch x.(type)"
-      controlStruct.controlStructureType shouldBe ControlStructureTypes.SWITCH
-      inside(controlStruct.astChildren.l) { case List(identifier: Identifier, switchBlock: Block) =>
-        identifier.code shouldBe "x"
-        switchBlock.astChildren.size shouldBe 9
-        switchBlock.astChildren.code.l shouldBe List(
-          "case nil",
-          "nil",
-          "y = 5",
-          "case int",
-          "int",
-          "y = 8",
-          "case float64",
-          "float64",
-          "y = 12"
-        )
-      }
-    }
+    val List(controlStruct: ControlStructure) = cpg.method.name("method").controlStructure.l
+    controlStruct.code shouldBe "switch x.(type)"
+    controlStruct.controlStructureType shouldBe ControlStructureTypes.SWITCH
+    val List(identifier: Identifier, switchBlock: Block) = controlStruct.astChildren.l
+    identifier.code shouldBe "x"
+    switchBlock.astChildren.size shouldBe 9
+    // TODO: something is wrong here. Identifier is being created for int, nil and float64
+    switchBlock.astChildren.code.l shouldBe List(
+      "case nil",
+      "nil",
+      "y = 5",
+      "case int",
+      "int",
+      "y = 8",
+      "case float64",
+      "float64",
+      "y = 12"
+    )
   }
 
   // TODO Need to handle `fallthrough` statements
