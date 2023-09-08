@@ -84,8 +84,8 @@ class Py2CpgOnFileSystem extends X2CpgFrontend[Py2CpgOnFileSystemConfig] {
   private def filterIgnoreDirNames(file: Path, inputPath: Path, ignoreDirNamesSet: Set[String]): Boolean = {
     var parts = inputPath.relativize(file).iterator().asScala.toList
 
-    // If it is not a directory the last part is the file name.
     if (!Files.isDirectory(file)) {
+      // we're only interested in the directories - drop the file part
       parts = parts.dropRight(1)
     }
 
