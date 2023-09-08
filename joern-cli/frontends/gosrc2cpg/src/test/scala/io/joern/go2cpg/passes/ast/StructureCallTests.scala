@@ -49,7 +49,7 @@ class StructureCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
       "test.go"
     )
 
-    "check no call node present" in {
+    "check call node present" in {
       cpg.call.nameExact("Rectangle").size shouldBe 1
     }
   }
@@ -204,7 +204,7 @@ class StructureCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
     }
 
     "Single call node getting created for Structure declaration" ignore {
-      cpg.call("Square").size shouldBe 1
+      cpg.call("Rectangle").size shouldBe 1
     }
   }
 
