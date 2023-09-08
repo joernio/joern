@@ -6,6 +6,7 @@ import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
 import scopt.OParser
 import scala.util.matching.Regex
 import io.joern.javasrc2cpg.typesolvers.SimpleCombinedTypeSolver
+import io.joern.javasrc2cpg.jpastprinter.JavaParserAstPrinter
 
 /** Command line configuration parameters
   */
@@ -18,7 +19,8 @@ final case class Config(
   enableTypeRecovery: Boolean = false,
   jdkPath: Option[String] = None,
   showEnv: Boolean = false,
-  skipTypeInfPass: Boolean = false
+  skipTypeInfPass: Boolean = false,
+  dumpJavaparserAsts: Boolean = false
 ) extends X2CpgConfig[Config]
     with TypeRecoveryParserConfig[Config] {
   def withInferenceJarPaths(paths: Set[String]): Config = {
@@ -55,6 +57,10 @@ final case class Config(
 
   def withSkipTypeInfPass(value: Boolean): Config = {
     copy(skipTypeInfPass = value).withInheritedFields(this)
+  }
+
+  def withDumpJavaparserAsts(value: Boolean): Config = {
+    copy(dumpJavaparserAsts = value).withInheritedFields(this)
   }
 }
 
@@ -101,7 +107,11 @@ private object Frontend {
         .action((_, c) => c.withSkipTypeInfPass(true))
         .text(
           "Skip the type inference pass. Results will be much worse, so should only be used for development purposes"
-        )
+        ),
+      opt[Unit]("dump-javaparser-asts")
+        .hidden()
+        .action((_, c) => c.withDumpJavaparserAsts(true))
+        .text("Dump the javaparser asts for the given input files and terminate (for debugging).")
     )
   }
 }
@@ -121,6 +131,8 @@ object Main extends X2CpgMain(cmdLineParser, new JavaSrc2Cpg()) {
   def run(config: Config, javasrc2Cpg: JavaSrc2Cpg): Unit = {
     if (config.showEnv) {
       JavaSrc2Cpg.showEnv()
+    } else if (config.dumpJavaparserAsts) {
+      JavaParserAstPrinter.printJpAsts(config)
     } else {
       javasrc2Cpg.run(config)
     }

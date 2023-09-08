@@ -4,6 +4,7 @@ import better.files.File
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.javasrc2cpg.util.Delombok.DelombokMode
 import io.joern.javasrc2cpg.util.Delombok.DelombokMode._
+import io.joern.x2cpg.SourceFiles
 import com.github.javaparser.{JavaParser, ParserConfiguration}
 import com.github.javaparser.ParserConfiguration.LanguageLevel
 import com.github.javaparser.ast.CompilationUnit
@@ -98,6 +99,11 @@ object SourceParser {
       getAnalysisAndTypesDirs(canonicalInputPath, config.delombokJavaHome, config.delombokMode, hasLombokDependency)
 
     new SourceParser(Path.of(canonicalInputPath), Path.of(analysisDir), Path.of(typesDir))
+  }
+
+  def getSourceFilenames(config: Config, sourcesOverride: Option[List[String]] = None): Array[String] = {
+    val inputPaths = sourcesOverride.getOrElse(config.inputPath :: Nil).toSet
+    SourceFiles.determine(inputPaths, JavaSrc2Cpg.sourceFileExtensions, config).toArray
   }
 
   /** Implements the logic described in the option description for the "delombok-mode" option:
