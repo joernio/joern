@@ -20,8 +20,8 @@ class StructureCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
     val List(rectangleCallNode) = cpg.call.nameExact("Rectangle").l
     "test basic cpg properties for call node of structure declaration" in {
       rectangleCallNode.name shouldBe "Rectangle"
-      rectangleCallNode.methodFullName shouldBe "main.Rectangle"
-      rectangleCallNode.typeFullName shouldBe "main.Rectangle.<init>"
+      rectangleCallNode.methodFullName shouldBe "main.Rectangle.<init>"
+      rectangleCallNode.typeFullName shouldBe "main.Rectangle"
     }
 
     "test argument of structure declaration node(call node)" in {
@@ -70,8 +70,8 @@ class StructureCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
     val List(rectangleCallNode) = cpg.call.nameExact("Rectangle").l
     "test basic cpg properties for call node of structure declaration" in {
       rectangleCallNode.name shouldBe "Rectangle"
-      rectangleCallNode.methodFullName shouldBe "path/to/somepackage.Rectangle"
-      rectangleCallNode.typeFullName shouldBe "path/to/somepackage.Rectangle.<init>"
+      rectangleCallNode.methodFullName shouldBe "path/to/somepackage.Rectangle.<init>"
+      rectangleCallNode.typeFullName shouldBe "path/to/somepackage.Rectangle"
       rectangleCallNode.signature shouldBe "path/to/somepackage.Rectangle()"
     }
 

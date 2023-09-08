@@ -47,10 +47,10 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
       compositeLit,
       compositeLit.code,
       methodName,
-      fullName,
+      fullName + "." + XDefines.ConstructorMethodName,
       DispatchTypes.STATIC_DISPATCH,
       Some(signature),
-      Some(fullName + "." + XDefines.ConstructorMethodName)
+      Some(fullName)
     )
     Seq(callAst(cpgCall, astForStructureDeclarationArgument(compositeLit.json(ParserKeys.Elts))))
   }
