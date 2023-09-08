@@ -134,13 +134,15 @@ class AstGenRunner(config: Config) {
     }
   }
 
-  private def runAstGenNative(in: String, out: File): Try[Seq[String]] =
-    ExternalCommand.run(s"$astGenCommand -out ${out.toString()} $in", ".")
+  private def runAstGenNative(in: String, out: File, exclude: String): Try[Seq[String]] = {
+    val excludeCommand = if (exclude.isEmpty) "" else s"-exclude $exclude"
+    ExternalCommand.run(s"$astGenCommand $excludeCommand -out ${out.toString()} $in", ".")
+  }
 
   def execute(out: File): AstGenRunnerResult = {
     val in = File(config.inputPath)
     logger.info(s"Running goastgen in '$config.inputPath' ...")
-    runAstGenNative(config.inputPath, out) match {
+    runAstGenNative(config.inputPath, out, config.ignoredFilesRegex.toString()) match {
       case Success(result) =>
         val srcFiles      = SourceFiles.determine(out.toString(), Set(".json"))
         val parsedModFile = filterModFile(srcFiles, out)
