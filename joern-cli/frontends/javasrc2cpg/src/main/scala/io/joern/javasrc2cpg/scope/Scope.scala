@@ -51,14 +51,9 @@ class Scope {
   }
 
   def popScope(): JavaScopeElement = {
-    scopeStack.headOption match {
-      case Some(scope) =>
-        scopeStack = scopeStack.tail
-        scope
-
-      case None =>
-        throw new UnsupportedOperationException("Cannot pop scope element that hasn't been pushed")
-    }
+    val scope = scopeStack.head
+    scopeStack = scopeStack.tail
+    scope
   }
 
   def addParameter(parameter: NewMethodParameterIn): Unit = {
@@ -78,27 +73,15 @@ class Scope {
   }
 
   private def addVariable(variable: ScopeVariable): Unit = {
-    scopeStack.headOption match {
-      case Some(scope) => scope.addVariableToScope(variable)
-
-      case None => throw new UnsupportedOperationException("Must push a scope node before adding variables to it")
-    }
+    scopeStack.head.addVariableToScope(variable)
   }
 
   def addType(name: String, typeFullName: String): Unit = {
-    scopeStack.headOption match {
-      case Some(scope) => scope.addTypeToScope(name, typeFullName)
-
-      case None => throw new UnsupportedOperationException("Must push a scope node before adding types to it")
-    }
+    scopeStack.head.addTypeToScope(name, typeFullName)
   }
 
   def addWildcardImport(prefix: String): Unit = {
-    scopeStack.headOption match {
-      case Some(scope) => scope.addWildcardImport(prefix)
-
-      case None => throw new UnsupportedOperationException("Must push a scope node before adding types to it")
-    }
+    scopeStack.head.addWildcardImport(prefix)
   }
 
   def lookupVariable(name: String): VariableLookupResult = {
