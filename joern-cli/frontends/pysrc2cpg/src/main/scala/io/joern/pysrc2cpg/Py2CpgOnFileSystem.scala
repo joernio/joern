@@ -8,10 +8,13 @@ import org.slf4j.LoggerFactory
 
 import java.nio.file.*
 import scala.util.Try
+import scala.jdk.CollectionConverters._
 
 case class Py2CpgOnFileSystemConfig(
   venvDir: Path = Paths.get(".venv"),
   ignoreVenvDir: Boolean = true,
+  ignorePaths: Seq[Path] = Nil,
+  ignoreDirNames: Seq[String] = Nil,
   requirementsTxt: String = "requirements.txt"
 ) extends X2CpgConfig[Py2CpgOnFileSystemConfig]
     with TypeRecoveryParserConfig[Py2CpgOnFileSystemConfig] {
@@ -21,6 +24,14 @@ case class Py2CpgOnFileSystemConfig(
 
   def withIgnoreVenvDir(value: Boolean): Py2CpgOnFileSystemConfig = {
     copy(ignoreVenvDir = value).withInheritedFields(this)
+  }
+
+  def withIgnorePaths(value: Seq[Path]): Py2CpgOnFileSystemConfig = {
+    copy(ignorePaths = value).withInheritedFields(this)
+  }
+
+  def withIgnoreDirNames(value: Seq[String]): Py2CpgOnFileSystemConfig = {
+    copy(ignoreDirNames = value).withInheritedFields(this)
   }
 
   def withRequirementsTxt(text: String): Py2CpgOnFileSystemConfig = {
@@ -39,23 +50,30 @@ class Py2CpgOnFileSystem extends X2CpgFrontend[Py2CpgOnFileSystemConfig] {
     logConfiguration(config)
 
     X2Cpg.withNewEmptyCpg(config.outputPath, config) { (cpg, _) =>
-      val ignorePrefixes =
+      val venvIgnorePath =
         if (config.ignoreVenvDir) {
           config.venvDir :: Nil
         } else {
           Nil
         }
+      val inputPath         = Path.of(config.inputPath)
+      val ignoreDirNamesSet = config.ignoreDirNames.toSet
+      val absoluteIgnorePaths = (config.ignorePaths ++ venvIgnorePath).map { path =>
+        inputPath.resolve(path)
+      }
+
       val inputFiles = SourceFiles
         .determine(config.inputPath, Set(".py"), config)
         .map(x => Path.of(x))
-        .filterNot { file =>
-          val relativeFile = Path.of(config.inputPath).relativize(file)
-          ignorePrefixes.exists(prefix => relativeFile.startsWith(prefix))
+        .filter { file => filterIgnoreDirNames(file, inputPath, ignoreDirNamesSet) }
+        .filter { file =>
+          !absoluteIgnorePaths.exists(ignorePath => file.startsWith(ignorePath))
         }
+
       val inputProviders = inputFiles.map { inputFile => () =>
         {
           val content = IOUtils.readLinesInFile(inputFile).mkString("\n")
-          Py2Cpg.InputPair(content, Paths.get(config.inputPath).relativize(inputFile).toString)
+          Py2Cpg.InputPair(content, inputPath.relativize(inputFile).toString)
         }
       }
       val py2Cpg = new Py2Cpg(inputProviders, cpg, config.inputPath, config.requirementsTxt, config.schemaValidation)
@@ -63,11 +81,25 @@ class Py2CpgOnFileSystem extends X2CpgFrontend[Py2CpgOnFileSystemConfig] {
     }
   }
 
+  private def filterIgnoreDirNames(file: Path, inputPath: Path, ignoreDirNamesSet: Set[String]): Boolean = {
+    var parts = inputPath.relativize(file).iterator().asScala.toList
+
+    if (!Files.isDirectory(file)) {
+      // we're only interested in the directories - drop the file part
+      parts = parts.dropRight(1)
+    }
+
+    val aPartIsInIgnoreSet = parts.exists(part => ignoreDirNamesSet.contains(part.toString))
+    !aPartIsInIgnoreSet
+  }
+
   private def logConfiguration(config: Py2CpgOnFileSystemConfig): Unit = {
     logger.info(s"Output file: ${config.outputPath}")
     logger.info(s"Input directory: ${config.inputPath}")
     logger.info(s"Venv directory: ${config.venvDir}")
     logger.info(s"IgnoreVenvDir: ${config.ignoreVenvDir}")
+    logger.info(s"IgnorePaths: ${config.ignorePaths.mkString(", ")}")
+    logger.info(s"IgnoreDirNames: ${config.ignoreDirNames.mkString(", ")}")
     logger.info(s"No dummy types: ${config.disableDummyTypes}")
   }
 }
