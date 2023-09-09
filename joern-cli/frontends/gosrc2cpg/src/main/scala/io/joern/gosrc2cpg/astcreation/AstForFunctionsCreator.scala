@@ -119,6 +119,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
               generateTypeFullName(typeName = typeParserNode.json(ParserKeys.X)(ParserKeys.Name).strOpt),
               EvaluationStrategies.BY_SHARING
             )
+          case x =>
+            logger.warn(s"Unhandled class ${x.getClass} under getReceiverInfo!")
+            ("", "")
         Some(recName, typeFullName, evaluationStrategy, recnode)
       case _ => None
   }

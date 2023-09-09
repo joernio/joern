@@ -47,6 +47,9 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
           Some(typeNode.json(ParserKeys.X)(ParserKeys.Name).str, typeNode.json(ParserKeys.X)),
           typeNode.json(ParserKeys.Sel)(ParserKeys.Name).str
         )
+      case x =>
+        logger.warn(s"Unhandled class ${x.getClass} under astForConstructorCall!")
+        (None, "")
     val (signature, fullName, _, _) = callMethodFullNameTypeFullNameAndSignature(methodName, alias)
 
     val cpgCall = callNode(
@@ -67,8 +70,8 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
       .flatMap(x => {
         val argument = createParserNodeInfo(x)
         argument.node match
-          case BasicLit => astForPrimitive(argument)
-          case _        => astForPrimitive(createParserNodeInfo(argument.json(ParserKeys.Value)))
+          case BasicLit => astForNode(argument)
+          case _        => astForNode(createParserNodeInfo(argument.json(ParserKeys.Value)))
       })
       .toSeq
   }
@@ -77,8 +80,8 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
     args.arrOpt
       .getOrElse(Seq.empty)
       .flatMap(x => {
-        val primitiveNode = createParserNodeInfo(x)
-        astForPrimitive(primitiveNode)
+        val argNode = createParserNodeInfo(x)
+        astForNode(argNode)
       })
       .toSeq
   }

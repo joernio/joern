@@ -1,17 +1,28 @@
 package io.joern.gosrc2cpg.parser
 
-object ParserAst {
+import io.joern.gosrc2cpg.astcreation.AstCreator
+import io.joern.gosrc2cpg.utils.AstGenRunner.getClass
+import org.slf4j.{Logger, LoggerFactory}
 
+object ParserAst {
+  private val logger                     = LoggerFactory.getLogger(getClass)
   private val QualifiedClassName: String = ParserAst.getClass.getName
 
-  def fromString(nodeName: String): ParserNode = {
-    val clazz = Class.forName(s"$QualifiedClassName${nodeName.stripPrefix("ast.")}$$")
-    clazz.getField("MODULE$").get(clazz).asInstanceOf[ParserNode]
+  def fromString(nodeName: String, fileName: String): ParserNode = {
+    try {
+      val clazz = Class.forName(s"$QualifiedClassName${nodeName.stripPrefix("ast.")}$$")
+      clazz.getField("MODULE$").get(clazz).asInstanceOf[ParserNode]
+    } catch {
+      case _ =>
+        logger.warn(s"`$nodeName` AST type is not handled. We found this inside '$fileName'")
+        NotHandledType
+    }
   }
 
   sealed trait ParserNode {
     override def toString: String = this.getClass.getSimpleName.stripSuffix("$")
   }
+  object NotHandledType      extends ParserNode
   sealed trait BaseExpr      extends ParserNode
   object BinaryExpr          extends BaseExpr
   object KeyValueExpr        extends BaseExpr

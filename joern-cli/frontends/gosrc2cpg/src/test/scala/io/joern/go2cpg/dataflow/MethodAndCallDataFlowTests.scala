@@ -150,4 +150,35 @@ class MethodAndCallDataFlowTests extends GoCodeToCpgSuite(withOssDataflow = true
       sink.reachableByFlows(srcone).size shouldBe 1
     }
   }
+
+  "data flow test through struct type" should {
+    val cpg = code("""
+        |package main
+        |type Person struct {
+        |	fname string
+        |	lname string
+        |}
+        |func (person Person) fullName() string {
+        |	return person.fname + " " + person.lname
+        |}
+        |func main() {
+        |	var a Person = Person{fname: "Pandurang", lname: "Patil"}
+        |	var fulname string = a.fullName()
+        |}
+        |""".stripMargin)
+    "data flow from literal passed to constructor to identifier" ignore {
+      val src  = cpg.literal("Pandurang").l
+      val sink = cpg.identifier("a").l
+      sink.reachableByFlows(src).size shouldBe 1
+
+      val sinkOne = cpg.identifier("fulname").l
+      sinkOne.reachableByFlows(src).size shouldBe 1
+    }
+
+    "data flow use case 2" in {
+      val src  = cpg.identifier("a").l
+      val sink = cpg.identifier("fulname").l
+      sink.reachableByFlows(src).size shouldBe 2
+    }
+  }
 }
