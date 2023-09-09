@@ -1,7 +1,7 @@
 package io.joern.go2cpg.passes.ast
 
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
 import io.shiftleft.semanticcpg.language.*
 
 class TypeDeclMethodCallTests extends GoCodeToCpgSuite {
@@ -44,6 +44,15 @@ class TypeDeclMethodCallTests extends GoCodeToCpgSuite {
       x.lineNumber shouldBe Option(12)
       x.typeFullName shouldBe "string"
       x.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+    }
+
+    "check this/receiver argument is correctly getting passed" in {
+      cpg.call("fullName").argument.size shouldBe 1
+      val List(x) = cpg.call("fullName").argument.l
+      x.order shouldBe 1
+      x.argumentIndex shouldBe 0
+      x.isInstanceOf[nodes.Identifier] shouldBe true
+      x.asInstanceOf[nodes.Identifier].name shouldBe "a"
     }
   }
 }

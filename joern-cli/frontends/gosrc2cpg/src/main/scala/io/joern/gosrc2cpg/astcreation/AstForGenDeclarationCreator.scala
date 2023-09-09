@@ -9,7 +9,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
 import ujson.Value
 
-import scala.util.Try
+import scala.util.{Success, Try}
 
 trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
   def astForGenDecl(genDecl: ParserNodeInfo): Seq[Ast] = {
@@ -40,23 +40,17 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
   }
 
   private def astForValueSpec(valueSpec: ParserNodeInfo): Seq[Ast] = {
-    // If global array is initialized, type info is present in values > type
-    val typeJson = Try(valueSpec.json(ParserKeys.Type))
-      .getOrElse(valueSpec.json(ParserKeys.Values).arr.head)
-    val typeInfoNode = createParserNodeInfo(typeJson)
-
-    val arrayInitializerNode: Seq[Ast] = typeInfoNode.node match
-      case ArrayType =>
-        Seq(astForArrayInitializer(typeInfoNode))
-      case CompositeLit =>
-        astForNode(typeInfoNode)
-      case _ =>
-        Seq.empty
+    val typeFullName = Try(valueSpec.json(ParserKeys.Type)) match
+      case Success(typeJson) =>
+        val typeInfoNode            = createParserNodeInfo(typeJson)
+        val (typeFullName, _, _, _) = processTypeInfo(typeInfoNode)
+        typeFullName
+      case _ => Defines.anyTypeName
 
     val localNodes = valueSpec.json(ParserKeys.Names).arr.flatMap { parserNode =>
-      val localParserNode                                    = createParserNodeInfo(parserNode)
-      val name                                               = parserNode(ParserKeys.Name).str
-      val (typeFullName, typeFullNameForcode, isVariadic, _) = processTypeInfo(typeInfoNode)
+      val localParserNode = createParserNodeInfo(parserNode)
+      val name            = parserNode(ParserKeys.Name).str
+
       val node = localNode(localParserNode, name, localParserNode.code, typeFullName)
       scope.addToScope(name, (node, typeFullName))
       val identifierAst = if (valueSpec.json(ParserKeys.Values).isNull) then astForNode(localParserNode) else Seq.empty
@@ -78,8 +72,8 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
             val arguments = astForNode(lhsParserNode) ++: astForNode(rhsParserNode)
             callAst(cNode, arguments)
           }
-      localNodes.toList ::: callNodes ::: arrayInitializerNode.toList
+      localNodes.toList ::: callNodes
     } else
-      localNodes.toList ++ arrayInitializerNode.toList
+      localNodes.toList
   }
 }

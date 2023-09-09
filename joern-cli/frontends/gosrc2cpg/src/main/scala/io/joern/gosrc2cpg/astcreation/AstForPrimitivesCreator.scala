@@ -48,7 +48,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     val variableOption = scope.lookupVariable(identifierName)
     variableOption match {
       case Some((variable, variableTypeName)) =>
-        val node = identifierNode(ident, identifierName, ident.json(ParserKeys.Name).str, variableTypeName)
+        val node = identifierNode(ident, identifierName, ident.code, variableTypeName)
         Ast(node).withRefEdge(node, variable)
       case _ =>
         // TODO: something is wrong here. Refer to SwitchTests -> "be correct for switch case 4"

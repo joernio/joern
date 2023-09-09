@@ -456,6 +456,15 @@ class MethodCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
       x.name shouldBe "bar"
       x.isExternal shouldBe true
     }
+
+    "Check arguments nodes" in {
+      cpg.call("bar").argument.size shouldBe 2
+      val List(a, b) = cpg.call("bar").argument.l
+      a.isInstanceOf[nodes.Identifier] shouldBe true
+      a.asInstanceOf[nodes.Identifier].name shouldBe "a"
+      b.isInstanceOf[nodes.Identifier] shouldBe true
+      b.asInstanceOf[nodes.Identifier].name shouldBe "b"
+    }
   }
 
   "Method call to builtin method recover()" should {
@@ -514,7 +523,7 @@ class MethodCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
       x.code shouldBe "println(b)"
       x.methodFullName shouldBe "println"
       x.signature shouldBe "println([]any)"
-      x.order shouldBe 6
+      x.order shouldBe 5
       x.lineNumber shouldBe Option(6)
     }
 
@@ -536,6 +545,7 @@ class MethodCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
       arg1.asInstanceOf[nodes.Identifier].name shouldBe "a"
       arg1.code shouldBe "a"
       arg1.order shouldBe 1
+      arg1.argumentIndex shouldBe 1
     }
 
     "traversal from argument to call node" in {
