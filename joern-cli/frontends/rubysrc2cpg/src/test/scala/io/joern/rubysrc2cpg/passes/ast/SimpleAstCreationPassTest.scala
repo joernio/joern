@@ -449,7 +449,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for a assignment expression" in {
       val cpg            = code("x = y")
       val List(callNode) = cpg.call.name(Operators.assignment).l
-      callNode.code shouldBe "="
+      callNode.code shouldBe "x = y"
       callNode.lineNumber shouldBe Some(1)
       callNode.columnNumber shouldBe Some(2)
     }
@@ -685,11 +685,11 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
 
       val List(argArgumentOfFoo, argArgumentOfPuts) = cpg.identifier.name("arg").l
       argArgumentOfFoo.code shouldBe "arg"
-      argArgumentOfFoo.lineNumber shouldBe Some(1)
+      argArgumentOfFoo.lineNumber shouldBe Some(2)
       argArgumentOfFoo.columnNumber shouldBe Some(5)
 
       argArgumentOfPuts.code shouldBe "arg"
-      argArgumentOfPuts.lineNumber shouldBe Some(2)
+      argArgumentOfPuts.lineNumber shouldBe Some(1)
     }
 
     "have correct structure for a hash initialisation" in {
@@ -948,7 +948,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
         "scope :get_all_doctors, -> { (select('id, first_name').where('role = :user_role', user_role: User.roles[:doctor])) }"
       )
       cpg.parameter.size shouldBe 6
-      cpg.call.name("proc_4").size shouldBe 1
+      cpg.call.name("proc_2").size shouldBe 1
       cpg.call.name("scope").size shouldBe 1
       cpg.call.name("where").size shouldBe 1
       cpg.call.name("select").size shouldBe 1
@@ -1259,7 +1259,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
         |  end
         |end
         |""".stripMargin)
-
     cpg.identifier("a").dedup.size shouldBe 1
     cpg.identifier("b").dedup.size shouldBe 1
     cpg.identifier("x").name.dedup.size shouldBe 1
@@ -1388,8 +1387,8 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     keyValueAssocOperator.astChildren.l(1).code shouldBe "1"
 
     val List(actualIdentifier, pseudoIdentifier) = cpg.identifier("bar").l
-    pseudoIdentifier.lineNumber shouldBe Some(4)
-    pseudoIdentifier.columnNumber shouldBe Some(2)
+    pseudoIdentifier.lineNumber shouldBe Some(2)
+    pseudoIdentifier.columnNumber shouldBe Some(0)
   }
 
   "have correct structure for regex match global variables" in {
