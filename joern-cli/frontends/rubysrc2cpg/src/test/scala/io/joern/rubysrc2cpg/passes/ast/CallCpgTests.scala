@@ -6,7 +6,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, MethodRef}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, nodes}
 import io.shiftleft.semanticcpg.language.*
 
-class CallCpgTests extends RubyCode2CpgFixture {
+class CallCpgTests extends RubyCode2CpgFixture(withPostProcessing = true) {
   "simple call method" should {
     val cpg = code("""foo("a", b)""".stripMargin)
 
@@ -180,6 +180,44 @@ class CallCpgTests extends RubyCode2CpgFixture {
       apiHost.argumentIndex shouldBe 1
       doRef.methodFullName shouldBe "Test0.rb::program.new3"
       doRef.argumentIndex shouldBe 2
+    }
+  }
+
+  "a call without parenthesis before the method definition is seen" should {
+    val cpg = code("""def event_params
+        |    @event_params ||= device_params
+        |      .merge(params)
+        |      .merge(encoded_partner_params)
+        |      .merge(
+        |        s2s: 1,
+        |        created_at_unix: Time.current.to_i,
+        |        app_token: app_token,
+        |        event_token: event_token,
+        |        install_source: install_source
+        |      )
+        |  end
+        |
+        |def device_params
+        |    case platform
+        |    when :android
+        |      { adid: adid, gps_adid: gps_adid }
+        |    when :ios
+        |      { adid: adid, idfa: idfa }
+        |    else
+        |      {}
+        |    end
+        |  end
+        |""".stripMargin)
+
+    "have its call node correctly identified and created" in {
+      val List(deviceParams) = cpg.call.nameExact("device_params").l: @unchecked
+      deviceParams.name shouldBe "device_params"
+      deviceParams.code shouldBe "device_params"
+      deviceParams.methodFullName shouldBe "Test0.rb::program.device_params"
+      deviceParams.typeFullName shouldBe Defines.Any
+      deviceParams.lineNumber shouldBe Option(2)
+      deviceParams.columnNumber shouldBe Option(22)
+      deviceParams.argumentIndex shouldBe 0
     }
   }
 }

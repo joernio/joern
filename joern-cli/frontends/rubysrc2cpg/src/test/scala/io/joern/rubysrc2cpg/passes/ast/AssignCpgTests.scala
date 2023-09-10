@@ -1,21 +1,27 @@
 package io.joern.rubysrc2cpg.passes.ast
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, NodeTypes, Operators, nodes}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 class AssignCpgTests extends RubyCode2CpgFixture {
+
   "single target assign" should {
     val cpg = code("""x = 2""".stripMargin)
 
-    // TODO: .code property need to be fixed
-    "test assignment node properties" ignore {
+    "test local and identifier nodes" in {
+      val localX = cpg.local.head
+      localX.name shouldBe "x"
+      val List(idX) = localX.referencingIdentifiers.l: @unchecked
+      idX.name shouldBe "x"
+    }
+
+    "test assignment node properties" in {
       val assignCall = cpg.call.methodFullName(Operators.assignment).head
-      assignCall.code shouldBe "x = 2" // "="
+      assignCall.code shouldBe "x = 2"
       assignCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       assignCall.lineNumber shouldBe Some(1)
-      assignCall.columnNumber shouldBe Some(1)
+      assignCall.columnNumber shouldBe Some(2)
     }
 
     "test assignment node ast children" in {

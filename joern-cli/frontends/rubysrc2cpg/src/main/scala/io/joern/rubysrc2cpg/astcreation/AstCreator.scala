@@ -39,7 +39,7 @@ class AstCreator(
     with AstCreatorHelper
     with AstForHereDocsCreator {
 
-  protected val scope: Scope[String, NewIdentifier, Unit] = new Scope()
+  protected val scope: RubyScope = new RubyScope()
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
@@ -140,7 +140,8 @@ class AstCreator(
 
     classStack.push(fullName)
 
-    scope.pushNewScope(())
+    scope.pushNewScope(programMethod)
+
     val statementAsts =
       if (
         programCtx.compoundStatement() != null &&
@@ -151,7 +152,6 @@ class AstCreator(
         logger.error(s"File $filename has no compound statement. Needs to be examined")
         List[Ast](Ast())
       }
-    scope.popScope()
 
     val methodRetNode = NewMethodReturn()
       .lineNumber(None)
@@ -176,7 +176,7 @@ class AstCreator(
     }.toList
 
     val methodRefAssignmentAsts = methodNameToMethod.values.map { methodNode =>
-      // Create a methodRefNode and assign it to the identifier version of the method, which will help in type propogation to resolve calls
+      // Create a methodRefNode and assign it to the identifier version of the method, which will help in type propagation to resolve calls
       val methodRefNode = NewMethodRef()
         .code("def " + methodNode.name + "(...)")
         .methodFullName(methodNode.fullName)
@@ -217,18 +217,20 @@ class AstCreator(
     }
 
     val methodDefInArgumentAsts = methodDefInArgument.toList
-
-    val blockNode = NewBlock().typeFullName(Defines.Any)
+    val locals                  = scope.createAndLinkLocalNodes(diffGraph).map(Ast.apply)
+    val blockNode               = NewBlock().typeFullName(Defines.Any)
     val programAst =
       methodAst(
         programMethod,
         Seq(Ast()),
         blockAst(
           blockNode,
-          statementAsts.toList ++ builtInMethodAst ++ methodRefAssignmentAsts ++ typeRefAssignmentAst ++ methodDefInArgumentAsts
+          locals ++ statementAsts.toList ++ builtInMethodAst ++ methodRefAssignmentAsts ++ typeRefAssignmentAst ++ methodDefInArgumentAsts
         ),
         methodRetNode
       )
+
+    scope.popScope()
 
     val fileNode       = NewFile().name(filename).order(1)
     val namespaceBlock = globalNamespaceBlock()
@@ -378,7 +380,7 @@ class AstCreator(
     } else {
       val callNode = NewCall()
         .name(operatorName)
-        .code(ctx.op.getText)
+        .code(text(ctx))
         .methodFullName(operatorName)
         .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
@@ -502,21 +504,22 @@ class AstCreator(
      * Model a proc as a method
      */
     // Note: For parameters in the Proc definiton, an implicit parameter which goes by the name of `this` is added to the cpg
-    val astMethodParam = astForParametersContext(ctx.parameters())
-    scope.pushNewScope(())
-    val astBody = astForCompoundStatement(ctx.block.compoundStatement, true)
-    scope.popScope()
-
     val procId = blockIdCounter
     blockIdCounter += 1
     val procMethodName = "proc_" + procId
-
     val methodFullName = classStack.reverse :+ procMethodName mkString pathSep
     val methodNode = NewMethod()
       .code(text(ctx))
       .name(procMethodName)
       .fullName(methodFullName)
       .filename(filename)
+
+    scope.pushNewScope(methodNode)
+
+    val astMethodParam = astForParametersContext(ctx.parameters())
+    val paramNames     = astMethodParam.flatMap(_.nodes).collect { case x: NewMethodParameterIn => x.name }.toSet
+    val locals         = scope.createAndLinkLocalNodes(diffGraph, paramNames).map(Ast.apply)
+    val astBody        = astForCompoundStatement(ctx.block.compoundStatement, true)
 
     val methodRetNode = NewMethodReturn()
       .typeFullName(Defines.Any)
@@ -527,7 +530,7 @@ class AstCreator(
     val methAst = methodAst(
       methodNode,
       astMethodParam,
-      blockAst(blockNode, astBody.toList),
+      blockAst(blockNode, locals ++ astBody.toList),
       methodRetNode,
       Seq[NewModifier](publicModifier)
     )
@@ -546,6 +549,9 @@ class AstCreator(
       .typeFullName(Defines.Any)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .code(text(ctx))
+
+    scope.popScope()
+
     Seq(callAst(callNode, callArgs))
   }
 
@@ -1353,7 +1359,6 @@ class AstCreator(
   }
 
   def astForMethodDefinitionContext(ctx: MethodDefinitionContext): Seq[Ast] = {
-    scope.pushNewScope(())
     val astMethodName = Option(ctx.methodNamePart()) match
       case Some(ctxMethodNamePart) =>
         astForMethodNamePartContext(ctxMethodNamePart)
@@ -1363,6 +1368,17 @@ class AstCreator(
 
     // Create thisParameter if this is an instance method
     // TODO may need to revisit to make this more robust
+    val methodFullName = classStack.reverse :+ callNode.name mkString pathSep
+    val methodNode = NewMethod()
+      .code(text(ctx))
+      .name(callNode.name)
+      .fullName(methodFullName)
+      .columnNumber(callNode.columnNumber)
+      .lineNumber(callNode.lineNumber)
+      .filename(filename)
+
+    scope.pushNewScope(methodNode)
+
     val astMethodParamSeq = ctx.methodNamePart() match {
       case _: SimpleMethodNamePartContext if !classStack.top.endsWith(":program") =>
         val thisParameterNode = createMethodParameterIn(
@@ -1377,33 +1393,6 @@ class AstCreator(
       case _ => astForMethodParameterPartContext(ctx.methodParameterPart())
     }
 
-    // there can be only one call node
-    val astBody = Option(ctx.bodyStatement()) match {
-      case Some(ctxBodyStmt) => astForBodyStatementContext(ctxBodyStmt, true)
-      case None =>
-        val expAst = astForExpressionContext(ctx.expression())
-        Seq(lastStmtAsReturn(ctx.expression().getText, expAst.head))
-    }
-    scope.popScope()
-
-    /*
-     * The method astForMethodNamePartContext() returns a call node in the AST.
-     * This is because it has been called from several places some of which need a call node.
-     * We will use fields from the call node to construct the method node. Post that,
-     * we will discard the call node since it is of no further use to us
-     *
-     * TODO Dave: ^ This seems like it needs a re-design, it is confusing
-     */
-
-    val methodFullName = classStack.reverse :+ callNode.name mkString pathSep
-    val methodNode = NewMethod()
-      .code(text(ctx))
-      .name(callNode.name)
-      .fullName(methodFullName)
-      .columnNumber(callNode.columnNumber)
-      .lineNumber(callNode.lineNumber)
-      .filename(filename)
-
     Option(ctx.END()) match
       case Some(value) => methodNode.lineNumberEnd(value.getSymbol.getLine)
       case None        =>
@@ -1413,6 +1402,13 @@ class AstCreator(
     val classType = if (classStack.isEmpty) "Standalone" else classStack.top
     val classPath = classStack.reverse.toList.mkString(pathSep)
     packageContext.packageTable.addPackageMethod(packageContext.moduleName, callNode.name, classPath, classType)
+
+    val astBody = Option(ctx.bodyStatement()) match {
+      case Some(ctxBodyStmt) => astForBodyStatementContext(ctxBodyStmt, true)
+      case None =>
+        val expAst = astForExpressionContext(ctx.expression())
+        Seq(lastStmtAsReturn(ctx.expression().getText, expAst.head))
+    }
 
     // process yield calls.
     astBody
@@ -1458,24 +1454,23 @@ class AstCreator(
     val identifiers =
       astBody.flatMap(ast => ast.nodes.filter(_.isInstanceOf[NewIdentifier])).asInstanceOf[Seq[NewIdentifier]]
 
-    astMethodParamSeq
-      .flatMap(ast =>
-        ast.nodes
-          .filter(_.isInstanceOf[NewMethodParameterIn])
-          .asInstanceOf[Seq[NewMethodParameterIn]]
-      )
-      .foreach { paramNode =>
-        val linkIdentifiers = identifiers.filter(_.name == paramNode.name)
-        linkIdentifiers.foreach { identifier =>
-          diffGraph.addEdge(identifier, paramNode, EdgeTypes.REF)
-        }
+    val params = astMethodParamSeq
+      .flatMap(_.nodes.collect { case x: NewMethodParameterIn => x })
+      .toList
+    val locals = scope.createAndLinkLocalNodes(diffGraph, params.map(_.name).toSet)
+
+    params.foreach { param =>
+      identifiers.filter(_.name == param.name).foreach { identifier =>
+        diffGraph.addEdge(identifier, param, EdgeTypes.REF)
       }
+    }
+    scope.popScope()
 
     Seq(
       methodAst(
         methodNode,
         astMethodParamSeq,
-        blockAst(blockNode, astBody.toList),
+        blockAst(blockNode, locals.map(Ast.apply) ++ astBody.toList),
         methodRetNode,
         Seq[NewModifier](modifierNode)
       )
@@ -1659,12 +1654,6 @@ class AstCreator(
     /*
      * Model a block as a method
      */
-
-    val astMethodParam = ctxParam.map(astForBlockParameterContext).getOrElse(Seq())
-    scope.pushNewScope(())
-    val astBody = astForStatements(ctxStmt, true)
-    scope.popScope()
-
     val methodFullName = classStack.reverse :+ blockMethodName mkString pathSep
     val methodNode = NewMethod()
       .code(text(ctxStmt))
@@ -1676,8 +1665,8 @@ class AstCreator(
       .columnNumber(colStart)
       .columnNumberEnd(colEnd)
 
-    val methodRetNode = NewMethodReturn()
-      .typeFullName(Defines.Any)
+    scope.pushNewScope(methodNode)
+    val astMethodParam = ctxParam.map(astForBlockParameterContext).getOrElse(Seq())
 
     val publicModifier = NewModifier().modifierType(ModifierTypes.PUBLIC)
     val paramSeq = astMethodParam.headOption match {
@@ -1700,15 +1689,26 @@ class AstCreator(
         }.toSeq
       case None => Seq()
     }
-
-    val blockNode = NewBlock().typeFullName(Defines.Any)
+    val paramNames = (astMethodParam ++ paramSeq)
+      .flatMap(_.root)
+      .collect {
+        case x: NewMethodParameterIn => x.name
+        case x: NewIdentifier        => x.name
+      }
+      .toSet
+    val locals        = scope.createAndLinkLocalNodes(diffGraph, paramNames).map(Ast.apply)
+    val astBody       = astForStatements(ctxStmt, true)
+    val methodRetNode = NewMethodReturn().typeFullName(Defines.Any)
+    val blockNode     = NewBlock().typeFullName(Defines.Any)
     val methAst = methodAst(
       methodNode,
       paramSeq,
-      blockAst(blockNode, astBody.toList),
+      blockAst(blockNode, locals ++ astBody.toList),
       methodRetNode,
       Seq[NewModifier](publicModifier)
     )
+
+    scope.popScope()
     Seq(methAst)
   }
 
@@ -1753,5 +1753,36 @@ class AstCreator(
       })
       .toSeq
   }
+
+}
+
+class RubyScope extends Scope[String, NewIdentifier, NewNode] {
+
+  /** Will generate local nodes for this scope's variables, excluding those that reference parameters.
+    * @param paramNames
+    *   the names of parameters.
+    */
+  def createAndLinkLocalNodes(
+    diffGraph: BatchedUpdate.DiffGraphBuilder,
+    paramNames: Set[String] = Set.empty
+  ): List[DeclarationNew] = stack.headOption match
+    case Some(top) =>
+      top.variables
+        .filterNot(x => paramNames.contains(x._1) || x._1 == "this")
+        .groupBy(_._1)
+        .map { case (name, varMap) => name -> varMap.values.toList.sortBy(i => (i.lineNumber, i.columnNumber)) }
+        .map { case (name, vars) =>
+          val firstI = vars.head
+          val local = NewLocal()
+            .name(name)
+            .code(name)
+            .lineNumber(firstI.lineNumber)
+            .columnNumber(firstI.columnNumber)
+            .typeFullName(firstI.typeFullName)
+          vars.foreach(i => diffGraph.addEdge(i, local, EdgeTypes.REF))
+          local
+        }
+        .toList
+    case None => List.empty[DeclarationNew]
 
 }
