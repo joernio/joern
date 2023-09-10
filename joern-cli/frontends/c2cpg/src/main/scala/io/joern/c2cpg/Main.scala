@@ -14,7 +14,9 @@ final case class Config(
   logProblems: Boolean = false,
   logPreprocessor: Boolean = false,
   printIfDefsOnly: Boolean = false,
-  includePathsAutoDiscovery: Boolean = false
+  includePathsAutoDiscovery: Boolean = false,
+  skipFunctionBodies: Boolean = false,
+  noImageLocations: Boolean = false
 ) extends X2CpgConfig[Config] {
   def withIncludePaths(includePaths: Set[String]): Config = {
     this.copy(includePaths = includePaths).withInheritedFields(this)
@@ -42,6 +44,14 @@ final case class Config(
 
   def withIncludePathsAutoDiscovery(value: Boolean): Config = {
     this.copy(includePathsAutoDiscovery = value).withInheritedFields(this)
+  }
+
+  def withSkipFunctionBodies(value: Boolean): Config = {
+    this.copy(skipFunctionBodies = value).withInheritedFields(this)
+  }
+
+  def withNoImageLocations(value: Boolean): Config = {
+    this.copy(noImageLocations = value).withInheritedFields(this)
   }
 }
 
@@ -75,6 +85,14 @@ private object Frontend {
       opt[Unit]("with-include-auto-discovery")
         .text("enables auto discovery of system header include paths")
         .action((_, c) => c.withIncludePathsAutoDiscovery(true)),
+      opt[Unit]("skip-function-bodies")
+        .text("instructs the parser to skip function and method bodies.")
+        .action((_, c) => c.withSkipFunctionBodies(true)),
+      opt[Unit]("no-image-locations")
+        .text(
+          "performance optimization, allows the parser not to create image-locations. An image location explains how a name made it into the translation unit. Eg: via macro expansion or preprocessor."
+        )
+        .action((_, c) => c.withNoImageLocations(true)),
       opt[String]("define")
         .unbounded()
         .text("define a name")
