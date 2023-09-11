@@ -66,7 +66,7 @@ trait AstCreatorHelper { this: AstCreator =>
       case None        => ParserNodeInfo(ParserAst.Unknown, ujson.Null, "", None, None, None, None)
   }
 
-  private def nodeType(node: Value): ParserNode = fromString(node(ParserKeys.NodeType).str)
+  private def nodeType(node: Value): ParserNode = fromString(node(ParserKeys.NodeType).str, relPathFileName)
   protected def code(node: Value): Try[String] = Try {
 
     val lineNumber    = line(node).get

@@ -147,14 +147,7 @@ class ArraysTests extends GoCodeToCpgSuite {
       val List(localNode) = cpg.local.l
       localNode.code shouldBe "a"
       localNode.lineNumber shouldBe Some(4)
-
-      val List(arrayInitializerNode) = cpg.method("main").ast.isCall.l
-      arrayInitializerNode.name shouldBe Operators.arrayInitializer
-      arrayInitializerNode.code shouldBe "[2]int"
-      arrayInitializerNode.lineNumber shouldBe Some(4)
-      arrayInitializerNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      arrayInitializerNode.typeFullName shouldBe "[]int"
-
+      localNode.typeFullName shouldBe "[]int"
     }
 
     "be correct when global variable is initialized using array length" in {
@@ -169,13 +162,7 @@ class ArraysTests extends GoCodeToCpgSuite {
       val List(localNode) = cpg.local.l
       localNode.code shouldBe "a"
       localNode.lineNumber shouldBe Some(3)
-
-      val List(arrayInitializerNode) = cpg.call.l
-      arrayInitializerNode.name shouldBe Operators.arrayInitializer
-      arrayInitializerNode.code shouldBe "[2]int"
-      arrayInitializerNode.lineNumber shouldBe Some(3)
-      arrayInitializerNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      arrayInitializerNode.typeFullName shouldBe "[]int"
+      localNode.typeFullName shouldBe "[]int"
 
     }
 

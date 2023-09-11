@@ -5,7 +5,7 @@ import io.shiftleft.semanticcpg.language.*
 
 import scala.collection.immutable.List
 
-class StructureCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
+class ConstructorCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
 
   "when structure declared with multiple argument" should {
     val cpg = code(
@@ -125,8 +125,8 @@ class StructureCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
       "test.go"
     )
 
-    val List(squareCallNode, _) = cpg.call("Square").l
     "check argument of Square call node" in {
+      val List(squareCallNode) = cpg.call("Square").l
       val List(squareArgument) = squareCallNode.argument.isLiteral.l
       squareArgument.argumentIndex shouldBe 1
       squareArgument.order shouldBe 1
@@ -134,7 +134,7 @@ class StructureCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
       squareArgument.typeFullName shouldBe "int"
     }
 
-    "Single call node getting created for Structure declaration" ignore {
+    "Single call node getting created for Structure declaration" in {
       cpg.call("Square").size shouldBe 1
     }
   }
@@ -157,8 +157,8 @@ class StructureCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
       "test.go"
     )
 
-    val List(squareCallNode, _) = cpg.call("Square").l
     "check argument of Square call node" in {
+      val List(squareCallNode) = cpg.call("Square").l
       val List(squareArgument) = squareCallNode.argument.isLiteral.l
       squareArgument.argumentIndex shouldBe 1
       squareArgument.order shouldBe 1
@@ -166,7 +166,7 @@ class StructureCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
       squareArgument.typeFullName shouldBe "int"
     }
 
-    "Single call node getting created for Structure declaration" ignore {
+    "Single call node getting created for Structure declaration" in {
       cpg.call("Square").size shouldBe 1
     }
   }
@@ -189,8 +189,8 @@ class StructureCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
       "test.go"
     )
 
-    val List(squareCallNode, _) = cpg.call("Rectangle").l
     "check argument of Rectangle call node" in {
+      val List(squareCallNode)                               = cpg.call("Rectangle").l
       val List(rectangleArgumentFirst, squareArgumentSecond) = squareCallNode.argument.isLiteral.l
       rectangleArgumentFirst.argumentIndex shouldBe 1
       rectangleArgumentFirst.order shouldBe 1
@@ -203,7 +203,7 @@ class StructureCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
       squareArgumentSecond.typeFullName shouldBe "int"
     }
 
-    "Single call node getting created for Structure declaration" ignore {
+    "Single call node getting created for Structure declaration" in {
       cpg.call("Rectangle").size shouldBe 1
     }
   }
