@@ -459,11 +459,9 @@ class MethodCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
 
     "Check arguments nodes" in {
       cpg.call("bar").argument.size shouldBe 2
-      val List(a, b) = cpg.call("bar").argument.l
-      a.isInstanceOf[nodes.Identifier] shouldBe true
-      a.asInstanceOf[nodes.Identifier].name shouldBe "a"
-      b.isInstanceOf[nodes.Identifier] shouldBe true
-      b.asInstanceOf[nodes.Identifier].name shouldBe "b"
+      val List(a: Identifier, b: Identifier) = cpg.call("bar").argument.l: @unchecked
+      a.name shouldBe "a"
+      b.name shouldBe "b"
     }
   }
 
