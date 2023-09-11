@@ -11,8 +11,8 @@ class SimpleCfgCreationPassTest extends CfgTestFixture(() => new RubyCfgTestCpg(
     "have correct structure for empty array literal" ignore {
       implicit val cpg: Cpg = code("x = []")
       succOf(":program") shouldBe expected(("x", AlwaysEdge))
-      succOf("x") shouldBe expected(("=", AlwaysEdge))
-      succOf("=") shouldBe expected(("<empty>", AlwaysEdge))
+      succOf("x") shouldBe expected(("x = []", AlwaysEdge))
+      succOf("x = []") shouldBe expected(("<empty>", AlwaysEdge))
     }
 
     "have correct structure for array literal with values" in {
@@ -24,33 +24,33 @@ class SimpleCfgCreationPassTest extends CfgTestFixture(() => new RubyCfgTestCpg(
     "assigning a literal value" in {
       implicit val cpg: Cpg = code("x = 1")
       succOf(":program") shouldBe expected(("x", AlwaysEdge))
-      succOf("=") shouldBe expected(("<empty>", AlwaysEdge))
+      succOf("x = 1") shouldBe expected(("<empty>", AlwaysEdge))
     }
 
     "assigning a string literal value" in {
       implicit val cpg: Cpg = code("x = 'some literal'")
       succOf(":program") shouldBe expected(("x", AlwaysEdge))
-      succOf("=") shouldBe expected(("<empty>", AlwaysEdge))
+      succOf("x = 'some literal'") shouldBe expected(("<empty>", AlwaysEdge))
     }
 
     "addition of two numbers" in {
       implicit val cpg: Cpg = code("x = 1 + 2")
       succOf(":program") shouldBe expected(("x", AlwaysEdge))
-      succOf("=") shouldBe expected(("<empty>", AlwaysEdge))
+      succOf("x = 1 + 2") shouldBe expected(("<empty>", AlwaysEdge))
       succOf("x") shouldBe expected(("1", AlwaysEdge))
       succOf("2") shouldBe expected(("1 + 2", AlwaysEdge))
       succOf("1") shouldBe expected(("2", AlwaysEdge))
-      succOf("1 + 2") shouldBe expected(("=", AlwaysEdge))
+      succOf("1 + 2") shouldBe expected(("x = 1 + 2", AlwaysEdge))
     }
 
     "addition of two string" in {
       implicit val cpg: Cpg = code("x = 1 + 2")
       succOf(":program") shouldBe expected(("x", AlwaysEdge))
-      succOf("=") shouldBe expected(("<empty>", AlwaysEdge))
+      succOf("x = 1 + 2") shouldBe expected(("<empty>", AlwaysEdge))
       succOf("x") shouldBe expected(("1", AlwaysEdge))
       succOf("2") shouldBe expected(("1 + 2", AlwaysEdge))
       succOf("1") shouldBe expected(("2", AlwaysEdge))
-      succOf("1 + 2") shouldBe expected(("=", AlwaysEdge))
+      succOf("1 + 2") shouldBe expected(("x = 1 + 2", AlwaysEdge))
     }
 
     "addition of multiple string" in {
@@ -66,9 +66,9 @@ class SimpleCfgCreationPassTest extends CfgTestFixture(() => new RubyCfgTestCpg(
       succOf("c") shouldBe expected(("\"do you like blueberries?\"", AlwaysEdge))
       succOf("a+b+c") shouldBe expected(("<empty>", AlwaysEdge))
       succOf("a+b") shouldBe expected(("c", AlwaysEdge))
-      succOf("\"Nice to meet you\"") shouldBe expected(("=", AlwaysEdge))
-      succOf("\", \"") shouldBe expected(("=", AlwaysEdge))
-      succOf("\"do you like blueberries?\"") shouldBe expected(("=", AlwaysEdge))
+      succOf("\"Nice to meet you\"") shouldBe expected(("a = \"Nice to meet you\"", AlwaysEdge))
+      succOf("\", \"") shouldBe expected(("b = \", \"", AlwaysEdge))
+      succOf("\"do you like blueberries?\"") shouldBe expected(("c = \"do you like blueberries?\"", AlwaysEdge))
     }
 
     "addition of multiple string and assign to variable" in {
@@ -82,11 +82,11 @@ class SimpleCfgCreationPassTest extends CfgTestFixture(() => new RubyCfgTestCpg(
       succOf("a") shouldBe expected(("\"Nice to meet you\"", AlwaysEdge))
       succOf("b") shouldBe expected(("\", \"", AlwaysEdge))
       succOf("c") shouldBe expected(("\"do you like blueberries?\"", AlwaysEdge))
-      succOf("a+b+c") shouldBe expected(("=", AlwaysEdge))
+      succOf("a+b+c") shouldBe expected(("x = a+b+c", AlwaysEdge))
       succOf("a+b") shouldBe expected(("c", AlwaysEdge))
-      succOf("\"Nice to meet you\"") shouldBe expected(("=", AlwaysEdge))
-      succOf("\", \"") shouldBe expected(("=", AlwaysEdge))
-      succOf("\"do you like blueberries?\"") shouldBe expected(("=", AlwaysEdge))
+      succOf("\"Nice to meet you\"") shouldBe expected(("a = \"Nice to meet you\"", AlwaysEdge))
+      succOf("\", \"") shouldBe expected(("b = \", \"", AlwaysEdge))
+      succOf("\"do you like blueberries?\"") shouldBe expected(("c = \"do you like blueberries?\"", AlwaysEdge))
       succOf("x") shouldBe expected(("a", AlwaysEdge))
     }
 
@@ -98,7 +98,7 @@ class SimpleCfgCreationPassTest extends CfgTestFixture(() => new RubyCfgTestCpg(
           |end
           |""".stripMargin)
       succOf(":program") shouldBe expected(("x", AlwaysEdge))
-      succOf("1") shouldBe expected(("=", AlwaysEdge))
+      succOf("1") shouldBe expected(("x = 1", AlwaysEdge))
       succOf("x") shouldBe expected(("1", AlwaysEdge))
       succOf("2") shouldBe expected(("x > 2", AlwaysEdge))
     }
@@ -115,7 +115,7 @@ class SimpleCfgCreationPassTest extends CfgTestFixture(() => new RubyCfgTestCpg(
           |end
           |""".stripMargin)
       succOf(":program") shouldBe expected(("x", AlwaysEdge))
-      succOf("1") shouldBe expected(("=", AlwaysEdge))
+      succOf("1") shouldBe expected(("x = 1", AlwaysEdge))
       succOf("x") shouldBe expected(("1", AlwaysEdge))
       succOf("2") shouldBe expected(("x > 2", AlwaysEdge))
       succOf("x <= 2 and x!=0") subsetOf expected(("\"x is 1\"", AlwaysEdge))

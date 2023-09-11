@@ -15,7 +15,7 @@ class RescueKeywordCpgTests extends RubyCode2CpgFixture {
     val methodNode = cpg.method.name("foo").head
     methodNode.name shouldBe "foo"
     methodNode.numberOfLines shouldBe 4
-    methodNode.astChildren.isBlock.astChildren.code.head shouldBe "try"
+    methodNode.astChildren.isBlock.astChildren.code.contains("try") shouldBe true
 
     val zeroDivisionErrorIdentifier = cpg.identifier("ZeroDivisionError").head
     zeroDivisionErrorIdentifier.code shouldBe "ZeroDivisionError"
