@@ -44,7 +44,14 @@ import io.joern.javasrc2cpg.astcreation.AstCreator
 import io.joern.javasrc2cpg.astcreation.LambdaImplementedInfo
 import io.joern.javasrc2cpg.astcreation.ExpectedType
 
-trait AstForLambdasCreator { this: AstCreator =>
+object AstForLambdasCreator {
+  case class LambdaImplementedInfo(
+    implementedInterface: Option[ResolvedReferenceType],
+    implementedMethod: Option[ResolvedMethodDeclaration]
+  )
+}
+
+private[expressions] trait AstForLambdasCreator { this: AstCreator =>
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 

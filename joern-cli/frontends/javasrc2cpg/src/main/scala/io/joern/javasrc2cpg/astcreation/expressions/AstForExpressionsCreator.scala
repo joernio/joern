@@ -1,0 +1,3 @@
+package io.joern.javasrc2cpg.astcreation.expressions
+
+trait AstForExpressionsCreator extends AstForLambdasCreator

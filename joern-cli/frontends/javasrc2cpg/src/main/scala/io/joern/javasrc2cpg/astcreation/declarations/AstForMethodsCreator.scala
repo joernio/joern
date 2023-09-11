@@ -32,8 +32,9 @@ import com.github.javaparser.ast.stmt.ExplicitConstructorInvocationStmt
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethodReturn
 import com.github.javaparser.resolution.types.ResolvedType
 import io.joern.javasrc2cpg.astcreation.AstCreator
+import io.joern.javasrc2cpg.astcreation.ExpectedType
 
-trait AstForMethodCreators { this: AstCreator => 
+private[declarations] trait AstForMethodsCreator { this: AstCreator => 
   def astForMethod(methodDeclaration: MethodDeclaration): Ast = {
     val methodNode = createPartialMethod(methodDeclaration)
 

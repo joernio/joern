@@ -1,0 +1,3 @@
+package io.joern.javasrc2cpg.astcreation.declarations
+
+trait AstForDeclarationsCreator extends AstForTypeDeclsCreator with AstForMethodsCreator

@@ -31,7 +31,7 @@ import io.joern.javasrc2cpg.util.BindingTable
 import io.shiftleft.codepropertygraph.generated.nodes.NewModifier
 import io.joern.javasrc2cpg.astcreation.AstCreator
 
-trait AstForTypeDeclsCreator { this: AstCreator =>
+private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
   private val logger = LoggerFactory.getLogger(this.getClass)
   
   def astForTypeDecl(typ: TypeDeclaration[_], astParentType: String, astParentFullName: String): Ast = {

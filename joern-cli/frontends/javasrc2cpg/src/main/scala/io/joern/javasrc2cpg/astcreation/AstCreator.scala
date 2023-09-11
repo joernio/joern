@@ -168,13 +168,11 @@ import scala.util.{Failure, Success, Try}
 import com.github.javaparser.ast.stmt.LocalClassDeclarationStmt
 import io.joern.x2cpg.Defines.StaticInitMethodName
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeParameter
+import io.joern.javasrc2cpg.astcreation.expressions.AstForExpressionsCreator
+import io.joern.javasrc2cpg.astcreation.declarations.AstForDeclarationsCreator
 
 case class ClosureBindingEntry(node: ScopeVariable, binding: NewClosureBinding)
 
-case class LambdaImplementedInfo(
-  implementedInterface: Option[ResolvedReferenceType],
-  implementedMethod: Option[ResolvedMethodDeclaration]
-)
 
 case class PartialConstructor(initNode: NewCall, initArgs: Seq[Ast], blockAst: Ast)
 
@@ -201,10 +199,9 @@ object AstWithStaticInit {
 class AstCreator(val filename: String, javaParserAst: CompilationUnit, global: Global, val symbolSolver: JavaSymbolSolver)(
   implicit val withSchemaValidation: ValidationMode
 ) extends AstCreatorBase(filename)
-    with AstNodeBuilder[Node, AstCreator] 
-    with AstForTypeDeclCreator 
-    with AstForMethodCreator
-    with AstForLambdasCreator
+    with AstNodeBuilder[Node, AstCreator]
+    with AstForDeclarationsCreator
+    with AstForExpressionsCreator
     {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
@@ -339,10 +336,6 @@ class AstCreator(val filename: String, javaParserAst: CompilationUnit, global: G
         Failure(e)
     }
   }
-
-
-
-
 
   def getBindingTable(typeDecl: ResolvedReferenceTypeDeclaration): BindingTable = {
     val fullName = typeInfoCalc.fullName(typeDecl).getOrElse {
