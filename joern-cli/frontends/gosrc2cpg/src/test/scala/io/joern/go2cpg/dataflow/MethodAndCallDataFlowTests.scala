@@ -199,7 +199,6 @@ class MethodAndCallDataFlowTests extends GoCodeToCpgSuite(withOssDataflow = true
     "data flow to first tuple variable" in {
       val srcfirst = cpg.identifier("a").l
       val avgsink  = cpg.identifier("avg").l
-      val sumsink  = cpg.identifier("sum").l
       avgsink.reachableByFlows(srcfirst).size shouldBe 2
 
     }
