@@ -1,4 +1,4 @@
-package io.joern.javasrc2cpg.passes
+package io.joern.javasrc2cpg.astcreation
 
 import com.github.javaparser.ast.`type`.TypeParameter
 import com.github.javaparser.ast.{CompilationUnit, Node, NodeList, PackageDeclaration}
@@ -156,7 +156,6 @@ import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.AstNodeBuilder
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode.PropertyDefaults
-import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn.PropertyDefaults as ParameterDefaults
 import io.shiftleft.passes.IntervalKeyPool
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -169,13 +168,10 @@ import scala.util.{Failure, Success, Try}
 import com.github.javaparser.ast.stmt.LocalClassDeclarationStmt
 import io.joern.x2cpg.Defines.StaticInitMethodName
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeParameter
+import io.joern.javasrc2cpg.astcreation.expressions.AstForExpressionsCreator
+import io.joern.javasrc2cpg.astcreation.declarations.AstForDeclarationsCreator
 
 case class ClosureBindingEntry(node: ScopeVariable, binding: NewClosureBinding)
-
-case class LambdaImplementedInfo(
-  implementedInterface: Option[ResolvedReferenceType],
-  implementedMethod: Option[ResolvedMethodDeclaration]
-)
 
 case class PartialConstructor(initNode: NewCall, initArgs: Seq[Ast], blockAst: Ast)
 
@@ -199,23 +195,27 @@ object AstWithStaticInit {
 
 /** Translate a Java Parser AST into a CPG AST
   */
-class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Global, symbolSolver: JavaSymbolSolver)(
-  implicit withSchemaValidation: ValidationMode
-) extends AstCreatorBase(filename)
-    with AstNodeBuilder[Node, AstCreator] {
+class AstCreator(
+  val filename: String,
+  javaParserAst: CompilationUnit,
+  global: Global,
+  val symbolSolver: JavaSymbolSolver
+)(implicit val withSchemaValidation: ValidationMode)
+    extends AstCreatorBase(filename)
+    with AstNodeBuilder[Node, AstCreator]
+    with AstForDeclarationsCreator
+    with AstForExpressionsCreator {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  private val scope = Scope()
+  private[astcreation] val scope = Scope()
 
-  private val typeInfoCalc: TypeInfoCalculator = TypeInfoCalculator(global, symbolSolver)
+  private[astcreation] val typeInfoCalc: TypeInfoCalculator = TypeInfoCalculator(global, symbolSolver)
   private val partialConstructorQueue: mutable.ArrayBuffer[PartialConstructor] = mutable.ArrayBuffer.empty
-  private val bindingTableCache = mutable.HashMap.empty[String, BindingTable]
+  private[astcreation] val bindingTableCache = mutable.HashMap.empty[String, BindingTable]
 
   // TODO: Perhaps move this to a NameProvider or some such? Look at kt2cpg to see if some unified representation
   // makes sense.
-  private val LambdaNamePrefix   = "lambda$"
-  private val lambdaKeyPool      = new IntervalKeyPool(first = 0, last = Long.MaxValue)
   private val IndexNamePrefix    = "$idx"
   private val indexKeyPool       = new IntervalKeyPool(first = 0, last = Long.MaxValue)
   private val IterableNamePrefix = "$iterLocal"
@@ -236,6 +236,12 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     Ast.storeInDiffGraph(ast, diffGraph)
   }
 
+  def toOptionList[T](items: collection.Seq[Option[T]]): Option[List[T]] = {
+    items.foldLeft[Option[List[T]]](Some(Nil)) {
+      case (Some(acc), Some(value)) => Some(acc :+ value)
+      case _                        => None
+    }
+  }
   protected def line(node: Node): Option[Integer]      = node.getBegin.map(x => Integer.valueOf(x.line)).toScala
   protected def column(node: Node): Option[Integer]    = node.getBegin.map(x => Integer.valueOf(x.column)).toScala
   protected def lineEnd(node: Node): Option[Integer]   = node.getEnd.map(x => Integer.valueOf(x.line)).toScala
@@ -321,7 +327,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  private def tryWithSafeStackOverflow[T](expr: => T): Try[T] = {
+  private[astcreation] def tryWithSafeStackOverflow[T](expr: => T): Try[T] = {
     try {
       Try(expr)
     } catch {
@@ -333,54 +339,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  private def composeSignature(
-    maybeReturnType: Option[String],
-    maybeParameterTypes: Option[List[String]],
-    parameterCount: Int
-  ): String = {
-    (maybeReturnType, maybeParameterTypes) match {
-      case (Some(returnType), Some(parameterTypes)) =>
-        composeMethodLikeSignature(returnType, parameterTypes)
-
-      case _ =>
-        composeUnresolvedSignature(parameterCount)
-    }
-  }
-
-  private def methodSignature(method: ResolvedMethodDeclaration, typeParamValues: ResolvedTypeParametersMap): String = {
-    val maybeParameterTypes = calcParameterTypes(method, typeParamValues)
-
-    val maybeReturnType =
-      Try(method.getReturnType).toOption
-        .flatMap(returnType => typeInfoCalc.fullName(returnType, typeParamValues))
-
-    composeSignature(maybeReturnType, maybeParameterTypes, method.getNumberOfParams)
-  }
-
-  private def toOptionList[T](items: collection.Seq[Option[T]]): Option[List[T]] = {
-    items.foldLeft[Option[List[T]]](Some(Nil)) {
-      case (Some(acc), Some(value)) => Some(acc :+ value)
-      case _                        => None
-    }
-  }
-
-  private def calcParameterTypes(
-    methodLike: ResolvedMethodLikeDeclaration,
-    typeParamValues: ResolvedTypeParametersMap
-  ): Option[List[String]] = {
-    val parameterTypes =
-      Range(0, methodLike.getNumberOfParams)
-        .flatMap { index =>
-          Try(methodLike.getParam(index)).toOption
-        }
-        .map { param =>
-          Try(param.getType).toOption
-            .flatMap(paramType => typeInfoCalc.fullName(paramType, typeParamValues))
-        }
-
-    toOptionList(parameterTypes)
-  }
-
   def getBindingTable(typeDecl: ResolvedReferenceTypeDeclaration): BindingTable = {
     val fullName = typeInfoCalc.fullName(typeDecl).getOrElse {
       val qualifiedName = typeDecl.getQualifiedName
@@ -390,442 +348,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     bindingTableCache.getOrElseUpdate(
       fullName,
       createBindingTable(fullName, typeDecl, getBindingTable, new BindingTableAdapterForJavaparser(methodSignature))
-    )
-  }
-
-  private def getLambdaBindingTable(lambdaBindingInfo: LambdaBindingInfo): BindingTable = {
-    val fullName = lambdaBindingInfo.fullName
-
-    bindingTableCache.getOrElseUpdate(
-      fullName,
-      createBindingTable(
-        fullName,
-        lambdaBindingInfo,
-        getBindingTable,
-        new BindingTableAdapterForLambdas(methodSignature)
-      )
-    )
-  }
-
-  private def createBindingNodes(typeDeclNode: NewTypeDecl, bindingTable: BindingTable): Unit = {
-    // We only sort to get stable output.
-    val sortedEntries =
-      bindingTable.getEntries.toBuffer.sortBy((entry: BindingTableEntry) => s"${entry.name}${entry.signature}")
-
-    sortedEntries.foreach { entry =>
-      val bindingNode = newBindingNode(entry.name, entry.signature, entry.implementingMethodFullName)
-
-      diffGraph.addNode(bindingNode)
-      diffGraph.addEdge(typeDeclNode, bindingNode, EdgeTypes.BINDS)
-    }
-  }
-
-  private def astForTypeDeclMember(member: BodyDeclaration[_], astParentFullName: String): AstWithStaticInit = {
-    member match {
-      case constructor: ConstructorDeclaration =>
-        val ast = astForConstructor(constructor)
-
-        AstWithStaticInit(ast)
-
-      case method: MethodDeclaration =>
-        val ast = astForMethod(method)
-
-        AstWithStaticInit(ast)
-
-      case typeDeclaration: TypeDeclaration[_] =>
-        AstWithStaticInit(astForTypeDecl(typeDeclaration, NodeTypes.TYPE_DECL, astParentFullName))
-
-      case fieldDeclaration: FieldDeclaration =>
-        val memberAsts = fieldDeclaration.getVariables.asScala.toList.map { variable =>
-          astForFieldVariable(variable, fieldDeclaration)
-        }
-
-        val assignments = assignmentsForVarDecl(
-          fieldDeclaration.getVariables.asScala.toList,
-          line(fieldDeclaration),
-          column(fieldDeclaration)
-        )
-
-        val staticInitAsts = if (fieldDeclaration.isStatic) assignments else Nil
-        if (!fieldDeclaration.isStatic) scope.addMemberInitializers(assignments)
-
-        AstWithStaticInit(memberAsts, staticInitAsts)
-
-      case initDeclaration: InitializerDeclaration =>
-        val stmts = initDeclaration.getBody.getStatements
-        val asts  = stmts.asScala.flatMap(astsForStatement).toList
-        AstWithStaticInit(ast = Seq.empty, staticInits = asts)
-
-      case unhandled =>
-        // AnnotationMemberDeclarations and InitializerDeclarations as children of typeDecls are the
-        // expected cases.
-        logger.info(s"Found unhandled typeDecl member ${unhandled.getClass} in file $filename")
-        AstWithStaticInit.empty
-    }
-  }
-
-  private def identifierForResolvedTypeParameter(typeParameter: ResolvedTypeParameterDeclaration): NewIdentifier = {
-    val name = typeParameter.getName
-    val typeFullName = Try(typeParameter.getUpperBound).toOption
-      .flatMap(typeInfoCalc.fullName)
-      .getOrElse(TypeConstants.Object)
-    typeInfoCalc.registerType(typeFullName)
-    newIdentifierNode(name, typeFullName)
-  }
-
-  private def clinitAstFromStaticInits(staticInits: Seq[Ast]): Option[Ast] = {
-    Option.when(staticInits.nonEmpty) {
-      val signature         = composeMethodLikeSignature(TypeConstants.Void, Nil)
-      val enclosingDeclName = scope.enclosingTypeDeclFullName.getOrElse(Defines.UnresolvedNamespace)
-      val fullName          = composeMethodFullName(enclosingDeclName, Defines.StaticInitMethodName, signature)
-      staticInitMethodAst(staticInits.toList, fullName, Some(signature), TypeConstants.Void)
-    }
-  }
-
-  private def codeForTypeDecl(typ: TypeDeclaration[_], isInterface: Boolean): String = {
-    val codeBuilder = new mutable.StringBuilder()
-    if (typ.isPublic) {
-      codeBuilder.append("public ")
-    } else if (typ.isPrivate) {
-      codeBuilder.append("private ")
-    } else if (typ.isProtected) {
-      codeBuilder.append("protected ")
-    }
-
-    if (typ.isStatic) {
-      codeBuilder.append("static ")
-    }
-
-    val classPrefix =
-      if (isInterface)
-        "interface "
-      else if (typ.isEnumDeclaration)
-        "enum "
-      else
-        "class "
-    codeBuilder.append(classPrefix)
-    codeBuilder.append(typ.getNameAsString)
-
-    codeBuilder.toString()
-  }
-
-  private def modifiersForTypeDecl(typ: TypeDeclaration[_], isInterface: Boolean): List[NewModifier] = {
-    val accessModifierType = if (typ.isPublic) {
-      Some(ModifierTypes.PUBLIC)
-    } else if (typ.isPrivate) {
-      Some(ModifierTypes.PRIVATE)
-    } else if (typ.isProtected) {
-      Some(ModifierTypes.PROTECTED)
-    } else {
-      None
-    }
-    val accessModifier = accessModifierType.map(newModifierNode)
-
-    val abstractModifier =
-      Option.when(isInterface || typ.getMethods.asScala.exists(_.isAbstract))(newModifierNode(ModifierTypes.ABSTRACT))
-
-    List(accessModifier, abstractModifier).flatten
-  }
-
-  private def createTypeDeclNode(
-    typ: TypeDeclaration[_],
-    astParentType: String,
-    astParentFullName: String,
-    isInterface: Boolean
-  ): NewTypeDecl = {
-    val baseTypeFullNames = if (typ.isClassOrInterfaceDeclaration) {
-      val decl             = typ.asClassOrInterfaceDeclaration()
-      val extendedTypes    = decl.getExtendedTypes.asScala
-      val implementedTypes = decl.getImplementedTypes.asScala
-      val inheritsFromTypeNames =
-        (extendedTypes ++ implementedTypes).flatMap { typ =>
-          typeInfoCalc.fullName(typ).orElse(scope.lookupType(typ.getNameAsString))
-        }
-      val maybeJavaObjectType = if (extendedTypes.isEmpty) {
-        typeInfoCalc.registerType(TypeConstants.Object)
-        Seq(TypeConstants.Object)
-      } else {
-        Seq()
-      }
-      maybeJavaObjectType ++ inheritsFromTypeNames
-    } else {
-      List.empty[String]
-    }
-
-    val resolvedType    = tryWithSafeStackOverflow(typ.resolve()).toOption
-    val defaultFullName = s"${Defines.UnresolvedNamespace}.${typ.getNameAsString}"
-    val name            = resolvedType.flatMap(typeInfoCalc.name).getOrElse(typ.getNameAsString)
-    val typeFullName    = resolvedType.flatMap(typeInfoCalc.fullName).getOrElse(defaultFullName)
-
-    val code = codeForTypeDecl(typ, isInterface)
-
-    NewTypeDecl()
-      .name(name)
-      .fullName(typeFullName)
-      .lineNumber(line(typ))
-      .columnNumber(column(typ))
-      .inheritsFromTypeFullName(baseTypeFullNames)
-      .filename(filename)
-      .code(code)
-      .astParentType(astParentType)
-      .astParentFullName(astParentFullName)
-  }
-
-  private def addTypeDeclTypeParamsToScope(typ: TypeDeclaration[_]): Unit = {
-    tryWithSafeStackOverflow(typ.resolve()).map(_.getTypeParameters.asScala) match {
-      case Success(resolvedTypeParams) =>
-        resolvedTypeParams
-          .map(identifierForResolvedTypeParameter)
-          .foreach { typeParamIdentifier =>
-            scope.addType(typeParamIdentifier.name, typeParamIdentifier.typeFullName)
-          }
-
-      case _ => // Nothing to do here
-    }
-  }
-
-  private def astForTypeDecl(typ: TypeDeclaration[_], astParentType: String, astParentFullName: String): Ast = {
-    val isInterface = typ match {
-      case classDeclaration: ClassOrInterfaceDeclaration => classDeclaration.isInterface
-      case _                                             => false
-    }
-
-    val typeDeclNode = createTypeDeclNode(typ, astParentType, astParentFullName, isInterface)
-
-    scope.pushTypeDeclScope(typeDeclNode)
-    addTypeDeclTypeParamsToScope(typ)
-
-    val enumEntryAsts = if (typ.isEnumDeclaration) {
-      typ.asEnumDeclaration().getEntries.asScala.map(astForEnumEntry).toList
-    } else {
-      List.empty
-    }
-
-    val staticInits: mutable.Buffer[Ast] = mutable.Buffer()
-    val memberAsts = typ.getMembers.asScala.flatMap { member =>
-      val astWithInits =
-        astForTypeDeclMember(member, astParentFullName = NodeTypes.TYPE_DECL)
-      staticInits.appendAll(astWithInits.staticInits)
-      astWithInits.ast
-    }
-
-    val defaultConstructorAst = if (!isInterface && typ.getConstructors.isEmpty) {
-      Some(astForDefaultConstructor())
-    } else {
-      None
-    }
-
-    val annotationAsts = typ.getAnnotations.asScala.map(astForAnnotationExpr)
-
-    val clinitAst = clinitAstFromStaticInits(staticInits.toSeq)
-
-    val localDecls    = scope.localDeclsInScope
-    val lambdaMethods = scope.lambdaMethodsInScope
-
-    val modifiers = modifiersForTypeDecl(typ, isInterface)
-
-    val typeDeclAst = Ast(typeDeclNode)
-      .withChildren(enumEntryAsts)
-      .withChildren(memberAsts)
-      .withChildren(defaultConstructorAst.toList)
-      .withChildren(annotationAsts)
-      .withChildren(clinitAst.toSeq)
-      .withChildren(localDecls)
-      .withChildren(lambdaMethods)
-      .withChildren(modifiers.map(Ast(_)))
-
-    val defaultConstructorBindingEntry =
-      defaultConstructorAst
-        .flatMap(_.root)
-        .collect { case defaultConstructor: NewMethod =>
-          BindingTableEntry(
-            io.joern.x2cpg.Defines.ConstructorMethodName,
-            defaultConstructor.signature,
-            defaultConstructor.fullName
-          )
-        }
-
-    // Annotation declarations need no binding table as objects of this
-    // typ never get called from user code.
-    // Furthermore the parser library throws an exception when trying to
-    // access e.g. the declared methods of an annotation declaration.
-    if (!typ.isInstanceOf[AnnotationDeclaration]) {
-      tryWithSafeStackOverflow(typ.resolve()).toOption.foreach { resolvedTypeDecl =>
-        val bindingTable = getBindingTable(resolvedTypeDecl)
-        defaultConstructorBindingEntry.foreach(bindingTable.add)
-        createBindingNodes(typeDeclNode, bindingTable)
-      }
-    }
-
-    scope.popScope()
-
-    typeDeclAst
-  }
-
-  private def astForDefaultConstructor(): Ast = {
-    val typeFullName = scope.enclosingTypeDeclFullName
-    val signature    = s"${TypeConstants.Void}()"
-    val fullName = composeMethodFullName(
-      typeFullName.getOrElse(Defines.UnresolvedNamespace),
-      Defines.ConstructorMethodName,
-      signature
-    )
-    val constructorNode = NewMethod()
-      .name(io.joern.x2cpg.Defines.ConstructorMethodName)
-      .fullName(fullName)
-      .signature(signature)
-      .filename(filename)
-      .isExternal(false)
-
-    val thisAst = Ast(thisNodeForMethod(typeFullName, lineNumber = None))
-    val bodyAst = Ast(NewBlock()).withChildren(scope.memberInitializers)
-
-    val returnNode = newMethodReturnNode(TypeConstants.Void, line = None, column = None)
-
-    val modifiers = List(newModifierNode(ModifierTypes.CONSTRUCTOR), newModifierNode(ModifierTypes.PUBLIC))
-
-    methodAstWithAnnotations(constructorNode, Seq(thisAst), bodyAst, returnNode, modifiers)
-  }
-
-  private def astForEnumEntry(entry: EnumConstantDeclaration): Ast = {
-    // TODO Fix enum entries in general
-    val typeFullName =
-      tryWithSafeStackOverflow(entry.resolve().getType).toOption.flatMap(typeInfoCalc.fullName)
-
-    val entryNode = memberNode(entry, entry.getNameAsString, entry.toString, typeFullName.getOrElse("ANY"))
-
-    val name = s"${typeFullName.getOrElse(Defines.UnresolvedNamespace)}.${Defines.ConstructorMethodName}"
-
-    Ast(entryNode)
-  }
-
-  private def modifiersForFieldDeclaration(decl: FieldDeclaration): Seq[Ast] = {
-    val staticModifier =
-      Option.when(decl.isStatic)(newModifierNode(ModifierTypes.STATIC))
-
-    val accessModifierType =
-      if (decl.isPublic)
-        Some(ModifierTypes.PUBLIC)
-      else if (decl.isPrivate)
-        Some(ModifierTypes.PRIVATE)
-      else if (decl.isProtected)
-        Some(ModifierTypes.PROTECTED)
-      else
-        None
-
-    val accessModifier = accessModifierType.map(newModifierNode)
-
-    List(staticModifier, accessModifier).flatten.map(Ast(_))
-  }
-
-  private def astForFieldVariable(v: VariableDeclarator, fieldDeclaration: FieldDeclaration): Ast = {
-    // TODO: Should be able to find expected type here
-    val annotations = fieldDeclaration.getAnnotations
-
-    // variable can be declared with generic type, so we need to get rid of the <> part of it to get the package information
-    // and append the <> when forming the typeFullName again
-    // Ex - private Consumer<String, Integer> consumer;
-    // From Consumer<String, Integer> we need to get to Consumer so splitting it by '<' and then combining with '<' to
-    // form typeFullName as Consumer<String, Integer>
-
-    val typeFullNameWithoutGenericSplit = typeInfoCalc
-      .fullName(v.getType)
-      .orElse(scope.lookupType(v.getTypeAsString))
-      .getOrElse(s"${Defines.UnresolvedNamespace}.${v.getTypeAsString}")
-    val typeFullName = {
-      // Check if the typeFullName is unresolved and if it has generic information to resolve the typeFullName
-      if (
-        typeFullNameWithoutGenericSplit
-          .contains(Defines.UnresolvedNamespace) && v.getTypeAsString.contains(Defines.LeftAngularBracket)
-      ) {
-        val splitByLeftAngular = v.getTypeAsString.split(Defines.LeftAngularBracket)
-        scope.lookupType(splitByLeftAngular.head) match {
-          case Some(fullName) =>
-            fullName + splitByLeftAngular
-              .slice(1, splitByLeftAngular.size)
-              .mkString(Defines.LeftAngularBracket, Defines.LeftAngularBracket, "")
-          case None => typeFullNameWithoutGenericSplit
-        }
-      } else typeFullNameWithoutGenericSplit
-    }
-    val name           = v.getName.toString
-    val node           = memberNode(v, name, s"$typeFullName $name", typeFullName)
-    val memberAst      = Ast(node)
-    val annotationAsts = annotations.asScala.map(astForAnnotationExpr)
-
-    val fieldDeclModifiers = modifiersForFieldDeclaration(fieldDeclaration)
-
-    scope.addMember(node, fieldDeclaration.isStatic)
-
-    memberAst
-      .withChildren(annotationAsts)
-      .withChildren(fieldDeclModifiers)
-  }
-
-  private def astForConstructor(constructorDeclaration: ConstructorDeclaration): Ast = {
-    val constructorNode = createPartialMethod(constructorDeclaration)
-      .name(io.joern.x2cpg.Defines.ConstructorMethodName)
-
-    scope.pushMethodScope(constructorNode, ExpectedType.Void)
-    val maybeResolved = tryWithSafeStackOverflow(constructorDeclaration.resolve())
-
-    val parameterAsts = astsForParameterList(constructorDeclaration.getParameters).toList
-    val paramTypes    = argumentTypesForMethodLike(maybeResolved)
-    val signature     = composeSignature(Some(TypeConstants.Void), paramTypes, parameterAsts.size)
-    val typeFullName  = scope.enclosingTypeDeclFullName
-    val fullName =
-      composeMethodFullName(
-        typeFullName.getOrElse(Defines.UnresolvedNamespace),
-        Defines.ConstructorMethodName,
-        signature
-      )
-
-    constructorNode
-      .fullName(fullName)
-      .signature(signature)
-
-    parameterAsts.foreach { ast =>
-      ast.root match {
-        case Some(parameter: NewMethodParameterIn) => scope.addParameter(parameter)
-        case _                                     => // This should never happen
-      }
-    }
-
-    val thisNode = thisNodeForMethod(typeFullName, line(constructorDeclaration))
-    scope.addParameter(thisNode)
-    val thisAst = Ast(thisNode)
-
-    val bodyAst      = astForConstructorBody(Some(constructorDeclaration.getBody))
-    val methodReturn = constructorReturnNode(constructorDeclaration)
-
-    val annotationAsts = constructorDeclaration.getAnnotations.asScala.map(astForAnnotationExpr).toList
-
-    val modifiers =
-      NewModifier().modifierType(ModifierTypes.CONSTRUCTOR) :: modifiersForMethod(constructorDeclaration).filterNot(
-        _.modifierType == ModifierTypes.VIRTUAL
-      )
-
-    scope.popScope()
-
-    methodAstWithAnnotations(
-      constructorNode,
-      thisAst :: parameterAsts,
-      bodyAst,
-      methodReturn,
-      modifiers,
-      annotationAsts
-    )
-  }
-
-  private def thisNodeForMethod(
-    maybeTypeFullName: Option[String],
-    lineNumber: Option[Integer]
-  ): NewMethodParameterIn = {
-    val typeFullName = typeInfoCalc.registerType(maybeTypeFullName.getOrElse(TypeConstants.Any))
-    NodeBuilders.newThisParameterNode(
-      typeFullName = typeFullName,
-      dynamicTypeHintFullName = maybeTypeFullName.toSeq,
-      line = lineNumber
     )
   }
 
@@ -934,7 +456,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     resolvedTypeOption.orElse(exprNameFromStack(expr))
   }
 
-  private def astForAnnotationExpr(annotationExpr: AnnotationExpr): Ast = {
+  def astForAnnotationExpr(annotationExpr: AnnotationExpr): Ast = {
     val fallbackType = s"${Defines.UnresolvedNamespace}.${annotationExpr.getNameAsString}"
     val fullName     = expressionReturnTypeFullName(annotationExpr).getOrElse(fallbackType)
     val code         = annotationExpr.toString
@@ -961,158 +483,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
           )
         )
         annotationAst(node, assignmentAsts)
-    }
-  }
-
-  private def abstractModifierForCallable(
-    callableDeclaration: CallableDeclaration[_],
-    isInterfaceMethod: Boolean
-  ): Option[NewModifier] = {
-    callableDeclaration match {
-      case methodDeclaration: MethodDeclaration =>
-        Option.when(methodDeclaration.isAbstract || (isInterfaceMethod && !methodDeclaration.isDefault)) {
-          newModifierNode(ModifierTypes.ABSTRACT)
-        }
-
-      case _ => None
-    }
-  }
-
-  private def modifiersForMethod(methodDeclaration: CallableDeclaration[_]): List[NewModifier] = {
-    val isInterfaceMethod = scope.enclosingTypeDecl.exists(_.code.contains("interface "))
-
-    val abstractModifier = abstractModifierForCallable(methodDeclaration, isInterfaceMethod)
-
-    val staticVirtualModifierType = if (methodDeclaration.isStatic) ModifierTypes.STATIC else ModifierTypes.VIRTUAL
-    val staticVirtualModifier     = Some(newModifierNode(staticVirtualModifierType))
-
-    val accessModifierType = if (methodDeclaration.isPublic) {
-      Some(ModifierTypes.PUBLIC)
-    } else if (methodDeclaration.isPrivate) {
-      Some(ModifierTypes.PRIVATE)
-    } else if (methodDeclaration.isProtected) {
-      Some(ModifierTypes.PROTECTED)
-    } else if (isInterfaceMethod) {
-      // TODO: more robust interface check
-      Some(ModifierTypes.PUBLIC)
-    } else {
-      None
-    }
-    val accessModifier = accessModifierType.map(newModifierNode)
-
-    List(accessModifier, abstractModifier, staticVirtualModifier).flatten
-  }
-
-  private def getIdentifiersForTypeParameters(methodDeclaration: MethodDeclaration): List[NewIdentifier] = {
-    methodDeclaration.getTypeParameters.asScala.map { typeParameter =>
-      val name = typeParameter.getNameAsString
-      val typeFullName = typeParameter.getTypeBound.asScala.headOption
-        .flatMap(typeInfoCalc.fullName)
-        .getOrElse(TypeConstants.Object)
-      typeInfoCalc.registerType(typeFullName)
-
-      NewIdentifier().name(name).typeFullName(typeFullName)
-    }.toList
-  }
-
-  private def astForMethod(methodDeclaration: MethodDeclaration): Ast = {
-    val methodNode = createPartialMethod(methodDeclaration)
-
-    val typeParameters = getIdentifiersForTypeParameters(methodDeclaration)
-
-    val maybeResolved      = tryWithSafeStackOverflow(methodDeclaration.resolve())
-    val expectedReturnType = Try(symbolSolver.toResolvedType(methodDeclaration.getType, classOf[ResolvedType])).toOption
-    val simpleMethodReturnType = methodDeclaration.getTypeAsString()
-    val returnTypeFullName = expectedReturnType
-      .flatMap(typeInfoCalc.fullName)
-      .orElse(scope.lookupType(simpleMethodReturnType))
-      .orElse(typeParameters.find(_.name == simpleMethodReturnType).map(_.typeFullName))
-
-    scope.pushMethodScope(methodNode, ExpectedType(returnTypeFullName, expectedReturnType))
-    typeParameters.foreach { typeParameter => scope.addType(typeParameter.name, typeParameter.typeFullName) }
-
-    val parameterAsts  = astsForParameterList(methodDeclaration.getParameters)
-    val parameterTypes = argumentTypesForMethodLike(maybeResolved)
-    val signature      = composeSignature(returnTypeFullName, parameterTypes, parameterAsts.size)
-    val namespaceName  = scope.enclosingTypeDeclFullName.getOrElse(Defines.UnresolvedNamespace)
-    val methodFullName = composeMethodFullName(namespaceName, methodDeclaration.getNameAsString, signature)
-
-    methodNode
-      .fullName(methodFullName)
-      .signature(signature)
-
-    val thisNode = Option.when(!methodDeclaration.isStatic) {
-      val typeFullName = scope.enclosingTypeDeclFullName
-      thisNodeForMethod(typeFullName, line(methodDeclaration))
-    }
-    val thisAst = thisNode.map(Ast(_)).toList
-
-    thisNode.foreach { node =>
-      scope.addParameter(node)
-    }
-
-    val bodyAst = methodDeclaration.getBody.toScala.map(astForBlockStatement(_)).getOrElse(Ast(NewBlock()))
-    val methodReturn = newMethodReturnNode(
-      returnTypeFullName.getOrElse(TypeConstants.Any),
-      None,
-      line(methodDeclaration.getType),
-      column(methodDeclaration.getType)
-    )
-
-    val annotationAsts = methodDeclaration.getAnnotations.asScala.map(astForAnnotationExpr).toSeq
-
-    val modifiers = modifiersForMethod(methodDeclaration)
-
-    scope.popScope()
-
-    methodAstWithAnnotations(methodNode, thisAst ++ parameterAsts, bodyAst, methodReturn, modifiers, annotationAsts)
-  }
-
-  private def constructorReturnNode(constructorDeclaration: ConstructorDeclaration): NewMethodReturn = {
-    val line   = constructorDeclaration.getEnd.map(x => Integer.valueOf(x.line)).toScala
-    val column = constructorDeclaration.getEnd.map(x => Integer.valueOf(x.column)).toScala
-    newMethodReturnNode(TypeConstants.Void, None, line, column)
-  }
-
-  /** Constructor and Method declarations share a lot of fields, so this method adds the fields they have in common.
-    * `fullName` and `signature` are omitted
-    */
-  private def createPartialMethod(declaration: CallableDeclaration[_]): NewMethod = {
-    val code         = declaration.getDeclarationAsString.trim
-    val columnNumber = declaration.getBegin.map(x => Integer.valueOf(x.column)).toScala
-    val endLine      = declaration.getEnd.map(x => Integer.valueOf(x.line)).toScala
-    val endColumn    = declaration.getEnd.map(x => Integer.valueOf(x.column)).toScala
-
-    val methodNode = NewMethod()
-      .name(declaration.getNameAsString)
-      .code(code)
-      .isExternal(false)
-      .filename(filename)
-      .lineNumber(line(declaration))
-      .columnNumber(columnNumber)
-      .lineNumberEnd(endLine)
-      .columnNumberEnd(endColumn)
-
-    methodNode
-  }
-
-  private def astForConstructorBody(body: Option[BlockStmt]): Ast = {
-    val containsThisInvocation =
-      body
-        .flatMap(_.getStatements.asScala.headOption)
-        .collect { case e: ExplicitConstructorInvocationStmt => e }
-        .exists(_.isThis)
-
-    val memberInitializers =
-      if (containsThisInvocation)
-        Seq.empty
-      else
-        scope.memberInitializers
-
-    body match {
-      case Some(b) => astForBlockStatement(b, prefixAsts = memberInitializers)
-
-      case None => Ast(NewBlock()).withChildren(memberInitializers)
     }
   }
 
@@ -1167,7 +537,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     resources.appended(controlStructureAst)
   }
 
-  private def astsForStatement(statement: Statement): Seq[Ast] = {
+  def astsForStatement(statement: Statement): Seq[Ast] = {
     // TODO: Implement missing handlers
     // case _: LocalClassDeclarationStmt  => Seq()
     // case _: LocalRecordDeclarationStmt => Seq()
@@ -1775,11 +1145,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     callAst(callNode, args)
   }
 
-  private def astForBlockStatement(
-    stmt: BlockStmt,
-    codeStr: String = "<empty>",
-    prefixAsts: Seq[Ast] = Seq.empty
-  ): Ast = {
+  def astForBlockStatement(stmt: BlockStmt, codeStr: String = "<empty>", prefixAsts: Seq[Ast] = Seq.empty): Ast = {
 
     val block = NewBlock()
       .code(codeStr)
@@ -2105,7 +1471,7 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  private def assignmentsForVarDecl(
+  def assignmentsForVarDecl(
     variables: Iterable[VariableDeclarator],
     lineNumber: Option[Integer],
     columnNumber: Option[Integer]
@@ -2349,13 +1715,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
   }
 
-  private def argumentTypesForMethodLike(
-    maybeResolvedMethodLike: Try[ResolvedMethodLikeDeclaration]
-  ): Option[List[String]] = {
-    maybeResolvedMethodLike.toOption
-      .flatMap(calcParameterTypes(_, ResolvedTypeParametersMap.empty()))
-  }
-
   private def initNode(
     namespaceName: Option[String],
     argumentTypes: Option[List[String]],
@@ -2483,6 +1842,11 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
       .withChild(assignmentAst)
       .withChild(initAst)
       .withChild(returnAst)
+  }
+
+  def argumentTypesForMethodLike(maybeResolvedMethodLike: Try[ResolvedMethodLikeDeclaration]): Option[List[String]] = {
+    maybeResolvedMethodLike.toOption
+      .flatMap(calcParameterTypes(_, ResolvedTypeParametersMap.empty()))
   }
 
   private def astForThisExpr(expr: ThisExpr, expectedType: ExpectedType): Ast = {
@@ -2625,349 +1989,12 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
     }
   }
 
-  private def nextLambdaName(): String = {
-    s"$LambdaNamePrefix${lambdaKeyPool.next}"
-  }
-
   private def nextIndexName(): String = {
     s"$IndexNamePrefix${indexKeyPool.next}"
   }
 
   private def nextIterableName(): String = {
     s"$IterableNamePrefix${iterableKeyPool.next}"
-  }
-
-  private def genericParamTypeMapForLambda(expectedType: ExpectedType): ResolvedTypeParametersMap = {
-    expectedType.resolvedType
-      // This should always be true for correct code
-      .collect { case r: ResolvedReferenceType => r }
-      .map(_.typeParametersMap())
-      .getOrElse(new ResolvedTypeParametersMap.Builder().build())
-  }
-
-  private def buildParamListForLambda(
-    expr: LambdaExpr,
-    maybeBoundMethod: Option[ResolvedMethodDeclaration],
-    expectedTypeParamTypes: ResolvedTypeParametersMap
-  ): Seq[Ast] = {
-    val lambdaParameters = expr.getParameters.asScala.toList
-    val paramTypesList = maybeBoundMethod match {
-      case Some(resolvedMethod) =>
-        val resolvedParameters = (0 until resolvedMethod.getNumberOfParams).map(resolvedMethod.getParam)
-
-        // Substitute generic typeParam with the expected type if it can be found; leave unchanged otherwise.
-        resolvedParameters.map(param => Try(param.getType)).map {
-          case Success(resolvedType: ResolvedTypeVariable) =>
-            val typ = expectedTypeParamTypes.getValue(resolvedType.asTypeParameter)
-            typeInfoCalc.fullName(typ)
-
-          case Success(resolvedType) => typeInfoCalc.fullName(resolvedType)
-
-          case Failure(_) => None
-        }
-
-      case None =>
-        // Unless types are explicitly specified in the lambda definition,
-        // this will yield the erased types which is why the actual lambda
-        // expression parameters are only used as a fallback.
-        lambdaParameters
-          .map(_.getType)
-          .map(typeInfoCalc.fullName)
-    }
-
-    if (paramTypesList.sizeIs != lambdaParameters.size) {
-      logger.error(s"Found different number lambda params and param types for $expr. Some parameters will be missing.")
-    }
-
-    val parameterNodes = lambdaParameters
-      .zip(paramTypesList)
-      .zipWithIndex
-      .map { case ((param, maybeType), idx) =>
-        val name         = param.getNameAsString
-        val typeFullName = maybeType.getOrElse(TypeConstants.Any)
-        val code         = s"$typeFullName $name"
-        val evalStrat =
-          if (param.getType.isPrimitiveType) EvaluationStrategies.BY_VALUE else EvaluationStrategies.BY_SHARING
-        val paramNode = NewMethodParameterIn()
-          .name(name)
-          .index(idx + 1)
-          .order(idx + 1)
-          .code(code)
-          .evaluationStrategy(evalStrat)
-          .typeFullName(typeFullName)
-          .lineNumber(line(expr))
-          .columnNumber(column(expr))
-        typeInfoCalc.registerType(typeFullName)
-        paramNode
-      }
-
-    parameterNodes.foreach { paramNode =>
-      scope.addParameter(paramNode)
-    }
-
-    parameterNodes.map(Ast(_))
-  }
-
-  private def getLambdaReturnType(
-    maybeResolvedLambdaType: Option[ResolvedType],
-    maybeBoundMethod: Option[ResolvedMethodDeclaration],
-    expectedTypeParamTypes: ResolvedTypeParametersMap
-  ): Option[String] = {
-    val maybeBoundMethodReturnType = maybeBoundMethod.flatMap { boundMethod =>
-      Try(boundMethod.getReturnType).collect {
-        case returnType: ResolvedTypeVariable => expectedTypeParamTypes.getValue(returnType.asTypeParameter)
-        case other                            => other
-      }.toOption
-    }
-
-    val returnType = maybeBoundMethodReturnType.orElse(maybeResolvedLambdaType)
-    returnType.flatMap(typeInfoCalc.fullName)
-  }
-
-  private def closureBindingsForCapturedNodes(lambdaMethodName: String): List[ClosureBindingEntry] = {
-    scope.capturedVariables.map { capturedNode =>
-      val closureBindingId = s"$filename:$lambdaMethodName:${capturedNode.name}"
-      val closureBindingNode =
-        newClosureBindingNode(closureBindingId, capturedNode.name, EvaluationStrategies.BY_SHARING)
-      ClosureBindingEntry(capturedNode, closureBindingNode)
-    }
-  }
-
-  private def localsForCapturedNodes(closureBindingEntries: List[ClosureBindingEntry]): List[NewLocal] = {
-    val localsForCaptured =
-      closureBindingEntries.map { case ClosureBindingEntry(node, binding) =>
-        val local = NewLocal()
-          .name(node.name)
-          .code(node.name)
-          .closureBindingId(binding.closureBindingId)
-          .typeFullName(node.typeFullName)
-        local
-      }
-    localsForCaptured.foreach { local => scope.addLocal(local) }
-    localsForCaptured
-  }
-
-  private def astForLambdaBody(
-    body: Statement,
-    localsForCapturedVars: Seq[NewLocal],
-    returnType: Option[String]
-  ): Ast = {
-    body match {
-      case block: BlockStmt => astForBlockStatement(block, prefixAsts = localsForCapturedVars.map(Ast(_)))
-
-      case stmt =>
-        val blockAst = Ast(NewBlock().lineNumber(line(body)))
-        val bodyAst = if (returnType.contains(TypeConstants.Void)) {
-          astsForStatement(stmt)
-        } else {
-          val returnNode =
-            NewReturn()
-              .code(s"return ${body.toString}")
-              .lineNumber(line(body))
-          val returnArgs = astsForStatement(stmt)
-          Seq(returnAst(returnNode, returnArgs))
-        }
-
-        blockAst
-          .withChildren(localsForCapturedVars.map(Ast(_)))
-          .withChildren(bodyAst)
-    }
-  }
-
-  private def lambdaMethodSignature(returnType: Option[String], parameters: Seq[Ast]): String = {
-    val maybeParameterTypes = toOptionList(parameters.map(_.rootType))
-    val containsEmptyType   = maybeParameterTypes.exists(_.contains(ParameterDefaults.TypeFullName))
-
-    (returnType, maybeParameterTypes) match {
-      case (Some(returnTpe), Some(parameterTpes)) if !containsEmptyType =>
-        composeMethodLikeSignature(returnTpe, parameterTpes)
-
-      case _ => composeUnresolvedSignature(parameters.size)
-    }
-  }
-
-  private def createLambdaMethodNode(
-    lambdaName: String,
-    parameters: Seq[Ast],
-    returnType: Option[String]
-  ): NewMethod = {
-    val enclosingTypeName = scope.enclosingTypeDeclFullName.getOrElse(Defines.UnresolvedNamespace)
-    val signature         = lambdaMethodSignature(returnType, parameters)
-    val lambdaFullName    = composeMethodFullName(enclosingTypeName, lambdaName, signature)
-
-    NewMethod()
-      .name(lambdaName)
-      .fullName(lambdaFullName)
-      .signature(signature)
-      .filename(filename)
-      .code("<lambda>")
-  }
-
-  private def addClosureBindingsToDiffGraph(
-    bindingEntries: Iterable[ClosureBindingEntry],
-    methodRef: NewMethodRef
-  ): Unit = {
-    bindingEntries.foreach { case ClosureBindingEntry(nodeTypeInfo, closureBinding) =>
-      diffGraph.addNode(closureBinding)
-      diffGraph.addEdge(closureBinding, nodeTypeInfo.node, EdgeTypes.REF)
-      diffGraph.addEdge(methodRef, closureBinding, EdgeTypes.CAPTURE)
-    }
-  }
-
-  private def createAndPushLambdaMethod(
-    expr: LambdaExpr,
-    lambdaMethodName: String,
-    implementedInfo: LambdaImplementedInfo,
-    localsForCaptured: Seq[NewLocal],
-    expectedLambdaType: ExpectedType
-  ): NewMethod = {
-    val implementedMethod    = implementedInfo.implementedMethod
-    val implementedInterface = implementedInfo.implementedInterface
-
-    // We need to get this information from the expected type as the JavaParser
-    // symbol solver returns the erased types when resolving the lambda itself.
-    val expectedTypeParamTypes = genericParamTypeMapForLambda(expectedLambdaType)
-    val parametersWithoutThis  = buildParamListForLambda(expr, implementedMethod, expectedTypeParamTypes)
-
-    val returnType = getLambdaReturnType(implementedInterface, implementedMethod, expectedTypeParamTypes)
-
-    val lambdaMethodBody = astForLambdaBody(expr.getBody, localsForCaptured, returnType)
-
-    val thisParam = lambdaMethodBody.nodes
-      .collect { case identifier: NewIdentifier => identifier }
-      .find { identifier => identifier.name == NameConstants.This || identifier.name == NameConstants.Super }
-      .map { _ =>
-        val typeFullName = scope.enclosingTypeDeclFullName
-        Ast(thisNodeForMethod(typeFullName, line(expr)))
-      }
-      .toList
-
-    val parameters = thisParam ++ parametersWithoutThis
-
-    val lambdaMethodNode = createLambdaMethodNode(lambdaMethodName, parametersWithoutThis, returnType)
-    val returnNode       = newMethodReturnNode(returnType.getOrElse(TypeConstants.Any), None, line(expr), column(expr))
-    val virtualModifier  = Some(newModifierNode(ModifierTypes.VIRTUAL))
-    val staticModifier   = Option.when(thisParam.isEmpty)(newModifierNode(ModifierTypes.STATIC))
-    val privateModifier  = Some(newModifierNode(ModifierTypes.PRIVATE))
-
-    val modifiers = List(virtualModifier, staticModifier, privateModifier).flatten.map(Ast(_))
-
-    val lambdaParameterNamesToNodes =
-      parameters
-        .flatMap(_.root)
-        .collect { case param: NewMethodParameterIn => param }
-        .map { param => param.name -> param }
-        .toMap
-
-    val identifiersMatchingParams = lambdaMethodBody.nodes
-      .collect { case identifier: NewIdentifier => identifier }
-      .filter { identifier => lambdaParameterNamesToNodes.contains(identifier.name) }
-
-    val lambdaMethodAstWithoutRefs =
-      Ast(lambdaMethodNode)
-        .withChildren(parameters)
-        .withChild(lambdaMethodBody)
-        .withChild(Ast(returnNode))
-        .withChildren(modifiers)
-
-    val lambdaMethodAst = identifiersMatchingParams.foldLeft(lambdaMethodAstWithoutRefs)((ast, identifier) =>
-      ast.withRefEdge(identifier, lambdaParameterNamesToNodes(identifier.name))
-    )
-
-    scope.addLambdaMethod(lambdaMethodAst)
-
-    lambdaMethodNode
-  }
-
-  private def createAndPushLambdaTypeDecl(
-    lambdaMethodNode: NewMethod,
-    implementedInfo: LambdaImplementedInfo
-  ): NewTypeDecl = {
-    val inheritsFromTypeFullName =
-      implementedInfo.implementedInterface
-        .flatMap(typeInfoCalc.fullName)
-        .orElse(Some(TypeConstants.Object))
-        .toList
-
-    typeInfoCalc.registerType(lambdaMethodNode.fullName)
-    val lambdaTypeDeclNode =
-      NewTypeDecl()
-        .fullName(lambdaMethodNode.fullName)
-        .name(lambdaMethodNode.name)
-        .inheritsFromTypeFullName(inheritsFromTypeFullName)
-    scope.addLocalDecl(Ast(lambdaTypeDeclNode))
-
-    lambdaTypeDeclNode
-  }
-
-  private def getLambdaImplementedInfo(expr: LambdaExpr, expectedType: ExpectedType): LambdaImplementedInfo = {
-    val maybeImplementedType = {
-      val maybeResolved = tryWithSafeStackOverflow(expr.calculateResolvedType())
-      maybeResolved.toOption
-        .orElse(expectedType.resolvedType)
-        .collect { case refType: ResolvedReferenceType => refType }
-    }
-
-    val maybeImplementedInterface = maybeImplementedType.flatMap(_.getTypeDeclaration.toScala)
-
-    if (maybeImplementedInterface.isEmpty) {
-      val location = s"$filename:${line(expr)}:${column(expr)}"
-      logger.debug(
-        s"Could not resolve the interface implemented by a lambda. Type info may be missing: $location. Type info may be missing."
-      )
-    }
-
-    val maybeBoundMethod = maybeImplementedInterface.flatMap { interface =>
-      interface.getDeclaredMethods.asScala
-        .filter(_.isAbstract)
-        .filterNot { method =>
-          // Filter out java.lang.Object methods re-declared by the interface as these are also considered abstract.
-          // See https://docs.oracle.com/javase/8/docs/api/java/lang/FunctionalInterface.html for details.
-          Try(method.getSignature) match {
-            case Success(signature) => ObjectMethodSignatures.contains(signature)
-            case Failure(_) =>
-              false // If the signature could not be calculated, it's probably not a standard object method.
-          }
-        }
-        .headOption
-    }
-
-    LambdaImplementedInfo(maybeImplementedType, maybeBoundMethod)
-  }
-
-  // TODO: All of this will be thrown out, probably
-  private def astForLambdaExpr(expr: LambdaExpr, expectedType: ExpectedType): Ast = {
-    scope.pushMethodScope(NewMethod(), expectedType)
-
-    val lambdaMethodName = nextLambdaName()
-
-    val closureBindingsForCapturedVars = closureBindingsForCapturedNodes(lambdaMethodName)
-    val localsForCaptured              = localsForCapturedNodes(closureBindingsForCapturedVars)
-    val implementedInfo                = getLambdaImplementedInfo(expr, expectedType)
-    val lambdaMethodNode =
-      createAndPushLambdaMethod(expr, lambdaMethodName, implementedInfo, localsForCaptured, expectedType)
-
-    val methodRef =
-      NewMethodRef()
-        .methodFullName(lambdaMethodNode.fullName)
-        .typeFullName(lambdaMethodNode.fullName)
-        .code(lambdaMethodNode.fullName)
-
-    addClosureBindingsToDiffGraph(closureBindingsForCapturedVars, methodRef)
-
-    val interfaceBinding = implementedInfo.implementedMethod.map { implementedMethod =>
-      newBindingNode(implementedMethod.getName, lambdaMethodNode.signature, lambdaMethodNode.fullName)
-    }
-
-    val bindingTable = getLambdaBindingTable(
-      LambdaBindingInfo(lambdaMethodNode.fullName, implementedInfo.implementedInterface, interfaceBinding)
-    )
-
-    val lambdaTypeDeclNode = createAndPushLambdaTypeDecl(lambdaMethodNode, implementedInfo)
-    createBindingNodes(lambdaTypeDeclNode, bindingTable)
-
-    scope.popScope()
-    Ast(methodRef)
   }
 
   private def astForLiteralExpr(expr: LiteralExpr): Ast = {
@@ -3145,41 +2172,6 @@ class AstCreator(filename: String, javaParserAst: CompilationUnit, global: Globa
 
     val identifier = identifierNode(superExpr, NameConstants.This, NameConstants.Super, typeFullName)
     Ast(identifier)
-  }
-
-  private def astsForParameterList(parameters: NodeList[Parameter]): Seq[Ast] = {
-    parameters.asScala.toList.zipWithIndex.map { case (param, idx) =>
-      astForParameter(param, idx + 1)
-    }
-  }
-
-  private def astForParameter(parameter: Parameter, childNum: Int): Ast = {
-    val maybeArraySuffix = if (parameter.isVarArgs) "[]" else ""
-    val typeFullName =
-      typeInfoCalc
-        .fullName(parameter.getType)
-        .orElse(scope.lookupType(parameter.getTypeAsString))
-        .map(_ ++ maybeArraySuffix)
-        .getOrElse(s"${Defines.UnresolvedNamespace}.${parameter.getTypeAsString}")
-    val evalStrat =
-      if (parameter.getType.isPrimitiveType) EvaluationStrategies.BY_VALUE else EvaluationStrategies.BY_SHARING
-    typeInfoCalc.registerType(typeFullName)
-
-    val parameterNode = NewMethodParameterIn()
-      .name(parameter.getName.toString)
-      .code(parameter.toString)
-      .lineNumber(line(parameter))
-      .columnNumber(column(parameter))
-      .evaluationStrategy(evalStrat)
-      .typeFullName(typeFullName)
-      .index(childNum)
-      .order(childNum)
-    val annotationAsts = parameter.getAnnotations.asScala.map(astForAnnotationExpr)
-    val ast            = Ast(parameterNode)
-
-    scope.addParameter(parameterNode)
-
-    ast.withChildren(annotationAsts)
   }
 
 }

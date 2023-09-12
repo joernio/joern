@@ -11,7 +11,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
 }
 
 import scala.collection.mutable
-import io.joern.javasrc2cpg.passes.ExpectedType
+import io.joern.javasrc2cpg.astcreation.ExpectedType
 import io.joern.x2cpg.Ast
 import io.shiftleft.codepropertygraph.generated.nodes.AstNodeNew
 
