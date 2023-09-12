@@ -2,23 +2,14 @@ package io.joern.javasrc2cpg.astcreation
 
 import com.github.javaparser.ast.expr.{
   AnnotationExpr,
-  ArrayInitializerExpr,
-  BinaryExpr,
   BooleanLiteralExpr,
   CharLiteralExpr,
-  ClassExpr,
   DoubleLiteralExpr,
   Expression,
-  FieldAccessExpr,
   IntegerLiteralExpr,
-  LiteralExpr,
   LongLiteralExpr,
-  MarkerAnnotationExpr,
   MethodCallExpr,
-  NameExpr,
-  NormalAnnotationExpr,
   NullLiteralExpr,
-  SingleMemberAnnotationExpr,
   StringLiteralExpr,
   TextBlockLiteralExpr
 }
@@ -39,18 +30,10 @@ import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
 import io.joern.javasrc2cpg.util.{BindingTable, BindingTableAdapterForJavaparser, NameConstants}
-import io.joern.x2cpg.Defines.*
 import io.joern.x2cpg.datastructures.Global
-import io.joern.x2cpg.utils.NodeBuilders
-import io.joern.x2cpg.utils.NodeBuilders.newAnnotationLiteralNode
-import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, Defines, ValidationMode}
+import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.NodeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  NewArrayInitializer,
-  NewClosureBinding,
-  NewImport,
-  NewNamespaceBlock
-}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewClosureBinding, NewImport, NewNamespaceBlock}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
@@ -233,87 +216,6 @@ class AstCreator(
     )
   }
 
-  private def convertAnnotationValueExpr(expr: Expression): Option[Ast] = {
-    expr match {
-      case arrayInit: ArrayInitializerExpr =>
-        val arrayInitNode = NewArrayInitializer()
-          .code(arrayInit.toString)
-        val initElementAsts = arrayInit.getValues.asScala.toList.map { value =>
-          convertAnnotationValueExpr(value)
-        }
-
-        setArgumentIndices(initElementAsts.flatten)
-
-        val returnAst = initElementAsts.foldLeft(Ast(arrayInitNode)) {
-          case (ast, Some(elementAst)) =>
-            ast.withChild(elementAst)
-          case (ast, _) => ast
-        }
-        Some(returnAst)
-
-      case annotationExpr: AnnotationExpr =>
-        Some(astForAnnotationExpr(annotationExpr))
-
-      case literalExpr: LiteralExpr =>
-        Some(astForAnnotationLiteralExpr(literalExpr))
-
-      case _: ClassExpr =>
-        // TODO: Implement for known case
-        None
-
-      case _: FieldAccessExpr =>
-        // TODO: Implement for known case
-        None
-
-      case _: BinaryExpr =>
-        // TODO: Implement for known case
-        None
-
-      case _: NameExpr =>
-        // TODO: Implement for known case
-        None
-
-      case _ =>
-        logger.info(s"convertAnnotationValueExpr not yet implemented for unknown case ${expr.getClass}")
-        None
-    }
-  }
-
-  private def astForAnnotationLiteralExpr(literalExpr: LiteralExpr): Ast = {
-    val valueNode =
-      literalExpr match {
-        case literal: StringLiteralExpr    => newAnnotationLiteralNode(literal.getValue)
-        case literal: IntegerLiteralExpr   => newAnnotationLiteralNode(literal.getValue)
-        case literal: BooleanLiteralExpr   => newAnnotationLiteralNode(java.lang.Boolean.toString(literal.getValue))
-        case literal: CharLiteralExpr      => newAnnotationLiteralNode(literal.getValue)
-        case literal: DoubleLiteralExpr    => newAnnotationLiteralNode(literal.getValue)
-        case literal: LongLiteralExpr      => newAnnotationLiteralNode(literal.getValue)
-        case _: NullLiteralExpr            => newAnnotationLiteralNode("null")
-        case literal: TextBlockLiteralExpr => newAnnotationLiteralNode(literal.getValue)
-      }
-
-    Ast(valueNode)
-  }
-
-  private def exprNameFromStack(expr: Expression): Option[String] = expr match {
-    case annotation: AnnotationExpr =>
-      scope.lookupType(annotation.getNameAsString)
-    case namedExpr: NodeWithName[_] =>
-      scope.lookupVariableOrType(namedExpr.getNameAsString)
-    case namedExpr: NodeWithSimpleName[_] =>
-      scope.lookupVariableOrType(namedExpr.getNameAsString)
-    // JavaParser doesn't handle literals well for some reason
-    case _: BooleanLiteralExpr   => Some("boolean")
-    case _: CharLiteralExpr      => Some("char")
-    case _: DoubleLiteralExpr    => Some("double")
-    case _: IntegerLiteralExpr   => Some("int")
-    case _: LongLiteralExpr      => Some("long")
-    case _: NullLiteralExpr      => Some("null")
-    case _: StringLiteralExpr    => Some("java.lang.String")
-    case _: TextBlockLiteralExpr => Some("java.lang.String")
-    case _                       => None
-  }
-
   def expressionReturnTypeFullName(expr: Expression): Option[String] = {
 
     val resolvedTypeOption = tryWithSafeStackOverflow(expr.calculateResolvedType()) match {
@@ -338,34 +240,23 @@ class AstCreator(
     resolvedTypeOption.orElse(exprNameFromStack(expr))
   }
 
-  def astForAnnotationExpr(annotationExpr: AnnotationExpr): Ast = {
-    val fallbackType = s"${Defines.UnresolvedNamespace}.${annotationExpr.getNameAsString}"
-    val fullName     = expressionReturnTypeFullName(annotationExpr).getOrElse(fallbackType)
-    val code         = annotationExpr.toString
-    val name         = annotationExpr.getName.getIdentifier
-    val node         = annotationNode(annotationExpr, code, name, fullName)
-    annotationExpr match {
-      case _: MarkerAnnotationExpr =>
-        annotationAst(node, List.empty)
-      case normal: NormalAnnotationExpr =>
-        val assignmentAsts = normal.getPairs.asScala.toList.map { pair =>
-          annotationAssignmentAst(
-            pair.getName.getIdentifier,
-            pair.toString,
-            convertAnnotationValueExpr(pair.getValue).getOrElse(Ast())
-          )
-        }
-        annotationAst(node, assignmentAsts)
-      case single: SingleMemberAnnotationExpr =>
-        val assignmentAsts = List(
-          annotationAssignmentAst(
-            "value",
-            single.getMemberValue.toString,
-            convertAnnotationValueExpr(single.getMemberValue).getOrElse(Ast())
-          )
-        )
-        annotationAst(node, assignmentAsts)
-    }
+  private def exprNameFromStack(expr: Expression): Option[String] = expr match {
+    case annotation: AnnotationExpr =>
+      scope.lookupType(annotation.getNameAsString)
+    case namedExpr: NodeWithName[_] =>
+      scope.lookupVariableOrType(namedExpr.getNameAsString)
+    case namedExpr: NodeWithSimpleName[_] =>
+      scope.lookupVariableOrType(namedExpr.getNameAsString)
+    // JavaParser doesn't handle literals well for some reason
+    case _: BooleanLiteralExpr   => Some("boolean")
+    case _: CharLiteralExpr      => Some("char")
+    case _: DoubleLiteralExpr    => Some("double")
+    case _: IntegerLiteralExpr   => Some("int")
+    case _: LongLiteralExpr      => Some("long")
+    case _: NullLiteralExpr      => Some("null")
+    case _: StringLiteralExpr    => Some("java.lang.String")
+    case _: TextBlockLiteralExpr => Some("java.lang.String")
+    case _                       => None
   }
 
   def argumentTypesForMethodLike(maybeResolvedMethodLike: Try[ResolvedMethodLikeDeclaration]): Option[List[String]] = {
