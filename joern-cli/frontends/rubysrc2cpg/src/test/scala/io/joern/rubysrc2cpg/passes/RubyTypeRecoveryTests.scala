@@ -12,6 +12,7 @@ import io.joern.x2cpg.passes.frontend.ImportsPass.{
 import io.shiftleft.semanticcpg.language.*
 
 import scala.collection.immutable.List
+import io.joern.x2cpg.Defines as XDefines
 
 object RubyTypeRecoveryTests {
   def getPackageTable: PackageTable = {
@@ -102,9 +103,9 @@ class RubyTypeRecoveryTests
       maxCall.methodFullName shouldBe "__builtin.puts"
     }
 
-    "conservatively present either option when an imported function uses the same name as a builtin" in {
+    "present the declared method name when a built-in with the same name is used in the same compilation unit" in {
       val List(absCall) = cpg.call("sleep").l
-      absCall.dynamicTypeHintFullName.l shouldBe Seq("__builtin.sleep", "main.rb::program.sleep")
+      absCall.methodFullName shouldBe "main.rb::program.sleep"
     }
   }
 
@@ -202,7 +203,7 @@ class RubyTypeRecoveryTests
 
     "resolve correct imports via tag nodes" in {
       val List(logging: ResolvedMethod, _) = cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
-      logging.fullName shouldBe "logger::program.Logger.new"
+      logging.fullName shouldBe s"logger::program.Logger.${XDefines.ConstructorMethodName}"
     }
 
     "provide a dummy type" in {

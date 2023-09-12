@@ -1,26 +1,26 @@
 package io.joern.rubysrc2cpg.astcreation
 
-import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.joern.rubysrc2cpg.passes.Defines as RubyDefines
+import io.joern.x2cpg.{Ast, Defines, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators, nodes}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  AstNodeNew,
-  NewCall,
-  NewFieldIdentifier,
-  NewMethodParameterIn,
-  NewNode
-}
+import org.antlr.v4.runtime.ParserRuleContext
 
 import scala.collection.mutable
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  import GlobalTypes._
+  import GlobalTypes.*
 
   def isBuiltin(x: String): Boolean = builtinFunctions.contains(x)
 
   def prefixAsBuiltin(x: String): String = s"$builtinPrefix$pathSep$x"
 
-  def astForAssignment(lhs: NewNode, rhs: NewNode, lineNumber: Option[Integer], colNumber: Option[Integer]): Ast = {
+  def astForAssignment(
+    lhs: NewNode,
+    rhs: NewNode,
+    lineNumber: Option[Integer] = None,
+    colNumber: Option[Integer] = None
+  ): Ast = {
 
     val code = codeOf(lhs) + " = " + codeOf(rhs)
     val callNode = NewCall()
@@ -34,12 +34,19 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     callAst(callNode, Seq(Ast(lhs), Ast(rhs)))
   }
 
+  def createThisIdentifier(
+    ctx: ParserRuleContext,
+    typeFullName: String = RubyDefines.Any,
+    dynamicTypeHints: List[String] = List.empty
+  ): NewIdentifier =
+    createIdentifierWithScope(ctx, "this", "this", typeFullName, dynamicTypeHints)
+
   protected def createFieldAccess(
     baseNode: NewNode,
     fieldName: String,
-    lineNumber: Option[Integer],
-    colNumber: Option[Integer]
-  ) = {
+    lineNumber: Option[Integer] = None,
+    colNumber: Option[Integer] = None
+  ): Ast = {
     val fieldIdNode = NewFieldIdentifier()
       .code(fieldName)
       .canonicalName(fieldName)

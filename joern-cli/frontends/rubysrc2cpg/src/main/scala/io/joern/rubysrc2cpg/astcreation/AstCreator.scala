@@ -5,7 +5,7 @@ import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.utils.PackageContext
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
-import io.joern.x2cpg.datastructures.{Global, Scope}
+import io.joern.x2cpg.datastructures.{Global, Scope, ScopeElement}
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -92,7 +92,7 @@ class AstCreator(
    * The value of this entry for a block is read AFTER its last statement has been processed. Absence of the the block
    * in this hash implies this is a leaf block.
    */
-  protected val blockChildHash = mutable.HashMap[Int, Int]()
+  protected val blockChildHash: mutable.Map[Int, Int] = mutable.HashMap[Int, Int]()
 
   protected val builtInCallNames = mutable.HashSet[String]()
   // Hashmap to store used variable names, to avoid duplicates in case of un-named variables
@@ -129,14 +129,16 @@ class AstCreator(
     val name     = ":program"
     val fullName = s"$relativeFilename:$name"
     val programMethod =
-      NewMethod()
-        .order(1)
-        .name(name)
-        .code(name)
-        .fullName(fullName)
-        .filename(filename)
-        .astParentType(NodeTypes.TYPE_DECL)
-        .astParentFullName(fullName)
+      methodNode(
+        programCtx,
+        name,
+        name,
+        fullName,
+        None,
+        relativeFilename,
+        Option(NodeTypes.TYPE_DECL),
+        Option(fullName)
+      )
 
     classStack.push(fullName)
 
@@ -153,48 +155,52 @@ class AstCreator(
         List[Ast](Ast())
       }
 
-    val methodRetNode = NewMethodReturn()
-      .lineNumber(None)
-      .columnNumber(None)
-      .typeFullName(Defines.Any)
+    val methodRetNode = methodReturnNode(programCtx, Defines.Any)
 
-    // For all the builtIn's encountered create assignment ast
+    // For all the builtIn's encountered create assignment ast, minus user-defined methods with the same name
     val lineColNum = 1
-    val builtInMethodAst = builtInCallNames.map { builtInCallName =>
-      val identifierNode = NewIdentifier()
-        .code(builtInCallName)
-        .name(builtInCallName)
-        .lineNumber(lineColNum)
-        .columnNumber(lineColNum)
-        .typeFullName(Defines.Any)
-      val typeRefNode = NewTypeRef()
-        .code(prefixAsBuiltin(builtInCallName))
-        .typeFullName(prefixAsBuiltin(builtInCallName))
-        .lineNumber(lineColNum)
-        .columnNumber(lineColNum)
-      astForAssignment(identifierNode, typeRefNode, Some(lineColNum), Some(lineColNum))
-    }.toList
+    val builtInMethodAst = builtInCallNames
+      .filterNot(methodNameToMethod.contains)
+      .map { builtInCallName =>
+        val identifierNode = NewIdentifier()
+          .code(builtInCallName)
+          .name(builtInCallName)
+          .lineNumber(lineColNum)
+          .columnNumber(lineColNum)
+          .typeFullName(Defines.Any)
+        scope.addToScope(builtInCallName, identifierNode)
+        val typeRefNode = NewTypeRef()
+          .code(prefixAsBuiltin(builtInCallName))
+          .typeFullName(prefixAsBuiltin(builtInCallName))
+          .lineNumber(lineColNum)
+          .columnNumber(lineColNum)
+        astForAssignment(identifierNode, typeRefNode, Some(lineColNum), Some(lineColNum))
+      }
+      .toList
 
-    val methodRefAssignmentAsts = methodNameToMethod.values.map { methodNode =>
-      // Create a methodRefNode and assign it to the identifier version of the method, which will help in type propagation to resolve calls
-      val methodRefNode = NewMethodRef()
-        .code("def " + methodNode.name + "(...)")
-        .methodFullName(methodNode.fullName)
-        .typeFullName(methodNode.fullName)
-        .lineNumber(lineColNum)
-        .columnNumber(lineColNum)
+    val methodRefAssignmentAsts = methodNameToMethod.values
+      .filterNot(_.astParentType == NodeTypes.TYPE_DECL)
+      .map { methodNode =>
+        // Create a methodRefNode and assign it to the identifier version of the method, which will help in type propagation to resolve calls
+        val methodRefNode = NewMethodRef()
+          .code("def " + methodNode.name + "(...)")
+          .methodFullName(methodNode.fullName)
+          .typeFullName(methodNode.fullName)
+          .lineNumber(lineColNum)
+          .columnNumber(lineColNum)
 
-      val methodNameIdentifier = NewIdentifier()
-        .code(methodNode.name)
-        .name(methodNode.name)
-        .typeFullName(Defines.Any)
-        .lineNumber(lineColNum)
-        .columnNumber(lineColNum)
-
-      val methodRefAssignmentAst =
-        astForAssignment(methodNameIdentifier, methodRefNode, methodNode.lineNumber, methodNode.columnNumber)
-      methodRefAssignmentAst
-    }.toList
+        val methodNameIdentifier = NewIdentifier()
+          .code(methodNode.name)
+          .name(methodNode.name)
+          .typeFullName(Defines.Any)
+          .lineNumber(lineColNum)
+          .columnNumber(lineColNum)
+        scope.addToScope(methodNode.name, methodNameIdentifier)
+        val methodRefAssignmentAst =
+          astForAssignment(methodNameIdentifier, methodRefNode, methodNode.lineNumber, methodNode.columnNumber)
+        methodRefAssignmentAst
+      }
+      .toList
 
     val typeRefAssignmentAst = typeDeclNameToTypeDecl.values.map { typeDeclNode =>
 
@@ -210,7 +216,7 @@ class AstCreator(
         .typeFullName(Defines.Any)
         .lineNumber(lineColNum)
         .columnNumber(lineColNum)
-
+      scope.addToScope(typeDeclNode.name, typeDeclNameIdentifier)
       val typeRefAssignmentAst =
         astForAssignment(typeDeclNameIdentifier, typeRefNode, typeDeclNode.lineNumber, typeDeclNode.columnNumber)
       typeRefAssignmentAst
@@ -218,21 +224,20 @@ class AstCreator(
 
     val methodDefInArgumentAsts = methodDefInArgument.toList
     val locals                  = scope.createAndLinkLocalNodes(diffGraph).map(Ast.apply)
-    val blockNode               = NewBlock().typeFullName(Defines.Any)
     val programAst =
       methodAst(
         programMethod,
-        Seq(Ast()),
+        Seq.empty[Ast],
         blockAst(
-          blockNode,
-          locals ++ statementAsts.toList ++ builtInMethodAst ++ methodRefAssignmentAsts ++ typeRefAssignmentAst ++ methodDefInArgumentAsts
+          blockNode(programCtx),
+          locals ++ builtInMethodAst ++ methodRefAssignmentAsts ++ typeRefAssignmentAst ++ methodDefInArgumentAsts ++ statementAsts.toList
         ),
         methodRetNode
       )
 
     scope.popScope()
 
-    val fileNode       = NewFile().name(filename).order(1)
+    val fileNode       = NewFile().name(relativeFilename).order(1)
     val namespaceBlock = globalNamespaceBlock()
     val ast            = Ast(fileNode).withChild(Ast(namespaceBlock).withChild(programAst))
 
@@ -330,7 +335,7 @@ class AstCreator(
       val node = createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
       Seq(Ast(node))
     case _ =>
-      logger.error(s"astForSingleLeftHandSideContext() $filename, ${text(ctx)} All contexts mismatched.")
+      logger.error(s"astForSingleLeftHandSideContext() $relativeFilename, ${text(ctx)} All contexts mismatched.")
       Seq(Ast())
 
   }
@@ -370,12 +375,13 @@ class AstCreator(
         .name(operatorName)
         .code(text(ctx))
         .methodFullName(operatorName)
+        .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .typeFullName(Defines.Any)
         .lineNumber(ctx.op.getLine)
         .columnNumber(ctx.op.getCharPositionInLine)
 
-      val packedRHS = getPackedRHS(rightAst)
+      val packedRHS = getPackedRHS(rightAst, wrapInBrackets = true)
       Seq(callAst(callNode, leftAst ++ packedRHS))
     } else {
       val callNode = NewCall()
@@ -471,7 +477,7 @@ class AstCreator(
     case ctx: ChainedInvocationWithoutArgumentsPrimaryContext =>
       astForChainedInvocationWithoutArgumentsPrimaryContext(ctx)
     case _ =>
-      logger.error(s"astForPrimaryContext() $filename, ${text(ctx)} All contexts mismatched.")
+      logger.error(s"astForPrimaryContext() $relativeFilename, ${text(ctx)} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -495,7 +501,7 @@ class AstCreator(
     case ctx: MultipleAssignmentExpressionContext  => astForMultipleAssignmentExpressionContext(ctx)
     case ctx: IsDefinedExpressionContext           => Seq(astForIsDefinedExpression(ctx))
     case _ =>
-      logger.error(s"astForExpressionContext() $filename, ${text(ctx)} All contexts mismatched.")
+      logger.error(s"astForExpressionContext() $relativeFilename, ${text(ctx)} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -508,13 +514,9 @@ class AstCreator(
     blockIdCounter += 1
     val procMethodName = "proc_" + procId
     val methodFullName = classStack.reverse :+ procMethodName mkString pathSep
-    val methodNode = NewMethod()
-      .code(text(ctx))
-      .name(procMethodName)
-      .fullName(methodFullName)
-      .filename(filename)
+    val newMethodNode  = methodNode(ctx, procMethodName, text(ctx), methodFullName, None, relativeFilename)
 
-    scope.pushNewScope(methodNode)
+    scope.pushNewScope(newMethodNode)
 
     val astMethodParam = astForParametersContext(ctx.parameters())
     val paramNames     = astMethodParam.flatMap(_.nodes).collect { case x: NewMethodParameterIn => x.name }.toSet
@@ -526,11 +528,10 @@ class AstCreator(
 
     val publicModifier = NewModifier().modifierType(ModifierTypes.PUBLIC)
 
-    val blockNode = NewBlock().typeFullName(Defines.Any)
     val methAst = methodAst(
-      methodNode,
+      newMethodNode,
       astMethodParam,
-      blockAst(blockNode, locals ++ astBody.toList),
+      blockAst(blockNode(ctx), locals ++ astBody.toList),
       methodRetNode,
       Seq[NewModifier](publicModifier)
     )
@@ -543,16 +544,12 @@ class AstCreator(
         Ast(node)
       })
 
-    val callNode = NewCall()
-      .name(procMethodName)
-      .methodFullName(methodFullName)
-      .typeFullName(Defines.Any)
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .code(text(ctx))
+    val procCallNode =
+      callNode(ctx, text(ctx), procMethodName, methodFullName, DispatchTypes.STATIC_DISPATCH, None, Option(Defines.Any))
 
     scope.popScope()
 
-    Seq(callAst(callNode, callArgs))
+    Seq(callAst(procCallNode, callArgs))
   }
 
   def astForDefinedMethodNameOrSymbolContext(ctx: DefinedMethodNameOrSymbolContext): Seq[Ast] = {
@@ -588,9 +585,9 @@ class AstCreator(
         .toSeq
       val splatAsts = astForExpressionOrCommand(ctx.splattingArgument().expressionOrCommand())
       val callNode = NewCall()
-        .name(ctx.COMMA().getText)
+        .name(Operators.arrayInitializer)
         .methodFullName(Operators.arrayInitializer)
-        .signature(Operators.arrayInitializer)
+        .signature("")
         .typeFullName(Defines.Any)
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .code(text(ctx))
@@ -602,7 +599,7 @@ class AstCreator(
     case ctx: RubyParser.SplattingOnlyIndexingArgumentsContext =>
       astForExpressionOrCommand(ctx.splattingArgument().expressionOrCommand())
     case _ =>
-      logger.error(s"astForIndexingArgumentsContext() $filename, ${text(ctx)} All contexts mismatched.")
+      logger.error(s"astForIndexingArgumentsContext() $relativeFilename, ${text(ctx)} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -666,8 +663,11 @@ class AstCreator(
   }
 
   def astForChainedInvocationPrimaryContext(ctx: ChainedInvocationPrimaryContext): Seq[Ast] = {
-    val methodNameAst = astForMethodNameContext(ctx.methodName())
-    val primaryAst    = astForPrimaryContext(ctx.primary())
+    val hasBlockStmt = ctx.block() != null
+    val primaryAst   = astForPrimaryContext(ctx.primary())
+    val methodNameAst =
+      if (!hasBlockStmt && text(ctx.methodName()) == "new") astForCallToConstructor(ctx.methodName(), primaryAst)
+      else astForMethodNameContext(ctx.methodName())
 
     val terminalNode = if (ctx.COLON2() != null) {
       ctx.COLON2()
@@ -683,7 +683,7 @@ class AstCreator(
       Seq()
     }
 
-    if (ctx.block() != null) {
+    if (hasBlockStmt) {
       val blockName = methodNameAst.head.nodes.head
         .asInstanceOf[NewCall]
         .name
@@ -755,6 +755,25 @@ class AstCreator(
         }
       }
     }
+  }
+
+  private def astForCallToConstructor(ctx: MethodNameContext, receiverAst: Seq[Ast]): Seq[Ast] = {
+    val receiverTypeName = receiverAst.flatMap(_.root).collectFirst { case x: NewIdentifier => x } match
+      case Some(receiverNode) if receiverNode.typeFullName != Defines.Any =>
+        receiverNode.typeFullName
+      case Some(receiverNode) if typeDeclNameToTypeDecl.contains(receiverNode.name) =>
+        typeDeclNameToTypeDecl(receiverNode.name).fullName
+      case _ => Defines.Any
+
+    val name = XDefines.ConstructorMethodName
+    val (methodFullName, typeFullName) =
+      if (receiverTypeName != Defines.Any)
+        (Seq(receiverTypeName, XDefines.ConstructorMethodName).mkString(pathSep), receiverTypeName)
+      else (XDefines.DynamicCallUnknownFullName, Defines.Any)
+
+    val constructorCall =
+      callNode(ctx, text(ctx), name, methodFullName, DispatchTypes.STATIC_DISPATCH, None, Option(typeFullName))
+    Seq(Ast(constructorCall))
   }
 
   def astForChainedInvocationWithoutArgumentsPrimaryContext(
@@ -835,7 +854,7 @@ class AstCreator(
     case ctx: GroupedLeftHandSideOnlyMultipleLeftHandSideContext =>
       astForGroupedLeftHandSideContext(ctx.groupedLeftHandSide())
     case _ =>
-      logger.error(s"astForMultipleLeftHandSideContext() $filename, ${text(ctx)} All contexts mismatched.")
+      logger.error(s"astForMultipleLeftHandSideContext() $relativeFilename, ${text(ctx)} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -862,14 +881,9 @@ class AstCreator(
     val lhsExpressionAst = astForPrimaryContext(ctx.primary())
     val rhsExpressionAst = Option(ctx.indexingArguments).map(astForIndexingArgumentsContext).getOrElse(Seq())
 
-    val operator = lhsExpressionAst.flatMap(_.nodes.filter(_.isInstanceOf[NewIdentifier])).headOption match
-      case Some(node) =>
-        if (node.asInstanceOf[NewIdentifier].name == "Array") {
-          Operators.arrayInitializer
-        } else {
-          Operators.indexAccess
-        }
-      case None => Operators.indexAccess
+    val operator = lhsExpressionAst.flatMap(_.nodes).collectFirst { case x: NewIdentifier => x } match
+      case Some(node) if node.name == "Array" => Operators.arrayInitializer
+      case _                                  => Operators.indexAccess
 
     val callNode = NewCall()
       .name(operator)
@@ -878,8 +892,8 @@ class AstCreator(
       .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .typeFullName(Defines.Any)
-      .lineNumber(ctx.LBRACK().getSymbol.getLine())
-      .columnNumber(ctx.LBRACK().getSymbol.getCharPositionInLine())
+      .lineNumber(ctx.LBRACK().getSymbol.getLine)
+      .columnNumber(ctx.LBRACK().getSymbol.getCharPositionInLine)
     Seq(callAst(callNode, lhsExpressionAst ++ rhsExpressionAst))
 
   }
@@ -953,7 +967,9 @@ class AstCreator(
           .withChildren(astForArguments(ctx.arguments()))
       )
     case _ =>
-      logger.error(s"astForInvocationWithoutParenthesesContext() $filename, ${text(ctx)} All contexts mismatched.")
+      logger.error(
+        s"astForInvocationWithoutParenthesesContext() $relativeFilename, ${text(ctx)} All contexts mismatched."
+      )
       Seq(Ast())
   }
 
@@ -1055,16 +1071,14 @@ class AstCreator(
   }
 
   def astForCallNode(ctx: ParserRuleContext, code: String, isYieldBlock: Boolean = false): Ast = {
-    val nameSuffix =
-      if (isYieldBlock) {
-        YIELD_SUFFIX
-      } else {
-        ""
-      }
-    val name = s"${getActualMethodName(text(ctx))}$nameSuffix"
-    // Add the call name to the global builtIn callNames set
-    if (isBuiltin(name))
-      builtInCallNames.add(name)
+    val name = if (isYieldBlock) {
+      s"${getActualMethodName(text(ctx))}$YIELD_SUFFIX"
+    } else {
+      val calleeName = getActualMethodName(text(ctx))
+      // Add the call name to the global builtIn callNames set
+      if (isBuiltin(calleeName)) builtInCallNames.add(calleeName)
+      calleeName
+    }
 
     callAst(callNode(ctx, code, name, DynamicCallUnknownFullName, DispatchTypes.STATIC_DISPATCH))
   }
@@ -1181,7 +1195,7 @@ class AstCreator(
     case ctx: SimpleMethodNamePartContext    => astForSimpleMethodNamePartContext(ctx)
     case ctx: SingletonMethodNamePartContext => astForSingletonMethodNamePartContext(ctx)
     case _ =>
-      logger.error(s"astForMethodNamePartContext() $filename, ${text(ctx)} All contexts mismatched.")
+      logger.error(s"astForMethodNamePartContext() $relativeFilename, ${text(ctx)} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -1309,7 +1323,7 @@ class AstCreator(
         XDefines.StaticInitMethodName,
         classInitFullName,
         None,
-        filename,
+        relativeFilename,
         Option(NodeTypes.TYPE_DECL),
         Option(classStack.reverse.mkString(pathSep))
       )
@@ -1368,16 +1382,17 @@ class AstCreator(
 
     // Create thisParameter if this is an instance method
     // TODO may need to revisit to make this more robust
-    val methodFullName = classStack.reverse :+ callNode.name mkString pathSep
-    val methodNode = NewMethod()
-      .code(text(ctx))
-      .name(callNode.name)
-      .fullName(methodFullName)
+
+    val (methodName, methodFullName) = if (callNode.name == "initialize") {
+      (XDefines.ConstructorMethodName, classStack.reverse :+ XDefines.ConstructorMethodName mkString pathSep)
+    } else {
+      (callNode.name, classStack.reverse :+ callNode.name mkString pathSep)
+    }
+    val newMethodNode = methodNode(ctx, methodName, text(ctx), methodFullName, None, relativeFilename)
       .columnNumber(callNode.columnNumber)
       .lineNumber(callNode.lineNumber)
-      .filename(filename)
 
-    scope.pushNewScope(methodNode)
+    scope.pushNewScope(newMethodNode)
 
     val astMethodParamSeq = ctx.methodNamePart() match {
       case _: SimpleMethodNamePartContext if !classStack.top.endsWith(":program") =>
@@ -1393,9 +1408,7 @@ class AstCreator(
       case _ => astForMethodParameterPartContext(ctx.methodParameterPart())
     }
 
-    Option(ctx.END()) match
-      case Some(value) => methodNode.lineNumberEnd(value.getSymbol.getLine)
-      case None        =>
+    Option(ctx.END()).foreach(endNode => newMethodNode.lineNumberEnd(endNode.getSymbol.getLine))
 
     callNode.methodFullName(methodFullName)
 
@@ -1412,31 +1425,22 @@ class AstCreator(
 
     // process yield calls.
     astBody
-      .flatMap(ast =>
-        ast.nodes
-          .filter(_.isInstanceOf[NewCall])
-          .filter(_.asInstanceOf[NewCall].name == UNRESOLVED_YIELD)
-      )
-      .foreach(node => {
-        val yieldCallNode  = node.asInstanceOf[NewCall]
-        val name           = methodNode.name
+      .flatMap(_.nodes.collect { case x: NewCall => x }.filter(_.name == UNRESOLVED_YIELD))
+      .foreach { yieldCallNode =>
+        val name           = newMethodNode.name
         val methodFullName = classStack.reverse :+ callNode.name mkString pathSep
         yieldCallNode.name(name + YIELD_SUFFIX)
         yieldCallNode.methodFullName(methodFullName + YIELD_SUFFIX)
-        methodNamesWithYield.add(methodNode.name)
+        methodNamesWithYield.add(newMethodNode.name)
         /*
          * These are calls to the yield block of this method.
          * Add this method to the list of yield blocks.
          * The add() is idempotent and so adding the same method multiple times makes no difference.
          * It just needs to be added at this place so that it gets added iff it has a yield block
          */
+      }
 
-      })
-
-    val methodRetNode = NewMethodReturn()
-      .lineNumber(None)
-      .columnNumber(None)
-      .typeFullName(Defines.Any)
+    val methodRetNode = NewMethodReturn().typeFullName(Defines.Any)
 
     val modifierNode = lastModifier match {
       case Some(modifier) => NewModifier().modifierType(modifier).code(modifier)
@@ -1446,9 +1450,9 @@ class AstCreator(
      * public/private/protected modifiers are in a separate statement
      * TODO find out how they should be used. Need to do this iff it adds any value
      */
-
-    methodNameToMethod.put(methodNode.name, methodNode)
-    val blockNode = NewBlock().typeFullName(Defines.Any)
+    if (methodName != XDefines.ConstructorMethodName) {
+      methodNameToMethod.put(newMethodNode.name, newMethodNode)
+    }
 
     /* Before creating ast, we traverse the method params and identifiers and link them*/
     val identifiers =
@@ -1468,31 +1472,28 @@ class AstCreator(
 
     Seq(
       methodAst(
-        methodNode,
+        newMethodNode,
         astMethodParamSeq,
-        blockAst(blockNode, locals.map(Ast.apply) ++ astBody.toList),
+        blockAst(blockNode(ctx), locals.map(Ast.apply) ++ astBody.toList),
         methodRetNode,
         Seq[NewModifier](modifierNode)
       )
     )
   }
 
-  def getPackedRHS(astsToConcat: Seq[Ast]) = {
+  private def getPackedRHS(astsToConcat: Seq[Ast], wrapInBrackets: Boolean = false) = {
     val code = astsToConcat
-      .flatMap(
-        _.nodes
-          .filter(_.isInstanceOf[NewIdentifier])
-      )
-      .map(_.asInstanceOf[NewIdentifier].code)
-      .mkString(",")
+      .flatMap(_.nodes)
+      .collect { case x: AstNodeNew => x.code }
+      .mkString(", ")
 
     val callNode = NewCall()
       .name(Operators.arrayInitializer)
       .methodFullName(Operators.arrayInitializer)
-      .signature(Operators.arrayInitializer)
+      .signature("")
       .typeFullName(Defines.Any)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .code(code)
+      .code(if (wrapInBrackets) s"[$code]" else code)
     Seq(callAst(callNode, astsToConcat))
   }
 
@@ -1586,7 +1587,7 @@ class AstCreator(
       val primaryAsts    = astForPrimaryContext(ctx.primary())
       primaryAsts ++ methodNameAsts ++ argsAsts ++ doBlockAsts
     case _ =>
-      logger.error(s"astForCommandWithDoBlockContext() $filename, ${text(ctx)} All contexts mismatched.")
+      logger.error(s"astForCommandWithDoBlockContext() $relativeFilename, ${text(ctx)} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -1604,8 +1605,8 @@ class AstCreator(
   }
 
   def astForArgumentsWithParenthesesContext(ctx: ArgumentsWithParenthesesContext): Seq[Ast] = ctx match {
-    case ctx: BlankArgsArgumentsWithParenthesesContext => Seq(Ast())
-    case ctx: ArgsOnlyArgumentsWithParenthesesContext  => astForArguments(ctx.arguments())
+    case _: BlankArgsArgumentsWithParenthesesContext  => Seq(Ast())
+    case ctx: ArgsOnlyArgumentsWithParenthesesContext => astForArguments(ctx.arguments())
     case ctx: ExpressionsAndChainedCommandWithDoBlockArgumentsWithParenthesesContext =>
       val expAsts = ctx
         .expressions()
@@ -1620,7 +1621,7 @@ class AstCreator(
     case ctx: ChainedCommandWithDoBlockOnlyArgumentsWithParenthesesContext =>
       astForChainedCommandWithDoBlockContext(ctx.chainedCommandWithDoBlock())
     case _ =>
-      logger.error(s"astForArgumentsWithParenthesesContext() $filename, ${text(ctx)} All contexts mismatched.")
+      logger.error(s"astForArgumentsWithParenthesesContext() $relativeFilename, ${text(ctx)} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -1655,17 +1656,13 @@ class AstCreator(
      * Model a block as a method
      */
     val methodFullName = classStack.reverse :+ blockMethodName mkString pathSep
-    val methodNode = NewMethod()
-      .code(text(ctxStmt))
-      .name(blockMethodName)
-      .fullName(methodFullName)
-      .filename(filename)
+    val newMethodNode = methodNode(ctxStmt, blockMethodName, text(ctxStmt), methodFullName, None, relativeFilename)
       .lineNumber(lineStart)
       .lineNumberEnd(lineEnd)
       .columnNumber(colStart)
       .columnNumberEnd(colEnd)
 
-    scope.pushNewScope(methodNode)
+    scope.pushNewScope(newMethodNode)
     val astMethodParam = ctxParam.map(astForBlockParameterContext).getOrElse(Seq())
 
     val publicModifier = NewModifier().modifierType(ModifierTypes.PUBLIC)
@@ -1699,17 +1696,18 @@ class AstCreator(
     val locals        = scope.createAndLinkLocalNodes(diffGraph, paramNames).map(Ast.apply)
     val astBody       = astForStatements(ctxStmt, true)
     val methodRetNode = NewMethodReturn().typeFullName(Defines.Any)
-    val blockNode     = NewBlock().typeFullName(Defines.Any)
-    val methAst = methodAst(
-      methodNode,
-      paramSeq,
-      blockAst(blockNode, locals ++ astBody.toList),
-      methodRetNode,
-      Seq[NewModifier](publicModifier)
-    )
 
     scope.popScope()
-    Seq(methAst)
+
+    Seq(
+      methodAst(
+        newMethodNode,
+        paramSeq,
+        blockAst(blockNode(ctxStmt), locals ++ astBody.toList),
+        methodRetNode,
+        Seq(publicModifier)
+      )
+    )
   }
 
   def astForAssociationContext(ctx: AssociationContext): Seq[Ast] = {
@@ -1748,15 +1746,39 @@ class AstCreator(
     ctx
       .association()
       .asScala
-      .flatMap(assoc => {
-        astForAssociationContext(assoc)
-      })
+      .flatMap(astForAssociationContext)
       .toSeq
   }
 
 }
 
+/** Extends the Scope class to help scope variables and create locals.
+  *
+  * TODO: Extend this to similarly link parameter nodes (especially `this` node) for consistency.
+  */
 class RubyScope extends Scope[String, NewIdentifier, NewNode] {
+
+  private type VarMap        = Map[String, VarGroup]
+  private type ScopeNodeType = NewNode
+
+  /** Groups a local node with its referencing identifiers.
+    */
+  private case class VarGroup(local: NewLocal, ids: List[NewIdentifier])
+
+  /** Links a scope to its variable groupings.
+    */
+  private val scopeToVarMap = mutable.HashMap.empty[ScopeNodeType, VarMap]
+
+  override def addToScope(identifier: String, variable: NewIdentifier): NewNode = {
+    val scopeNode = super.addToScope(identifier, variable)
+    stack.headOption.foreach(head => scopeToVarMap.appendIdentifierToVarGroup(head.scopeNode, variable))
+    scopeNode
+  }
+
+  override def popScope(): Option[NewNode] = {
+    stack.headOption.map(_.scopeNode).foreach(scopeToVarMap.remove)
+    super.popScope()
+  }
 
   /** Will generate local nodes for this scope's variables, excluding those that reference parameters.
     * @param paramNames
@@ -1766,23 +1788,59 @@ class RubyScope extends Scope[String, NewIdentifier, NewNode] {
     diffGraph: BatchedUpdate.DiffGraphBuilder,
     paramNames: Set[String] = Set.empty
   ): List[DeclarationNew] = stack.headOption match
-    case Some(top) =>
-      top.variables
-        .filterNot(x => paramNames.contains(x._1) || x._1 == "this")
-        .groupBy(_._1)
-        .map { case (name, varMap) => name -> varMap.values.toList.sortBy(i => (i.lineNumber, i.columnNumber)) }
-        .map { case (name, vars) =>
-          val firstI = vars.head
-          val local = NewLocal()
-            .name(name)
-            .code(name)
-            .lineNumber(firstI.lineNumber)
-            .columnNumber(firstI.columnNumber)
-            .typeFullName(firstI.typeFullName)
-          vars.foreach(i => diffGraph.addEdge(i, local, EdgeTypes.REF))
-          local
-        }
-        .toList
-    case None => List.empty[DeclarationNew]
+    case Some(top) => scopeToVarMap.buildVariableGroupings(top.scopeNode, paramNames ++ Set("this"), diffGraph)
+    case None      => List.empty[DeclarationNew]
+
+  private implicit class IdentifierExt(node: NewIdentifier) {
+
+    /** Creates a new VarGroup and corresponding NewLocal for the given identifier.
+      */
+    def toNewVarGroup: VarGroup = {
+      val newLocal = NewLocal()
+        .name(node.name)
+        .code(node.name)
+        .lineNumber(node.lineNumber)
+        .columnNumber(node.columnNumber)
+        .typeFullName(node.typeFullName)
+      VarGroup(newLocal, List(node))
+    }
+
+  }
+
+  private implicit class ScopeExt(scopeMap: mutable.Map[ScopeNodeType, VarMap]) {
+
+    /** Registers the identifier to its corresponding variable grouping in the given scope.
+      */
+    def appendIdentifierToVarGroup(key: ScopeNodeType, identifier: NewIdentifier): Unit =
+      scopeMap.updateWith(key) {
+        case Some(varMap: VarMap) =>
+          Some(varMap.updatedWith(identifier.name) {
+            case Some(varGroup: VarGroup) => Some(varGroup.copy(ids = varGroup.ids :+ identifier))
+            case None                     => Some(identifier.toNewVarGroup)
+          })
+        case None =>
+          Some(Map(identifier.name -> identifier.toNewVarGroup))
+      }
+
+    /** Will persist the variable groupings that do not represent parameter nodes and link them with REF edges.
+      * @return
+      *   the list of persisted local nodes.
+      */
+    def buildVariableGroupings(
+      key: ScopeNodeType,
+      paramNames: Set[String],
+      diffGraph: BatchedUpdate.DiffGraphBuilder
+    ): List[DeclarationNew] =
+      scopeMap.get(key) match
+        case Some(varMap) =>
+          varMap.values
+            .filterNot { case VarGroup(local, _) => paramNames.contains(local.name) }
+            .map { case VarGroup(local, ids) =>
+              ids.foreach(id => diffGraph.addEdge(id, local, EdgeTypes.REF))
+              local
+            }
+            .toList
+        case None => List.empty[DeclarationNew]
+  }
 
 }

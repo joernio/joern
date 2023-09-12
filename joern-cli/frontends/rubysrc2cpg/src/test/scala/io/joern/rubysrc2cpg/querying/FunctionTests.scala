@@ -1,8 +1,9 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class FunctionTests extends RubyCode2CpgFixture {
 
@@ -35,7 +36,7 @@ class FunctionTests extends RubyCode2CpgFixture {
       cpg.identifier.name("age").size shouldBe 1
       cpg.fieldAccess.fieldIdentifier.canonicalName("name").size shouldBe 2
       cpg.fieldAccess.fieldIdentifier.canonicalName("age").size shouldBe 4
-      cpg.identifier.size shouldBe 16 // 4 identifier node is for `puts = typeDef(__builtin.puts)` and methodRef's assignment, 1 node for class Person = typeDef
+      cpg.identifier.size shouldBe 13 // 4 identifier node is for `puts = typeDef(__builtin.puts)` 1 node for class Person = typeDef
     }
 
     "recognize all call nodes" in {
@@ -44,7 +45,9 @@ class FunctionTests extends RubyCode2CpgFixture {
     }
 
     "recognize all method nodes" in {
-      cpg.method.name("initialize").size shouldBe 1
+      // Initialize => <init>
+      cpg.method.name("initialize").size shouldBe 0
+      cpg.method.name(Defines.ConstructorMethodName).size shouldBe 1
       cpg.method.name("greet").size shouldBe 1
       cpg.method.name("have_birthday").size shouldBe 1
     }
@@ -73,16 +76,17 @@ class FunctionTests extends RubyCode2CpgFixture {
     "recognise all method nodes" in {
       cpg.method.name("\\[]").size shouldBe 1
       cpg.method.name("\\[]=").size shouldBe 1
-      cpg.method.name("initialize").size shouldBe 1
+      cpg.method.name("initialize").size shouldBe 0
+      cpg.method.name(Defines.ConstructorMethodName).size shouldBe 1
     }
 
     "recognize all call nodes" in {
       cpg.call
         .name(Operators.assignment)
-        .size shouldBe 7 // 3 identifier node is for methodRef's assignment, 1 identifier node for TypeRef's assignment
+        .size shouldBe 4 //  +1 identifier node for TypeRef's assignment
       cpg.call.name("to_s").size shouldBe 2
-      cpg.call.name("new").size shouldBe 1
-      cpg.call.size shouldBe 15 // 3 identifier node is for methodRef's assignment, 1 identifier node for TypeRef's assignment
+      cpg.call.name(Defines.ConstructorMethodName).size shouldBe 1
+      cpg.call.size shouldBe 12 // 1 identifier node for TypeRef's assignment
     }
 
     "recognize all identifier nodes" in {

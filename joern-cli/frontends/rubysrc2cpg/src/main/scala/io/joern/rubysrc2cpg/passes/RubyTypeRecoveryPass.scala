@@ -5,6 +5,7 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import overflowdb.BatchedUpdate.DiffGraphBuilder
+import io.joern.x2cpg.Defines as XDefines
 
 class RubyTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
     extends XTypeRecoveryPass[File](cpg, config) {
@@ -37,7 +38,7 @@ private class RecoverForRubyFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, 
   /** A heuristic method to determine if a call name is a constructor or not.
     */
   override protected def isConstructor(name: String): Boolean =
-    !name.isBlank && name.equals("new")
+    !name.isBlank && (name == "new" || name == XDefines.ConstructorMethodName)
 
   override def visitImport(i: Import): Unit = for {
     resolvedImport <- i.call.tag
@@ -53,12 +54,13 @@ private class RecoverForRubyFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, 
   override def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
 
     def isMatching(cName: String, code: String) = {
-      val cNameList = cName.split(":program").last.split("\\.").filterNot(_.isEmpty)
-      val codeList  = code.split("\\(").head.split("[:.]").filterNot(_.isEmpty)
+      val cNameList = cName.split(":program").last.split("\\.").filterNot(_.isEmpty).dropRight(1)
+      val codeList  = code.split("\\(").head.split("[:.]").filterNot(_.isEmpty).dropRight(1)
       cNameList sameElements codeList
     }
 
-    val constructorPaths = symbolTable.get(c).filter(isMatching(_, c.code)).map(_.stripSuffix(s"${pathSep}new"))
+    val constructorPaths =
+      symbolTable.get(c).filter(isMatching(_, c.code)).map(_.stripSuffix(s"$pathSep${XDefines.ConstructorMethodName}"))
     associateTypes(i, constructorPaths)
   }
 

@@ -1,11 +1,11 @@
 package io.joern.rubysrc2cpg.passes
 
 import better.files.File
-import io.joern.rubysrc2cpg.utils.{MethodTableModel, PackageTable}
+import io.joern.rubysrc2cpg.utils.PackageTable
+import io.joern.x2cpg.Defines as XDefines
 import io.joern.x2cpg.passes.frontend.ImportsPass.*
 import io.joern.x2cpg.passes.frontend.XImportResolverPass
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.semanticcpg.language.*
 
@@ -52,7 +52,10 @@ class ImportResolverPass(cpg: Cpg, packageTableInfo: PackageTable) extends XImpo
         val importNodesFromTypeDecl = packageTableInfo
           .getTypeDecl(expEntity)
           .flatMap { typeDeclModel =>
-            Seq(ResolvedMethod(s"${typeDeclModel.fullName}.new", "new"), ResolvedTypeDecl(typeDeclModel.fullName))
+            Seq(
+              ResolvedMethod(s"${typeDeclModel.fullName}.${XDefines.ConstructorMethodName}", "new"),
+              ResolvedTypeDecl(typeDeclModel.fullName)
+            )
           }
           .distinct
 
@@ -61,21 +64,24 @@ class ImportResolverPass(cpg: Cpg, packageTableInfo: PackageTable) extends XImpo
         }
         (importNodesFromTypeDecl ++ importNodesFromModule).toSet
       } else {
+        val filePattern = s"${Pattern.quote(expResolvedPath)}\\.?.*"
         val resolvedTypeDecls = cpg.typeDecl
-          .where(_.file.name(s"${Pattern.quote(expResolvedPath)}\\.?.*"))
+          .where(_.file.name(filePattern))
           .fullName
-          .flatMap(fullName => Seq(ResolvedTypeDecl(fullName), ResolvedMethod(s"$fullName.new", "new")))
+          .flatMap(fullName =>
+            Seq(ResolvedTypeDecl(fullName), ResolvedMethod(s"$fullName.${XDefines.ConstructorMethodName}", "new"))
+          )
           .toSet
 
         val resolvedModules = cpg.namespaceBlock
           .whereNot(_.nameExact("<global>"))
-          .where(_.file.name(s"${Pattern.quote(expResolvedPath)}\\.?.*"))
+          .where(_.file.name(filePattern))
           .flatMap(module => Seq(ResolvedTypeDecl(module.fullName)))
           .toSet
 
         // Expose methods which are directly present in a file, without any module, TypeDecl
         val resolvedMethods = cpg.method
-          .where(_.file.name(s"${Pattern.quote(expResolvedPath)}\\.?.*"))
+          .where(_.file.name(filePattern))
           .where(_.nameExact(":program"))
           .astChildren
           .astChildren
@@ -105,7 +111,7 @@ class ImportResolverPass(cpg: Cpg, packageTableInfo: PackageTable) extends XImpo
       case resPath if entity.endsWith(".rb") => s"$resPath.rb"
       case resPath                           => resPath
     }
-    resolvedPath
+    resolvedPath.stripPrefix(root)
   }
 
 }
