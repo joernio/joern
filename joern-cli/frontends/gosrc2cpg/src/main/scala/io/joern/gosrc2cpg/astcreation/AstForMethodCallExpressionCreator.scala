@@ -10,15 +10,15 @@ import ujson.Value
 
 trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  private def getAliasFromSelectorExpr(funcDetails: ParserNodeInfo): ParserNodeInfo = {
+  private def getLastIdentifierFromSelectorExpr(funcDetails: ParserNodeInfo): ParserNodeInfo = {
     funcDetails.node match
       case Ident =>
         // recursion break condition
         funcDetails
       case SelectorExpr =>
-        getAliasFromSelectorExpr(createParserNodeInfo(funcDetails.json(ParserKeys.X)))
+        getLastIdentifierFromSelectorExpr(createParserNodeInfo(funcDetails.json(ParserKeys.X)))
       case _ =>
-        getAliasFromSelectorExpr(createParserNodeInfo(funcDetails.json(ParserKeys.X)))
+        getLastIdentifierFromSelectorExpr(createParserNodeInfo(funcDetails.json(ParserKeys.X)))
   }
 
   def astForCallExpression(expr: ParserNodeInfo): Seq[Ast] = {
@@ -27,7 +27,7 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
       case Ident =>
         (None, funcDetails.json(ParserKeys.Name).str)
       case SelectorExpr =>
-        val indentifierNode = getAliasFromSelectorExpr(createParserNodeInfo(funcDetails.json(ParserKeys.X)))
+        val indentifierNode = getLastIdentifierFromSelectorExpr(createParserNodeInfo(funcDetails.json(ParserKeys.X)))
         (
           Some(indentifierNode.json(ParserKeys.Name).str, indentifierNode.json),
           funcDetails.json(ParserKeys.Sel)(ParserKeys.Name).str
