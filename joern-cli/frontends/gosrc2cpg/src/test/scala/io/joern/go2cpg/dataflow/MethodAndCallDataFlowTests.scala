@@ -181,4 +181,33 @@ class MethodAndCallDataFlowTests extends GoCodeToCpgSuite(withOssDataflow = true
       sink.reachableByFlows(src).size shouldBe 2
     }
   }
+
+  "multiple assignment with tuple using var keyword initialization" should {
+    val cpg = code("""
+        |package main
+        |
+        |func add(int a, int b) (int, int) {
+        |return (a+b)/2 , a+b
+        |}
+        |func foo() {
+        |  var a = 10
+        |  var b = 20
+        |  var avg, sum = add(a, b)
+        |}
+        |""".stripMargin)
+
+    "data flow to first tuple variable" in {
+      val srcfirst = cpg.identifier("a").l
+      val avgsink  = cpg.identifier("avg").l
+      avgsink.reachableByFlows(srcfirst).size shouldBe 2
+
+    }
+
+    // tuple return handling
+    "data flow to second tuple variable" ignore {
+      val srcfirst = cpg.identifier("a").l
+      val sumsink  = cpg.identifier("sum").l
+      sumsink.reachableByFlows(srcfirst).size shouldBe 1
+    }
+  }
 }
