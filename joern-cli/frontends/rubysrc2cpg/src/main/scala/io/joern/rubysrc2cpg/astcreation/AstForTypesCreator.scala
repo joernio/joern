@@ -3,20 +3,15 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.parser.RubyParser.{
   ClassDefinitionPrimaryContext,
   ClassOrModuleReferenceContext,
-  ExpressionExpressionOrCommandContext,
   ModuleDefinitionPrimaryContext,
-  PrimaryExpressionContext,
-  PseudoVariableIdentifierVariableReferenceContext,
-  ScopedConstantReferenceContext,
-  SelfPseudoVariableIdentifierContext,
-  VariableReferencePrimaryContext
+  ScopedConstantReferenceContext
 }
-import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.*
-import org.antlr.v4.runtime.ParserRuleContext
 import io.joern.x2cpg.utils.*
+import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
+import org.antlr.v4.runtime.ParserRuleContext
 
 import scala.collection.mutable
 
@@ -42,7 +37,16 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       classStack.push(className)
       val fullName = classStack.reverse.mkString(pathSep)
 
-      val bodyAst = astForClassBody(ctx.classDefinition().bodyStatement())
+      val bodyAst = astForClassBody(ctx.classDefinition().bodyStatement()).map { ast =>
+        ast.root.foreach {
+          case node: NewMethod =>
+            node
+              .astParentType(NodeTypes.TYPE_DECL)
+              .astParentFullName(fullName)
+          case _ =>
+        }
+        ast
+      }
 
       if (classStack.nonEmpty) {
         classStack.pop()
@@ -51,12 +55,55 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       val typeDeclNode = NewTypeDecl()
         .name(className)
         .fullName(fullName)
+        .filename(relativeFilename)
+        .code(text(ctx).takeWhile(x => x != '\n'))
+        .lineNumber(line(ctx))
+        .columnNumber(column(ctx))
+
+      // create constructor if not explicitly defined
+      val hasConstructor =
+        bodyAst.flatMap(_.root).collect { case x: NewMethod => x.name }.contains(XDefines.ConstructorMethodName)
+      val defaultConstructor =
+        if (!hasConstructor)
+          createDefaultConstructor(ctx, typeDeclNode, bodyAst.flatMap(_.nodes).collect { case x: NewMember => x })
+        else Seq.empty
 
       typeDeclNameToTypeDecl.put(className, typeDeclNode)
-      Seq(Ast(typeDeclNode).withChildren(bodyAst))
+      Seq(Ast(typeDeclNode).withChildren(defaultConstructor ++ bodyAst))
     } else {
       Seq.empty
     }
+  }
+
+  /** If no constructor is explicitly defined, will create a default one.
+    */
+  private def createDefaultConstructor(
+    ctx: ClassDefinitionPrimaryContext,
+    typeDecl: NewTypeDecl,
+    fields: Seq[NewMember]
+  ): Seq[Ast] = {
+    val name     = XDefines.ConstructorMethodName
+    val code     = Seq(typeDecl.name, name).mkString(pathSep)
+    val fullName = Seq(typeDecl.fullName, name).mkString(pathSep)
+
+    val constructorNode =
+      methodNode(ctx, name, code, fullName, None, relativeFilename, Option(typeDecl.label), Option(typeDecl.fullName))
+    val thisParam = createMethodParameterIn("this", None, None, typeDecl.fullName)
+    val params =
+      thisParam +: fields.map(m => createMethodParameterIn(m.name, None, None, m.typeFullName))
+    val assignments = fields.map { m =>
+      val thisNode        = createThisIdentifier(ctx)
+      val lhs             = createFieldAccess(thisNode, m.name)
+      val paramIdentifier = identifierNode(ctx, m.name, m.name, m.typeFullName)
+      val refParam        = params.find(_.name == m.name).get
+      astForAssignment(lhs.root.get, paramIdentifier)
+        .withRefEdge(thisNode, thisParam)
+        .withRefEdge(paramIdentifier, refParam)
+    }.toList
+    val body         = blockAst(blockNode(ctx), assignments)
+    val methodReturn = methodReturnNode(ctx, typeDecl.fullName)
+
+    Seq(methodAst(constructorNode, params.map(Ast.apply(_)), body, methodReturn))
   }
 
   def astForClassExpression(ctx: ClassDefinitionPrimaryContext): Seq[Ast] = {
@@ -79,9 +126,9 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       val namespaceBlock = NewNamespaceBlock()
         .name(className)
         .fullName(fullName)
-        .filename(filename)
+        .filename(relativeFilename)
 
-      val moduleBodyAst = astInFakeMethod(className, fullName, filename, ctx)
+      val moduleBodyAst = astInFakeMethod(className, fullName, relativeFilename, ctx)
       classStack.pop()
       Seq(Ast(namespaceBlock).withChildren(moduleBodyAst))
     } else {

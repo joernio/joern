@@ -1,7 +1,6 @@
 package io.joern.rubysrc2cpg.dataflow
 
 import io.joern.dataflowengineoss.language.*
-import io.joern.rubysrc2cpg.RubySrc2Cpg
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 

@@ -11,7 +11,7 @@ class CustomAssignmentTests extends RubyCode2CpgFixture(withPostProcessing = tru
         |puts "This is ruby"
         |""".stripMargin)
     "be created for builtin presence" in {
-      val List(_, putsAssignmentCall) = cpg.call.l
+      val List(putsAssignmentCall, _) = cpg.call.l
       putsAssignmentCall.name shouldBe "<operator>.assignment"
 
       val List(putsIdentifier: Identifier, putsBuiltInTypeRef: TypeRef) = putsAssignmentCall.argument.l: @unchecked
@@ -22,7 +22,7 @@ class CustomAssignmentTests extends RubyCode2CpgFixture(withPostProcessing = tru
     }
 
     "resolve type for `puts`" in {
-      val List(putsCall, _) = cpg.call.l
+      val List(_, putsCall) = cpg.call.l
       putsCall.name shouldBe "puts"
       putsCall.methodFullName shouldBe "__builtin.puts"
     }
@@ -37,7 +37,7 @@ class CustomAssignmentTests extends RubyCode2CpgFixture(withPostProcessing = tru
         |foo()
         |""".stripMargin)
     "be created" in {
-      val List(_, fooAssignmentCall) = cpg.call.l
+      val List(fooAssignmentCall, _) = cpg.call.l
       fooAssignmentCall.name shouldBe "<operator>.assignment"
 
       val List(fooIdentifier: Identifier, fooMethodRef: MethodRef) = fooAssignmentCall.argument.l: @unchecked
@@ -48,7 +48,7 @@ class CustomAssignmentTests extends RubyCode2CpgFixture(withPostProcessing = tru
     }
 
     "resolve type for `foo`" in {
-      val List(fooCall, _) = cpg.call.l
+      val List(_, fooCall) = cpg.call.l
       fooCall.name shouldBe "foo"
       fooCall.methodFullName shouldBe "Test0.rb::program.foo"
     }

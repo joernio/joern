@@ -34,7 +34,7 @@ class FileTests extends RubyCode2CpgFixture {
   }
 
   "should allow traversing from file to its methods via namespace block" in {
-    cpg.file.nameNot(FileTraversal.UNKNOWN).method.name.toSetMutable shouldBe Set(":program", "foo", "bar")
+    cpg.file.nameNot(FileTraversal.UNKNOWN).method.name.toSetMutable shouldBe Set("foo", "bar", "<init>", ":program")
   }
 
   // TODO: TypeDecl fix this unit test

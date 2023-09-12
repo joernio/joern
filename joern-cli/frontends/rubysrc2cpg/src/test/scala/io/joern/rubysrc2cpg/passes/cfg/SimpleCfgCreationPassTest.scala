@@ -12,31 +12,31 @@ class SimpleCfgCreationPassTest extends CfgTestFixture(() => new RubyCfgTestCpg(
       implicit val cpg: Cpg = code("x = []")
       succOf(":program") shouldBe expected(("x", AlwaysEdge))
       succOf("x") shouldBe expected(("x = []", AlwaysEdge))
-      succOf("x = []") shouldBe expected(("<empty>", AlwaysEdge))
+      succOf("x = []") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "have correct structure for array literal with values" in {
       implicit val cpg: Cpg = code("x = [1, 2]")
       succOf("1") shouldBe expected(("2", AlwaysEdge))
-      succOf("x = [1, 2]") shouldBe expected(("<empty>", AlwaysEdge))
+      succOf("x = [1, 2]") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "assigning a literal value" in {
       implicit val cpg: Cpg = code("x = 1")
       succOf(":program") shouldBe expected(("x", AlwaysEdge))
-      succOf("x = 1") shouldBe expected(("<empty>", AlwaysEdge))
+      succOf("x = 1") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "assigning a string literal value" in {
       implicit val cpg: Cpg = code("x = 'some literal'")
       succOf(":program") shouldBe expected(("x", AlwaysEdge))
-      succOf("x = 'some literal'") shouldBe expected(("<empty>", AlwaysEdge))
+      succOf("x = 'some literal'") shouldBe expected(("RET", AlwaysEdge))
     }
 
     "addition of two numbers" in {
       implicit val cpg: Cpg = code("x = 1 + 2")
       succOf(":program") shouldBe expected(("x", AlwaysEdge))
-      succOf("x = 1 + 2") shouldBe expected(("<empty>", AlwaysEdge))
+      succOf("x = 1 + 2") shouldBe expected(("RET", AlwaysEdge))
       succOf("x") shouldBe expected(("1", AlwaysEdge))
       succOf("2") shouldBe expected(("1 + 2", AlwaysEdge))
       succOf("1") shouldBe expected(("2", AlwaysEdge))
@@ -46,7 +46,7 @@ class SimpleCfgCreationPassTest extends CfgTestFixture(() => new RubyCfgTestCpg(
     "addition of two string" in {
       implicit val cpg: Cpg = code("x = 1 + 2")
       succOf(":program") shouldBe expected(("x", AlwaysEdge))
-      succOf("x = 1 + 2") shouldBe expected(("<empty>", AlwaysEdge))
+      succOf("x = 1 + 2") shouldBe expected(("RET", AlwaysEdge))
       succOf("x") shouldBe expected(("1", AlwaysEdge))
       succOf("2") shouldBe expected(("1 + 2", AlwaysEdge))
       succOf("1") shouldBe expected(("2", AlwaysEdge))
@@ -64,7 +64,7 @@ class SimpleCfgCreationPassTest extends CfgTestFixture(() => new RubyCfgTestCpg(
       succOf("a") shouldBe expected(("\"Nice to meet you\"", AlwaysEdge))
       succOf("b") shouldBe expected(("\", \"", AlwaysEdge))
       succOf("c") shouldBe expected(("\"do you like blueberries?\"", AlwaysEdge))
-      succOf("a+b+c") shouldBe expected(("<empty>", AlwaysEdge))
+      succOf("a+b+c") shouldBe expected(("RET", AlwaysEdge))
       succOf("a+b") shouldBe expected(("c", AlwaysEdge))
       succOf("\"Nice to meet you\"") shouldBe expected(("a = \"Nice to meet you\"", AlwaysEdge))
       succOf("\", \"") shouldBe expected(("b = \", \"", AlwaysEdge))
@@ -97,7 +97,10 @@ class SimpleCfgCreationPassTest extends CfgTestFixture(() => new RubyCfgTestCpg(
           |   puts "x is greater than 2"
           |end
           |""".stripMargin)
-      succOf(":program") shouldBe expected(("x", AlwaysEdge))
+      succOf(":program") shouldBe expected(("puts", AlwaysEdge))
+      succOf("puts") shouldBe expected(("__builtin.puts", AlwaysEdge))
+      succOf("__builtin.puts") shouldBe expected(("puts = __builtin.puts", AlwaysEdge))
+      succOf("puts = __builtin.puts") shouldBe expected(("x", AlwaysEdge))
       succOf("1") shouldBe expected(("x = 1", AlwaysEdge))
       succOf("x") shouldBe expected(("1", AlwaysEdge))
       succOf("2") shouldBe expected(("x > 2", AlwaysEdge))
@@ -114,12 +117,15 @@ class SimpleCfgCreationPassTest extends CfgTestFixture(() => new RubyCfgTestCpg(
           |   puts "I can't guess the number"
           |end
           |""".stripMargin)
-      succOf(":program") shouldBe expected(("x", AlwaysEdge))
+      succOf(":program") shouldBe expected(("puts", AlwaysEdge))
+      succOf("puts") shouldBe expected(("__builtin.puts", AlwaysEdge))
+      succOf("__builtin.puts") shouldBe expected(("puts = __builtin.puts", AlwaysEdge))
+      succOf("puts = __builtin.puts") shouldBe expected(("x", AlwaysEdge))
       succOf("1") shouldBe expected(("x = 1", AlwaysEdge))
       succOf("x") shouldBe expected(("1", AlwaysEdge))
       succOf("2") shouldBe expected(("x > 2", AlwaysEdge))
       succOf("x <= 2 and x!=0") subsetOf expected(("\"x is 1\"", AlwaysEdge))
-      succOf("x <= 2 and x!=0") subsetOf expected(("<empty>", AlwaysEdge))
+      succOf("x <= 2 and x!=0") subsetOf expected(("RET", AlwaysEdge))
     }
 
   }

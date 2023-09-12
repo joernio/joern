@@ -210,7 +210,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     case ctx: OrAndExpressionOrCommandContext      => Seq(astForOrAndExpressionOrCommand(ctx))
     case ctx: ExpressionExpressionOrCommandContext => astForExpressionContext(ctx.expression())
     case _ =>
-      logger.error(s"astForExpressionOrCommand() $filename, ${text(ctx)} All contexts mismatched.")
+      logger.error(s"astForExpressionOrCommand() $relativeFilename, ${text(ctx)} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -353,7 +353,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
         case path if File(path).exists =>
           path
         case path if File(s"$path.rb").exists =>
-          s"${path}.rb"
+          s"$path.rb"
         case _ =>
           pathValue
       }
