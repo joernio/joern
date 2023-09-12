@@ -74,6 +74,34 @@ class LoopsTests extends GoCodeToCpgSuite {
       }
     }
 
+    "for-loop without breaking condition" in {
+      val cpg = code("""
+          package main
+          |var a = 10
+          |func main() {
+          |	for {
+          | a++
+          |	}
+          |}
+          |
+          |""".stripMargin)
+
+      inside(cpg.method.name("main").controlStructure.l) { case List(forStmt) =>
+        forStmt.controlStructureType shouldBe ControlStructureTypes.FOR
+        inside(forStmt.astChildren.order(1).l) { case List(initializerBlock: Block) =>
+          initializerBlock.astChildren.size shouldBe 0
+        }
+
+        // order 2 is braking condition
+        forStmt.astChildren.order(2).size shouldBe 0
+        forStmt.astChildren.order(3).size shouldBe 0
+
+        inside(forStmt.astChildren.order(4).l) { case List(body: Block) =>
+          body.astChildren.isCall.code.l shouldBe List("a++")
+        }
+      }
+    }
+
     "be correct for for-loop case 3" in {
       val cpg = code("""
          |package main
