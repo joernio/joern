@@ -562,6 +562,55 @@ class MethodCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
     }
   }
 
+  "Method call on chain of variable" should {
+    "Check call node properties on two times chained" in {
+      val cpg = code("""
+        package main
+        |
+        |func foo(ctx context) int {
+        |
+        |   var a = 10
+        |	result := ctx.data.bar(a)
+        |
+        |	return result
+        |}
+        |
+        |""".stripMargin)
+
+      cpg.call("bar").size shouldBe 1
+      val List(x) = cpg.call("bar").l
+      x.code shouldBe "ctx.data.bar(a)"
+      x.methodFullName shouldBe "main.context.bar"
+      x.order shouldBe 2
+      x.lineNumber shouldBe Option(7)
+      x.typeFullName shouldBe Defines.anyTypeName
+    }
+
+    "Check call node properties on five times chained" in {
+      val cpg = code("""
+        package main
+          |
+          |func foo(ctx context) int {
+          |
+          | var a = 10
+          |	result := ctx.data1.data2.data3.data4.bar(a)
+          |
+          |	return result
+          |}
+          |
+          |""".stripMargin)
+
+      cpg.call("bar").size shouldBe 1
+      val List(x) = cpg.call("bar").l
+      x.code shouldBe "ctx.data1.data2.data3.data4.bar(a)"
+      x.methodFullName shouldBe "main.context.bar"
+      x.order shouldBe 2
+      x.lineNumber shouldBe Option(7)
+      x.typeFullName shouldBe Defines.anyTypeName
+    }
+
+  }
+
   // TODO : Unit test with new function
 //  package main
 //
