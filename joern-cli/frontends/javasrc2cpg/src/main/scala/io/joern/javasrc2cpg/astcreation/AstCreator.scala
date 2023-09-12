@@ -1,21 +1,6 @@
 package io.joern.javasrc2cpg.astcreation
 
-import com.github.javaparser.ast.`type`.TypeParameter
-import com.github.javaparser.ast.{CompilationUnit, Node, NodeList, PackageDeclaration}
-import com.github.javaparser.ast.body.{
-  AnnotationDeclaration,
-  BodyDeclaration,
-  CallableDeclaration,
-  ClassOrInterfaceDeclaration,
-  ConstructorDeclaration,
-  EnumConstantDeclaration,
-  FieldDeclaration,
-  InitializerDeclaration,
-  MethodDeclaration,
-  Parameter,
-  TypeDeclaration,
-  VariableDeclarator
-}
+import com.github.javaparser.ast.body.VariableDeclarator
 import com.github.javaparser.ast.expr.AssignExpr.Operator
 import com.github.javaparser.ast.expr.{
   AnnotationExpr,
@@ -53,110 +38,51 @@ import com.github.javaparser.ast.expr.{
   VariableDeclarationExpr
 }
 import com.github.javaparser.ast.nodeTypes.{NodeWithName, NodeWithSimpleName}
-import com.github.javaparser.ast.stmt.{
-  AssertStmt,
-  BlockStmt,
-  BreakStmt,
-  CatchClause,
-  ContinueStmt,
-  DoStmt,
-  EmptyStmt,
-  ExplicitConstructorInvocationStmt,
-  ExpressionStmt,
-  ForEachStmt,
-  ForStmt,
-  IfStmt,
-  LabeledStmt,
-  ReturnStmt,
-  Statement,
-  SwitchEntry,
-  SwitchStmt,
-  SynchronizedStmt,
-  ThrowStmt,
-  TryStmt,
-  WhileStmt
-}
+import com.github.javaparser.ast.{CompilationUnit, Node, NodeList, PackageDeclaration}
 import com.github.javaparser.resolution.UnsolvedSymbolException
 import com.github.javaparser.resolution.declarations.{
   ResolvedFieldDeclaration,
   ResolvedMethodDeclaration,
   ResolvedMethodLikeDeclaration,
-  ResolvedReferenceTypeDeclaration,
-  ResolvedTypeParameterDeclaration
+  ResolvedReferenceTypeDeclaration
 }
+import com.github.javaparser.resolution.types.ResolvedType
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
-import com.github.javaparser.resolution.types.{ResolvedReferenceType, ResolvedType, ResolvedTypeVariable}
 import com.github.javaparser.symbolsolver.JavaSymbolSolver
-import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator
-import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.{ObjectMethodSignatures, TypeConstants}
-import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
-import io.joern.x2cpg.utils.NodeBuilders.{
-  newAnnotationLiteralNode,
-  newBindingNode,
-  newCallNode,
-  newClosureBindingNode,
-  newFieldIdentifierNode,
-  newIdentifierNode,
-  newMethodReturnNode,
-  newModifierNode,
-  newOperatorCallNode
-}
-import io.joern.javasrc2cpg.scope.NodeTypeInfo
+import io.joern.javasrc2cpg.astcreation.declarations.AstForDeclarationsCreator
+import io.joern.javasrc2cpg.astcreation.expressions.AstForExpressionsCreator
+import io.joern.javasrc2cpg.astcreation.statements.AstForStatementsCreator
 import io.joern.javasrc2cpg.scope.Scope
 import io.joern.javasrc2cpg.scope.Scope.*
-import io.joern.javasrc2cpg.util.{
-  BindingTable,
-  BindingTableAdapterForJavaparser,
-  BindingTableAdapterForLambdas,
-  BindingTableEntry,
-  LambdaBindingInfo,
-  NameConstants
-}
-import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.{ObjectMethodSignatures, TypeConstants}
+import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator
+import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
+import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
 import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, composeMethodLikeSignature, composeUnresolvedSignature}
+import io.joern.javasrc2cpg.util.{BindingTable, BindingTableAdapterForJavaparser, NameConstants}
 import io.joern.x2cpg.Defines.*
-import io.shiftleft.codepropertygraph.generated.{
-  ControlStructureTypes,
-  DispatchTypes,
-  EdgeTypes,
-  EvaluationStrategies,
-  ModifierTypes,
-  NodeTypes,
-  Operators
-}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  NewAnnotation,
-  NewArrayInitializer,
-  NewBlock,
-  NewCall,
-  NewClosureBinding,
-  NewControlStructure,
-  NewFieldIdentifier,
-  NewIdentifier,
-  NewImport,
-  NewJumpTarget,
-  NewLiteral,
-  NewLocal,
-  NewMember,
-  NewMethod,
-  NewMethodParameterIn,
-  NewMethodRef,
-  NewMethodReturn,
-  NewModifier,
-  NewNamespaceBlock,
-  NewNode,
-  NewReturn,
-  NewTypeDecl,
-  NewTypeRef
-}
-import io.joern.x2cpg.{Ast, AstCreatorBase, Defines, ValidationMode}
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.passes.frontend.TypeNodePass
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.joern.x2cpg.utils.NodeBuilders
-import io.joern.x2cpg.AstNodeBuilder
+import io.joern.x2cpg.utils.NodeBuilders.{newAnnotationLiteralNode, newIdentifierNode, newOperatorCallNode}
+import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode.PropertyDefaults
-import io.shiftleft.passes.IntervalKeyPool
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewArrayInitializer,
+  NewBlock,
+  NewCall,
+  NewClosureBinding,
+  NewFieldIdentifier,
+  NewIdentifier,
+  NewImport,
+  NewLiteral,
+  NewLocal,
+  NewMethodParameterIn,
+  NewNamespaceBlock,
+  NewNode,
+  NewTypeRef
+}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, NodeTypes, Operators}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
@@ -165,11 +91,6 @@ import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
 import scala.language.{existentials, implicitConversions}
 import scala.util.{Failure, Success, Try}
-import com.github.javaparser.ast.stmt.LocalClassDeclarationStmt
-import io.joern.x2cpg.Defines.StaticInitMethodName
-import io.shiftleft.codepropertygraph.generated.nodes.NewTypeParameter
-import io.joern.javasrc2cpg.astcreation.expressions.AstForExpressionsCreator
-import io.joern.javasrc2cpg.astcreation.declarations.AstForDeclarationsCreator
 
 case class ClosureBindingEntry(node: ScopeVariable, binding: NewClosureBinding)
 
@@ -204,7 +125,8 @@ class AstCreator(
     extends AstCreatorBase(filename)
     with AstNodeBuilder[Node, AstCreator]
     with AstForDeclarationsCreator
-    with AstForExpressionsCreator {
+    with AstForExpressionsCreator
+    with AstForStatementsCreator {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
@@ -213,13 +135,6 @@ class AstCreator(
   private[astcreation] val typeInfoCalc: TypeInfoCalculator = TypeInfoCalculator(global, symbolSolver)
   private val partialConstructorQueue: mutable.ArrayBuffer[PartialConstructor] = mutable.ArrayBuffer.empty
   private[astcreation] val bindingTableCache = mutable.HashMap.empty[String, BindingTable]
-
-  // TODO: Perhaps move this to a NameProvider or some such? Look at kt2cpg to see if some unified representation
-  // makes sense.
-  private val IndexNamePrefix    = "$idx"
-  private val indexKeyPool       = new IntervalKeyPool(first = 0, last = Long.MaxValue)
-  private val IterableNamePrefix = "$iterLocal"
-  private val iterableKeyPool    = new IntervalKeyPool(first = 0, last = Long.MaxValue)
 
   /** Entry point of AST creation. Translates a compilation unit created by JavaParser into a DiffGraph containing the
     * corresponding CPG AST.
@@ -432,7 +347,7 @@ class AstCreator(
     case _                       => None
   }
 
-  private def expressionReturnTypeFullName(expr: Expression): Option[String] = {
+  def expressionReturnTypeFullName(expr: Expression): Option[String] = {
 
     val resolvedTypeOption = tryWithSafeStackOverflow(expr.calculateResolvedType()) match {
       case Failure(ex) =>
@@ -483,696 +398,6 @@ class AstCreator(
           )
         )
         annotationAst(node, assignmentAsts)
-    }
-  }
-
-  private def astsForLabeledStatement(stmt: LabeledStmt): Seq[Ast] = {
-    val jumpTargetAst = Ast(NewJumpTarget().name(stmt.getLabel.toString))
-    val stmtAst       = astsForStatement(stmt.getStatement).toList
-
-    jumpTargetAst :: stmtAst
-  }
-
-  private def astForThrow(stmt: ThrowStmt): Ast = {
-    val throwNode = NewCall()
-      .name("<operator>.throw")
-      .methodFullName("<operator>.throw")
-      .lineNumber(line(stmt))
-      .columnNumber(column(stmt))
-      .code(stmt.toString())
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-
-    val args = astsForExpression(stmt.getExpression, ExpectedType.empty)
-
-    callAst(throwNode, args)
-  }
-
-  private def astForCatchClause(catchClause: CatchClause): Ast = {
-    astForBlockStatement(catchClause.getBody)
-  }
-
-  private def astsForTry(stmt: TryStmt): Seq[Ast] = {
-    val tryNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.TRY)
-      .code("try")
-      .lineNumber(line(stmt))
-      .columnNumber(column(stmt))
-
-    val resources = stmt.getResources.asScala.flatMap(astsForExpression(_, expectedType = ExpectedType.empty)).toList
-    val tryAst    = astForBlockStatement(stmt.getTryBlock, codeStr = "try")
-    val catchAsts = stmt.getCatchClauses.asScala.map(astForCatchClause)
-    val catchBlock = Option
-      .when(catchAsts.nonEmpty) {
-        Ast(NewBlock().code("catch")).withChildren(catchAsts)
-      }
-      .toList
-    val finallyAst =
-      stmt.getFinallyBlock.toScala.map(astForBlockStatement(_, "finally")).toList
-
-    val controlStructureAst = Ast(tryNode)
-      .withChild(tryAst)
-      .withChildren(catchBlock)
-      .withChildren(finallyAst)
-
-    resources.appended(controlStructureAst)
-  }
-
-  def astsForStatement(statement: Statement): Seq[Ast] = {
-    // TODO: Implement missing handlers
-    // case _: LocalClassDeclarationStmt  => Seq()
-    // case _: LocalRecordDeclarationStmt => Seq()
-    // case _: YieldStmt                  => Seq()
-    statement match {
-      case x: ExplicitConstructorInvocationStmt =>
-        Seq(astForExplicitConstructorInvocation(x))
-      case x: AssertStmt       => Seq(astForAssertStatement(x))
-      case x: BlockStmt        => Seq(astForBlockStatement(x))
-      case x: BreakStmt        => Seq(astForBreakStatement(x))
-      case x: ContinueStmt     => Seq(astForContinueStatement(x))
-      case x: DoStmt           => Seq(astForDo(x))
-      case _: EmptyStmt        => Seq() // Intentionally skipping this
-      case x: ExpressionStmt   => astsForExpression(x.getExpression, ExpectedType.Void)
-      case x: ForEachStmt      => astForForEach(x)
-      case x: ForStmt          => Seq(astForFor(x))
-      case x: IfStmt           => Seq(astForIf(x))
-      case x: LabeledStmt      => astsForLabeledStatement(x)
-      case x: ReturnStmt       => Seq(astForReturnNode(x))
-      case x: SwitchStmt       => Seq(astForSwitchStatement(x))
-      case x: SynchronizedStmt => Seq(astForSynchronizedStatement(x))
-      case x: ThrowStmt        => Seq(astForThrow(x))
-      case x: TryStmt          => astsForTry(x)
-      case x: WhileStmt        => Seq(astForWhile(x))
-      // case x: LocalClassDeclarationStmt => Seq(astForLocalClassDeclarationStmt(x))
-      case x =>
-        logger.warn(s"Attempting to generate AST for unknown statement of type ${x.getClass}")
-        Seq(unknownAst(x))
-    }
-  }
-
-  private def astForElse(maybeStmt: Option[Statement]): Option[Ast] = {
-    maybeStmt.map { stmt =>
-      val elseAsts = astsForStatement(stmt)
-
-      val elseNode =
-        NewControlStructure()
-          .controlStructureType(ControlStructureTypes.ELSE)
-          .lineNumber(line(stmt))
-          .columnNumber(column(stmt))
-          .code("else")
-
-      Ast(elseNode).withChildren(elseAsts)
-    }
-  }
-
-  def astForIf(stmt: IfStmt): Ast = {
-    val ifNode =
-      NewControlStructure()
-        .controlStructureType(ControlStructureTypes.IF)
-        .lineNumber(line(stmt))
-        .columnNumber(column(stmt))
-        .code(s"if (${stmt.getCondition.toString})")
-
-    val conditionAst =
-      astsForExpression(stmt.getCondition, ExpectedType.Boolean).headOption.toList
-
-    val thenAsts = astsForStatement(stmt.getThenStmt)
-    val elseAst  = astForElse(stmt.getElseStmt.toScala).toList
-
-    val ast = Ast(ifNode)
-      .withChildren(conditionAst)
-      .withChildren(thenAsts)
-      .withChildren(elseAst)
-
-    conditionAst.flatMap(_.root.toList) match {
-      case r :: Nil =>
-        ast.withConditionEdge(ifNode, r)
-      case _ =>
-        ast
-    }
-  }
-
-  def astForWhile(stmt: WhileStmt): Ast = {
-    val conditionAst = astsForExpression(stmt.getCondition, ExpectedType.Boolean).headOption
-    val stmtAsts     = astsForStatement(stmt.getBody)
-    val code         = s"while (${stmt.getCondition.toString})"
-    val lineNumber   = line(stmt)
-    val columnNumber = column(stmt)
-
-    whileAst(conditionAst, stmtAsts, Some(code), lineNumber, columnNumber)
-  }
-
-  private def astForDo(stmt: DoStmt): Ast = {
-    val conditionAst = astsForExpression(stmt.getCondition, ExpectedType.Boolean).headOption
-    val stmtAsts     = astsForStatement(stmt.getBody)
-    val code         = s"do {...} while (${stmt.getCondition.toString})"
-    val lineNumber   = line(stmt)
-    val columnNumber = column(stmt)
-
-    doWhileAst(conditionAst, stmtAsts, Some(code), lineNumber, columnNumber)
-  }
-
-  private def astForBreakStatement(stmt: BreakStmt): Ast = {
-    val node = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.BREAK)
-      .lineNumber(line(stmt))
-      .columnNumber(column(stmt))
-      .code(stmt.toString)
-    Ast(node)
-  }
-
-  private def astForContinueStatement(stmt: ContinueStmt): Ast = {
-    val node = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.CONTINUE)
-      .lineNumber(line(stmt))
-      .columnNumber(column(stmt))
-      .code(stmt.toString)
-    Ast(node)
-  }
-
-  private def getForCode(stmt: ForStmt): String = {
-    val init    = stmt.getInitialization.asScala.map(_.toString).mkString(", ")
-    val compare = stmt.getCompare.toScala.map(_.toString)
-    val update  = stmt.getUpdate.asScala.map(_.toString).mkString(", ")
-    s"for ($init; $compare; $update)"
-  }
-  def astForFor(stmt: ForStmt): Ast = {
-    val forNode =
-      NewControlStructure()
-        .controlStructureType(ControlStructureTypes.FOR)
-        .code(getForCode(stmt))
-        .lineNumber(line(stmt))
-        .columnNumber(column(stmt))
-
-    val initAsts =
-      stmt.getInitialization.asScala.flatMap(astsForExpression(_, expectedType = ExpectedType.empty))
-
-    val compareAsts = stmt.getCompare.toScala.toList.flatMap {
-      astsForExpression(_, ExpectedType.Boolean)
-    }
-
-    val updateAsts = stmt.getUpdate.asScala.toList.flatMap {
-      astsForExpression(_, ExpectedType.empty)
-    }
-
-    val stmtAsts =
-      astsForStatement(stmt.getBody)
-
-    val ast = Ast(forNode)
-      .withChildren(initAsts)
-      .withChildren(compareAsts)
-      .withChildren(updateAsts)
-      .withChildren(stmtAsts)
-
-    compareAsts.flatMap(_.root) match {
-      case c :: Nil =>
-        ast.withConditionEdge(forNode, c)
-      case _ => ast
-    }
-  }
-
-  private def iterableAssignAstsForNativeForEach(
-    iterableExpression: Expression,
-    iterableType: Option[String]
-  ): (NodeTypeInfo, Seq[Ast]) = {
-    val lineNo       = line(iterableExpression)
-    val expectedType = ExpectedType(iterableType)
-
-    val iterableAst = astsForExpression(iterableExpression, expectedType = expectedType) match {
-      case Nil =>
-        logger.error(s"Could not create AST for iterable expr $iterableExpression: $filename:l$lineNo")
-        Ast()
-      case iterableAstHead :: Nil => iterableAstHead
-      case iterableAsts =>
-        logger.warn(
-          s"Found multiple ASTS for iterable expr $iterableExpression: $filename:l$lineNo\nDropping all but the first!"
-        )
-        iterableAsts.head
-    }
-
-    val iterableName      = nextIterableName()
-    val iterableLocalNode = localNode(iterableExpression, iterableName, iterableName, iterableType.getOrElse("ANY"))
-    val iterableLocalAst  = Ast(iterableLocalNode)
-
-    val iterableAssignNode =
-      newOperatorCallNode(Operators.assignment, code = "", line = lineNo, typeFullName = iterableType)
-    val iterableAssignIdentifier =
-      identifierNode(iterableExpression, iterableName, iterableName, iterableType.getOrElse("ANY"))
-    val iterableAssignArgs = List(Ast(iterableAssignIdentifier), iterableAst)
-    val iterableAssignAst =
-      callAst(iterableAssignNode, iterableAssignArgs)
-        .withRefEdge(iterableAssignIdentifier, iterableLocalNode)
-
-    (
-      NodeTypeInfo(iterableLocalNode, iterableLocalNode.name, Some(iterableLocalNode.typeFullName)),
-      List(iterableLocalAst, iterableAssignAst)
-    )
-  }
-
-  private def nativeForEachIdxLocalNode(lineNo: Option[Integer]): NewLocal = {
-    val idxName      = nextIndexName()
-    val typeFullName = TypeConstants.Int
-    val idxLocal =
-      NewLocal()
-        .name(idxName)
-        .typeFullName(typeFullName)
-        .code(idxName)
-        .lineNumber(lineNo)
-    scope.addLocal(idxLocal)
-    idxLocal
-  }
-
-  private def nativeForEachIdxInitializerAst(lineNo: Option[Integer], idxLocal: NewLocal): Ast = {
-    val idxName = idxLocal.name
-    val idxInitializerCallNode = newOperatorCallNode(
-      Operators.assignment,
-      code = s"int $idxName = 0",
-      line = lineNo,
-      typeFullName = Some(TypeConstants.Int)
-    )
-    val idxIdentifierArg = newIdentifierNode(idxName, idxLocal.typeFullName)
-    val zeroLiteral =
-      NewLiteral()
-        .code("0")
-        .typeFullName(TypeConstants.Int)
-        .lineNumber(lineNo)
-    val idxInitializerArgAsts = List(Ast(idxIdentifierArg), Ast(zeroLiteral))
-    callAst(idxInitializerCallNode, idxInitializerArgAsts)
-      .withRefEdge(idxIdentifierArg, idxLocal)
-  }
-
-  private def nativeForEachCompareAst(
-    lineNo: Option[Integer],
-    iterableSource: NodeTypeInfo,
-    idxLocal: NewLocal
-  ): Ast = {
-    val idxName = idxLocal.name
-
-    val compareNode = newOperatorCallNode(
-      Operators.lessThan,
-      code = s"$idxName < ${iterableSource.name}.length",
-      typeFullName = Some(TypeConstants.Boolean),
-      line = lineNo
-    )
-    val comparisonIdxIdentifier = newIdentifierNode(idxName, idxLocal.typeFullName)
-    val comparisonFieldAccess = newOperatorCallNode(
-      Operators.fieldAccess,
-      code = s"${iterableSource.name}.length",
-      typeFullName = Some(TypeConstants.Int),
-      line = lineNo
-    )
-    val fieldAccessIdentifier = newIdentifierNode(iterableSource.name, iterableSource.typeFullName.getOrElse("ANY"))
-    val fieldAccessFieldIdentifier = newFieldIdentifierNode("length", lineNo)
-    val fieldAccessArgs            = List(fieldAccessIdentifier, fieldAccessFieldIdentifier).map(Ast(_))
-    val fieldAccessAst             = callAst(comparisonFieldAccess, fieldAccessArgs)
-    val compareArgs                = List(Ast(comparisonIdxIdentifier), fieldAccessAst)
-
-    // TODO: This is a workaround for a crash when looping over statically imported members. Handle those properly.
-    val iterableSourceNode = localParamOrMemberFromNode(iterableSource)
-
-    callAst(compareNode, compareArgs)
-      .withRefEdge(comparisonIdxIdentifier, idxLocal)
-      .withRefEdges(fieldAccessIdentifier, iterableSourceNode.toList)
-  }
-
-  private def nativeForEachIncrementAst(lineNo: Option[Integer], idxLocal: NewLocal): Ast = {
-    val incrementNode = newOperatorCallNode(
-      Operators.postIncrement,
-      code = s"${idxLocal.name}++",
-      typeFullName = Some(TypeConstants.Int),
-      line = lineNo
-    )
-    val incrementArg    = newIdentifierNode(idxLocal.name, idxLocal.typeFullName)
-    val incrementArgAst = Ast(incrementArg)
-    callAst(incrementNode, List(incrementArgAst))
-      .withRefEdge(incrementArg, idxLocal)
-  }
-
-  private def variableLocalForForEachBody(stmt: ForEachStmt): NewLocal = {
-    val lineNo = line(stmt)
-    // Create item local
-    val maybeVariable = stmt.getVariable.getVariables.asScala.toList match {
-      case Nil =>
-        logger.error(s"ForEach statement has empty variable list: $filename$lineNo")
-        None
-      case variable :: Nil => Some(variable)
-      case variable :: _ =>
-        logger.warn(s"ForEach statement defines multiple variables. Dropping all but the first: $filename$lineNo")
-        Some(variable)
-    }
-
-    val partialLocalNode = NewLocal().lineNumber(lineNo)
-
-    maybeVariable match {
-      case Some(variable) =>
-        val name         = variable.getNameAsString
-        val typeFullName = typeInfoCalc.fullName(variable.getType).getOrElse("ANY")
-        val localNode = partialLocalNode
-          .name(name)
-          .code(variable.getNameAsString)
-          .typeFullName(typeFullName)
-
-        scope.addLocal(localNode)
-        localNode
-
-      case None =>
-        // Returning partialLocalNode here is fine since getting to this case means everything is broken anyways :)
-        partialLocalNode
-    }
-  }
-
-  private def localParamOrMemberFromNode(nodeTypeInfo: NodeTypeInfo): Option[NewNode] = {
-    nodeTypeInfo.node match {
-      case localNode: NewLocal                 => Some(localNode)
-      case memberNode: NewMember               => Some(memberNode)
-      case parameterNode: NewMethodParameterIn => Some(parameterNode)
-      case _                                   => None
-    }
-  }
-  private def variableAssignForNativeForEachBody(
-    variableLocal: NewLocal,
-    idxLocal: NewLocal,
-    iterable: NodeTypeInfo
-  ): Ast = {
-    // Everything will be on the same line as the `for` statement, but this is the most useful
-    // solution for debugging.
-    val lineNo = variableLocal.lineNumber
-    val varAssignNode =
-      newOperatorCallNode(Operators.assignment, PropertyDefaults.Code, Some(variableLocal.typeFullName), lineNo)
-
-    val targetNode = newIdentifierNode(variableLocal.name, variableLocal.typeFullName)
-
-    val indexAccessTypeFullName = iterable.typeFullName.map(_.replaceAll(raw"\[]", ""))
-    val indexAccess =
-      newOperatorCallNode(Operators.indexAccess, PropertyDefaults.Code, indexAccessTypeFullName, lineNo)
-
-    val indexAccessIdentifier = newIdentifierNode(iterable.name, iterable.typeFullName.getOrElse("ANY"))
-    val indexAccessIndex      = newIdentifierNode(idxLocal.name, idxLocal.typeFullName)
-
-    val indexAccessArgsAsts = List(indexAccessIdentifier, indexAccessIndex).map(Ast(_))
-    val indexAccessAst      = callAst(indexAccess, indexAccessArgsAsts)
-
-    val iterableSourceNode = localParamOrMemberFromNode(iterable)
-
-    val assignArgsAsts = List(Ast(targetNode), indexAccessAst)
-    callAst(varAssignNode, assignArgsAsts)
-      .withRefEdge(targetNode, variableLocal)
-      .withRefEdges(indexAccessIdentifier, iterableSourceNode.toList)
-      .withRefEdge(indexAccessIndex, idxLocal)
-  }
-
-  private def nativeForEachBodyAst(stmt: ForEachStmt, idxLocal: NewLocal, iterable: NodeTypeInfo): Ast = {
-    val variableLocal     = variableLocalForForEachBody(stmt)
-    val variableLocalAst  = Ast(variableLocal)
-    val variableAssignAst = variableAssignForNativeForEachBody(variableLocal, idxLocal, iterable)
-
-    stmt.getBody match {
-      case block: BlockStmt =>
-        astForBlockStatement(block, prefixAsts = List(variableLocalAst, variableAssignAst))
-      case statement =>
-        val stmtAsts  = astsForStatement(statement)
-        val blockNode = NewBlock().lineNumber(variableLocal.lineNumber)
-        Ast(blockNode)
-          .withChild(variableLocalAst)
-          .withChild(variableAssignAst)
-          .withChildren(stmtAsts)
-    }
-  }
-
-  private def astsForNativeForEach(stmt: ForEachStmt, iterableType: Option[String]): Seq[Ast] = {
-
-    // This is ugly, but for a case like `for (int x : new int[] { ... })` this creates a new LOCAL
-    // with the assignment `int[] $iterLocal0 = new int[] { ... }` before the FOR loop.
-    // TODO: Fix this
-    val (iterableSource: NodeTypeInfo, tempIterableInitAsts) = stmt.getIterable match {
-      case nameExpr: NameExpr =>
-        scope.lookupVariable(nameExpr.getNameAsString).asNodeInfoOption match {
-          // If this is not the case, then the code is broken (iterable not in scope).
-          case Some(nodeTypeInfo) => (nodeTypeInfo, Nil)
-          case _                  => iterableAssignAstsForNativeForEach(nameExpr, iterableType)
-        }
-      case iterableExpr => iterableAssignAstsForNativeForEach(iterableExpr, iterableType)
-    }
-
-    val forNode = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.FOR)
-
-    val lineNo = line(stmt)
-
-    val idxLocal          = nativeForEachIdxLocalNode(lineNo)
-    val idxInitializerAst = nativeForEachIdxInitializerAst(lineNo, idxLocal)
-    // TODO next: pass NodeTypeInfo around
-    val compareAst   = nativeForEachCompareAst(lineNo, iterableSource, idxLocal)
-    val incrementAst = nativeForEachIncrementAst(lineNo, idxLocal)
-    val bodyAst      = nativeForEachBodyAst(stmt, idxLocal, iterableSource)
-
-    val forAst = Ast(forNode)
-      .withChild(Ast(idxLocal))
-      .withChild(idxInitializerAst)
-      .withChild(compareAst)
-      .withChild(incrementAst)
-      .withChild(bodyAst)
-      .withConditionEdges(forNode, compareAst.root.toList)
-
-    tempIterableInitAsts ++ Seq(forAst)
-  }
-
-  private def iteratorLocalForForEach(lineNumber: Option[Integer]): NewLocal = {
-    val iteratorLocalName = nextIterableName()
-    NewLocal()
-      .name(iteratorLocalName)
-      .code(iteratorLocalName)
-      .typeFullName(TypeConstants.Iterator)
-      .lineNumber(lineNumber)
-  }
-
-  private def iteratorAssignAstForForEach(
-    iterExpr: Expression,
-    iteratorLocalNode: NewLocal,
-    iterableType: Option[String],
-    lineNo: Option[Integer]
-  ): Ast = {
-    val iteratorAssignNode =
-      newOperatorCallNode(Operators.assignment, code = "", typeFullName = Some(TypeConstants.Iterator), line = lineNo)
-    val iteratorAssignIdentifier =
-      identifierNode(iterExpr, iteratorLocalNode.name, iteratorLocalNode.name, iteratorLocalNode.typeFullName)
-
-    val iteratorCallNode =
-      newCallNode("iterator", iterableType, TypeConstants.Iterator, DispatchTypes.DYNAMIC_DISPATCH, lineNumber = lineNo)
-
-    val actualIteratorAst = astsForExpression(iterExpr, expectedType = ExpectedType.empty).toList match {
-      case Nil =>
-        logger.warn(s"Could not create receiver ast for iterator $iterExpr")
-        None
-
-      case ast :: Nil => Some(ast)
-
-      case ast :: _ =>
-        logger.warn(s"Created multiple receiver asts for $iterExpr. Dropping all but the first.")
-        Some(ast)
-    }
-
-    val iteratorCallAst =
-      callAst(iteratorCallNode, base = actualIteratorAst)
-
-    callAst(iteratorAssignNode, List(Ast(iteratorAssignIdentifier), iteratorCallAst))
-      .withRefEdge(iteratorAssignIdentifier, iteratorLocalNode)
-  }
-
-  private def hasNextCallAstForForEach(iteratorLocalNode: NewLocal, lineNo: Option[Integer]): Ast = {
-    val iteratorHasNextCallNode =
-      newCallNode(
-        "hasNext",
-        Some(TypeConstants.Iterator),
-        TypeConstants.Boolean,
-        DispatchTypes.DYNAMIC_DISPATCH,
-        lineNumber = lineNo
-      )
-    val iteratorHasNextCallReceiver =
-      newIdentifierNode(iteratorLocalNode.name, iteratorLocalNode.typeFullName)
-
-    callAst(iteratorHasNextCallNode, base = Some(Ast(iteratorHasNextCallReceiver)))
-      .withRefEdge(iteratorHasNextCallReceiver, iteratorLocalNode)
-  }
-
-  private def astForIterableForEachItemAssign(iteratorLocalNode: NewLocal, variableLocal: NewLocal): Ast = {
-    val lineNo          = variableLocal.lineNumber
-    val forVariableType = variableLocal.typeFullName
-    val varLocalAssignNode =
-      newOperatorCallNode(Operators.assignment, PropertyDefaults.Code, Some(forVariableType), lineNo)
-    val varLocalAssignIdentifier = newIdentifierNode(variableLocal.name, variableLocal.typeFullName)
-
-    val iterNextCallNode =
-      newCallNode(
-        "next",
-        Some(TypeConstants.Iterator),
-        TypeConstants.Object,
-        DispatchTypes.DYNAMIC_DISPATCH,
-        lineNumber = lineNo
-      )
-    val iterNextCallReceiver = newIdentifierNode(iteratorLocalNode.name, iteratorLocalNode.typeFullName)
-    val iterNextCallAst =
-      callAst(iterNextCallNode, base = Some(Ast(iterNextCallReceiver)))
-        .withRefEdge(iterNextCallReceiver, iteratorLocalNode)
-
-    callAst(varLocalAssignNode, List(Ast(varLocalAssignIdentifier), iterNextCallAst))
-      .withRefEdge(varLocalAssignIdentifier, variableLocal)
-  }
-
-  private def astForIterableForEach(stmt: ForEachStmt, iterableType: Option[String]): Seq[Ast] = {
-    val lineNo = line(stmt)
-
-    val iteratorLocalNode = iteratorLocalForForEach(lineNo)
-    val iteratorAssignAst =
-      iteratorAssignAstForForEach(stmt.getIterable, iteratorLocalNode, iterableType, lineNo)
-    val iteratorHasNextCallAst = hasNextCallAstForForEach(iteratorLocalNode, lineNo)
-    val variableLocal          = variableLocalForForEachBody(stmt)
-    val variableAssignAst      = astForIterableForEachItemAssign(iteratorLocalNode, variableLocal)
-
-    val bodyPrefixAsts = Seq(Ast(variableLocal), variableAssignAst)
-    val bodyAst = stmt.getBody match {
-      case block: BlockStmt =>
-        astForBlockStatement(block, prefixAsts = bodyPrefixAsts)
-
-      case bodyStmt =>
-        val bodyBlockNode = NewBlock().lineNumber(lineNo)
-        val bodyStmtAsts  = astsForStatement(bodyStmt)
-        Ast(bodyBlockNode)
-          .withChildren(bodyPrefixAsts)
-          .withChildren(bodyStmtAsts)
-    }
-
-    val forNode =
-      NewControlStructure()
-        .controlStructureType(ControlStructureTypes.WHILE)
-        .code(ControlStructureTypes.FOR)
-        .lineNumber(lineNo)
-        .columnNumber(column(stmt))
-
-    val forAst = controlStructureAst(forNode, Some(iteratorHasNextCallAst), List(bodyAst))
-
-    Seq(Ast(iteratorLocalNode), iteratorAssignAst, forAst)
-  }
-
-  private def astForForEach(stmt: ForEachStmt): Seq[Ast] = {
-    scope.pushBlockScope()
-
-    val ast = expressionReturnTypeFullName(stmt.getIterable) match {
-      case Some(typeFullName) if typeFullName.endsWith("[]") =>
-        astsForNativeForEach(stmt, Some(typeFullName))
-
-      case maybeType =>
-        astForIterableForEach(stmt, maybeType)
-    }
-
-    scope.popScope()
-    ast
-  }
-
-  private def astForSwitchStatement(stmt: SwitchStmt): Ast = {
-    val switchNode =
-      NewControlStructure()
-        .controlStructureType(ControlStructureTypes.SWITCH)
-        .code(s"switch(${stmt.getSelector.toString})")
-
-    val selectorAsts = astsForExpression(stmt.getSelector, ExpectedType.empty)
-    val selectorNode = selectorAsts.head.root.get
-
-    val entryAsts = stmt.getEntries.asScala.flatMap(astForSwitchEntry)
-
-    val switchBodyAst = Ast(NewBlock()).withChildren(entryAsts)
-
-    Ast(switchNode)
-      .withChildren(selectorAsts)
-      .withChild(switchBodyAst)
-      .withConditionEdge(switchNode, selectorNode)
-  }
-
-  private def astForSynchronizedStatement(stmt: SynchronizedStmt): Ast = {
-    val parentNode =
-      NewBlock()
-        .lineNumber(line(stmt))
-        .columnNumber(column(stmt))
-
-    val modifier = Ast(newModifierNode("SYNCHRONIZED"))
-
-    val exprAsts = astsForExpression(stmt.getExpression, ExpectedType.empty)
-    val bodyAst  = astForBlockStatement(stmt.getBody)
-
-    Ast(parentNode)
-      .withChild(modifier)
-      .withChildren(exprAsts)
-      .withChild(bodyAst)
-  }
-
-  private def astsForSwitchCases(entry: SwitchEntry): Seq[Ast] = {
-    entry.getLabels.asScala.toList match {
-      case Nil =>
-        val target = NewJumpTarget()
-          .name("default")
-          .code("default")
-        Seq(Ast(target))
-
-      case labels =>
-        labels.flatMap { label =>
-          val jumpTarget = NewJumpTarget()
-            .name("case")
-            .code(label.toString)
-          val labelAsts = astsForExpression(label, ExpectedType.empty).toList
-
-          Ast(jumpTarget) :: labelAsts
-        }
-    }
-  }
-
-  private def astForSwitchEntry(entry: SwitchEntry): Seq[Ast] = {
-    val labelAsts = astsForSwitchCases(entry)
-
-    val statementAsts = entry.getStatements.asScala.flatMap(astsForStatement)
-
-    labelAsts ++ statementAsts
-  }
-
-  private def astForAssertStatement(stmt: AssertStmt): Ast = {
-    val callNode = NewCall()
-      .name("assert")
-      .methodFullName("assert")
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .code(stmt.toString)
-      .lineNumber(line(stmt))
-      .columnNumber(column(stmt))
-
-    val args = astsForExpression(stmt.getCheck, ExpectedType.Boolean)
-    callAst(callNode, args)
-  }
-
-  def astForBlockStatement(stmt: BlockStmt, codeStr: String = "<empty>", prefixAsts: Seq[Ast] = Seq.empty): Ast = {
-
-    val block = NewBlock()
-      .code(codeStr)
-      .lineNumber(line(stmt))
-      .columnNumber(column(stmt))
-
-    scope.pushBlockScope()
-
-    val stmtAsts = stmt.getStatements.asScala.flatMap(astsForStatement)
-
-    scope.popScope()
-    Ast(block)
-      .withChildren(prefixAsts)
-      .withChildren(stmtAsts)
-  }
-
-  private def astForReturnNode(ret: ReturnStmt): Ast = {
-    val returnNode = NewReturn()
-      .lineNumber(line(ret))
-      .columnNumber(column(ret))
-      .code(ret.toString)
-    if (ret.getExpression.isPresent) {
-      val expectedType = scope.enclosingMethodReturnType.getOrElse(ExpectedType.empty)
-      val exprAsts     = astsForExpression(ret.getExpression.get(), expectedType)
-      returnAst(returnNode, exprAsts)
-    } else {
-      Ast(returnNode)
     }
   }
 
@@ -1715,7 +940,7 @@ class AstCreator(
 
   }
 
-  private def initNode(
+  def initNode(
     namespaceName: Option[String],
     argumentTypes: Option[List[String]],
     argsSize: Int,
@@ -1864,34 +1089,7 @@ class AstCreator(
     Ast(identifier)
   }
 
-  private def astForExplicitConstructorInvocation(stmt: ExplicitConstructorInvocationStmt): Ast = {
-    val maybeResolved = tryWithSafeStackOverflow(stmt.resolve())
-    val args          = argAstsForCall(stmt, maybeResolved, stmt.getArguments)
-    val argTypes      = argumentTypesForMethodLike(maybeResolved)
-
-    val typeFullName = maybeResolved.toOption
-      .map(_.declaringType())
-      .flatMap(typeInfoCalc.fullName)
-
-    val callRoot = initNode(
-      typeFullName.orElse(Some(TypeConstants.Any)),
-      argTypes,
-      args.size,
-      stmt.toString,
-      line(stmt),
-      column(stmt)
-    )
-
-    val thisNode = newIdentifierNode(NameConstants.This, typeFullName.getOrElse(TypeConstants.Any))
-    scope.lookupVariable(NameConstants.This).variableNode.foreach { thisParam =>
-      diffGraph.addEdge(thisNode, thisParam, EdgeTypes.REF)
-    }
-    val thisAst = Ast(thisNode)
-
-    callAst(callRoot, args, Some(thisAst))
-  }
-
-  private def astsForExpression(expression: Expression, expectedType: ExpectedType): Seq[Ast] = {
+  def astsForExpression(expression: Expression, expectedType: ExpectedType): Seq[Ast] = {
     // TODO: Implement missing handlers
     // case _: MethodReferenceExpr     => Seq()
     // case _: PatternExpr             => Seq()
@@ -1924,7 +1122,7 @@ class AstCreator(
     }
   }
 
-  private def unknownAst(node: Node): Ast = Ast(unknownNode(node, node.toString))
+  def unknownAst(node: Node): Ast = Ast(unknownNode(node, node.toString))
 
   private def someWithDotSuffix(prefix: String): Option[String] = Some(s"$prefix.")
 
@@ -1987,14 +1185,6 @@ class AstCreator(
       val name = maybeScope.map(_.toString).getOrElse(NameConstants.This)
       identifierNode(call, name, name, typeFullName.getOrElse("ANY"))
     }
-  }
-
-  private def nextIndexName(): String = {
-    s"$IndexNamePrefix${indexKeyPool.next}"
-  }
-
-  private def nextIterableName(): String = {
-    s"$IterableNamePrefix${iterableKeyPool.next}"
   }
 
   private def astForLiteralExpr(expr: LiteralExpr): Ast = {
@@ -2066,7 +1256,7 @@ class AstCreator(
     maybeType.map(typeInfoCalc.registerType)
   }
 
-  private def argAstsForCall(
+  def argAstsForCall(
     call: Node,
     tryResolvedDecl: Try[ResolvedMethodLikeDeclaration],
     args: NodeList[Expression]
