@@ -370,6 +370,7 @@ class AstCreator(
         .name(operatorName)
         .code(text(ctx))
         .methodFullName(operatorName)
+        .signature("")
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .typeFullName(Defines.Any)
         .lineNumber(ctx.op.getLine)
@@ -588,9 +589,9 @@ class AstCreator(
         .toSeq
       val splatAsts = astForExpressionOrCommand(ctx.splattingArgument().expressionOrCommand())
       val callNode = NewCall()
-        .name(ctx.COMMA().getText)
+        .name(Operators.arrayInitializer)
         .methodFullName(Operators.arrayInitializer)
-        .signature(Operators.arrayInitializer)
+        .signature("")
         .typeFullName(Defines.Any)
         .dispatchType(DispatchTypes.STATIC_DISPATCH)
         .code(text(ctx))
@@ -862,14 +863,9 @@ class AstCreator(
     val lhsExpressionAst = astForPrimaryContext(ctx.primary())
     val rhsExpressionAst = Option(ctx.indexingArguments).map(astForIndexingArgumentsContext).getOrElse(Seq())
 
-    val operator = lhsExpressionAst.flatMap(_.nodes.filter(_.isInstanceOf[NewIdentifier])).headOption match
-      case Some(node) =>
-        if (node.asInstanceOf[NewIdentifier].name == "Array") {
-          Operators.arrayInitializer
-        } else {
-          Operators.indexAccess
-        }
-      case None => Operators.indexAccess
+    val operator = lhsExpressionAst.flatMap(_.nodes).collectFirst { case x: NewIdentifier => x } match
+      case Some(node) if node.name == "Array" => Operators.arrayInitializer
+      case _ => Operators.indexAccess
 
     val callNode = NewCall()
       .name(operator)
@@ -878,8 +874,8 @@ class AstCreator(
       .signature("")
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .typeFullName(Defines.Any)
-      .lineNumber(ctx.LBRACK().getSymbol.getLine())
-      .columnNumber(ctx.LBRACK().getSymbol.getCharPositionInLine())
+      .lineNumber(ctx.LBRACK().getSymbol.getLine)
+      .columnNumber(ctx.LBRACK().getSymbol.getCharPositionInLine)
     Seq(callAst(callNode, lhsExpressionAst ++ rhsExpressionAst))
 
   }
@@ -1477,22 +1473,19 @@ class AstCreator(
     )
   }
 
-  def getPackedRHS(astsToConcat: Seq[Ast]) = {
+  private def getPackedRHS(astsToConcat: Seq[Ast]) = {
     val code = astsToConcat
-      .flatMap(
-        _.nodes
-          .filter(_.isInstanceOf[NewIdentifier])
-      )
-      .map(_.asInstanceOf[NewIdentifier].code)
-      .mkString(",")
+      .flatMap(_.nodes)
+      .collect { case x: AstNodeNew => x.code }
+      .mkString(", ")
 
     val callNode = NewCall()
       .name(Operators.arrayInitializer)
       .methodFullName(Operators.arrayInitializer)
-      .signature(Operators.arrayInitializer)
+      .signature("")
       .typeFullName(Defines.Any)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .code(code)
+      .code(s"[$code]")
     Seq(callAst(callNode, astsToConcat))
   }
 
