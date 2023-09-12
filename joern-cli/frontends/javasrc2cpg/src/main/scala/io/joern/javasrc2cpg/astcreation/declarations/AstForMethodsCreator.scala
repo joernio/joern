@@ -1,38 +1,30 @@
 package io.joern.javasrc2cpg.astcreation.declarations
 
-import io.joern.x2cpg.Ast
+import com.github.javaparser.ast.NodeList
+import com.github.javaparser.ast.body.{CallableDeclaration, ConstructorDeclaration, MethodDeclaration, Parameter}
+import com.github.javaparser.ast.stmt.{BlockStmt, ExplicitConstructorInvocationStmt}
+import com.github.javaparser.resolution.declarations.{ResolvedMethodDeclaration, ResolvedMethodLikeDeclaration}
+import com.github.javaparser.resolution.types.ResolvedType
+import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
+import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
-import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
-import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
-import io.joern.x2cpg.utils.NodeBuilders.*
 import io.joern.javasrc2cpg.util.Util.*
-import io.shiftleft.codepropertygraph.generated.ModifierTypes
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethodParameterIn
 import io.joern.x2cpg.utils.NodeBuilders
-import io.joern.x2cpg.ValidationMode
-import com.github.javaparser.ast.body.ConstructorDeclaration
-import com.github.javaparser.ast.body.MethodDeclaration
-import com.github.javaparser.ast.body.CallableDeclaration
+import io.joern.x2cpg.utils.NodeBuilders.*
+import io.joern.x2cpg.{Ast, Defines}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewBlock,
+  NewIdentifier,
+  NewMethod,
+  NewMethodParameterIn,
+  NewMethodReturn,
+  NewModifier
+}
+import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, ModifierTypes}
 
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
-import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
-import io.shiftleft.codepropertygraph.generated.nodes.NewModifier
-import com.github.javaparser.resolution.declarations.ResolvedMethodLikeDeclaration
 import scala.util.Try
-import com.github.javaparser.ast.NodeList
-import com.github.javaparser.ast.body.Parameter
-import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
-import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
-import com.github.javaparser.resolution.declarations.ResolvedMethodDeclaration
-import io.joern.x2cpg.utils.AstPropertiesUtil.*
-import com.github.javaparser.ast.stmt.BlockStmt
-import com.github.javaparser.ast.stmt.ExplicitConstructorInvocationStmt
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethodReturn
-import com.github.javaparser.resolution.types.ResolvedType
-import io.joern.javasrc2cpg.astcreation.AstCreator
-import io.joern.javasrc2cpg.astcreation.ExpectedType
 
 private[declarations] trait AstForMethodsCreator { this: AstCreator =>
   def astForMethod(methodDeclaration: MethodDeclaration): Ast = {

@@ -1,45 +1,29 @@
 package io.joern.javasrc2cpg.astcreation.statements
 
-import com.github.javaparser.ast.stmt.AssertStmt
-import com.github.javaparser.ast.stmt.BlockStmt
-import com.github.javaparser.ast.stmt.BreakStmt
-import com.github.javaparser.ast.stmt.CatchClause
-import com.github.javaparser.ast.stmt.ContinueStmt
-import com.github.javaparser.ast.stmt.DoStmt
-import com.github.javaparser.ast.stmt.EmptyStmt
-import com.github.javaparser.ast.stmt.ExplicitConstructorInvocationStmt
-import com.github.javaparser.ast.stmt.ExpressionStmt
-import com.github.javaparser.ast.stmt.ForEachStmt
-import com.github.javaparser.ast.stmt.ForStmt
-import com.github.javaparser.ast.stmt.IfStmt
-import com.github.javaparser.ast.stmt.LabeledStmt
-import com.github.javaparser.ast.stmt.ReturnStmt
-import com.github.javaparser.ast.stmt.Statement
-import com.github.javaparser.ast.stmt.SwitchEntry
-import com.github.javaparser.ast.stmt.SwitchStmt
-import com.github.javaparser.ast.stmt.SynchronizedStmt
-import com.github.javaparser.ast.stmt.ThrowStmt
-import com.github.javaparser.ast.stmt.TryStmt
-import com.github.javaparser.ast.stmt.WhileStmt
-import io.joern.javasrc2cpg.astcreation.AstCreator
-import io.joern.javasrc2cpg.astcreation.ExpectedType
-import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
-import io.joern.javasrc2cpg.util.NameConstants
+import com.github.javaparser.ast.stmt.{
+  AssertStmt,
+  BlockStmt,
+  BreakStmt,
+  ContinueStmt,
+  DoStmt,
+  EmptyStmt,
+  ExplicitConstructorInvocationStmt,
+  ExpressionStmt,
+  ForEachStmt,
+  ForStmt,
+  IfStmt,
+  LabeledStmt,
+  ReturnStmt,
+  Statement,
+  SwitchStmt,
+  SynchronizedStmt,
+  ThrowStmt,
+  TryStmt,
+  WhileStmt
+}
+import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.x2cpg.Ast
-import io.joern.x2cpg.utils.NodeBuilders.newIdentifierNode
-import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
-import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
-import io.shiftleft.codepropertygraph.generated.nodes.NewCall
-import io.shiftleft.codepropertygraph.generated.nodes.NewControlStructure
-import io.shiftleft.codepropertygraph.generated.nodes.NewJumpTarget
-import io.shiftleft.codepropertygraph.generated.nodes.NewReturn
 import org.slf4j.LoggerFactory
-
-import scala.jdk.CollectionConverters.*
-import scala.jdk.OptionConverters.RichOptional
 
 trait AstForStatementsCreator extends AstForSimpleStatementsCreator with AstForForLoopsCreator { this: AstCreator =>
 

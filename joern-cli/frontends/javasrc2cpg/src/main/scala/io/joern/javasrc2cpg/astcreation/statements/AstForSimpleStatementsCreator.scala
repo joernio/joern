@@ -1,39 +1,33 @@
 package io.joern.javasrc2cpg.astcreation.statements
 
-import io.joern.javasrc2cpg.astcreation.AstCreator
-import com.github.javaparser.ast.stmt.BlockStmt
-import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
-import scala.jdk.CollectionConverters.*
-import com.github.javaparser.ast.stmt.ExplicitConstructorInvocationStmt
+import com.github.javaparser.ast.stmt.{
+  AssertStmt,
+  BlockStmt,
+  BreakStmt,
+  CatchClause,
+  ContinueStmt,
+  DoStmt,
+  ExplicitConstructorInvocationStmt,
+  IfStmt,
+  LabeledStmt,
+  ReturnStmt,
+  Statement,
+  SwitchEntry,
+  SwitchStmt,
+  SynchronizedStmt,
+  ThrowStmt,
+  TryStmt,
+  WhileStmt
+}
+import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.NameConstants
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.joern.x2cpg.utils.NodeBuilders.newIdentifierNode
-import com.github.javaparser.ast.stmt.AssertStmt
-import io.shiftleft.codepropertygraph.generated.nodes.NewCall
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.joern.javasrc2cpg.astcreation.ExpectedType
-import com.github.javaparser.ast.stmt.BreakStmt
-import io.shiftleft.codepropertygraph.generated.nodes.NewControlStructure
-import com.github.javaparser.ast.stmt.ContinueStmt
-import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
-import com.github.javaparser.ast.stmt.DoStmt
-import com.github.javaparser.ast.stmt.WhileStmt
-import com.github.javaparser.ast.stmt.IfStmt
-import com.github.javaparser.ast.stmt.Statement
-import com.github.javaparser.ast.stmt.SwitchStmt
-import com.github.javaparser.ast.stmt.SynchronizedStmt
-import com.github.javaparser.ast.stmt.SwitchEntry
-import io.shiftleft.codepropertygraph.generated.nodes.NewJumpTarget
-import com.github.javaparser.ast.stmt.ReturnStmt
-import io.shiftleft.codepropertygraph.generated.nodes.NewReturn
-import com.github.javaparser.ast.stmt.LabeledStmt
-import com.github.javaparser.ast.stmt.ThrowStmt
-import com.github.javaparser.ast.stmt.CatchClause
-import com.github.javaparser.ast.stmt.TryStmt
-import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
+import io.joern.x2cpg.Ast
+import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newModifierNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewControlStructure, NewJumpTarget, NewReturn}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes}
 
+import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
 
 trait AstForSimpleStatementsCreator { this: AstCreator =>

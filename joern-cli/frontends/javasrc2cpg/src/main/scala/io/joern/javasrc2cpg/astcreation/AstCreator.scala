@@ -1,21 +1,6 @@
 package io.joern.javasrc2cpg.astcreation
 
-import com.github.javaparser.ast.`type`.TypeParameter
-import com.github.javaparser.ast.{CompilationUnit, Node, NodeList, PackageDeclaration}
-import com.github.javaparser.ast.body.{
-  AnnotationDeclaration,
-  BodyDeclaration,
-  CallableDeclaration,
-  ClassOrInterfaceDeclaration,
-  ConstructorDeclaration,
-  EnumConstantDeclaration,
-  FieldDeclaration,
-  InitializerDeclaration,
-  MethodDeclaration,
-  Parameter,
-  TypeDeclaration,
-  VariableDeclarator
-}
+import com.github.javaparser.ast.body.VariableDeclarator
 import com.github.javaparser.ast.expr.AssignExpr.Operator
 import com.github.javaparser.ast.expr.{
   AnnotationExpr,
@@ -53,110 +38,51 @@ import com.github.javaparser.ast.expr.{
   VariableDeclarationExpr
 }
 import com.github.javaparser.ast.nodeTypes.{NodeWithName, NodeWithSimpleName}
-import com.github.javaparser.ast.stmt.{
-  AssertStmt,
-  BlockStmt,
-  BreakStmt,
-  CatchClause,
-  ContinueStmt,
-  DoStmt,
-  EmptyStmt,
-  ExplicitConstructorInvocationStmt,
-  ExpressionStmt,
-  ForEachStmt,
-  ForStmt,
-  IfStmt,
-  LabeledStmt,
-  ReturnStmt,
-  Statement,
-  SwitchEntry,
-  SwitchStmt,
-  SynchronizedStmt,
-  ThrowStmt,
-  TryStmt,
-  WhileStmt
-}
+import com.github.javaparser.ast.{CompilationUnit, Node, NodeList, PackageDeclaration}
 import com.github.javaparser.resolution.UnsolvedSymbolException
 import com.github.javaparser.resolution.declarations.{
   ResolvedFieldDeclaration,
   ResolvedMethodDeclaration,
   ResolvedMethodLikeDeclaration,
-  ResolvedReferenceTypeDeclaration,
-  ResolvedTypeParameterDeclaration
+  ResolvedReferenceTypeDeclaration
 }
+import com.github.javaparser.resolution.types.ResolvedType
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
-import com.github.javaparser.resolution.types.{ResolvedReferenceType, ResolvedType, ResolvedTypeVariable}
 import com.github.javaparser.symbolsolver.JavaSymbolSolver
-import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator
-import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.{ObjectMethodSignatures, TypeConstants}
-import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
-import io.joern.x2cpg.utils.NodeBuilders.{
-  newAnnotationLiteralNode,
-  newBindingNode,
-  newCallNode,
-  newClosureBindingNode,
-  newFieldIdentifierNode,
-  newIdentifierNode,
-  newMethodReturnNode,
-  newModifierNode,
-  newOperatorCallNode
-}
-import io.joern.javasrc2cpg.scope.NodeTypeInfo
+import io.joern.javasrc2cpg.astcreation.declarations.AstForDeclarationsCreator
+import io.joern.javasrc2cpg.astcreation.expressions.AstForExpressionsCreator
+import io.joern.javasrc2cpg.astcreation.statements.AstForStatementsCreator
 import io.joern.javasrc2cpg.scope.Scope
 import io.joern.javasrc2cpg.scope.Scope.*
-import io.joern.javasrc2cpg.util.{
-  BindingTable,
-  BindingTableAdapterForJavaparser,
-  BindingTableAdapterForLambdas,
-  BindingTableEntry,
-  LambdaBindingInfo,
-  NameConstants
-}
-import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.{ObjectMethodSignatures, TypeConstants}
+import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator
+import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
+import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
 import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, composeMethodLikeSignature, composeUnresolvedSignature}
+import io.joern.javasrc2cpg.util.{BindingTable, BindingTableAdapterForJavaparser, NameConstants}
 import io.joern.x2cpg.Defines.*
-import io.shiftleft.codepropertygraph.generated.{
-  ControlStructureTypes,
-  DispatchTypes,
-  EdgeTypes,
-  EvaluationStrategies,
-  ModifierTypes,
-  NodeTypes,
-  Operators
-}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  NewAnnotation,
-  NewArrayInitializer,
-  NewBlock,
-  NewCall,
-  NewClosureBinding,
-  NewControlStructure,
-  NewFieldIdentifier,
-  NewIdentifier,
-  NewImport,
-  NewJumpTarget,
-  NewLiteral,
-  NewLocal,
-  NewMember,
-  NewMethod,
-  NewMethodParameterIn,
-  NewMethodRef,
-  NewMethodReturn,
-  NewModifier,
-  NewNamespaceBlock,
-  NewNode,
-  NewReturn,
-  NewTypeDecl,
-  NewTypeRef
-}
-import io.joern.x2cpg.{Ast, AstCreatorBase, Defines, ValidationMode}
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.passes.frontend.TypeNodePass
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.joern.x2cpg.utils.NodeBuilders
-import io.joern.x2cpg.AstNodeBuilder
+import io.joern.x2cpg.utils.NodeBuilders.{newAnnotationLiteralNode, newIdentifierNode, newOperatorCallNode}
+import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode.PropertyDefaults
-import io.shiftleft.passes.IntervalKeyPool
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewArrayInitializer,
+  NewBlock,
+  NewCall,
+  NewClosureBinding,
+  NewFieldIdentifier,
+  NewIdentifier,
+  NewImport,
+  NewLiteral,
+  NewLocal,
+  NewMethodParameterIn,
+  NewNamespaceBlock,
+  NewNode,
+  NewTypeRef
+}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, NodeTypes, Operators}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
@@ -165,12 +91,6 @@ import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
 import scala.language.{existentials, implicitConversions}
 import scala.util.{Failure, Success, Try}
-import com.github.javaparser.ast.stmt.LocalClassDeclarationStmt
-import io.joern.x2cpg.Defines.StaticInitMethodName
-import io.shiftleft.codepropertygraph.generated.nodes.NewTypeParameter
-import io.joern.javasrc2cpg.astcreation.expressions.AstForExpressionsCreator
-import io.joern.javasrc2cpg.astcreation.declarations.AstForDeclarationsCreator
-import io.joern.javasrc2cpg.astcreation.statements.AstForStatementsCreator
 
 case class ClosureBindingEntry(node: ScopeVariable, binding: NewClosureBinding)
 

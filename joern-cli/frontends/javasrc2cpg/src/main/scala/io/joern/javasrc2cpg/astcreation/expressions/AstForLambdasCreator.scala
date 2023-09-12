@@ -1,51 +1,39 @@
 package io.joern.javasrc2cpg.astcreation.expressions
 
 import com.github.javaparser.ast.expr.LambdaExpr
-import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
-import io.joern.x2cpg.Ast
-import io.joern.javasrc2cpg.util.BindingTable
-import io.joern.javasrc2cpg.util.LambdaBindingInfo
-import com.github.javaparser.ast.stmt.Statement
-import com.github.javaparser.ast.stmt.BlockStmt
-import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
-import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
-import io.shiftleft.codepropertygraph.generated.nodes.NewReturn
-import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
-import io.joern.x2cpg.utils.NodeBuilders.{newClosureBindingNode, newModifierNode, newMethodReturnNode}
-import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
-import com.github.javaparser.resolution.types.ResolvedReferenceType
+import com.github.javaparser.ast.stmt.{BlockStmt, Statement}
 import com.github.javaparser.resolution.declarations.ResolvedMethodDeclaration
-import scala.jdk.CollectionConverters.*
-import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
-import io.shiftleft.codepropertygraph.generated.ModifierTypes
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethodParameterIn
-import io.joern.javasrc2cpg.util.NameConstants
-import io.joern.x2cpg.utils.AstPropertiesUtil.*
-import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn.PropertyDefaults as ParameterDefaults
-import io.joern.javasrc2cpg.util.Util.composeMethodLikeSignature
-import io.joern.javasrc2cpg.util.Util.composeUnresolvedSignature
-import io.joern.x2cpg.Defines
-import io.joern.javasrc2cpg.util.Util.composeMethodFullName
-import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
-import org.slf4j.LoggerFactory
-import scala.jdk.OptionConverters.RichOptional
-import scala.util.{Try, Success, Failure}
-import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.ObjectMethodSignatures
-import io.shiftleft.passes.IntervalKeyPool
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethodRef
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.joern.x2cpg.utils.NodeBuilders.newBindingNode
-import io.joern.javasrc2cpg.util.BindingTableAdapterForLambdas
-import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
-import com.github.javaparser.resolution.types.ResolvedTypeVariable
-import com.github.javaparser.resolution.types.ResolvedType
-import io.joern.javasrc2cpg.astcreation.AstCreator
-import io.joern.javasrc2cpg.astcreation.ExpectedType
-import io.joern.javasrc2cpg.astcreation.expressions.AstForLambdasCreator.LambdaImplementedInfo
+import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
+import com.github.javaparser.resolution.types.{ResolvedReferenceType, ResolvedType, ResolvedTypeVariable}
+import io.joern.javasrc2cpg.astcreation.expressions.AstForLambdasCreator.{ClosureBindingEntry, LambdaImplementedInfo}
+import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.javasrc2cpg.scope.Scope.ScopeVariable
-import io.shiftleft.codepropertygraph.generated.nodes.NewClosureBinding
-import io.joern.javasrc2cpg.astcreation.expressions.AstForLambdasCreator.ClosureBindingEntry
+import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.{ObjectMethodSignatures, TypeConstants}
+import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
+import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, composeMethodLikeSignature, composeUnresolvedSignature}
+import io.joern.javasrc2cpg.util.{BindingTable, BindingTableAdapterForLambdas, LambdaBindingInfo, NameConstants}
+import io.joern.x2cpg.utils.AstPropertiesUtil.*
+import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newClosureBindingNode, newMethodReturnNode, newModifierNode}
+import io.joern.x2cpg.{Ast, Defines}
+import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn.PropertyDefaults as ParameterDefaults
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewBlock,
+  NewClosureBinding,
+  NewIdentifier,
+  NewLocal,
+  NewMethod,
+  NewMethodParameterIn,
+  NewMethodRef,
+  NewReturn,
+  NewTypeDecl
+}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes}
+import io.shiftleft.passes.IntervalKeyPool
+import org.slf4j.LoggerFactory
+
+import scala.jdk.CollectionConverters.*
+import scala.jdk.OptionConverters.RichOptional
+import scala.util.{Failure, Success, Try}
 
 object AstForLambdasCreator {
   case class LambdaImplementedInfo(

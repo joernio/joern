@@ -1,36 +1,31 @@
 package io.joern.javasrc2cpg.astcreation.declarations
 
-import com.github.javaparser.ast.body.TypeDeclaration
-import io.joern.x2cpg.Ast
-import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration
+import com.github.javaparser.ast.body.{
+  AnnotationDeclaration,
+  BodyDeclaration,
+  ClassOrInterfaceDeclaration,
+  ConstructorDeclaration,
+  EnumConstantDeclaration,
+  FieldDeclaration,
+  InitializerDeclaration,
+  MethodDeclaration,
+  TypeDeclaration,
+  VariableDeclarator
+}
+import com.github.javaparser.resolution.declarations.ResolvedTypeParameterDeclaration
+import io.joern.javasrc2cpg.astcreation.AstCreator
+import io.joern.javasrc2cpg.astcreation.declarations.AstForTypeDeclsCreator.AstWithStaticInit
+import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
+import io.joern.javasrc2cpg.util.{BindingTable, BindingTableEntry}
+import io.joern.x2cpg.utils.NodeBuilders.*
+import io.joern.x2cpg.{Ast, Defines}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewIdentifier, NewMethod, NewModifier, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
+import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
-import io.joern.javasrc2cpg.util.BindingTableEntry
-import com.github.javaparser.ast.body.AnnotationDeclaration
-import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
-import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
-import io.joern.x2cpg.Defines
-import com.github.javaparser.ast.body.EnumConstantDeclaration
-import io.shiftleft.codepropertygraph.generated.NodeTypes
-import com.github.javaparser.ast.body.InitializerDeclaration
-import org.slf4j.LoggerFactory
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
-import com.github.javaparser.ast.body.BodyDeclaration
-import com.github.javaparser.ast.body.ConstructorDeclaration
-import com.github.javaparser.ast.body.MethodDeclaration
-import com.github.javaparser.ast.body.FieldDeclaration
-import com.github.javaparser.ast.body.VariableDeclarator
-import io.shiftleft.codepropertygraph.generated.ModifierTypes
-import io.joern.x2cpg.utils.NodeBuilders.*
-import scala.util.Success
-import com.github.javaparser.resolution.declarations.ResolvedTypeParameterDeclaration
-import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
-import scala.util.Try
-import io.joern.javasrc2cpg.util.BindingTable
-import io.shiftleft.codepropertygraph.generated.nodes.NewModifier
-import io.joern.javasrc2cpg.astcreation.AstCreator
-import io.joern.javasrc2cpg.astcreation.declarations.AstForTypeDeclsCreator.AstWithStaticInit
+import scala.util.{Success, Try}
 
 object AstForTypeDeclsCreator {
   case class AstWithStaticInit(ast: Seq[Ast], staticInits: Seq[Ast])

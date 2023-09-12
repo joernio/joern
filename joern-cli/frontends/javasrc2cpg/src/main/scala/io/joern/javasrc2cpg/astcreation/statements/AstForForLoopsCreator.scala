@@ -1,35 +1,28 @@
 package io.joern.javasrc2cpg.astcreation.statements
 
-import io.joern.javasrc2cpg.astcreation.AstCreator
-import io.shiftleft.codepropertygraph.generated.nodes.NewControlStructure
-import com.github.javaparser.ast.stmt.ForStmt
-import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
-
-import scala.jdk.OptionConverters.RichOptional
-import scala.jdk.CollectionConverters.*
-import io.joern.javasrc2cpg.astcreation.ExpectedType
-import com.github.javaparser.ast.stmt.ForEachStmt
+import com.github.javaparser.ast.expr.{Expression, NameExpr}
+import com.github.javaparser.ast.stmt.{BlockStmt, ForEachStmt, ForStmt}
+import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.javasrc2cpg.scope.NodeTypeInfo
-import com.github.javaparser.ast.expr.NameExpr
-import com.github.javaparser.ast.expr.Expression
-import org.slf4j.LoggerFactory
-import com.github.javaparser.ast.stmt.BlockStmt
-import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
-import io.joern.x2cpg.utils.NodeBuilders.newIdentifierNode
-import io.joern.x2cpg.utils.NodeBuilders.newOperatorCallNode
-import io.joern.x2cpg.utils.NodeBuilders.newCallNode
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
+import io.joern.x2cpg.Ast
+import io.joern.x2cpg.utils.NodeBuilders.{newCallNode, newFieldIdentifierNode, newIdentifierNode, newOperatorCallNode}
+import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewBlock,
+  NewControlStructure,
+  NewLiteral,
+  NewLocal,
+  NewMember,
+  NewMethodParameterIn,
+  NewNode
+}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import io.shiftleft.passes.IntervalKeyPool
-import io.shiftleft.codepropertygraph.generated.nodes.NewMember
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethodParameterIn
-import io.shiftleft.codepropertygraph.generated.nodes.NewNode
-import io.shiftleft.codepropertygraph.generated.nodes.NewLiteral
-import io.joern.x2cpg.utils.NodeBuilders.newFieldIdentifierNode
+import org.slf4j.LoggerFactory
+
+import scala.jdk.CollectionConverters.*
+import scala.jdk.OptionConverters.RichOptional
 
 trait AstForForLoopsCreator { this: AstCreator =>
 
