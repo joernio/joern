@@ -215,7 +215,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   private def astForForStatement(forStmt: ParserNodeInfo): Ast = {
 
     val initParserNode = nullSafeCreateParserNodeInfo(forStmt.json.obj.get(ParserKeys.Init))
-    val condParserNode = createParserNodeInfo(forStmt.json(ParserKeys.Cond))
+    val condParserNode = nullSafeCreateParserNodeInfo(forStmt.json.obj.get(ParserKeys.Cond))
     val iterParserNode = nullSafeCreateParserNodeInfo(forStmt.json.obj.get(ParserKeys.Post))
 
     val code    = s"for ${initParserNode.code};${condParserNode.code};${iterParserNode.code}"
