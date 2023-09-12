@@ -12,6 +12,7 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.{
   ReflectionTypeSolver
 }
 import io.joern.javasrc2cpg.JavaSrc2Cpg.JavaSrcEnvVar
+import io.joern.javasrc2cpg.astcreation.AstCreator
 import io.joern.javasrc2cpg.passes.AstCreationPass.*
 import io.joern.javasrc2cpg.typesolvers.{EagerSourceTypeSolver, JdkJarTypeSolver, SimpleCombinedTypeSolver}
 import io.joern.javasrc2cpg.util.Delombok.DelombokMode

@@ -13,7 +13,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.nodes.DeclarationNew
 
 import io.joern.javasrc2cpg.scope.Scope._
-import io.joern.javasrc2cpg.passes.ExpectedType
+import io.joern.javasrc2cpg.astcreation.ExpectedType
 
 import scala.collection.mutable
 import io.joern.x2cpg.utils.ListUtils._
