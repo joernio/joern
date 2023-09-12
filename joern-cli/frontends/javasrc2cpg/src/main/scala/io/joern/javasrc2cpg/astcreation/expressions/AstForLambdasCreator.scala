@@ -41,22 +41,27 @@ import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
 import com.github.javaparser.resolution.types.ResolvedTypeVariable
 import com.github.javaparser.resolution.types.ResolvedType
 import io.joern.javasrc2cpg.astcreation.AstCreator
-import io.joern.javasrc2cpg.astcreation.LambdaImplementedInfo
 import io.joern.javasrc2cpg.astcreation.ExpectedType
+import io.joern.javasrc2cpg.astcreation.expressions.AstForLambdasCreator.LambdaImplementedInfo
+import io.joern.javasrc2cpg.scope.Scope.ScopeVariable
+import io.shiftleft.codepropertygraph.generated.nodes.NewClosureBinding
+import io.joern.javasrc2cpg.astcreation.expressions.AstForLambdasCreator.ClosureBindingEntry
 
 object AstForLambdasCreator {
   case class LambdaImplementedInfo(
     implementedInterface: Option[ResolvedReferenceType],
     implementedMethod: Option[ResolvedMethodDeclaration]
   )
+
+  case class ClosureBindingEntry(node: ScopeVariable, binding: NewClosureBinding)
 }
 
 private[expressions] trait AstForLambdasCreator { this: AstCreator =>
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  private val LambdaNamePrefix   = "lambda$"
-  private val lambdaKeyPool      = new IntervalKeyPool(first = 0, last = Long.MaxValue)
+  private val LambdaNamePrefix = "lambda$"
+  private val lambdaKeyPool    = new IntervalKeyPool(first = 0, last = Long.MaxValue)
 
   private def nextLambdaName(): String = {
     s"$LambdaNamePrefix${lambdaKeyPool.next}"
@@ -211,7 +216,6 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
 
     LambdaImplementedInfo(maybeImplementedType, maybeBoundMethod)
   }
-
 
   private def addClosureBindingsToDiffGraph(
     bindingEntries: Iterable[ClosureBindingEntry],

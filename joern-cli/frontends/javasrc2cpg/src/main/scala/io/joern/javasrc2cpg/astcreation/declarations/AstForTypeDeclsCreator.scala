@@ -30,10 +30,22 @@ import scala.util.Try
 import io.joern.javasrc2cpg.util.BindingTable
 import io.shiftleft.codepropertygraph.generated.nodes.NewModifier
 import io.joern.javasrc2cpg.astcreation.AstCreator
+import io.joern.javasrc2cpg.astcreation.declarations.AstForTypeDeclsCreator.AstWithStaticInit
+
+object AstForTypeDeclsCreator {
+  case class AstWithStaticInit(ast: Seq[Ast], staticInits: Seq[Ast])
+  object AstWithStaticInit {
+    val empty: AstWithStaticInit = AstWithStaticInit(Seq.empty, Seq.empty)
+
+    def apply(ast: Ast): AstWithStaticInit = {
+      AstWithStaticInit(Seq(ast), staticInits = Seq.empty)
+    }
+  }
+}
 
 private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
   private val logger = LoggerFactory.getLogger(this.getClass)
-  
+
   def astForTypeDecl(typ: TypeDeclaration[_], astParentType: String, astParentFullName: String): Ast = {
     val isInterface = typ match {
       case classDeclaration: ClassOrInterfaceDeclaration => classDeclaration.isInterface
@@ -129,7 +141,6 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
 
     List(accessModifier, abstractModifier).flatten
   }
-
 
   private def astForTypeDeclMember(member: BodyDeclaration[_], astParentFullName: String): AstWithStaticInit = {
     member match {
@@ -330,8 +341,6 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
       case _ => // Nothing to do here
     }
   }
-
-
 
   private def astForEnumEntry(entry: EnumConstantDeclaration): Ast = {
     // TODO Fix enum entries in general

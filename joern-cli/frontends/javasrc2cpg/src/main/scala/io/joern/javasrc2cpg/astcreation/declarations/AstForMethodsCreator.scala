@@ -34,7 +34,7 @@ import com.github.javaparser.resolution.types.ResolvedType
 import io.joern.javasrc2cpg.astcreation.AstCreator
 import io.joern.javasrc2cpg.astcreation.ExpectedType
 
-private[declarations] trait AstForMethodsCreator { this: AstCreator => 
+private[declarations] trait AstForMethodsCreator { this: AstCreator =>
   def astForMethod(methodDeclaration: MethodDeclaration): Ast = {
     val methodNode = createPartialMethod(methodDeclaration)
 
@@ -202,7 +202,6 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     ast.withChildren(annotationAsts)
   }
 
-
   def calcParameterTypes(
     methodLike: ResolvedMethodLikeDeclaration,
     typeParamValues: ResolvedTypeParametersMap
@@ -248,7 +247,6 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       astForParameter(param, idx + 1)
     }
   }
-
 
   def astForConstructor(constructorDeclaration: ConstructorDeclaration): Ast = {
     val constructorNode = createPartialMethod(constructorDeclaration)
@@ -353,10 +351,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     methodNode
   }
 
-  def thisNodeForMethod(
-    maybeTypeFullName: Option[String],
-    lineNumber: Option[Integer]
-  ): NewMethodParameterIn = {
+  def thisNodeForMethod(maybeTypeFullName: Option[String], lineNumber: Option[Integer]): NewMethodParameterIn = {
     val typeFullName = typeInfoCalc.registerType(maybeTypeFullName.getOrElse(TypeConstants.Any))
     NodeBuilders.newThisParameterNode(
       typeFullName = typeFullName,

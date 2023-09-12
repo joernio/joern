@@ -173,7 +173,6 @@ import io.joern.javasrc2cpg.astcreation.declarations.AstForDeclarationsCreator
 
 case class ClosureBindingEntry(node: ScopeVariable, binding: NewClosureBinding)
 
-
 case class PartialConstructor(initNode: NewCall, initArgs: Seq[Ast], blockAst: Ast)
 
 case class ExpectedType(fullName: Option[String], resolvedType: Option[ResolvedType] = None)
@@ -196,13 +195,16 @@ object AstWithStaticInit {
 
 /** Translate a Java Parser AST into a CPG AST
   */
-class AstCreator(val filename: String, javaParserAst: CompilationUnit, global: Global, val symbolSolver: JavaSymbolSolver)(
-  implicit val withSchemaValidation: ValidationMode
-) extends AstCreatorBase(filename)
+class AstCreator(
+  val filename: String,
+  javaParserAst: CompilationUnit,
+  global: Global,
+  val symbolSolver: JavaSymbolSolver
+)(implicit val withSchemaValidation: ValidationMode)
+    extends AstCreatorBase(filename)
     with AstNodeBuilder[Node, AstCreator]
     with AstForDeclarationsCreator
-    with AstForExpressionsCreator
-    {
+    with AstForExpressionsCreator {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
@@ -349,7 +351,6 @@ class AstCreator(val filename: String, javaParserAst: CompilationUnit, global: G
     )
   }
 
-
   private def convertAnnotationValueExpr(expr: Expression): Option[Ast] = {
     expr match {
       case arrayInit: ArrayInitializerExpr =>
@@ -484,8 +485,6 @@ class AstCreator(val filename: String, javaParserAst: CompilationUnit, global: G
         annotationAst(node, assignmentAsts)
     }
   }
-
-
 
   private def astsForLabeledStatement(stmt: LabeledStmt): Seq[Ast] = {
     val jumpTargetAst = Ast(NewJumpTarget().name(stmt.getLabel.toString))
@@ -1146,11 +1145,7 @@ class AstCreator(val filename: String, javaParserAst: CompilationUnit, global: G
     callAst(callNode, args)
   }
 
-  def astForBlockStatement(
-    stmt: BlockStmt,
-    codeStr: String = "<empty>",
-    prefixAsts: Seq[Ast] = Seq.empty
-  ): Ast = {
+  def astForBlockStatement(stmt: BlockStmt, codeStr: String = "<empty>", prefixAsts: Seq[Ast] = Seq.empty): Ast = {
 
     val block = NewBlock()
       .code(codeStr)
@@ -1720,7 +1715,6 @@ class AstCreator(val filename: String, javaParserAst: CompilationUnit, global: G
 
   }
 
-
   private def initNode(
     namespaceName: Option[String],
     argumentTypes: Option[List[String]],
@@ -1850,9 +1844,7 @@ class AstCreator(val filename: String, javaParserAst: CompilationUnit, global: G
       .withChild(returnAst)
   }
 
-  def argumentTypesForMethodLike(
-    maybeResolvedMethodLike: Try[ResolvedMethodLikeDeclaration]
-  ): Option[List[String]] = {
+  def argumentTypesForMethodLike(maybeResolvedMethodLike: Try[ResolvedMethodLikeDeclaration]): Option[List[String]] = {
     maybeResolvedMethodLike.toOption
       .flatMap(calcParameterTypes(_, ResolvedTypeParametersMap.empty()))
   }
@@ -1997,7 +1989,6 @@ class AstCreator(val filename: String, javaParserAst: CompilationUnit, global: G
     }
   }
 
-
   private def nextIndexName(): String = {
     s"$IndexNamePrefix${indexKeyPool.next}"
   }
@@ -2005,8 +1996,6 @@ class AstCreator(val filename: String, javaParserAst: CompilationUnit, global: G
   private def nextIterableName(): String = {
     s"$IterableNamePrefix${iterableKeyPool.next}"
   }
-
-
 
   private def astForLiteralExpr(expr: LiteralExpr): Ast = {
     val typeFullName = expressionReturnTypeFullName(expr).getOrElse(TypeConstants.Any)
@@ -2184,7 +2173,5 @@ class AstCreator(val filename: String, javaParserAst: CompilationUnit, global: G
     val identifier = identifierNode(superExpr, NameConstants.This, NameConstants.Super, typeFullName)
     Ast(identifier)
   }
-
-
 
 }
