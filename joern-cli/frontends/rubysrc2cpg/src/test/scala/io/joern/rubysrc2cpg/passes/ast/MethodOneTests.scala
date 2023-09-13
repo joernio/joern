@@ -21,7 +21,7 @@ class MethodOneTests extends RubyCode2CpgFixture {
         x.fullName shouldBe "Test0.rb::program.foo"
         x.code should startWith("def foo(a, b)")
         x.isExternal shouldBe false
-        x.order shouldBe 1
+        x.order shouldBe 3
         x.filename endsWith "Test0.rb"
         x.lineNumber shouldBe Option(2)
         x.lineNumberEnd shouldBe Option(4)

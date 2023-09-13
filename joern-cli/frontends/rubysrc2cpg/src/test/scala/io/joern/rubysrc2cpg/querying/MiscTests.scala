@@ -1,7 +1,8 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.semanticcpg.language._
+import io.joern.x2cpg.Defines
+import io.shiftleft.semanticcpg.language.*
 
 class MiscTests extends RubyCode2CpgFixture {
 
@@ -46,7 +47,7 @@ class MiscTests extends RubyCode2CpgFixture {
     "recognise all identifier and call nodes" in {
       cpg.call.name("application").size shouldBe 1
       cpg.call.name("configure").size shouldBe 1
-      cpg.call.name("new").size shouldBe 1
+      cpg.call.name(Defines.ConstructorMethodName).size shouldBe 1
       cpg.call.name("<operator>.scopeResolution").size shouldBe 2
       cpg.identifier.name("Rails").size shouldBe 1
       cpg.identifier.name("config").size shouldBe 1

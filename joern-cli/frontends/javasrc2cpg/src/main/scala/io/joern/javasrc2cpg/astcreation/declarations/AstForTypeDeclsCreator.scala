@@ -12,6 +12,27 @@ import com.github.javaparser.ast.body.{
   TypeDeclaration,
   VariableDeclarator
 }
+import com.github.javaparser.ast.expr.{
+  AnnotationExpr,
+  ArrayInitializerExpr,
+  BinaryExpr,
+  BooleanLiteralExpr,
+  CharLiteralExpr,
+  ClassExpr,
+  DoubleLiteralExpr,
+  Expression,
+  FieldAccessExpr,
+  IntegerLiteralExpr,
+  LiteralExpr,
+  LongLiteralExpr,
+  MarkerAnnotationExpr,
+  NameExpr,
+  NormalAnnotationExpr,
+  NullLiteralExpr,
+  SingleMemberAnnotationExpr,
+  StringLiteralExpr,
+  TextBlockLiteralExpr
+}
 import com.github.javaparser.resolution.declarations.ResolvedTypeParameterDeclaration
 import io.joern.javasrc2cpg.astcreation.AstCreator
 import io.joern.javasrc2cpg.astcreation.declarations.AstForTypeDeclsCreator.AstWithStaticInit
@@ -19,7 +40,13 @@ import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.{BindingTable, BindingTableEntry}
 import io.joern.x2cpg.utils.NodeBuilders.*
 import io.joern.x2cpg.{Ast, Defines}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewIdentifier, NewMethod, NewModifier, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  NewArrayInitializer,
+  NewIdentifier,
+  NewMethod,
+  NewModifier,
+  NewTypeDecl
+}
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
 import org.slf4j.LoggerFactory
 
@@ -117,6 +144,98 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     scope.popScope()
 
     typeDeclAst
+  }
+
+  private[declarations] def astForAnnotationExpr(annotationExpr: AnnotationExpr): Ast = {
+    val fallbackType = s"${Defines.UnresolvedNamespace}.${annotationExpr.getNameAsString}"
+    val fullName     = expressionReturnTypeFullName(annotationExpr).getOrElse(fallbackType)
+    val code         = annotationExpr.toString
+    val name         = annotationExpr.getName.getIdentifier
+    val node         = annotationNode(annotationExpr, code, name, fullName)
+    annotationExpr match {
+      case _: MarkerAnnotationExpr =>
+        annotationAst(node, List.empty)
+      case normal: NormalAnnotationExpr =>
+        val assignmentAsts = normal.getPairs.asScala.toList.map { pair =>
+          annotationAssignmentAst(
+            pair.getName.getIdentifier,
+            pair.toString,
+            convertAnnotationValueExpr(pair.getValue).getOrElse(Ast())
+          )
+        }
+        annotationAst(node, assignmentAsts)
+      case single: SingleMemberAnnotationExpr =>
+        val assignmentAsts = List(
+          annotationAssignmentAst(
+            "value",
+            single.getMemberValue.toString,
+            convertAnnotationValueExpr(single.getMemberValue).getOrElse(Ast())
+          )
+        )
+        annotationAst(node, assignmentAsts)
+    }
+  }
+
+  private def convertAnnotationValueExpr(expr: Expression): Option[Ast] = {
+    expr match {
+      case arrayInit: ArrayInitializerExpr =>
+        val arrayInitNode = NewArrayInitializer()
+          .code(arrayInit.toString)
+        val initElementAsts = arrayInit.getValues.asScala.toList.map { value =>
+          convertAnnotationValueExpr(value)
+        }
+
+        setArgumentIndices(initElementAsts.flatten)
+
+        val returnAst = initElementAsts.foldLeft(Ast(arrayInitNode)) {
+          case (ast, Some(elementAst)) =>
+            ast.withChild(elementAst)
+          case (ast, _) => ast
+        }
+        Some(returnAst)
+
+      case annotationExpr: AnnotationExpr =>
+        Some(astForAnnotationExpr(annotationExpr))
+
+      case literalExpr: LiteralExpr =>
+        Some(astForAnnotationLiteralExpr(literalExpr))
+
+      case _: ClassExpr =>
+        // TODO: Implement for known case
+        None
+
+      case _: FieldAccessExpr =>
+        // TODO: Implement for known case
+        None
+
+      case _: BinaryExpr =>
+        // TODO: Implement for known case
+        None
+
+      case _: NameExpr =>
+        // TODO: Implement for known case
+        None
+
+      case _ =>
+        logger.info(s"convertAnnotationValueExpr not yet implemented for unknown case ${expr.getClass}")
+        None
+    }
+  }
+
+  private def astForAnnotationLiteralExpr(literalExpr: LiteralExpr): Ast = {
+    val valueNode =
+      literalExpr match {
+        case literal: StringLiteralExpr    => newAnnotationLiteralNode(literal.getValue)
+        case literal: IntegerLiteralExpr   => newAnnotationLiteralNode(literal.getValue)
+        case literal: BooleanLiteralExpr   => newAnnotationLiteralNode(java.lang.Boolean.toString(literal.getValue))
+        case literal: CharLiteralExpr      => newAnnotationLiteralNode(literal.getValue)
+        case literal: DoubleLiteralExpr    => newAnnotationLiteralNode(literal.getValue)
+        case literal: LongLiteralExpr      => newAnnotationLiteralNode(literal.getValue)
+        case _: NullLiteralExpr            => newAnnotationLiteralNode("null")
+        case literal: TextBlockLiteralExpr => newAnnotationLiteralNode(literal.getValue)
+      }
+
+    Ast(valueNode)
   }
 
   private def modifiersForTypeDecl(typ: TypeDeclaration[_], isInterface: Boolean): List[NewModifier] = {

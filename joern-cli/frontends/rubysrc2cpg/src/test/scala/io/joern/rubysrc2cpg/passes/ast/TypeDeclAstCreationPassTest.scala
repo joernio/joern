@@ -66,7 +66,7 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
       vehicle.name shouldBe "Vehicle"
       vehicle.fullName shouldBe "Test0.rb::program.Vehicle"
 
-      val List(speeding, halting, driving) = vehicle.method.l
+      val List(_, speeding, halting, driving) = vehicle.method.l
       speeding.name shouldBe "speeding"
       halting.name shouldBe "halting"
       driving.name shouldBe "driving"
@@ -155,7 +155,7 @@ class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture {
       myClass.name shouldBe "MyClass"
       myClass.fullName shouldBe "Test0.rb::program.MyClass"
 
-      val List(_, m1, m2, m3, m4) = myClass.method.l
+      val List(_, _, m1, m2, m3, m4) = myClass.method.l
       m1.name shouldBe "method1"
       m2.name shouldBe "method2"
       m3.name shouldBe "method3"

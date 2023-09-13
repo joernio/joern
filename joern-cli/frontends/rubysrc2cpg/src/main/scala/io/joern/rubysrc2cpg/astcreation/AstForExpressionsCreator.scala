@@ -110,7 +110,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case ctx: RegularExpressionLiteralContext => Seq(astForRegularExpressionLiteral(ctx))
     case ctx: HereDocLiteralContext           => Seq(astForHereDocLiteral(ctx))
     case _ =>
-      logger.error(s"astForLiteralPrimaryExpression() $filename, ${text(ctx)} All contexts mismatched.")
+      logger.error(s"astForLiteralPrimaryExpression() $relativeFilename, ${text(ctx)} All contexts mismatched.")
       Seq()
   }
 
@@ -279,7 +279,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         case Some(xs) => Option(xs ++ Set(ctx))
         case None     => Option(Set(ctx))
       }
-      val thisNode = createIdentifierWithScope(ctx, "this", "this", Defines.Any, List.empty)
+      val thisNode = createThisIdentifier(ctx)
       astForFieldAccess(ctx, thisNode)
     } else if (definitelyIdentifier || scope.lookupVariable(variableName).isDefined) {
       val node = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List())

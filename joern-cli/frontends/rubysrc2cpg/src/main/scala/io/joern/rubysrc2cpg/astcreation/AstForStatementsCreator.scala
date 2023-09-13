@@ -210,7 +210,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     case ctx: OrAndExpressionOrCommandContext      => Seq(astForOrAndExpressionOrCommand(ctx))
     case ctx: ExpressionExpressionOrCommandContext => astForExpressionContext(ctx.expression())
     case _ =>
-      logger.error(s"astForExpressionOrCommand() $filename, ${text(ctx)} All contexts mismatched.")
+      logger.error(s"astForExpressionOrCommand() $relativeFilename, ${text(ctx)} All contexts mismatched.")
       Seq(Ast())
   }
 
@@ -253,13 +253,17 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
 
     /* isolate methods from the original args and create identifier ASTs from it */
     val methodDefAsts = argsAsts.filter(_.nodes.headOption.getOrElse(None).isInstanceOf[NewMethod])
-    val methodToIdentifierAsts = methodDefAsts.map { ast =>
-      val id = NewIdentifier()
-        .name(ast.nodes.head.asInstanceOf[NewMethod].name)
-        .code(ast.nodes.head.asInstanceOf[NewMethod].name)
-        .typeFullName(Defines.Any)
-        .lineNumber(ast.nodes.head.asInstanceOf[NewMethod].lineNumber)
-      Ast(id)
+    val methodToIdentifierAsts = methodDefAsts.flatMap { ast =>
+      ast.nodes.collectFirst { case x: NewMethod => x }.map { methodNode =>
+        val id = NewIdentifier()
+          .name(methodNode.name)
+          .code(methodNode.name)
+          .typeFullName(Defines.Any)
+          .lineNumber(methodNode.lineNumber)
+          .columnNumber(methodNode.columnNumber)
+        scope.addToScope(methodNode.name, id)
+        Ast(id)
+      }
     }
 
     /* TODO: we add the isolated method defs later on to the parent instead */
@@ -349,7 +353,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
         case path if File(path).exists =>
           path
         case path if File(s"$path.rb").exists =>
-          s"${path}.rb"
+          s"$path.rb"
         case _ =>
           pathValue
       }

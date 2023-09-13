@@ -1,7 +1,6 @@
 package io.joern.rubysrc2cpg.dataflow
 
 import io.joern.dataflowengineoss.language.*
-import io.joern.rubysrc2cpg.RubySrc2Cpg
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 
@@ -889,7 +888,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     "find flows to the sink" in {
       val source = cpg.identifier.name("x").l
       val sink   = cpg.call.name("puts").l
-      sink.reachableByFlows(source).l.size shouldBe 1
+      sink.reachableByFlows(source).l.size shouldBe 2
     }
   }
 

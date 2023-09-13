@@ -14,17 +14,17 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for a single command call" in {
       val cpg = code("""puts 123""")
 
-      val List(call1, call2) = cpg.call.l
-      val List(arg)          = call1.argument.isLiteral.l
+      val List(assign, puts) = cpg.call.l
+      val List(arg)          = puts.argument.isLiteral.l
 
-      call1.code shouldBe "puts 123"
-      call1.lineNumber shouldBe Some(1)
+      puts.code shouldBe "puts 123"
+      puts.lineNumber shouldBe Some(1)
 
       arg.code shouldBe "123"
       arg.lineNumber shouldBe Some(1)
       arg.columnNumber shouldBe Some(5)
 
-      call2.name shouldBe "<operator>.assignment" // call node for builtin typeRef assignment
+      assign.name shouldBe "<operator>.assignment" // call node for builtin typeRef assignment
     }
 
     "have correct structure for an unsigned, decimal integer literal" in {
@@ -314,7 +314,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     "have correct structure for a single-line regular expression literal passed as argument to a command" in {
       val cpg = code("puts /x/")
 
-      val List(callNode, _) = cpg.call.l
+      val List(_, callNode) = cpg.call.l
       callNode.code shouldBe "puts /x/"
       callNode.name shouldBe "puts"
       callNode.lineNumber shouldBe Some(1)
@@ -416,7 +416,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
 
     "have correct structure for a call node" in {
       val cpg               = code("puts \"something\"")
-      val List(callNode, _) = cpg.call.l
+      val List(_, callNode) = cpg.call.l
       callNode.code shouldBe "puts \"something\""
       callNode.lineNumber shouldBe Some(1)
       callNode.columnNumber shouldBe Some(0)
@@ -683,7 +683,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       callNode3.lineNumber shouldBe Some(2)
       callNode3.columnNumber shouldBe Some(0)
 
-      val List(argArgumentOfFoo, argArgumentOfPuts) = cpg.identifier.name("arg").l
+      val List(argArgumentOfPuts, argArgumentOfFoo) = cpg.identifier.name("arg").l
       argArgumentOfFoo.code shouldBe "arg"
       argArgumentOfFoo.lineNumber shouldBe Some(2)
       argArgumentOfFoo.columnNumber shouldBe Some(5)
@@ -1191,7 +1191,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     methodNode.name shouldBe "foo"
     methodNode.lineNumber shouldBe Some(2)
 
-    val List(divisionOperator, assignmentOperator) = cpg.method.name(".*operator.*").l
+    val List(assignmentOperator, divisionOperator) = cpg.method.name(".*operator.*").l
     divisionOperator.name shouldBe "<operator>.division"
     assignmentOperator.name shouldBe "<operator>.assignment"
   }
@@ -1386,7 +1386,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     keyValueAssocOperator.code shouldBe ":x=>1"
     keyValueAssocOperator.astChildren.l(1).code shouldBe "1"
 
-    val List(actualIdentifier, pseudoIdentifier) = cpg.identifier("bar").l
+    val List(pseudoIdentifier, actualIdentifier) = cpg.identifier("bar").l
     pseudoIdentifier.lineNumber shouldBe Some(2)
     pseudoIdentifier.columnNumber shouldBe Some(0)
   }
@@ -1475,12 +1475,12 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     args1.head.code shouldBe "some_lhs"
     args1.tail.code.l.head shouldBe "some_rhs"
 
-    val callNode2 = cpg.call.code("pack_lhs = pack_rhs1,pack_rhs2").l.head
+    val callNode2 = cpg.call.code("pack_lhs = pack_rhs1, pack_rhs2").l.head
     callNode2.lineNumber shouldBe Some(2)
     callNode2.columnNumber shouldBe Some(19)
     val args2 = callNode2.argument.l
     args2.size shouldBe 2
     args2.head.code shouldBe "pack_lhs"
-    args2.tail.code.l.head shouldBe "pack_rhs1,pack_rhs2"
+    args2.tail.code.l.head shouldBe "pack_rhs1, pack_rhs2"
   }
 }
