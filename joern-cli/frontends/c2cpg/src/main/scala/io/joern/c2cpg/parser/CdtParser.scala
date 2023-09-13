@@ -44,7 +44,11 @@ class CdtParser(config: Config) extends ParseProblemsLogger with PreprocessorSta
   private val log              = new DefaultLogService
 
   // enables parsing of code behind disabled preprocessor defines:
-  private val opts: Int = ILanguage.OPTION_PARSE_INACTIVE_CODE
+  private var opts: Int = ILanguage.OPTION_PARSE_INACTIVE_CODE
+  // instructs the parser to skip function and method bodies
+  if (config.skipFunctionBodies) opts |= ILanguage.OPTION_SKIP_FUNCTION_BODIES
+  // performance optimization, allows the parser not to create image-locations
+  if (config.noImageLocations) opts |= ILanguage.OPTION_NO_IMAGE_LOCATIONS
 
   private def createParseLanguage(file: Path): ILanguage = {
     if (FileDefaults.isCPPFile(file.toString)) {
