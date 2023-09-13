@@ -1492,6 +1492,34 @@ class MethodTests extends GoCodeToCpgSuite {
       argv.name shouldBe "argv"
     }
   }
+
+  "When ast of struct node is coming under method's body" should {
+    val cpg = code("""package main
+        |
+        |func foo() Node {
+        |   var boo = int64(0)
+        |   return Node{
+        |     value: boo,
+        |   }
+        |}
+        |
+        |type Node struct {
+        |   value string
+        |}""".stripMargin)
+
+    "Be correct with method node properties" in {
+      val List(x) = cpg.method("foo").l
+      x.fullName shouldBe "main.foo"
+      // TODO: confirm if signature is correct
+      x.signature shouldBe "main.foo()main.Node"
+    }
+
+    "Be correct with typeDecl node properties" ignore {
+      val List(x) = cpg.typeDecl("Node").l
+      x.fullName shouldBe "main.Node"
+    }
+
+  }
   // TODO: add unit test for "sem chan int"
   //        resultErrChan := make(chan error)
   //		sem := make(chan int, concurrency)
