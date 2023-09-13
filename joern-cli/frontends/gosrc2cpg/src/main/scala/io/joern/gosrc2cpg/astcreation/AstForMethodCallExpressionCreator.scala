@@ -39,7 +39,6 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
       case SelectorExpr =>
         val (indentifierNode, interCalls) =
           getLastIdentifierFromSelectorExpr(createParserNodeInfo(funcDetails.json(ParserKeys.X)), Seq.empty)
-        println(s"interCalls: ${interCalls.size}")
         interCallAsts = interCalls
         (
           Some(indentifierNode.json(ParserKeys.Name).str, indentifierNode.json),
