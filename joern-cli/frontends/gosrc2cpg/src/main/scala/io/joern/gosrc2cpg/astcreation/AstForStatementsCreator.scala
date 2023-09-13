@@ -112,9 +112,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val rhsArr = assignStmt.json(ParserKeys.Rhs).arr
 
     if (lhsArr.isEmpty || rhsArr.isEmpty)
-      Seq(Ast())
+      Seq.empty
     else {
-      val localNodes = (lhsArr zipAll (rhsArr, lhsArr.last, rhsArr.last))
+      (lhsArr zipAll (rhsArr, lhsArr.last, rhsArr.last))
         .map { case (lhs, rhs) => (createParserNodeInfo(lhs), createParserNodeInfo(rhs)) }
         .map { case (localParserNode, rhsParserNode) =>
           val name = localParserNode.json(ParserKeys.Name).str
@@ -123,9 +123,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           scope.addToScope(name, (node, typ))
           Ast(node)
         }
-        .toList
-      val blockNode_ = blockNode(assignStmt, Defines.empty, Defines.anyTypeName)
-      Seq(blockAst(blockNode_, localNodes))
+        .toSeq
     }
   }
 
