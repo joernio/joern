@@ -57,7 +57,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   protected def getTypeOfToken(basicLit: ParserNodeInfo): String = {
-    // TODO Maybe in future need to add __BuiltIn kind of prefix
+    // TODO need to add more primitive types
     Try(basicLit.json(ParserKeys.Kind).str match {
       case "INT"    => "int"
       case "FLOAT"  => "float32"
