@@ -1,11 +1,12 @@
 package io.joern.x2cpg
 
+import flatgraph.DiffGraphBuilder
 import io.joern.x2cpg.passes.frontend.MetaDataPass
+import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, ModifierTypes}
-import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 

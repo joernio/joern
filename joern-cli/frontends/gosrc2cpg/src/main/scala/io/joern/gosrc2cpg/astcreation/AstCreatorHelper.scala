@@ -83,7 +83,7 @@ trait AstCreatorHelper { this: AstCreator =>
   protected def getTypeFullNameFromAstNode(ast: Seq[Ast]): String = {
     ast.headOption
       .flatMap(_.root)
-      .map(_.properties.get(PropertyNames.TYPE_FULL_NAME).get.toString)
+      .map(_.propertiesMap.get(PropertyNames.TYPE_FULL_NAME).toString)
       .getOrElse(Defines.anyTypeName)
   }
 

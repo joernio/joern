@@ -1,7 +1,6 @@
 package io.shiftleft.semanticcpg.language
 
-import io.shiftleft.codepropertygraph.generated.nodes.NewNode
-import overflowdb.Node
+import io.shiftleft.codepropertygraph.generated.nodes.{AbstractNode, NewNode, StoredNode}
 
 import scala.jdk.CollectionConverters.*
 
@@ -18,20 +17,20 @@ object Show {
     override def apply(a: Any): String = a match {
       case node: NewNode =>
         val label      = node.label
-        val properties = propsToString(node.properties.toList)
+        val properties = propsToString(node.propertiesMap.asScala.toMap)
         s"($label): $properties"
 
-      case node: Node =>
+      case node: StoredNode =>
         val label      = node.label
         val id         = node.id().toString
-        val properties = propsToString(node.propertiesMap.asScala.toList)
+        val properties = propsToString(node.propertiesMap.asScala.toMap)
         s"($label,$id): $properties"
 
       case other => other.toString
     }
 
-    private def propsToString(keyValues: List[(String, Any)]): String = {
-      keyValues
+    private def propsToString(properties: Map[String, Any]): String = {
+      properties
         .filter(_._2.toString.nonEmpty)
         .sortBy(_._1)
         .map { case (key, value) => s"$key: $value" }

@@ -1,7 +1,15 @@
 package io.joern.x2cpg.passes.frontend
 
 import io.joern.x2cpg.{Defines, X2CpgConfig}
-import io.shiftleft.codepropertygraph.generated.{Cpg, DispatchTypes, EdgeTypes, NodeTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{
+  Cpg,
+  DispatchTypes,
+  EdgeTypes,
+  NodeTypes,
+  Operators,
+  Properties,
+  PropertyNames
+}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.passes.{CpgPass, CpgPassBase, ForkJoinParallelCpgPass}
 import io.shiftleft.semanticcpg.language.*
@@ -264,9 +272,9 @@ object XTypeRecovery {
   // the symbol table then perhaps this would work out better
   implicit class AllNodeTypesFromNodeExt(x: StoredNode) {
     def allTypes: Iterator[String] =
-      (x.property(PropertyNames.TYPE_FULL_NAME, "ANY") +:
-        (x.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty)
-          ++ x.property(PropertyNames.POSSIBLE_TYPES, Seq.empty))).iterator
+      (x.propertyOption(Properties.TypeFullName).getOrElse("ANY") +:
+        (x.property(Properties.DynamicTypeHintFullName) ++
+          x.property(Properties.PossibleTypes))).iterator
 
     def getKnownTypes: Set[String] = {
       x.allTypes.toSet.filterNot(XTypeRecovery.unknownTypePattern.matches)
@@ -435,7 +443,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     * @param a
     *   assignment call pointer.
     */
-  protected def visitAssignments(a: Assignment): Set[String] = visitAssignmentArguments(a.argumentOut.l)
+  protected def visitAssignments(a: Assignment): Set[String] =
+    visitAssignmentArguments(a.argumentOut.cast[CfgNode].l)
 
   protected def visitAssignmentArguments(args: List[AstNode]): Set[String] = args match {
     case List(i: Identifier, b: Block)                             => visitIdentifierAssignedToBlock(i, b)
@@ -811,7 +820,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       case ::(_: TypeRef, ::(f: FieldIdentifier, _)) =>
         f.canonicalName
       case xs =>
-        logger.warn(s"Unhandled field structure ${xs.map(x => (x.label, x.code)).mkString(",")} @ ${debugLocation(fa)}")
+        val debugInfo = xs.collect { case x: CfgNode => (x.label(), x.code) }.mkString(",")
+        logger.warn(s"Unhandled field structure $debugInfo @ ${debugLocation(fa)}")
         wrapName("<unknown>")
     }
   }
@@ -819,7 +829,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def visitCallAssignedToLiteral(c: Call, l: Literal): Set[String] = {
     if (c.name.equals(Operators.indexAccess)) {
       // For now, we will just handle this on a very basic level
-      c.argumentOut.l match {
+      c.argumentOut.cast[CfgNode].l match {
         case List(_: Identifier, _: Literal) =>
           indexAccessToCollectionVar(c).map(cv => symbolTable.append(cv, getLiteralType(l))).getOrElse(Set.empty)
         case List(_: Identifier, idx: Identifier) if symbolTable.contains(idx) =>
@@ -862,7 +872,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           .getOrElse(XTypeRecovery.DummyIndexAccess)
       else x.name
 
-    Option(c.argumentOut.l match {
+    Option(c.argumentOut.cast[CfgNode].l match {
       case List(i: Identifier, idx: Literal)    => CollectionVar(i.name, idx.code)
       case List(i: Identifier, idx: Identifier) => CollectionVar(i.name, idx.code)
       case List(c: Call, idx: Call)             => CollectionVar(callName(c), callName(idx))
@@ -971,7 +981,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           callPaths.map(c => s"$c$pathSep${XTypeRecovery.DummyReturnType}")
         else
           returnValues
-      case ::(head: Call, Nil) if head.argumentOut.headOption.exists(symbolTable.contains) =>
+      case ::(head: Call, Nil) if head.argumentOut.cast[CfgNode].headOption.exists(symbolTable.contains) =>
         symbolTable
           .get(head.argumentOut.head)
           .map(t => Seq(t, head.name, XTypeRecovery.DummyReturnType).mkString(pathSep))
@@ -981,7 +991,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         extractTypes(head.argument.l)
       case _ => Set.empty
     }
-    val returnTypes = extractTypes(ret.argumentOut.l)
+    val returnTypes = extractTypes(ret.argumentOut.cast[CfgNode].l)
     existingTypes.addAll(returnTypes)
     builder.setNodeProperty(ret.method.methodReturn, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, existingTypes)
   }
@@ -1232,7 +1242,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     lazy val existingTypes = storedNode.getKnownTypes
 
     val hasUnknownTypeFullName = storedNode
-      .property(PropertyNames.TYPE_FULL_NAME, Defines.Any)
+      .propertyOption(PropertyNames.TYPE_FULL_NAME)
+      .getOrElse(Defines.Any)
       .matches(XTypeRecovery.unknownTypePattern.pattern.pattern())
 
     if (types.nonEmpty && (hasUnknownTypeFullName || types.toSet != existingTypes)) {
@@ -1271,10 +1282,12 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     */
   protected def storeDefaultTypeInfo(n: StoredNode, types: Seq[String]): Unit =
     val hasUnknownType =
-      n.property(PropertyNames.TYPE_FULL_NAME, Defines.Any).matches(XTypeRecovery.unknownTypePattern.pattern.pattern())
+      n.propertyOption(PropertyNames.TYPE_FULL_NAME)
+        .getOrElse(Defines.Any)
+        .matches(XTypeRecovery.unknownTypePattern.pattern.pattern())
 
     if (types.toSet != n.getKnownTypes || (hasUnknownType && types.nonEmpty)) {
-      setTypes(n, (n.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty) ++ types).distinct)
+      setTypes(n, (n.propertyOption(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME).getOrElse(Seq.empty) ++ types).distinct)
     }
 
   /** If there is only 1 type hint then this is set to the `typeFullName` property and `dynamicTypeHintFullName` is

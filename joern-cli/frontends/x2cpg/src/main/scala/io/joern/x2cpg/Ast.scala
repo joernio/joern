@@ -5,7 +5,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode.PropertyDefaults
 import org.slf4j.LoggerFactory
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
-import overflowdb.SchemaViolationException
+import flatgraph.SchemaViolationException
 
 case class AstEdge(src: NewNode, dst: NewNode)
 
@@ -58,7 +58,7 @@ object Ast {
     !(src.isValidOutNeighbor(edge, dst) && dst.isValidInNeighbor(edge, src))
   ) {
     throw new SchemaViolationException(
-      s"Malformed AST detected: (${src.label()}) -[$edge]-> (${dst.label()}) violates the schema."
+      s"Malformed AST detected: (${src.label}) -[$edge]-> (${dst.label}) violates the schema."
     )
   }
 
@@ -222,9 +222,10 @@ case class Ast(
     * copy.
     */
   def subTreeCopy(node: AstNodeNew, argIndex: Int = -1, replacementNode: Option[AstNodeNew] = None): Ast = {
-    val newNode = replacementNode match
+    val newNode = replacementNode match {
       case Some(n) => n
-      case None    => node.copy
+      case None    => node.copy()
+    }
     if (argIndex != -1) {
       // newNode.order = argIndex
       newNode match {

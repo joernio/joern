@@ -1,11 +1,13 @@
 package io.shiftleft.semanticcpg.language.modulevariable
 
+import flatgraph.help.{Doc, Traversal}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.Assignment
 import io.shiftleft.codepropertygraph.generated.help.Doc
 
+@Traversal(elementType = classOf[Local])
 class ModuleVariableTraversal(traversal: Iterator[OpNodes.ModuleVariable]) extends AnyVal {
 
   @Doc(info = "All assignments where the module variables in this traversal are the target across the program")
@@ -32,7 +34,7 @@ class ModuleVariableTraversal(traversal: Iterator[OpNodes.ModuleVariable]) exten
   )
   def references: Iterator[Identifier | FieldIdentifier] = {
     val variables = traversal.toList
-    variables.headOption.map(node => Cpg(node.graph())) match
+    variables.headOption.map(node => Cpg(node.graph)) match
       case Some(cpg) =>
         val modules       = cpg.method.isModule.l
         val variableNames = variables.name.toSet
@@ -78,7 +80,7 @@ class ModuleVariableTraversal(traversal: Iterator[OpNodes.ModuleVariable]) exten
     val variables          = traversal.toList
     lazy val moduleNames   = variables.method.isModule.fullName.dedup.toSeq
     lazy val variableNames = variables.name.toSeq
-    variables.headOption.map(node => Cpg(node.graph())) match
+    variables.headOption.map(node => Cpg(node.graph)) match
       case Some(cpg) => cpg.typeDecl.fullNameExact(moduleNames*).member.nameExact(variableNames*)
       case None      => Iterator.empty
   }

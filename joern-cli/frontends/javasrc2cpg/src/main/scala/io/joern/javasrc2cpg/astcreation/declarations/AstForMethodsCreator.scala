@@ -463,8 +463,8 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
   }
 
   private def constructorReturnNode(constructorDeclaration: ConstructorDeclaration): NewMethodReturn = {
-    val line   = constructorDeclaration.getEnd.map(x => x.line).toScala
-    val column = constructorDeclaration.getEnd.map(x => x.column).toScala
+    val line   = constructorDeclaration.getEnd.map(_.line).toScala
+    val column = constructorDeclaration.getEnd.map(_.column).toScala
     newMethodReturnNode(TypeConstants.Void, None, line, column)
   }
 

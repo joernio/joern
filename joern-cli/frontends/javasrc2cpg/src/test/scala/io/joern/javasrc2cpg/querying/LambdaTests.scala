@@ -708,7 +708,7 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
         case myValue :: Nil =>
           myValue.closureOriginalName.head shouldBe "myValue"
           myValue._localViaRefOut.get.name shouldBe "myValue"
-          myValue._captureIn.collectFirst { case x: MethodRef =>
+          myValue.captureIn.collectFirst { case x: MethodRef =>
             x.methodFullName
           }.head shouldBe "Foo.<lambda>0:<unresolvedSignature>(1)"
 

@@ -70,7 +70,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
       To signify the singleton type, we add the <class> tag.
      */
-    val singletonTypeDecl = typeDecl.copy
+    val singletonTypeDecl = typeDecl
+      .copy()
       .name(s"$className<class>")
       .fullName(s"$classFullName<class>")
       .inheritsFromTypeFullName(inheritsFrom.map(x => s"$x<class>"))

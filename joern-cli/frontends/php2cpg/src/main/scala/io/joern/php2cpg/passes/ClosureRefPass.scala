@@ -22,7 +22,7 @@ class ClosureRefPass(cpg: Cpg) extends ForkJoinParallelCpgPass[ClosureBinding](c
     * that is the scope in which the closure would have originally been created.
     */
   override def runOnPart(diffGraph: DiffGraphBuilder, closureBinding: ClosureBinding): Unit = {
-    closureBinding.captureIn.collectAll[MethodRef].toList match {
+    closureBinding._captureIn.collectAll[MethodRef].toList match {
       case Nil =>
         logger.error(s"No MethodRef corresponding to closureBinding ${closureBinding.closureBindingId}")
 

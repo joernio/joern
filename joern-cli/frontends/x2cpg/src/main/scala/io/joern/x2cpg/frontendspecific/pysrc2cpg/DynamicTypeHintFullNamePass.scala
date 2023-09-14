@@ -1,5 +1,6 @@
 package io.joern.x2cpg.frontendspecific.pysrc2cpg
 
+import flatgraph.DiffGraphBuilder
 import io.joern.x2cpg.passes.frontend.ImportStringHandling
 import io.shiftleft.codepropertygraph.generated.{Cpg, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, MethodParameterIn, MethodReturn, StoredNode}

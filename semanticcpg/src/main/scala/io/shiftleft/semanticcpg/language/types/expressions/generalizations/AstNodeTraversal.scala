@@ -1,20 +1,18 @@
 package io.shiftleft.semanticcpg.language.types.expressions.generalizations
 
+import flatgraph.help.{Doc, Traversal}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes}
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.traversal.help
 import io.shiftleft.codepropertygraph.generated.help.Doc
 
-@help.Traversal(elementType = classOf[AstNode])
+@Traversal(elementType = classOf[AstNode])
 class AstNodeTraversal[A <: AstNode](val traversal: Iterator[A]) extends AnyVal {
 
   /** Nodes of the AST rooted in this node, including the node itself.
     */
   @Doc(info = "All nodes of the abstract syntax tree")
-  def ast: Iterator[AstNode] = {
-    traversal.repeat(_.out(EdgeTypes.AST))(_.emit).cast[AstNode]
-  }
+  def ast: Iterator[AstNode] =
+    traversal.repeat(_._astOut)(_.emit).cast[AstNode]
 
   /** All nodes of the abstract syntax tree rooted in this node, which match `predicate`. Equivalent of `match` in the
     * original CPG paper.
@@ -38,7 +36,7 @@ class AstNodeTraversal[A <: AstNode](val traversal: Iterator[A]) extends AnyVal 
   /** Nodes of the AST rooted in this node, minus the node itself
     */
   def astMinusRoot: Iterator[AstNode] =
-    traversal.repeat(_.out(EdgeTypes.AST))(_.emitAllButFirst).cast[AstNode]
+    traversal.repeat(_._astOut)(_.emitAllButFirst).cast[AstNode]
 
   /** Direct children of node in the AST. Siblings are ordered by their `order` fields
     */
@@ -48,7 +46,7 @@ class AstNodeTraversal[A <: AstNode](val traversal: Iterator[A]) extends AnyVal 
   /** Parent AST node
     */
   def astParent: Iterator[AstNode] =
-    traversal.in(EdgeTypes.AST).cast[AstNode]
+    traversal._astIn.cast[AstNode]
 
   /** Siblings of this node in the AST, ordered by their `order` fields
     */
@@ -58,7 +56,7 @@ class AstNodeTraversal[A <: AstNode](val traversal: Iterator[A]) extends AnyVal 
   /** Traverses up the AST and returns the first block node.
     */
   def parentBlock: Iterator[Block] =
-    traversal.repeat(_.in(EdgeTypes.AST))(_.emit.until(_.hasLabel(NodeTypes.BLOCK))).collectAll[Block]
+    traversal.repeat(_._astIn)(_.emit.until(_.hasLabel(Block.Label))).collectAll[Block]
 
   /** Nodes of the AST obtained by expanding AST edges backwards until the method root is reached
     */
@@ -72,24 +70,26 @@ class AstNodeTraversal[A <: AstNode](val traversal: Iterator[A]) extends AnyVal 
 
   /** Nodes of the AST obtained by expanding AST edges backwards until `root` or the method root is reached
     */
-  def inAst(root: AstNode): Iterator[AstNode] =
+  def inAst(root: AstNode): Iterator[AstNode] = {
     traversal
-      .repeat(_.in(EdgeTypes.AST))(
+      .repeat(_._astIn)(
         _.emit
-          .until(_.or(_.hasLabel(NodeTypes.METHOD), _.filter(n => root != null && root == n)))
+          .until(_.or(_.hasLabel(Method.Label), _.filter(n => root != null && root == n)))
       )
       .cast[AstNode]
+  }
 
   /** Nodes of the AST obtained by expanding AST edges backwards until `root` or the method root is reached, minus this
     * node
     */
-  def inAstMinusLeaf(root: AstNode): Iterator[AstNode] =
+  def inAstMinusLeaf(root: AstNode): Iterator[AstNode] = {
     traversal
-      .repeat(_.in(EdgeTypes.AST))(
+      .repeat(_._astIn)(
         _.emitAllButFirst
-          .until(_.or(_.hasLabel(NodeTypes.METHOD), _.filter(n => root != null && root == n)))
+          .until(_.or(_.hasLabel(Method.Label), _.filter(n => root != null && root == n)))
       )
       .cast[AstNode]
+  }
 
   /** Traverse only to those AST nodes that are also control flow graph nodes
     */
@@ -208,10 +208,11 @@ class AstNodeTraversal[A <: AstNode](val traversal: Iterator[A]) extends AnyVal 
   def isTypeDecl: Iterator[TypeDecl] =
     traversal.collectAll[TypeDecl]
 
-  def walkAstUntilReaching(labels: List[String]): Iterator[StoredNode] =
+  def walkAstUntilReaching(labels: List[String]): Iterator[StoredNode] = {
     traversal
-      .repeat(_.out(EdgeTypes.AST))(_.emitAllButFirst.until(_.hasLabel(labels*)))
+      .repeat(_._astOut)(_.emitAllButFirst.until(_.hasLabel(labels*)))
       .dedup
       .cast[StoredNode]
+  }
 
 }

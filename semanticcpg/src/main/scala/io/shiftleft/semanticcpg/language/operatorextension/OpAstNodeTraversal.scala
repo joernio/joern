@@ -1,9 +1,11 @@
 package io.shiftleft.semanticcpg.language.operatorextension
 
+import flatgraph.help.{Doc, Traversal}
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.codepropertygraph.generated.help.Doc
 
+@Traversal(elementType = classOf[AstNode])
 class OpAstNodeTraversal[A <: AstNode](val traversal: Iterator[A]) extends AnyVal {
 
   @Doc(info = "Any assignments that this node is a part of (traverse up)")

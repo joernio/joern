@@ -4,7 +4,6 @@ import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.dotgenerator.DotSerializer.{Edge, Graph}
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.Node
 
 class CfgGenerator {
 
@@ -44,12 +43,12 @@ class CfgGenerator {
   protected def expand(v: StoredNode): Iterator[Edge] =
     v._cfgOut.map(node => Edge(v, node, edgeType = edgeType))
 
-  private def isConditionInControlStructure(v: Node): Boolean = v match {
+  private def isConditionInControlStructure(v: StoredNode): Boolean = v match {
     case id: Identifier => id.astParent.isControlStructure
     case _              => false
   }
 
-  private def cfgNodeShouldBeDisplayed(v: Node): Boolean =
+  private def cfgNodeShouldBeDisplayed(v: StoredNode): Boolean =
     isConditionInControlStructure(v) ||
       !(v.isInstanceOf[Literal] ||
         v.isInstanceOf[Identifier] ||

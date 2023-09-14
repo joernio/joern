@@ -224,7 +224,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
     // Set span contents
     methodAstsWithRefs.flatMap(_.nodes).foreach {
-      case m: NewMethodRef => DummyNode(m.copy)(block.span.spanStart(m.code))
+      case m: NewMethodRef => DummyNode(m.copy())(block.span.spanStart(m.code))
       case _               =>
     }
 

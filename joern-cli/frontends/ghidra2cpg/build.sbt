@@ -6,8 +6,8 @@ libraryDependencies ++= Seq(
   "io.joern"          % "ghidra"                   % Versions.ghidra,
   "com.github.scopt" %% "scopt"                    % Versions.scopt,
   "commons-io"        % "commons-io"               % Versions.commonsIo,
-  "io.shiftleft"     %% "codepropertygraph"        % Versions.cpg,
-  "io.shiftleft"     %% "codepropertygraph-protos" % Versions.cpg,
+  "com.michaelpollmeier"     %% "codepropertygraph"        % Versions.cpg,
+  "com.michaelpollmeier"     %% "codepropertygraph-protos" % Versions.cpg,
   "org.scalatest"    %% "scalatest"                % Versions.scalatest % Test
 )
 

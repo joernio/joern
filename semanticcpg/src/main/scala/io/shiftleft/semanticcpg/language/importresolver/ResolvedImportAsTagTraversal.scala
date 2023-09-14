@@ -1,5 +1,6 @@
 package io.shiftleft.semanticcpg.language.importresolver
 
+import flatgraph.help.{Doc, Traversal}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Declaration, Member, Tag}
 import io.shiftleft.semanticcpg.language.*
@@ -7,12 +8,10 @@ import io.shiftleft.codepropertygraph.generated.help.Doc
 
 class ResolvedImportAsTagExt(node: Tag) extends AnyVal {
 
-  @Doc(info = "Parses this tag as an EvaluatedImport class")
   def _toEvaluatedImport: Option[EvaluatedImport] = EvaluatedImport.tagToEvaluatedImport(node)
 
-  @Doc(info = "If this tag represents a resolved import, will attempt to find the CPG entities this refers to")
   def resolvedEntity: Iterator[AstNode] = {
-    val cpg = Cpg(node.graph())
+    val cpg = Cpg(node.graph)
     node._toEvaluatedImport.iterator
       .collectAll[ResolvedImport]
       .flatMap {
@@ -25,9 +24,9 @@ class ResolvedImportAsTagExt(node: Tag) extends AnyVal {
       }
       .iterator
   }
-
 }
 
+@Traversal(elementType = classOf[Tag])
 class ResolvedImportAsTagTraversal(steps: Iterator[Tag]) extends AnyVal {
 
   @Doc(info = "Parses these tags as EvaluatedImport classes")

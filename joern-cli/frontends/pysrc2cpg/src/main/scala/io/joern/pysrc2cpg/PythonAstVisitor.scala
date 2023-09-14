@@ -8,6 +8,7 @@ import io.joern.x2cpg.frontendspecific.pysrc2cpg.Constants
 import io.joern.x2cpg.{AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewIdentifier, NewNode, NewTypeDecl}
+import flatgraph.DiffGraphBuilder
 import org.slf4j.LoggerFactory
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 

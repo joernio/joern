@@ -1,9 +1,11 @@
 package io.shiftleft.semanticcpg.language.operatorextension
 
-import io.shiftleft.codepropertygraph.generated.nodes.{Expression, Identifier}
+import flatgraph.help.{Doc, Traversal}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Expression, Identifier}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.codepropertygraph.generated.help.Doc
 
+@Traversal(elementType = classOf[Call])
 class ArrayAccessTraversal(val traversal: Iterator[OpNodes.ArrayAccess]) extends AnyVal {
 
   @Doc(info = "The expression representing the array")
