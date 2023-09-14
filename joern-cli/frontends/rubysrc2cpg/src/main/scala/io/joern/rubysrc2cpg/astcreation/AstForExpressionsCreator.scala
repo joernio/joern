@@ -161,7 +161,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         decl.dynamicTypeHintFullName.headOption
       case _ =>
         astForExpression(baseNode).nodes
-          .flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME).map(_.toString))
+          .flatMap(node => Option(node.propertiesMap.get(PropertyNames.TYPE_FULL_NAME)).map(_.toString))
           .filterNot(_ == XDefines.Any)
           .headOption
     }

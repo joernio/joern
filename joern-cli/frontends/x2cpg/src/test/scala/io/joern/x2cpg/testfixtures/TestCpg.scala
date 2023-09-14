@@ -1,9 +1,9 @@
 package io.joern.x2cpg.testfixtures
 
+import flatgraph.Graph
 import io.joern.x2cpg.X2CpgConfig
 import io.joern.x2cpg.utils.TestCodeWriter
 import io.shiftleft.codepropertygraph.generated.Cpg
-import overflowdb.Graph
 
 import java.nio.file.{Files, Path}
 import java.util.Comparator
@@ -11,7 +11,7 @@ import java.util.Comparator
 // Lazily populated test CPG which is created upon first access to the underlying graph.
 // The trait LanguageFrontend is mixed in and not property/field of this class in order
 // to allow the configuration of language frontend specific properties on the CPG object.
-abstract class TestCpg extends Cpg() with LanguageFrontend with TestCodeWriter {
+abstract class TestCpg extends Cpg(Cpg.empty.graph) with LanguageFrontend with TestCodeWriter {
   private var _graph                = Option.empty[Graph]
   protected var _withPostProcessing = false
 

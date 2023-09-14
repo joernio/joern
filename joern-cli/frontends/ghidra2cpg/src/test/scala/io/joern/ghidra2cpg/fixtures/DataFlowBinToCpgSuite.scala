@@ -9,12 +9,13 @@ import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.dotextension.ImageViewer
 import io.shiftleft.semanticcpg.layers.*
 
+import scala.compiletime.uninitialized
 import scala.sys.process.Process
 import scala.util.Try
 
 class DataFlowBinToCpgSuite extends GhidraBinToCpgSuite {
 
-  implicit var context: EngineContext = scala.compiletime.uninitialized
+  implicit var context: EngineContext = uninitialized
 
   override def beforeAll(): Unit = {
     super.beforeAll()
@@ -33,7 +34,7 @@ class DataFlowBinToCpgSuite extends GhidraBinToCpgSuite {
     new OssDataFlow(options).run(context)
   }
 
-  protected implicit def int2IntegerOption(x: Int): Option[Integer] =
+  protected implicit def int2IntegerOption(x: Int): Option[Int] =
     Some(x)
 
   protected def getMemberOfType(cpg: Cpg, typeName: String, memberName: String): Iterator[Member] =

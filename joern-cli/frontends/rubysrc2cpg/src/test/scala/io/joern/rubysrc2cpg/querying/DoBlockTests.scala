@@ -232,7 +232,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
             case None => fail("Expected closure binding refer to the captured local")
           }
 
-          inside(myValue._captureIn.l) {
+          inside(myValue.captureIn.l) {
             case (x: MethodRef) :: Nil => x.methodFullName shouldBe "Test0.rb:<global>::program:<lambda>0"
             case xs                    => fail(s"Expected single method ref binding but got [${xs.mkString(",")}]")
           }

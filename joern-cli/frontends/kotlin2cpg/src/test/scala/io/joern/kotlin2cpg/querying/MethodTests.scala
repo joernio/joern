@@ -174,7 +174,7 @@ class MethodTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         |""".stripMargin)
 
     "pass the lambda to a `sortedWith` call which is then under the method `sorted`" in {
-      inside(cpg.methodRef(".*<lambda>.*").inCall.l) {
+      inside(cpg.methodRefWithName(".*<lambda>.*").inCall.l) {
         case sortedWith :: Nil =>
           sortedWith.name shouldBe "sortedWith"
           sortedWith.method.name shouldBe "sorted"

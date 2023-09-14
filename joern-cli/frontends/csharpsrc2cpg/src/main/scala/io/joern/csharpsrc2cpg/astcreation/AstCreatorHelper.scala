@@ -3,14 +3,15 @@ package io.joern.csharpsrc2cpg.astcreation
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetJsonAst, DotNetNodeInfo, ParserKeys}
 import io.joern.csharpsrc2cpg.{CSharpDefines, Constants, astcreation}
+import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, PropertyNames}
-import io.shiftleft.passes.IntervalKeyPool
 import ujson.Value
 
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
+
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   private val anonymousTypeKeyPool = new IntervalKeyPool(first = 0, last = Long.MaxValue)
@@ -62,8 +63,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   protected def getTypeFullNameFromAstNode(ast: Ast): String = {
     ast.root
-      .flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME))
-      .map(_.toString)
+      .map(_.propertiesMap.getOrDefault(PropertyNames.TYPE_FULL_NAME, Defines.Any).toString)
       .getOrElse(Defines.Any)
   }
 
@@ -83,7 +83,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case x: NewMethodParameterIn =>
         identifierNode(dotNetNode.orNull, x.name, x.code, x.typeFullName, x.dynamicTypeHintFullName)
       case x =>
-        logger.warn(s"Unhandled declaration type '${x.label()}' for ${x.name}")
+        logger.warn(s"Unhandled declaration type '${x.label}' for ${x.name}")
         identifierNode(dotNetNode.orNull, x.name, x.name, Defines.Any)
   }
 

@@ -17,7 +17,7 @@ class CfgDominatorFrontier[NodeType](cfgAdapter: CfgAdapter[NodeType], domTreeAd
   private def withIDom(x: NodeType, preds: Seq[NodeType]) =
     doms(x).map(i => (x, preds, i))
 
-  def calculate(cfgNodes: Seq[NodeType]): mutable.Map[NodeType, mutable.Set[NodeType]] = {
+  def calculate(cfgNodes: Iterator[NodeType]): mutable.Map[NodeType, mutable.Set[NodeType]] = {
     val domFrontier = mutable.Map.empty[NodeType, mutable.Set[NodeType]]
 
     for {

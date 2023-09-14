@@ -1,29 +1,8 @@
 package io.shiftleft.semanticcpg.language
 
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  Call,
-  Identifier,
-  Literal,
-  Local,
-  Method,
-  MethodParameterIn,
-  MethodParameterOut,
-  MethodRef,
-  MethodReturn,
-  StoredNode
-}
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.NodeExtension
-import io.shiftleft.semanticcpg.language.nodemethods.{
-  CallMethods,
-  IdentifierMethods,
-  LiteralMethods,
-  LocalMethods,
-  MethodMethods,
-  MethodParameterInMethods,
-  MethodParameterOutMethods,
-  MethodRefMethods,
-  MethodReturnMethods
-}
+import io.shiftleft.semanticcpg.language.nodemethods.*
 
 trait NodeExtensionFinder {
   def apply(n: StoredNode): Option[NodeExtension]

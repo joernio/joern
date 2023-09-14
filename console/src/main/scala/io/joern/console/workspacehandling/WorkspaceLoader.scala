@@ -2,7 +2,7 @@ package io.joern.console.workspacehandling
 
 import better.files.Dsl.mkdirs
 import better.files.File
-import overflowdb.traversal.help.Table.AvailableWidthProvider
+import flatgraph.help.Table.AvailableWidthProvider
 
 import java.nio.file.Path
 import scala.collection.mutable.ListBuffer

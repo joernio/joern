@@ -6,6 +6,7 @@ import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.joern.x2cpg.testfixtures.TestCpg
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
+import io.shiftleft.semanticcpg.language.*
 import io.joern.console.scan.*
 import io.shiftleft.utils.ProjectRoot
 

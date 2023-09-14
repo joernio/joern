@@ -231,7 +231,7 @@ class MacroHandlingTests extends C2CpgSuite {
     """.stripMargin)
 
     "should not result in malformed CFGs when expanding a nested macro with block" in {
-      cpg.all.collectAll[Block].l.count(b => b.cfgOut.size > 1) shouldBe 0
+      cpg.all.collectAll[Block].l.count(b => b._cfgOut.size > 1) shouldBe 0
     }
   }
 

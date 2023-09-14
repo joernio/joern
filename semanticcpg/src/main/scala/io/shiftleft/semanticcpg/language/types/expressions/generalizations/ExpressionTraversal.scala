@@ -59,8 +59,8 @@ class ExpressionTraversal[NodeType <: Expression](val traversal: Iterator[NodeTy
     */
   def method: Iterator[Method] =
     traversal._containsIn
-      .flatMap {
-        case x: Method   => x.start
+      .map {
+        case x: Method   => x
         case x: TypeDecl => x.astParent
       }
       .collectAll[Method]

@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.language.types.expressions
 
 import io.shiftleft.codepropertygraph.generated.nodes.{Declaration, Identifier}
-import io.shiftleft.semanticcpg.language.toTraversalSugarExt
+import io.shiftleft.semanticcpg.language.*
 
 /** An identifier, e.g., an instance of a local variable, or a temporary variable
   */

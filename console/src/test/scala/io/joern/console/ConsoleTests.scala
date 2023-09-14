@@ -428,7 +428,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
   "cpg" should {
     "provide .help command" in ConsoleFixture() { (console, codeDir) =>
       // part of Predefined.shared, which makes the below work in the repl without separate import
-      import io.shiftleft.codepropertygraph.Cpg.docSearchPackages
+      import io.shiftleft.semanticcpg.language.docSearchPackages
       import io.joern.console.testing.availableWidthProvider
 
       console.importCode(codeDir.toString)

@@ -1,8 +1,8 @@
 package io.joern.console
 
-import overflowdb.traversal.help.DocFinder.*
-import overflowdb.traversal.help.Table.AvailableWidthProvider
-import overflowdb.traversal.help.{DocFinder, Table}
+import flatgraph.help.DocFinder.*
+import flatgraph.help.Table.AvailableWidthProvider
+import flatgraph.help.{DocFinder, Table}
 
 object Help {
 

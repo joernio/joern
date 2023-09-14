@@ -12,8 +12,7 @@ class X2CpgTests extends AnyWordSpec with Matchers {
 
     "create an empty in-memory CPG when no output path is given" in {
       val cpg = X2Cpg.newEmptyCpg(None)
-      cpg.graph.V.hasNext shouldBe false
-      cpg.graph.E.hasNext shouldBe false
+      cpg.graph.allNodes.hasNext shouldBe false
       cpg.close()
     }
 
@@ -22,9 +21,9 @@ class X2CpgTests extends AnyWordSpec with Matchers {
       file.delete()
       file.exists shouldBe false
       val cpg = X2Cpg.newEmptyCpg(Some(file.path.toString))
+      cpg.close()
       file.exists shouldBe true
       Files.size(file.path) should not be 0
-      cpg.close()
     }
 
     "overwrite existing file to create empty CPG" in {
@@ -32,11 +31,10 @@ class X2CpgTests extends AnyWordSpec with Matchers {
         file.exists shouldBe true
         Files.size(file.path) shouldBe 0
         val cpg = X2Cpg.newEmptyCpg(Some(file.path.toString))
-        cpg.graph.V.hasNext shouldBe false
-        cpg.graph.E.hasNext shouldBe false
+        cpg.graph.allNodes.hasNext shouldBe false
+        cpg.close()
         file.exists shouldBe true
         Files.size(file.path) should not be 0
-        cpg.close()
       }
     }
   }

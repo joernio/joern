@@ -3,7 +3,7 @@ package io.joern.console
 import better.files.Dsl.*
 import better.files.*
 import io.joern.console.workspacehandling.Project
-import overflowdb.traversal.help.Table.{AvailableWidthProvider, ConstantWidth}
+import flatgraph.help.Table.{AvailableWidthProvider, ConstantWidth}
 
 import scala.util.Try
 

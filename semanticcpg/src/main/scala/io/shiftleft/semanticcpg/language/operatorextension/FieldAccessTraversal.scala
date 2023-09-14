@@ -1,9 +1,10 @@
 package io.shiftleft.semanticcpg.language.operatorextension
 
-import io.shiftleft.codepropertygraph.generated.nodes.{FieldIdentifier, Member, TypeDecl}
+import flatgraph.help.{Doc, Traversal}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Member, TypeDecl}
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.traversal.help.Doc
 
+@Traversal(elementType = classOf[Call])
 class FieldAccessTraversal(val traversal: Iterator[OpNodes.FieldAccess]) extends AnyVal {
 
   @Doc(info = "Attempts to resolve the type declaration for this field access")

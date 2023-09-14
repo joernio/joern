@@ -8,8 +8,6 @@ import io.joern.x2cpg.passes.frontend.MetaDataPass
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
-import scala.jdk.CollectionConverters.*
-
 class MetaDataPassTests extends AnyWordSpec with Matchers {
 
   "MetaDataPass" should {
@@ -17,11 +15,11 @@ class MetaDataPassTests extends AnyWordSpec with Matchers {
     new MetaDataPass(cpg, Languages.C, "").createAndApply()
 
     "create exactly two nodes" in {
-      cpg.graph.V.asScala.size shouldBe 2
+      cpg.graph.allNodes.size shouldBe 2
     }
 
     "create no edges" in {
-      cpg.graph.E.asScala.size shouldBe 0
+      cpg.graph.allNodes.outE.size shouldBe 0
     }
 
     "create a metadata node with correct language" in {

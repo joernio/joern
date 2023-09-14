@@ -1,14 +1,14 @@
 package io.joern.dataflowengineoss.queryengine
 
+import flatgraph.Edge
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.passes.reachingdef.EdgeValidator
 import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Properties}
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.{Logger, LoggerFactory}
-import overflowdb.Edge
 
 import java.util.concurrent.*
 import scala.collection.mutable
@@ -205,9 +205,11 @@ object Engine {
   private def elemForEdge(e: Edge, callSiteStack: List[Call] = List())(implicit
     semantics: Semantics
   ): Option[PathElement] = {
-    val curNode  = e.inNode().asInstanceOf[CfgNode]
-    val parNode  = e.outNode().asInstanceOf[CfgNode]
-    val outLabel = Some(e.property(Properties.Variable)).getOrElse("")
+    val curNode = e.dst.asInstanceOf[CfgNode]
+    val parNode = e.src.asInstanceOf[CfgNode]
+    // note: flatgraph only allows at most one property per edge, and since we know :tm: that this is a ReachingDef edge it must be the Variable property...
+    val variablePropertyMaybe = Option(e.property).map(_.asInstanceOf[String])
+    val outLabel              = variablePropertyMaybe.getOrElse("")
 
     if (!EdgeValidator.isValidEdge(curNode, parNode)) {
       return None
@@ -254,9 +256,8 @@ object Engine {
   private def ddgInE(node: CfgNode, path: Vector[PathElement], callSiteStack: List[Call] = List()): Vector[Edge] = {
     node
       .inE(EdgeTypes.REACHING_DEF)
-      .asScala
       .filter { e =>
-        e.outNode() match {
+        e.src match {
           case srcNode: CfgNode =>
             !srcNode.isInstanceOf[Method] && !path
               .map(x => x.node)

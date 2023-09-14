@@ -1,7 +1,6 @@
 package io.joern.php2cpg.passes
 
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.PropertyNames
+import io.shiftleft.codepropertygraph.generated.{Cpg, Properties, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, NamespaceBlock, Method, TypeDecl}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language.*
@@ -15,7 +14,7 @@ class AstParentInfoPass(cpg: Cpg) extends ForkJoinParallelCpgPass[AstNode](cpg) 
   override def runOnPart(diffGraph: DiffGraphBuilder, node: AstNode): Unit = {
     findParent(node).foreach { parentNode =>
       val astParentType     = parentNode.label
-      val astParentFullName = parentNode.property(PropertyNames.FULL_NAME)
+      val astParentFullName = parentNode.property(Properties.FullName)
 
       diffGraph.setNodeProperty(node, PropertyNames.AST_PARENT_TYPE, astParentType)
       diffGraph.setNodeProperty(node, PropertyNames.AST_PARENT_FULL_NAME, astParentFullName)

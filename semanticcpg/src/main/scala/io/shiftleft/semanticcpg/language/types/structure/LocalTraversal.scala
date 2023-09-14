@@ -13,8 +13,8 @@ class LocalTraversal(val traversal: Iterator[Local]) extends AnyVal {
   def method: Iterator[Method] = {
     // TODO The following line of code is here for backwards compatibility.
     // Use the lower commented out line once not required anymore.
-    traversal.repeat(_.in(EdgeTypes.AST))(_.until(_.hasLabel(NodeTypes.METHOD))).cast[Method]
-    // definingBlock.method
+    traversal.repeat(_._astIn)(_.until(_.hasLabel(Method.Label))).cast[Method]
+//    definingBlock.method
   }
 
 }

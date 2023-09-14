@@ -3,15 +3,14 @@ package io.joern.swiftsrc2cpg.passes
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.joern.x2cpg.passes.frontend.TypeNodePass
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.passes.KeyPool
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import scala.collection.mutable
 
 object SwiftTypeNodePass {
 
-  def withRegisteredTypes(registeredTypes: List[String], cpg: Cpg, keyPool: Option[KeyPool] = None): TypeNodePass = {
-    new TypeNodePass(registeredTypes, cpg, keyPool, getTypesFromCpg = false) {
+  def withRegisteredTypes(registeredTypes: List[String], cpg: Cpg): TypeNodePass = {
+    new TypeNodePass(registeredTypes, cpg, getTypesFromCpg = false) {
 
       override def fullToShortName(typeName: String): String = {
         typeName match {

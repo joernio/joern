@@ -2,7 +2,7 @@ package io.shiftleft.semanticcpg.language.dotextension
 
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode
 import io.shiftleft.semanticcpg.dotgenerator.DotAstGenerator
-import overflowdb.traversal.*
+import io.shiftleft.semanticcpg.language.*
 
 class AstNodeDot[NodeType <: AstNode](val traversal: Iterator[NodeType]) extends AnyVal {
 

@@ -68,7 +68,7 @@ class FieldAccessLinkerPass(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {
     dstGraph: DiffGraphBuilder
   ): Unit = {
     val dereference = Dereference(cpg)
-    cpg.graph.nodes(srcLabels*).asScala.cast[SRC_NODE_TYPE].filterNot(_.outE(edgeType).hasNext).foreach { srcNode =>
+    cpg.graph.nodes(srcLabels*).cast[SRC_NODE_TYPE].filterNot(_.outE(edgeType).hasNext).foreach { srcNode =>
       if (!srcNode.outE(edgeType).hasNext) {
         getDstFullNames(srcNode).foreach { dstFullName =>
           val dereferenceDstFullName = dereference.dereferenceTypeFullName(dstFullName)

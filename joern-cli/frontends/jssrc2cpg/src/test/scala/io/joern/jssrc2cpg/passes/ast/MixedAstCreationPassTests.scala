@@ -285,7 +285,7 @@ class MixedAstCreationPassTests extends AstJsSrc2CpgSuite {
       val List(fooLocalY) = fooBlock.astChildren.isLocal.nameExact("y").l
       val List(barRef)    = fooBlock.astChildren.isCall.astChildren.isMethodRef.l
 
-      val List(closureBindForY, closureBindForX) = barRef.captureOut.l
+      val List(closureBindForY, closureBindForX) = barRef.captureOut.cast[ClosureBinding].l
 
       closureBindForX.closureOriginalName shouldBe Option("x")
       closureBindForX.closureBindingId shouldBe Option("Test0.js::program:foo:bar:x")
