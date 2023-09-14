@@ -1,8 +1,9 @@
 package io.shiftleft.semanticcpg.language
 
-import io.shiftleft.codepropertygraph.generated.{Operators, Properties, PropertyNames}
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.accesspath._
+import io.shiftleft.codepropertygraph.generated.{Operators, PropertyKeys}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.accesspath.*
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
@@ -42,9 +43,10 @@ object AccessPathHandling {
           .collect {
             case node: Literal    => ConstantAccess(node.code)
             case node: Identifier => ConstantAccess(node.name)
-            case other if other.propertyOption(PropertyNames.NAME).isPresent =>
-              logger.warn(s"unexpected/deprecated node encountered: $other with properties: ${other.propertiesMap()}")
-              ConstantAccess(other.property(Properties.NAME))
+            case other if other.propertyOption(PropertyKeys.Name).isDefined =>
+              val properties = other.propertiesMap
+              logger.warn(s"unexpected/deprecated node encountered: $other with properties: $properties")
+              ConstantAccess(other.property(PropertyKeys.Name))
           }
           .getOrElse(VariableAccess) :: tail
 

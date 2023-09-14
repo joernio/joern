@@ -6,7 +6,6 @@ import io.shiftleft.codepropertygraph.generated.edges.Ast
 import io.shiftleft.codepropertygraph.generated.nodes.{ClosureBinding, Method, TypeDecl}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.jIteratortoTraversal
 
 class NestedDeclarationsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with a simple local fn declaration" should {

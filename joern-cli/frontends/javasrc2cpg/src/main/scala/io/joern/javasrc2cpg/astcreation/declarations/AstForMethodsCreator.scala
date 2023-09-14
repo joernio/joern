@@ -462,8 +462,8 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
   }
 
   private def constructorReturnNode(constructorDeclaration: ConstructorDeclaration): NewMethodReturn = {
-    val line   = constructorDeclaration.getEnd.map(x => Integer.valueOf(x.line)).toScala
-    val column = constructorDeclaration.getEnd.map(x => Integer.valueOf(x.column)).toScala
+    val line   = constructorDeclaration.getEnd.map(_.line).toScala
+    val column = constructorDeclaration.getEnd.map(_.column).toScala
     newMethodReturnNode(TypeConstants.Void, None, line, column)
   }
 
@@ -498,7 +498,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     methodNode(declaration, declaration.getNameAsString(), code, placeholderFullName, None, filename)
   }
 
-  def thisNodeForMethod(maybeTypeFullName: Option[String], lineNumber: Option[Integer]): NewMethodParameterIn = {
+  def thisNodeForMethod(maybeTypeFullName: Option[String], lineNumber: Option[Int]): NewMethodParameterIn = {
     val typeFullName = typeInfoCalc.registerType(maybeTypeFullName.getOrElse(TypeConstants.Any))
     NodeBuilders.newThisParameterNode(
       typeFullName = typeFullName,

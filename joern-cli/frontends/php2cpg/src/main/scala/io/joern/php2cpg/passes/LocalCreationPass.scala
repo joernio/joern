@@ -30,8 +30,8 @@ abstract class LocalCreationPass[ScopeType <: AstNode](cpg: Cpg)
     with AstNodeBuilder[AstNode, LocalCreationPass[ScopeType]] {
   override protected def line(node: AstNode)                       = node.lineNumber
   override protected def column(node: AstNode)                     = node.columnNumber
-  override protected def lineEnd(node: AstNode): Option[Integer]   = None
-  override protected def columnEnd(node: AstNode): Option[Integer] = None
+  override protected def lineEnd(node: AstNode): Option[Int]   = None
+  override protected def columnEnd(node: AstNode): Option[Int] = None
   override protected def code(node: AstNode): String               = node.code
 
   protected def getIdentifiersInScope(node: AstNode): List[Identifier] = {
@@ -96,7 +96,7 @@ abstract class LocalCreationPass[ScopeType <: AstNode](cpg: Cpg)
   ): Unit = {
     val identifierMap =
       getIdentifiersInScope(bodyNode)
-        .filter(_.refOut.isEmpty)
+        .filter(_._refOut.isEmpty)
         .filterNot(excludeIdentifierFn)
         .groupBy(_.name)
 

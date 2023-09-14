@@ -6,7 +6,6 @@ import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Identifier, Literal}
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.toNodeTraversal
 
 class DataFlowTests extends DataFlowCodeToCpgSuite {
 
@@ -1081,7 +1080,7 @@ class DataFlowTests extends DataFlowCodeToCpgSuite {
       cpg
         .call("bar")
         .outE(EdgeTypes.REACHING_DEF)
-        .count(_.inNode() == cpg.ret.head) shouldBe 1
+        .count(_.dst == cpg.ret.head) shouldBe 1
     }
   }
 

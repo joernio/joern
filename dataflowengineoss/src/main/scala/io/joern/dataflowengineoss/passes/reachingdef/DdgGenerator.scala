@@ -4,10 +4,10 @@ import io.joern.dataflowengineoss.queryengine.AccessPathUsage.toTrackedBaseAndAc
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.joern.dataflowengineoss.{globalFromLiteral, identifierToFirstUsages}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
 import io.shiftleft.semanticcpg.accesspath.MatchResult
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.BatchedUpdate.DiffGraphBuilder
+import flatgraph.DiffGraphBuilder
 
 import scala.collection.{Set, mutable}
 
@@ -132,7 +132,7 @@ class DdgGenerator(semantics: Semantics) {
       // There is always an edge from the method input parameter
       // to the corresponding method output parameter as modifications
       // of the input parameter only affect a copy.
-      paramOut.paramIn.foreach { paramIn =>
+      paramOut.start.paramIn.foreach { paramIn =>
         addEdge(paramIn, paramOut, paramIn.name)
       }
       usageAnalyzer.usedIncomingDefs(paramOut).foreach { case (_, inElements) =>
@@ -169,7 +169,7 @@ class DdgGenerator(semantics: Semantics) {
 
     def addEdgesToCapturedIdentifiersAndParameters(): Unit = {
       val identifierDestPairs =
-        method._identifierViaContainsOut
+        method.identifierViaContainsOut
           .flatMap { identifier =>
             identifierToFirstUsages(identifier).map(usage => (identifier, usage))
           }
@@ -191,7 +191,7 @@ class DdgGenerator(semantics: Semantics) {
       // modelling data-flow is unsound as the engine assumes REACHING_DEF edges are intraprocedural.
       // See PR #3735 on Joern for details
       val globalIdentifiers =
-        (method._callViaContainsOut ++ method._returnViaContainsOut).ast.isLiteral
+        (method.callViaContainsOut ++ method.returnViaContainsOut).ast.isLiteral
           .flatMap(globalFromLiteral)
           .collectAll[Identifier]
           .l
@@ -224,7 +224,7 @@ class DdgGenerator(semantics: Semantics) {
 
     (fromNode, toNode) match {
       case (parentNode: CfgNode, childNode: CfgNode) if EdgeValidator.isValidEdge(childNode, parentNode) =>
-        dstGraph.addEdge(fromNode, toNode, EdgeTypes.REACHING_DEF, PropertyNames.VARIABLE, variable)
+        dstGraph.addEdge(fromNode, toNode, EdgeTypes.REACHING_DEF, variable)
       case _ =>
 
     }

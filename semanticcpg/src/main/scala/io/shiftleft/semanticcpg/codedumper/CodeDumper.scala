@@ -76,7 +76,7 @@ object CodeDumper {
                   .mkString("\n")
               } else {
                 val filename = rootPath.map(toAbsolutePath(location.filename, _)).getOrElse(location.filename)
-                code(filename, m.lineNumber.get, m.lineNumberEnd.get, location.lineNumber, Option(m.fullName))
+                code(filename, m.lineNumber.get, m.lineNumberEnd.get, location.lineNumber.map(int2Integer), Option(m.fullName))
               }
               if (highlight) {
                 SourceHighlighter.highlight(Source(rawCode, lang))
@@ -97,7 +97,7 @@ object CodeDumper {
     filename: String,
     startLine: Integer,
     endLine: Integer,
-    lineToHighlight: Option[Integer] = None,
+    lineToHighlight: Option[Int] = None,
     locationFullName: Option[String] = None
   ): String = {
     Try(IOUtils.readLinesInFile(Paths.get(filename))) match {

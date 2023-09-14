@@ -10,7 +10,7 @@ import soot.tagkit.Host
 import soot.{Unit, Value}
 
 import scala.collection.mutable
-import scala.jdk.CollectionConverters.CollectionHasAsScala
+import scala.jdk.CollectionConverters.*
 import scala.collection.mutable.ArrayBuffer
 
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -65,12 +65,12 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case x: FieldRef   => Seq(astForFieldRef(x, assignStmt))
       case x             => astsForValue(x, assignStmt)
     }
-    val lhsCode = identifier.flatMap(_.root).flatMap(_.properties.get(PropertyNames.CODE)).mkString
+    val lhsCode = identifier.flatMap(_.root).flatMap(_.propertiesMap.asScala.get(PropertyNames.CODE)).mkString
 
     val initAsts = astsForValue(initializer, assignStmt)
     val rhsCode = initAsts
       .flatMap(_.root)
-      .map(_.properties.getOrElse(PropertyNames.CODE, ""))
+      .map(_.propertiesMap.asScala.getOrElse(PropertyNames.CODE, ""))
       .mkString(", ")
 
     val assignment = operatorNode(
@@ -142,7 +142,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private def astsForMonitorStmt(monitorStmt: MonitorStmt): Seq[Ast] = {
     val opAst      = astsForValue(monitorStmt.getOp, monitorStmt)
-    val typeString = opAst.flatMap(_.root).map(_.properties(PropertyNames.CODE)).mkString
+    val typeString = opAst.flatMap(_.root).map(_.propertiesMap.get(PropertyNames.CODE)).mkString
     val code = monitorStmt match {
       case _: EnterMonitorStmt => s"entermonitor $typeString"
       case _: ExitMonitorStmt  => s"exitmonitor $typeString"
@@ -181,7 +181,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   private def astsForReturnStmt(returnStmt: ReturnStmt): Seq[Ast] = {
     val astChildren = astsForValue(returnStmt.getOp, returnStmt)
     val returnNode = NewReturn()
-      .code(s"return ${astChildren.flatMap(_.root).map(_.properties(PropertyNames.CODE)).mkString(" ")};")
+      .code(s"return ${astChildren.flatMap(_.root).map(_.propertiesMap.get(PropertyNames.CODE)).mkString(" ")};")
       .lineNumber(line(returnStmt))
       .columnNumber(column(returnStmt))
 

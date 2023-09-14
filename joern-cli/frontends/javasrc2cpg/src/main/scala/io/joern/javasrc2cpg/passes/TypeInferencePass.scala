@@ -4,11 +4,10 @@ import com.github.javaparser.symbolsolver.cache.GuavaCache
 import com.google.common.cache.CacheBuilder
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.ModifierTypes
+import io.shiftleft.codepropertygraph.generated.{ModifierTypes, PropertyKeys}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
 import io.shiftleft.passes.ConcurrentWriterCpgPass
-import io.shiftleft.semanticcpg.language._
-import org.slf4j.LoggerFactory
+import io.shiftleft.semanticcpg.language.*
 
 import scala.jdk.OptionConverters.RichOptional
 import io.joern.x2cpg.Defines.UnresolvedNamespace
@@ -55,10 +54,7 @@ class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[Call](cpg) {
     val callArgs = if (skipCallThis) call.argument.toList.tail else call.argument.toList
 
     val hasDifferingArg = method.parameter.zip(callArgs).exists { case (parameter, argument) =>
-      val maybeArgumentType = Option(argument.property(PropertyNames.TypeFullName))
-        .map(_.toString())
-        .getOrElse(TypeConstants.Any)
-
+      val maybeArgumentType = argument.propertyOption(PropertyKeys.TypeFullName).getOrElse(TypeConstants.Any)
       val argMatches = maybeArgumentType == TypeConstants.Any || maybeArgumentType == parameter.typeFullName
 
       !argMatches
@@ -80,10 +76,8 @@ class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[Call](cpg) {
   }
 
   private def getReplacementMethod(call: Call): Option[Method] = {
-    val argTypes =
-      call.argument.flatMap(arg => Option(arg.property(PropertyNames.TypeFullName)).map(_.toString)).mkString(":")
-    val callKey =
-      s"${call.methodFullName}:$argTypes"
+    val argTypes = call.argument.property(PropertyKeys.TypeFullName).mkString(":")
+    val callKey = s"${call.methodFullName}:$argTypes"
     cache.get(callKey).toScala.getOrElse {
       val callNameParts = getNameParts(call.name, call.methodFullName)
       resolvedMethodIndex.get(call.name).flatMap { candidateMethods =>

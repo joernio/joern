@@ -39,7 +39,7 @@ class IdentifierLocalTests extends RubyCode2CpgFixture(useDeprecatedFrontend = t
     val List(identifierX, _) = method.block.ast.isIdentifier.l
     identifierX.name shouldBe "x"
 
-    val localX = identifierX._localViaRefOut.get
+    val localX = identifierX.localViaRefOut.get
     localX.name shouldBe "x"
   }
 
@@ -52,14 +52,14 @@ class IdentifierLocalTests extends RubyCode2CpgFixture(useDeprecatedFrontend = t
     val List(paramx) = identifierX.refsTo.l
     paramx.name shouldBe "x"
 
-    val parameterX = identifierX._methodParameterInViaRefOut.get
+    val parameterX = identifierX.methodParameterInViaRefOut.get
     parameterX.name shouldBe "x"
   }
 
   "Reach parameter from last identifier" in {
     val List(method)           = cpg.method.nameExact("method3").l
     val List(outerIdentifierX) = method.ast.isIdentifier.lineNumber(22).l
-    val parameterX             = outerIdentifierX._methodParameterInViaRefOut.get
+    val parameterX             = outerIdentifierX.methodParameterInViaRefOut.get
     parameterX.name shouldBe "x"
   }
 
@@ -79,7 +79,7 @@ class IdentifierLocalTests extends RubyCode2CpgFixture(useDeprecatedFrontend = t
     nestedBlock.ast.isIdentifier.nameExact("innerx").l.size shouldBe 2
     val List(nestedIdentifierX, _) = nestedBlock.ast.isIdentifier.nameExact("innerx").l
 
-    val nestedLocalX = nestedIdentifierX._localViaRefOut.get
+    val nestedLocalX = nestedIdentifierX.localViaRefOut.get
     nestedLocalX.name shouldBe "innerx"
   }
 }

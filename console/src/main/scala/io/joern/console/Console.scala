@@ -12,7 +12,8 @@ import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.dotextension.ImageViewer
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
-import overflowdb.traversal.help.Doc
+// TODO get Doc/help back
+//import overflowdb.traversal.help.Doc
 
 import scala.sys.process.Process
 import scala.util.control.NoStackTrace
@@ -56,52 +57,54 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
     }
   }
 
-  @Doc(
-    info = "Access to the workspace directory",
-    longInfo = """
-                 |All auditing projects are stored in a workspace directory, and `workspace`
-                 |provides programmatic access to this directory. Entering `workspace` provides
-                 |a list of all projects, indicating which code the project makes accessible,
-                 |whether the project is open, and which analyzers have been run to produce it.
-                 |Multiple projects can be open at any given time, however, only one project
-                 |can be active. Queries and edit-operations are executed on the active project
-                 |only.
-                 |
-                 |Operations
-                 |
-                 |----------
-                 |
-                 |`workspace` provides low-level access to the workspace directory. In most cases,
-                 |it is a better idea to use higher-level operations such as `importCode`, `open`,
-                 |`close`, and `delete`, which make use of workspace operations internally.
-                 |
-                 |* workspace.open([name]): open project by name and make it the active project.
-                 | If `name` is omitted, the last project in the workspace list is opened. If
-                 | the project is already open, this has the same effect as `workspace.setActiveProject([name])`
-                 |
-                 |* workspace.close([name]): close project by name. Does not remove the project.
-                 |
-                 |* workspace.remove([name]): close and remove project by name.
-                 |
-                 |* workspace.reset: create a fresh workspace directory, deleting the current
-                 |workspace directory
-                 |
-                 |""",
-    example = "workspace"
-  )
+  // TODO get Doc/help back
+//  @Doc(
+//    info = "Access to the workspace directory",
+//    longInfo = """
+//                 |All auditing projects are stored in a workspace directory, and `workspace`
+//                 |provides programmatic access to this directory. Entering `workspace` provides
+//                 |a list of all projects, indicating which code the project makes accessible,
+//                 |whether the project is open, and which analyzers have been run to produce it.
+//                 |Multiple projects can be open at any given time, however, only one project
+//                 |can be active. Queries and edit-operations are executed on the active project
+//                 |only.
+//                 |
+//                 |Operations
+//                 |
+//                 |----------
+//                 |
+//                 |`workspace` provides low-level access to the workspace directory. In most cases,
+//                 |it is a better idea to use higher-level operations such as `importCode`, `open`,
+//                 |`close`, and `delete`, which make use of workspace operations internally.
+//                 |
+//                 |* workspace.open([name]): open project by name and make it the active project.
+//                 | If `name` is omitted, the last project in the workspace list is opened. If
+//                 | the project is already open, this has the same effect as `workspace.setActiveProject([name])`
+//                 |
+//                 |* workspace.close([name]): close project by name. Does not remove the project.
+//                 |
+//                 |* workspace.remove([name]): close and remove project by name.
+//                 |
+//                 |* workspace.reset: create a fresh workspace directory, deleting the current
+//                 |workspace directory
+//                 |
+//                 |""",
+//    example = "workspace"
+//  )
   def workspace: WorkspaceManager[T] = workspaceManager
 
-  @Doc(
-    info = "Close current workspace and open a different one",
-    longInfo = """ | By default, the workspace in $INSTALL_DIR/workspace is used.
-                 | This method allows specifying a different workspace directory
-                 | via the `pathName` parameter.
-                 | Before changing the workspace, the current workspace will be
-                 | closed, saving any unsaved changes.
-                 | If `pathName` points to a non-existing directory, then a new
-                 | workspace is first created.
-                 |"""
-  )
+  // TODO get Doc/help back
+//  @Doc(
+//    info = "Close current workspace and open a different one",
+//    longInfo = """ | By default, the workspace in $INSTALL_DIR/workspace is used.
+//                 | This method allows specifying a different workspace directory
+//                 | via the `pathName` parameter.
+//                 | Before changing the workspace, the current workspace will be
+//                 | closed, saving any unsaved changes.
+//                 | If `pathName` points to a non-existing directory, then a new
+//                 | workspace is first created.
+//                 |"""
+//  )
   def switchWorkspace(pathName: String): Unit = {
     if (workspaceManager != null) {
       report("Saving current workspace before changing workspace")
@@ -112,28 +115,30 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
     workspaceManager = new WorkspaceManager[T](pathName, loader)
   }
 
-  @Doc(info = "Currently active project", example = "project")
+  // TODO get Doc/help back
+//  @Doc(info = "Currently active project", example = "project")
   def project: T =
     workspace.projectByCpg(cpg).getOrElse(throw new RuntimeException("No active project"))
 
-  @Doc(
-    info = "CPG of the active project",
-    longInfo = """
-                 |Upon importing code, a project is created that holds
-                 |an intermediate representation called `Code Property Graph`. This
-                 |graph is a composition of low-level program representations such
-                 |as abstract syntax trees and control flow graphs, but it can be arbitrarily
-                 |extended to hold any information relevant in your audit, information
-                 |about HTTP entry points, IO routines, information flows, or locations
-                 |of vulnerable code. Think of Ocular and Joern as a CPG editors.
-                 |
-                 |In practice, `cpg` is the root object of the query language, that is, all
-                 |query language constructs can be invoked starting from `cpg`. For example,
-                 |`cpg.method.l` lists all methods, while `cpg.finding.l` lists all findings
-                 |of potentially vulnerable code.
-                 |""",
-    example = "cpg.method.l"
-  )
+  // TODO get Doc/help back
+//  @Doc(
+//    info = "CPG of the active project",
+//    longInfo = """
+//                 |Upon importing code, a project is created that holds
+//                 |an intermediate representation called `Code Property Graph`. This
+//                 |graph is a composition of low-level program representations such
+//                 |as abstract syntax trees and control flow graphs, but it can be arbitrarily
+//                 |extended to hold any information relevant in your audit, information
+//                 |about HTTP entry points, IO routines, information flows, or locations
+//                 |of vulnerable code. Think of Ocular and Joern as a CPG editors.
+//                 |
+//                 |In practice, `cpg` is the root object of the query language, that is, all
+//                 |query language constructs can be invoked starting from `cpg`. For example,
+//                 |`cpg.method.l` lists all methods, while `cpg.finding.l` lists all findings
+//                 |of potentially vulnerable code.
+//                 |""",
+//    example = "cpg.method.l"
+//  )
   implicit def cpg: Cpg = workspace.cpg
 
   /** All cpgs loaded in the workspace
@@ -156,22 +161,23 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
     def l: List[X] = it.toList
   }
 
-  @Doc(
-    info = "Open project by name",
-    longInfo = """
-                 |open([projectName])
-                 |
-                 |Opens the project named `name` and make it the active project.
-                 |If `name` is not provided, the active project is opened. If `name`
-                 |is a path, the project name is derived from and a deprecation
-                 |warning is printed.
-                 |
-                 |Upon completion of this operation, the CPG stored in this project
-                 |can be queried via `cpg`. Returns an optional reference to the
-                 |project, which is empty on error.
-                 |""",
-    example = """open("projectName")"""
-  )
+  // TODO get Doc/help back
+//  @Doc(
+//    info = "Open project by name",
+//    longInfo = """
+//                 |open([projectName])
+//                 |
+//                 |Opens the project named `name` and make it the active project.
+//                 |If `name` is not provided, the active project is opened. If `name`
+//                 |is a path, the project name is derived from and a deprecation
+//                 |warning is printed.
+//                 |
+//                 |Upon completion of this operation, the CPG stored in this project
+//                 |can be queried via `cpg`. Returns an optional reference to the
+//                 |project, which is empty on error.
+//                 |""",
+//    example = """open("projectName")"""
+//  )
   def open(name: String): Option[Project] = {
     val projectName = fixProjectNameAndComplainOnFix(name)
     workspace.openProject(projectName).map { project =>
@@ -179,18 +185,19 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
     }
   }
 
-  @Doc(
-    info = "Open project for input path",
-    longInfo = """
-                 |openForInputPath([input-path])
-                 |
-                 |Opens the project of the CPG generated for the input path `input-path`.
-                 |
-                 |Upon completion of this operation, the CPG stored in this project
-                 |can be queried via `cpg`. Returns an optional reference to the
-                 |project, which is empty on error.
-                 |"""
-  )
+  // TODO get Doc/help back
+//  @Doc(
+//    info = "Open project for input path",
+//    longInfo = """
+//                 |openForInputPath([input-path])
+//                 |
+//                 |Opens the project of the CPG generated for the input path `input-path`.
+//                 |
+//                 |Upon completion of this operation, the CPG stored in this project
+//                 |can be queried via `cpg`. Returns an optional reference to the
+//                 |project, which is empty on error.
+//                 |"""
+//  )
   def openForInputPath(inputPath: String): Option[Project] = {
     val absInputPath = File(inputPath).path.toAbsolutePath.toString
     workspace.projects
@@ -213,13 +220,15 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
     * @param name
     *   the name of the project
     */
-  @Doc(info = "Close and remove project from disk", example = "delete(projectName)")
+  // TODO get Doc/help back
+//  @Doc(info = "Close and remove project from disk", example = "delete(projectName)")
   def delete(name: String): Option[Unit] = {
     workspaceManager.getActiveProject.foreach(_.cpg.foreach(_.close()))
     defaultProjectNameIfEmpty(name).flatMap(workspace.deleteProject)
   }
 
-  @Doc(info = "Exit the REPL")
+  // TODO get Doc/help back
+//  @Doc(info = "Exit the REPL")
   def exit: Unit = {
     workspace.projects.foreach(_.close)
     System.exit(0)
@@ -241,16 +250,17 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
     }
   }
 
-  @Doc(
-    info = "Write all changes to disk",
-    longInfo = """
-                 |Close and reopen all loaded CPGs. This ensures
-                 |that changes have been flushed to disk.
-                 |
-                 |Returns list of affected projects
-                 |""",
-    example = "save"
-  )
+  // TODO get Doc/help back
+//  @Doc(
+//    info = "Write all changes to disk",
+//    longInfo = """
+//                 |Close and reopen all loaded CPGs. This ensures
+//                 |that changes have been flushed to disk.
+//                 |
+//                 |Returns list of affected projects
+//                 |""",
+//    example = "save"
+//  )
   def save: List[Project] = {
     report("Saving graphs on disk. This may take a while.")
     workspace.projects.collect {
@@ -260,72 +270,74 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
     }.flatten
   }
 
-  @Doc(
-    info = "Create new project from code",
-    longInfo = """
-                 |importCode(<inputPath>, [projectName], [namespaces], [language])
-                 |
-                 |Type `importCode` alone to get a list of all supported languages
-                 |
-                 |Import code at `inputPath`. Creates a new project, generates a CPG,
-                 |and opens the project. Upon success, the CPG can be queried via the `cpg`
-                 |object. Default overlays are already applied to the newly created CPG.
-                 |Returns new CPG and ensures that `cpg` now refers to this new CPG.
-                 |
-                 |By default, `importCode` attempts to guess the source language of
-                 |the code you provide. You can also specify the source language
-                 |manually, by running `importCode.<language>`. For example, `importCode.c`
-                 |runs the C/C++ frontend.
-                 |
-                 |Type `importCode` alone to get an overview of all available language modules.
-                 |
-                 |Parameters:
-                 |
-                 |-----------
-                 |
-                 |inputPath: location on disk of the code to analyze. e.g., a directory
-                 |containing source code or a Java archive (JAR).
-                 |
-                 |projectName: a unique name used for project management. If this parameter
-                 |is omitted, the name will be derived from `inputPath`
-                 |
-                 |namespaces: the whitelist of namespaces to analyse. Specifying this
-                 |parameter is only effective if the language frontend supports it.
-                 |If the list is omitted or empty, namespace selection is performed
-                 |automatically via heuristics.
-                 |
-                 |language: the programming language which the code at `inputPath` is written in.
-                 |If `language` is empty, the language used is guessed by inspecting
-                 |the filename found and possibly by looking into the file/directory.
-                 |
-                 |""",
-    example = """importCode("example.jar")"""
-  )
+  // TODO get Doc/help back
+//  @Doc(
+//    info = "Create new project from code",
+//    longInfo = """
+//                 |importCode(<inputPath>, [projectName], [namespaces], [language])
+//                 |
+//                 |Type `importCode` alone to get a list of all supported languages
+//                 |
+//                 |Import code at `inputPath`. Creates a new project, generates a CPG,
+//                 |and opens the project. Upon success, the CPG can be queried via the `cpg`
+//                 |object. Default overlays are already applied to the newly created CPG.
+//                 |Returns new CPG and ensures that `cpg` now refers to this new CPG.
+//                 |
+//                 |By default, `importCode` attempts to guess the source language of
+//                 |the code you provide. You can also specify the source language
+//                 |manually, by running `importCode.<language>`. For example, `importCode.c`
+//                 |runs the C/C++ frontend.
+//                 |
+//                 |Type `importCode` alone to get an overview of all available language modules.
+//                 |
+//                 |Parameters:
+//                 |
+//                 |-----------
+//                 |
+//                 |inputPath: location on disk of the code to analyze. e.g., a directory
+//                 |containing source code or a Java archive (JAR).
+//                 |
+//                 |projectName: a unique name used for project management. If this parameter
+//                 |is omitted, the name will be derived from `inputPath`
+//                 |
+//                 |namespaces: the whitelist of namespaces to analyse. Specifying this
+//                 |parameter is only effective if the language frontend supports it.
+//                 |If the list is omitted or empty, namespace selection is performed
+//                 |automatically via heuristics.
+//                 |
+//                 |language: the programming language which the code at `inputPath` is written in.
+//                 |If `language` is empty, the language used is guessed by inspecting
+//                 |the filename found and possibly by looking into the file/directory.
+//                 |
+//                 |""",
+//    example = """importCode("example.jar")"""
+//  )
   def importCode = new ImportCode(this)
 
-  @Doc(
-    info = "Create new project from existing CPG",
-    longInfo = """
-                 |importCpg(<inputPath>, [projectName], [enhance])
-                 |
-                 |Import an existing CPG. The CPG is stored as part
-                 |of a new project and blanks are filled in by analyzing the CPG.
-                 |If we find that default overlays have not been applied, these
-                 |are applied to the CPG after loading it.
-                 |
-                 |Parameters:
-                 |
-                 |inputPath: path where the existing CPG (in overflowdb format)
-                 |is stored
-                 |
-                 |projectName: name of the new project. If this parameter
-                 |is omitted, the path is derived from `inputPath`
-                 |
-                 |enhance: run default overlays and post-processing passes. Defaults to `true`.
-                 |Pass `enhance=false` to disable the enhancements.
-                 |""",
-    example = """importCpg("cpg.bin.zip")"""
-  )
+  // TODO get Doc/help back
+//  @Doc(
+//    info = "Create new project from existing CPG",
+//    longInfo = """
+//                 |importCpg(<inputPath>, [projectName], [enhance])
+//                 |
+//                 |Import an existing CPG. The CPG is stored as part
+//                 |of a new project and blanks are filled in by analyzing the CPG.
+//                 |If we find that default overlays have not been applied, these
+//                 |are applied to the CPG after loading it.
+//                 |
+//                 |Parameters:
+//                 |
+//                 |inputPath: path where the existing CPG (in overflowdb format)
+//                 |is stored
+//                 |
+//                 |projectName: name of the new project. If this parameter
+//                 |is omitted, the path is derived from `inputPath`
+//                 |
+//                 |enhance: run default overlays and post-processing passes. Defaults to `true`.
+//                 |Pass `enhance=false` to disable the enhancements.
+//                 |""",
+//    example = """importCpg("cpg.bin.zip")"""
+//  )
   def importCpg(inputPath: String, projectName: String = "", enhance: Boolean = true): Option[Cpg] = {
     val name =
       Option(projectName).filter(_.nonEmpty).getOrElse(deriveNameFromInputPath(inputPath, workspace))
@@ -347,10 +359,10 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
 
     val cpgDestinationPath = cpgDestinationPathOpt.get
 
-    if (CpgLoader.isLegacyCpg(cpgFile)) {
+    if (CpgLoader.isProtoFormat(cpgFile.path)) {
       report("You have provided a legacy proto CPG. Attempting conversion.")
       try {
-        CpgConverter.convertProtoCpgToOverflowDb(cpgFile.path.toString, cpgDestinationPath.toString)
+        CpgConverter.convertProtoCpgToFlatgraph(cpgFile.path.toString, cpgDestinationPath.toString)
       } catch {
         case exc: Exception =>
           report("Error converting legacy CPG: " + exc.getMessage)
@@ -377,14 +389,15 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
     cpgOpt
   }
 
-  @Doc(
-    info = "Close project by name",
-    longInfo = """|Close project. Resources are freed but the project remains on disk.
-                  |The project remains active, that is, calling `cpg` now raises an
-                  |exception. A different project can now be activated using `open`.
-                  |""",
-    example = "close(projectName)"
-  )
+  // TODO get Doc/help back
+//  @Doc(
+//    info = "Close project by name",
+//    longInfo = """|Close project. Resources are freed but the project remains on disk.
+//                  |The project remains active, that is, calling `cpg` now raises an
+//                  |exception. A different project can now be activated using `open`.
+//                  |""",
+//    example = "close(projectName)"
+//  )
   def close(name: String): Option[Project] = defaultProjectNameIfEmpty(name).flatMap(workspace.closeProject)
 
   def close: Option[Project] = close("")

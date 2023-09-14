@@ -1,9 +1,9 @@
 package io.joern.rubysrc2cpg.deprecated.astcreation
 
+import flatgraph.DiffGraphBuilder
 import io.joern.x2cpg.datastructures.Scope
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{DeclarationNew, NewIdentifier, NewLocal, NewNode}
-import overflowdb.BatchedUpdate
 
 import scala.collection.mutable
 
@@ -40,7 +40,7 @@ class RubyScope extends Scope[String, NewIdentifier, NewNode] {
     *   the names of parameters.
     */
   def createAndLinkLocalNodes(
-    diffGraph: BatchedUpdate.DiffGraphBuilder,
+    diffGraph: DiffGraphBuilder,
     paramNames: Set[String] = Set.empty
   ): List[DeclarationNew] = stack.headOption match
     case Some(top) => scopeToVarMap.buildVariableGroupings(top.scopeNode, paramNames ++ Set("this"), diffGraph)
@@ -84,7 +84,7 @@ class RubyScope extends Scope[String, NewIdentifier, NewNode] {
     def buildVariableGroupings(
       key: ScopeNodeType,
       paramNames: Set[String],
-      diffGraph: BatchedUpdate.DiffGraphBuilder
+      diffGraph: DiffGraphBuilder
     ): List[DeclarationNew] =
       scopeMap.get(key) match
         case Some(varMap) =>

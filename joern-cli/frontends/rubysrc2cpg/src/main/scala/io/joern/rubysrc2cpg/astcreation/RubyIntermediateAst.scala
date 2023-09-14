@@ -3,23 +3,23 @@ package io.joern.rubysrc2cpg.astcreation
 object RubyIntermediateAst {
 
   case class TextSpan(
-    line: Option[Integer],
-    column: Option[Integer],
-    lineEnd: Option[Integer],
-    columnEnd: Option[Integer],
+    line: Option[Int],
+    column: Option[Int],
+    lineEnd: Option[Int],
+    columnEnd: Option[Int],
     text: String
   ) {
     def spanStart(newText: String = ""): TextSpan = TextSpan(line, column, line, column, newText)
   }
 
   sealed class RubyNode(val span: TextSpan) {
-    def line: Option[Integer] = span.line
+    def line: Option[Int] = span.line
 
-    def column: Option[Integer] = span.column
+    def column: Option[Int] = span.column
 
-    def lineEnd: Option[Integer] = span.lineEnd
+    def lineEnd: Option[Int] = span.lineEnd
 
-    def columnEnd: Option[Integer] = span.columnEnd
+    def columnEnd: Option[Int] = span.columnEnd
 
     def text: String = span.text
   }

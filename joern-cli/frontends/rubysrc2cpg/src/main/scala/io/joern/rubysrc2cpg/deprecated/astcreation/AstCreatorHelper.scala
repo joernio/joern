@@ -14,13 +14,13 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   import io.joern.rubysrc2cpg.deprecated.astcreation.GlobalTypes.*
 
-  protected def line(ctx: ParserRuleContext): Option[Integer] = Option(ctx.getStart.getLine)
+  protected def line(ctx: ParserRuleContext): Option[Int] = Option(ctx.getStart.getLine)
 
-  protected def column(ctx: ParserRuleContext): Option[Integer] = Option(ctx.getStart.getCharPositionInLine)
+  protected def column(ctx: ParserRuleContext): Option[Int] = Option(ctx.getStart.getCharPositionInLine)
 
-  protected def lineEnd(ctx: ParserRuleContext): Option[Integer] = Option(ctx.getStop.getLine)
+  protected def lineEnd(ctx: ParserRuleContext): Option[Int] = Option(ctx.getStop.getLine)
 
-  protected def columnEnd(ctx: ParserRuleContext): Option[Integer] = Option(ctx.getStop.getCharPositionInLine)
+  protected def columnEnd(ctx: ParserRuleContext): Option[Int] = Option(ctx.getStop.getCharPositionInLine)
 
   override def code(node: ParserRuleContext): String = shortenCode(text(node))
 
@@ -53,8 +53,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     code: String,
     typeFullName: String,
     dynamicTypeHints: Seq[String],
-    lineNumber: Option[Integer],
-    columnNumber: Option[Integer]
+    lineNumber: Option[Int],
+    columnNumber: Option[Int]
   ): NewIdentifier = {
     val newNode = NewIdentifier()
       .name(name)
@@ -102,8 +102,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def astForAssignment(
     lhs: NewNode,
     rhs: NewNode,
-    lineNumber: Option[Integer] = None,
-    colNumber: Option[Integer] = None
+    lineNumber: Option[Int] = None,
+    colNumber: Option[Int] = None
   ): Ast = {
     val code = Seq(lhs, rhs).collect { case x: AstNodeNew => x.code }.mkString(" = ")
     val assignment = NewCall()
@@ -144,8 +144,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   protected def createMethodParameterIn(
     name: String,
-    lineNumber: Option[Integer] = None,
-    colNumber: Option[Integer] = None,
+    lineNumber: Option[Int] = None,
+    colNumber: Option[Int] = None,
     typeFullName: String = RubyDefines.Any,
     order: Int = -1,
     index: Int = -1
