@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.language.types.expressions.generalizations
 
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.v2.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
 /** An expression (base type)
@@ -58,12 +58,11 @@ class ExpressionTraversal[NodeType <: Expression](val traversal: Iterator[NodeTy
   /** Traverse to enclosing method
     */
   def method: Iterator[Method] =
-    traversal._containsIn
-      .flatMap {
-        case x: Method   => x.start
-        case x: TypeDecl => x.astParent
-      }
-      .collectAll[Method]
+    traversal._containsIn.map {
+      case x: Method   => x
+      case x: TypeDecl => x.astParent
+    }
+    .collectAll[Method]
 
   /** Traverse to expression evaluation type
     */

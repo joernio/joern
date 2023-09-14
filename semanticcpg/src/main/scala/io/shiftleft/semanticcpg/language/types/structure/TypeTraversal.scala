@@ -1,14 +1,13 @@
 package io.shiftleft.semanticcpg.language.types.structure
 
-import io.shiftleft.codepropertygraph.generated.nodes
-import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
 class TypeTraversal(val traversal: Iterator[Type]) extends AnyVal {
 
   /** Annotations of the corresponding type declaration.
     */
-  def annotation: Iterator[nodes.Annotation] =
+  def annotation: Iterator[Annotation] =
     traversal.referencedTypeDecl.annotation
 
   /** Namespaces in which the corresponding type declaration is defined.
@@ -59,7 +58,7 @@ class TypeTraversal(val traversal: Iterator[Type]) extends AnyVal {
   /** Type declarations which derive from this type.
     */
   def derivedTypeDecl: Iterator[TypeDecl] =
-    traversal.flatMap(_.inheritsFromIn)
+    traversal._inheritsFromIn.collectAll[TypeDecl]
 
   /** Direct alias types.
     */
@@ -72,23 +71,24 @@ class TypeTraversal(val traversal: Iterator[Type]) extends AnyVal {
     traversal.repeat(_.aliasType)(_.emitAllButFirst)
 
   def localOfType: Iterator[Local] =
-    traversal.flatMap(_._localViaEvalTypeIn)
+    traversal._localViaEvalTypeIn
 
   def memberOfType: Iterator[Member] =
-    traversal.flatMap(_.evalTypeIn).collectAll[Member]
+    traversal._evalTypeIn.collectAll[Member]
 
   @deprecated("Please use `parameterOfType`")
   def parameter: Iterator[MethodParameterIn] = parameterOfType
 
   def parameterOfType: Iterator[MethodParameterIn] =
-    traversal.flatMap(_.evalTypeIn).collectAll[MethodParameterIn]
+    traversal._evalTypeIn.collectAll[MethodParameterIn]
 
   def methodReturnOfType: Iterator[MethodReturn] =
-    traversal.flatMap(_.evalTypeIn).collectAll[MethodReturn]
+    traversal._evalTypeIn.collectAll[MethodReturn]
 
   def expressionOfType: Iterator[Expression] = expression
 
+  // TODO define in schema
   def expression: Iterator[Expression] =
-    traversal.flatMap(_.evalTypeIn).collectAll[Expression]
+    traversal._evalTypeIn.collectAll[Expression]
 
 }

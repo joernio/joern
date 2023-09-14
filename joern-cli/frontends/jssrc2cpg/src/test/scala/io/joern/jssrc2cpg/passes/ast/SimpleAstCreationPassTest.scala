@@ -2,7 +2,7 @@ package io.joern.jssrc2cpg.passes.ast
 
 import io.joern.jssrc2cpg.passes.{AbstractPassTest, Defines, EcmaBuiltins}
 import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language._
 
 class SimpleAstCreationPassTest extends AbstractPassTest {

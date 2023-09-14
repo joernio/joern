@@ -1,7 +1,6 @@
 package io.shiftleft.semanticcpg.language.types.structure
 
-import io.shiftleft.codepropertygraph.generated.nodes
-import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
 /** Type declaration - possibly a template that requires instantiation
@@ -11,13 +10,13 @@ class TypeDeclTraversal(val traversal: Iterator[TypeDecl]) extends AnyVal {
 
   /** Annotations of the type declaration
     */
-  def annotation: Iterator[nodes.Annotation] =
+  def annotation: Iterator[Annotation] =
     traversal.flatMap(_._annotationViaAstOut)
 
   /** Types referencing to this type declaration.
     */
   def referencingType: Iterator[Type] =
-    traversal.flatMap(_.refIn)
+    traversal._refIn.collectAll[Type]
 
   /** Namespace in which this type declaration is defined
     */
