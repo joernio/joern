@@ -13,18 +13,28 @@ import scala.util.{Success, Try}
 
 trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
   def astForGenDecl(genDecl: ParserNodeInfo): Seq[Ast] = {
-    genDecl
-      .json(ParserKeys.Specs)
-      .arr
-      .map(createParserNodeInfo)
-      .flatMap { genDeclNode =>
-        genDeclNode.node match
-          case ImportSpec => astForImport(genDeclNode)
-          case TypeSpec   => astForTypeSpec(genDeclNode)
-          case ValueSpec  => astForValueSpec(genDeclNode)
-          case _          => Seq[Ast]()
+    Try(
+      genDecl
+        .json(ParserKeys.Specs)
+        .arr
+    ) match {
+      case Success(specArr) => {
+        specArr
+          .map(createParserNodeInfo)
+          .flatMap { genDeclNode =>
+            genDeclNode.node match
+              case ImportSpec => astForImport(genDeclNode)
+              case TypeSpec   => astForTypeSpec(genDeclNode)
+              case ValueSpec  => astForValueSpec(genDeclNode)
+              case _          => Seq[Ast]()
+          }
+          .toSeq
       }
-      .toSeq
+      case _ => {
+        Seq()
+      }
+    }
+
   }
 
   private def astForImport(nodeInfo: ParserNodeInfo): Seq[Ast] = {
