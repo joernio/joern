@@ -1,8 +1,8 @@
 package io.joern.x2cpg.passes.base
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.PropertyNames
-import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn.PropertyDefaults
+import io.shiftleft.codepropertygraph.generated.v2.PropertyNames
+import io.shiftleft.codepropertygraph.generated.v2.nodes.MethodParameterIn.PropertyDefaults
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 

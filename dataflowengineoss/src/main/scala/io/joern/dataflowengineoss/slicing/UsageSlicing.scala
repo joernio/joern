@@ -1,8 +1,8 @@
 package io.joern.dataflowengineoss.slicing
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
+import io.shiftleft.codepropertygraph.generated.v2.{Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language.*
 
 import java.util.concurrent.*
@@ -150,15 +150,14 @@ object UsageSlicing {
       // Handle the case where a call is an invocation of a field member (lambda) or function/method call
       val (callName, resolvedMethod): (Option[String], Option[String]) =
         if (isMemberInvocation)
-          baseCall.argumentOut
-            .flatMap {
-              case x: FieldIdentifier =>
-                Option(Option(x.code) -> None)
-              case x: Call => Option(Option(x.name) -> getResolvedMethod(x))
-              case _       => None
-            }
-            .headOption
-            .getOrElse((None, None))
+          baseCall._argumentOut.flatMap {
+            case x: FieldIdentifier =>
+              Option(Option(x.code) -> None)
+            case x: Call => Option(Option(x.name) -> getResolvedMethod(x))
+            case _       => None
+          }
+          .headOption
+          .getOrElse((None, None))
         else if (isConstructor) {
           val m = constructorTypeMatcher.matcher(baseCall.code)
           val typeName =
@@ -182,12 +181,9 @@ object UsageSlicing {
         .flatMap {
           case _: MethodRef => Option("LAMBDA")
           case x =>
-            Option(
-              x.property(
-                PropertyNames.TYPE_FULL_NAME,
-                x.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq("ANY")).headOption
-              )
-            )
+            x.propertyOption[String](PropertyNames.TYPE_FULL_NAME)
+              .orElse(x.propertyOption[Seq[String]](PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME).flatMap(_.headOption))
+              .getOrElse("ANY")
         }
         .collect { case x: String => x }
         .toList
@@ -198,16 +194,15 @@ object UsageSlicing {
           case None                 => "ANY"
         }
       } else {
-        baseCall.argumentOut
-          .flatMap {
-            case x: Call if !DefComponent.unresolvedCallPattern.matcher(x.methodFullName).matches() =>
-              cpg.method.fullNameExact(x.methodFullName).methodReturn.typeFullName.headOption
-            case x: Call =>
-              x.callee(resolver).methodReturn.typeFullName.headOption
-            case _ => None
-          }
-          .headOption
-          .getOrElse("ANY")
+        baseCall._argumentOut.flatMap {
+          case x: Call if !DefComponent.unresolvedCallPattern.matcher(x.methodFullName).matches() =>
+            cpg.method.fullNameExact(x.methodFullName).methodReturn.typeFullName.headOption
+          case x: Call =>
+            x.callee(resolver).methodReturn.typeFullName.headOption
+          case _ => None
+        }
+        .headOption
+        .getOrElse("ANY")
       }
 
       Option(

@@ -1,16 +1,20 @@
 package io.shiftleft.semanticcpg.language.operatorextension
 
-import io.shiftleft.codepropertygraph.generated.nodes
+import io.shiftleft.codepropertygraph.generated.v2.nodes
+import io.shiftleft.codepropertygraph.generated.v2.nodes.Expression
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.traversal.help
-import overflowdb.traversal.help.Doc
+// TODO bring back: import overflowdb.traversal.help
+// TODO bring back: import overflowdb.traversal.help.Doc
 
-@help.Traversal(elementType = classOf[nodes.Call])
+// TODO bring back
+// @help.Traversal(elementType = classOf[nodes.Call])
 class AssignmentTraversal(val traversal: Iterator[OpNodes.Assignment]) extends AnyVal {
 
-  @Doc(info = "Left-hand sides of assignments")
+// TODO bring back
+  // @Doc(info = "Left-hand sides of assignments")
   def target: Iterator[nodes.Expression] = traversal.map(_.target)
 
-  @Doc(info = "Right-hand sides of assignments")
+// TODO bring back
+  // @Doc(info = "Right-hand sides of assignments")
   def source: Iterator[nodes.Expression] = traversal.map(_.source)
 }

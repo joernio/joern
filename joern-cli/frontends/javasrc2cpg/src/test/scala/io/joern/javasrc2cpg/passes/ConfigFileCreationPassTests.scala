@@ -1,13 +1,12 @@
 package io.joern.javasrc2cpg.passes
 
 import better.files.File
+import flatgraph.misc.TestUtils.*
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
-import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.NewMetaData
+import io.shiftleft.codepropertygraph.generated.v2.Cpg
+import io.shiftleft.codepropertygraph.generated.v2.nodes.NewMetaData
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.utils.ProjectRoot
-import overflowdb.BatchedUpdate
-import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import java.nio.file.Paths
 
@@ -17,8 +16,9 @@ class ConfigFileCreationPassTests extends JavaSrcCode2CpgFixture {
     ProjectRoot.relativise("joern-cli/frontends/javasrc2cpg/src/test/resources/config_tests")
 
   "it should find the correct config files" in {
-    val cpg = new Cpg()
-    BatchedUpdate.applyDiff(cpg.graph, new DiffGraphBuilder().addNode(NewMetaData().root(testConfigDir)).build())
+    val cpg = Cpg.empty
+    cpg.graph.addNode(NewMetaData().root(testConfigDir))
+
     val foundFiles        = new ConfigFileCreationPass(cpg).generateParts().map(_.canonicalPath)
     val absoluteConfigDir = File(testConfigDir).canonicalPath
     foundFiles should contain theSameElementsAs Array(

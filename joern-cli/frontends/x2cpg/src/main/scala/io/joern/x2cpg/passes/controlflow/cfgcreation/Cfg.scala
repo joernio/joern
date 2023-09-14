@@ -1,6 +1,6 @@
 package io.joern.x2cpg.passes.controlflow.cfgcreation
 
-import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
+import io.shiftleft.codepropertygraph.generated.v2.nodes.CfgNode
 import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.CfgEdgeType
 import org.slf4j.LoggerFactory
 

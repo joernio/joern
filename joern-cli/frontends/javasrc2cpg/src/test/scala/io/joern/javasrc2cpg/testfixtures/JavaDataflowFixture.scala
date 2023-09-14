@@ -5,7 +5,7 @@ import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
 import io.joern.javasrc2cpg.JavaSrc2CpgTestContext
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Expression, Literal}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{Expression, Literal}
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
@@ -48,5 +48,5 @@ class JavaDataflowFixture(extraFlows: List[FlowSemantic] = List.empty) extends A
     (source, sink)
   }
 
-  protected def flowToResultPairs(path: Path): List[(String, Option[Integer])] = path.resultPairs()
+  protected def flowToResultPairs(path: Path): List[(String, Option[Int])] = path.resultPairs()
 }

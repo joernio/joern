@@ -1,8 +1,8 @@
 package io.joern.x2cpg.passes
 
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewMember}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.v2.*
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{NewCall, NewMember}
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.testing.MockCpg
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec

@@ -1,8 +1,8 @@
 package io.joern.x2cpg
 
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
-import io.shiftleft.codepropertygraph.generated.nodes.Block.{PropertyDefaults => BlockDefaults}
-import io.shiftleft.codepropertygraph.generated.nodes.{
+import io.shiftleft.codepropertygraph.generated.v2.nodes.Block.{PropertyDefaults => BlockDefaults}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{
   NewAnnotation,
   NewBlock,
   NewCall,
@@ -27,10 +27,10 @@ import org.apache.commons.lang.StringUtils
 
 import scala.util.Try
 trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
-  protected def line(node: Node): Option[Integer]
-  protected def column(node: Node): Option[Integer]
-  protected def lineEnd(node: Node): Option[Integer]
-  protected def columnEnd(element: Node): Option[Integer]
+  protected def line(node: Node): Option[Int]
+  protected def column(node: Node): Option[Int]
+  protected def lineEnd(node: Node): Option[Int]
+  protected def columnEnd(element: Node): Option[Int]
 
   private val MinCodeLength: Int        = 50
   private val DefaultMaxCodeLength: Int = 1000

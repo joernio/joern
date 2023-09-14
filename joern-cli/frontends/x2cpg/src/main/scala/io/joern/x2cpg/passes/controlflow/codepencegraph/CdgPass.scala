@@ -1,8 +1,8 @@
 package io.joern.x2cpg.passes.controlflow.codepencegraph
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{
+import io.shiftleft.codepropertygraph.generated.v2.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{
   Call,
   ControlStructure,
   Identifier,

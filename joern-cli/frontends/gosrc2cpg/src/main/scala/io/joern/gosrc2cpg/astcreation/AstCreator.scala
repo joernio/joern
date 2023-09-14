@@ -11,7 +11,7 @@ import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, AstNodeBuilder as X2
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import org.slf4j.{Logger, LoggerFactory}
-import overflowdb.BatchedUpdate.DiffGraphBuilder
+import flatgraph.DiffGraphBuilder
 import ujson.Value
 
 import scala.collection.mutable

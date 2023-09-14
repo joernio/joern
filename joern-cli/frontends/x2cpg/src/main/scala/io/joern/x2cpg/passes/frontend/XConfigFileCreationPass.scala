@@ -2,7 +2,7 @@ package io.joern.x2cpg.passes.frontend
 
 import better.files.File
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.NewConfigFile
+import io.shiftleft.codepropertygraph.generated.v2.nodes.NewConfigFile
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.utils.IOUtils

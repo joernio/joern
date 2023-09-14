@@ -5,7 +5,7 @@ import io.joern.javasrc2cpg.scope.Scope.*
 import io.joern.javasrc2cpg.util.NameConstants
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.utils.ListUtils.*
-import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 
 // TODO: Added for backwards compatibility with old scope methods, but is no longer
 //  strictly necessary due to stricter scope variable classes. Refactor AstCreator

@@ -7,7 +7,7 @@ import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParse
 import com.github.javaparser.symbolsolver.javassistmodel.JavassistAnnotationDeclaration
 import com.github.javaparser.symbolsolver.reflectionmodel.ReflectionAnnotationDeclaration
 import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, getAllParents, safeGetAncestors}
-import io.shiftleft.codepropertygraph.generated.nodes.NewBinding
+import io.shiftleft.codepropertygraph.generated.v2.nodes.NewBinding
 
 import scala.jdk.OptionConverters.RichOptional
 import scala.jdk.CollectionConverters._

@@ -4,8 +4,8 @@ import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclar
 import com.github.javaparser.resolution.types.ResolvedReferenceType
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.x2cpg.{Ast, Defines}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, PropertyNames}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewFieldIdentifier, NewMember}
+import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{NewCall, NewFieldIdentifier, NewMember}
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable

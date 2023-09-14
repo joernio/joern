@@ -2,7 +2,7 @@ package io.joern.dataflowengineoss.queryengine
 
 import io.joern.dataflowengineoss.queryengine.Engine.argToOutputParams
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{
   Call,
   Expression,
   Method,
@@ -100,7 +100,7 @@ class TaskCreator(context: EngineContext) {
     */
 
   private def paramToMethodRefCallReceivers(param: MethodParameterIn): List[Expression] =
-    new Cpg(param.graph()).methodRef.methodFullNameExact(param.method.fullName).inCall.argument(0).l
+    new Cpg(param.graph).methodRef.methodFullNameExact(param.method.fullName).inCall.argument(0).l
 
   /** Create new tasks from all results that end in an output argument, including return arguments. In this case, we
     * want to traverse to corresponding method output parameters and method return nodes respectively.

@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.language.nodemethods
 
 import io.shiftleft.Implicits.IterableOnceDeco
-import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.*
 
@@ -11,9 +11,8 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
 
   /** Successors in the CFG
     */
-  def cfgNext: Iterator[CfgNode] = {
+  def cfgNext: Iterator[CfgNode] =
     Iterator.single(node).cfgNext
-  }
 
   /** Maps each node in the traversal to a traversal returning its n successors.
     */
@@ -31,9 +30,8 @@ class CfgNodeMethods(val node: CfgNode) extends AnyVal with NodeExtension {
 
   /** Predecessors in the CFG
     */
-  def cfgPrev: Iterator[CfgNode] = {
+  def cfgPrev: Iterator[CfgNode] =
     Iterator.single(node).cfgPrev
-  }
 
   /** Recursively determine all nodes on which this CFG node is control-dependent.
     */
