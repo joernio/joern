@@ -51,7 +51,7 @@ import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{NewClosureBinding, NewFile, NewImport, NewNamespaceBlock}
 import org.slf4j.LoggerFactory
-import overflowdb.BatchedUpdate.DiffGraphBuilder
+import flatgraph.DiffGraphBuilder
 
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
@@ -135,11 +135,11 @@ class AstCreator(
     .removeOption(new DefaultConfigurationOption(ConfigOption.PRINT_COMMENTS))
     .removeOption(new DefaultConfigurationOption(ConfigOption.PRINT_JAVADOC))
 
-  protected def line(node: Node): Option[Int]      = node.getBegin.map(x => x.line).toScala
-  protected def column(node: Node): Option[Int]    = node.getBegin.map(x => x.column).toScala
-  protected def lineEnd(node: Node): Option[Int]   = node.getEnd.map(x => x.line).toScala
-  protected def columnEnd(node: Node): Option[Int] = node.getEnd.map(x => x.column).toScala
-  protected def code(node: Node): String           = node.toString(codePrinterOptions)
+  protected def line(node: Node): Option[Int]      = node.getBegin.map(_.line).toScala
+  protected def column(node: Node): Option[Int]    = node.getBegin.map(_.column).toScala
+  protected def lineEnd(node: Node): Option[Int]   = node.getEnd.map(_.line).toScala
+  protected def columnEnd(node: Node): Option[Int] = node.getEnd.map(_.column).toScala
+  protected def code(node: Node): String               = node.toString(codePrinterOptions)
 
   private val lineOffsetTable = OffsetUtils.getLineOffsetTable(fileContent)
 

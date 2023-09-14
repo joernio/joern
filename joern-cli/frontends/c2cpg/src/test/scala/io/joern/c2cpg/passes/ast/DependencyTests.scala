@@ -24,11 +24,11 @@ class DependencyTests extends AstC2CpgSuite {
           fooImport.code shouldBe "#include \"./folder/sub/foo.h\""
           fooImport.importedEntity shouldBe Option("./folder/sub/foo.h")
           fooImport.importedAs shouldBe Option("./folder/sub/foo.h")
-          fooImport._dependencyViaImportsOut.head shouldBe fooDep
+          fooImport.dependencyViaImportsOut.head shouldBe fooDep
           ioImport.code shouldBe "#include <io.h>"
           ioImport.importedEntity shouldBe Option("io.h")
           ioImport.importedAs shouldBe Option("io.h")
-          ioImport._dependencyViaImportsOut.head shouldBe ioDep
+          ioImport.dependencyViaImportsOut.head shouldBe ioDep
         }
       }
     }

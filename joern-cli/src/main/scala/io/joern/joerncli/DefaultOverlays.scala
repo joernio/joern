@@ -16,7 +16,7 @@ object DefaultOverlays {
     *   the filename of the cpg
     */
   def create(storeFilename: String, maxNumberOfDefinitions: Int = defaultMaxNumberOfDefinitions): Cpg = {
-    val cpg = CpgBasedTool.loadFromOdb(storeFilename)
+    val cpg = CpgBasedTool.loadFromFile(storeFilename)
     applyDefaultOverlays(cpg)
     val context = new LayerCreatorContext(cpg)
     val options = new OssDataFlowOptions(maxNumberOfDefinitions)

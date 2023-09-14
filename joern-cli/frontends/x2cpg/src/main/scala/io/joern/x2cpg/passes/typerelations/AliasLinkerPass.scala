@@ -4,6 +4,7 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, PropertyNames}
 import io.shiftleft.passes.CpgPass
+import io.shiftleft.semanticcpg.language.*
 import io.joern.x2cpg.utils.LinkingUtil
 
 class AliasLinkerPass(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {

@@ -1,5 +1,6 @@
 package io.joern.php2cpg.astcreation
 
+import flatgraph.DiffGraphBuilder
 import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants, operatorSymbols}
 import io.joern.php2cpg.datastructures.ArrayIndexTracker
 import io.joern.php2cpg.parser.Domain.*
@@ -8,14 +9,14 @@ import io.joern.php2cpg.utils.Scope
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.Defines.{StaticInitMethodName, UnresolvedNamespace, UnresolvedSignature}
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
+import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.utils.NodeBuilders.*
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
+import scala.jdk.CollectionConverters.*
 import org.slf4j.LoggerFactory
-import overflowdb.BatchedUpdate
 
 import java.nio.charset.StandardCharsets
 
@@ -31,7 +32,7 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
 
   private def getNewTmpName(prefix: String = "tmp"): String = s"$prefix${tmpKeyPool.next.toString}"
 
-  override def createAst(): BatchedUpdate.DiffGraphBuilder = {
+  override def createAst(): DiffGraphBuilder = {
     val ast = astForPhpFile(phpAst)
     storeInDiffGraph(ast, diffGraph)
     diffGraph
@@ -585,7 +586,7 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
     val iteratorAssignAst = simpleAssignAst(Ast(iterIdentifier), iterValue, line(stmt))
 
     // - Assigned item assign
-    val itemInitAst = getItemAssignAstForForeach(stmt, assignItemTargetAst, iterIdentifier.copy)
+    val itemInitAst = getItemAssignAstForForeach(stmt, assignItemTargetAst, iterIdentifier.copy())
 
     // Condition ast
     val isNullName = PhpOperators.isNull
@@ -598,7 +599,7 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
     val conditionAst = callAst(notIsNull, isNullAst :: Nil)
 
     // Update asts
-    val nextIterIdent = Ast(iterIdentifier.copy)
+    val nextIterIdent = Ast(iterIdentifier.copy())
     val nextSignature = "void()"
     val nextCallCode  = s"${nextIterIdent.rootCodeOrEmpty}->next()"
     val nextCallNode = callNode(
@@ -1412,8 +1413,9 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
         case PhpVariable(PhpNameExpr(name, _), _) =>
           val typeFullName = scope
             .lookupVariable(name)
-            .flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME).map(_.toString))
+            .map(node => Option(node.propertiesMap.get(PropertyNames.TYPE_FULL_NAME)))
             .getOrElse(TypeConstants.Any)
+            .toString
           val byRefPrefix = if (closureUse.byRef) "&" else ""
 
           Some(localNode(closureExpr, name, s"$byRefPrefix$$$name", typeFullName))
@@ -1526,11 +1528,11 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
       Some(initSignature),
       Some(TypeConstants.Any)
     )
-    val initReceiver = Ast(tmpIdentifier.copy)
+    val initReceiver = Ast(tmpIdentifier.copy())
     val initCallAst  = callAst(initCallNode, initArgs, base = Option(initReceiver))
 
     // Return identifier
-    val returnIdentifierAst = Ast(tmpIdentifier.copy)
+    val returnIdentifierAst = Ast(tmpIdentifier.copy())
 
     Ast(blockNode(expr, "", TypeConstants.Any))
       .withChild(allocAssignAst)
@@ -1677,7 +1679,7 @@ class AstCreator(filename: String, phpAst: PhpFile, fileContent: Option[String],
       case nameExpr: PhpNameExpr =>
         scope
           .lookupVariable(nameExpr.name)
-          .flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME).map(_.toString))
+          .flatMap(_.propertiesMap.asScala.get(PropertyNames.TYPE_FULL_NAME).map(_.toString))
           .getOrElse(nameExpr.name)
 
       case expr =>

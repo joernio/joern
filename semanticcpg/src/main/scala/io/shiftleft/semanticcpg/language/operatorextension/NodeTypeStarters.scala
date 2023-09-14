@@ -1,11 +1,10 @@
 package io.shiftleft.semanticcpg.language.operatorextension
 
+import flatgraph.help.{Doc, TraversalSource}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.traversal.help.{Doc, TraversalSource}
 
-/** Steps that allow traversing from `cpg` to operators.
-  */
+/** Steps that allow traversing from `cpg` to operators. */
 @TraversalSource
 class NodeTypeStarters(cpg: Cpg) {
 

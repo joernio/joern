@@ -10,6 +10,7 @@ import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.GuardStmtSyntax
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.InitializerDeclSyntax
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.SwiftNode
 import io.joern.x2cpg.frontendspecific.swiftsrc2cpg.Defines
+import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.utils.NodeBuilders.{newClosureBindingNode, newLocalNode}
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
@@ -17,8 +18,6 @@ import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
-import io.shiftleft.codepropertygraph.generated.PropertyNames
-import io.shiftleft.passes.IntervalKeyPool
 
 import scala.collection.mutable
 
@@ -95,7 +94,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   protected def astParentInfo(): (String, String) = {
     val astParentType     = methodAstParentStack.head.label
-    val astParentFullName = methodAstParentStack.head.properties(PropertyNames.FULL_NAME).toString
+    val astParentFullName = methodAstParentStack.head.propertiesMap.get("FULL_NAME").toString
     (astParentType, astParentFullName)
   }
 

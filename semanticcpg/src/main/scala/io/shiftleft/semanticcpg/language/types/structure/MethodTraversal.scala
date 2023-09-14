@@ -1,21 +1,19 @@
 package io.shiftleft.semanticcpg.language.types.structure
 
+import flatgraph.help.{Doc, Traversal}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.*
-import overflowdb.traversal.help
-import overflowdb.traversal.help.Doc
 
 /** A method, function, or procedure
   */
-@help.Traversal(elementType = classOf[Method])
+@Traversal(elementType = classOf[Method])
 class MethodTraversal(val traversal: Iterator[Method]) extends AnyVal {
 
   /** Traverse to annotations of method
     */
   def annotation: Iterator[nodes.Annotation] =
-    traversal.flatMap(_._annotationViaAstOut)
+    traversal.flatMap(_.annotationViaAstOut)
 
   /** All control structures of this method
     */
@@ -164,7 +162,8 @@ class MethodTraversal(val traversal: Iterator[Method]) extends AnyVal {
         // some language frontends don't have a TYPE_DECL for a METHOD
         case Some(namespaceBlock: NamespaceBlock) => namespaceBlock.start
         // other language frontends always embed their method in a TYPE_DECL
-        case _ => m.definingTypeDecl.namespaceBlock
+        case _ =>
+          m.definingTypeDecl.iterator.namespaceBlock
       }
     }
   }

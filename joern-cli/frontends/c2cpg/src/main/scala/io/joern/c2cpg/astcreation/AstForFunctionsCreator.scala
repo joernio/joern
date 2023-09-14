@@ -37,7 +37,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     val parentNode: NewTypeDecl = methodAstParentStack.collectFirst { case t: NewTypeDecl => t }.getOrElse {
       val astParentType     = methodAstParentStack.head.label
-      val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
+      val astParentFullName = methodAstParentStack.head.propertiesMap.get("FULL_NAME").toString
       val typeDeclNode_ = typeDeclNode(
         node,
         normalizedName,

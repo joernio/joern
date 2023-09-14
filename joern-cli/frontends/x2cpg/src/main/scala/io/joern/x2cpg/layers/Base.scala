@@ -32,7 +32,6 @@ class Base extends LayerCreator {
 
   override def create(context: LayerCreatorContext): Unit = {
     val cpg = context.cpg
-    cpg.graph.indexManager.createNodePropertyIndex(PropertyNames.FULL_NAME)
     Base.passes(cpg).zipWithIndex.foreach { case (pass, index) =>
       runPass(pass, context, index)
     }

@@ -1,15 +1,16 @@
 package io.shiftleft.semanticcpg.language.types.expressions
 
+import flatgraph.help.{Doc, Traversal}
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, ControlStructure, Expression}
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Properties}
+import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.traversal.help.Doc
 
 object ControlStructureTraversal {
   val secondChildIndex = 2
   val thirdChildIndex  = 3
 }
 
+@Traversal(elementType = classOf[ControlStructure])
 class ControlStructureTraversal(val traversal: Iterator[ControlStructure]) extends AnyVal {
   import ControlStructureTraversal.*
 
@@ -23,11 +24,11 @@ class ControlStructureTraversal(val traversal: Iterator[ControlStructure]) exten
 
   @Doc(info = "Sub tree taken when condition evaluates to true")
   def whenTrue: Iterator[AstNode] =
-    traversal.out.has(Properties.Order, secondChildIndex: Int).cast[AstNode]
+    traversal.out.collectAll[AstNode].order(secondChildIndex)
 
   @Doc(info = "Sub tree taken when condition evaluates to false")
   def whenFalse: Iterator[AstNode] =
-    traversal.out.has(Properties.Order, thirdChildIndex).cast[AstNode]
+    traversal.out.collectAll[AstNode].order(thirdChildIndex)
 
   @Doc(info = "Only `Try` control structures")
   def isTry: Iterator[ControlStructure] =

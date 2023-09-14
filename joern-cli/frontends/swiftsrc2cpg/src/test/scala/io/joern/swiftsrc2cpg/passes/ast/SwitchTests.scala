@@ -19,7 +19,7 @@ class SwitchTests extends AstSwiftSrc2CpgSuite {
       switchExpr.order shouldBe 1
       switchExpr.code shouldBe "x"
       val List(switchBlock) = switchStmt.astChildren.isBlock.l
-      switchBlock._jumpTargetViaAstOut shouldBe empty
+      switchBlock.jumpTargetViaAstOut shouldBe empty
     }
 
     "testSwitch10" in {
@@ -52,7 +52,7 @@ class SwitchTests extends AstSwiftSrc2CpgSuite {
       switchExpr.order shouldBe 1
       switchExpr.code shouldBe "x"
       val List(switchBlock) = switchStmt.astChildren.isBlock.l
-      val List(caseLabel1)  = switchBlock._jumpTargetViaAstOut.codeExact("case 0:").l
+      val List(caseLabel1)  = switchBlock.jumpTargetViaAstOut.codeExact("case 0:").l
       caseLabel1.order shouldBe 1
 
       val List(caseExpr1) = switchBlock.astChildren.isLiteral.codeExact("0").l
@@ -63,7 +63,7 @@ class SwitchTests extends AstSwiftSrc2CpgSuite {
 
       switchBlock.astChildren.isControlStructure.order(4).codeExact("break").size shouldBe 1
 
-      val List(caseLabel2) = switchBlock._jumpTargetViaAstOut.codeExact("case 1, 2, 3:").l
+      val List(caseLabel2) = switchBlock.jumpTargetViaAstOut.codeExact("case 1, 2, 3:").l
       caseLabel2.order shouldBe 5
 
       val List(caseExpr21) = switchBlock.astChildren.isLiteral.codeExact("1").l
@@ -97,7 +97,7 @@ class SwitchTests extends AstSwiftSrc2CpgSuite {
       switchExpr.order shouldBe 1
       switchExpr.code shouldBe "x"
       val List(switchBlock) = switchStmt.astChildren.isBlock.l
-      val List(caseLabel1)  = switchBlock._jumpTargetViaAstOut.codeExact("case 0:").l
+      val List(caseLabel1)  = switchBlock.jumpTargetViaAstOut.codeExact("case 0:").l
       caseLabel1.order shouldBe 1
 
       val List(caseExpr1) = switchBlock.astChildren.isLiteral.codeExact("0").l
@@ -105,7 +105,7 @@ class SwitchTests extends AstSwiftSrc2CpgSuite {
 
       switchBlock.astChildren.isControlStructure.order(3).codeExact("break").size shouldBe 1
 
-      val List(caseLabel2) = switchBlock._jumpTargetViaAstOut.codeExact("case 1:").l
+      val List(caseLabel2) = switchBlock.jumpTargetViaAstOut.codeExact("case 1:").l
       caseLabel2.order shouldBe 4
 
       val List(caseExpr21) = switchBlock.astChildren.isLiteral.codeExact("1").l
@@ -130,7 +130,7 @@ class SwitchTests extends AstSwiftSrc2CpgSuite {
       switchExpr.order shouldBe 1
       switchExpr.code shouldBe "x"
       val List(switchBlock) = switchStmt.astChildren.isBlock.l
-      val List(caseLabel1)  = switchBlock._jumpTargetViaAstOut.codeExact("case 0:").l
+      val List(caseLabel1)  = switchBlock.jumpTargetViaAstOut.codeExact("case 0:").l
       caseLabel1.order shouldBe 1
 
       val List(caseExpr1) = switchBlock.astChildren.isLiteral.codeExact("0").l
@@ -138,7 +138,7 @@ class SwitchTests extends AstSwiftSrc2CpgSuite {
 
       switchBlock.astChildren.isControlStructure.order(3).codeExact("break").size shouldBe 1
 
-      val List(caseLabel2) = switchBlock._jumpTargetViaAstOut.codeExact("default:").l
+      val List(caseLabel2) = switchBlock.jumpTargetViaAstOut.codeExact("default:").l
       caseLabel2.order shouldBe 4
 
       val List(stmtExpr2) = switchBlock.astChildren.isCall.codeExact("x = 0").l
@@ -163,7 +163,7 @@ class SwitchTests extends AstSwiftSrc2CpgSuite {
       switchExpr.order shouldBe 1
       switchExpr.code shouldBe "x"
       val List(switchBlock) = switchStmt.astChildren.isBlock.l
-      val List(caseLabel1)  = switchBlock._jumpTargetViaAstOut.codeExact("case 0:").l
+      val List(caseLabel1)  = switchBlock.jumpTargetViaAstOut.codeExact("case 0:").l
       caseLabel1.order shouldBe 1
 
       val List(caseExpr1) = switchBlock.astChildren.isLiteral.codeExact("0").l
@@ -175,7 +175,7 @@ class SwitchTests extends AstSwiftSrc2CpgSuite {
         .codeExact("fallthrough")
         .size shouldBe 1
 
-      val List(caseLabel2) = switchBlock._jumpTargetViaAstOut.codeExact("case 1:").l
+      val List(caseLabel2) = switchBlock.jumpTargetViaAstOut.codeExact("case 1:").l
       caseLabel2.order shouldBe 4
 
       val List(caseExpr2) = switchBlock.astChildren.isLiteral.codeExact("1").l
@@ -187,7 +187,7 @@ class SwitchTests extends AstSwiftSrc2CpgSuite {
         .codeExact("fallthrough")
         .size shouldBe 1
 
-      val List(caseLabel3) = switchBlock._jumpTargetViaAstOut.codeExact("default:").l
+      val List(caseLabel3) = switchBlock.jumpTargetViaAstOut.codeExact("default:").l
       caseLabel3.order shouldBe 7
 
       switchBlock.astChildren.isControlStructure
@@ -245,7 +245,7 @@ class SwitchTests extends AstSwiftSrc2CpgSuite {
       val List(switchBlock) = switchStmt.astChildren.isBlock.l
       val List(elseBlock)   = switchBlock.astChildren.isBlock.l
 
-      val List(caseLabel1) = elseBlock._jumpTargetViaAstOut.codeExact("case (1, 2):").l
+      val List(caseLabel1) = elseBlock.jumpTargetViaAstOut.codeExact("case (1, 2):").l
       caseLabel1.order shouldBe 1
 
       val List(child1CaseLabel1) = elseBlock.astChildren.isCall.codeExact("(1, 2)").l
@@ -253,7 +253,7 @@ class SwitchTests extends AstSwiftSrc2CpgSuite {
       val List(child2CaseLabel1) = elseBlock.astChildren.isCall.codeExact("foo()").l
       child2CaseLabel1.order shouldBe 3
 
-      val List(caseLabel2) = elseBlock._jumpTargetViaAstOut.codeExact("case (var a, var b):").l
+      val List(caseLabel2) = elseBlock.jumpTargetViaAstOut.codeExact("case (var a, var b):").l
       caseLabel2.order shouldBe 5
       val List(child1CaseLabel2) = elseBlock.astChildren.isCall.codeExact("(var a, var b)").l
       child1CaseLabel2.order shouldBe 6

@@ -15,7 +15,11 @@ class ReturnEdgesPass(cpg: Cpg) extends CpgPass(cpg) {
     cpg.call.nameNot("<operator>.*").foreach { from =>
       // We expect RAX/EAX as return
       val to = from.cfgNext.isCall.argument.code("(R|E)AX").headOption
-      if (to.nonEmpty) diffGraph.addEdge(from, to.get, EdgeTypes.REACHING_DEF, PropertyNames.VARIABLE, from.code)
+
+      // in flatgraph an edge may have zero or one properties and they're not named...
+      // in this case we know that we're dealing with ReachingDef edges which has the `variable` property
+      val variableProperty = from.code
+      if (to.nonEmpty) diffGraph.addEdge(from, to.get, EdgeTypes.REACHING_DEF, variableProperty)
     }
   }
 

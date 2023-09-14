@@ -1,8 +1,10 @@
 package io.shiftleft.semanticcpg.language
 
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.accessors.Lang.*
+import io.shiftleft.codepropertygraph.generated.neighboraccessors.Lang.*
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.{Logger, LoggerFactory}
-import overflowdb.traversal._
 
 import scala.annotation.tailrec
 
@@ -41,7 +43,7 @@ object LocationCreator {
       val namespaceOption = for {
         tpe            <- typeOption
         namespaceBlock <- tpe.namespaceBlock
-        namespace      <- namespaceBlock._namespaceViaRefOut.nextOption()
+        namespace      <- namespaceBlock.namespaceViaRefOut.nextOption()
       } yield namespace.name
       val namespaceName = namespaceOption.getOrElse("")
 
@@ -64,7 +66,7 @@ object LocationCreator {
 
   @tailrec
   private def findVertex(node: StoredNode, instanceCheck: StoredNode => Boolean): Option[StoredNode] =
-    node._astIn.nextOption() match {
+    node._astIn.iterator.nextOption() match {
       case Some(head) if instanceCheck(head) => Some(head)
       case Some(head)                        => findVertex(head, instanceCheck)
       case None                              => None

@@ -6,8 +6,8 @@ import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
 import io.shiftleft.codepropertygraph.generated.{Cpg, Operators, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
-import io.shiftleft.semanticcpg.language.{types, *}
-import overflowdb.BatchedUpdate.DiffGraphBuilder
+import io.shiftleft.semanticcpg.language.*
+import flatgraph.DiffGraphBuilder
 
 class RubyTypeRecoveryPassGenerator(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
     extends XTypeRecoveryPassGenerator[File](cpg, config) {

@@ -6,9 +6,7 @@ import io.shiftleft.codepropertygraph.generated.edges.Ref
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, Literal, MethodParameterIn}
 import io.shiftleft.semanticcpg.language.NoResolve
-import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.jIteratortoTraversal
-import overflowdb.traversal.toNodeTraversal
+import io.shiftleft.semanticcpg.language.*
 
 class NewCallTests extends JavaSrcCode2CpgFixture {
   "calls to imported methods" when {
@@ -284,7 +282,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
 
       cpg.method.name("test").call.name("foo").argument(0).outE.collectAll[Ref].l match {
         case List(ref) =>
-          ref.inNode match {
+          ref.dst match {
             case param: MethodParameterIn =>
               param.name shouldBe "this"
               param.index shouldBe 0
@@ -309,7 +307,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
 
       cpg.method.name("test").call.name("foo").argument(0).outE.collectAll[Ref].l match {
         case List(ref) =>
-          ref.inNode match {
+          ref.dst match {
             case param: MethodParameterIn =>
               param.name shouldBe "this"
               param.index shouldBe 0

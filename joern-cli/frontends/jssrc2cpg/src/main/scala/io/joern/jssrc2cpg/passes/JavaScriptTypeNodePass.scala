@@ -4,14 +4,13 @@ import io.joern.x2cpg.frontendspecific.jssrc2cpg.Defines
 import io.joern.x2cpg.passes.frontend.TypeNodePass
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.passes.KeyPool
 
 import scala.collection.mutable
 
 object JavaScriptTypeNodePass {
 
-  def withRegisteredTypes(registeredTypes: List[String], cpg: Cpg, keyPool: Option[KeyPool] = None): TypeNodePass = {
-    new TypeNodePass(registeredTypes, cpg, keyPool, getTypesFromCpg = false) {
+  def withRegisteredTypes(registeredTypes: List[String], cpg: Cpg): TypeNodePass = {
+    new TypeNodePass(registeredTypes, cpg, getTypesFromCpg = false) {
 
       override def fullToShortName(typeName: String): String = {
         typeName match {
