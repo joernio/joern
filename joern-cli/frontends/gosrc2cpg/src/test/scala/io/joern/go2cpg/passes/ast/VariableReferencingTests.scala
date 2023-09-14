@@ -64,6 +64,19 @@ class VariableReferencingTests extends GoCodeToCpgSuite {
       localNode.lineNumber shouldBe Some(2)
       localNode.columnNumber shouldBe Some(5)
     }
+  }
 
+  "Empty variable declaration" should {
+    val cpg = code("""
+        |package main
+        |func main() {
+        |   var()
+        |}
+        |""".stripMargin)
+
+    "test empty variable" in {
+      cpg.method.size shouldBe 2
+      cpg.method("main.<global>").local.size shouldBe 0
+    }
   }
 }
