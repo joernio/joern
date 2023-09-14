@@ -10,4 +10,7 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest"         % Versions.scalatest % Test
 )
 
-Compile / doc / scalacOptions ++= Seq("-doc-title", "semanticcpg apidocs", "-doc-version", version.value)
+Compile/compile/scalacOptions ++= Seq(
+  // TODO remove
+  "-Wconf:any:silent", // silence warnings for now
+)
