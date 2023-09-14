@@ -1,9 +1,9 @@
 package io.shiftleft.semanticcpg.language
 
-import io.shiftleft.codepropertygraph.generated.nodes.AbstractNode
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{AbstractNode, StoredNode}
 import org.json4s.native.Serialization.{write, writePretty}
 import org.json4s.{CustomSerializer, Extraction, Formats}
-import overflowdb.traversal.help.Doc
+//import overflowdb.traversal.help.Doc
 import replpp.Colors
 import replpp.Operators.*
 
@@ -46,11 +46,11 @@ class Steps[A](val traversal: Iterator[A]) extends AnyVal {
     * pretty-printing. This is the only three of the methods which we may modify on a per-node-type basis, typically via
     * implicits of type Show[NodeType].
     */
-  @Doc(info = "execute this traversal and pretty print the results")
+//  @Doc(info = "execute this traversal and pretty print the results")
   def p(implicit show: Show[A] = Show.default): List[String] =
     traversal.toList.map(show.apply)
 
-  @Doc(info = "execute this traversal and show the pretty-printed results in `less`")
+//  @Doc(info = "execute this traversal and show the pretty-printed results in `less`")
   // uses scala-repl-pp's `#|^` operator which let's `less` inherit stdin and stdout
   def browse: Unit = {
     given Colors = Colors.Default
@@ -61,11 +61,11 @@ class Steps[A](val traversal: Iterator[A]) extends AnyVal {
     * `toList`, only in json format. Typically, the user will call this method upon inspection of the results of
     * `toList` in order to export the data for processing with other tools.
     */
-  @Doc(info = "execute traversal and convert the result to json")
+//  @Doc(info = "execute traversal and convert the result to json")
   def toJson: String = toJson(pretty = false)
 
   /** Execute traversal and convert the result to pretty json. */
-  @Doc(info = "execute traversal and convert the result to pretty json")
+//  @Doc(info = "execute traversal and convert the result to pretty json")
   def toJsonPretty: String = toJson(pretty = true)
 
   protected def toJson(pretty: Boolean): String = {
@@ -82,9 +82,9 @@ object Steps {
   private lazy val nodeSerializer = new CustomSerializer[AbstractNode](implicit format =>
     (
       { case _ => ??? },
-      { case node: AbstractNode with Product =>
+      { case node: AbstractNode =>
         val elementMap = (0 until node.productArity).map { i =>
-          val label   = node.productElementName(i)
+          val label = node.productElementName(i)
           val element = node.productElement(i)
           label -> element
         }.toMap + ("_label" -> node.label)

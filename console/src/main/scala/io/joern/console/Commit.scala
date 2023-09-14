@@ -2,7 +2,7 @@ package io.joern.console
 
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
-import overflowdb.BatchedUpdate.DiffGraphBuilder
+import io.joern.odb2.DiffGraphBuilder
 
 object Commit {
   val overlayName: String = "commit"

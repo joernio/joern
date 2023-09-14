@@ -1,7 +1,8 @@
 package io.shiftleft.semanticcpg.dotgenerator
 
-import io.shiftleft.codepropertygraph.generated.PropertyNames
-import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.joern.odb2.Accessors
+import io.shiftleft.codepropertygraph.generated.v2.PropertyKinds
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.utils.MemberAccess
 import org.apache.commons.lang.StringEscapeUtils
@@ -70,7 +71,7 @@ object DotSerializer {
   }
 
   private def stringRepr(vertex: StoredNode): String = {
-    val maybeLineNo: Optional[AnyRef] = vertex.propertyOption(PropertyNames.LINE_NUMBER)
+    val lineNoMaybe = Accessors.getNodePropertyOption[Integer](vertex.graph, vertex.nodeKind, PropertyKinds.LINE_NUMBER, vertex.seq())
     StringEscapeUtils.escapeHtml(vertex match {
       case call: Call                            => (call.name, limit(call.code)).toString
       case contrl: ControlStructure              => (contrl.label, contrl.controlStructureType, contrl.code).toString
@@ -87,7 +88,7 @@ object DotSerializer {
       case typeDecl: TypeDecl                    => (typeDecl.label, typeDecl.name).toString()
       case member: Member                        => (member.label, member.name).toString()
       case _                                     => ""
-    }) + (if (maybeLineNo.isPresent) s"<SUB>${maybeLineNo.get()}</SUB>" else "")
+    }) + lineNoMaybe.map(lineNo => s"<SUB>$lineNo</SUB>").getOrElse("")
   }
 
   private def toCfgNode(node: StoredNode): CfgNode = {

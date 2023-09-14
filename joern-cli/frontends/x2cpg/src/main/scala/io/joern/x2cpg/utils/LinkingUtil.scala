@@ -22,7 +22,7 @@ import scala.jdk.CollectionConverters._
 
 trait LinkingUtil {
 
-  import overflowdb.BatchedUpdate.DiffGraphBuilder
+  import io.joern.odb2.DiffGraphBuilder
 
   val logger: Logger = LoggerFactory.getLogger(classOf[LinkingUtil])
 

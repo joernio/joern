@@ -9,7 +9,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.eclipse.cdt.core.dom.ast.{IASTNode, IASTTranslationUnit}
 import org.slf4j.{Logger, LoggerFactory}
-import overflowdb.BatchedUpdate.DiffGraphBuilder
+import io.joern.odb2.DiffGraphBuilder
 
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable

@@ -1,8 +1,8 @@
 package io.shiftleft.semanticcpg.language.callgraphextension
 
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.traversal.help.Doc
+// TODO bring back: import overflowdb.traversal.help.Doc
 
 class MethodTraversal(val traversal: Iterator[Method]) extends AnyVal {
 
@@ -13,7 +13,7 @@ class MethodTraversal(val traversal: Iterator[Method]) extends AnyVal {
     val sinkMethods   = traversal.dedup
 
     if (sourceMethods.isEmpty || sinkMethods.isEmpty) {
-      Iterator.empty[Method].enablePathTracking
+      Iterator.empty[Method]
     } else {
       sinkMethods
         .repeat(
@@ -60,7 +60,7 @@ class MethodTraversal(val traversal: Iterator[Method]) extends AnyVal {
 
   /** Outgoing call sites
     */
-  @Doc(info = "Call sites (outgoing calls)")
+  // TODO bring back: @Doc(info = "Call sites (outgoing calls)")
   def call: Iterator[Call] =
     traversal.flatMap(_._callViaContainsOut)
 

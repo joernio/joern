@@ -1,12 +1,12 @@
 package io.shiftleft.semanticcpg.language.types.expressions.generalizations
 
-import io.shiftleft.codepropertygraph.generated.nodes.{ClosureBinding, Declaration, MethodRef, TypeRef}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{ClosureBinding, Declaration, MethodRef, TypeRef}
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.traversal.help
+// TODO bring back: import overflowdb.traversal.help
 
 /** A declaration, such as a local or parameter.
   */
-@help.Traversal(elementType = classOf[Declaration])
+// TODO bring back: @help.Traversal(elementType = classOf[Declaration])
 class DeclarationTraversal[NodeType <: Declaration](val traversal: Iterator[NodeType]) extends AnyVal {
 
   /** The closure binding node referenced by this declaration

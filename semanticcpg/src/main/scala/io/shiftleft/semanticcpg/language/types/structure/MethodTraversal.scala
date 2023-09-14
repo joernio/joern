@@ -1,15 +1,14 @@
 package io.shiftleft.semanticcpg.language.types.structure
 
-import io.shiftleft.codepropertygraph.generated.*
-import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.v2.*
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.*
-import overflowdb.traversal.help
-import overflowdb.traversal.help.Doc
+// TODO bring back: import overflowdb.traversal.help
+// TODO bring back: import overflowdb.traversal.help.Doc
 
 /** A method, function, or procedure
   */
-@help.Traversal(elementType = classOf[Method])
+// TODO bring back: @help.Traversal(elementType = classOf[Method])
 class MethodTraversal(val traversal: Iterator[Method]) extends AnyVal {
 
   /** Traverse to annotations of method
@@ -19,7 +18,7 @@ class MethodTraversal(val traversal: Iterator[Method]) extends AnyVal {
 
   /** All control structures of this method
     */
-  @Doc(info = "Control structures (source frontends only)")
+  // TODO bring back: @Doc(info = "Control structures (source frontends only)")
   def controlStructure: Iterator[ControlStructure] =
     traversal.ast.isControlStructure
 
@@ -28,53 +27,53 @@ class MethodTraversal(val traversal: Iterator[Method]) extends AnyVal {
   def controlStructure(regex: String): Iterator[ControlStructure] =
     traversal.ast.isControlStructure.code(regex)
 
-  @Doc(info = "All try blocks (`ControlStructure` nodes)")
+  // TODO bring back: @Doc(info = "All try blocks (`ControlStructure` nodes)")
   def tryBlock: Iterator[ControlStructure] =
     controlStructure.isTry
 
-  @Doc(info = "All if blocks (`ControlStructure` nodes)")
+  // TODO bring back: @Doc(info = "All if blocks (`ControlStructure` nodes)")
   def ifBlock: Iterator[ControlStructure] =
     controlStructure.isIf
 
-  @Doc(info = "All else blocks (`ControlStructure` nodes)")
+  // TODO bring back: @Doc(info = "All else blocks (`ControlStructure` nodes)")
   def elseBlock: Iterator[ControlStructure] =
     controlStructure.isElse
 
-  @Doc(info = "All switch blocks (`ControlStructure` nodes)")
+  // TODO bring back: @Doc(info = "All switch blocks (`ControlStructure` nodes)")
   def switchBlock: Iterator[ControlStructure] =
     controlStructure.isSwitch
 
-  @Doc(info = "All do blocks (`ControlStructure` nodes)")
+  // TODO bring back: @Doc(info = "All do blocks (`ControlStructure` nodes)")
   def doBlock: Iterator[ControlStructure] =
     controlStructure.isDo
 
-  @Doc(info = "All for blocks (`ControlStructure` nodes)")
+  // TODO bring back: @Doc(info = "All for blocks (`ControlStructure` nodes)")
   def forBlock: Iterator[ControlStructure] =
     controlStructure.isFor
 
-  @Doc(info = "All while blocks (`ControlStructure` nodes)")
+  // TODO bring back: @Doc(info = "All while blocks (`ControlStructure` nodes)")
   def whileBlock: Iterator[ControlStructure] =
     controlStructure.isWhile
 
-  @Doc(info = "All gotos (`ControlStructure` nodes)")
+  // TODO bring back: @Doc(info = "All gotos (`ControlStructure` nodes)")
   def goto: Iterator[ControlStructure] =
     controlStructure.isGoto
 
-  @Doc(info = "All breaks (`ControlStructure` nodes)")
+  // TODO bring back: @Doc(info = "All breaks (`ControlStructure` nodes)")
   def break: Iterator[ControlStructure] =
     controlStructure.isBreak
 
-  @Doc(info = "All continues (`ControlStructure` nodes)")
+  // TODO bring back: @Doc(info = "All continues (`ControlStructure` nodes)")
   def continue: Iterator[ControlStructure] =
     controlStructure.isContinue
 
-  @Doc(info = "All throws (`ControlStructure` nodes)")
+  // TODO bring back: @Doc(info = "All throws (`ControlStructure` nodes)")
   def throws: Iterator[ControlStructure] =
     controlStructure.isThrow
 
   /** The type declaration associated with this method, e.g., the class it is defined in.
     */
-  @Doc(info = "Type this method is defined in")
+  // TODO bring back: @Doc(info = "Type this method is defined in")
   def definingTypeDecl: Iterator[TypeDecl] =
     traversal
       .repeat(_._astIn)(_.until(_.collectAll[TypeDecl]))
@@ -82,12 +81,12 @@ class MethodTraversal(val traversal: Iterator[Method]) extends AnyVal {
 
   /** The type declaration associated with this method, e.g., the class it is defined in. Alias for 'definingTypeDecl'
     */
-  @Doc(info = "Type this method is defined in - alias for 'definingTypeDecl'")
+  // TODO bring back: @Doc(info = "Type this method is defined in - alias for 'definingTypeDecl'")
   def typeDecl: Iterator[TypeDecl] = definingTypeDecl
 
   /** The method in which this method is defined
     */
-  @Doc(info = "Method this method is defined in")
+  // TODO bring back: @Doc(info = "Method this method is defined in")
   def definingMethod: Iterator[Method] =
     traversal
       .repeat(_._astIn)(_.until(_.collectAll[Method]))
@@ -111,23 +110,23 @@ class MethodTraversal(val traversal: Iterator[Method]) extends AnyVal {
 
   /** Traverse to external methods, that is, methods not present but only referenced in the CPG.
     */
-  @Doc(info = "External methods (called, but no body available)")
+  // TODO bring back: @Doc(info = "External methods (called, but no body available)")
   def external: Iterator[Method] =
     traversal.isExternal(true)
 
   /** Traverse to internal methods, that is, methods for which code is included in this CPG.
     */
-  @Doc(info = "Internal methods, i.e., a body is available")
+  // TODO bring back: @Doc(info = "Internal methods, i.e., a body is available")
   def internal: Iterator[Method] =
     traversal.isExternal(false)
 
   /** Traverse to the methods local variables
     */
-  @Doc(info = "Local variables declared in the method")
+  // TODO bring back: @Doc(info = "Local variables declared in the method")
   def local: Iterator[Local] =
     traversal.block.ast.isLocal
 
-  @Doc(info = "Top level expressions (\"Statements\")")
+  // TODO bring back: @Doc(info = "Top level expressions (\"Statements\")")
   def topLevelExpressions: Iterator[Expression] =
     traversal._astOut
       .collectAll[Block]
@@ -135,36 +134,37 @@ class MethodTraversal(val traversal: Iterator[Method]) extends AnyVal {
       .not(_.collectAll[Local])
       .cast[Expression]
 
-  @Doc(info = "Control flow graph nodes")
+  // TODO bring back: @Doc(info = "Control flow graph nodes")
   def cfgNode: Iterator[CfgNode] =
     traversal.flatMap(_.cfgNode)
 
   /** Traverse to last expression in CFG.
     */
-  @Doc(info = "Last control flow graph node")
+  // TODO bring back: @Doc(info = "Last control flow graph node")
   def cfgLast: Iterator[CfgNode] =
     traversal.methodReturn.cfgLast
 
   /** Traverse to method body (alias for `block`) */
-  @Doc(info = "Alias for `block`")
+  // TODO bring back: @Doc(info = "Alias for `block`")
   def body: Iterator[Block] =
     traversal.block
 
   /** Traverse to namespace */
-  @Doc(info = "Namespace this method is declared in")
+  // TODO bring back: @Doc(info = "Namespace this method is declared in")
   def namespace: Iterator[Namespace] = {
     traversal.namespaceBlock.namespace
   }
 
   /** Traverse to namespace block */
-  @Doc(info = "Namespace block this method is declared in")
+  // TODO bring back: @Doc(info = "Namespace block this method is declared in")
   def namespaceBlock: Iterator[NamespaceBlock] = {
     traversal.flatMap { m =>
-      m.astIn.headOption match {
+      m._astIn.headOption match {
         // some language frontends don't have a TYPE_DECL for a METHOD
         case Some(namespaceBlock: NamespaceBlock) => namespaceBlock.start
         // other language frontends always embed their method in a TYPE_DECL
-        case _ => m.definingTypeDecl.namespaceBlock
+        case _ =>
+          m.definingTypeDecl.iterator.namespaceBlock
       }
     }
   }

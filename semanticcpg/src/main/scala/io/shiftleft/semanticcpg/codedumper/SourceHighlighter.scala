@@ -1,12 +1,12 @@
 package io.shiftleft.semanticcpg.codedumper
 
 import better.files.File
-import io.shiftleft.codepropertygraph.generated.Languages
+import io.shiftleft.codepropertygraph.generated.v2.Languages
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.sys.process.Process
 
-/** language must be one of io.shiftleft.codepropertygraph.generated.Languages TODO: generate enums instead of Strings
+/** language must be one of io.shiftleft.codepropertygraph.generated.v2.Languages TODO: generate enums instead of Strings
   * for the languages
   */
 case class Source(code: String, language: String)

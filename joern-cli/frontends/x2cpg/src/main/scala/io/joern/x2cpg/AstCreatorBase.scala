@@ -2,10 +2,10 @@ package io.joern.x2cpg
 
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, ModifierTypes}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-import overflowdb.BatchedUpdate.DiffGraphBuilder
+import io.joern.odb2.DiffGraphBuilder
 
 abstract class AstCreatorBase(filename: String)(implicit withSchemaValidation: ValidationMode) {
   val diffGraph: DiffGraphBuilder = new DiffGraphBuilder

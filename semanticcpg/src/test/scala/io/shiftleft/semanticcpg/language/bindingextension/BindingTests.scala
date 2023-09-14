@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.language.bindingextension
 
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.v2.EdgeKinds
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.testing.MockCpg
 import org.scalatest.matchers.should.Matchers
@@ -17,10 +17,10 @@ class BindingTests extends AnyWordSpec with Matchers {
       val typeDecl = cpg.typeDecl.name("BindingTest").head
       val binding1 = NewBinding().name("<init>")
       val binding2 = NewBinding().name("boundMethod")
-      graph.addEdge(typeDecl, binding1, EdgeTypes.BINDS)
-      graph.addEdge(typeDecl, binding2, EdgeTypes.BINDS)
-      graph.addEdge(binding1, cpg.method("<init>").head, EdgeTypes.REF)
-      graph.addEdge(binding2, cpg.method("boundMethod").head, EdgeTypes.REF)
+      graph.addEdge(typeDecl, binding1, EdgeKinds.BINDS)
+      graph.addEdge(typeDecl, binding2, EdgeKinds.BINDS)
+      graph.addEdge(binding1, cpg.method("<init>").head, EdgeKinds.REF)
+      graph.addEdge(binding2, cpg.method("boundMethod").head, EdgeKinds.REF)
     }
     .cpg
 

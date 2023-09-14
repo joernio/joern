@@ -1,12 +1,11 @@
 package io.shiftleft.semanticcpg
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Languages, ModifierTypes}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
+import io.shiftleft.codepropertygraph.generated.v2.{EdgeKinds, Languages, ModifierTypes}
 import io.shiftleft.passes.CpgPass
-import io.shiftleft.semanticcpg.language._
-import overflowdb.BatchedUpdate
-import overflowdb.BatchedUpdate.DiffGraphBuilder
+import io.shiftleft.semanticcpg.language.*
+import io.joern.odb2.DiffGraphBuilder
 
 package object testing {
 
@@ -39,10 +38,10 @@ package object testing {
           val namespace      = NewNamespace().name(name)
           graph.addNode(namespaceBlock)
           graph.addNode(namespace)
-          graph.addEdge(namespaceBlock, namespace, EdgeTypes.REF)
+          graph.addEdge(namespaceBlock, namespace, EdgeKinds.REF)
           if (inFile.isDefined) {
-            val fileNode = cpg.file.name(inFile.get).head
-            graph.addEdge(namespaceBlock, fileNode, EdgeTypes.SOURCE_FILE)
+            val fileNode = cpg.file(inFile.get).head
+            graph.addEdge(namespaceBlock, fileNode, EdgeKinds.SOURCE_FILE)
           }
         }
       }
@@ -68,17 +67,17 @@ package object testing {
           graph.addNode(typeNode)
           graph.addNode(member)
           graph.addNode(modifier)
-          graph.addEdge(typeNode, typeDeclNode, EdgeTypes.REF)
-          graph.addEdge(typeDeclNode, member, EdgeTypes.AST)
-          graph.addEdge(member, modifier, EdgeTypes.AST)
+          graph.addEdge(typeNode, typeDeclNode, EdgeKinds.REF)
+          graph.addEdge(typeDeclNode, member, EdgeKinds.AST)
+          graph.addEdge(member, modifier, EdgeKinds.AST)
 
           if (inNamespace.isDefined) {
             val namespaceBlock = cpg.namespaceBlock(inNamespace.get).head
-            graph.addEdge(namespaceBlock, typeDeclNode, EdgeTypes.AST)
+            graph.addEdge(namespaceBlock, typeDeclNode, EdgeKinds.AST)
           }
           if (inFile.isDefined) {
-            val fileNode = cpg.file.name(inFile.get).head
-            graph.addEdge(typeDeclNode, fileNode, EdgeTypes.SOURCE_FILE)
+            val fileNode = cpg.file(inFile.get).head
+            graph.addEdge(typeDeclNode, fileNode, EdgeKinds.SOURCE_FILE)
           }
         }
       }
@@ -106,17 +105,17 @@ package object testing {
         graph.addNode(paramOut)
         graph.addNode(block)
         graph.addNode(modifier)
-        graph.addEdge(method, retParam, EdgeTypes.AST)
-        graph.addEdge(method, param, EdgeTypes.AST)
-        graph.addEdge(param, paramOut, EdgeTypes.PARAMETER_LINK)
-        graph.addEdge(method, block, EdgeTypes.AST)
-        graph.addEdge(param, paramType, EdgeTypes.EVAL_TYPE)
-        graph.addEdge(paramOut, paramType, EdgeTypes.EVAL_TYPE)
-        graph.addEdge(method, modifier, EdgeTypes.AST)
+        graph.addEdge(method, retParam, EdgeKinds.AST)
+        graph.addEdge(method, param, EdgeKinds.AST)
+        graph.addEdge(param, paramOut, EdgeKinds.PARAMETER_LINK)
+        graph.addEdge(method, block, EdgeKinds.AST)
+        graph.addEdge(param, paramType, EdgeKinds.EVAL_TYPE)
+        graph.addEdge(paramOut, paramType, EdgeKinds.EVAL_TYPE)
+        graph.addEdge(method, modifier, EdgeKinds.AST)
 
         if (inTypeDecl.isDefined) {
-          val typeDeclNode = cpg.typeDecl.name(inTypeDecl.get).head
-          graph.addEdge(typeDeclNode, method, EdgeTypes.AST)
+          val typeDeclNode = cpg.typeDecl(inTypeDecl.get).head
+          graph.addEdge(typeDeclNode, method, EdgeKinds.AST)
         }
       }
 
@@ -128,47 +127,47 @@ package object testing {
       withCustom { (graph, cpg) =>
         implicit val diffGraph: DiffGraphBuilder = graph
         methodTags.foreach { case (k, v) =>
-          cpg.method.name(methodName).newTagNodePair(k, v).store()(diffGraph)
+          cpg.method(methodName).newTagNodePair(k, v).store()(diffGraph)
         }
         paramTags.foreach { case (k, v) =>
-          cpg.method.name(methodName).parameter.newTagNodePair(k, v).store()(diffGraph)
+          cpg.method(methodName).parameter.newTagNodePair(k, v).store()(diffGraph)
         }
       }
 
     def withCallInMethod(methodName: String, callName: String, code: Option[String] = None): MockCpg =
       withCustom { (graph, cpg) =>
-        val methodNode = cpg.method.name(methodName).head
+        val methodNode = cpg.method(methodName).head
         val blockNode  = methodNode.block
         val callNode   = NewCall().name(callName).code(code.getOrElse(callName))
         graph.addNode(callNode)
-        graph.addEdge(blockNode, callNode, EdgeTypes.AST)
-        graph.addEdge(methodNode, callNode, EdgeTypes.CONTAINS)
+        graph.addEdge(blockNode, callNode, EdgeKinds.AST)
+        graph.addEdge(methodNode, callNode, EdgeKinds.CONTAINS)
       }
 
     def withMethodCall(calledMethod: String, callingMethod: String, code: Option[String] = None): MockCpg =
       withCustom { (graph, cpg) =>
-        val callingMethodNode = cpg.method.name(callingMethod).head
-        val calledMethodNode  = cpg.method.name(calledMethod).head
+        val callingMethodNode = cpg.method(callingMethod).head
+        val calledMethodNode  = cpg.method(calledMethod).head
         val callNode          = NewCall().name(calledMethod).code(code.getOrElse(calledMethod))
-        graph.addEdge(callNode, calledMethodNode, EdgeTypes.CALL)
-        graph.addEdge(callingMethodNode, callNode, EdgeTypes.CONTAINS)
+        graph.addEdge(callNode, calledMethodNode, EdgeKinds.CALL)
+        graph.addEdge(callingMethodNode, callNode, EdgeKinds.CONTAINS)
       }
 
     def withLocalInMethod(methodName: String, localName: String): MockCpg =
       withCustom { (graph, cpg) =>
-        val methodNode = cpg.method.name(methodName).head
+        val methodNode = cpg.method(methodName).head
         val blockNode  = methodNode.block
         val typeNode   = NewType().name("alocaltype")
         val localNode  = NewLocal().name(localName).typeFullName("alocaltype")
         graph.addNode(localNode)
         graph.addNode(typeNode)
-        graph.addEdge(blockNode, localNode, EdgeTypes.AST)
-        graph.addEdge(localNode, typeNode, EdgeTypes.EVAL_TYPE)
+        graph.addEdge(blockNode, localNode, EdgeKinds.AST)
+        graph.addEdge(localNode, typeNode, EdgeKinds.EVAL_TYPE)
       }
 
     def withLiteralArgument(callName: String, literalCode: String): MockCpg = {
       withCustom { (graph, cpg) =>
-        val callNode    = cpg.call.name(callName).head
+        val callNode    = cpg.call(callName).head
         val methodNode  = callNode.method
         val literalNode = NewLiteral().code(literalCode)
         val typeDecl = NewTypeDecl()
@@ -177,8 +176,8 @@ package object testing {
 
         graph.addNode(typeDecl)
         graph.addNode(literalNode)
-        graph.addEdge(callNode, literalNode, EdgeTypes.AST)
-        graph.addEdge(methodNode, literalNode, EdgeTypes.CONTAINS)
+        graph.addEdge(callNode, literalNode, EdgeKinds.AST)
+        graph.addEdge(methodNode, literalNode, EdgeKinds.CONTAINS)
       }
     }
 
@@ -189,13 +188,13 @@ package object testing {
       withArgument(callName, NewCall().name(callArgName).code(code).argumentIndex(index))
 
     def withArgument(callName: String, newNode: NewNode): MockCpg = withCustom { (graph, cpg) =>
-      val callNode   = cpg.call.name(callName).head
+      val callNode   = cpg.call(callName).head
       val methodNode = callNode.method
       val typeDecl   = NewTypeDecl().name("abc")
-      graph.addEdge(callNode, newNode, EdgeTypes.AST)
-      graph.addEdge(callNode, newNode, EdgeTypes.ARGUMENT)
-      graph.addEdge(methodNode, newNode, EdgeTypes.CONTAINS)
-      graph.addEdge(newNode, typeDecl, EdgeTypes.REF)
+      graph.addEdge(callNode, newNode, EdgeKinds.AST)
+      graph.addEdge(callNode, newNode, EdgeKinds.ARGUMENT)
+      graph.addEdge(methodNode, newNode, EdgeKinds.CONTAINS)
+      graph.addEdge(newNode, typeDecl, EdgeKinds.REF)
       graph.addNode(newNode)
     }
 
@@ -203,7 +202,7 @@ package object testing {
       val diffGraph = new DiffGraphBuilder
       f(diffGraph, cpg)
       class MyPass extends CpgPass(cpg) {
-        override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+        override def run(builder: DiffGraphBuilder): Unit = {
           builder.absorb(diffGraph)
         }
       }

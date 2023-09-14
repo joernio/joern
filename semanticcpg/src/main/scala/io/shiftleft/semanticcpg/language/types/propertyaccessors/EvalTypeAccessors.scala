@@ -1,7 +1,6 @@
 package io.shiftleft.semanticcpg.language.types.propertyaccessors
 
-import io.shiftleft.codepropertygraph.generated.Properties
-import io.shiftleft.codepropertygraph.generated.nodes.AstNode
+import io.shiftleft.codepropertygraph.generated.v2.nodes.AstNode
 import io.shiftleft.semanticcpg.language.*
 
 class EvalTypeAccessors[A <: AstNode](val traversal: Iterator[A]) extends AnyVal {
@@ -40,7 +39,11 @@ class EvalTypeAccessors[A <: AstNode](val traversal: Iterator[A]) extends AnyVal
       traversal.where(evalType(_).filter(value => !regexes0.exists(_.matches(value))))
     }
 
-  private def evalType(traversal: Iterator[A]): Iterator[String] =
-    traversal.flatMap(_._evalTypeOut).flatMap(_._refOut).property(Properties.FULL_NAME)
+  private def evalType(traversal: Iterator[A]): Iterator[String] = {
+//    traversal.flatMap(_._evalTypeOut).flatMap(_._refOut).property(Properties.FULL_NAME)
+  //    traversal.flatMap(_._evalTypeOut).flatMap(_._refOut).property(Properties.FULL_NAME)
+    val x = traversal.flatMap(_._evalTypeOut).flatMap(_._refOut).map(_.propertiesMap)
+    ???
+  }
 
 }
