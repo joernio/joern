@@ -5,8 +5,8 @@ import io.joern.console.workspacehandling.Project
 import io.joern.console.{ConsoleException, FrontendConfig, Reporting}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
-import overflowdb.traversal.help.Table
-import overflowdb.traversal.help.Table.AvailableWidthProvider
+import flatgraph.help.Table
+import flatgraph.help.Table.AvailableWidthProvider
 
 import java.nio.file.Path
 import scala.util.{Failure, Success, Try}
@@ -166,12 +166,13 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
   /** Provide an overview of the available CPG generators (frontends)
     */
   override def toString: String = {
-    val cols = List("name", "description", "available")
-    val rows = allFrontends.map { frontend =>
-      List(frontend.name, frontend.description, frontend.isAvailable.toString)
-    }
-    "Type `importCode.<language>` to run a specific language frontend\n" +
-      "\n" + Table(cols, rows).render
+//    val cols = List("name", "description", "available")
+//    val rows = allFrontends.map { frontend =>
+//      List(frontend.name, frontend.description, frontend.isAvailable.toString)
+//    }
+//    "Type `importCode.<language>` to run a specific language frontend\n" +
+//      "\n" + Table(cols, rows).render
+    ???
   }
 
   private def apply(generator: CpgGenerator, inputPath: String, projectName: String): Cpg = {

@@ -1,6 +1,6 @@
 package io.joern.dataflowengineoss
 
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.joern.dataflowengineoss.language.dotextension.DdgNodeDot
 import io.joern.dataflowengineoss.language.nodemethods.{ExpressionMethods, ExtendedCfgNodeMethods}
 

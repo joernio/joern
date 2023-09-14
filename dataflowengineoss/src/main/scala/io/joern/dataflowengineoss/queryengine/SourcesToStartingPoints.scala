@@ -3,6 +3,7 @@ package io.joern.dataflowengineoss.queryengine
 import io.joern.dataflowengineoss.globalFromLiteral
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.allAssignmentTypes
@@ -61,14 +62,14 @@ class SourceTravsToStartingPointsTask[NodeType](sourceTravs: IterableOnce[NodeTy
   */
 class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode]] {
 
-  private val cpg = Cpg(src.graph())
+  private val cpg = Cpg(src.graph)
 
   override def compute(): List[CfgNode] = sourceToStartingPoints(src)
 
   private def sourceToStartingPoints(src: StoredNode): List[CfgNode] = {
     src match {
       case methodReturn: MethodReturn =>
-        methodReturn.method.callIn.l
+        methodReturn.method._callIn.cast[Call].l
       case lit: Literal =>
         val uses = usages(targetsToClassIdentifierPair(literalToInitializedMembers(lit)))
         val globals = globalFromLiteral(lit).flatMap {
@@ -101,7 +102,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
     }
 
   private def fieldAndIndexAccesses(identifier: Identifier): List[CfgNode] =
-    identifier.method._identifierViaContainsOut
+    identifier.method.identifierViaContainsOut
       .nameExact(identifier.name)
       .inCall
       .collect { case c if isFieldAccess(c.name) => c }
@@ -173,7 +174,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
   }
 
   private def firstUsagesForName(name: String, m: Method): List[Expression] = {
-    val identifiers      = m._identifierViaContainsOut.l
+    val identifiers      = m.identifierViaContainsOut.l
     val identifierUsages = identifiers.nameExact(name).takeWhile(notLeftHandOfAssignment).l
     val fieldIdentifiers = m.fieldAccess.fieldIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
     val thisRefs         = Seq("this", "self") ++ m.typeDecl.name.headOption.toList

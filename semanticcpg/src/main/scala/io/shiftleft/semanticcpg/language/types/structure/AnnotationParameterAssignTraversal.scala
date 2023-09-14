@@ -10,13 +10,13 @@ class AnnotationParameterAssignTraversal(val traversal: Iterator[AnnotationParam
   /** Traverse to all annotation parameters
     */
   def parameter: Iterator[AnnotationParameter] =
-    traversal.flatMap(_._annotationParameterViaAstOut)
+    traversal.flatMap(_.annotationParameterViaAstOut)
 
   /** Traverse to all values of annotation parameters
     */
   def value: Iterator[Expression] =
     traversal
-      .flatMap(_.astOut)
+      .flatMap(_._astOut)
       .filterNot(_.isInstanceOf[AnnotationParameter])
       .cast[Expression]
 }

@@ -1,10 +1,9 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal, Local, Method}
-import io.shiftleft.proto.cpg.Cpg.DispatchTypes
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class NewConstructorInvocationTests extends JavaSrcCode2CpgFixture {
   "constructor init method call" should {
@@ -153,20 +152,20 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
       case List(method) =>
         val List(_: Local, assign: Call, init: Call) = method.astChildren.isBlock.astChildren.l: @unchecked
 
-        assign.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+        assign.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
         assign.name shouldBe Operators.assignment
         val alloc = assign.argument(2).asInstanceOf[Call]
         alloc.name shouldBe "<operator>.alloc"
         alloc.code shouldBe "new Bar(4, 2)"
-        alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+        alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
         alloc.methodFullName shouldBe "<operator>.alloc"
         alloc.typeFullName shouldBe "Bar"
         alloc.argument.size shouldBe 0
 
         init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
         init.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)"
-        init.callOut.head.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)"
-        init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+        init.methodViaCallOut.head.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)"
+        init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
         init.typeFullName shouldBe "void"
         init.signature shouldBe "void(int,int)"
         init.code shouldBe "new Bar(4, 2)"
@@ -194,20 +193,20 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
       case List(method) =>
         val List(assign: Call, init: Call) = method.astChildren.isBlock.astChildren.l: @unchecked
 
-        assign.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+        assign.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
         assign.name shouldBe Operators.assignment
         val alloc = assign.argument(2).asInstanceOf[Call]
         alloc.name shouldBe "<operator>.alloc"
         alloc.code shouldBe "new Bar(4, 2)"
-        alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+        alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
         alloc.methodFullName shouldBe "<operator>.alloc"
         alloc.typeFullName shouldBe "Bar"
         alloc.argument.size shouldBe 0
 
         init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
         init.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)"
-        init.callOut.head.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)"
-        init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+        init.methodViaCallOut.head.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)"
+        init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
         init.typeFullName shouldBe "void"
         init.signature shouldBe "void(int,int)"
         init.code shouldBe "new Bar(4, 2)"
@@ -249,16 +248,16 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
         alloc.order shouldBe 2
         alloc.argumentIndex shouldBe 2
         alloc.code shouldBe "new Bar(42)"
-        alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+        alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
         alloc.typeFullName shouldBe "Bar"
         alloc.argument.size shouldBe 0
 
         init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
         init.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
-        init.callOut.head.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
+        init.methodViaCallOut.head.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
         init.signature shouldBe "void(int)"
         init.code shouldBe "new Bar(42)"
-        init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+        init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
         init.argument.size shouldBe 2
         val List(obj: Identifier, initArg1: Literal) = init.argument.l: @unchecked
@@ -294,16 +293,16 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
         alloc.order shouldBe 2
         alloc.argumentIndex shouldBe 2
         alloc.code shouldBe "new Bar(42)"
-        alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+        alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
         alloc.typeFullName shouldBe "Bar"
         alloc.argument.size shouldBe 0
 
         init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
         init.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
-        init.callOut.head.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
+        init.methodViaCallOut.head.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
         init.signature shouldBe "void(int)"
         init.code shouldBe "new Bar(42)"
-        init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+        init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
 
         init.argument.size shouldBe 2
         val List(obj: Identifier, initArg1: Literal) = init.argument.l: @unchecked
@@ -330,7 +329,7 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
         val List(init: Call) = method.astChildren.isBlock.astChildren.l: @unchecked
         init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
         init.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
-        init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+        init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
         init.typeFullName shouldBe "void"
         init.signature shouldBe "void(int)"
 
@@ -358,7 +357,7 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
         val List(init: Call) = method.astChildren.isBlock.astChildren.l: @unchecked
         init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
         init.methodFullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
-        init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
+        init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
         init.typeFullName shouldBe "void"
         init.signature shouldBe "void(int)"
 

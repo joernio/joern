@@ -101,7 +101,7 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
 
   private def copyAstForVarDeclInit(targetAst: Ast): Ast = {
     targetAst.root match {
-      case Some(identifier: NewIdentifier) => Ast(identifier.copy)
+      case Some(identifier: NewIdentifier) => Ast(identifier.copy())
 
       case Some(fieldAccess: NewCall) if fieldAccess.name == Operators.fieldAccess =>
         val maybeIdentifier = targetAst.nodes.collectFirst { case node if node.isInstanceOf[NewIdentifier] => node }
@@ -109,8 +109,8 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
 
         (maybeIdentifier, maybeField) match {
           case (Some(identifier), Some(fieldIdentifier)) =>
-            val args = List(identifier, fieldIdentifier).map(node => Ast(node.copy))
-            callAst(fieldAccess.copy, args)
+            val args = List(identifier, fieldIdentifier).map(node => Ast(node.copy()))
+            callAst(fieldAccess.copy(), args)
 
           case _ =>
             logger.warn(s"Attempting to copy field access without required children: ${fieldAccess.code}")

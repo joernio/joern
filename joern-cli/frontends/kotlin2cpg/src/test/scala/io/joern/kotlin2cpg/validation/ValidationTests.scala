@@ -6,7 +6,6 @@ import io.shiftleft.codepropertygraph.generated.edges.Ast
 import io.shiftleft.codepropertygraph.generated.nodes.ClosureBinding
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.jIteratortoTraversal
 
 class ValidationTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with lambdas with no params and one param" should {

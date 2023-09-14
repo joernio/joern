@@ -1,5 +1,6 @@
 package io.joern.csharpsrc2cpg.astcreation
 
+import flatgraph.DiffGraphBuilder
 import io.joern.csharpsrc2cpg.TypeMap
 import io.joern.csharpsrc2cpg.datastructures.CSharpScope
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
@@ -8,7 +9,6 @@ import io.joern.x2cpg.astgen.{AstGenNodeBuilder, ParserResult}
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.NewFile
 import org.slf4j.{Logger, LoggerFactory}
-import overflowdb.BatchedUpdate.DiffGraphBuilder
 import ujson.Value
 
 import java.math.BigInteger

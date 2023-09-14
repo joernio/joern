@@ -4,7 +4,7 @@ import io.joern.jssrc2cpg.passes.AbstractPassTest
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn
+import io.shiftleft.codepropertygraph.generated.nodes.{ClosureBinding, MethodParameterIn}
 import io.shiftleft.semanticcpg.language._
 
 class MixedAstCreationPassTest extends AbstractPassTest {
@@ -44,7 +44,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       val List(localX)       = methodBlock.astChildren.isLocal.l
       val List(assignment)   = methodBlock.astChildren.isCall.l
       val List(identifierX)  = assignment.astChildren.isIdentifier.l
-      val List(localXViaRef) = identifierX.refOut.l
+      val List(localXViaRef) = identifierX._refOut.l
       localXViaRef shouldBe localX
     }
 
@@ -57,7 +57,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       val List(localX)       = methodBlock.astChildren.isLocal.l
       val List(assignment)   = methodBlock.astChildren.isCall.l
       val List(identifierX)  = assignment.astChildren.isIdentifier.l
-      val List(localXViaRef) = identifierX.refOut.l
+      val List(localXViaRef) = identifierX._refOut.l
       localXViaRef shouldBe localX
     }
 
@@ -67,7 +67,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       val List(localX)       = methodBlock.astChildren.isLocal.l
       val List(assignment)   = methodBlock.astChildren.isCall.l
       val List(identifierX)  = assignment.astChildren.isIdentifier.l
-      val List(localXViaRef) = identifierX.refOut.l
+      val List(localXViaRef) = identifierX._refOut.l
       localXViaRef shouldBe localX
     }
 
@@ -80,12 +80,12 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       val List(localX)        = methodBlock.astChildren.isLocal.l
       val List(assignment1)   = methodBlock.astChildren.isCall.order(1).l
       val List(identifierX1)  = assignment1.astChildren.isIdentifier.l
-      val List(localXViaRef1) = identifierX1.refOut.l
+      val List(localXViaRef1) = identifierX1._refOut.l
       localXViaRef1 shouldBe localX
 
       val List(assignment2)   = methodBlock.astChildren.isCall.order(2).l
       val List(identifierX2)  = assignment2.astChildren.isIdentifier.l
-      val List(localXViaRef2) = identifierX2.refOut.l
+      val List(localXViaRef2) = identifierX2._refOut.l
       localXViaRef2 shouldBe localX
     }
 
@@ -96,7 +96,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       val List(nestedBlock)  = methodBlock.astChildren.isBlock.l
       val List(assignment)   = nestedBlock.astChildren.isCall.l
       val List(identifierX)  = assignment.astChildren.isIdentifier.l
-      val List(localXViaRef) = identifierX.refOut.l
+      val List(localXViaRef) = identifierX._refOut.l
       localXViaRef shouldBe localX
     }
 
@@ -110,7 +110,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       val List(localX)       = nestedBlock.astChildren.isLocal.l
       val List(assignment)   = methodBlock.astChildren.isCall.l
       val List(identifierX)  = assignment.astChildren.isIdentifier.l
-      val List(localXViaRef) = identifierX.refOut.l
+      val List(localXViaRef) = identifierX._refOut.l
       localXViaRef shouldBe localX
     }
 
@@ -123,7 +123,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       val List(localX)       = methodBlock.astChildren.isLocal.l
       val List(assignment)   = methodBlock.astChildren.isCall.l
       val List(identifierX)  = assignment.astChildren.isIdentifier.l
-      val List(localXViaRef) = identifierX.refOut.l
+      val List(localXViaRef) = identifierX._refOut.l
       localXViaRef shouldBe localX
     }
 
@@ -137,7 +137,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       val List(localX)       = nestedBlock.astChildren.isLocal.l
       val List(assignment)   = methodBlock.astChildren.isCall.l
       val List(identifierX)  = assignment.astChildren.isIdentifier.l
-      val List(localXViaRef) = identifierX.refOut.l
+      val List(localXViaRef) = identifierX._refOut.l
       localXViaRef shouldBe localX
     }
 
@@ -151,7 +151,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       val List(nestedBlock)  = methodBlock.astChildren.isBlock.l
       val List(assignment)   = nestedBlock.astChildren.isCall.l
       val List(identifierX)  = assignment.astChildren.isIdentifier.l
-      val List(localXViaRef) = identifierX.refOut.l
+      val List(localXViaRef) = identifierX._refOut.l
       localXViaRef shouldBe localX
     }
 
@@ -170,12 +170,12 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       val List(innerLocalX)       = nestedBlock.astChildren.isLocal.l
       val List(innerAssignment)   = nestedBlock.astChildren.isCall.l
       val List(innerIdentifierX)  = innerAssignment.astChildren.isIdentifier.l
-      val List(innerLocalXViaRef) = innerIdentifierX.refOut.l
+      val List(innerLocalXViaRef) = innerIdentifierX._refOut.l
       innerLocalXViaRef shouldBe innerLocalX
 
       val List(outerAssignment)   = methodBlock.astChildren.isCall.l
       val List(outerIdentifierX)  = outerAssignment.astChildren.isIdentifier.l
-      val List(outerLocalXViaRef) = outerIdentifierX.refOut.l
+      val List(outerLocalXViaRef) = outerIdentifierX._refOut.l
       outerLocalXViaRef shouldBe outerLocalX
     }
 
@@ -232,12 +232,12 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       val List(fooBlock)       = fooMethod.astChildren.isBlock.l
       val List(fooLocalX)      = fooBlock.astChildren.isLocal.nameExact("x").l
       val List(barRef)         = fooBlock.astChildren.isCall.astChildren.isMethodRef.l
-      val List(closureBinding) = barRef.captureOut.l
+      val List(closureBinding) = barRef._captureOut.cast[ClosureBinding].l
       closureBinding.closureBindingId shouldBe Option("code.js::program:foo:bar:x")
       closureBinding.closureOriginalName shouldBe Option("x")
       closureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
 
-      closureBinding.refOut.head shouldBe fooLocalX
+      closureBinding._refOut.head shouldBe fooLocalX
 
       val List(barMethod)      = cpg.method.nameExact("bar").l
       val List(barMethodBlock) = barMethod.astChildren.isBlock.l
@@ -245,7 +245,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       barLocals.closureBindingId shouldBe Option("code.js::program:foo:bar:x")
 
       val List(identifierX) = barMethodBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("x").l
-      identifierX.refOut.head shouldBe barLocals
+      identifierX._refOut.head shouldBe barLocals
     }
 
     "have correct closure binding (two variables)" in AstFixture("""
@@ -264,17 +264,17 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       val List(fooLocalY) = fooBlock.astChildren.isLocal.nameExact("y").l
       val List(barRef)    = fooBlock.astChildren.isCall.astChildren.isMethodRef.l
 
-      val List(closureBindForY, closureBindForX) = barRef.captureOut.l
+      val List(closureBindForY, closureBindForX) = barRef._captureOut.cast[ClosureBinding].l
 
       closureBindForX.closureOriginalName shouldBe Option("x")
       closureBindForX.closureBindingId shouldBe Option("code.js::program:foo:bar:x")
       closureBindForX.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      closureBindForX.refOut.head shouldBe fooLocalX
+      closureBindForX._refOut.head shouldBe fooLocalX
 
       closureBindForY.closureOriginalName shouldBe Option("y")
       closureBindForY.closureBindingId shouldBe Option("code.js::program:foo:bar:y")
       closureBindForY.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      closureBindForY.refOut.head shouldBe fooLocalY
+      closureBindForY._refOut.head shouldBe fooLocalY
 
       val List(barMethod)                    = cpg.method.nameExact("bar").l
       val List(barMethodBlock)               = barMethod.astChildren.isBlock.l
@@ -284,13 +284,13 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       barLocalsForX.closureBindingId shouldBe Option("code.js::program:foo:bar:x")
 
       val List(identifierX) = barMethodBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("x").l
-      identifierX.refOut.head shouldBe barLocalsForX
+      identifierX._refOut.head shouldBe barLocalsForX
 
       barLocalsForY.name shouldBe "y"
       barLocalsForY.closureBindingId shouldBe Option("code.js::program:foo:bar:y")
 
       val List(identifierY) = barMethodBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("y").l
-      identifierY.refOut.head shouldBe barLocalsForY
+      identifierY._refOut.head shouldBe barLocalsForY
     }
 
     "have correct closure binding for capturing over 2 levels" in AstFixture("""
@@ -309,11 +309,11 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       val List(fooLocalX) = fooBlock.astChildren.isLocal.nameExact("x").l
       val List(barRef)    = fooBlock.astChildren.isCall.astChildren.isMethodRef.l
 
-      val List(closureBindingXInFoo) = barRef.captureOut.l
+      val List(closureBindingXInFoo) = barRef._captureOut.cast[ClosureBinding].l
       closureBindingXInFoo.closureBindingId shouldBe Option("code.js::program:foo:bar:x")
       closureBindingXInFoo.closureOriginalName shouldBe Option("x")
       closureBindingXInFoo.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      closureBindingXInFoo.refOut.head shouldBe fooLocalX
+      closureBindingXInFoo._refOut.head shouldBe fooLocalX
 
       val List(barMethod)      = cpg.method.nameExact("bar").l
       val List(barMethodBlock) = barMethod.astChildren.isBlock.l
@@ -322,14 +322,14 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       barLocalX.closureBindingId shouldBe Option("code.js::program:foo:bar:x")
 
       val List(barIdentifierX) = barMethodBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("x").l
-      barIdentifierX.refOut.head shouldBe barLocalX
+      barIdentifierX._refOut.head shouldBe barLocalX
 
       val List(bazRef)               = barMethodBlock.astChildren.isCall.astChildren.isMethodRef.l
-      val List(closureBindingXInBar) = bazRef.captureOut.l
+      val List(closureBindingXInBar) = bazRef._captureOut.cast[ClosureBinding].l
       closureBindingXInBar.closureBindingId shouldBe Option("code.js::program:foo:bar:baz:x")
       closureBindingXInBar.closureOriginalName shouldBe Option("x")
       closureBindingXInBar.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      closureBindingXInBar.refOut.head shouldBe barLocalX
+      closureBindingXInBar._refOut.head shouldBe barLocalX
 
       val List(bazMethod)      = cpg.method.nameExact("baz").l
       val List(bazMethodBlock) = bazMethod.astChildren.isBlock.l
@@ -337,7 +337,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       bazLocalX.closureBindingId shouldBe Option("code.js::program:foo:bar:baz:x")
 
       val List(bazIdentifierX) = bazMethodBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("x").l
-      bazIdentifierX.refOut.head shouldBe bazLocalX
+      bazIdentifierX._refOut.head shouldBe bazLocalX
     }
 
     "have correct closure binding for capturing over 2 levels with intermediate blocks" in AstFixture("""
@@ -359,11 +359,11 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       val List(fooBlock)             = fooMethod.astChildren.isBlock.l
       val List(fooLocalX)            = fooBlock.astChildren.isLocal.nameExact("x").l
       val List(barRef)               = fooBlock.astChildren.isCall.astChildren.isMethodRef.l
-      val List(closureBindingXInFoo) = barRef.captureOut.l
+      val List(closureBindingXInFoo) = barRef._captureOut.cast[ClosureBinding].l
       closureBindingXInFoo.closureBindingId shouldBe Option("code.js::program:foo:bar:x")
       closureBindingXInFoo.closureOriginalName shouldBe Option("x")
       closureBindingXInFoo.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      closureBindingXInFoo.refOut.head shouldBe fooLocalX
+      closureBindingXInFoo._refOut.head shouldBe fooLocalX
 
       val List(barMethod)      = cpg.method.nameExact("bar").l
       val List(barMethodBlock) = barMethod.astChildren.isBlock.l
@@ -372,15 +372,15 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       barLocalX.closureBindingId shouldBe Option("code.js::program:foo:bar:x")
 
       val List(barIdentifierX) = barMethodBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("x").l
-      barIdentifierX.refOut.head shouldBe barLocalX
+      barIdentifierX._refOut.head shouldBe barLocalX
 
       val List(barMethodInnerBlock)  = barMethodBlock.astChildren.isBlock.l
       val List(bazRef)               = barMethodInnerBlock.astChildren.isCall.astChildren.isMethodRef.l
-      val List(closureBindingXInBar) = bazRef.captureOut.l
+      val List(closureBindingXInBar) = bazRef._captureOut.cast[ClosureBinding].l
       closureBindingXInBar.closureBindingId shouldBe Option("code.js::program:foo:bar:baz:x")
       closureBindingXInBar.closureOriginalName shouldBe Option("x")
       closureBindingXInBar.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      closureBindingXInBar.refOut.head shouldBe barLocalX
+      closureBindingXInBar._refOut.head shouldBe barLocalX
 
       val List(bazMethod)      = cpg.method.nameExact("baz").l
       val List(bazMethodBlock) = bazMethod.astChildren.isBlock.l
@@ -390,7 +390,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
 
       val List(bazMethodInnerBlock) = bazMethodBlock.astChildren.isBlock.l
       val List(bazIdentifierX)      = bazMethodInnerBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("x").l
-      bazIdentifierX.refOut.head shouldBe bazLocalX
+      bazIdentifierX._refOut.head shouldBe bazLocalX
     }
 
     "have correct closure binding for capturing over 2 levels with no intermediate use" in AstFixture("""
@@ -407,11 +407,11 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       val List(fooBlock)             = fooMethod.astChildren.isBlock.l
       val List(fooLocalX)            = fooBlock.astChildren.isLocal.nameExact("x").l
       val List(barRef)               = fooBlock.astChildren.isCall.astChildren.isMethodRef.l
-      val List(closureBindingXInFoo) = barRef.captureOut.l
+      val List(closureBindingXInFoo) = barRef._captureOut.cast[ClosureBinding].l
       closureBindingXInFoo.closureBindingId shouldBe Option("code.js::program:foo:bar:x")
       closureBindingXInFoo.closureOriginalName shouldBe Option("x")
       closureBindingXInFoo.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      closureBindingXInFoo.refOut.head shouldBe fooLocalX
+      closureBindingXInFoo._refOut.head shouldBe fooLocalX
 
       val List(barMethod)      = cpg.method.nameExact("bar").l
       val List(barMethodBlock) = barMethod.astChildren.isBlock.l
@@ -420,11 +420,11 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       barLocalX.closureBindingId shouldBe Option("code.js::program:foo:bar:x")
 
       val List(bazRef)               = barMethodBlock.astChildren.isCall.astChildren.isMethodRef.l
-      val List(closureBindingXInBar) = bazRef.captureOut.l
+      val List(closureBindingXInBar) = bazRef._captureOut.cast[ClosureBinding].l
       closureBindingXInBar.closureBindingId shouldBe Option("code.js::program:foo:bar:baz:x")
       closureBindingXInBar.closureOriginalName shouldBe Option("x")
       closureBindingXInBar.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      closureBindingXInBar.refOut.head shouldBe barLocalX
+      closureBindingXInBar._refOut.head shouldBe barLocalX
 
       val List(bazMethod)      = cpg.method.nameExact("baz").l
       val List(bazMethodBlock) = bazMethod.astChildren.isBlock.l
@@ -433,7 +433,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       bazLocalX.closureBindingId shouldBe Option("code.js::program:foo:bar:baz:x")
 
       val List(bazIdentifierX) = bazMethodBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("x").l
-      bazIdentifierX.refOut.head shouldBe bazLocalX
+      bazIdentifierX._refOut.head shouldBe bazLocalX
     }
 
     "have correct closure binding for capturing the same variable into 2 different anonymous methods" in AstFixture("""
@@ -450,19 +450,19 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       val List(anon1Ref) =
         fooBlock.astChildren.isCall.astChildren.isMethodRef.methodFullNameExact("code.js::program:foo:<lambda>0").l
 
-      val List(closureBindingXAnon1) = anon1Ref.captureOut.l
+      val List(closureBindingXAnon1) = anon1Ref._captureOut.cast[ClosureBinding].l
       closureBindingXAnon1.closureBindingId shouldBe Option("code.js::program:foo:<lambda>0:x")
       closureBindingXAnon1.closureOriginalName shouldBe Option("x")
       closureBindingXAnon1.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      closureBindingXAnon1.refOut.head shouldBe fooLocalX
+      closureBindingXAnon1._refOut.head shouldBe fooLocalX
 
       val List(anon2Ref) =
         fooBlock.astChildren.isCall.astChildren.isMethodRef.methodFullNameExact("code.js::program:foo:<lambda>1").l
-      val List(closureBindingXAnon2) = anon2Ref.captureOut.l
+      val List(closureBindingXAnon2) = anon2Ref._captureOut.cast[ClosureBinding].l
       closureBindingXAnon2.closureBindingId shouldBe Option("code.js::program:foo:<lambda>1:x")
       closureBindingXAnon2.closureOriginalName shouldBe Option("x")
       closureBindingXAnon2.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      closureBindingXAnon2.refOut.head shouldBe fooLocalX
+      closureBindingXAnon2._refOut.head shouldBe fooLocalX
     }
 
     "have correct closure bindings" in AstFixture("""
@@ -477,11 +477,11 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       val List(fooBlock)       = fooMethod.astChildren.isBlock.l
       val List(fooLocalX)      = fooBlock.astChildren.isLocal.nameExact("x").l
       val List(barRef)         = fooBlock.astChildren.isCall.astChildren.isMethodRef.l
-      val List(closureBinding) = barRef.captureOut.l
+      val List(closureBinding) = barRef._captureOut.cast[ClosureBinding].l
       closureBinding.closureBindingId shouldBe Option("code.js::program:foo:bar:x")
       closureBinding.closureOriginalName shouldBe Option("x")
       closureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
-      closureBinding.refOut.head shouldBe fooLocalX
+      closureBinding._refOut.head shouldBe fooLocalX
 
       val List(barMethod)      = cpg.method.nameExact("bar").l
       val List(barMethodBlock) = barMethod.astChildren.isBlock.l
@@ -489,7 +489,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       barLocals.closureBindingId shouldBe Option("code.js::program:foo:bar:x")
 
       val List(identifierX) = barMethodBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("x").l
-      identifierX.refOut.head shouldBe barLocals
+      identifierX._refOut.head shouldBe barLocals
     }
 
     "have correct method full names for scoped anonymous functions" in AstFixture("""

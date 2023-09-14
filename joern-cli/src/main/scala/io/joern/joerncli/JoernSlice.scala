@@ -122,7 +122,7 @@ object JoernSlice {
           } else {
             config.inputPath.pathAsString
           }
-        Using.resource(CpgBasedTool.loadFromOdb(inputCpgPath)) { cpg =>
+        Using.resource(CpgBasedTool.loadFromFile(inputCpgPath)) { cpg =>
           checkAndApplyOverlays(cpg)
           // Slice the CPG
           (config match {

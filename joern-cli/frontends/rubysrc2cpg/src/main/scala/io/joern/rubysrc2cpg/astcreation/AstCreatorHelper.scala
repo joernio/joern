@@ -12,10 +12,10 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def computeClassFullName(name: String): String  = s"${scope.surroundingScopeFullName.head}.$name"
   protected def computeMethodFullName(name: String): String = s"${scope.surroundingScopeFullName.head}:$name"
 
-  override def column(node: RubyNode): Option[Integer]    = node.column
-  override def columnEnd(node: RubyNode): Option[Integer] = node.columnEnd
-  override def line(node: RubyNode): Option[Integer]      = node.line
-  override def lineEnd(node: RubyNode): Option[Integer]   = node.lineEnd
+  override def column(node: RubyNode): Option[Int]    = node.column
+  override def columnEnd(node: RubyNode): Option[Int] = node.columnEnd
+  override def line(node: RubyNode): Option[Int]      = node.line
+  override def lineEnd(node: RubyNode): Option[Int]   = node.lineEnd
   override def code(node: RubyNode): String               = shortenCode(node.text)
 
   protected def isBuiltin(x: String): Boolean      = builtinFunctions.contains(x)

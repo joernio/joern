@@ -23,11 +23,11 @@ class DependencyTests extends AbstractPassTest {
           fooImport.code shouldBe "#include \"./folder/sub/foo.h\""
           fooImport.importedEntity shouldBe Some("./folder/sub/foo.h")
           fooImport.importedAs shouldBe Some("./folder/sub/foo.h")
-          fooImport._dependencyViaImportsOut.head shouldBe fooDep
+          fooImport.dependencyViaImportsOut.head shouldBe fooDep
           ioImport.code shouldBe "#include <io.h>"
           ioImport.importedEntity shouldBe Some("io.h")
           ioImport.importedAs shouldBe Some("io.h")
-          ioImport._dependencyViaImportsOut.head shouldBe ioDep
+          ioImport.dependencyViaImportsOut.head shouldBe ioDep
         }
       }
     }

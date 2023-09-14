@@ -1,7 +1,7 @@
 package io.joern.c2cpg.passes.cfg
 
 import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language._
 
@@ -26,13 +26,13 @@ class MethodCfgLayoutTests extends CCodeToCpgSuite {
       val x = cpg.method.nameExact("method1").cfgNext.collectAll[Identifier].head
       x.name shouldBe "x"
 
-      val one = x.cfgOut.collectAll[Literal].head
+      val one = x._cfgOut.collectAll[Literal].head
       one.code shouldBe "1"
 
-      val call = one.cfgOut.collectAll[Call].head
+      val call = one._cfgOut.collectAll[Call].head
       call.name shouldBe Operators.assignment
 
-      val ret = call.cfgOut.collectAll[MethodReturn].head
+      val ret = call._cfgOut.collectAll[MethodReturn].head
       ret.code shouldBe "RET"
     }
 
@@ -46,13 +46,13 @@ class MethodCfgLayoutTests extends CCodeToCpgSuite {
       val z = y.cfgNext.collectAll[Identifier].head
       z.name shouldBe "z"
 
-      val call1 = z.cfgOut.collectAll[Call].head
+      val call1 = z._cfgOut.collectAll[Call].head
       call1.name shouldBe Operators.addition
 
-      val call2 = call1.cfgOut.collectAll[Call].head
+      val call2 = call1._cfgOut.collectAll[Call].head
       call2.name shouldBe Operators.assignment
 
-      val ret = call2.cfgOut.collectAll[MethodReturn].head
+      val ret = call2._cfgOut.collectAll[MethodReturn].head
       ret.code shouldBe "RET"
     }
   }

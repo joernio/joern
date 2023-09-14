@@ -6,8 +6,8 @@ import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.model.GoModHelper
 import io.joern.gosrc2cpg.parser.GoAstJsonParser
 import io.joern.x2cpg.SourceFiles
-import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
+import io.shiftleft.codepropertygraph.generated.Cpg
+import flatgraph.DiffGraphBuilder
 
 import java.nio.file.Paths
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -37,9 +37,7 @@ class MethodAndTypeCacheBuilderPass(
     val (astCreators, diffGraphs)                                = results.unzip
     cpgOpt.map { cpg =>
       diffGraphs.foreach { diffGraph =>
-        overflowdb.BatchedUpdate
-          .applyDiff(cpg.graph, diffGraph, null, null)
-          .transitiveModifications()
+        flatgraph.DiffGraphApplier.applyDiff(cpg.graph, diffGraph)
       }
     }
     astCreators

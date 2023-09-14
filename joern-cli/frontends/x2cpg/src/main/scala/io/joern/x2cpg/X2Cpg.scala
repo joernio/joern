@@ -4,14 +4,13 @@ import better.files.File
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.X2Cpg.{applyDefaultOverlays, withErrorsToConsole}
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
 import org.slf4j.LoggerFactory
-import overflowdb.Config
 import scopt.OParser
 
 import java.io.PrintWriter
-import java.nio.file.{Files, Paths}
+import java.nio.file.{Files, Path, Paths}
 import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
 
@@ -137,7 +136,7 @@ trait X2CpgFrontend[T <: X2CpgConfig[_]] {
     withErrorsToConsole(config) { _ =>
       createCpg(config) match {
         case Success(cpg) =>
-          cpg.close()
+          cpg.close() // persists to disk
           Success(cpg)
         case Failure(exception) =>
           Failure(exception)
@@ -253,19 +252,16 @@ object X2Cpg {
   /** Create an empty CPG, backed by the file at `optionalOutputPath` or in-memory if `optionalOutputPath` is empty.
     */
   def newEmptyCpg(optionalOutputPath: Option[String] = None): Cpg = {
-    val odbConfig = optionalOutputPath
-      .map { outputPath =>
-        val outFile = File(outputPath)
+    optionalOutputPath match {
+      case Some(outputPath) =>
+        lazy val outFile = File(outputPath)
         if (outputPath != "" && outFile.exists) {
           logger.info("Output file exists, removing: " + outputPath)
           outFile.delete()
         }
-        Config.withDefaults.withStorageLocation(outputPath)
-      }
-      .getOrElse {
-        Config.withDefaults()
-      }
-    Cpg.withConfig(odbConfig)
+        Cpg.withStorage(outFile.path)
+      case None => Cpg.empty
+    }
   }
 
   /** Apply function `applyPasses` to a newly created CPG. The CPG is wrapped in a `Try` and returned. On failure, the
@@ -280,6 +276,8 @@ object X2Cpg {
       } match {
         case Success(_) => cpg
         case Failure(exception) =>
+          // TODO discuss with Bernhard, implement AutoClosable, Config etc.
+          // TODO replace with scala.util.Using
           cpg.close()
           throw exception
       }

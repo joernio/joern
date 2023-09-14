@@ -6,8 +6,8 @@ import io.joern.pythonparser.ast
 import io.joern.x2cpg.{AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.{NewNode, NewTypeDecl}
+import flatgraph.DiffGraphBuilder
 import org.slf4j.LoggerFactory
-import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.mutable
 import PythonAstVisitor.logger
@@ -29,7 +29,7 @@ class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode
 ) extends AstCreatorBase(relFileName)
     with PythonAstVisitorHelpers {
 
-  private val diffGraph     = new DiffGraphBuilder()
+  private val diffGraph     = Cpg.newDiffGraphBuilder
   protected val nodeBuilder = new NodeBuilder(diffGraph)
   protected val edgeBuilder = new EdgeBuilder(diffGraph)
 

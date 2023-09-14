@@ -1,9 +1,8 @@
 package io.shiftleft.semanticcpg.language
 
-import io.shiftleft.codepropertygraph.generated.nodes.NewNode
-import overflowdb.Node
+import io.shiftleft.codepropertygraph.generated.nodes.{AbstractNode, NewNode, StoredNode}
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 /** Typeclass for (pretty) printing an object
   */
@@ -11,6 +10,20 @@ trait Show[A] {
   def apply(a: A): String
 }
 
+//object Show {
+//  def default[A]: Show[A] = Default.asInstanceOf[Show[A]]
+//
+//  private val Default = new Show[Any] {
+//    override def apply(a: Any): String = a match {
+//      case node: AbstractNode =>
+//      s"${node.label}: ${node.propertiesMap}"
+//
+//      case other => other.toString
+//    }
+//
+//  }
+//
+//}
 object Show {
   def default[A]: Show[A] = Default.asInstanceOf[Show[A]]
 
@@ -18,20 +31,20 @@ object Show {
     override def apply(a: Any): String = a match {
       case node: NewNode =>
         val label      = node.label
-        val properties = propsToString(node.properties.toList)
+        val properties = propsToString(node.propertiesMap.asScala.toMap)
         s"($label): $properties"
 
-      case node: Node =>
+      case node: StoredNode =>
         val label      = node.label
         val id         = node.id().toString
-        val properties = propsToString(node.propertiesMap.asScala.toList)
+        val properties = propsToString(node.propertiesMap.asScala.toMap)
         s"($label,$id): $properties"
 
       case other => other.toString
     }
 
-    private def propsToString(keyValues: List[(String, Any)]): String = {
-      keyValues
+    private def propsToString(properties: Map[String, Any]): String = {
+      properties
         .filter(_._2.toString.nonEmpty)
         .sortBy(_._1)
         .map { case (key, value) => s"$key: $value" }

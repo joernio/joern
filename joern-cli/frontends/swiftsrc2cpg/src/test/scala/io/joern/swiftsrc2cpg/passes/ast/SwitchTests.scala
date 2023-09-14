@@ -16,7 +16,7 @@ class SwitchTests extends AbstractPassTest {
       switchExpr.order shouldBe 1
       switchExpr.code shouldBe "x"
       val List(switchBlock) = switchStmt.astChildren.isBlock.l
-      switchBlock._jumpTargetViaAstOut shouldBe empty
+      switchBlock.jumpTargetViaAstOut shouldBe empty
     }
 
     "testSwitch10" in AstFixture("""
@@ -48,7 +48,7 @@ class SwitchTests extends AbstractPassTest {
       switchExpr.order shouldBe 1
       switchExpr.code shouldBe "x"
       val List(switchBlock) = switchStmt.astChildren.isBlock.l
-      val List(caseLabel1)  = switchBlock._jumpTargetViaAstOut.codeExact("case 0:").l
+      val List(caseLabel1)  = switchBlock.jumpTargetViaAstOut.codeExact("case 0:").l
       caseLabel1.order shouldBe 1
 
       val List(caseExpr1) = switchBlock.astChildren.isLiteral.codeExact("0").l
@@ -59,7 +59,7 @@ class SwitchTests extends AbstractPassTest {
 
       switchBlock.astChildren.isControlStructure.order(4).codeExact("break").size shouldBe 1
 
-      val List(caseLabel2) = switchBlock._jumpTargetViaAstOut.codeExact("case 1, 2, 3:").l
+      val List(caseLabel2) = switchBlock.jumpTargetViaAstOut.codeExact("case 1, 2, 3:").l
       caseLabel2.order shouldBe 5
 
       val List(caseExpr21) = switchBlock.astChildren.isLiteral.codeExact("1").l
@@ -92,7 +92,7 @@ class SwitchTests extends AbstractPassTest {
       switchExpr.order shouldBe 1
       switchExpr.code shouldBe "x"
       val List(switchBlock) = switchStmt.astChildren.isBlock.l
-      val List(caseLabel1)  = switchBlock._jumpTargetViaAstOut.codeExact("case 0:").l
+      val List(caseLabel1)  = switchBlock.jumpTargetViaAstOut.codeExact("case 0:").l
       caseLabel1.order shouldBe 1
 
       val List(caseExpr1) = switchBlock.astChildren.isLiteral.codeExact("0").l
@@ -100,7 +100,7 @@ class SwitchTests extends AbstractPassTest {
 
       switchBlock.astChildren.isControlStructure.order(3).codeExact("break").size shouldBe 1
 
-      val List(caseLabel2) = switchBlock._jumpTargetViaAstOut.codeExact("case 1:").l
+      val List(caseLabel2) = switchBlock.jumpTargetViaAstOut.codeExact("case 1:").l
       caseLabel2.order shouldBe 4
 
       val List(caseExpr21) = switchBlock.astChildren.isLiteral.codeExact("1").l
@@ -124,7 +124,7 @@ class SwitchTests extends AbstractPassTest {
       switchExpr.order shouldBe 1
       switchExpr.code shouldBe "x"
       val List(switchBlock) = switchStmt.astChildren.isBlock.l
-      val List(caseLabel1)  = switchBlock._jumpTargetViaAstOut.codeExact("case 0:").l
+      val List(caseLabel1)  = switchBlock.jumpTargetViaAstOut.codeExact("case 0:").l
       caseLabel1.order shouldBe 1
 
       val List(caseExpr1) = switchBlock.astChildren.isLiteral.codeExact("0").l
@@ -132,7 +132,7 @@ class SwitchTests extends AbstractPassTest {
 
       switchBlock.astChildren.isControlStructure.order(3).codeExact("break").size shouldBe 1
 
-      val List(caseLabel2) = switchBlock._jumpTargetViaAstOut.codeExact("default:").l
+      val List(caseLabel2) = switchBlock.jumpTargetViaAstOut.codeExact("default:").l
       caseLabel2.order shouldBe 4
 
       val List(stmtExpr2) = switchBlock.astChildren.isCall.codeExact("x = 0").l
@@ -156,7 +156,7 @@ class SwitchTests extends AbstractPassTest {
       switchExpr.order shouldBe 1
       switchExpr.code shouldBe "x"
       val List(switchBlock) = switchStmt.astChildren.isBlock.l
-      val List(caseLabel1)  = switchBlock._jumpTargetViaAstOut.codeExact("case 0:").l
+      val List(caseLabel1)  = switchBlock.jumpTargetViaAstOut.codeExact("case 0:").l
       caseLabel1.order shouldBe 1
 
       val List(caseExpr1) = switchBlock.astChildren.isLiteral.codeExact("0").l
@@ -168,7 +168,7 @@ class SwitchTests extends AbstractPassTest {
         .codeExact("fallthrough")
         .size shouldBe 1
 
-      val List(caseLabel2) = switchBlock._jumpTargetViaAstOut.codeExact("case 1:").l
+      val List(caseLabel2) = switchBlock.jumpTargetViaAstOut.codeExact("case 1:").l
       caseLabel2.order shouldBe 4
 
       val List(caseExpr2) = switchBlock.astChildren.isLiteral.codeExact("1").l
@@ -180,7 +180,7 @@ class SwitchTests extends AbstractPassTest {
         .codeExact("fallthrough")
         .size shouldBe 1
 
-      val List(caseLabel3) = switchBlock._jumpTargetViaAstOut.codeExact("default:").l
+      val List(caseLabel3) = switchBlock.jumpTargetViaAstOut.codeExact("default:").l
       caseLabel3.order shouldBe 7
 
       switchBlock.astChildren.isControlStructure

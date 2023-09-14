@@ -163,7 +163,7 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       val List(program)         = cpg.method.nameExact(":program").l
       val List(programBlock)    = program.astChildren.isBlock.l
       val List(assignmentToTmp) = programBlock.astChildren.isCall.l
-      val List(rhs)             = assignmentToTmp._typeRefViaAstOut.l
+      val List(rhs)             = assignmentToTmp.typeRefViaAstOut.l
       rhs.typeFullName shouldBe "code.js::program:ClassA"
     }
 

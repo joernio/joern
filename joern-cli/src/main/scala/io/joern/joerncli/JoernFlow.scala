@@ -28,7 +28,7 @@ object JoernFlow {
       }
 
       debugOut("Loading graph... ")
-      val cpg = CpgBasedTool.loadFromOdb(config.cpgFileName)
+      val cpg = CpgBasedTool.loadFromFile(config.cpgFileName)
       debugOut("[DONE]\n")
 
       implicit val resolver: ICallResolver = NoResolve
