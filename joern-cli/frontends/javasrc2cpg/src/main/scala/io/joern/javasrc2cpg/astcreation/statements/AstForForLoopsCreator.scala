@@ -81,6 +81,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
   def astForForEach(stmt: ForEachStmt): Seq[Ast] = {
     scope.pushBlockScope()
 
+    // TODO: Does the type need to be registered here?
     val ast = expressionReturnTypeFullName(stmt.getIterable) match {
       case Some(typeFullName) if typeFullName.endsWith("[]") =>
         astsForNativeForEach(stmt, Some(typeFullName))
@@ -89,7 +90,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
         astForIterableForEach(stmt, maybeType)
     }
 
-    scope.popScope()
+    scope.popBlockScope()
     ast
   }
 
@@ -237,7 +238,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
         .typeFullName(typeFullName)
         .code(idxName)
         .lineNumber(lineNo)
-    scope.addLocal(idxLocal)
+    scope.enclosingBlock.get.addLocal(idxLocal)
     idxLocal
   }
 
@@ -331,7 +332,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
           .code(variable.getNameAsString)
           .typeFullName(typeFullName)
 
-        scope.addLocal(localNode)
+        scope.enclosingBlock.get.addLocal(localNode)
         localNode
 
       case None =>

@@ -56,6 +56,26 @@ class NewConstructorInvocationTests extends JavaSrcCode2CpgFixture {
       }
     }
   }
+
+  "an object creation expression as an argument to an unresolved call should still be created correctly" in {
+    val cpg = code("""
+        |class Foo {
+        |  public Foo(int x) {}
+        |
+        |  void foo() {
+        |    sink(new Foo(42));
+        |  }
+        |}
+        |""".stripMargin)
+
+    inside(cpg.call.name("sink").argument.l) { case List(_: Identifier, initBlock: Block) =>
+      inside(initBlock.ast.collectAll[Call].nameExact("<init>").l) { case List(initCall) =>
+        inside(initCall.argument.l) { case List(_: Identifier, givenArg: Literal) =>
+          givenArg.code shouldBe "42"
+        }
+      }
+    }
+  }
 }
 
 class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {

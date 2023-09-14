@@ -1,13 +1,12 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, Literal, Member}
 import io.shiftleft.semanticcpg.language._
-import org.scalatest.Ignore
 
 class NewMemberTests extends JavaSrcCode2CpgFixture {
-  "members with anonymous classes should not result in subtrees to the member node" in {
+  "members with anonymous classes" should {
     val cpg = code("""
         |class Foo {
         |  Foo x = new Foo() {
@@ -17,8 +16,21 @@ class NewMemberTests extends JavaSrcCode2CpgFixture {
         |
         |  void foo() {}
         |}""".stripMargin)
-    cpg.member.size shouldBe 1
-    cpg.member.name("x").astChildren.size shouldBe 0
+
+    "not result in subtrees to the member node" in {
+      def typeDecl = cpg.typeDecl.nameExact("Foo")
+      typeDecl.size shouldBe 1
+
+      typeDecl.member.size shouldBe 1
+      typeDecl.member.name("x").astChildren.size shouldBe 0
+    }
+
+    "contain a class declaration for the anonymous class" in {
+      inside(cpg.typeDecl.nameExact("Foo$0").l) { case List(anonDecl) =>
+        anonDecl.fullName shouldBe "Foo.x.Foo$0"
+        anonDecl.method.name.toSet shouldBe Set("<init>", "foo")
+      }
+    }
   }
 
   "member with generic class" should {
@@ -87,7 +99,7 @@ class NewMemberTests extends JavaSrcCode2CpgFixture {
     }
     "be added to the default constructor in classes with no constructor" in {
       val cpg = code("""
-			 |class Foo {
+             |class Foo {
              |    int x = 1;
              |}""".stripMargin)
 
