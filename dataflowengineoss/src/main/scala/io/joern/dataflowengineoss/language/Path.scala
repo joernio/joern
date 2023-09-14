@@ -3,11 +3,11 @@ package io.joern.dataflowengineoss.language
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, Member, MethodParameterIn}
 import io.shiftleft.semanticcpg
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.traversal.help.Table
-import overflowdb.traversal.help.Table.AvailableWidthProvider
+import flatgraph.help.Table
+import flatgraph.help.Table.AvailableWidthProvider
 
 case class Path(elements: List[AstNode]) {
-  def resultPairs(): List[(String, Option[Integer])] = {
+  def resultPairs(): List[(String, Option[Int])] = {
     val pairs = elements.map {
       case point: MethodParameterIn =>
         val method      = point.method

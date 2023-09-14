@@ -13,6 +13,6 @@ class CallTraversal(val traversal: Iterator[Call]) extends AnyVal {
     traversal.flatMap(callResolver.getCalledMethodsAsTraversal)
 
   def referencedImports: Iterator[Import] =
-    traversal.flatMap(_._importViaIsCallForImportOut)
+    traversal.flatMap(_.importViaIsCallForImportOut)
 
 }

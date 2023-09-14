@@ -8,7 +8,7 @@ import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders.newBindingNode
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes, Operators, PropertyNames}
 import ujson.Value
 
 import scala.util.Try
@@ -25,7 +25,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     registerType(aliasFullName)
 
     val astParentType     = methodAstParentStack.head.label
-    val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
+    val astParentFullName = methodAstParentStack.head.propertiesMap.get(PropertyNames.FULL_NAME).toString
 
     val aliasTypeDeclNode =
       typeDeclNode(alias, aliasName, aliasFullName, parserResult.filename, alias.code, astParentType, astParentFullName)
@@ -221,7 +221,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     registerType(typeFullName)
 
     val astParentType     = methodAstParentStack.head.label
-    val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
+    val astParentFullName = methodAstParentStack.head.propertiesMap.get(PropertyNames.FULL_NAME).toString
 
     val typeDeclNode_ = typeDeclNode(
       tsEnum,
@@ -303,7 +303,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     registerType(typeFullName)
 
     val astParentType     = methodAstParentStack.head.label
-    val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
+    val astParentFullName = methodAstParentStack.head.propertiesMap.get(PropertyNames.FULL_NAME).toString
 
     val superClass = Try(createBabelNodeInfo(clazz.json("superClass")).code).toOption.toSeq
     val implements = Try(clazz.json("implements").arr.map(createBabelNodeInfo(_).code)).toOption.toSeq.flatten
@@ -458,7 +458,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     registerType(typeFullName)
 
     val astParentType     = methodAstParentStack.head.label
-    val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
+    val astParentFullName = methodAstParentStack.head.propertiesMap.get(PropertyNames.FULL_NAME).toString
 
     val extendz = Try(tsInterface.json("extends").arr.map(createBabelNodeInfo(_).code)).toOption.toSeq.flatten
 

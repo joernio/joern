@@ -1,9 +1,8 @@
 package io.joern.x2cpg.testfixtures
 
 import io.joern.x2cpg.X2CpgConfig
-import io.shiftleft.codepropertygraph.Cpg
-import overflowdb.Graph
-
+import flatgraph.Graph
+import io.shiftleft.codepropertygraph.generated.{Cpg, NodeTypes}
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths}
 import java.util.Comparator
@@ -13,8 +12,9 @@ import scala.collection.mutable
 // Lazily populated test CPG which is created upon first access to the underlying graph.
 // The trait LanguageFrontend is mixed in and not property/field of this class in order
 // to allow the configuration of language frontend specific properties on the CPG object.
-abstract class TestCpg extends Cpg() with LanguageFrontend {
-  private var _graph                = Option.empty[Graph]
+// TODO MP cleanup: rename to TestLanguageFrontend or something?
+abstract class TestCpg extends Cpg(Cpg.empty.graph) with LanguageFrontend {
+  private var _graph0               = Option.empty[Graph]
   private val codeFileNamePairs     = mutable.ArrayBuffer.empty[(String, Path)]
   private var fileNameCounter       = 0
   protected var _withPostProcessing = false
@@ -52,7 +52,7 @@ abstract class TestCpg extends Cpg() with LanguageFrontend {
   }
 
   private def checkGraphEmpty(): Unit = {
-    if (_graph.isDefined) {
+    if (_graph0.isDefined) {
       throw new RuntimeException("Modifying test data is not allowed after accessing graph.")
     }
   }
@@ -81,20 +81,20 @@ abstract class TestCpg extends Cpg() with LanguageFrontend {
   }
 
   override def graph: Graph = {
-    if (_graph.isEmpty) {
+    if (_graph0.isEmpty) {
       val codeDir = codeToFileSystem()
       try {
-        _graph = Option(execute(codeDir.toFile).graph)
+        _graph0 = Option(execute(codeDir.toFile).graph)
         applyPasses()
         if (_withPostProcessing) applyPostProcessingPasses()
       } finally {
         deleteDir(codeDir)
       }
     }
-    _graph.get
+    _graph0.get
   }
 
   override def close(): Unit = {
-    _graph.foreach(_.close())
+    _graph0.foreach(_.close())
   }
 }

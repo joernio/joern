@@ -1,17 +1,15 @@
 package io.shiftleft.semanticcpg.language
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.Cpg.docSearchPackages
+import io.shiftleft.codepropertygraph.generated.{NodeTypes, PropertyKeys}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{NodeTypes, Properties}
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.testing.MockCpg
+import flatgraph.help.Table.{AvailableWidthProvider, ConstantWidth}
 import org.json4s.*
 import org.json4s.native.JsonMethods.parse
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import overflowdb.traversal.help.Table.{AvailableWidthProvider, ConstantWidth}
-
-import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 class StepsTest extends AnyWordSpec with Matchers {
 

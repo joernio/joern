@@ -2,15 +2,16 @@ name                     := "joern"
 ThisBuild / organization := "io.joern"
 ThisBuild / scalaVersion := "3.3.1"
 
-val cpgVersion = "1.6.6"
+val cpgVersion = "1.6.5+8-cdc7060b"
 
+// TODO uncomment
 lazy val joerncli          = Projects.joerncli
-lazy val querydb           = Projects.querydb
+// lazy val querydb           = Projects.querydb
 lazy val console           = Projects.console
 lazy val dataflowengineoss = Projects.dataflowengineoss
 lazy val macros            = Projects.macros
 lazy val semanticcpg       = Projects.semanticcpg
-lazy val benchmarks        = Projects.benchmarks
+// lazy val benchmarks        = Projects.benchmarks
 lazy val c2cpg             = Projects.c2cpg
 lazy val ghidra2cpg        = Projects.ghidra2cpg
 lazy val x2cpg             = Projects.x2cpg
@@ -25,9 +26,10 @@ lazy val gosrc2cpg         = Projects.gosrc2cpg
 lazy val swiftsrc2cpg      = Projects.swiftsrc2cpg
 lazy val csharpsrc2cpg     = Projects.csharpsrc2cpg
 
+// TODO uncomment
 lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   joerncli,
-  querydb,
+//   querydb,
   console,
   dataflowengineoss,
   macros,
@@ -71,17 +73,18 @@ ThisBuild / scalacOptions ++= Seq(
   "11"
 )
 
-lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")
-createDistribution := {
-  val distributionFile = file("target/joern-cli.zip")
-  val zip              = (joerncli / Universal / packageBin).value
+// TODO uncomment
+// lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")
+// createDistribution := {
+//   val distributionFile = file("target/joern-cli.zip")
+//   val zip              = (joerncli / Universal / packageBin).value
 
-  IO.copyFile(zip, distributionFile)
-  val querydbDistribution = (querydb / createDistribution).value
+//   IO.copyFile(zip, distributionFile)
+//   val querydbDistribution = (querydb / createDistribution).value
 
-  println(s"created distribution - resulting files: $distributionFile")
-  distributionFile
-}
+//   println(s"created distribution - resulting files: $distributionFile")
+//   distributionFile
+// }
 
 ThisBuild / resolvers ++= Seq(
   Resolver.mavenLocal,

@@ -1,8 +1,8 @@
 package io.joern.x2cpg.passes.callgraph
 
 import io.joern.x2cpg.utils.LinkingUtil
-import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.*
+import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.passes.CpgPass
 import overflowdb.traversal.*
 
@@ -23,6 +23,7 @@ class MethodRefLinker(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {
       edgeType = EdgeTypes.REF,
       dstNodeMap = methodFullNameToNode(cpg, _),
       dstFullNameKey = PropertyNames.METHOD_FULL_NAME,
+      dstDefaultPropertyValue = Method.PropertyDefaults.FullName,
       dstGraph,
       None
     )

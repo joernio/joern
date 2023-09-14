@@ -5,7 +5,7 @@ import io.joern.pythonparser.ast
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.utils.NodeBuilders
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, nodes}
-import overflowdb.BatchedUpdate.DiffGraphBuilder
+import flatgraph.DiffGraphBuilder
 
 class NodeBuilder(diffGraph: DiffGraphBuilder) {
 

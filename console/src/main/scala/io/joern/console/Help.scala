@@ -1,8 +1,8 @@
 package io.joern.console
 
-import overflowdb.traversal.help.DocFinder.*
-import overflowdb.traversal.help.Table.AvailableWidthProvider
-import overflowdb.traversal.help.{DocFinder, Table}
+import flatgraph.help.DocFinder.*
+import flatgraph.help.Table.AvailableWidthProvider
+import flatgraph.help.{DocFinder, Table}
 
 object Help {
 
@@ -15,19 +15,19 @@ object Help {
       }
       .toList ++ List(runRow)
 
-    val header = formatNoQuotes("""
-      |
-      |Welcome to the interactive help system. Below you find
-      |a table of all available top-level commands. To get
-      |more detailed help on a specific command, just type
-      |
-      |`help.<command>`.
-      |
-      |Try `help.importCode` to begin with.
-      |
-      |
-      |""".stripMargin)
-    header + "\n" + Table(columnNames, rows.sortBy(_.head)).render
+   val header = formatNoQuotes("""
+     |
+     |Welcome to the interactive help system. Below you find
+     |a table of all available top-level commands. To get
+     |more detailed help on a specific command, just type
+     |
+     |`help.<command>`.
+     |
+     |Try `help.importCode` to begin with.
+     |
+     |
+     |""".stripMargin)
+   header + "\n" + Table(columnNames, rows.sortBy(_.head)).render
   }
 
   def format(text: String): String = {
@@ -53,24 +53,24 @@ object Help {
         |""".stripMargin)
 
   def codeForHelpCommand(clazz: Class[_]): String = {
-    val membersCode = DocFinder
-      .findDocumentedMethodsOf(clazz)
-      .map { case StepDoc(_, funcName, doc) =>
-        s"    val $funcName: String = ${Help.format(doc.longInfo)}"
-      }
-      .mkString("\n")
+   val membersCode = DocFinder
+     .findDocumentedMethodsOf(clazz)
+     .map { case StepDoc(_, funcName, doc) =>
+       s"    val $funcName: String = ${Help.format(doc.longInfo)}"
+     }
+     .mkString("\n")
 
-    val overview = Help.overview(clazz)
-    s"""
-       | class Helper() {
-       |   def run: String = Help.runLongHelp
-       |   override def toString: String = \"\"\"$overview\"\"\"
-       |
-       |  $membersCode
-       | }
-       |
-       | val help = new Helper
-       |""".stripMargin
+   val overview = Help.overview(clazz)
+   s"""
+      | class Helper() {
+      |   def run: String = Help.runLongHelp
+      |   override def toString: String = \"\"\"$overview\"\"\"
+      |
+      |  $membersCode
+      | }
+      |
+      | val help = new Helper
+      |""".stripMargin
   }
 
 }

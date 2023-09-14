@@ -1,7 +1,6 @@
 package io.joern.x2cpg.layers
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}
 import io.joern.x2cpg.passes.base._
@@ -32,7 +31,6 @@ class Base extends LayerCreator {
 
   override def create(context: LayerCreatorContext, storeUndoInfo: Boolean): Unit = {
     val cpg = context.cpg
-    cpg.graph.indexManager.createNodePropertyIndex(PropertyNames.FULL_NAME)
     Base.passes(cpg).zipWithIndex.foreach { case (pass, index) =>
       runPass(pass, context, storeUndoInfo, index)
     }

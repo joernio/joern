@@ -1,20 +1,19 @@
 package io.joern.x2cpg.utils
 
 import io.joern.x2cpg.passes.frontend.Dereference
-import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{Properties, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{Cpg, Properties, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.nodes.NamespaceBlock
+import io.shiftleft.codepropertygraph.generated.nodes.Type
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.{Logger, LoggerFactory}
-import overflowdb.traversal.*
-import overflowdb.traversal.ChainedImplicitsTemp.*
-import overflowdb.{Node, NodeDb, NodeRef, PropertyKey}
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 
 trait LinkingUtil {
 
-  import overflowdb.BatchedUpdate.DiffGraphBuilder
+  import flatgraph.DiffGraphBuilder
   private val MAX_BATCH_SIZE = 100
 
   val logger: Logger = LoggerFactory.getLogger(classOf[LinkingUtil])
@@ -31,8 +30,8 @@ trait LinkingUtil {
   def namespaceBlockFullNameToNode(cpg: Cpg, x: String): Option[NamespaceBlock] =
     nodesWithFullName(cpg, x).collectFirst { case x: NamespaceBlock => x }
 
-  def nodesWithFullName(cpg: Cpg, x: String): mutable.Seq[NodeRef[_ <: NodeDb]] =
-    cpg.graph.indexManager.lookup(PropertyNames.FULL_NAME, x).asScala
+  def nodesWithFullName(cpg: Cpg, x: String): Iterator[StoredNode] =
+    cpg.graph.nodesWithProperty(propertyName = PropertyNames.FULL_NAME, value = x).cast[StoredNode]
 
   protected def getBatchSize(totalItems: Int): Int = {
     val batchSize =
@@ -53,6 +52,7 @@ trait LinkingUtil {
     edgeType: String,
     dstNodeMap: String => Option[StoredNode],
     dstFullNameKey: String,
+    dstDefaultPropertyValue: Any,
     dstGraph: DiffGraphBuilder,
     dstNotExistsHandler: Option[(StoredNode, String) => Unit]
   ): Unit = {
@@ -62,14 +62,13 @@ trait LinkingUtil {
       // If the source node does not have any outgoing edges of this type
       // This check is just required for backward compatibility
       if (srcNode.outE(edgeType).isEmpty) {
-        val key = new PropertyKey[String](dstFullNameKey)
         srcNode
-          .propertyOption(key)
+          .propertyOption[String](dstFullNameKey)
           .filter { dstFullName =>
             val dereferenceDstFullName = dereference.dereferenceTypeFullName(dstFullName)
-            srcNode.propertyDefaultValue(dstFullNameKey) != dereferenceDstFullName
+            dstDefaultPropertyValue != dereferenceDstFullName
           }
-          .ifPresent { dstFullName =>
+          .map { dstFullName =>
             // for `UNKNOWN` this is not always set, so we're using an Option here
             val srcStoredNode          = srcNode.asInstanceOf[StoredNode]
             val dereferenceDstFullName = dereference.dereferenceTypeFullName(dstFullName)
@@ -85,7 +84,7 @@ trait LinkingUtil {
             }
           }
       } else {
-        srcNode.out(edgeType).property(Properties.FULL_NAME).nextOption() match {
+        srcNode.out(edgeType).property[String](PropertyNames.FULL_NAME).nextOption() match {
           case Some(dstFullName) =>
             dstGraph.setNodeProperty(
               srcNode.asInstanceOf[StoredNode],
@@ -117,7 +116,7 @@ trait LinkingUtil {
   ): Unit = {
     var loggedDeprecationWarning = false
     val dereference              = Dereference(cpg)
-    cpg.graph.nodes(srcLabels: _*).asScala.cast[SRC_NODE_TYPE].foreach { srcNode =>
+    cpg.graph.nodes(srcLabels: _*).cast[SRC_NODE_TYPE].foreach { srcNode =>
       if (!srcNode.outE(edgeType).hasNext) {
         getDstFullNames(srcNode).foreach { dstFullName =>
           val dereferenceDstFullName = dereference.dereferenceTypeFullName(dstFullName)
@@ -131,7 +130,7 @@ trait LinkingUtil {
           }
         }
       } else {
-        val dstFullNames = srcNode.out(edgeType).property(Properties.FULL_NAME).l
+        val dstFullNames = srcNode.out(edgeType).property[String](PropertyNames.FULL_NAME).l
         dstGraph.setNodeProperty(srcNode, dstFullNameKey, dstFullNames.map(dereference.dereferenceTypeFullName))
         if (!loggedDeprecationWarning) {
           logger.info(

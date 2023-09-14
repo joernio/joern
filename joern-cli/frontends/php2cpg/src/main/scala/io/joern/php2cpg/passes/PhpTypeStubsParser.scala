@@ -11,8 +11,6 @@ import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import org.slf4j.{Logger, LoggerFactory}
-import overflowdb.BatchedUpdate
-import scopt.OParser
 
 import scala.io.Source
 import java.io.{File => JFile}
@@ -49,7 +47,7 @@ class PhpTypeStubsParserPass(cpg: Cpg, config: XTypeStubsParserConfig = XTypeStu
     arr
   }
 
-  override def runOnPart(builder: overflowdb.BatchedUpdate.DiffGraphBuilder, part: KnownFunction): Unit = {
+  override def runOnPart(builder: DiffGraphBuilder, part: KnownFunction): Unit = {
     /* calculate the result of this part - this is done as a concurrent task */
     val builtinMethod = cpg.method.fullNameExact(part.name).l
     builtinMethod.foreach(mNode => {
@@ -75,7 +73,7 @@ class PhpTypeStubsParserPass(cpg: Cpg, config: XTypeStubsParserConfig = XTypeStu
   def scanParamTypes(pTypesRawArr: List[String]): Seq[Seq[String]] =
     pTypesRawArr.map(paramTypeRaw => paramTypeRaw.split(",").map(_.strip).toSeq).toSeq
 
-  protected def setTypes(builder: overflowdb.BatchedUpdate.DiffGraphBuilder, n: StoredNode, types: Seq[String]): Unit =
+  protected def setTypes(builder: DiffGraphBuilder, n: StoredNode, types: Seq[String]): Unit =
     if (types.size == 1) builder.setNodeProperty(n, PropertyNames.TYPE_FULL_NAME, types.head)
     else builder.setNodeProperty(n, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, types)
 }

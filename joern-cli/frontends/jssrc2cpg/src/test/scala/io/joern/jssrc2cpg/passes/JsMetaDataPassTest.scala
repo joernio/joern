@@ -13,11 +13,11 @@ class JsMetaDataPassTest extends AbstractPassTest {
     new JavaScriptMetaDataPass(cpg, "somehash", "").createAndApply()
 
     "create exactly 1 node" in {
-      cpg.graph.V.asScala.size shouldBe 1
+      cpg.graph.allNodes.size shouldBe 1
     }
 
     "create no edges" in {
-      cpg.graph.E.asScala.size shouldBe 0
+      cpg.graph.allNodes.outE.size shouldBe 0
     }
 
     "create a metadata node with correct language" in {

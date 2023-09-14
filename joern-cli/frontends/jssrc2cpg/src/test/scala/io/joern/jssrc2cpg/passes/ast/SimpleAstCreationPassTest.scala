@@ -2,7 +2,7 @@ package io.joern.jssrc2cpg.passes.ast
 
 import io.joern.jssrc2cpg.passes.{AbstractPassTest, Defines, EcmaBuiltins}
 import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language._
 
 class SimpleAstCreationPassTest extends AbstractPassTest {
@@ -340,7 +340,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(assignment)  = methodBlock.astChildren.isCall.l
       val List(identifierX) = assignment.astChildren.isIdentifier.l
 
-      val List(localXViaRef) = identifierX.refOut.l
+      val List(localXViaRef) = identifierX._refOut.l
       localXViaRef shouldBe localX
 
       val List(block) = assignment.astChildren.isBlock.l
@@ -370,7 +370,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(assignment)  = methodBlock.astChildren.isCall.l
       val List(identifierX) = assignment.astChildren.isIdentifier.l
 
-      val List(localXViaRef) = identifierX.refOut.l
+      val List(localXViaRef) = identifierX._refOut.l
       localXViaRef shouldBe localX
 
       val List(block) = assignment.astChildren.isBlock.l
@@ -399,7 +399,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(assignment)  = methodBlock.astChildren.isCall.l
       val List(identifierX) = assignment.astChildren.isIdentifier.l
 
-      val List(localXViaRef) = identifierX.refOut.l
+      val List(localXViaRef) = identifierX._refOut.l
       localXViaRef shouldBe localX
 
       val List(block) = assignment.astChildren.isBlock.l
@@ -419,7 +419,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(assignment)  = methodBlock.astChildren.isCall.l
       val List(identifierX) = assignment.astChildren.isIdentifier.l
 
-      val List(localXViaRef) = identifierX.refOut.l
+      val List(localXViaRef) = identifierX._refOut.l
       localXViaRef shouldBe localX
 
       val List(block) = assignment.astChildren.isBlock.l
@@ -436,7 +436,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(assignment)  = methodBlock.astChildren.isCall.l
       val List(identifierX) = assignment.astChildren.isIdentifier.l
 
-      val List(localXViaRef) = identifierX.refOut.l
+      val List(localXViaRef) = identifierX._refOut.l
       localXViaRef shouldBe localX
 
       val List(block) = assignment.astChildren.isBlock.l
@@ -452,7 +452,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(assignment)  = methodBlock.astChildren.isCall.l
       val List(identifierX) = assignment.astChildren.isIdentifier.l
 
-      val List(localXViaRef) = identifierX.refOut.l
+      val List(localXViaRef) = identifierX._refOut.l
       localXViaRef shouldBe localX
 
       val List(block) = assignment.astChildren.isBlock.l
@@ -518,7 +518,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(methodIdentifier) = assignment.astChildren.isIdentifier.argumentIndex(1).l
       methodIdentifier.name shouldBe "method"
 
-      methodIdentifier.refOut.head shouldBe localForMethod
+      methodIdentifier._refOut.head shouldBe localForMethod
     }
 
     "have correct parameter order in lambda function with ignored param" in AstFixture("var x = ([, param]) => param") {
@@ -791,11 +791,11 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(typeDecl) = cpg.typeDecl.nameExact("method").l
       typeDecl.fullName should endWith("code.js::program:method")
 
-      val List(binding) = typeDecl.bindsOut.l
+      val List(binding) = typeDecl._bindsOut.cast[Binding].l
       binding.name shouldBe ""
       binding.signature shouldBe ""
 
-      val List(boundMethod) = binding.refOut.l
+      val List(boundMethod) = binding._refOut.l
       boundMethod shouldBe cpg.method.nameExact("method").head
     }
 
@@ -1190,7 +1190,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
         switchExpr.code shouldBe "x"
 
         val List(switchBlock) = switch.astChildren.isBlock.l
-        val List(caseLabel)   = switchBlock._jumpTargetViaAstOut.codeExact("case 1:").l
+        val List(caseLabel)   = switchBlock.jumpTargetViaAstOut.codeExact("case 1:").l
         caseLabel.order shouldBe 1
         val List(caseExpr) = switchBlock.astChildren.isLiteral.codeExact("1").l
         caseExpr.order shouldBe 2
@@ -1209,7 +1209,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
         switchExpr.code shouldBe "x"
 
         val List(switchBlock) = switch.astChildren.isBlock.l
-        val List(caseLabel1)  = switchBlock._jumpTargetViaAstOut.codeExact("case 1:").l
+        val List(caseLabel1)  = switchBlock.jumpTargetViaAstOut.codeExact("case 1:").l
         caseLabel1.order shouldBe 1
 
         val List(caseExpr1) = switchBlock.astChildren.isLiteral.codeExact("1").l
@@ -1218,7 +1218,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
         val List(identifierY) = switchBlock.astChildren.isIdentifier.codeExact("y").l
         identifierY.order shouldBe 3
 
-        val List(caseLabel2) = switchBlock._jumpTargetViaAstOut.codeExact("case 2:").l
+        val List(caseLabel2) = switchBlock.jumpTargetViaAstOut.codeExact("case 2:").l
         caseLabel2.order shouldBe 4
 
         val List(caseExpr2) = switchBlock.astChildren.isLiteral.codeExact("2").l
@@ -1241,13 +1241,13 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
           switchExpr.code shouldBe "x"
 
           val List(switchBlock) = switch.astChildren.isBlock.l
-          val List(caseLabel1)  = switchBlock._jumpTargetViaAstOut.codeExact("case 1:").l
+          val List(caseLabel1)  = switchBlock.jumpTargetViaAstOut.codeExact("case 1:").l
           caseLabel1.order shouldBe 1
 
           val List(caseExpr1) = switchBlock.astChildren.isLiteral.codeExact("1").l
           caseExpr1.order shouldBe 2
 
-          val List(caseLabel2) = switchBlock._jumpTargetViaAstOut.codeExact("case 2:").l
+          val List(caseLabel2) = switchBlock.jumpTargetViaAstOut.codeExact("case 2:").l
           caseLabel2.order shouldBe 3
 
           val List(caseExpr2) = switchBlock.astChildren.isLiteral.codeExact("2").l
@@ -1271,14 +1271,14 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
         switchExpr.code shouldBe "x"
 
         val List(switchBlock) = switch.astChildren.isBlock.l
-        val List(caseLabel1)  = switchBlock._jumpTargetViaAstOut.codeExact("case 1:").l
+        val List(caseLabel1)  = switchBlock.jumpTargetViaAstOut.codeExact("case 1:").l
         caseLabel1.order shouldBe 1
 
         val List(caseExpr1) = switchBlock.astChildren.isLiteral.codeExact("1").l
         caseExpr1.order shouldBe 2
 
         val List(caseLabel2) =
-          switchBlock._jumpTargetViaAstOut.codeExact("case 2:").l
+          switchBlock.jumpTargetViaAstOut.codeExact("case 2:").l
         caseLabel2.order shouldBe 3
 
         val List(caseExpr2) = switchBlock.astChildren.isLiteral.codeExact("2").l
@@ -1289,7 +1289,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
         identifierY.order shouldBe 5
 
         val List(caseLabel3) =
-          switchBlock._jumpTargetViaAstOut.codeExact("case 3:").l
+          switchBlock.jumpTargetViaAstOut.codeExact("case 3:").l
         caseLabel3.order shouldBe 6
 
         val List(caseExpr3) = switchBlock.astChildren.isLiteral.codeExact("3").l
@@ -1314,7 +1314,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
         programBlock.astChildren.isLiteral.size shouldBe 0
 
         val List(switchBlock) = switch.astChildren.isBlock.l
-        val List(caseLabel)   = switchBlock._jumpTargetViaAstOut.codeExact("default:").l
+        val List(caseLabel)   = switchBlock.jumpTargetViaAstOut.codeExact("default:").l
         caseLabel.order shouldBe 1
 
         val List(identifierY) = switchBlock.astChildren.isIdentifier.nameExact("y").l
@@ -1335,7 +1335,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
         switchExpr.code shouldBe "x"
 
         val List(switchBlock) = switch.astChildren.isBlock.l
-        val List(caseLabel1)  = switchBlock._jumpTargetViaAstOut.codeExact("case 1:").l
+        val List(caseLabel1)  = switchBlock.jumpTargetViaAstOut.codeExact("case 1:").l
         caseLabel1.order shouldBe 1
 
         val List(caseExpr1) = switchBlock.astChildren.isLiteral.codeExact("1").l
@@ -1348,7 +1348,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
           switchBlock.astChildren.isControlStructure.controlStructureTypeExact(ControlStructureTypes.BREAK).l
         break.order shouldBe 4
 
-        val List(caseLabel2) = switchBlock._jumpTargetViaAstOut.codeExact("default:").l
+        val List(caseLabel2) = switchBlock.jumpTargetViaAstOut.codeExact("default:").l
         caseLabel2.order shouldBe 5
 
         val List(identifierZ) = switchBlock.astChildren.isIdentifier.nameExact("z").l
@@ -1369,7 +1369,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
           val List(topLevelSwitchBlock) = topLevelSwitch.astChildren.isBlock.l
 
-          val List(topLevelCaseLabel) = topLevelSwitchBlock._jumpTargetViaAstOut.codeExact("default:").l
+          val List(topLevelCaseLabel) = topLevelSwitchBlock.jumpTargetViaAstOut.codeExact("default:").l
           topLevelCaseLabel.order shouldBe 1
 
           val List(nestedSwitch) = topLevelSwitchBlock.astChildren.isControlStructure.l
@@ -1380,7 +1380,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
           nestedSwitchExpr.code shouldBe "y"
 
           val List(nestedSwitchBlock) = nestedSwitch.astChildren.isBlock.l
-          val List(nestedCaseLabel)   = nestedSwitchBlock._jumpTargetViaAstOut.codeExact("default:").l
+          val List(nestedCaseLabel)   = nestedSwitchBlock.jumpTargetViaAstOut.codeExact("default:").l
           nestedCaseLabel.order shouldBe 1
 
           val List(identifierZ) = nestedSwitchBlock.astChildren.isIdentifier.nameExact("z").l

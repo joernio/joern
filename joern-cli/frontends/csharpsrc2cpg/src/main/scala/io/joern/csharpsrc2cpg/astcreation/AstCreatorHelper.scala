@@ -57,8 +57,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   protected def getTypeFullNameFromAstNode(ast: Ast): String = {
     ast.root
-      .flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME))
-      .map(_.toString)
+      .flatMap(_.propertiesMap.getOrDefault(PropertyNames.TYPE_FULL_NAME, Defines.Any).toString)
       .getOrElse(Defines.Any)
   }
 
@@ -147,10 +146,10 @@ object AstCreatorHelper {
     */
   def createDotNetNodeInfo(json: Value, relativeFileName: Option[String] = None): DotNetNodeInfo = {
     val metaData = json(ParserKeys.MetaData)
-    val ln       = metaData(ParserKeys.LineStart).numOpt.map(_.toInt.asInstanceOf[Integer])
-    val cn       = metaData(ParserKeys.ColumnStart).numOpt.map(_.toInt.asInstanceOf[Integer])
-    val lnEnd    = metaData(ParserKeys.LineEnd).numOpt.map(_.toInt.asInstanceOf[Integer])
-    val cnEnd    = metaData(ParserKeys.ColumnEnd).numOpt.map(_.toInt.asInstanceOf[Integer])
+    val ln       = metaData(ParserKeys.LineStart).numOpt.map(_.toInt)
+    val cn       = metaData(ParserKeys.ColumnStart).numOpt.map(_.toInt)
+    val lnEnd    = metaData(ParserKeys.LineEnd).numOpt.map(_.toInt)
+    val cnEnd    = metaData(ParserKeys.ColumnEnd).numOpt.map(_.toInt)
     val c =
       metaData(ParserKeys.Code).strOpt.map(x => x.takeWhile(x => x != '\n' && x != '{')).getOrElse("<empty>").strip()
     val node = nodeType(metaData, relativeFileName)

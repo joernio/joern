@@ -48,5 +48,5 @@ class JavaDataflowFixture(extraFlows: List[FlowSemantic] = List.empty) extends A
     (source, sink)
   }
 
-  protected def flowToResultPairs(path: Path): List[(String, Option[Integer])] = path.resultPairs()
+  protected def flowToResultPairs(path: Path): List[(String, Option[Int])] = path.resultPairs()
 }

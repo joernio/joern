@@ -2,11 +2,10 @@ package io.joern.dataflowengineoss
 
 import better.files.File
 import io.circe.{Decoder, Encoder, HCursor, Json}
-import io.shiftleft.codepropertygraph.generated.PropertyNames
+import io.shiftleft.codepropertygraph.generated.PropertyKeys
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
-import overflowdb.PropertyKey
 
 import java.util.concurrent.{ExecutorService, Executors}
 import java.util.regex.Pattern
@@ -161,8 +160,8 @@ package object slicing {
     typeFullName: String = "",
     parentMethod: String = "",
     parentFile: String = "",
-    lineNumber: Option[Integer] = None,
-    columnNumber: Option[Integer] = None
+    lineNumber: Option[Int] = None,
+    columnNumber: Option[Int] = None
   )
 
   implicit val encodeSliceNode: Encoder[SliceNode] = Encoder.instance {
@@ -398,13 +397,12 @@ package object slicing {
       *   extracted.
       */
     def fromNode(node: StoredNode, typeMap: Map[String, String] = Map.empty[String, String]): DefComponent = {
-      val nodeType = (node.property(PropertyNames.TYPE_FULL_NAME, "ANY") +: node.property(
-        PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
-        Seq.empty[String]
-      )).filterNot(_.matches("(ANY|UNKNOWN)")).headOption.getOrElse("ANY")
+      val typeFullNameProperty = node.propertyOption(PropertyKeys.TypeFullName).getOrElse("ANY")
+      val dynamicTypeHintFullNamesProperty = node.property(PropertyKeys.DynamicTypeHintFullName)
+      val nodeType = (typeFullNameProperty +: dynamicTypeHintFullNamesProperty).filterNot(_.matches("(ANY|UNKNOWN)")).headOption.getOrElse("ANY")
       val typeFullName = typeMap.getOrElse(nodeType, nodeType)
-      val lineNumber   = Option(node.property(new PropertyKey[Integer](PropertyNames.LINE_NUMBER))).map(_.toInt)
-      val columnNumber = Option(node.property(new PropertyKey[Integer](PropertyNames.COLUMN_NUMBER))).map(_.toInt)
+      val lineNumber = node.property(PropertyKeys.LineNumber)
+      val columnNumber = node.property(PropertyKeys.ColumnNumber)
       node match {
         case x: MethodParameterIn => ParamDef(x.name, typeFullName, x.index, lineNumber, columnNumber)
         case x: Call if x.code.startsWith("new ") =>
