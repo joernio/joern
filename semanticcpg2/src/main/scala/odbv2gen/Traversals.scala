@@ -2,6 +2,8 @@ package io.shiftleft.codepropertygraph.generated.v2.traversals
 import io.joern.odb2
 import io.shiftleft.codepropertygraph.generated.v2.nodes
 
+@scala.annotation.nowarn
+
 object Lang extends ConcreteStoredConversions {}
 
 object Accessors {
