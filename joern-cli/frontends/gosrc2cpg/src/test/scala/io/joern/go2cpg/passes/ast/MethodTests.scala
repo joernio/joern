@@ -1529,8 +1529,7 @@ class MethodTests extends GoCodeToCpgSuite {
   }
 
   "When ast of struct node is coming under method's body and defined later" should {
-    val cpg = code(
-      """
+    val cpg = code("""
         |package main
         |
         |func foo() Node {
