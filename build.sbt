@@ -10,6 +10,7 @@ lazy val console           = Projects.console
 lazy val dataflowengineoss = Projects.dataflowengineoss
 lazy val macros            = Projects.macros
 lazy val semanticcpg       = Projects.semanticcpg
+lazy val semanticcpg2      = Projects.semanticcpg2
 lazy val benchmarks        = Projects.benchmarks
 lazy val c2cpg             = Projects.c2cpg
 lazy val ghidra2cpg        = Projects.ghidra2cpg
