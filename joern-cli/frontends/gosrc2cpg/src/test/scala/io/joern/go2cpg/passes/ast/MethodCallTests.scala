@@ -611,6 +611,63 @@ class MethodCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
 
   }
 
+  "Method call chaining using builder design" should {
+    val cpg = code("""
+        |package main
+        |
+        |import "fmt"
+        |
+        |type Person struct {
+        |    name     string
+        |    age      int
+        |    location string
+        |}
+        |
+        |func (p *Person) SetName(name string) *Person {
+        |    p.name = name
+        |    return p
+        |}
+        |
+        |func (p *Person) SetAge(age int) *Person {
+        |    p.age = age
+        |    return p
+        |}
+        |
+        |func (p *Person) SetLocation(location string) *Person {
+        |    p.location = location
+        |    return p
+        |}
+        |
+        |func main() {
+        |    person := &Person{}
+        |    person.SetName("John").SetAge(30).SetLocation("New York")
+        |}
+        |""".stripMargin)
+
+    "Check call node properties: Name" in {
+      val List(x) = cpg.call.name("SetName").l
+      x.code shouldBe "person.SetName(\"John\")"
+      x.methodFullName shouldBe "ANY.SetName"
+      x.order shouldBe 4
+      x.lineNumber shouldBe Option(29)
+      x.typeFullName shouldBe Defines.anyTypeName
+    }
+
+    "Check call node properties: Location" in {
+      val List(x) = cpg.call.name("SetLocation").l
+      x.code shouldBe "person.SetName(\"John\").SetAge(30).SetLocation(\"New York\")"
+      x.methodFullName shouldBe "ANY.SetLocation"
+      x.order shouldBe 3
+      x.lineNumber shouldBe Option(29)
+      x.typeFullName shouldBe Defines.anyTypeName
+    }
+
+    "Check call node properties: Age" ignore {
+      val List(x) = cpg.call.name("SetAge").l
+    }
+
+  }
+
   // TODO : Unit test with new function
 //  package main
 //

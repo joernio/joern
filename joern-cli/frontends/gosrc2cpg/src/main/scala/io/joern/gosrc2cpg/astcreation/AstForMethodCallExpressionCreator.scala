@@ -1,6 +1,6 @@
 package io.joern.gosrc2cpg.astcreation
 
-import io.joern.gosrc2cpg.parser.ParserAst.{BasicLit, Ident, SelectorExpr}
+import io.joern.gosrc2cpg.parser.ParserAst.{BasicLit, Ident, SelectorExpr, CallExpr}
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
@@ -10,24 +10,36 @@ import ujson.Value
 
 trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  private def getLastIdentifierFromSelectorExpr(funcDetails: ParserNodeInfo): ParserNodeInfo = {
+  private def getLastIdentifierFromSelectorExpr(
+    funcDetails: ParserNodeInfo,
+    asts: Seq[Ast]
+  ): (ParserNodeInfo, Seq[Ast]) = {
     funcDetails.node match
       case Ident =>
         // recursion break condition
-        funcDetails
+        (funcDetails, asts)
       case SelectorExpr =>
-        getLastIdentifierFromSelectorExpr(createParserNodeInfo(funcDetails.json(ParserKeys.X)))
-      case _ =>
-        getLastIdentifierFromSelectorExpr(createParserNodeInfo(funcDetails.json(ParserKeys.X)))
+        getLastIdentifierFromSelectorExpr(createParserNodeInfo(funcDetails.json(ParserKeys.X)), asts)
+      case CallExpr =>
+        getLastIdentifierFromSelectorExpr(
+          createParserNodeInfo(funcDetails.json(ParserKeys.Fun)(ParserKeys.X)),
+          astForCallExpression(funcDetails)
+        )
+      case x =>
+        logger.warn(s"Unhandled class ${x.getClass} under getLastIdentifierFromSelectorExpr!")
+        (funcDetails, Seq.empty)
   }
 
   def astForCallExpression(expr: ParserNodeInfo): Seq[Ast] = {
-    val funcDetails = createParserNodeInfo(expr.json(ParserKeys.Fun))
+    val funcDetails   = createParserNodeInfo(expr.json(ParserKeys.Fun))
+    var interCallAsts = Seq.empty[Ast]
     val (aliasOpt, methodName) = funcDetails.node match
       case Ident =>
         (None, funcDetails.json(ParserKeys.Name).str)
       case SelectorExpr =>
-        val indentifierNode = getLastIdentifierFromSelectorExpr(createParserNodeInfo(funcDetails.json(ParserKeys.X)))
+        val (indentifierNode, interCalls) =
+          getLastIdentifierFromSelectorExpr(createParserNodeInfo(funcDetails.json(ParserKeys.X)), Seq.empty)
+        interCallAsts = interCalls
         (
           Some(indentifierNode.json(ParserKeys.Name).str, indentifierNode.json),
           funcDetails.json(ParserKeys.Sel)(ParserKeys.Name).str
@@ -37,6 +49,7 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
         (None, "")
     val (signature, fullName, typeFullName, thisObjIdentifier) =
       callMethodFullNameTypeFullNameAndSignature(methodName, aliasOpt)
+
     val cpgCall = callNode(
       expr,
       expr.code,
@@ -46,7 +59,7 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
       Some(signature),
       Some(typeFullName)
     )
-    Seq(callAst(cpgCall, astForArgs(expr.json(ParserKeys.Args)), thisObjIdentifier.headOption))
+    Seq(callAst(cpgCall, astForArgs(expr.json(ParserKeys.Args)), thisObjIdentifier.headOption)) ++ interCallAsts
   }
 
   protected def astForConstructorCall(compositeLit: ParserNodeInfo): Seq[Ast] = {
