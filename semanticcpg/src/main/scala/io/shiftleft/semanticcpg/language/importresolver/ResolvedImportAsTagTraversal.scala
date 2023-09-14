@@ -1,18 +1,21 @@
 package io.shiftleft.semanticcpg.language.importresolver
 
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Declaration, Member, Tag}
+import io.shiftleft.codepropertygraph.generated.v2.Cpg
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{AstNode, Declaration, Member, Tag}
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.traversal.help.Doc
+// TODO bring back help/doc
+//import overflowdb.traversal.help.Doc
 
 class ResolvedImportAsTagExt(node: Tag) extends AnyVal {
 
-  @Doc(info = "Parses this tag as an EvaluatedImport class")
+  // TODO bring back help/doc
+//  @Doc(info = "Parses this tag as an EvaluatedImport class")
   def _toEvaluatedImport: Option[EvaluatedImport] = EvaluatedImport.tagToEvaluatedImport(node)
 
-  @Doc(info = "If this tag represents a resolved import, will attempt to find the CPG entities this refers to")
+  // TODO bring back help/doc
+//  @Doc(info = "If this tag represents a resolved import, will attempt to find the CPG entities this refers to")
   def resolvedEntity: Iterator[AstNode] = {
-    val cpg = Cpg(node.graph())
+    val cpg = Cpg(node.graph)
     node._toEvaluatedImport.iterator
       .collectAll[ResolvedImport]
       .flatMap {
@@ -30,12 +33,14 @@ class ResolvedImportAsTagExt(node: Tag) extends AnyVal {
 
 class ResolvedImportAsTagTraversal(steps: Iterator[Tag]) extends AnyVal {
 
-  @Doc(info = "Parses these tags as EvaluatedImport classes")
+  // TODO bring back help/doc
+//  @Doc(info = "Parses these tags as EvaluatedImport classes")
   def _toEvaluatedImport: Iterator[EvaluatedImport] = {
     steps.flatMap(_._toEvaluatedImport)
   }
 
-  @Doc(info = "If these tags represent resolved imports, will attempt to find the CPG entities referred to")
+  // TODO bring back help/doc
+//  @Doc(info = "If these tags represent resolved imports, will attempt to find the CPG entities referred to")
   def resolvedEntity: Iterator[AstNode] = {
     steps.flatMap(_.resolvedEntity)
   }

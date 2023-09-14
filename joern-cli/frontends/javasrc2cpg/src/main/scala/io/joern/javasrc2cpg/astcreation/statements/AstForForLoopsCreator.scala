@@ -6,19 +6,11 @@ import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.javasrc2cpg.scope.NodeTypeInfo
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.x2cpg.Ast
+import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.utils.NodeBuilders.{newCallNode, newFieldIdentifierNode, newIdentifierNode, newOperatorCallNode}
-import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  NewBlock,
-  NewControlStructure,
-  NewLiteral,
-  NewLocal,
-  NewMember,
-  NewMethodParameterIn,
-  NewNode
-}
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
-import io.shiftleft.passes.IntervalKeyPool
+import io.shiftleft.codepropertygraph.generated.v2.nodes.Call.PropertyDefaults
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{NewBlock, NewControlStructure, NewLiteral, NewLocal, NewMember, NewMethodParameterIn, NewNode}
+import io.shiftleft.codepropertygraph.generated.v2.{ControlStructureTypes, DispatchTypes, Operators}
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.*
@@ -228,7 +220,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
     )
   }
 
-  private def nativeForEachIdxLocalNode(lineNo: Option[Integer]): NewLocal = {
+  private def nativeForEachIdxLocalNode(lineNo: Option[Int]): NewLocal = {
     val idxName      = nextIndexName()
     val typeFullName = TypeConstants.Int
     val idxLocal =
@@ -241,7 +233,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
     idxLocal
   }
 
-  private def nativeForEachIdxInitializerAst(lineNo: Option[Integer], idxLocal: NewLocal): Ast = {
+  private def nativeForEachIdxInitializerAst(lineNo: Option[Int], idxLocal: NewLocal): Ast = {
     val idxName = idxLocal.name
     val idxInitializerCallNode = newOperatorCallNode(
       Operators.assignment,
@@ -261,7 +253,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
   }
 
   private def nativeForEachCompareAst(
-    lineNo: Option[Integer],
+    lineNo: Option[Int],
     iterableSource: NodeTypeInfo,
     idxLocal: NewLocal
   ): Ast = {
@@ -294,7 +286,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
       .withRefEdges(fieldAccessIdentifier, iterableSourceNode.toList)
   }
 
-  private def nativeForEachIncrementAst(lineNo: Option[Integer], idxLocal: NewLocal): Ast = {
+  private def nativeForEachIncrementAst(lineNo: Option[Int], idxLocal: NewLocal): Ast = {
     val incrementNode = newOperatorCallNode(
       Operators.postIncrement,
       code = s"${idxLocal.name}++",
@@ -340,7 +332,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
     }
   }
 
-  private def iteratorLocalForForEach(lineNumber: Option[Integer]): NewLocal = {
+  private def iteratorLocalForForEach(lineNumber: Option[Int]): NewLocal = {
     val iteratorLocalName = nextIterableName()
     NewLocal()
       .name(iteratorLocalName)
@@ -353,7 +345,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
     iterExpr: Expression,
     iteratorLocalNode: NewLocal,
     iterableType: Option[String],
-    lineNo: Option[Integer]
+    lineNo: Option[Int]
   ): Ast = {
     val iteratorAssignNode =
       newOperatorCallNode(Operators.assignment, code = "", typeFullName = Some(TypeConstants.Iterator), line = lineNo)
@@ -382,7 +374,7 @@ trait AstForForLoopsCreator { this: AstCreator =>
       .withRefEdge(iteratorAssignIdentifier, iteratorLocalNode)
   }
 
-  private def hasNextCallAstForForEach(iteratorLocalNode: NewLocal, lineNo: Option[Integer]): Ast = {
+  private def hasNextCallAstForForEach(iteratorLocalNode: NewLocal, lineNo: Option[Int]): Ast = {
     val iteratorHasNextCallNode =
       newCallNode(
         "hasNext",

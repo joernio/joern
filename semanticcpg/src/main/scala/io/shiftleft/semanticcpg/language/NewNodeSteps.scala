@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.language
 
-import io.shiftleft.codepropertygraph.generated.nodes.NewNode
-import overflowdb.BatchedUpdate.DiffGraphBuilder
+import io.shiftleft.codepropertygraph.generated.v2.nodes.NewNode
+import flatgraph.DiffGraphBuilder
 
 trait HasStoreMethod {
   def store()(implicit diffBuilder: DiffGraphBuilder): Unit

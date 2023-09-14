@@ -1,7 +1,7 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.Local
+import io.shiftleft.codepropertygraph.generated.v2.nodes.Local
 import io.shiftleft.semanticcpg.language._
 
 class LocalTests extends JavaSrcCode2CpgFixture {

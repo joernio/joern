@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language.nodemethods
 
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, MethodReturn, NewLocation, Type}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{Call, MethodReturn, NewLocation, Type}
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.*
 
@@ -19,5 +19,6 @@ class MethodReturnMethods(val node: MethodReturn) extends AnyVal with NodeExtens
     callsites.collectAll[Call]
   }
 
-  def typ: Iterator[Type] = node.evalTypeOut
+  // TODO define in schema as named step
+  def typ: Iterator[Type] = node._evalTypeOut.collectAll[Type]
 }

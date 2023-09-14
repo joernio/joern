@@ -1,8 +1,8 @@
 package io.joern.x2cpg
 
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{CallBase, NewImport}
-import overflowdb.BatchedUpdate.DiffGraphBuilder
+import io.shiftleft.codepropertygraph.generated.v2.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{CallBase, NewImport}
+import flatgraph.DiffGraphBuilder
 
 object Imports {
 

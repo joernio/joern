@@ -1,7 +1,7 @@
 package io.joern.x2cpg.utils
 
-import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
-import io.shiftleft.codepropertygraph.generated.nodes.{
+import io.shiftleft.codepropertygraph.generated.v2.nodes.Call.PropertyDefaults
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{
   NewAnnotationLiteral,
   NewBinding,
   NewCall,
@@ -14,7 +14,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewMethodReturn,
   NewModifier
 }
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies}
+import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, EvaluationStrategies}
 
 /** NodeBuilders helps with node creation and is intended to be used when functions from `x2cpg.AstCreatorBase` are not
   * appropriate; for example, in cases in which the node's line and column are _not_ set from the base ASTNode type of a
@@ -69,8 +69,8 @@ object NodeBuilders {
     dispatchType: String,
     argumentTypes: Iterable[String] = Nil,
     code: String = PropertyDefaults.Code,
-    lineNumber: Option[Integer] = None,
-    columnNumber: Option[Integer] = None
+    lineNumber: Option[Int] = None,
+    columnNumber: Option[Int] = None
   ): NewCall = {
     val signature      = composeCallSignature(returnTypeFullName, argumentTypes)
     val methodFullName = composeMethodFullName(typeDeclFullName, methodName, signature)
@@ -93,8 +93,8 @@ object NodeBuilders {
 
   def newFieldIdentifierNode(
     name: String,
-    line: Option[Integer] = None,
-    column: Option[Integer] = None
+    line: Option[Int] = None,
+    column: Option[Int] = None
   ): NewFieldIdentifier = {
     NewFieldIdentifier()
       .canonicalName(name)
@@ -113,7 +113,7 @@ object NodeBuilders {
     name: String,
     typeFullName: String,
     dynamicTypeHints: Seq[String],
-    line: Option[Integer]
+    line: Option[Int]
   ): NewIdentifier = {
     NewIdentifier()
       .code(name)
@@ -127,8 +127,8 @@ object NodeBuilders {
     name: String,
     code: String,
     typeFullName: Option[String] = None,
-    line: Option[Integer] = None,
-    column: Option[Integer] = None
+    line: Option[Int] = None,
+    column: Option[Int] = None
   ): NewCall = {
     NewCall()
       .name(name)
@@ -146,8 +146,8 @@ object NodeBuilders {
     code: String = "this",
     typeFullName: String,
     dynamicTypeHintFullName: Seq[String] = Seq.empty,
-    line: Option[Integer] = None,
-    column: Option[Integer] = None,
+    line: Option[Int] = None,
+    column: Option[Int] = None,
     evaluationStrategy: String = EvaluationStrategies.BY_SHARING
   ): NewMethodParameterIn = {
     NewMethodParameterIn()
@@ -167,8 +167,8 @@ object NodeBuilders {
   def newMethodReturnNode(
     typeFullName: String,
     dynamicTypeHintFullName: Option[String] = None,
-    line: Option[Integer],
-    column: Option[Integer]
+    line: Option[Int],
+    column: Option[Int]
   ): NewMethodReturn =
     NewMethodReturn()
       .typeFullName(typeFullName)

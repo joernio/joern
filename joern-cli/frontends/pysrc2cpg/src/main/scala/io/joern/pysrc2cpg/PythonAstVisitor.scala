@@ -5,8 +5,8 @@ import io.joern.pysrc2cpg.memop.*
 import io.joern.pythonparser.ast
 import io.joern.x2cpg.{AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
-import io.shiftleft.codepropertygraph.generated.nodes.{NewNode, NewTypeDecl}
-import overflowdb.BatchedUpdate.DiffGraphBuilder
+import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewNode, NewTypeDecl}
+import flatgraph.DiffGraphBuilder
 
 import scala.collection.mutable
 

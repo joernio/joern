@@ -1,6 +1,6 @@
 package io.joern
 
-import io.shiftleft.codepropertygraph.generated.nodes.{Declaration, Expression, Identifier, Literal}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{Declaration, Expression, Identifier, Literal}
 import io.shiftleft.semanticcpg.language.*
 
 package object dataflowengineoss {

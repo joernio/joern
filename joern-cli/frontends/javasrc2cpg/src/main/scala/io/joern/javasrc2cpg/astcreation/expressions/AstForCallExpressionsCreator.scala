@@ -23,9 +23,9 @@ import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, composeMethodLikeS
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newOperatorCallNode}
 import io.joern.x2cpg.{Ast, Defines}
-import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewIdentifier}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.Call.PropertyDefaults
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{NewBlock, NewCall, NewIdentifier}
+import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, EdgeTypes, Operators}
 
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
@@ -323,8 +323,8 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
     argumentTypes: Option[List[String]],
     argsSize: Int,
     code: String,
-    lineNumber: Option[Integer] = None,
-    columnNumber: Option[Integer] = None
+    lineNumber: Option[Int] = None,
+    columnNumber: Option[Int] = None
   ): NewCall = {
     val initSignature = argumentTypes match {
       case Some(tpe)          => composeMethodLikeSignature(TypeConstants.Void, tpe)
@@ -346,8 +346,8 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
 
   private var tempConstCount = 0
   private def blockAstForConstructorInvocation(
-    lineNumber: Option[Integer],
-    columnNumber: Option[Integer],
+    lineNumber: Option[Int],
+    columnNumber: Option[Int],
     allocNode: NewCall,
     initNode: NewCall,
     args: Seq[Ast]
@@ -368,12 +368,12 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
 
     val assignmentAst = callAst(assignmentNode, List(identifierAst, allocAst))
 
-    val identifierWithDefaultOrder = identifier.copy.order(PropertyDefaults.Order)
-    val identifierForInit          = identifierWithDefaultOrder.copy
+    val identifierWithDefaultOrder = identifier.copy().order(PropertyDefaults.Order)
+    val identifierForInit          = identifierWithDefaultOrder.copy()
     val initWithDefaultOrder       = initNode.order(PropertyDefaults.Order)
     val initAst                    = callAst(initWithDefaultOrder, args, Some(Ast(identifierForInit)))
 
-    val returnAst = Ast(identifierWithDefaultOrder.copy)
+    val returnAst = Ast(identifierWithDefaultOrder.copy())
 
     Ast(blockNode)
       .withChild(assignmentAst)

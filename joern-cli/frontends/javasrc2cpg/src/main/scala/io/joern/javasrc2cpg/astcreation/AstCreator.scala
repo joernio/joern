@@ -33,10 +33,10 @@ import io.joern.javasrc2cpg.util.{BindingTable, BindingTableAdapterForJavaparser
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.utils.OffsetUtils
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.NodeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{NewClosureBinding, NewFile, NewImport, NewNamespaceBlock}
+import io.shiftleft.codepropertygraph.generated.v2.NodeTypes
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{NewClosureBinding, NewFile, NewImport, NewNamespaceBlock}
 import org.slf4j.LoggerFactory
-import overflowdb.BatchedUpdate.DiffGraphBuilder
+import flatgraph.DiffGraphBuilder
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
@@ -112,10 +112,10 @@ class AstCreator(
       case _                        => None
     }
   }
-  protected def line(node: Node): Option[Integer]      = node.getBegin.map(x => Integer.valueOf(x.line)).toScala
-  protected def column(node: Node): Option[Integer]    = node.getBegin.map(x => Integer.valueOf(x.column)).toScala
-  protected def lineEnd(node: Node): Option[Integer]   = node.getEnd.map(x => Integer.valueOf(x.line)).toScala
-  protected def columnEnd(node: Node): Option[Integer] = node.getEnd.map(x => Integer.valueOf(x.column)).toScala
+  protected def line(node: Node): Option[Int]      = node.getBegin.map(_.line).toScala
+  protected def column(node: Node): Option[Int]    = node.getBegin.map(_.column).toScala
+  protected def lineEnd(node: Node): Option[Int]   = node.getEnd.map(_.line).toScala
+  protected def columnEnd(node: Node): Option[Int] = node.getEnd.map(_.column).toScala
   protected def code(node: Node): String               = "" // TODO: javasrc2cpg uses custom code strings everywhere
 
   private val lineOffsetTable = OffsetUtils.getLineOffsetTable(fileContent)

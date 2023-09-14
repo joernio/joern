@@ -2,7 +2,7 @@ package io.joern.javasrc2cpg.scope
 
 import io.joern.javasrc2cpg.scope.Scope.*
 import io.joern.javasrc2cpg.scope.JavaScopeElement.*
-import io.shiftleft.codepropertygraph.generated.nodes.{
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{
   NewImport,
   NewMethod,
   NewNamespaceBlock,
@@ -13,7 +13,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
 import scala.collection.mutable
 import io.joern.javasrc2cpg.astcreation.ExpectedType
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.nodes.AstNodeNew
+import io.shiftleft.codepropertygraph.generated.v2.nodes.AstNodeNew
 
 trait JavaScopeElement {
   private val variables                        = mutable.Map[String, ScopeVariable]()

@@ -18,7 +18,7 @@ import org.jetbrains.kotlin.descriptors.{DescriptorVisibilities, DescriptorVisib
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.lexer.{KtToken, KtTokens}
 import org.slf4j.{Logger, LoggerFactory}
-import overflowdb.BatchedUpdate.DiffGraphBuilder
+import flatgraph.DiffGraphBuilder
 
 import scala.annotation.tailrec
 import scala.collection.mutable

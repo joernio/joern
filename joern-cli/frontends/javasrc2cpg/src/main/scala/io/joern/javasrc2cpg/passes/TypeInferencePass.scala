@@ -4,15 +4,15 @@ import com.github.javaparser.symbolsolver.cache.GuavaCache
 import com.google.common.cache.CacheBuilder
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.ModifierTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
+import io.shiftleft.codepropertygraph.generated.v2.ModifierTypes
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{Call, Method}
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.LoggerFactory
 
 import scala.jdk.OptionConverters.RichOptional
 import io.joern.x2cpg.Defines.UnresolvedNamespace
-import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyNames
+import io.shiftleft.codepropertygraph.generated.v2.nodes.Call.PropertyNames
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 
 class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[Call](cpg) {
@@ -55,10 +55,7 @@ class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[Call](cpg) {
     val callArgs = if (skipCallThis) call.argument.toList.tail else call.argument.toList
 
     val hasDifferingArg = method.parameter.zip(callArgs).exists { case (parameter, argument) =>
-      val maybeArgumentType = Option(argument.property(PropertyNames.TypeFullName))
-        .map(_.toString())
-        .getOrElse(TypeConstants.Any)
-
+      val maybeArgumentType = argument.propertyOption[String](PropertyNames.TypeFullName).getOrElse(TypeConstants.Any)
       val argMatches = maybeArgumentType == TypeConstants.Any || maybeArgumentType == parameter.typeFullName
 
       !argMatches
@@ -81,7 +78,7 @@ class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[Call](cpg) {
 
   private def getReplacementMethod(call: Call): Option[Method] = {
     val argTypes =
-      call.argument.flatMap(arg => Option(arg.property(PropertyNames.TypeFullName)).map(_.toString)).mkString(":")
+      call.argument.flatMap(_.propertyOption[String](PropertyNames.TypeFullName)).mkString(":")
     val callKey =
       s"${call.methodFullName}:$argTypes"
     cache.get(callKey).toScala.getOrElse {

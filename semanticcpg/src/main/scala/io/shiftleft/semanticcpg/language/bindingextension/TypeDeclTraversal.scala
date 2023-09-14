@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language.bindingextension
 
-import io.shiftleft.codepropertygraph.generated.nodes.{Binding, Method, TypeDecl}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{Binding, Method, TypeDecl}
 import io.shiftleft.semanticcpg.language.*
 
 class TypeDeclTraversal(val traversal: Iterator[TypeDecl]) extends AnyVal {
@@ -13,6 +13,6 @@ class TypeDeclTraversal(val traversal: Iterator[TypeDecl]) extends AnyVal {
   /** Traverse to the method bindings of this type declaration.
     */
   def methodBinding: Iterator[Binding] =
-    traversal.canonicalType.flatMap(_.bindsOut)
+    traversal.canonicalType.flatMap(_._bindsOut.collectAll[Binding])
 
 }

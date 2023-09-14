@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language.importresolver
 
-import io.shiftleft.codepropertygraph.generated.nodes.Tag
+import io.shiftleft.codepropertygraph.generated.v2.nodes.Tag
 
 import scala.language.implicitConversions
 
