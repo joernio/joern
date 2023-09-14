@@ -212,7 +212,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
       cpg.all.collectAll[ClosureBinding].l match {
         case myValue :: Nil =>
           myValue.closureOriginalName.head shouldBe "myValue"
-          inside(myValue._localViaRefOut) {
+          inside(myValue.localViaRefOut) {
             case Some(local) =>
               local.name shouldBe "myValue"
               local.method.fullName.headOption shouldBe Option("Test0.rb:<global>::program")

@@ -19,8 +19,8 @@ class MetaDataTests extends JimpleCode2CpgFixture {
 
   "should not have any incoming or outgoing edges" in {
     cpg.metaData.size shouldBe 1
-    cpg.metaData.in().l shouldBe List()
-    cpg.metaData.out().l shouldBe List()
+    cpg.metaData.in.l shouldBe List()
+    cpg.metaData.out.l shouldBe List()
   }
 
 }

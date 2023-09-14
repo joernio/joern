@@ -12,8 +12,8 @@ import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.dotextension.ImageViewer
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
-import overflowdb.traversal.help.Doc
-import overflowdb.traversal.help.Table.AvailableWidthProvider
+import flatgraph.help.Doc
+import flatgraph.help.Table.AvailableWidthProvider
 
 import scala.sys.process.Process
 import scala.util.control.NoStackTrace
@@ -96,13 +96,13 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
   @Doc(
     info = "Close current workspace and open a different one",
     longInfo = """ | By default, the workspace in $INSTALL_DIR/workspace is used.
-                 | This method allows specifying a different workspace directory
-                 | via the `pathName` parameter.
-                 | Before changing the workspace, the current workspace will be
-                 | closed, saving any unsaved changes.
-                 | If `pathName` points to a non-existing directory, then a new
-                 | workspace is first created.
-                 |"""
+                  | This method allows specifying a different workspace directory
+                  | via the `pathName` parameter.
+                  | Before changing the workspace, the current workspace will be
+                  | closed, saving any unsaved changes.
+                  | If `pathName` points to a non-existing directory, then a new
+                  | workspace is first created.
+                  |"""
   )
   def switchWorkspace(pathName: String): Unit = {
     if (workspaceManager != null) {
@@ -349,10 +349,14 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
 
     val cpgDestinationPath = cpgDestinationPathOpt.get
 
-    if (CpgLoader.isLegacyCpg(cpgFile)) {
-      report("You have provided a legacy proto CPG. Attempting conversion.")
+    val isProtoFormat = CpgLoader.isProtoFormat(cpgFile.path)
+    val isOverflowDbFormat = CpgLoader.isOverflowDbFormat(cpgFile.path)
+    if (isProtoFormat || isOverflowDbFormat) {
+      if (isProtoFormat) report("You have provided a legacy proto CPG. Attempting conversion.")
+      else if (isOverflowDbFormat) report("You have provided a legacy overflowdb CPG. Attempting conversion.")
       try {
-        CpgConverter.convertProtoCpgToOverflowDb(cpgFile.path.toString, cpgDestinationPath.toString)
+        val cpg = CpgLoader.load(cpgFile.path, cpgDestinationPath)
+        cpg.close()
       } catch {
         case exc: Exception =>
           report("Error converting legacy CPG: " + exc.getMessage)

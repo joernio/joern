@@ -66,5 +66,5 @@ class KotlinCode2CpgFixture(
     )
     with SemanticCpgTestFixture(extraFlows) {
 
-  protected def flowToResultPairs(path: Path): List[(String, Option[Integer])] = path.resultPairs()
+  protected def flowToResultPairs(path: Path): List[(String, Option[Int])] = path.resultPairs()
 }

@@ -9,7 +9,7 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
-class AstCreationPass(cpg: Cpg, astCreators: List[AstCreator]) extends ConcurrentWriterCpgPass[AstCreator](cpg) {
+class AstCreationPass(cpg: Cpg, astCreators: List[AstCreator]) extends ForkJoinParallelCpgPass[AstCreator](cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 

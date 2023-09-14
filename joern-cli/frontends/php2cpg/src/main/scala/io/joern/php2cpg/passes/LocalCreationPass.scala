@@ -1,6 +1,6 @@
 package io.joern.php2cpg.passes
 
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{
@@ -26,12 +26,12 @@ object LocalCreationPass {
 }
 
 abstract class LocalCreationPass[ScopeType <: AstNode](cpg: Cpg)
-    extends ConcurrentWriterCpgPass[ScopeType](cpg)
+    extends ForkJoinParallelCpgPass[ScopeType](cpg)
     with AstNodeBuilder[AstNode, LocalCreationPass[ScopeType]] {
   override protected def line(node: AstNode)                       = node.lineNumber
   override protected def column(node: AstNode)                     = node.columnNumber
-  override protected def lineEnd(node: AstNode): Option[Integer]   = None
-  override protected def columnEnd(node: AstNode): Option[Integer] = None
+  override protected def lineEnd(node: AstNode): Option[Int]   = None
+  override protected def columnEnd(node: AstNode): Option[Int] = None
   override protected def code(node: AstNode): String               = node.code
 
   protected def getIdentifiersInScope(node: AstNode): List[Identifier] = {
@@ -96,7 +96,7 @@ abstract class LocalCreationPass[ScopeType <: AstNode](cpg: Cpg)
   ): Unit = {
     val identifierMap =
       getIdentifiersInScope(bodyNode)
-        .filter(_.refOut.isEmpty)
+        .filter(_._refOut.isEmpty)
         .filterNot(excludeIdentifierFn)
         .groupBy(_.name)
 

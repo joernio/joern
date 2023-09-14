@@ -1,9 +1,10 @@
 package io.shiftleft.semanticcpg.language.callgraphextension
 
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
+import flatgraph.help.{Doc, Traversal}
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.traversal.help.Doc
 
+@Traversal(elementType = classOf[Method])
 class MethodTraversal(val traversal: Iterator[Method]) extends AnyVal {
 
   /** Intended for internal use! Traverse to direct and transitive callers of the method.
@@ -62,6 +63,6 @@ class MethodTraversal(val traversal: Iterator[Method]) extends AnyVal {
     */
   @Doc(info = "Call sites (outgoing calls)")
   def call: Iterator[Call] =
-    traversal.flatMap(_._callViaContainsOut)
+    traversal.flatMap(_.callViaContainsOut)
 
 }

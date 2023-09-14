@@ -8,7 +8,7 @@ import io.joern.x2cpg.astgen.ParserResult
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.utils.{Report, TimeUtils}
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.utils.IOUtils
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -16,7 +16,7 @@ import java.nio.file.Paths
 import scala.util.{Failure, Success, Try}
 
 class AstCreationPass(cpg: Cpg, astCreators: Seq[AstCreator], report: Report)
-    extends ConcurrentWriterCpgPass[AstCreator](cpg) {
+    extends ForkJoinParallelCpgPass[AstCreator](cpg) {
   private val logger: Logger                      = LoggerFactory.getLogger(classOf[AstCreationPass])
   override def generateParts(): Array[AstCreator] = astCreators.toArray
   override def runOnPart(diffGraph: DiffGraphBuilder, astCreator: AstCreator): Unit = {

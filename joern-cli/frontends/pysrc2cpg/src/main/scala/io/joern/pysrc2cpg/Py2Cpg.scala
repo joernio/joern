@@ -1,10 +1,9 @@
 package io.joern.pysrc2cpg
 
 import io.joern.x2cpg.ValidationMode
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
-import overflowdb.BatchedUpdate
-import overflowdb.BatchedUpdate.DiffGraphBuilder
+import flatgraph.{DiffGraphApplier, DiffGraphBuilder}
 
 object Py2Cpg {
   case class InputPair(content: String, relFileName: String)
@@ -32,7 +31,7 @@ class Py2Cpg(
   schemaValidationMode: ValidationMode,
   enableFileContent: Boolean
 ) {
-  private val diffGraph   = new DiffGraphBuilder()
+  private val diffGraph   = Cpg.newDiffGraphBuilder
   private val nodeBuilder = new NodeBuilder(diffGraph)
   private val edgeBuilder = new EdgeBuilder(diffGraph)
 
@@ -44,7 +43,7 @@ class Py2Cpg(
     val anyTypeDecl =
       nodeBuilder.typeDeclNode(Constants.ANY, Constants.ANY, "N/A", Nil, LineAndColumn(1, 1, 1, 1, 1, 1))
     edgeBuilder.astEdge(anyTypeDecl, globalNamespaceBlock, 0)
-    BatchedUpdate.applyDiff(outputCpg.graph, diffGraph)
+    DiffGraphApplier.applyDiff(outputCpg.graph, diffGraph)
     new CodeToCpg(outputCpg, inputProviders, schemaValidationMode, enableFileContent).createAndApply()
     new ConfigFileCreationPass(outputCpg, requirementsTxt).createAndApply()
     new DependenciesFromRequirementsTxtPass(outputCpg).createAndApply()

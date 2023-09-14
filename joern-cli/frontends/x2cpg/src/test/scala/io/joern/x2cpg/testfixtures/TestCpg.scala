@@ -1,9 +1,9 @@
 package io.joern.x2cpg.testfixtures
 
+import flatgraph.Graph
 import io.joern.x2cpg.X2CpgConfig
 import io.joern.x2cpg.utils.TestCodeWriter
 import io.shiftleft.codepropertygraph.Cpg
-import overflowdb.Graph
 
 import java.nio.file.{Files, Path}
 import java.util.Comparator
@@ -11,7 +11,7 @@ import java.util.Comparator
 // Lazily populated test CPG which is created upon first access to the underlying graph.
 // The trait LanguageFrontend is mixed in and not property/field of this class in order
 // to allow the configuration of language frontend specific properties on the CPG object.
-abstract class TestCpg extends Cpg() with LanguageFrontend with TestCodeWriter {
+abstract class TestCpg extends Cpg(Cpg.empty.graph) with LanguageFrontend with TestCodeWriter {
   private var _graph                = Option.empty[Graph]
   protected var _withPostProcessing = false
 
@@ -35,7 +35,7 @@ abstract class TestCpg extends Cpg() with LanguageFrontend with TestCodeWriter {
   }
 
   private def checkGraphEmpty(): Unit = {
-    if (_graph.isDefined) {
+    if (_graph0.isDefined) {
       throw new RuntimeException("Modifying test data is not allowed after accessing graph.")
     }
   }
@@ -51,17 +51,17 @@ abstract class TestCpg extends Cpg() with LanguageFrontend with TestCodeWriter {
     if (_graph.isEmpty) {
       val codeDir = writeCode(fileSuffix)
       try {
-        _graph = Option(execute(codeDir.toFile).graph)
+        _graph0 = Option(execute(codeDir.toFile).graph)
         applyPasses()
         if (_withPostProcessing) applyPostProcessingPasses()
       } finally {
         cleanupOutput()
       }
     }
-    _graph.get
+    _graph0.get
   }
 
   override def close(): Unit = {
-    _graph.foreach(_.close())
+    _graph0.foreach(_.close())
   }
 }

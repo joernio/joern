@@ -14,7 +14,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
                      |""".stripMargin)
 
     val List(f)         = cpg.method.name("f").l
-    val List(r: Return) = f.methodReturn.cfgIn.l: @unchecked
+    val List(r: Return) = f.methodReturn._cfgIn.l: @unchecked
     r.code shouldBe "x * x"
     r.lineNumber shouldBe Some(2)
   }
@@ -27,7 +27,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
                      |""".stripMargin)
 
     val List(f)         = cpg.method.name("f").l
-    val List(r: Return) = f.methodReturn.cfgIn.l: @unchecked
+    val List(r: Return) = f.methodReturn._cfgIn.l: @unchecked
     r.code shouldBe "return x * x"
     r.lineNumber shouldBe Some(3)
   }
@@ -39,7 +39,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
 
     // Lowered as `def f(x) = x = 1; return x`
     val List(f)         = cpg.method.name("f").l
-    val List(r: Return) = f.methodReturn.cfgIn.l: @unchecked
+    val List(r: Return) = f.methodReturn._cfgIn.l: @unchecked
     r.code shouldBe "x = 1"
     r.lineNumber shouldBe Some(2)
   }
@@ -52,7 +52,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
         |""".stripMargin)
 
     val List(f)         = cpg.method.name("f").l
-    val List(r: Return) = f.methodReturn.cfgIn.l: @unchecked
+    val List(r: Return) = f.methodReturn._cfgIn.l: @unchecked
     r.code shouldBe "x"
     r.lineNumber shouldBe Some(3)
   }
@@ -65,7 +65,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
         |""".stripMargin)
 
     val List(f)         = cpg.method.name("f").l
-    val List(r: Return) = f.methodReturn.cfgIn.l: @unchecked
+    val List(r: Return) = f.methodReturn._cfgIn.l: @unchecked
 
     r.code shouldBe "puts x"
     r.lineNumber shouldBe Some(3)
@@ -83,7 +83,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
         |end""".stripMargin)
 
     val List(f)         = cpg.method.name("f").l
-    val List(r: Return) = f.methodReturn.cfgIn.l: @unchecked
+    val List(r: Return) = f.methodReturn._cfgIn.l: @unchecked
 
     r.code shouldBe "x.class"
     r.lineNumber shouldBe Some(3)
@@ -97,7 +97,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
         |""".stripMargin)
 
     val List(f)         = cpg.method.name("f").l
-    val List(r: Return) = f.methodReturn.cfgIn.l: @unchecked
+    val List(r: Return) = f.methodReturn._cfgIn.l: @unchecked
 
     r.code shouldBe "[]"
     r.lineNumber shouldBe Some(3)
@@ -133,7 +133,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
         |""".stripMargin)
 
     val List(f)         = cpg.method.name("f").l
-    val List(r: Return) = f.methodReturn.cfgIn.l: @unchecked
+    val List(r: Return) = f.methodReturn._cfgIn.l: @unchecked
 
     r.code shouldBe "{x:0}"
     r.lineNumber shouldBe Some(2)
@@ -151,7 +151,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
 
     // Lowered as `def f; def g = 0; return :g; end`
     val List(f)         = cpg.method.name("f").l
-    val List(r: Return) = f.methodReturn.cfgIn.l: @unchecked
+    val List(r: Return) = f.methodReturn._cfgIn.l: @unchecked
 
     val List(s: Literal) = r.astChildren.isLiteral.l
     s.code shouldBe ":g"
@@ -166,7 +166,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
         |""".stripMargin)
 
     val List(f)         = cpg.method.name("foo").l
-    val List(r: Return) = f.methodReturn.cfgIn.l: @unchecked
+    val List(r: Return) = f.methodReturn._cfgIn.l: @unchecked
     r.code shouldBe "return \"\""
     r.lineNumber shouldBe Some(3)
   }

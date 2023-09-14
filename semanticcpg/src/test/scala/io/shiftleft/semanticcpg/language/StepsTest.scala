@@ -1,18 +1,17 @@
 package io.shiftleft.semanticcpg.language
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.Cpg.docSearchPackages
+import io.shiftleft.codepropertygraph.generated.{NodeTypes, PropertyKeys}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{NodeTypes, Properties}
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.testing.MockCpg
+import flatgraph.help.Table.{AvailableWidthProvider, ConstantWidth}
 import org.json4s.*
 import org.json4s.native.JsonMethods.parse
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import overflowdb.traversal.help.Table.{AvailableWidthProvider, ConstantWidth}
 
 import java.util.Optional
-import scala.jdk.CollectionConverters.IteratorHasAsScala
 
 class StepsTest extends AnyWordSpec with Matchers {
 
@@ -52,7 +51,7 @@ class StepsTest extends AnyWordSpec with Matchers {
         val method: Method        = cpg.method.head
         val results: List[Method] = cpg.method.id(method.id).toList
         results.size shouldBe 1
-        results.head.underlying.id
+        results.head.id
       }
 
       "providing multiple" in {
@@ -197,19 +196,19 @@ class StepsTest extends AnyWordSpec with Matchers {
     "show domain overview" in {
       val domainStartersHelp = Cpg.emptyCpg.help
       domainStartersHelp should include(".comment")
-      domainStartersHelp should include("All comments in source-based CPGs")
+      domainStartersHelp should include("A source code comment")
       domainStartersHelp should include(".arithmetic")
       domainStartersHelp should include("All arithmetic operations")
     }
 
     "provide node-specific overview" in {
       val methodStepsHelp = Cpg.emptyCpg.method.help
-      methodStepsHelp should include("Available steps for Method")
+      methodStepsHelp should include("Available steps for `Method`")
       methodStepsHelp should include(".namespace")
       methodStepsHelp should include(".depth") // from AstNode
 
       val methodStepsHelpVerbose = Cpg.emptyCpg.method.helpVerbose
-      methodStepsHelpVerbose should include("traversal name")
+      methodStepsHelpVerbose should include("implemented in")
       methodStepsHelpVerbose should include("structure.MethodTraversal")
 
       val assignmentStepsHelp = Cpg.emptyCpg.assignment.help
@@ -283,7 +282,6 @@ class StepsTest extends AnyWordSpec with Matchers {
     def methodParameterOut =
       cpg.graph
         .nodes(NodeTypes.METHOD_PARAMETER_OUT)
-        .asScala
         .cast[MethodParameterOut]
         .name("param1")
     methodParameterOut.typ.name.head shouldBe "paramtype"
@@ -305,7 +303,7 @@ class StepsTest extends AnyWordSpec with Matchers {
     file.typeDecl.name.head shouldBe "AClass"
     file.head.typeDecl.name.head shouldBe "AClass"
 
-    def block = cpg.graph.nodes(NodeTypes.BLOCK).asScala.cast[Block].typeFullName("int")
+    def block = cpg.graph.nodes(NodeTypes.BLOCK).cast[Block].typeFullName("int")
     block.local.name.size shouldBe 1
     block.flatMap(_.local.name).size shouldBe 1
 
@@ -321,8 +319,8 @@ class StepsTest extends AnyWordSpec with Matchers {
 //    def cfg: Iterator[CfgNode] = cpg.method.name("add")
 
     def ast: Iterator[AstNode] = cpg.method.name("foo").cast[AstNode]
-    ast.astParent.property(Properties.NAME).head shouldBe "AClass"
-    ast.head.astParent.property(Properties.NAME) shouldBe "AClass"
+    ast.astParent.property(PropertyKeys.Name).head shouldBe "AClass"
+    ast.head.astParent.property(PropertyKeys.Name) shouldBe "AClass"
 
     // methodForCallGraph
     method.call.size shouldBe 1
@@ -347,13 +345,6 @@ class StepsTest extends AnyWordSpec with Matchers {
     // modifierAccessors
     method.modifier.modifierType.toSetMutable shouldBe Set("modifiertype")
     method.head.modifier.modifierType.toSetMutable shouldBe Set("modifiertype")
-  }
-
-  "id starter step" in {
-    // only verifying what compiles and what doesn't...
-    // if it compiles, :shipit:
-    assertCompiles("cpg.id(1).out")
-    assertDoesNotCompile("cpg.id(1).outV") // `.outV` is only available on Traversal[Edge]
   }
 
   "property accessors" in {

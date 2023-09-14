@@ -7,11 +7,10 @@ import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-import overflowdb.traversal.toNodeTraversal
 
 class AstCreationPassTests extends AstC2CpgSuite {
 
@@ -140,18 +139,18 @@ class AstCreationPassTests extends AstC2CpgSuite {
         l2.body.code shouldBe "{ return a + b; }"
       }
 
-      inside(cpg.typeDecl(NamespaceTraversal.globalNamespaceName).head.bindsOut.l) {
+      inside(cpg.typeDecl(NamespaceTraversal.globalNamespaceName).head._bindsOut.l) {
         case List(bX: Binding, bY: Binding) =>
           bX.name shouldBe lambda1FullName
           bX.signature shouldBe s"int $lambda1FullName (int,int)"
-          inside(bX.refOut.l) { case List(method: Method) =>
+          inside(bX._refOut.l) { case List(method: Method) =>
             method.name shouldBe lambda1FullName
             method.fullName shouldBe lambda1FullName
             method.signature shouldBe s"int $lambda1FullName (int,int)"
           }
           bY.name shouldBe lambda2FullName
           bY.signature shouldBe s"string $lambda2FullName (string,string)"
-          inside(bY.refOut.l) { case List(method: Method) =>
+          inside(bY._refOut.l) { case List(method: Method) =>
             method.name shouldBe lambda2FullName
             method.fullName shouldBe lambda2FullName
             method.signature shouldBe s"string $lambda2FullName (string,string)"
@@ -190,10 +189,10 @@ class AstCreationPassTests extends AstC2CpgSuite {
         l1.signature shouldBe signature
       }
 
-      inside(cpg.typeDecl("Foo").head.bindsOut.l) { case List(binding: Binding) =>
+      inside(cpg.typeDecl("Foo").head._bindsOut.l) { case List(binding: Binding) =>
         binding.name shouldBe lambdaName
         binding.signature shouldBe signature
-        inside(binding.refOut.l) { case List(method: Method) =>
+        inside(binding._refOut.l) { case List(method: Method) =>
           method.name shouldBe lambdaName
           method.fullName shouldBe lambdaFullName
           method.signature shouldBe signature
@@ -233,10 +232,10 @@ class AstCreationPassTests extends AstC2CpgSuite {
         l1.signature shouldBe signature
       }
 
-      inside(cpg.typeDecl.fullNameExact("A.B.Foo").head.bindsOut.l) { case List(binding: Binding) =>
+      inside(cpg.typeDecl.fullNameExact("A.B.Foo").head._bindsOut.l) { case List(binding: Binding) =>
         binding.name shouldBe lambdaName
         binding.signature shouldBe signature
-        inside(binding.refOut.l) { case List(method: Method) =>
+        inside(binding._refOut.l) { case List(method: Method) =>
           method.name shouldBe lambdaName
           method.fullName shouldBe lambdaFullName
           method.signature shouldBe signature
@@ -284,18 +283,18 @@ class AstCreationPassTests extends AstC2CpgSuite {
         l1.signature shouldBe signature1
       }
 
-      inside(cpg.typeDecl(NamespaceTraversal.globalNamespaceName).head.bindsOut.l) {
+      inside(cpg.typeDecl(NamespaceTraversal.globalNamespaceName).head._bindsOut.l) {
         case List(b1: Binding, b2: Binding) =>
           b1.name shouldBe lambda1Name
           b1.signature shouldBe signature1
-          inside(b1.refOut.l) { case List(method: Method) =>
+          inside(b1._refOut.l) { case List(method: Method) =>
             method.name shouldBe lambda1Name
             method.fullName shouldBe lambda1Name
             method.signature shouldBe signature1
           }
           b2.name shouldBe lambda2Name
           b2.signature shouldBe signature2
-          inside(b2.refOut.l) { case List(method: Method) =>
+          inside(b2._refOut.l) { case List(method: Method) =>
             method.name shouldBe lambda2Name
             method.fullName shouldBe lambda2Name
             method.signature shouldBe signature2
@@ -1396,11 +1395,9 @@ class AstCreationPassTests extends AstC2CpgSuite {
         .name("d")
         .ast
         .isReturn
-        .outE(EdgeTypes.ARGUMENT)
+        .out(EdgeTypes.ARGUMENT)
         .head
-        .inNode()
-        .get
-        .asInstanceOf[CallDb]
+        .asInstanceOf[Call]
         .code shouldBe "x * 2"
     }
 

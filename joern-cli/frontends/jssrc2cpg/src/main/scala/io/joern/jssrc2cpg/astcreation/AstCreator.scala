@@ -18,7 +18,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeRef
 import org.slf4j.{Logger, LoggerFactory}
-import overflowdb.BatchedUpdate.DiffGraphBuilder
+import flatgraph.DiffGraphBuilder
 import ujson.Value
 
 import scala.collection.mutable
@@ -253,10 +253,10 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
 
   private def astsForProgram(program: BabelNodeInfo): List[Ast] = createBlockStatementAsts(program.json("body"))
 
-  protected def line(node: BabelNodeInfo): Option[Integer]      = node.lineNumber
-  protected def column(node: BabelNodeInfo): Option[Integer]    = node.columnNumber
-  protected def lineEnd(node: BabelNodeInfo): Option[Integer]   = node.lineNumberEnd
-  protected def columnEnd(node: BabelNodeInfo): Option[Integer] = node.columnNumberEnd
+  protected def line(node: BabelNodeInfo): Option[Int]      = node.lineNumber
+  protected def column(node: BabelNodeInfo): Option[Int]    = node.columnNumber
+  protected def lineEnd(node: BabelNodeInfo): Option[Int]   = node.lineNumberEnd
+  protected def columnEnd(node: BabelNodeInfo): Option[Int] = node.columnNumberEnd
   protected def code(node: BabelNodeInfo): String               = node.code
 
   protected def nodeOffsets(node: Value): Option[(Int, Int)] = {

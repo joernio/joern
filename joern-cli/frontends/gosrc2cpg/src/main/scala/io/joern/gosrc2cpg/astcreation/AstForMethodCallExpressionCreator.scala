@@ -153,7 +153,7 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
     val receiverTypeFullName =
       receiverAst.headOption
         .flatMap(_.root)
-        .map(_.properties.get(PropertyNames.TYPE_FULL_NAME).get.toString)
+        .map(_.propertiesMap.get(PropertyNames.TYPE_FULL_NAME).toString)
         .getOrElse(Defines.anyTypeName)
         .stripPrefix("*")
     val callMethodFullName = s"$receiverTypeFullName.$methodName"

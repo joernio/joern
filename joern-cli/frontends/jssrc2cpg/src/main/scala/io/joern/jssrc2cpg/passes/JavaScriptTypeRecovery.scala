@@ -5,10 +5,10 @@ import io.joern.x2cpg.Defines.ConstructorMethodName
 import io.joern.x2cpg.passes.frontend.*
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{Operators, PropertyKeys, PropertyNames}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
-import overflowdb.BatchedUpdate.DiffGraphBuilder
+import flatgraph.DiffGraphBuilder
 
 class JavaScriptTypeRecoveryPassGenerator(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
     extends XTypeRecoveryPassGenerator[File](cpg, config) {
@@ -48,9 +48,9 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
 
   override protected def prepopulateSymbolTableEntry(x: AstNode): Unit = x match {
     case x @ (_: Identifier | _: Local | _: MethodParameterIn)
-        if x.property(PropertyNames.TYPE_FULL_NAME, Defines.Any) != Defines.Any =>
-      val typeFullName = x.property(PropertyNames.TYPE_FULL_NAME, Defines.Any)
-      val typeHints    = symbolTable.get(LocalVar(x.property(PropertyNames.TYPE_FULL_NAME, Defines.Any))) - typeFullName
+        if x.propertyOption(PropertyKeys.TypeFullName).getOrElse(Defines.Any) != Defines.Any =>
+      val typeFullName = x.propertyOption(PropertyKeys.TypeFullName).getOrElse(Defines.Any)
+      val typeHints    = symbolTable.get(LocalVar(typeFullName)) - typeFullName
       lazy val cpgTypeFullName = cpg.typeDecl.nameExact(typeFullName).fullName.toSet
       val resolvedTypeHints =
         if (typeHints.nonEmpty) symbolTable.put(x, typeHints)
@@ -110,7 +110,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
 
   private lazy val exportedIdentifiers = cu.method
     .nameExact(":program")
-    .flatMap(_._callViaContainsOut)
+    .flatMap(_.callViaContainsOut)
     .nameExact(Operators.assignment)
     .filter(_.code.startsWith("exports.*"))
     .argument
@@ -205,7 +205,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
   override protected def postSetTypeInformation(): Unit = {
     // often there are "this" identifiers with type hints but this can be set to a type hint if they meet the criteria
     cu.method
-      .flatMap(_._identifierViaContainsOut)
+      .flatMap(_.identifierViaContainsOut)
       .nameExact("this")
       .where(_.typeFullNameExact(Defines.Any))
       .filterNot(_.dynamicTypeHintFullName.isEmpty)

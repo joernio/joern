@@ -150,7 +150,7 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
     // then use the types of those to fix the local type.
     val assignTarget = identifierNode(expr, tmpName, tmpName, TypeConstants.Any)
     val allocAndInitAst =
-      inlinedAstsForObjectCreationExpr(expr, Ast(assignTarget.copy), expectedType, resetAssignmentTargetType = true)
+      inlinedAstsForObjectCreationExpr(expr, Ast(assignTarget.copy()), expectedType, resetAssignmentTargetType = true)
 
     assignTarget.typeFullName(allocAndInitAst.allocAst.rootType.getOrElse(TypeConstants.Any))
     val tmpLocal = localNode(expr, tmpName, tmpName, assignTarget.typeFullName)
@@ -171,7 +171,7 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
     val allocAssignTargetAst  = Ast(allocAssignTargetNode).withRefEdge(allocAssignTargetNode, tmpLocal)
     val allocAssignAst        = callAst(allocAssignCall, allocAssignTargetAst :: allocAndInitAst.allocAst :: Nil)
 
-    val returnedIdentifier    = assignTarget.copy
+    val returnedIdentifier    = assignTarget.copy()
     val returnedIdentifierAst = Ast(returnedIdentifier).withRefEdge(returnedIdentifier, tmpLocal)
 
     Ast(blockNode(expr).typeFullName(returnedIdentifier.typeFullName))
@@ -332,8 +332,8 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
     argumentTypes: Option[List[String]],
     argsSize: Int,
     code: String,
-    lineNumber: Option[Integer] = None,
-    columnNumber: Option[Integer] = None
+    lineNumber: Option[Int] = None,
+    columnNumber: Option[Int] = None
   ): NewCall = {
     val initSignature = argumentTypes match {
       case Some(tpe)          => composeMethodLikeSignature(TypeConstants.Void, tpe)

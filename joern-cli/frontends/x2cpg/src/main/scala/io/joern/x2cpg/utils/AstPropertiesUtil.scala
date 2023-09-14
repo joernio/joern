@@ -8,7 +8,7 @@ object AstPropertiesUtil {
   implicit class RootProperties(val ast: Ast) extends AnyVal {
 
     private def rootProperty(propertyName: String): Option[String] = {
-      ast.root.flatMap(_.properties.get(propertyName).map(_.toString))
+      ast.root.flatMap(node => Option(node.propertiesMap.get(propertyName)).map(_.toString))
     }
 
     def rootType: Option[String] = rootProperty(PropertyNames.TYPE_FULL_NAME)

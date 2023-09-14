@@ -1,5 +1,6 @@
 package io.joern.csharpsrc2cpg.astcreation
 
+import flatgraph.DiffGraphBuilder
 import io.joern.csharpsrc2cpg.{CSharpDefines, Constants}
 import io.joern.csharpsrc2cpg.datastructures.{CSharpProgramSummary, CSharpScope}
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
@@ -10,7 +11,6 @@ import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewTypeDecl}
 import io.shiftleft.passes.IntervalKeyPool
 import org.slf4j.{Logger, LoggerFactory}
-import overflowdb.BatchedUpdate.DiffGraphBuilder
 import ujson.Value
 
 import java.math.BigInteger

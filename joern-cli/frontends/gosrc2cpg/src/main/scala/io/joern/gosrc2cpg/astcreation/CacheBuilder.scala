@@ -5,8 +5,8 @@ import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.gosrc2cpg.utils.UtilityConstants.fileSeparateorPattern
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
+import flatgraph.DiffGraphBuilder
+import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
 import ujson.{Arr, Obj, Value}
 
@@ -16,7 +16,7 @@ import scala.util.Try
 trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   def buildCache(cpgOpt: Option[Cpg]): DiffGraphBuilder = {
-    val diffGraph = new DiffGraphBuilder
+    val diffGraph = Cpg.newDiffGraphBuilder
     try {
       if (checkIfGivenDependencyPackageCanBeProcessed()) {
         cpgOpt.map { _ =>

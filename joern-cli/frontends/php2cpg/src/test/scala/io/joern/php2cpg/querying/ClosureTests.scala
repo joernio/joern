@@ -110,7 +110,7 @@ class ClosureTests extends PhpCode2CpgFixture {
       inside(cpg.all.collectAll[ClosureBinding].filter(_.closureOriginalName.contains("use1")).l) {
         case List(closureBinding) =>
           val capturedNode = cpg.method.nameExact("<global>").local.name("use1").head
-          closureBinding.refOut.toList shouldBe List(capturedNode)
+          closureBinding._refOut.toList shouldBe List(capturedNode)
       }
     }
 

@@ -3,6 +3,7 @@ package io.joern.dataflowengineoss.queryengine
 import io.joern.dataflowengineoss.globalFromLiteral
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.allAssignmentTypes
@@ -229,7 +230,7 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
     }
 
   private def fieldAndIndexAccesses(identifier: Identifier): List[CfgNode] =
-    identifier.method._identifierViaContainsOut
+    identifier.method.identifierViaContainsOut
       .nameExact(identifier.name)
       .inCall
       .collect { case c if isFieldAccess(c.name) => c }
@@ -282,7 +283,7 @@ abstract class BaseSourceToStartingPoints extends Callable[Unit] {
   }
 
   private def firstUsagesForName(name: String, m: Method): List[Expression] = {
-    val identifiers      = m._identifierViaContainsOut.l
+    val identifiers      = m.identifierViaContainsOut.l
     val identifierUsages = identifiers.nameExact(name).takeWhile(notLeftHandOfAssignment).l
     val fieldIdentifiers = m.fieldAccess.fieldIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
     val thisRefs         = Seq("this", "self") ++ m.typeDecl.name.headOption.toList

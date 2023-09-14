@@ -33,7 +33,7 @@ class DataFlowBinToCpgSuite extends GhidraBinToCpgSuite {
     new OssDataFlow(options).run(context)
   }
 
-  protected implicit def int2IntegerOption(x: Int): Option[Integer] =
+  protected implicit def int2IntegerOption(x: Int): Option[Int] =
     Some(x)
 
   protected def getMemberOfType(cpg: Cpg, typeName: String, memberName: String): Iterator[Member] =

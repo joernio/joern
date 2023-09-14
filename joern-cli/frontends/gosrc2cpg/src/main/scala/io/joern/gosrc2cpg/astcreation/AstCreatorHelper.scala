@@ -65,7 +65,7 @@ trait AstCreatorHelper { this: AstCreator =>
   protected def getTypeFullNameFromAstNode(ast: Seq[Ast]): String = {
     ast.headOption
       .flatMap(_.root)
-      .map(_.properties.get(PropertyNames.TYPE_FULL_NAME).get.toString)
+      .map(_.propertiesMap.get(PropertyNames.TYPE_FULL_NAME).toString)
       .getOrElse(Defines.anyTypeName)
   }
 
@@ -113,13 +113,13 @@ trait AstCreatorHelper { this: AstCreator =>
     }
   }
 
-  protected def line(node: Value): Option[Integer] = Try(node(ParserKeys.NodeLineNo).num).toOption.map(_.toInt)
+  protected def line(node: Value): Option[Int] = Try(node(ParserKeys.NodeLineNo).num).toOption.map(_.toInt)
 
-  protected def column(node: Value): Option[Integer] = Try(node(ParserKeys.NodeColNo).num).toOption.map(_.toInt)
+  protected def column(node: Value): Option[Int] = Try(node(ParserKeys.NodeColNo).num).toOption.map(_.toInt)
 
-  protected def lineEndNo(node: Value): Option[Integer] = Try(node(ParserKeys.NodeLineEndNo).num).toOption.map(_.toInt)
+  protected def lineEndNo(node: Value): Option[Int] = Try(node(ParserKeys.NodeLineEndNo).num).toOption.map(_.toInt)
 
-  protected def columnEndNo(node: Value): Option[Integer] = Try(node(ParserKeys.NodeColEndNo).num).toOption.map(_.toInt)
+  protected def columnEndNo(node: Value): Option[Int] = Try(node(ParserKeys.NodeColEndNo).num).toOption.map(_.toInt)
 
   protected def positionLookupTables(source: String): Map[Int, String] = {
     source

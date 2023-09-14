@@ -2,7 +2,9 @@ name                     := "joern"
 ThisBuild / organization := "io.joern"
 ThisBuild / scalaVersion := "3.4.2"
 
-val cpgVersion = "1.6.13"
+val cpgVersion = "1.6.13+11-85465b84"
+// TODO drop
+// ThisBuild / libraryDependencies += "io.joern" %% "flatgraph-core" % "0.0.23+0-3adb3bbb+20240326-1218"
 
 lazy val joerncli          = Projects.joerncli
 lazy val querydb           = Projects.querydb
@@ -71,17 +73,18 @@ ThisBuild / scalacOptions ++= Seq(
   "11"
 )
 
-lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")
-createDistribution := {
-  val distributionFile = file("target/joern-cli.zip")
-  val zip              = (joerncli / Universal / packageBin).value
+// TODO uncomment
+// lazy val createDistribution = taskKey[File]("Create a complete Joern distribution")
+// createDistribution := {
+//   val distributionFile = file("target/joern-cli.zip")
+//   val zip              = (joerncli / Universal / packageBin).value
 
-  IO.copyFile(zip, distributionFile)
-  val querydbDistribution = (querydb / createDistribution).value
+//   IO.copyFile(zip, distributionFile)
+//   val querydbDistribution = (querydb / createDistribution).value
 
-  println(s"created distribution - resulting files: $distributionFile")
-  distributionFile
-}
+//   println(s"created distribution - resulting files: $distributionFile")
+//   distributionFile
+// }
 
 ThisBuild / resolvers ++= Seq(
   Resolver.mavenLocal,

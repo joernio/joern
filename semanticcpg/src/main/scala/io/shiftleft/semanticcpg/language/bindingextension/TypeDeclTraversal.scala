@@ -13,6 +13,6 @@ class TypeDeclTraversal(val traversal: Iterator[TypeDecl]) extends AnyVal {
   /** Traverse to the method bindings of this type declaration.
     */
   def methodBinding: Iterator[Binding] =
-    traversal.canonicalType.flatMap(_.bindsOut)
+    traversal.canonicalType.flatMap(_._bindsOut.collectAll[Binding])
 
 }

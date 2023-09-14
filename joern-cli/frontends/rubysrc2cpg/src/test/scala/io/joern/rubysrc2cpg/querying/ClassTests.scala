@@ -97,7 +97,7 @@ class ClassTests extends RubyCode2CpgFixture {
     methodAbc.fullName shouldBe "Test0.rb:<global>::program.C:abc"
 
     // TODO: Make sure that @abc in this return is the actual field
-    val List(ret: Return)          = methodAbc.methodReturn.cfgIn.l: @unchecked
+    val List(ret: Return)          = methodAbc.methodReturn._cfgIn.l: @unchecked
     val List(abcField: Identifier) = ret.astChildren.l: @unchecked
     ret.code shouldBe "return @abc"
     abcField.name shouldBe "@abc"

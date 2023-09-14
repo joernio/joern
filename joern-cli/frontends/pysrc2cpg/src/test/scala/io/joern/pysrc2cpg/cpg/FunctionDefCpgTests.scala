@@ -54,12 +54,12 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
     }
 
     "test function method ref" in {
-      cpg.methodRef("func").referencedMethod.fullName.head shouldBe
+      cpg.methodRefWithName("func").referencedMethod.fullName.head shouldBe
         "test.py:<module>.func"
     }
 
     "test assignment of method ref to local variable" in {
-      val assignNode = cpg.methodRef("func").astParent.isCall.head
+      val assignNode = cpg.methodRefWithName("func").astParent.isCall.head
       assignNode.code shouldBe "func = def func(...)"
     }
 

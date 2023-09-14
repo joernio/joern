@@ -13,7 +13,7 @@ import io.joern.ghidra2cpg.utils.Utils._
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNodeNew, NewBlock, NewMethod}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
@@ -25,7 +25,7 @@ abstract class FunctionPass(
   functions: List[Function],
   cpg: Cpg,
   decompiler: Decompiler
-) extends ConcurrentWriterCpgPass[Function](cpg) {
+) extends ForkJoinParallelCpgPass[Function](cpg) {
 
   protected val functionByName: mutable.Map[String, Function] = mutable.HashMap[String, Function]()
   for (fn <- functions) {
@@ -60,7 +60,7 @@ abstract class FunctionPass(
 
   override def generateParts(): Array[Function] = functions.toArray
 
-  implicit def intToIntegerOption(intOption: Option[Int]): Option[Integer] = intOption.map(intValue => {
+  implicit def intToIntegerOption(intOption: Option[Int]): Option[Int] = intOption.map(intValue => {
     val integerValue = intValue
     integerValue
   })

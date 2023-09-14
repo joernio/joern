@@ -1,30 +1,32 @@
 package io.joern.x2cpg.passes
 
-import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn
+import flatgraph.misc.TestUtils.*
+import io.shiftleft.codepropertygraph.generated.*
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.*
 import io.joern.x2cpg.passes.base.MethodDecoratorPass
 import io.joern.x2cpg.testfixtures.EmptyGraphFixture
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import overflowdb._
 
 class MethodDecoratorPassTests extends AnyWordSpec with Matchers {
   "MethodDecoratorTest" in EmptyGraphFixture { graph =>
-    val method = graph + NodeTypes.METHOD
-    val parameterIn = graph
-      .+(
-        NodeTypes.METHOD_PARAMETER_IN,
-        Properties.CODE                -> "p1",
-        Properties.ORDER               -> 1,
-        Properties.NAME                -> "p1",
-        Properties.EVALUATION_STRATEGY -> EvaluationStrategies.BY_REFERENCE,
-        Properties.TYPE_FULL_NAME      -> "some.Type",
-        Properties.LINE_NUMBER         -> 10
-      )
-      .asInstanceOf[MethodParameterIn]
+    val method = graph.addNode(NewMethod())
+    val parameterIn = graph.addNode(
+      NewMethodParameterIn()
+        .code("p1")
+        .order(1)
+        .name("p1")
+        .evaluationStrategy(EvaluationStrategies.BY_REFERENCE)
+        .typeFullName("some.Type")
+        .lineNumber(10)
+    )
 
-    method --- EdgeTypes.AST --> parameterIn
+    // TODO MP get arrow syntax back
+//    method --- EdgeTypes.AST --> parameterIn
+    graph.applyDiff { diffGraphBuilder =>
+      diffGraphBuilder.addEdge(method, parameterIn, EdgeTypes.AST)
+    }
 
     val methodDecorator = new MethodDecoratorPass(new Cpg(graph))
     methodDecorator.createAndApply()

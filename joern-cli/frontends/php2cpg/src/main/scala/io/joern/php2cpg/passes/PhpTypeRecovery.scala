@@ -1,5 +1,6 @@
 package io.joern.php2cpg.passes
 
+import flatgraph.DiffGraphBuilder
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.passes.frontend.*
 import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
@@ -9,7 +10,6 @@ import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, Prope
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
-import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.mutable
 
@@ -151,7 +151,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
         symbolTable.append(head, callees)
       case _ => Set.empty
     }
-    val returnTypes = extractTypes(ret.argumentOut.l)
+    val returnTypes = extractTypes(ret._argumentOut.cast[CfgNode].l)
     existingTypes.addAll(returnTypes)
 
     /* Check whether method return is already known, and if so, remove dummy value */
@@ -222,7 +222,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
           .getOrElse(XTypeRecovery.DummyIndexAccess)
       else x.name
 
-    val collectionVar = Option(c.argumentOut.l match {
+    val collectionVar = Option(c._argumentOut.cast[CfgNode].l match {
       case List(i: Identifier, idx: Literal)    => CollectionVar(i.name, idx.code)
       case List(i: Identifier, idx: Identifier) => CollectionVar(i.name, idx.code)
       case List(c: Call, idx: Call)             => CollectionVar(callName(c), callName(idx))

@@ -194,7 +194,7 @@ class MethodTests extends C2CpgSuite {
       val List(indentifierX) = method.block.ast.isIdentifier.l
       indentifierX.name shouldBe "x"
 
-      val localX = indentifierX._localViaRefOut.get
+      val localX = indentifierX.localViaRefOut.get
       localX.name shouldBe "x"
     }
 
@@ -203,7 +203,7 @@ class MethodTests extends C2CpgSuite {
       val List(indentifierX) = method.block.ast.isIdentifier.l
       indentifierX.name shouldBe "x"
 
-      val parameterX = indentifierX._methodParameterInViaRefOut.get
+      val parameterX = indentifierX.methodParameterInViaRefOut.get
       parameterX.name shouldBe "x"
     }
 
@@ -211,7 +211,7 @@ class MethodTests extends C2CpgSuite {
       val List(method)           = cpg.method.nameExact("method3").l
       val List(outerIdentifierX) = method.block.astChildren.astChildren.isIdentifier.nameExact("x").l
 
-      val parameterX = outerIdentifierX._methodParameterInViaRefOut.get
+      val parameterX = outerIdentifierX.methodParameterInViaRefOut.get
       parameterX.name shouldBe "x"
 
       val List(expectedParameterX) = method.parameter.l
@@ -220,7 +220,7 @@ class MethodTests extends C2CpgSuite {
 
       val List(outerIdentifierY) = method.block.astChildren.astChildren.isIdentifier.nameExact("y").l
 
-      val outerLocalY = outerIdentifierY._localViaRefOut.get
+      val outerLocalY = outerIdentifierY.localViaRefOut.get
       outerLocalY.name shouldBe "y"
 
       val List(expectedOuterLocalY) = method.block.astChildren.isLocal.l
@@ -232,7 +232,7 @@ class MethodTests extends C2CpgSuite {
       val List(nestedIdentifierX) = nestedBlock.ast.isIdentifier.nameExact("x").l
       nestedIdentifierX.name shouldBe "x"
 
-      val nestedLocalX = nestedIdentifierX._localViaRefOut.get
+      val nestedLocalX = nestedIdentifierX.localViaRefOut.get
       nestedLocalX.name shouldBe "x"
 
       val List(expectedNestedLocalX) = nestedBlock.ast.isLocal.nameExact("x").l
@@ -241,7 +241,7 @@ class MethodTests extends C2CpgSuite {
       val List(nestedIdentifierY) = nestedBlock.ast.isIdentifier.nameExact("y").l
       nestedIdentifierY.name shouldBe "y"
 
-      val nestedLocalY = nestedIdentifierY._localViaRefOut.get
+      val nestedLocalY = nestedIdentifierY.localViaRefOut.get
       nestedLocalY.name shouldBe "y"
 
       val List(expectedNestedLocalY) = nestedBlock.ast.isLocal.nameExact("y").l

@@ -2,13 +2,13 @@ package io.joern.x2cpg.passes.frontend
 
 import io.joern.x2cpg.passes.frontend.TypeNodePass.fullToShortName
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.PropertyKeys
 import io.shiftleft.codepropertygraph.generated.nodes.NewType
-import io.shiftleft.passes.{KeyPool, CpgPass}
-import io.shiftleft.semanticcpg.language._
-import io.shiftleft.codepropertygraph.generated.PropertyNames
+import io.shiftleft.passes.CpgPass
+import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import scala.collection.mutable
-import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 /** Creates a `TYPE` node for each type in `usedTypes` as well as all inheritsFrom type names in the CPG
   *
@@ -18,9 +18,8 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 class TypeNodePass protected (
   registeredTypes: List[String],
   cpg: Cpg,
-  keyPool: Option[KeyPool],
   getTypesFromCpg: Boolean
-) extends CpgPass(cpg, "types", keyPool) {
+) extends CpgPass(cpg, "types") {
 
   protected def typeDeclTypes: mutable.Set[String] = {
     val typeDeclTypes = mutable.Set[String]()
@@ -33,9 +32,8 @@ class TypeNodePass protected (
 
   protected def typeFullNamesFromCpg: Set[String] = {
     cpg.all
-      .map(_.property(PropertyNames.TYPE_FULL_NAME))
+      .map(_.property(PropertyKeys.TypeFullName))
       .filter(_ != null)
-      .map(_.toString)
       .toSet
   }
 
@@ -65,12 +63,12 @@ class TypeNodePass protected (
 }
 
 object TypeNodePass {
-  def withTypesFromCpg(cpg: Cpg, keyPool: Option[KeyPool] = None): TypeNodePass = {
-    new TypeNodePass(Nil, cpg, keyPool, getTypesFromCpg = true)
+  def withTypesFromCpg(cpg: Cpg): TypeNodePass = {
+    new TypeNodePass(Nil, cpg, getTypesFromCpg = true)
   }
 
-  def withRegisteredTypes(registeredTypes: List[String], cpg: Cpg, keyPool: Option[KeyPool] = None): TypeNodePass = {
-    new TypeNodePass(registeredTypes, cpg, keyPool, getTypesFromCpg = false)
+  def withRegisteredTypes(registeredTypes: List[String], cpg: Cpg): TypeNodePass = {
+    new TypeNodePass(registeredTypes, cpg, getTypesFromCpg = false)
   }
 
   def fullToShortName(typeName: String): String = {
