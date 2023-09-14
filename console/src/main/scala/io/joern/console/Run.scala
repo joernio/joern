@@ -75,7 +75,7 @@ object Run {
 
     val toStringCode =
       s"""
-         |  import overflowdb.traversal.help.Table
+         |  import flatgraph.help.Table
          |  override def toString() : String = {
          |    val columnNames = List("name", "description")
          |    val rows =

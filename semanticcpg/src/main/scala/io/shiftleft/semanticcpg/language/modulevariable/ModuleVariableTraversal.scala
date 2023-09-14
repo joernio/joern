@@ -1,11 +1,13 @@
 package io.shiftleft.semanticcpg.language.modulevariable
 
+import io.shiftleft.codepropertygraph.generated.help.{Doc, Traversal}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.Assignment
 import io.shiftleft.codepropertygraph.generated.help.Doc
 
+@Traversal(elementType = classOf[Local])
 class ModuleVariableTraversal(traversal: Iterator[OpNodes.ModuleVariable]) extends AnyVal {
 
   @Doc(info = "All assignments where the module variables in this traversal are the target across the program")

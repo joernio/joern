@@ -4,15 +4,13 @@ import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes}
 import io.shiftleft.semanticcpg.codedumper.CodeDumper
-import overflowdb.Node
-import overflowdb.traversal.*
-import io.shiftleft.codepropertygraph.generated.help.Doc
+import io.shiftleft.codepropertygraph.generated.help.{Doc, Traversal}
 
 /** Steps for all node types
   *
   * This is the base class for all steps defined on
   */
-@help.Traversal(elementType = classOf[StoredNode])
+@Traversal(elementType = classOf[StoredNode])
 class NodeSteps[NodeType <: StoredNode](val traversal: Iterator[NodeType]) extends AnyVal {
 
   @Doc(
@@ -23,15 +21,16 @@ class NodeSteps[NodeType <: StoredNode](val traversal: Iterator[NodeType]) exten
       |the file node that represents that source file.
       |"""
   )
-  def file: Iterator[File] =
-    traversal
-      .choose(_.label) {
-        case NodeTypes.NAMESPACE => _.in(EdgeTypes.REF).out(EdgeTypes.SOURCE_FILE)
-        case NodeTypes.COMMENT   => _.in(EdgeTypes.AST).hasLabel(NodeTypes.FILE)
-        case _ =>
-          _.repeat(_.coalesce(_.out(EdgeTypes.SOURCE_FILE), _.in(EdgeTypes.AST)))(_.until(_.hasLabel(NodeTypes.FILE)))
-      }
-      .cast[File]
+  def file: Iterator[File] = {
+    traversal.flatMap {
+      case namespace: Namespace =>
+        namespace.refIn.sourceFileOut
+      case comment: Comment =>
+        comment.astIn
+      case node =>
+        Iterator(node).repeat(_.coalesce(_._sourceFileOut, _._astIn))(_.until(_.hasLabel(File.Label))).cast[File]
+    }
+  }
 
   @Doc(
     info = "Location, including filename and line number",
@@ -83,11 +82,6 @@ class NodeSteps[NodeType <: StoredNode](val traversal: Iterator[NodeType]) exten
       CodeDumper.dump(node.location, language, rootPath, highlight)
     }.l
   }
-
-  /* follow the incoming edges of the given type as long as possible */
-  protected def walkIn(edgeType: String): Iterator[Node] =
-    traversal
-      .repeat(_.in(edgeType))(_.until(_.in(edgeType).countTrav.filter(_ == 0)))
 
   @Doc(
     info = "Tag node with `tagName`",

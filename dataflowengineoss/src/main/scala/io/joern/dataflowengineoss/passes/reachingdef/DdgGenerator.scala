@@ -4,7 +4,7 @@ import io.joern.dataflowengineoss.{globalFromLiteral, identifierToFirstUsages}
 import io.joern.dataflowengineoss.queryengine.AccessPathUsage.toTrackedBaseAndAccessPathSimple
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
 import io.shiftleft.semanticcpg.accesspath.MatchResult
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
@@ -132,7 +132,7 @@ class DdgGenerator(semantics: Semantics) {
       // There is always an edge from the method input parameter
       // to the corresponding method output parameter as modifications
       // of the input parameter only affect a copy.
-      paramOut.paramIn.foreach { paramIn =>
+      paramOut.start.paramIn.foreach { paramIn =>
         addEdge(paramIn, paramOut, paramIn.name)
       }
       usageAnalyzer.usedIncomingDefs(paramOut).foreach { case (_, inElements) =>
@@ -224,7 +224,7 @@ class DdgGenerator(semantics: Semantics) {
 
     (fromNode, toNode) match {
       case (parentNode: CfgNode, childNode: CfgNode) if EdgeValidator.isValidEdge(childNode, parentNode) =>
-        dstGraph.addEdge(fromNode, toNode, EdgeTypes.REACHING_DEF, PropertyNames.VARIABLE, variable)
+        dstGraph.addEdge(fromNode, toNode, EdgeTypes.REACHING_DEF, variable)
       case _ =>
 
     }

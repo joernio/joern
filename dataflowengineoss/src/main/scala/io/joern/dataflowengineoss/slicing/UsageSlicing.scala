@@ -3,7 +3,7 @@ package io.joern.dataflowengineoss.slicing
 import io.joern.x2cpg.utils.ConcurrentTaskUtil
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{Operators, Properties}
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 
@@ -182,15 +182,12 @@ object UsageSlicing {
                         .getOrElse(Iterator.empty)
                     else baseCall.argument)
         .collect { case n: Expression if n.argumentIndex > 0 => n }
-        .flatMap {
-          case _: MethodRef => Option("LAMBDA")
+        .map {
+          case _: MethodRef => "LAMBDA"
           case x =>
-            Option(
-              x.property(
-                PropertyNames.TYPE_FULL_NAME,
-                x.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq("ANY")).headOption
-              )
-            )
+            x.propertyOption(Properties.TypeFullName)
+              .orElse(x.property(Properties.DynamicTypeHintFullName).headOption)
+              .getOrElse("ANY")
         }
         .collect { case x: String => x }
         .toList

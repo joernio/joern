@@ -1,10 +1,8 @@
 package io.shiftleft.semanticcpg.language.types.propertyaccessors
 
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Modifier}
-import io.shiftleft.codepropertygraph.generated.traversal.toModifierTraversalExtGen
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.*
 
 class ModifierAccessors[A <: AstNode](val traversal: Iterator[A]) extends AnyVal {
 

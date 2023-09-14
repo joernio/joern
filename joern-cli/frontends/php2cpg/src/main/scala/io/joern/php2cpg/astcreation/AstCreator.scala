@@ -8,11 +8,11 @@ import io.joern.php2cpg.utils.Scope
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.Defines.{StaticInitMethodName, UnresolvedNamespace, UnresolvedSignature}
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
+import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.utils.NodeBuilders.*
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
 

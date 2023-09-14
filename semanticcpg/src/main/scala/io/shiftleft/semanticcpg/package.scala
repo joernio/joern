@@ -1,6 +1,6 @@
 package io.shiftleft
 
-import overflowdb.traversal.help.Table.AvailableWidthProvider
+import flatgraph.help.Table.AvailableWidthProvider
 
 /** Domain specific language for querying code property graphs
   *
