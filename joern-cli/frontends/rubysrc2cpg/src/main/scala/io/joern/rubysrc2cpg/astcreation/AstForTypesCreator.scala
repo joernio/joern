@@ -10,7 +10,7 @@ import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.utils.*
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes, nodes}
 import org.antlr.v4.runtime.ParserRuleContext
 
 import scala.collection.mutable
@@ -18,7 +18,8 @@ import scala.collection.mutable
 trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   // Maps field references of known types
-  protected val fieldReferences = mutable.HashMap.empty[String, Set[ParserRuleContext]]
+  protected val fieldReferences        = mutable.HashMap.empty[String, Set[ParserRuleContext]]
+  protected val typeDeclNameToTypeDecl = mutable.HashMap[String, nodes.NewTypeDecl]()
 
   def astForClassDeclaration(ctx: ClassDefinitionPrimaryContext): Seq[Ast] = {
     val baseClassName = if (ctx.classDefinition().expressionOrCommand() != null) {
@@ -93,7 +94,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       thisParam +: fields.map(m => createMethodParameterIn(m.name, None, None, m.typeFullName))
     val assignments = fields.map { m =>
       val thisNode        = createThisIdentifier(ctx)
-      val lhs             = createFieldAccess(thisNode, m.name)
+      val lhs             = astForFieldAccess(ctx, thisNode)
       val paramIdentifier = identifierNode(ctx, m.name, m.name, m.typeFullName)
       val refParam        = params.find(_.name == m.name).get
       astForAssignment(lhs.root.get, paramIdentifier)

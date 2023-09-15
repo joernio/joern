@@ -307,24 +307,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     controlStructureAst(ifNode, testAst.headOption, thenAst ++ elseAst)
   }
 
-  protected def astForFieldAccess(ctx: ParserRuleContext, baseNode: NewNode): Ast = {
-    val fieldAccess =
-      callNode(ctx, text(ctx), Operators.fieldAccess, Operators.fieldAccess, DispatchTypes.STATIC_DISPATCH)
-    val fieldIdentifier = newFieldIdentifier(ctx)
-    val astChildren     = Seq(baseNode, fieldIdentifier)
-    callAst(fieldAccess, astChildren.map(Ast.apply))
-  }
-
-  protected def newFieldIdentifier(ctx: ParserRuleContext): NewFieldIdentifier = {
-    val code = text(ctx)
-    val name = code.replaceAll("@", "")
-    NewFieldIdentifier()
-      .code(code)
-      .canonicalName(name)
-      .lineNumber(ctx.start.getLine)
-      .columnNumber(ctx.start.getCharPositionInLine)
-  }
-
   protected def astForQuotedStringExpression(ctx: QuotedStringExpressionContext): Seq[Ast] = ctx match
     case ctx: NonExpandedQuotedStringLiteralContext => Seq(astForNonExpandedQuotedString(ctx))
     case _ =>
@@ -339,4 +321,5 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForQuotedRegexInterpolation(ctx: QuotedRegexInterpolationContext): Seq[Ast] = {
     Seq(Ast(literalNode(ctx, text(ctx), Defines.Regexp)))
   }
+
 }

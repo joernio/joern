@@ -1,21 +1,100 @@
 package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.passes.Defines as RubyDefines
-import io.joern.x2cpg.{Ast, Defines, ValidationMode}
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators, nodes}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
 import org.antlr.v4.runtime.ParserRuleContext
+import org.antlr.v4.runtime.misc.Interval
 
 import scala.collection.mutable
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   import GlobalTypes.*
 
-  def isBuiltin(x: String): Boolean = builtinFunctions.contains(x)
+  protected def line(ctx: ParserRuleContext): Option[Integer] = Option(ctx.getStart.getLine)
 
-  def prefixAsBuiltin(x: String): String = s"$builtinPrefix$pathSep$x"
+  protected def column(ctx: ParserRuleContext): Option[Integer] = Option(ctx.getStart.getCharPositionInLine)
 
-  def astForAssignment(
+  protected def lineEnd(ctx: ParserRuleContext): Option[Integer] = Option(ctx.getStop.getLine)
+
+  protected def columnEnd(ctx: ParserRuleContext): Option[Integer] = Option(ctx.getStop.getCharPositionInLine)
+
+  protected def text(ctx: ParserRuleContext): String = {
+    val a     = ctx.getStart.getStartIndex
+    val b     = ctx.getStop.getStopIndex
+    val intv  = new Interval(a, b)
+    val input = ctx.getStart.getInputStream
+    input.getText(intv)
+  }
+
+  protected def isBuiltin(x: String): Boolean = builtinFunctions.contains(x)
+
+  protected def prefixAsBuiltin(x: String): String = s"$builtinPrefix$pathSep$x"
+
+  protected def createIdentifierWithScope(
+    ctx: ParserRuleContext,
+    name: String,
+    code: String,
+    typeFullName: String,
+    dynamicTypeHints: Seq[String] = Seq()
+  ): NewIdentifier = {
+    val newNode = identifierNode(ctx, name, code, typeFullName, dynamicTypeHints)
+    scope.addToScope(name, newNode)
+    newNode
+  }
+
+  protected def createIdentifierWithScope(
+    name: String,
+    code: String,
+    typeFullName: String,
+    dynamicTypeHints: Seq[String],
+    lineNumber: Option[Integer],
+    columnNumber: Option[Integer]
+  ): NewIdentifier = {
+    val newNode = NewIdentifier()
+      .name(name)
+      .code(code)
+      .typeFullName(typeFullName)
+      .dynamicTypeHintFullName(dynamicTypeHints)
+      .lineNumber(lineNumber)
+      .columnNumber(columnNumber)
+    scope.addToScope(name, newNode)
+    newNode
+  }
+
+  protected def createOpCall(
+    ctx: ParserRuleContext,
+    operation: String,
+    lineNumber: Option[Int] = None,
+    columnNumber: Option[Int] = None,
+    maybeCode: Option[String] = None
+  ): NewCall = {
+    val code = maybeCode.getOrElse(text(ctx))
+    val opCall =
+      callNode(ctx, code, operation, operation, DispatchTypes.STATIC_DISPATCH, None, Option(RubyDefines.Any))
+    lineNumber.foreach(opCall.lineNumber(_))
+    columnNumber.foreach(opCall.columnNumber(_))
+    opCall
+  }
+
+  protected def createLiteralNode(
+    code: String,
+    typeFullName: String,
+    dynamicTypeHints: Seq[String] = Seq.empty,
+    lineNumber: Option[Int] = None,
+    columnNumber: Option[Int] = None
+  ): NewLiteral = {
+    val newLiteral = NewLiteral()
+      .code(code)
+      .typeFullName(typeFullName)
+      .dynamicTypeHintFullName(dynamicTypeHints)
+    lineNumber.foreach(newLiteral.lineNumber(_))
+    columnNumber.foreach(newLiteral.columnNumber(_))
+    newLiteral
+  }
+
+  protected def astForAssignment(
     lhs: NewNode,
     rhs: NewNode,
     lineNumber: Option[Integer] = None,
@@ -34,36 +113,29 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     callAst(callNode, Seq(Ast(lhs), Ast(rhs)))
   }
 
-  def createThisIdentifier(
+  protected def createThisIdentifier(
     ctx: ParserRuleContext,
     typeFullName: String = RubyDefines.Any,
     dynamicTypeHints: List[String] = List.empty
   ): NewIdentifier =
     createIdentifierWithScope(ctx, "this", "this", typeFullName, dynamicTypeHints)
 
-  protected def createFieldAccess(
-    baseNode: NewNode,
-    fieldName: String,
-    lineNumber: Option[Integer] = None,
-    colNumber: Option[Integer] = None
-  ): Ast = {
-    val fieldIdNode = NewFieldIdentifier()
-      .code(fieldName)
-      .canonicalName(fieldName)
-      .lineNumber(lineNumber)
-      .columnNumber(colNumber)
-
-    val baseNodeCopy = baseNode.copy
-    val code         = codeOf(baseNode) + "." + codeOf(fieldIdNode)
-    val callNode = NewCall()
+  protected def newFieldIdentifier(ctx: ParserRuleContext): NewFieldIdentifier = {
+    val code = text(ctx)
+    val name = code.replaceAll("@", "")
+    NewFieldIdentifier()
       .code(code)
-      .name(Operators.fieldAccess)
-      .methodFullName(Operators.fieldAccess)
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .lineNumber(lineNumber)
-      .columnNumber(colNumber)
+      .canonicalName(name)
+      .lineNumber(ctx.start.getLine)
+      .columnNumber(ctx.start.getCharPositionInLine)
+  }
 
-    callAst(callNode, Seq(Ast(baseNodeCopy), Ast(fieldIdNode)))
+  protected def astForFieldAccess(ctx: ParserRuleContext, baseNode: NewNode): Ast = {
+    val fieldAccess =
+      callNode(ctx, text(ctx), Operators.fieldAccess, Operators.fieldAccess, DispatchTypes.STATIC_DISPATCH)
+    val fieldIdentifier = newFieldIdentifier(ctx)
+    val astChildren     = Seq(baseNode, fieldIdentifier)
+    callAst(fieldAccess, astChildren.map(Ast.apply))
   }
 
   protected def createMethodParameterIn(
@@ -73,7 +145,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     typeFullName: String = RubyDefines.Any,
     order: Int = -1,
     index: Int = -1
-  ) = {
+  ): NewMethodParameterIn = {
     NewMethodParameterIn()
       .name(name)
       .code(name)
