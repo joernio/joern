@@ -34,15 +34,7 @@ trait AstCreatorHelper { this: AstCreator =>
         val node  = nodeType(json)
         val pni   = ParserNodeInfo(node, json, c, ln, cn, lnEnd, cnEnd)
         parserNodeCache.addOne(json(ParserKeys.NodeId).num.toLong, pni)
-        node match
-          case CallExpr =>
-            Try(json(ParserKeys.Fun)(ParserKeys.Obj)(ParserKeys.Decl)) match
-              case Success(obj) =>
-                // This is being called only to cache this objects
-                createParserNodeInfo(obj)
-              case _ =>
-          case _ =>
-        // Do nothing
+        cacheReferenceNode(json, node)
         pni
       case Success(nodeReferenceId) =>
         // Get the parser node info from the cache using the node reference ID
@@ -56,6 +48,22 @@ trait AstCreatorHelper { this: AstCreator =>
             val nodeType = json.obj.get("node_type")
             logger.warn(s"Unhandled node_type $nodeType filename: $relPathFileName")
             nullSafeCreateParserNodeInfo(None)
+  }
+
+  def cacheReferenceNode(json: Value, node: ParserNode) = {
+    // This is being called only to cache this objects
+    node match
+      case CallExpr =>
+        Try(json(ParserKeys.Fun)(ParserKeys.Obj)(ParserKeys.Decl)) match
+          case Success(obj) =>
+            createParserNodeInfo(obj)
+          case _ =>
+      case Ident =>
+        Try(json(ParserKeys.Obj)(ParserKeys.Decl)) match
+          case Success(obj) =>
+            createParserNodeInfo(obj)
+          case _ =>
+      case _ =>
   }
 
   protected def addModifier(node: NewNode, name: String): NewModifier = {
