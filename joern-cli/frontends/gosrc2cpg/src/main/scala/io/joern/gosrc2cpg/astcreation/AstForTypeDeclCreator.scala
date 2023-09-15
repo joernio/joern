@@ -6,15 +6,13 @@ import io.joern.x2cpg
 import io.joern.x2cpg.datastructures.Stack.StackWrapper
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
 import ujson.Value
 
-import scala.util.{Failure, Success, Try}
+import scala.util.{Success, Try}
 
 trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   def astForTypeSpec(typeSpecNode: ParserNodeInfo): Seq[Ast] = {
-    // TODO: Add support for member variables and methods
     methodAstParentStack.collectFirst { case t: NewTypeDecl => t } match {
       case Some(parentMethodAstNode) =>
         val nameNode = typeSpecNode.json(ParserKeys.Name)
@@ -28,7 +26,7 @@ trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { thi
             typeSpecNode,
             nameNode(ParserKeys.Name).str,
             fullName,
-            parserResult.filename,
+            relPathFileName,
             typeSpecNode.code,
             astParentType,
             astParentFullName
@@ -61,8 +59,8 @@ trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { thi
       .arrOpt
       .getOrElse(List())
       .flatMap(x => {
-        val typeInfo = createParserNodeInfo(x(ParserKeys.Type))
-        val (typeFullName, typeFullNameForCode, isVariadic, evaluationStrategy) = processTypeInfo(typeInfo)
+        val typeInfo                = createParserNodeInfo(x(ParserKeys.Type))
+        val (typeFullName, _, _, _) = processTypeInfo(typeInfo)
         x(ParserKeys.Names).arrOpt
           .getOrElse(List())
           .map(fieldInfo => {

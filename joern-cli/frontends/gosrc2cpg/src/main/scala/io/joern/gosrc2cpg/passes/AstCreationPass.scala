@@ -23,7 +23,7 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
       val parseResult     = GoAstJsonParser.readFile(Paths.get(inputJsonFile))
       val fileLOC         = IOUtils.readLinesInFile(Paths.get(parseResult.fullPath)).size
       val relPathFileName = SourceFiles.toRelativePath(parseResult.fullPath, config.inputPath)
-      report.addReportInfo(parseResult.filename, fileLOC, parsed = true)
+      report.addReportInfo(relPathFileName, fileLOC, parsed = true)
       Try {
         val localDiff = new AstCreator(relPathFileName, parseResult)(config.schemaValidation).createAst()
         diffGraph.absorb(localDiff)
