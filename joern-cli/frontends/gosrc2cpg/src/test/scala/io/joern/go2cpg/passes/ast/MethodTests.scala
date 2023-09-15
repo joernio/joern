@@ -1493,8 +1493,9 @@ class MethodTests extends GoCodeToCpgSuite {
     }
   }
 
-  "When ast of struct node is coming under method's body" should {
-    val cpg = code("""package main
+  "When ast of struct node is coming under return statement  and defined later" should {
+    val cpg = code("""
+        |package main
         |
         |func foo() Node {
         |   var boo = int64(0)
@@ -1514,9 +1515,51 @@ class MethodTests extends GoCodeToCpgSuite {
       x.signature shouldBe "main.foo()main.Node"
     }
 
-    "Be correct with typeDecl node properties" ignore {
+    "Be correct with typeDecl node properties" in {
       val List(x) = cpg.typeDecl("Node").l
       x.fullName shouldBe "main.Node"
+      x.fullName shouldBe "main.Node"
+      x.member.size shouldBe 1
+
+      val List(m) = x.member.l
+      m.name shouldBe "value"
+      m.typeFullName shouldBe "string"
+    }
+
+  }
+
+  "When ast of struct node is coming under method's body and defined later" should {
+    val cpg = code("""
+        |package main
+        |
+        |func foo() Node {
+        |   var boo = int64(0)
+        |   var a = Node{
+        |     value: boo,
+        |   }
+        |   return a
+        |}
+        |
+        |type Node struct {
+        |   value string
+        |}""".stripMargin)
+
+    "Be correct with method node properties" in {
+      val List(x) = cpg.method("foo").l
+      x.fullName shouldBe "main.foo"
+      // TODO: confirm if signature is correct
+      x.signature shouldBe "main.foo()main.Node"
+    }
+
+    "Be correct with typeDecl node properties" in {
+      val List(x) = cpg.typeDecl("Node").l
+      x.fullName shouldBe "main.Node"
+      x.fullName shouldBe "main.Node"
+      x.member.size shouldBe 1
+
+      val List(m) = x.member.l
+      m.name shouldBe "value"
+      m.typeFullName shouldBe "string"
     }
 
   }
