@@ -66,4 +66,28 @@ class BuiltInMethodCallTests extends GoCodeToCpgSuite {
 
   }
 
+  "Check assignment operation when channel is used" should {
+    val cpg = code("""package main
+        |
+        |import "fmt"
+        |
+        |func main() {
+        |    ch := make(chan int)
+        |
+        |    go func() {
+        |        ch <- 42 // Send a value to the channel
+        |    }()
+        |
+        |    // Receive the value from the channel
+        |    value := <-ch
+        |    fmt.Println(value)
+        |}""".stripMargin)
+    "check identifier properties" in {
+      val List(channelDeclarationNode, channelEnqueueNode) = cpg.identifier("ch").l
+      channelDeclarationNode.lineNumber.get shouldBe 6
+      channelEnqueueNode.lineNumber.get shouldBe 13
+    }
+
+  }
+
 }

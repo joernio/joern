@@ -150,4 +150,35 @@ class OperatorDataflowTests extends GoCodeToCpgSuite(withOssDataflow = true) {
     }
   }
 
+  "Check dataflow when channel is used" should {
+    val cpg = code("""package main
+        |
+        |import "fmt"
+        |
+        |func main() {
+        |    ch := make(chan int)
+        |
+        |    go func() {
+        |        ch <- 42 // Send a value to the channel
+        |    }()
+        |
+        |    // Receive the value from the channel
+        |    value := <-ch
+        |    fmt.Println(value)
+        |}""".stripMargin)
+
+    "check dataflow from literal to Println" ignore {
+      val source = cpg.literal("42")
+      val sink   = cpg.call("Println")
+      sink.reachableByFlows(source).size shouldBe 1
+    }
+
+    "check dataflow from identifier to Println" in {
+      val source = cpg.identifier("ch").lineNumber(6)
+      val sink   = cpg.call("Println")
+      sink.reachableByFlows(source).size shouldBe 1
+    }
+
+  }
+
 }
