@@ -1,6 +1,6 @@
 package io.joern.gosrc2cpg.astcreation
 
-import io.joern.gosrc2cpg.parser.ParserAst.{BasicLit, Ident, SelectorExpr, CallExpr}
+import io.joern.gosrc2cpg.parser.ParserAst.{BasicLit, Ident, MapType, SelectorExpr, CallExpr}
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
@@ -106,10 +106,17 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
       .getOrElse(Seq.empty)
       .flatMap(x => {
         val argNode = createParserNodeInfo(x)
-        astForNode(argNode)
+        argNode.node match
+          case MapType => astForMapType(argNode)
+          case _       => astForNode(argNode)
       })
       .toSeq
   }
+
+  private def astForMapType(arg: ParserNodeInfo): Seq[Ast] = {
+    Seq(Ast(literalNode(arg, arg.code, Defines.map)))
+  }
+
   private def callMethodFullNameTypeFullNameAndSignature(
     methodName: String,
     aliasName: Option[(String, Value)] = None
