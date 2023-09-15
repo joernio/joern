@@ -55,4 +55,33 @@ class TypeDeclMethodCallTests extends GoCodeToCpgSuite {
       x.name shouldBe "a"
     }
   }
+
+
+  "structure initialization having array" should {
+
+    val cpg = code(
+      """
+        |package main
+        |
+        |type Phone struct {
+        |	phone     string
+        |	phonetype string
+        |}
+        |type Person struct {
+        |	phone []Phone
+        |	name  string
+        |}
+        |
+        |func main() {
+        |   numbers := [5]int{1, 2, 3, 4, 5}
+        |	var fphone = []Phone{{phone: "1234567890", phonetype: "Home"}, {phone: "1234567890", phonetype: "Home"}}
+        |	var person = Person{fphone, "Person name"}
+        |}
+        |""".stripMargin)
+
+    "Check number of member nodes" in {
+      val List(typeDeclNode) = cpg.typeDecl.name("Person").l
+      typeDeclNode.member.size shouldBe 2
+    }
+  }
 }
