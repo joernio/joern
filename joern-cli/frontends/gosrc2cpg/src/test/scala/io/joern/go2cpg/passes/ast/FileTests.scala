@@ -95,7 +95,7 @@ class FileTests extends GoCodeToCpgSuite {
     "traversal from file to typedecl should work" in {
       cpg.file(".*mainlib.go").size shouldBe 1
       cpg.file(".*mainlib.go").typeDecl.fullName.l shouldBe List(
-        "fpkg/mainlib.go:joern.io/sample/fpkg.<global>",
+        s"${Seq("fpkg", "mainlib.go").mkString(File.separator)}:joern.io/sample/fpkg.<global>",
         "joern.io/sample/fpkg.Person"
       )
     }

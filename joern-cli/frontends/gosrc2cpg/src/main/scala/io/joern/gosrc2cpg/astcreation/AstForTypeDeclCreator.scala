@@ -59,8 +59,8 @@ trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { thi
       .arrOpt
       .getOrElse(List())
       .flatMap(x => {
-        val typeInfo = createParserNodeInfo(x(ParserKeys.Type))
-        val (typeFullName, typeFullNameForCode, isVariadic, evaluationStrategy) = processTypeInfo(typeInfo)
+        val typeInfo                = createParserNodeInfo(x(ParserKeys.Type))
+        val (typeFullName, _, _, _) = processTypeInfo(typeInfo)
         x(ParserKeys.Names).arrOpt
           .getOrElse(List())
           .map(fieldInfo => {
