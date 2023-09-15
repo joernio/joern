@@ -64,6 +64,7 @@ object ParserAst {
   object FieldList           extends ParserNode
   object ArrayType           extends ParserNode
   object MapType             extends ParserNode
+  object ChanType            extends ParserNode
   object Field               extends ParserNode
   object TypeSpec            extends ParserNode
 }
