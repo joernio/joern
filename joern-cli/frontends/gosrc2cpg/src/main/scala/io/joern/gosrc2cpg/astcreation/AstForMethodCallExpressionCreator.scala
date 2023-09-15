@@ -114,7 +114,7 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
   }
 
   private def astForMapType(arg: ParserNodeInfo): Seq[Ast] = {
-    Seq(Ast(identifierNode(arg, Defines.map, arg.code, Defines.anyTypeName)))
+    Seq(Ast(literalNode(arg, arg.code, Defines.map)))
   }
 
   private def callMethodFullNameTypeFullNameAndSignature(

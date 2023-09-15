@@ -31,11 +31,10 @@ class BuiltInMethodCallTests extends GoCodeToCpgSuite {
     }
 
     "check call node arguments" in {
-      val List(x) = cpg.call("make").argument.isIdentifier.l
-      x.name shouldBe "map"
+      val List(x) = cpg.call("make").argument.isLiteral.l
       x.code shouldBe "map[string]int"
       x.argumentIndex shouldBe 1
-      x.typeFullName shouldBe "ANY"
+      x.typeFullName shouldBe "map"
     }
 
   }
