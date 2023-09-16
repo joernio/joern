@@ -121,7 +121,7 @@ class TypeDeclConstructorDataflowTests extends GoCodeToCpgSuite(withOssDataflow 
         |""".stripMargin)
 
     "Check dataflow from constructor parameter node" in {
-      val sink   = cpg.identifier("person")
+      val sink = cpg.identifier("person")
 
       var source = cpg.literal.code("\"John Doe\"")
       sink.reachableByFlows(source).size shouldBe 2
