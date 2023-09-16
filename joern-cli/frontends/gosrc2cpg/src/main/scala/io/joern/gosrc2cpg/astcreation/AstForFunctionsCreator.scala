@@ -40,7 +40,6 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
   def astForFuncDecl(funcDecl: ParserNodeInfo): Seq[Ast] = {
 
-    val filename     = relPathFileName
     val name         = funcDecl.json(ParserKeys.Name).obj(ParserKeys.Name).str
     val receiverInfo = getReceiverInfo(Try(funcDecl.json(ParserKeys.Recv)))
     val methodFullname = receiverInfo match
@@ -62,7 +61,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val signature =
       s"$methodFullname(${parameterSignature(params, genericTypeMethodMap)})$returnTypeStr"
     GoGlobal.recordFullNameToReturnType(methodFullname, returnTypeStr, Some(signature))
-    val methodNode_ = methodNode(funcDecl, name, funcDecl.code, methodFullname, Some(signature), filename)
+    val methodNode_ = methodNode(funcDecl, name, funcDecl.code, methodFullname, Some(signature), relPathFileName)
     methodAstParentStack.push(methodNode_)
     scope.pushNewScope(methodNode_)
     val receiverNode = astForReceiver(receiverInfo)

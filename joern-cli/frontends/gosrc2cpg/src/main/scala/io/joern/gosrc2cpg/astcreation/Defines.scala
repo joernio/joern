@@ -8,6 +8,7 @@ object Defines {
   val empty                          = "<empty>"
   val dot                            = "."
   val map                            = "map"
+  val chan                           = "chan"
 
   val primitiveTypeMap: Map[String, String] =
     // This list is prepared with reference to primitives defined at https://pkg.go.dev/builtin#pkg-types
@@ -48,7 +49,7 @@ object Defines {
       ("delete", ("delete(map[any]any, any)", "delete", voidTypeName)),
       ("imag", ("imag(ComplexType)FloatType", "imag", "FloatType")),
       ("len", ("len(any)int", "len", "int")),
-      ("make", ("make(map)map", "map", "map")),
+      ("make", ("make(map)map|make(chan)chan", "make", "map|chan")),
       ("max", ("max[cmp.Ordered](cmp.Ordered, []cmp.Ordered)cmp.Ordered", "max", "cmp.Ordered")),
       ("min", ("min[cmp.Ordered](cmp.Ordered, []cmp.Ordered)cmp.Ordered", "min", "cmp.Ordered")),
       ("new", ("new(any)*any", "new", "*any")),

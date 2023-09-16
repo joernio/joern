@@ -45,7 +45,7 @@ trait AstCreatorHelper { this: AstCreator =>
           case Some(value) => value
           case None        =>
             // If the parser node info does not exist in the cache, log a warning message and create a null-safe parser node info
-            val nodeType = json.obj.get("node_type")
+            val nodeType = json(ParserKeys.NodeType).str
             logger.warn(s"Unhandled node_type $nodeType filename: $relPathFileName")
             nullSafeCreateParserNodeInfo(None)
   }
@@ -60,7 +60,8 @@ trait AstCreatorHelper { this: AstCreator =>
           case _ =>
       case Ident =>
         Try(json(ParserKeys.Obj)(ParserKeys.Decl)) match
-          case Success(obj) =>
+          // NOTE: For now only handling caching for node reference id of struct type
+          case Success(obj) if obj(ParserKeys.NodeType).str == "ast.TypeSpec" =>
             createParserNodeInfo(obj)
           case _ =>
       case _ =>
