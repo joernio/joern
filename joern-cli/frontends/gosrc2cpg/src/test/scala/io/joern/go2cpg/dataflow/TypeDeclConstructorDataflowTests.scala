@@ -120,31 +120,24 @@ class TypeDeclConstructorDataflowTests extends GoCodeToCpgSuite(withOssDataflow 
         |}
         |""".stripMargin)
 
-    "Check dataflow from constructor parameter node" in {
-      val sink = cpg.identifier("person")
-
-      var source = cpg.literal.code("\"John Doe\"")
-      sink.reachableByFlows(source).size shouldBe 2
-
-      source = cpg.literal.code("\"123 Main St\"")
-      sink.reachableByFlows(source).size shouldBe 2
-
-    }
-
     "Check dataflow from every constructor parameter node to assignment" in {
-      val sink = cpg.identifier("person")
+      val sink = cpg.identifier("person").l
 
-      source = cpg.literal.code("\"New York\"")
-      sink.reachableByFlows(source).size shouldBe 1
+      val source1 = cpg.literal.code("\"John Doe\"").l
+      sink.reachableByFlows(source1).size shouldBe 2
 
-      source = cpg.literal.code("30")
-      sink.reachableByFlows(source).size shouldBe 1
+      val source2 = cpg.literal.code("\"New York\"").l
+      sink.reachableByFlows(source2).size shouldBe 2
 
-      source = cpg.literal.code("\"USA\"")
-      sink.reachableByFlows(source).size shouldBe 1
+      val source3 = cpg.literal.code("\"123 Main St\"").l
+      sink.reachableByFlows(source3).size shouldBe 2
 
-      source = cpg.literal.code("30")
-      sink.reachableByFlows(source).size shouldBe 1
+      val source4 = cpg.literal.code("30").l
+      sink.reachableByFlows(source4).size shouldBe 2
+
+      val source5 = cpg.literal.code("\"USA\"").l
+      sink.reachableByFlows(source5).size shouldBe 2
+
     }
 
     "Check dataflow from variable holding structure to println" in {
