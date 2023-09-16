@@ -27,10 +27,10 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)(im
     with AstForStatementsCreator
     with AstForTypeDeclCreator
     with AstForMethodCallExpressionCreator
+    with CacheBuilder
     with X2CpgAstNodeBuilder[ParserNodeInfo, AstCreator] {
 
-  protected val logger: Logger = LoggerFactory.getLogger(classOf[AstCreator])
-
+  protected val logger: Logger                                       = LoggerFactory.getLogger(classOf[AstCreator])
   protected val methodAstParentStack: Stack[NewNode]                 = new Stack()
   protected val scope: Scope[String, (NewNode, String), NewNode]     = new Scope()
   protected val aliasToNameSpaceMapping: mutable.Map[String, String] = mutable.Map.empty

@@ -25,22 +25,6 @@ trait AstForExpressionCreator(implicit withSchemaValidation: ValidationMode) { t
     }
   }
 
-  private def astForFieldAccess(info: ParserNodeInfo): Seq[Ast] = {
-    // TODO: Need to identify a way to find the typeFullName of the field getting accessed
-    val fieldTypeFullName = Defines.anyTypeName
-    val callNode =
-      newOperatorCallNode(Operators.fieldAccess, info.code, Some(fieldTypeFullName), line(info), column(info))
-    val identifierAsts  = astForNode(info.json(ParserKeys.X))
-    val fieldIdentifier = info.json(ParserKeys.Sel)(ParserKeys.Name).str
-    val fieldIdentifierNode = NewFieldIdentifier()
-      .canonicalName(fieldIdentifier)
-      .lineNumber(line(info))
-      .columnNumber(column(info))
-      .code(fieldIdentifier)
-    val fieldIdAst = Ast(fieldIdentifierNode)
-    Seq(callAst(callNode, identifierAsts ++ Seq(fieldIdAst)))
-  }
-
   private def astForBinaryExpr(binaryExpr: ParserNodeInfo): Seq[Ast] = {
     val op = binaryExpr.json(ParserKeys.Op).value match {
       case "*"  => Operators.multiplication
