@@ -122,28 +122,29 @@ class TypeDeclConstructorDataflowTests extends GoCodeToCpgSuite(withOssDataflow 
 
     "Check dataflow from constructor parameter node" in {
       val sink   = cpg.identifier("person")
+
       var source = cpg.literal.code("\"John Doe\"")
+      sink.reachableByFlows(source).size shouldBe 2
+
+      source = cpg.literal.code("\"123 Main St\"")
       sink.reachableByFlows(source).size shouldBe 2
 
     }
 
-    "Check dataflow from every constructor parameter node to assignment" ignore {
+    "Check dataflow from every constructor parameter node to assignment" in {
       val sink = cpg.identifier("person")
 
-      var source = cpg.literal.code("\"123 Main St\"")
-      sink.reachableByFlows(source).size shouldBe 0
-
       source = cpg.literal.code("\"New York\"")
-      sink.reachableByFlows(source).size shouldBe 0
+      sink.reachableByFlows(source).size shouldBe 1
 
       source = cpg.literal.code("30")
-      sink.reachableByFlows(source).size shouldBe 0
+      sink.reachableByFlows(source).size shouldBe 1
 
       source = cpg.literal.code("\"USA\"")
-      sink.reachableByFlows(source).size shouldBe 0
+      sink.reachableByFlows(source).size shouldBe 1
 
       source = cpg.literal.code("30")
-      sink.reachableByFlows(source).size shouldBe 0
+      sink.reachableByFlows(source).size shouldBe 1
     }
 
     "Check dataflow from variable holding structure to println" in {
