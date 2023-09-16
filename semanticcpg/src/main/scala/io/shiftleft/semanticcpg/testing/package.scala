@@ -1,12 +1,11 @@
 package io.shiftleft.semanticcpg
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Languages, ModifierTypes}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
+//import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, Languages, ModifierTypes}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
-import overflowdb.BatchedUpdate
-import overflowdb.BatchedUpdate.DiffGraphBuilder
+import io.joern.odb2.DiffGraphBuilder
 
 package object testing {
 
@@ -203,7 +202,7 @@ package object testing {
       val diffGraph = new DiffGraphBuilder
       f(diffGraph, cpg)
       class MyPass extends CpgPass(cpg) {
-        override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+        override def run(builder: DiffGraphBuilder): Unit = {
           builder.absorb(diffGraph)
         }
       }
