@@ -29,9 +29,8 @@ trait CacheBuilder { this: AstCreator =>
           )
         ) {
           processFuncDecl(obj)
-        } else {
-          obj.value.values.foreach(subJson => findAndProcess(subJson))
         }
+        obj.value.values.foreach(subJson => findAndProcess(subJson))
       case arr: Arr =>
         arr.value.foreach(subJson => findAndProcess(subJson))
       case _ =>
@@ -66,7 +65,7 @@ trait CacheBuilder { this: AstCreator =>
     val params = funcDeclVal(ParserKeys.Type)(ParserKeys.Params)(ParserKeys.List)
     val signature =
       s"$methodFullname(${parameterSignature(params, genericTypeMethodMap)})$returnTypeStr"
-    GoGlobal.recordFullNameToReturnType(methodFullname, returnTypeStr, Some(signature))
+    GoGlobal.recordFullNameToReturnType(methodFullname, returnTypeStr, signature)
     (name, methodFullname, signature, params, receiverInfo, genericTypeMethodMap)
   }
 }

@@ -1,6 +1,7 @@
 package io.joern.gosrc2cpg.astcreation
 
-import io.joern.gosrc2cpg.parser.ParserAst.{BasicLit, Ident, MapType, SelectorExpr, CallExpr, ChanType}
+import io.joern.gosrc2cpg.datastructures.GoGlobal
+import io.joern.gosrc2cpg.parser.ParserAst.{BasicLit, CallExpr, ChanType, Ident, MapType, SelectorExpr}
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
@@ -133,9 +134,15 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
         // NOTE: If the given type is not found in primitiveTypeMap.
         // Then we are assuming the type is custom type defined inside same pacakge as that of current file's package.
         // This assumption will be invalid when another package is imported with alias "."
+        val (returnTypeFullNameCache, signatureCache) =
+          GoGlobal.methodFullNameReturnTypeMap
+            .getOrDefault(
+              s"$fullyQualifiedPackage.$methodName",
+              (Defines.anyTypeName, s"$fullyQualifiedPackage.$methodName()")
+            )
         val (signature, fullName, returnTypeFullName) = Defines.builtinFunctions.getOrElse(
           methodName,
-          (s"$fullyQualifiedPackage.$methodName()", s"$fullyQualifiedPackage.$methodName", Defines.tobeFilled)
+          (signatureCache, s"$fullyQualifiedPackage.$methodName", returnTypeFullNameCache)
         )
         (signature, fullName, returnTypeFullName, Seq.empty)
       case Some(alias, jsonNode) =>
@@ -143,18 +150,29 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
         val variableOption = scope.lookupVariable(alias)
         variableOption match {
           case Some((_, variableTypeName)) =>
+            val (returnTypeFullNameCache, signatureCache) =
+              GoGlobal.methodFullNameReturnTypeMap
+                .getOrDefault(
+                  s"$variableTypeName.$methodName",
+                  (Defines.anyTypeName, s"$variableTypeName.$methodName()")
+                )
             val thisObjIdentifier = astForNode(jsonNode)
-            (
-              s"$variableTypeName.$methodName()",
-              s"$variableTypeName.$methodName",
-              Defines.tobeFilled,
-              thisObjIdentifier
-            )
+            (signatureCache, s"$variableTypeName.$methodName", returnTypeFullNameCache, thisObjIdentifier)
           case _ =>
+            val (returnTypeFullNameCache, signatureCache) =
+              GoGlobal.methodFullNameReturnTypeMap
+                .getOrDefault(
+                  s"${aliasToNameSpaceMapping.getOrElse(alias, s"${XDefines.Unknown}.<$alias>")}.$methodName",
+                  (
+                    Defines.anyTypeName,
+                    s"${aliasToNameSpaceMapping.getOrElse(alias, s"${XDefines.Unknown}.<$alias>")}.$methodName()"
+                  )
+                )
+
             (
-              s"${aliasToNameSpaceMapping.getOrElse(alias, s"${XDefines.Unknown}.<$alias>")}.$methodName()",
+              signatureCache,
               s"${aliasToNameSpaceMapping.getOrElse(alias, s"${XDefines.Unknown}.<$alias>")}.$methodName",
-              Defines.tobeFilled,
+              returnTypeFullNameCache,
               Seq.empty
             )
         }

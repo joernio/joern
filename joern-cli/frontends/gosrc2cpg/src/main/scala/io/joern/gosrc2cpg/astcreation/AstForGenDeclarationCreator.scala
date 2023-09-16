@@ -16,7 +16,7 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
         .json(ParserKeys.Specs)
         .arr
     ) match {
-      case Success(specArr) => {
+      case Success(specArr) =>
         specArr
           .map(createParserNodeInfo)
           .flatMap { genDeclNode =>
@@ -27,12 +27,9 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
               case _          => Seq[Ast]()
           }
           .toSeq
-      }
-      case _ => {
-        Seq()
-      }
+      case _ =>
+        Seq.empty
     }
-
   }
 
   private def astForImport(nodeInfo: ParserNodeInfo): Seq[Ast] = {
