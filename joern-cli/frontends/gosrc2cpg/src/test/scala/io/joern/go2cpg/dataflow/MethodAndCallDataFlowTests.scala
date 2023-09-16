@@ -183,7 +183,7 @@ class MethodAndCallDataFlowTests extends GoCodeToCpgSuite(withOssDataflow = true
     }
 
     "data flow use case 3" in {
-      val src = cpg.identifier("a").l
+      val src  = cpg.identifier("a").l
       val sink = cpg.call("println").l
       sink.reachableByFlows(src).size shouldBe 2
     }
