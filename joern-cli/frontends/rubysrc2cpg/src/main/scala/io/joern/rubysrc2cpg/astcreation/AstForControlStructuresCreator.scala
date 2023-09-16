@@ -1,30 +1,21 @@
 package io.joern.rubysrc2cpg.astcreation
 
-import io.joern.rubysrc2cpg.parser.RubyParser.{
-  BreakArgsInvocationWithoutParenthesesContext,
-  CaseExpressionPrimaryContext,
-  JumpExpressionPrimaryContext,
-  NextArgsInvocationWithoutParenthesesContext,
-  WhenArgumentContext
-}
+import io.joern.rubysrc2cpg.parser.RubyParser.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{NewControlStructure, NewReturn}
+import io.shiftleft.codepropertygraph.generated.nodes.NewControlStructure
 
 import scala.jdk.CollectionConverters.*
 trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  protected def astForWhenArgumentContext(ctx: WhenArgumentContext): Seq[Ast] = {
+  private def astForWhenArgumentContext(ctx: WhenArgumentContext): Seq[Ast] = {
     val expAsts =
-      ctx
-        .expressions()
-        .expression()
-        .asScala
+      ctx.expressions.expression.asScala
         .flatMap(astForExpressionContext)
         .toList
 
-    if (ctx.splattingArgument() != null) {
+    if (ctx.splattingArgument != null) {
       expAsts ++ astForExpressionOrCommand(ctx.splattingArgument().expressionOrCommand())
     } else {
       expAsts
@@ -68,80 +59,77 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     Seq(controlStructureAst(switchNode, conditionAst, Seq(Ast(block).withChildren(stmtAsts))))
   }
 
-  protected def astsForNextArgsInvocation(ctx: NextArgsInvocationWithoutParenthesesContext) = {
+  protected def astForNextArgsInvocation(ctx: NextArgsInvocationWithoutParenthesesContext): Seq[Ast] = {
     /*
      * While this is a `CONTINUE` for now, if we detect that this is the LHS of an `IF` then this becomes a `RETURN`
      */
-    val node = NewControlStructure()
-      .controlStructureType(ControlStructureTypes.CONTINUE)
-      .lineNumber(ctx.NEXT().getSymbol.getLine)
-      .columnNumber(ctx.NEXT().getSymbol.getCharPositionInLine)
-      .code(Defines.ModifierNext)
     Seq(
-      Ast(node)
-        .withChildren(astForArguments(ctx.arguments()))
+      astForControlStructure(
+        ctx.getClass.getSimpleName,
+        ctx.NEXT(),
+        ControlStructureTypes.CONTINUE,
+        Defines.ModifierNext
+      ).withChildren(astForArguments(ctx.arguments()))
     )
   }
 
-  protected def astForBreakArgsInvocation(ctx: BreakArgsInvocationWithoutParenthesesContext) = {
-    val args = ctx.arguments()
-    Option(args) match {
+  protected def astForBreakArgsInvocation(ctx: BreakArgsInvocationWithoutParenthesesContext): Seq[Ast] = {
+    Option(ctx.arguments()) match {
       case Some(args) =>
         /*
          * This is break with args inside a block. The argument passed to break will be returned by the bloc
          * Model this as a return since this is effectively a  return
          */
-        val retNode = NewReturn()
-          .code(text(ctx))
-          .lineNumber(ctx.BREAK().getSymbol().getLine)
-          .columnNumber(ctx.BREAK().getSymbol().getCharPositionInLine)
-        val argAst = astForArguments(args)
+        val retNode = returnNode(ctx.BREAK(), text(ctx))
+        val argAst  = astForArguments(args)
         Seq(returnAst(retNode, argAst))
       case None =>
-        val node = NewControlStructure()
-          .controlStructureType(ControlStructureTypes.BREAK)
-          .lineNumber(ctx.BREAK().getSymbol.getLine)
-          .columnNumber(ctx.BREAK().getSymbol.getCharPositionInLine)
-          .code(text(ctx))
         Seq(
-          Ast(node)
-            .withChildren(astForArguments(ctx.arguments()))
+          astForControlStructure(ctx.getClass.getSimpleName, ctx.BREAK(), ControlStructureTypes.BREAK, text(ctx))
+            .withChildren(astForArguments(ctx.arguments))
         )
     }
   }
 
   protected def astForJumpExpressionPrimaryContext(ctx: JumpExpressionPrimaryContext): Seq[Ast] = {
-    if (ctx.jumpExpression().BREAK() != null) {
-      val node = NewControlStructure()
-        .controlStructureType(ControlStructureTypes.BREAK)
-        .lineNumber(ctx.jumpExpression().BREAK().getSymbol.getLine)
-        .columnNumber(ctx.jumpExpression().BREAK().getSymbol.getCharPositionInLine)
-        .code(text(ctx))
-      Seq(Ast(node))
-    } else if (ctx.jumpExpression().NEXT() != null) {
-      val node = NewControlStructure()
-        .controlStructureType(ControlStructureTypes.CONTINUE)
-        .lineNumber(ctx.jumpExpression().NEXT().getSymbol.getLine)
-        .columnNumber(ctx.jumpExpression().NEXT().getSymbol.getCharPositionInLine)
-        .code(Defines.ModifierNext)
-      Seq(Ast(node))
-    } else if (ctx.jumpExpression().REDO() != null) {
-      val node = NewControlStructure()
-        .controlStructureType(ControlStructureTypes.CONTINUE)
-        .lineNumber(ctx.jumpExpression().REDO().getSymbol.getLine)
-        .columnNumber(ctx.jumpExpression().REDO().getSymbol.getCharPositionInLine)
-        .code(Defines.ModifierRedo)
-      Seq(Ast(node))
-    } else if (ctx.jumpExpression().RETRY() != null) {
-      val node = NewControlStructure()
-        .controlStructureType(ControlStructureTypes.CONTINUE)
-        .lineNumber(ctx.jumpExpression().RETRY().getSymbol.getLine)
-        .columnNumber(ctx.jumpExpression().RETRY().getSymbol.getCharPositionInLine)
-        .code(Defines.ModifierRetry)
-      Seq(Ast(node))
-    } else {
-      Seq(Ast())
-    }
+    val parserTypeName = ctx.getClass.getSimpleName
+    val controlStructureAst = ctx.jumpExpression() match
+      case expr if expr.BREAK() != null =>
+        astForControlStructure(parserTypeName, expr.BREAK(), ControlStructureTypes.BREAK, text(ctx))
+      case expr if expr.NEXT() != null =>
+        astForControlStructure(parserTypeName, expr.NEXT(), ControlStructureTypes.CONTINUE, Defines.ModifierNext)
+      case expr if expr.REDO() != null =>
+        astForControlStructure(parserTypeName, expr.REDO(), ControlStructureTypes.CONTINUE, Defines.ModifierRedo)
+      case expr if expr.RETRY() != null =>
+        astForControlStructure(parserTypeName, expr.RETRY(), ControlStructureTypes.CONTINUE, Defines.ModifierRetry)
+      case _ =>
+        Ast()
+    Seq(controlStructureAst)
+  }
+
+  protected def astForRescueClause(ctx: BodyStatementContext): Ast = {
+    val compoundStatementAsts = astForCompoundStatement(ctx.compoundStatement)
+    val elseClauseAsts = Option(ctx.elseClause) match
+      case Some(ctx) => astForCompoundStatement(ctx.compoundStatement)
+      case None      => Seq.empty
+
+    /*
+     * TODO Conversion of last statement to return AST is needed here
+     * This can be done after the data flow engine issue with return from a try block is fixed
+     */
+    val tryBodyAsts = compoundStatementAsts ++ elseClauseAsts
+    val tryBodyAst  = blockAst(blockNode(ctx), tryBodyAsts.toList)
+
+    val finallyAst = Option(ctx.ensureClause) match
+      case Some(ctx) => astForCompoundStatement(ctx.compoundStatement).headOption
+      case None      => None
+
+    val catchAsts = ctx.rescueClause.asScala
+      .map(astForRescueClauseContext)
+      .toSeq
+
+    val tryNode = controlStructureNode(ctx, ControlStructureTypes.TRY, "try")
+    tryCatchAst(tryNode, tryBodyAst, catchAsts, finallyAst)
   }
 
 }

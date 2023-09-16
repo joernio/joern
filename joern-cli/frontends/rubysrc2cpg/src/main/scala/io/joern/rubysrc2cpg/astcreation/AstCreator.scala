@@ -235,14 +235,9 @@ class AstCreator(
     case ctx: VariableIdentifierOnlySingleLeftHandSideContext =>
       Seq(astForVariableIdentifierHelper(ctx.variableIdentifier(), true))
     case ctx: PrimaryInsideBracketsSingleLeftHandSideContext =>
-      val primaryAsts = astForPrimaryContext(ctx.primary())
-      val argsAsts    = astForArguments(ctx.arguments())
-      val indexAccessCall = createOpCall(
-        ctx,
-        Operators.indexAccess,
-        Option(ctx.LBRACK().getSymbol.getLine),
-        Option(ctx.LBRACK().getSymbol.getCharPositionInLine)
-      )
+      val primaryAsts     = astForPrimaryContext(ctx.primary())
+      val argsAsts        = astForArguments(ctx.arguments())
+      val indexAccessCall = createOpCall(ctx.LBRACK(), Operators.indexAccess, text(ctx))
       Seq(callAst(indexAccessCall, primaryAsts ++ argsAsts))
     case ctx: XdotySingleLeftHandSideContext =>
       // TODO handle obj.foo=arg being interpreted as obj.foo(arg) here.
@@ -291,10 +286,10 @@ class AstCreator(
         case Some(expCmd) =>
           expCmd.expressionOrCommand().asScala.flatMap(astForExpressionOrCommand).toSeq
         case None =>
-          Seq()
+          Seq.empty
 
-      if (ctx.splattingArgument() != null) {
-        val splattingAsts = astForExpressionOrCommand(ctx.splattingArgument().expressionOrCommand())
+      if (ctx.splattingArgument != null) {
+        val splattingAsts = astForExpressionOrCommand(ctx.splattingArgument.expressionOrCommand)
         exprAsts ++ splattingAsts
       } else {
         exprAsts
@@ -302,31 +297,43 @@ class AstCreator(
     }
 
   private def astForSingleAssignmentExpressionContext(ctx: SingleAssignmentExpressionContext): Seq[Ast] = {
-    val rightAst = astForMultipleRightHandSideContext(ctx.multipleRightHandSide())
-    val leftAst  = astForSingleLeftHandSideContext(ctx.singleLeftHandSide())
+    val rightAst = astForMultipleRightHandSideContext(ctx.multipleRightHandSide)
+    val leftAst  = astForSingleLeftHandSideContext(ctx.singleLeftHandSide)
 
     val operatorName = getOperatorName(ctx.op)
-    val callNode     = createOpCall(ctx, operatorName, Option(ctx.op.getLine), Option(ctx.op.getCharPositionInLine))
+    val opCallNode =
+      callNode(ctx, text(ctx), operatorName, operatorName, DispatchTypes.STATIC_DISPATCH, None, Option(Defines.Any))
+        .lineNumber(ctx.op.getLine)
+        .columnNumber(ctx.op.getCharPositionInLine)
     if (leftAst.size == 1 && rightAst.size > 1) {
       /*
        * This is multiple RHS packed into a single LHS. That is, packing left hand side.
        * This is as good as multiple RHS packed into an array and put into a single LHS
        */
       val packedRHS = getPackedRHS(rightAst, wrapInBrackets = true)
-      Seq(callAst(callNode, leftAst ++ packedRHS))
+      Seq(callAst(opCallNode, leftAst ++ packedRHS))
     } else {
-      Seq(callAst(callNode, leftAst ++ rightAst))
+      Seq(callAst(opCallNode, leftAst ++ rightAst))
     }
   }
 
   def astForStringInterpolationContext(ctx: InterpolatedStringExpressionContext): Seq[Ast] = {
-    val varAsts = ctx
-      .stringInterpolation()
-      .interpolatedStringSequence()
-      .asScala
+    val varAsts = ctx.stringInterpolation.interpolatedStringSequence.asScala
       .flatMap(inter =>
-        Seq(Ast(createOpCall(ctx, RubyOperators.formattedValue, maybeCode = Option(inter.getText)))) ++
-          astForStatements(inter.compoundStatement().statements(), false, false)
+        Seq(
+          Ast(
+            callNode(
+              ctx,
+              text(inter),
+              RubyOperators.formattedValue,
+              RubyOperators.formattedValue,
+              DispatchTypes.STATIC_DISPATCH,
+              None,
+              Option(Defines.Any)
+            )
+          )
+        ) ++
+          astForStatements(inter.compoundStatement.statements, false, false)
       )
       .toSeq
 
@@ -340,8 +347,8 @@ class AstCreator(
             substr.getText,
             Defines.String,
             List(Defines.String),
-            Option(substr.getSymbol.getLine),
-            Option(substr.getSymbol.getCharPositionInLine)
+            Option(substr.lineNumber),
+            Option(substr.columnNumber)
           )
         )
       )
@@ -491,12 +498,7 @@ class AstCreator(
         .flatMap(astForExpressionContext)
         .toSeq
       val splatAsts = astForExpressionOrCommand(ctx.splattingArgument().expressionOrCommand())
-      val callNode = createOpCall(
-        ctx,
-        Operators.arrayInitializer,
-        Option(ctx.COMMA().getSymbol.getLine),
-        Option(ctx.COMMA().getSymbol.getCharPositionInLine)
-      )
+      val callNode  = createOpCall(ctx.COMMA, Operators.arrayInitializer, text(ctx))
       Seq(callAst(callNode, expAsts ++ splatAsts))
     case ctx: AssociationsOnlyIndexingArgumentsContext =>
       astForAssociationsContext(ctx.associations())
@@ -779,7 +781,7 @@ class AstCreator(
     case ctx: BreakArgsInvocationWithoutParenthesesContext =>
       astForBreakArgsInvocation(ctx)
     case ctx: NextArgsInvocationWithoutParenthesesContext =>
-      astsForNextArgsInvocation(ctx)
+      astForNextArgsInvocation(ctx)
     case _ =>
       logger.error(
         s"astForInvocationWithoutParenthesesContext() $relativeFilename, ${text(ctx)} All contexts mismatched."
@@ -1117,39 +1119,8 @@ class AstCreator(
   }
 
   def astForBodyStatementContext(ctx: BodyStatementContext, isMethodBody: Boolean = false): Seq[Ast] = {
-    if (ctx.rescueClause().size > 0) {
-      val compoundStatementAsts = astForCompoundStatement(ctx.compoundStatement())
-      val elseClauseAsts = Option(ctx.elseClause()) match
-        case Some(ctx) => astForCompoundStatement(ctx.compoundStatement(), false)
-        case None      => Seq()
-
-      /*
-       * TODO Conversion of last statement to return AST is needed here
-       * This can be done after the data flow engine issue with return from a try block is fixed
-       */
-      val tryBodyAsts = compoundStatementAsts ++ elseClauseAsts
-      val tryBodyAst  = blockAst(blockNode(ctx), tryBodyAsts.toList)
-
-      val finallyAst = Option(ctx.ensureClause()) match
-        case Some(ctx) => astForCompoundStatement(ctx.compoundStatement()).headOption
-        case None      => None
-
-      val catchAsts = ctx
-        .rescueClause()
-        .asScala
-        .map(astForRescueClauseContext)
-        .toSeq
-
-      val tryNode = NewControlStructure()
-        .controlStructureType(ControlStructureTypes.TRY)
-        .code("try")
-        .lineNumber(line(ctx))
-        .columnNumber(column(ctx))
-
-      Seq(tryCatchAst(tryNode, tryBodyAst, catchAsts, finallyAst))
-    } else {
-      astForCompoundStatement(ctx.compoundStatement(), isMethodBody)
-    }
+    if (ctx.rescueClause.size > 0) Seq(astForRescueClause(ctx))
+    else astForCompoundStatement(ctx.compoundStatement(), isMethodBody)
   }
 
   private def getPackedRHS(astsToConcat: Seq[Ast], wrapInBrackets: Boolean = false) = {
@@ -1161,17 +1132,16 @@ class AstCreator(
     val callNode = NewCall()
       .name(Operators.arrayInitializer)
       .methodFullName(Operators.arrayInitializer)
-      .signature("")
       .typeFullName(Defines.Any)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .code(if (wrapInBrackets) s"[$code]" else code)
     Seq(callAst(callNode, astsToConcat))
   }
 
-  def astForMultipleAssignmentExpressionContext(ctx: MultipleAssignmentExpressionContext): Seq[Ast] = {
+  private def astForMultipleAssignmentExpressionContext(ctx: MultipleAssignmentExpressionContext): Seq[Ast] = {
     val rhsAsts      = astForMultipleRightHandSideContext(ctx.multipleRightHandSide())
     val lhsAsts      = astForMultipleLeftHandSideContext(ctx.multipleLeftHandSide())
-    val operatorName = getOperatorName(ctx.EQ().getSymbol)
+    val operatorName = getOperatorName(ctx.EQ.getSymbol)
 
     /*
      * This is multiple LHS and multiple RHS
@@ -1184,40 +1154,22 @@ class AstCreator(
         /* The rightmost AST in the LHS is a packed variable.
          * Pack the extra ASTs and the rightmost AST in the RHS in one array like the if() part
          */
-
         val diff        = rhsAsts.size - lhsAsts.size
-        val packedRHS   = getPackedRHS(rhsAsts.takeRight(diff + 1)).head
-        val alignedAsts = lhsAsts.take(lhsAsts.size - 1).zip(rhsAsts.take(lhsAsts.size - 1))
-        val packedAsts  = lhsAsts.takeRight(1) zip Seq(packedRHS)
+        val packedRHS   = getPackedRHS(rhsAsts.takeRight(diff + 1)).headOption.to(Seq)
+        val alignedAsts = lhsAsts.take(lhsAsts.size - 1) zip rhsAsts.take(lhsAsts.size - 1)
+        val packedAsts  = lhsAsts.takeRight(1) zip packedRHS
         alignedAsts ++ packedAsts
       } else {
         lhsAsts.zip(rhsAsts)
       }
 
-    assigns.map { argPair =>
-      val lhsCode = argPair._1.nodes.headOption match {
-        case Some(id: NewIdentifier) => id.code
-        case Some(lit: NewLiteral)   => lit.code
-        case _                       => ""
-      }
+    assigns.map { case (lhsAst, rhsAst) =>
+      val lhsCode           = lhsAst.nodes.collectFirst { case x: AstNodeNew => x.code }.getOrElse("")
+      val rhsCode           = rhsAst.nodes.collectFirst { case x: AstNodeNew => x.code }.getOrElse("")
+      val code              = s"$lhsCode = $rhsCode"
+      val syntheticCallNode = createOpCall(ctx.EQ, operatorName, code)
 
-      val rhsCode = argPair._2.nodes.headOption match {
-        case Some(id: NewIdentifier) => id.code
-        case Some(lit: NewLiteral)   => lit.code
-        case Some(call: NewCall)     => call.code
-        case _                       => ""
-      }
-
-      val syntheticCallNode = NewCall()
-        .name(operatorName)
-        .code(lhsCode + " = " + rhsCode)
-        .methodFullName(operatorName)
-        .dispatchType(DispatchTypes.STATIC_DISPATCH)
-        .typeFullName(Defines.Any)
-        .lineNumber(ctx.EQ().getSymbol().getLine())
-        .columnNumber(ctx.EQ().getSymbol().getCharPositionInLine())
-
-      callAst(syntheticCallNode, Seq(argPair._1, argPair._2))
+      callAst(syntheticCallNode, Seq(lhsAst, rhsAst))
     }
   }
 
@@ -1296,23 +1248,21 @@ class AstCreator(
       Seq(Ast())
   }
 
-  def astForBlockParametersContext(ctx: BlockParametersContext): Seq[Ast] = {
-    if (ctx.singleLeftHandSide() != null) {
-      astForSingleLeftHandSideContext(ctx.singleLeftHandSide())
-    } else if (ctx.multipleLeftHandSide() != null) {
-      astForMultipleLeftHandSideContext(ctx.multipleLeftHandSide())
+  private def astForBlockParametersContext(ctx: BlockParametersContext): Seq[Ast] =
+    if (ctx.singleLeftHandSide != null) {
+      astForSingleLeftHandSideContext(ctx.singleLeftHandSide)
+    } else if (ctx.multipleLeftHandSide != null) {
+      astForMultipleLeftHandSideContext(ctx.multipleLeftHandSide)
     } else {
-      Seq(Ast())
+      Seq.empty
     }
-  }
 
-  def astForBlockParameterContext(ctx: BlockParameterContext): Seq[Ast] = {
-    if (ctx.blockParameters() != null) {
-      astForBlockParametersContext(ctx.blockParameters())
+  protected def astForBlockParameterContext(ctx: BlockParameterContext): Seq[Ast] =
+    if (ctx.blockParameters != null) {
+      astForBlockParametersContext(ctx.blockParameters)
     } else {
-      Seq(Ast())
+      Seq.empty
     }
-  }
 
   def astForBlockMethod(
     ctxStmt: StatementsContext,
@@ -1382,136 +1332,30 @@ class AstCreator(
   }
 
   def astForAssociationContext(ctx: AssociationContext): Seq[Ast] = {
-    val terminalNode = Option(ctx.COLON()) match
-      case Some(value) => value
-      case None        => ctx.EQGT()
+    val terminalNode = Option(ctx.COLON).getOrElse(ctx.EQGT)
     val operatorText = getOperatorName(terminalNode.getSymbol)
+    val expressions  = ctx.expression.asScala
 
     val callArgs =
-      Option(ctx.keyword()) match {
+      Option(ctx.keyword) match {
         case Some(ctxKeyword) =>
           val expr1Ast  = astForCallNode(ctx, ctxKeyword.getText)
-          val expr2Asts = astForExpressionContext(ctx.expression().get(0))
+          val expr2Asts = astForExpressionContext(expressions.head)
           Seq(expr1Ast) ++ expr2Asts
         case None =>
-          var expr2Asts = Seq(Ast())
-          val expr1Asts = astForExpressionContext(ctx.expression().get(0))
-          if (ctx.expression().size() > 1 && ctx.expression().get(1) != null) {
-            expr2Asts = astForExpressionContext(ctx.expression().get(1))
-          }
+          val expr1Asts = astForExpressionContext(expressions.head)
+          val expr2Asts = expressions.lift(1).flatMap(astForExpressionContext)
           expr1Asts ++ expr2Asts
       }
 
-    val callNode = NewCall()
-      .name(operatorText)
-      .code(text(ctx))
-      .methodFullName(operatorText)
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .typeFullName(Defines.Any)
-      .lineNumber(terminalNode.getSymbol.getLine)
-      .columnNumber(terminalNode.getSymbol.getCharPositionInLine)
+    val callNode = createOpCall(terminalNode, operatorText, text(ctx))
     Seq(callAst(callNode, callArgs))
   }
 
-  def astForAssociationsContext(ctx: AssociationsContext): Seq[Ast] = {
-    ctx
-      .association()
-      .asScala
+  private def astForAssociationsContext(ctx: AssociationsContext): Seq[Ast] = {
+    ctx.association.asScala
       .flatMap(astForAssociationContext)
       .toSeq
-  }
-
-}
-
-/** Extends the Scope class to help scope variables and create locals.
-  *
-  * TODO: Extend this to similarly link parameter nodes (especially `this` node) for consistency.
-  */
-class RubyScope extends Scope[String, NewIdentifier, NewNode] {
-
-  private type VarMap        = Map[String, VarGroup]
-  private type ScopeNodeType = NewNode
-
-  /** Groups a local node with its referencing identifiers.
-    */
-  private case class VarGroup(local: NewLocal, ids: List[NewIdentifier])
-
-  /** Links a scope to its variable groupings.
-    */
-  private val scopeToVarMap = mutable.HashMap.empty[ScopeNodeType, VarMap]
-
-  override def addToScope(identifier: String, variable: NewIdentifier): NewNode = {
-    val scopeNode = super.addToScope(identifier, variable)
-    stack.headOption.foreach(head => scopeToVarMap.appendIdentifierToVarGroup(head.scopeNode, variable))
-    scopeNode
-  }
-
-  override def popScope(): Option[NewNode] = {
-    stack.headOption.map(_.scopeNode).foreach(scopeToVarMap.remove)
-    super.popScope()
-  }
-
-  /** Will generate local nodes for this scope's variables, excluding those that reference parameters.
-    * @param paramNames
-    *   the names of parameters.
-    */
-  def createAndLinkLocalNodes(
-    diffGraph: BatchedUpdate.DiffGraphBuilder,
-    paramNames: Set[String] = Set.empty
-  ): List[DeclarationNew] = stack.headOption match
-    case Some(top) => scopeToVarMap.buildVariableGroupings(top.scopeNode, paramNames ++ Set("this"), diffGraph)
-    case None      => List.empty[DeclarationNew]
-
-  private implicit class IdentifierExt(node: NewIdentifier) {
-
-    /** Creates a new VarGroup and corresponding NewLocal for the given identifier.
-      */
-    def toNewVarGroup: VarGroup = {
-      val newLocal = NewLocal()
-        .name(node.name)
-        .code(node.name)
-        .lineNumber(node.lineNumber)
-        .columnNumber(node.columnNumber)
-        .typeFullName(node.typeFullName)
-      VarGroup(newLocal, List(node))
-    }
-
-  }
-
-  private implicit class ScopeExt(scopeMap: mutable.Map[ScopeNodeType, VarMap]) {
-
-    /** Registers the identifier to its corresponding variable grouping in the given scope.
-      */
-    def appendIdentifierToVarGroup(key: ScopeNodeType, identifier: NewIdentifier): Unit =
-      scopeMap.updateWith(key) {
-        case Some(varMap: VarMap) =>
-          Some(varMap.updatedWith(identifier.name) {
-            case Some(varGroup: VarGroup) => Some(varGroup.copy(ids = varGroup.ids :+ identifier))
-            case None                     => Some(identifier.toNewVarGroup)
-          })
-        case None =>
-          Some(Map(identifier.name -> identifier.toNewVarGroup))
-      }
-
-    /** Will persist the variable groupings that do not represent parameter nodes and link them with REF edges.
-      * @return
-      *   the list of persisted local nodes.
-      */
-    def buildVariableGroupings(
-      key: ScopeNodeType,
-      paramNames: Set[String],
-      diffGraph: BatchedUpdate.DiffGraphBuilder
-    ): List[DeclarationNew] =
-      scopeMap.get(key) match
-        case Some(varMap) =>
-          varMap.values
-            .filterNot { case VarGroup(local, _) => paramNames.contains(local.name) }
-            .map { case VarGroup(local, ids) =>
-              ids.foreach(id => diffGraph.addEdge(id, local, EdgeTypes.REF))
-              local
-            }
-            .toList
-        case None => List.empty[DeclarationNew]
   }
 
 }

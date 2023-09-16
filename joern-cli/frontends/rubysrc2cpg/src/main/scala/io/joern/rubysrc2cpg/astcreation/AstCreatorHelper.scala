@@ -6,6 +6,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.misc.Interval
+import org.antlr.v4.runtime.tree.TerminalNode
 
 import scala.collection.mutable
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -64,18 +65,19 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   protected def createOpCall(
-    ctx: ParserRuleContext,
+    node: TerminalNode,
     operation: String,
-    lineNumber: Option[Int] = None,
-    columnNumber: Option[Int] = None,
-    maybeCode: Option[String] = None
+    code: String,
+    typeFullName: String = RubyDefines.Any
   ): NewCall = {
-    val code = maybeCode.getOrElse(text(ctx))
-    val opCall =
-      callNode(ctx, code, operation, operation, DispatchTypes.STATIC_DISPATCH, None, Option(RubyDefines.Any))
-    lineNumber.foreach(opCall.lineNumber(_))
-    columnNumber.foreach(opCall.columnNumber(_))
-    opCall
+    NewCall()
+      .name(operation)
+      .methodFullName(operation)
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .lineNumber(node.lineNumber)
+      .columnNumber(node.columnNumber)
+      .typeFullName(typeFullName)
+      .code(code)
   }
 
   protected def createLiteralNode(
@@ -166,6 +168,36 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     usedVariableNames.put(variableName, counter)
     currentVariableName
   }
+
+  protected def astForControlStructure(
+    parserTypeName: String,
+    node: TerminalNode,
+    controlStructureType: String,
+    code: String
+  ): Ast =
+    Ast(
+      NewControlStructure()
+        .parserTypeName(parserTypeName)
+        .controlStructureType(controlStructureType)
+        .code(code)
+        .lineNumber(node.lineNumber)
+        .columnNumber(node.columnNumber)
+    )
+
+  protected def returnNode(node: TerminalNode, code: String): NewReturn =
+    NewReturn()
+      .lineNumber(node.lineNumber)
+      .columnNumber(node.columnNumber)
+      .code(code)
+
+  implicit class TerminalNodeExt(n: TerminalNode) {
+
+    def lineNumber: Int = n.getSymbol.getLine
+
+    def columnNumber: Int = n.getSymbol.getCharPositionInLine
+
+  }
+
 }
 
 object GlobalTypes {
