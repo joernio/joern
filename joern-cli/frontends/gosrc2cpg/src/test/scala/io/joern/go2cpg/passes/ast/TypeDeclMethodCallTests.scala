@@ -2,8 +2,8 @@ package io.joern.go2cpg.passes.ast
 
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
 import io.joern.gosrc2cpg.astcreation.Defines
-import io.shiftleft.codepropertygraph.generated.nodes.Identifier
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, nodes}
 import io.shiftleft.semanticcpg.language.*
 
 class TypeDeclMethodCallTests extends GoCodeToCpgSuite {
@@ -74,7 +74,7 @@ class TypeDeclMethodCallTests extends GoCodeToCpgSuite {
       cpg.call("bar").size shouldBe 1
       val List(x) = cpg.call("bar").l
       x.code shouldBe "ctx.data.bar(a)"
-      x.methodFullName shouldBe "main.context.bar"
+      x.methodFullName shouldBe "ANY.bar"
       x.order shouldBe 2
       x.lineNumber shouldBe Option(7)
       x.typeFullName shouldBe Defines.anyTypeName
@@ -97,7 +97,7 @@ class TypeDeclMethodCallTests extends GoCodeToCpgSuite {
       cpg.call("bar").size shouldBe 1
       val List(x) = cpg.call("bar").l
       x.code shouldBe "ctx.data1.data2.data3.data4.bar(a)"
-      x.methodFullName shouldBe "main.context.bar"
+      x.methodFullName shouldBe "ANY.bar"
       x.order shouldBe 2
       x.lineNumber shouldBe Option(7)
       x.typeFullName shouldBe Defines.anyTypeName
@@ -105,33 +105,26 @@ class TypeDeclMethodCallTests extends GoCodeToCpgSuite {
 
   }
 
-  "Method call chaining using builder design" ignore {
+  "Method call chaining using builder design" should {
     val cpg = code("""
         |package main
-        |
-        |import "fmt"
-        |
         |type Person struct {
         |    name     string
         |    age      int
         |    location string
         |}
-        |
         |func (p *Person) SetName(name string) *Person {
         |    p.name = name
         |    return p
         |}
-        |
         |func (p *Person) SetAge(age int) *Person {
         |    p.age = age
         |    return p
         |}
-        |
         |func (p *Person) SetLocation(location string) *Person {
         |    p.location = location
         |    return p
         |}
-        |
         |func main() {
         |    var person *Person = &Person{}
         |    person.SetName("John").SetAge(30).SetLocation("New York")
@@ -142,9 +135,24 @@ class TypeDeclMethodCallTests extends GoCodeToCpgSuite {
       val List(x) = cpg.call.name("SetName").l
       x.code shouldBe "person.SetName(\"John\")"
       x.methodFullName shouldBe "main.Person.SetName"
-      x.order shouldBe 4
-      x.lineNumber shouldBe Option(29)
-      x.typeFullName shouldBe "main.Person"
+      x.order shouldBe 1
+      x.lineNumber shouldBe Option(22)
+      x.typeFullName shouldBe "*main.Person"
+
+      val List(receiver: Identifier, _) = x.argument.l: @unchecked
+      receiver.name shouldBe "person"
+    }
+
+    "Check call node properties: Age" in {
+      val List(x) = cpg.call.name("SetAge").l
+      x.code shouldBe "person.SetName(\"John\").SetAge(30)"
+      x.methodFullName shouldBe "main.Person.SetAge"
+      x.order shouldBe 1
+      x.lineNumber shouldBe Option(22)
+      x.typeFullName shouldBe "*main.Person"
+
+      val List(receiver: Call, _) = x.argument.l: @unchecked
+      receiver.name shouldBe "SetName"
     }
 
     "Check call node properties: Location" in {
@@ -152,12 +160,11 @@ class TypeDeclMethodCallTests extends GoCodeToCpgSuite {
       x.code shouldBe "person.SetName(\"John\").SetAge(30).SetLocation(\"New York\")"
       x.methodFullName shouldBe "main.Person.SetLocation"
       x.order shouldBe 3
-      x.lineNumber shouldBe Option(29)
-      x.typeFullName shouldBe "main.Person"
-    }
+      x.lineNumber shouldBe Option(22)
+      x.typeFullName shouldBe "*main.Person"
 
-    "Check call node properties: Age" in {
-      val List(x) = cpg.call.name("SetAge").l
+      val List(receiver: Call, _) = x.argument.l: @unchecked
+      receiver.name shouldBe "SetAge"
     }
   }
 }
