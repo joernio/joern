@@ -114,6 +114,11 @@ trait AstForStatementsCreator(filename: String)(implicit withSchemaValidation: V
           case Some(method: NewMethod) => returnAst(retNode, Seq(Ast(methodToMethodRef(ctx, method))))
           case _                       => returnAst(retNode, Seq(lastStmtAst))
 
+  protected def astForBodyStatementContext(ctx: BodyStatementContext, isMethodBody: Boolean = false): Seq[Ast] = {
+    if (ctx.rescueClause.size > 0) Seq(astForRescueClause(ctx))
+    else astForCompoundStatement(ctx.compoundStatement(), isMethodBody)
+  }
+
   protected def astForCompoundStatement(
     ctx: CompoundStatementContext,
     isMethodBody: Boolean = false,
@@ -376,7 +381,7 @@ trait AstForStatementsCreator(filename: String)(implicit withSchemaValidation: V
   ) = {
     blockMethodName match {
       case Some(blockMethodName) =>
-        astForBlockMethod(
+        astForBlockFunction(
           compoundStmtCtx.statements(),
           blockParamCtx,
           blockMethodName,

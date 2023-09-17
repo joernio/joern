@@ -5,13 +5,18 @@ import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.utils.PackageContext
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, ModifierTypes}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes}
+import org.antlr.v4.runtime.tree.TerminalNode
+import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
+import scala.jdk.CollectionConverters.*
 
 trait AstForFunctionsCreator(packageContext: PackageContext)(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
+
+  private val logger = LoggerFactory.getLogger(getClass)
 
   /*
    *Fake methods created from yield blocks and their yield calls will have this suffix in their names
@@ -147,6 +152,252 @@ trait AstForFunctionsCreator(packageContext: PackageContext)(implicit withSchema
         blockAst(blockNode(ctx), locals.map(Ast.apply) ++ astBody.toList),
         methodRetNode,
         Seq[NewModifier](modifierNode)
+      )
+    )
+  }
+
+  private def astForOperatorMethodNameContext(ctx: OperatorMethodNameContext): Seq[Ast] = {
+    /*
+     * This is for operator overloading for the class
+     */
+    val name           = text(ctx)
+    val methodFullName = classStack.reverse :+ name mkString pathSep
+
+    val node = callNode(ctx, text(ctx), name, methodFullName, DispatchTypes.STATIC_DISPATCH, None, Option(Defines.Any))
+    ctx.children.asScala
+      .collectFirst { case x: TerminalNode => x }
+      .foreach(x => node.lineNumber(x.lineNumber).columnNumber(x.columnNumber))
+    Seq(callAst(node))
+  }
+
+  protected def astForMethodNameContext(ctx: MethodNameContext): Seq[Ast] = {
+    if (ctx.methodIdentifier() != null) {
+      astForMethodIdentifierContext(ctx.methodIdentifier(), text(ctx))
+    } else if (ctx.operatorMethodName() != null) {
+      astForOperatorMethodNameContext(ctx.operatorMethodName)
+    } else if (ctx.keyword() != null) {
+      val node =
+        callNode(ctx, text(ctx), text(ctx), text(ctx), DispatchTypes.STATIC_DISPATCH, None, Option(Defines.Any))
+      ctx.children.asScala
+        .collectFirst { case x: TerminalNode => x }
+        .foreach(x =>
+          node.lineNumber(x.lineNumber).columnNumber(x.columnNumber).name(x.getText).methodFullName(x.getText)
+        )
+      Seq(callAst(node))
+    } else {
+      Seq.empty
+    }
+  }
+
+  private def astForSingletonMethodNamePartContext(ctx: SingletonMethodNamePartContext): Seq[Ast] = {
+    val definedMethodNameAst = astForDefinedMethodNameContext(ctx.definedMethodName())
+    val singletonObjAst      = astForSingletonObjectContext(ctx.singletonObject())
+    definedMethodNameAst ++ singletonObjAst
+  }
+
+  private def astForSingletonObjectContext(ctx: SingletonObjectContext): Seq[Ast] = {
+    if (ctx.variableIdentifier() != null) {
+      Seq(astForVariableIdentifierHelper(ctx.variableIdentifier(), true))
+    } else if (ctx.pseudoVariableIdentifier() != null) {
+      Seq(Ast())
+    } else if (ctx.expressionOrCommand() != null) {
+      astForExpressionOrCommand(ctx.expressionOrCommand())
+    } else {
+      Seq.empty
+    }
+  }
+
+  private def astForParametersContext(ctx: ParametersContext): Seq[Ast] = {
+    if (ctx == null) return Seq()
+
+    // the parameterTupleList holds the parameter terminal node and is the parameter a variadic parameter
+    val parameterTupleList = ctx.parameter().asScala.map {
+      case procCtx if procCtx.procParameter() != null =>
+        (Option(procCtx.procParameter().LOCAL_VARIABLE_IDENTIFIER()), false)
+      case optCtx if optCtx.optionalParameter() != null =>
+        (Option(optCtx.optionalParameter().LOCAL_VARIABLE_IDENTIFIER()), false)
+      case manCtx if manCtx.mandatoryParameter() != null =>
+        (Option(manCtx.mandatoryParameter().LOCAL_VARIABLE_IDENTIFIER()), false)
+      case arrCtx if arrCtx.arrayParameter() != null =>
+        (Option(arrCtx.arrayParameter().LOCAL_VARIABLE_IDENTIFIER()), arrCtx.arrayParameter().STAR() != null)
+      case keywordCtx if keywordCtx.keywordParameter() != null =>
+        (Option(keywordCtx.keywordParameter().LOCAL_VARIABLE_IDENTIFIER()), false)
+      case _ => (None, false)
+    }
+
+    parameterTupleList.zipWithIndex.map { case (paraTuple, paraIndex) =>
+      paraTuple match
+        case (Some(paraValue), isVariadic) =>
+          val varSymbol = paraValue.getSymbol
+          createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, Seq[String](Defines.Any))
+          Ast(
+            createMethodParameterIn(
+              varSymbol.getText,
+              lineNumber = Some(varSymbol.getLine),
+              colNumber = Some(varSymbol.getCharPositionInLine),
+              order = paraIndex + 1,
+              index = paraIndex + 1
+            ).isVariadic(isVariadic)
+          )
+        case _ =>
+          Ast(
+            createMethodParameterIn(
+              getUnusedVariableNames(usedVariableNames, Defines.TempParameter),
+              order = paraIndex + 1,
+              index = paraIndex + 1
+            )
+          )
+    }.toList
+  }
+
+  // TODO: Rewrite for simplicity and take into account more than parameter names.
+  private def astForMethodParameterPartContext(ctx: MethodParameterPartContext): Seq[Ast] = {
+    if (ctx == null || ctx.parameters == null) Seq.empty
+    else astForParametersContext(ctx.parameters)
+  }
+
+  private def astForDefinedMethodNameContext(ctx: DefinedMethodNameContext): Seq[Ast] = {
+    Option(ctx.methodName()) match
+      case Some(methodNameCtx) => astForMethodNameContext(methodNameCtx)
+      case None                => astForAssignmentLikeMethodIdentifierContext(ctx.assignmentLikeMethodIdentifier())
+  }
+
+  private def astForAssignmentLikeMethodIdentifierContext(ctx: AssignmentLikeMethodIdentifierContext): Seq[Ast] = {
+    Seq(
+      callAst(
+        callNode(ctx, text(ctx), text(ctx), text(ctx), DispatchTypes.STATIC_DISPATCH, Some(""), Some(Defines.Any))
+      )
+    )
+  }
+
+  private def astForMethodNamePartContext(ctx: MethodNamePartContext): Seq[Ast] = ctx match {
+    case ctx: SimpleMethodNamePartContext    => astForSimpleMethodNamePartContext(ctx)
+    case ctx: SingletonMethodNamePartContext => astForSingletonMethodNamePartContext(ctx)
+    case _ =>
+      logger.error(s"astForMethodNamePartContext() $relativeFilename, ${text(ctx)} All contexts mismatched.")
+      Seq(Ast())
+  }
+
+  private def astForSimpleMethodNamePartContext(ctx: SimpleMethodNamePartContext): Seq[Ast] =
+    astForDefinedMethodNameContext(ctx.definedMethodName)
+
+  protected def astForProcDefinitionContext(ctx: ProcDefinitionContext): Seq[Ast] = {
+    /*
+     * Model a proc as a method
+     */
+    // Note: For parameters in the Proc definition, an implicit parameter which goes by the name of `this` is added to the cpg
+    val procMethodName = s"proc_${blockIdCounter.getAndAdd(1)}"
+    val methodFullName = classStack.reverse :+ procMethodName mkString pathSep
+    val newMethodNode  = methodNode(ctx, procMethodName, text(ctx), methodFullName, None, relativeFilename)
+
+    scope.pushNewScope(newMethodNode)
+
+    val astMethodParam = astForParametersContext(ctx.parameters())
+    val paramNames     = astMethodParam.flatMap(_.nodes).collect { case x: NewMethodParameterIn => x.name }.toSet
+    val locals         = scope.createAndLinkLocalNodes(diffGraph, paramNames).map(Ast.apply)
+    val astBody        = astForCompoundStatement(ctx.block.compoundStatement, true)
+
+    val methodRetNode = NewMethodReturn()
+      .typeFullName(Defines.Any)
+
+    val publicModifier = NewModifier().modifierType(ModifierTypes.PUBLIC)
+
+    val methAst = methodAst(
+      newMethodNode,
+      astMethodParam,
+      blockAst(blockNode(ctx), locals ++ astBody.toList),
+      methodRetNode,
+      Seq(publicModifier)
+    )
+    blockMethods.addOne(methAst)
+
+    val callArgs = astMethodParam
+      .flatMap(_.root)
+      .collect { case x: NewMethodParameterIn => x }
+      .map(param => Ast(createIdentifierWithScope(ctx, param.name, param.code, Defines.Any, Seq())))
+
+    val procCallNode =
+      callNode(ctx, text(ctx), procMethodName, methodFullName, DispatchTypes.STATIC_DISPATCH, None, Option(Defines.Any))
+
+    scope.popScope()
+
+    Seq(callAst(procCallNode, callArgs))
+  }
+
+  def astForDefinedMethodNameOrSymbolContext(ctx: DefinedMethodNameOrSymbolContext): Seq[Ast] =
+    if (ctx == null) {
+      Seq.empty
+    } else {
+      if (ctx.definedMethodName() != null) {
+        astForDefinedMethodNameContext(ctx.definedMethodName())
+      } else {
+        Seq(astForSymbolLiteral(ctx.symbol()))
+      }
+    }
+
+  protected def astForBlockFunction(
+    ctxStmt: StatementsContext,
+    ctxParam: Option[BlockParameterContext],
+    blockMethodName: String,
+    lineStart: Int,
+    lineEnd: Int,
+    colStart: Int,
+    colEnd: Int
+  ): Seq[Ast] = {
+    /*
+     * Model a block as a method
+     */
+    val methodFullName = classStack.reverse :+ blockMethodName mkString pathSep
+    val newMethodNode = methodNode(ctxStmt, blockMethodName, text(ctxStmt), methodFullName, None, relativeFilename)
+      .lineNumber(lineStart)
+      .lineNumberEnd(lineEnd)
+      .columnNumber(colStart)
+      .columnNumberEnd(colEnd)
+
+    scope.pushNewScope(newMethodNode)
+    val astMethodParam = ctxParam.map(astForBlockParameterContext).getOrElse(Seq())
+
+    val publicModifier = NewModifier().modifierType(ModifierTypes.PUBLIC)
+    val paramSeq = astMethodParam.headOption match {
+      case Some(value) =>
+        value.nodes.map {
+          /* In majority of cases, node will be an identifier */
+          case identifierNode: NewIdentifier =>
+            val param = NewMethodParameterIn()
+              .name(identifierNode.name)
+              .code(identifierNode.code)
+              .lineNumber(identifierNode.lineNumber)
+              .columnNumber(identifierNode.columnNumber)
+            Ast(param)
+          case _: NewCall =>
+            /* TODO: Occasionally, we might encounter a _ call in cases like "do |_, x|" where we should handle this?
+             * But for now, we just return an empty AST. Keeping this match explicitly here so we come back */
+            Ast()
+          case _ =>
+            Ast()
+        }.toSeq
+      case None => Seq()
+    }
+    val paramNames = (astMethodParam ++ paramSeq)
+      .flatMap(_.root)
+      .collect {
+        case x: NewMethodParameterIn => x.name
+        case x: NewIdentifier        => x.name
+      }
+      .toSet
+    val locals        = scope.createAndLinkLocalNodes(diffGraph, paramNames).map(Ast.apply)
+    val astBody       = astForStatements(ctxStmt, true)
+    val methodRetNode = NewMethodReturn().typeFullName(Defines.Any)
+
+    scope.popScope()
+
+    Seq(
+      methodAst(
+        newMethodNode,
+        paramSeq,
+        blockAst(blockNode(ctxStmt), locals ++ astBody.toList),
+        methodRetNode,
+        Seq(publicModifier)
       )
     )
   }

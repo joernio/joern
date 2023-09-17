@@ -1,12 +1,12 @@
 package io.joern.rubysrc2cpg.astcreation
-
+import io.joern.rubysrc2cpg.parser.RubyParser.*
 import io.joern.rubysrc2cpg.passes.Defines as RubyDefines
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
-import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.misc.Interval
 import org.antlr.v4.runtime.tree.TerminalNode
+import org.antlr.v4.runtime.{ParserRuleContext, Token}
 
 import scala.collection.mutable
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -102,17 +102,16 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     lineNumber: Option[Integer] = None,
     colNumber: Option[Integer] = None
   ): Ast = {
-
-    val code = codeOf(lhs) + " = " + codeOf(rhs)
-    val callNode = NewCall()
+    val code = Seq(lhs, rhs).collect { case x: AstNodeNew => x.code }.mkString(" = ")
+    val assignment = NewCall()
       .name(Operators.assignment)
+      .methodFullName(Operators.assignment)
       .code(code)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .lineNumber(lineNumber)
       .columnNumber(colNumber)
-      .methodFullName(Operators.assignment)
 
-    callAst(callNode, Seq(Ast(lhs), Ast(rhs)))
+    callAst(assignment, Seq(Ast(lhs), Ast(rhs)))
   }
 
   protected def createThisIdentifier(
@@ -158,11 +157,10 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       .index(index)
   }
 
-  protected def codeOf(node: NewNode): String = {
-    node.asInstanceOf[AstNodeNew].code
-  }
-
-  def getUnusedVariableNames(usedVariableNames: mutable.HashMap[String, Int], variableName: String): String = {
+  protected def getUnusedVariableNames(
+    usedVariableNames: mutable.HashMap[String, Int],
+    variableName: String
+  ): String = {
     val counter             = usedVariableNames.get(variableName).map(_ + 1).getOrElse(0)
     val currentVariableName = s"${variableName}_$counter"
     usedVariableNames.put(variableName, counter)
@@ -190,6 +188,19 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       .columnNumber(node.columnNumber)
       .code(code)
 
+  protected def getOperatorName(token: Token): String = token.getType match {
+    case ASSIGNMENT_OPERATOR => Operators.assignment
+    case DOT2                => Operators.range
+    case DOT3                => Operators.range
+    case EMARK               => Operators.not
+    case EQ                  => Operators.assignment
+    case COLON2              => RubyOperators.scopeResolution
+    case DOT                 => Operators.fieldAccess
+    case EQGT                => RubyOperators.keyValueAssociation
+    case COLON               => RubyOperators.activeRecordAssociation
+    case _                   => RubyOperators.none
+  }
+
   implicit class TerminalNodeExt(n: TerminalNode) {
 
     def lineNumber: Int = n.getSymbol.getLine
@@ -198,6 +209,21 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   }
 
+}
+
+object RubyOperators {
+  val none                    = "<operator>.none"
+  val patternMatch            = "<operator>.patternMatch"
+  val notPatternMatch         = "<operator>.notPatternMatch"
+  val scopeResolution         = "<operator>.scopeResolution"
+  val defined                 = "<operator>.defined"
+  val keyValueAssociation     = "<operator>.keyValueAssociation"
+  val activeRecordAssociation = "<operator>.activeRecordAssociation"
+  val undef                   = "<operator>.undef"
+  val superKeyword            = "<operator>.super"
+  val stringConcatenation     = "<operator>.stringConcatenation"
+  val formattedString         = "<operator>.formatString"
+  val formattedValue          = "<operator>.formatValue"
 }
 
 object GlobalTypes {
