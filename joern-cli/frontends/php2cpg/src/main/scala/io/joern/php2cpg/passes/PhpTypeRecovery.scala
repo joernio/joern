@@ -32,7 +32,22 @@ private class PhpTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XType
 private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraphBuilder, state: XTypeRecoveryState)
   extends RecoverForXCompilationUnit[NamespaceBlock](cpg, cu, builder, state) {
 
-  override def isConstructor(c: Call): Boolean = isConstructor(c.name)
+  override protected def prepopulateSymbolTable(): Unit = {
+    logger.debug(s"prepopulating symbol table")
+    super.prepopulateSymbolTable()
+    logger.debug(s"symbol table: ${symbolTable.view.mkString(" ")}")
+  }
+
+  override protected def prepopulateSymbolTableEntry(x: AstNode): Unit = x match {
+    case x: Call => x.methodFullName match {
+      case Operators.alloc  =>
+      case _                => symbolTable.append(x, (x.methodFullName +: x.dynamicTypeHintFullName).toSet)
+    }
+    case _      => super.prepopulateSymbolTableEntry(x)
+  }
+
+  override def isConstructor(c: Call): Boolean =
+    isConstructor(c.name) && c.code.endsWith(")")
 
   override protected def isConstructor(name: String): Boolean =
     !name.isBlank && name.charAt(0).isUpper
@@ -86,7 +101,8 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
 
   override protected def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
     logger.debug(s"visiting identifier ${i.name} assigned to constructor ${c.name}")
-    super.visitIdentifierAssignedToConstructor(i, c)
+    val constructorPaths = symbolTable.get(c).map(_.stripSuffix(s"${pathSep}<init>"))
+    associateTypes(i, constructorPaths)
   }
 
   override protected def visitIdentifierAssignedToCallRetVal(i: Identifier, c: Call): Set[String] = {
