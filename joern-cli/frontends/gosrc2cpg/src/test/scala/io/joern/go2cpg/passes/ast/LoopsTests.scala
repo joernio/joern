@@ -221,8 +221,7 @@ class LoopsTests extends GoCodeToCpgSuite {
   }
 
   "for loop with range not, having any index" should {
-    val cpg = code(
-      """
+    val cpg = code("""
         |package main
         |
         |func main() {
