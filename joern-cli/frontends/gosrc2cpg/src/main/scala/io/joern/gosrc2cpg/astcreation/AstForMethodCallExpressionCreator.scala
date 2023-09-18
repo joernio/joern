@@ -1,55 +1,19 @@
 package io.joern.gosrc2cpg.astcreation
 
-import io.joern.gosrc2cpg.parser.ParserAst.{BasicLit, Ident, MapType, SelectorExpr, CallExpr, ChanType}
+import io.joern.gosrc2cpg.datastructures.GoGlobal
+import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.nodes.NewNode
-import org.slf4j.LoggerFactory
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, PropertyNames}
 import ujson.Value
+
+import scala.util.{Success, Try}
 
 trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  private def getLastIdentifierFromSelectorExpr(
-    funcDetails: ParserNodeInfo,
-    asts: Seq[Ast]
-  ): (ParserNodeInfo, Seq[Ast]) = {
-    funcDetails.node match
-      case Ident =>
-        // recursion break condition
-        (funcDetails, asts)
-      case SelectorExpr =>
-        getLastIdentifierFromSelectorExpr(createParserNodeInfo(funcDetails.json(ParserKeys.X)), asts)
-      case CallExpr =>
-        getLastIdentifierFromSelectorExpr(
-          createParserNodeInfo(funcDetails.json(ParserKeys.Fun)(ParserKeys.X)),
-          astForCallExpression(funcDetails)
-        )
-      case x =>
-        logger.warn(s"Unhandled class ${x.getClass} under getLastIdentifierFromSelectorExpr!")
-        (funcDetails, Seq.empty)
-  }
-
   def astForCallExpression(expr: ParserNodeInfo): Seq[Ast] = {
-    val funcDetails   = createParserNodeInfo(expr.json(ParserKeys.Fun))
-    var interCallAsts = Seq.empty[Ast]
-    val (aliasOpt, methodName) = funcDetails.node match
-      case Ident =>
-        (None, funcDetails.json(ParserKeys.Name).str)
-      case SelectorExpr =>
-        val (indentifierNode, interCalls) =
-          getLastIdentifierFromSelectorExpr(createParserNodeInfo(funcDetails.json(ParserKeys.X)), Seq.empty)
-        interCallAsts = interCalls
-        (
-          Some(indentifierNode.json(ParserKeys.Name).str, indentifierNode.json),
-          funcDetails.json(ParserKeys.Sel)(ParserKeys.Name).str
-        )
-      case x =>
-        logger.warn(s"Unhandled class ${x.getClass} under astForCallExpression!")
-        (None, "")
-    val (signature, fullName, typeFullName, thisObjIdentifier) =
-      callMethodFullNameTypeFullNameAndSignature(methodName, aliasOpt)
-
+    val (methodName, signature, fullName, typeFullName, receiverAst) =
+      preReqForCallNode(createParserNodeInfo(expr.json(ParserKeys.Fun)))
     val cpgCall = callNode(
       expr,
       expr.code,
@@ -59,24 +23,13 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
       Some(signature),
       Some(typeFullName)
     )
-    Seq(callAst(cpgCall, astForArgs(expr.json(ParserKeys.Args)), thisObjIdentifier.headOption)) ++ interCallAsts
+    Seq(callAst(cpgCall, astForArgs(expr.json(ParserKeys.Args)), receiverAst.headOption))
   }
 
   protected def astForConstructorCall(compositeLit: ParserNodeInfo): Seq[Ast] = {
-    val typeNode = createParserNodeInfo(compositeLit.json(ParserKeys.Type))
-    val (alias, methodName) = typeNode.node match
-      case Ident =>
-        (None, typeNode.json(ParserKeys.Name).str)
-      case SelectorExpr =>
-        (
-          Some(typeNode.json(ParserKeys.X)(ParserKeys.Name).str, typeNode.json(ParserKeys.X)),
-          typeNode.json(ParserKeys.Sel)(ParserKeys.Name).str
-        )
-      case x =>
-        logger.warn(s"Unhandled class ${x.getClass} under astForConstructorCall!")
-        (None, "")
-    val (signature, fullName, _, _) = callMethodFullNameTypeFullNameAndSignature(methodName, alias)
-
+    val (methodName, signature, fullName, _, _) = preReqForCallNode(
+      createParserNodeInfo(compositeLit.json(ParserKeys.Type))
+    )
     val cpgCall = callNode(
       compositeLit,
       compositeLit.code,
@@ -87,6 +40,19 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
       Some(fullName)
     )
     Seq(callAst(cpgCall, astForStructureDeclarationArgument(compositeLit.json(ParserKeys.Elts))))
+  }
+
+  private def preReqForCallNode(funcDetails: ParserNodeInfo): (String, String, String, String, Seq[Ast]) = {
+    val (aliasOpt, methodName) = funcDetails.node match
+      case Ident =>
+        (None, funcDetails.json(ParserKeys.Name).str)
+      case SelectorExpr =>
+        val xNode = createParserNodeInfo(funcDetails.json(ParserKeys.X))
+        (Some(xNode), funcDetails.json(ParserKeys.Sel)(ParserKeys.Name).str)
+      case x =>
+        logger.warn(s"Unhandled class ${x.getClass} under astForCallExpression!")
+        (None, "")
+    callMethodFullNameTypeFullNameAndSignature(methodName, aliasOpt)
   }
 
   private def astForStructureDeclarationArgument(args: Value): Seq[Ast] = {
@@ -107,56 +73,69 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
       .flatMap(x => {
         val argNode = createParserNodeInfo(x)
         argNode.node match
-          case MapType  => astForMapType(argNode)
-          case ChanType => astForChanType(argNode)
+          case MapType  => Seq(Ast(literalNode(argNode, argNode.code, Defines.map)))
+          case ChanType => Seq(Ast(literalNode(argNode, argNode.code, Defines.chan)))
           case _        => astForNode(argNode)
       })
       .toSeq
   }
 
-  private def astForMapType(arg: ParserNodeInfo): Seq[Ast] = {
-    Seq(Ast(literalNode(arg, arg.code, Defines.map)))
-  }
-
-  private def astForChanType(arg: ParserNodeInfo): Seq[Ast] = {
-    Seq(Ast(literalNode(arg, arg.code, Defines.chan)))
-  }
-
   private def callMethodFullNameTypeFullNameAndSignature(
     methodName: String,
-    aliasName: Option[(String, Value)] = None
-  ): (String, String, String, Seq[Ast]) = {
+    aliasName: Option[ParserNodeInfo] = None
+  ): (String, String, String, String, Seq[Ast]) = {
     // NOTE: There is an assumption that the import nodes have been processed before this method is being called
     // and mapping of alias to their respective namespace is already done.
     aliasName match
       case None =>
-        // NOTE: If the given type is not found in primitiveTypeMap.
-        // Then we are assuming the type is custom type defined inside same pacakge as that of current file's package.
+        // NOTE: If the given function is not found in builtinFunctions.
+        // Then we are assuming that the given function is defined inside same package as that of current file's package.
         // This assumption will be invalid when another package is imported with alias "."
-        val (signature, fullName, returnTypeFullName) = Defines.builtinFunctions.getOrElse(
-          methodName,
-          (s"$fullyQualifiedPackage.$methodName()", s"$fullyQualifiedPackage.$methodName", Defines.tobeFilled)
-        )
-        (signature, fullName, returnTypeFullName, Seq.empty)
-      case Some(alias, jsonNode) =>
-        // Note check if given alias is an object, in that case we will find the expected variable in scope.
-        val variableOption = scope.lookupVariable(alias)
-        variableOption match {
-          case Some((_, variableTypeName)) =>
-            val thisObjIdentifier = astForNode(jsonNode)
-            (
-              s"$variableTypeName.$methodName()",
-              s"$variableTypeName.$methodName",
-              Defines.tobeFilled,
-              thisObjIdentifier
-            )
+        val methodFullName = s"$fullyQualifiedPackage.$methodName"
+        val (returnTypeFullNameCache, signatureCache) =
+          GoGlobal.methodFullNameReturnTypeMap
+            .getOrDefault(methodFullName, (Defines.anyTypeName, s"$methodFullName()"))
+        val (signature, fullName, returnTypeFullName) =
+          Defines.builtinFunctions.getOrElse(methodName, (signatureCache, methodFullName, returnTypeFullNameCache))
+        (methodName, signature, fullName, returnTypeFullName, Seq.empty)
+      case Some(xnode) =>
+        xnode.node match
+          case Ident =>
+            Try(xnode.json(ParserKeys.Obj)) match
+              case Success(_) =>
+                // The presence of "Obj" field indicates its variable identifier and not an alias
+                processReceiverAst(methodName, xnode)
+              case _ =>
+                // Otherwise its an alias to imported namespace on which method call is made
+                val alias = xnode.json(ParserKeys.Name).str
+                val callMethodFullName =
+                  s"${aliasToNameSpaceMapping.getOrElse(alias, s"${XDefines.Unknown}.<$alias>")}.$methodName"
+                val (returnTypeFullNameCache, signatureCache) =
+                  GoGlobal.methodFullNameReturnTypeMap
+                    .getOrDefault(callMethodFullName, (Defines.anyTypeName, s"$callMethodFullName()"))
+
+                (methodName, signatureCache, callMethodFullName, returnTypeFullNameCache, Seq.empty)
           case _ =>
-            (
-              s"${aliasToNameSpaceMapping.getOrElse(alias, s"${XDefines.Unknown}.<$alias>")}.$methodName()",
-              s"${aliasToNameSpaceMapping.getOrElse(alias, s"${XDefines.Unknown}.<$alias>")}.$methodName",
-              Defines.tobeFilled,
-              Seq.empty
-            )
-        }
+            // This will take care of chained method calls. It will call `astForCallExpression` in recursive way,
+            // and the call node is used as receiver to this current call node.
+            processReceiverAst(methodName, xnode)
+  }
+
+  private def processReceiverAst(
+    methodName: String,
+    xnode: ParserNodeInfo
+  ): (String, String, String, String, Seq[Ast]) = {
+    val receiverAst = astForNode(xnode)
+    val receiverTypeFullName =
+      receiverAst.head.root.get.properties
+        .get(PropertyNames.TYPE_FULL_NAME)
+        .getOrElse(Defines.anyTypeName)
+        .toString
+        .stripPrefix("*")
+    val callMethodFullName = s"$receiverTypeFullName.$methodName"
+    val (returnTypeFullNameCache, signatureCache) =
+      GoGlobal.methodFullNameReturnTypeMap
+        .getOrDefault(callMethodFullName, (Defines.anyTypeName, s"$callMethodFullName()"))
+    (methodName, signatureCache, callMethodFullName, returnTypeFullNameCache, receiverAst)
   }
 }
