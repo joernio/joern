@@ -193,21 +193,22 @@ class TypeDeclMethodCallTests extends GoCodeToCpgSuite {
       literals.code("\"USA\"").size shouldBe 1
       literals.code("30").size shouldBe 1
     }
+  }
 
   "Method call on chain of variable" should {
     "Check call node properties on two times chained" in {
       val cpg = code("""
         package main
-          |
-          |func foo(ctx context) int {
-          |
-          |   var a = 10
-          |	result := ctx.data.bar(a)
-          |
-          |	return result
-          |}
-          |
-          |""".stripMargin)
+            |
+            |func foo(ctx context) int {
+            |
+            |   var a = 10
+            |	result := ctx.data.bar(a)
+            |
+            |	return result
+            |}
+            |
+            |""".stripMargin)
 
       cpg.call("bar").size shouldBe 1
       val List(x) = cpg.call("bar").l
@@ -221,16 +222,16 @@ class TypeDeclMethodCallTests extends GoCodeToCpgSuite {
     "Check call node properties on five times chained" in {
       val cpg = code("""
         package main
-          |
-          |func foo(ctx context) int {
-          |
-          | var a = 10
-          |	result := ctx.data1.data2.data3.data4.bar(a)
-          |
-          |	return result
-          |}
-          |
-          |""".stripMargin)
+            |
+            |func foo(ctx context) int {
+            |
+            | var a = 10
+            |	result := ctx.data1.data2.data3.data4.bar(a)
+            |
+            |	return result
+            |}
+            |
+            |""".stripMargin)
 
       cpg.call("bar").size shouldBe 1
       val List(x) = cpg.call("bar").l
@@ -245,29 +246,29 @@ class TypeDeclMethodCallTests extends GoCodeToCpgSuite {
 
   "Method call chaining using builder design" should {
     val cpg = code("""
-        |package main
-        |type Person struct {
-        |    name     string
-        |    age      int
-        |    location string
-        |}
-        |func (p *Person) SetName(name string) *Person {
-        |    p.name = name
-        |    return p
-        |}
-        |func (p *Person) SetAge(age int) *Person {
-        |    p.age = age
-        |    return p
-        |}
-        |func (p *Person) SetLocation(location string) *Person {
-        |    p.location = location
-        |    return p
-        |}
-        |func main() {
-        |    var person *Person = &Person{}
-        |    person.SetName("John").SetAge(30).SetLocation("New York")
-        |}
-        |""".stripMargin)
+          |package main
+          |type Person struct {
+          |    name     string
+          |    age      int
+          |    location string
+          |}
+          |func (p *Person) SetName(name string) *Person {
+          |    p.name = name
+          |    return p
+          |}
+          |func (p *Person) SetAge(age int) *Person {
+          |    p.age = age
+          |    return p
+          |}
+          |func (p *Person) SetLocation(location string) *Person {
+          |    p.location = location
+          |    return p
+          |}
+          |func main() {
+          |    var person *Person = &Person{}
+          |    person.SetName("John").SetAge(30).SetLocation("New York")
+          |}
+          |""".stripMargin)
 
     "Check call node properties: Name" in {
       val List(x) = cpg.call.name("SetName").l
