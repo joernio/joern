@@ -164,6 +164,7 @@ class MethodAndCallDataFlowTests extends GoCodeToCpgSuite(withOssDataflow = true
         |func main() {
         |	var a  = Person{fname: "Pandurang", lname: "Patil"}
         |	var fulname string = a.fullName()
+        |   println(fulname)
         |}
         |""".stripMargin)
     "data flow from literal passed to constructor to identifier" in {
@@ -172,12 +173,18 @@ class MethodAndCallDataFlowTests extends GoCodeToCpgSuite(withOssDataflow = true
       sink.reachableByFlows(src).size shouldBe 2
 
       val sinkOne = cpg.identifier("fulname").l
-      sinkOne.reachableByFlows(src).size shouldBe 1
+      sinkOne.reachableByFlows(src).size shouldBe 2
     }
 
     "data flow use case 2" in {
       val src  = cpg.identifier("a").l
       val sink = cpg.identifier("fulname").l
+      sink.reachableByFlows(src).size shouldBe 4
+    }
+
+    "data flow use case 3" in {
+      val src  = cpg.identifier("a").l
+      val sink = cpg.call("println").l
       sink.reachableByFlows(src).size shouldBe 2
     }
   }

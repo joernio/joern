@@ -4,7 +4,7 @@ import io.joern.rubysrc2cpg.parser.RubyParser.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewFieldIdentifier, NewNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNodeNew, NewCall, NewIdentifier}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, ModifierTypes, Operators}
 import org.antlr.v4.runtime.ParserRuleContext
 import org.slf4j.LoggerFactory
@@ -114,23 +114,199 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       Seq()
   }
 
-  protected def astForSymbol(ctx: SymbolContext): Seq[Ast] = {
+  private def astForSymbol(ctx: SymbolContext): Seq[Ast] = {
     if (
       ctx.stringExpression() != null && ctx.stringExpression().children.get(0).isInstanceOf[StringInterpolationContext]
     ) {
-      val node = NewCall()
-        .name(RubyOperators.formattedString)
-        .methodFullName(RubyOperators.formattedString)
-        .code(text(ctx))
-        .lineNumber(line(ctx))
-        .columnNumber(column(ctx))
-        .typeFullName(Defines.Any)
-        .dispatchType(DispatchTypes.STATIC_DISPATCH)
-
+      val node = callNode(
+        ctx,
+        text(ctx),
+        RubyOperators.formattedString,
+        RubyOperators.formattedString,
+        DispatchTypes.STATIC_DISPATCH,
+        None,
+        Option(Defines.Any)
+      )
       astForStringExpression(ctx.stringExpression()) ++ Seq(Ast(node))
     } else {
       Seq(astForSymbolLiteral(ctx))
     }
+  }
+
+  protected def astForMultipleRightHandSideContext(ctx: MultipleRightHandSideContext): Seq[Ast] =
+    if (ctx == null) {
+      Seq.empty
+    } else {
+      val expCmd = ctx.expressionOrCommands()
+      val exprAsts = Option(expCmd) match
+        case Some(expCmd) =>
+          expCmd.expressionOrCommand().asScala.flatMap(astForExpressionOrCommand).toSeq
+        case None =>
+          Seq.empty
+
+      if (ctx.splattingArgument != null) {
+        val splattingAsts = astForExpressionOrCommand(ctx.splattingArgument.expressionOrCommand)
+        exprAsts ++ splattingAsts
+      } else {
+        exprAsts
+      }
+    }
+
+  protected def astForSingleLeftHandSideContext(ctx: SingleLeftHandSideContext): Seq[Ast] = ctx match {
+    case ctx: VariableIdentifierOnlySingleLeftHandSideContext =>
+      Seq(astForVariableIdentifierHelper(ctx.variableIdentifier, true))
+    case ctx: PrimaryInsideBracketsSingleLeftHandSideContext =>
+      val primaryAsts     = astForPrimaryContext(ctx.primary)
+      val argsAsts        = astForArguments(ctx.arguments)
+      val indexAccessCall = createOpCall(ctx.LBRACK, Operators.indexAccess, text(ctx))
+      Seq(callAst(indexAccessCall, primaryAsts ++ argsAsts))
+    case ctx: XdotySingleLeftHandSideContext =>
+      // TODO handle obj.foo=arg being interpreted as obj.foo(arg) here.
+      val xAsts = astForPrimaryContext(ctx.primary)
+
+      Seq(ctx.LOCAL_VARIABLE_IDENTIFIER, ctx.CONSTANT_IDENTIFIER)
+        .flatMap(Option(_))
+        .headOption match
+        case Some(localVar) =>
+          val name = localVar.getSymbol.getText
+          val node = createIdentifierWithScope(ctx, name, name, Defines.Any, List(Defines.Any))
+          val yAst = Ast(node)
+
+          val callNode = createOpCall(localVar, Operators.fieldAccess, text(ctx))
+          Seq(callAst(callNode, xAsts ++ Seq(yAst)))
+        case None =>
+          Seq.empty
+    case ctx: ScopedConstantAccessSingleLeftHandSideContext =>
+      val localVar  = ctx.CONSTANT_IDENTIFIER
+      val varSymbol = localVar.getSymbol
+      val node = createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
+      Seq(Ast(node))
+    case _ =>
+      logger.error(s"astForSingleLeftHandSideContext() $relativeFilename, ${text(ctx)} All contexts mismatched.")
+      Seq.empty
+  }
+
+  protected def astForSingleAssignmentExpressionContext(ctx: SingleAssignmentExpressionContext): Seq[Ast] = {
+    val rightAst = astForMultipleRightHandSideContext(ctx.multipleRightHandSide)
+    val leftAst  = astForSingleLeftHandSideContext(ctx.singleLeftHandSide)
+
+    val operatorName = getOperatorName(ctx.op)
+    val opCallNode =
+      callNode(ctx, text(ctx), operatorName, operatorName, DispatchTypes.STATIC_DISPATCH, None, Option(Defines.Any))
+        .lineNumber(ctx.op.getLine)
+        .columnNumber(ctx.op.getCharPositionInLine)
+    if (leftAst.size == 1 && rightAst.size > 1) {
+      /*
+       * This is multiple RHS packed into a single LHS. That is, packing left hand side.
+       * This is as good as multiple RHS packed into an array and put into a single LHS
+       */
+      val packedRHS = getPackedRHS(rightAst, wrapInBrackets = true)
+      Seq(callAst(opCallNode, leftAst ++ packedRHS))
+    } else {
+      Seq(callAst(opCallNode, leftAst ++ rightAst))
+    }
+  }
+
+  protected def astForMultipleAssignmentExpressionContext(ctx: MultipleAssignmentExpressionContext): Seq[Ast] = {
+    val rhsAsts      = astForMultipleRightHandSideContext(ctx.multipleRightHandSide())
+    val lhsAsts      = astForMultipleLeftHandSideContext(ctx.multipleLeftHandSide())
+    val operatorName = getOperatorName(ctx.EQ.getSymbol)
+
+    /*
+     * This is multiple LHS and multiple RHS
+     *Since we have multiple LHS and RHS elements here, we will now create synthetic assignment
+     * call nodes to model how ruby assigns values from RHS elements to LHS elements. We create
+     * tuples for each assignment and then pass them to the assignment calls nodes
+     */
+    val assigns =
+      if (lhsAsts.size < rhsAsts.size) {
+        /* The rightmost AST in the LHS is a packed variable.
+         * Pack the extra ASTs and the rightmost AST in the RHS in one array like the if() part
+         */
+        val diff        = rhsAsts.size - lhsAsts.size
+        val packedRHS   = getPackedRHS(rhsAsts.takeRight(diff + 1)).headOption.to(Seq)
+        val alignedAsts = lhsAsts.take(lhsAsts.size - 1) zip rhsAsts.take(lhsAsts.size - 1)
+        val packedAsts  = lhsAsts.takeRight(1) zip packedRHS
+        alignedAsts ++ packedAsts
+      } else {
+        lhsAsts.zip(rhsAsts)
+      }
+
+    assigns.map { case (lhsAst, rhsAst) =>
+      val lhsCode           = lhsAst.nodes.collectFirst { case x: AstNodeNew => x.code }.getOrElse("")
+      val rhsCode           = rhsAst.nodes.collectFirst { case x: AstNodeNew => x.code }.getOrElse("")
+      val code              = s"$lhsCode = $rhsCode"
+      val syntheticCallNode = createOpCall(ctx.EQ, operatorName, code)
+
+      callAst(syntheticCallNode, Seq(lhsAst, rhsAst))
+    }
+  }
+
+  protected def astForIndexingExpressionPrimaryContext(ctx: IndexingExpressionPrimaryContext): Seq[Ast] = {
+    val lhsExpressionAst = astForPrimaryContext(ctx.primary())
+    val rhsExpressionAst = Option(ctx.indexingArguments).map(astForIndexingArgumentsContext).getOrElse(Seq())
+
+    val operator = lhsExpressionAst.flatMap(_.nodes).collectFirst { case x: NewIdentifier => x } match
+      case Some(node) if node.name == "Array" => Operators.arrayInitializer
+      case _                                  => Operators.indexAccess
+
+    val callNode = createOpCall(ctx.LBRACK, operator, text(ctx))
+    Seq(callAst(callNode, lhsExpressionAst ++ rhsExpressionAst))
+
+  }
+
+  private def getPackedRHS(astsToConcat: Seq[Ast], wrapInBrackets: Boolean = false) = {
+    val code = astsToConcat
+      .flatMap(_.nodes)
+      .collect { case x: AstNodeNew => x.code }
+      .mkString(", ")
+
+    val callNode = NewCall()
+      .name(Operators.arrayInitializer)
+      .methodFullName(Operators.arrayInitializer)
+      .typeFullName(Defines.Any)
+      .dispatchType(DispatchTypes.STATIC_DISPATCH)
+      .code(if (wrapInBrackets) s"[$code]" else code)
+    Seq(callAst(callNode, astsToConcat))
+  }
+
+  def astForStringInterpolationContext(ctx: InterpolatedStringExpressionContext): Seq[Ast] = {
+    val varAsts = ctx.stringInterpolation.interpolatedStringSequence.asScala
+      .flatMap(inter =>
+        Seq(
+          Ast(
+            callNode(
+              ctx,
+              text(inter),
+              RubyOperators.formattedValue,
+              RubyOperators.formattedValue,
+              DispatchTypes.STATIC_DISPATCH,
+              None,
+              Option(Defines.Any)
+            )
+          )
+        ) ++
+          astForStatements(inter.compoundStatement.statements, false, false)
+      )
+      .toSeq
+
+    val literalAsts = ctx
+      .stringInterpolation()
+      .DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE()
+      .asScala
+      .map(substr =>
+        Ast(
+          createLiteralNode(
+            substr.getText,
+            Defines.String,
+            List(Defines.String),
+            Option(substr.lineNumber),
+            Option(substr.columnNumber)
+          )
+        )
+      )
+      .toSeq
+    varAsts ++ literalAsts
   }
 
   // TODO: Return Ast instead of Seq[Ast]
@@ -216,6 +392,16 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     // TODO: for X in Y is not properly modelled by while Y
     val forRootAst = whileAst(forExprAst.headOption, forBodyAst, Some(text(ctx)), line(ctx), column(ctx))
     forVarAst.headOption.map(forRootAst.withChild).getOrElse(forRootAst)
+  }
+
+  private def astForForVariableContext(ctx: ForVariableContext): Seq[Ast] = {
+    if (ctx.singleLeftHandSide() != null) {
+      astForSingleLeftHandSideContext(ctx.singleLeftHandSide())
+    } else if (ctx.multipleLeftHandSide() != null) {
+      astForMultipleLeftHandSideContext(ctx.multipleLeftHandSide())
+    } else {
+      Seq(Ast())
+    }
   }
 
   protected def astForWhileExpression(ctx: WhileExpressionContext): Ast = {
@@ -307,24 +493,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     controlStructureAst(ifNode, testAst.headOption, thenAst ++ elseAst)
   }
 
-  protected def astForFieldAccess(ctx: ParserRuleContext, baseNode: NewNode): Ast = {
-    val fieldAccess =
-      callNode(ctx, text(ctx), Operators.fieldAccess, Operators.fieldAccess, DispatchTypes.STATIC_DISPATCH)
-    val fieldIdentifier = newFieldIdentifier(ctx)
-    val astChildren     = Seq(baseNode, fieldIdentifier)
-    callAst(fieldAccess, astChildren.map(Ast.apply))
-  }
-
-  protected def newFieldIdentifier(ctx: ParserRuleContext): NewFieldIdentifier = {
-    val code = text(ctx)
-    val name = code.replaceAll("@", "")
-    NewFieldIdentifier()
-      .code(code)
-      .canonicalName(name)
-      .lineNumber(ctx.start.getLine)
-      .columnNumber(ctx.start.getCharPositionInLine)
-  }
-
   protected def astForQuotedStringExpression(ctx: QuotedStringExpressionContext): Seq[Ast] = ctx match
     case ctx: NonExpandedQuotedStringLiteralContext => Seq(astForNonExpandedQuotedString(ctx))
     case _ =>
@@ -339,4 +507,5 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForQuotedRegexInterpolation(ctx: QuotedRegexInterpolationContext): Seq[Ast] = {
     Seq(Ast(literalNode(ctx, text(ctx), Defines.Regexp)))
   }
+
 }

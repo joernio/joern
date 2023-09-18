@@ -4,8 +4,10 @@ import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg
 import io.joern.x2cpg.datastructures.Stack.StackWrapper
+import io.joern.x2cpg.utils.NodeBuilders.newOperatorCallNode
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
+import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.{NewFieldIdentifier, NewTypeDecl}
 import ujson.Value
 
 import scala.util.{Success, Try}
@@ -70,5 +72,21 @@ trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { thi
           })
       })
       .toSeq
+  }
+
+  protected def astForFieldAccess(info: ParserNodeInfo): Seq[Ast] = {
+    // TODO: Need to identify a way to find the typeFullName of the field getting accessed
+    val fieldTypeFullName = Defines.anyTypeName
+    val callNode =
+      newOperatorCallNode(Operators.fieldAccess, info.code, Some(fieldTypeFullName), line(info), column(info))
+    val identifierAsts  = astForNode(info.json(ParserKeys.X))
+    val fieldIdentifier = info.json(ParserKeys.Sel)(ParserKeys.Name).str
+    val fieldIdentifierNode = NewFieldIdentifier()
+      .canonicalName(fieldIdentifier)
+      .lineNumber(line(info))
+      .columnNumber(column(info))
+      .code(fieldIdentifier)
+    val fieldIdAst = Ast(fieldIdentifierNode)
+    Seq(callAst(callNode, identifierAsts ++ Seq(fieldIdAst)))
   }
 }

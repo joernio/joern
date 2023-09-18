@@ -1,6 +1,5 @@
 package io.joern.rubysrc2cpg.passes.ast
 
-import io.joern.rubysrc2cpg.Config
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 
@@ -16,7 +15,7 @@ class ImportAstCreationTest extends RubyCode2CpgFixture {
     val calls   = cpg.call("require|require_relative|load").l
     "have a valid import node" in {
       imports.importedEntity.l shouldBe List("dummy_logger", "util/help.rb", "mymodule.rb")
-      imports.importedAs.l shouldBe List("", "", "")
+      imports.importedAs.l shouldBe List("dummy_logger", "util/help.rb", "mymodule.rb")
     }
 
     "have a valid call node" in {

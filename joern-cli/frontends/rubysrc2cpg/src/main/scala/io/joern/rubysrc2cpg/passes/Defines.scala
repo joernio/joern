@@ -32,5 +32,8 @@ object Defines {
   val TempIdentifier = "tmp"
   val TempParameter  = "param"
 
+  // Constructor method
+  val Initialize = "initialize"
+
   def getBuiltInType(typeInString: String) = s"${GlobalTypes.builtinPrefix}.$typeInString"
 }
