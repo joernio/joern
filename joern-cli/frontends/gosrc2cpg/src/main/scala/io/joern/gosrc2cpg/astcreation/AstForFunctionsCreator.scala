@@ -87,9 +87,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   protected def getReceiverInfo(receiver: Try[Value]): Option[(String, String, String, ParserNodeInfo)] = {
     receiver match
       case Success(rec) if rec != null =>
-        val recnode        = createParserNodeInfo(rec)
-        val recValue       = rec(ParserKeys.List).arr.head
-        val recName        = recValue(ParserKeys.Names).arr.head(ParserKeys.Name).str
+        val recnode  = createParserNodeInfo(rec)
+        val recValue = rec(ParserKeys.List).arr.head
+        val recName = Try(recValue(ParserKeys.Names).arr.head(ParserKeys.Name).str) match
+          case Success(recName) => recName
+          case _                => Defines.This
         val typeParserNode = createParserNodeInfo(recValue(ParserKeys.Type))
         val (typeFullName, evaluationStrategy) = typeParserNode.node match
           case Ident =>

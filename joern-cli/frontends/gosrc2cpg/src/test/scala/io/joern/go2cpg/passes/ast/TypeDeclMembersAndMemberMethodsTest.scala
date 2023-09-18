@@ -213,4 +213,27 @@ class TypeDeclMembersAndMemberMethodsTest extends GoCodeToCpgSuite {
 
     }
   }
+  "Method defined on struct type without receiver variable name" should {
+    val cpg = code("""
+        |package main
+        |type StringAlias struct {
+        |	name string
+        |}
+        |func (StringAlias) SomeMethod() {
+        |}
+        |func (StringAlias) SomeMethodOne() {
+        |}
+        |""".stripMargin)
+
+    "check method nodes" in {
+      val List(typeDeclNode) = cpg.typeDecl.name("StringAlias").l
+      typeDeclNode.astChildren.isMethod.size shouldBe 2
+
+      val List(areaByValueNode, areaByReferenceNode) = typeDeclNode.astChildren.isMethod.l
+      areaByValueNode.name shouldBe "SomeMethod"
+      areaByValueNode.fullName shouldBe "main.StringAlias.SomeMethod"
+      areaByReferenceNode.name shouldBe "SomeMethodOne"
+      areaByReferenceNode.fullName shouldBe "main.StringAlias.SomeMethodOne"
+    }
+  }
 }
