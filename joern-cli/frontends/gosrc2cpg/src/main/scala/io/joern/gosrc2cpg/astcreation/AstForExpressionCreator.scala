@@ -21,6 +21,7 @@ trait AstForExpressionCreator(implicit withSchemaValidation: ValidationMode) { t
       case TypeAssertExpr => astForNode(expr.json(ParserKeys.X))
       case CallExpr       => astForCallExpression(expr)
       case SelectorExpr   => astForFieldAccess(expr)
+      case KeyValueExpr   => astForNode(createParserNodeInfo(expr.json(ParserKeys.Value)))
       case _              => Seq(Ast())
     }
   }

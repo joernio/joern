@@ -56,20 +56,159 @@ class TypeDeclMethodCallTests extends GoCodeToCpgSuite {
       x.name shouldBe "a"
     }
   }
+
+  "structure initialization having array of complex(structure-array) type" should {
+
+    val cpg = code("""
+        |package main
+        |
+        |type Phone struct {
+        |	phone     string
+        |	phonetype string
+        |}
+        |type Person struct {
+        |	phone []Phone
+        |	name  string
+        |}
+        |
+        |func main() {
+        |   numbers := [5]int{1, 2, 3, 4, 5}
+        |	var fphone = []Phone{{phone: "1234567890", phonetype: "Home"}, {phone: "1234567890", phonetype: "Home"}}
+        |	var person = Person{fphone, "Peter"}
+        |}
+        |""".stripMargin)
+
+    "Check member nodes" in {
+      val List(typeDeclNode) = cpg.typeDecl.name("Person").l
+      typeDeclNode.member.size shouldBe 2
+
+      val List(phone, name) = typeDeclNode.member.l
+      phone.typeFullName shouldBe "[]main.Phone"
+      name.typeFullName shouldBe "string"
+    }
+
+    "check literal nodes" in {
+      val literalNodes = cpg.literal.l
+      literalNodes.code("\"1234567890\"").size shouldBe 2
+      literalNodes.code("\"Home\"").size shouldBe 2
+      literalNodes.code("\"Peter\"").size shouldBe 1
+    }
+
+    "check arrayInitializer nodes" in {
+      val List(intArrayNode, phoneArrayNode) = cpg.call(".*arrayInitializer").l
+      intArrayNode.code shouldBe "[5]int{1, 2, 3, 4, 5}"
+      phoneArrayNode.code shouldBe "[]Phone{{phone: \"1234567890\", phonetype: \"Home\"}, {phone: \"1234567890\", phonetype: \"Home\"}}"
+    }
+  }
+
+  "structure initialization having array of int type" should {
+
+    val cpg = code("""
+        |package main
+        |
+        |import "fmt"
+        |
+        |type Person struct {
+        |	phone []int
+        |	name  string
+        |}
+        |
+        |func main() {
+        |	numbers := []int{1, 2, 3, 4, 5}
+        |	var person = Person{numbers, "Peter"}
+        |	fmt.Println(person)
+        |
+        |}
+        |""".stripMargin)
+
+    "Check member nodes" in {
+      val List(typeDeclNode) = cpg.typeDecl.name("Person").l
+      typeDeclNode.member.size shouldBe 2
+
+      val List(phone, name) = typeDeclNode.member.l
+      phone.typeFullName shouldBe "[]int"
+      name.typeFullName shouldBe "string"
+    }
+
+    "check literal nodes" in {
+      val literalNodes = cpg.literal.l
+      literalNodes.code("1|2|3|4|5").size shouldBe 5
+      literalNodes.code("\"Peter\"").size shouldBe 1
+    }
+
+    "check arrayInitializer nodes" in {
+      val List(intArrayNode) = cpg.call(".*arrayInitializer").l
+      intArrayNode.code shouldBe "[]int{1, 2, 3, 4, 5}"
+    }
+  }
+
+  "structure initialization having array of complex(structure) type" should {
+
+    val cpg = code("""
+        package main
+        |
+        |import "fmt"
+        |
+        |type Address struct {
+        |    Street  string
+        |    City    string
+        |    Country string
+        |}
+        |
+        |type Person struct {
+        |    Name    string
+        |    Age     int
+        |    Address Address
+        |}
+        |
+        |func main() {
+        |    person := Person{
+        |        Name: "John Doe",
+        |        Age:  30,
+        |        Address: Address{
+        |            Street:  "123 Main St",
+        |            City:    "New York",
+        |            Country: "USA",
+        |        },
+        |    }
+        |}
+        |""".stripMargin)
+
+    "Check member nodes" in {
+      val List(typeDeclNode) = cpg.typeDecl.name("Person").l
+      typeDeclNode.member.size shouldBe 3
+
+      val List(name, age, address) = typeDeclNode.member.l
+      name.typeFullName shouldBe "string"
+      age.typeFullName shouldBe "int"
+      address.typeFullName shouldBe "main.Address"
+    }
+
+    "Check literal nodes" in {
+      val literals = cpg.literal.l
+      literals.code("\"John Doe\"").size shouldBe 1
+      literals.code("\"123 Main St\"").size shouldBe 1
+      literals.code("\"New York\"").size shouldBe 1
+      literals.code("\"John Doe\"").size shouldBe 1
+      literals.code("\"USA\"").size shouldBe 1
+      literals.code("30").size shouldBe 1
+    }
+  }
+
   "Method call on chain of variable" should {
     "Check call node properties on two times chained" in {
       val cpg = code("""
         package main
-          |
-          |func foo(ctx context) int {
-          |
-          |   var a = 10
-          |	result := ctx.data.bar(a)
-          |
-          |	return result
-          |}
-          |
-          |""".stripMargin)
+            |
+            |func foo(ctx context) int {
+            |
+            |   var a = 10
+            |	result := ctx.data.bar(a)
+            |
+            |	return result
+            |}
+            |
+            |""".stripMargin)
 
       cpg.call("bar").size shouldBe 1
       val List(x) = cpg.call("bar").l
@@ -83,16 +222,16 @@ class TypeDeclMethodCallTests extends GoCodeToCpgSuite {
     "Check call node properties on five times chained" in {
       val cpg = code("""
         package main
-          |
-          |func foo(ctx context) int {
-          |
-          | var a = 10
-          |	result := ctx.data1.data2.data3.data4.bar(a)
-          |
-          |	return result
-          |}
-          |
-          |""".stripMargin)
+            |
+            |func foo(ctx context) int {
+            |
+            | var a = 10
+            |	result := ctx.data1.data2.data3.data4.bar(a)
+            |
+            |	return result
+            |}
+            |
+            |""".stripMargin)
 
       cpg.call("bar").size shouldBe 1
       val List(x) = cpg.call("bar").l
@@ -107,29 +246,29 @@ class TypeDeclMethodCallTests extends GoCodeToCpgSuite {
 
   "Method call chaining using builder design" should {
     val cpg = code("""
-        |package main
-        |type Person struct {
-        |    name     string
-        |    age      int
-        |    location string
-        |}
-        |func (p *Person) SetName(name string) *Person {
-        |    p.name = name
-        |    return p
-        |}
-        |func (p *Person) SetAge(age int) *Person {
-        |    p.age = age
-        |    return p
-        |}
-        |func (p *Person) SetLocation(location string) *Person {
-        |    p.location = location
-        |    return p
-        |}
-        |func main() {
-        |    var person *Person = &Person{}
-        |    person.SetName("John").SetAge(30).SetLocation("New York")
-        |}
-        |""".stripMargin)
+          |package main
+          |type Person struct {
+          |    name     string
+          |    age      int
+          |    location string
+          |}
+          |func (p *Person) SetName(name string) *Person {
+          |    p.name = name
+          |    return p
+          |}
+          |func (p *Person) SetAge(age int) *Person {
+          |    p.age = age
+          |    return p
+          |}
+          |func (p *Person) SetLocation(location string) *Person {
+          |    p.location = location
+          |    return p
+          |}
+          |func main() {
+          |    var person *Person = &Person{}
+          |    person.SetName("John").SetAge(30).SetLocation("New York")
+          |}
+          |""".stripMargin)
 
     "Check call node properties: Name" in {
       val List(x) = cpg.call.name("SetName").l

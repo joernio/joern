@@ -62,7 +62,8 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
         val argument = createParserNodeInfo(x)
         argument.node match
           case BasicLit => astForNode(argument)
-          case _        => astForNode(createParserNodeInfo(argument.json(ParserKeys.Value)))
+          case Ident    => astForNode(argument)
+          case _        => astForNode(argument)
       })
       .toSeq
   }

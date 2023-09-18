@@ -18,22 +18,34 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     }
   }
 
-  protected def astForCompositeLiteral(primitive: ParserNodeInfo): Seq[Ast] = {
-    val typeNode = createParserNodeInfo(primitive.json(ParserKeys.Type))
+  def astForCompositeLiteralHavingTypeKey(typeNode: ParserNodeInfo, compositeLiteralNode: ParserNodeInfo): Seq[Ast] = {
     typeNode.node match
       case ArrayType =>
-        val elementsAsts = Try(primitive.json(ParserKeys.Elts)) match
+        val elementsAsts = Try(compositeLiteralNode.json(ParserKeys.Elts)) match
           case Success(value) if !value.isNull => value.arr.flatMap(e => astForNode(createParserNodeInfo(e))).toSeq
           case _                               => Seq.empty
-        elementsAsts ++ Seq(astForArrayInitializer(primitive))
+        elementsAsts ++ Seq(astForArrayInitializer(compositeLiteralNode))
       // Handling structure initialisation by creating a call node and arguments
       case Ident =>
-        astForConstructorCall(primitive)
+        astForConstructorCall(compositeLiteralNode)
       // Handling structure initialisation(alias present) by creating a call node and arguments
       case SelectorExpr =>
-        astForConstructorCall(primitive)
+        astForConstructorCall(compositeLiteralNode)
       case _ =>
         Seq.empty
+  }
+
+  protected def astForCompositeLiteral(compositeLiteralNodeInfo: ParserNodeInfo): Seq[Ast] = {
+    Try(createParserNodeInfo(compositeLiteralNodeInfo.json(ParserKeys.Type))) match
+      case Success(typeNode) =>
+        astForCompositeLiteralHavingTypeKey(typeNode, compositeLiteralNodeInfo)
+      case _ =>
+        val elementsAsts = Try(compositeLiteralNodeInfo.json(ParserKeys.Elts)) match
+          case Success(compositeElements) if !compositeElements.isNull =>
+            compositeElements.arr.flatMap(e => astForNode(createParserNodeInfo(e))).toSeq
+          case _ => Seq.empty
+          // TODO: merge array initializer node Seq(astForArrayInitializer(compositeLiteralNodeInfo))
+        elementsAsts
   }
 
   private def astForLiteral(stringLiteral: ParserNodeInfo): Ast = {
