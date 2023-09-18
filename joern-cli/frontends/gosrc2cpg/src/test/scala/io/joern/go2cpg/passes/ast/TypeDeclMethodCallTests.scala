@@ -306,4 +306,52 @@ class TypeDeclMethodCallTests extends GoCodeToCpgSuite {
       receiver.name shouldBe "SetAge"
     }
   }
+
+  "return statement having pointer to structure" should {
+    val cpg = code("""
+        |package main
+        |
+        |type Node struct {
+        |	name string
+        |}
+        |type Service struct {
+        |	value *Node
+        |}
+        |func NewService(node *Node) *Service {
+        |        return &Service{
+        |                value: &Node{node},
+        |        }
+        |}
+        |""".stripMargin)
+
+    "check call node properties" in {
+      cpg.call("Service").size shouldBe 1
+      val List(callNode) = cpg.call("Service").l
+      callNode.argument.size shouldBe 1
+    }
+  }
+
+  "return statement having structure initialising with string" should {
+    val cpg = code("""
+        |package main
+        |
+        |type Node struct {
+        |	name string
+        |}
+        |type Service struct {
+        |	value *Node
+        |}
+        |func NewService() *Service {
+        |        return &Service{
+        |                value: &Node{"somestring"},
+        |        }
+        |}
+        |""".stripMargin)
+
+    "check call node properties" in {
+      cpg.call("Service").size shouldBe 1
+      val List(callNode) = cpg.call("Service").l
+      callNode.argument.size shouldBe 1
+    }
+  }
 }
