@@ -13,7 +13,7 @@ trait CacheBuilder { this: AstCreator =>
       findAndProcess(parserResult.json)
     } catch
       case ex: Exception =>
-        logger.error(s"Error: While processing - ${parserResult.fullPath}", ex)
+        logger.warn(s"Error: While processing - ${parserResult.fullPath}", ex)
   }
 
   private def findAndProcess(json: Value): Unit = {
