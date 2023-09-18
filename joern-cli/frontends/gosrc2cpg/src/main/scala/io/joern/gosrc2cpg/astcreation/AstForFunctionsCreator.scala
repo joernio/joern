@@ -4,10 +4,10 @@ import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.utils.{NodeBuilders, StringUtils}
+import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, NodeTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes, PropertyNames}
 import ujson.Value
 
 import scala.collection.mutable
@@ -39,29 +39,13 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   def astForFuncDecl(funcDecl: ParserNodeInfo): Seq[Ast] = {
-
-    val name         = funcDecl.json(ParserKeys.Name).obj(ParserKeys.Name).str
-    val receiverInfo = getReceiverInfo(Try(funcDecl.json(ParserKeys.Recv)))
-    val methodFullname = receiverInfo match
-      case Some(_, typeFullName, evaluationStrategy, _) =>
-        val signatureStr = evaluationStrategy match
-          case EvaluationStrategies.BY_SHARING =>
-            s"*$typeFullName"
-          case EvaluationStrategies.BY_VALUE =>
-            typeFullName
-        s"$typeFullName.$name"
-      case _ =>
-        s"$fullyQualifiedPackage.$name"
+    val (name, methodFullname, signature, params, receiverInfo, genericTypeMethodMap) = processFuncDecl(funcDecl.json)
     // TODO: handle multiple return type or tuple (int, int)
-    val genericTypeMethodMap = processTypeParams(funcDecl.json(ParserKeys.Type))
-    val (returnTypeStr, methodReturn) =
+    val (returnTypeStr, returnTypeInfo) =
       getReturnType(funcDecl.json(ParserKeys.Type), genericTypeMethodMap).headOption
-        .getOrElse(("", methodReturnNode(funcDecl, Defines.voidTypeName)))
-    val params = funcDecl.json(ParserKeys.Type)(ParserKeys.Params)(ParserKeys.List)
-    val signature =
-      s"$methodFullname(${parameterSignature(params, genericTypeMethodMap)})$returnTypeStr"
-    GoGlobal.recordFullNameToReturnType(methodFullname, returnTypeStr, Some(signature))
-    val methodNode_ = methodNode(funcDecl, name, funcDecl.code, methodFullname, Some(signature), relPathFileName)
+        .getOrElse((Defines.voidTypeName, funcDecl))
+    val methodReturn = methodReturnNode(returnTypeInfo, returnTypeStr)
+    val methodNode_  = methodNode(funcDecl, name, funcDecl.code, methodFullname, Some(signature), relPathFileName)
     methodAstParentStack.push(methodNode_)
     scope.pushNewScope(methodNode_)
     val receiverNode = astForReceiver(receiverInfo)
@@ -100,7 +84,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       case _ => Seq.empty
   }
 
-  private def getReceiverInfo(receiver: Try[Value]): Option[(String, String, String, ParserNodeInfo)] = {
+  protected def getReceiverInfo(receiver: Try[Value]): Option[(String, String, String, ParserNodeInfo)] = {
     receiver match
       case Success(rec) if rec != null =>
         val recnode        = createParserNodeInfo(rec)
@@ -156,7 +140,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       .toSeq
   }
 
-  private def parameterSignature(params: Value, genericTypeMethodMap: Map[String, List[String]]): String = {
+  protected def parameterSignature(params: Value, genericTypeMethodMap: Map[String, List[String]]): String = {
     //    func foo(argc, something int, argv string) int {
     // We get params -> list -> names [argc, something], type (int)
     params.arrOpt
@@ -175,18 +159,18 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       .mkString(", ")
   }
 
-  private def getReturnType(
+  protected def getReturnType(
     methodTypes: Value,
     genericTypeMethodMap: Map[String, List[String]] = Map.empty
-  ): Seq[(String, NewMethodReturn)] = {
+  ): Seq[(String, ParserNodeInfo)] = {
     Try(methodTypes(ParserKeys.Results)) match
       case Success(returnType) =>
         returnType(ParserKeys.List).arrOpt
           .getOrElse(List())
           .map(x =>
-            val typeInfo                                           = createParserNodeInfo(x(ParserKeys.Type))
-            val (typeFullName, typeFullNameForcode, isVariadic, _) = processTypeInfo(typeInfo, genericTypeMethodMap)
-            (typeFullName, methodReturnNode(typeInfo, typeFullName))
+            val typeInfo                = createParserNodeInfo(x(ParserKeys.Type))
+            val (typeFullName, _, _, _) = processTypeInfo(typeInfo, genericTypeMethodMap)
+            (typeFullName, typeInfo)
           )
           .toSeq
       case Failure(exception) => Seq.empty
@@ -201,7 +185,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     }
   }
 
-  private def processTypeParams(funDecl: Value): Map[String, List[String]] = {
+  protected def processTypeParams(funDecl: Value): Map[String, List[String]] = {
     val genericTypeMethodMap = new mutable.HashMap[String, List[String]]()
     Try(funDecl(ParserKeys.TypeParams)) match {
       case Success(typeParams) =>

@@ -5,6 +5,7 @@ import io.joern.rubysrc2cpg.parser.RubyParser.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
 import io.joern.x2cpg.Imports.createImportNodeAndLink
+import io.joern.x2cpg.X2Cpg.stripQuotes
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
@@ -13,36 +14,48 @@ import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 
-trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
+trait AstForStatementsCreator(filename: String)(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
   private val logger = LoggerFactory.getLogger(this.getClass)
-  protected def astForAliasStatement(ctx: AliasStatementContext): Ast = {
+  private val prefixMethods = Set(
+    "attr_reader",
+    "attr_writer",
+    "attr_accessor",
+    "remove_method",
+    "public_class_method",
+    "private_class_method",
+    "private",
+    "protected",
+    "module_function"
+  )
+
+  private def astForAliasStatement(ctx: AliasStatementContext): Ast = {
     val aliasName  = ctx.definedMethodNameOrSymbol(0).getText.substring(1)
     val methodName = ctx.definedMethodNameOrSymbol(1).getText.substring(1)
     methodAliases.addOne(aliasName, methodName)
     Ast()
   }
 
-  protected def astForUndefStatement(ctx: UndefStatementContext): Ast = {
+  private def astForUndefStatement(ctx: UndefStatementContext): Ast = {
     val undefNames = ctx.definedMethodNameOrSymbol().asScala.flatMap(astForDefinedMethodNameOrSymbolContext).toSeq
     val call       = callNode(ctx, text(ctx), RubyOperators.undef, RubyOperators.undef, DispatchTypes.STATIC_DISPATCH)
     callAst(call, undefNames)
   }
 
-  protected def astForBeginStatement(ctx: BeginStatementContext): Ast = {
+  private def astForBeginStatement(ctx: BeginStatementContext): Ast = {
     val stmts     = Option(ctx.compoundStatement).map(astForCompoundStatement(_)).getOrElse(Seq())
     val blockNode = NewBlock().typeFullName(Defines.Any)
     blockAst(blockNode, stmts.toList)
   }
 
-  protected def astForEndStatement(ctx: EndStatementContext): Ast = {
+  private def astForEndStatement(ctx: EndStatementContext): Ast = {
     val stmts     = Option(ctx.compoundStatement).map(astForCompoundStatement(_)).getOrElse(Seq())
     val blockNode = NewBlock().typeFullName(Defines.Any)
     blockAst(blockNode, stmts.toList)
   }
 
-  protected def astForModifierStatement(ctx: ModifierStatementContext): Ast = ctx.mod.getType match {
+  private def astForModifierStatement(ctx: ModifierStatementContext): Ast = ctx.mod.getType match {
     case IF     => astForIfModifierStatement(ctx)
     case UNLESS => astForUnlessModifierStatement(ctx)
     case WHILE  => astForWhileModifierStatement(ctx)
@@ -50,7 +63,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     case RESCUE => astForRescueModifierStatement(ctx)
   }
 
-  protected def astForIfModifierStatement(ctx: ModifierStatementContext): Ast = {
+  private def astForIfModifierStatement(ctx: ModifierStatementContext): Ast = {
     val lhs    = astForStatement(ctx.statement(0))
     val rhs    = astForStatement(ctx.statement(1)).headOption
     val ifNode = controlStructureNode(ctx, ControlStructureTypes.IF, text(ctx))
@@ -63,46 +76,47 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
       case _ => controlStructureAst(ifNode, rhs, lhs)
   }
 
-  protected def astForUnlessModifierStatement(ctx: ModifierStatementContext): Ast = {
+  private def astForUnlessModifierStatement(ctx: ModifierStatementContext): Ast = {
     val lhs    = astForStatement(ctx.statement(0))
     val rhs    = astForStatement(ctx.statement(1))
     val ifNode = controlStructureNode(ctx, ControlStructureTypes.IF, text(ctx))
     controlStructureAst(ifNode, lhs.headOption, rhs)
   }
 
-  protected def astForWhileModifierStatement(ctx: ModifierStatementContext): Ast = {
+  private def astForWhileModifierStatement(ctx: ModifierStatementContext): Ast = {
     val lhs = astForStatement(ctx.statement(0))
     val rhs = astForStatement(ctx.statement(1))
     whileAst(rhs.headOption, lhs, Some(text(ctx)))
   }
 
-  protected def astForUntilModifierStatement(ctx: ModifierStatementContext): Ast = {
+  private def astForUntilModifierStatement(ctx: ModifierStatementContext): Ast = {
     val lhs = astForStatement(ctx.statement(0))
     val rhs = astForStatement(ctx.statement(1))
     whileAst(rhs.headOption, lhs, Some(text(ctx)))
   }
 
-  protected def astForRescueModifierStatement(ctx: ModifierStatementContext): Ast = {
+  private def astForRescueModifierStatement(ctx: ModifierStatementContext): Ast = {
     val lhs       = astForStatement(ctx.statement(0))
     val rhs       = astForStatement(ctx.statement(1))
     val throwNode = controlStructureNode(ctx, ControlStructureTypes.THROW, text(ctx))
     controlStructureAst(throwNode, rhs.headOption, lhs)
   }
 
-  protected def lastStmtAsReturn(code: String, lastStmtAst: Ast): Ast = {
-    val lastStmtIsAlreadyReturn = lastStmtAst.root match {
-      case Some(value) => value.isInstanceOf[NewReturn]
-      case None        => false
-    }
+  /** If the last statement is a return, this is returned. If not, then a return node is created.
+    */
+  protected def lastStmtAsReturnAst(ctx: ParserRuleContext, lastStmtAst: Ast, maybeCode: Option[String] = None): Ast =
+    lastStmtAst.root.collectFirst { case x: NewReturn => x } match
+      case Some(_) => lastStmtAst
+      case None =>
+        val code    = maybeCode.getOrElse(text(ctx))
+        val retNode = returnNode(ctx, code)
+        lastStmtAst.root match
+          case Some(method: NewMethod) => returnAst(retNode, Seq(Ast(methodToMethodRef(ctx, method))))
+          case _                       => returnAst(retNode, Seq(lastStmtAst))
 
-    if (lastStmtIsAlreadyReturn) {
-      lastStmtAst
-    } else {
-      val retNode = NewReturn().code(code)
-      lastStmtAst.root match
-        case Some(method: NewMethod) => returnAst(retNode, Seq(Ast(methodToMethodRef(method))))
-        case _                       => returnAst(retNode, Seq[Ast](lastStmtAst))
-    }
+  protected def astForBodyStatementContext(ctx: BodyStatementContext, isMethodBody: Boolean = false): Seq[Ast] = {
+    if (ctx.rescueClause.size > 0) Seq(astForRescueClause(ctx))
+    else astForCompoundStatement(ctx.compoundStatement(), isMethodBody)
   }
 
   protected def astForCompoundStatement(
@@ -112,13 +126,12 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
   ): Seq[Ast] = {
     val stmtAsts = Option(ctx)
       .map(_.statements())
-      .map(st => { astForStatements(st, isMethodBody, canConsiderAsLeaf) })
-      .getOrElse(Seq())
+      .map(astForStatements(_, isMethodBody, canConsiderAsLeaf))
+      .getOrElse(Seq.empty)
     if (isMethodBody) {
       stmtAsts
     } else {
       Seq(blockAst(blockNode(ctx), stmtAsts.toList))
-
     }
   }
 
@@ -143,58 +156,47 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     isMethodBody: Boolean = false,
     canConsiderAsLeaf: Boolean = true
   ): Seq[Ast] = {
-    Option(ctx) match {
-      case Some(ctx) =>
-        val stmtCount   = ctx.statement().size()
-        var stmtCounter = 0
-        val myBlockId   = blockIdCounter
-        blockIdCounter += 1
-        val parentBlockId = currentBlockId
-        if (canConsiderAsLeaf) {
-          blockChildHash.update(parentBlockId, myBlockId)
+
+    def astsForStmtCtx(stCtx: StatementContext, stmtCount: Int, stmtCounter: Int): Seq[Ast] = {
+      if (isMethodBody) processingLastMethodStatement.lazySet(stmtCounter == stmtCount)
+      val stAsts = astForStatement(stCtx)
+      if (stAsts.nonEmpty && canConsiderAsLeaf && processingLastMethodStatement.get) {
+        blockChildHash.get(currentBlockId.get) match {
+          case Some(_) =>
+            // this is a non-leaf block
+            stAsts
+          case None =>
+            // this is a leaf block
+            processingLastMethodStatement.lazySet(!(isMethodBody && stmtCounter == stmtCount))
+            Seq(lastStmtAsReturnAst(stCtx, stAsts.head, Option(text(stCtx))))
         }
-        currentBlockId = myBlockId
+      } else {
+        stAsts
+      }
+    }
+
+    Option(ctx)
+      .map { ctx =>
+        val stmtCount     = ctx.statement.size
+        val parentBlockId = currentBlockId.get
+        if (canConsiderAsLeaf) blockChildHash.update(parentBlockId, currentBlockId.get)
+        currentBlockId.lazySet(blockIdCounter.addAndGet(1))
 
         val stmtAsts = Option(ctx)
-          .map(_.statement())
+          .map(_.statement)
           .map(_.asScala)
-          .getOrElse(Seq())
-          .flatMap(stCtx => {
-            stmtCounter += 1
-            if (isMethodBody) {
-              if (stmtCounter == stmtCount) {
-                processingLastMethodStatement = true
-              } else {
-                processingLastMethodStatement = false
-              }
-            }
-            val stAsts = astForStatement(stCtx)
-            if (stAsts.size > 0 && canConsiderAsLeaf && processingLastMethodStatement) {
-              blockChildHash.get(myBlockId) match {
-                case Some(value) =>
-                  // this is a non-leaf block
-                  stAsts
-                case None =>
-                  // this is a leaf block
-                  if (isMethodBody && stmtCounter == stmtCount) {
-                    processingLastMethodStatement = false
-                  }
-                  Seq(lastStmtAsReturn(text(stCtx), stAsts.head))
-              }
-            } else {
-              stAsts
-            }
-          })
+          .getOrElse(Seq.empty)
+          .zipWithIndex
+          .flatMap { case (stmtCtx, idx) => astsForStmtCtx(stmtCtx, stmtCount, idx + 1) }
           .toSeq
-        currentBlockId = parentBlockId
+        currentBlockId.lazySet(parentBlockId)
         stmtAsts
-      case None =>
-        Seq()
-    }
+      }
+      .getOrElse(Seq.empty)
   }
 
   // TODO: return Ast instead of Seq[Ast].
-  protected def astForStatement(ctx: StatementContext): Seq[Ast] = scanStmtForHereDoc(ctx match {
+  private def astForStatement(ctx: StatementContext): Seq[Ast] = scanStmtForHereDoc(ctx match {
     case ctx: AliasStatementContext               => Seq(astForAliasStatement(ctx))
     case ctx: UndefStatementContext               => Seq(astForUndefStatement(ctx))
     case ctx: BeginStatementContext               => Seq(astForBeginStatement(ctx))
@@ -214,74 +216,62 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
       Seq(Ast())
   }
 
-  protected def astForNotKeywordExpressionOrCommand(ctx: NotExpressionOrCommandContext): Ast = {
+  private def astForNotKeywordExpressionOrCommand(ctx: NotExpressionOrCommandContext): Ast = {
     val exprOrCommandAst = astForExpressionOrCommand(ctx.expressionOrCommand())
     val call             = callNode(ctx, text(ctx), Operators.not, Operators.not, DispatchTypes.STATIC_DISPATCH)
     callAst(call, exprOrCommandAst)
   }
 
-  protected def astForOrAndExpressionOrCommand(ctx: OrAndExpressionOrCommandContext): Ast = ctx.op.getType match {
+  private def astForOrAndExpressionOrCommand(ctx: OrAndExpressionOrCommandContext): Ast = ctx.op.getType match {
     case OR  => astForOrExpressionOrCommand(ctx)
     case AND => astForAndExpressionOrCommand(ctx)
   }
 
-  protected def astForOrExpressionOrCommand(ctx: OrAndExpressionOrCommandContext): Ast = {
+  private def astForOrExpressionOrCommand(ctx: OrAndExpressionOrCommandContext): Ast = {
     val argsAst = ctx.expressionOrCommand().asScala.flatMap(astForExpressionOrCommand)
     val call    = callNode(ctx, text(ctx), Operators.or, Operators.or, DispatchTypes.STATIC_DISPATCH)
     callAst(call, argsAst.toList)
   }
 
-  protected def astForAndExpressionOrCommand(ctx: OrAndExpressionOrCommandContext): Ast = {
+  private def astForAndExpressionOrCommand(ctx: OrAndExpressionOrCommandContext): Ast = {
     val argsAst = ctx.expressionOrCommand().asScala.flatMap(astForExpressionOrCommand)
     val call    = callNode(ctx, text(ctx), Operators.and, Operators.and, DispatchTypes.STATIC_DISPATCH)
     callAst(call, argsAst.toList)
   }
 
-  protected def astForSuperCommand(ctx: SuperCommandContext): Ast =
+  private def astForSuperCommand(ctx: SuperCommandContext): Ast =
     astForSuperCall(ctx, astForArguments(ctx.argumentsWithoutParentheses().arguments()))
 
-  protected def astForYieldCommand(ctx: YieldCommandContext): Ast =
+  private def astForYieldCommand(ctx: YieldCommandContext): Ast =
     astForYieldCall(ctx, Option(ctx.argumentsWithoutParentheses().arguments()))
 
-  protected def astForSimpleMethodCommand(ctx: SimpleMethodCommandContext): Seq[Ast] = {
+  private def astForSimpleMethodCommand(ctx: SimpleMethodCommandContext): Seq[Ast] = {
     val methodIdentifierAsts = astForMethodIdentifierContext(ctx.methodIdentifier(), text(ctx))
-    methodNameAsIdentifierStack.push(methodIdentifierAsts.head)
+    methodIdentifierAsts.headOption.foreach(methodNameAsIdentifierStack.push)
     val argsAsts = astForArguments(ctx.argumentsWithoutParentheses().arguments())
 
     /* get args without the method def in it */
-    val argAstsWithoutMethods = argsAsts.filterNot(_.nodes.headOption.getOrElse(None).isInstanceOf[NewMethod])
+    val argAstsWithoutMethods = argsAsts.filterNot(_.root.exists(_.isInstanceOf[NewMethod]))
 
     /* isolate methods from the original args and create identifier ASTs from it */
-    val methodDefAsts = argsAsts.filter(_.nodes.headOption.getOrElse(None).isInstanceOf[NewMethod])
-    val methodToIdentifierAsts = methodDefAsts.flatMap { ast =>
-      ast.nodes.collectFirst { case x: NewMethod => x }.map { methodNode =>
-        val id = NewIdentifier()
-          .name(methodNode.name)
-          .code(methodNode.name)
-          .typeFullName(Defines.Any)
-          .lineNumber(methodNode.lineNumber)
-          .columnNumber(methodNode.columnNumber)
-        scope.addToScope(methodNode.name, id)
-        Ast(id)
+    val methodDefAsts = argsAsts.filter(_.root.exists(_.isInstanceOf[NewMethod]))
+    val methodToIdentifierAsts = methodDefAsts.flatMap {
+      _.nodes.collectFirst { case methodNode: NewMethod =>
+        Ast(
+          createIdentifierWithScope(
+            methodNode.name,
+            methodNode.name,
+            Defines.Any,
+            Seq.empty,
+            methodNode.lineNumber,
+            methodNode.columnNumber
+          )
+        )
       }
     }
 
     /* TODO: we add the isolated method defs later on to the parent instead */
-    methodDefAsts.foreach { ast =>
-      methodDefInArgument.addOne(ast)
-    }
-
-    val prefixMethods = Set(
-      "attr_reader",
-      "attr_writer",
-      "attr_accessor",
-      "remove_method",
-      "public_class_method",
-      "private_class_method",
-      "private",
-      "protected",
-      "module_function"
-    )
+    methodDefInArgument.addAll(methodDefAsts)
 
     val callNodes = methodIdentifierAsts.head.nodes.collect { case x: NewCall => x }
     if (callNodes.size == 1) {
@@ -301,41 +291,38 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  protected def astForMemberAccessCommand(ctx: MemberAccessCommandContext): Seq[Ast] = {
-    val argsAst    = astForArguments(ctx.argumentsWithoutParentheses().arguments)
-    val primaryAst = astForPrimaryContext(ctx.primary())
-    val methodCallNode = astForMethodNameContext(ctx.methodName()).head.nodes.head
-      .asInstanceOf[NewCall]
-    val callNode = NewCall()
-      .name(getActualMethodName(methodCallNode.name))
-      .code(text(ctx))
-      .methodFullName(DynamicCallUnknownFullName)
-      .signature("")
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .typeFullName(Defines.Any)
-      .lineNumber(methodCallNode.lineNumber)
-      .columnNumber(methodCallNode.columnNumber)
-
-    primaryAst.headOption match {
-      case Some(value) =>
-        if (value.root.map(_.isInstanceOf[NewMethod]).getOrElse(false)) {
-          val methodNode    = value.root.head.asInstanceOf[NewMethod]
-          val methodRefNode = methodToMethodRef(methodNode)
-          blockMethods.addOne(primaryAst.head)
-          Seq(callAst(callNode, Seq(Ast(methodRefNode)) ++ argsAst))
-        } else {
-          Seq(callAst(callNode, argsAst, primaryAst.headOption))
-        }
-      case None => Seq(callAst(callNode, argsAst, primaryAst.headOption))
-    }
+  private def astForMemberAccessCommand(ctx: MemberAccessCommandContext): Seq[Ast] = {
+    astForMethodNameContext(ctx.methodName).headOption
+      .flatMap(_.root)
+      .collectFirst { case x: NewCall => resolveAlias(x.name) }
+      .map(methodName =>
+        callNode(
+          ctx,
+          text(ctx),
+          methodName,
+          DynamicCallUnknownFullName,
+          DispatchTypes.STATIC_DISPATCH,
+          None,
+          Option(Defines.Any)
+        )
+      ) match
+      case Some(newCall) =>
+        val primaryAst = astForPrimaryContext(ctx.primary())
+        val argsAst    = astForArguments(ctx.argumentsWithoutParentheses().arguments)
+        primaryAst.headOption
+          .flatMap(_.root)
+          .collectFirst { case x: NewMethod => x }
+          .map { methodNode =>
+            val methodRefNode = methodToMethodRef(ctx, methodNode)
+            blockMethods.addOne(primaryAst.head)
+            Seq(callAst(newCall, Seq(Ast(methodRefNode)) ++ argsAst))
+          }
+          .getOrElse(Seq(callAst(newCall, argsAst, primaryAst.headOption)))
+      case None => Seq.empty
   }
 
-  private def methodToMethodRef(methodNode: NewMethod): NewMethodRef = {
-    NewMethodRef()
-      .code("def " + methodNode.name + "(...)")
-      .methodFullName(methodNode.fullName)
-      .typeFullName(methodNode.fullName)
-  }
+  private def methodToMethodRef(ctx: ParserRuleContext, methodNode: NewMethod): NewMethodRef =
+    methodRefNode(ctx, s"def ${methodNode.name}(...)", methodNode.fullName, Defines.Any)
 
   protected def astForCommand(ctx: CommandContext): Seq[Ast] = ctx match {
     case ctx: YieldCommandContext        => Seq(astForYieldCommand(ctx))
@@ -344,11 +331,11 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     case ctx: MemberAccessCommandContext => astForMemberAccessCommand(ctx)
   }
 
-  protected def resolveRequireOrLoadPath(argsAst: Seq[Ast], callNode: NewCall): Seq[Ast] = {
-    val importedNode = argsAst.head.nodes.collect { case x: NewLiteral => x }
+  private def resolveRequireOrLoadPath(argsAst: Seq[Ast], callNode: NewCall): Seq[Ast] = {
+    val importedNode = argsAst.headOption.map(_.nodes.collect { case x: NewLiteral => x }).getOrElse(Seq.empty)
     if (importedNode.size == 1) {
       val node      = importedNode.head
-      val pathValue = node.code.replaceAll("'", "").replaceAll("\"", "")
+      val pathValue = stripQuotes(node.code)
       val result = pathValue match {
         case path if File(path).exists =>
           path
@@ -358,7 +345,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
           pathValue
       }
       packageStack.append(result)
-      val importNode = createImportNodeAndLink(result, "", Some(callNode), diffGraph)
+      val importNode = createImportNodeAndLink(result, pathValue, Some(callNode), diffGraph)
       Seq(callAst(callNode, argsAst), Ast(importNode))
     } else {
       Seq(callAst(callNode, argsAst))
@@ -369,13 +356,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     val importedNode = argsAst.head.nodes.collect { case x: NewLiteral => x }
     if (importedNode.size == 1) {
       val node        = importedNode.head
-      val pathValue   = node.code.replaceAll("'", "").replaceAll("\"", "")
+      val pathValue   = stripQuotes(node.code)
       val updatedPath = if (pathValue.endsWith(".rb")) pathValue else s"$pathValue.rb"
 
       val currentDirectory = File(currentFile).parent
       val file             = File(currentDirectory, updatedPath)
       packageStack.append(file.pathAsString)
-      val importNode = createImportNodeAndLink(updatedPath, "", Some(callNode), diffGraph)
+      val importNode = createImportNodeAndLink(updatedPath, pathValue, Some(callNode), diffGraph)
       Seq(callAst(callNode, argsAst), Ast(importNode))
     } else {
       Seq(callAst(callNode, argsAst))
@@ -394,7 +381,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
   ) = {
     blockMethodName match {
       case Some(blockMethodName) =>
-        astForBlockMethod(
+        astForBlockFunction(
           compoundStmtCtx.statements(),
           blockParamCtx,
           blockMethodName,
@@ -415,7 +402,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     astForBlockHelper(ctx, Option(ctx.blockParameter), ctx.bodyStatement().compoundStatement(), blockMethodName)
   }
 
-  protected def astForBraceBlock(ctx: BraceBlockContext, blockMethodName: Option[String] = None): Ast = {
+  private def astForBraceBlock(ctx: BraceBlockContext, blockMethodName: Option[String] = None): Ast = {
     astForBlockHelper(ctx, Option(ctx.blockParameter), ctx.bodyStatement().compoundStatement(), blockMethodName)
   }
 

@@ -2,7 +2,6 @@ package io.joern.gosrc2cpg.astcreation
 
 object Defines {
   val anyTypeName: String            = "ANY"
-  val tobeFilled: String             = "<TO_BE_FILLED>"
   val voidTypeName: String           = "void"
   val qualifiedNameSeparator: String = "::"
   val empty                          = "<empty>"

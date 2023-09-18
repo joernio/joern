@@ -1,6 +1,7 @@
 package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.parser.RubyParser.{
+  BodyStatementContext,
   ClassDefinitionPrimaryContext,
   ClassOrModuleReferenceContext,
   ModuleDefinitionPrimaryContext,
@@ -10,7 +11,7 @@ import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.utils.*
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes, Operators, nodes}
 import org.antlr.v4.runtime.ParserRuleContext
 
 import scala.collection.mutable
@@ -18,21 +19,11 @@ import scala.collection.mutable
 trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   // Maps field references of known types
-  protected val fieldReferences = mutable.HashMap.empty[String, Set[ParserRuleContext]]
+  protected val fieldReferences: mutable.HashMap[String, Set[ParserRuleContext]] = mutable.HashMap.empty
+  protected val typeDeclNameToTypeDecl: mutable.HashMap[String, NewTypeDecl]     = mutable.HashMap.empty
 
   def astForClassDeclaration(ctx: ClassDefinitionPrimaryContext): Seq[Ast] = {
-    val baseClassName = if (ctx.classDefinition().expressionOrCommand() != null) {
-      val parentClassNameAst = astForExpressionOrCommand(ctx.classDefinition().expressionOrCommand())
-      val nameNode = parentClassNameAst.head.nodes
-        .filter(node => node.isInstanceOf[NewIdentifier])
-        .head
-        .asInstanceOf[NewIdentifier]
-      Some(nameNode.name)
-    } else {
-      None
-    }
-
-    val className = ctx.className(baseClassName).getOrElse(Defines.Any)
+    val className = ctx.className.getOrElse(Defines.Any)
     if (className != Defines.Any) {
       classStack.push(className)
       val fullName = classStack.reverse.mkString(pathSep)
@@ -52,24 +43,18 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         classStack.pop()
       }
 
-      val typeDeclNode = NewTypeDecl()
-        .name(className)
-        .fullName(fullName)
-        .filename(relativeFilename)
-        .code(text(ctx).takeWhile(x => x != '\n'))
-        .lineNumber(line(ctx))
-        .columnNumber(column(ctx))
+      val typeDecl = typeDeclNode(ctx, className, fullName, relativeFilename, text(ctx).takeWhile(_ != '\n'))
 
       // create constructor if not explicitly defined
       val hasConstructor =
         bodyAst.flatMap(_.root).collect { case x: NewMethod => x.name }.contains(XDefines.ConstructorMethodName)
       val defaultConstructor =
         if (!hasConstructor)
-          createDefaultConstructor(ctx, typeDeclNode, bodyAst.flatMap(_.nodes).collect { case x: NewMember => x })
+          createDefaultConstructor(ctx, typeDecl, bodyAst.flatMap(_.nodes).collect { case x: NewMember => x })
         else Seq.empty
 
-      typeDeclNameToTypeDecl.put(className, typeDeclNode)
-      Seq(Ast(typeDeclNode).withChildren(defaultConstructor ++ bodyAst))
+      typeDeclNameToTypeDecl.put(className, typeDecl)
+      Seq(Ast(typeDecl).withChildren(defaultConstructor ++ bodyAst))
     } else {
       Seq.empty
     }
@@ -93,7 +78,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       thisParam +: fields.map(m => createMethodParameterIn(m.name, None, None, m.typeFullName))
     val assignments = fields.map { m =>
       val thisNode        = createThisIdentifier(ctx)
-      val lhs             = createFieldAccess(thisNode, m.name)
+      val lhs             = astForFieldAccess(ctx, thisNode)
       val paramIdentifier = identifierNode(ctx, m.name, m.name, m.typeFullName)
       val refParam        = params.find(_.name == m.name).get
       astForAssignment(lhs.root.get, paramIdentifier)
@@ -117,7 +102,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   }
 
   def astForModuleDefinitionPrimaryContext(ctx: ModuleDefinitionPrimaryContext): Seq[Ast] = {
-    val className = ctx.moduleDefinition().classOrModuleReference().classOrModuleName(None)
+    val className = ctx.moduleDefinition().classOrModuleReference().classOrModuleName
 
     if (className != Defines.Any) {
       classStack.push(className)
@@ -189,15 +174,82 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       }
       .toSeq
 
+  /** Handles body statements differently from [[astForBodyStatementContext]] by noting that method definitions should
+    * be on the root level and assignments where the LHS starts with @@ should be treated as fields.
+    */
+  private def astForClassBody(ctx: BodyStatementContext): Seq[Ast] = {
+    val rootStatements =
+      Option(ctx).map(_.compoundStatement()).map(_.statements()).map(astForStatements(_)).getOrElse(Seq())
+    retrieveAndGenerateClassChildren(ctx, rootStatements)
+  }
+
+  /** As class bodies are not treated much differently to other procedure bodies, we need to retrieve certain components
+    * that would result in the creation of interprocedural constructs.
+    *
+    * TODO: This is pretty hacky and the parser could benefit from more specific tokens
+    */
+  private def retrieveAndGenerateClassChildren(classCtx: BodyStatementContext, rootStatements: Seq[Ast]): Seq[Ast] = {
+    val (memberLikeStmts, blockStmts) = rootStatements
+      .flatMap { ast =>
+        ast.root match
+          case Some(_: NewMethod)                                 => Seq(ast)
+          case Some(x: NewCall) if x.name == Operators.assignment => Seq(ast) ++ membersFromStatementAsts(ast)
+          case _                                                  => Seq(ast)
+      }
+      .partition(_.root match
+        case Some(_: NewMethod) => true
+        case Some(_: NewMember) => true
+        case _                  => false
+      )
+
+    val methodStmts = memberLikeStmts.filter(_.root.exists(_.isInstanceOf[NewMethod]))
+    val memberNodes = memberLikeStmts.flatMap(_.root).collect { case m: NewMember => m }
+
+    val uniqueMemberReferences =
+      (memberNodes ++ fieldReferences.getOrElse(classStack.top, Set.empty).groupBy(_.getText).map { case (code, ctxs) =>
+        NewMember()
+          .name(code.replaceAll("@", ""))
+          .code(code)
+          .typeFullName(Defines.Any)
+      }).toList.distinctBy(_.name).map { m =>
+        val modifierType = m.name match
+          case x if x.startsWith("@@") => ModifierTypes.STATIC
+          case _                       => ModifierTypes.VIRTUAL
+        val modifierAst = Ast(NewModifier().modifierType(modifierType))
+        Ast(m).withChild(modifierAst)
+      }
+
+    // Create class initialization method to host all field initializers
+    val classInitMethodAst = if (blockStmts.nonEmpty) {
+      val classInitFullName = (classStack.reverse :+ XDefines.StaticInitMethodName).mkString(pathSep)
+      val classInitMethod = methodNode(
+        classCtx,
+        XDefines.StaticInitMethodName,
+        XDefines.StaticInitMethodName,
+        classInitFullName,
+        None,
+        relativeFilename,
+        Option(NodeTypes.TYPE_DECL),
+        Option(classStack.reverse.mkString(pathSep))
+      )
+      val classInitBody = blockAst(blockNode(classCtx), blockStmts.toList)
+      Seq(methodAst(classInitMethod, Seq.empty, classInitBody, methodReturnNode(classCtx, Defines.Any)))
+    } else {
+      Seq.empty
+    }
+
+    classInitMethodAst ++ uniqueMemberReferences ++ methodStmts
+  }
+
   implicit class ClassDefinitionPrimaryContextExt(val ctx: ClassDefinitionPrimaryContext) {
 
     def hasClassDefinition: Boolean = Option(ctx.classDefinition()).isDefined
 
-    def className(baseClassName: Option[String] = None): Option[String] =
+    def className: Option[String] =
       Option(ctx.classDefinition().classOrModuleReference()) match {
         case Some(classOrModuleReferenceCtx) =>
           Option(classOrModuleReferenceCtx)
-            .map(_.classOrModuleName(baseClassName))
+            .map(_.classOrModuleName)
         case None =>
           // TODO the below is just to avoid crashes. This needs to be implemented properly
           None
@@ -208,7 +260,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     def hasScopedConstantReference: Boolean = Option(ctx.scopedConstantReference()).isDefined
 
-    def classOrModuleName(baseClassName: Option[String] = None): String =
+    def classOrModuleName: String =
       Option(ctx) match {
         case Some(ct) =>
           if (ct.hasScopedConstantReference)
