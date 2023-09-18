@@ -6,6 +6,7 @@ import io.joern.rubysrc2cpg.utils.PackageContext
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes}
+import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.slf4j.LoggerFactory
 
@@ -281,21 +282,25 @@ trait AstForFunctionsCreator(packageContext: PackageContext)(implicit withSchema
   private def astForSimpleMethodNamePartContext(ctx: SimpleMethodNamePartContext): Seq[Ast] =
     astForDefinedMethodNameContext(ctx.definedMethodName)
 
+  protected def methodForClosureStyleFn(ctx: ParserRuleContext): NewMethod = {
+    val procMethodName = s"proc_${blockIdCounter.getAndAdd(1)}"
+    val methodFullName = classStack.reverse :+ procMethodName mkString pathSep
+    methodNode(ctx, procMethodName, text(ctx), methodFullName, None, relativeFilename)
+  }
+
   protected def astForProcDefinitionContext(ctx: ProcDefinitionContext): Seq[Ast] = {
     /*
      * Model a proc as a method
      */
     // Note: For parameters in the Proc definition, an implicit parameter which goes by the name of `this` is added to the cpg
-    val procMethodName = s"proc_${blockIdCounter.getAndAdd(1)}"
-    val methodFullName = classStack.reverse :+ procMethodName mkString pathSep
-    val newMethodNode  = methodNode(ctx, procMethodName, text(ctx), methodFullName, None, relativeFilename)
+    val newMethodNode = methodForClosureStyleFn(ctx)
 
     scope.pushNewScope(newMethodNode)
 
     val astMethodParam = astForParametersContext(ctx.parameters())
     val paramNames     = astMethodParam.flatMap(_.nodes).collect { case x: NewMethodParameterIn => x.name }.toSet
-    val locals         = scope.createAndLinkLocalNodes(diffGraph, paramNames).map(Ast.apply)
     val astBody        = astForCompoundStatement(ctx.block.compoundStatement, true)
+    val locals         = scope.createAndLinkLocalNodes(diffGraph, paramNames).map(Ast.apply)
 
     val methodRetNode = NewMethodReturn()
       .typeFullName(Defines.Any)
@@ -317,7 +322,15 @@ trait AstForFunctionsCreator(packageContext: PackageContext)(implicit withSchema
       .map(param => Ast(createIdentifierWithScope(ctx, param.name, param.code, Defines.Any, Seq())))
 
     val procCallNode =
-      callNode(ctx, text(ctx), procMethodName, methodFullName, DispatchTypes.STATIC_DISPATCH, None, Option(Defines.Any))
+      callNode(
+        ctx,
+        text(ctx),
+        newMethodNode.name,
+        newMethodNode.fullName,
+        DispatchTypes.STATIC_DISPATCH,
+        None,
+        Option(Defines.Any)
+      )
 
     scope.popScope()
 
@@ -358,25 +371,23 @@ trait AstForFunctionsCreator(packageContext: PackageContext)(implicit withSchema
     val astMethodParam = ctxParam.map(astForBlockParameterContext).getOrElse(Seq())
 
     val publicModifier = NewModifier().modifierType(ModifierTypes.PUBLIC)
-    val paramSeq = astMethodParam.headOption match {
-      case Some(value) =>
-        value.nodes.map {
-          /* In majority of cases, node will be an identifier */
-          case identifierNode: NewIdentifier =>
-            val param = NewMethodParameterIn()
-              .name(identifierNode.name)
-              .code(identifierNode.code)
-              .lineNumber(identifierNode.lineNumber)
-              .columnNumber(identifierNode.columnNumber)
-            Ast(param)
-          case _: NewCall =>
-            /* TODO: Occasionally, we might encounter a _ call in cases like "do |_, x|" where we should handle this?
-             * But for now, we just return an empty AST. Keeping this match explicitly here so we come back */
-            Ast()
-          case _ =>
-            Ast()
-        }.toSeq
-      case None => Seq()
+    val paramSeq = astMethodParam.flatMap(_.root).map {
+      /* In majority of cases, node will be an identifier */
+      case identifierNode: NewIdentifier =>
+        val param = NewMethodParameterIn()
+          .name(identifierNode.name)
+          .code(identifierNode.code)
+          .typeFullName(identifierNode.typeFullName)
+          .lineNumber(identifierNode.lineNumber)
+          .columnNumber(identifierNode.columnNumber)
+          .dynamicTypeHintFullName(identifierNode.dynamicTypeHintFullName)
+        Ast(param)
+      case _: NewCall =>
+        /* TODO: Occasionally, we might encounter a _ call in cases like "do |_, x|" where we should handle this?
+         * But for now, we just return an empty AST. Keeping this match explicitly here so we come back */
+        Ast()
+      case _ =>
+        Ast()
     }
     val paramNames = (astMethodParam ++ paramSeq)
       .flatMap(_.root)
@@ -385,8 +396,8 @@ trait AstForFunctionsCreator(packageContext: PackageContext)(implicit withSchema
         case x: NewIdentifier        => x.name
       }
       .toSet
-    val locals        = scope.createAndLinkLocalNodes(diffGraph, paramNames).map(Ast.apply)
     val astBody       = astForStatements(ctxStmt, true)
+    val locals        = scope.createAndLinkLocalNodes(diffGraph, paramNames).map(Ast.apply)
     val methodRetNode = NewMethodReturn().typeFullName(Defines.Any)
 
     scope.popScope()

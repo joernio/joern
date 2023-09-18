@@ -5,12 +5,12 @@ import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.utils.PackageContext
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
+import io.joern.x2cpg.X2Cpg.stripQuotes
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.antlr.v4.runtime.ParserRuleContext
-import org.antlr.v4.runtime.tree.TerminalNode
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
 
@@ -667,10 +667,21 @@ class AstCreator(
       val doBlockAst = Seq(astForDoBlock(ctx.doBlock()))
       argsAsts ++ doBlockAst
     case ctx: RubyParser.ArgsAndDoBlockAndMethodIdCommandWithDoBlockContext =>
-      val argsAsts     = astForArguments(ctx.argumentsWithoutParentheses().arguments())
-      val doBlockAsts  = Seq(astForDoBlock(ctx.doBlock()))
       val methodIdAsts = astForMethodIdentifierContext(ctx.methodIdentifier(), text(ctx))
-      methodIdAsts ++ argsAsts ++ doBlockAsts
+      methodIdAsts.headOption.flatMap(_.root) match
+        case Some(methodIdRoot: NewCall) if methodIdRoot.name == "define_method" =>
+          ctx.argumentsWithoutParentheses.arguments.argument.asScala.headOption
+            .map { methodArg =>
+              // TODO: methodArg will name the method, but this could be an identifier or even a string concatenation
+              //  which is not assumed below
+              val methodName = stripQuotes(methodArg.getText)
+              Seq(astForDoBlock(ctx.doBlock(), Option(methodName)))
+            }
+            .getOrElse(Seq.empty)
+        case _ =>
+          val argsAsts    = astForArguments(ctx.argumentsWithoutParentheses().arguments())
+          val doBlockAsts = Seq(astForDoBlock(ctx.doBlock()))
+          methodIdAsts ++ argsAsts ++ doBlockAsts
     case ctx: RubyParser.PrimaryMethodArgsDoBlockCommandWithDoBlockContext =>
       val argsAsts       = astForArguments(ctx.argumentsWithoutParentheses().arguments())
       val doBlockAsts    = Seq(astForDoBlock(ctx.doBlock()))
