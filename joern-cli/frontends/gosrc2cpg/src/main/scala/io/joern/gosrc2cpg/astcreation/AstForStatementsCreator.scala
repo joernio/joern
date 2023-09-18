@@ -5,7 +5,7 @@ import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.gosrc2cpg.utils.Operator
 import io.joern.x2cpg.utils.NodeBuilders.{newCallNode, newOperatorCallNode}
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewCall, NewIdentifier, NewLiteral}
+import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewCall, NewIdentifier, NewLiteral, NewLocal}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import ujson.Value
 
@@ -259,13 +259,15 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     }
   }
   def astForIndexStatement(indexNode: ParserNodeInfo): Seq[Ast] = {
+    val (indexIdentifier, indexTypeFullName) = processIndexIdentifier(indexNode.json)
     val callNode = newOperatorCallNode(
       Operators.indexAccess,
       code = indexNode.code,
       line = indexNode.lineNumber,
-      column = indexNode.columnNumber
+      column = indexNode.columnNumber,
+      typeFullName = Some(extractBaseType(indexTypeFullName))
     )
-    Seq(callAst(callNode, processIndexStatementArgs(indexNode.json)))
+    Seq(callAst(callNode, processIndexStatementArgs(indexNode.json) ++ indexIdentifier))
   }
 
   private def processIndexStatementArgs(node: Value): Seq[Ast] = {
@@ -276,13 +278,36 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       val indexArgsAst = NewLiteral().code(literalValue)
       Seq(Ast(indexArgsAst)) ++ processIndexStatementArgs(node(ParserKeys.X))
     } else {
-      Seq(
+      Seq(Ast())
+    }
+  }
+
+  private def processIndexIdentifier(node: Value): (Seq[Ast], String) = {
+    if (node.obj.contains(ParserKeys.Name)) {
+      val typeFullName = scope.lookupVariable(node(ParserKeys.Name).str) match
+        case Some(_, typeName) => typeName
+        case _                 => Defines.anyTypeName
+      val identifier = Seq(
         Ast(
           NewIdentifier()
             .name(node(ParserKeys.Name).str)
             .code(node(ParserKeys.Name).str)
+            .typeFullName(typeFullName)
         )
       )
+      (identifier, typeFullName)
+    } else {
+      processIndexIdentifier(node(ParserKeys.X))
+    }
+  }
+
+  def extractBaseType(input: String): String = {
+    if (input.matches("""(\[\])*(\w|\.)+""")) {
+      input.substring(input.lastIndexOf("]") + 1, input.length)
+    } else if (input.matches("""map\[(.*?)\]""")) {
+      input.stripPrefix("map[").stripSuffix("]")
+    } else {
+      Defines.anyTypeName
     }
   }
 }

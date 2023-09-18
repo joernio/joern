@@ -19,21 +19,25 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   protected def astForCompositeLiteral(primitive: ParserNodeInfo): Seq[Ast] = {
-    val typeNode = createParserNodeInfo(primitive.json(ParserKeys.Type))
-    typeNode.node match
-      case ArrayType =>
-        val elementsAsts = Try(primitive.json(ParserKeys.Elts)) match
-          case Success(value) if !value.isNull => value.arr.flatMap(e => astForNode(createParserNodeInfo(e))).toSeq
-          case _                               => Seq.empty
-        elementsAsts ++ Seq(astForArrayInitializer(primitive))
-      // Handling structure initialisation by creating a call node and arguments
-      case Ident =>
-        astForConstructorCall(primitive)
-      // Handling structure initialisation(alias present) by creating a call node and arguments
-      case SelectorExpr =>
-        astForConstructorCall(primitive)
-      case _ =>
-        Seq.empty
+    if (primitive.json.obj.contains(ParserKeys.Type)) {
+      val typeNode = createParserNodeInfo(primitive.json(ParserKeys.Type))
+      typeNode.node match
+        case ArrayType =>
+          val elementsAsts = Try(primitive.json(ParserKeys.Elts)) match
+            case Success(value) if !value.isNull => value.arr.flatMap(e => astForNode(createParserNodeInfo(e))).toSeq
+            case _                               => Seq.empty
+          elementsAsts ++ Seq(astForArrayInitializer(primitive))
+        // Handling structure initialisation by creating a call node and arguments
+        case Ident =>
+          astForConstructorCall(primitive)
+        // Handling structure initialisation(alias present) by creating a call node and arguments
+        case SelectorExpr =>
+          astForConstructorCall(primitive)
+        case _ =>
+          Seq.empty
+    } else {
+      Seq.empty
+    }
   }
 
   private def astForLiteral(stringLiteral: ParserNodeInfo): Ast = {

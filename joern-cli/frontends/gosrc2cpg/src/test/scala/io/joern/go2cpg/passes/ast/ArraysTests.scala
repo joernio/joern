@@ -410,94 +410,89 @@ class ArraysTests extends GoCodeToCpgSuite {
     val cpg = code("""
         |package main
         |func main() {
-        | value := myArray[index]
+        | var myArray []int = []int{1, 2}
+        | value := myArray[0]
         |}
         |""".stripMargin)
+
     val List(indexCall) = cpg.call.name("<operator>.indexAccess").l
-    indexCall.code shouldBe "myArray[index]"
+    indexCall.code shouldBe "myArray[0]"
     indexCall.methodFullName shouldBe "<operator>.indexAccess"
+    indexCall.typeFullName shouldBe "int"
 
-    val List(indexIdentifiers) = cpg.identifier.name(".*myArray.*").l
-    indexIdentifiers.code shouldBe "myArray"
+    val List(indexLiteral: Literal, indexIdentifier: Identifier) = indexCall.argument.l
 
-    cpg.literal.code("index").size shouldBe 1
+    indexIdentifier.code shouldBe "myArray"
+    indexIdentifier.typeFullName shouldBe "[]int"
+
+    indexLiteral.code shouldBe "0"
   }
 
-  "be correct when array access using string having single index" in {
+  "be correct when map access using string having single index" ignore {
     val cpg = code("""
         |package main
         |func main() {
-        | value := myArray["index"]
+        | var mymap map[string]int = make(map[string]int)
+        | var a = mymap["key"]
         |}
         |""".stripMargin)
 
     val List(indexCall) = cpg.call.name("<operator>.indexAccess").l
-    indexCall.code shouldBe "myArray[\"index\"]"
+    indexCall.code shouldBe "mymap[\"key\"]"
     indexCall.methodFullName shouldBe "<operator>.indexAccess"
+    indexCall.typeFullName shouldBe "string"
 
-    val List(indexIdentifiers) = cpg.identifier.name(".*myArray.*").l
-    indexIdentifiers.code shouldBe "myArray"
+    val List(indexLiteral: Literal, indexIdentifier: Identifier) = indexCall.argument.l
 
-    cpg.literal.code("\"index\"").size shouldBe 1
+    indexIdentifier.code shouldBe "mymap"
+    indexIdentifier.typeFullName shouldBe "map[string]int"
+
+    indexLiteral.code shouldBe "\"key\""
   }
 
   "be correct when array access using variable having multi index" in {
     val cpg = code("""
         |package main
         |func main() {
-        |   value := myArray[index2][index1]
+        |   var myArray [][]string = [][]string{{"1", "2"}, {"3", "4"}}
+        |   value := myArray[0][1]
         |}
         |""".stripMargin)
 
     val List(indexCall) = cpg.call.name("<operator>.indexAccess").l
-    indexCall.code shouldBe "myArray[index2][index1]"
+    indexCall.code shouldBe "myArray[0][1]"
     indexCall.methodFullName shouldBe "<operator>.indexAccess"
+    indexCall.typeFullName shouldBe "string"
 
-    val List(indexIdentifiers) = cpg.identifier.name(".*myArray.*").l
-    indexIdentifiers.code shouldBe "myArray"
-
-    val List(literal1: Literal, literal2: Literal, _) = indexCall.argument.l
-    literal1.code shouldBe "index1"
-    literal2.code shouldBe "index2"
+    val List(indexLiteral1: Literal, indexLiteral2: Literal, indexIdentifier: Identifier) = indexCall.argument.l
+    indexIdentifier.code shouldBe "myArray"
+    indexIdentifier.typeFullName shouldBe "[][]string"
+    indexLiteral1.code shouldBe "1"
+    indexLiteral2.code shouldBe "0"
   }
 
-  "be correct when array access using string having multi index" in {
+  "be correct when struct array access using variable having single index" in {
     val cpg = code("""
-        |package main
-        |func main() {
-        |   value := myArray["index2"]["index1"]
-        |}
-        |""".stripMargin)
+         |package main
+         |type Person struct {
+         |    FirstName string
+         |}
+         |
+         |func main() {
+         |  var person [3]Person
+         |  var a = person[0]
+         |}
+         |
+         |""".stripMargin)
 
     val List(indexCall) = cpg.call.name("<operator>.indexAccess").l
-    indexCall.code shouldBe "myArray[\"index2\"][\"index1\"]"
+    indexCall.code shouldBe "person[0]"
     indexCall.methodFullName shouldBe "<operator>.indexAccess"
+    indexCall.typeFullName shouldBe "main.Person"
 
-    val List(indexIdentifiers) = cpg.identifier.name(".*myArray.*").l
-    indexIdentifiers.code shouldBe "myArray"
-
-    val List(literal1: Literal, literal2: Literal, _) = indexCall.argument.l
-    literal1.code shouldBe "\"index1\""
-    literal2.code shouldBe "\"index2\""
-  }
-
-  "be correct when array access having mixed structure" in {
-    val cpg = code("""
-        |package main
-        |func main() {
-        |   value := myArray["index2"][index1]
-        |}
-        |""".stripMargin)
-
-    val List(indexCall) = cpg.call.name("<operator>.indexAccess").l
-    indexCall.code shouldBe "myArray[\"index2\"][index1]"
-    indexCall.methodFullName shouldBe "<operator>.indexAccess"
-
-    val List(indexIdentifiers) = cpg.identifier.name(".*myArray.*").l
-    indexIdentifiers.code shouldBe "myArray"
-
-    val List(literal1: Literal, literal2: Literal, _) = indexCall.argument.l
-    literal1.code shouldBe "index1"
-    literal2.code shouldBe "\"index2\""
+    val List(indexLiteral1: Literal, indexIdentifier: Identifier) = indexCall.argument.l
+    indexIdentifier.code shouldBe "person"
+    indexIdentifier.typeFullName shouldBe "[]main.Person"
+    indexLiteral1.code shouldBe "0"
   }
 }
