@@ -8,13 +8,9 @@ import org.slf4j.LoggerFactory
 
 import scala.util.Try
 
-/** A consumable wrapper for the RubyParser class used to parse the given file and be disposed thereafter. This includes
-  * a "hacky" recovery of the parser when unsupported constructs are encountered by simply not parsing those lines.
+/** A consumable wrapper for the RubyParser class used to parse the given file and be disposed thereafter.
   * @param filename
   *   the file path to the file to be parsed.
-  * @param parsingTimeoutMs
-  *   grammar dependent, during development we may see input that would cause the parser to hang. To induce completion
-  *   we need a timeout.
   */
 class AntlrParser(filename: String) {
 
@@ -35,8 +31,6 @@ class AntlrParser(filename: String) {
   *
   * @param clearLimit
   *   the percentage of used heap to clear the DFA-cache on.
-  * @param parserTimeoutMs
-  *   how long the parser may attempt parsing a file before bailing out.
   */
 class ResourceManagedParser(clearLimit: Double) extends AutoCloseable {
 
