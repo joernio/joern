@@ -67,6 +67,7 @@ object ParserAst {
   object ChanType            extends ParserNode
   object Field               extends ParserNode
   object TypeSpec            extends ParserNode
+  object IndexExpr           extends ParserNode
 }
 
 object ParserKeys {
@@ -116,4 +117,5 @@ object ParserKeys {
   val TypeParams      = "TypeParams"
   val Args            = "Args"
   val Recv            = "Recv"
+  val Index           = "Index"
 }

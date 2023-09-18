@@ -3,8 +3,9 @@ package io.joern.gosrc2cpg.astcreation
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.gosrc2cpg.utils.Operator
+import io.joern.x2cpg.utils.NodeBuilders.{newCallNode, newOperatorCallNode}
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
+import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewCall, NewIdentifier, NewLiteral}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import ujson.Value
 
@@ -255,6 +256,33 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         Ast(controlStructureNode(branchStmt, ControlStructureTypes.GOTO, branchStmt.code))
       case "fallthrough" => // TODO handling for FALLTHROUGH
         Ast()
+    }
+  }
+  def astForIndexStatement(indexNode: ParserNodeInfo): Seq[Ast] = {
+    val callNode = newOperatorCallNode(
+      Operators.indexAccess,
+      code = indexNode.code,
+      line = indexNode.lineNumber,
+      column = indexNode.columnNumber
+    )
+    Seq(callAst(callNode, processIndexStatementArgs(indexNode.json)))
+  }
+
+  private def processIndexStatementArgs(node: Value): Seq[Ast] = {
+    if (node.obj.contains(ParserKeys.Index)) {
+      val indexJson = node(ParserKeys.Index)
+      val literalValue =
+        if (indexJson.obj.contains(ParserKeys.Name)) indexJson(ParserKeys.Name).str else indexJson(ParserKeys.Value).str
+      val indexArgsAst = NewLiteral().code(literalValue)
+      Seq(Ast(indexArgsAst)) ++ processIndexStatementArgs(node(ParserKeys.X))
+    } else {
+      Seq(
+        Ast(
+          NewIdentifier()
+            .name(node(ParserKeys.Name).str)
+            .code(node(ParserKeys.Name).str)
+        )
+      )
     }
   }
 }
