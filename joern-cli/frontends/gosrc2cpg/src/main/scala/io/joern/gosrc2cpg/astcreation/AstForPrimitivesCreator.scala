@@ -41,9 +41,11 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
         astForCompositeLiteralHavingTypeKey(typeNode, compositeLiteralNodeInfo)
       case _ =>
         val elementsAsts = Try(compositeLiteralNodeInfo.json(ParserKeys.Elts)) match
-          case Success(value) if !value.isNull => value.arr.flatMap(e => astForNode(createParserNodeInfo(e))).toSeq
-          case _                               => Seq.empty
-        elementsAsts // ++ Seq(astForArrayInitializer(compositeLiteralNodeInfo))
+          case Success(compositeElements) if !compositeElements.isNull =>
+            compositeElements.arr.flatMap(e => astForNode(createParserNodeInfo(e))).toSeq
+          case _ => Seq.empty
+          // TODO: merge array initializer node Seq(astForArrayInitializer(compositeLiteralNodeInfo))
+        elementsAsts
   }
 
   private def astForLiteral(stringLiteral: ParserNodeInfo): Ast = {
