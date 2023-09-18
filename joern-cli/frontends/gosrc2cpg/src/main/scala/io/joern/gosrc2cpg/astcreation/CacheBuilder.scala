@@ -1,7 +1,7 @@
 package io.joern.gosrc2cpg.astcreation
 
 import io.joern.gosrc2cpg.datastructures.GoGlobal
-import io.joern.gosrc2cpg.parser.{GoAstJsonParser, ParserKeys, ParserNodeInfo}
+import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import ujson.{Arr, Obj, Value}
 
 import scala.util.Try
@@ -9,7 +9,11 @@ import scala.util.Try
 trait CacheBuilder { this: AstCreator =>
 
   def buildCache(): Unit = {
-    findAndProcess(parserResult.json)
+    try {
+      findAndProcess(parserResult.json)
+    } catch
+      case ex: Exception =>
+        logger.warn(s"Error: While processing - ${parserResult.fullPath}", ex)
   }
 
   private def findAndProcess(json: Value): Unit = {

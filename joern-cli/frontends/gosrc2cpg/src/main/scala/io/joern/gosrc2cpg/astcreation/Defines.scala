@@ -8,6 +8,7 @@ object Defines {
   val dot                            = "."
   val map                            = "map"
   val chan                           = "chan"
+  val This: String                   = "this"
 
   val primitiveTypeMap: Map[String, String] =
     // This list is prepared with reference to primitives defined at https://pkg.go.dev/builtin#pkg-types
