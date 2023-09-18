@@ -8,7 +8,7 @@ import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.utils.ExternalCommand
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
-import org.slf4j.LoggerFactory
+import org.slf4j.{LoggerFactory, Logger}
 
 import scala.collection.mutable
 import scala.util.{Failure, Try, Success}
