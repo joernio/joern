@@ -1,10 +1,22 @@
 package io.shiftleft.semanticcpg.language.nodemethods
 
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Expression, NewLocation}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{Call, Expression, NewLocation}
+import io.shiftleft.codepropertygraph.generated.v2.accessors.Accessors
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.*
 
 class CallMethods(val node: Call) extends AnyVal with NodeExtension with HasLocation {
+
+  def isStatic: Boolean = {
+    // TODO define as extension method in codegen so we don't need to invoke constructor here
+    new Accessors.Access_Property_DISPATCH_TYPE(node).dispatchType == "STATIC_DISPATCH"
+  }
+
+  def isDynamic: Boolean = {
+    // TODO define as extension method in codegen so we don't need to invoke constructor here
+    new Accessors.Access_Property_DISPATCH_TYPE(node).dispatchType == "DYNAMIC_DISPATCH"
+  }
+
   def receiver: Iterator[Expression] =
     node.receiverOut
 
