@@ -50,7 +50,7 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
         val xNode = createParserNodeInfo(funcDetails.json(ParserKeys.X))
         (Some(xNode), funcDetails.json(ParserKeys.Sel)(ParserKeys.Name).str)
       case x =>
-        logger.warn(s"Unhandled class ${x.getClass} under astForCallExpression!")
+        logger.warn(s"Unhandled class ${x.getClass} under astForCallExpression! file -> ${parserResult.fullPath}")
         (None, "")
     callMethodFullNameTypeFullNameAndSignature(methodName, aliasOpt)
   }
