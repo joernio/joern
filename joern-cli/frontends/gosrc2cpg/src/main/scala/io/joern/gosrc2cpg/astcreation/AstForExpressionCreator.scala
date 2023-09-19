@@ -4,7 +4,7 @@ import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.gosrc2cpg.utils.Operator
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewIdentifier}
+import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, PropertyNames}
 import ujson.Value
 
@@ -54,10 +54,10 @@ trait AstForExpressionCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private def astForStarExpr(starExpr: ParserNodeInfo): Seq[Ast] = {
     val operand = astForNode(starExpr.json(ParserKeys.X))
-    val typeFullName = operand.head.root.get.properties
-      .get(PropertyNames.TYPE_FULL_NAME)
+    val typeFullName = operand.headOption
+      .flatMap(_.root)
+      .map(_.properties.get(PropertyNames.TYPE_FULL_NAME).get.toString)
       .getOrElse(Defines.anyTypeName)
-      .toString
     val cNode = createCallNodeForOperator(starExpr, Operators.indirection, typeFullName = Some(typeFullName))
     Seq(callAst(cNode, operand))
   }
@@ -89,10 +89,10 @@ trait AstForExpressionCreator(implicit withSchemaValidation: ValidationMode) { t
   private def processIndexIdentifier(identNode: Value): (Seq[Ast], String) = {
     val identifierAst = astForNode(identNode)
     val identifierTypeFullName =
-      identifierAst.head.root.get.properties
-        .get(PropertyNames.TYPE_FULL_NAME)
+      identifierAst.headOption
+        .flatMap(_.root)
+        .map(_.properties.get(PropertyNames.TYPE_FULL_NAME).get.toString)
         .getOrElse(Defines.anyTypeName)
-        .toString
         .stripPrefix("*")
         .stripPrefix("[]")
     (identifierAst, identifierTypeFullName)
