@@ -9,11 +9,9 @@ class CallMethods[NodeType <: CallBase](val node: NodeType) extends AnyVal {
   def isStatic: Boolean =
     node.dispatchType == "STATIC_DISPATCH"
 
-  //  def isDynamic: Boolean = {
-//    // TODO define as extension method in codegen so we don't need to invoke constructor here
-//    new Accessors.Access_Property_DISPATCH_TYPE(node).dispatchType == "DYNAMIC_DISPATCH"
-//  }
-//
+  def isDynamic: Boolean =
+    node.dispatchType == "DYNAMIC_DISPATCH"
+
 //  def receiver: Iterator[Expression] =
 //    node.receiverOut
 //
