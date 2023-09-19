@@ -247,6 +247,98 @@ class TypeDeclTests extends GoCodeToCpgSuite {
       typeDeclNodeBar.astOut.isModifier.size shouldBe 1
     }
   }
+
+  "when multiple TypeDecls are defined having multiple members" should {
+    val cpg = code("""
+        |package main
+        |type House struct {
+        |   name Name
+        |   owner Person
+        |}
+        |type Person struct {
+        |   firstName string
+        |   lastName string
+        |}
+        |type Address struct { shortAddress string }
+        |type Name struct { address Address }
+        |""".stripMargin)
+
+    "test basic ast structure for House" in {
+      val List(typeDeclNode) = cpg.typeDecl.name("House").l
+      typeDeclNode.fullName shouldBe "main.House"
+      typeDeclNode.member.size shouldBe 2
+      val List(name, owner) = typeDeclNode.member.l
+      name.code shouldBe "name"
+      name.typeFullName shouldBe "main.Name"
+      owner.code shouldBe "owner"
+      owner.typeFullName shouldBe "main.Person"
+    }
+
+    "test basic ast structure for Person" in {
+      val List(typeDeclNode) = cpg.typeDecl.name("Person").l
+      typeDeclNode.fullName shouldBe "main.Person"
+      typeDeclNode.member.size shouldBe 2
+      val List(firstname, lastname) = typeDeclNode.member.l
+      firstname.code shouldBe "firstName"
+      firstname.typeFullName shouldBe "string"
+      lastname.code shouldBe "lastName"
+      lastname.typeFullName shouldBe "string"
+    }
+
+    "test basic ast structure for Address" in {
+      val List(typeDeclNode) = cpg.typeDecl.name("Address").l
+      typeDeclNode.fullName shouldBe "main.Address"
+      typeDeclNode.member.size shouldBe 1
+      val List(name) = typeDeclNode.member.l
+      name.code shouldBe "shortAddress"
+      name.typeFullName shouldBe "string"
+    }
+
+    "test basic ast structure for Name" in {
+      val List(typeDeclNode) = cpg.typeDecl.name("Name").l
+      typeDeclNode.fullName shouldBe "main.Name"
+      typeDeclNode.member.size shouldBe 1
+      val List(name) = typeDeclNode.member.l
+      name.code shouldBe "address"
+      name.typeFullName shouldBe "main.Address"
+    }
+  }
+
+  "when multiple TypeDecls are defined having array of complex(structre-array)" should {
+    val cpg = code("""
+        |package main
+        |type House struct { names []Name }
+        |type Address struct { shortAddress string }
+        |type Name struct { address Address }
+        |""".stripMargin)
+
+    "test basic ast structure for House" in {
+      val List(typeDeclNode) = cpg.typeDecl.name("House").l
+      typeDeclNode.fullName shouldBe "main.House"
+      typeDeclNode.member.size shouldBe 1
+      val List(name) = typeDeclNode.member.l
+      name.code shouldBe "names"
+      name.typeFullName shouldBe "[]main.Name"
+    }
+
+    "test basic ast structure for Address" in {
+      val List(typeDeclNode) = cpg.typeDecl.name("Address").l
+      typeDeclNode.fullName shouldBe "main.Address"
+      typeDeclNode.member.size shouldBe 1
+      val List(name) = typeDeclNode.member.l
+      name.code shouldBe "shortAddress"
+      name.typeFullName shouldBe "string"
+    }
+
+    "test basic ast structure for Name" in {
+      val List(typeDeclNode) = cpg.typeDecl.name("Name").l
+      typeDeclNode.fullName shouldBe "main.Name"
+      typeDeclNode.member.size shouldBe 1
+      val List(name) = typeDeclNode.member.l
+      name.code shouldBe "address"
+      name.typeFullName shouldBe "main.Address"
+    }
+  }
 }
 
 //TODO: Add unit tests for nested struct within a block
