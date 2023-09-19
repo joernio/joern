@@ -28,6 +28,13 @@ trait CacheBuilder { this: AstCreator =>
           processImports(obj)
         } else if (
           json.obj
+            .contains(ParserKeys.NodeType) && obj(ParserKeys.NodeType).str == "ast.TypeSpec" && !json.obj.contains(
+            ParserKeys.NodeReferenceId
+          )
+        ) {
+          createParserNodeInfo(obj)
+        } else if (
+          json.obj
             .contains(ParserKeys.NodeType) && obj(ParserKeys.NodeType).str == "ast.FuncDecl" && !json.obj.contains(
             ParserKeys.NodeReferenceId
           )

@@ -219,4 +219,31 @@ class LoopsTests extends GoCodeToCpgSuite {
       body.astChildren.isCall.code.l shouldBe List("counter++")
     }
   }
+
+  "for loop with range not, having any index" should {
+    val cpg = code("""
+        |package main
+        |
+        |func main() {
+        |
+        |	for range servers {
+        |       b := 10
+        |		success = success && <-shutdownChan
+        |	}
+        |}
+        |
+        |""".stripMargin)
+
+    "check nodes in body" in {
+      val List(identifierNode) = cpg.identifier("b").l
+      identifierNode.typeFullName shouldBe "int"
+    }
+
+    "check working AST structure is in place" in {
+      val List(forStmt) = cpg.method.name("main").controlStructure.l
+      forStmt.controlStructureType shouldBe ControlStructureTypes.FOR
+      val List(identifier: Identifier) = forStmt.astChildren.order(1).l: @unchecked
+      identifier.name shouldBe "servers"
+    }
+  }
 }
