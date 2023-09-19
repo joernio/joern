@@ -62,6 +62,9 @@ object AstGenRunner {
     skippedFiles: List[(String, String)] = List.empty
   )
 
+  // env var to the path for the astgen bin
+  private val AstGenBinEnvVar: String = "ASTGEN_BIN"
+
   lazy private val executableName = Environment.operatingSystem match {
     case Environment.OperatingSystemType.Windows => "astgen-win.exe"
     case Environment.OperatingSystemType.Linux   => "astgen-linux"
@@ -91,30 +94,51 @@ object AstGenRunner {
     Paths.get(fixedDir, "/bin/astgen").toAbsolutePath.toString
   }
 
-  private def hasCompatibleAstGenVersion(astGenVersion: String): Boolean = {
-    ExternalCommand.run("astgen --version", ".").toOption.map(_.mkString.strip()) match {
+  private def hasCompatibleAstGenVersionAtPath(astGenVersion: String, path: Option[String]): Boolean = {
+    val localPath    = path.getOrElse(".")
+    val debugMsgPath = path.getOrElse("PATH")
+    ExternalCommand.run("astgen --version", localPath).toOption.map(_.mkString.strip()) match {
       case Some(installedVersion)
-          if installedVersion != "unknown" &&
-            Try(VersionHelper.compare(installedVersion, astGenVersion)).toOption.getOrElse(-1) >= 0 =>
-        logger.debug(s"Using local astgen v$installedVersion from systems PATH")
+          if installedVersion != "unknown" && Try(VersionHelper.compare(installedVersion, astGenVersion)).toOption
+            .getOrElse(-1) >= 0 =>
+        logger.debug(s"Using astgen v$installedVersion from $debugMsgPath")
         true
       case Some(installedVersion) =>
         logger.debug(
-          s"Found local astgen v$installedVersion in systems PATH but jssrc2cpg requires at least v$astGenVersion"
+          s"Found astgen v$installedVersion in $debugMsgPath but jssrc2cpg requires at least v$astGenVersion"
         )
         false
-      case _ => false
+      case _ =>
+        false
     }
+  }
+
+  /** @return
+    *   the full path to the astgen binary found on the system
+    */
+  private def compatibleAstGenPath(astGenVersion: String): String = {
+    val pathFromEnv = scala.util.Properties.envOrNone(AstGenBinEnvVar)
+    pathFromEnv match
+      // 1. case: we try it at env var ASTGEN_BIN
+      case Some(path) if File(path).exists && hasCompatibleAstGenVersionAtPath(astGenVersion, Some(path)) =>
+        s"$path/astgen"
+      // 2. case: we try it with the systems PATH
+      case _ if hasCompatibleAstGenVersionAtPath(astGenVersion, None) =>
+        "astgen"
+      // otherwise: we use the default local astgen executable path
+      case _ =>
+        logger.debug(
+          s"Did not find any astgen binary on this system (environment variable ASTGEN_BIN not set and no entry in the systems PATH)"
+        )
+        val localPath = s"$executableDir/$executableName"
+        logger.debug(s"Using astgen from '$localPath'")
+        localPath
   }
 
   private lazy val astGenCommand = {
     val conf          = ConfigFactory.load
     val astGenVersion = conf.getString("jssrc2cpg.astgen_version")
-    if (hasCompatibleAstGenVersion(astGenVersion)) {
-      "astgen"
-    } else {
-      s"$executableDir/$executableName"
-    }
+    compatibleAstGenPath(astGenVersion)
   }
 }
 
