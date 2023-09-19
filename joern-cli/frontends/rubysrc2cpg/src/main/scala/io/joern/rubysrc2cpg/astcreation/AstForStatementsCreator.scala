@@ -369,7 +369,7 @@ trait AstForStatementsCreator(filename: String)(implicit withSchemaValidation: V
     }
   }
 
-  protected def astForBlock(ctx: BlockContext, blockMethodName: Option[String] = None): Ast = ctx match
+  protected def astForBlock(ctx: BlockContext, blockMethodName: Option[String] = None): Seq[Ast] = ctx match
     case ctx: DoBlockBlockContext    => astForDoBlock(ctx.doBlock(), blockMethodName)
     case ctx: BraceBlockBlockContext => astForBraceBlock(ctx.braceBlock(), blockMethodName)
 
@@ -378,7 +378,7 @@ trait AstForStatementsCreator(filename: String)(implicit withSchemaValidation: V
     blockParamCtx: Option[BlockParameterContext],
     compoundStmtCtx: CompoundStatementContext,
     blockMethodName: Option[String] = None
-  ) = {
+  ): Seq[Ast] = {
     blockMethodName match {
       case Some(blockMethodName) =>
         astForBlockFunction(
@@ -389,20 +389,20 @@ trait AstForStatementsCreator(filename: String)(implicit withSchemaValidation: V
           lineEnd(compoundStmtCtx).head,
           column(compoundStmtCtx).head,
           columnEnd(compoundStmtCtx).head
-        ).head
+        )
       case None =>
         val blockNode_    = blockNode(ctx, text(ctx), Defines.Any)
         val blockBodyAst  = astForCompoundStatement(compoundStmtCtx)
         val blockParamAst = blockParamCtx.flatMap(astForBlockParameterContext)
-        blockAst(blockNode_, blockBodyAst.toList ++ blockParamAst)
+        Seq(blockAst(blockNode_, blockBodyAst.toList ++ blockParamAst))
     }
   }
 
-  protected def astForDoBlock(ctx: DoBlockContext, blockMethodName: Option[String] = None): Ast = {
+  protected def astForDoBlock(ctx: DoBlockContext, blockMethodName: Option[String] = None): Seq[Ast] = {
     astForBlockHelper(ctx, Option(ctx.blockParameter), ctx.bodyStatement().compoundStatement(), blockMethodName)
   }
 
-  private def astForBraceBlock(ctx: BraceBlockContext, blockMethodName: Option[String] = None): Ast = {
+  private def astForBraceBlock(ctx: BraceBlockContext, blockMethodName: Option[String] = None): Seq[Ast] = {
     astForBlockHelper(ctx, Option(ctx.blockParameter), ctx.bodyStatement().compoundStatement(), blockMethodName)
   }
 

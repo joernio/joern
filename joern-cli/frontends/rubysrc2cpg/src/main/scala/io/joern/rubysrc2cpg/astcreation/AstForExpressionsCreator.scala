@@ -4,7 +4,7 @@ import io.joern.rubysrc2cpg.parser.RubyParser.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNodeNew, NewCall, NewIdentifier}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNodeNew, NewCall, NewIdentifier, NewMethod}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, ModifierTypes, Operators}
 import org.antlr.v4.runtime.ParserRuleContext
 import org.slf4j.LoggerFactory
@@ -196,12 +196,20 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         .lineNumber(ctx.op.getLine)
         .columnNumber(ctx.op.getCharPositionInLine)
     if (leftAst.size == 1 && rightAst.size > 1) {
-      /*
-       * This is multiple RHS packed into a single LHS. That is, packing left hand side.
-       * This is as good as multiple RHS packed into an array and put into a single LHS
-       */
-      val packedRHS = getPackedRHS(rightAst, wrapInBrackets = true)
-      Seq(callAst(opCallNode, leftAst ++ packedRHS))
+      if (rightAst.headOption.flatMap(_.root).exists(_.isInstanceOf[NewMethod])) {
+        /*
+         * Here we expect to be assigned the result of some dynamically defined function's application to some variable
+         */
+        val lastAst = rightAst.takeRight(1)
+        rightAst.filterNot(_ == lastAst.head) ++ Seq(callAst(opCallNode, leftAst ++ lastAst))
+      } else {
+        /*
+         * This is multiple RHS packed into a single LHS. That is, packing left hand side.
+         * This is as good as multiple RHS packed into an array and put into a single LHS
+         */
+        val packedRHS = getPackedRHS(rightAst, wrapInBrackets = true)
+        Seq(callAst(opCallNode, leftAst ++ packedRHS))
+      }
     } else {
       Seq(callAst(opCallNode, leftAst ++ rightAst))
     }
@@ -374,7 +382,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   protected def astForYieldCall(ctx: ParserRuleContext, argumentsCtx: Option[ArgumentsContext]): Ast = {
     val args = argumentsCtx.map(astForArguments).getOrElse(Seq())
-    val call = callNode(ctx, text(ctx), UNRESOLVED_YIELD, UNRESOLVED_YIELD, DispatchTypes.STATIC_DISPATCH)
+    val call =
+      callNode(ctx, text(ctx), Defines.UNRESOLVED_YIELD, Defines.UNRESOLVED_YIELD, DispatchTypes.STATIC_DISPATCH)
     callAst(call, args)
   }
 
