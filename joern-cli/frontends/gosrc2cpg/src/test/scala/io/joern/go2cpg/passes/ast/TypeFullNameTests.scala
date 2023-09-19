@@ -1,7 +1,6 @@
 package io.joern.go2cpg.passes.ast
 
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
-import io.joern.gosrc2cpg.astcreation.Defines
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
 
@@ -551,6 +550,66 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
       a.typeFullName shouldBe "int"
       b.typeFullName shouldBe "int"
       c.typeFullName shouldBe "int"
+    }
+  }
+
+  "Type Check for Arrays" should {
+    val cpg = code("""
+        |package main
+        |func main() {
+        |   var a [][]string = [][]string{{"1", "2"}, {"3", "4"}}
+        |   b := a[0][1]
+        |   var c = [][]string{{"1", "2"}, {"3", "4"}}
+        |   var d = c[1]
+        |   var e = d[0]
+        |   var f = c[0][0]
+        |   var g []int = []int{1,2,3}
+        |   var h = g[0]
+        |   i := g
+        |   j := []float32{ 1.2, 2.5}
+        |   var k = i[0]
+        |   var l = j[0]
+        |}
+        |""".stripMargin)
+    "Type Check LOCAL nodes working" in {
+      val List(a, b, c, d, e, f, g, h, i, j, k, l) = cpg.local.l
+      a.typeFullName shouldBe "[][]string"
+      g.typeFullName shouldBe "[]int"
+    }
+
+    "Type Check LOCAL nodes non working" ignore {
+      val List(a, b, c, d, e, f, g, h, i, j, k, l) = cpg.local.l
+      b.typeFullName shouldBe "string"
+      c.typeFullName shouldBe "[][]string"
+      d.typeFullName shouldBe "[]string"
+      e.typeFullName shouldBe "string"
+      f.typeFullName shouldBe "string"
+      h.typeFullName shouldBe "int"
+      i.typeFullName shouldBe "[]int"
+      j.typeFullName shouldBe "[]float32"
+      k.typeFullName shouldBe "int"
+      l.typeFullName shouldBe "float32"
+    }
+
+    "Type check for CALL nodes working" in {
+      val List(a, b, c, d, e, f, g, h, i, j, k, l, m) = cpg.call.nameNot(Operators.assignment).l
+      a.typeFullName shouldBe "[][]string"
+      b.typeFullName shouldBe "string"
+      c.typeFullName shouldBe "[]string"
+      d.typeFullName shouldBe "[][]string"
+      i.typeFullName shouldBe "[]int"
+      j.typeFullName shouldBe "int"
+      k.typeFullName shouldBe "[]float32"
+    }
+
+    "Type check for CALL nodes non working" ignore {
+      val List(a, b, c, d, e, f, g, h, i, j, k, l, m) = cpg.call.nameNot(Operators.assignment).l
+      e.typeFullName shouldBe "[]string"
+      f.typeFullName shouldBe "string"
+      g.typeFullName shouldBe "string"
+      h.typeFullName shouldBe "[]string"
+      l.typeFullName shouldBe "int"
+      m.typeFullName shouldBe "float32"
     }
   }
 

@@ -3,8 +3,9 @@ package io.joern.gosrc2cpg.astcreation
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.gosrc2cpg.utils.Operator
+import io.joern.x2cpg.utils.NodeBuilders.{newCallNode, newOperatorCallNode}
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
+import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewCall, NewIdentifier, NewLiteral, NewLocal}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import ujson.Value
 

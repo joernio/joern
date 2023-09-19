@@ -47,5 +47,32 @@ class ArrayDataflowTests extends GoCodeToCpgSuite(withOssDataflow = true) {
       sink.reachableByFlows(source).size shouldBe 2
     }
   }
+  "Data flows around multidimentional Arrays" should {
+    val cpg = code("""
+        |package main
+        |func main() {
+        |   var myArray [][]string = [][]string{{"1", "2"}, {"3", "4"}}
+        |   first := myArray[0][1]
+        |   second := myArray[1][0]
+        |   third := myArray
+        |}
+        |""".stripMargin)
 
+    "data flow check one" ignore {
+      val src  = cpg.identifier("myArray").l
+      val sink = cpg.identifier("first")
+      sink.reachableByFlows(src).size shouldBe 2
+    }
+    "data flow check two" ignore {
+      val src  = cpg.literal("\"2\"").l
+      val sink = cpg.identifier("first")
+      sink.reachableByFlows(src).size shouldBe 1
+    }
+
+    "data flow check three" in {
+      val src  = cpg.identifier("myArray").l
+      val sink = cpg.identifier("third")
+      sink.reachableByFlows(src).size shouldBe 2
+    }
+  }
 }

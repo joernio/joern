@@ -3,13 +3,12 @@ package io.joern.gosrc2cpg.astcreation
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.gosrc2cpg.utils.Operator
-import io.joern.x2cpg.utils.NodeBuilders.*
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewFieldIdentifier}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.NewCall
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, PropertyNames}
+import ujson.Value
 
 import scala.collection.immutable.Seq
-
 trait AstForExpressionCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
   def astsForExpression(expr: ParserNodeInfo): Seq[Ast] = {
     expr.node match {
@@ -17,11 +16,11 @@ trait AstForExpressionCreator(implicit withSchemaValidation: ValidationMode) { t
       case StarExpr       => astForStarExpr(expr)
       case UnaryExpr      => astForUnaryExpr(expr)
       case ParenExpr      => astsForExpression(createParserNodeInfo(expr.json(ParserKeys.X)))
-      case StructType     => astForStructType(expr)
       case TypeAssertExpr => astForNode(expr.json(ParserKeys.X))
       case CallExpr       => astForCallExpression(expr)
       case SelectorExpr   => astForFieldAccess(expr)
       case KeyValueExpr   => astForNode(createParserNodeInfo(expr.json(ParserKeys.Value)))
+      case IndexExpr      => astForIndexExpression(expr)
       case _              => Seq(Ast())
     }
   }
@@ -54,8 +53,12 @@ trait AstForExpressionCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astForStarExpr(starExpr: ParserNodeInfo): Seq[Ast] = {
-    val cNode   = createCallNodeForOperator(starExpr, Operators.indirection)
     val operand = astForNode(starExpr.json(ParserKeys.X))
+    val typeFullName = operand.headOption
+      .flatMap(_.root)
+      .map(_.properties.get(PropertyNames.TYPE_FULL_NAME).get.toString)
+      .getOrElse(Defines.anyTypeName)
+    val cNode = createCallNodeForOperator(starExpr, Operators.indirection, typeFullName = Some(typeFullName))
     Seq(callAst(cNode, operand))
   }
 
@@ -75,11 +78,43 @@ trait AstForExpressionCreator(implicit withSchemaValidation: ValidationMode) { t
     Seq(callAst(cNode, operand))
   }
 
+  private def astForIndexExpression(indexNode: ParserNodeInfo): Seq[Ast] = {
+    val indexAst                                = astForNode(indexNode.json(ParserKeys.Index))
+    val (indexIdentifier, callNodeTypeFullName) = processIndexIdentifier(indexNode.json(ParserKeys.X))
+    val callNode =
+      createCallNodeForOperator(indexNode, Operators.indexAccess, typeFullName = Some(callNodeTypeFullName))
+    Seq(callAst(callNode, indexIdentifier ++ indexAst))
+  }
+
+  private def processIndexIdentifier(identNode: Value): (Seq[Ast], String) = {
+    val identifierAst = astForNode(identNode)
+    val identifierTypeFullName =
+      identifierAst.headOption
+        .flatMap(_.root)
+        .map(_.properties.get(PropertyNames.TYPE_FULL_NAME).get.toString)
+        .getOrElse(Defines.anyTypeName)
+        .stripPrefix("*")
+        .stripPrefix("[]")
+    (identifierAst, identifierTypeFullName)
+  }
+//
+//  private def extractBaseType(input: String): String = {
+//    if (input.matches("""(\[\])*(\w|\.)+""")) {
+//      input.substring(input.lastIndexOf("]") + 1, input.length)
+//    } else if (input.matches("""map\[(.*?)\]""")) {
+//      input.stripPrefix("map[").stripSuffix("]")
+//    } else {
+//      Defines.anyTypeName
+//    }
+//  }
+
   private def createCallNodeForOperator(
     node: ParserNodeInfo,
     operatorMethod: String,
-    DispatchType: String = DispatchTypes.STATIC_DISPATCH
+    DispatchType: String = DispatchTypes.STATIC_DISPATCH,
+    signature: Option[String] = None,
+    typeFullName: Option[String] = None
   ): NewCall = {
-    callNode(node, node.code, operatorMethod, operatorMethod, DispatchType)
+    callNode(node, node.code, operatorMethod, operatorMethod, DispatchType, signature, typeFullName)
   }
 }

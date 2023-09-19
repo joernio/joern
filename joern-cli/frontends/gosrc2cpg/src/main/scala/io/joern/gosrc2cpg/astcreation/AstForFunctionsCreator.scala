@@ -1,6 +1,5 @@
 package io.joern.gosrc2cpg.astcreation
 
-import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.datastructures.Stack.*
@@ -87,27 +86,26 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   protected def getReceiverInfo(receiver: Try[Value]): Option[(String, String, String, ParserNodeInfo)] = {
     receiver match
       case Success(rec) if rec != null =>
-        val recnode  = createParserNodeInfo(rec)
-        val recValue = rec(ParserKeys.List).arr.head
-        val recName = Try(recValue(ParserKeys.Names).arr.head(ParserKeys.Name).str) match
-          case Success(recName) => recName
-          case _                => Defines.This
-        val typeParserNode = createParserNodeInfo(recValue(ParserKeys.Type))
-        val (typeFullName, evaluationStrategy) = typeParserNode.node match
-          case Ident =>
-            (
-              generateTypeFullName(typeName = typeParserNode.json(ParserKeys.Name).strOpt),
-              EvaluationStrategies.BY_VALUE
-            )
-          case StarExpr =>
-            (
-              generateTypeFullName(typeName = typeParserNode.json(ParserKeys.X)(ParserKeys.Name).strOpt),
-              EvaluationStrategies.BY_SHARING
-            )
-          case x =>
-            logger.warn(s"Unhandled class ${x.getClass} under getReceiverInfo!")
-            ("", "")
-        Some(recName, typeFullName, evaluationStrategy, recnode)
+        val recnode = createParserNodeInfo(rec)
+        rec(ParserKeys.List).arr.headOption.map(recValue => {
+          val recName        = Try(recValue(ParserKeys.Names).arr.head(ParserKeys.Name).str).getOrElse(Defines.This)
+          val typeParserNode = createParserNodeInfo(recValue(ParserKeys.Type))
+          val (typeFullName, evaluationStrategy) = typeParserNode.node match
+            case Ident =>
+              (
+                generateTypeFullName(typeName = typeParserNode.json(ParserKeys.Name).strOpt),
+                EvaluationStrategies.BY_VALUE
+              )
+            case StarExpr =>
+              (
+                generateTypeFullName(typeName = typeParserNode.json(ParserKeys.X)(ParserKeys.Name).strOpt),
+                EvaluationStrategies.BY_SHARING
+              )
+            case x =>
+              logger.warn(s"Unhandled class ${x.getClass} under getReceiverInfo! file -> ${parserResult.fullPath}")
+              ("", "")
+          (recName, typeFullName, evaluationStrategy, recnode)
+        })
       case _ => None
   }
 

@@ -50,7 +50,7 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
         val xNode = createParserNodeInfo(funcDetails.json(ParserKeys.X))
         (Some(xNode), funcDetails.json(ParserKeys.Sel)(ParserKeys.Name).str)
       case x =>
-        logger.warn(s"Unhandled class ${x.getClass} under astForCallExpression!")
+        logger.warn(s"Unhandled class ${x.getClass} under astForCallExpression! file -> ${parserResult.fullPath}")
         (None, "")
     callMethodFullNameTypeFullNameAndSignature(methodName, aliasOpt)
   }
@@ -128,10 +128,10 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
   ): (String, String, String, String, Seq[Ast]) = {
     val receiverAst = astForNode(xnode)
     val receiverTypeFullName =
-      receiverAst.head.root.get.properties
-        .get(PropertyNames.TYPE_FULL_NAME)
+      receiverAst.headOption
+        .flatMap(_.root)
+        .map(_.properties.get(PropertyNames.TYPE_FULL_NAME).get.toString)
         .getOrElse(Defines.anyTypeName)
-        .toString
         .stripPrefix("*")
     val callMethodFullName = s"$receiverTypeFullName.$methodName"
     val (returnTypeFullNameCache, signatureCache) =

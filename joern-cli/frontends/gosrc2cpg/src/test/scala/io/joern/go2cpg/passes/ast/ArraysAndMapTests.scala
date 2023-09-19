@@ -6,13 +6,13 @@ import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Dispatch
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 
-class ArraysTests extends GoCodeToCpgSuite {
+class ArraysAndMapTests extends GoCodeToCpgSuite {
   "AST Creation for Array Initialization" should {
     "be correct when a int array is declared" in {
       val cpg = code("""
           |package main
           |func main() {
-          |	var a []int 
+          |	var a []int
           |}
           |""".stripMargin)
       cpg.local("a").size shouldBe 1
@@ -404,5 +404,205 @@ class ArraysTests extends GoCodeToCpgSuite {
     assignmentCallNode.astChildren.isIdentifier.l.size shouldBe 1
     val List(identifierNode) = assignmentCallNode.astChildren.isIdentifier.l.l
     identifierNode.code shouldBe "c"
+  }
+
+  "be correct when array access using variable having single index" should {
+    val cpg = code("""
+        |package main
+        |func main() {
+        | var myArray []int = []int{1, 2}
+        | value := myArray[0]
+        |}
+        |""".stripMargin)
+
+    "be correct for local and identifier node" in {
+      val List(myArr, _) = cpg.local.l
+      myArr.typeFullName shouldBe "[]int"
+
+      val List(identifier, _, _) = cpg.identifier.l
+      identifier.typeFullName shouldBe "[]int"
+    }
+    "be correct for indexAccess call node" in {
+      val List(indexCall) = cpg.call.name("<operator>.indexAccess").l
+      indexCall.code shouldBe "myArray[0]"
+      indexCall.methodFullName shouldBe "<operator>.indexAccess"
+      indexCall.typeFullName shouldBe "int"
+
+      val List(indexIdentifier: Identifier, indexLiteral: Literal) = indexCall.argument.l: @unchecked
+
+      indexIdentifier.code shouldBe "myArray"
+      indexIdentifier.typeFullName shouldBe "[]int"
+
+      indexLiteral.code shouldBe "0"
+    }
+  }
+
+  "be correct when array of pointer access using variable having single index" should {
+    val cpg = code("""
+        |package main
+        |func main() {
+        | var myArray []*int
+        | value := myArray[0]
+        |}
+        |""".stripMargin)
+
+    "be correct for local and identifier node" in {
+      val List(myArr, _) = cpg.local.l
+      myArr.typeFullName shouldBe "[]*int"
+
+      val List(identifier, _, _) = cpg.identifier.l
+      identifier.typeFullName shouldBe "[]*int"
+    }
+    "be correct for indexAccess call node" in {
+      val List(indexCall) = cpg.call.name("<operator>.indexAccess").l
+      indexCall.code shouldBe "myArray[0]"
+      indexCall.methodFullName shouldBe "<operator>.indexAccess"
+      indexCall.typeFullName shouldBe "*int"
+
+      val List(indexIdentifier: Identifier, indexLiteral: Literal) = indexCall.argument.l: @unchecked
+
+      indexIdentifier.code shouldBe "myArray"
+      indexIdentifier.typeFullName shouldBe "[]*int"
+
+      indexLiteral.code shouldBe "0"
+    }
+  }
+
+  "be correct when pointer of array access using variable having single index" should {
+    val cpg = code("""
+        |package main
+        |func main() {
+        | var myArray *[]int
+        | value := (*myArray)[0]
+        |}
+        |""".stripMargin)
+
+    "be correct for local and identifier node" in {
+      val List(myArr, _) = cpg.local.l
+      myArr.typeFullName shouldBe "*[]int"
+
+      val List(identifier, _, _) = cpg.identifier.l
+      identifier.typeFullName shouldBe "*[]int"
+    }
+    "be correct for indexAccess call node" in {
+      val List(indexCall) = cpg.call.name("<operator>.indexAccess").l
+      indexCall.code shouldBe "(*myArray)[0]"
+      indexCall.methodFullName shouldBe "<operator>.indexAccess"
+      indexCall.typeFullName shouldBe "int"
+
+      val List(indexIdentifier: Call, indexLiteral: Literal) = indexCall.argument.l: @unchecked
+
+      indexIdentifier.code shouldBe "*myArray"
+      indexIdentifier.typeFullName shouldBe "*[]int"
+
+      indexLiteral.code shouldBe "0"
+    }
+  }
+
+  "be correct when array access using variable having multi index" should {
+    val cpg = code("""
+        |package main
+        |func main() {
+        |   var myArray [][]string = [][]string{{"1", "2"}, {"3", "4"}}
+        |   value := myArray[0][1]
+        |}
+        |""".stripMargin)
+    "Be correct for local and Identifier nodes" in {
+      val List(myArr, _) = cpg.local.l
+      myArr.typeFullName shouldBe "[][]string"
+
+      val List(identifier, _, _) = cpg.identifier.l
+      identifier.typeFullName shouldBe "[][]string"
+    }
+    "Be correct for IndexAccess call nodes" in {
+      val List(indexCallFirst, _) = cpg.call.name(Operators.indexAccess).l
+      indexCallFirst.code shouldBe "myArray[0][1]"
+      indexCallFirst.typeFullName shouldBe "string"
+
+      val List(indexIdentifier: Call, indexLiteral1: Literal) = indexCallFirst.argument.l: @unchecked
+      indexIdentifier.code shouldBe "myArray[0]"
+      indexIdentifier.typeFullName shouldBe "[]string"
+      indexLiteral1.code shouldBe "1"
+
+      val List(indexIdentifierTwo: Identifier, indexLiteral2: Literal) = indexIdentifier.argument.l: @unchecked
+      indexIdentifierTwo.code shouldBe "myArray"
+      indexIdentifierTwo.typeFullName shouldBe "[][]string"
+      indexLiteral2.code shouldBe "0"
+    }
+  }
+
+  "be correct when map access using string having single index" ignore {
+    val cpg = code("""
+        |package main
+        |func main() {
+        | var mymap map[string]int = make(map[string]int)
+        | var a = mymap["key"]
+        |}
+        |""".stripMargin)
+    "be correct for local node properties" in {
+      val List(x) = cpg.local("mymap").l
+      x.typeFullName shouldBe "map[]int"
+    }
+
+    "be correct for index access" in {
+      val List(indexCall) = cpg.call.name("<operator>.indexAccess").l
+      indexCall.code shouldBe "mymap[\"key\"]"
+      indexCall.methodFullName shouldBe "<operator>.indexAccess"
+      indexCall.typeFullName shouldBe "int"
+
+      val List(indexLiteral: Literal, indexIdentifier: Identifier) = indexCall.argument.l: @unchecked
+
+      indexIdentifier.code shouldBe "mymap"
+      indexIdentifier.typeFullName shouldBe "map[]int"
+
+      indexLiteral.code shouldBe "\"key\""
+      indexLiteral.typeFullName shouldBe "string"
+    }
+  }
+
+  "be correct when struct array access using variable having single index" should {
+    val cpg = code("""
+         |package main
+         |type Person struct {
+         |    Fname string
+         |    Lname string
+         |}
+         |func (p Person) fullName() string {
+         |	return p.Fname + " " + p.Lname
+         |}
+         |func main() {
+         |  var person [3]Person
+         |  var a = person[0]
+         |  var flname = person[0].fullName()
+         |}
+         |""".stripMargin)
+
+    "local and identifer checks" in {
+      val List(person, _, _) = cpg.local.l
+      person.typeFullName shouldBe "[]main.Person"
+    }
+
+    "index access call check" in {
+      val List(indexOne, indexTwo) = cpg.call.name(Operators.indexAccess).l
+      indexOne.code shouldBe "person[0]"
+      indexOne.methodFullName shouldBe Operators.indexAccess
+      indexOne.typeFullName shouldBe "main.Person"
+
+      val List(indexIdentifier: Identifier, indexLiteral1: Literal) = indexOne.argument.l: @unchecked
+      indexIdentifier.code shouldBe "person"
+      indexIdentifier.typeFullName shouldBe "[]main.Person"
+      indexLiteral1.code shouldBe "0"
+    }
+
+    "be correct for method call node on array index access" in {
+      val List(fullName) = cpg.call("fullName").l
+      fullName.methodFullName shouldBe "main.Person.fullName"
+      fullName.typeFullName shouldBe "string"
+
+      val List(args: Call) = fullName.argument.l: @unchecked
+      args.argumentIndex shouldBe 0
+      args.name shouldBe Operators.indexAccess
+      args.typeFullName shouldBe "main.Person"
+    }
   }
 }
