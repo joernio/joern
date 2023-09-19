@@ -91,7 +91,6 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)(im
     nodeInfo.node match {
       case GenDecl          => astForGenDecl(nodeInfo)
       case FuncDecl         => astForFuncDecl(nodeInfo)
-      case IndexExpr        => astForIndexStatement(nodeInfo)
       case _: BasePrimitive => astForPrimitive(nodeInfo)
       case _: BaseExpr      => astsForExpression(nodeInfo)
       case _: BaseStmt      => astsForStatement(nodeInfo)
