@@ -428,7 +428,7 @@ class ArraysAndMapTests extends GoCodeToCpgSuite {
       indexCall.methodFullName shouldBe "<operator>.indexAccess"
       indexCall.typeFullName shouldBe "int"
 
-      val List(indexIdentifier: Identifier, indexLiteral: Literal) = indexCall.argument.l
+      val List(indexIdentifier: Identifier, indexLiteral: Literal) = indexCall.argument.l: @unchecked
 
       indexIdentifier.code shouldBe "myArray"
       indexIdentifier.typeFullName shouldBe "[]int"
@@ -459,7 +459,7 @@ class ArraysAndMapTests extends GoCodeToCpgSuite {
       indexCall.methodFullName shouldBe "<operator>.indexAccess"
       indexCall.typeFullName shouldBe "*int"
 
-      val List(indexIdentifier: Identifier, indexLiteral: Literal) = indexCall.argument.l
+      val List(indexIdentifier: Identifier, indexLiteral: Literal) = indexCall.argument.l: @unchecked
 
       indexIdentifier.code shouldBe "myArray"
       indexIdentifier.typeFullName shouldBe "[]*int"
@@ -490,7 +490,7 @@ class ArraysAndMapTests extends GoCodeToCpgSuite {
       indexCall.methodFullName shouldBe "<operator>.indexAccess"
       indexCall.typeFullName shouldBe "int"
 
-      val List(indexIdentifier: Call, indexLiteral: Literal) = indexCall.argument.l
+      val List(indexIdentifier: Call, indexLiteral: Literal) = indexCall.argument.l: @unchecked
 
       indexIdentifier.code shouldBe "*myArray"
       indexIdentifier.typeFullName shouldBe "*[]int"
@@ -519,12 +519,12 @@ class ArraysAndMapTests extends GoCodeToCpgSuite {
       indexCallFirst.code shouldBe "myArray[0][1]"
       indexCallFirst.typeFullName shouldBe "string"
 
-      val List(indexIdentifier: Call, indexLiteral1: Literal) = indexCallFirst.argument.l
+      val List(indexIdentifier: Call, indexLiteral1: Literal) = indexCallFirst.argument.l: @unchecked
       indexIdentifier.code shouldBe "myArray[0]"
       indexIdentifier.typeFullName shouldBe "[]string"
       indexLiteral1.code shouldBe "1"
 
-      val List(indexIdentifierTwo: Identifier, indexLiteral2: Literal) = indexIdentifier.argument.l
+      val List(indexIdentifierTwo: Identifier, indexLiteral2: Literal) = indexIdentifier.argument.l: @unchecked
       indexIdentifierTwo.code shouldBe "myArray"
       indexIdentifierTwo.typeFullName shouldBe "[][]string"
       indexLiteral2.code shouldBe "0"
@@ -550,7 +550,7 @@ class ArraysAndMapTests extends GoCodeToCpgSuite {
       indexCall.methodFullName shouldBe "<operator>.indexAccess"
       indexCall.typeFullName shouldBe "int"
 
-      val List(indexLiteral: Literal, indexIdentifier: Identifier) = indexCall.argument.l
+      val List(indexLiteral: Literal, indexIdentifier: Identifier) = indexCall.argument.l: @unchecked
 
       indexIdentifier.code shouldBe "mymap"
       indexIdentifier.typeFullName shouldBe "map[]int"
@@ -588,7 +588,7 @@ class ArraysAndMapTests extends GoCodeToCpgSuite {
       indexOne.methodFullName shouldBe Operators.indexAccess
       indexOne.typeFullName shouldBe "main.Person"
 
-      val List(indexIdentifier: Identifier, indexLiteral1: Literal) = indexOne.argument.l
+      val List(indexIdentifier: Identifier, indexLiteral1: Literal) = indexOne.argument.l: @unchecked
       indexIdentifier.code shouldBe "person"
       indexIdentifier.typeFullName shouldBe "[]main.Person"
       indexLiteral1.code shouldBe "0"
@@ -599,7 +599,7 @@ class ArraysAndMapTests extends GoCodeToCpgSuite {
       fullName.methodFullName shouldBe "main.Person.fullName"
       fullName.typeFullName shouldBe "string"
 
-      val List(args: Call) = fullName.argument.l
+      val List(args: Call) = fullName.argument.l: @unchecked
       args.argumentIndex shouldBe 0
       args.name shouldBe Operators.indexAccess
       args.typeFullName shouldBe "main.Person"
