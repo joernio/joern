@@ -233,16 +233,22 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private def astForRangeStatement(rangeStmt: ParserNodeInfo): Ast = {
 
-    val keyParserNode  = createParserNodeInfo(rangeStmt.json(ParserKeys.Key))
-    val declParserNode = createParserNodeInfo(keyParserNode.json(ParserKeys.Obj)(ParserKeys.Decl))
-
-    val code    = s"for ${declParserNode.code}"
-    val forNode = controlStructureNode(rangeStmt, ControlStructureTypes.FOR, code)
-
-    val declAst = astsForStatement(declParserNode)
-    val initAst = astForNode(rangeStmt.json(ParserKeys.X))
-    val stmtAst = astsForStatement(rangeStmt.json(ParserKeys.Body))
-    controlStructureAst(forNode, None, initAst ++ declAst ++ stmtAst)
+    rangeStmt.json.obj.contains(ParserKeys.Key) match
+      case true =>
+        val keyParserNode  = createParserNodeInfo(rangeStmt.json(ParserKeys.Key))
+        val declParserNode = createParserNodeInfo(keyParserNode.json(ParserKeys.Obj)(ParserKeys.Decl))
+        val code           = s"for ${declParserNode.code}"
+        val forNode        = controlStructureNode(rangeStmt, ControlStructureTypes.FOR, code)
+        val declAst        = astsForStatement(declParserNode)
+        val initAst        = astForNode(rangeStmt.json(ParserKeys.X))
+        val stmtAst        = astsForStatement(rangeStmt.json(ParserKeys.Body))
+        controlStructureAst(forNode, None, initAst ++ declAst ++ stmtAst)
+      case false =>
+        val initAst = astForNode(rangeStmt.json(ParserKeys.X))
+        val code    = s"for range ${createParserNodeInfo(rangeStmt.json(ParserKeys.X)).code}"
+        val forNode = controlStructureNode(rangeStmt, ControlStructureTypes.FOR, code)
+        val stmtAst = astsForStatement(rangeStmt.json(ParserKeys.Body))
+        controlStructureAst(forNode, None, initAst ++ stmtAst)
   }
 
   private def astForBranchStatement(branchStmt: ParserNodeInfo): Ast = {
