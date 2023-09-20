@@ -185,12 +185,12 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
     val conditionParserNode = Try(createParserNodeInfo(typeSwitchStmt.json(ParserKeys.Assign)))
     val (code, conditionAst) = conditionParserNode.toOption match {
-      case Some(node) => (node.code, Some(astForConditionExpression(node)))
-      case _          => ("", None)
+      case Some(node) => (node.code, astForNode(node))
+      case _          => ("", Seq.empty)
     }
     val switchNode = controlStructureNode(typeSwitchStmt, ControlStructureTypes.SWITCH, s"switch $code")
     val stmtAsts   = astsForStatement(createParserNodeInfo(typeSwitchStmt.json(ParserKeys.Body)))
-    controlStructureAst(switchNode, conditionAst, stmtAsts)
+    controlStructureAst(switchNode, conditionAst.headOption, stmtAsts)
   }
 
   private def astForCaseClause(caseStmt: ParserNodeInfo): Seq[Ast] = {

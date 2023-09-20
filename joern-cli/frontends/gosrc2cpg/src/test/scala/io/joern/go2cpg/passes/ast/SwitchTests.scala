@@ -78,7 +78,7 @@ class SwitchTests extends GoCodeToCpgSuite {
     }
   }
 
-  "be correct for switch case 3" ignore {
+  "be correct for switch case 3" in {
 
     val cpg = code("""
         |package main
