@@ -1,10 +1,9 @@
 package io.joern.go2cpg.passes.ast
 
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
+import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 
 class SwitchTests extends GoCodeToCpgSuite {
   "AST Creation for switch case" should {
@@ -78,7 +77,7 @@ class SwitchTests extends GoCodeToCpgSuite {
     }
   }
 
-  "be correct for switch case 3" ignore {
+  "be correct for switch case 3" in {
 
     val cpg = code("""
         |package main
@@ -91,28 +90,26 @@ class SwitchTests extends GoCodeToCpgSuite {
         |      case int:
         |         y = 8
         |      case float64:
-        |         y= 12
+        |         y = 12
         |   }
         |}
     """.stripMargin)
-    inside(cpg.method.name("method").controlStructure.l) { case List(controlStruct: ControlStructure) =>
-      controlStruct.code shouldBe "switch i := x.(type)"
-      controlStruct.controlStructureType shouldBe ControlStructureTypes.SWITCH
-      inside(controlStruct.astChildren.l) { case List(assignment: Call, switchBlock: Block) =>
-        switchBlock.astChildren.size shouldBe 9
-        switchBlock.astChildren.code.l shouldBe List(
-          "case nil",
-          "nil",
-          "y = 5",
-          "case int",
-          "int",
-          "y = 8",
-          "case float64",
-          "float64",
-          "y = 12"
-        )
-      }
-    }
+    val List(controlStruct: ControlStructure) = cpg.method.name("method").controlStructure.l
+    controlStruct.code shouldBe "switch i := x.(type)"
+    controlStruct.controlStructureType shouldBe ControlStructureTypes.SWITCH
+    val List(assignment: Call, switchBlock: Block) = controlStruct.astChildren.l
+    switchBlock.astChildren.size shouldBe 9
+    switchBlock.astChildren.code.l shouldBe List(
+      "case nil",
+      "nil",
+      "y = 5",
+      "case int",
+      "int",
+      "y = 8",
+      "case float64",
+      "float64",
+      "y = 12"
+    )
   }
 
   "be correct for switch case 4" in {
@@ -135,8 +132,7 @@ class SwitchTests extends GoCodeToCpgSuite {
     val List(controlStruct: ControlStructure) = cpg.method.name("method").controlStructure.l
     controlStruct.code shouldBe "switch x.(type)"
     controlStruct.controlStructureType shouldBe ControlStructureTypes.SWITCH
-    val List(identifier: Identifier, switchBlock: Block) = controlStruct.astChildren.l
-    identifier.code shouldBe "x"
+    val List(identifier: Call, switchBlock: Block) = controlStruct.astChildren.l
     switchBlock.astChildren.size shouldBe 9
     // TODO: something is wrong here. Identifier is being created for int, nil and float64
     switchBlock.astChildren.code.l shouldBe List(

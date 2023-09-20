@@ -3,13 +3,11 @@ package io.joern.gosrc2cpg.astcreation
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.gosrc2cpg.utils.Operator
-import io.joern.x2cpg.utils.NodeBuilders.{newCallNode, newOperatorCallNode}
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewCall, NewIdentifier, NewLiteral, NewLocal}
+import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewIdentifier, NewLocal}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import ujson.Value
 
-import scala.annotation.tailrec
 import scala.util.Try
 
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -185,12 +183,25 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
     val conditionParserNode = Try(createParserNodeInfo(typeSwitchStmt.json(ParserKeys.Assign)))
     val (code, conditionAst) = conditionParserNode.toOption match {
-      case Some(node) => (node.code, Some(astForConditionExpression(node)))
-      case _          => ("", None)
+      case Some(node) => (node.code, astForNode(node))
+      case _          => ("", Seq.empty)
     }
     val switchNode = controlStructureNode(typeSwitchStmt, ControlStructureTypes.SWITCH, s"switch $code")
     val stmtAsts   = astsForStatement(createParserNodeInfo(typeSwitchStmt.json(ParserKeys.Body)))
-    controlStructureAst(switchNode, conditionAst, stmtAsts)
+    val id = conditionAst
+      .flatMap(_.root)
+      .collectFirst {
+        case x: NewIdentifier => identifierNode(conditionParserNode.get, x.name, x.code, x.typeFullName)
+        case x: NewLocal      => identifierNode(conditionParserNode.get, x.name, x.code, x.typeFullName)
+      }
+      .get
+    val identifier = Ast(id)
+    val isOp =
+      callNode(conditionParserNode.get, s"${id.name}.(type)", Operators.is, Operators.is, DispatchTypes.STATIC_DISPATCH)
+    val condition = Option(callAst(isOp, Seq(identifier)))
+
+    val newStmtAst = stmtAsts // TODO: Push conditionAst to the front of the block
+    controlStructureAst(switchNode, condition, newStmtAst)
   }
 
   private def astForCaseClause(caseStmt: ParserNodeInfo): Seq[Ast] = {
