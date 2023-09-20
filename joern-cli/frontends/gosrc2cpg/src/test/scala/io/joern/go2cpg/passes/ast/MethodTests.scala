@@ -1563,6 +1563,87 @@ class MethodTests extends GoCodeToCpgSuite {
     }
 
   }
+
+  "when constant is used in initializing struct" should {
+    val cpg = code("""
+        |package main
+        |
+        |var person = Person()
+        |
+        |type Name struct {
+        |   name string
+        |}
+        |
+        |const (
+        | personName string = "peter"
+        |)
+        |
+        |func Person() Name {
+        |   return Name{
+        |     name: personName,
+        |   }
+        |}
+        |""".stripMargin)
+
+    "test basic ast structure for Person" in {
+      val List(method) = cpg.method.name("Person").l
+      method.signature shouldBe "main.Person()main.Name"
+
+      val List(typeDeclNode) = cpg.typeDecl.name("Name").l
+      typeDeclNode.fullName shouldBe "main.Name"
+      typeDeclNode.member.size shouldBe 1
+      val List(name) = typeDeclNode.member.l
+      name.code shouldBe "name"
+      name.typeFullName shouldBe "string"
+    }
+
+    "test basic ast structure for identifiers" in {
+
+      val List(person, personName, _) = cpg.identifier.l
+      person.name shouldBe "person"
+      personName.name shouldBe "personName"
+      personName.typeFullName shouldBe "string"
+    }
+  }
+
+  "when function is passed as argument" should {
+    val cpg = code("""
+        |package main
+        |
+        |func help() {
+        |   Person(Hello, "hi")
+        |}
+        |
+        |func Hello(value string) {}
+        |
+        |func Person(hello func(string), value string) {
+        |   hello(value)
+        |}
+        |""".stripMargin)
+
+    // TODO: Handle function as argument
+
+    "test basic ast structure for help" in {
+      val List(methodNode) = cpg.method.name("help").l
+      methodNode.signature shouldBe "main.help()"
+
+      val List(personCall) = cpg.call.name("Person").l
+      personCall.signature shouldBe "main.Person(ANY, string)"
+
+      val List(arg1, arg2) = personCall.argument.l
+      arg1.code shouldBe "Hello"
+      arg2.code shouldBe "\"hi\""
+    }
+
+    "test basic ast structure for Person" in {
+      val List(methodNode) = cpg.method.name("Person").l
+      methodNode.signature shouldBe "main.Person(ANY, string)"
+
+      val List(callNode) = methodNode.call.l
+      callNode.code shouldBe "hello(value)"
+      callNode.signature shouldBe "main.hello()"
+    }
+  }
   // TODO: add unit test for "sem chan int"
   //        resultErrChan := make(chan error)
   //		sem := make(chan int, concurrency)
