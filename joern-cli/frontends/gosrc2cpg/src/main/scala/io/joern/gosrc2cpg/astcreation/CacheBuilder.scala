@@ -40,6 +40,14 @@ trait CacheBuilder { this: AstCreator =>
           )
         ) {
           processFuncDecl(obj)
+          createParserNodeInfo(obj)
+        } else if (
+          json.obj
+            .contains(ParserKeys.NodeType) && obj(ParserKeys.NodeType).str == "ast.ValueSpec" && !json.obj.contains(
+            ParserKeys.NodeReferenceId
+          )
+        ) {
+          createParserNodeInfo(obj)
         }
         obj.value.values.foreach(subJson => findAndProcess(subJson))
       case arr: Arr =>
