@@ -190,7 +190,10 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val stmtAsts   = astsForStatement(createParserNodeInfo(typeSwitchStmt.json(ParserKeys.Body)))
     val id = conditionAst
       .flatMap(_.root)
-      .collectFirst { case x: NewIdentifier => identifierNode(conditionParserNode.get, x.name, x.code, x.typeFullName) }
+      .collectFirst {
+        case x: NewIdentifier => identifierNode(conditionParserNode.get, x.name, x.code, x.typeFullName)
+        case x: NewLocal      => identifierNode(conditionParserNode.get, x.name, x.code, x.typeFullName)
+      }
       .get
     val identifier = Ast(id)
     val isOp =
