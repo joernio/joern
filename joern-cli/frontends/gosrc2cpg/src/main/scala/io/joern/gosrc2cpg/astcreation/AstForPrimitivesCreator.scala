@@ -1,11 +1,12 @@
 package io.joern.gosrc2cpg.astcreation
 
-import io.joern.gosrc2cpg.parser.ParserAst.{ArrayType, BasePrimitive, BasicLit, CompositeLit, Ident, SelectorExpr}
+import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.{Ast, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 
-import scala.util.{Failure, Success, Try}
+import scala.util.{Success, Try}
 
 trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -18,13 +19,17 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     }
   }
 
-  def astForCompositeLiteralHavingTypeKey(typeNode: ParserNodeInfo, compositeLiteralNode: ParserNodeInfo): Seq[Ast] = {
+  private def astForCompositeLiteralHavingTypeKey(
+    typeNode: ParserNodeInfo,
+    compositeLiteralNode: ParserNodeInfo
+  ): Seq[Ast] = {
     typeNode.node match
       case ArrayType =>
         val elementsAsts = Try(compositeLiteralNode.json(ParserKeys.Elts)) match
           case Success(value) if !value.isNull => value.arr.flatMap(e => astForNode(createParserNodeInfo(e))).toSeq
           case _                               => Seq.empty
-        elementsAsts ++ Seq(astForArrayInitializer(compositeLiteralNode))
+        val arrayInitCallNode = astForArrayInitializer(compositeLiteralNode)
+        Seq(callAst(arrayInitCallNode, elementsAsts))
       // Handling structure initialisation by creating a call node and arguments
       case Ident =>
         astForConstructorCall(compositeLiteralNode)
@@ -35,7 +40,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
         Seq.empty
   }
 
-  protected def astForCompositeLiteral(compositeLiteralNodeInfo: ParserNodeInfo): Seq[Ast] = {
+  private def astForCompositeLiteral(compositeLiteralNodeInfo: ParserNodeInfo): Seq[Ast] = {
     Try(createParserNodeInfo(compositeLiteralNodeInfo.json(ParserKeys.Type))) match
       case Success(typeNode) =>
         astForCompositeLiteralHavingTypeKey(typeNode, compositeLiteralNodeInfo)
@@ -80,18 +85,29 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     }).toOption.getOrElse(Defines.anyTypeName)
   }
 
-  protected def astForArrayInitializer(primitive: ParserNodeInfo): Ast = {
-    val (typeFullName, typeFullNameForcode, isVariadic, _) = processTypeInfo(primitive)
-    Ast(
-      callNode(
-        primitive,
-        primitive.code,
-        Operators.arrayInitializer,
-        Operators.arrayInitializer,
-        DispatchTypes.STATIC_DISPATCH,
-        Option(Defines.empty),
-        Option(typeFullName) // The "" around the typename is eliminated
-      )
+  protected def astForBooleanLiteral(rhsParserNode: ParserNodeInfo): Seq[Ast] = {
+    rhsParserNode.node match
+      case Ident
+          // NOTE: This is very corner case where for boolean literals true and false.
+          // We don't get node of type BasicLit as is the case with other literals. Hence we have to handle it here
+          if (rhsParserNode.json(ParserKeys.Name).str == "true" || rhsParserNode
+            .json(ParserKeys.Name)
+            .str == "false") =>
+        Seq(Ast(literalNode(rhsParserNode, rhsParserNode.code, Defines.Bool)))
+      case _ =>
+        astForNode(rhsParserNode)
+  }
+
+  private def astForArrayInitializer(primitive: ParserNodeInfo): NewCall = {
+    val (typeFullName, _, _, _) = processTypeInfo(primitive)
+    callNode(
+      primitive,
+      primitive.code,
+      Operators.arrayInitializer,
+      Operators.arrayInitializer,
+      DispatchTypes.STATIC_DISPATCH,
+      Option(Defines.empty),
+      Option(typeFullName)
     )
   }
 }

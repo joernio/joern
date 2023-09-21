@@ -5,7 +5,7 @@ import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.gosrc2cpg.utils.Operator
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewIdentifier, NewLocal}
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, PropertyNames}
 import ujson.Value
 
 import scala.util.Try
@@ -79,19 +79,35 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case "|="  => Operators.assignmentOr
       case _     => Operator.unknown
     }
-    val cNode = callNode(assignStmt, assignStmt.code, op, op, DispatchTypes.STATIC_DISPATCH)
 
-    // create corresponding local node as this is known as short variable declaration operator
-    val localNodesIfIntialized =
-      if (assignStmt.json(ParserKeys.Tok).value == ":=") createLocalNodeForShortVariableDeclaration(assignStmt)
-      else Seq()
-    val arguments = assignStmt.json(ParserKeys.Lhs).arr.flatMap(astForNode).toList ::: assignStmt
+    val rhsAst = assignStmt
       .json(ParserKeys.Rhs)
       .arr
-      .flatMap(astForNode)
-      .toList
-    val callAst_ = Seq(callAst(cNode, arguments))
-    localNodesIfIntialized ++: callAst_
+      .map(createParserNodeInfo)
+      .flatMap(astForBooleanLiteral)
+    val typeFullName = Some(
+      rhsAst.headOption
+        .flatMap(_.root)
+        .map(_.properties.get(PropertyNames.TYPE_FULL_NAME).get.toString)
+        .getOrElse(Defines.anyTypeName)
+    )
+    val (lhsAst, localAst) = assignStmt
+      .json(ParserKeys.Lhs)
+      .arr
+      .map(lhsnode => {
+        val lhs = createParserNodeInfo(lhsnode)
+        // create corresponding local node as this is known as short variable declaration operator
+        val localNode =
+          if (assignStmt.json(ParserKeys.Tok).value == ":=") then Seq(astForLocalNode(lhs, typeFullName))
+          else Seq.empty
+        val lhsAst = astForNode(lhs)
+        (lhsAst, localNode)
+      })
+      .unzip
+    val arguments = lhsAst.flatten ++: rhsAst
+    val cNode     = callNode(assignStmt, assignStmt.code, op, op, DispatchTypes.STATIC_DISPATCH, None, typeFullName)
+    val callAst_  = Seq(callAst(cNode, arguments.toSeq))
+    localAst.flatten ++: callAst_
   }
 
   private def astForIncDecStatement(incDecStatement: ParserNodeInfo): Ast = {
@@ -103,27 +119,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val cNode   = callNode(incDecStatement, incDecStatement.code, op, op, DispatchTypes.STATIC_DISPATCH)
     val operand = astForNode(incDecStatement.json(ParserKeys.X))
     callAst(cNode, operand)
-  }
-
-  private def createLocalNodeForShortVariableDeclaration(assignStmt: ParserNodeInfo): Seq[Ast] = {
-
-    val lhsArr = assignStmt.json(ParserKeys.Lhs).arr
-    val rhsArr = assignStmt.json(ParserKeys.Rhs).arr
-
-    if (lhsArr.isEmpty || rhsArr.isEmpty)
-      Seq.empty
-    else {
-      (lhsArr zipAll (rhsArr, lhsArr.last, rhsArr.last))
-        .map { case (lhs, rhs) => (createParserNodeInfo(lhs), createParserNodeInfo(rhs)) }
-        .map { case (localParserNode, rhsParserNode) =>
-          val name = localParserNode.json(ParserKeys.Name).str
-          val typ  = getTypeOfToken(rhsParserNode)
-          val node = localNode(localParserNode, name, localParserNode.code, typ)
-          scope.addToScope(name, (node, typ))
-          Ast(node)
-        }
-        .toSeq
-    }
   }
 
   private def astForConditionExpression(condStmt: ParserNodeInfo, explicitArgumentIndex: Option[Int] = None): Ast = {
