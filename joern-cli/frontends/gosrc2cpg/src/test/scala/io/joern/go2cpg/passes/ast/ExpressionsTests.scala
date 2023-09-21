@@ -8,9 +8,8 @@ import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 
 class ExpressionsTests extends GoCodeToCpgSuite {
-  "AST Creation for expressions" should {
-    "be correct for nested expression" in {
-      val cpg = code("""
+  "be correct for nested expression" in {
+    val cpg = code("""
           |package main
           |func method() {
           |  var x int
@@ -21,25 +20,25 @@ class ExpressionsTests extends GoCodeToCpgSuite {
           |}
   """.stripMargin)
 
-      val localX = cpg.local.order(2)
-      localX.name.l shouldBe List("x")
-      val localY = cpg.local.order(4)
-      localY.name.l shouldBe List("y")
-      val localZ = cpg.local.order(6)
-      localZ.name.l shouldBe List("z")
-
-      inside(cpg.method.name("method").ast.isCall.name(Operators.assignment).map(new OpNodes.Assignment(_)).l) {
-        case List(assignment) =>
-          assignment.target.code shouldBe "x"
-          assignment.source.start.isCall.name.l shouldBe List(Operators.addition)
-          inside(assignment.source.astChildren.l) { case List(id1: Identifier, id2: Identifier) =>
-            id1.order shouldBe 1
-            id1.code shouldBe "y"
-            id2.order shouldBe 2
-            id2.code shouldBe "z"
-          }
-      }
-    }
+    cpg.local.name.l shouldBe List("x", "y", "z")
+    val List(assignment) =
+      cpg.method.name("method").ast.isCall.name(Operators.assignment).map(new OpNodes.Assignment(_)).l
+    assignment.target.code shouldBe "x"
+    assignment.source.start.isCall.name.l shouldBe List(Operators.addition)
+    val List(id1: Identifier, id2: Identifier) = assignment.source.astChildren.l
+    id1.order shouldBe 1
+    id1.code shouldBe "y"
+    id2.order shouldBe 2
+    id2.code shouldBe "z"
   }
 
+  "be correct for expression with literal" in {
+    val cpg = code("""
+        |package main
+        |func main() {
+        |   var a = "Pandurang" + "Patil"
+        |}
+        |""".stripMargin)
+    val List(x) = cpg.local.l
+  }
 }

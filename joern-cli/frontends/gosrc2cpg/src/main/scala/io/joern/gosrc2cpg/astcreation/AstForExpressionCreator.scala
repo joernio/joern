@@ -26,6 +26,10 @@ trait AstForExpressionCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astForBinaryExpr(binaryExpr: ParserNodeInfo): Seq[Ast] = {
+    val arguments = astForNode(binaryExpr.json(ParserKeys.X)) ++: astForNode(binaryExpr.json(ParserKeys.Y))
+    // Randomly taking first element of the LHS.
+    // TODO: We need to create proper unit tests for corner cases to be handled separately
+    var typeFullName = getTypeFullNameFromAstNode(arguments)
     val op = binaryExpr.json(ParserKeys.Op).value match {
       case "*"  => Operators.multiplication
       case "/"  => Operators.division
@@ -34,47 +38,73 @@ trait AstForExpressionCreator(implicit withSchemaValidation: ValidationMode) { t
       case "-"  => Operators.subtraction
       case "<<" => Operators.shiftLeft
       case ">>" => Operators.arithmeticShiftRight
-      case "<"  => Operators.lessThan
-      case ">"  => Operators.greaterThan
-      case "<=" => Operators.lessEqualsThan
-      case ">=" => Operators.greaterEqualsThan
-      case "&"  => Operators.and
-      case "^"  => Operators.xor
-      case "|"  => Operators.or
-      case "&&" => Operators.logicalAnd
-      case "||" => Operators.logicalOr
-      case "==" => Operators.equals
-      case "!=" => Operators.notEquals
-      case _    => Operator.unknown
+      case "<" =>
+        typeFullName = Defines.Bool
+        Operators.lessThan
+      case ">" =>
+        typeFullName = Defines.Bool
+        Operators.greaterThan
+      case "<=" =>
+        typeFullName = Defines.Bool
+        Operators.lessEqualsThan
+      case ">=" =>
+        typeFullName = Defines.Bool
+        Operators.greaterEqualsThan
+      case "&" => Operators.and
+      case "^" => Operators.xor
+      case "|" => Operators.or
+      case "&&" =>
+        typeFullName = Defines.Bool
+        Operators.logicalAnd
+      case "||" =>
+        typeFullName = Defines.Bool
+        Operators.logicalOr
+      case "==" =>
+        typeFullName = Defines.Bool
+        Operators.equals
+      case "!=" =>
+        typeFullName = Defines.Bool
+        Operators.notEquals
+      case _ => Operator.unknown
     }
-    val cNode     = createCallNodeForOperator(binaryExpr, op)
-    val arguments = astForNode(binaryExpr.json(ParserKeys.X)) ++: astForNode(binaryExpr.json(ParserKeys.Y))
+    val cNode = createCallNodeForOperator(binaryExpr, op, typeFullName = Some(typeFullName))
+
     Seq(callAst(cNode, arguments))
   }
 
   private def astForStarExpr(starExpr: ParserNodeInfo): Seq[Ast] = {
-    val operand = astForNode(starExpr.json(ParserKeys.X))
-    val typeFullName = operand.headOption
-      .flatMap(_.root)
-      .map(_.properties.get(PropertyNames.TYPE_FULL_NAME).get.toString)
-      .getOrElse(Defines.anyTypeName)
-    val cNode = createCallNodeForOperator(starExpr, Operators.indirection, typeFullName = Some(typeFullName))
+    val operand      = astForNode(starExpr.json(ParserKeys.X))
+    val typeFullName = getTypeFullNameFromAstNode(operand)
+    val cNode        = createCallNodeForOperator(starExpr, Operators.indirection, typeFullName = Some(typeFullName))
     Seq(callAst(cNode, operand))
   }
 
+  protected def getTypeFullNameFromAstNode(ast: Seq[Ast]): String = {
+    ast.headOption
+      .flatMap(_.root)
+      .map(_.properties.get(PropertyNames.TYPE_FULL_NAME).get.toString)
+      .getOrElse(Defines.anyTypeName)
+  }
+
   private def astForUnaryExpr(unaryExpr: ParserNodeInfo): Seq[Ast] = {
+    val operand      = astForNode(unaryExpr.json(ParserKeys.X))
+    var typeFullName = getTypeFullNameFromAstNode(operand)
     val operatorMethod = unaryExpr.json(ParserKeys.Op).value match {
-      case "+"     => Operators.plus
-      case "-"     => Operators.minus
-      case "*"     => Operators.indirection
-      case "&"     => Operators.addressOf
-      case "!"     => Operators.logicalNot
+      case "+" => Operators.plus
+      case "-" => Operators.minus
+      case "*" =>
+        typeFullName = typeFullName.stripPrefix("*")
+        Operators.indirection
+      case "&" =>
+        typeFullName = "*" + typeFullName
+        Operators.addressOf
+      case "!" =>
+        typeFullName = Defines.Bool
+        Operators.logicalNot
       case "range" => Operators.range
       case _       => Operator.unknown
     }
-
-    val cNode   = createCallNodeForOperator(unaryExpr, operatorMethod)
-    val operand = astForNode(unaryExpr.json(ParserKeys.X))
+    val cNode = createCallNodeForOperator(unaryExpr, operatorMethod, typeFullName = Some(typeFullName))
     Seq(callAst(cNode, operand))
   }
 
@@ -88,13 +118,9 @@ trait AstForExpressionCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private def processIndexIdentifier(identNode: Value): (Seq[Ast], String) = {
     val identifierAst = astForNode(identNode)
-    val identifierTypeFullName =
-      identifierAst.headOption
-        .flatMap(_.root)
-        .map(_.properties.get(PropertyNames.TYPE_FULL_NAME).get.toString)
-        .getOrElse(Defines.anyTypeName)
-        .stripPrefix("*")
-        .stripPrefix("[]")
+    val identifierTypeFullName = getTypeFullNameFromAstNode(identifierAst)
+      .stripPrefix("*")
+      .stripPrefix("[]")
     (identifierAst, identifierTypeFullName)
   }
 //

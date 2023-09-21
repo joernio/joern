@@ -4,7 +4,7 @@ import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, PropertyNames}
 import ujson.Value
 
 import scala.util.{Success, Try}
@@ -45,36 +45,62 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
       case Success(typeJson) =>
         val typeInfoNode            = createParserNodeInfo(typeJson)
         val (typeFullName, _, _, _) = processTypeInfo(typeInfoNode)
-        typeFullName
-      case _ => Defines.anyTypeName
+        Some(typeFullName)
+      case _ => None
 
-    val localNodes = valueSpec.json(ParserKeys.Names).arr.flatMap { parserNode =>
-      val localParserNode = createParserNodeInfo(parserNode)
-      val name            = parserNode(ParserKeys.Name).str
-
-      val node = localNode(localParserNode, name, localParserNode.code, typeFullName)
-      scope.addToScope(name, (node, typeFullName))
-      val identifierAst = if (valueSpec.json(ParserKeys.Values).isNull) then astForNode(localParserNode) else Seq.empty
-      identifierAst ++: Seq(Ast(node))
-    }
-
-    if (!valueSpec.json(ParserKeys.Values).isNull) {
-      val callNodes =
-        (valueSpec.json(ParserKeys.Names).arr.toList zip valueSpec.json(ParserKeys.Values).arr.toList)
-          .map { case (lhs, rhs) => (createParserNodeInfo(lhs), createParserNodeInfo(rhs)) }
-          .map { case (lhsParserNode, rhsParserNode) =>
-            val cNode = callNode(
-              rhsParserNode,
-              lhsParserNode.code + rhsParserNode.code,
-              Operators.assignment,
-              Operators.assignment,
-              DispatchTypes.STATIC_DISPATCH
-            )
-            val arguments = astForNode(lhsParserNode) ++: astForNode(rhsParserNode)
-            callAst(cNode, arguments)
+    Try(valueSpec.json(ParserKeys.Values).arr.toList) match
+      case Success(_) =>
+        val (assCallAsts, localAsts) =
+          (valueSpec.json(ParserKeys.Names).arr.toList zip valueSpec.json(ParserKeys.Values).arr.toList)
+            .map { case (lhs, rhs) => (createParserNodeInfo(lhs), createParserNodeInfo(rhs)) }
+            .map { case (lhsParserNode, rhsParserNode) =>
+              astForAssignmentCallNode(lhsParserNode, rhsParserNode, typeFullName)
+            }
+            .unzip
+        localAsts ++: assCallAsts
+      case _ =>
+        valueSpec
+          .json(ParserKeys.Names)
+          .arr
+          .flatMap { parserNode =>
+            val localParserNode = createParserNodeInfo(parserNode)
+            Seq(astForLocalNode(localParserNode, typeFullName)) ++: astForNode(localParserNode)
           }
-      localNodes.toList ::: callNodes
-    } else
-      localNodes.toList
+          .toSeq
+
+  }
+
+  private def astForAssignmentCallNode(
+    lhsParserNode: ParserNodeInfo,
+    rhsParserNode: ParserNodeInfo,
+    typeFullName: Option[String]
+  ): (Ast, Ast) = {
+    val rhsAst = astForBooleanLiteral(rhsParserNode)
+    val rhsTypeFullName = typeFullName.getOrElse(
+      rhsAst.headOption
+        .flatMap(_.root)
+        .map(_.properties.get(PropertyNames.TYPE_FULL_NAME).get.toString)
+        .getOrElse(Defines.anyTypeName)
+    )
+    val localAst  = astForLocalNode(lhsParserNode, Some(rhsTypeFullName))
+    val lhsAst    = astForNode(lhsParserNode)
+    val arguments = lhsAst ++: rhsAst
+    val cNode = callNode(
+      rhsParserNode,
+      lhsParserNode.code + rhsParserNode.code,
+      Operators.assignment,
+      Operators.assignment,
+      DispatchTypes.STATIC_DISPATCH,
+      None,
+      Some(rhsTypeFullName)
+    )
+    (callAst(cNode, arguments), localAst)
+  }
+
+  protected def astForLocalNode(localParserNode: ParserNodeInfo, typeFullName: Option[String]): Ast = {
+    val name = localParserNode.json(ParserKeys.Name).str
+    val node = localNode(localParserNode, name, localParserNode.code, typeFullName.getOrElse(Defines.anyTypeName))
+    scope.addToScope(name, (node, typeFullName.getOrElse(Defines.anyTypeName)))
+    Ast(node)
   }
 }

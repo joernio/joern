@@ -1,203 +1,111 @@
 package io.joern.go2cpg.passes.ast
 
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 
+import java.io.File
 class ArraysAndMapTests extends GoCodeToCpgSuite {
-  "AST Creation for Array Initialization" should {
-    "be correct when a int array is declared" in {
-      val cpg = code("""
-          |package main
-          |func main() {
-          |	var a []int
-          |}
-          |""".stripMargin)
+
+  "Be correct when a int array is declared" should {
+    val cpg = code("""
+        |package main
+        |func main() {
+        |	var a []int
+        |}
+        |""".stripMargin)
+    "check LOCAL node" in {
       cpg.local("a").size shouldBe 1
+      val List(x) = cpg.local("a").l
+      x.typeFullName shouldBe "[]int"
+    }
+
+    "Check IDENTIFIER node" in {
       cpg.identifier("a").size shouldBe 1
       val List(x) = cpg.identifier("a").l
-      x.code shouldBe "a"
-    }
-    "be correct when a int array is initialized" in {
-      val cpg = code("""
-          |package main
-          |func main() {
-          |	a := [5]int{1,2}
-          |}
-          |""".stripMargin)
-
-      val List(assignmentCallNode) = cpg.call(Operators.assignment).lineNumber(4).l
-
-      val List(arrayInitializerCallNode) = assignmentCallNode.astChildren.isCall.l
-      assignmentCallNode.name shouldBe Operators.assignment
-      assignmentCallNode.code shouldBe "a := [5]int{1,2}"
-
-      arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
-      arrayInitializerCallNode.code shouldBe "[5]int{1,2}"
-      arrayInitializerCallNode.typeFullName shouldBe "[]int"
-
-      assignmentCallNode.astChildren.isLiteral.l.size shouldBe 2
-      val List(literal1, literal2) = assignmentCallNode.astChildren.isLiteral.l
-      literal1.code shouldBe "1"
-      literal2.code shouldBe "2"
-      literal1.typeFullName shouldBe "int"
-      literal2.typeFullName shouldBe "int"
-
-      assignmentCallNode.astChildren.isIdentifier.l.size shouldBe 1
-      val List(identifierNode) = assignmentCallNode.astChildren.isIdentifier.l.l
-      identifierNode.code shouldBe "a"
-    }
-
-    "be correct when a string array is initialized" in {
-      val cpg = code("""
-          |package main
-          |func main() {
-          |	a := [5]string{"hello","world"}
-          |}
-          |""".stripMargin)
-
-      val List(assignmentCallNode) = cpg.call(Operators.assignment).lineNumber(4).l
-
-      val List(arrayInitializerCallNode) = assignmentCallNode.astChildren.isCall.l
-      assignmentCallNode.name shouldBe Operators.assignment
-      assignmentCallNode.code shouldBe "a := [5]string{\"hello\",\"world\"}"
-
-      arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
-      arrayInitializerCallNode.code shouldBe "[5]string{\"hello\",\"world\"}"
-      arrayInitializerCallNode.typeFullName shouldBe "[]string"
-
-      assignmentCallNode.astChildren.isLiteral.l.size shouldBe 2
-      val List(literal1, literal2) = assignmentCallNode.astChildren.isLiteral.l
-      literal1.code shouldBe "\"hello\""
-      literal2.code shouldBe "\"world\""
-      literal1.typeFullName shouldBe "string"
-      literal2.typeFullName shouldBe "string"
-
-      assignmentCallNode.astChildren.isIdentifier.l.size shouldBe 1
-      val List(identifierNode) = assignmentCallNode.astChildren.isIdentifier.l
-      identifierNode.code shouldBe "a"
-    }
-
-    "be correct when a dynamic length array is initialized" in {
-      val cpg = code("""
-          |package main
-          |func main() {
-          |	a := [...]int{1,2}
-          |}
-          |""".stripMargin)
-
-      val List(assignmentCallNode)       = cpg.call(Operators.assignment).lineNumber(4).l
-      val List(arrayInitializerCallNode) = assignmentCallNode.astChildren.isCall.l
-      assignmentCallNode.name shouldBe Operators.assignment
-      assignmentCallNode.code shouldBe "a := [...]int{1,2}"
-
-      arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
-      arrayInitializerCallNode.code shouldBe "[...]int{1,2}"
-      arrayInitializerCallNode.typeFullName shouldBe "[]int"
-
-      assignmentCallNode.astChildren.isLiteral.l.size shouldBe 2
-      val List(literal1, literal2) = assignmentCallNode.astChildren.isLiteral.l
-      literal1.code shouldBe "1"
-      literal2.code shouldBe "2"
-      literal1.typeFullName shouldBe "int"
-      literal2.typeFullName shouldBe "int"
-
-      assignmentCallNode.astChildren.isIdentifier.l.size shouldBe 1
-      val List(identifierNode) = assignmentCallNode.astChildren.isIdentifier.l
-      identifierNode.code shouldBe "a"
-    }
-
-    "be correct when an empty array is initialized" in {
-      val cpg = code("""
-          |package main
-          |func main() {
-          |	a := [2]string{}
-          |}
-          |""".stripMargin)
-
-      val List(assignmentCallNode)       = cpg.call(Operators.assignment).lineNumber(4).l
-      val List(arrayInitializerCallNode) = assignmentCallNode.astChildren.isCall.l
-      assignmentCallNode.name shouldBe Operators.assignment
-      assignmentCallNode.code shouldBe "a := [2]string{}"
-
-      arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
-      arrayInitializerCallNode.code shouldBe "[2]string{}"
-      arrayInitializerCallNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      arrayInitializerCallNode.typeFullName shouldBe "[]string"
-
-      assignmentCallNode.astChildren.isLiteral.l.size shouldBe 0
-
-      assignmentCallNode.astChildren.isIdentifier.l.size shouldBe 1
-      val List(identifierNode) = assignmentCallNode.astChildren.isIdentifier.l
-      identifierNode.code shouldBe "a"
-
-    }
-
-    "be correct when initialized using array length" in {
-      val cpg = code("""
-          |package main
-          |func main() {
-          |	var a[2]int
-          |}
-          |""".stripMargin)
-
-      cpg.local.size shouldBe 1
-      val List(localNode) = cpg.local.l
-      localNode.code shouldBe "a"
-      localNode.lineNumber shouldBe Some(4)
-      localNode.typeFullName shouldBe "[]int"
-    }
-
-    "be correct when global variable is initialized using array length" in {
-      val cpg = code("""
-          |package main
-          |var a[2]int
-          |func main() {
-          |}
-          |""".stripMargin)
-
-      cpg.local.size shouldBe 1
-      val List(localNode) = cpg.local.l
-      localNode.code shouldBe "a"
-      localNode.lineNumber shouldBe Some(3)
-      localNode.typeFullName shouldBe "[]int"
-
-    }
-
-    // Might need to change comparisons of this test case
-    "be correct when a global array is initialized" in {
-      val cpg = code("""
-          |package main
-          |var a = [5]int{1,2}
-          |func main() {
-          |}
-          |""".stripMargin)
-
-      val List(assignmentCallNode)       = cpg.call(Operators.assignment).lineNumber(3).l
-      val List(arrayInitializerCallNode) = assignmentCallNode.astChildren.isCall.l
-      assignmentCallNode.name shouldBe Operators.assignment
-
-      arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
-      arrayInitializerCallNode.code shouldBe "[5]int{1,2}"
-      arrayInitializerCallNode.typeFullName shouldBe "[]int"
-
-      assignmentCallNode.astChildren.isLiteral.l.size shouldBe 2
-      val List(literal1, literal2) = assignmentCallNode.astChildren.isLiteral.l
-      literal1.code shouldBe "1"
-      literal2.code shouldBe "2"
-      literal1.typeFullName shouldBe "int"
-      literal2.typeFullName shouldBe "int"
-
-      assignmentCallNode.astChildren.isIdentifier.l.size shouldBe 1
-      val List(identifierNode) = assignmentCallNode.astChildren.isIdentifier.l
-      identifierNode.code shouldBe "a"
+      x.typeFullName shouldBe "[]int"
     }
   }
 
-  "code field for assignment operator" should {
-    "be correct" ignore {
+  "Be correct when a int array is declared with array length" should {
+    val cpg = code("""
+        |package main
+        |func main() {
+        |	var a [2]int
+        |}
+        |""".stripMargin)
+    "check LOCAL node" in {
+      cpg.local("a").size shouldBe 1
+      val List(x) = cpg.local("a").l
+      x.typeFullName shouldBe "[]int"
+    }
+
+    "Check IDENTIFIER node" in {
+      cpg.identifier("a").size shouldBe 1
+      val List(x) = cpg.identifier("a").l
+      x.typeFullName shouldBe "[]int"
+    }
+  }
+
+  "Be correct when a int array is declared with array length as global variable" should {
+    val cpg = code("""
+        |package main
+        |var a [2]int
+        |func main() {
+        |}
+        |""".stripMargin)
+    "check LOCAL node" in {
+      cpg.local("a").size shouldBe 1
+      val List(x) = cpg.local("a").l
+      x.typeFullName shouldBe "[]int"
+    }
+
+    "Check IDENTIFIER node" in {
+      cpg.identifier("a").size shouldBe 1
+      val List(x) = cpg.identifier("a").l
+      x.typeFullName shouldBe "[]int"
+    }
+  }
+
+  "Be correct when a int array is declared and initialised with array length as global variable" should {
+    val cpg = code("""
+        |package main
+        |var a = [5]int{1,2}
+        |func main() {
+        |}
+        |""".stripMargin)
+
+    "check LOCAL node" in {
+      cpg.local("a").size shouldBe 1
+      val List(x) = cpg.local("a").l
+      x.typeFullName shouldBe "[]int"
+    }
+
+    "Check IDENTIFIER node" in {
+      cpg.identifier("a").size shouldBe 1
+      val List(x) = cpg.identifier("a").l
+      x.typeFullName shouldBe "[]int"
+    }
+
+    "Check Array initializer CALL node" in {
+      val List(x) = cpg.call(Operators.arrayInitializer).l
+      x.typeFullName shouldBe "[]int"
+      val List(arg1: Literal, arg2: Literal) = x.argument.l: @unchecked
+      arg1.code shouldBe "1"
+      arg2.code shouldBe "2"
+    }
+
+    "Check assignment call node" in {
+      val List(assignmentCallNode) = cpg.call(Operators.assignment).l
+      assignmentCallNode.typeFullName shouldBe "[]int"
+      val List(arg1: Identifier, arg2: Call) = assignmentCallNode.argument.l: @unchecked
+      arg1.name shouldBe "a"
+      arg1.typeFullName shouldBe "[]int"
+      arg2.typeFullName shouldBe "[]int"
+    }
+
+    "be correct with code field" ignore {
       val cpg = code("""
           |package main
           |var a = [5]int{1,2}
@@ -210,7 +118,159 @@ class ArraysAndMapTests extends GoCodeToCpgSuite {
     }
   }
 
-  "be correct when array of struct within package same file" in {
+  "Be correct when a int array is initialized" should {
+    val cpg = code("""
+        |package main
+        |func main() {
+        |	a := [5]int{1,2}
+        |}
+        |""".stripMargin)
+
+    "check LOCAL node" in {
+      cpg.local("a").size shouldBe 1
+      val List(x) = cpg.local("a").l
+      x.typeFullName shouldBe "[]int"
+    }
+
+    "Check IDENTIFIER node" in {
+      cpg.identifier("a").size shouldBe 1
+      val List(x) = cpg.identifier("a").l
+      x.typeFullName shouldBe "[]int"
+    }
+
+    "Check Array initializer CALL node" in {
+      val List(x) = cpg.call(Operators.arrayInitializer).l
+      x.typeFullName shouldBe "[]int"
+      val List(arg1: Literal, arg2: Literal) = x.argument.l: @unchecked
+      arg1.code shouldBe "1"
+      arg2.code shouldBe "2"
+    }
+
+    "Check assignment call node" in {
+      val List(assignmentCallNode) = cpg.call(Operators.assignment).lineNumber(4).l
+      assignmentCallNode.typeFullName shouldBe "[]int"
+      val List(arg1: Identifier, arg2: Call) = assignmentCallNode.argument.l: @unchecked
+      arg1.name shouldBe "a"
+      arg1.typeFullName shouldBe "[]int"
+      arg2.typeFullName shouldBe "[]int"
+    }
+  }
+
+  "Be correct when a string array is initialized" should {
+    val cpg = code("""
+        |package main
+        |func main() {
+        |	a := [5]string{"hello","world"}
+        |}
+        |""".stripMargin)
+
+    "check LOCAL node" in {
+      cpg.local("a").size shouldBe 1
+      val List(x) = cpg.local("a").l
+      x.typeFullName shouldBe "[]string"
+    }
+
+    "Check IDENTIFIER node" in {
+      cpg.identifier("a").size shouldBe 1
+      val List(x) = cpg.identifier("a").l
+      x.typeFullName shouldBe "[]string"
+    }
+
+    "Check Array initializer CALL node" in {
+      val List(x) = cpg.call(Operators.arrayInitializer).l
+      x.typeFullName shouldBe "[]string"
+      val List(arg1: Literal, arg2: Literal) = x.argument.l: @unchecked
+      arg1.code shouldBe "\"hello\""
+      arg2.code shouldBe "\"world\""
+    }
+
+    "Check assignment call node" in {
+      val List(assignmentCallNode) = cpg.call(Operators.assignment).lineNumber(4).l
+      assignmentCallNode.typeFullName shouldBe "[]string"
+      val List(arg1: Identifier, arg2: Call) = assignmentCallNode.argument.l: @unchecked
+      arg1.name shouldBe "a"
+      arg1.typeFullName shouldBe "[]string"
+      arg2.typeFullName shouldBe "[]string"
+    }
+  }
+
+  "Be correct when a dynamic length int array is initialized" should {
+    val cpg = code("""
+        |package main
+        |func main() {
+        |	a := [...]int{1,2}
+        |}
+        |""".stripMargin)
+
+    "check LOCAL node" in {
+      cpg.local("a").size shouldBe 1
+      val List(x) = cpg.local("a").l
+      x.typeFullName shouldBe "[]int"
+    }
+
+    "Check IDENTIFIER node" in {
+      cpg.identifier("a").size shouldBe 1
+      val List(x) = cpg.identifier("a").l
+      x.typeFullName shouldBe "[]int"
+    }
+
+    "Check Array initializer CALL node" in {
+      val List(x) = cpg.call(Operators.arrayInitializer).l
+      x.typeFullName shouldBe "[]int"
+      val List(arg1: Literal, arg2: Literal) = x.argument.l: @unchecked
+      arg1.code shouldBe "1"
+      arg2.code shouldBe "2"
+    }
+
+    "Check assignment call node" in {
+      val List(assignmentCallNode) = cpg.call(Operators.assignment).lineNumber(4).l
+      assignmentCallNode.typeFullName shouldBe "[]int"
+      assignmentCallNode.code shouldBe "a := [...]int{1,2}"
+
+      val List(arg1: Identifier, arg2: Call) = assignmentCallNode.argument.l: @unchecked
+      arg1.name shouldBe "a"
+      arg1.typeFullName shouldBe "[]int"
+      arg2.typeFullName shouldBe "[]int"
+    }
+  }
+
+  "Be correct when an empty array is initialized" should {
+    val cpg = code("""
+        |package main
+        |func main() {
+        |	a := [5]string{}
+        |}
+        |""".stripMargin)
+
+    "check LOCAL node" in {
+      cpg.local("a").size shouldBe 1
+      val List(x) = cpg.local("a").l
+      x.typeFullName shouldBe "[]string"
+    }
+
+    "Check IDENTIFIER node" in {
+      cpg.identifier("a").size shouldBe 1
+      val List(x) = cpg.identifier("a").l
+      x.typeFullName shouldBe "[]string"
+    }
+
+    "Check Array initializer CALL node" in {
+      val List(x) = cpg.call(Operators.arrayInitializer).l
+      x.typeFullName shouldBe "[]string"
+      x.argument.size shouldBe 0
+    }
+
+    "Check assignment call node" in {
+      val List(assignmentCallNode) = cpg.call(Operators.assignment).lineNumber(4).l
+      assignmentCallNode.typeFullName shouldBe "[]string"
+      val List(arg1: Identifier, arg2: Call) = assignmentCallNode.argument.l: @unchecked
+      arg1.name shouldBe "a"
+      arg1.typeFullName shouldBe "[]string"
+      arg2.typeFullName shouldBe "[]string"
+    }
+  }
+
+  "be correct when array of struct within package same file" should {
     val cpg = code("""
         |package main
         |
@@ -226,26 +286,45 @@ class ArraysAndMapTests extends GoCodeToCpgSuite {
         |}
         |""".stripMargin)
 
-    cpg.file.size shouldBe 2
+    "check LOCAL node" in {
+      cpg.local.size shouldBe 3
+      val List(a, b, c) = cpg.local.l
+      a.typeFullName shouldBe "main.Node"
+      b.typeFullName shouldBe "main.Node"
+      c.typeFullName shouldBe "[]main.Node"
+    }
 
-    val List(assignmentCallNode) = cpg.call(Operators.assignment).lineNumber(12).l
+    "Check IDENTIFIER node" in {
+      cpg.identifier.size shouldBe 5
+      val List(a, b, c, d, e) = cpg.identifier.l
+      a.typeFullName shouldBe "main.Node"
+      b.typeFullName shouldBe "main.Node"
+      c.typeFullName shouldBe "[]main.Node"
+      d.typeFullName shouldBe "main.Node"
+      e.typeFullName shouldBe "main.Node"
+    }
 
-    val List(arrayInitializerCallNode) = assignmentCallNode.astChildren.isCall.l
-    assignmentCallNode.name shouldBe Operators.assignment
-    assignmentCallNode.code shouldBe "c := []Node{a, b}"
+    "Check Array initializer CALL node" in {
+      val List(x) = cpg.call(Operators.arrayInitializer).l
+      x.typeFullName shouldBe "[]main.Node"
+      val List(arg1: Identifier, arg2: Identifier) = x.argument.l: @unchecked
+      arg1.name shouldBe "a"
+      arg2.name shouldBe "b"
+    }
 
-    arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
-    arrayInitializerCallNode.code shouldBe "[]Node{a, b}"
-    arrayInitializerCallNode.typeFullName shouldBe "[]main.Node"
-
-    assignmentCallNode.astChildren.isIdentifier.l.size shouldBe 3
-    val List(identifier1, identifier2, identifier3) = assignmentCallNode.astChildren.isIdentifier.l
-    identifier1.code shouldBe "c"
-    identifier2.code shouldBe "a"
-    identifier3.code shouldBe "b"
+    "Check assignment call node" in {
+      val List(first, sec, third) = cpg.call(Operators.assignment).l
+      first.typeFullName shouldBe "main.Node"
+      sec.typeFullName shouldBe "main.Node"
+      third.typeFullName shouldBe "[]main.Node"
+      val List(arg1: Identifier, arg2: Call) = third.argument.l: @unchecked
+      arg1.name shouldBe "c"
+      arg1.typeFullName shouldBe "[]main.Node"
+      arg2.typeFullName shouldBe "[]main.Node"
+    }
   }
 
-  "be correct when array of struct within package but different file" in {
+  "be correct when array of struct within package but different file" should {
     val cpg = code(
       """
         |package main
@@ -271,76 +350,120 @@ class ArraysAndMapTests extends GoCodeToCpgSuite {
         "second.go"
       )
 
-    cpg.file.size shouldBe 3
+    "check FILE Nodes" in {
+      cpg.file.size shouldBe 3
+    }
 
-    val List(assignmentCallNode) = cpg.call(Operators.assignment).lineNumber(8).l
+    "check LOCAL node" in {
+      cpg.local.size shouldBe 3
+      val List(a, b, c) = cpg.local.l
+      a.typeFullName shouldBe "main.Node"
+      b.typeFullName shouldBe "main.Node"
+      c.typeFullName shouldBe "[]main.Node"
+    }
 
-    val List(arrayInitializerCallNode) = assignmentCallNode.astChildren.isCall.l
-    assignmentCallNode.name shouldBe Operators.assignment
-    assignmentCallNode.code shouldBe "c := []Node{a, b}"
+    "Check IDENTIFIER node" in {
+      cpg.identifier.size shouldBe 5
+      val List(a, b, c, d, e) = cpg.identifier.l
+      a.typeFullName shouldBe "main.Node"
+      b.typeFullName shouldBe "main.Node"
+      c.typeFullName shouldBe "[]main.Node"
+      d.typeFullName shouldBe "main.Node"
+      e.typeFullName shouldBe "main.Node"
+    }
 
-    arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
-    arrayInitializerCallNode.code shouldBe "[]Node{a, b}"
-    arrayInitializerCallNode.typeFullName shouldBe "[]main.Node"
+    "Check Array initializer CALL node" in {
+      val List(x) = cpg.call(Operators.arrayInitializer).l
+      x.typeFullName shouldBe "[]main.Node"
+      val List(arg1: Identifier, arg2: Identifier) = x.argument.l: @unchecked
+      arg1.name shouldBe "a"
+      arg2.name shouldBe "b"
+    }
 
-    assignmentCallNode.astChildren.isIdentifier.l.size shouldBe 3
-    val List(identifier1, identifier2, identifier3) = assignmentCallNode.astChildren.isIdentifier.l
-    identifier1.code shouldBe "c"
-    identifier2.code shouldBe "a"
-    identifier3.code shouldBe "b"
+    "Check assignment call node" in {
+      val List(first, sec, third) = cpg.call(Operators.assignment).l
+      first.typeFullName shouldBe "main.Node"
+      sec.typeFullName shouldBe "main.Node"
+      third.typeFullName shouldBe "[]main.Node"
+      val List(arg1: Identifier, arg2: Call) = third.argument.l: @unchecked
+      arg1.name shouldBe "c"
+      arg1.typeFullName shouldBe "[]main.Node"
+      arg2.typeFullName shouldBe "[]main.Node"
+    }
   }
 
-  "be correct when array of struct in different package but same project" in {
-
+  "be correct when array of struct in different package but same project" should {
     val cpg = code(
       """
-        |package mypackage
-        |
-        |type Node struct {
-        |name string
-        |}
-        |
+        |module joern.io/sample
+        |go 1.18
         |""".stripMargin,
-      "first.go"
+      "go.mod"
+    ).moreCode(
+      """
+        |package fpkg
+        |type Node struct {
+        |  name string
+        |}
+        |""".stripMargin,
+      Seq("fpkg", "lib.go").mkString(File.separator)
+    ).moreCode(
+      """
+        |package main
+        |import "joern.io/sample/fpkg"
+        |func main() {
+        | var a fpkg.Node = fpkg.Node{"value1"}
+        | var b fpkg.Node = fpkg.Node{"value2"}
+        |
+        | c := []fpkg.Node{a, b}
+        |}
+        |""".stripMargin,
+      "main.go"
     )
-      .moreCode(
-        """
-          |package main
-          |
-          |import (
-          | "mypackage"
-          |)
-          |
-          |func main() {
-          | var a mypackage.Node = mypackage.Node{"value1"}
-          | var b mypackage.Node = mypackage.Node{"value2"}
-          |
-          | c := []mypackage.Node{a, b}
-          |}
-          |""".stripMargin,
-        "second.go"
-      )
 
-    cpg.file.size shouldBe 3
+    "check FILE Nodes" in {
+      cpg.file.size shouldBe 3
+    }
 
-    val List(assignmentCallNode) = cpg.call(Operators.assignment).lineNumber(12).l
+    "check LOCAL node" in {
+      cpg.local.size shouldBe 3
+      val List(a, b, c) = cpg.local.l
+      a.typeFullName shouldBe "joern.io/sample/fpkg.Node"
+      b.typeFullName shouldBe "joern.io/sample/fpkg.Node"
+      c.typeFullName shouldBe "[]joern.io/sample/fpkg.Node"
+    }
 
-    val List(arrayInitializerCallNode) = assignmentCallNode.astChildren.isCall.l
-    assignmentCallNode.name shouldBe Operators.assignment
-    assignmentCallNode.code shouldBe "c := []mypackage.Node{a, b}"
+    "Check IDENTIFIER node" in {
+      cpg.identifier.size shouldBe 5
+      val List(a, b, c, d, e) = cpg.identifier.l
+      a.typeFullName shouldBe "joern.io/sample/fpkg.Node"
+      b.typeFullName shouldBe "joern.io/sample/fpkg.Node"
+      c.typeFullName shouldBe "[]joern.io/sample/fpkg.Node"
+      d.typeFullName shouldBe "joern.io/sample/fpkg.Node"
+      e.typeFullName shouldBe "joern.io/sample/fpkg.Node"
+    }
 
-    arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
-    arrayInitializerCallNode.code shouldBe "[]mypackage.Node{a, b}"
-    arrayInitializerCallNode.typeFullName shouldBe "[]mypackage.Node"
+    "Check Array initializer CALL node" in {
+      val List(x) = cpg.call(Operators.arrayInitializer).l
+      x.typeFullName shouldBe "[]joern.io/sample/fpkg.Node"
+      val List(arg1: Identifier, arg2: Identifier) = x.argument.l: @unchecked
+      arg1.name shouldBe "a"
+      arg2.name shouldBe "b"
+    }
 
-    assignmentCallNode.astChildren.isIdentifier.l.size shouldBe 3
-    val List(identifier1, identifier2, identifier3) = assignmentCallNode.astChildren.isIdentifier.l
-    identifier1.code shouldBe "c"
-    identifier2.code shouldBe "a"
-    identifier3.code shouldBe "b"
+    "Check assignment call node" in {
+      val List(first, sec, third) = cpg.call(Operators.assignment).l
+      first.typeFullName shouldBe "joern.io/sample/fpkg.Node"
+      sec.typeFullName shouldBe "joern.io/sample/fpkg.Node"
+      third.typeFullName shouldBe "[]joern.io/sample/fpkg.Node"
+      val List(arg1: Identifier, arg2: Call) = third.argument.l: @unchecked
+      arg1.name shouldBe "c"
+      arg1.typeFullName shouldBe "[]joern.io/sample/fpkg.Node"
+      arg2.typeFullName shouldBe "[]joern.io/sample/fpkg.Node"
+    }
   }
 
-  "be correct when when a int array id initialized having pointer" in {
+  "be correct when when a int array id initialized having pointer" should {
     val cpg = code("""
         |package main
         |func main() {
@@ -350,27 +473,47 @@ class ArraysAndMapTests extends GoCodeToCpgSuite {
         |}
         |""".stripMargin)
 
-    val List(assignmentCallNode) = cpg.call(Operators.assignment).lineNumber(6).l
+    "check LOCAL node" in {
+      cpg.local.size shouldBe 3
+      val List(a, b, c) = cpg.local.l
+      a.typeFullName shouldBe "int"
+      b.typeFullName shouldBe "int"
+      c.typeFullName shouldBe "[]*int"
+    }
 
-    val List(arrayInitializerCallNode) = assignmentCallNode.astChildren.isCall.name(Operators.arrayInitializer).l
-    assignmentCallNode.name shouldBe Operators.assignment
-    assignmentCallNode.code shouldBe "c := [5]*int{&a,&b}"
+    "Check IDENTIFIER node" in {
+      cpg.identifier.size shouldBe 5
+      val List(a, b, c, d, e) = cpg.identifier.l
+      a.typeFullName shouldBe "int"
+      b.typeFullName shouldBe "int"
+      c.typeFullName shouldBe "[]*int"
+      d.typeFullName shouldBe "int"
+      e.typeFullName shouldBe "int"
+    }
 
-    arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
-    arrayInitializerCallNode.code shouldBe "[5]*int{&a,&b}"
-    arrayInitializerCallNode.typeFullName shouldBe "[]*int"
+    "Check Array initializer CALL node" in {
+      val List(x) = cpg.call(Operators.arrayInitializer).l
+      x.typeFullName shouldBe "[]*int"
+      val List(arg1: Call, arg2: Call) = x.argument.l: @unchecked
+      arg1.name shouldBe Operators.addressOf
+      arg1.typeFullName shouldBe "*int"
+      arg2.name shouldBe Operators.addressOf
+      arg2.typeFullName shouldBe "*int"
+    }
 
-    assignmentCallNode.astChildren.isCall.name(Operators.addressOf).l.size shouldBe 2
-    val List(call1, call2) = assignmentCallNode.astChildren.isCall.name(Operators.addressOf).l
-    call1.code shouldBe "&a"
-    call2.code shouldBe "&b"
-
-    assignmentCallNode.astChildren.isIdentifier.l.size shouldBe 1
-    val List(identifierNode) = assignmentCallNode.astChildren.isIdentifier.l.l
-    identifierNode.code shouldBe "c"
+    "Check assignment call node" in {
+      val List(first, sec, third) = cpg.call(Operators.assignment).l
+      first.typeFullName shouldBe "int"
+      sec.typeFullName shouldBe "int"
+      third.typeFullName shouldBe "[]*int"
+      val List(arg1: Identifier, arg2: Call) = third.argument.l: @unchecked
+      arg1.name shouldBe "c"
+      arg1.typeFullName shouldBe "[]*int"
+      arg2.typeFullName shouldBe "[]*int"
+    }
   }
 
-  "be correct when array of struct having pointer within package same file" in {
+  "be correct when array of struct having pointer within package same file" should {
     val cpg = code("""
         |package main
         |
@@ -386,24 +529,44 @@ class ArraysAndMapTests extends GoCodeToCpgSuite {
         |}
         |""".stripMargin)
 
-    val List(assignmentCallNode) = cpg.call(Operators.assignment).lineNumber(12).l
+    "check LOCAL node" in {
+      cpg.local.size shouldBe 3
+      val List(a, b, c) = cpg.local.l
+      a.typeFullName shouldBe "main.Node"
+      b.typeFullName shouldBe "main.Node"
+      c.typeFullName shouldBe "[]*main.Node"
+    }
 
-    val List(arrayInitializerCallNode) = assignmentCallNode.astChildren.isCall.name(Operators.arrayInitializer).l
-    assignmentCallNode.name shouldBe Operators.assignment
-    assignmentCallNode.code shouldBe "c := []*Node{&a,&b}"
+    "Check IDENTIFIER node" in {
+      cpg.identifier.size shouldBe 5
+      val List(a, b, c, d, e) = cpg.identifier.l
+      a.typeFullName shouldBe "main.Node"
+      b.typeFullName shouldBe "main.Node"
+      c.typeFullName shouldBe "[]*main.Node"
+      d.typeFullName shouldBe "main.Node"
+      e.typeFullName shouldBe "main.Node"
+    }
 
-    arrayInitializerCallNode.name shouldBe Operators.arrayInitializer
-    arrayInitializerCallNode.code shouldBe "[]*Node{&a,&b}"
-    arrayInitializerCallNode.typeFullName shouldBe "[]*main.Node"
+    "Check Array initializer CALL node" in {
+      val List(x) = cpg.call(Operators.arrayInitializer).l
+      x.typeFullName shouldBe "[]*main.Node"
+      val List(arg1: Call, arg2: Call) = x.argument.l: @unchecked
+      arg1.name shouldBe Operators.addressOf
+      arg1.typeFullName shouldBe "*main.Node"
+      arg2.name shouldBe Operators.addressOf
+      arg2.typeFullName shouldBe "*main.Node"
+    }
 
-    assignmentCallNode.astChildren.isCall.name(Operators.addressOf).l.size shouldBe 2
-    val List(call1, call2) = assignmentCallNode.astChildren.isCall.name(Operators.addressOf).l
-    call1.code shouldBe "&a"
-    call2.code shouldBe "&b"
-
-    assignmentCallNode.astChildren.isIdentifier.l.size shouldBe 1
-    val List(identifierNode) = assignmentCallNode.astChildren.isIdentifier.l.l
-    identifierNode.code shouldBe "c"
+    "Check assignment call node" in {
+      val List(first, sec, third) = cpg.call(Operators.assignment).l
+      first.typeFullName shouldBe "main.Node"
+      sec.typeFullName shouldBe "main.Node"
+      third.typeFullName shouldBe "[]*main.Node"
+      val List(arg1: Identifier, arg2: Call) = third.argument.l: @unchecked
+      arg1.name shouldBe "c"
+      arg1.typeFullName shouldBe "[]*main.Node"
+      arg2.typeFullName shouldBe "[]*main.Node"
+    }
   }
 
   "be correct when array access using variable having single index" should {
