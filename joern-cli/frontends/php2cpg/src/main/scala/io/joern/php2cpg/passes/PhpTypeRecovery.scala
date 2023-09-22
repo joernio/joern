@@ -32,6 +32,18 @@ private class PhpTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XType
 private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraphBuilder, state: XTypeRecoveryState)
   extends RecoverForXCompilationUnit[NamespaceBlock](cpg, cu, builder, state) {
 
+  /**
+   * A lookup table for any PHP builtins with known types. The
+   * methodReturnValues method will refer to this table when an unknown function
+   * is encountered.
+   */
+  protected val builtinsSymbolTable = Map[String, Set[String]](
+    "strtolower" -> Set("string"),
+    "strtotime" -> Set("int", "bool"),
+    "unserialize" -> Set("ANY"),
+    "var_dump" -> Set(),
+  )
+
   override protected def prepopulateSymbolTable(): Unit = {
     logger.debug(s"prepopulating symbol table")
     super.prepopulateSymbolTable()
@@ -191,6 +203,25 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
   override protected def persistMemberWithTypeDecl(typeFullName: String, memberName: String, types: Set[String]): Unit = {
     logger.debug(s"persisting member with TypeDecl: typeFullName: ${typeFullName}, memberName: ${memberName}, types: [${types.mkString("; ")}]")
     super.persistMemberWithTypeDecl(typeFullName, memberName, types)
+  }
+
+  override protected def methodReturnValues(methodFullNames: Seq[String]): Set[String] = {
+    val rs = cpg.method
+      .fullNameExact(methodFullNames: _*)
+      .methodReturn
+      .flatMap(mr => mr.typeFullName +: mr.dynamicTypeHintFullName)
+      .filterNot(_.equals("ANY"))
+      .toSet
+    if (rs.isEmpty)
+      // Look up in builtins table or else return dummy return type
+      methodFullNames.flatMap(
+        m => builtinsSymbolTable
+          .getOrElse(
+            m,
+            Set(m.concat(s"$pathSep${XTypeRecovery.DummyReturnType}"))
+          ))
+          .toSet
+    else rs
   }
 
 }
