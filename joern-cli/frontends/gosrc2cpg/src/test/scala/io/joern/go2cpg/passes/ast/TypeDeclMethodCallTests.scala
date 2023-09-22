@@ -213,7 +213,7 @@ class TypeDeclMethodCallTests extends GoCodeToCpgSuite {
       cpg.call("bar").size shouldBe 1
       val List(x) = cpg.call("bar").l
       x.code shouldBe "ctx.data.bar(a)"
-      x.methodFullName shouldBe "ANY.bar"
+      x.methodFullName shouldBe "<unknown>.bar"
       x.order shouldBe 2
       x.lineNumber shouldBe Option(7)
       x.typeFullName shouldBe Defines.anyTypeName
@@ -236,7 +236,7 @@ class TypeDeclMethodCallTests extends GoCodeToCpgSuite {
       cpg.call("bar").size shouldBe 1
       val List(x) = cpg.call("bar").l
       x.code shouldBe "ctx.data1.data2.data3.data4.bar(a)"
-      x.methodFullName shouldBe "ANY.bar"
+      x.methodFullName shouldBe "<unknown>.bar"
       x.order shouldBe 2
       x.lineNumber shouldBe Option(7)
       x.typeFullName shouldBe Defines.anyTypeName

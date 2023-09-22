@@ -10,8 +10,13 @@ import scala.jdk.CollectionConverters.EnumerationHasAsScala
 object GoGlobal extends Global {
 
   val methodFullNameReturnTypeMap: ConcurrentHashMap[String, (String, String)] = new ConcurrentHashMap()
+  val structTypeMemberTypeMapping: ConcurrentHashMap[String, String]           = new ConcurrentHashMap()
 
-  def recordFullNameToReturnType(methodFullName: String, returnType: String, signature: String) = {
+  def recordStructTypeMemberType(memberFullName: String, memberType: String): Unit = {
+    structTypeMemberTypeMapping.putIfAbsent(memberFullName, memberType)
+  }
+
+  def recordFullNameToReturnType(methodFullName: String, returnType: String, signature: String): Unit = {
     methodFullNameReturnTypeMap.putIfAbsent(methodFullName, (returnType, signature))
   }
 

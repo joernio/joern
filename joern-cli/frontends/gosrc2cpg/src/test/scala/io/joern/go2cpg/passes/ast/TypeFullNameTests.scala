@@ -721,6 +721,67 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
       perOne.typeFullName shouldBe "joern.io/sample/lib.Person"
     }
 
-    "Field access CALL node type check" in {}
+    "Field access CALL node type check" in {
+      val List(a, b, c, d) = cpg.call(Operators.fieldAccess).l
+      a.typeFullName shouldBe "string"
+      b.typeFullName shouldBe "string"
+      c.typeFullName shouldBe "string"
+      d.typeFullName shouldBe "string"
+    }
+  }
+
+  "Struct Type used in another struct type check" should {
+    val cpg = code(
+      """
+        |module joern.io/sample
+        |go 1.18
+        |""".stripMargin,
+      "go.mod"
+    ).moreCode(
+      """
+          |package lib
+          |
+          |type Address struct {
+          |	addone string
+          |	addtwo string
+          |}
+          |type Person struct {
+          |	name     string
+          |	age      int
+          |	location string
+          |	address  Address
+          |}
+          |
+          |""".stripMargin,
+      Seq("lib", "typelib.go").mkString(File.separator)
+    ).moreCode(
+      """
+        |package main
+        |import "joern.io/sample/lib"
+        |func main() {
+        |	var a = lib.Address{}
+        |	var p = lib.Person{"pandurang", 10, "", a}
+        |	var name = p.name
+        |	address := p.address
+        |}
+        |""".stripMargin,
+      "main.go"
+    )
+
+    "Check CALL nodes of RHS" in {
+      val List(a, b, c, d) = cpg.call.nameNot(Operators.assignment).l
+      a.typeFullName shouldBe "joern.io/sample/lib.Address"
+      b.typeFullName shouldBe "joern.io/sample/lib.Person"
+      c.typeFullName shouldBe "string"
+      d.typeFullName shouldBe "joern.io/sample/lib.Address"
+    }
+
+    "Check LHS LOCAL Nodes for types" in {
+      val List(a, b, c, d) = cpg.local.l
+      a.typeFullName shouldBe "joern.io/sample/lib.Address"
+      b.typeFullName shouldBe "joern.io/sample/lib.Person"
+      c.typeFullName shouldBe "string"
+      d.typeFullName shouldBe "joern.io/sample/lib.Address"
+    }
   }
 }

@@ -79,13 +79,6 @@ trait AstForExpressionCreator(implicit withSchemaValidation: ValidationMode) { t
     Seq(callAst(cNode, operand))
   }
 
-  protected def getTypeFullNameFromAstNode(ast: Seq[Ast]): String = {
-    ast.headOption
-      .flatMap(_.root)
-      .map(_.properties.get(PropertyNames.TYPE_FULL_NAME).get.toString)
-      .getOrElse(Defines.anyTypeName)
-  }
-
   private def astForUnaryExpr(unaryExpr: ParserNodeInfo): Seq[Ast] = {
     val operand      = astForNode(unaryExpr.json(ParserKeys.X))
     var typeFullName = getTypeFullNameFromAstNode(operand)

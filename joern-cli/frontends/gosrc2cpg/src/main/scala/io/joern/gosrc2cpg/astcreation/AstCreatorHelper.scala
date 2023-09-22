@@ -3,10 +3,10 @@ package io.joern.gosrc2cpg.astcreation
 import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserAst, ParserKeys, ParserNodeInfo}
-import io.joern.x2cpg.Defines as XDefines
+import io.joern.x2cpg.{Ast, Defines as XDefines}
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.shiftleft.codepropertygraph.generated.nodes.{NewModifier, NewNode}
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes}
+import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, ModifierTypes, PropertyNames}
 import org.apache.commons.lang.StringUtils
 import ujson.Value
 
@@ -50,7 +50,7 @@ trait AstCreatorHelper { this: AstCreator =>
             nullSafeCreateParserNodeInfo(None)
   }
 
-  def cacheReferenceNode(json: Value, node: ParserNode) = {
+  private def cacheReferenceNode(json: Value, node: ParserNode) = {
     // This is being called only to cache this objects
     node match
       case CallExpr =>
@@ -65,6 +65,13 @@ trait AstCreatorHelper { this: AstCreator =>
             createParserNodeInfo(obj)
           case _ =>
       case _ =>
+  }
+
+  protected def getTypeFullNameFromAstNode(ast: Seq[Ast]): String = {
+    ast.headOption
+      .flatMap(_.root)
+      .map(_.properties.get(PropertyNames.TYPE_FULL_NAME).get.toString)
+      .getOrElse(Defines.anyTypeName)
   }
 
   protected def addModifier(node: NewNode, name: String): NewModifier = {

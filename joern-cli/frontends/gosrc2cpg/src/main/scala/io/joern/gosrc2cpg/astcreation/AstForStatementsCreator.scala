@@ -85,12 +85,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       .arr
       .map(createParserNodeInfo)
       .flatMap(astForBooleanLiteral)
-    val typeFullName = Some(
-      rhsAst.headOption
-        .flatMap(_.root)
-        .map(_.properties.get(PropertyNames.TYPE_FULL_NAME).get.toString)
-        .getOrElse(Defines.anyTypeName)
-    )
+    val typeFullName = Some(getTypeFullNameFromAstNode(rhsAst.toSeq))
     val (lhsAst, localAst) = assignStmt
       .json(ParserKeys.Lhs)
       .arr
