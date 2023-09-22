@@ -261,7 +261,7 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
       a.typeFullName shouldBe "string"
     }
 
-    "check for identifier nodes working" in {
+    "check for identifier nodes" in {
       val List(x) = cpg.identifier("x").typeFullName.dedup.l
       x shouldBe "int"
       val List(y) = cpg.identifier("y").typeFullName.dedup.l
@@ -270,10 +270,6 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
       xx shouldBe "string"
       val List(yy) = cpg.identifier("yy").typeFullName.dedup.l
       yy shouldBe "string"
-
-    }
-
-    "check for identifier nodes non working" in {
 
       val List(aaa, bbb, ccc) = cpg.identifier("aaa|bbb|ccc").l
       aaa.typeFullName shouldBe "int"
@@ -598,10 +594,6 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
       val List(a, b, c, d, e, f, g, h, i, j, k, l) = cpg.local.l
       a.typeFullName shouldBe "[][]string"
       g.typeFullName shouldBe "[]int"
-    }
-
-    "Type Check LOCAL nodes non working" in {
-      val List(a, b, c, d, e, f, g, h, i, j, k, l) = cpg.local.l
       b.typeFullName shouldBe "string"
       c.typeFullName shouldBe "[][]string"
       d.typeFullName shouldBe "[]string"
@@ -623,10 +615,6 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
       i.typeFullName shouldBe "[]int"
       j.typeFullName shouldBe "int"
       k.typeFullName shouldBe "[]float32"
-    }
-
-    "Type check for CALL nodes non working" in {
-      val List(a, b, c, d, e, f, g, h, i, j, k, l, m) = cpg.call.nameNot(Operators.assignment).l
       e.typeFullName shouldBe "[]string"
       f.typeFullName shouldBe "string"
       g.typeFullName shouldBe "string"
@@ -680,6 +668,8 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
         |  var compNameOne = perOne.fullName()
         |  var perThree = lib.Person{fname: "Ram", lname: "Thakur"}
         |  perFour := lib.Person{fname: "Seema", lname: "Dubey"}
+        |  b := perFour.fname
+        |  c := perFour.lname
         |}
         |""".stripMargin,
       "main.go"
@@ -695,7 +685,7 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
       createPerson.typeFullName shouldBe "joern.io/sample/lib.Person"
     }
 
-    "Call node typeFullName check for function call on receiver object usecase 1" ignore {
+    "Call node typeFullName check for function call on receiver object usecase 1" in {
       val List(fullName) = cpg.call("fullName").lineNumber(8).l
       fullName.typeFullName shouldBe "string"
     }
@@ -705,7 +695,7 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
       fullName.typeFullName shouldBe "string"
     }
 
-    "TODO variable type checks not working " in {
+    "Variable type checks" in {
       val List(a) = cpg.local("a").l
       a.typeFullName shouldBe "string"
 
@@ -727,11 +717,71 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
       val List(perFour) = cpg.identifier("perFour").lineNumber(12).l
       perFour.typeFullName shouldBe "joern.io/sample/lib.Person"
 
-    }
-
-    "variable type checks working" in {
       val List(perOne) = cpg.identifier("perOne").lineNumber(9).l
       perOne.typeFullName shouldBe "joern.io/sample/lib.Person"
+    }
+
+    "Field access CALL node type check" in {
+      val List(a, b, c, d) = cpg.call(Operators.fieldAccess).l
+      a.typeFullName shouldBe "string"
+      b.typeFullName shouldBe "string"
+      c.typeFullName shouldBe "string"
+      d.typeFullName shouldBe "string"
+    }
+  }
+
+  "Struct Type used in another struct type check" should {
+    val cpg = code(
+      """
+        |module joern.io/sample
+        |go 1.18
+        |""".stripMargin,
+      "go.mod"
+    ).moreCode(
+      """
+          |package lib
+          |
+          |type Address struct {
+          |	addone string
+          |	addtwo string
+          |}
+          |type Person struct {
+          |	name     string
+          |	age      int
+          |	location string
+          |	address  Address
+          |}
+          |
+          |""".stripMargin,
+      Seq("lib", "typelib.go").mkString(File.separator)
+    ).moreCode(
+      """
+        |package main
+        |import "joern.io/sample/lib"
+        |func main() {
+        |	var a = lib.Address{}
+        |	var p = lib.Person{"pandurang", 10, "", a}
+        |	var name = p.name
+        |	address := p.address
+        |}
+        |""".stripMargin,
+      "main.go"
+    )
+
+    "Check CALL nodes of RHS" in {
+      val List(a, b, c, d) = cpg.call.nameNot(Operators.assignment).l
+      a.typeFullName shouldBe "joern.io/sample/lib.Address"
+      b.typeFullName shouldBe "joern.io/sample/lib.Person"
+      c.typeFullName shouldBe "string"
+      d.typeFullName shouldBe "joern.io/sample/lib.Address"
+    }
+
+    "Check LHS LOCAL Nodes for types" in {
+      val List(a, b, c, d) = cpg.local.l
+      a.typeFullName shouldBe "joern.io/sample/lib.Address"
+      b.typeFullName shouldBe "joern.io/sample/lib.Person"
+      c.typeFullName shouldBe "string"
+      d.typeFullName shouldBe "joern.io/sample/lib.Address"
     }
   }
 }

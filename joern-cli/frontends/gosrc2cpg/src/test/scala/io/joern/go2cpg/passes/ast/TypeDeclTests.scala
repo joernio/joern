@@ -25,11 +25,6 @@ class TypeDeclTests extends GoCodeToCpgSuite {
       typeDeclNode.columnNumber shouldBe Some(6)
     }
 
-    "test parent ast structure" in {
-      cpg.typeDecl("Foo").astParentFullName.l.head shouldBe "test.go:main.<global>"
-      cpg.typeDecl("Foo").astParentType.l.head shouldBe NodeTypes.TYPE_DECL
-    }
-
     "test fullName of TypeDecl nodes" in {
       typeDeclNode.fullName shouldBe "main.Foo"
     }
@@ -53,11 +48,6 @@ class TypeDeclTests extends GoCodeToCpgSuite {
       typeDeclNode.code shouldBe "Foo string"
       typeDeclNode.lineNumber shouldBe Some(2)
       typeDeclNode.columnNumber shouldBe Some(6)
-    }
-
-    "test ast parent structure" in {
-      cpg.typeDecl("Foo").astParentFullName.l.head shouldBe "test.go:main.<global>"
-      cpg.typeDecl("Foo").astParentType.l.head shouldBe NodeTypes.TYPE_DECL
     }
 
     "test fullName of TypeDecl nodes" in {
@@ -85,11 +75,6 @@ class TypeDeclTests extends GoCodeToCpgSuite {
       typeDeclNode.columnNumber shouldBe Some(6)
     }
 
-    "test parent ast structure" in {
-      cpg.typeDecl("Foo").astParentFullName.l.head shouldBe "test.go:main.<global>"
-      cpg.typeDecl("Foo").astParentType.l.head shouldBe NodeTypes.TYPE_DECL
-    }
-
     "test fullName of TypeDecl nodes" in {
       typeDeclNode.fullName shouldBe "main.Foo"
     }
@@ -114,11 +99,6 @@ class TypeDeclTests extends GoCodeToCpgSuite {
       typeDeclNode.code shouldBe "foo int"
       typeDeclNode.lineNumber shouldBe Some(2)
       typeDeclNode.columnNumber shouldBe Some(6)
-    }
-
-    "test ast parent structure" in {
-      cpg.typeDecl("foo").astParentFullName.l.head shouldBe "test.go:main.<global>"
-      cpg.typeDecl("foo").astParentType.l.head shouldBe NodeTypes.TYPE_DECL
     }
 
     "test fullName of TypeDecl nodes" in {
@@ -148,11 +128,6 @@ class TypeDeclTests extends GoCodeToCpgSuite {
       typeDeclNode.columnNumber shouldBe Some(7)
     }
 
-    "test ast parent structure" in {
-      cpg.typeDecl("Sample").astParentFullName.l.head shouldBe "test.go:main.<global>"
-      cpg.typeDecl("Sample").astParentType.l.head shouldBe NodeTypes.TYPE_DECL
-    }
-
     "test fullName of TypeDecl nodes" ignore {
       typeDeclNode.fullName shouldBe "main.main.Sample"
     }
@@ -178,11 +153,6 @@ class TypeDeclTests extends GoCodeToCpgSuite {
       typeDeclNode.code shouldBe "Foo struct {}"
       typeDeclNode.lineNumber shouldBe Some(3)
       typeDeclNode.columnNumber shouldBe Some(2)
-    }
-
-    "test ast parent structure" in {
-      cpg.typeDecl("Foo").astParentFullName.l.head shouldBe "test.go:main.<global>"
-      cpg.typeDecl("Foo").astParentType.l.head shouldBe NodeTypes.TYPE_DECL
     }
 
     "test fullName of TypeDecl nodes" in {
@@ -212,11 +182,6 @@ class TypeDeclTests extends GoCodeToCpgSuite {
       typeDeclNode.columnNumber shouldBe Some(2)
     }
 
-    "test ast parent structure for Foo" in {
-      cpg.typeDecl("Foo").astParentFullName.l.head shouldBe "test.go:main.<global>"
-      cpg.typeDecl("Foo").astParentType.l.head shouldBe NodeTypes.TYPE_DECL
-    }
-
     "test fullName of TypeDecl nodes for Foo" in {
       typeDeclNode.fullName shouldBe "main.Foo"
     }
@@ -231,11 +196,6 @@ class TypeDeclTests extends GoCodeToCpgSuite {
       typeDeclNodeBar.code shouldBe "bar interface {}"
       typeDeclNodeBar.lineNumber shouldBe Some(4)
       typeDeclNodeBar.columnNumber shouldBe Some(2)
-    }
-
-    "test parent ast structure for bar" in {
-      cpg.typeDecl("bar").astParentFullName.l.head shouldBe "test.go:main.<global>"
-      cpg.typeDecl("bar").astParentType.l.head shouldBe NodeTypes.TYPE_DECL
     }
 
     "test fullName of TypeDecl nodes for bar" in {

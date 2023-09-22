@@ -4,7 +4,7 @@ import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import ujson.Value
 
 import scala.util.{Success, Try}
@@ -75,16 +75,11 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
     rhsParserNode: ParserNodeInfo,
     typeFullName: Option[String]
   ): (Ast, Ast) = {
-    val rhsAst = astForBooleanLiteral(rhsParserNode)
-    val rhsTypeFullName = typeFullName.getOrElse(
-      rhsAst.headOption
-        .flatMap(_.root)
-        .map(_.properties.get(PropertyNames.TYPE_FULL_NAME).get.toString)
-        .getOrElse(Defines.anyTypeName)
-    )
-    val localAst  = astForLocalNode(lhsParserNode, Some(rhsTypeFullName))
-    val lhsAst    = astForNode(lhsParserNode)
-    val arguments = lhsAst ++: rhsAst
+    val rhsAst          = astForBooleanLiteral(rhsParserNode)
+    val rhsTypeFullName = typeFullName.getOrElse(getTypeFullNameFromAstNode(rhsAst))
+    val localAst        = astForLocalNode(lhsParserNode, Some(rhsTypeFullName))
+    val lhsAst          = astForNode(lhsParserNode)
+    val arguments       = lhsAst ++: rhsAst
     val cNode = callNode(
       rhsParserNode,
       lhsParserNode.code + rhsParserNode.code,

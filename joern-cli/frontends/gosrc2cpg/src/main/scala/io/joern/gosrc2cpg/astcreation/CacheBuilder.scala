@@ -3,6 +3,7 @@ package io.joern.gosrc2cpg.astcreation
 import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import ujson.{Arr, Obj, Value}
+import io.joern.x2cpg.Ast
 
 import scala.util.Try
 
@@ -54,6 +55,14 @@ trait CacheBuilder { this: AstCreator =>
         arr.value.foreach(subJson => findAndProcess(subJson))
       case _ =>
     }
+  }
+
+  protected def processTypeSepc(typeSepc: Value): (String, String, Seq[Ast]) = {
+    val name     = typeSepc(ParserKeys.Name)(ParserKeys.Name).str
+    val fullName = fullyQualifiedPackage + Defines.dot + name
+    val typeNode = createParserNodeInfo(typeSepc(ParserKeys.Type))
+    // astForStructType() function will record the member types
+    (name, fullName, astForStructType(typeNode, fullName))
   }
 
   protected def processImports(importDecl: Value): (String, String) = {
