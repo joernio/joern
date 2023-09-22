@@ -7,7 +7,7 @@ import io.joern.x2cpg.datastructures.Stack.StackWrapper
 import io.joern.x2cpg.utils.NodeBuilders.newOperatorCallNode
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.{NewFieldIdentifier, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.NewFieldIdentifier
 import ujson.Value
 
 import scala.util.{Success, Try}
@@ -15,37 +15,22 @@ import scala.util.{Success, Try}
 trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   def astForTypeSpec(typeSpecNode: ParserNodeInfo): Seq[Ast] = {
-    methodAstParentStack.collectFirst { case t: NewTypeDecl => t } match {
-      case Some(parentMethodAstNode) =>
-        val nameNode = typeSpecNode.json(ParserKeys.Name)
-        val typeNode = createParserNodeInfo(typeSpecNode.json(ParserKeys.Type))
+    val nameNode = typeSpecNode.json(ParserKeys.Name)
+    val typeNode = createParserNodeInfo(typeSpecNode.json(ParserKeys.Type))
 
-        val astParentType     = parentMethodAstNode.label
-        val astParentFullName = parentMethodAstNode.fullName
-        val fullName          = fullyQualifiedPackage + Defines.dot + nameNode(ParserKeys.Name).str
-        val typeDeclNode_ =
-          typeDeclNode(
-            typeSpecNode,
-            nameNode(ParserKeys.Name).str,
-            fullName,
-            relPathFileName,
-            typeSpecNode.code,
-            astParentType,
-            astParentFullName
-          )
+    val fullName = fullyQualifiedPackage + Defines.dot + nameNode(ParserKeys.Name).str
+    val typeDeclNode_ =
+      typeDeclNode(typeSpecNode, nameNode(ParserKeys.Name).str, fullName, relPathFileName, typeSpecNode.code)
 
-        methodAstParentStack.push(typeDeclNode_)
-        scope.pushNewScope(typeDeclNode_)
-        val memberAsts = astForStructType(typeNode)
+    methodAstParentStack.push(typeDeclNode_)
+    scope.pushNewScope(typeDeclNode_)
+    val memberAsts = astForStructType(typeNode)
 
-        methodAstParentStack.pop()
-        scope.popScope()
+    methodAstParentStack.pop()
+    scope.popScope()
 
-        val modifier = addModifier(typeDeclNode_, nameNode(ParserKeys.Name).str)
-        Seq(Ast(typeDeclNode_).withChild(Ast(modifier)).withChildren(memberAsts))
-      case None => Seq.empty
-    }
-
+    val modifier = addModifier(typeDeclNode_, nameNode(ParserKeys.Name).str)
+    Seq(Ast(typeDeclNode_).withChild(Ast(modifier)).withChildren(memberAsts))
   }
 
   protected def astForStructType(expr: ParserNodeInfo): Seq[Ast] = {
