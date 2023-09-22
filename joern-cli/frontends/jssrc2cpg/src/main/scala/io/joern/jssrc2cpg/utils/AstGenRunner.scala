@@ -62,8 +62,12 @@ object AstGenRunner {
     skippedFiles: List[(String, String)] = List.empty
   )
 
-  // env var to the path for the astgen bin
-  private val AstGenBinEnvVar: String = "ASTGEN_BIN"
+  // directory for the astgen binary from the env var ASTGEN_BIN
+  private val AstGenBinDir: Option[String] = scala.util.Properties.envOrNone("ASTGEN_BIN").flatMap {
+    case path if File(path).isDirectory => Some(path)
+    case path if File(path).exists      => File(path).parentOption.map(_.pathAsString)
+    case _                              => None
+  }
 
   lazy private val executableName = Environment.operatingSystem match {
     case Environment.OperatingSystemType.Windows => "astgen-win.exe"
@@ -117,10 +121,9 @@ object AstGenRunner {
     *   the full path to the astgen binary found on the system
     */
   private def compatibleAstGenPath(astGenVersion: String): String = {
-    val pathFromEnv = scala.util.Properties.envOrNone(AstGenBinEnvVar)
-    pathFromEnv match
+    AstGenBinDir match
       // 1. case: we try it at env var ASTGEN_BIN
-      case Some(path) if File(path).exists && hasCompatibleAstGenVersionAtPath(astGenVersion, Some(path)) =>
+      case Some(path) if hasCompatibleAstGenVersionAtPath(astGenVersion, Some(path)) =>
         s"$path/astgen"
       // 2. case: we try it with the systems PATH
       case _ if hasCompatibleAstGenVersionAtPath(astGenVersion, None) =>
