@@ -14,12 +14,10 @@ class CallTraversal[NodeType <: CallBase](val traversal: Iterator[NodeType]) ext
   def isDynamic: Iterator[NodeType] =
     traversal.filter(_.isDynamic)
 
-  // TODO continue here
-//  /** The receiver of a call if the call has a receiver associated.
-//    */
+  /** The receiver of a call if the call has a receiver associated. */
 //  def receiver: Iterator[Expression] =
 //    traversal.flatMap(_.receiver)
-//
+
 //  /** Arguments of the call
 //    */
 //  def argument: Iterator[Expression] =
