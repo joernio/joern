@@ -25,7 +25,7 @@ class ExpressionsTests extends GoCodeToCpgSuite {
       cpg.method.name("method").ast.isCall.name(Operators.assignment).map(new OpNodes.Assignment(_)).l
     assignment.target.code shouldBe "x"
     assignment.source.start.isCall.name.l shouldBe List(Operators.addition)
-    val List(id1: Identifier, id2: Identifier) = assignment.source.astChildren.l
+    val List(id1: Identifier, id2: Identifier) = assignment.source.astChildren.l: @unchecked
     id1.order shouldBe 1
     id1.code shouldBe "y"
     id2.order shouldBe 2
