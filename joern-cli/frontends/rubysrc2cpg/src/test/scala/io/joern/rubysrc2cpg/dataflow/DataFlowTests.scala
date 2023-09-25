@@ -922,8 +922,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     }
   }
 
-  // TODO:
-  "Data flow coming out of chainedInvocationPrimary usage" ignore {
+  "Data flow coming out of chainedInvocationPrimary usage" should {
     val cpg = code("""
         |x = 1
         |y = 10
