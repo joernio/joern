@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.language.nodemethods
 
 import io.shiftleft.codepropertygraph.generated.v2.accessors.Lang.*
-import io.shiftleft.codepropertygraph.generated.v2.nodes.CallBase
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
 class CallMethods[NodeType <: CallBase](val node: NodeType) extends AnyVal {
@@ -13,8 +13,8 @@ class CallMethods[NodeType <: CallBase](val node: NodeType) extends AnyVal {
     node.dispatchType == "DYNAMIC_DISPATCH"
 
 //  def receiver: Iterator[Expression] =
-//    node.receiverOut
-//
+//    node._receiverOut
+
 //  def arguments(index: Int): Iterator[Expression] =
 //    node._argumentOut
 //      .collect {
