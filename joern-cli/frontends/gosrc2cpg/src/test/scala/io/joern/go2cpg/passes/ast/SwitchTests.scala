@@ -97,7 +97,7 @@ class SwitchTests extends GoCodeToCpgSuite {
     val List(controlStruct: ControlStructure) = cpg.method.name("method").controlStructure.l
     controlStruct.code shouldBe "switch i := x.(type)"
     controlStruct.controlStructureType shouldBe ControlStructureTypes.SWITCH
-    val List(assignment: Call, switchBlock: Block) = controlStruct.astChildren.l
+    val List(assignment: Call, switchBlock: Block) = controlStruct.astChildren.l: @unchecked
     switchBlock.astChildren.size shouldBe 9
     switchBlock.astChildren.code.l shouldBe List(
       "case nil",
@@ -132,7 +132,7 @@ class SwitchTests extends GoCodeToCpgSuite {
     val List(controlStruct: ControlStructure) = cpg.method.name("method").controlStructure.l
     controlStruct.code shouldBe "switch x.(type)"
     controlStruct.controlStructureType shouldBe ControlStructureTypes.SWITCH
-    val List(identifier: Call, switchBlock: Block) = controlStruct.astChildren.l
+    val List(identifier: Call, switchBlock: Block) = controlStruct.astChildren.l: @unchecked
     switchBlock.astChildren.size shouldBe 9
     // TODO: something is wrong here. Identifier is being created for int, nil and float64
     switchBlock.astChildren.code.l shouldBe List(
