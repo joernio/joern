@@ -561,4 +561,20 @@ class MethodCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
       sink.reachableByFlows(src).size shouldBe 1
     }
   }
+
+  "Method call check with parameters being passed while they are casted to another type" ignore {
+    val cpg = code("""
+        |package main
+        |func foo() {
+        |	var a = bar([]byte("test"))
+        |   var b = bar(map[string]interface{}(labels))
+        |   var c = bar(reflect.TypeOf((*MockDB)(nil).CheckHealth))
+        |}
+        |""".stripMargin)
+    // TODO: Need to work on how this casting should get translated to AST
+    "Check call node properties" in {
+      cpg.call("bar").size shouldBe 3
+      val List(a, b, c) = cpg.call("bar").l
+    }
+  }
 }
