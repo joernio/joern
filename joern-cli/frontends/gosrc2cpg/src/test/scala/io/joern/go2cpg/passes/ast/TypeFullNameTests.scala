@@ -784,4 +784,69 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
       d.typeFullName shouldBe "joern.io/sample/lib.Address"
     }
   }
+
+  "Use case where namespace folder is not matching with declared package name" should {
+    val cpg = code(
+      """
+        |module joern.io/sample
+        |go 1.18
+        |""".stripMargin,
+      "go.mod"
+    ).moreCode(
+      """
+        |package fpkg
+        |type Sample struct {
+        |  Name string
+        |}
+        |func Woo(a int) int{
+        |   return 0
+        |}
+        |""".stripMargin,
+      Seq("lib", "lib.go").mkString(File.separator)
+    ).moreCode(
+      """
+        |package main
+        |import "joern.io/sample/lib"
+        |func main() {
+        |  var a = fpkg.Woo(10)
+        |  var b = fpkg.Sample{name: "Pandurang"}
+        |  var c = b.Name
+        |  var d fpkg.Sample
+        |}
+        |""".stripMargin,
+      "main.go"
+    )
+
+    "Check METHOD Node" in {
+      cpg.method("Woo").size shouldBe 1
+      val List(x) = cpg.method("Woo").l
+      x.fullName shouldBe "joern.io/sample/lib.Woo"
+      x.signature shouldBe "joern.io/sample/lib.Woo(int)int"
+    }
+
+    "Check CALL Node" in {
+      val List(x) = cpg.call("Woo").l
+      x.methodFullName shouldBe "joern.io/sample/lib.Woo"
+      x.typeFullName shouldBe "int"
+    }
+
+    "Traversal from call to callee method node" in {
+      val List(x) = cpg.call("Woo").callee.l
+      x.fullName shouldBe "joern.io/sample/lib.Woo"
+      x.isExternal shouldBe false
+    }
+
+    "Check TypeDecl Node" in {
+      val List(x) = cpg.typeDecl("Sample").l
+      x.fullName shouldBe "joern.io/sample/lib.Sample"
+    }
+
+    "Check LOCAL Nodes" in {
+      val List(a, b, c, d) = cpg.local.l
+      a.typeFullName shouldBe "int"
+      b.typeFullName shouldBe "joern.io/sample/lib.Sample"
+      c.typeFullName shouldBe "string"
+      d.typeFullName shouldBe "joern.io/sample/lib.Sample"
+    }
+  }
 }

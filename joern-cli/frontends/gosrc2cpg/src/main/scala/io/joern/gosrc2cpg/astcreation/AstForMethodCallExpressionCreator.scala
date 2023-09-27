@@ -112,7 +112,7 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
                 // Otherwise its an alias to imported namespace on which method call is made
                 val alias = xnode.json(ParserKeys.Name).str
                 val callMethodFullName =
-                  s"${aliasToNameSpaceMapping.getOrElse(alias, s"${XDefines.Unknown}.<$alias>")}.$methodName"
+                  resolveAliasToFullName(alias, methodName)
                 val (returnTypeFullNameCache, signatureCache) =
                   GoGlobal.methodFullNameReturnTypeMap
                     .getOrDefault(callMethodFullName, (Defines.anyTypeName, s"$callMethodFullName()"))
