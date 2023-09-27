@@ -38,6 +38,7 @@ trait CacheBuilder { this: AstCreator =>
           )
         ) {
           createParserNodeInfo(obj)
+          processTypeSepc(obj)
         } else if (
           json.obj
             .contains(ParserKeys.NodeType) && obj(ParserKeys.NodeType).str == "ast.FuncDecl" && !json.obj.contains(

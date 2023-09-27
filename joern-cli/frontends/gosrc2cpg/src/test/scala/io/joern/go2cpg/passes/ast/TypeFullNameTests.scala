@@ -785,6 +785,30 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
     }
   }
 
+  "Struct type used before defining it" should {
+    val cpg = code("""
+        |package main
+        |func main() {
+        |  var p = Person{name: "Pandurang"}
+        |  var c = p.name
+        |}
+        |type Person struct{
+        |  name string
+        |}
+        |""".stripMargin)
+    "LOCAL Node type check" in {
+      val List(p, c) = cpg.local.l
+      p.typeFullName shouldBe "main.Person"
+      c.typeFullName shouldBe "string"
+    }
+
+    "CALL Node type check" in {
+      val List(a, b) = cpg.call.nameNot(Operators.assignment).l
+      a.typeFullName shouldBe "main.Person"
+      b.typeFullName shouldBe "string"
+    }
+  }
+
   "Use case where namespace folder is not matching with declared package name" should {
     val cpg = code(
       """
