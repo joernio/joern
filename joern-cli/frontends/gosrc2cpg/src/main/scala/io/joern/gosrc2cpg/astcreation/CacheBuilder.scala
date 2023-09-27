@@ -2,8 +2,8 @@ package io.joern.gosrc2cpg.astcreation
 
 import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
-import ujson.{Arr, Obj, Value}
 import io.joern.x2cpg.Ast
+import ujson.{Arr, Obj, Value}
 
 import scala.util.Try
 
@@ -12,6 +12,10 @@ trait CacheBuilder { this: AstCreator =>
   def buildCache(): Unit = {
     try {
       findAndProcess(parserResult.json)
+      // Declared package name and namespace ending folder token is not matching then cache the alias to namespace mapping
+      if (!fullyQualifiedPackage.endsWith(declaredPackageName)) {
+        GoGlobal.recordAliasToNamespaceMapping(declaredPackageName, fullyQualifiedPackage)
+      }
     } catch
       case ex: Exception =>
         logger.warn(s"Error: While processing - ${parserResult.fullPath}", ex)
@@ -34,6 +38,7 @@ trait CacheBuilder { this: AstCreator =>
           )
         ) {
           createParserNodeInfo(obj)
+          processTypeSepc(obj)
         } else if (
           json.obj
             .contains(ParserKeys.NodeType) && obj(ParserKeys.NodeType).str == "ast.FuncDecl" && !json.obj.contains(
