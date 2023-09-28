@@ -64,45 +64,50 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astForAssignStatement(assignStmt: ParserNodeInfo): Seq[Ast] = {
-    val op = assignStmt.json(ParserKeys.Tok).value match {
-      case "="   => Operators.assignment
-      case ":="  => Operators.assignment
-      case "*="  => Operators.assignmentMultiplication
-      case "/="  => Operators.assignmentDivision
-      case "%="  => Operators.assignmentModulo
-      case "+="  => Operators.assignmentPlus
-      case "-="  => Operators.assignmentMinus
-      case "<<=" => Operators.assignmentShiftLeft
-      case ">>=" => Operators.assignmentArithmeticShiftRight
-      case "&="  => Operators.assignmentAnd
-      case "^="  => Operators.assignmentXor
-      case "|="  => Operators.assignmentOr
-      case _     => Operator.unknown
+    assignStmt.json(ParserKeys.Tok).value match {
+      case "="   => astForOnlyAssignmentOperator(assignStmt, Operators.assignment)
+      case ":="  => astForDeclrationAssignment(assignStmt, Operators.assignment)
+      case "*="  => astForOnlyAssignmentOperator(assignStmt, Operators.assignmentMultiplication)
+      case "/="  => astForOnlyAssignmentOperator(assignStmt, Operators.assignmentDivision)
+      case "%="  => astForOnlyAssignmentOperator(assignStmt, Operators.assignmentModulo)
+      case "+="  => astForOnlyAssignmentOperator(assignStmt, Operators.assignmentPlus)
+      case "-="  => astForOnlyAssignmentOperator(assignStmt, Operators.assignmentMinus)
+      case "<<=" => astForOnlyAssignmentOperator(assignStmt, Operators.assignmentShiftLeft)
+      case ">>=" => astForOnlyAssignmentOperator(assignStmt, Operators.assignmentArithmeticShiftRight)
+      case "&="  => astForOnlyAssignmentOperator(assignStmt, Operators.assignmentAnd)
+      case "^="  => astForOnlyAssignmentOperator(assignStmt, Operators.assignmentXor)
+      case "|="  => astForOnlyAssignmentOperator(assignStmt, Operators.assignmentOr)
+      case _     => astForOnlyAssignmentOperator(assignStmt, Operator.unknown)
     }
+  }
 
+  private def astForDeclrationAssignment(assignStmt: ParserNodeInfo, op: String): Seq[Ast] = {
+    val (assCallAsts, localAsts) =
+      (assignStmt.json(ParserKeys.Lhs).arr.toList zip assignStmt.json(ParserKeys.Rhs).arr.toList)
+        .map { case (lhs, rhs) => (createParserNodeInfo(lhs), createParserNodeInfo(rhs)) }
+        .map { case (lhsParserNode, rhsParserNode) =>
+          astForAssignmentCallNode(lhsParserNode, rhsParserNode, None, assignStmt.code)
+        }
+        .unzip
+    localAsts ++: assCallAsts
+  }
+
+  private def astForOnlyAssignmentOperator(assignStmt: ParserNodeInfo, op: String): Seq[Ast] = {
     val rhsAst = assignStmt
       .json(ParserKeys.Rhs)
       .arr
       .map(createParserNodeInfo)
       .flatMap(astForBooleanLiteral)
     val typeFullName = Some(getTypeFullNameFromAstNode(rhsAst.toSeq))
-    val (lhsAst, localAst) = assignStmt
+    val lhsAst = assignStmt
       .json(ParserKeys.Lhs)
       .arr
-      .map(lhsnode => {
-        val lhs = createParserNodeInfo(lhsnode)
-        // create corresponding local node as this is known as short variable declaration operator
-        val localNode =
-          if (assignStmt.json(ParserKeys.Tok).value == ":=") then Seq(astForLocalNode(lhs, typeFullName))
-          else Seq.empty
-        val lhsAst = astForNode(lhs)
-        (lhsAst, localNode)
-      })
-      .unzip
-    val arguments = lhsAst.flatten ++: rhsAst
+      .flatMap(astForNode)
+
+    val arguments = lhsAst ++: rhsAst
     val cNode     = callNode(assignStmt, assignStmt.code, op, op, DispatchTypes.STATIC_DISPATCH, None, typeFullName)
     val callAst_  = Seq(callAst(cNode, arguments.toSeq))
-    localAst.flatten ++: callAst_
+    callAst_
   }
 
   private def astForIncDecStatement(incDecStatement: ParserNodeInfo): Ast = {

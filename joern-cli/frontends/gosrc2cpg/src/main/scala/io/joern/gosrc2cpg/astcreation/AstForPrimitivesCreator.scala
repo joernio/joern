@@ -62,14 +62,18 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private def astForIdentifier(ident: ParserNodeInfo): Ast = {
     val identifierName = ident.json(ParserKeys.Name).str
-    val variableOption = scope.lookupVariable(identifierName)
-    variableOption match {
-      case Some((variable, variableTypeName)) =>
-        val node = identifierNode(ident, identifierName, ident.code, variableTypeName)
-        Ast(node).withRefEdge(node, variable)
-      case _ =>
-        // TODO: something is wrong here. Refer to SwitchTests -> "be correct for switch case 4"
-        Ast(identifierNode(ident, identifierName, ident.json(ParserKeys.Name).str, Defines.anyTypeName))
+    if identifierName != "_" then {
+      val variableOption = scope.lookupVariable(identifierName)
+      variableOption match {
+        case Some((variable, variableTypeName)) =>
+          val node = identifierNode(ident, identifierName, ident.code, variableTypeName)
+          Ast(node).withRefEdge(node, variable)
+        case _ =>
+          // TODO: something is wrong here. Refer to SwitchTests -> "be correct for switch case 4"
+          Ast(identifierNode(ident, identifierName, ident.json(ParserKeys.Name).str, Defines.anyTypeName))
+      }
+    } else {
+      Ast()
     }
   }
 
