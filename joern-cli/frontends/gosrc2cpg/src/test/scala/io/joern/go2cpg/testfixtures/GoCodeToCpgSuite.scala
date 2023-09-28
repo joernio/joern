@@ -16,7 +16,9 @@ trait Go2CpgFrontend extends LanguageFrontend {
     val cpgOutFile = File.newTemporaryFile("go2cpg.bin")
     cpgOutFile.deleteOnExit()
     val go2cpg = new GoSrc2Cpg()
-    val config = Config()
+    val config = getConfig()
+      .map(_.asInstanceOf[Config])
+      .getOrElse(Config())
       .withInputPath(sourceCodePath.getAbsolutePath)
       .withOutputPath(cpgOutFile.pathAsString)
     go2cpg.createCpg(config).get
