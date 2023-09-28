@@ -6,7 +6,11 @@ import scopt.OParser
 
 import java.nio.file.Paths
 
-final case class Config() extends X2CpgConfig[Config] {}
+final case class Config(fetchDependencies: Boolean = false) extends X2CpgConfig[Config] {
+  def withFetchDependencies(value: Boolean): Config = {
+    copy(fetchDependencies = value).withInheritedFields(this)
+  }
+}
 
 object Frontend {
   implicit val defaultConfig: Config = Config()
@@ -14,7 +18,12 @@ object Frontend {
   val cmdLineParser: OParser[Unit, Config] = {
     val builder = OParser.builder[Config]
     import builder._
-    OParser.sequence(programName("gosrc2cpg"))
+    OParser.sequence(
+      programName("gosrc2cpg"),
+      opt[Unit]("fetch-dependencies")
+        .text("attempt to fetch dependencies for extra type information")
+        .action((_, c) => c.withFetchDependencies(true))
+    )
   }
 
 }
