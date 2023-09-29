@@ -1,14 +1,14 @@
 package io.joern.gosrc2cpg.astcreation
 
-import io.joern.gosrc2cpg.model.GoMod
+import io.joern.gosrc2cpg.model.{GoMod, GoModHelper}
 import io.joern.gosrc2cpg.parser.GoAstJsonParser.ParserResult
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.datastructures.Scope
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, AstNodeBuilder as X2CpgAstNodeBuilder}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewNamespaceBlock, NewNode}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, NodeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.NodeTypes
+import io.shiftleft.codepropertygraph.generated.nodes.{NewNamespaceBlock, NewNode}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -16,7 +16,7 @@ import ujson.Value
 
 import scala.collection.mutable
 
-class AstCreator(val relPathFileName: String, val parserResult: ParserResult)(implicit
+class AstCreator(val relPathFileName: String, val parserResult: ParserResult, goMod: GoModHelper)(implicit
   withSchemaValidation: ValidationMode
 ) extends AstCreatorBase(relPathFileName)
     with AstCreatorHelper
@@ -37,7 +37,7 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult)(im
   protected val lineNumberMapping: Map[Int, String]                  = positionLookupTables(parserResult.fileContent)
   protected val declaredPackageName = parserResult.json(ParserKeys.Name)(ParserKeys.Name).str
   protected val fullyQualifiedPackage =
-    GoMod.getNameSpace(parserResult.fullPath, declaredPackageName)
+    goMod.getNameSpace(parserResult.fullPath, declaredPackageName)
 
   override def createAst(): DiffGraphBuilder = {
     val rootNode = createParserNodeInfo(parserResult.json)

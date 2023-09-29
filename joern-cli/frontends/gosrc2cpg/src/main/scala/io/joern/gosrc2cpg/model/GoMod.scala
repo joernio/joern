@@ -8,12 +8,10 @@ import io.joern.gosrc2cpg.utils.UtilityConstants.fileSeparateorPattern
 import java.io.File
 import scala.collection.mutable.ListBuffer
 
-object GoMod {
+class GoModHelper(config: Option[Config] = None, meta: Option[GoMod] = None) {
 
   import java.util.regex.Pattern
 
-  var meta: Option[GoMod]             = None
-  var config: Option[Config]          = None
   def getModMetaData(): Option[GoMod] = meta
   def getNameSpace(compilationUnitFilePath: String, pkg: String): String = {
 
