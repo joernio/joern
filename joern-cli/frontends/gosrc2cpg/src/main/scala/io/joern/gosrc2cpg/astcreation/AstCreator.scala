@@ -49,7 +49,7 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult, go
   private def astForTranslationUnit(rootNode: ParserNodeInfo): Ast = {
     val namespaceBlock = NewNamespaceBlock()
       .name(fullyQualifiedPackage)
-      .fullName(s"$relPathFileName:${fullyQualifiedPackage}")
+      .fullName(s"$relPathFileName:$fullyQualifiedPackage")
       .filename(relPathFileName)
     methodAstParentStack.push(namespaceBlock)
     val rootAst = Ast(namespaceBlock).withChild(

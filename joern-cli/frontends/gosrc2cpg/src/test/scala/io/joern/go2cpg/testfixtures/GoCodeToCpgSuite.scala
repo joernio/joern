@@ -52,5 +52,7 @@ class GoCodeToCpgSuite(fileSuffix: String = ".go", withOssDataflow: Boolean = fa
 
   override def beforeEach(): Unit = {
     GoGlobal.methodFullNameReturnTypeMap.clear()
+    GoGlobal.aliasToNameSpaceMapping.clear()
+    GoGlobal.structTypeMemberTypeMapping.clear()
   }
 }

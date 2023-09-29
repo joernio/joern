@@ -213,10 +213,10 @@ class TypeDeclMethodCallTests extends GoCodeToCpgSuite {
       cpg.call("bar").size shouldBe 1
       val List(x) = cpg.call("bar").l
       x.code shouldBe "ctx.data.bar(a)"
-      x.methodFullName shouldBe "<unknown>.bar"
+      x.methodFullName shouldBe "main.context.data.<FieldAccess>.<unknown>.bar"
       x.order shouldBe 2
       x.lineNumber shouldBe Option(7)
-      x.typeFullName shouldBe Defines.anyTypeName
+      x.typeFullName shouldBe "main.context.data.<FieldAccess>.<unknown>.bar.<ReturnType>.<unknown>"
     }
 
     "Check call node properties on five times chained" in {
@@ -236,10 +236,10 @@ class TypeDeclMethodCallTests extends GoCodeToCpgSuite {
       cpg.call("bar").size shouldBe 1
       val List(x) = cpg.call("bar").l
       x.code shouldBe "ctx.data1.data2.data3.data4.bar(a)"
-      x.methodFullName shouldBe "<unknown>.bar"
+      x.methodFullName shouldBe "main.context.data1.<FieldAccess>.<unknown>.data2.<FieldAccess>.<unknown>.data3.<FieldAccess>.<unknown>.data4.<FieldAccess>.<unknown>.bar"
       x.order shouldBe 2
       x.lineNumber shouldBe Option(7)
-      x.typeFullName shouldBe Defines.anyTypeName
+      x.typeFullName shouldBe "main.context.data1.<FieldAccess>.<unknown>.data2.<FieldAccess>.<unknown>.data3.<FieldAccess>.<unknown>.data4.<FieldAccess>.<unknown>.bar.<ReturnType>.<unknown>"
     }
 
   }

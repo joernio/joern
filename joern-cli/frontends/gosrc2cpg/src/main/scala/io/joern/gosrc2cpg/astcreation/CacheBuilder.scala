@@ -1,6 +1,7 @@
 package io.joern.gosrc2cpg.astcreation
 
 import io.joern.gosrc2cpg.datastructures.GoGlobal
+import io.joern.gosrc2cpg.parser.ParserAst.{GenDecl, ValueSpec}
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.Ast
 import ujson.{Arr, Obj, Value}
@@ -11,14 +12,38 @@ trait CacheBuilder { this: AstCreator =>
 
   def buildCache(): Unit = {
     try {
-      findAndProcess(parserResult.json)
       // Declared package name and namespace ending folder token is not matching then cache the alias to namespace mapping
       if (!fullyQualifiedPackage.endsWith(declaredPackageName)) {
         GoGlobal.recordAliasToNamespaceMapping(declaredPackageName, fullyQualifiedPackage)
       }
+      findAndProcess(parserResult.json)
+      processPackageLevelGolbalVaraiblesAndConstants(parserResult.json)
     } catch
       case ex: Exception =>
         logger.warn(s"Error: While processing - ${parserResult.fullPath}", ex)
+  }
+
+  private def processPackageLevelGolbalVaraiblesAndConstants(json: Value): Unit = {
+    json(ParserKeys.Decls).arrOpt
+      .getOrElse(List())
+      .map(createParserNodeInfo)
+      .foreach(decl => {
+        decl.node match
+          case GenDecl =>
+            decl
+              .json(ParserKeys.Specs)
+              .arrOpt
+              .getOrElse(List())
+              .map(createParserNodeInfo)
+              .foreach(spec => {
+                spec.node match
+                  case ValueSpec => astForValueSpec(spec, true)
+                  case _         =>
+                  // Only process ValueSpec
+              })
+          case _ =>
+          // Only process GenDecl
+      })
   }
 
   private def findAndProcess(json: Value): Unit = {
