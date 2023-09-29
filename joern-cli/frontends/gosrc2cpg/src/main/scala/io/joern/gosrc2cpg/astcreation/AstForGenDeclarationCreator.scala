@@ -54,7 +54,7 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
           (valueSpec.json(ParserKeys.Names).arr.toList zip valueSpec.json(ParserKeys.Values).arr.toList)
             .map { case (lhs, rhs) => (createParserNodeInfo(lhs), createParserNodeInfo(rhs)) }
             .map { case (lhsParserNode, rhsParserNode) =>
-              astForAssignmentCallNode(lhsParserNode, rhsParserNode, typeFullName)
+              astForAssignmentCallNode(lhsParserNode, rhsParserNode, typeFullName, valueSpec.code)
             }
             .unzip
         localAsts ++: assCallAsts
@@ -70,10 +70,11 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
 
   }
 
-  private def astForAssignmentCallNode(
+  protected def astForAssignmentCallNode(
     lhsParserNode: ParserNodeInfo,
     rhsParserNode: ParserNodeInfo,
-    typeFullName: Option[String]
+    typeFullName: Option[String],
+    code: String
   ): (Ast, Ast) = {
     val rhsAst          = astForBooleanLiteral(rhsParserNode)
     val rhsTypeFullName = typeFullName.getOrElse(getTypeFullNameFromAstNode(rhsAst))
@@ -82,7 +83,7 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
     val arguments       = lhsAst ++: rhsAst
     val cNode = callNode(
       rhsParserNode,
-      lhsParserNode.code + rhsParserNode.code,
+      code,
       Operators.assignment,
       Operators.assignment,
       DispatchTypes.STATIC_DISPATCH,
@@ -94,8 +95,12 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
 
   protected def astForLocalNode(localParserNode: ParserNodeInfo, typeFullName: Option[String]): Ast = {
     val name = localParserNode.json(ParserKeys.Name).str
-    val node = localNode(localParserNode, name, localParserNode.code, typeFullName.getOrElse(Defines.anyTypeName))
-    scope.addToScope(name, (node, typeFullName.getOrElse(Defines.anyTypeName)))
-    Ast(node)
+    if name != "_" then {
+      val node = localNode(localParserNode, name, localParserNode.code, typeFullName.getOrElse(Defines.anyTypeName))
+      scope.addToScope(name, (node, typeFullName.getOrElse(Defines.anyTypeName)))
+      Ast(node)
+    } else {
+      Ast()
+    }
   }
 }
