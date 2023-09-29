@@ -52,7 +52,7 @@ trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { thi
             // The presence of "Obj" field indicates its variable identifier and not an alias
             receiverAstAndFullName(xnode, fieldIdentifier)
           case _ =>
-            // Otherwise its an alias to imported namespace on which method call is made
+            // Otherwise its an alias to imported namespace using which global variable is getting accessed
             val alias            = xnode.json(ParserKeys.Name).str
             val receiverFullName = resolveAliasToFullName(alias, fieldIdentifier)
             (
@@ -63,8 +63,7 @@ trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { thi
               )
             )
       case _ =>
-        // This will take care of chained method calls. It will call `astForCallExpression` in recursive way,
-        // and the call node is used as receiver to this current call node.
+        // This will take care of chained calls
         receiverAstAndFullName(xnode, fieldIdentifier)
   }
 
