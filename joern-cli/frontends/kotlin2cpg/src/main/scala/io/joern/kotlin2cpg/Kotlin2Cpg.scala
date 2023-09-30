@@ -184,8 +184,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
         deps
       case None =>
         logger.warn(s"Could not fetch dependencies for project at path $sourceDir")
-        println("Could not fetch dependencies when explicitly asked to. Exiting.")
-        System.exit(1)
+        println("Could not fetch dependencies when explicitly asked to.")
         Seq()
     }
   }
@@ -203,8 +202,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
         coordinates.toSeq
       case None =>
         logger.warn(s"Could not fetch coordinates for project at path $sourceDir")
-        println("Could not fetch coordinates when explicitly asked to. Exiting.")
-        System.exit(1)
+        println("Could not fetch coordinates when explicitly asked to.")
         Seq()
     }
   }
