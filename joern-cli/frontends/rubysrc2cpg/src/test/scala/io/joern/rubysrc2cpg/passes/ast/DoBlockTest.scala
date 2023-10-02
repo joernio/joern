@@ -32,8 +32,7 @@ class DoBlockTest extends RubyCode2CpgFixture {
   }
 
   "a do-block function used as a higher-order function" should {
-    val cpg = code(
-      """class TransactionsController < ApplicationController
+    val cpg = code("""class TransactionsController < ApplicationController
         |  def permitted_column_name(column_name)
         |    %w[trx_date description amount].find { |permitted| column_name == permitted } || 'trx_date'
         |  end
