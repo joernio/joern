@@ -42,14 +42,43 @@ trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { thi
       case _ => Seq.empty
   }
 
-  protected def astForFieldAccess(info: ParserNodeInfo): Seq[Ast] = {
-    val identifierAsts       = astForNode(info.json(ParserKeys.X))
+  private def processReceiver(info: ParserNodeInfo): (Seq[Ast], String) = {
+    val xnode           = createParserNodeInfo(info.json(ParserKeys.X))
+    val fieldIdentifier = info.json(ParserKeys.Sel)(ParserKeys.Name).str
+    xnode.node match
+      case Ident =>
+        Try(xnode.json(ParserKeys.Obj)) match
+          case Success(_) =>
+            // The presence of "Obj" field indicates its variable identifier and not an alias
+            receiverAstAndFullName(xnode, fieldIdentifier)
+          case _ =>
+            // Otherwise its an alias to imported namespace using which global variable is getting accessed
+            val alias            = xnode.json(ParserKeys.Name).str
+            val receiverFullName = resolveAliasToFullName(alias, fieldIdentifier)
+            (
+              astForNode(xnode),
+              GoGlobal.structTypeMemberTypeMapping.getOrDefault(
+                receiverFullName,
+                s"$receiverFullName${Defines.dot}${Defines.FieldAccess}${Defines.dot}${XDefines.Unknown}"
+              )
+            )
+      case _ =>
+        // This will take care of chained calls
+        receiverAstAndFullName(xnode, fieldIdentifier)
+  }
+
+  private def receiverAstAndFullName(xnode: ParserNodeInfo, fieldIdentifier: String): (Seq[Ast], String) = {
+    val identifierAsts       = astForNode(xnode)
     val receiverTypeFullName = getTypeFullNameFromAstNode(identifierAsts)
-    val fieldIdentifier      = info.json(ParserKeys.Sel)(ParserKeys.Name).str
     val fieldTypeFullName = GoGlobal.structTypeMemberTypeMapping.getOrDefault(
-      receiverTypeFullName + Defines.dot + fieldIdentifier,
-      XDefines.Unknown
+      s"$receiverTypeFullName${Defines.dot}$fieldIdentifier",
+      s"$receiverTypeFullName${Defines.dot}$fieldIdentifier${Defines.dot}${Defines.FieldAccess}${Defines.dot}${XDefines.Unknown}"
     )
+    (identifierAsts, fieldTypeFullName)
+  }
+  protected def astForFieldAccess(info: ParserNodeInfo): Seq[Ast] = {
+    val (identifierAsts, fieldTypeFullName) = processReceiver(info)
+    val fieldIdentifier                     = info.json(ParserKeys.Sel)(ParserKeys.Name).str
     val fieldIdentifierNode = NewFieldIdentifier()
       .canonicalName(fieldIdentifier)
       .lineNumber(line(info))

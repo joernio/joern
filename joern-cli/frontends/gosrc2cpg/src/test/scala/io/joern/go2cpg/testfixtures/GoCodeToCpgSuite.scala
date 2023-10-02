@@ -17,7 +17,7 @@ trait Go2CpgFrontend extends LanguageFrontend {
     cpgOutFile.deleteOnExit()
     val go2cpg = new GoSrc2Cpg()
     val config = getConfig()
-      .map(_.asInstanceOf[Config])
+      .collectFirst { case x: Config => x }
       .getOrElse(Config())
       .withInputPath(sourceCodePath.getAbsolutePath)
       .withOutputPath(cpgOutFile.pathAsString)
@@ -52,5 +52,7 @@ class GoCodeToCpgSuite(fileSuffix: String = ".go", withOssDataflow: Boolean = fa
 
   override def beforeEach(): Unit = {
     GoGlobal.methodFullNameReturnTypeMap.clear()
+    GoGlobal.aliasToNameSpaceMapping.clear()
+    GoGlobal.structTypeMemberTypeMapping.clear()
   }
 }

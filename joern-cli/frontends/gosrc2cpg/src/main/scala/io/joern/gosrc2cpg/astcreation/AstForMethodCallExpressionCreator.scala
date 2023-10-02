@@ -138,7 +138,10 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
     val callMethodFullName = s"$receiverTypeFullName.$methodName"
     val (returnTypeFullNameCache, signatureCache) =
       GoGlobal.methodFullNameReturnTypeMap
-        .getOrDefault(callMethodFullName, (Defines.anyTypeName, s"$callMethodFullName()"))
+        .getOrDefault(
+          callMethodFullName,
+          (s"$receiverTypeFullName.$methodName.${Defines.ReturnType}.${XDefines.Unknown}", s"$callMethodFullName()")
+        )
     (methodName, signatureCache, callMethodFullName, returnTypeFullNameCache, receiverAst)
   }
 }
