@@ -31,4 +31,23 @@ class DoBlockTest extends RubyCode2CpgFixture {
     }
   }
 
+  "a do-block function used as a higher-order function" should {
+    val cpg = code("""class TransactionsController < ApplicationController
+        |  def permitted_column_name(column_name)
+        |    %w[trx_date description amount].find { |permitted| column_name == permitted } || 'trx_date'
+        |  end
+        |end
+        |
+        |""".stripMargin)
+
+    "create a do-block method named from the surrounding function" in {
+      val findMethod :: _ = cpg.method.name("find.*").l: @unchecked
+      findMethod.name should startWith("find")
+      findMethod.parameter.size shouldBe 1
+      val permitParam :: _ = findMethod.parameter.l: @unchecked
+      permitParam.name shouldBe "permitted"
+    }
+
+  }
+
 }
