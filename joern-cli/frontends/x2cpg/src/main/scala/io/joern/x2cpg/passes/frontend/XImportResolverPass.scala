@@ -9,6 +9,8 @@ import io.shiftleft.semanticcpg.language.*
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.io.File as JFile
+import java.nio.charset.StandardCharsets
+import java.util.Base64
 
 abstract class XImportResolverPass(cpg: Cpg) extends ConcurrentWriterCpgPass[Import](cpg) {
 
@@ -40,6 +42,8 @@ abstract class XImportResolverPass(cpg: Cpg) extends ConcurrentWriterCpgPass[Imp
 }
 
 object ImportsPass {
+
+  private val sep = ","
 
   sealed trait ResolvedImport {
     def label: String
@@ -84,7 +88,16 @@ object ImportsPass {
     })
 
     private def valueToOptions(x: String): Map[String, String] =
-      x.split(',').grouped(2).map(xs => xs(0) -> xs(1)).toMap
+      x.split(sep).grouped(2).map(xs => xs(0) -> xs(1).decode).toMap
+
+  }
+
+  implicit class Base64StringExt(str: String) {
+
+    def encode: String = Base64.getEncoder.encodeToString(str.getBytes(StandardCharsets.UTF_8))
+
+    def decode: String = new String(Base64.getDecoder.decode(str.getBytes), StandardCharsets.UTF_8)
+
   }
 
   case class ResolvedMethod(
@@ -94,7 +107,10 @@ object ImportsPass {
     override val label: String = RESOLVED_METHOD
   ) extends ResolvedImport {
     override def serialize: String =
-      s"$OPT_FULL_NAME,$fullName,$OPT_ALIAS,$alias" + receiver.map(r => s",$OPT_RECEIVER,$r").getOrElse("")
+      (Seq(OPT_FULL_NAME, fullName.encode, OPT_ALIAS, alias.encode) ++ receiver
+        .map(r => Seq(OPT_RECEIVER, r.encode))
+        .getOrElse(Seq.empty))
+        .mkString(sep)
   }
 
   case class ResolvedTypeDecl(fullName: String, override val label: String = RESOLVED_TYPE_DECL)
@@ -104,7 +120,7 @@ object ImportsPass {
 
   case class ResolvedMember(basePath: String, memberName: String, override val label: String = RESOLVED_MEMBER)
       extends ResolvedImport {
-    override def serialize: String = s"$OPT_BASE_PATH,$basePath,$OPT_NAME,$memberName"
+    override def serialize: String = Seq(OPT_BASE_PATH, basePath.encode, OPT_NAME, memberName.encode).mkString(sep)
   }
 
   case class UnknownMethod(
@@ -114,7 +130,10 @@ object ImportsPass {
     override val label: String = UNKNOWN_METHOD
   ) extends ResolvedImport {
     override def serialize: String =
-      s"$OPT_FULL_NAME,$fullName,$OPT_ALIAS,$alias" + receiver.map(r => s",$OPT_RECEIVER,$r").getOrElse("")
+      (Seq(OPT_FULL_NAME, fullName.encode, OPT_ALIAS, alias.encode) ++ receiver
+        .map(r => Seq(OPT_RECEIVER, r.encode))
+        .getOrElse(Seq.empty))
+        .mkString(sep)
   }
 
   case class UnknownTypeDecl(fullName: String, override val label: String = UNKNOWN_TYPE_DECL) extends ResolvedImport {
