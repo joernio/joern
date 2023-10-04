@@ -50,4 +50,21 @@ class DoBlockTest extends RubyCode2CpgFixture {
 
   }
 
+  "a do-block function wrapped within an active record association" should {
+    val cpg = code("""
+        |refunds = []
+        |attrs = {
+        | refunds: refunds.sort_by! { |r| r["created"] }
+        |}
+        |""".stripMargin)
+
+    "create a do-block method named from the surrounding function" in {
+      val findMethod :: _ = cpg.method.name("sort_by.*").l: @unchecked
+      findMethod.name should startWith("sort_by")
+      findMethod.parameter.size shouldBe 1
+      val permitParam :: _ = findMethod.parameter.l: @unchecked
+      permitParam.name shouldBe "r"
+    }
+  }
+
 }
