@@ -173,6 +173,7 @@ class AstCreator(filename: String, cls: SootClass, global: Global)(implicit with
           .withChildren(astsForModifiers(methodDeclaration))
           .withChildren(parameterAsts)
           .withChildren(astsForHostTags(methodDeclaration))
+          .withChild(Ast(NewBlock()))
           .withChild(astForMethodReturn(methodDeclaration))
       } else {
         val lastOrder = 2 + methodDeclaration.getParameterCount

@@ -1,7 +1,7 @@
 package io.joern.jimple2cpg
 
 import better.files.File
-import io.joern.jimple2cpg.passes.{AstCreationPass, SootAstCreationPass}
+import io.joern.jimple2cpg.passes.{AstCreationPass, DeclarationRefPass, SootAstCreationPass}
 import io.joern.jimple2cpg.util.ProgramHandlingUtil.{ClassFile, extractClassesInPackageLayout}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
@@ -117,6 +117,7 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
     TypeNodePass
       .withRegisteredTypes(global.usedTypes.keys().asScala.toList, cpg)
       .createAndApply()
+    DeclarationRefPass(cpg).createAndApply()
   }
 
   override def createCpg(config: Config): Try[Cpg] =

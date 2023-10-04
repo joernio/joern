@@ -10,7 +10,7 @@ class MethodParameterTests extends JimpleCode2CpgFixture {
   val cpg: Cpg = code("""package a;
       |class Foo {
       | int foo(int param1, Object param2) {
-      |  return 0;
+      |  return param1;
       | }
       |}
       """.stripMargin).cpg
@@ -45,6 +45,10 @@ class MethodParameterTests extends JimpleCode2CpgFixture {
 
   "should allow traversing from parameter to method" in {
     cpg.parameter.name("param1").method.filter(_.isExternal == false).name.l shouldBe List("foo")
+  }
+
+  "should allow traversing from parameter to identifier" in {
+    cpg.parameter.name("param1").referencingIdentifiers.name.l shouldBe List("param1")
   }
 
 }
