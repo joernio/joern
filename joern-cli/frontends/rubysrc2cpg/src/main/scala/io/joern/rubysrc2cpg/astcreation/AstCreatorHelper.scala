@@ -209,6 +209,22 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   }
 
+  implicit class AstIterExt(a: Iterable[Ast]) {
+
+    /** Partitions a sequence of Ast objects into those with roots start with an expression, and those that don't.
+      * @return
+      *   a tuple of sequences where the first has expression roots and the second does not.
+      */
+    def partitionExprAst: (Seq[Ast], Seq[Ast]) = {
+      val (as, bs) = a.partition(_.root match
+        case Some(_: ExpressionNew) => true
+        case _                      => false
+      )
+      (as.toSeq, bs.toSeq)
+    }
+
+  }
+
 }
 
 object RubyOperators {
