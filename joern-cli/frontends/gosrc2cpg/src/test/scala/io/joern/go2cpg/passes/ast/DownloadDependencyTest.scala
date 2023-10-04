@@ -32,7 +32,7 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
     }
   }
 
-  "unresolved dependency tests" should {
+  "unresolved dependency tests one" should {
     val cpg = code(
       """
         |module joern.io/sample
@@ -62,6 +62,30 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
       d.typeFullName shouldBe "joern.io/sampletwo.Person.Process.<ReturnType>.<unknown>.FullName.<ReturnType>.<unknown>"
       e.typeFullName shouldBe "joern.io/sampletwo.Person.Process.<ReturnType>.<unknown>"
       f.typeFullName shouldBe "joern.io/sampletwo.Person.Process.<ReturnType>.<unknown>.SomeField.<FieldAccess>.<unknown>"
+    }
+  }
+
+  "unresolved dependency tests two" should {
+    val cpg = code("""
+        |package main
+        |import (
+        |    "github.com/rs/zerolog"
+        |    "github.com/rs/zerolog/log"
+        |)
+        |func main() {
+        |    zerolog.SetGlobalLevel(zerolog.InfoLevel)
+        |    log.Error().Msg("Error message")
+        |    log.Warn().Msg("Warning message")
+        |}
+        |""".stripMargin)
+
+    "Be correct for CALL Node typeFullNames" in {
+      val List(a, b, c, d, e) = cpg.call.nameNot(Operators.fieldAccess).l
+      a.typeFullName shouldBe "github.com/rs/zerolog.SetGlobalLevel.<ReturnType>.<unknown>"
+      b.typeFullName shouldBe "github.com/rs/zerolog/log.Error.<ReturnType>.<unknown>.Msg.<ReturnType>.<unknown>"
+      c.typeFullName shouldBe "github.com/rs/zerolog/log.Error.<ReturnType>.<unknown>"
+      d.typeFullName shouldBe "github.com/rs/zerolog/log.Warn.<ReturnType>.<unknown>.Msg.<ReturnType>.<unknown>"
+      e.typeFullName shouldBe "github.com/rs/zerolog/log.Warn.<ReturnType>.<unknown>"
     }
   }
 }
