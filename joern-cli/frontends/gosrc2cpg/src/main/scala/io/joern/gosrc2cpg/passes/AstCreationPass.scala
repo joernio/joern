@@ -3,7 +3,7 @@ package io.joern.gosrc2cpg.passes
 import io.joern.gosrc2cpg.Config
 import io.joern.gosrc2cpg.astcreation.AstCreator
 import io.joern.gosrc2cpg.parser.GoAstJsonParser
-import io.joern.gosrc2cpg.utils.AstGenRunner.AstGenRunnerResult
+import io.joern.gosrc2cpg.parser.GoAstJsonParser.ParserResult
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.utils.{Report, TimeUtils}
 import io.shiftleft.codepropertygraph.Cpg
@@ -14,26 +14,24 @@ import org.slf4j.{Logger, LoggerFactory}
 import java.nio.file.Paths
 import scala.util.{Failure, Success, Try}
 
-class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: Config, report: Report)
-    extends ConcurrentWriterCpgPass[String](cpg) {
-  private val logger: Logger                  = LoggerFactory.getLogger(classOf[AstCreationPass])
-  override def generateParts(): Array[String] = astGenRunnerResult.parsedFiles.toArray
-  override def runOnPart(diffGraph: DiffGraphBuilder, inputJsonFile: String): Unit = {
+class AstCreationPass(cpg: Cpg, astCreators: Seq[AstCreator], config: Config, report: Report)
+    extends ConcurrentWriterCpgPass[AstCreator](cpg) {
+  private val logger: Logger                      = LoggerFactory.getLogger(classOf[AstCreationPass])
+  override def generateParts(): Array[AstCreator] = astCreators.toArray
+  override def runOnPart(diffGraph: DiffGraphBuilder, astCreator: AstCreator): Unit = {
     val ((gotCpg, filename), duration) = TimeUtils.time {
-      val parseResult     = GoAstJsonParser.readFile(Paths.get(inputJsonFile))
-      val fileLOC         = IOUtils.readLinesInFile(Paths.get(parseResult.fullPath)).size
-      val relPathFileName = SourceFiles.toRelativePath(parseResult.fullPath, config.inputPath)
-      report.addReportInfo(relPathFileName, fileLOC, parsed = true)
+      val fileLOC = IOUtils.readLinesInFile(Paths.get(astCreator.parserResult.fullPath)).size
+      report.addReportInfo(astCreator.relPathFileName, fileLOC, parsed = true)
       Try {
-        val localDiff = new AstCreator(relPathFileName, parseResult)(config.schemaValidation).createAst()
+        val localDiff = astCreator.createAst()
         diffGraph.absorb(localDiff)
       } match {
         case Failure(exception) =>
-          logger.warn(s"Failed to generate a CPG for: '${parseResult.fullPath}'", exception)
-          (false, relPathFileName)
+          logger.warn(s"Failed to generate a CPG for: '${astCreator.parserResult.fullPath}'", exception)
+          (false, astCreator.relPathFileName)
         case Success(_) =>
-          logger.info(s"Generated a CPG for: '${parseResult.fullPath}'")
-          (true, relPathFileName)
+          logger.info(s"Generated a CPG for: '${astCreator.parserResult.fullPath}'")
+          (true, astCreator.relPathFileName)
       }
     }
     report.updateReport(filename, cpg = gotCpg, duration)

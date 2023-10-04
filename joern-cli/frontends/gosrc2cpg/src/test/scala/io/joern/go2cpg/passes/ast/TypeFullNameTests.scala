@@ -1,7 +1,6 @@
 package io.joern.go2cpg.passes.ast
 
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
-import io.joern.gosrc2cpg.astcreation.Defines
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
 
@@ -36,28 +35,51 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
     }
   }
 
-  "Type check for implicit Type based on assigned literal" ignore {
+  "Type check for implicit Type based on assigned literal" should {
     val cpg = code("""
         |package main
         |func main() {
         |   var a = 10
         |   var b = 20.5
-        |   var c = [5]int{1,2}
+        |   var c = "Somestr"
+        |   var d = true
+        |   var e = false
+        |   var f = [5]int{1,2}
         |}
         |""".stripMargin)
 
-    "Check for local nodes" in {
-      val List(a, b, c) = cpg.local.l
+    "check for LITERAL nodes types" in {
+      val List(a, b, c, d, e, _, _) = cpg.literal.l
       a.typeFullName shouldBe "int"
       b.typeFullName shouldBe "float32"
-      c.typeFullName shouldBe "[]int"
+      c.typeFullName shouldBe "string"
+      d.typeFullName shouldBe "bool"
+      e.typeFullName shouldBe "bool"
+    }
+
+    "check for array call nodes types" in {
+      val List(arrayInitialiser) = cpg.call.nameNot(Operators.assignment).l
+      arrayInitialiser.typeFullName shouldBe "[]int"
+    }
+
+    "Check for local nodes" in {
+      val List(a, b, c, d, e, f) = cpg.local.l
+      a.typeFullName shouldBe "int"
+      b.typeFullName shouldBe "float32"
+      c.typeFullName shouldBe "string"
+      d.typeFullName shouldBe "bool"
+      e.typeFullName shouldBe "bool"
+      f.typeFullName shouldBe "[]int"
     }
 
     "check for identifier nodes" in {
-      val List(a, b, c) = cpg.identifier.l
+      val List(a, b, c, d, e, f) = cpg.identifier.l
       a.typeFullName shouldBe "int"
       b.typeFullName shouldBe "float32"
-      c.typeFullName shouldBe "[]int"
+      c.typeFullName shouldBe "string"
+      d.typeFullName shouldBe "bool"
+      e.typeFullName shouldBe "bool"
+      f.typeFullName shouldBe "[]int"
     }
   }
 
@@ -123,7 +145,7 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
         |}
         |""".stripMargin)
 
-    "Check for local nodes" ignore {
+    "Check for local nodes" in {
       val List(
         x,
         y,
@@ -239,7 +261,7 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
       a.typeFullName shouldBe "string"
     }
 
-    "check for identifier nodes working" in {
+    "check for identifier nodes" in {
       val List(x) = cpg.identifier("x").typeFullName.dedup.l
       x shouldBe "int"
       val List(y) = cpg.identifier("y").typeFullName.dedup.l
@@ -248,10 +270,6 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
       xx shouldBe "string"
       val List(yy) = cpg.identifier("yy").typeFullName.dedup.l
       yy shouldBe "string"
-
-    }
-
-    "TODO check for identifier nodes non working" ignore {
 
       val List(aaa, bbb, ccc) = cpg.identifier("aaa|bbb|ccc").l
       aaa.typeFullName shouldBe "int"
@@ -342,7 +360,7 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
 
     }
 
-    "Check call nodes for + operator type full name" ignore {
+    "Check call nodes for + operator type full name" in {
       val List(a, b, c, d, e, f) = cpg.call(Operators.addition).l
       d.typeFullName shouldBe "int"
       e.typeFullName shouldBe "int"
@@ -352,111 +370,111 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
       a.typeFullName shouldBe "string"
     }
 
-    "check call nodes for - operator type full name" ignore {
+    "check call nodes for - operator type full name" in {
       val List(g, h, i) = cpg.call(Operators.subtraction).l
       g.typeFullName shouldBe "int"
       h.typeFullName shouldBe "int"
       i.typeFullName shouldBe "int"
     }
 
-    "check call nodes for * operator type full name" ignore {
+    "check call nodes for * operator type full name" in {
       val List(j, k, l) = cpg.call(Operators.multiplication).l
       j.typeFullName shouldBe "int"
       k.typeFullName shouldBe "int"
       l.typeFullName shouldBe "int"
     }
 
-    "check call nodes for / operator type full name" ignore {
+    "check call nodes for / operator type full name" in {
       val List(m, n, o) = cpg.call(Operators.division).l
       m.typeFullName shouldBe "int"
       n.typeFullName shouldBe "int"
       o.typeFullName shouldBe "int"
     }
 
-    "check call nodes for % operator type full name" ignore {
+    "check call nodes for % operator type full name" in {
       val List(p, q, r) = cpg.call(Operators.modulo).l
       p.typeFullName shouldBe "int"
       q.typeFullName shouldBe "int"
       r.typeFullName shouldBe "int"
     }
 
-    "check call nodes for == operator type full name" ignore {
+    "check call nodes for == operator type full name" in {
       val List(s, t) = cpg.call(Operators.equals).l
       s.typeFullName shouldBe "bool"
       t.typeFullName shouldBe "bool"
     }
 
-    "check call nodes for != operator type full name" ignore {
+    "check call nodes for != operator type full name" in {
       val List(u, v) = cpg.call(Operators.notEquals).l
       u.typeFullName shouldBe "bool"
       v.typeFullName shouldBe "bool"
     }
 
-    "check call nodes for > operator type full name" ignore {
+    "check call nodes for > operator type full name" in {
       val List(w, z) = cpg.call(Operators.greaterThan).l
       w.typeFullName shouldBe "bool"
       z.typeFullName shouldBe "bool"
     }
 
-    "check call nodes for < operator type full name" ignore {
+    "check call nodes for < operator type full name" in {
       val List(aa, bb) = cpg.call(Operators.lessThan).l
       aa.typeFullName shouldBe "bool"
       bb.typeFullName shouldBe "bool"
     }
 
-    "check call nodes for >= operator type full name" ignore {
+    "check call nodes for >= operator type full name" in {
       val List(cc, dd) = cpg.call(Operators.greaterEqualsThan).l
       cc.typeFullName shouldBe "bool"
       dd.typeFullName shouldBe "bool"
     }
 
-    "check call nodes for <= operator type full name" ignore {
+    "check call nodes for <= operator type full name" in {
       val List(ee, ff) = cpg.call(Operators.lessEqualsThan).l
       ee.typeFullName shouldBe "bool"
       ff.typeFullName shouldBe "bool"
     }
 
-    "check call nodes for && operator type full name" ignore {
+    "check call nodes for && operator type full name" in {
       val List(gg, hh) = cpg.call(Operators.logicalAnd).l
       gg.typeFullName shouldBe "bool"
       hh.typeFullName shouldBe "bool"
     }
 
-    "check call nodes for || operator type full name" ignore {
+    "check call nodes for || operator type full name" in {
       val List(ii, jj) = cpg.call(Operators.logicalOr).l
       ii.typeFullName shouldBe "bool"
       jj.typeFullName shouldBe "bool"
     }
 
-    "check call nodes for & operator type full name" ignore {
+    "check call nodes for & operator type full name" in {
       val List(kk, ll, mm) = cpg.call(Operators.and).l
       kk.typeFullName shouldBe "int"
       ll.typeFullName shouldBe "int"
       mm.typeFullName shouldBe "int"
     }
 
-    "check call nodes for | operator type full name" ignore {
+    "check call nodes for | operator type full name" in {
       val List(nn, oo, pp) = cpg.call(Operators.or).l
       nn.typeFullName shouldBe "int"
       oo.typeFullName shouldBe "int"
       pp.typeFullName shouldBe "int"
     }
 
-    "check call nodes for ^ operator type full name" ignore {
+    "check call nodes for ^ operator type full name" in {
       val List(qq, rr, ss) = cpg.call(Operators.xor).l
       qq.typeFullName shouldBe "int"
       rr.typeFullName shouldBe "int"
       ss.typeFullName shouldBe "int"
     }
 
-    "check call nodes for << operator type full name" ignore {
+    "check call nodes for << operator type full name" in {
       val List(tt, uu, vv) = cpg.call(Operators.shiftLeft).l
       tt.typeFullName shouldBe "int"
       uu.typeFullName shouldBe "int"
       vv.typeFullName shouldBe "int"
     }
 
-    "check call nodes for >> operator type full name" ignore {
+    "check call nodes for >> operator type full name" in {
       val List(aaa, bbb, ccc) = cpg.call(Operators.arithmeticShiftRight).l
       aaa.typeFullName shouldBe "int"
       bbb.typeFullName shouldBe "int"
@@ -464,7 +482,7 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
     }
   }
 
-  "Type check for += call nodes with string arguments " ignore {
+  "Type check for += call nodes with string arguments " should {
     val cpg = code("""
         |package main
         |func main() {
@@ -494,7 +512,7 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
     }
   }
 
-  "Type check for += call nodes with float arguments " ignore {
+  "Type check for += call nodes with float arguments " should {
     val cpg = code("""
         |package main
         |func main() {
@@ -524,7 +542,7 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
     }
   }
 
-  "Type check for += call nodes with int arguments " ignore {
+  "Type check for += call nodes with int arguments " should {
     val cpg = code("""
         |package main
         |func main() {
@@ -551,6 +569,58 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
       a.typeFullName shouldBe "int"
       b.typeFullName shouldBe "int"
       c.typeFullName shouldBe "int"
+    }
+  }
+
+  "Type Check for Arrays" should {
+    val cpg = code("""
+        |package main
+        |func main() {
+        |   var a [][]string = [][]string{{"1", "2"}, {"3", "4"}}
+        |   b := a[0][1]
+        |   var c = [][]string{{"1", "2"}, {"3", "4"}}
+        |   var d = c[1]
+        |   var e = d[0]
+        |   var f = c[0][0]
+        |   var g []int = []int{1,2,3}
+        |   var h = g[0]
+        |   i := g
+        |   j := []float32{ 1.2, 2.5}
+        |   var k = i[0]
+        |   var l = j[0]
+        |}
+        |""".stripMargin)
+    "Type Check LOCAL nodes working" in {
+      val List(a, b, c, d, e, f, g, h, i, j, k, l) = cpg.local.l
+      a.typeFullName shouldBe "[][]string"
+      g.typeFullName shouldBe "[]int"
+      b.typeFullName shouldBe "string"
+      c.typeFullName shouldBe "[][]string"
+      d.typeFullName shouldBe "[]string"
+      e.typeFullName shouldBe "string"
+      f.typeFullName shouldBe "string"
+      h.typeFullName shouldBe "int"
+      i.typeFullName shouldBe "[]int"
+      j.typeFullName shouldBe "[]float32"
+      k.typeFullName shouldBe "int"
+      l.typeFullName shouldBe "float32"
+    }
+
+    "Type check for CALL nodes working" in {
+      val List(a, b, c, d, e, f, g, h, i, j, k, l, m) = cpg.call.nameNot(Operators.assignment).l
+      a.typeFullName shouldBe "[][]string"
+      b.typeFullName shouldBe "string"
+      c.typeFullName shouldBe "[]string"
+      d.typeFullName shouldBe "[][]string"
+      i.typeFullName shouldBe "[]int"
+      j.typeFullName shouldBe "int"
+      k.typeFullName shouldBe "[]float32"
+      e.typeFullName shouldBe "[]string"
+      f.typeFullName shouldBe "string"
+      g.typeFullName shouldBe "string"
+      h.typeFullName shouldBe "[]string"
+      l.typeFullName shouldBe "int"
+      m.typeFullName shouldBe "float32"
     }
   }
 
@@ -598,6 +668,8 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
         |  var compNameOne = perOne.fullName()
         |  var perThree = lib.Person{fname: "Ram", lname: "Thakur"}
         |  perFour := lib.Person{fname: "Seema", lname: "Dubey"}
+        |  b := perFour.fname
+        |  c := perFour.lname
         |}
         |""".stripMargin,
       "main.go"
@@ -613,7 +685,7 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
       createPerson.typeFullName shouldBe "joern.io/sample/lib.Person"
     }
 
-    "Call node typeFullName check for function call on receiver object usecase 1" ignore {
+    "Call node typeFullName check for function call on receiver object usecase 1" in {
       val List(fullName) = cpg.call("fullName").lineNumber(8).l
       fullName.typeFullName shouldBe "string"
     }
@@ -623,7 +695,7 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
       fullName.typeFullName shouldBe "string"
     }
 
-    "TODO variable type checks not working " ignore {
+    "Variable type checks" in {
       val List(a) = cpg.local("a").l
       a.typeFullName shouldBe "string"
 
@@ -645,11 +717,160 @@ class TypeFullNameTests extends GoCodeToCpgSuite {
       val List(perFour) = cpg.identifier("perFour").lineNumber(12).l
       perFour.typeFullName shouldBe "joern.io/sample/lib.Person"
 
-    }
-
-    "variable type checks working" in {
       val List(perOne) = cpg.identifier("perOne").lineNumber(9).l
       perOne.typeFullName shouldBe "joern.io/sample/lib.Person"
+    }
+
+    "Field access CALL node type check" in {
+      val List(a, b, c, d) = cpg.call(Operators.fieldAccess).l
+      a.typeFullName shouldBe "string"
+      b.typeFullName shouldBe "string"
+      c.typeFullName shouldBe "string"
+      d.typeFullName shouldBe "string"
+    }
+  }
+
+  "Struct Type used in another struct type check" should {
+    val cpg = code(
+      """
+        |module joern.io/sample
+        |go 1.18
+        |""".stripMargin,
+      "go.mod"
+    ).moreCode(
+      """
+          |package lib
+          |
+          |type Address struct {
+          |	addone string
+          |	addtwo string
+          |}
+          |type Person struct {
+          |	name     string
+          |	age      int
+          |	location string
+          |	address  Address
+          |}
+          |
+          |""".stripMargin,
+      Seq("lib", "typelib.go").mkString(File.separator)
+    ).moreCode(
+      """
+        |package main
+        |import "joern.io/sample/lib"
+        |func main() {
+        |	var a = lib.Address{}
+        |	var p = lib.Person{"pandurang", 10, "", a}
+        |	var name = p.name
+        |	address := p.address
+        |}
+        |""".stripMargin,
+      "main.go"
+    )
+
+    "Check CALL nodes of RHS" in {
+      val List(a, b, c, d) = cpg.call.nameNot(Operators.assignment).l
+      a.typeFullName shouldBe "joern.io/sample/lib.Address"
+      b.typeFullName shouldBe "joern.io/sample/lib.Person"
+      c.typeFullName shouldBe "string"
+      d.typeFullName shouldBe "joern.io/sample/lib.Address"
+    }
+
+    "Check LHS LOCAL Nodes for types" in {
+      val List(a, b, c, d) = cpg.local.l
+      a.typeFullName shouldBe "joern.io/sample/lib.Address"
+      b.typeFullName shouldBe "joern.io/sample/lib.Person"
+      c.typeFullName shouldBe "string"
+      d.typeFullName shouldBe "joern.io/sample/lib.Address"
+    }
+  }
+
+  "Struct type used before defining it" should {
+    val cpg = code("""
+        |package main
+        |func main() {
+        |  var p = Person{name: "Pandurang"}
+        |  var c = p.name
+        |}
+        |type Person struct{
+        |  name string
+        |}
+        |""".stripMargin)
+    "LOCAL Node type check" in {
+      val List(p, c) = cpg.local.l
+      p.typeFullName shouldBe "main.Person"
+      c.typeFullName shouldBe "string"
+    }
+
+    "CALL Node type check" in {
+      val List(a, b) = cpg.call.nameNot(Operators.assignment).l
+      a.typeFullName shouldBe "main.Person"
+      b.typeFullName shouldBe "string"
+    }
+  }
+
+  "Use case where namespace folder is not matching with declared package name" should {
+    val cpg = code(
+      """
+        |module joern.io/sample
+        |go 1.18
+        |""".stripMargin,
+      "go.mod"
+    ).moreCode(
+      """
+        |package fpkg
+        |type Sample struct {
+        |  Name string
+        |}
+        |func Woo(a int) int{
+        |   return 0
+        |}
+        |""".stripMargin,
+      Seq("lib", "lib.go").mkString(File.separator)
+    ).moreCode(
+      """
+        |package main
+        |import "joern.io/sample/lib"
+        |func main() {
+        |  var a = fpkg.Woo(10)
+        |  var b = fpkg.Sample{name: "Pandurang"}
+        |  var c = b.Name
+        |  var d fpkg.Sample
+        |}
+        |""".stripMargin,
+      "main.go"
+    )
+
+    "Check METHOD Node" in {
+      cpg.method("Woo").size shouldBe 1
+      val List(x) = cpg.method("Woo").l
+      x.fullName shouldBe "joern.io/sample/lib.Woo"
+      x.signature shouldBe "joern.io/sample/lib.Woo(int)int"
+    }
+
+    "Check CALL Node" in {
+      val List(x) = cpg.call("Woo").l
+      x.methodFullName shouldBe "joern.io/sample/lib.Woo"
+      x.typeFullName shouldBe "int"
+    }
+
+    "Traversal from call to callee method node" in {
+      val List(x) = cpg.call("Woo").callee.l
+      x.fullName shouldBe "joern.io/sample/lib.Woo"
+      x.isExternal shouldBe false
+    }
+
+    "Check TypeDecl Node" in {
+      val List(x) = cpg.typeDecl("Sample").l
+      x.fullName shouldBe "joern.io/sample/lib.Sample"
+    }
+
+    "Check LOCAL Nodes" in {
+      val List(a, b, c, d) = cpg.local.l
+      a.typeFullName shouldBe "int"
+      b.typeFullName shouldBe "joern.io/sample/lib.Sample"
+      c.typeFullName shouldBe "string"
+      d.typeFullName shouldBe "joern.io/sample/lib.Sample"
     }
   }
 }

@@ -13,6 +13,7 @@ import scala.jdk.CollectionConverters.CollectionHasAsScala
 trait AstForDeclarationsCreator { this: AstCreator =>
 
   private val logger = LoggerFactory.getLogger(this.getClass)
+
   protected def astForArguments(ctx: ArgumentsContext): Seq[Ast] = {
     ctx.argument().asScala.flatMap(astForArgument).toSeq
   }
@@ -26,7 +27,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       case ctx: CommandArgumentContext           => astForCommand(ctx.command)
       case ctx: HereDocArgumentContext           => astForHereDocArgument(ctx)
       case _ =>
-        logger.error(s"astForArgument() $filename, ${ctx.getText} All contexts mismatched.")
+        logger.error(s"astForArgument() $relativeFilename, ${ctx.getText} All contexts mismatched.")
         Seq()
     }
   }

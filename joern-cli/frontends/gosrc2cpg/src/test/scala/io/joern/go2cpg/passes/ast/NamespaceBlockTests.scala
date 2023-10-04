@@ -26,9 +26,11 @@ class NamespaceBlockTests extends GoCodeToCpgSuite {
     x.order shouldBe 1
   }
 
-  // TODO: Once the method node creation is done, this unit test needs to be fixed to add fullname for "func foo()" as well, along with dummy method representing the file.
-  "should allow traversing from namespace block to method" ignore {
-    cpg.namespaceBlock.filenameNot(FileTraversal.UNKNOWN).ast.isMethod.fullName.l shouldBe List("Test0.go:main")
+  "should allow traversing from namespace block to method" in {
+    cpg.namespaceBlock.filenameNot(FileTraversal.UNKNOWN).ast.isMethod.fullName.l shouldBe List(
+      "Test0.go:main.<global>",
+      "main.foo"
+    )
   }
 
   "should allow traversing from namespace block to type declaration" in {

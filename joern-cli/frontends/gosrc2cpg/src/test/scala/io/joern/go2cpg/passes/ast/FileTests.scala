@@ -40,14 +40,13 @@ class FileTests extends GoCodeToCpgSuite {
       )
     }
 
-    // TODO: TypeDecl fix the unit test
-    "should allow traversing from file to its type declarations via namespace block" ignore {
+    "should allow traversing from file to its type declarations via namespace block" in {
       cpg.file
         .nameNot(FileTraversal.UNKNOWN)
         .typeDecl
         .name
         .l
-        .sorted shouldBe List("main.<global>", "int", "Sample")
+        .sorted shouldBe List("Sample", "main.<global>")
     }
 
     "should allow traversing to namespaces" in {

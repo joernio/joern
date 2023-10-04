@@ -2,13 +2,16 @@ package io.joern.gosrc2cpg.astcreation
 
 object Defines {
   val anyTypeName: String            = "ANY"
-  val tobeFilled: String             = "<TO_BE_FILLED>"
   val voidTypeName: String           = "void"
   val qualifiedNameSeparator: String = "::"
   val empty                          = "<empty>"
   val dot                            = "."
   val map                            = "map"
   val chan                           = "chan"
+  val This: String                   = "this"
+  val Bool                           = "bool"
+  val FieldAccess                    = "<FieldAccess>"
+  val ReturnType                     = "<ReturnType>"
 
   val primitiveTypeMap: Map[String, String] =
     // This list is prepared with reference to primitives defined at https://pkg.go.dev/builtin#pkg-types

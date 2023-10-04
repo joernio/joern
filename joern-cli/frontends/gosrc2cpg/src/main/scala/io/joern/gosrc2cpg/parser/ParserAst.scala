@@ -33,6 +33,7 @@ object ParserAst {
   object SelectorExpr        extends BaseExpr
   object CallExpr            extends BaseExpr
   object StructType          extends BaseExpr
+  object IndexExpr           extends BaseExpr
   sealed trait BaseStmt      extends ParserNode
   object BlockStmt           extends BaseStmt
   object DeclStmt            extends BaseStmt
@@ -65,7 +66,6 @@ object ParserAst {
   object ArrayType           extends ParserNode
   object MapType             extends ParserNode
   object ChanType            extends ParserNode
-  object Field               extends ParserNode
   object TypeSpec            extends ParserNode
 }
 
@@ -116,4 +116,5 @@ object ParserKeys {
   val TypeParams      = "TypeParams"
   val Args            = "Args"
   val Recv            = "Recv"
+  val Index           = "Index"
 }

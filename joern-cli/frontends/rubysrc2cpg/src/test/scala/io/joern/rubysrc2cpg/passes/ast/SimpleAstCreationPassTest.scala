@@ -733,7 +733,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       val cpg = code("object::foo do\nputs \"right here\"\nend")
 
       val List(callNode1) = cpg.call.name("foo").l
-      callNode1.code shouldBe "puts \"right here\""
+      callNode1.code shouldBe "def foo1(...)"
       callNode1.lineNumber shouldBe Some(1)
       callNode1.columnNumber shouldBe Some(3)
 

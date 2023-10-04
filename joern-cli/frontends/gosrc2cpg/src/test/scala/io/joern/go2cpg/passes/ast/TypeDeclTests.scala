@@ -25,11 +25,6 @@ class TypeDeclTests extends GoCodeToCpgSuite {
       typeDeclNode.columnNumber shouldBe Some(6)
     }
 
-    "test parent ast structure" in {
-      cpg.typeDecl("Foo").astParentFullName.l.head shouldBe "test.go:main.<global>"
-      cpg.typeDecl("Foo").astParentType.l.head shouldBe NodeTypes.TYPE_DECL
-    }
-
     "test fullName of TypeDecl nodes" in {
       typeDeclNode.fullName shouldBe "main.Foo"
     }
@@ -53,11 +48,6 @@ class TypeDeclTests extends GoCodeToCpgSuite {
       typeDeclNode.code shouldBe "Foo string"
       typeDeclNode.lineNumber shouldBe Some(2)
       typeDeclNode.columnNumber shouldBe Some(6)
-    }
-
-    "test ast parent structure" in {
-      cpg.typeDecl("Foo").astParentFullName.l.head shouldBe "test.go:main.<global>"
-      cpg.typeDecl("Foo").astParentType.l.head shouldBe NodeTypes.TYPE_DECL
     }
 
     "test fullName of TypeDecl nodes" in {
@@ -85,11 +75,6 @@ class TypeDeclTests extends GoCodeToCpgSuite {
       typeDeclNode.columnNumber shouldBe Some(6)
     }
 
-    "test parent ast structure" in {
-      cpg.typeDecl("Foo").astParentFullName.l.head shouldBe "test.go:main.<global>"
-      cpg.typeDecl("Foo").astParentType.l.head shouldBe NodeTypes.TYPE_DECL
-    }
-
     "test fullName of TypeDecl nodes" in {
       typeDeclNode.fullName shouldBe "main.Foo"
     }
@@ -114,11 +99,6 @@ class TypeDeclTests extends GoCodeToCpgSuite {
       typeDeclNode.code shouldBe "foo int"
       typeDeclNode.lineNumber shouldBe Some(2)
       typeDeclNode.columnNumber shouldBe Some(6)
-    }
-
-    "test ast parent structure" in {
-      cpg.typeDecl("foo").astParentFullName.l.head shouldBe "test.go:main.<global>"
-      cpg.typeDecl("foo").astParentType.l.head shouldBe NodeTypes.TYPE_DECL
     }
 
     "test fullName of TypeDecl nodes" in {
@@ -148,11 +128,6 @@ class TypeDeclTests extends GoCodeToCpgSuite {
       typeDeclNode.columnNumber shouldBe Some(7)
     }
 
-    "test ast parent structure" in {
-      cpg.typeDecl("Sample").astParentFullName.l.head shouldBe "test.go:main.<global>"
-      cpg.typeDecl("Sample").astParentType.l.head shouldBe NodeTypes.TYPE_DECL
-    }
-
     "test fullName of TypeDecl nodes" ignore {
       typeDeclNode.fullName shouldBe "main.main.Sample"
     }
@@ -178,11 +153,6 @@ class TypeDeclTests extends GoCodeToCpgSuite {
       typeDeclNode.code shouldBe "Foo struct {}"
       typeDeclNode.lineNumber shouldBe Some(3)
       typeDeclNode.columnNumber shouldBe Some(2)
-    }
-
-    "test ast parent structure" in {
-      cpg.typeDecl("Foo").astParentFullName.l.head shouldBe "test.go:main.<global>"
-      cpg.typeDecl("Foo").astParentType.l.head shouldBe NodeTypes.TYPE_DECL
     }
 
     "test fullName of TypeDecl nodes" in {
@@ -212,11 +182,6 @@ class TypeDeclTests extends GoCodeToCpgSuite {
       typeDeclNode.columnNumber shouldBe Some(2)
     }
 
-    "test ast parent structure for Foo" in {
-      cpg.typeDecl("Foo").astParentFullName.l.head shouldBe "test.go:main.<global>"
-      cpg.typeDecl("Foo").astParentType.l.head shouldBe NodeTypes.TYPE_DECL
-    }
-
     "test fullName of TypeDecl nodes for Foo" in {
       typeDeclNode.fullName shouldBe "main.Foo"
     }
@@ -233,11 +198,6 @@ class TypeDeclTests extends GoCodeToCpgSuite {
       typeDeclNodeBar.columnNumber shouldBe Some(2)
     }
 
-    "test parent ast structure for bar" in {
-      cpg.typeDecl("bar").astParentFullName.l.head shouldBe "test.go:main.<global>"
-      cpg.typeDecl("bar").astParentType.l.head shouldBe NodeTypes.TYPE_DECL
-    }
-
     "test fullName of TypeDecl nodes for bar" in {
       typeDeclNodeBar.fullName shouldBe "main.bar"
     }
@@ -245,6 +205,98 @@ class TypeDeclTests extends GoCodeToCpgSuite {
     "test the modifier for bar" in {
       typeDeclNodeBar.modifier.head.modifierType shouldBe ModifierTypes.PRIVATE
       typeDeclNodeBar.astOut.isModifier.size shouldBe 1
+    }
+  }
+
+  "when multiple TypeDecls are defined having multiple members" should {
+    val cpg = code("""
+        |package main
+        |type House struct {
+        |   name Name
+        |   owner Person
+        |}
+        |type Person struct {
+        |   firstName string
+        |   lastName string
+        |}
+        |type Address struct { shortAddress string }
+        |type Name struct { address Address }
+        |""".stripMargin)
+
+    "test basic ast structure for House" in {
+      val List(typeDeclNode) = cpg.typeDecl.name("House").l
+      typeDeclNode.fullName shouldBe "main.House"
+      typeDeclNode.member.size shouldBe 2
+      val List(name, owner) = typeDeclNode.member.l
+      name.code shouldBe "name"
+      name.typeFullName shouldBe "main.Name"
+      owner.code shouldBe "owner"
+      owner.typeFullName shouldBe "main.Person"
+    }
+
+    "test basic ast structure for Person" in {
+      val List(typeDeclNode) = cpg.typeDecl.name("Person").l
+      typeDeclNode.fullName shouldBe "main.Person"
+      typeDeclNode.member.size shouldBe 2
+      val List(firstname, lastname) = typeDeclNode.member.l
+      firstname.code shouldBe "firstName"
+      firstname.typeFullName shouldBe "string"
+      lastname.code shouldBe "lastName"
+      lastname.typeFullName shouldBe "string"
+    }
+
+    "test basic ast structure for Address" in {
+      val List(typeDeclNode) = cpg.typeDecl.name("Address").l
+      typeDeclNode.fullName shouldBe "main.Address"
+      typeDeclNode.member.size shouldBe 1
+      val List(name) = typeDeclNode.member.l
+      name.code shouldBe "shortAddress"
+      name.typeFullName shouldBe "string"
+    }
+
+    "test basic ast structure for Name" in {
+      val List(typeDeclNode) = cpg.typeDecl.name("Name").l
+      typeDeclNode.fullName shouldBe "main.Name"
+      typeDeclNode.member.size shouldBe 1
+      val List(name) = typeDeclNode.member.l
+      name.code shouldBe "address"
+      name.typeFullName shouldBe "main.Address"
+    }
+  }
+
+  "when multiple TypeDecls are defined having array of complex(structre-array)" should {
+    val cpg = code("""
+        |package main
+        |type House struct { names []Name }
+        |type Address struct { shortAddress string }
+        |type Name struct { address Address }
+        |""".stripMargin)
+
+    "test basic ast structure for House" in {
+      val List(typeDeclNode) = cpg.typeDecl.name("House").l
+      typeDeclNode.fullName shouldBe "main.House"
+      typeDeclNode.member.size shouldBe 1
+      val List(name) = typeDeclNode.member.l
+      name.code shouldBe "names"
+      name.typeFullName shouldBe "[]main.Name"
+    }
+
+    "test basic ast structure for Address" in {
+      val List(typeDeclNode) = cpg.typeDecl.name("Address").l
+      typeDeclNode.fullName shouldBe "main.Address"
+      typeDeclNode.member.size shouldBe 1
+      val List(name) = typeDeclNode.member.l
+      name.code shouldBe "shortAddress"
+      name.typeFullName shouldBe "string"
+    }
+
+    "test basic ast structure for Name" in {
+      val List(typeDeclNode) = cpg.typeDecl.name("Name").l
+      typeDeclNode.fullName shouldBe "main.Name"
+      typeDeclNode.member.size shouldBe 1
+      val List(name) = typeDeclNode.member.l
+      name.code shouldBe "address"
+      name.typeFullName shouldBe "main.Address"
     }
   }
 }

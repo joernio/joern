@@ -101,10 +101,7 @@ class ConstructorCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
       squareArgument.argumentIndex shouldBe 1
       squareArgument.order shouldBe 1
       squareArgument.code shouldBe "square"
-    }
-
-    "type full name of argument" ignore {
-      squareArgument.typeFullName shouldBe "main.Square.<init>"
+      squareArgument.typeFullName shouldBe "main.Square"
     }
   }
 

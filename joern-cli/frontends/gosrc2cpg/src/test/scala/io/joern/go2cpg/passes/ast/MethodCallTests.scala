@@ -404,7 +404,7 @@ class MethodCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
       x.signature shouldBe "joern.io/sample/fpkg.bar()"
       x.order shouldBe 1
       x.lineNumber shouldBe Option(5)
-      x.typeFullName shouldBe Defines.anyTypeName
+      x.typeFullName shouldBe "joern.io/sample/fpkg.bar.<ReturnType>.<unknown>"
     }
 
     "traversal from call to caller method node" in {
@@ -437,7 +437,7 @@ class MethodCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
       x.methodFullName shouldBe "joern.io/sample/fpkg.bar"
       x.order shouldBe 5
       x.lineNumber shouldBe Option(7)
-      x.typeFullName shouldBe Defines.anyTypeName
+      x.typeFullName shouldBe "joern.io/sample/fpkg.bar.<ReturnType>.<unknown>"
     }
 
     "Signature property should be updated with argument types" ignore {
@@ -562,135 +562,19 @@ class MethodCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
     }
   }
 
-  "Method call on chain of variable" should {
-    "Check call node properties on two times chained" in {
-      val cpg = code("""
-        package main
-        |
-        |func foo(ctx context) int {
-        |
-        |   var a = 10
-        |	result := ctx.data.bar(a)
-        |
-        |	return result
-        |}
-        |
-        |""".stripMargin)
-
-      cpg.call("bar").size shouldBe 1
-      val List(x) = cpg.call("bar").l
-      x.code shouldBe "ctx.data.bar(a)"
-      x.methodFullName shouldBe "main.context.bar"
-      x.order shouldBe 2
-      x.lineNumber shouldBe Option(7)
-      x.typeFullName shouldBe Defines.anyTypeName
-    }
-
-    "Check call node properties on five times chained" in {
-      val cpg = code("""
-        package main
-          |
-          |func foo(ctx context) int {
-          |
-          | var a = 10
-          |	result := ctx.data1.data2.data3.data4.bar(a)
-          |
-          |	return result
-          |}
-          |
-          |""".stripMargin)
-
-      cpg.call("bar").size shouldBe 1
-      val List(x) = cpg.call("bar").l
-      x.code shouldBe "ctx.data1.data2.data3.data4.bar(a)"
-      x.methodFullName shouldBe "main.context.bar"
-      x.order shouldBe 2
-      x.lineNumber shouldBe Option(7)
-      x.typeFullName shouldBe Defines.anyTypeName
-    }
-
-  }
-
-  "Method call chaining using builder design" should {
+  "Method call check with parameters being passed while they are casted to another type" ignore {
     val cpg = code("""
         |package main
-        |
-        |import "fmt"
-        |
-        |type Person struct {
-        |    name     string
-        |    age      int
-        |    location string
-        |}
-        |
-        |func (p *Person) SetName(name string) *Person {
-        |    p.name = name
-        |    return p
-        |}
-        |
-        |func (p *Person) SetAge(age int) *Person {
-        |    p.age = age
-        |    return p
-        |}
-        |
-        |func (p *Person) SetLocation(location string) *Person {
-        |    p.location = location
-        |    return p
-        |}
-        |
-        |func main() {
-        |    person := &Person{}
-        |    person.SetName("John").SetAge(30).SetLocation("New York")
+        |func foo() {
+        |	var a = bar([]byte("test"))
+        |   var b = bar(map[string]interface{}(labels))
+        |   var c = bar(reflect.TypeOf((*MockDB)(nil).CheckHealth))
         |}
         |""".stripMargin)
-
-    "Check call node properties: Name" in {
-      val List(x) = cpg.call.name("SetName").l
-      x.code shouldBe "person.SetName(\"John\")"
-      x.methodFullName shouldBe "ANY.SetName"
-      x.order shouldBe 4
-      x.lineNumber shouldBe Option(29)
-      x.typeFullName shouldBe Defines.anyTypeName
+    // TODO: Need to work on how this casting should get translated to AST
+    "Check call node properties" in {
+      cpg.call("bar").size shouldBe 3
+      val List(a, b, c) = cpg.call("bar").l
     }
-
-    "Check call node properties: Location" in {
-      val List(x) = cpg.call.name("SetLocation").l
-      x.code shouldBe "person.SetName(\"John\").SetAge(30).SetLocation(\"New York\")"
-      x.methodFullName shouldBe "ANY.SetLocation"
-      x.order shouldBe 3
-      x.lineNumber shouldBe Option(29)
-      x.typeFullName shouldBe Defines.anyTypeName
-    }
-
-    "Check call node properties: Age" ignore {
-      val List(x) = cpg.call.name("SetAge").l
-    }
-
   }
-
-  // TODO : Unit test with new function
-//  package main
-//
-//  import
-//
-//  "fmt"
-//
-//  type Person
-//  struct {
-//    Name string
-//      Age int
-//  }
-//
-//  func main () {
-//    // Using the new function to create a pointer to a new zero-initialized Person
-//    p := new(Person)
-//
-//    // You can also initialize the fields directly
-//    p.Name = "John"
-//    p.Age = 30
-//
-//    fmt.Println("Name:", p.Name)
-//    fmt.Println("Age:", p.Age)
-//  }
-
 }

@@ -32,8 +32,7 @@ class FieldAccessTests extends GoCodeToCpgSuite {
     "External Field access test" in {
       val List(fieldAccessCall) = cpg.method("main").astChildren.fieldAccess.l
       fieldAccessCall.name shouldBe Operators.fieldAccess
-      // TODO: We need to find and set the right full name
-      fieldAccessCall.typeFullName shouldBe Defines.anyTypeName
+      fieldAccessCall.typeFullName shouldBe "string"
 
       val List(ident: Identifier, fieldIdent: FieldIdentifier) = fieldAccessCall.argument.l: @unchecked
       ident.name shouldBe "a"
@@ -50,21 +49,8 @@ class FieldAccessTests extends GoCodeToCpgSuite {
       val List(fieldAccessCall: Call) = cpg.call("println").argument.l: @unchecked
       fieldAccessCall.name shouldBe Operators.fieldAccess
     }
-    "some" in {
-      val cpg = code("""
-          |package main
-          |
-          |import "fmt"
-          |
-          |func main() {
-          |    // Define and immediately invoke an anonymous function
-          |    result := func(x, y int) int {
-          |        return x + y
-          |    }(5, 7)
-          |
-          |    fmt.Println(result) // Output: 12
-          |}
-          |""".stripMargin)
-    }
   }
 }
+
+//TODO: Add unit test for global public variable defined in one package and getting accessed in another package.
+// Its construct will be similar to fieldAccess
