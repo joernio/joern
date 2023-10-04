@@ -6,14 +6,14 @@ import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
 
 class DownloadDependencyTest extends GoCodeToCpgSuite {
-  "Simple use case of thrid party dependency download use case" ignore {
+  "Simple use case of thrid party dependency download use case" should {
     val config = Config().withFetchDependencies(true)
     val cpg = code(
       """
         |module joern.io/sample
         |go 1.18
         |require (
-        |	github.com/google/uuid v1.3.1 // indirect
+        |	github.com/google/uuid v1.3.1
         |)
         |""".stripMargin,
       "go.mod"
@@ -29,6 +29,31 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
     "Check CALL Node" in {
       val List(x) = cpg.call("NewString").l
       x.typeFullName shouldBe "string"
+    }
+  }
+
+  "Download dependency example with different package and namespace name" should {
+    val config = Config().withFetchDependencies(true)
+    val cpg = code(
+      """
+        |module joern.io/sample
+        |go 1.18
+        |require (
+        |	github.com/aerospike/aerospike-client-go/v6 v6.14.0
+        |)
+        |""".stripMargin,
+      "go.mod"
+    ).moreCode("""
+          |package main
+          |import "github.com/aerospike/aerospike-client-go/v6"
+          |func main()  {
+          |  client, err := aerospike.NewClient("localhost", 3000)
+          |}
+          |""".stripMargin)
+      .withConfig(config)
+    "Check CALL Node" in {
+      val List(x) = cpg.call("NewClient").l
+      x.typeFullName shouldBe "*github.com/aerospike/aerospike-client-go/v6.Client"
     }
   }
 
@@ -80,6 +105,7 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
         |""".stripMargin)
 
     "Be correct for CALL Node typeFullNames" in {
+      "github.com/rs/zerolog/log.Error"
       val List(a, b, c, d, e) = cpg.call.nameNot(Operators.fieldAccess).l
       a.typeFullName shouldBe "github.com/rs/zerolog.SetGlobalLevel.<ReturnType>.<unknown>"
       b.typeFullName shouldBe "github.com/rs/zerolog/log.Error.<ReturnType>.<unknown>.Msg.<ReturnType>.<unknown>"

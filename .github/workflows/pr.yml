@@ -19,6 +19,10 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: 2.7
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.18
       - name: Install Bundler
         run: gem install bundler
       - name: Delete `.rustup` directory

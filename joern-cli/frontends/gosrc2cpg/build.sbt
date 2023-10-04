@@ -11,6 +11,7 @@ libraryDependencies ++= Seq(
   "io.shiftleft"              %% "codepropertygraph" % Versions.cpg,
   "org.scalatest"             %% "scalatest"         % Versions.scalatest % Test,
   "com.lihaoyi"               %% "upickle"           % Versions.upickle,
+  "com.lihaoyi"               %% "os-lib"            % "0.9.1",
   "com.fasterxml.jackson.core" % "jackson-databind"  % "2.15.2",
   "com.typesafe"               % "config"            % "1.4.2",
   "com.michaelpollmeier"       % "versionsort"       % "1.0.11",
