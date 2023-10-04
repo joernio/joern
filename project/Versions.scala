@@ -10,7 +10,7 @@ object Versions {
   val gradleTooling = "8.3"
   val circe         = "0.14.5"
   val requests      = "0.8.0"
-  val upickle       = "3.1.2"
+  val upickle       = "3.1.3"
   val scalaReplPP   = "0.1.72"
 
   private def parseVersion(key: String): String = {
