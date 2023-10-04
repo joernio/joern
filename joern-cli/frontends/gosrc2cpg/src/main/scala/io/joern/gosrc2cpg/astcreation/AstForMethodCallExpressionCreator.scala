@@ -115,7 +115,10 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
                   resolveAliasToFullName(alias, methodName)
                 val (returnTypeFullNameCache, signatureCache) =
                   GoGlobal.methodFullNameReturnTypeMap
-                    .getOrDefault(callMethodFullName, (Defines.anyTypeName, s"$callMethodFullName()"))
+                    .getOrDefault(
+                      callMethodFullName,
+                      (s"$callMethodFullName.${Defines.ReturnType}.${XDefines.Unknown}", s"$callMethodFullName()")
+                    )
 
                 (methodName, signatureCache, callMethodFullName, returnTypeFullNameCache, Seq.empty)
           case _ =>

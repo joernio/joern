@@ -404,7 +404,7 @@ class MethodCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
       x.signature shouldBe "joern.io/sample/fpkg.bar()"
       x.order shouldBe 1
       x.lineNumber shouldBe Option(5)
-      x.typeFullName shouldBe Defines.anyTypeName
+      x.typeFullName shouldBe "joern.io/sample/fpkg.bar.<ReturnType>.<unknown>"
     }
 
     "traversal from call to caller method node" in {
@@ -437,7 +437,7 @@ class MethodCallTests extends GoCodeToCpgSuite(withOssDataflow = true) {
       x.methodFullName shouldBe "joern.io/sample/fpkg.bar"
       x.order shouldBe 5
       x.lineNumber shouldBe Option(7)
-      x.typeFullName shouldBe Defines.anyTypeName
+      x.typeFullName shouldBe "joern.io/sample/fpkg.bar.<ReturnType>.<unknown>"
     }
 
     "Signature property should be updated with argument types" ignore {
