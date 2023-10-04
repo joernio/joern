@@ -12,19 +12,25 @@ class CallMethods[NodeType <: CallBase](val node: NodeType) extends AnyVal {
   def isDynamic: Boolean =
     node.dispatchType == "DYNAMIC_DISPATCH"
 
-//  def receiver: Iterator[Expression] =
-//    node._receiverOut
+//  def receiver: Iterator[Expression] = {
+//    // TODO generate in codegen
+//    //    node._receiverOut
+//    ???
+//  }
 
 //  def arguments(index: Int): Iterator[Expression] =
 //    node._argumentOut
 //      .collect {
 //        case expr: Expression if expr.argumentIndex == index => expr
 //      }
-//
-//  def argument: Iterator[Expression] =
-//    node._argumentOut.collectAll[Expression]
-//
-//  def argument(index: Int): Expression =
+
+  def argument: Iterator[Expression] = {
+    // TODO define as named step in the schema
+    node._argumentOut.collectAll[Expression]
+    ???
+  }
+
+  //  def argument(index: Int): Expression =
 //    arguments(index).head
 //
 //  def argumentOption(index: Int): Option[Expression] =
