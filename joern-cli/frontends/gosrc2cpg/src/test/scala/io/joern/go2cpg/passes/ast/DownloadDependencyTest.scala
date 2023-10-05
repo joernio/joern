@@ -32,7 +32,8 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
     }
   }
 
-  "Download dependency example with different package and namespace name" should {
+  // NOTE: This test is ignored because of high memory usage on windows
+  "Download dependency example with different package and namespace name" ignore {
     val config = Config().withFetchDependencies(true)
     val cpg = code(
       """
@@ -51,6 +52,7 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
           |}
           |""".stripMargin)
       .withConfig(config)
+
     "Check CALL Node" in {
       val List(x) = cpg.call("NewClient").l
       x.typeFullName shouldBe "*github.com/aerospike/aerospike-client-go/v6.Client"
@@ -105,7 +107,6 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
         |""".stripMargin)
 
     "Be correct for CALL Node typeFullNames" in {
-      "github.com/rs/zerolog/log.Error"
       val List(a, b, c, d, e) = cpg.call.nameNot(Operators.fieldAccess).l
       a.typeFullName shouldBe "github.com/rs/zerolog.SetGlobalLevel.<ReturnType>.<unknown>"
       b.typeFullName shouldBe "github.com/rs/zerolog/log.Error.<ReturnType>.<unknown>.Msg.<ReturnType>.<unknown>"
