@@ -67,4 +67,17 @@ class DoBlockTest extends RubyCode2CpgFixture {
     }
   }
 
+  "a do-block function wrapped within a chained invocation inside of a call argument" should {
+    val cpg = code("OpenStruct.new(obj.map { |key, val| [key, to_recursive_ostruct(val)] }.to_h)")
+
+    "create a do-block method named from the surrounding function" in {
+      val mapMethod :: _ = cpg.method.name("map.*").l: @unchecked
+      mapMethod.name should startWith("map")
+      mapMethod.parameter.size shouldBe 2
+      val k :: v :: _ = mapMethod.parameter.l: @unchecked
+      k.name shouldBe "key"
+      v.name shouldBe "val"
+    }
+  }
+
 }
