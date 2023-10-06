@@ -268,46 +268,6 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
     super.storeCallTypeInfo(c, types)
   }
 
-  override protected def setTypeInformationForRecCall(x: AstNode, n: Option[Call], ms: List[AstNode]): Unit = {
-    logger.debug(s"setting type information for receiver call")
-    (n, ms) match {
-      // Case 1: 'call' is an assignment from some dynamic dispatch call
-      case (Some(call: Call), ::(i: Identifier, ::(c: Call, _))) if call.name == Operators.assignment => {
-        logger.debug(s"- assignment from some dynamic dispatch call")
-        logger.debug(s"- call: ${call.name} ms: [${ms.mkString(", ")}]")
-        setTypeForIdentifierAssignedToCall(call, i, c)
-      }
-      // Case 1: 'call' is an assignment from some other data structure
-      case (Some(call: Call), ::(i: Identifier, _)) if call.name == Operators.assignment => {
-        logger.debug(s"- assignment from some other data structure")
-        logger.debug(s"- call: ${call.name} ms: [${ms.mkString(", ")}]")
-        setTypeForIdentifierAssignedToDefault(call, i)
-      }
-      // Case 2: 'i' is the receiver of 'call'
-      case (Some(call: Call), ::(i: Identifier, _)) if call.name != Operators.fieldAccess => {
-        logger.debug(s"- i is the receiver of 'call'")
-        logger.debug(s"- call: ${call.name} ms: [${ms.mkString(", ")}]")
-        setTypeForDynamicDispatchCall(call, i)
-      }
-      // Case 3: 'i' is the receiver for a field access on member 'f'
-      case (Some(fieldAccess: Call), ::(i: Identifier, ::(f: FieldIdentifier, _)))
-          if fieldAccess.name == Operators.fieldAccess => {
-        logger.debug(s"- i is the receiver for a field access on member 'f'")
-        logger.debug(s"- fieldAccess: ${fieldAccess.name} ms: [${ms.mkString(", ")}]")
-        setTypeForFieldAccess(new FieldAccess(fieldAccess), i, f)
-      }
-      case _ => logger.debug(s"other type of receiver")
-    }
-    // Handle the node itself
-    x match {
-      case c: Call if c.name.startsWith("<operator") => logger.debug(s"- call (not persisting): ${c.name}")
-      case _                                         => {
-        logger.debug(s"- persisting type")
-        persistType(x, symbolTable.get(x))
-      }
-    }
-  }
-
   override protected def assignTypesToCall(x: Call, types: Set[String]): Set[String] = {
     logger.debug(s"assigning types to call: ${x.name}: [${types.mkString(", ")}]")
     if (types.nonEmpty) {
@@ -332,29 +292,6 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
     logger.debug(s"persisting type: ${x.label}: [${types.mkString(",")}]")
     super.persistType(x, types)
   }
-
-  override protected def storeNodeTypeInfo(storedNode: StoredNode, types: Seq[String]): Unit = {
-    lazy val existingTypes = storedNode.getKnownTypes
-
-    if (types.nonEmpty && types.toSet != existingTypes) {
-      storedNode match {
-        case m: Member =>
-          // To avoid overwriting member updates, we store them elsewhere until the end
-          newTypesForMembers.updateWith(m) {
-            case Some(ts) => Some(ts ++ types)
-            case None     => Some(types.toSet)
-          }
-        case i: Identifier                               => storeIdentifierTypeInfo(i, types)
-        case l: Local                                    => storeLocalTypeInfo(l, types)
-        case c: Call if !c.name.startsWith("<operator>") => storeCallTypeInfo(c, types)
-        case c: Call                                     =>
-        case n =>
-          state.changesWereMade.compareAndSet(false, true)
-          setTypes(n, types)
-      }
-    }
-  }
-
 
   override protected def methodReturnValues(methodFullNames: Seq[String]): Set[String] = {
     // Look up methods in existing CPG
