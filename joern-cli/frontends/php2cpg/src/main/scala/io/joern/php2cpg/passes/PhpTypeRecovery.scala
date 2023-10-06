@@ -38,10 +38,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
    * is encountered.
    */
   protected val builtinsSymbolTable = Map[String, Set[String]](
-    "strtolower" -> Set("string"),
-    "strtotime" -> Set("int", "bool"),
-    "unserialize" -> Set("ANY"),
-    "var_dump" -> Set(),
+        //"strtolower"    -> Set("string"),
   )
 
   override protected def prepopulateSymbolTable(): Unit = {
@@ -119,7 +116,28 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
 
   override protected def visitIdentifierAssignedToCallRetVal(i: Identifier, c: Call): Set[String] = {
     logger.debug(s"visiting identifier ${i.name} assigned to CallRetVal ${c.name}")
-    super.visitIdentifierAssignedToCallRetVal(i, c)
+
+    if (symbolTable.contains(c)) {
+      logger.debug(s"- symbol table contains call")
+      val callReturns = methodReturnValues(symbolTable.get(c).toSeq)
+      associateTypes(i, callReturns)
+    } else if (c.argument.exists(_.argumentIndex == 0)) {
+      logger.debug(s"- argument index exists")
+      val callFullNames = (c.argument(0) match {
+        case i: Identifier if symbolTable.contains(LocalVar(i.name))  => symbolTable.get(LocalVar(i.name))
+        case i: Identifier if symbolTable.contains(CallAlias(i.name)) => symbolTable.get(CallAlias(i.name))
+        case _                                                        => Set.empty
+      }).map(_.concat(s"$pathSep${c.name}")).toSeq
+      val callReturns = methodReturnValues(callFullNames)
+      associateTypes(i, callReturns)
+    } else {
+      // Check if the CPG already contains type info for this method, otherwise
+      // use dummy return value.
+      logger.debug(s"- checking CPG")
+      val rs = methodReturnValues(Seq(c.methodFullName))
+      if (rs.isEmpty) associateTypes(i, Set(s"${c.name}$pathSep${XTypeRecovery.DummyReturnType}"))
+      else associateTypes(i, rs)
+    }
   }
 
   override protected def visitIdentifierAssignedToLiteral(i: Identifier, l: Literal): Set[String] = {
@@ -152,6 +170,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
 
   override protected def visitCallAssignedToCall(x: Call, y: Call): Set[String] = {
     logger.debug(s"visiting call ${x.name} assigned to call ${y.name}")
+    logger.debug(s"- ${x.name}: [${getTypesFromCall(y).mkString(", ")}]")
     super.visitCallAssignedToCall(x, y)
   }
 
@@ -176,7 +195,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
    * (But need to leave the regular "this"? uncertain)
    */
   override protected def associateTypes(symbol: LocalVar, fa: FieldAccess, types: Set[String]): Set[String] = {
-    fa.astChildren.filterNot(_.code.matches("(\\$this|this)")).headOption.collect {
+    fa.astChildren.filterNot(_.code.matches("(\\$this|this|self)")).headOption.collect {
       case fi: FieldIdentifier =>
         getFieldParents(fa).foreach(t => persistMemberWithTypeDecl(t, fi.canonicalName, types))
       case i: Identifier if isField(i) =>
@@ -205,23 +224,158 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
     super.persistMemberWithTypeDecl(typeFullName, memberName, types)
   }
 
+  override protected def getTypesFromCall(c: Call): Set[String] = c.name match {
+    case Operators.fieldAccess        => symbolTable.get(LocalVar(getFieldName(new FieldAccess(c))))
+    case _ if symbolTable.contains(c) => symbolTable.get(c)
+    case Operators.indexAccess        => getIndexAccessTypes(c)
+    case n => {
+      logger.debug(s"Unknown RHS call type '$n' @ ${c.name}")
+      logger.debug("- looking up in CPG")
+      methodReturnValues(Seq(c.methodFullName))
+    }
+  }
+
+  override protected def indexAccessToCollectionVar(c: Call): Option[CollectionVar] = {
+    def callName(x: Call) =
+      if (x.name.equals(Operators.fieldAccess))
+        getFieldName(new FieldAccess(x))
+      else if (x.name.equals(Operators.indexAccess))
+        indexAccessToCollectionVar(x)
+          .map(cv => s"${cv.identifier}[${cv.idx}]")
+          .getOrElse(XTypeRecovery.DummyIndexAccess)
+      else x.name
+
+    logger.debug(s"Index access to collection var")
+    logger.debug(s"- call name: ${c.name}")
+
+    val collectionVar = Option(c.argumentOut.l match {
+      case List(i: Identifier, idx: Literal)    => CollectionVar(i.name, idx.code)
+      case List(i: Identifier, idx: Identifier) => CollectionVar(i.name, idx.code)
+      case List(c: Call, idx: Call)             => CollectionVar(callName(c), callName(idx))
+      case List(c: Call, idx: Literal)          => CollectionVar(callName(c), idx.code)
+      case List(c: Call, idx: Identifier)       => CollectionVar(callName(c), idx.code)
+      case xs =>
+        logger.debug(s"Unhandled index access ${xs.map(x => (x.label, x.code)).mkString(",")} @ ${c.name}")
+        null
+    })
+    logger.debug(s"- collection var: ${collectionVar.mkString}")
+
+    collectionVar
+  }
+
+  override protected def storeCallTypeInfo(c: Call, types: Seq[String]): Unit = {
+    logger.debug(s"storing call type info: ${c.methodFullName}: [${types.mkString(", ")}]")
+    super.storeCallTypeInfo(c, types)
+  }
+
+  override protected def setTypeInformationForRecCall(x: AstNode, n: Option[Call], ms: List[AstNode]): Unit = {
+    logger.debug(s"setting type information for receiver call")
+    (n, ms) match {
+      // Case 1: 'call' is an assignment from some dynamic dispatch call
+      case (Some(call: Call), ::(i: Identifier, ::(c: Call, _))) if call.name == Operators.assignment => {
+        logger.debug(s"- assignment from some dynamic dispatch call")
+        logger.debug(s"- call: ${call.name} ms: [${ms.mkString(", ")}]")
+        setTypeForIdentifierAssignedToCall(call, i, c)
+      }
+      // Case 1: 'call' is an assignment from some other data structure
+      case (Some(call: Call), ::(i: Identifier, _)) if call.name == Operators.assignment => {
+        logger.debug(s"- assignment from some other data structure")
+        logger.debug(s"- call: ${call.name} ms: [${ms.mkString(", ")}]")
+        setTypeForIdentifierAssignedToDefault(call, i)
+      }
+      // Case 2: 'i' is the receiver of 'call'
+      case (Some(call: Call), ::(i: Identifier, _)) if call.name != Operators.fieldAccess => {
+        logger.debug(s"- i is the receiver of 'call'")
+        logger.debug(s"- call: ${call.name} ms: [${ms.mkString(", ")}]")
+        setTypeForDynamicDispatchCall(call, i)
+      }
+      // Case 3: 'i' is the receiver for a field access on member 'f'
+      case (Some(fieldAccess: Call), ::(i: Identifier, ::(f: FieldIdentifier, _)))
+          if fieldAccess.name == Operators.fieldAccess => {
+        logger.debug(s"- i is the receiver for a field access on member 'f'")
+        logger.debug(s"- fieldAccess: ${fieldAccess.name} ms: [${ms.mkString(", ")}]")
+        setTypeForFieldAccess(new FieldAccess(fieldAccess), i, f)
+      }
+      case _ => logger.debug(s"other type of receiver")
+    }
+    // Handle the node itself
+    x match {
+      case c: Call if c.name.startsWith("<operator") => logger.debug(s"- call (not persisting): ${c.name}")
+      case _                                         => {
+        logger.debug(s"- persisting type")
+        persistType(x, symbolTable.get(x))
+      }
+    }
+  }
+
+  override protected def assignTypesToCall(x: Call, types: Set[String]): Set[String] = {
+    logger.debug(s"assigning types to call: ${x.name}: [${types.mkString(", ")}]")
+    if (types.nonEmpty) {
+      getSymbolFromCall(x) match {
+        case (lhs, globalKeys) if globalKeys.nonEmpty => {
+          logger.debug(s"- globalKeys non-empty: lhs: ${lhs.toString()}")
+          globalKeys.foreach { (fieldVar: FieldPath) =>
+            logger.debug(s"- persisting member with type decl: compUnitFullName: ${fieldVar.compUnitFullName}; identifier: ${fieldVar.identifier}; types: ${types.mkString(", ")}")
+            persistMemberWithTypeDecl(fieldVar.compUnitFullName, fieldVar.identifier, types)
+          }
+          symbolTable.append(lhs, types)
+        }
+        case (lhs, _) => {
+          logger.debug(s"- globalKeys empty: lhs: ${lhs.toString()}")
+          symbolTable.append(lhs, types)
+        }
+      }
+    } else Set.empty
+  }
+
+  override protected def persistType(x: StoredNode, types: Set[String]): Unit = {
+    logger.debug(s"persisting type: ${x.label}: [${types.mkString(",")}]")
+    super.persistType(x, types)
+  }
+
+  override protected def storeNodeTypeInfo(storedNode: StoredNode, types: Seq[String]): Unit = {
+    lazy val existingTypes = storedNode.getKnownTypes
+
+    if (types.nonEmpty && types.toSet != existingTypes) {
+      storedNode match {
+        case m: Member =>
+          // To avoid overwriting member updates, we store them elsewhere until the end
+          newTypesForMembers.updateWith(m) {
+            case Some(ts) => Some(ts ++ types)
+            case None     => Some(types.toSet)
+          }
+        case i: Identifier                               => storeIdentifierTypeInfo(i, types)
+        case l: Local                                    => storeLocalTypeInfo(l, types)
+        case c: Call if !c.name.startsWith("<operator>") => storeCallTypeInfo(c, types)
+        case c: Call                                     =>
+        case n =>
+          state.changesWereMade.compareAndSet(false, true)
+          setTypes(n, types)
+      }
+    }
+  }
+
+
   override protected def methodReturnValues(methodFullNames: Seq[String]): Set[String] = {
+    // Look up methods in existing CPG
     val rs = cpg.method
       .fullNameExact(methodFullNames: _*)
       .methodReturn
       .flatMap(mr => mr.typeFullName +: mr.dynamicTypeHintFullName)
       .filterNot(_.equals("ANY"))
+      .filterNot(_.endsWith("alloc.<init>"))
+      .filterNot(_.endsWith(s"${XTypeRecovery.DummyReturnType}"))
       .toSet
+    logger.debug(s"method return values: ${rs.mkString(",")}")
     if (rs.isEmpty)
       // Look up in builtins table or else return dummy return type
+      // TODO: Remove - no longer necessary now that PhpSetKnownTypes is
+      // implemented.
       methodFullNames.flatMap(
-        m => builtinsSymbolTable
-          .getOrElse(
+        m => builtinsSymbolTable.getOrElse(
             m,
             Set(m.concat(s"$pathSep${XTypeRecovery.DummyReturnType}"))
-          ))
-          .toSet
+          )).toSet
     else rs
   }
-
 }
