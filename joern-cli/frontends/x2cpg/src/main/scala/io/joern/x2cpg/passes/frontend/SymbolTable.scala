@@ -152,6 +152,18 @@ class SymbolTable[K <: SBKey](val keyFromNode: AstNode => Option[K]) {
 
   def view: MapView[K, Set[String]] = table.view
 
+  /** @return
+    *   a deep copy of this symbol table.
+    */
+  def copy(): SymbolTable[K] = {
+    val sb = SymbolTable[K](keyFromNode)
+    this.table.foreach { case (k, v) => sb.table.put(k, Set.from(v)) }
+    sb
+  }
+
   def clear(): Unit = table.clear()
+
+  override def toString: String =
+    table.map { case (k, v) => s"$k -> [${v.mkString(",")}]" }.mkString("\n")
 
 }
