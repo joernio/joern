@@ -57,7 +57,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
     "resolve correct imports via tag nodes" in {
       val List(a: UnknownMethod, b: UnknownTypeDecl, x: UnknownMethod, y: UnknownTypeDecl) =
-        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.call.where(_.referencedImports).toResolvedImport.toList: @unchecked
       a.fullName shouldBe "slack_sdk:WebClient"
       b.fullName shouldBe "slack_sdk:WebClient"
       x.fullName shouldBe "sendgrid:SendGridAPIClient"
@@ -141,7 +141,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
     "resolve correct imports via tag nodes" in {
       val List(a: ResolvedMember, b: ResolvedMember, c: ResolvedMember, d: UnknownMethod, e: UnknownTypeDecl) =
-        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.call.where(_.referencedImports).toResolvedImport.toList: @unchecked
       a.basePath shouldBe "Foo.ts::program"
       a.memberName shouldBe "x"
       b.basePath shouldBe "Foo.ts::program"
@@ -229,7 +229,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
     )
 
     "resolve correct imports via tag nodes" in {
-      val List(x: ResolvedMethod) = cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+      val List(x: ResolvedMethod) = cpg.call.where(_.referencedImports).toResolvedImport.toList: @unchecked
       x.fullName shouldBe "util.js::program:getIncrementalInteger"
     }
 
@@ -258,7 +258,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
     "resolve correct imports via tag nodes" in {
       val List(x: UnknownMethod, y: UnknownTypeDecl) =
-        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.call.where(_.referencedImports).toResolvedImport.toList: @unchecked
       x.fullName shouldBe "googleapis"
       y.fullName shouldBe "googleapis"
     }
@@ -279,10 +279,15 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         |""".stripMargin)
 
     "resolve correct imports via tag nodes" in {
-      val List(x: UnknownMethod, y: UnknownTypeDecl, z: UnknownMethod) =
-        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+      val List(w: UnknownMethod, x: UnknownTypeDecl, y: UnknownMethod, z: UnknownTypeDecl) =
+        cpg.call.where(_.referencedImports).toResolvedImport.toList: @unchecked
+      w.alias shouldBe "google"
+      w.fullName shouldBe "googleapis"
+      x.alias shouldBe "google"
       x.fullName shouldBe "googleapis"
+      y.alias shouldBe "_tmp_0"
       y.fullName shouldBe "googleapis"
+      z.alias shouldBe "_tmp_0"
       z.fullName shouldBe "googleapis"
     }
 
@@ -381,7 +386,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
     "resolve correct imports via tag nodes" in {
       val List(a: ResolvedTypeDecl, b: ResolvedMethod, c: ResolvedMethod, d: UnknownMethod, e: UnknownTypeDecl) =
-        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.call.where(_.referencedImports).toResolvedImport.toList: @unchecked
       a.fullName shouldBe "foo.js::program"
       b.fullName shouldBe "foo.js::program:literalFunction"
       c.fullName shouldBe "foo.js::program:get"

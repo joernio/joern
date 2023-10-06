@@ -1,39 +1,37 @@
 package io.joern.pysrc2cpg
 
-import io.joern.x2cpg.passes.frontend._
+import io.joern.x2cpg.passes.frontend.*
+import io.joern.x2cpg.passes.frontend.ImportsPass.*
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
-class PythonTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
-    extends XTypeRecoveryPass[File](cpg, config) {
+class PythonTypeRecoveryPass(cpg: Cpg, config: TypeRecoveryConfig = TypeRecoveryConfig())
+    extends XTypeRecoveryPass(cpg, config) {
 
-  override protected def generateRecoveryPass(state: XTypeRecoveryState): XTypeRecovery[File] =
+  override protected def generateRecoveryPass(state: State): XTypeRecovery =
     new PythonTypeRecovery(cpg, state)
 }
 
-private class PythonTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTypeRecovery[File](cpg, state) {
+private class PythonTypeRecovery(cpg: Cpg, state: State) extends XTypeRecovery(cpg, state) {
 
-  override def compilationUnit: Iterator[File] = cpg.file.iterator
-
-  override def generateRecoveryForCompilationUnitTask(
-    unit: File,
-    builder: DiffGraphBuilder
-  ): RecoverForXCompilationUnit[File] = {
-    val newConfig = state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
-    new RecoverForPythonFile(cpg, unit, builder, state.copy(config = newConfig))
+  // TODO: I am getting some conccurent modification exceptions, something to watch
+  override def loadImports(i: ResolvedImport, symbolTable: SymbolTable[LocalKey]): Unit = i match {
+    case ResolvedMember(basePath, memberName, alias, _) =>
+      val memberTypes = cpg.typeDecl
+        .fullNameExact(basePath)
+        .member
+        .nameExact(memberName)
+        .flatMap(m => m.typeFullName +: m.dynamicTypeHintFullName)
+        .filterNot(_ == "ANY")
+        .toSet
+      symbolTable.put(LocalVar(alias), memberTypes)
+    case _ => super.loadImports(i, symbolTable)
   }
-
-}
-
-/** Performs type recovery from the root of a compilation unit level
-  */
-private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, state: XTypeRecoveryState)
-    extends RecoverForXCompilationUnit[File](cpg, cu, builder, state) {
 
   /** Replaces the `this` prefix with the Pythonic `self` prefix for instance methods of functions local to this
     * compilation unit.
@@ -44,35 +42,26 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
       case _         => SBKey.fromNodeToLocalKey(node)
     }
 
-  override val symbolTable: SymbolTable[LocalKey] = new SymbolTable[LocalKey](fromNodeToLocalPythonKey)
-
-  override def visitImport(i: Import): Unit = {
-    if (i.importedAs.isDefined && i.importedEntity.isDefined) {
-      import io.joern.x2cpg.passes.frontend.ImportsPass._
-
-      val entityName = i.importedAs.get
-      i.call.tag.flatMap(ResolvedImport.tagToResolvedImport).foreach {
-        case ResolvedMethod(fullName, alias, receiver, _) => symbolTable.put(CallAlias(alias, receiver), fullName)
-        case ResolvedTypeDecl(fullName, _)                => symbolTable.put(LocalVar(entityName), fullName)
-        case ResolvedMember(basePath, memberName, _) =>
-          val memberTypes = cpg.typeDecl
-            .fullNameExact(basePath)
-            .member
-            .nameExact(memberName)
-            .flatMap(m => m.typeFullName +: m.dynamicTypeHintFullName)
-            .filterNot(_ == "ANY")
-            .toSet
-          symbolTable.put(LocalVar(entityName), memberTypes)
-        case UnknownMethod(fullName, alias, receiver, _) =>
-          symbolTable.put(CallAlias(alias, receiver), fullName)
-        case UnknownTypeDecl(fullName, _) =>
-          symbolTable.put(LocalVar(entityName), fullName)
-        case UnknownImport(path, _) =>
-          symbolTable.put(CallAlias(entityName), path)
-          symbolTable.put(LocalVar(entityName), path)
-      }
-    }
+  override def generateRecoveryForCompilationUnitTask(
+    unit: File,
+    builder: DiffGraphBuilder
+  ): Seq[RecoverForXCompilationUnit] = {
+    val symbolTable = SymbolTable[LocalKey](fromNodeToLocalPythonKey)
+    importNodes(unit).foreach(loadImports(_, symbolTable))
+    unit.method.map(RecoverForPythonFile(cpg, _, symbolTable.copy(), builder, state)).toSeq
   }
+
+}
+
+/** Performs type recovery from the root of a compilation unit level
+  */
+private class RecoverForPythonFile(
+  cpg: Cpg,
+  procedure: Method,
+  symbolTable: SymbolTable[LocalKey],
+  builder: DiffGraphBuilder,
+  state: State
+) extends RecoverForXCompilationUnit(cpg, procedure, symbolTable, builder, state) {
 
   override def visitAssignments(a: OpNodes.Assignment): Set[String] = {
     a.argumentOut.l match {
@@ -183,7 +172,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
   }
 
   override protected def postSetTypeInformation(): Unit =
-    cu.typeDecl
+    procedure.typeDecl
       .map(t => t -> t.inheritsFromTypeFullName.partition(itf => symbolTable.contains(LocalVar(itf))))
       .foreach { case (t, (identifierTypes, otherTypes)) =>
         val existingTypes = (identifierTypes ++ otherTypes).distinct
@@ -195,7 +184,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
       }
 
   override def prepopulateSymbolTable(): Unit = {
-    cu.ast.isMethodRef.where(_.astSiblings.isIdentifier.nameExact("classmethod")).referencedMethod.foreach {
+    procedure.ast.isMethodRef.where(_.astSiblings.isIdentifier.nameExact("classmethod")).referencedMethod.foreach {
       classMethod =>
         classMethod.parameter
           .nameExact("cls")

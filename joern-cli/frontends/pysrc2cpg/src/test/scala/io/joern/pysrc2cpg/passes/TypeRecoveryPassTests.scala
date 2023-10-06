@@ -71,7 +71,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         webClientT: UnknownTypeDecl,
         sendGridM: UnknownMethod,
         sendGridT: UnknownTypeDecl
-      ) = cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+      ) = cpg.call.where(_.referencedImports).toResolvedImport.toList: @unchecked
       webClientM.fullName shouldBe "slack_sdk.py:<module>.WebClient.__init__"
       webClientT.fullName shouldBe "slack_sdk.py:<module>.WebClient"
       sendGridM.fullName shouldBe "sendgrid.py:<module>.SendGridAPIClient.__init__"
@@ -217,11 +217,11 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "resolve correct imports via tag nodes" in {
       val List(foo1: UnknownMethod, foo2: UnknownTypeDecl) =
-        cpg.file(".*foo.py").ast.isCall.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.file(".*foo.py").ast.isCall.where(_.referencedImports).toResolvedImport.toList: @unchecked
       foo1.fullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.__init__"
       foo2.fullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy"
       val List(bar1: ResolvedTypeDecl, bar2: ResolvedMethod) =
-        cpg.file(".*bar.py").ast.isCall.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.file(".*bar.py").ast.isCall.where(_.referencedImports).toResolvedImport.toList: @unchecked
       bar1.fullName shouldBe "foo.py:<module>"
       bar2.fullName shouldBe "foo.py:<module>"
     }
@@ -310,7 +310,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "resolve correct imports via tag nodes" in {
       val List(a: ResolvedTypeDecl, b: ResolvedMethod, c: UnknownImport, d: ResolvedMember) =
-        cpg.file(".*UserController.py").ast.isCall.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.file(".*UserController.py").ast.isCall.where(_.referencedImports).toResolvedImport.toList: @unchecked
       a.fullName shouldBe "app.py:<module>"
       b.fullName shouldBe "app.py:<module>"
       c.path shouldBe "flask.py:<module>.jsonify"
@@ -318,7 +318,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       d.memberName shouldBe "db"
 
       val List(sqlAlchemyM: UnknownMethod, sqlAlchemyT: UnknownTypeDecl) =
-        cpg.file(".*app.py").ast.isCall.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.file(".*app.py").ast.isCall.where(_.referencedImports).toResolvedImport.toList: @unchecked
       sqlAlchemyM.fullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.__init__"
       sqlAlchemyT.fullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy"
     }
@@ -356,7 +356,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |""".stripMargin).cpg
 
     "resolve correct imports via tag nodes" in {
-      val List(logging: UnknownImport) = cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+      val List(logging: UnknownImport) = cpg.call.where(_.referencedImports).toResolvedImport.toList: @unchecked
       logging.path shouldBe "logging.py:<module>"
     }
 
@@ -380,7 +380,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "resolve correct imports via tag nodes" in {
       val List(error: UnknownImport, request: UnknownImport) =
-        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.call.where(_.referencedImports).toResolvedImport.toList: @unchecked
       error.path shouldBe "urllib.py:<module>.error"
       request.path shouldBe "urllib.py:<module>.request"
     }
@@ -440,7 +440,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "resolve correct imports via tag nodes" in {
       val List(a: ResolvedTypeDecl, b: ResolvedMethod, c: UnknownMethod, d: UnknownTypeDecl, e: UnknownImport) =
-        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.call.where(_.referencedImports).toResolvedImport.toList: @unchecked
 
       a.fullName shouldBe "MongoConnection.py:<module>.MongoConnection"
       b.fullName shouldBe "MongoConnection.py:<module>.MongoConnection.__init__"
@@ -569,7 +569,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         sessionM: ResolvedMethod,
         sqlSessionM: UnknownMethod,
         sqlSessionT: UnknownTypeDecl
-      ) = cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+      ) = cpg.call.where(_.referencedImports).toResolvedImport.toList: @unchecked
       sessionT.fullName shouldBe Seq("data", "db_session.py:<module>").mkString(File.separator)
       sessionM.fullName shouldBe Seq("data", "db_session.py:<module>").mkString(File.separator)
       sqlSessionM.fullName shouldBe Seq("sqlalchemy", "orm.py:<module>.Session.__init__").mkString(File.separator)
@@ -656,7 +656,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "resolve correct imports via tag nodes" in {
       val List(sqlSessionM: UnknownMethod, sqlSessionT: UnknownTypeDecl, db: ResolvedMember) =
-        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.call.where(_.referencedImports).toResolvedImport.toList: @unchecked
       sqlSessionM.fullName shouldBe Seq("flask_sqlalchemy.py:<module>.SQLAlchemy.__init__").mkString(File.separator)
       sqlSessionT.fullName shouldBe Seq("flask_sqlalchemy.py:<module>.SQLAlchemy").mkString(File.separator)
       db.basePath shouldBe Seq("api", "__init__.py:<module>").mkString(File.separator)
@@ -937,7 +937,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "resolve correct imports via tag nodes" in {
       val List(djangoModels: UnknownImport, profileT: ResolvedTypeDecl, profileM: ResolvedMethod) =
-        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.call.where(_.referencedImports).toResolvedImport.toList: @unchecked
       djangoModels.path shouldBe Seq("django", "db.py:<module>.models").mkString(File.separator)
       profileT.fullName shouldBe "models.py:<module>.Profile"
       profileM.fullName shouldBe "models.py:<module>.Profile.__init__"
@@ -979,7 +979,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "resolve correct imports via tag nodes" in {
       val List(connectorT: ResolvedTypeDecl, connectorM: ResolvedMethod) =
-        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.call.where(_.referencedImports).toResolvedImport.toList: @unchecked
       connectorT.fullName shouldBe Seq("lib", "connector.py:<module>.Connector").mkString(File.separator)
       connectorM.fullName shouldBe Seq("lib", "connector.py:<module>.Connector.__init__").mkString(File.separator)
     }

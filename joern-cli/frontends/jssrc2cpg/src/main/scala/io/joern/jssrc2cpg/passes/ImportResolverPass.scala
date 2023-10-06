@@ -94,9 +94,9 @@ class ImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
                if (methodMatches.nonEmpty) methodMatches.fullName.toSet
                else constructorMatches.fullName.toSet
              if (methodPaths.nonEmpty) {
-               methodPaths.flatMap(x => Set(ResolvedMethod(x, alias, Option("this")), ResolvedTypeDecl(x)))
+               methodPaths.flatMap(x => Set(ResolvedMethod(x, alias, Option("this")), ResolvedTypeDecl(x, alias)))
              } else if (moduleExportsThisVariable) {
-               Set(ResolvedMember(targetModule.fullName.head, b.name))
+               Set(ResolvedMember(targetModule.fullName.head, b.name, alias))
              } else {
                Set.empty
              }
@@ -108,7 +108,7 @@ class ImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
              b.referencedMethod.astParent.iterator
                .collectAll[Method]
                .fullName
-               .map(x => ResolvedTypeDecl(x))
+               .map(x => ResolvedTypeDecl(x, alias))
                .toSet ++ Set(ResolvedMethod(b.methodFullName, callName, receiver))
            case ::(_, ::(y: Call, _)) =>
              // Exported closure with a method ref within the AST of the RHS
@@ -118,7 +118,7 @@ class ImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
          }
        }.toSet
      } else {
-       Set(UnknownMethod(entity, alias, Option("this")), UnknownTypeDecl(entity))
+       Set(UnknownMethod(entity, alias, Option("this")), UnknownTypeDecl(entity, alias))
      }).foreach(x => resolvedImportToTag(x, importCall, diffGraph))
   }
 

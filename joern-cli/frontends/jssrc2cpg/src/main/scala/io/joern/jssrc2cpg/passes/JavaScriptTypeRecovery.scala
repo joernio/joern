@@ -1,37 +1,41 @@
 package io.joern.jssrc2cpg.passes
 
+import io.joern.x2cpg.Defines as XDefines
 import io.joern.x2cpg.Defines.ConstructorMethodName
-import io.joern.x2cpg.passes.frontend._
-import io.joern.x2cpg.{Defines => XDefines}
+import io.joern.x2cpg.passes.frontend.*
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
-class JavaScriptTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
-    extends XTypeRecoveryPass[File](cpg, config) {
-  override protected def generateRecoveryPass(state: XTypeRecoveryState): XTypeRecovery[File] =
+class JavaScriptTypeRecoveryPass(cpg: Cpg, config: TypeRecoveryConfig = TypeRecoveryConfig())
+    extends XTypeRecoveryPass(cpg, config) {
+  override protected def generateRecoveryPass(state: State): XTypeRecovery =
     new JavaScriptTypeRecovery(cpg, state)
 }
 
-private class JavaScriptTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTypeRecovery[File](cpg, state) {
-
-  override def compilationUnit: Iterator[File] = cpg.file.iterator
+private class JavaScriptTypeRecovery(cpg: Cpg, state: State) extends XTypeRecovery(cpg, state) {
 
   override def generateRecoveryForCompilationUnitTask(
     unit: File,
     builder: DiffGraphBuilder
-  ): RecoverForXCompilationUnit[File] = {
-    val newConfig = state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
-    new RecoverForJavaScriptFile(cpg, unit, builder, state.copy(config = newConfig))
+  ): Seq[RecoverForXCompilationUnit] = {
+    val symbolTable = SymbolTable[LocalKey](SBKey.fromNodeToLocalKey)
+    importNodes(unit).foreach(loadImports(_, symbolTable))
+    unit.method.map(RecoverForJavaScriptFile(cpg, _, symbolTable.copy(), builder, state)).toSeq
   }
 
 }
 
-private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, state: XTypeRecoveryState)
-    extends RecoverForXCompilationUnit[File](cpg, cu, builder, state) {
+private class RecoverForJavaScriptFile(
+  cpg: Cpg,
+  procedure: Method,
+  symbolTable: SymbolTable[LocalKey],
+  builder: DiffGraphBuilder,
+  state: State
+) extends RecoverForXCompilationUnit(cpg, procedure, symbolTable, builder, state) {
 
   override protected val pathSep = ':'
 
@@ -64,42 +68,44 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
 
   override protected def prepopulateSymbolTable(): Unit = {
     super.prepopulateSymbolTable()
-    cu.ast.isMethod.foreach(f => symbolTable.put(CallAlias(f.name, Option("this")), Set(f.fullName)))
-    (cu.ast.isParameter.whereNot(_.nameExact("this")) ++ cu.ast.isMethod.methodReturn).filter(hasTypes).foreach { p =>
-      val resolvedHints = p.getKnownTypes
-        .map { t =>
-          t.split("\\.").headOption match {
-            case Some(base) if symbolTable.contains(LocalVar(base)) =>
-              (t, symbolTable.get(LocalVar(base)).map(x => s"$x${t.stripPrefix(base)}"))
-            case _ => (t, Set(t))
+    procedure.ast.isMethod.foreach(f => symbolTable.put(CallAlias(f.name, Option("this")), Set(f.fullName)))
+    (procedure.ast.isParameter.whereNot(_.nameExact("this")) ++ procedure.ast.isMethod.methodReturn)
+      .filter(hasTypes)
+      .foreach { p =>
+        val resolvedHints = p.getKnownTypes
+          .map { t =>
+            t.split("\\.").headOption match {
+              case Some(base) if symbolTable.contains(LocalVar(base)) =>
+                (t, symbolTable.get(LocalVar(base)).map(x => s"$x${t.stripPrefix(base)}"))
+              case _ => (t, Set(t))
+            }
           }
+          .flatMap {
+            case (t, ts) if Set(t) == ts => Set(t)
+            case (_, ts)                 => ts.map(_.replaceAll("\\.(?!js::program)", pathSep.toString))
+          }
+        p match {
+          case _: MethodParameterIn => symbolTable.put(p, resolvedHints)
+          case _: MethodReturn if resolvedHints.sizeIs == 1 =>
+            builder.setNodeProperty(p, PropertyNames.TYPE_FULL_NAME, resolvedHints.head)
+          case _: MethodReturn =>
+            builder.setNodeProperty(p, PropertyNames.TYPE_FULL_NAME, Defines.Any)
+            builder.setNodeProperty(p, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, resolvedHints)
+          case _ =>
         }
-        .flatMap {
-          case (t, ts) if Set(t) == ts => Set(t)
-          case (_, ts)                 => ts.map(_.replaceAll("\\.(?!js::program)", pathSep.toString))
-        }
-      p match {
-        case _: MethodParameterIn => symbolTable.put(p, resolvedHints)
-        case _: MethodReturn if resolvedHints.sizeIs == 1 =>
-          builder.setNodeProperty(p, PropertyNames.TYPE_FULL_NAME, resolvedHints.head)
-        case _: MethodReturn =>
-          builder.setNodeProperty(p, PropertyNames.TYPE_FULL_NAME, Defines.Any)
-          builder.setNodeProperty(p, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, resolvedHints)
-        case _ =>
       }
-    }
   }
 
-  private lazy val exportedIdentifiers = cu.method
-    .nameExact(":program")
-    .ast
-    .isCall
-    .nameExact(Operators.assignment)
-    .filter(_.code.startsWith("exports.*"))
-    .argument
-    .isIdentifier
-    .name
-    .toSet
+  private lazy val exportedIdentifiers =
+    Iterator(procedure)
+      .repeat(_._astIn)(_.emit.until(_.collectAll[Method].nameExact(":program")))
+      .collectAll[Method]
+      .assignment
+      .code("export.*")
+      .argument
+      .isIdentifier
+      .name
+      .toSet
 
   override protected def isField(i: Identifier): Boolean =
     state.isFieldCache.getOrElseUpdate(i.id(), exportedIdentifiers.contains(i.name) || super.isField(i))
@@ -164,7 +170,8 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
   }
 
   override protected def visitIdentifierAssignedToCall(i: Identifier, c: Call): Set[String] =
-    if (c.name == "require") Set.empty
+    if (c.name == "require" || c.code.startsWith("require")) Set.empty
+    else if (c.name.endsWith(".factory")) symbolTable.append(i, c.methodFullName.stripSuffix(".factory"))
     else super.visitIdentifierAssignedToCall(i, c)
 
   override protected def visitIdentifierAssignedToMethodRef(
@@ -183,7 +190,7 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
 
   override protected def postSetTypeInformation(): Unit = {
     // often there are "this" identifiers with type hints but this can be set to a type hint if they meet the criteria
-    cu.ast.isIdentifier
+    procedure._identifierViaContainsOut
       .nameExact("this")
       .where(_.typeFullNameExact(Defines.Any))
       .filterNot(_.dynamicTypeHintFullName.isEmpty)

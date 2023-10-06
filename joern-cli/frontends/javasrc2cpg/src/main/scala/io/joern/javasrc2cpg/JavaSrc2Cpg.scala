@@ -9,7 +9,7 @@ import io.joern.javasrc2cpg.passes.{
   TypeInferencePass
 }
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
-import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass, XTypeRecoveryConfig}
+import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass, TypeRecoveryConfig}
 import io.joern.x2cpg.X2CpgFrontend
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
@@ -57,7 +57,7 @@ object JavaSrc2Cpg {
 
   def typeRecoveryPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] = {
     List(
-      new JavaTypeRecoveryPass(cpg, XTypeRecoveryConfig(enabledDummyTypes = !config.exists(_.disableDummyTypes))),
+      new JavaTypeRecoveryPass(cpg, TypeRecoveryConfig(enabledDummyTypes = !config.exists(_.disableDummyTypes))),
       new JavaTypeHintCallLinker(cpg)
     )
   }
