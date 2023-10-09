@@ -10,16 +10,20 @@ import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
+import java.util.concurrent.ExecutorService
+
 class PythonTypeRecoveryPass(cpg: Cpg, config: TypeRecoveryConfig = TypeRecoveryConfig())
     extends XTypeRecoveryPass(cpg, config) {
 
-  override protected def generateRecoveryPass(state: State): XTypeRecovery =
-    new PythonTypeRecovery(cpg, state)
+  override protected def generateRecoveryPass(state: State, executor: ExecutorService): XTypeRecovery =
+    new PythonTypeRecovery(cpg, state, executor)
 }
 
-private class PythonTypeRecovery(cpg: Cpg, state: State) extends XTypeRecovery(cpg, state) {
+private class PythonTypeRecovery(cpg: Cpg, state: State, executor: ExecutorService)
+    extends XTypeRecovery(cpg, state, executor) {
 
-  // TODO: I am getting some conccurent modification exceptions, something to watch
+  override val initialSymbolTable: SymbolTable[LocalKey] = SymbolTable[LocalKey](fromNodeToLocalPythonKey)
+
   override def loadImports(i: ResolvedImport, symbolTable: SymbolTable[LocalKey]): Unit = i match {
     case ResolvedMember(basePath, memberName, alias, _) =>
       val memberTypes = cpg.typeDecl
@@ -42,26 +46,26 @@ private class PythonTypeRecovery(cpg: Cpg, state: State) extends XTypeRecovery(c
       case _         => SBKey.fromNodeToLocalKey(node)
     }
 
-  override def generateRecoveryForCompilationUnitTask(
-    unit: File,
-    builder: DiffGraphBuilder
-  ): Seq[RecoverForXCompilationUnit] = {
-    val symbolTable = SymbolTable[LocalKey](fromNodeToLocalPythonKey)
-    importNodes(unit).foreach(loadImports(_, symbolTable))
-    unit.method.map(RecoverForPythonFile(cpg, _, symbolTable.copy(), builder, state)).toSeq
-  }
+  override protected def recoverTypesForProcedure(
+    cpg: Cpg,
+    procedure: Method,
+    initialSymbolTable: SymbolTable[LocalKey],
+    builder: DiffGraphBuilder,
+    state: State
+  ): RecoverTypesForProcedure =
+    RecoverForPythonProcedure(cpg, procedure, initialSymbolTable, builder, state)
 
 }
 
 /** Performs type recovery from the root of a compilation unit level
   */
-private class RecoverForPythonFile(
+private class RecoverForPythonProcedure(
   cpg: Cpg,
   procedure: Method,
   symbolTable: SymbolTable[LocalKey],
   builder: DiffGraphBuilder,
   state: State
-) extends RecoverForXCompilationUnit(cpg, procedure, symbolTable, builder, state) {
+) extends RecoverTypesForProcedure(cpg, procedure, symbolTable, builder, state) {
 
   override def visitAssignments(a: OpNodes.Assignment): Set[String] = {
     a.argumentOut.l match {

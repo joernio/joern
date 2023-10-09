@@ -14,12 +14,13 @@ import overflowdb.BatchedUpdate
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import scopt.OParser
 
-import java.util.concurrent.RecursiveTask
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.{Callable, ExecutorService, Executors}
 import scala.annotation.tailrec
 import scala.collection.concurrent.TrieMap
 import scala.collection.{Iterator, mutable}
 import scala.util.matching.Regex
+import scala.util.{Failure, Success, Try}
 
 /** @param iterations
   *   the number of iterations to run.
@@ -77,21 +78,27 @@ abstract class XTypeRecoveryPass(cpg: Cpg, config: TypeRecoveryConfig = TypeReco
     if (config.iterations > 0) {
       val stopEarly = new AtomicBoolean(false)
       val state     = State(config, stopEarly = stopEarly, graphCache = initGraphCache)
+      val executor  = Executors.newWorkStealingPool()
       try {
         Iterator.from(0).takeWhile(_ < config.iterations).foreach { i =>
           val newState = state.copy(currentIteration = i, graphCache = initGraphCache)
-          generateRecoveryPass(newState).createAndApply()
+          generateRecoveryPass(newState, executor).createAndApply()
         }
         // If dummy values are enabled and we are stopping early, we need one more round to propagate these dummy values
-        if (stopEarly.get() && config.enabledDummyTypes)
-          generateRecoveryPass(state.copy(currentIteration = config.iterations - 1, graphCache = initGraphCache))
+        if (stopEarly.get() && config.enabledDummyTypes) {
+          generateRecoveryPass(
+            state.copy(currentIteration = config.iterations - 1, graphCache = initGraphCache),
+            executor
+          )
             .createAndApply()
+        }
       } finally {
         state.clear()
+        executor.shutdown()
       }
     }
 
-  protected def generateRecoveryPass(state: State): XTypeRecovery
+  protected def generateRecoveryPass(state: State, executor: ExecutorService): XTypeRecovery
 
 }
 
@@ -132,40 +139,70 @@ trait TypeRecoveryParserConfig[R <: X2CpgConfig[R]] { this: R =>
   * @param cpg
   *   the CPG to recovery types for.
   */
-abstract class XTypeRecovery(cpg: Cpg, state: State) extends ForkJoinParallelCpgPass[File](cpg) {
+abstract class XTypeRecovery(cpg: Cpg, state: State, executor: ExecutorService)
+    extends ForkJoinParallelCpgPass[File](cpg) {
 
   import io.joern.x2cpg.passes.frontend.AllNodeTypesFromIteratorExt
+
+  protected val logger: Logger                            = LoggerFactory.getLogger(getClass)
+  protected val initialSymbolTable: SymbolTable[LocalKey] = SymbolTable[LocalKey](SBKey.fromNodeToLocalKey)
 
   override def generateParts(): Array[File] = cpg.file.toArray
 
   override def runOnPart(builder: DiffGraphBuilder, part: File): Unit = {
+    importNodes(part).foreach(loadImports(_, initialSymbolTable))
+    // Make a new builder and absorb them from each task
     val tasks = part
-      .flatMap(generateRecoveryForCompilationUnitTask(_, builder))
-      .map(_.fork())
+      .flatMap(compilationUnitToTasks(_))
+      .map(executor.submit)
       .l
-    val changesWereMade = tasks
-      .map(_.get())
-      .reduceOption((a, b) => a || b)
-      .getOrElse(false)
-    if (!changesWereMade) state.stopEarly.set(true)
+    tasks.foreach { task =>
+      Try(task.get()) match
+        case Failure(exception) =>
+          logger.error(s"Type recovery & propagation task failed for file '${part.name}'", exception)
+        case Success(diffGraph) =>
+          builder.absorb(diffGraph)
+    }
+    if (!state.changesWereMade.get()) state.stopEarly.set(true)
   }
 
-  /** A factory method to generate a [[RecoverForXCompilationUnit]] task with the given parameters.
+  /** A factory method to generate a [[RecoverTypesForProcedure]] task with the given parameters.
     *
     * @param unit
     *   the compilation unit.
-    * @param builder
-    *   the graph builder.
     * @return
-    *   a forkable [[RecoverForXCompilationUnit]] task.
+    *   a forkable [[RecoverTypesForProcedure]] task.
     */
-  def generateRecoveryForCompilationUnitTask(unit: File, builder: DiffGraphBuilder): Seq[RecoverForXCompilationUnit]
+  private def compilationUnitToTasks(unit: File): Seq[RecoverTypesForProcedure] =
+    unit.method.map(recoverTypesForProcedure(cpg, _, initialSymbolTable.copy(), new DiffGraphBuilder, state)).toSeq
+
+  /** The entrypoint for a type recovery and propagation task.
+    * @param cpg
+    *   the graph.
+    * @param procedure
+    *   the target method.
+    * @param initialSymbolTable
+    *   the initial symbol table containing imported symbols.
+    * @param builder
+    *   the builder.
+    * @param state
+    *   state information for this iteration of the type recovery and propagation algorithm.
+    * @return
+    *   a callable recovery task.
+    */
+  protected def recoverTypesForProcedure(
+    cpg: Cpg,
+    procedure: Method,
+    initialSymbolTable: SymbolTable[LocalKey],
+    builder: DiffGraphBuilder,
+    state: State
+  ): RecoverTypesForProcedure
 
   protected def importNodes(cu: File): List[ResolvedImport] = cu.ast.isCall.referencedImports.flatMap(visitImport).l
 
   /** Visits an import and stores references in the symbol table as both an identifier and call.
     */
-  protected def visitImport(i: Import): Iterator[ResolvedImport] = {
+  private def visitImport(i: Import): Iterator[ResolvedImport] = {
     import io.joern.x2cpg.passes.frontend.ImportsPass.*
 
     i.call.tag.flatMap(tag => i.importedAs.flatMap(ResolvedImport.tagToResolvedImport(tag, _)))
@@ -253,15 +290,17 @@ object XTypeRecovery {
   *   stores type information for local structures that live within this compilation unit, e.g. local variables. and is
   *   pre-loaded with imported symbols.
   * @param builder
-  *   the graph builder
+  *   the graph builder, should be returned in the `call` function.
+  * @param state
+  *   the state of the type recovery.
   */
-abstract class RecoverForXCompilationUnit(
+abstract class RecoverTypesForProcedure(
   cpg: Cpg,
   procedure: Method,
   symbolTable: SymbolTable[LocalKey],
   builder: DiffGraphBuilder,
   state: State
-) extends RecursiveTask[Boolean] {
+) extends Callable[DiffGraphBuilder] {
 
   import io.joern.x2cpg.passes.frontend.AllNodeTypesFromNodeExt
 
@@ -316,7 +355,7 @@ abstract class RecoverForXCompilationUnit(
 
   protected def returns: Iterator[Return] = procedure.methodReturn.toReturn
 
-  override def compute(): Boolean = try {
+  override def call(): DiffGraphBuilder = try {
     // Look at symbols with existing type info
     prepopulateSymbolTable()
     // Prune import names if the methods exist in the CPG
@@ -329,8 +368,8 @@ abstract class RecoverForXCompilationUnit(
     setTypeInformation()
     // Entrypoint for any final changes
     postSetTypeInformation()
-    // Return number of changes
-    state.changesWereMade.get()
+    // Return diff graph
+    builder
   } finally {
     symbolTable.clear()
   }

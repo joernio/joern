@@ -1,41 +1,48 @@
 package io.joern.javasrc2cpg.passes
 
 import io.joern.x2cpg.Defines
-import io.joern.x2cpg.passes.frontend._
+import io.joern.x2cpg.passes.frontend.*
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.PropertyNames
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
-class JavaTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
-    extends XTypeRecoveryPass[Method](cpg, config) {
-  override protected def generateRecoveryPass(state: XTypeRecoveryState): XTypeRecovery[Method] =
-    new JavaTypeRecovery(cpg, state)
+import java.util.concurrent.ExecutorService
+
+class JavaTypeRecoveryPass(cpg: Cpg, config: TypeRecoveryConfig = TypeRecoveryConfig())
+    extends XTypeRecoveryPass(cpg, config) {
+  override protected def generateRecoveryPass(state: State, executor: ExecutorService): XTypeRecovery =
+    new JavaTypeRecovery(cpg, state, executor)
 }
 
-private class JavaTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTypeRecovery[Method](cpg, state) {
+private class JavaTypeRecovery(cpg: Cpg, state: State, executor: ExecutorService)
+    extends XTypeRecovery(cpg, state, executor) {
 
-  override def compilationUnit: Iterator[Method] = cpg.method.isExternal(false).iterator
-
-  override def generateRecoveryForCompilationUnitTask(
-    unit: Method,
-    builder: DiffGraphBuilder
-  ): RecoverForXCompilationUnit[Method] = {
-    val newConfig = state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
-    new RecoverForJavaFile(cpg, unit, builder, state.copy(config = newConfig))
-  }
-}
-
-private class RecoverForJavaFile(cpg: Cpg, cu: Method, builder: DiffGraphBuilder, state: XTypeRecoveryState)
-    extends RecoverForXCompilationUnit[Method](cpg, cu, builder, state) {
+  override protected val initialSymbolTable = new SymbolTable[LocalKey](javaNodeToLocalKey)
 
   private def javaNodeToLocalKey(n: AstNode): Option[LocalKey] = n match {
     case i: Identifier if i.name == "this" && i.code == "super" => Option(LocalVar("super"))
     case _                                                      => SBKey.fromNodeToLocalKey(n)
   }
 
-  override protected val symbolTable = new SymbolTable[LocalKey](javaNodeToLocalKey)
+  override protected def recoverTypesForProcedure(
+    cpg: Cpg,
+    procedure: Method,
+    initialSymbolTable: SymbolTable[LocalKey],
+    builder: DiffGraphBuilder,
+    state: State
+  ): RecoverTypesForProcedure =
+    RecoverForJavaFile(cpg, procedure, initialSymbolTable, builder, state)
+
+}
+
+private class RecoverForJavaFile(
+  cpg: Cpg,
+  procedure: Method,
+  symbolTable: SymbolTable[LocalKey],
+  builder: DiffGraphBuilder,
+  state: State
+) extends RecoverTypesForProcedure(cpg, procedure, symbolTable, builder, state) {
 
   override protected def isConstructor(c: Call): Boolean = isConstructor(c.name)
 

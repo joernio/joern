@@ -10,32 +10,35 @@ import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
+import java.util.concurrent.ExecutorService
+
 class JavaScriptTypeRecoveryPass(cpg: Cpg, config: TypeRecoveryConfig = TypeRecoveryConfig())
     extends XTypeRecoveryPass(cpg, config) {
-  override protected def generateRecoveryPass(state: State): XTypeRecovery =
-    new JavaScriptTypeRecovery(cpg, state)
+  override protected def generateRecoveryPass(state: State, executor: ExecutorService): XTypeRecovery =
+    new JavaScriptTypeRecovery(cpg, state, executor)
 }
 
-private class JavaScriptTypeRecovery(cpg: Cpg, state: State) extends XTypeRecovery(cpg, state) {
+private class JavaScriptTypeRecovery(cpg: Cpg, state: State, executor: ExecutorService)
+    extends XTypeRecovery(cpg, state, executor) {
 
-  override def generateRecoveryForCompilationUnitTask(
-    unit: File,
-    builder: DiffGraphBuilder
-  ): Seq[RecoverForXCompilationUnit] = {
-    val symbolTable = SymbolTable[LocalKey](SBKey.fromNodeToLocalKey)
-    importNodes(unit).foreach(loadImports(_, symbolTable))
-    unit.method.map(RecoverForJavaScriptFile(cpg, _, symbolTable.copy(), builder, state)).toSeq
-  }
+  override protected def recoverTypesForProcedure(
+    cpg: Cpg,
+    procedure: Method,
+    initialSymbolTable: SymbolTable[LocalKey],
+    builder: DiffGraphBuilder,
+    state: State
+  ): RecoverTypesForProcedure =
+    RecoverForJavaScriptProcedure(cpg, procedure, initialSymbolTable, builder, state)
 
 }
 
-private class RecoverForJavaScriptFile(
+private class RecoverForJavaScriptProcedure(
   cpg: Cpg,
   procedure: Method,
   symbolTable: SymbolTable[LocalKey],
   builder: DiffGraphBuilder,
   state: State
-) extends RecoverForXCompilationUnit(cpg, procedure, symbolTable, builder, state) {
+) extends RecoverTypesForProcedure(cpg, procedure, symbolTable, builder, state) {
 
   override protected val pathSep = ':'
 
