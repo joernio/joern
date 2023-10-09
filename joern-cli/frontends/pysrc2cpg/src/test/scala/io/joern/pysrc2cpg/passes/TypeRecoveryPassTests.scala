@@ -1,12 +1,11 @@
 package io.joern.pysrc2cpg.passes
 
 import io.joern.pysrc2cpg.PySrc2CpgFixture
+import io.joern.x2cpg.passes.frontend.ImportsPass.*
 import io.joern.x2cpg.passes.frontend.{ImportsPass, XTypeHintCallLinker}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 import java.io.File
-import io.joern.x2cpg.passes.frontend.ImportsPass._
-
 import scala.collection.immutable.Seq
 class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
@@ -265,7 +264,6 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         .name("createTable")
         .l
       d.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.createTable"
-      d.dynamicTypeHintFullName shouldBe Seq()
       d.callee(NoResolve).isExternal.headOption shouldBe Some(true)
     }
 
@@ -278,7 +276,6 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         .l
 
       d.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.deleteTable"
-      d.dynamicTypeHintFullName shouldBe Seq()
       d.callee(NoResolve).isExternal.headOption shouldBe Some(true)
     }
 
@@ -452,7 +449,6 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     "recover a potential type for `self.collection` using the assignment at `get_collection` as a type hint" in {
       val Some(selfFindFound) = cpg.typeDecl(".*InstallationsDAO.*").ast.isCall.name("find_one").headOption: @unchecked
       selfFindFound.dynamicTypeHintFullName shouldBe Seq(
-        "__builtin.None.find_one",
         "pymongo.py:<module>.MongoClient.__init__.<indexAccess>.<indexAccess>.find_one"
       )
     }
@@ -1051,9 +1047,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "be able to handle a simple call off an alias" in {
       val Some(redisGet) = cpg.call.nameExact("publish_json").headOption: @unchecked
-      redisGet.methodFullName shouldBe Seq("db", "redis.py:<module>.RedisDB.get_redis.publish_json").mkString(
-        File.separator
-      )
+      redisGet.methodFullName shouldBe "aioredis.py:<module>.Redis.publish_json"
     }
   }
 

@@ -24,6 +24,8 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
   implicit protected val resolver: NoResolve.type = NoResolve
   private val fileNamePattern                     = Pattern.compile("^(.*(.py|.js|.rb)).*$")
   protected val pathSep: Char                     = '.'
+  private val methodReturnMap =
+    cpg.methodReturn.filterNot(_.typeFullName == "ANY").map { mr => mr.method.fullName -> mr.typeFullName }.toMap
 
   protected def calls: Iterator[Call] = cpg.call
     .nameNot("<operator>.*", "<operators>.*")
@@ -88,14 +90,50 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     }
   }
 
-  protected def setCallees(call: Call, methodNames: Seq[String], builder: DiffGraphBuilder): Unit = {
-    val nonDummyTypes = methodNames.filterNot(isDummyType)
+  protected def setCallees(call: Call, ms: Seq[String], builder: DiffGraphBuilder): Unit = {
+
+    /** Filters in "most resolved" types, by looking at the common suffixes.
+      *
+      * @param ts
+      *   the incoming types.
+      * @return
+      *   the filtered set.
+      */
+    def filterMostResolvedTypes(ts: Iterable[String]): Iterable[String] = {
+      ts.groupBy(_.split(pathSep).last).flatMap { case (_, xs) =>
+        xs.sortBy(x => (XTypeRecovery.DummyTokens.count(x.contains), x.length)).headOption
+      }
+    }
+
+    def resolveMethodRefs(m: String): String =
+      if (!m.endsWith(XTypeRecovery.DummyReturnType)) {
+        m.split(pathSep).toList match
+          case head :: next =>
+            methodReturnMap.get((head +: next.take(next.length - 1)).mkString(pathSep.toString)) match
+              case Some(path) if next.nonEmpty => s"$path$pathSep${next.last}"
+              case Some(path)                  => path
+              case _                           => m
+          case Nil => m
+      } else {
+        m
+      }
+
+    val methodNames            = ms.map(resolveMethodRefs).distinct
+    lazy val nonDummyTypes     = methodNames.filterNot(isDummyType)
+    lazy val mostResolvedTypes = filterMostResolvedTypes(methodNames).toSeq
     if (methodNames.sizeIs == 1) {
       builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, methodNames.head)
       builder.setNodeProperty(
         call,
         PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
         call.dynamicTypeHintFullName.diff(methodNames)
+      )
+    } else if (mostResolvedTypes.sizeIs == 1 && nonDummyTypes.isEmpty) {
+      builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, mostResolvedTypes.head)
+      builder.setNodeProperty(
+        call,
+        PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
+        call.dynamicTypeHintFullName.diff(mostResolvedTypes)
       )
     } else if (methodNames.sizeIs > 1 && methodNames != nonDummyTypes) {
       setCallees(call, nonDummyTypes, builder)

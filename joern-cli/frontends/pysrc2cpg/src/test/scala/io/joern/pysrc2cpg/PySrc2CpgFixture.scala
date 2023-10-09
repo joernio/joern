@@ -6,6 +6,7 @@ import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
+import io.joern.x2cpg.passes.frontend.TypeRecoveryConfig
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, LanguageFrontend, TestCpg}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
@@ -39,7 +40,7 @@ class PySrcTestCpg extends TestCpg with PythonFrontend {
     new ImportResolverPass(this).createAndApply()
     new PythonInheritanceNamePass(this).createAndApply()
     new DynamicTypeHintFullNamePass(this).createAndApply()
-    new PythonTypeRecoveryPass(this).createAndApply()
+    new PythonTypeRecoveryPass(this, TypeRecoveryConfig(parallelism = 1)).createAndApply()
     new PythonTypeHintCallLinker(this).createAndApply()
     new NaiveCallLinker(this).createAndApply()
 

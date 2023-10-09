@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.{Callable, ExecutorService, Executors}
 import scala.annotation.tailrec
 import scala.collection.concurrent.TrieMap
+import scala.collection.immutable.Set
 import scala.collection.{Iterator, mutable}
 import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try}
@@ -26,8 +27,10 @@ import scala.util.{Failure, Success, Try}
   *   the number of iterations to run.
   * @param enabledDummyTypes
   *   whether to enable placeholder dummy values for partially resolved types.
+  * @param parallelism
+  *   the number of cores to use. Useful to define for tests as this is fairly non-deterministic at the moment.
   */
-case class TypeRecoveryConfig(iterations: Int = 2, enabledDummyTypes: Boolean = true)
+case class TypeRecoveryConfig(iterations: Int = 2, enabledDummyTypes: Boolean = true, parallelism: Int = 4)
 
 /** @param config
   *   the user defined config.
@@ -56,7 +59,11 @@ case class State(
 
 }
 
-case class GraphCache(methodReturnTypes: Map[String, Set[String]])
+case class GraphCache(
+  methodReturnTypes: Map[String, Set[String]],
+  memberTypes: Map[(String, String), Set[String]],
+  typeDecls: Set[String]
+)
 
 /** In order to propagate types across compilation units, but avoid the poor scalability of a fixed-point algorithm, the
   * number of iterations can be configured using the iterations parameter. Note that iterations < 2 will not provide any
@@ -67,18 +74,23 @@ case class GraphCache(methodReturnTypes: Map[String, Set[String]])
 abstract class XTypeRecoveryPass(cpg: Cpg, config: TypeRecoveryConfig = TypeRecoveryConfig()) extends CpgPass(cpg) {
 
   private def initGraphCache: GraphCache =
-    GraphCache(methodReturnTypes =
-      cpg.methodReturn
-        .map { f => f.method.fullName -> f.allTypes.filterNot(_ == "ANY").toSet }
+    GraphCache(
+      methodReturnTypes = cpg.methodReturn
+        .map(mr => mr.method.fullName -> mr.allTypes.filterNot(_ == "ANY").toSet)
         .filterNot(_._2.isEmpty)
-        .toMap
+        .toMap,
+      memberTypes = cpg.member
+        .map(m => (m.typeDecl.fullName, m.name) -> m.allTypes.filterNot(_ == "ANY").toSet)
+        .filterNot(_._2.isEmpty)
+        .toMap,
+      typeDecls = cpg.typeDecl.fullName.toSet
     )
 
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit =
     if (config.iterations > 0) {
       val stopEarly = new AtomicBoolean(false)
       val state     = State(config, stopEarly = stopEarly, graphCache = initGraphCache)
-      val executor  = Executors.newWorkStealingPool()
+      val executor  = Executors.newWorkStealingPool(config.parallelism)
       try {
         Iterator.from(0).takeWhile(_ < config.iterations).foreach { i =>
           val newState = state.copy(currentIteration = i, graphCache = initGraphCache)
@@ -237,10 +249,10 @@ object XTypeRecovery {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  val DummyReturnType                       = "<returnValue>"
-  val DummyMemberLoad                       = "<member>"
-  val DummyIndexAccess                      = "<indexAccess>"
-  private lazy val DummyTokens: Set[String] = Set(DummyReturnType, DummyMemberLoad, DummyIndexAccess)
+  val DummyReturnType               = "<returnValue>"
+  val DummyMemberLoad               = "<member>"
+  val DummyIndexAccess              = "<indexAccess>"
+  lazy val DummyTokens: Set[String] = Set(DummyReturnType, DummyMemberLoad, DummyIndexAccess)
 
   val unknownTypePattern: Regex = s"(i?)(UNKNOWN|ANY|${Defines.UnresolvedNamespace}).*".r
 
@@ -1194,13 +1206,48 @@ abstract class RecoverTypesForProcedure(
     * cleared. If not then `dynamicTypeHintFullName` is set to the types.
     */
   protected def setTypes(n: StoredNode, types: Seq[String]): Unit = {
-    val resolvedTypes = types.flatMap { t =>
-      state.graphCache.methodReturnTypes.get(t.stripSuffix(s"$pathSep${XTypeRecovery.DummyReturnType}")) match
-        case Some(resolved) => resolved
-        case None           => Set(t)
-    }.distinct
-    val nonDummyTypes = resolvedTypes.filterNot(XTypeRecovery.isDummyType)
-    if (nonDummyTypes.size == 1) builder.setNodeProperty(n, PropertyNames.TYPE_FULL_NAME, nonDummyTypes.head)
+    val pattern = s"""^\\(([\\w_]+)\\)(.*)""".r
+
+    def resolveDummyMethodReturn(t: String): Set[String] = {
+      val split = t.split(s"$pathSep${XTypeRecovery.DummyReturnType}", -1)
+      if (split.length - 1 > 1) Set(t)
+      else
+        split.toList match
+          case methodFullName :: suffix =>
+            state.graphCache.methodReturnTypes
+              .get(methodFullName)
+              .map(xs => xs.map(x => s"$x${suffix.mkString}"))
+              .getOrElse(Set(t))
+          case Nil => Set(t)
+    }
+
+    def resolveMemberAccess(t: String): Set[String] = if (t.contains(XTypeRecovery.DummyMemberLoad)) {
+      val split = t.split(s"$pathSep${XTypeRecovery.DummyMemberLoad}", -1)
+      if (split.length - 1 > 1) {
+        Set(t)
+      } else {
+        split.toList match
+          case baseType :: next =>
+            next.mkString match
+              case pattern(key, suffix) =>
+                state.graphCache.memberTypes
+                  .get((baseType, key))
+                  .map(xs => xs.map(x => s"$x${suffix.mkString}"))
+                  .getOrElse(Set(t))
+              case _ => Set(t)
+          case Nil =>
+            Set(t)
+      }
+    } else {
+      Set(t)
+    }
+
+    val resolvedTypes = types
+      .flatMap(resolveDummyMethodReturn)
+      .flatMap(resolveMemberAccess)
+      .distinct
+    val realTypes = resolvedTypes.filter(state.graphCache.typeDecls.contains)
+    if (realTypes.size == 1) builder.setNodeProperty(n, PropertyNames.TYPE_FULL_NAME, realTypes.head)
     else if (resolvedTypes.size == 1) builder.setNodeProperty(n, PropertyNames.TYPE_FULL_NAME, resolvedTypes.head)
     else builder.setNodeProperty(n, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, resolvedTypes)
   }
