@@ -54,10 +54,9 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astForLiteral(stringLiteral: ParserNodeInfo): Ast = {
-    val code = stringLiteral.json(ParserKeys.Value).str
     // TODO May need to revisit this
     val typ = getTypeOfToken(stringLiteral)
-    Ast(literalNode(stringLiteral, code, typ))
+    Ast(literalNode(stringLiteral, stringLiteral.code, typ))
   }
 
   private def astForIdentifier(ident: ParserNodeInfo): Ast = {
