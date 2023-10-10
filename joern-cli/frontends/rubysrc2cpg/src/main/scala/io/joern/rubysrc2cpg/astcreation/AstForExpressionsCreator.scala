@@ -395,57 +395,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     otherAst :+ callAst(call, argsAst)
   }
 
-  protected def astForUntilExpression(ctx: UntilExpressionContext): Ast = {
-    val testAst = astForExpressionOrCommand(ctx.expressionOrCommand()).headOption
-    val bodyAst = astForCompoundStatement(ctx.doClause().compoundStatement())
-    // TODO: testAst should be negated if it's going to be modelled as a while stmt.
-    whileAst(testAst, bodyAst, Some(text(ctx)), line(ctx), column(ctx))
-  }
-
-  protected def astForForExpression(ctx: ForExpressionContext): Ast = {
-    val forVarAst  = astForForVariableContext(ctx.forVariable())
-    val forExprAst = astForExpressionOrCommand(ctx.expressionOrCommand())
-    val forBodyAst = astForCompoundStatement(ctx.doClause().compoundStatement())
-    // TODO: for X in Y is not properly modelled by while Y
-    val forRootAst = whileAst(forExprAst.headOption, forBodyAst, Some(text(ctx)), line(ctx), column(ctx))
-    forVarAst.headOption.map(forRootAst.withChild).getOrElse(forRootAst)
-  }
-
-  private def astForForVariableContext(ctx: ForVariableContext): Seq[Ast] = {
-    if (ctx.singleLeftHandSide() != null) {
-      astForSingleLeftHandSideContext(ctx.singleLeftHandSide())
-    } else if (ctx.multipleLeftHandSide() != null) {
-      astForMultipleLeftHandSideContext(ctx.multipleLeftHandSide())
-    } else {
-      Seq(Ast())
-    }
-  }
-
-  protected def astForWhileExpression(ctx: WhileExpressionContext): Ast = {
-    val testAst = astForExpressionOrCommand(ctx.expressionOrCommand())
-    val bodyAst = astForCompoundStatement(ctx.doClause().compoundStatement())
-    whileAst(testAst.headOption, bodyAst, Some(text(ctx)), line(ctx), column(ctx))
-  }
-
-  protected def astForIfExpression(ctx: IfExpressionContext): Ast = {
-    val testAst   = astForExpressionOrCommand(ctx.expressionOrCommand())
-    val thenAst   = astForCompoundStatement(ctx.thenClause().compoundStatement())
-    val elsifAsts = Option(ctx.elsifClause).map(_.asScala).getOrElse(Seq()).map(astForElsifClause)
-    val elseAst = Option(ctx.elseClause()).map(ctx => astForCompoundStatement(ctx.compoundStatement())).getOrElse(Seq())
-    val ifNode  = controlStructureNode(ctx, ControlStructureTypes.IF, text(ctx))
-    controlStructureAst(ifNode, testAst.headOption)
-      .withChildren(thenAst)
-      .withChildren(elsifAsts.toSeq)
-      .withChildren(elseAst)
-  }
-
-  private def astForElsifClause(ctx: ElsifClauseContext): Ast = {
-    val ifNode  = controlStructureNode(ctx, ControlStructureTypes.IF, text(ctx))
-    val testAst = astForExpressionOrCommand(ctx.expressionOrCommand())
-    val bodyAst = astForCompoundStatement(ctx.thenClause().compoundStatement())
-    controlStructureAst(ifNode, testAst.headOption, bodyAst)
-  }
-
   protected def astForVariableReference(ctx: VariableReferenceContext): Ast = ctx match {
     case ctx: VariableIdentifierVariableReferenceContext => astForVariableIdentifierHelper(ctx.variableIdentifier())
     case ctx: PseudoVariableIdentifierVariableReferenceContext =>
@@ -501,13 +450,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
   }
 
-  protected def astForUnlessExpression(ctx: UnlessExpressionContext): Ast = {
-    val testAst = astForExpressionOrCommand(ctx.expressionOrCommand())
-    val thenAst = astForCompoundStatement(ctx.thenClause().compoundStatement())
+  protected def astForUnlessExpression(ctx: UnlessExpressionContext): Seq[Ast] = {
+    val (exprAst, otherAst) = astForExpressionOrCommand(ctx.expressionOrCommand()).partitionExprAst
+    val thenAst             = astForCompoundStatement(ctx.thenClause().compoundStatement())
     val elseAst =
       Option(ctx.elseClause()).map(_.compoundStatement()).map(st => astForCompoundStatement(st)).getOrElse(Seq())
     val ifNode = controlStructureNode(ctx, ControlStructureTypes.IF, text(ctx))
-    controlStructureAst(ifNode, testAst.headOption, thenAst ++ elseAst)
+    otherAst :+ controlStructureAst(ifNode, exprAst.headOption, thenAst ++ elseAst)
   }
 
   protected def astForQuotedStringExpression(ctx: QuotedStringExpressionContext): Seq[Ast] = ctx match

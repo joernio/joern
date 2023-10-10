@@ -200,12 +200,12 @@ class AstCreator(
     case ctx: ProcDefinitionPrimaryContext   => astForProcDefinitionContext(ctx.procDefinition())
     case ctx: YieldWithOptionalArgumentPrimaryContext =>
       astForYieldCall(ctx, Option(ctx.yieldWithOptionalArgument().arguments()))
-    case ctx: IfExpressionPrimaryContext     => Seq(astForIfExpression(ctx.ifExpression()))
-    case ctx: UnlessExpressionPrimaryContext => Seq(astForUnlessExpression(ctx.unlessExpression()))
+    case ctx: IfExpressionPrimaryContext     => astForIfExpression(ctx.ifExpression())
+    case ctx: UnlessExpressionPrimaryContext => astForUnlessExpression(ctx.unlessExpression())
     case ctx: CaseExpressionPrimaryContext   => astForCaseExpressionPrimaryContext(ctx)
-    case ctx: WhileExpressionPrimaryContext  => Seq(astForWhileExpression(ctx.whileExpression()))
-    case ctx: UntilExpressionPrimaryContext  => Seq(astForUntilExpression(ctx.untilExpression()))
-    case ctx: ForExpressionPrimaryContext    => Seq(astForForExpression(ctx.forExpression()))
+    case ctx: WhileExpressionPrimaryContext  => astForWhileExpression(ctx.whileExpression())
+    case ctx: UntilExpressionPrimaryContext  => astForUntilExpression(ctx.untilExpression())
+    case ctx: ForExpressionPrimaryContext    => astForForExpression(ctx.forExpression())
     case ctx: ReturnWithParenthesesPrimaryContext =>
       Seq(returnAst(returnNode(ctx, text(ctx)), astForArgumentsWithParenthesesContext(ctx.argumentsWithParentheses())))
     case ctx: JumpExpressionPrimaryContext     => astForJumpExpressionPrimaryContext(ctx)
