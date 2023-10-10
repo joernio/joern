@@ -31,10 +31,15 @@ trait KotlinFrontend extends LanguageFrontend {
 }
 
 class KotlinTestCpg(override protected val withTestResourcePaths: Boolean) extends TestCpg with KotlinFrontend {
-  private var _withOssDataflow = false
+  private var _withOssDataflow    = false
+  private var _withPostProcessing = false
 
   def withOssDataflow(value: Boolean = true): this.type = {
     _withOssDataflow = value
+    this
+  }
+  def withPostProcessing(value: Boolean = true): this.type = {
+    _withPostProcessing = value
     this
   }
 
@@ -46,11 +51,20 @@ class KotlinTestCpg(override protected val withTestResourcePaths: Boolean) exten
       val options = new OssDataFlowOptions()
       new OssDataFlow(options).run(context)
     }
+
+    if (_withPostProcessing) {
+      Kotlin2Cpg.postProcessingPass(this)
+    }
   }
 }
 
-class KotlinCode2CpgFixture(withOssDataflow: Boolean = false, withDefaultJars: Boolean = false)
-    extends Code2CpgFixture(() => new KotlinTestCpg(withDefaultJars).withOssDataflow(withOssDataflow)) {
+class KotlinCode2CpgFixture(
+  withOssDataflow: Boolean = false,
+  withDefaultJars: Boolean = false,
+  withPostProcessing: Boolean = false
+) extends Code2CpgFixture(() =>
+      new KotlinTestCpg(withDefaultJars).withOssDataflow(withOssDataflow).withPostProcessing(withPostProcessing)
+    ) {
 
   implicit val context: EngineContext = EngineContext()
 
