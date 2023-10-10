@@ -65,7 +65,7 @@ private class RecoverForJavaScriptProcedure(
         builder.setNodeProperty(x, PropertyNames.TYPE_FULL_NAME, resolvedTypeHints.head)
     case x @ (_: Identifier | _: Local | _: MethodParameterIn) =>
       symbolTable.put(x, x.getKnownTypes)
-    case x: Call => symbolTable.put(x, (x.methodFullName +: x.dynamicTypeHintFullName).toSet)
+    case x: Call => symbolTable.put(x, (Seq(x.methodFullName) ++ x.dynamicTypeHintFullName ++ x.possibleTypes).toSet)
     case _       =>
   }
 
@@ -93,7 +93,7 @@ private class RecoverForJavaScriptProcedure(
             builder.setNodeProperty(p, PropertyNames.TYPE_FULL_NAME, resolvedHints.head)
           case _: MethodReturn =>
             builder.setNodeProperty(p, PropertyNames.TYPE_FULL_NAME, Defines.Any)
-            builder.setNodeProperty(p, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, resolvedHints)
+            builder.setNodeProperty(p, PropertyNames.POSSIBLE_TYPES, resolvedHints)
           case _ =>
         }
       }

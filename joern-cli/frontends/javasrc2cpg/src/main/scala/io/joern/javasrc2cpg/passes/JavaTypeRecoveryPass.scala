@@ -71,7 +71,7 @@ private class RecoverForJavaFile(
         case t if t.endsWith(c.signature) => t
         case t                            => s"$t:${c.signature}"
       }
-      builder.setNodeProperty(c, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, signedTypes)
+      builder.setNodeProperty(c, PropertyNames.POSSIBLE_TYPES, signedTypes)
     }
 
 }

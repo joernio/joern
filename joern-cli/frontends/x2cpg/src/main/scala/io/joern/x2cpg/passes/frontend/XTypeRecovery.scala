@@ -1183,8 +1183,8 @@ abstract class RecoverTypesForProcedure(
       state.changesWereMade.compareAndSet(false, true)
       builder.setNodeProperty(
         c,
-        PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
-        (c.dynamicTypeHintFullName ++ types).distinct
+        PropertyNames.POSSIBLE_TYPES,
+        (c.possibleTypes ++ c.dynamicTypeHintFullName ++ types).distinct
       )
     }
 
@@ -1249,7 +1249,7 @@ abstract class RecoverTypesForProcedure(
     val realTypes = resolvedTypes.filter(state.graphCache.typeDecls.contains)
     if (realTypes.size == 1) builder.setNodeProperty(n, PropertyNames.TYPE_FULL_NAME, realTypes.head)
     else if (resolvedTypes.size == 1) builder.setNodeProperty(n, PropertyNames.TYPE_FULL_NAME, resolvedTypes.head)
-    else builder.setNodeProperty(n, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, resolvedTypes)
+    else builder.setNodeProperty(n, PropertyNames.POSSIBLE_TYPES, resolvedTypes)
   }
 
   /** Allows one to modify the types assigned to locals.
@@ -1267,10 +1267,12 @@ abstract class RecoverTypesForProcedure(
 // The below are convenience calls for accessing type properties, one day when this pass uses `Tag` nodes instead of
 // the symbol table then perhaps this would work out better
 implicit class AllNodeTypesFromNodeExt(x: StoredNode) {
-  def allTypes: Iterator[String] = (x.property(PropertyNames.TYPE_FULL_NAME, "ANY") +: x.property(
-    PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
-    Seq.empty
-  )).iterator
+
+  def allTypes: Iterator[String] = (Seq(x.property(PropertyNames.TYPE_FULL_NAME, "ANY")) ++
+    x.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty) ++ x.property(
+      PropertyNames.POSSIBLE_TYPES,
+      Seq.empty
+    )).iterator
 
   def getKnownTypes: Set[String] = {
     x.allTypes.toSet.filterNot(XTypeRecovery.unknownTypePattern.matches)

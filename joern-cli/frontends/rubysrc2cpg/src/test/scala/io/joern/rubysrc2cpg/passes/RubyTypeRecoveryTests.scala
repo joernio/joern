@@ -71,8 +71,8 @@ class RubyTypeRecoveryTests
     )
     "resolve 'x' identifier types despite shadowing" in {
       val List(xOuterScope, xInnerScope) = cpg.identifier("x").take(2).l
-      xOuterScope.dynamicTypeHintFullName shouldBe Seq("__builtin.Integer", "__builtin.String")
-      xInnerScope.dynamicTypeHintFullName shouldBe Seq("__builtin.Integer", "__builtin.String")
+      xOuterScope.possibleTypes shouldBe Seq("__builtin.Integer", "__builtin.String")
+      xInnerScope.possibleTypes shouldBe Seq("__builtin.Integer", "__builtin.String")
     }
 
     "resolve module constant type" in {

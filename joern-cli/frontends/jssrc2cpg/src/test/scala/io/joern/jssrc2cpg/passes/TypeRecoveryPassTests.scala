@@ -22,8 +22,8 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
     "resolve 'x' identifier types despite shadowing" in {
       val List(xOuterScope, xInnerScope) = cpg.identifier.nameExact("x").l
-      xOuterScope.dynamicTypeHintFullName shouldBe Seq("__ecma.String", "__ecma.Number")
-      xInnerScope.dynamicTypeHintFullName shouldBe Seq("__ecma.String", "__ecma.Number")
+      xOuterScope.possibleTypes shouldBe Seq("__ecma.String", "__ecma.Number")
+      xInnerScope.possibleTypes shouldBe Seq("__ecma.String", "__ecma.Number")
     }
 
     "resolve 'z' types correctly" in {
@@ -167,25 +167,25 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
     "resolve 'foo.x' and 'foo.y' field access primitive types correctly" in {
       val List(z1, z2) = cpg.file.name(".*Bar.*").ast.isIdentifier.nameExact("z").l
       z1.typeFullName shouldBe "ANY"
-      z1.dynamicTypeHintFullName shouldBe Seq("__ecma.Number", "__ecma.String")
+      z1.possibleTypes shouldBe Seq("__ecma.Number", "__ecma.String")
       z2.typeFullName shouldBe "ANY"
-      z2.dynamicTypeHintFullName shouldBe Seq("__ecma.Number", "__ecma.String")
+      z2.possibleTypes shouldBe Seq("__ecma.Number", "__ecma.String")
     }
 
     "resolve 'foo.d' field access object types correctly" in {
       val List(d1, d2, d3) = cpg.file.name(".*Bar.*").ast.isIdentifier.nameExact("d").l
       d1.typeFullName shouldBe "flask_sqlalchemy:SQLAlchemy"
-      d1.dynamicTypeHintFullName shouldBe Seq()
+      d1.possibleTypes shouldBe empty
       d2.typeFullName shouldBe "flask_sqlalchemy:SQLAlchemy"
-      d2.dynamicTypeHintFullName shouldBe Seq()
+      d2.possibleTypes shouldBe empty
       d3.typeFullName shouldBe "flask_sqlalchemy:SQLAlchemy"
-      d3.dynamicTypeHintFullName shouldBe Seq()
+      d3.possibleTypes shouldBe empty
     }
 
     "resolve a 'createTable' call indirectly from 'foo.d' field access correctly" in {
       val List(d) = cpg.file.name(".*Bar.*").ast.isCall.name("createTable").l
       d.methodFullName shouldBe "flask_sqlalchemy:SQLAlchemy:createTable"
-      d.dynamicTypeHintFullName shouldBe Seq()
+      d.possibleTypes shouldBe empty
       d.callee(NoResolve).isExternal.headOption shouldBe Some(true)
     }
 
@@ -197,7 +197,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         .name("deleteTable")
         .l
       d.methodFullName shouldBe "flask_sqlalchemy:SQLAlchemy:deleteTable"
-      d.dynamicTypeHintFullName shouldBe empty
+      d.possibleTypes shouldBe empty
       d.callee(NoResolve).isExternal.headOption shouldBe Some(true)
     }
 

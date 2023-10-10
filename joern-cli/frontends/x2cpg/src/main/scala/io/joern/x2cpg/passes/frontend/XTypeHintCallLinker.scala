@@ -32,7 +32,7 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     .filter(c => calleeNames(c).nonEmpty && c.callee.isEmpty)
 
   protected def calleeNames(c: Call): Seq[String] =
-    c.dynamicTypeHintFullName.filterNot(_.equals("ANY")).distinct
+    (c.dynamicTypeHintFullName ++ c.possibleTypes).filterNot(_.equals("ANY")).distinct
 
   protected def callees(names: Seq[String]): List[Method] = cpg.method.fullNameExact(names: _*).toList
 
@@ -125,15 +125,15 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
       builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, methodNames.head)
       builder.setNodeProperty(
         call,
-        PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
-        call.dynamicTypeHintFullName.diff(methodNames)
+        PropertyNames.POSSIBLE_TYPES,
+        call.possibleTypes.diff(methodNames)
       )
     } else if (mostResolvedTypes.sizeIs == 1 && nonDummyTypes.isEmpty) {
       builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, mostResolvedTypes.head)
       builder.setNodeProperty(
         call,
-        PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
-        call.dynamicTypeHintFullName.diff(mostResolvedTypes)
+        PropertyNames.POSSIBLE_TYPES,
+        call.possibleTypes.diff(mostResolvedTypes)
       )
     } else if (methodNames.sizeIs > 1 && methodNames != nonDummyTypes) {
       setCallees(call, nonDummyTypes, builder)

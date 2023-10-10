@@ -25,15 +25,15 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "resolve 'x' identifier types despite shadowing" in {
       val List(xOuterScope, xInnerScope) = cpg.identifier("x").take(2).l
-      xOuterScope.dynamicTypeHintFullName shouldBe Seq("__builtin.int", "__builtin.str")
-      xInnerScope.dynamicTypeHintFullName shouldBe Seq("__builtin.int", "__builtin.str")
+      xOuterScope.possibleTypes shouldBe Seq("__builtin.int", "__builtin.str")
+      xInnerScope.possibleTypes shouldBe Seq("__builtin.int", "__builtin.str")
     }
 
     "resolve 'y' and 'z' identifier collection types" in {
       val List(zDict, zList, zTuple) = cpg.identifier("z").take(3).l
-      zDict.dynamicTypeHintFullName shouldBe Seq("__builtin.dict", "__builtin.list", "__builtin.tuple")
-      zList.dynamicTypeHintFullName shouldBe Seq("__builtin.dict", "__builtin.list", "__builtin.tuple")
-      zTuple.dynamicTypeHintFullName shouldBe Seq("__builtin.dict", "__builtin.list", "__builtin.tuple")
+      zDict.possibleTypes shouldBe Seq("__builtin.dict", "__builtin.list", "__builtin.tuple")
+      zList.possibleTypes shouldBe Seq("__builtin.dict", "__builtin.list", "__builtin.tuple")
+      zTuple.possibleTypes shouldBe Seq("__builtin.dict", "__builtin.list", "__builtin.tuple")
     }
 
     "resolve 'z' identifier calls conservatively" in {
@@ -41,7 +41,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       zAppend.methodFullName shouldBe "<unknownFullName>"
       // Since we don't have method nodes with this full name, this should belong to the call linker namespace
       zAppend.callee.astParentFullName.headOption shouldBe Some(XTypeHintCallLinker.namespace)
-      zAppend.dynamicTypeHintFullName shouldBe Seq(
+      zAppend.possibleTypes shouldBe Seq(
         "__builtin.dict.append",
         "__builtin.list.append",
         "__builtin.tuple.append"
@@ -183,7 +183,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "conservatively present either option when an imported function uses the same name as a builtin" in {
       val Some(absCall) = cpg.call("abs").headOption: @unchecked
-      absCall.dynamicTypeHintFullName shouldBe Seq("foo.py:<module>.abs", "__builtin.abs")
+      absCall.possibleTypes shouldBe Seq("foo.py:<module>.abs", "__builtin.abs")
     }
 
   }
@@ -240,9 +240,9 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         .name("z")
         .l
       z1.typeFullName shouldBe "ANY"
-      z1.dynamicTypeHintFullName shouldBe Seq("__builtin.int", "__builtin.str")
+      z1.possibleTypes shouldBe Seq("__builtin.int", "__builtin.str")
       z2.typeFullName shouldBe "ANY"
-      z2.dynamicTypeHintFullName shouldBe Seq("__builtin.int", "__builtin.str")
+      z2.possibleTypes shouldBe Seq("__builtin.int", "__builtin.str")
     }
 
     "resolve 'foo.d' field access object types correctly" in {
@@ -253,7 +253,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         .name("d")
         .headOption: @unchecked
       d.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy"
-      d.dynamicTypeHintFullName shouldBe Seq()
+      d.possibleTypes shouldBe empty
     }
 
     "resolve a 'createTable' call indirectly from 'foo.d' field access correctly" in {
@@ -448,7 +448,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "recover a potential type for `self.collection` using the assignment at `get_collection` as a type hint" in {
       val Some(selfFindFound) = cpg.typeDecl(".*InstallationsDAO.*").ast.isCall.name("find_one").headOption: @unchecked
-      selfFindFound.dynamicTypeHintFullName shouldBe Seq(
+      selfFindFound.possibleTypes shouldBe Seq(
         "pymongo.py:<module>.MongoClient.__init__.<indexAccess>.<indexAccess>.find_one"
       )
     }
