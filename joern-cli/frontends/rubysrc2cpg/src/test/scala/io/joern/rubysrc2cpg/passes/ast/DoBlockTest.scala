@@ -1,6 +1,7 @@
 package io.joern.rubysrc2cpg.passes.ast
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, MethodRef}
 import io.shiftleft.semanticcpg.language.*
 
 class DoBlockTest extends RubyCode2CpgFixture {
@@ -77,6 +78,32 @@ class DoBlockTest extends RubyCode2CpgFixture {
       val k :: v :: _ = mapMethod.parameter.l: @unchecked
       k.name shouldBe "key"
       v.name shouldBe "val"
+    }
+  }
+
+  "chained higher-order functions as do-block functions" should {
+    val cpg = code("""
+        |xs
+        | .select { |x| x.foo }
+        | .each { |y| puts(y) }
+        |""".stripMargin)
+
+    "chain the two methods calls where one is the argument of the other" in {
+      val selectCall = cpg.call.nameExact("select").head
+      val eachCall   = cpg.call.nameExact("each").head
+      selectCall.astParent shouldBe eachCall
+
+      selectCall.astChildren.l match
+        case ::(xs: Identifier, ::(selectRef: MethodRef, Nil)) =>
+          xs.name shouldBe "xs"
+          selectRef.referencedMethod.name should startWith("select")
+        case _ => fail("'select' call children are not what is expected.")
+
+      eachCall.astChildren.l match
+        case ::(sCall: Call, ::(eachRef: MethodRef, Nil)) =>
+          sCall shouldBe selectCall
+          eachRef.referencedMethod.name should startWith("each")
+        case _ => fail("'each' call children are not what is expected.")
     }
   }
 
