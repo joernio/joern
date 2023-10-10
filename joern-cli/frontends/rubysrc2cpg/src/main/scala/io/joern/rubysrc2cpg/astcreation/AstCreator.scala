@@ -332,6 +332,12 @@ class AstCreator(
           columnEnd(ctx).head
         )
 
+      blockMethodAsts.foreach { ast =>
+        ast.root match
+          case Some(_: NewMethod) => blockMethods.addOne(ast)
+          case _                  =>
+      }
+
       blockMethodAsts :+ blockMethodAsts
         .flatMap(_.nodes)
         .collectFirst { case methodRefNode: NewMethodRef =>
