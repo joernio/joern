@@ -4,7 +4,14 @@ import io.joern.rubysrc2cpg.parser.RubyParser.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  AstNodeNew,
+  NewCall,
+  NewIdentifier,
+  NewMethod,
+  NewType,
+  NewTypeDecl
+}
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, ModifierTypes, Operators}
 import org.antlr.v4.runtime.ParserRuleContext
 import org.slf4j.LoggerFactory
@@ -91,19 +98,23 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   ): Seq[Ast] = {
     val (argsAst, otherAst) = arguments
       .flatMap(astForExpressionContext)
-      .partitionExprAst
+      .partition(_.root match
+        case Some(_: NewMethod)   => false
+        case Some(_: NewTypeDecl) => false
+        case _                    => true
+      )
     val call = callNode(ctx, text(ctx), name, name, DispatchTypes.STATIC_DISPATCH)
-    otherAst :+ callAst(call, argsAst.toList)
+    otherAst.toSeq :+ callAst(call, argsAst.toList)
   }
 
   protected def astForIsDefinedExpression(ctx: IsDefinedExpressionContext): Seq[Ast] =
     astForBinaryOperatorExpression(ctx, RubyOperators.defined, Seq(ctx.expression()))
 
   // TODO: Maybe merge (in RubyParser.g4) isDefinedExpression with isDefinedPrimaryExpression?
-  protected def astForIsDefinedPrimaryExpression(ctx: IsDefinedPrimaryContext): Seq[Ast] = {
-    val (argsAst, otherAst) = astForExpressionOrCommand(ctx.expressionOrCommand()).partitionExprAst
-    val call = callNode(ctx, text(ctx), RubyOperators.defined, RubyOperators.defined, DispatchTypes.STATIC_DISPATCH)
-    otherAst :+ callAst(call, argsAst.toList)
+  protected def astForIsDefinedPrimaryExpression(ctx: IsDefinedPrimaryContext): Ast = {
+    val argsAst = astForExpressionOrCommand(ctx.expressionOrCommand())
+    val call    = callNode(ctx, text(ctx), RubyOperators.defined, RubyOperators.defined, DispatchTypes.STATIC_DISPATCH)
+    callAst(call, argsAst.toList)
   }
 
   protected def astForLiteralPrimaryExpression(ctx: LiteralPrimaryContext): Seq[Ast] = ctx.literal() match {
@@ -158,10 +169,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case ctx: VariableIdentifierOnlySingleLeftHandSideContext =>
       Seq(astForVariableIdentifierHelper(ctx.variableIdentifier, true))
     case ctx: PrimaryInsideBracketsSingleLeftHandSideContext =>
-      val primaryAsts          = astForPrimaryContext(ctx.primary)
-      val (argsAsts, otherAst) = astForArguments(ctx.arguments).partitionExprAst
-      val indexAccessCall      = createOpCall(ctx.LBRACK, Operators.indexAccess, text(ctx))
-      otherAst :+ callAst(indexAccessCall, primaryAsts ++ argsAsts)
+      val primaryAsts     = astForPrimaryContext(ctx.primary)
+      val argsAsts        = astForArguments(ctx.arguments)
+      val indexAccessCall = createOpCall(ctx.LBRACK, Operators.indexAccess, text(ctx))
+      Seq(callAst(indexAccessCall, primaryAsts ++ argsAsts))
     case ctx: XdotySingleLeftHandSideContext =>
       // TODO handle obj.foo=arg being interpreted as obj.foo(arg) here.
       val xAsts = astForPrimaryContext(ctx.primary)
@@ -209,9 +220,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
          * This is multiple RHS packed into a single LHS. That is, packing left hand side.
          * This is as good as multiple RHS packed into an array and put into a single LHS
          */
-        val packedRHS           = getPackedRHS(rightAst, wrapInBrackets = true)
-        val (argsAst, otherAst) = (leftAst ++ packedRHS).partitionExprAst
-        otherAst :+ callAst(opCallNode, argsAst)
+        val packedRHS = getPackedRHS(rightAst, wrapInBrackets = true)
+        Seq(callAst(opCallNode, leftAst ++ packedRHS))
       }
     } else {
       Seq(callAst(opCallNode, leftAst ++ rightAst))
@@ -261,9 +271,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case Some(node) if node.name == "Array" => Operators.arrayInitializer
       case _                                  => Operators.indexAccess
 
-    val callNode            = createOpCall(ctx.LBRACK, operator, text(ctx))
-    val (argsAst, otherAst) = (lhsExpressionAst ++ rhsExpressionAst).partitionExprAst
-    otherAst :+ callAst(callNode, argsAst)
+    val callNode = createOpCall(ctx.LBRACK, operator, text(ctx))
+    Seq(callAst(callNode, lhsExpressionAst ++ rhsExpressionAst))
 
   }
 
@@ -279,8 +288,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .typeFullName(Defines.Any)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .code(if (wrapInBrackets) s"[$code]" else code)
-    val (argsAst, otherAst) = astsToConcat.partitionExprAst
-    otherAst :+ callAst(callNode, argsAst)
+    Seq(callAst(callNode, astsToConcat))
   }
 
   def astForStringInterpolationContext(ctx: InterpolatedStringExpressionContext): Seq[Ast] = {
@@ -369,7 +377,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   def astForRangeExpressionContext(ctx: RangeExpressionContext): Seq[Ast] =
     astForBinaryOperatorExpression(ctx, Operators.range, ctx.expression().asScala)
 
-  protected def astForSuperExpression(ctx: SuperExpressionPrimaryContext): Seq[Ast] = {
+  protected def astForSuperExpression(ctx: SuperExpressionPrimaryContext): Ast = {
     val argsAst = Option(ctx.argumentsWithParentheses()) match
       case Some(ctxArgs) => astForArgumentsWithParenthesesContext(ctxArgs)
       case None          => Seq()
@@ -379,20 +387,17 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   // TODO: Handle the optional block.
   // NOTE: `super` is quite complicated semantically speaking. We'll need
   //       to revisit how to represent them.
-  protected def astForSuperCall(ctx: ParserRuleContext, arguments: Seq[Ast]): Seq[Ast] = {
+  protected def astForSuperCall(ctx: ParserRuleContext, arguments: Seq[Ast]): Ast = {
     val call =
       callNode(ctx, text(ctx), RubyOperators.superKeyword, RubyOperators.superKeyword, DispatchTypes.STATIC_DISPATCH)
-
-    val (argsAst, otherAst) = arguments.partitionExprAst
-    otherAst :+ callAst(call, argsAst)
+    callAst(call, arguments.toList)
   }
 
-  protected def astForYieldCall(ctx: ParserRuleContext, argumentsCtx: Option[ArgumentsContext]): Seq[Ast] = {
+  protected def astForYieldCall(ctx: ParserRuleContext, argumentsCtx: Option[ArgumentsContext]): Ast = {
     val args = argumentsCtx.map(astForArguments).getOrElse(Seq())
     val call =
       callNode(ctx, text(ctx), Defines.UNRESOLVED_YIELD, Defines.UNRESOLVED_YIELD, DispatchTypes.STATIC_DISPATCH)
-    val (argsAst, otherAst) = args.partitionExprAst
-    otherAst :+ callAst(call, argsAst)
+    callAst(call, args)
   }
 
   protected def astForUntilExpression(ctx: UntilExpressionContext): Ast = {
