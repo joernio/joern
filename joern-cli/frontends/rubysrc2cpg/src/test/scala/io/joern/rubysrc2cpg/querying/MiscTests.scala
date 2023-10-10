@@ -54,7 +54,7 @@ class MiscTests extends RubyCode2CpgFixture {
       cpg.identifier.name("Formatter").size shouldBe 1
       cpg.identifier.name("Logger").size shouldBe 1
       cpg.identifier.name("log_formatter").size shouldBe 1
-      cpg.identifier.size shouldBe 6
+      cpg.identifier.size shouldBe 5
     }
   }
 
