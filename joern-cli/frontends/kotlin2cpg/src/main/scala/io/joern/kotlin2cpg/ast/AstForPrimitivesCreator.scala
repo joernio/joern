@@ -212,8 +212,8 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   def astForImportDirective(directive: KtImportDirective): Ast = {
-    val importedAs = Try(directive.getImportedName.getIdentifier).toOption.getOrElse("")
-    val isWildcard = importedAs == Constants.wildcardImportName || directive.getImportedName == null
+    val importedAs = Try(directive.getImportedName.getIdentifier).toOption
+    val isWildcard = importedAs.contains(Constants.wildcardImportName) || directive.getImportedName == null
     val node =
       NewImport()
         .isWildcard(isWildcard)
