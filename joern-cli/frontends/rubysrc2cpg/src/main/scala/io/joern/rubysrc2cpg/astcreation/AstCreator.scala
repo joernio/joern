@@ -332,21 +332,34 @@ class AstCreator(
           columnEnd(ctx).head
         )
 
-      blockMethodAsts :+ blockMethodAsts
-        .flatMap(_.nodes)
-        .collectFirst { case methodRefNode: NewMethodRef =>
-          val callNode = NewCall()
-            .name(blockName)
-            .methodFullName(methodRefNode.methodFullName)
-            .typeFullName(Defines.Any)
-            .code(methodRefNode.code)
-            .lineNumber(methodRefNode.lineNumber)
-            .columnNumber(methodRefNode.columnNumber)
-            .dispatchType(DispatchTypes.STATIC_DISPATCH)
-          // TODO: primaryAst.headOption is broken when primaryAst is an array
-          callAst(callNode, argsAst ++ Seq(Ast(methodRefNode.copy)), primaryAst.headOption)
-        }
-        .getOrElse(Ast())
+      blockMethodAsts
+        ++ blockMethodAsts
+          .flatMap(_.nodes)
+          .collectFirst { case methodRefNode: NewMethodRef =>
+            val callNode = NewCall()
+              .name(blockName)
+              .methodFullName(methodRefNode.methodFullName)
+              .typeFullName(Defines.Any)
+              .code(methodRefNode.code)
+              .lineNumber(methodRefNode.lineNumber)
+              .columnNumber(methodRefNode.columnNumber)
+              .dispatchType(DispatchTypes.STATIC_DISPATCH)
+            // TODO: primaryAst.headOption is broken when primaryAst is an array
+            val (exprAst, otherAst) = primaryAst.partitionExprAst
+
+            exprAst.lastOption match
+              case Some(receiverCallAst: Ast)
+                  if exprAst.size > 1 && receiverCallAst.root.exists(_.isInstanceOf[NewCall]) =>
+                val siblings = exprAst.take(exprAst.length - 2)
+                (otherAst ++ siblings) :+ callAst(
+                  callNode,
+                  argsAst ++ Seq(Ast(methodRefNode.copy)),
+                  Option(receiverCallAst)
+                )
+              case _ =>
+                otherAst :+ callAst(callNode, argsAst ++ Seq(Ast(methodRefNode.copy)), exprAst.headOption)
+          }
+          .getOrElse(Seq.empty)
     } else {
       val callNode = methodNameAst.head.nodes
         .filter(node => node.isInstanceOf[NewCall])
