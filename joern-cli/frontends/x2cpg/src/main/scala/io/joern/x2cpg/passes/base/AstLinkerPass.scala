@@ -17,7 +17,13 @@ class AstLinkerPass(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {
       addAstParent(typeDecl, typeDecl.fullName, typeDecl.astParentType, typeDecl.astParentFullName, dstGraph)
     }
     cpg.member.whereNot(_.astParent).foreach { member =>
-      addAstParent(member, member.typeFullName, member.astParentType, member.astParentFullName, dstGraph)
+      addAstParent(
+        member,
+        s"${member.astParentFullName}.${member.name}",
+        member.astParentType,
+        member.astParentFullName,
+        dstGraph
+      )
     }
   }
 
