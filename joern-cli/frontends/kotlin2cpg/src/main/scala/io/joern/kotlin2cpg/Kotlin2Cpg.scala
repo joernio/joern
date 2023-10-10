@@ -9,13 +9,19 @@ import org.slf4j.LoggerFactory
 import scala.util.Try
 import scala.jdk.CollectionConverters.{CollectionHasAsScala, EnumerationHasAsScala}
 import io.joern.kotlin2cpg.files.SourceFilesPicker
-import io.joern.kotlin2cpg.passes.{AstCreationPass, ConfigPass, DependenciesFromMavenCoordinatesPass}
+import io.joern.kotlin2cpg.passes.{
+  AstCreationPass,
+  ConfigPass,
+  DependenciesFromMavenCoordinatesPass,
+  KotlinTypeHintCallLinker,
+  KotlinTypeRecoveryPass
+}
 import io.joern.kotlin2cpg.compiler.{CompilerAPI, ErrorLoggingMessageCollector}
 import io.joern.kotlin2cpg.types.{ContentSourcesPicker, DefaultTypeInfoProvider}
 import io.joern.kotlin2cpg.utils.PathUtils
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
-import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
+import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass, XTypeRecoveryConfig}
 import io.joern.x2cpg.utils.dependency.{DependencyResolver, DependencyResolverParams, GradleConfigKeys}
 import io.joern.kotlin2cpg.interop.JavasrcInterop
 import io.joern.kotlin2cpg.jar4import.UsesService
@@ -28,6 +34,11 @@ object Kotlin2Cpg {
   val language = "KOTLIN"
   case class InputPair(content: String, fileName: String)
   type InputProvider = () => InputPair
+
+  def postProcessingPass(cpg: Cpg): Unit = {
+    new KotlinTypeRecoveryPass(cpg).createAndApply()
+    new KotlinTypeHintCallLinker(cpg).createAndApply()
+  }
 }
 
 case class KtFileWithMeta(f: KtFile, relativizedPath: String, filename: String)
