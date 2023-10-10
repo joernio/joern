@@ -132,4 +132,55 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     tryCatchAst(tryNode, tryBodyAst, catchAsts, finallyAst)
   }
 
+  protected def astForUntilExpression(ctx: UntilExpressionContext): Seq[Ast] = {
+    val (boilerplate, exprAst) = astForExpressionOrCommand(ctx.expressionOrCommand()).partitionClosureFromExpr
+    val bodyAst                = astForCompoundStatement(ctx.doClause().compoundStatement())
+    // TODO: testAst should be negated if it's going to be modelled as a while stmt.
+    boilerplate :+ whileAst(exprAst, bodyAst, Some(text(ctx)), line(ctx), column(ctx))
+  }
+
+  protected def astForForExpression(ctx: ForExpressionContext): Seq[Ast] = {
+    val forVarAst                 = astForForVariableContext(ctx.forVariable())
+    val (boilerplate, forExprAst) = astForExpressionOrCommand(ctx.expressionOrCommand()).partitionClosureFromExpr
+    val forBodyAst                = astForCompoundStatement(ctx.doClause().compoundStatement())
+    // TODO: for X in Y is not properly modelled by while Y
+    val forRootAst = whileAst(forExprAst, forBodyAst, Some(text(ctx)), line(ctx), column(ctx))
+    boilerplate :+ forVarAst.headOption.map(forRootAst.withChild).getOrElse(forRootAst)
+  }
+
+  private def astForForVariableContext(ctx: ForVariableContext): Seq[Ast] = {
+    if (ctx.singleLeftHandSide() != null) {
+      astForSingleLeftHandSideContext(ctx.singleLeftHandSide())
+    } else if (ctx.multipleLeftHandSide() != null) {
+      astForMultipleLeftHandSideContext(ctx.multipleLeftHandSide())
+    } else {
+      Seq(Ast())
+    }
+  }
+
+  protected def astForWhileExpression(ctx: WhileExpressionContext): Seq[Ast] = {
+    val (boilerplate, exprAst) = astForExpressionOrCommand(ctx.expressionOrCommand()).partitionClosureFromExpr
+    val bodyAst                = astForCompoundStatement(ctx.doClause().compoundStatement())
+    boilerplate :+ whileAst(exprAst, bodyAst, Some(text(ctx)), line(ctx), column(ctx))
+  }
+
+  protected def astForIfExpression(ctx: IfExpressionContext): Seq[Ast] = {
+    val (boilerplate, exprAst) = astForExpressionOrCommand(ctx.expressionOrCommand()).partitionClosureFromExpr
+    val thenAst                = astForCompoundStatement(ctx.thenClause().compoundStatement())
+    val elsifAsts              = Option(ctx.elsifClause).map(_.asScala).getOrElse(Seq()).flatMap(astForElsifClause)
+    val elseAst = Option(ctx.elseClause()).map(ctx => astForCompoundStatement(ctx.compoundStatement())).getOrElse(Seq())
+    val ifNode  = controlStructureNode(ctx, ControlStructureTypes.IF, text(ctx))
+    boilerplate :+ controlStructureAst(ifNode, exprAst)
+      .withChildren(thenAst)
+      .withChildren(elsifAsts.toSeq)
+      .withChildren(elseAst)
+  }
+
+  private def astForElsifClause(ctx: ElsifClauseContext): Seq[Ast] = {
+    val ifNode                 = controlStructureNode(ctx, ControlStructureTypes.IF, text(ctx))
+    val (boilerplate, exprAst) = astForExpressionOrCommand(ctx.expressionOrCommand()).partitionClosureFromExpr
+    val bodyAst                = astForCompoundStatement(ctx.thenClause().compoundStatement())
+    boilerplate :+ controlStructureAst(ifNode, exprAst, bodyAst)
+  }
+
 }

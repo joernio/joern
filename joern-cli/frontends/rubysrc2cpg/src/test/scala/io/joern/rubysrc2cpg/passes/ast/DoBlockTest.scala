@@ -1,8 +1,9 @@
 package io.joern.rubysrc2cpg.passes.ast
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, MethodRef}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, ControlStructure, Identifier, MethodRef}
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, NodeTypes}
 
 class DoBlockTest extends RubyCode2CpgFixture {
 
@@ -104,6 +105,27 @@ class DoBlockTest extends RubyCode2CpgFixture {
           sCall shouldBe selectCall
           eachRef.referencedMethod.name should startWith("each")
         case _ => fail("'each' call children are not what is expected.")
+    }
+  }
+
+  "a boolean do-block function as a conditional argument" should {
+    val cpg = code("""
+        |if @items.any? { |x| x > 1 }
+        | puts "foo"
+        |else
+        | puts "bar"
+        |end
+        |""".stripMargin)
+
+    "be defined outside of the control structure" in {
+      val anyMethod = cpg.method.name("any.*").head
+      anyMethod.astParent.label shouldBe NodeTypes.BLOCK
+    }
+
+    "have the call to the method ref as the conditional argument" in {
+      val ifStmt               = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).head
+      val ::(anyCall: Call, _) = ifStmt.condition.l: @unchecked
+      anyCall.name should startWith("any")
     }
   }
 
