@@ -123,18 +123,10 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     lazy val mostResolvedTypes = filterMostResolvedTypes(methodNames).toSeq
     if (methodNames.sizeIs == 1) {
       builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, methodNames.head)
-      builder.setNodeProperty(
-        call,
-        PropertyNames.POSSIBLE_TYPES,
-        call.possibleTypes.diff(methodNames)
-      )
+      builder.setNodeProperty(call, PropertyNames.POSSIBLE_TYPES, call.possibleTypes.diff(methodNames))
     } else if (mostResolvedTypes.sizeIs == 1 && nonDummyTypes.isEmpty) {
       builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, mostResolvedTypes.head)
-      builder.setNodeProperty(
-        call,
-        PropertyNames.POSSIBLE_TYPES,
-        call.possibleTypes.diff(mostResolvedTypes)
-      )
+      builder.setNodeProperty(call, PropertyNames.POSSIBLE_TYPES, call.possibleTypes.diff(mostResolvedTypes))
     } else if (methodNames.sizeIs > 1 && methodNames != nonDummyTypes) {
       setCallees(call, nonDummyTypes, builder)
     }
