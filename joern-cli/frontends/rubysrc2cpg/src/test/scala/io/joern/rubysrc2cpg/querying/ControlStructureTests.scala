@@ -57,7 +57,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     "recognise all identifier nodes" in {
       cpg.identifier.name("n").size shouldBe 2
       cpg.identifier.name("m").size shouldBe 1
-      cpg.identifier.size shouldBe 5
+      cpg.identifier.size shouldBe 6
       cpg.method.name("fakeName").dotAst.l
     }
 

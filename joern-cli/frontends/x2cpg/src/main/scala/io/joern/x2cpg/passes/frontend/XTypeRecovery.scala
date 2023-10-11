@@ -27,10 +27,8 @@ import scala.util.{Failure, Success, Try}
   *   the number of iterations to run.
   * @param enabledDummyTypes
   *   whether to enable placeholder dummy values for partially resolved types.
-  * @param parallelism
-  *   the number of cores to use. Useful to define for tests as this is fairly non-deterministic at the moment.
   */
-case class TypeRecoveryConfig(iterations: Int = 2, enabledDummyTypes: Boolean = true, parallelism: Int = 4)
+case class TypeRecoveryConfig(iterations: Int = 2, enabledDummyTypes: Boolean = true)
 
 /** @param config
   *   the user defined config.
@@ -90,7 +88,7 @@ abstract class XTypeRecoveryPass(cpg: Cpg, config: TypeRecoveryConfig = TypeReco
     if (config.iterations > 0) {
       val stopEarly = new AtomicBoolean(false)
       val state     = TypeRecoveryState(config, stopEarly = stopEarly, graphCache = initGraphCache)
-      val executor  = Executors.newWorkStealingPool(config.parallelism)
+      val executor  = Executors.newWorkStealingPool()
       try {
         Iterator.from(0).takeWhile(_ < config.iterations).foreach { i =>
           val newState = state.copy(currentIteration = i, graphCache = initGraphCache)

@@ -285,7 +285,7 @@ trait AstForStatementsCreator(filename: String)(implicit withSchemaValidation: V
         /* we remove the method definition AST from argument and add its corresponding identifier form */
         Seq(callAst(callNode, argAstsWithoutMethods ++ methodToIdentifierAsts, receiverAst))
       } else {
-        Seq(callAst(callNode, argsAst, receiverAst))
+        Seq(callAst(callNode, argAstsWithoutMethods, receiverAst))
       }
     } else {
       argsAsts
