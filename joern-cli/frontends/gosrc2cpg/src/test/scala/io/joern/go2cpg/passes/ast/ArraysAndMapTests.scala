@@ -351,7 +351,7 @@ class ArraysAndMapTests extends GoCodeToCpgSuite {
       )
 
     "check FILE Nodes" in {
-      cpg.file.size shouldBe 3
+      cpg.file.size shouldBe 4
     }
 
     "check LOCAL node" in {
@@ -422,7 +422,7 @@ class ArraysAndMapTests extends GoCodeToCpgSuite {
     )
 
     "check FILE Nodes" in {
-      cpg.file.size shouldBe 3
+      cpg.file.size shouldBe 5
     }
 
     "check LOCAL node" in {

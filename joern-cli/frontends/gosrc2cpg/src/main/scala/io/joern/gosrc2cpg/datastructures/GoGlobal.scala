@@ -46,7 +46,7 @@ object GoGlobal extends Global {
     */
   val structTypeMemberTypeMapping: ConcurrentHashMap[String, String] = new ConcurrentHashMap()
 
-  def recordAliasToNamespaceMapping(alias: String, namespace: String): Unit = {
+  def recordAliasToNamespaceMapping(alias: String, namespace: String): String = {
     aliasToNameSpaceMapping.putIfAbsent(alias, namespace)
   }
 
