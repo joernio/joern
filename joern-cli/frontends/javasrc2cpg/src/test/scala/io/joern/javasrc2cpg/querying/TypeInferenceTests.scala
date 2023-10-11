@@ -354,11 +354,16 @@ class JavaTypeRecoveryPassTests extends JavaSrcCode2CpgFixture(enableTypeRecover
       Seq("net", "javaguides", "hibernate", "NamedQueryExample.java").mkString(File.separator)
     )
 
-    "should be resolved using dummy return values" in {
+    "receive a full namespace from Java inference" in {
+      val Some(getResultList) = cpg.call("createNamedQuery").headOption: @unchecked
+      getResultList.methodFullName shouldBe "org.hibernate.Session.createNamedQuery:<unresolvedSignature>(2)"
+    }
+
+    "resolve the second call using dummy return values" in {
       val Some(getResultList) = cpg.call("getResultList").headOption: @unchecked
       // Changes the below from <unresolvedNamespace>.getResultList:<unresolvedSignature>(0) to:
       getResultList.methodFullName shouldBe "org.hibernate.Session.createNamedQuery:<unresolvedSignature>(2).<returnValue>.getResultList:<unresolvedSignature>(0)"
-      getResultList.dynamicTypeHintFullName shouldBe Seq()
+      getResultList.possibleTypes shouldBe Seq()
     }
 
     "hint that `transaction` may be of the null type" in {

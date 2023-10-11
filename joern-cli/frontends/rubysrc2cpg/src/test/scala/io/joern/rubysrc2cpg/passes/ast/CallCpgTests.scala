@@ -28,15 +28,11 @@ class CallCpgTests extends RubyCode2CpgFixture(withPostProcessing = true) {
     }
 
     "test astChildren" in {
-      val callNode = cpg.call.name("foo").head
-      val children = callNode.astChildren
-      children.size shouldBe 2
+      val callNode                     = cpg.call.name("foo").head
+      val List(_, firstArg, secondArg) = callNode.astChildren.l: @unchecked
 
-      val firstChild  = children.head
-      val secondChild = children.last
-
-      firstChild.code shouldBe "\"a\""
-      secondChild.code shouldBe "b"
+      firstArg.code shouldBe "\"a\""
+      secondArg.code shouldBe "b"
     }
   }
 

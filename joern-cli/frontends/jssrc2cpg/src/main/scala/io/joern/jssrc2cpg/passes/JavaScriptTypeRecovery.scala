@@ -14,11 +14,11 @@ import java.util.concurrent.ExecutorService
 
 class JavaScriptTypeRecoveryPass(cpg: Cpg, config: TypeRecoveryConfig = TypeRecoveryConfig())
     extends XTypeRecoveryPass(cpg, config) {
-  override protected def generateRecoveryPass(state: State, executor: ExecutorService): XTypeRecovery =
+  override protected def generateRecoveryPass(state: TypeRecoveryState, executor: ExecutorService): XTypeRecovery =
     new JavaScriptTypeRecovery(cpg, state, executor)
 }
 
-private class JavaScriptTypeRecovery(cpg: Cpg, state: State, executor: ExecutorService)
+private class JavaScriptTypeRecovery(cpg: Cpg, state: TypeRecoveryState, executor: ExecutorService)
     extends XTypeRecovery(cpg, state, executor) {
 
   override protected def recoverTypesForProcedure(
@@ -26,7 +26,7 @@ private class JavaScriptTypeRecovery(cpg: Cpg, state: State, executor: ExecutorS
     procedure: Method,
     initialSymbolTable: SymbolTable[LocalKey],
     builder: DiffGraphBuilder,
-    state: State
+    state: TypeRecoveryState
   ): RecoverTypesForProcedure =
     RecoverForJavaScriptProcedure(cpg, procedure, initialSymbolTable, builder, state)
 
@@ -37,7 +37,7 @@ private class RecoverForJavaScriptProcedure(
   procedure: Method,
   symbolTable: SymbolTable[LocalKey],
   builder: DiffGraphBuilder,
-  state: State
+  state: TypeRecoveryState
 ) extends RecoverTypesForProcedure(cpg, procedure, symbolTable, builder, state) {
 
   override protected val pathSep = ':'
@@ -196,7 +196,7 @@ private class RecoverForJavaScriptProcedure(
     procedure._identifierViaContainsOut
       .nameExact("this")
       .where(_.typeFullNameExact(Defines.Any))
-      .filterNot(_.dynamicTypeHintFullName.isEmpty)
+      .filterNot(_.possibleTypes.isEmpty)
       .foreach(setTypeFromTypeHints)
   }
 

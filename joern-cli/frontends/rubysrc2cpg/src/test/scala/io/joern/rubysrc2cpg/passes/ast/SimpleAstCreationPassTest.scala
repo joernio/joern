@@ -181,8 +181,8 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
 
     "have correct structure for `self` identifier" in {
-      val cpg           = code("puts self")
-      val List(self, _) = cpg.identifier.l
+      val cpg        = code("puts self")
+      val List(self) = cpg.identifier("self").l
       self.typeFullName shouldBe Defines.Object
       self.code shouldBe "self"
       self.lineNumber shouldBe Some(1)
@@ -190,8 +190,8 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
 
     "have correct structure for `__FILE__` identifier" in {
-      val cpg           = code("puts __FILE__")
-      val List(file, _) = cpg.identifier.l
+      val cpg        = code("puts __FILE__")
+      val List(file) = cpg.identifier("__FILE__").l
       file.typeFullName shouldBe "__builtin.String"
       file.code shouldBe "__FILE__"
       file.lineNumber shouldBe Some(1)
@@ -199,8 +199,8 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
 
     "have correct structure for `__LINE__` identifier" in {
-      val cpg           = code("puts __LINE__")
-      val List(line, _) = cpg.identifier.l
+      val cpg        = code("puts __LINE__")
+      val List(line) = cpg.identifier("__LINE__").l
       line.typeFullName shouldBe "__builtin.Integer"
       line.code shouldBe "__LINE__"
       line.lineNumber shouldBe Some(1)
@@ -208,8 +208,8 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     }
 
     "have correct structure for `__ENCODING__` identifier" in {
-      val cpg               = code("puts __ENCODING__")
-      val List(encoding, _) = cpg.identifier.l
+      val cpg            = code("puts __ENCODING__")
+      val List(encoding) = cpg.identifier("__ENCODING__").l
       encoding.typeFullName shouldBe Defines.Encoding
       encoding.code shouldBe "__ENCODING__"
       encoding.lineNumber shouldBe Some(1)
@@ -1097,23 +1097,22 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
   }
 
   // Change below test cases to focus on the argument of call `foo`
-  "have correct structure when a association is passed as an argument with parantheses" in {
+  "have correct structure when a association is passed as an argument with parentheses" in {
     val cpg = code("""foo(bar:)""".stripMargin)
 
-    cpg.argument.size shouldBe 2
-    cpg.argument.l(0).code shouldBe "bar:"
+    val List(_, bar) = cpg.call("foo").argument.l
+    bar.code shouldBe "bar:"
     cpg.call.size shouldBe 2
     val List(callNode, operatorNode) = cpg.call.l
     callNode.name shouldBe "foo"
     operatorNode.name shouldBe "<operator>.activeRecordAssociation"
   }
 
-  "have correct structure when a association is passed as an argument without parantheses" in {
+  "have correct structure when a association is passed as an argument without parentheses" in {
     val cpg = code("""foo bar:""".stripMargin)
 
-    cpg.argument.size shouldBe 2
-    cpg.argument.l.head.code shouldBe "bar:"
-
+    val List(_, bar) = cpg.call("foo").argument.l
+    bar.code shouldBe "bar:"
     cpg.call.size shouldBe 2
     val List(callNode, operatorNode) = cpg.call.l
     callNode.name shouldBe "foo"
@@ -1216,8 +1215,7 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
       |val fileName = "AB\u0003\u0004\u0014\u0000\u0000\u0000\b\u0000\u0000\u0000!\u0000file"
       |""".stripMargin)
 
-    cpg.identifier.size shouldBe 1
-    cpg.identifier.name.head shouldBe "fileName"
+    cpg.identifier("fileName").size shouldBe 1
     cpg.literal.head.code
       .stripPrefix("\"")
       .stripSuffix("\"")
@@ -1434,7 +1432,6 @@ class SimpleAstCreationPassTest extends RubyCode2CpgFixture {
     cpg.call.size shouldBe 2
     cpg.call.name("<operator>.activeRecordAssociation").size shouldBe 1
 
-    cpg.identifier.size shouldBe 2
     cpg.identifier.name("a").size shouldBe 1
     cpg.identifier.name("b").size shouldBe 1
   }

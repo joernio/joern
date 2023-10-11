@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language.*
 
 import java.io.File
 import scala.collection.immutable.Seq
-class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
+class PyTypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
   "literals declared from built-in types" should {
     lazy val cpg = code("""
@@ -41,11 +41,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       zAppend.methodFullName shouldBe "<unknownFullName>"
       // Since we don't have method nodes with this full name, this should belong to the call linker namespace
       zAppend.callee.astParentFullName.headOption shouldBe Some(XTypeHintCallLinker.namespace)
-      zAppend.possibleTypes shouldBe Seq(
-        "__builtin.dict.append",
-        "__builtin.list.append",
-        "__builtin.tuple.append"
-      )
+      zAppend.possibleTypes shouldBe Seq("__builtin.dict.append", "__builtin.list.append", "__builtin.tuple.append")
     }
   }
 

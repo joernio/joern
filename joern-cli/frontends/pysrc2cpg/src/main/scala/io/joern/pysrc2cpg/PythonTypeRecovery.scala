@@ -15,11 +15,11 @@ import java.util.concurrent.ExecutorService
 class PythonTypeRecoveryPass(cpg: Cpg, config: TypeRecoveryConfig = TypeRecoveryConfig())
     extends XTypeRecoveryPass(cpg, config) {
 
-  override protected def generateRecoveryPass(state: State, executor: ExecutorService): XTypeRecovery =
+  override protected def generateRecoveryPass(state: TypeRecoveryState, executor: ExecutorService): XTypeRecovery =
     new PythonTypeRecovery(cpg, state, executor)
 }
 
-private class PythonTypeRecovery(cpg: Cpg, state: State, executor: ExecutorService)
+private class PythonTypeRecovery(cpg: Cpg, state: TypeRecoveryState, executor: ExecutorService)
     extends XTypeRecovery(cpg, state, executor) {
 
   override val initialSymbolTable: SymbolTable[LocalKey] = SymbolTable[LocalKey](fromNodeToLocalPythonKey)
@@ -51,7 +51,7 @@ private class PythonTypeRecovery(cpg: Cpg, state: State, executor: ExecutorServi
     procedure: Method,
     initialSymbolTable: SymbolTable[LocalKey],
     builder: DiffGraphBuilder,
-    state: State
+    state: TypeRecoveryState
   ): RecoverTypesForProcedure =
     RecoverForPythonProcedure(cpg, procedure, initialSymbolTable, builder, state)
 
@@ -64,7 +64,7 @@ private class RecoverForPythonProcedure(
   procedure: Method,
   symbolTable: SymbolTable[LocalKey],
   builder: DiffGraphBuilder,
-  state: State
+  state: TypeRecoveryState
 ) extends RecoverTypesForProcedure(cpg, procedure, symbolTable, builder, state) {
 
   override def visitAssignments(a: OpNodes.Assignment): Set[String] = {
@@ -196,7 +196,7 @@ private class RecoverForPythonProcedure(
             val clsPath = classMethod.typeDecl.fullName.toSet
             symbolTable.put(LocalVar(cls.name), clsPath)
             if (cls.typeFullName == "ANY")
-              builder.setNodeProperty(cls, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, clsPath.toSeq)
+              builder.setNodeProperty(cls, PropertyNames.POSSIBLE_TYPES, clsPath.toSeq)
           }
     }
     super.prepopulateSymbolTable()

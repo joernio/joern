@@ -4,7 +4,7 @@ import io.joern.jssrc2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.joern.x2cpg.passes.frontend.ImportsPass._
 import io.shiftleft.semanticcpg.language._
 
-class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
+class JsTypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
   "literals declared from built-in types" should {
     val cpg = code("""

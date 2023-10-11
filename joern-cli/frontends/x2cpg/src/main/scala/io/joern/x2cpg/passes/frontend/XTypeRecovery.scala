@@ -43,7 +43,7 @@ case class TypeRecoveryConfig(iterations: Int = 2, enabledDummyTypes: Boolean = 
   * @param stopEarly
   *   indicates that we may stop type propagation earlier than the specified number of iterations.
   */
-case class State(
+case class TypeRecoveryState(
   config: TypeRecoveryConfig = TypeRecoveryConfig(),
   currentIteration: Int = 0,
   isFieldCache: TrieMap[Long, Boolean] = TrieMap.empty[Long, Boolean],
@@ -89,7 +89,7 @@ abstract class XTypeRecoveryPass(cpg: Cpg, config: TypeRecoveryConfig = TypeReco
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit =
     if (config.iterations > 0) {
       val stopEarly = new AtomicBoolean(false)
-      val state     = State(config, stopEarly = stopEarly, graphCache = initGraphCache)
+      val state     = TypeRecoveryState(config, stopEarly = stopEarly, graphCache = initGraphCache)
       val executor  = Executors.newWorkStealingPool(config.parallelism)
       try {
         Iterator.from(0).takeWhile(_ < config.iterations).foreach { i =>
@@ -110,7 +110,7 @@ abstract class XTypeRecoveryPass(cpg: Cpg, config: TypeRecoveryConfig = TypeReco
       }
     }
 
-  protected def generateRecoveryPass(state: State, executor: ExecutorService): XTypeRecovery
+  protected def generateRecoveryPass(state: TypeRecoveryState, executor: ExecutorService): XTypeRecovery
 
 }
 
@@ -151,7 +151,7 @@ trait TypeRecoveryParserConfig[R <: X2CpgConfig[R]] { this: R =>
   * @param cpg
   *   the CPG to recovery types for.
   */
-abstract class XTypeRecovery(cpg: Cpg, state: State, executor: ExecutorService)
+abstract class XTypeRecovery(cpg: Cpg, state: TypeRecoveryState, executor: ExecutorService)
     extends ForkJoinParallelCpgPass[File](cpg) {
 
   import io.joern.x2cpg.passes.frontend.AllNodeTypesFromIteratorExt
@@ -163,9 +163,11 @@ abstract class XTypeRecovery(cpg: Cpg, state: State, executor: ExecutorService)
 
   override def runOnPart(builder: DiffGraphBuilder, part: File): Unit = {
     importNodes(part).foreach(loadImports(_, initialSymbolTable))
+    // Prune import names if the methods exist in the CPG
+    postVisitImports()
     // Make a new builder and absorb them from each task
     val tasks = part
-      .flatMap(compilationUnitToTasks(_))
+      .flatMap(compilationUnitToTasks)
       .map(executor.submit)
       .l
     tasks.foreach { task =>
@@ -207,14 +209,14 @@ abstract class XTypeRecovery(cpg: Cpg, state: State, executor: ExecutorService)
     procedure: Method,
     initialSymbolTable: SymbolTable[LocalKey],
     builder: DiffGraphBuilder,
-    state: State
+    state: TypeRecoveryState
   ): RecoverTypesForProcedure
 
   protected def importNodes(cu: File): List[ResolvedImport] = cu.ast.isCall.referencedImports.flatMap(visitImport).l
 
   /** Visits an import and stores references in the symbol table as both an identifier and call.
     */
-  private def visitImport(i: Import): Iterator[ResolvedImport] = {
+  protected def visitImport(i: Import): Iterator[ResolvedImport] = {
     import io.joern.x2cpg.passes.frontend.ImportsPass.*
 
     i.call.tag.flatMap(tag => i.importedAs.flatMap(ResolvedImport.tagToResolvedImport(tag, _)))
@@ -242,6 +244,12 @@ abstract class XTypeRecovery(cpg: Cpg, state: State, executor: ExecutorService)
       symbolTable.append(CallAlias(alias), path)
       symbolTable.append(LocalVar(alias), path)
   }
+
+  /** The initial import setting is over-approximated, so this step checks the CPG for any matches and prunes against
+    * these findings. If there are no findings, it will leave the table as is. The latter is significant for external
+    * types or methods.
+    */
+  protected def postVisitImports(): Unit = {}
 
 }
 
@@ -311,7 +319,7 @@ abstract class RecoverTypesForProcedure(
   procedure: Method,
   symbolTable: SymbolTable[LocalKey],
   builder: DiffGraphBuilder,
-  state: State
+  state: TypeRecoveryState
 ) extends Callable[DiffGraphBuilder] {
 
   import io.joern.x2cpg.passes.frontend.AllNodeTypesFromNodeExt
@@ -345,15 +353,18 @@ abstract class RecoverTypesForProcedure(
       if (p.index == 0) p.method == procedure else true
     )).l
     val identifiers = procAndParentProc.flatMap(_._identifierViaContainsOut).l
+    val calls = procedure.call
+      .nameNot("<operator.*")
+      .distinctBy(c => c.name -> c.argument.headOption)
 
-    (declarations ++ identifiers)
+    (declarations ++ identifiers ++ calls)
       .filter(hasTypes)
       .foreach(prepopulateSymbolTableEntry)
   }
 
   protected def prepopulateSymbolTableEntry(x: AstNode): Unit = x match {
     case x @ (_: Identifier | _: Local | _: MethodParameterIn) => symbolTable.append(x, x.getKnownTypes)
-    case x: Call => symbolTable.append(x, (x.methodFullName +: x.dynamicTypeHintFullName).toSet)
+    case x: Call => symbolTable.append(x, (x.methodFullName +: x.possibleTypes).filterNot(_.startsWith("<un")).toSet)
     case _       =>
   }
 
@@ -370,8 +381,6 @@ abstract class RecoverTypesForProcedure(
   override def call(): DiffGraphBuilder = try {
     // Look at symbols with existing type info
     prepopulateSymbolTable()
-    // Prune import names if the methods exist in the CPG
-    postVisitImports()
     // Populate local symbol table with assignments
     assignments.foreach(visitAssignments)
     // See if any new information are in the parameters of methods
@@ -391,12 +400,6 @@ abstract class RecoverTypesForProcedure(
     val lineNo   = n.lineNumber.getOrElse("<unknown>")
     s"$fileName#L$lineNo"
   }
-
-  /** The initial import setting is over-approximated, so this step checks the CPG for any matches and prunes against
-    * these findings. If there are no findings, it will leave the table as is. The latter is significant for external
-    * types or methods.
-    */
-  protected def postVisitImports(): Unit = {}
 
   /** Using assignment and import information (in the global symbol table), will propagate these types in the symbol
     * table.
@@ -1008,8 +1011,13 @@ abstract class RecoverTypesForProcedure(
   }
 
   protected def setTypeForDynamicDispatchCall(call: Call, i: Identifier): Unit = {
-    val idHints   = symbolTable.get(i)
+    val idHints = if (i.name == "this" || i.name == "self") {
+      i.inAst.collectFirst { case x: Method => x.typeDecl.fullName.toSet }.getOrElse(symbolTable.get(i))
+    } else {
+      symbolTable.get(i)
+    }
     val callTypes = symbolTable.get(call)
+
     persistType(i, idHints)
     if (callTypes.isEmpty && !call.name.startsWith("<operator>"))
       // For now, calls are treated as function pointers and thus the type should point to the method

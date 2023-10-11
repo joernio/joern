@@ -1,34 +1,27 @@
 package io.joern.kotlin2cpg
 
 import better.files.File
-
-import java.nio.file.{Files, Paths}
-import org.jetbrains.kotlin.psi.KtFile
-import org.slf4j.LoggerFactory
-
-import scala.util.Try
-import scala.jdk.CollectionConverters.{CollectionHasAsScala, EnumerationHasAsScala}
-import io.joern.kotlin2cpg.files.SourceFilesPicker
-import io.joern.kotlin2cpg.passes.{
-  AstCreationPass,
-  ConfigPass,
-  DependenciesFromMavenCoordinatesPass,
-  KotlinTypeHintCallLinker,
-  KotlinTypeRecoveryPass
-}
 import io.joern.kotlin2cpg.compiler.{CompilerAPI, ErrorLoggingMessageCollector}
+import io.joern.kotlin2cpg.files.SourceFilesPicker
+import io.joern.kotlin2cpg.interop.JavasrcInterop
+import io.joern.kotlin2cpg.jar4import.UsesService
+import io.joern.kotlin2cpg.passes.*
 import io.joern.kotlin2cpg.types.{ContentSourcesPicker, DefaultTypeInfoProvider}
 import io.joern.kotlin2cpg.utils.PathUtils
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
-import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
-import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass, XTypeRecoveryConfig}
+import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass, TypeRecoveryConfig}
 import io.joern.x2cpg.utils.dependency.{DependencyResolver, DependencyResolverParams, GradleConfigKeys}
-import io.joern.kotlin2cpg.interop.JavasrcInterop
-import io.joern.kotlin2cpg.jar4import.UsesService
+import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.utils.IOUtils
+import org.jetbrains.kotlin.psi.KtFile
+import org.slf4j.LoggerFactory
+
+import java.nio.file.{Files, Paths}
+import scala.jdk.CollectionConverters.{CollectionHasAsScala, EnumerationHasAsScala}
+import scala.util.Try
 
 object Kotlin2Cpg {
   val language = "KOTLIN"
