@@ -4,7 +4,6 @@ import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, ControlStructure}
 import io.shiftleft.semanticcpg.language.*
-
 class ControlStructureTests extends RubyCode2CpgFixture {
 
   "CPG for code with doBlock iterating over a constant array" should {
@@ -16,7 +15,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
 
     "recognise all identifier nodes" in {
       cpg.identifier.name("n").size shouldBe 1
-      cpg.identifier.size shouldBe 3 // 1 identifier node is for `puts = typeDef(__builtin.puts)` and similarly for `each2`
+      cpg.identifier.size shouldBe 2 // 1 identifier node is for `puts = typeDef(__builtin.puts)`
     }
 
     "recognize all call nodes" in {
@@ -57,7 +56,8 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     "recognise all identifier nodes" in {
       cpg.identifier.name("n").size shouldBe 2
       cpg.identifier.name("m").size shouldBe 1
-      cpg.identifier.size shouldBe 6 // includes each2 = def each2(...)
+      cpg.identifier.size shouldBe 5
+      cpg.method.name("fakeName").dotAst.l
     }
 
     "recognize all call nodes" in {

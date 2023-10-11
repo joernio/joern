@@ -1,9 +1,8 @@
 package io.joern.rubysrc2cpg.astcreation
 
-import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.Scope
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.nodes.{DeclarationNew, NewIdentifier, NewLocal, NewNode}
 import overflowdb.BatchedUpdate
 
 import scala.collection.mutable
@@ -31,10 +30,6 @@ class RubyScope extends Scope[String, NewIdentifier, NewNode] {
     scopeNode
   }
 
-  def removeFromScope(variable: NewIdentifier): Unit = {
-    stack.headOption.foreach(head => scopeToVarMap.removeIdentifierFromVarGroup(head.scopeNode, variable))
-  }
-
   override def popScope(): Option[NewNode] = {
     stack.headOption.map(_.scopeNode).foreach(scopeToVarMap.remove)
     super.popScope()
@@ -47,18 +42,9 @@ class RubyScope extends Scope[String, NewIdentifier, NewNode] {
   def createAndLinkLocalNodes(
     diffGraph: BatchedUpdate.DiffGraphBuilder,
     paramNames: Set[String] = Set.empty
-  ): List[DeclarationNew] = {
-    stack.headOption match
-      case Some(top) => scopeToVarMap.buildVariableGroupings(top.scopeNode, paramNames ++ Set("this"), diffGraph)
-      case None      => List.empty[DeclarationNew]
-  }
-
-  /** Links the parameter node to the referenced identifiers in this scope.
-    */
-  def linkParamNode(diffGraph: BatchedUpdate.DiffGraphBuilder, param: NewMethodParameterIn): Unit =
-    stack.headOption match
-      case Some(top) => scopeToVarMap.buildParameterGrouping(top.scopeNode, param, diffGraph)
-      case None      => List.empty[DeclarationNew]
+  ): List[DeclarationNew] = stack.headOption match
+    case Some(top) => scopeToVarMap.buildVariableGroupings(top.scopeNode, paramNames ++ Set("this"), diffGraph)
+    case None      => List.empty[DeclarationNew]
 
   private implicit class IdentifierExt(node: NewIdentifier) {
 
@@ -91,18 +77,6 @@ class RubyScope extends Scope[String, NewIdentifier, NewNode] {
           Some(Map(identifier.name -> identifier.toNewVarGroup))
       }
 
-    /** Removes an identifier from the var group.
-      */
-    def removeIdentifierFromVarGroup(key: ScopeNodeType, identifier: NewIdentifier): Unit =
-      scopeMap.updateWith(key) {
-        case Some(varMap: VarMap) =>
-          Some(varMap.updatedWith(identifier.name) {
-            case Some(varGroup: VarGroup) => Some(varGroup.copy(ids = varGroup.ids.filterNot(_ == identifier)))
-            case None                     => None
-          })
-        case None => None
-      }
-
     /** Will persist the variable groupings that do not represent parameter nodes and link them with REF edges.
       * @return
       *   the list of persisted local nodes.
@@ -122,23 +96,6 @@ class RubyScope extends Scope[String, NewIdentifier, NewNode] {
             }
             .toList
         case None => List.empty[DeclarationNew]
-
-    /** Will persist a REF edge between the given parameter and its corresponding identifiers.
-      */
-    def buildParameterGrouping(
-      key: ScopeNodeType,
-      param: NewMethodParameterIn,
-      diffGraph: BatchedUpdate.DiffGraphBuilder
-    ): Unit = {
-      scopeMap
-        .get(key)
-        .map(_.values)
-        .foreach(_.filter { case VarGroup(local, _) => local.name == param.name }
-          .foreach { case VarGroup(_, ids) =>
-            ids.foreach(id => diffGraph.addEdge(id, param, EdgeTypes.REF))
-          })
-    }
-
   }
 
 }
