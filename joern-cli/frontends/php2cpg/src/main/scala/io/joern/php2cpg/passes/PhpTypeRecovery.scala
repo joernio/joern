@@ -10,7 +10,7 @@ import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, 
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 class PhpTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
-  extends XTypeRecoveryPass[NamespaceBlock](cpg, config) {
+    extends XTypeRecoveryPass[NamespaceBlock](cpg, config) {
 
   override protected def generateRecoveryPass(state: XTypeRecoveryState): XTypeRecovery[NamespaceBlock] =
     new PhpTypeRecovery(cpg, state)
@@ -30,15 +30,13 @@ private class PhpTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XType
 }
 
 private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraphBuilder, state: XTypeRecoveryState)
-  extends RecoverForXCompilationUnit[NamespaceBlock](cpg, cu, builder, state) {
+    extends RecoverForXCompilationUnit[NamespaceBlock](cpg, cu, builder, state) {
 
-  /**
-   * A lookup table for any PHP builtins with known types. The
-   * methodReturnValues method will refer to this table when an unknown function
-   * is encountered.
-   */
+  /** A lookup table for any PHP builtins with known types. The methodReturnValues method will refer to this table when
+    * an unknown function is encountered.
+    */
   protected val builtinsSymbolTable = Map[String, Set[String]](
-        //"strtolower"    -> Set("string"),
+    // "strtolower"    -> Set("string"),
   )
 
   override protected def prepopulateSymbolTable(): Unit = {
@@ -48,11 +46,12 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
   }
 
   override protected def prepopulateSymbolTableEntry(x: AstNode): Unit = x match {
-    case x: Call => x.methodFullName match {
-      case Operators.alloc  =>
-      case _                => symbolTable.append(x, (x.methodFullName +: x.dynamicTypeHintFullName).toSet)
-    }
-    case _      => super.prepopulateSymbolTableEntry(x)
+    case x: Call =>
+      x.methodFullName match {
+        case Operators.alloc =>
+        case _               => symbolTable.append(x, (x.methodFullName +: x.dynamicTypeHintFullName).toSet)
+      }
+    case _ => super.prepopulateSymbolTableEntry(x)
   }
 
   override def isConstructor(c: Call): Boolean =
@@ -62,7 +61,9 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
     !name.isBlank && name.charAt(0).isUpper
 
   override def assignments: Iterator[Assignment] = {
-    logger.debug(s"[assignments] assignments: ${cu.ast.isCall.nameExact(Operators.assignment).l.map(a => a.code).mkString("; ")}")
+    logger.debug(
+      s"[assignments] assignments: ${cu.ast.isCall.nameExact(Operators.assignment).l.map(a => a.code).mkString("; ")}"
+    )
     cu.ast.isCall.nameExact(Operators.assignment).map(new OpNodes.Assignment(_))
   }
 
@@ -189,11 +190,11 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
     super.visitIdentifierAssignedToFieldLoad(i, fa)
   }
 
-  /** Necessary to change the filter regex from (this|self) to (\\$this|this),
-   *  in order to account for $this PHP convention.
-   *
-   * (But need to leave the regular "this"? uncertain)
-   */
+  /** Necessary to change the filter regex from (this|self) to (\\$this|this), in order to account for $this PHP
+    * convention.
+    *
+    * (But need to leave the regular "this"? uncertain)
+    */
   override protected def associateTypes(symbol: LocalVar, fa: FieldAccess, types: Set[String]): Set[String] = {
     fa.astChildren.filterNot(_.code.matches("(\\$this|this|self)")).headOption.collect {
       case fi: FieldIdentifier =>
@@ -204,9 +205,8 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
     symbolTable.append(symbol, types)
   }
 
-  /** Reference the PythonTypeRecovery implementation.
-   *  The XTypeRecovery one seems incorrect.
-   */
+  /** Reference the PythonTypeRecovery implementation. The XTypeRecovery one seems incorrect.
+    */
   override protected def getFieldParents(fa: FieldAccess): Set[String] = {
     if (fa.method.name == "<module>") {
       Set(fa.method.fullName)
@@ -219,8 +219,14 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
     }
   }
 
-  override protected def persistMemberWithTypeDecl(typeFullName: String, memberName: String, types: Set[String]): Unit = {
-    logger.debug(s"persisting member with TypeDecl: typeFullName: ${typeFullName}, memberName: ${memberName}, types: [${types.mkString("; ")}]")
+  override protected def persistMemberWithTypeDecl(
+    typeFullName: String,
+    memberName: String,
+    types: Set[String]
+  ): Unit = {
+    logger.debug(
+      s"persisting member with TypeDecl: typeFullName: ${typeFullName}, memberName: ${memberName}, types: [${types.mkString("; ")}]"
+    )
     super.persistMemberWithTypeDecl(typeFullName, memberName, types)
   }
 
@@ -275,7 +281,10 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
         case (lhs, globalKeys) if globalKeys.nonEmpty => {
           logger.debug(s"- globalKeys non-empty: lhs: ${lhs.toString()}")
           globalKeys.foreach { (fieldVar: FieldPath) =>
-            logger.debug(s"- persisting member with type decl: compUnitFullName: ${fieldVar.compUnitFullName}; identifier: ${fieldVar.identifier}; types: ${types.mkString(", ")}")
+            logger.debug(
+              s"- persisting member with type decl: compUnitFullName: ${fieldVar.compUnitFullName}; identifier: ${fieldVar.identifier}; types: ${types
+                  .mkString(", ")}"
+            )
             persistMemberWithTypeDecl(fieldVar.compUnitFullName, fieldVar.identifier, types)
           }
           symbolTable.append(lhs, types)
@@ -308,11 +317,9 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
       // Look up in builtins table or else return dummy return type
       // TODO: Remove - no longer necessary now that PhpSetKnownTypes is
       // implemented.
-      methodFullNames.flatMap(
-        m => builtinsSymbolTable.getOrElse(
-            m,
-            Set(m.concat(s"$pathSep${XTypeRecovery.DummyReturnType}"))
-          )).toSet
+      methodFullNames
+        .flatMap(m => builtinsSymbolTable.getOrElse(m, Set(m.concat(s"$pathSep${XTypeRecovery.DummyReturnType}"))))
+        .toSet
     else rs
   }
 }
