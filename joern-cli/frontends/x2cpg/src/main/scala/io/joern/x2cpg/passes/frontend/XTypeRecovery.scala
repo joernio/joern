@@ -163,30 +163,30 @@ abstract class XTypeRecovery(cpg: Cpg, state: TypeRecoveryState, executor: Execu
     importNodes(part).foreach(loadImports(_, initialSymbolTable))
     // Prune import names if the methods exist in the CPG
     postVisitImports()
-    // Make a new builder and absorb them from each task
-    val tasks = part
-      .flatMap(compilationUnitToTasks)
+    // Make a new task and absorb the resulting builder from each task
+    part.method
+      .to(LazyList)
+      .map(methodToTask)
       .map(executor.submit)
-      .l
-    tasks.foreach { task =>
-      Try(task.get()) match
+      .map(task => Try(task.get()))
+      .foreach {
         case Failure(exception) =>
           logger.error(s"Type recovery & propagation task failed for file '${part.name}'", exception)
         case Success(diffGraph) =>
           builder.absorb(diffGraph)
-    }
+      }
     if (!state.changesWereMade.get()) state.stopEarly.set(true)
   }
 
   /** A factory method to generate a [[RecoverTypesForProcedure]] task with the given parameters.
     *
     * @param unit
-    *   the compilation unit.
+    *   the procedure.
     * @return
     *   a forkable [[RecoverTypesForProcedure]] task.
     */
-  private def compilationUnitToTasks(unit: File): Seq[RecoverTypesForProcedure] =
-    unit.method.map(recoverTypesForProcedure(cpg, _, initialSymbolTable.copy(), new DiffGraphBuilder, state)).toSeq
+  private def methodToTask(unit: Method): RecoverTypesForProcedure =
+    recoverTypesForProcedure(cpg, unit, initialSymbolTable.copy(), new DiffGraphBuilder, state)
 
   /** The entrypoint for a type recovery and propagation task.
     * @param cpg
@@ -387,6 +387,8 @@ abstract class RecoverTypesForProcedure(
     setTypeInformation()
     // Entrypoint for any final changes
     postSetTypeInformation()
+    // Clear symbol table now in case the return value is blocked by the task queue
+    symbolTable.clear()
     // Return diff graph
     builder
   } finally {
