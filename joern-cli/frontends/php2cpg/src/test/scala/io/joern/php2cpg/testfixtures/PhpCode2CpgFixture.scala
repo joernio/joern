@@ -2,6 +2,7 @@ package io.joern.php2cpg.testfixtures
 
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.php2cpg.{Config, Php2Cpg}
+import io.joern.php2cpg.passes.PhpTypeRecoveryPass
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, DefaultTestCpg, LanguageFrontend}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
@@ -26,6 +27,7 @@ class PhpTestCpg(runOssDataflow: Boolean) extends TestCpg with PhpFrontend {
 
   override protected def applyPasses(): Unit = {
     X2Cpg.applyDefaultOverlays(this)
+    new PhpTypeRecoveryPass(this).createAndApply()
     if (runOssDataflow) {
       val context = new LayerCreatorContext(this)
       val options = new OssDataFlowOptions()
