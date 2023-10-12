@@ -88,7 +88,8 @@ abstract class XTypeRecoveryPass(cpg: Cpg, config: TypeRecoveryConfig = TypeReco
     if (config.iterations > 0) {
       val stopEarly = new AtomicBoolean(false)
       val state     = TypeRecoveryState(config, stopEarly = stopEarly, graphCache = initGraphCache)
-      val executor  = Executors.newWorkStealingPool()
+      // keep memory usage constant by limiting tasks
+      val executor = Executors.newWorkStealingPool(4)
       try {
         Iterator.from(0).takeWhile(_ < config.iterations).foreach { i =>
           val newState = state.copy(currentIteration = i, graphCache = initGraphCache)
@@ -164,10 +165,11 @@ abstract class XTypeRecovery(cpg: Cpg, state: TypeRecoveryState, executor: Execu
     // Prune import names if the methods exist in the CPG
     postVisitImports()
     // Make a new task and absorb the resulting builder from each task
-    part.method
-      .to(LazyList)
+    val tasks = part.method
       .map(methodToTask)
       .map(executor.submit)
+      .l
+    tasks
       .map(task => Try(task.get()))
       .foreach {
         case Failure(exception) =>

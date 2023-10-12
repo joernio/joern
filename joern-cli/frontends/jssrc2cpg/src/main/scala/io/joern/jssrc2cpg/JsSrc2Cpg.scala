@@ -59,7 +59,7 @@ object JsSrc2Cpg {
   def postProcessingPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] = {
     val typeRecoveryConfig = config
       .map(c => TypeRecoveryConfig(c.typePropagationIterations, !c.disableDummyTypes))
-      .getOrElse(TypeRecoveryConfig(iterations = 3))
+      .getOrElse(TypeRecoveryConfig())
     List(
       new JavaScriptInheritanceNamePass(cpg),
       new ConstClosurePass(cpg),
