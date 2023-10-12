@@ -165,11 +165,9 @@ abstract class XTypeRecovery(cpg: Cpg, state: TypeRecoveryState, executor: Execu
     // Prune import names if the methods exist in the CPG
     postVisitImports()
     // Make a new task and absorb the resulting builder from each task
-    val tasks = part.method.toArray
+    part.method.toArray
       .map(methodToTask)
-      .map(executor.submit)
-    tasks
-      .map(task => Try(task.get()))
+      .map(task => Try(task.call()))
       .foreach {
         case Failure(exception) =>
           logger.error(s"Type recovery & propagation task failed for file '${part.name}'", exception)
