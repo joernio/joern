@@ -1,6 +1,6 @@
 package io.joern.pysrc2cpg.passes
 
-import io.joern.pysrc2cpg.PySrc2CpgFixture
+import io.joern.pysrc2cpg.{Py2CpgOnFileSystemConfig, PySrc2CpgFixture}
 import io.joern.x2cpg.passes.frontend.ImportsPass.*
 import io.joern.x2cpg.passes.frontend.{ImportsPass, XTypeHintCallLinker}
 import io.shiftleft.semanticcpg.language.*
@@ -967,7 +967,7 @@ class PyTypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) 
         |	c.getBotoClient().getS3Object()
         |""".stripMargin,
       "impl.py"
-    )
+    ).withConfig(Py2CpgOnFileSystemConfig().withTypePropagationIterations(3))
 
     "resolve correct imports via tag nodes" in {
       val List(connectorT: ResolvedTypeDecl, connectorM: ResolvedMethod) =

@@ -165,10 +165,9 @@ abstract class XTypeRecovery(cpg: Cpg, state: TypeRecoveryState, executor: Execu
     // Prune import names if the methods exist in the CPG
     postVisitImports()
     // Make a new task and absorb the resulting builder from each task
-    val tasks = part.method
+    val tasks = part.method.toArray
       .map(methodToTask)
       .map(executor.submit)
-      .l
     tasks
       .map(task => Try(task.get()))
       .foreach {
