@@ -5,12 +5,7 @@ import io.circe.{Decoder, HCursor}
 import io.joern.gosrc2cpg.Config
 import io.joern.gosrc2cpg.utils.UtilityConstants.fileSeparateorPattern
 
-import java.io.File
-import scala.collection.mutable.ListBuffer
-
 class GoModHelper(config: Option[Config] = None, meta: Option[GoMod] = None) {
-
-  import java.util.regex.Pattern
 
   def getModMetaData(): Option[GoMod] = meta
   def getNameSpace(compilationUnitFilePath: String, pkg: String): String = {

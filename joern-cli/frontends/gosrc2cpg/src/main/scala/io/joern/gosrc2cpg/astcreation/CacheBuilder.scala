@@ -3,6 +3,7 @@ package io.joern.gosrc2cpg.astcreation
 import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.parser.ParserAst.{GenDecl, ValueSpec}
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
+import io.joern.gosrc2cpg.utils.UtilityConstants.fileSeparateorPattern
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
@@ -34,7 +35,7 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
   }
 
   private def astForPackage(rootNode: ParserNodeInfo): Ast = {
-    val pathTokens = relPathFileName.split(File.separator)
+    val pathTokens = relPathFileName.split(fileSeparateorPattern)
     val packageFolderPath = if (pathTokens.nonEmpty && pathTokens.size > 1) {
       s"${File.separator}${pathTokens.dropRight(1).mkString(File.separator)}"
     } else {
