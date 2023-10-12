@@ -21,7 +21,7 @@ class MethodAndTypeCacheBuilderPass(cpgOpt: Option[Cpg], astFiles: List[String],
           val parserResult    = GoAstJsonParser.readFile(Paths.get(file))
           val relPathFileName = SourceFiles.toRelativePath(parserResult.fullPath, config.inputPath)
           val astCreator      = new AstCreator(relPathFileName, parserResult, goMod)(config.schemaValidation)
-          val diffGraph       = astCreator.buildCache()
+          val diffGraph       = astCreator.buildCache(cpgOpt)
           (astCreator, diffGraph)
         }
       })

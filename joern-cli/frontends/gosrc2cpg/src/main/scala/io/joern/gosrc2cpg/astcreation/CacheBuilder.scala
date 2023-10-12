@@ -5,6 +5,7 @@ import io.joern.gosrc2cpg.parser.ParserAst.{GenDecl, ValueSpec}
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.gosrc2cpg.utils.UtilityConstants.fileSeparateorPattern
 import io.joern.x2cpg.{Ast, ValidationMode}
+import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
 import ujson.{Arr, Obj, Value}
@@ -14,17 +15,21 @@ import scala.util.Try
 
 trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  def buildCache(): DiffGraphBuilder = {
+  def buildCache(cpgOpt: Option[Cpg]): DiffGraphBuilder = {
     val diffGraph = new DiffGraphBuilder
     try {
 
-      val result = GoGlobal.recordAliasToNamespaceMapping(declaredPackageName, fullyQualifiedPackage)
-      if (result == null) {
-        // if result is null that means item got added first time otherwise it has been already added to global map
-        val rootNode = createParserNodeInfo(parserResult.json)
-        val ast      = astForPackage(rootNode)
-        Ast.storeInDiffGraph(ast, diffGraph)
-      }
+      cpgOpt.map(_ => {
+        // We don't want to process this part when third party dependencies are being processed.
+        val result = GoGlobal.recordAliasToNamespaceMapping(declaredPackageName, fullyQualifiedPackage)
+        if (result == null) {
+          // if result is null that means item got added first time otherwise it has been already added to global map
+          val rootNode = createParserNodeInfo(parserResult.json)
+          val ast      = astForPackage(rootNode)
+          Ast.storeInDiffGraph(ast, diffGraph)
+        }
+      })
+
       findAndProcess(parserResult.json)
       processPackageLevelGolbalVaraiblesAndConstants(parserResult.json)
     } catch {
