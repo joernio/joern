@@ -113,7 +113,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.signature shouldBe "main.foo()joern.io/sample/fpkg.Sample"
       x.isExternal shouldBe false
 
-      x.order shouldBe 2
+      x.order shouldBe 1
       x.filename shouldBe "Test0.go"
       x.lineNumber shouldBe Option(4)
       x.lineNumberEnd shouldBe Option(6)
@@ -188,7 +188,7 @@ class MethodTests extends GoCodeToCpgSuite {
       y.signature shouldBe "main.bar()"
       y.isExternal shouldBe false
 
-      y.order shouldBe 2
+      y.order shouldBe 1
       y.filename shouldBe "Test0.go"
       y.lineNumber shouldBe Option(6)
       y.lineNumberEnd shouldBe Option(7)
@@ -691,7 +691,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.signature shouldBe "main.foo(int, main.Sample)"
       x.isExternal shouldBe false
 
-      x.order shouldBe 2
+      x.order shouldBe 1
       x.filename shouldBe "Test0.go"
       x.lineNumber shouldBe Option(7)
       x.lineNumberEnd shouldBe Option(8)
@@ -889,7 +889,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.signature shouldBe "main.foo(int, joern.io/sample/fpkg.Sample)"
       x.isExternal shouldBe false
 
-      x.order shouldBe 2
+      x.order shouldBe 1
       x.filename shouldBe "main.go"
       x.lineNumber shouldBe Option(4)
       x.lineNumberEnd shouldBe Option(5)
@@ -957,7 +957,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.signature shouldBe "main.foo(int, []joern.io/sample/fpkg.Sample)"
       x.isExternal shouldBe false
 
-      x.order shouldBe 2
+      x.order shouldBe 1
       x.filename shouldBe "main.go"
       x.lineNumber shouldBe Option(4)
       x.lineNumberEnd shouldBe Option(5)
@@ -1017,7 +1017,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.signature shouldBe "main.foo(int, privado.ai/test/fpkg.Sample)"
       x.isExternal shouldBe false
 
-      x.order shouldBe 2
+      x.order shouldBe 1
       x.filename shouldBe "main.go"
       x.lineNumber shouldBe Option(4)
       x.lineNumberEnd shouldBe Option(5)
@@ -1077,7 +1077,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.signature shouldBe "main.foo(int, []privado.ai/test/fpkg.Sample)"
       x.isExternal shouldBe false
 
-      x.order shouldBe 2
+      x.order shouldBe 1
       x.filename shouldBe "main.go"
       x.lineNumber shouldBe Option(4)
       x.lineNumberEnd shouldBe Option(5)
@@ -1137,7 +1137,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.signature shouldBe "main.foo(int, *privado.ai/test/fpkg.Sample)"
       x.isExternal shouldBe false
 
-      x.order shouldBe 2
+      x.order shouldBe 1
       x.filename shouldBe "main.go"
       x.lineNumber shouldBe Option(4)
       x.lineNumberEnd shouldBe Option(5)
@@ -1197,7 +1197,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.signature shouldBe "main.foo(int, []*privado.ai/test/fpkg.Sample)"
       x.isExternal shouldBe false
 
-      x.order shouldBe 2
+      x.order shouldBe 1
       x.filename shouldBe "main.go"
       x.lineNumber shouldBe Option(4)
       x.lineNumberEnd shouldBe Option(5)
@@ -1257,7 +1257,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.signature shouldBe "main.foo(int, *[]privado.ai/test/fpkg.Sample)"
       x.isExternal shouldBe false
 
-      x.order shouldBe 2
+      x.order shouldBe 1
       x.filename shouldBe "main.go"
       x.lineNumber shouldBe Option(4)
       x.lineNumberEnd shouldBe Option(5)
@@ -1317,7 +1317,7 @@ class MethodTests extends GoCodeToCpgSuite {
       x.signature shouldBe "main.foo(int, []*privado.ai/test/fpkg.Sample)"
       x.isExternal shouldBe false
 
-      x.order shouldBe 2
+      x.order shouldBe 1
       x.filename shouldBe "main.go"
       x.lineNumber shouldBe Option(4)
       x.lineNumberEnd shouldBe Option(5)
@@ -1599,7 +1599,7 @@ class MethodTests extends GoCodeToCpgSuite {
 
     "test basic ast structure for identifiers" in {
 
-      val List(person, personName, _) = cpg.identifier.l
+      val List(personName, person, _) = cpg.identifier.l
       person.name shouldBe "person"
       personName.name shouldBe "personName"
       personName.typeFullName shouldBe "string"
