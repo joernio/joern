@@ -5,7 +5,7 @@ import io.joern.x2cpg.{Defines, X2CpgConfig}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, Operators, PropertyNames}
-import io.shiftleft.passes.{CpgPass, ForkJoinParallelCpgPass}
+import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
@@ -28,7 +28,7 @@ import scala.util.{Failure, Success, Try}
   * @param enabledDummyTypes
   *   whether to enable placeholder dummy values for partially resolved types.
   */
-case class TypeRecoveryConfig(iterations: Int = 2, enabledDummyTypes: Boolean = true)
+case class TypeRecoveryConfig(iterations: Int = 4, enabledDummyTypes: Boolean = true)
 
 /** @param config
   *   the user defined config.
@@ -88,8 +88,7 @@ abstract class XTypeRecoveryPass(cpg: Cpg, config: TypeRecoveryConfig = TypeReco
     if (config.iterations > 0) {
       val stopEarly = new AtomicBoolean(false)
       val state     = TypeRecoveryState(config, stopEarly = stopEarly, graphCache = initGraphCache)
-      // keep memory usage constant by limiting tasks
-      val executor = Executors.newWorkStealingPool(4)
+      val executor = Executors.newWorkStealingPool()
       try {
         Iterator.from(0).takeWhile(_ < config.iterations).foreach { i =>
           val newState = state.copy(currentIteration = i, graphCache = initGraphCache)
@@ -150,24 +149,25 @@ trait TypeRecoveryParserConfig[R <: X2CpgConfig[R]] { this: R =>
   * @param cpg
   *   the CPG to recovery types for.
   */
-abstract class XTypeRecovery(cpg: Cpg, state: TypeRecoveryState, executor: ExecutorService)
-    extends ForkJoinParallelCpgPass[File](cpg) {
+abstract class XTypeRecovery(cpg: Cpg, state: TypeRecoveryState, executor: ExecutorService) extends CpgPass(cpg) {
 
   import io.joern.x2cpg.passes.frontend.AllNodeTypesFromIteratorExt
 
   protected val logger: Logger                            = LoggerFactory.getLogger(getClass)
   protected val initialSymbolTable: SymbolTable[LocalKey] = SymbolTable[LocalKey](SBKey.fromNodeToLocalKey)
 
-  override def generateParts(): Array[File] = cpg.file.toArray
+  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit =
+    cpg.file.toArray.foreach(runOnCompilationUnit(builder, _))
 
-  override def runOnPart(builder: DiffGraphBuilder, part: File): Unit = {
+  private def runOnCompilationUnit(builder: DiffGraphBuilder, part: File): Unit = {
     importNodes(part).foreach(loadImports(_, initialSymbolTable))
     // Prune import names if the methods exist in the CPG
     postVisitImports()
     // Make a new task and absorb the resulting builder from each task
     part.method.toArray
       .map(methodToTask)
-      .map(task => Try(task.call()))
+      .map(executor.submit)
+      .map(task => Try(task.get()))
       .foreach {
         case Failure(exception) =>
           logger.error(s"Type recovery & propagation task failed for file '${part.name}'", exception)
@@ -606,7 +606,7 @@ abstract class RecoverTypesForProcedure(
   protected def visitIdentifierAssignedToCallRetVal(i: Identifier, c: Call): Set[String] = {
     if (symbolTable.contains(c)) {
       val callReturns = methodReturnValues(symbolTable.get(c).toSeq)
-      associateTypes(i, callReturns)
+      associateTypes(i, callReturns ++ i.getKnownTypes)
     } else if (c.argument.exists(_.argumentIndex == 0)) {
       val callFullNames = (c.argument(0) match {
         case i: Identifier if symbolTable.contains(LocalVar(i.name))  => symbolTable.get(LocalVar(i.name))
@@ -872,7 +872,7 @@ abstract class RecoverTypesForProcedure(
   /** Visits an identifier that is the target of a cast operation.
     */
   protected def visitIdentifierAssignedToCast(i: Identifier, c: Call): Set[String] =
-    associateTypes(i, (c.typeFullName +: c.dynamicTypeHintFullName).filterNot(_ == "ANY").toSet)
+    associateTypes(i, c.getKnownTypes)
 
   protected def getFieldBaseType(base: Identifier, fi: FieldIdentifier): Set[String] =
     getFieldBaseType(base.name, fi.canonicalName)
@@ -882,13 +882,13 @@ abstract class RecoverTypesForProcedure(
       .get(LocalVar(baseName))
       .flatMap(t => typeDeclIterator(t).member.nameExact(fieldName))
       .typeFullNameNot("ANY")
-      .flatMap(m => m.typeFullName +: m.dynamicTypeHintFullName)
+      .flatMap(_.getKnownTypes)
       .toSet
 
   protected def visitReturns(ret: Return): Unit = {
     val m = ret.method
     val existingTypes = mutable.HashSet.from(
-      (m.methodReturn.typeFullName +: m.methodReturn.dynamicTypeHintFullName)
+      (m.methodReturn.typeFullName +: (m.methodReturn.dynamicTypeHintFullName ++ m.methodReturn.possibleTypes))
         .filterNot(_ == "ANY")
     )
     @tailrec
@@ -902,7 +902,7 @@ abstract class RecoverTypesForProcedure(
           .fullNameExact(ts.map(_.compUnitFullName).toSeq: _*)
           .member
           .nameExact(sym.identifier)
-          .flatMap(m => m.typeFullName +: m.dynamicTypeHintFullName)
+          .flatMap(m => m.typeFullName +: (m.dynamicTypeHintFullName ++ m.possibleTypes))
           .filterNot { x => x == "ANY" || x == "this" }
           .toSet
         if (cpgTypes.nonEmpty) cpgTypes
@@ -940,8 +940,8 @@ abstract class RecoverTypesForProcedure(
       .collect {
         case n: Local                                       => n
         case n: Expression                                  => n
-        case n: MethodParameterIn if state.isFinalIteration => n
-        case n: MethodReturn if state.isFinalIteration      => n
+        case n: MethodParameterIn  => n
+        case n: MethodReturn     => n
       }
       .foreach {
         case x: Local if symbolTable.contains(x) => storeNodeTypeInfo(x, symbolTable.get(x).toSeq)
@@ -1205,7 +1205,7 @@ abstract class RecoverTypesForProcedure(
   protected def storeDefaultTypeInfo(n: StoredNode, types: Seq[String]): Unit = {
     if (types.toSet != n.getKnownTypes) {
       state.changesWereMade.compareAndSet(false, true)
-      setTypes(n, (n.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty) ++ types).distinct)
+      setTypes(n, (n.getKnownTypes ++ types).toSeq)
     }
   }
 
@@ -1249,9 +1249,15 @@ abstract class RecoverTypesForProcedure(
       Set(t)
     }
 
-    val resolvedTypes = types
+    def filterMostResolvedTypes(ts: Iterable[String]): Iterable[String] = {
+      ts.groupBy(_.split(pathSep).last).flatMap { case (_, xs) =>
+        xs.sortBy(x => (XTypeRecovery.DummyTokens.count(x.contains), x.length)).headOption
+      }
+    }
+
+    val resolvedTypes = filterMostResolvedTypes(types
       .flatMap(resolveDummyMethodReturn)
-      .flatMap(resolveMemberAccess)
+      .flatMap(resolveMemberAccess)).toSeq
       .distinct
     val realTypes = resolvedTypes.filter(state.graphCache.typeDecls.contains)
     if (realTypes.size == 1) builder.setNodeProperty(n, PropertyNames.TYPE_FULL_NAME, realTypes.head)

@@ -25,15 +25,15 @@ class PyTypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) 
 
     "resolve 'x' identifier types despite shadowing" in {
       val List(xOuterScope, xInnerScope) = cpg.identifier("x").take(2).l
-      xOuterScope.possibleTypes shouldBe Seq("__builtin.int", "__builtin.str")
-      xInnerScope.possibleTypes shouldBe Seq("__builtin.int", "__builtin.str")
+      xOuterScope.possibleTypes.sorted shouldBe Seq("__builtin.int", "__builtin.str")
+      xInnerScope.possibleTypes.sorted shouldBe Seq("__builtin.int", "__builtin.str")
     }
 
     "resolve 'y' and 'z' identifier collection types" in {
       val List(zDict, zList, zTuple) = cpg.identifier("z").take(3).l
-      zDict.possibleTypes shouldBe Seq("__builtin.dict", "__builtin.list", "__builtin.tuple")
-      zList.possibleTypes shouldBe Seq("__builtin.dict", "__builtin.list", "__builtin.tuple")
-      zTuple.possibleTypes shouldBe Seq("__builtin.dict", "__builtin.list", "__builtin.tuple")
+      zDict.possibleTypes.sorted shouldBe Seq("__builtin.dict", "__builtin.list", "__builtin.tuple")
+      zList.possibleTypes.sorted shouldBe Seq("__builtin.dict", "__builtin.list", "__builtin.tuple")
+      zTuple.possibleTypes.sorted shouldBe Seq("__builtin.dict", "__builtin.list", "__builtin.tuple")
     }
 
     "resolve 'z' identifier calls conservatively" in {
@@ -41,7 +41,7 @@ class PyTypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) 
       zAppend.methodFullName shouldBe "<unknownFullName>"
       // Since we don't have method nodes with this full name, this should belong to the call linker namespace
       zAppend.callee.astParentFullName.headOption shouldBe Some(XTypeHintCallLinker.namespace)
-      zAppend.possibleTypes shouldBe Seq("__builtin.dict.append", "__builtin.list.append", "__builtin.tuple.append")
+      zAppend.possibleTypes.sorted shouldBe Seq("__builtin.dict.append", "__builtin.list.append", "__builtin.tuple.append")
     }
   }
 
@@ -236,9 +236,9 @@ class PyTypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) 
         .name("z")
         .l
       z1.typeFullName shouldBe "ANY"
-      z1.possibleTypes shouldBe Seq("__builtin.int", "__builtin.str")
+      z1.possibleTypes.sorted shouldBe Seq("__builtin.int", "__builtin.str")
       z2.typeFullName shouldBe "ANY"
-      z2.possibleTypes shouldBe Seq("__builtin.int", "__builtin.str")
+      z2.possibleTypes.sorted shouldBe Seq("__builtin.int", "__builtin.str")
     }
 
     "resolve 'foo.d' field access object types correctly" in {

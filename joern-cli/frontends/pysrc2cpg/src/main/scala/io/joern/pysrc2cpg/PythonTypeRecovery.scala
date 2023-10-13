@@ -30,7 +30,7 @@ private class PythonTypeRecovery(cpg: Cpg, state: TypeRecoveryState, executor: E
         .fullNameExact(basePath)
         .member
         .nameExact(memberName)
-        .flatMap(m => m.typeFullName +: m.dynamicTypeHintFullName)
+        .flatMap(m => m.typeFullName +: (m.dynamicTypeHintFullName ++ m.possibleTypes))
         .filterNot(_ == "ANY")
         .toSet
       symbolTable.put(LocalVar(alias), memberTypes)
@@ -208,5 +208,19 @@ private class RecoverForPythonProcedure(
       .map(td => symbolTable.append(CallAlias(i.name, rec), Set(td)))
       .headOption
       .getOrElse(super.visitIdentifierAssignedToTypeRef(i, t, rec))
+
+  override protected def storeCallTypeInfo(c: Call, types: Seq[String]): Unit =
+    super.storeCallTypeInfo(c, types.filterNot(_.startsWith("__builtin.None")))
+
+  override protected def persistType(x: StoredNode, types: Set[String]): Unit = x match {
+    case _: Call => super.persistType(x, types.filterNot(_.startsWith("__builtin.None")))
+    case _       => super.persistType(x, types.filterNot(_.matches("__builtin\\.None.+")))
+  }
+
+  override protected def setTypes(n: StoredNode, types: Seq[String]): Unit = n match {
+    case _: Call => super.setTypes(n, types.filterNot(_.startsWith("__builtin.None")))
+    case _ => super.setTypes(n, types.filterNot(_.matches("__builtin\\.None.+")))
+  }
+
 
 }

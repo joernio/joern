@@ -167,9 +167,9 @@ class JsTypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
     "resolve 'foo.x' and 'foo.y' field access primitive types correctly" in {
       val List(z1, z2) = cpg.file.name(".*Bar.*").ast.isIdentifier.nameExact("z").l
       z1.typeFullName shouldBe "ANY"
-      z1.possibleTypes shouldBe Seq("__ecma.Number", "__ecma.String")
+      z1.possibleTypes.sorted shouldBe Seq("__ecma.Number", "__ecma.String")
       z2.typeFullName shouldBe "ANY"
-      z2.possibleTypes shouldBe Seq("__ecma.Number", "__ecma.String")
+      z2.possibleTypes.sorted shouldBe Seq("__ecma.Number", "__ecma.String")
     }
 
     "resolve 'foo.d' field access object types correctly" in {
