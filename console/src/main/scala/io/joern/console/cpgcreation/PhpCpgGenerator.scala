@@ -2,7 +2,7 @@ package io.joern.console.cpgcreation
 
 import io.joern.console.FrontendConfig
 import io.joern.php2cpg.Main
-import io.joern.php2cpg.passes.PhpTypeRecoveryPass
+import io.joern.php2cpg.passes.{PhpTypeRecoveryPass, PhpSetKnownTypesPass}
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
 import io.shiftleft.codepropertygraph.Cpg
@@ -24,6 +24,7 @@ case class PhpCpgGenerator(config: FrontendConfig, rootPath: Path) extends CpgGe
   override def isJvmBased = true
 
   override def applyPostProcessingPasses(cpg: Cpg): Cpg = {
+    new PhpSetKnownTypesPass(cpg).createAndApply()
     new PhpTypeRecoveryPass(cpg, XTypeRecoveryConfig()).createAndApply()
 
     cpg
