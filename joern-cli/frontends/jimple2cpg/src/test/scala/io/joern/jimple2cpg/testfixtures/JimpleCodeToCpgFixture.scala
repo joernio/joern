@@ -1,5 +1,6 @@
 package io.joern.jimple2cpg.testfixtures
 
+import better.files.File as BFile
 import io.joern.jimple2cpg.{Config, Jimple2Cpg}
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, LanguageFrontend, TestCpg}
@@ -24,9 +25,9 @@ trait Jimple2CpgFrontend extends LanguageFrontend {
 class JimpleCode2CpgFixture() extends Code2CpgFixture(() => new JimpleTestCpg()) {}
 
 class JimpleTestCpg() extends TestCpg with Jimple2CpgFrontend {
-  override protected def codeFilePreProcessing(codeFile: Path): Unit = {
-    JimpleCodeToCpgFixture.compileJava(codeFile.toFile)
-  }
+
+  override protected def codeDirPreProcessing(rootFile: Path, codeFiles: List[Path]): Unit =
+    JimpleCodeToCpgFixture.compileJava(rootFile, codeFiles.map(_.toFile))
 
   override protected def applyPasses(): Unit = {
     X2Cpg.applyDefaultOverlays(this)
@@ -37,7 +38,7 @@ object JimpleCodeToCpgFixture {
 
   /** Compiles the source code with debugging info.
     */
-  def compileJava(sourceCodeFile: File): Unit = {
+  def compileJava(root: Path, sourceCodeFiles: List[File]): Unit = {
     val javac       = getJavaCompiler
     val fileManager = javac.getStandardFileManager(null, null, null)
     javac
@@ -45,14 +46,14 @@ object JimpleCodeToCpgFixture {
         null,
         fileManager,
         null,
-        Seq("-g", "-d", sourceCodeFile.getParent).asJava,
+        Seq("-g", "-d", root.toString).asJava,
         null,
-        fileManager.getJavaFileObjectsFromFiles(Seq(sourceCodeFile).asJava)
+        fileManager.getJavaFileObjectsFromFiles(sourceCodeFiles.asJava)
       )
       .call()
 
     fileManager
-      .list(StandardLocation.CLASS_OUTPUT, "", Collections.singleton(JavaFileObject.Kind.CLASS), false)
+      .list(StandardLocation.CLASS_OUTPUT, "", Collections.singleton(JavaFileObject.Kind.CLASS), true)
       .forEach(x => new File(x.toUri).deleteOnExit())
   }
 

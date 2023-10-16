@@ -21,6 +21,9 @@ abstract class TestCpg extends Cpg() with LanguageFrontend {
   @nowarn
   protected def codeFilePreProcessing(codeFile: Path): Unit = {}
 
+  @nowarn
+  protected def codeDirPreProcessing(rootFile: Path, codeFiles: List[Path]): Unit = {}
+
   protected def applyPasses(): Unit
 
   def moreCode(code: String): this.type = {
@@ -48,7 +51,7 @@ abstract class TestCpg extends Cpg() with LanguageFrontend {
 
   private def codeToFileSystem(): Path = {
     val tmpDir = Files.createTempDirectory("x2cpgTestTmpDir")
-    codeFileNamePairs.foreach { case (code, fileName) =>
+    val codeFiles = codeFileNamePairs.map { case (code, fileName) =>
       if (fileName.getParent != null) {
         Files.createDirectories(tmpDir.resolve(fileName.getParent))
       }
@@ -56,7 +59,9 @@ abstract class TestCpg extends Cpg() with LanguageFrontend {
       val codeFile    = tmpDir.resolve(Paths.get(fileName.toString))
       Files.write(codeFile, codeAsBytes)
       codeFilePreProcessing(codeFile)
-    }
+      codeFile
+    }.toList
+    codeDirPreProcessing(tmpDir, codeFiles)
     tmpDir
   }
 
