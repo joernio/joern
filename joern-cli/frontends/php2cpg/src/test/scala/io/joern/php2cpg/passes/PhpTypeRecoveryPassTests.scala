@@ -16,7 +16,7 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture() {
 
     "resolve 'x' identifier type" in {
       val List(xIdentifier) = cpg.identifier("x").take(1).l
-      //xIdentifier.dynamicTypeHintFullName shouldBe Seq("int")
+      // xIdentifier.dynamicTypeHintFullName shouldBe Seq("int")
       xIdentifier.typeFullName shouldBe "int"
     }
     "resolve 'foo_return_int()' return value" in {
@@ -56,7 +56,7 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture() {
     }
 
     "resolve built-in parameter type" in {
-      val List(strtolowerMethod) = cpg.method("strtolower").take(1).l
+      val List(strtolowerMethod)    = cpg.method("strtolower").take(1).l
       val List(strtolowerParameter) = strtolowerMethod.parameter.take(1).l
       strtolowerParameter.typeFullName shouldBe "string"
     }
@@ -228,18 +228,18 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture() {
 
     "identify return type of static method in declaration" in {
       val List(staticMethod) = cpg.method("static_method").take(1).l
-        staticMethod.methodReturn.dynamicTypeHintFullName shouldBe Seq("int")
+      staticMethod.methodReturn.dynamicTypeHintFullName shouldBe Seq("int")
     }
 
     "identify return type of static method called outside of class" in {
-      val List(fooMethod) = cpg.method("foo_call_static_method").take(1).l
+      val List(fooMethod)     = cpg.method("foo_call_static_method").take(1).l
       val List(tmpIdentifier) = cpg.identifier("tmp_foo").take(1).l
       tmpIdentifier.typeFullName shouldBe "int"
       fooMethod.methodReturn.dynamicTypeHintFullName shouldBe Seq("int")
     }
 
     "identify return type of static method called using 'self' inside class" in {
-      val List(barMethod) = cpg.typeDecl("ClassA").method.name("bar").take(1).l
+      val List(barMethod)     = cpg.typeDecl("ClassA").method.name("bar").take(1).l
       val List(tmpIdentifier) = cpg.identifier("tmp_bar").take(1).l
       tmpIdentifier.typeFullName shouldBe "int"
       barMethod.methodReturn.dynamicTypeHintFullName shouldBe Seq("int")
@@ -339,7 +339,8 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture() {
         |   }
         |}
         |""".stripMargin,
-      "classA.php").moreCode(
+      "classA.php"
+    ).moreCode(
       """
         |<?php
         |include 'classA.php';
