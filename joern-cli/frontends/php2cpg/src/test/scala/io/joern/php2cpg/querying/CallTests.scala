@@ -98,7 +98,7 @@ class CallTests extends PhpCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    "have the correct method node defined" in {
+    "resolve the correct method full name" in {
       val List(barCall) = cpg.call("bar").take(1).l
       barCall.name shouldBe "bar"
       barCall.methodFullName shouldBe s"ClassA::bar"
