@@ -16,7 +16,7 @@ import scala.io.Source
  * Sets the return and parameter types for builtin functions with known function
  * signatures.
  *
- * TODO: Handle variadic arguments.
+ * TODO: Need to handle variadic arguments.
  */
 class PhpSetKnownTypesPass(cpg: Cpg) extends CpgPass(cpg) {
 

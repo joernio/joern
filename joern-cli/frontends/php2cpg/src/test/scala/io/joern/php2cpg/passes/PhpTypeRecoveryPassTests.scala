@@ -50,7 +50,18 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture() {
       |}
       |""".stripMargin).cpg
 
-    "resolve methodReturn type" in {
+    "resolve built-in methodReturn type" in {
+      val List(strtolowerMethod) = cpg.method("strtolower").take(1).l
+      strtolowerMethod.methodReturn.typeFullName shouldBe "string"
+    }
+
+    "resolve built-in parameter type" in {
+      val List(strtolowerMethod) = cpg.method("strtolower").take(1).l
+      val List(strtolowerParameter) = strtolowerMethod.parameter.take(1).l
+      strtolowerParameter.typeFullName shouldBe "string"
+    }
+
+    "resolve calling function methodReturn type" in {
       val List(fooMethod) = cpg.method("foo_return_strtolower").take(1).l
       fooMethod.methodReturn.dynamicTypeHintFullName shouldBe Seq("string")
     }
@@ -355,6 +366,7 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture() {
   /* TODO: remaining tests:
    * - Method call inherited from a super class should be recovered
    * - A type hint on a parameter should be sufficient to resolve method full names at calls
+   * - Parameter types on builtins with variadic parameters
    */
 
 }
