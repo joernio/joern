@@ -967,10 +967,13 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
 
     val fullName = call.target match {
       // Static method call with a known class name
-      case Some(nameExpr: PhpNameExpr) if call.isStatic =>
-        s"${nameExpr.name}${StaticMethodDelimiter}$name"
+      case Some(nameExpr: PhpNameExpr) if call.isStatic => {
+        if (nameExpr.name == "self") composeMethodFullName(name, call.isStatic)
+        else s"${nameExpr.name}${StaticMethodDelimiter}$name"
+      }
 
       case Some(expr) =>
+        // composeMethodFullName(name, call.isStatic)
         s"$UnresolvedNamespace\\$codePrefix"
 
       case None if PhpBuiltins.FuncNames.contains(name) =>
