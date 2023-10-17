@@ -4,14 +4,14 @@ import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
 /** A call site */
-class CallTraversal[NodeType <: CallBase](val traversal: Iterator[NodeType]) extends AnyVal {
+class CallTraversal(val traversal: Iterator[Call]) extends AnyVal {
 
   /** Only statically dispatched calls */
-  def isStatic: Iterator[NodeType] =
+  def isStatic: Iterator[Call] =
     traversal.filter(_.isStatic)
 
   /** Only dynamically dispatched calls */
-  def isDynamic: Iterator[NodeType] =
+  def isDynamic: Iterator[Call] =
     traversal.filter(_.isDynamic)
 
   /** The receiver of a call if the call has a receiver associated. */
