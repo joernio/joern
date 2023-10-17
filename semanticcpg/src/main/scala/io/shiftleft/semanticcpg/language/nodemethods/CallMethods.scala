@@ -4,7 +4,7 @@ import io.shiftleft.codepropertygraph.generated.v2.accessors.Lang.*
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
-class CallMethods[NodeType <: CallBase](val node: NodeType) extends AnyVal {
+class CallMethods(val node: Call) extends AnyVal {
 
   def isStatic: Boolean =
     node.dispatchType == "STATIC_DISPATCH"

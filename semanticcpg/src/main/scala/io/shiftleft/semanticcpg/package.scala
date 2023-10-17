@@ -40,7 +40,7 @@ package object language /* extends operatorextension.Implicits with LowPrioImpli
 //   implicit def toExpressionMethods(node: Expression): ExpressionMethods       = new ExpressionMethods(node)
 //   implicit def toMethodMethods(node: Method): MethodMethods                   = new MethodMethods(node)
 //   implicit def toMethodReturnMethods(node: MethodReturn): MethodReturnMethods = new MethodReturnMethods(node)
-  implicit def toCallMethods[NodeType <: CallBase](node: NodeType): CallMethods[NodeType] = new CallMethods(node)
+  implicit def toCallMethods(node: Call): CallMethods = new CallMethods(node)
 //   implicit def toMethodParamInMethods(node: MethodParameterIn): MethodParameterInMethods =
 //     new MethodParameterInMethods(node)
 //   implicit def toMethodParamOutMethods(node: MethodParameterOut): MethodParameterOutMethods =
@@ -65,7 +65,7 @@ package object language /* extends operatorextension.Implicits with LowPrioImpli
 //   implicit def iterOnceToTypeDeclTrav[A <: TypeDecl](a: IterableOnce[A]): TypeDeclTraversal =
 //     new TypeDeclTraversal(a.iterator)
 
-  implicit def iterOnceToOriginalCallTrav[NodeType <: CallBase](traversal: Iterator[NodeType]): OriginalCall[NodeType] = new OriginalCall(traversal)
+  implicit def iterOnceToOriginalCallTrav(traversal: Iterator[Call]): OriginalCall = new OriginalCall(traversal)
 
 //   implicit def singleToControlStructureTrav[A <: ControlStructure](a: A): ControlStructureTraversal =
 //     new ControlStructureTraversal(Iterator.single(a))

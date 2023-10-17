@@ -2,7 +2,10 @@ name                     := "joern"
 ThisBuild / organization := "io.joern"
 ThisBuild / scalaVersion := "3.3.1"
 
-val cpgVersion = "2.0.0-alpha1"
+val cpgVersion = "1.4.23+11-cc8650f1"
+
+// TODO remove, usually we want to inherit this from cpg, just added as a shortcut during development
+// ThisBuild / dependencyOverrides += "io.joern" %% "odb2-core" % "0.0.0+97-e9aba06c" 
 
 // TODO uncomment
 // lazy val joerncli          = Projects.joerncli
