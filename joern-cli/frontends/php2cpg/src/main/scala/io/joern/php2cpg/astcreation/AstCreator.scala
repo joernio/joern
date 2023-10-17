@@ -973,7 +973,6 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
       }
 
       case Some(expr) =>
-        // composeMethodFullName(name, call.isStatic)
         s"$UnresolvedNamespace\\$codePrefix"
 
       case None if PhpBuiltins.FuncNames.contains(name) =>
