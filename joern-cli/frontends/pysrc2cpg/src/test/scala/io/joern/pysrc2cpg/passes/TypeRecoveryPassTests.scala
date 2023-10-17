@@ -1150,7 +1150,9 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "preserve the filename path relative to the root and not themselves" in {
       val itemsrouter = cpg.identifier.where(_.typeFullName(".*itemsrouter.py:<module>")).l
-      itemsrouter.forall(_.typeFullName == "code/itemsrouter.py:<module>") shouldBe true
+      itemsrouter.forall(
+        _.typeFullName == Seq("code", "itemsrouter.py:<module>").mkString(File.separator)
+      ) shouldBe true
     }
 
     "correctly infer the `fastapi` types" in {
