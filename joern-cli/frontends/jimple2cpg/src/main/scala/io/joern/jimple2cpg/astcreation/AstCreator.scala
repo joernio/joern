@@ -6,7 +6,7 @@ import io.joern.jimple2cpg.astcreation.statements.AstForStatementsCreator
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.utils.NodeBuilders
-import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
+import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.objectweb.asm.Type
@@ -14,7 +14,7 @@ import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import soot.jimple.*
 import soot.tagkit.*
-import soot.{Local as _, *}
+import soot.{Unit as SUnit, Local as _, *}
 
 import scala.collection.immutable.Seq
 import scala.collection.mutable
@@ -26,11 +26,12 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
 ) extends AstCreatorBase(filename)
     with AstForDeclarationsCreator
     with AstForStatementsCreator
-    with AstForExpressionsCreator {
+    with AstForExpressionsCreator
+    with AstNodeBuilder[Host, AstCreator] {
 
-  private val logger                                            = LoggerFactory.getLogger(getClass)
-  protected val unitToAsts: mutable.HashMap[Unit, Seq[Ast]]     = mutable.HashMap.empty
-  protected val controlTargets: mutable.HashMap[Seq[Ast], Unit] = mutable.HashMap.empty
+  private val logger                                             = LoggerFactory.getLogger(getClass)
+  protected val unitToAsts: mutable.HashMap[SUnit, Seq[Ast]]     = mutable.HashMap.empty
+  protected val controlTargets: mutable.HashMap[Seq[Ast], SUnit] = mutable.HashMap.empty
 
   /** Add `typeName` to a global map and return it. The map is later passed to a pass that creates TYPE nodes for each
     * key in the map.
@@ -66,7 +67,7 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
     val namespaceBlock = NewNamespaceBlock()
       .name(name)
       .fullName(packageDecl)
-    Ast(namespaceBlock.filename(absolutePath).order(1))
+    Ast(namespaceBlock.filename(absolutePath))
   }
 
   protected def getEvaluationStrategy(typ: soot.Type): String =
@@ -74,11 +75,10 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
       case _: PrimType    => EvaluationStrategies.BY_VALUE
       case _: VoidType    => EvaluationStrategies.BY_VALUE
       case _: NullType    => EvaluationStrategies.BY_VALUE
-      case _: RefLikeType => EvaluationStrategies.BY_REFERENCE
       case _              => EvaluationStrategies.BY_SHARING
     }
 
-  protected def isIgnoredUnit(unit: soot.Unit): Boolean = {
+  protected def isIgnoredUnit(unit: SUnit): Boolean = {
     unit match {
       case _: IdentityStmt => true
       case _: NopStmt      => true
@@ -86,42 +86,40 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
     }
   }
 
-  protected def astsForValue(value: soot.Value, order: Int, parentUnit: soot.Unit): Seq[Ast] = {
+  protected def astsForValue(value: soot.Value, parentUnit: SUnit): Seq[Ast] = {
     value match {
-      case x: Expr               => astsForExpression(x, order, parentUnit)
-      case x: soot.Local         => Seq(astForLocal(x, order, parentUnit))
-      case x: CaughtExceptionRef => Seq(astForCaughtExceptionRef(x, order, parentUnit))
-      case x: Constant           => Seq(astForConstantExpr(x, order))
-      case x: FieldRef           => Seq(astForFieldRef(x, order, parentUnit))
+      case x: Expr               => astsForExpression(x, parentUnit)
+      case x: soot.Local         => Seq(astForLocal(x, parentUnit))
+      case x: CaughtExceptionRef => Seq(astForCaughtExceptionRef(x, parentUnit))
+      case x: Constant           => Seq(astForConstantExpr(x))
+      case x: FieldRef           => Seq(astForFieldRef(x, parentUnit))
       case x: ThisRef            => Seq(createThisNode(x))
-      case x: ParameterRef       => Seq(createParameterNode(x, order))
-      case x: IdentityRef        => Seq(astForIdentityRef(x, order, parentUnit))
-      case x: ArrayRef           => Seq(astForArrayRef(x, order, parentUnit))
+      case x: ParameterRef       => Seq(astForParameterRef(x))
+      case x: IdentityRef        => Seq(astForIdentityRef(x, parentUnit))
+      case x: ArrayRef           => Seq(astForArrayRef(x, parentUnit))
       case x =>
         logger.warn(s"Unhandled soot.Value type ${x.getClass}")
         Seq()
     }
   }
 
-  protected def astForArrayRef(arrRef: ArrayRef, order: Int, parentUnit: soot.Unit): Ast = {
+  protected def astForArrayRef(arrRef: ArrayRef, parentUnit: SUnit): Ast = {
     val indexAccess = NewCall()
       .name(Operators.indexAccess)
       .methodFullName(Operators.indexAccess)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .code(arrRef.toString())
-      .order(order)
-      .argumentIndex(order)
       .lineNumber(line(parentUnit))
       .columnNumber(column(parentUnit))
       .typeFullName(registerType(arrRef.getType.toQuotedString))
 
-    val astChildren = astsForValue(arrRef.getBase, 1, parentUnit) ++ astsForValue(arrRef.getIndex, 2, parentUnit)
+    val astChildren = astsForValue(arrRef.getBase, parentUnit) ++ astsForValue(arrRef.getIndex, parentUnit)
     Ast(indexAccess)
       .withChildren(astChildren)
       .withArgEdges(indexAccess, astChildren.flatMap(_.root))
   }
 
-  protected def astForLocal(local: soot.Local, order: Int, parentUnit: soot.Unit): Ast = {
+  protected def astForLocal(local: soot.Local, parentUnit: SUnit): Ast = {
     val name         = local.getName
     val typeFullName = registerType(local.getType.toQuotedString)
     Ast(
@@ -129,20 +127,16 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
         .name(name)
         .lineNumber(line(parentUnit))
         .columnNumber(column(parentUnit))
-        .order(order)
-        .argumentIndex(order)
         .code(name)
         .typeFullName(typeFullName)
     )
   }
 
-  protected def astForIdentityRef(x: IdentityRef, order: Int, parentUnit: soot.Unit): Ast = {
+  protected def astForIdentityRef(x: IdentityRef, parentUnit: SUnit): Ast = {
     Ast(
       NewIdentifier()
         .code(x.toString())
         .name(x.toString())
-        .order(order)
-        .argumentIndex(order)
         .typeFullName(registerType(x.getType.toQuotedString))
         .lineNumber(line(parentUnit))
         .columnNumber(column(parentUnit))
@@ -156,14 +150,12 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
         .code("this")
         .typeFullName(registerType(method.getType.toQuotedString))
         .dynamicTypeHintFullName(Seq(registerType(method.getType.toQuotedString)))
-        .order(0)
-        .argumentIndex(0)
     )
   }
 
   protected def createThisNode(method: SootMethod, builder: NewNode): Ast = createThisNode(method.makeRef(), builder)
 
-  protected def createThisNode(method: SootMethodRef, builder: NewNode): Ast = {
+  protected def createThisNode[NodeType](method: SootMethodRef, builder: NewNode): Ast = {
     if (!method.isStatic || method.isConstructor) {
       val parentType = registerType(Try(method.getDeclaringClass.getType.toQuotedString).getOrElse("ANY"))
       Ast(builder match {
@@ -171,8 +163,6 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
           x.name("this")
             .code("this")
             .typeFullName(parentType)
-            .order(0)
-            .argumentIndex(0)
             .dynamicTypeHintFullName(Seq(parentType))
         case _: NewMethodParameterIn =>
           NodeBuilders.newThisParameterNode(
@@ -187,7 +177,7 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
     }
   }
 
-  protected def astForFieldRef(fieldRef: FieldRef, order: Int, parentUnit: soot.Unit): Ast = {
+  protected def astForFieldRef(fieldRef: FieldRef, parentUnit: SUnit): Ast = {
     val leftOpString = fieldRef match {
       case x: StaticFieldRef   => x.getFieldRef.declaringClass().toString
       case x: InstanceFieldRef => x.getBase.toString()
@@ -205,8 +195,6 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
       .typeFullName(registerType(fieldRef.getType.toQuotedString))
       .methodFullName(Operators.fieldAccess)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .order(order)
-      .argumentIndex(order)
       .lineNumber(line(parentUnit))
       .columnNumber(column(parentUnit))
 
@@ -233,11 +221,9 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
       .withArgEdges(fieldAccessBlock, argAsts.flatMap(_.root))
   }
 
-  private def astForCaughtExceptionRef(caughtException: CaughtExceptionRef, order: Int, parentUnit: soot.Unit): Ast = {
+  private def astForCaughtExceptionRef(caughtException: CaughtExceptionRef, parentUnit: SUnit): Ast = {
     Ast(
       NewIdentifier()
-        .order(order)
-        .argumentIndex(order)
         .lineNumber(line(parentUnit))
         .columnNumber(column(parentUnit))
         .name(caughtException.toString())
@@ -246,29 +232,23 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
     )
   }
 
-  private def astForConstantExpr(constant: Constant, order: Int): Ast = {
+  private def astForConstantExpr(constant: Constant): Ast = {
     constant match {
       case x: ClassConstant =>
         Ast(
           NewLiteral()
-            .order(order)
-            .argumentIndex(order)
             .code(s"${x.value.parseAsJavaType}.class")
             .typeFullName(registerType(x.getType.toQuotedString))
         )
       case _: NullConstant =>
         Ast(
           NewLiteral()
-            .order(order)
-            .argumentIndex(order)
             .code("null")
             .typeFullName(registerType("null"))
         )
       case _ =>
         Ast(
           NewLiteral()
-            .order(order)
-            .argumentIndex(order)
             .code(constant.toString)
             .typeFullName(registerType(constant.getType.toQuotedString))
         )
@@ -281,29 +261,21 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
       .withArgEdges(rootNode, args.flatMap(_.root))
   }
 
-  def line(node: Host): Option[Integer] = {
+  override def line(node: Host): Option[Integer] = {
     if (node == null) None
     else if (node.getJavaSourceStartLineNumber == -1) None
     else Option(node.getJavaSourceStartLineNumber)
   }
 
-  def column(node: Host): Option[Integer] = {
+  override def column(node: Host): Option[Integer] = {
     if (node == null) None
     else if (node.getJavaSourceStartColumnNumber == -1) None
     else Option(node.getJavaSourceStartColumnNumber)
   }
 
-  def withOrder[T <: Any, X](nodeList: java.util.List[T])(f: (T, Int) => X): Seq[X] = {
-    nodeList.asScala.zipWithIndex.map { case (x, i) =>
-      f(x, i + 1)
-    }.toSeq
-  }
+  override def columnEnd(node: Host): Option[Integer] = None
 
-  def withOrder[T <: Any, X](nodeList: Iterable[T])(f: (T, Int) => X): Seq[X] = {
-    nodeList.zipWithIndex.map { case (x, i) =>
-      f(x, i + 1)
-    }.toSeq
-  }
+  override def lineEnd(node: Host): Option[Integer] = None
 
 }
 

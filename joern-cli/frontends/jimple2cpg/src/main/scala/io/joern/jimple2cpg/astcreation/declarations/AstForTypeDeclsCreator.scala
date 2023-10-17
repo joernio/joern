@@ -1,25 +1,14 @@
 package io.joern.jimple2cpg.astcreation.declarations
 
 import io.joern.jimple2cpg.astcreation.AstCreator
-import io.joern.x2cpg.Ast.storeInDiffGraph
-import io.joern.x2cpg.datastructures.Global
-import io.joern.x2cpg.utils.NodeBuilders
-import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import org.objectweb.asm.Type
-import org.slf4j.LoggerFactory
-import overflowdb.BatchedUpdate.DiffGraphBuilder
-import soot.jimple.*
-import soot.jimple.internal.JimpleLocal
 import soot.tagkit.*
 import soot.{RefType, Local as _, *}
 
-import scala.collection.immutable.HashSet
 import scala.collection.mutable
-import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters.CollectionHasAsScala
-import scala.util.{Failure, Success, Try}
 
 trait AstForTypeDeclsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -47,27 +36,19 @@ trait AstForTypeDeclsCreator(implicit withSchemaValidation: ValidationMode) { th
     if (inherited.nonEmpty) code.append(s" extends ${inherited.mkString(", ")}")
     if (implemented.nonEmpty) code.append(s" implements ${implemented.mkString(", ")}")
 
-    val typeDecl = NewTypeDecl()
-      .name(shortName)
-      .fullName(fullName)
-      .order(1) // Jimple always has 1 class per file
-      .filename(filename)
-      .code(code.toString())
-      .inheritsFromTypeFullName(inherited ++ implemented)
-      .astParentType(NodeTypes.NAMESPACE_BLOCK)
-      .astParentFullName(namespaceBlockFullName)
-    val methodAsts = withOrder(typ.getSootClass.getMethods.asScala.toList.sortWith((x, y) => x.getName > y.getName)) {
-      (m, order) =>
-        astForMethod(m, typ, order)
-    }
+    val typeDecl = typeDeclNode(
+      typ.getSootClass,
+      shortName,
+      fullName,
+      filename,
+      code.toString(),
+      NodeTypes.NAMESPACE_BLOCK,
+      namespaceBlockFullName,
+      inherited ++ implemented
+    )
 
-    val memberAsts = typ.getSootClass.getFields.asScala
-      .filter(_.isDeclared)
-      .zipWithIndex
-      .map { case (v, i) =>
-        astForField(v, i + methodAsts.size + 1)
-      }
-      .toList
+    val methodAsts = clz.getMethods.asScala.map(astForMethod(_, typ)).toList
+    val memberAsts = clz.getFields.asScala.filter(_.isDeclared).map(astForField).toList
 
     Ast(typeDecl)
       .withChildren(astsForHostTags(clz))
@@ -76,7 +57,7 @@ trait AstForTypeDeclsCreator(implicit withSchemaValidation: ValidationMode) { th
       .withChildren(modifiers)
   }
 
-  protected def astForField(field: SootField, order: Int): Ast = {
+  private def astForField(field: SootField): Ast = {
     val typeFullName = registerType(field.getType.toQuotedString)
     val name         = field.getName
     val code         = if (field.getDeclaration.contains("enum")) name else s"$typeFullName $name"
@@ -90,9 +71,8 @@ trait AstForTypeDeclsCreator(implicit withSchemaValidation: ValidationMode) { th
         .lineNumber(line(field))
         .columnNumber(column(field))
         .typeFullName(typeFullName)
-        .order(order)
         .code(code)
-    ).withChildren(withOrder(annotations) { (a, aOrder) => astsForAnnotations(a, aOrder, field) })
+    ).withChildren(annotations.map(astsForAnnotations(_, field)).toSeq)
   }
 
   /** Creates a list of all inherited classes and implemented interfaces. If there are none then a list with a single

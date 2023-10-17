@@ -22,8 +22,8 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
   // There are many, but the popular ones should do https://en.wikipedia.org/wiki/List_of_JVM_languages
   private val JVM_LANGS = HashSet("scala", "clojure", "groovy", "kotlin", "jython", "jruby")
 
-  protected def astForMethod(methodDeclaration: SootMethod, typeDecl: RefType, childNum: Int): Ast = {
-    val methodNode = createMethodNode(methodDeclaration, typeDecl, childNum)
+  protected def astForMethod(methodDeclaration: SootMethod, typeDecl: RefType): Ast = {
+    val methodNode = createMethodNode(methodDeclaration, typeDecl)
     try {
       if (!methodDeclaration.isConcrete) {
         // Soot is not able to parse origin parameter names of abstract methods
@@ -32,15 +32,19 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
           .map { case (typ, index) => new JimpleLocal(s"param${index + 1}", typ) }
         val parameterAsts =
           Seq(createThisNode(methodDeclaration, NewMethodParameterIn())) ++
-            withOrder(locals) { (p, order) => astForParameter(p, order, methodDeclaration, Map()) }
-        Ast(methodNode)
-          .withChildren(astsForModifiers(methodDeclaration))
-          .withChildren(parameterAsts)
-          .withChildren(astsForHostTags(methodDeclaration))
-          .withChild(Ast(NewBlock()))
-          .withChild(astForMethodReturn(methodDeclaration))
+            locals.zipWithIndex.map { case (param, index) =>
+              astForParameter(param, index + 1, methodDeclaration, Map())
+            }
+
+        methodAstWithAnnotations(
+          methodNode,
+          parameterAsts,
+          Ast(NewBlock()),
+          astForMethodReturn(methodDeclaration),
+          astsForModifiers(methodDeclaration),
+          astsForHostTags(methodDeclaration)
+        )
       } else {
-        val lastOrder = 2 + methodDeclaration.getParameterCount
         // Map params to their annotations
         val mTags = methodDeclaration.getTags.asScala
         val paramAnnos =
@@ -52,19 +56,21 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
           case Success(body) => body
         }
         val parameterAsts =
-          Seq(createThisNode(methodDeclaration, NewMethodParameterIn())) ++ withOrder(methodBody.getParameterLocals) {
-            (p, order) => astForParameter(p, order, methodDeclaration, parameterAnnotations)
-          }
-        Ast(
+          Seq(createThisNode(methodDeclaration, NewMethodParameterIn())) ++
+            methodBody.getParameterLocals.asScala.zipWithIndex.map { case (param, index) =>
+              astForParameter(param, index, methodDeclaration, parameterAnnotations)
+            }
+
+        methodAstWithAnnotations(
           methodNode
             .lineNumberEnd(methodBody.toString.split('\n').filterNot(_.isBlank).length)
-            .code(methodBody.toString)
+            .code(methodBody.toString),
+          parameterAsts,
+          astForMethodBody(methodBody),
+          astForMethodReturn(methodDeclaration),
+          astsForModifiers(methodDeclaration),
+          astsForHostTags(methodDeclaration)
         )
-          .withChildren(astsForModifiers(methodDeclaration))
-          .withChildren(parameterAsts)
-          .withChildren(astsForHostTags(methodDeclaration))
-          .withChild(astForMethodBody(methodBody, lastOrder))
-          .withChild(astForMethodReturn(methodDeclaration))
       }
     } catch {
       case e: RuntimeException =>
@@ -84,26 +90,30 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
             e
           )
         }
-        Ast(methodNode)
-          .withChildren(astsForModifiers(methodDeclaration))
-          .withChildren(astsForHostTags(methodDeclaration))
-          .withChild(astForMethodReturn(methodDeclaration))
+        methodAstWithAnnotations(
+          methodNode,
+          Seq.empty,
+          Ast(NewBlock()),
+          astForMethodReturn(methodDeclaration),
+          astsForModifiers(methodDeclaration),
+          astsForHostTags(methodDeclaration)
+        )
     } finally {
       // Join all targets with CFG edges - this seems to work from what is seen on DotFiles
-      controlTargets.foreach({ case (asts, units) =>
+      controlTargets.foreach { case (asts, units) =>
         asts.headOption match {
           case Some(value) =>
             diffGraph.addEdge(value.root.get, unitToAsts(units).last.root.get, EdgeTypes.CFG)
           case None =>
         }
-      })
+      }
       // Clear these maps
       controlTargets.clear()
       unitToAsts.clear()
     }
   }
 
-  private def astsForModifiers(methodDeclaration: SootMethod): Seq[Ast] = {
+  private def astsForModifiers(methodDeclaration: SootMethod): Seq[NewModifier] = {
     Seq(
       if (methodDeclaration.isStatic) Some(ModifierTypes.STATIC) else None,
       if (methodDeclaration.isPublic) Some(ModifierTypes.PUBLIC) else None,
@@ -115,39 +125,34 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
         Some(ModifierTypes.VIRTUAL)
       else None,
       if (methodDeclaration.isSynchronized) Some("SYNCHRONIZED") else None
-    ).flatten.map { modifier =>
-      Ast(NewModifier().modifierType(modifier).code(modifier.toLowerCase))
-    }
+    ).flatten.map(NodeBuilders.newModifierNode(_).code(modifier.toLowerCase))
   }
 
   private def astForMethodReturn(methodDeclaration: SootMethod): Ast = {
     val typeFullName = registerType(methodDeclaration.getReturnType.toQuotedString)
-    val methodReturnNode = NodeBuilders
-      .newMethodReturnNode(typeFullName, None, line(methodDeclaration), None)
-      .order(methodDeclaration.getParameterCount + 2)
-    Ast(methodReturnNode)
+    methodReturnNode(methodDeclaration, typeFullName)
   }
 
-  private def createMethodNode(methodDeclaration: SootMethod, typeDecl: RefType, childNum: Int) = {
+  private def createMethodNode(methodDeclaration: SootMethod, typeDecl: RefType) = {
+    val name           = methodDeclaration.getName
     val fullName       = methodFullName(typeDecl, methodDeclaration)
     val methodDeclType = registerType(methodDeclaration.getReturnType.toQuotedString)
     val code = if (!methodDeclaration.isConstructor) {
-      s"$methodDeclType ${methodDeclaration.getName}${paramListSignature(methodDeclaration, withParams = true)}"
+      s"$methodDeclType $name${paramListSignature(methodDeclaration, withParams = true)}"
     } else {
       s"${typeDecl.getClassName}${paramListSignature(methodDeclaration, withParams = true)}"
     }
-    NewMethod()
-      .name(methodDeclaration.getName)
-      .fullName(fullName)
-      .code(code)
-      .signature(methodDeclType + paramListSignature(methodDeclaration))
-      .isExternal(false)
-      .order(childNum)
-      .filename(filename)
-      .astParentType(NodeTypes.TYPE_DECL)
-      .astParentFullName(typeDecl.toQuotedString)
-      .lineNumber(line(methodDeclaration))
-      .columnNumber(column(methodDeclaration))
+    val signature = s"$methodDeclType${paramListSignature(methodDeclaration)}"
+    methodNode(
+      methodDeclaration,
+      name,
+      code,
+      fullName,
+      Option(signature),
+      filename,
+      NodeTypes.TYPE_DECL,
+      typeDecl.toQuotedString
+    )
   }
 
   private def methodFullName(typeDecl: RefType, methodDeclaration: SootMethod): String = {
@@ -174,63 +179,51 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
     }
   }
 
-  protected def createParameterNode(parameterRef: ParameterRef, order: Int): Ast = {
+  protected def astForParameterRef(parameterRef: ParameterRef): Ast = {
     val name = s"@parameter${parameterRef.getIndex}"
-    Ast(
-      NewIdentifier()
-        .name(name)
-        .code(name)
-        .typeFullName(registerType(parameterRef.getType.toQuotedString))
-        .order(order)
-        .argumentIndex(order)
-    )
+    Ast(identifierNode(parameterRef, name, name, registerType(parameterRef.getType.toQuotedString)))
   }
 
   private def astForParameter(
     parameter: soot.Local,
-    childNum: Int,
+    index: Int,
     methodDeclaration: SootMethod,
     parameterAnnotations: Map[String, VisibilityAnnotationTag]
   ): Ast = {
     val typeFullName = registerType(parameter.getType.toQuotedString)
 
-    val parameterNode = Ast(
-      NewMethodParameterIn()
-        .name(parameter.getName)
-        .code(s"$typeFullName ${parameter.getName}")
-        .typeFullName(typeFullName)
-        .order(childNum)
-        .index(childNum)
-        .lineNumber(line(methodDeclaration))
-        .columnNumber(column(methodDeclaration))
-        .evaluationStrategy(getEvaluationStrategy(parameter.getType))
+    val paramAst = Ast(
+      parameterInNode(
+        parameter,
+        parameter.getName,
+        s"$typeFullName ${parameter.getName}",
+        index,
+        isVariadic = false, // Variadic types are converted to explicit arrays in bytecode
+        getEvaluationStrategy(parameter.getType),
+        Option(typeFullName)
+      )
     )
 
     parameterAnnotations.get(parameter.getName) match {
       case Some(annoRoot) =>
-        parameterNode.withChildren(withOrder(annoRoot.getAnnotations.asScala) { (a, order) =>
-          astsForAnnotations(a, order, methodDeclaration)
-        })
-      case None => parameterNode
+        val annotationAsts = annoRoot.getAnnotations.asScala.map(astsForAnnotations(_, methodDeclaration)).toSeq
+        paramAst.withChildren(annotationAsts)
+      case None => paramAst
     }
   }
 
-  private def astForMethodBody(body: Body, order: Int): Ast = {
-    val block        = NewBlock().order(order).lineNumber(line(body)).columnNumber(column(body))
+  private def astForMethodBody(body: Body): Ast = {
     val jimpleParams = body.getParameterLocals.asScala.toList
     // Don't let parameters also become locals (avoiding duplication)
     val jimpleLocals = body.getLocals.asScala.filterNot(l => jimpleParams.contains(l) || l.getName == "this").toList
-    val locals = withOrder(jimpleLocals) { case (l, order) =>
-      val name         = l.getName
-      val typeFullName = registerType(l.getType.toQuotedString)
+    val locals = jimpleLocals.map { local =>
+      val name         = local.getName
+      val typeFullName = registerType(local.getType.toQuotedString)
       val code         = s"$typeFullName $name"
-      Ast(NewLocal().name(name).code(code).typeFullName(typeFullName).order(order))
+      localNode(local, name, code, typeFullName)
     }
-    Ast(block)
-      .withChildren(locals)
-      .withChildren(withOrder(body.getUnits.asScala.filterNot(isIgnoredUnit)) { (x, order) =>
-        astsForStatement(x, order + locals.size)
-      }.flatten)
+    val statements = body.getUnits.asScala.filterNot(isIgnoredUnit).flatMap(astsForStatement).toSeq
+    blockAst(blockNode(body), locals ++ statements)
   }
 
 }

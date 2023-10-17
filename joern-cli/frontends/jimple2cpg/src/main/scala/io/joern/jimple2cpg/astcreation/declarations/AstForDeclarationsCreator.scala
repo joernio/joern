@@ -33,27 +33,24 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode)  
     host.getTags.asScala
       .collect { case x: VisibilityAnnotationTag => x }
       .flatMap { x =>
-        withOrder(x.getAnnotations.asScala) { (a, order) => astsForAnnotations(a, order, host) }
+        x.getAnnotations.asScala.map(a => astsForAnnotations(a, host))
       }
       .toSeq
   }
 
-  protected def astsForAnnotations(annotation: AnnotationTag, order: Int, host: AbstractHost): Ast = {
+  protected def astsForAnnotations(annotation: AnnotationTag, host: AbstractHost): Ast = {
     val annoType = registerType(annotation.getType.parseAsJavaType)
     val name = annoType.split('.').last
-    val elementNodes = withOrder(annotation.getElems.asScala) { case (a, order) =>
-      astForAnnotationElement(a, order, host)
-    }
+    val elementNodes = annotation.getElems.asScala.map(astForAnnotationElement(_, host)).toSeq
     val annotationNode = NewAnnotation()
       .name(name)
       .code(s"@$name(${elementNodes.flatMap(_.root).flatMap(_.properties.get(PropertyNames.CODE)).mkString(", ")})")
       .fullName(annoType)
-      .order(order)
     Ast(annotationNode)
       .withChildren(elementNodes)
   }
 
-  private def astForAnnotationElement(annoElement: AnnotationElem, order: Int, parent: AbstractHost): Ast = {
+  private def astForAnnotationElement(annoElement: AnnotationElem, parent: AbstractHost): Ast = {
     def getLiteralElementNameAndCode(annoElement: AnnotationElem): (String, String) = annoElement match {
       case x: AnnotationClassElem =>
         val desc = registerType(x.getDesc.parseAsJavaType)
@@ -78,18 +75,17 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode)  
             .code(annoElement.getName)
             .lineNumber(lineNo)
             .columnNumber(columnNo)
-            .order(1)
         )
       )
       codeBuilder.append(s"${annoElement.getName} = ")
     }
     astChildren.append(annoElement match {
       case x: AnnotationAnnotationElem =>
-        val rhsAst = astsForAnnotations(x.getValue, astChildren.size + 1, parent)
+        val rhsAst = astsForAnnotations(x.getValue, parent)
         codeBuilder.append(s"${rhsAst.root.flatMap(_.properties.get(PropertyNames.CODE)).mkString(", ")}")
         rhsAst
       case x: AnnotationArrayElem =>
-        val (rhsAst, code) = astForAnnotationArrayElement(x, astChildren.size + 1, parent)
+        val (rhsAst, code) = astForAnnotationArrayElement(x, parent)
         codeBuilder.append(code)
         rhsAst
       case x =>
@@ -97,9 +93,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode)  
           case y: AnnotationStringElem => (y.getValue, s"\"${y.getValue}\"")
           case _ => getLiteralElementNameAndCode(x)
         }
-        val rhsOrder = if (annoElement.getName == null) order else astChildren.size + 1
         codeBuilder.append(code)
-        Ast(NewAnnotationLiteral().name(name).code(code).order(rhsOrder).argumentIndex(rhsOrder))
+        Ast(NewAnnotationLiteral().name(name).code(code))
     })
 
     if (astChildren.size == 1) {
@@ -109,17 +104,16 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode)  
         .code(codeBuilder.toString)
         .lineNumber(lineNo)
         .columnNumber(columnNo)
-        .order(order)
 
       Ast(paramAssign)
         .withChildren(astChildren)
     }
   }
 
-  private def astForAnnotationArrayElement(x: AnnotationArrayElem, order: Int, parent: AbstractHost): (Ast, String) = {
-    val elems = withOrder(x.getValues.asScala) { (elem, order) => astForAnnotationElement(elem, order, parent) }
+  private def astForAnnotationArrayElement(x: AnnotationArrayElem, parent: AbstractHost): (Ast, String) = {
+    val elems = x.getValues.asScala.map(astForAnnotationElement(_, parent)).toSeq
     val code = s"{${elems.flatMap(_.root).flatMap(_.properties.get(PropertyNames.CODE)).mkString(", ")}}"
-    val array = NewArrayInitializer().code(code).order(order).argumentIndex(order)
+    val array = NewArrayInitializer().code(code)
     (Ast(array).withChildren(elems), code)
   }
 

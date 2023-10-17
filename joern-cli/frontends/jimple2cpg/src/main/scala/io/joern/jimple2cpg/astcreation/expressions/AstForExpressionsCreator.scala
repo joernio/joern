@@ -5,7 +5,7 @@ import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewIdentifier, NewTypeRef}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import org.slf4j.LoggerFactory
-import soot.*
+import soot.{Unit as SUnit, *}
 import soot.jimple.*
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -14,24 +14,24 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  protected def astsForExpression(expr: Expr, order: Int, parentUnit: soot.Unit): Seq[Ast] = {
+  protected def astsForExpression(expr: Expr, parentUnit: soot.Unit): Seq[Ast] = {
     expr match {
-      case x: BinopExpr  => Seq(astForBinOpExpr(x, order, parentUnit))
-      case x: InvokeExpr => Seq(astForInvokeExpr(x, order, parentUnit))
-      case x: AnyNewExpr => Seq(astForNewExpr(x, order, parentUnit))
-      case x: CastExpr   => Seq(astForUnaryExpr(Operators.cast, x, x.getOp, order, parentUnit))
+      case x: BinopExpr  => Seq(astForBinOpExpr(x, parentUnit))
+      case x: InvokeExpr => Seq(astForInvokeExpr(x, parentUnit))
+      case x: AnyNewExpr => Seq(astForNewExpr(x, parentUnit))
+      case x: CastExpr   => Seq(astForUnaryExpr(Operators.cast, x, x.getOp, parentUnit))
       case x: InstanceOfExpr =>
-        Seq(astForUnaryExpr(Operators.instanceOf, x, x.getOp, order, parentUnit))
+        Seq(astForUnaryExpr(Operators.instanceOf, x, x.getOp, parentUnit))
       case x: LengthExpr =>
-        Seq(astForUnaryExpr(Operators.lengthOf, x, x.getOp, order, parentUnit))
-      case x: NegExpr => Seq(astForUnaryExpr(Operators.minus, x, x.getOp, order, parentUnit))
+        Seq(astForUnaryExpr(Operators.lengthOf, x, x.getOp, parentUnit))
+      case x: NegExpr => Seq(astForUnaryExpr(Operators.minus, x, x.getOp, parentUnit))
       case x =>
         logger.warn(s"Unhandled soot.Expr type ${x.getClass}")
         Seq()
     }
   }
 
-  private def astForBinOpExpr(binOp: BinopExpr, order: Int, parentUnit: soot.Unit): Ast = {
+  private def astForBinOpExpr(binOp: BinopExpr, parentUnit: soot.Unit): Ast = {
     // https://javadoc.io/static/org.soot-oss/soot/4.3.0/soot/jimple/BinopExpr.html
     val operatorName = binOp match {
       case _: AddExpr  => Operators.addition
@@ -59,20 +59,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         "<operator>.unknown"
     }
 
-    val callNode = NewCall()
-      .name(operatorName)
-      .methodFullName(operatorName)
-      .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .code(binOp.toString)
-      .argumentIndex(order)
-      .order(order)
+    val call = callNode(parentUnit, binOp.toString, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH)
 
     val args =
-      astsForValue(binOp.getOp1, 1, parentUnit) ++ astsForValue(binOp.getOp2, 2, parentUnit)
-    callAst(callNode, args)
+      astsForValue(binOp.getOp1, parentUnit) ++ astsForValue(binOp.getOp2, parentUnit)
+    callAst(call, args)
   }
 
-  private def astForInvokeExpr(invokeExpr: InvokeExpr, order: Int, parentUnit: soot.Unit): Ast = {
+  private def astForInvokeExpr(invokeExpr: InvokeExpr, parentUnit: soot.Unit): Ast = {
     val callee = invokeExpr.getMethodRef
     val dispatchType = invokeExpr match {
       case _ if callee.isConstructor => DispatchTypes.STATIC_DISPATCH
@@ -85,7 +79,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       s"${registerType(callee.getReturnType.toQuotedString)}(${(for (i <- 0 until callee.getParameterTypes.size())
           yield registerType(callee.getParameterType(i).toQuotedString)).mkString(",")})"
     val thisAsts = invokeExpr match {
-      case expr: InstanceInvokeExpr => astsForValue(expr.getBase, 0, parentUnit)
+      case expr: InstanceInvokeExpr => astsForValue(expr.getBase, parentUnit)
       case _                        => Seq(createThisNode(callee, NewIdentifier()))
     }
 
@@ -110,20 +104,16 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .name(callee.getName)
       .code(code)
       .dispatchType(dispatchType)
-      .order(order)
-      .argumentIndex(order)
       .methodFullName(s"$calleeType.${callee.getName}:$signature")
       .signature(signature)
       .typeFullName(callType)
       .lineNumber(line(parentUnit))
       .columnNumber(column(parentUnit))
 
-    val argAsts = withOrder(invokeExpr match {
+    val argAsts = (invokeExpr match {
       case x: DynamicInvokeExpr => x.getArgs.asScala ++ x.getBootstrapArgs.asScala
       case x                    => x.getArgs.asScala
-    }) { case (arg, order) =>
-      astsForValue(arg, order, parentUnit)
-    }.flatten
+    }).flatMap(astsForValue(_, parentUnit)).toSeq
 
     val callAst = Ast(callNode)
       .withChildren(thisAsts)
@@ -137,12 +127,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }
   }
 
-  private def astForNewExpr(x: AnyNewExpr, order: Int, parentUnit: soot.Unit): Ast = {
+  private def astForNewExpr(x: AnyNewExpr, parentUnit: soot.Unit): Ast = {
     x match {
       case u: NewArrayExpr =>
-        astForArrayCreateExpr(x, List(u.getSize), order, parentUnit)
+        astForArrayCreateExpr(x, List(u.getSize), parentUnit)
       case u: NewMultiArrayExpr =>
-        astForArrayCreateExpr(x, u.getSizes.asScala, order, parentUnit)
+        astForArrayCreateExpr(x, u.getSizes.asScala, parentUnit)
       case _ =>
         val parentType = registerType(x.getType.toQuotedString)
         Ast(
@@ -152,20 +142,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
             .typeFullName(parentType)
             .code(s"new ${x.getType}")
             .dispatchType(DispatchTypes.STATIC_DISPATCH)
-            .order(order)
-            .argumentIndex(order)
             .lineNumber(line(parentUnit))
             .columnNumber(column(parentUnit))
         )
     }
   }
 
-  private def astForArrayCreateExpr(
-    arrayInitExpr: Expr,
-    sizes: Iterable[Value],
-    order: Int,
-    parentUnit: soot.Unit
-  ): Ast = {
+  private def astForArrayCreateExpr(arrayInitExpr: Expr, sizes: Iterable[Value], parentUnit: soot.Unit): Ast = {
     // Jimple does not have Operators.arrayInitializer
     // to enforce 3 address code form
     val arrayBaseType = registerType(arrayInitExpr.getType.toQuotedString)
@@ -175,44 +158,29 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .methodFullName(Operators.alloc)
       .code(code)
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .order(order)
-      .typeFullName(arrayBaseType)
-      .argumentIndex(order)
       .lineNumber(line(parentUnit))
       .columnNumber(column(parentUnit))
-    val valueAsts = withOrder(sizes) { (s, o) =>
-      astsForValue(s, o, parentUnit)
-    }.flatten
+    val valueAsts = sizes.flatMap(astsForValue(_, parentUnit)).toSeq
     Ast(callBlock)
       .withChildren(valueAsts)
       .withArgEdges(callBlock, valueAsts.flatMap(_.root))
   }
 
-  private def astForUnaryExpr(
-    methodName: String,
-    unaryExpr: Expr,
-    op: Value,
-    order: Int,
-    parentUnit: soot.Unit
-  ): Ast = {
+  private def astForUnaryExpr(methodName: String, unaryExpr: Expr, op: Value, parentUnit: soot.Unit): Ast = {
     val callBlock = NewCall()
       .name(methodName)
       .methodFullName(methodName)
       .code(unaryExpr.toString())
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
-      .order(order)
       .typeFullName(registerType(unaryExpr.getType.toQuotedString))
-      .argumentIndex(order)
       .lineNumber(line(parentUnit))
       .columnNumber(column(parentUnit))
 
-    def astForTypeRef(t: String, order: Int) = {
+    def astForTypeRef(t: String) = {
       Seq(
         Ast(
           NewTypeRef()
             .code(if (t.contains('.')) t.substring(t.lastIndexOf('.') + 1, t.length) else t)
-            .order(order)
-            .argumentIndex(order)
             .lineNumber(line(parentUnit))
             .columnNumber(column(parentUnit))
             .typeFullName(t)
@@ -223,11 +191,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val valueAsts = unaryExpr match {
       case instanceOfExpr: InstanceOfExpr =>
         val t = registerType(instanceOfExpr.getCheckType.toQuotedString)
-        astsForValue(op, 1, parentUnit) ++ astForTypeRef(t, 2)
+        astsForValue(op, parentUnit) ++ astForTypeRef(t)
       case castExpr: CastExpr =>
         val t = registerType(castExpr.getCastType.toQuotedString)
-        astForTypeRef(t, 1) ++ astsForValue(op, 2, parentUnit)
-      case _ => astsForValue(op, 1, parentUnit)
+        astForTypeRef(t) ++ astsForValue(op, parentUnit)
+      case _ => astsForValue(op, parentUnit)
     }
 
     Ast(callBlock)
