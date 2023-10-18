@@ -3,24 +3,57 @@ package io.joern.gosrc2cpg.astcreation
 import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.parser.ParserAst.{GenDecl, ValueSpec}
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
-import io.joern.x2cpg.Ast
+import io.joern.gosrc2cpg.utils.UtilityConstants.fileSeparateorPattern
+import io.joern.x2cpg.{Ast, ValidationMode}
+import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
+import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
 import ujson.{Arr, Obj, Value}
 
+import java.io.File
 import scala.util.Try
 
-trait CacheBuilder { this: AstCreator =>
+trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  def buildCache(): Unit = {
+  def buildCache(cpgOpt: Option[Cpg]): DiffGraphBuilder = {
+    val diffGraph = new DiffGraphBuilder
     try {
-      // Declared package name and namespace ending folder token is not matching then cache the alias to namespace mapping
-      if (!fullyQualifiedPackage.endsWith(declaredPackageName)) {
-        GoGlobal.recordAliasToNamespaceMapping(declaredPackageName, fullyQualifiedPackage)
-      }
+
+      cpgOpt.map(_ => {
+        // We don't want to process this part when third party dependencies are being processed.
+        val result = GoGlobal.recordAliasToNamespaceMapping(declaredPackageName, fullyQualifiedPackage)
+        if (result == null) {
+          // if result is null that means item got added first time otherwise it has been already added to global map
+          val rootNode = createParserNodeInfo(parserResult.json)
+          val ast      = astForPackage(rootNode)
+          Ast.storeInDiffGraph(ast, diffGraph)
+        }
+      })
+
       findAndProcess(parserResult.json)
       processPackageLevelGolbalVaraiblesAndConstants(parserResult.json)
-    } catch
+    } catch {
       case ex: Exception =>
         logger.warn(s"Error: While processing - ${parserResult.fullPath}", ex)
+    }
+    diffGraph
+  }
+
+  private def astForPackage(rootNode: ParserNodeInfo): Ast = {
+    val pathTokens = relPathFileName.split(fileSeparateorPattern)
+    val packageFolderPath = if (pathTokens.nonEmpty && pathTokens.size > 1) {
+      s"${File.separator}${pathTokens.dropRight(1).mkString(File.separator)}"
+    } else {
+      s"${File.separator}"
+    }
+
+    val namespaceBlock = NewNamespaceBlock()
+      .name(fullyQualifiedPackage)
+      .fullName(fullyQualifiedPackage)
+      .filename(packageFolderPath)
+    val fakePackageTypeDecl =
+      typeDeclNode(rootNode, fullyQualifiedPackage, fullyQualifiedPackage, packageFolderPath, fullyQualifiedPackage)
+    Ast(namespaceBlock).withChild(Ast(fakePackageTypeDecl))
   }
 
   private def processPackageLevelGolbalVaraiblesAndConstants(json: Value): Unit = {

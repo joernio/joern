@@ -31,6 +31,7 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import scala.jdk.CollectionConverters.*
 
 import scala.annotation.unused
+import scala.util.Try
 
 trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
@@ -211,11 +212,13 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   def astForImportDirective(directive: KtImportDirective): Ast = {
-    val isWildcard = directive.getLastChild.getText == Constants.wildcardImportName || directive.getImportedName == null
+    val importedAs = Try(directive.getImportedName.getIdentifier).toOption
+    val isWildcard = importedAs.contains(Constants.wildcardImportName) || directive.getImportedName == null
     val node =
       NewImport()
         .isWildcard(isWildcard)
         .isExplicit(true)
+        .importedAs(importedAs)
         .importedEntity(directive.getImportPath.getPathStr)
         .code(s"${Constants.importKeyword} ${directive.getImportPath.getPathStr}")
         .lineNumber(line(directive))

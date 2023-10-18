@@ -5,7 +5,7 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes}
 import io.shiftleft.passes.CpgPass
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class AstLinkerPass(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {
 
@@ -15,6 +15,15 @@ class AstLinkerPass(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {
     }
     cpg.typeDecl.whereNot(_.astParent).foreach { typeDecl =>
       addAstParent(typeDecl, typeDecl.fullName, typeDecl.astParentType, typeDecl.astParentFullName, dstGraph)
+    }
+    cpg.member.whereNot(_.astParent).foreach { member =>
+      addAstParent(
+        member,
+        s"${member.astParentFullName}.${member.name}",
+        member.astParentType,
+        member.astParentFullName,
+        dstGraph
+      )
     }
   }
 

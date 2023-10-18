@@ -10,30 +10,8 @@ import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newIdentifierNode, new
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewMethod, NewTypeDecl}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
-import org.jetbrains.kotlin.psi.{
-  KtAnnotationEntry,
-  KtArrayAccessExpression,
-  KtBlockExpression,
-  KtCallExpression,
-  KtClass,
-  KtClassOrObject,
-  KtDeclaration,
-  KtDestructuringDeclaration,
-  KtDotQualifiedExpression,
-  KtExpression,
-  KtIfExpression,
-  KtNameReferenceExpression,
-  KtNamedFunction,
-  KtObjectLiteralExpression,
-  KtParameter,
-  KtPostfixExpression,
-  KtProperty,
-  KtPsiUtil,
-  KtQualifiedExpression,
-  KtSecondaryConstructor,
-  KtWhenExpression
-}
 import io.shiftleft.semanticcpg.language.*
+import org.jetbrains.kotlin.psi.*
 
 import scala.jdk.CollectionConverters.*
 import scala.util.Random
@@ -417,6 +395,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     implicit typeInfoProvider: TypeInfoProvider
   ): Seq[Ast] = {
     ctors.map { ctor =>
+      val primaryCtorCallAst    = List(Ast(primaryCtorCall.copy))
       val constructorParams     = ctor.getValueParameters.asScala.toList
       val defaultSignature      = typeInfoProvider.anySignature(constructorParams)
       val defaultFullName       = s"$classFullName.${TypeConstants.initPrefix}:$defaultSignature"
@@ -435,10 +414,10 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       val ctorMethodBlockAsts =
         ctor.getBodyExpression match {
           case b: KtBlockExpression =>
-            astsForBlock(b, None, None, preStatements = Option(Seq(Ast(primaryCtorCall))))
+            astsForBlock(b, None, None, preStatements = Option(primaryCtorCallAst))
           case null =>
             val node = NewBlock().code(Constants.empty).typeFullName(TypeConstants.any)
-            Seq(blockAst(node, List(Ast(primaryCtorCall))))
+            Seq(blockAst(node, primaryCtorCallAst))
         }
       scope.popScope()
 

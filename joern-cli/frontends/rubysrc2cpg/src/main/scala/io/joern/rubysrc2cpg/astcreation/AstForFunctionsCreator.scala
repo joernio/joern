@@ -20,6 +20,17 @@ trait AstForFunctionsCreator(packageContext: PackageContext)(implicit withSchema
   private val logger = LoggerFactory.getLogger(getClass)
 
   /*
+   *Fake methods created from yield blocks and their yield calls will have this suffix in their names
+   */
+  protected val YIELD_SUFFIX = "_yield"
+
+  /*
+   * This is used to mark call nodes created due to yield calls. This is set in their names at creation.
+   * The appropriate name wrt the names of their actual methods is set later in them.
+   */
+  protected val UNRESOLVED_YIELD = "unresolved_yield"
+
+  /*
    * Stack of variable identifiers incorrectly identified as method identifiers
    * Each AST contains exactly one call or identifier node
    */
@@ -90,12 +101,12 @@ trait AstForFunctionsCreator(packageContext: PackageContext)(implicit withSchema
 
     // process yield calls.
     astBody
-      .flatMap(_.nodes.collect { case x: NewCall => x }.filter(_.name == Defines.UNRESOLVED_YIELD))
+      .flatMap(_.nodes.collect { case x: NewCall => x }.filter(_.name == UNRESOLVED_YIELD))
       .foreach { yieldCallNode =>
         val name           = newMethodNode.name
         val methodFullName = classStack.reverse :+ callNode.name mkString pathSep
-        yieldCallNode.name(name + Defines.YIELD_SUFFIX)
-        yieldCallNode.methodFullName(methodFullName + Defines.YIELD_SUFFIX)
+        yieldCallNode.name(name + YIELD_SUFFIX)
+        yieldCallNode.methodFullName(methodFullName + YIELD_SUFFIX)
         methodNamesWithYield.add(newMethodNode.name)
         /*
          * These are calls to the yield block of this method.
@@ -337,8 +348,6 @@ trait AstForFunctionsCreator(packageContext: PackageContext)(implicit withSchema
       }
     }
 
-  /** Creates a method, methodRef, and type decl binding for this block method.
-    */
   protected def astForBlockFunction(
     ctxStmt: StatementsContext,
     ctxParam: Option[BlockParameterContext],
@@ -354,17 +363,17 @@ trait AstForFunctionsCreator(packageContext: PackageContext)(implicit withSchema
     val methodFullName = classStack.reverse :+ blockMethodName mkString pathSep
     val newMethodNode = methodNode(ctxStmt, blockMethodName, text(ctxStmt), methodFullName, None, relativeFilename)
       .lineNumber(lineStart)
-      .lineNumberEnd(lineEnd + 1) // this requires a +1 due to the `end` token
+      .lineNumberEnd(lineEnd)
       .columnNumber(colStart)
       .columnNumberEnd(colEnd)
 
     scope.pushNewScope(newMethodNode)
     val astMethodParam = ctxParam.map(astForBlockParameterContext).getOrElse(Seq())
+
     val publicModifier = NewModifier().modifierType(ModifierTypes.PUBLIC)
     val paramSeq = astMethodParam.flatMap(_.root).map {
       /* In majority of cases, node will be an identifier */
       case identifierNode: NewIdentifier =>
-        scope.removeFromScope(identifierNode)
         val param = NewMethodParameterIn()
           .name(identifierNode.name)
           .code(identifierNode.code)
@@ -380,27 +389,18 @@ trait AstForFunctionsCreator(packageContext: PackageContext)(implicit withSchema
       case _ =>
         Ast()
     }
-    val paramNames = paramSeq
+    val paramNames = (astMethodParam ++ paramSeq)
       .flatMap(_.root)
       .collect {
         case x: NewMethodParameterIn => x.name
         case x: NewIdentifier        => x.name
       }
       .toSet
-
-    val astBody = astForStatements(ctxStmt, true)
-    val locals  = scope.createAndLinkLocalNodes(diffGraph, paramNames).map(Ast.apply)
-    paramSeq.flatMap(_.root).collect { case x: NewMethodParameterIn => x }.foreach(scope.linkParamNode(diffGraph, _))
+    val astBody       = astForStatements(ctxStmt, true)
+    val locals        = scope.createAndLinkLocalNodes(diffGraph, paramNames).map(Ast.apply)
     val methodRetNode = NewMethodReturn().typeFullName(Defines.Any)
 
     scope.popScope()
-
-    // Create a method ref & type binding for this node
-    val methodRefAssignmentAst = methodRefAssignmentFromMethod(newMethodNode)
-    val binding = NewBinding()
-      .name(blockMethodName)
-      .methodFullName(methodFullName)
-    val typeDecl = typeDeclFromMethod(newMethodNode)
 
     Seq(
       methodAst(
@@ -409,69 +409,8 @@ trait AstForFunctionsCreator(packageContext: PackageContext)(implicit withSchema
         blockAst(blockNode(ctxStmt), locals ++ astBody.toList),
         methodRetNode,
         Seq(publicModifier)
-      ),
-      methodRefAssignmentAst,
-      Ast(typeDecl).withBindsEdge(typeDecl, binding).withRefEdge(binding, newMethodNode)
+      )
     )
-  }
-
-  private def methodPositionWithFallback(
-    method: NewMethod,
-    lineNum: Option[Integer] = None,
-    colNum: Option[Integer] = None
-  ): (Option[Integer], Option[Integer]) = {
-    val lineNumber = lineNum match
-      case Some(x)                             => Some(x)
-      case None if method.lineNumber.isDefined => method.lineNumber
-      case _                                   => None
-    val columnNumber = colNum match
-      case Some(x)                               => Some(x)
-      case None if method.columnNumber.isDefined => method.columnNumber
-      case _                                     => None
-
-    (lineNumber, columnNumber)
-  }
-
-  /** Creates a method ref node assigned to an identifier of the same name from a method and adds the identifier to the
-    * scope.
-    */
-  protected def methodRefAssignmentFromMethod(
-    method: NewMethod,
-    lineNum: Option[Integer] = None,
-    colNum: Option[Integer] = None
-  ): Ast = {
-    val (lineNumber, columnNumber) = methodPositionWithFallback(method, lineNum, colNum)
-    val methodRefNode = NewMethodRef()
-      .code("def " + method.name + "(...)")
-      .methodFullName(method.fullName)
-      .typeFullName(method.fullName)
-      .lineNumber(lineNumber)
-      .columnNumber(columnNumber)
-
-    val methodNameIdentifier = NewIdentifier()
-      .code(method.name)
-      .name(method.name)
-      .typeFullName(Defines.Any)
-      .lineNumber(lineNumber)
-      .columnNumber(columnNumber)
-    scope.addToScope(method.name, methodNameIdentifier)
-    val methodRefAssignmentAst =
-      astForAssignment(methodNameIdentifier, methodRefNode, lineNumber, columnNumber)
-    methodRefAssignmentAst
-  }
-
-  protected def typeDeclFromMethod(
-    method: NewMethod,
-    lineNum: Option[Integer] = None,
-    colNum: Option[Integer] = None
-  ): NewTypeDecl = {
-    val (lineNumber, columnNumber) = methodPositionWithFallback(method, lineNum, colNum)
-    NewTypeDecl()
-      .code("def " + method.name + "(...)")
-      .name(method.name)
-      .fullName(method.fullName)
-      .lineNumber(lineNumber)
-      .columnNumber(columnNumber)
   }
 
 }

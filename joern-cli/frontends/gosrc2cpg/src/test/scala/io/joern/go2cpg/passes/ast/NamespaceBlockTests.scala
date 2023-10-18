@@ -6,49 +6,56 @@ import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 class NamespaceBlockTests extends GoCodeToCpgSuite {
-  private val cpg = code("""
-      |package main
-      |func foo() {}
-      |""".stripMargin)
 
-  "should contain a correct global namespace block for the `<unknown>` file" in {
-    val List(x) = cpg.namespaceBlock.filename(FileTraversal.UNKNOWN).l
-    x.name shouldBe NamespaceTraversal.globalNamespaceName
-    x.fullName shouldBe NamespaceTraversal.globalNamespaceName
-    x.order shouldBe 1
+  "Simple use case to check NameSpaceBlock node and its childs" should {
+    val cpg = code("""
+        |package main
+        |func foo() {}
+        |""".stripMargin)
+
+    "should contain a correct global namespace block for the `<unknown>` file" in {
+      val List(x) = cpg.namespaceBlock.filename(FileTraversal.UNKNOWN).l
+      x.name shouldBe NamespaceTraversal.globalNamespaceName
+      x.fullName shouldBe NamespaceTraversal.globalNamespaceName
+      x.order shouldBe 1
+    }
+
+    "should contain correct namespace block for known file" in {
+      val List(x) = cpg.namespaceBlock.filenameNot(FileTraversal.UNKNOWN).l
+      x.name shouldBe "main"
+      x.filename should not be empty
+      x.fullName shouldBe "main"
+      x.order shouldBe 1
+    }
+
+    "should allow traversing from namespace block to method" in {
+      cpg.namespaceBlock.filenameNot(FileTraversal.UNKNOWN).ast.isMethod.fullName.l shouldBe List(
+        "main.foo",
+        "Test0.go:main.Test0.go"
+      )
+    }
+
+    "should allow traversing from namespace block to type declaration" in {
+      cpg.namespaceBlock
+        .filenameNot(FileTraversal.UNKNOWN)
+        .ast
+        .isTypeDecl
+        .nameNot(NamespaceTraversal.globalNamespaceName)
+        .fullName
+        .l
+        .sorted shouldBe List("main")
+    }
+
+    "should allow traversing from namespace block to namespace" in {
+      cpg.namespaceBlock.filenameNot(FileTraversal.UNKNOWN).namespace.name.l shouldBe List("main")
+    }
+
+    "Traversal from Package Type Decl to its child methods" in {
+      cpg.typeDecl("main").method.fullName.l shouldBe List("main.foo", "Test0.go:main.Test0.go")
+    }
   }
 
-  "should contain correct namespace block for known file" in {
-    val List(x) = cpg.namespaceBlock.filenameNot(FileTraversal.UNKNOWN).l
-    x.name shouldBe "main"
-    x.filename should not be empty
-    x.fullName shouldBe s"Test0.go:main"
-    x.order shouldBe 1
-  }
-
-  "should allow traversing from namespace block to method" in {
-    cpg.namespaceBlock.filenameNot(FileTraversal.UNKNOWN).ast.isMethod.fullName.l shouldBe List(
-      "Test0.go:main.<global>",
-      "main.foo"
-    )
-  }
-
-  "should allow traversing from namespace block to type declaration" in {
-    cpg.namespaceBlock
-      .filenameNot(FileTraversal.UNKNOWN)
-      .ast
-      .isTypeDecl
-      .nameNot(NamespaceTraversal.globalNamespaceName)
-      .fullName
-      .l
-      .sorted shouldBe List(s"Test0.go:main.<global>")
-  }
-
-  "should allow traversing from namespace block to namespace" in {
-    cpg.namespaceBlock.filenameNot(FileTraversal.UNKNOWN).namespace.name.l shouldBe List("main")
-  }
-
-  "create one NamespaceBlock per file" in {
+  "create one NamespaceBlock per package" in {
     val cpg = code(
       """
         |package main
@@ -62,12 +69,8 @@ class NamespaceBlockTests extends GoCodeToCpgSuite {
         |""".stripMargin,
       "woo.go"
     )
-    val expectedFilenames          = Seq("foo.go", "woo.go")
-    val expectedNamespaceFullNames = expectedFilenames.map(f => s"$f:main")
-    val allNamespaceBlockFullNames = cpg.namespaceBlock.fullNameNot(NamespaceTraversal.globalNamespaceName).fullName.l
-    allNamespaceBlockFullNames.zip(expectedNamespaceFullNames).foreach { case (actual, expected) =>
-      actual should endWith(expected)
-    }
+    val List(expected) = cpg.namespaceBlock.fullNameNot(NamespaceTraversal.globalNamespaceName).fullName.l
+    expected shouldBe "main"
   }
 
   "Simple sample with go.mod and main package" in {
