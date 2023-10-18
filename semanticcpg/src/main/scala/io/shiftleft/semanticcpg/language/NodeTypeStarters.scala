@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.language
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.{Cpg, CpgGeneratedNodeStarters, nodes}
+import io.shiftleft.codepropertygraph.generated.v2.{Cpg, CpgNodeStarters, nodes}
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
