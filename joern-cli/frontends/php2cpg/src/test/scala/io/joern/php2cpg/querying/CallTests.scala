@@ -84,6 +84,30 @@ class CallTests extends PhpCode2CpgFixture {
     }
   }
 
+  /* This possibly should exist in NamespaceTests.scala */
+  "static method calls that refer to self" should {
+    val cpg = code("""
+        |<?php
+        |class ClassA {
+        |   function foo($x) {
+        |     return self::bar($x);
+        |   }
+        |   static function bar($param) {
+        |     return 0;
+        |   }
+        |}
+        |""".stripMargin)
+
+    "resolve the correct method full name" in {
+      val List(barCall) = cpg.call("bar").take(1).l
+      barCall.name shouldBe "bar"
+      barCall.methodFullName shouldBe s"ClassA::bar"
+      barCall.receiver.isEmpty shouldBe true
+      barCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      barCall.code shouldBe "self::bar($x)"
+    }
+  }
+
   "method calls with simple names should be correct" in {
     val cpg = code("<?php\n$f->foo($x);")
 
