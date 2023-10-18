@@ -24,11 +24,9 @@ class CallMethods(val node: Call) extends AnyVal {
 //        case expr: Expression if expr.argumentIndex == index => expr
 //      }
 
-  def argument: Iterator[Expression] = {
-    // TODO define as named step in the schema
+  // TODO define as named step in the schema
+  def argument: Iterator[Expression] =
     node._argumentOut.collectAll[Expression]
-    ???
-  }
 
   //  def argument(index: Int): Expression =
 //    arguments(index).head

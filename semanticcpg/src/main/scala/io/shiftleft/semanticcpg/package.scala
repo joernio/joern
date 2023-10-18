@@ -26,7 +26,7 @@ import io.shiftleft.semanticcpg.language.types.expressions.{CallTraversal => Ori
   * Implicit conversions to specific steps, based on the node at hand. Automatically in scope when using anything in the
   * `steps` package, e.g. `Steps`
   */
-package object language /* extends operatorextension.Implicits with LowPrioImplicits with NodeTraversalImplicits */ {
+package object language extends /* operatorextension.Implicits with */ LowPrioImplicits  /* with NodeTraversalImplicits */ {
   // Implicit conversions from generated node types. We use these to add methods
   // to generated node types.
 
@@ -266,8 +266,11 @@ package object language /* extends operatorextension.Implicits with LowPrioImpli
 //     new ExpressionTraversal[A](a.iterator)
 }
 
-// trait LowPrioImplicits extends overflowdb.traversal.Implicits {
-//   implicit def singleToCfgNodeTraversal[A <: CfgNode](a: A): CfgNodeTraversal[A] =
+ trait LowPrioImplicits extends io.joern.odb2.Traversal {
+   implicit def iterableOnceToIterator[A](iterableOnce: IterableOnce[A]): Iterator[A] =
+     iterableOnce.iterator
+
+   //   implicit def singleToCfgNodeTraversal[A <: CfgNode](a: A): CfgNodeTraversal[A] =
 //     new CfgNodeTraversal[A](Iterator.single(a))
 //   implicit def iterOnceToCfgNodeTraversal[A <: CfgNode](a: IterableOnce[A]): CfgNodeTraversal[A] =
 //     new CfgNodeTraversal[A](a.iterator)
@@ -281,4 +284,4 @@ package object language /* extends operatorextension.Implicits with LowPrioImpli
 //     new DeclarationTraversal[A](Iterator.single(a))
 //   implicit def iterOnceToDeclarationNodeTraversal[A <: Declaration](a: IterableOnce[A]): DeclarationTraversal[A] =
 //     new DeclarationTraversal[A](a.iterator)
-// }
+ }
