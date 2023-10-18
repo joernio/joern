@@ -1,7 +1,7 @@
 package io.joern.php2cpg.passes
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.passes.CpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.Operators
@@ -12,14 +12,38 @@ import overflowdb.BatchedUpdate
 
 import scala.io.Source
 
+// Corresponds to a parsed row in the known functions file
+case class KnownFunction(
+  name: String,
+  rTypes: Seq[String],      // return types
+  pTypes: Seq[Seq[String]]  // Index 0 = parameter at P0
+)
+
 /**
  * Sets the return and parameter types for builtin functions with known function
  * signatures.
  *
  * TODO: Need to handle variadic arguments.
  */
-class PhpSetKnownTypesPass(cpg: Cpg) extends CpgPass(cpg) {
+class PhpSetKnownTypesPass(cpg: Cpg, knownTypesFile: Option[File] = None)
+  extends ForkJoinParallelCpgPass[KnownFunction](cpg) {
 
+  override def generateParts(): Array[KnownFunction] = {
+    /* parse file and return each row as a KnownFunction object */
+    knownTypesFile match {
+      case Some(file) => {
+        /* parse file and return each row as a KnownFunction object */
+        Array()
+      }
+      case _ => Array()
+    }
+  }
+
+  override def runOnPart(builder: overflowdb.BatchedUpdate.DiffGraphBuilder, part: KnownFunction): Unit = {
+    /* calculate the result of this part - this is done as a concurrent task */
+  }
+
+  /*
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
     val typeSetObject = generateSetKnownTypesObject(cpg, builder)
     typeSetObject.setParamTypes()
@@ -30,7 +54,7 @@ class PhpSetKnownTypesPass(cpg: Cpg) extends CpgPass(cpg) {
     cpg: Cpg,
     builder: BatchedUpdate.DiffGraphBuilder
   ): SetKnownTypes = new SetKnownTypes(cpg, builder)
-
+  */
 }
 
 class SetKnownTypes(cpg: Cpg, builder: BatchedUpdate.DiffGraphBuilder) {
