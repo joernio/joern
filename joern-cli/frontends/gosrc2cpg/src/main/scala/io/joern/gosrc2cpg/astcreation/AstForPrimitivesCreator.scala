@@ -1,9 +1,11 @@
 package io.joern.gosrc2cpg.astcreation
 
+import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
+import io.joern.x2cpg.utils.NodeBuilders.newOperatorCallNode
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.NewCall
+import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewFieldIdentifier}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 
 import scala.util.{Success, Try}
@@ -68,12 +70,36 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
           val node = identifierNode(ident, identifierName, ident.code, variableTypeName)
           Ast(node).withRefEdge(node, variable)
         case _ =>
-          // TODO: something is wrong here. Refer to SwitchTests -> "be correct for switch case 4"
-          Ast(identifierNode(ident, identifierName, ident.json(ParserKeys.Name).str, Defines.anyTypeName))
+          // If its not local node then check if its global member variable of package TypeDecl
+          Option(GoGlobal.structTypeMemberTypeMapping.get(s"$fullyQualifiedPackage${Defines.dot}$identifierName")) match
+            case Some(fieldTypeFullName) => astForPackageGlobalFieldAccess(fieldTypeFullName, identifierName, ident)
+            case _                       =>
+              // TODO: something is wrong here. Refer to SwitchTests -> "be correct for switch case 4"
+              Ast(identifierNode(ident, identifierName, ident.json(ParserKeys.Name).str, Defines.anyTypeName))
       }
     } else {
       Ast()
     }
+  }
+
+  private def astForPackageGlobalFieldAccess(
+    fieldTypeFullName: String,
+    identifierName: String,
+    ident: ParserNodeInfo
+  ): Ast = {
+    val identifierAsts = Seq(Ast(identifierNode(ident, declaredPackageName, ident.code, fullyQualifiedPackage)))
+    callAst(
+      newOperatorCallNode(Operators.fieldAccess, ident.code, Some(fieldTypeFullName), line(ident), column(ident)),
+      identifierAsts ++: Seq(
+        Ast(
+          NewFieldIdentifier()
+            .canonicalName(identifierName)
+            .lineNumber(line(ident))
+            .columnNumber(column(ident))
+            .code(identifierName)
+        )
+      )
+    )
   }
 
   protected def getTypeOfToken(basicLit: ParserNodeInfo): String = {

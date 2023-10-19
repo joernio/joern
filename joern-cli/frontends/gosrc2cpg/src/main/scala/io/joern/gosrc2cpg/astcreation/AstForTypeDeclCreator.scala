@@ -35,7 +35,7 @@ trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { thi
                 val fieldNodeInfo = createParserNodeInfo(fieldInfo)
                 val fieldName     = fieldNodeInfo.json(ParserKeys.Name).str
                 GoGlobal.recordStructTypeMemberType(typeDeclFullName + Defines.dot + fieldName, typeFullName)
-                Ast(memberNode(typeInfo, fieldName, fieldNodeInfo.code, typeFullName, Seq()))
+                Ast(memberNode(typeInfo, fieldName, fieldNodeInfo.code, typeFullName))
               })
           })
           .toSeq
@@ -79,14 +79,21 @@ trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { thi
   protected def astForFieldAccess(info: ParserNodeInfo): Seq[Ast] = {
     val (identifierAsts, fieldTypeFullName) = processReceiver(info)
     val fieldIdentifier                     = info.json(ParserKeys.Sel)(ParserKeys.Name).str
-    val fieldIdentifierNode = NewFieldIdentifier()
-      .canonicalName(fieldIdentifier)
-      .lineNumber(line(info))
-      .columnNumber(column(info))
-      .code(fieldIdentifier)
-    val fieldIdAst = Ast(fieldIdentifierNode)
     val callNode =
       newOperatorCallNode(Operators.fieldAccess, info.code, Some(fieldTypeFullName), line(info), column(info))
-    Seq(callAst(callNode, identifierAsts ++ Seq(fieldIdAst)))
+    Seq(
+      callAst(
+        callNode,
+        identifierAsts ++ Seq(
+          Ast(
+            NewFieldIdentifier()
+              .canonicalName(fieldIdentifier)
+              .lineNumber(line(info))
+              .columnNumber(column(info))
+              .code(fieldIdentifier)
+          )
+        )
+      )
+    )
   }
 }
