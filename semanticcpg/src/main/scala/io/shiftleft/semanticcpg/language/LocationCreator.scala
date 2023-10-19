@@ -1,8 +1,10 @@
 package io.shiftleft.semanticcpg.language
 
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
+import io.shiftleft.codepropertygraph.generated.v2.accessors.Lang.*
+import io.shiftleft.codepropertygraph.generated.v2.neighboraccessors.Lang.*
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.{Logger, LoggerFactory}
-import overflowdb.traversal._
 
 import scala.annotation.tailrec
 
@@ -33,7 +35,7 @@ object LocationCreator {
     node: StoredNode,
     symbol: String,
     label: String,
-    lineNumber: Option[Integer],
+    lineNumber: Option[Int],
     method: Method
   ): NewLocation = {
 
@@ -70,7 +72,7 @@ object LocationCreator {
 
   @tailrec
   private def findVertex(node: StoredNode, instanceCheck: StoredNode => Boolean): Option[StoredNode] =
-    node._astIn.nextOption() match {
+    node._astIn.iterator.nextOption() match {
       case Some(head) if instanceCheck(head) => Some(head)
       case Some(head)                        => findVertex(head, instanceCheck)
       case None                              => None

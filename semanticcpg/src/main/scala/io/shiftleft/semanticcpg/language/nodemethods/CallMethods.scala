@@ -2,9 +2,10 @@ package io.shiftleft.semanticcpg.language.nodemethods
 
 import io.shiftleft.codepropertygraph.generated.v2.accessors.Lang.*
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
+import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.*
 
-class CallMethods(val node: Call) extends AnyVal {
+class CallMethods(val node: Call) extends AnyVal with NodeExtension with HasLocation {
 
   def isStatic: Boolean =
     node.dispatchType == "STATIC_DISPATCH"
@@ -32,8 +33,8 @@ class CallMethods(val node: Call) extends AnyVal {
       case expr: Expression if expr.argumentIndex == index => expr
     }
 
-  // TODO reimplement
-//  override def location: NewLocation = {
+  override def location: NewLocation = {
 //    LocationCreator(node, node.code, node.label, node.lineNumber, node.method)
-//  }
+    ???
+  }
 }
