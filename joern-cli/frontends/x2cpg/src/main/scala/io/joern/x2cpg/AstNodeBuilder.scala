@@ -24,7 +24,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewTypeRef,
   NewUnknown
 }
-import io.shiftleft.semanticcpg.utils.Statements.countAll
 import org.apache.commons.lang.StringUtils
 trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
   protected def line(node: Node): Option[Integer]
