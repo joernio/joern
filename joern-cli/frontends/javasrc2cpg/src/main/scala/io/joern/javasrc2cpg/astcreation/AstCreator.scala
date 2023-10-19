@@ -31,9 +31,10 @@ import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
 import io.joern.javasrc2cpg.util.{BindingTable, BindingTableAdapterForJavaparser, NameConstants}
 import io.joern.x2cpg.datastructures.Global
+import io.joern.x2cpg.utils.OffsetUtils
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.NodeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{NewClosureBinding, NewImport, NewNamespaceBlock}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewClosureBinding, NewFile, NewImport, NewNamespaceBlock}
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
@@ -68,6 +69,7 @@ object AstWithStaticInit {
 class AstCreator(
   val filename: String,
   javaParserAst: CompilationUnit,
+  fileContent: Option[String],
   global: Global,
   val symbolSolver: JavaSymbolSolver
 )(implicit val withSchemaValidation: ValidationMode)
@@ -90,8 +92,11 @@ class AstCreator(
     * corresponding CPG AST.
     */
   def createAst(): DiffGraphBuilder = {
+    val fileNode = NewFile().name(filename).order(0)
+    fileContent.foreach(fileNode.content(_))
     val ast = astForTranslationUnit(javaParserAst)
     storeInDiffGraph(ast)
+    diffGraph.addNode(fileNode)
     diffGraph
   }
 
@@ -110,7 +115,13 @@ class AstCreator(
   protected def line(node: Node): Option[Integer]      = node.getBegin.map(x => Integer.valueOf(x.line)).toScala
   protected def column(node: Node): Option[Integer]    = node.getBegin.map(x => Integer.valueOf(x.column)).toScala
   protected def lineEnd(node: Node): Option[Integer]   = node.getEnd.map(x => Integer.valueOf(x.line)).toScala
-  protected def columnEnd(node: Node): Option[Integer] = node.getEnd.map(x => Integer.valueOf(x.line)).toScala
+  protected def columnEnd(node: Node): Option[Integer] = node.getEnd.map(x => Integer.valueOf(x.column)).toScala
+
+  private val lineOffsetIndex = OffsetUtils.getLineOffsetIndex(fileContent)
+
+  override protected def offset(node: Node): Option[(Int, Int)] = {
+    zeroIndexedCoordinates(node).flatMap(OffsetUtils.coordinatesToOffset(lineOffsetIndex, _))
+  }
 
   // TODO: Handle static imports correctly.
   private def addImportsToScope(compilationUnit: CompilationUnit): Seq[NewImport] = {
@@ -150,7 +161,6 @@ class AstCreator(
   /** Translate compilation unit into AST
     */
   private def astForTranslationUnit(compilationUnit: CompilationUnit): Ast = {
-
     try {
       val namespaceBlock = namespaceBlockForPackageDecl(compilationUnit.getPackageDeclaration.toScala)
 

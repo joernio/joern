@@ -1,5 +1,8 @@
 package io.joern.x2cpg
 
+import io.joern.x2cpg.AstNodeBuilder.ZeroIndexedCoordinates
+import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
+import io.shiftleft.codepropertygraph.generated.nodes.Block.{PropertyDefaults => BlockDefaults}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewAnnotation,
   NewBlock,
@@ -21,14 +24,24 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewTypeRef,
   NewUnknown
 }
-import io.shiftleft.codepropertygraph.generated.nodes.Block.{PropertyDefaults => BlockDefaults}
+import io.shiftleft.semanticcpg.utils.Statements.countAll
 import org.apache.commons.lang.StringUtils
-import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
   protected def line(node: Node): Option[Integer]
   protected def column(node: Node): Option[Integer]
   protected def lineEnd(node: Node): Option[Integer]
   protected def columnEnd(element: Node): Option[Integer]
+
+  protected def zeroIndexedCoordinates(node: Node): Option[ZeroIndexedCoordinates] = {
+    for {
+      lineNum      <- line(node)
+      columnNum    <- column(node)
+      lineEndNum   <- lineEnd(node)
+      columnEndNum <- columnEnd(node)
+    } yield ZeroIndexedCoordinates(lineNum - 1, columnNum - 1, lineEndNum - 1, columnEndNum - 1)
+  }
+
+  protected def offset(node: Node): Option[(Int, Int)] = None
 
   protected def unknownNode(node: Node, code: String): NewUnknown = {
     NewUnknown()
@@ -293,6 +306,9 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
         .lineNumberEnd(lineEnd(node))
         .columnNumberEnd(columnEnd(node))
     signature.foreach { s => node_.signature(StringUtils.normalizeSpace(s)) }
+    offset(node).foreach { case (offset, offsetEnd) =>
+      node_.offset(offset).offsetEnd(offsetEnd)
+    }
     node_
   }
 
@@ -313,4 +329,8 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
       .lineNumber(line(node))
       .columnNumber(column(node))
   }
+}
+
+object AstNodeBuilder {
+  case class ZeroIndexedCoordinates(line: Int, column: Int, lineEnd: Int, columnEnd: Int)
 }
