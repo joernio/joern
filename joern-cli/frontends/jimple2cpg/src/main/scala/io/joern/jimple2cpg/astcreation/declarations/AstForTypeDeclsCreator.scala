@@ -22,6 +22,7 @@ trait AstForTypeDeclsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     if (clz.isPublic) code.append("public ")
     else if (clz.isPrivate) code.append("private ")
+    else if (clz.isProtected) code.append("protected ")
     if (clz.isStatic) code.append("static ")
     if (clz.isFinal) code.append("final ")
     if (clz.isInterface) code.append("interface ")
@@ -65,14 +66,8 @@ trait AstForTypeDeclsCreator(implicit withSchemaValidation: ValidationMode) { th
       .collect { case x: VisibilityAnnotationTag => x }
       .flatMap(_.getAnnotations.asScala)
 
-    Ast(
-      NewMember()
-        .name(name)
-        .lineNumber(line(field))
-        .columnNumber(column(field))
-        .typeFullName(typeFullName)
-        .code(code)
-    ).withChildren(annotations.map(astsForAnnotations(_, field)).toSeq)
+    Ast(memberNode(field, name, code, typeFullName))
+      .withChildren(annotations.map(astsForAnnotations(_, field)).toSeq)
   }
 
   /** Creates a list of all inherited classes and implemented interfaces. If there are none then a list with a single

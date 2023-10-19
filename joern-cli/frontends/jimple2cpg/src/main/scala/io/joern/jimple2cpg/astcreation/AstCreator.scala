@@ -18,6 +18,7 @@ import soot.{Unit as SUnit, Local as _, *}
 
 import scala.collection.immutable.Seq
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.Try
 
@@ -29,9 +30,11 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
     with AstForExpressionsCreator
     with AstNodeBuilder[Host, AstCreator] {
 
-  private val logger                                             = LoggerFactory.getLogger(getClass)
-  protected val unitToAsts: mutable.HashMap[SUnit, Seq[Ast]]     = mutable.HashMap.empty
-  protected val controlTargets: mutable.HashMap[Seq[Ast], SUnit] = mutable.HashMap.empty
+  private val logger                                         = LoggerFactory.getLogger(getClass)
+  protected val unitToAsts: mutable.HashMap[SUnit, Seq[Ast]] = mutable.HashMap.empty
+  // Cfg information
+  protected val controlTargets: mutable.HashMap[Seq[Ast], SUnit]        = mutable.HashMap.empty
+  protected val nonExceptionalControlEdges: ArrayBuffer[(SUnit, SUnit)] = mutable.ArrayBuffer.empty
 
   /** Add `typeName` to a global map and return it. The map is later passed to a pass that creates TYPE nodes for each
     * key in the map.
@@ -72,17 +75,18 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
 
   protected def getEvaluationStrategy(typ: soot.Type): String =
     typ match {
-      case _: PrimType    => EvaluationStrategies.BY_VALUE
-      case _: VoidType    => EvaluationStrategies.BY_VALUE
-      case _: NullType    => EvaluationStrategies.BY_VALUE
-      case _              => EvaluationStrategies.BY_SHARING
+      case _: PrimType => EvaluationStrategies.BY_VALUE
+      case _: VoidType => EvaluationStrategies.BY_VALUE
+      case _: NullType => EvaluationStrategies.BY_VALUE
+      case _           => EvaluationStrategies.BY_SHARING
     }
 
   protected def isIgnoredUnit(unit: SUnit): Boolean = {
     unit match {
-      case _: IdentityStmt => true
-      case _: NopStmt      => true
-      case _               => false
+      case x: IdentityStmt if x.getRightOp.isInstanceOf[CaughtExceptionRef] => false
+      case _: IdentityStmt                                                  => true
+      case _: NopStmt                                                       => true
+      case _                                                                => false
     }
   }
 
@@ -94,7 +98,7 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
       case x: Constant           => Seq(astForConstantExpr(x))
       case x: FieldRef           => Seq(astForFieldRef(x, parentUnit))
       case x: ThisRef            => Seq(createThisNode(x))
-      case x: ParameterRef       => Seq(astForParameterRef(x))
+      case x: ParameterRef       => Seq(astForParameterRef(x, parentUnit))
       case x: IdentityRef        => Seq(astForIdentityRef(x, parentUnit))
       case x: ArrayRef           => Seq(astForArrayRef(x, parentUnit))
       case x =>
@@ -155,7 +159,7 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
 
   protected def createThisNode(method: SootMethod, builder: NewNode): Ast = createThisNode(method.makeRef(), builder)
 
-  protected def createThisNode[NodeType](method: SootMethodRef, builder: NewNode): Ast = {
+  protected def createThisNode(method: SootMethodRef, builder: NewNode): Ast = {
     if (!method.isStatic || method.isConstructor) {
       val parentType = registerType(Try(method.getDeclaringClass.getType.toQuotedString).getOrElse("ANY"))
       Ast(builder match {
@@ -215,7 +219,7 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
         .canonicalName(fieldRef.getFieldRef.name())
         .code(fieldRef.getFieldRef.name())
     ).map(Ast(_))
-
+    // TODO
     Ast(fieldAccessBlock)
       .withChildren(argAsts)
       .withArgEdges(fieldAccessBlock, argAsts.flatMap(_.root))
@@ -255,12 +259,6 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
     }
   }
 
-  private def callAst(rootNode: NewNode, args: Seq[Ast]): Ast = {
-    Ast(rootNode)
-      .withChildren(args)
-      .withArgEdges(rootNode, args.flatMap(_.root))
-  }
-
   override def line(node: Host): Option[Integer] = {
     if (node == null) None
     else if (node.getJavaSourceStartLineNumber == -1) None
@@ -277,6 +275,49 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
 
   override def lineEnd(node: Host): Option[Integer] = None
 
+  /** Tracks AST scope.
+    */
+  protected val stack: mutable.Stack[Ast] = mutable.Stack.empty
+
+  object UnitTrapExt {
+
+    /** Maps trap units to their trap.
+      */
+    val unitToTrap: mutable.HashMap[SUnit, Trap] = mutable.HashMap.empty
+
+    /** Maps a trap to its AST structure.
+      */
+    val trapToAst: mutable.HashMap[Trap, Ast] = mutable.HashMap.empty
+
+    /** Maps trap units to their type.
+      */
+    val unitTrapType: mutable.HashMap[SUnit, TrappedUnitType] = mutable.HashMap.empty
+
+  }
+
+  /** Extends a Soot unit to give enriched try-catch information.
+    */
+  implicit class UnitTrapExt(unit: SUnit) {
+
+    import UnitTrapExt.*
+
+    /** @return
+      *   true if this unit is a trap start, end, or handler unit.
+      */
+    def isTrapUnit: Boolean = unitTrapType.contains(unit)
+
+    /** @return
+      *   the type of trap unit this unit is.
+      */
+    def trapType: TrappedUnitType = unitTrapType(unit)
+
+    /** @return
+      *   the trap this unit corresponds to.
+      */
+    def correspondingTrap: Trap = unitToTrap(unit)
+
+  }
+
 }
 
 /** String extensions for strings describing JVM operators.
@@ -289,4 +330,8 @@ implicit class JvmStringOpts(s: String) {
     */
   def parseAsJavaType: String = Type.getType(s).getClassName.replaceAll("/", ".")
 
+}
+
+enum TrappedUnitType {
+  case START, HANDLER, END
 }

@@ -1,14 +1,18 @@
 package io.joern.jimple2cpg.astcreation.statements
 
-import io.joern.jimple2cpg.astcreation.AstCreator
+import io.joern.jimple2cpg.astcreation.TrappedUnitType.{END, HANDLER, START}
+import io.joern.jimple2cpg.astcreation.{AstCreator, TrappedUnitType}
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, PropertyNames}
 import org.slf4j.LoggerFactory
 import soot.jimple.*
+import soot.tagkit.Host
 import soot.{Unit, Value}
 
+import scala.collection.mutable
 import scala.jdk.CollectionConverters.CollectionHasAsScala
+
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -25,14 +29,54 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case x: TableSwitchStmt  => astsForTableSwitchStmt(x)
       case x: ThrowStmt        => astsForThrowStmt(x)
       case x: MonitorStmt      => astsForMonitorStmt(x)
-      case _: IdentityStmt     => Seq() // Identity statements redefine parameters as locals
+      case x: IdentityStmt     => astsForIdentityStmt(x)
       case _: NopStmt          => Seq() // Ignore NOP statements
       case x =>
         logger.warn(s"Unhandled soot.Unit type ${x.getClass}")
         Seq(astForUnknownStmt(x, None))
     }
+    // Populate standard control-flow information
     unitToAsts.put(statement, stmt)
+    statement.getBoxesPointingToThis.asScala
+      .filterNot(_.getUnit == statement)
+      .foreach(y => nonExceptionalControlEdges.addOne(y.getUnit -> statement))
+    // Handle any try-catch info
+    handleTrappingLogic(statement, stmt)
     stmt
+  }
+
+  private def handleTrappingLogic(statement: Unit, stmt: Seq[Ast]) = {
+    if (statement.isTrapUnit) {
+      statement.trapType match
+        // Step 1: A try-block is started
+        case START =>
+          val currentBlock = stack.pop()
+          // Create try-structure
+          val tryNode = controlStructureNode(statement, ControlStructureTypes.TRY, statement.toString())
+          val tryBlock = Ast(blockNode(statement).order(1)).withChildren(stmt)
+          val tryAst = Ast(tryNode) // we only add the block to this at the end
+          stack.push(currentBlock.withChild(tryAst))
+          stack.push(tryBlock)
+          UnitTrapExt.trapToAst.put(statement.correspondingTrap, tryAst)
+        // Step 2: The try-block is ended
+        case END =>
+          val currentBlock = stack.pop().withChildren(stmt)
+          val tryAst = UnitTrapExt.trapToAst(statement.correspondingTrap).withChild(currentBlock)
+          val parentBlock = stack.pop().withChild(tryAst)
+          stack.push(parentBlock)
+        // Step 3: A handler, if specified, is created.
+        case HANDLER =>
+          // TODO: The last try block may not be the one associated with this handler
+//          val currentBlock = stack.pop()
+          //          val tryAst = UnitTrapExt.trapToAst(statement.correspondingTrap)
+          val catchBlock = Ast(blockNode(statement).order(2)).withChildren(stmt)
+          stack.push(catchBlock)
+      //          UnitTrapExt.trapToAst.put(statement.correspondingTrap, tryAst)
+    } else {
+      // TODO Maybe we need to link the try here somehow
+      val currentBlock = stack.pop().withChildren(stmt)
+      stack.push(currentBlock)
+    }
   }
 
   /** Helper method for operator nodes.
@@ -43,7 +87,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     code: String,
     typeFullName: Option[String] = None
   ): NewCall = {
-    callNode(node, code, operation, operation, DispatchTypes.STATIC_DISPATCH, typeFullName = typeFullName)
+    callNode(node, code, operation, operation, DispatchTypes.STATIC_DISPATCH, None, typeFullName = typeFullName)
   }
 
   /** Creates the AST for assignment statements keeping in mind Jimple is a 3-address code language.
@@ -69,7 +113,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       assignStmt,
       s"$lhsCode = $rhsCode",
       Operators.assignment,
-      DispatchTypes.STATIC_DISPATCH,
       Option(registerType(leftOp.getType.toQuotedString))
     )
     Seq(callAst(assignment, identifier ++ initAsts))
@@ -151,6 +194,12 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     )
   }
 
+  private def astsForIdentityStmt(x: IdentityStmt): Seq[Ast] = {
+    x.getRightOp match
+      case _: CaughtExceptionRef => astsForDefinition(x)
+      case _                     => Seq.empty // Other identity statements redefine parameters as locals
+  }
+
   private def astForUnknownStmt(stmt: Unit, maybeOp: Option[Value]): Ast = {
     val opAst = maybeOp match {
       case Some(op) => astsForValue(op, stmt)
@@ -202,7 +251,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val gotoAst = Seq(
       Ast(
         NewUnknown()
-          .code(s"goto ${line(gotoStmt.getTarget).getOrElse(gotoStmt.getTarget.toString())}")
+          .code(s"goto ${gotoStmt.getTarget}")
           .lineNumber(line(gotoStmt))
           .columnNumber(column(gotoStmt))
       )
@@ -212,8 +261,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astForSwitchWithDefaultAndCondition(switchStmt: SwitchStmt): Ast = {
-    val jimple    = switchStmt.toString()
-    val totalTgts = switchStmt.getTargets.size()
+    val jimple = switchStmt.toString()
     val switch = NewControlStructure()
       .controlStructureType(ControlStructureTypes.SWITCH)
       .code(jimple.substring(0, jimple.indexOf("{") - 1))

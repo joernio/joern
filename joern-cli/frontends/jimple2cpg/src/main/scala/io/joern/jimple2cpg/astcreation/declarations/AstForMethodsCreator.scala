@@ -1,6 +1,6 @@
 package io.joern.jimple2cpg.astcreation.declarations
 
-import io.joern.jimple2cpg.astcreation.AstCreator
+import io.joern.jimple2cpg.astcreation.{AstCreator, TrappedUnitType}
 import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
@@ -9,7 +9,8 @@ import org.slf4j.LoggerFactory
 import soot.jimple.*
 import soot.jimple.internal.JimpleLocal
 import soot.tagkit.*
-import soot.{SootMethod, Local as _, *}
+import soot.toolkits.graph.BriefUnitGraph
+import soot.{SootMethod, Local as SootLocal, Unit as SUnit, *}
 
 import scala.collection.immutable.HashSet
 import scala.jdk.CollectionConverters.CollectionHasAsScala
@@ -100,12 +101,17 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
         )
     } finally {
       // Join all targets with CFG edges - this seems to work from what is seen on DotFiles
-      controlTargets.foreach { case (asts, units) =>
+      controlTargets.foreach { case (asts, unit) =>
         asts.headOption match {
           case Some(value) =>
-            diffGraph.addEdge(value.root.get, unitToAsts(units).last.root.get, EdgeTypes.CFG)
+            diffGraph.addEdge(value.root.get, unitToAsts(unit).last.root.get, EdgeTypes.CFG)
           case None =>
         }
+      }
+      nonExceptionalControlEdges.foreach { case (a, b) =>
+        val aNode = unitToAsts(a).last.root.get
+        val bNode = unitToAsts(b).last.root.get
+        diffGraph.addEdge(aNode, bNode, EdgeTypes.CFG)
       }
       // Clear these maps
       controlTargets.clear()
@@ -113,22 +119,7 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
     }
   }
 
-  private def astsForModifiers(methodDeclaration: SootMethod): Seq[NewModifier] = {
-    Seq(
-      if (methodDeclaration.isStatic) Some(ModifierTypes.STATIC) else None,
-      if (methodDeclaration.isPublic) Some(ModifierTypes.PUBLIC) else None,
-      if (methodDeclaration.isProtected) Some(ModifierTypes.PROTECTED) else None,
-      if (methodDeclaration.isPrivate) Some(ModifierTypes.PRIVATE) else None,
-      if (methodDeclaration.isAbstract) Some(ModifierTypes.ABSTRACT) else None,
-      if (methodDeclaration.isConstructor) Some(ModifierTypes.CONSTRUCTOR) else None,
-      if (!methodDeclaration.isFinal && !methodDeclaration.isStatic && methodDeclaration.isPublic)
-        Some(ModifierTypes.VIRTUAL)
-      else None,
-      if (methodDeclaration.isSynchronized) Some("SYNCHRONIZED") else None
-    ).flatten.map(NodeBuilders.newModifierNode(_).code(modifier.toLowerCase))
-  }
-
-  private def astForMethodReturn(methodDeclaration: SootMethod): Ast = {
+  private def astForMethodReturn(methodDeclaration: SootMethod): NewMethodReturn = {
     val typeFullName = registerType(methodDeclaration.getReturnType.toQuotedString)
     methodReturnNode(methodDeclaration, typeFullName)
   }
@@ -150,8 +141,8 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
       fullName,
       Option(signature),
       filename,
-      NodeTypes.TYPE_DECL,
-      typeDecl.toQuotedString
+      Option(NodeTypes.TYPE_DECL),
+      Option(typeDecl.toQuotedString)
     )
   }
 
@@ -179,9 +170,9 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
     }
   }
 
-  protected def astForParameterRef(parameterRef: ParameterRef): Ast = {
+  protected def astForParameterRef(parameterRef: ParameterRef, parentUnit: SUnit): Ast = {
     val name = s"@parameter${parameterRef.getIndex}"
-    Ast(identifierNode(parameterRef, name, name, registerType(parameterRef.getType.toQuotedString)))
+    Ast(identifierNode(parentUnit, name, name, registerType(parameterRef.getType.toQuotedString)))
   }
 
   private def astForParameter(
@@ -194,7 +185,7 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
 
     val paramAst = Ast(
       parameterInNode(
-        parameter,
+        methodDeclaration,
         parameter.getName,
         s"$typeFullName ${parameter.getName}",
         index,
@@ -220,10 +211,21 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
       val name         = local.getName
       val typeFullName = registerType(local.getType.toQuotedString)
       val code         = s"$typeFullName $name"
-      localNode(local, name, code, typeFullName)
+      Ast(localNode(body, name, code, typeFullName))
     }
-    val statements = body.getUnits.asScala.filterNot(isIgnoredUnit).flatMap(astsForStatement).toSeq
-    blockAst(blockNode(body), locals ++ statements)
+    // Indicate trap boundaries
+    body.getTraps.asScala.foreach { trap =>
+      UnitTrapExt.unitTrapType.put(trap.getBeginUnit, TrappedUnitType.START)
+      UnitTrapExt.unitTrapType.put(trap.getHandlerUnit, TrappedUnitType.HANDLER)
+      UnitTrapExt.unitTrapType.put(trap.getEndUnit, TrappedUnitType.END)
+      trap.getUnitBoxes.asScala.map(_.getUnit).foreach(UnitTrapExt.unitToTrap.put(_, trap))
+    }
+
+    stack.push(Ast(blockNode(body)).withChildren(locals))
+
+    body.getUnits.asScala.filterNot(isIgnoredUnit).foreach(astsForStatement)
+
+    stack.pop()
   }
 
 }
