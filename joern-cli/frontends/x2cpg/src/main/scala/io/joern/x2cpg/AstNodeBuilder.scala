@@ -1,6 +1,5 @@
 package io.joern.x2cpg
 
-import io.joern.x2cpg.AstNodeBuilder.ZeroIndexedCoordinates
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.shiftleft.codepropertygraph.generated.nodes.Block.{PropertyDefaults => BlockDefaults}
 import io.shiftleft.codepropertygraph.generated.nodes.{
