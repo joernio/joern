@@ -1,12 +1,11 @@
 package io.joern.pysrc2cpg.passes
 
 import io.joern.pysrc2cpg.PySrc2CpgFixture
+import io.joern.x2cpg.passes.frontend.ImportsPass.*
 import io.joern.x2cpg.passes.frontend.{ImportsPass, XTypeHintCallLinker}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 import java.io.File
-import io.joern.x2cpg.passes.frontend.ImportsPass._
-
 import scala.collection.immutable.Seq
 class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
@@ -1116,6 +1115,49 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     "propagate the type in the return value" in {
       val Some(token) = cpg.method("access_token").ast.isIdentifier.nameExact("token").headOption: @unchecked
       token.typeFullName shouldBe Seq("oauth2", "__init__.py:<module>.Token").mkString(File.separator)
+    }
+
+  }
+
+  "Imports from two module neighbours" should {
+
+    lazy val cpg = code(
+      """
+        |from fastapi import FastAPI
+        |import itemsrouter
+        |app = FastAPI()
+        |app.include_router(
+        |    itemsrouter.router,
+        |    prefix="/items",
+        |    tags=["items"],
+        |    responses={404: {"description": "Not found"}},
+        |)
+        |""".stripMargin,
+      Seq("code", "main.py").mkString(File.separator)
+    ).moreCode(
+      """
+        |from fastapi import APIRouter
+        |
+        |router = APIRouter()
+        |fake_items_db = {"plumbus": {"name": "Plumbus"}, "gun": {"name": "Portal Gun"}}
+        |@router.get("/")
+        |async def read_items():
+        |    return fake_items_db
+        |
+        |""".stripMargin,
+      Seq("code", "itemsrouter.py").mkString(File.separator)
+    )
+
+    "preserve the filename path relative to the root and not themselves" in {
+      val itemsrouter = cpg.identifier.where(_.typeFullName(".*itemsrouter.py:<module>")).l
+      itemsrouter.forall(
+        _.typeFullName == Seq("code", "itemsrouter.py:<module>").mkString(File.separator)
+      ) shouldBe true
+    }
+
+    "correctly infer the `fastapi` types" in {
+      cpg.identifier("fastapi").forall(_.typeFullName == "fastapi.py:<module>.APIRouter") shouldBe true
+      cpg.identifier("app").forall(_.typeFullName == "fastapi.py:<module>.FastAPI") shouldBe true
     }
 
   }
