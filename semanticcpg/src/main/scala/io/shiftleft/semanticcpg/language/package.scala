@@ -10,12 +10,7 @@ import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 //import io.shiftleft.semanticcpg.language.callgraphextension.{CallTraversal, MethodTraversal}
 //import io.shiftleft.semanticcpg.language.dotextension.{AstNodeDot, CfgNodeDot, InterproceduralNodeDot}
 import io.shiftleft.semanticcpg.language.nodemethods.*
-//import io.shiftleft.semanticcpg.language.types.expressions.generalizations.{
-//  AstNodeTraversal,
-//  CfgNodeTraversal,
-//  DeclarationTraversal,
-//  ExpressionTraversal
-//}
+import io.shiftleft.semanticcpg.language.types.expressions.generalizations.*
 import io.shiftleft.semanticcpg.language.types.expressions.{CallTraversal => OriginalCall, *}
 //import io.shiftleft.semanticcpg.language.types.propertyaccessors._
 //import io.shiftleft.semanticcpg.language.types.structure.{MethodTraversal => OriginalMethod, _}
@@ -275,10 +270,10 @@ package object language extends /* operatorextension.Implicits with */ LowPrioIm
 //   implicit def iterOnceToCfgNodeTraversal[A <: CfgNode](a: IterableOnce[A]): CfgNodeTraversal[A] =
 //     new CfgNodeTraversal[A](a.iterator)
 
-//   implicit def singleToAstNodeTraversal[A <: AstNode](a: A): AstNodeTraversal[A] =
-//     new AstNodeTraversal[A](Iterator.single(a))
-//   implicit def iterOnceToAstNodeTraversal[A <: AstNode](a: IterableOnce[A]): AstNodeTraversal[A] =
-//     new AstNodeTraversal[A](a.iterator)
+   implicit def singleToAstNodeTraversal[A <: AstNode](a: A): AstNodeTraversal[A] =
+     new AstNodeTraversal[A](Iterator.single(a))
+   implicit def iterOnceToAstNodeTraversal[A <: AstNode](a: IterableOnce[A]): AstNodeTraversal[A] =
+     new AstNodeTraversal[A](a.iterator)
 
 //   implicit def singleToDeclarationNodeTraversal[A <: Declaration](a: A): DeclarationTraversal[A] =
 //     new DeclarationTraversal[A](Iterator.single(a))
