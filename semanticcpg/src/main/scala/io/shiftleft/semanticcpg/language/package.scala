@@ -36,7 +36,7 @@ package object language extends /* operatorextension.Implicits with */ LowPrioIm
 //   implicit def toExtendedNode(node: NodeOrDetachedNode): NodeMethods          = new NodeMethods(node)
 //   implicit def toExtendedStoredNode(node: StoredNode): StoredNodeMethods      = new StoredNodeMethods(node)
   implicit def toAstNodeMethods(node: AstNode): AstNodeMethods                = new AstNodeMethods(node)
-//   implicit def toCfgNodeMethods(node: CfgNode): CfgNodeMethods                = new CfgNodeMethods(node)
+   implicit def toCfgNodeMethods(node: CfgNode): CfgNodeMethods                = new CfgNodeMethods(node)
 //   implicit def toExpressionMethods(node: Expression): ExpressionMethods       = new ExpressionMethods(node)
   implicit def toMethodMethods(node: Method): MethodMethods                   = new MethodMethods(node)
 //   implicit def toMethodReturnMethods(node: MethodReturn): MethodReturnMethods = new MethodReturnMethods(node)
