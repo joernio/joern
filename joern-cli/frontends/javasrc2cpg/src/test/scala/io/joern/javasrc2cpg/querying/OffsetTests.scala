@@ -5,7 +5,7 @@ import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 
 class OffsetTests extends JavaSrcCode2CpgFixture {
-  val contentEnabled = Config().withEnableFileContent(true)
+  val contentEnabled = Config().withDisableFileContent(false)
 
   "a class with a single method without file content enabled" should {
     val source = """
