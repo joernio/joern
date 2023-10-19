@@ -32,7 +32,7 @@ package object language extends /* operatorextension.Implicits with */ LowPrioIm
 
   // TODO continue here
 
-//   implicit def cfgNodeToAsNode(node: CfgNode): AstNodeMethods                 = new AstNodeMethods(node)
+   implicit def cfgNodeToAsNode(node: CfgNode): AstNodeMethods                 = new AstNodeMethods(node)
 //   implicit def toExtendedNode(node: NodeOrDetachedNode): NodeMethods          = new NodeMethods(node)
 //   implicit def toExtendedStoredNode(node: StoredNode): StoredNodeMethods      = new StoredNodeMethods(node)
   implicit def toAstNodeMethods(node: AstNode): AstNodeMethods                = new AstNodeMethods(node)
