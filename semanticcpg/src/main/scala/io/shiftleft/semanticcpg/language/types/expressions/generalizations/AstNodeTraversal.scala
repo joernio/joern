@@ -3,6 +3,7 @@ package io.shiftleft.semanticcpg.language.types.expressions.generalizations
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.codepropertygraph.generated.v2.accessors.Lang.*
 import io.shiftleft.codepropertygraph.generated.v2.traversals.Lang.*
+import io.shiftleft.codepropertygraph.generated.v2.neighboraccessors.Lang.*
 import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, NodeTypes}
 import io.shiftleft.semanticcpg.language.*
 // TODO bring back @Help
@@ -55,8 +56,14 @@ class AstNodeTraversal[A <: AstNode](val traversal: Iterator[A]) extends AnyVal 
 
   /** Parent AST node
     */
-  def astParent: Iterator[AstNode] =
-    traversal.flatMap(_._astIn).cast[AstNode]
+  def astParent: Iterator[AstNode] = {
+    // TODO replace by generated code
+    extension (iterator: Iterator[StoredNode]) {
+      def _astIn: Iterator[StoredNode] = ???
+    }
+
+    traversal._astIn.cast[AstNode]
+  }
 
   /** Siblings of this node in the AST, ordered by their `order` fields
     */
