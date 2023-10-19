@@ -31,15 +31,6 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
   protected def lineEnd(node: Node): Option[Integer]
   protected def columnEnd(element: Node): Option[Integer]
 
-  protected def zeroIndexedCoordinates(node: Node): Option[ZeroIndexedCoordinates] = {
-    for {
-      lineNum      <- line(node)
-      columnNum    <- column(node)
-      lineEndNum   <- lineEnd(node)
-      columnEndNum <- columnEnd(node)
-    } yield ZeroIndexedCoordinates(lineNum - 1, columnNum - 1, lineEndNum - 1, columnEndNum - 1)
-  }
-
   protected def offset(node: Node): Option[(Int, Int)] = None
 
   protected def unknownNode(node: Node, code: String): NewUnknown = {
@@ -328,8 +319,4 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
       .lineNumber(line(node))
       .columnNumber(column(node))
   }
-}
-
-object AstNodeBuilder {
-  case class ZeroIndexedCoordinates(line: Int, column: Int, lineEnd: Int, columnEnd: Int)
 }

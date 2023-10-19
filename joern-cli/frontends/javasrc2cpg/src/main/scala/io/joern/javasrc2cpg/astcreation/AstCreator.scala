@@ -117,10 +117,15 @@ class AstCreator(
   protected def lineEnd(node: Node): Option[Integer]   = node.getEnd.map(x => Integer.valueOf(x.line)).toScala
   protected def columnEnd(node: Node): Option[Integer] = node.getEnd.map(x => Integer.valueOf(x.column)).toScala
 
-  private val lineOffsetIndex = OffsetUtils.getLineOffsetIndex(fileContent)
+  private val lineOffsetTable = OffsetUtils.getLineOffsetTable(fileContent)
 
   override protected def offset(node: Node): Option[(Int, Int)] = {
-    zeroIndexedCoordinates(node).flatMap(OffsetUtils.coordinatesToOffset(lineOffsetIndex, _))
+    for {
+      lineNr      <- line(node)
+      columnNr    <- column(node)
+      lineEndNr   <- lineEnd(node)
+      columnEndNr <- columnEnd(node)
+    } yield OffsetUtils.coordinatesToOffset(lineOffsetTable, lineNr - 1, columnNr - 1, lineEndNr - 1, columnEndNr - 1)
   }
 
   // TODO: Handle static imports correctly.

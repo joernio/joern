@@ -65,13 +65,7 @@ trait X2CpgConfig[R <: X2CpgConfig[R]] {
     this.asInstanceOf[R]
   }
 
-  var enableFileContent: Boolean  = false
   var disableFileContent: Boolean = true
-
-  def withEnableFileContent(value: Boolean): R = {
-    this.enableFileContent = value
-    this.asInstanceOf[R]
-  }
 
   def withDisableFileContent(value: Boolean): R = {
     this.disableFileContent = value
@@ -84,7 +78,6 @@ trait X2CpgConfig[R <: X2CpgConfig[R]] {
     this.defaultIgnoredFilesRegex = config.defaultIgnoredFilesRegex
     this.ignoredFilesRegex = config.ignoredFilesRegex
     this.ignoredFiles = config.ignoredFiles
-    this.enableFileContent = config.enableFileContent
     this.disableFileContent = config.disableFileContent
     this.asInstanceOf[R]
   }
@@ -244,7 +237,7 @@ object X2Cpg {
         .action((_, c) => c.withSchemaValidation(ValidationMode.Enabled))
         .text("enables early schema validation during AST creation (disabled by default)"),
       opt[Unit]("enable-file-content")
-        .action((_, c) => c.withEnableFileContent(true))
+        .action((_, c) => c.withDisableFileContent(false))
         .text(
           "add the raw source code to the content field of FILE nodes to allow for method source retrieval via offset fields (disabled by default)"
         ),
