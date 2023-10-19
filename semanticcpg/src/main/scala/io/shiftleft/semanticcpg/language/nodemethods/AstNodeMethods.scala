@@ -1,7 +1,10 @@
 package io.shiftleft.semanticcpg.language.nodemethods
 
 import io.shiftleft.Implicits.IterableOnceDeco
-import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
+import io.shiftleft.codepropertygraph.generated.v2.neighboraccessors.Lang.*
+import io.shiftleft.codepropertygraph.generated.v2.accessors.Lang.*
+import io.shiftleft.codepropertygraph.generated.v2.traversals.Lang.*
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.nodemethods.AstNodeMethods.lastExpressionInBlock
@@ -56,7 +59,7 @@ class AstNodeMethods(val node: AstNode) extends AnyVal with NodeExtension {
     val additionalDepth = if (p(node)) { 1 }
     else { 0 }
 
-    val childDepths = node.astChildren.map(_.depth(p)).l
+    val childDepths = astChildren.map(_.depth(p)).l
     additionalDepth + (if (childDepths.isEmpty) {
                          0
                        } else {
@@ -70,7 +73,7 @@ class AstNodeMethods(val node: AstNode) extends AnyVal with NodeExtension {
   /** Direct children of node in the AST. Siblings are ordered by their `order` fields
     */
   def astChildren: Iterator[AstNode] =
-    node._astOut.cast[AstNode].sortBy(_.order).iterator
+    node._astOut.cast[AstNode].toSeq.sortBy(_.order).iterator
 
   /** Siblings of this node in the AST, ordered by their `order` fields
     */
@@ -79,8 +82,11 @@ class AstNodeMethods(val node: AstNode) extends AnyVal with NodeExtension {
 
   /** Nodes of the AST rooted in this node, including the node itself.
     */
-  def ast: Iterator[AstNode] =
-    Iterator.single(node).ast
+  def ast: Iterator[AstNode] = {
+    // TODO bring back - needs AstNodeTraversal
+    ???
+//    Iterator.single(node).ast
+  }
 
   /** Textual representation of AST node
     */
@@ -94,7 +100,9 @@ class AstNodeMethods(val node: AstNode) extends AnyVal with NodeExtension {
     }
 
   def statement: AstNode =
-    statementInternal(node, _.parentExpression.get)
+    // TODO bring back: need ExpressionMethods
+    ???
+//    statementInternal(node, _.parentExpression.get)
 
   @scala.annotation.tailrec
   private def statementInternal(node: AstNode, parentExpansion: Expression => Expression): AstNode = {
