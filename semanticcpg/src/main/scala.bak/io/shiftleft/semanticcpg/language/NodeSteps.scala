@@ -5,13 +5,13 @@ import io.shiftleft.codepropertygraph.generated.v2.nodes._
 import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, NodeTypes}
 import io.shiftleft.semanticcpg.codedumper.CodeDumper
 // import overflowdb.traversal._
-// import overflowdb.traversal.help.Doc
+// // TODO bring back: import overflowdb.traversal.help.Doc
 
 /** Steps for all node types
   *
   * This is the base class for all steps defined on
   */
-// @help.Traversal(elementType = classOf[StoredNode])
+// // TODO bring back: @help.Traversal(elementType = classOf[StoredNode])
 class NodeSteps[NodeType <: StoredNode](val traversal: Iterator[NodeType]) extends AnyVal {
 
   // @Doc(
