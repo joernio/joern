@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import scala.annotation.tailrec
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
+import scala.util.matching.Regex
 
 /** @param iterations
   *   the number of iterations to run.
@@ -66,6 +67,8 @@ abstract class XTypeRecoveryPass[CompilationUnitType <: AstNode](
   config: XTypeRecoveryConfig = XTypeRecoveryConfig()
 ) extends CpgPass(cpg) {
 
+  import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
+
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit =
     if (config.iterations > 0) {
       val stopEarly = new AtomicBoolean(false)
@@ -76,14 +79,42 @@ abstract class XTypeRecoveryPass[CompilationUnitType <: AstNode](
           generateRecoveryPass(newState).createAndApply()
         }
         // If dummy values are enabled and we are stopping early, we need one more round to propagate these dummy values
-        if (stopEarly.get() && config.enabledDummyTypes)
+        if (stopEarly.get() && config.enabledDummyTypes) {
           generateRecoveryPass(state.copy(currentIteration = config.iterations - 1)).createAndApply()
+        }
+
+        postTypeRecoveryAndPropagation(builder)
       } finally {
         state.clear()
       }
     }
 
   protected def generateRecoveryPass(state: XTypeRecoveryState): XTypeRecovery[CompilationUnitType]
+
+  /** A hook for the end of the type recovery and propagation.
+    */
+  protected def postTypeRecoveryAndPropagation(builder: DiffGraphBuilder): Unit = {
+    linkMembersToTheirRefs(builder)
+  }
+
+  private def linkMembersToTheirRefs(builder: DiffGraphBuilder): Unit = {
+    import XTypeRecovery.unknownTypePattern
+    // Set all now-typed fieldAccess calls to their referencing members (if they exist)
+    cpg.fieldAccess
+      .where(
+        _.and(
+          _.not(_.referencedMember),
+          _.argument(1).isIdentifier.typeFullNameNot(unknownTypePattern.pattern.pattern())
+        )
+      )
+      .foreach { fieldAccess =>
+        cpg.typeDecl
+          .fullNameExact(fieldAccess.argument(1).getKnownTypes.toSeq: _*)
+          .member
+          .nameExact(fieldAccess.fieldIdentifier.canonicalName.toSeq: _*)
+          .foreach(builder.addEdge(fieldAccess, _, EdgeTypes.REF))
+      }
+  }
 
 }
 
@@ -167,6 +198,8 @@ object XTypeRecovery {
   val DummyIndexAccess                      = "<indexAccess>"
   private lazy val DummyTokens: Set[String] = Set(DummyReturnType, DummyMemberLoad, DummyIndexAccess)
 
+  val unknownTypePattern: Regex = s"(i?)(UNKNOWN|ANY|${Defines.UnresolvedNamespace}).*".r
+
   def dummyMemberType(prefix: String, memberName: String, sep: Char = '.'): String =
     s"$prefix$sep$DummyMemberLoad($memberName)"
 
@@ -201,6 +234,26 @@ object XTypeRecovery {
     )
   }
 
+  // The below are convenience calls for accessing type properties, one day when this pass uses `Tag` nodes instead of
+  // the symbol table then perhaps this would work out better
+  implicit class AllNodeTypesFromNodeExt(x: StoredNode) {
+    def allTypes: Iterator[String] = (x.property(PropertyNames.TYPE_FULL_NAME, "ANY") +: x.property(
+      PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
+      Seq.empty
+    )).iterator
+
+    def getKnownTypes: Set[String] = {
+      x.allTypes.toSet.filterNot(unknownTypePattern.matches)
+    }
+  }
+
+  implicit class AllNodeTypesFromIteratorExt(x: Iterator[StoredNode]) {
+    def allTypes: Iterator[String] = x.flatMap(_.allTypes)
+
+    def getKnownTypes: Set[String] =
+      x.allTypes.toSet.filterNot(unknownTypePattern.matches)
+  }
+
 }
 
 /** Performs type recovery from the root of a compilation unit level
@@ -220,6 +273,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   builder: DiffGraphBuilder,
   state: XTypeRecoveryState
 ) extends RecursiveTask[Boolean] {
+
+  import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
 
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
 
@@ -309,6 +364,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     alias          <- i.importedAs
   } {
     import io.joern.x2cpg.passes.frontend.ImportsPass.*
+    import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromIteratorExt
 
     ResolvedImport.tagToResolvedImport(resolvedImport).foreach {
       case ResolvedMethod(fullName, alias, receiver, _) =>
@@ -1164,27 +1220,5 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** Allows an implementation to perform an operation once type persistence is complete.
     */
   protected def postSetTypeInformation(): Unit = {}
-
-  private val unknownTypePattern = s"(i?)(UNKNOWN|ANY|${Defines.UnresolvedNamespace}).*".r
-
-  // The below are convenience calls for accessing type properties, one day when this pass uses `Tag` nodes instead of
-  // the symbol table then perhaps this would work out better
-  implicit class AllNodeTypesFromNodeExt(x: StoredNode) {
-    def allTypes: Iterator[String] = (x.property(PropertyNames.TYPE_FULL_NAME, "ANY") +: x.property(
-      PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
-      Seq.empty
-    )).iterator
-
-    def getKnownTypes: Set[String] = {
-      x.allTypes.toSet.filterNot(unknownTypePattern.matches)
-    }
-  }
-
-  implicit class AllNodeTypesFromIteratorExt(x: Iterator[StoredNode]) {
-    def allTypes: Iterator[String] = x.flatMap(_.allTypes)
-
-    def getKnownTypes: Set[String] =
-      x.allTypes.toSet.filterNot(unknownTypePattern.matches)
-  }
 
 }
