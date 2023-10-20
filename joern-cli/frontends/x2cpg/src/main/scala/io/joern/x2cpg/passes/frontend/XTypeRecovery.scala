@@ -344,21 +344,21 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     * @param a
     *   assignment call pointer.
     */
-  protected def visitAssignments(a: Assignment): Set[String] = {
-    a.argumentOut.l match {
-      case List(i: Identifier, b: Block)                             => visitIdentifierAssignedToBlock(i, b)
-      case List(i: Identifier, c: Call)                              => visitIdentifierAssignedToCall(i, c)
-      case List(x: Identifier, y: Identifier)                        => visitIdentifierAssignedToIdentifier(x, y)
-      case List(i: Identifier, l: Literal) if state.isFirstIteration => visitIdentifierAssignedToLiteral(i, l)
-      case List(i: Identifier, m: MethodRef)                         => visitIdentifierAssignedToMethodRef(i, m)
-      case List(i: Identifier, t: TypeRef)                           => visitIdentifierAssignedToTypeRef(i, t)
-      case List(c: Call, i: Identifier)                              => visitCallAssignedToIdentifier(c, i)
-      case List(x: Call, y: Call)                                    => visitCallAssignedToCall(x, y)
-      case List(c: Call, l: Literal) if state.isFirstIteration       => visitCallAssignedToLiteral(c, l)
-      case List(c: Call, m: MethodRef)                               => visitCallAssignedToMethodRef(c, m)
-      case List(c: Call, b: Block)                                   => visitCallAssignedToBlock(c, b)
-      case _                                                         => Set.empty
-    }
+  protected def visitAssignments(a: Assignment): Set[String] = visitAssignmentArguments(a.argumentOut.l)
+
+  protected def visitAssignmentArguments(args: List[AstNode]): Set[String] = args match {
+    case List(i: Identifier, b: Block)                             => visitIdentifierAssignedToBlock(i, b)
+    case List(i: Identifier, c: Call)                              => visitIdentifierAssignedToCall(i, c)
+    case List(x: Identifier, y: Identifier)                        => visitIdentifierAssignedToIdentifier(x, y)
+    case List(i: Identifier, l: Literal) if state.isFirstIteration => visitIdentifierAssignedToLiteral(i, l)
+    case List(i: Identifier, m: MethodRef)                         => visitIdentifierAssignedToMethodRef(i, m)
+    case List(i: Identifier, t: TypeRef)                           => visitIdentifierAssignedToTypeRef(i, t)
+    case List(c: Call, i: Identifier)                              => visitCallAssignedToIdentifier(c, i)
+    case List(x: Call, y: Call)                                    => visitCallAssignedToCall(x, y)
+    case List(c: Call, l: Literal) if state.isFirstIteration       => visitCallAssignedToLiteral(c, l)
+    case List(c: Call, m: MethodRef)                               => visitCallAssignedToMethodRef(c, m)
+    case List(c: Call, b: Block)                                   => visitCallAssignedToBlock(c, b)
+    case _                                                         => Set.empty
   }
 
   /** Visits an identifier being assigned to the result of some operation.
@@ -426,13 +426,15 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def setCallMethodFullNameFromBase(c: Call): Set[String] = {
     val recTypes = c.argument.headOption
       .map {
-        case x: Call if x.typeFullName != "ANY" => Set(x.typeFullName)
+        case x: Call if x.typeFullName != "ANY" =>
+          Set(x.typeFullName)
         case x: Call =>
           cpg.method.fullNameExact(c.methodFullName).methodReturn.typeFullNameNot("ANY").typeFullName.toSet match {
             case xs if xs.nonEmpty => xs
             case _ => symbolTable.get(x).map(t => Seq(t, XTypeRecovery.DummyReturnType).mkString(pathSep.toString))
           }
-        case x => symbolTable.get(x)
+        case x =>
+          symbolTable.get(x)
       }
       .getOrElse(Set.empty[String])
     val callTypes = recTypes.map(_.concat(s"$pathSep${c.name}"))
@@ -505,11 +507,14 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       // We have been able to resolve the type inter-procedurally
       associateTypes(i, globalTypes)
     } else if (baseTypes.nonEmpty) {
+      lazy val existingMembers = cpg.typeDecl.fullNameExact(baseTypes.toSeq: _*).member.nameExact(fieldName)
       if (baseTypes.equals(symbolTable.get(LocalVar(fieldFullName)))) {
         associateTypes(i, baseTypes)
-      } else {
+      } else if (existingMembers.isEmpty) {
         // If not available, use a dummy variable that can be useful for call matching
         associateTypes(i, baseTypes.map(t => XTypeRecovery.dummyMemberType(t, fieldName, pathSep)))
+      } else {
+        Set.empty
       }
     } else {
       // Assign dummy
@@ -611,7 +616,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     */
   protected def getTypesFromCall(c: Call): Set[String] = c.name match {
     case Operators.fieldAccess        => symbolTable.get(LocalVar(getFieldName(new FieldAccess(c))))
-    case _ if symbolTable.contains(c) => symbolTable.get(c)
+    case _ if symbolTable.contains(c) => methodReturnValues(symbolTable.get(c).toSeq)
     case Operators.indexAccess        => getIndexAccessTypes(c)
     case n =>
       logger.debug(s"Unknown RHS call type '$n' @ ${debugLocation(c)}")
@@ -694,6 +699,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         // TODO: Handle this case better
         val callCode = if (c.code.contains("(")) c.code.substring(c.code.indexOf("(")) else c.code
         XTypeRecovery.dummyMemberType(callCode, f.canonicalName, pathSep)
+      case ::(_: TypeRef, ::(f: FieldIdentifier, _)) =>
+        f.canonicalName
       case xs =>
         logger.warn(s"Unhandled field structure ${xs.map(x => (x.label, x.code)).mkString(",")} @ ${debugLocation(fa)}")
         wrapName("<unknown>")
@@ -986,7 +993,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   /** In the case this field access is a function pointer, we would want to make sure this has a method ref.
     */
-  private def handlePotentialFunctionPointer(
+  protected def handlePotentialFunctionPointer(
     funcPtr: Expression,
     baseTypes: Set[String],
     funcName: String,

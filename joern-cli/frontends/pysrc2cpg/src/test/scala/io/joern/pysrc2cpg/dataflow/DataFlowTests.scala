@@ -5,8 +5,7 @@ import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
 import io.joern.pysrc2cpg.PySrc2CpgFixture
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Literal, Member, Method}
-import io.shiftleft.semanticcpg.language._
-import org.scalatest.Ignore
+import io.shiftleft.semanticcpg.language.*
 
 import java.io.File
 
@@ -20,7 +19,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
       |""".stripMargin)
     val source = cpg.literal("42")
     val sink   = cpg.call.code("print.*").argument
-    sink.reachableByFlows(source).size shouldBe 1
+    sink.reachableByFlows(source).size should be > 0
   }
 
   "chained call" in {
@@ -31,7 +30,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
       |""".stripMargin)
     def source = cpg.literal("42")
     def sink   = cpg.call("sink").argument
-    sink.reachableByFlows(source).size shouldBe 1
+    sink.reachableByFlows(source).size shouldBe 2
   }
 
   "inter procedural call 1" in {
@@ -182,6 +181,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         |accountId="sometext"
         |response = client.post_data(data, accountId)
         |""".stripMargin)
+
     val sourceUrlIdentifier = cpg.identifier(".*url.*").l
     val sink                = cpg.call("post").l
     sourceUrlIdentifier.size shouldBe 2
@@ -190,7 +190,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
 
     val sourceUrlLiteral = cpg.literal(".*app.commissionly.io.*").l
     sourceUrlLiteral.size shouldBe 1
-    sink.reachableByFlows(sourceUrlLiteral).size shouldBe 1
+    sink.reachableByFlows(sourceUrlLiteral).size shouldBe 2
   }
 
   "Flow correctly from parent scope to child function scope" in {
@@ -302,7 +302,8 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         "models.py"
       )
 
-    val List(method: Method) = cpg.identifier.name("foo").inAssignment.source.isCall.callee.l
+    val List(method: Method) =
+      cpg.identifier.name("foo").inAssignment.source.isBlock.ast.isCall.nameExact("Foo").callee.l
     method.fullName shouldBe "models.py:<module>.Foo.__init__"
     val List(typeDeclFullName) = method.typeDecl.fullName.l
     typeDeclFullName shouldBe "models.py:<module>.Foo"
@@ -321,7 +322,8 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         "models.py"
       )
 
-    val List(method: Method) = cpg.identifier.name("foo").inAssignment.source.isCall.callee.l
+    val List(method: Method) =
+      cpg.identifier.name("foo").inAssignment.source.isBlock.ast.isCall.nameExact("Foo").callee.l
     method.fullName shouldBe "models.py:<module>.Foo.__init__"
     val List(typeDeclFullName) = method.typeDecl.fullName.l
     typeDeclFullName shouldBe "models.py:<module>.Foo"

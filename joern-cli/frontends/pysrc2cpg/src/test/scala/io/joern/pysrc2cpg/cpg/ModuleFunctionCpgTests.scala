@@ -1,7 +1,8 @@
 package io.joern.pysrc2cpg.cpg
 
 import io.joern.pysrc2cpg.Py2CpgTestContext
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.Call
+import io.shiftleft.semanticcpg.language.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -16,9 +17,8 @@ class ModuleFunctionCpgTests extends AnyFreeSpec with Matchers {
   }
 
   "test method body" in {
-    val topLevelExprs = cpg.method.fullName("test.py:<module>").topLevelExpressions.l
-    topLevelExprs.size shouldBe 1
-    topLevelExprs.isCall.head.code shouldBe "pass"
-    topLevelExprs.isCall.head.methodFullName shouldBe "<operator>.pass"
+    val _ :: (topLevelExprs: Call) :: Nil = cpg.method.fullName("test.py:<module>").topLevelExpressions.l: @unchecked
+    topLevelExprs.code shouldBe "pass"
+    topLevelExprs.methodFullName shouldBe "<operator>.pass"
   }
 }
