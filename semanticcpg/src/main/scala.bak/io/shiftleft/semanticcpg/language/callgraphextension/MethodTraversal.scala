@@ -2,7 +2,7 @@ package io.shiftleft.semanticcpg.language.callgraphextension
 
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.traversal.help.Doc
+// TODO bring back: import overflowdb.traversal.help.Doc
 
 class MethodTraversal(val traversal: Iterator[Method]) extends AnyVal {
 
@@ -60,7 +60,7 @@ class MethodTraversal(val traversal: Iterator[Method]) extends AnyVal {
 
   /** Outgoing call sites
     */
-  @Doc(info = "Call sites (outgoing calls)")
+  // TODO bring back: @Doc(info = "Call sites (outgoing calls)")
   def call: Iterator[Call] =
     traversal.flatMap(_._callViaContainsOut)
 
