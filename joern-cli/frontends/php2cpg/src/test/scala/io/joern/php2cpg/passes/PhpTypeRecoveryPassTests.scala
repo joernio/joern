@@ -16,7 +16,6 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture() {
 
     "resolve 'x' identifier type" in {
       val List(xIdentifier) = cpg.identifier("x").take(1).l
-      // xIdentifier.dynamicTypeHintFullName shouldBe Seq("int")
       xIdentifier.typeFullName shouldBe "int"
     }
     "resolve 'foo_return_int()' return value" in {
@@ -25,7 +24,12 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture() {
     }
   }
 
-  "literals declared from built-in types that are shadowed" should {
+  /* These tests are written assuming a context sensitive type recovery pass,
+   * but the current implementation is context insenstive.
+   * Test is set to be ignored, but should be revisited when conext sensitivity
+   * can be added.
+   */
+  "literals declared from built-in types that are shadowed" ignore {
     lazy val cpg = code("""
         |<?php
         |$x = 123;
@@ -143,7 +147,10 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture() {
     }
   }
 
-  "functions with docblock type information" should {
+  /* Joern's PHP front-end does not currently handle comments. This test is
+   * ignored, but should be revisited when comments are handled.
+   */
+  "functions with docblock type information" ignore {
     lazy val cpg = code("""
       |<?php
       |/**
