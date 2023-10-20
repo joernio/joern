@@ -32,7 +32,7 @@ package object language extends /* operatorextension.Implicits with */ LowPrioIm
 //   implicit def toExtendedStoredNode(node: StoredNode): StoredNodeMethods      = new StoredNodeMethods(node)
   implicit def toAstNodeMethods(node: AstNode): AstNodeMethods                = new AstNodeMethods(node)
    implicit def toCfgNodeMethods(node: CfgNode): CfgNodeMethods                = new CfgNodeMethods(node)
-//   implicit def toExpressionMethods(node: Expression): ExpressionMethods       = new ExpressionMethods(node)
+  implicit def toExpressionMethods(node: Expression): ExpressionMethods       = new ExpressionMethods(node)
   implicit def toMethodMethods(node: Method): MethodMethods                   = new MethodMethods(node)
 //   implicit def toMethodReturnMethods(node: MethodReturn): MethodReturnMethods = new MethodReturnMethods(node)
   implicit def toCallMethods(node: Call): CallMethods = new CallMethods(node)
@@ -257,11 +257,11 @@ package object language extends /* operatorextension.Implicits with */ LowPrioIm
 //       Iterator.single(node)
 //   }
 
-//   implicit def toExpression[A <: Expression](a: IterableOnce[A]): ExpressionTraversal[A] =
-//     new ExpressionTraversal[A](a.iterator)
+  implicit def toExpression[A <: Expression](a: IterableOnce[A]): ExpressionTraversal[A] =
+    new ExpressionTraversal[A](a.iterator)
 }
 
- trait LowPrioImplicits extends io.joern.odb2.Traversal {
+ trait LowPrioImplicits extends io.joern.odb2.Implicits with io.joern.odb2.Traversal {
    implicit def iterableOnceToIterator[A](iterableOnce: IterableOnce[A]): Iterator[A] =
      iterableOnce.iterator
 
@@ -275,8 +275,8 @@ package object language extends /* operatorextension.Implicits with */ LowPrioIm
    implicit def iterOnceToAstNodeTraversal[A <: AstNode](a: IterableOnce[A]): AstNodeTraversal[A] =
      new AstNodeTraversal[A](a.iterator)
 
-//   implicit def singleToDeclarationNodeTraversal[A <: Declaration](a: A): DeclarationTraversal[A] =
-//     new DeclarationTraversal[A](Iterator.single(a))
-//   implicit def iterOnceToDeclarationNodeTraversal[A <: Declaration](a: IterableOnce[A]): DeclarationTraversal[A] =
-//     new DeclarationTraversal[A](a.iterator)
+  implicit def singleToDeclarationNodeTraversal[A <: Declaration](a: A): DeclarationTraversal[A] =
+    new DeclarationTraversal[A](Iterator.single(a))
+  implicit def iterOnceToDeclarationNodeTraversal[A <: Declaration](a: IterableOnce[A]): DeclarationTraversal[A] =
+    new DeclarationTraversal[A](a.iterator)
  }
