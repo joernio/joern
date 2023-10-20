@@ -19,7 +19,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
       |""".stripMargin)
     val source = cpg.literal("42")
     val sink   = cpg.call.code("print.*").argument
-    sink.reachableByFlows(source).size should be > 0
+    sink.reachableByFlows(source).size shouldBe 2
   }
 
   "chained call" in {
@@ -589,6 +589,27 @@ class RegexDefinedFlowsDataFlowTests
     val sinks   = cpg.call.methodFullName(".*log.*(debug|info|error).*").l
     val flows   = sinks.reachableByFlows(sources).l
     flows.size shouldBe 2
+  }
+
+  "flow across interprocedural module variables" in {
+    val cpg: Cpg = code(
+      """
+        |a = 42
+        |""".stripMargin,
+      "foo.py"
+    )
+      .moreCode(
+        """
+          |import foo
+          |
+          |print(foo.a)
+          |""".stripMargin,
+        "bar.py"
+      )
+
+    val source = cpg.literal("42").l
+    val sink   = cpg.call.code("print.*").argument.l
+    sink.reachableByFlows(source).size shouldBe 1
   }
 
 }

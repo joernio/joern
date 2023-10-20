@@ -4,8 +4,8 @@ import io.joern.dataflowengineoss.globalFromLiteral
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.allAssignmentTypes
 import io.shiftleft.semanticcpg.utils.MemberAccess.isFieldAccess
 import org.slf4j.LoggerFactory
@@ -121,6 +121,8 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
                 x.argument(2).isFieldIdentifier.canonicalNameExact(identifier.name)
               case fieldIdentifier: FieldIdentifier =>
                 x.argument(2).isFieldIdentifier.canonicalNameExact(fieldIdentifier.canonicalName)
+              case member: Member =>
+                x.argument(2).isFieldIdentifier.canonicalNameExact(member.name)
               case _ => Iterator.empty
             }
           }
@@ -174,7 +176,9 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
       .or(
         _.method.nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName, "__init__"),
         // in language such as Python, where assignments for members can be directly under a type decl
-        _.method.typeDecl
+        _.method.typeDecl,
+        // for Python, we have moved to replacing strong updates of module-level variables with their members
+        _.target.isCall.nameExact(Operators.fieldAccess).argument(1).isIdentifier.name("<module>")
       )
       .target
       .flatMap {
@@ -209,6 +213,11 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
 
   private def targetsToClassIdentifierPair(targets: List[AstNode]): List[(TypeDecl, AstNode)] = {
     targets.flatMap {
+      case expr: FieldIdentifier =>
+        expr.method.typeDecl.map { typeDecl => (typeDecl, expr) } ++
+          expr.inCall.fieldAccess.referencedMember.flatMap { member =>
+            member.typeDecl.map { typeDecl => (typeDecl, member) }
+          }
       case expr: Expression =>
         expr.method.typeDecl.map { typeDecl => (typeDecl, expr) }
       case member: Member =>
