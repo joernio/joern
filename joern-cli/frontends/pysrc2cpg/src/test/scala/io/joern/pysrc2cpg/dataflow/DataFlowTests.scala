@@ -19,7 +19,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
       |""".stripMargin)
     val source = cpg.literal("42")
     val sink   = cpg.call.code("print.*").argument
-    sink.reachableByFlows(source).size shouldBe 2
+    sink.reachableByFlows(source).size shouldBe 1
   }
 
   "chained call" in {
@@ -30,7 +30,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
       |""".stripMargin)
     def source = cpg.literal("42")
     def sink   = cpg.call("sink").argument
-    sink.reachableByFlows(source).size shouldBe 2
+    sink.reachableByFlows(source).size shouldBe 1
   }
 
   "inter procedural call 1" in {
@@ -181,7 +181,6 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         |accountId="sometext"
         |response = client.post_data(data, accountId)
         |""".stripMargin)
-
     val sourceUrlIdentifier = cpg.identifier(".*url.*").l
     val sink                = cpg.call("post").l
     sourceUrlIdentifier.size shouldBe 2
@@ -190,7 +189,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
 
     val sourceUrlLiteral = cpg.literal(".*app.commissionly.io.*").l
     sourceUrlLiteral.size shouldBe 1
-    sink.reachableByFlows(sourceUrlLiteral).size shouldBe 2
+    sink.reachableByFlows(sourceUrlLiteral).size shouldBe 1
   }
 
   "Flow correctly from parent scope to child function scope" in {

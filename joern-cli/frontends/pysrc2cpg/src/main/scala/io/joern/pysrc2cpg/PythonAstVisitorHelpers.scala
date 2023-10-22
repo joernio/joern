@@ -129,9 +129,20 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
               lineAndColumn
             ),
             createIdentifierNode(tmpVariableName, Load, lineAndColumn)
-          )
+          ).collect {
+            // Signal that these are module-related de-sugaring operations
+            case x: NewIdentifier => x.code(s"<module>.${x.code}")
+            case x: NewCall       => x.code(s"<module>.${x.code}")
+          }
           val targetNode = convert(targetAstNode)
-          Iterable.single(createAssignment(targetNode, createBlock(stmts, lineAndColumn), lineAndColumn))
+          // Generate a block, and make it look like the "sugared" code that is being parsed
+          val block = createBlock(stmts, lineAndColumn)
+            .asInstanceOf[NewBlock]
+            .code(s"${codeOf(targetNode)} = ${codeOf(valueNode)}")
+          val desugaredModuleAssign = createAssignment(targetNode, block, lineAndColumn).asInstanceOf[NewCall]
+          // Get rid of code that looks like `targetNode = targetNode = value`
+          desugaredModuleAssign.code(desugaredModuleAssign.code.split("=").tail.mkString("=").trim)
+          Iterable.single(desugaredModuleAssign)
         case _ => Iterable.single(createAssignment(convert(targetAstNode), valueNode, lineAndColumn))
     } else {
       // Lowering of x, (y,z) = a = b = c:
