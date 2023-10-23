@@ -8,7 +8,7 @@ import io.shiftleft.semanticcpg.language.*
 class DownloadDependencyTest extends GoCodeToCpgSuite {
   // NOTE: With respect to conversation on this PR - https://github.com/joernio/joern/pull/3753
   // ignoring the below uni tests, which tries to download the dependencies.
-  "Simple use case of thrid party dependency download use case" ignore {
+  "Simple use case of third-party dependency download" ignore {
     val config = Config().withFetchDependencies(true)
     val cpg = code(
       """
