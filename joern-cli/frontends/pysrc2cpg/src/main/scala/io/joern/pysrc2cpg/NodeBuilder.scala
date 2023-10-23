@@ -198,12 +198,16 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
     addNodeToDiff(returnNode)
   }
 
-  def identifierNode(name: String, lineAndColumn: LineAndColumn): nodes.NewIdentifier = {
+  def identifierNode(
+    name: String,
+    lineAndColumn: LineAndColumn,
+    typeFullName: String = Constants.ANY
+  ): nodes.NewIdentifier = {
     val identifierNode = nodes
       .NewIdentifier()
       .code(name)
       .name(name)
-      .typeFullName(Constants.ANY)
+      .typeFullName(typeFullName)
       .lineNumber(lineAndColumn.line)
       .columnNumber(lineAndColumn.column)
     addNodeToDiff(identifierNode)

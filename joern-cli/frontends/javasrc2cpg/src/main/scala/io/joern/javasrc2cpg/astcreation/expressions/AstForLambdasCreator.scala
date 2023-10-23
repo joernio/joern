@@ -85,11 +85,12 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
 
     val parameters = thisParam ++ parametersWithoutThis
 
-    val lambdaMethodNode = createLambdaMethodNode(lambdaMethodName, parametersWithoutThis, returnType)
-    val returnNode       = newMethodReturnNode(returnType.getOrElse(TypeConstants.Any), None, line(expr), column(expr))
-    val virtualModifier  = Some(newModifierNode(ModifierTypes.VIRTUAL))
-    val staticModifier   = Option.when(thisParam.isEmpty)(newModifierNode(ModifierTypes.STATIC))
-    val privateModifier  = Some(newModifierNode(ModifierTypes.PRIVATE))
+    val lambdaMethodNode = createLambdaMethodNode(expr, lambdaMethodName, parametersWithoutThis, returnType)
+
+    val returnNode      = newMethodReturnNode(returnType.getOrElse(TypeConstants.Any), None, line(expr), column(expr))
+    val virtualModifier = Some(newModifierNode(ModifierTypes.VIRTUAL))
+    val staticModifier  = Option.when(thisParam.isEmpty)(newModifierNode(ModifierTypes.STATIC))
+    val privateModifier = Some(newModifierNode(ModifierTypes.PRIVATE))
 
     val modifiers = List(virtualModifier, staticModifier, privateModifier).flatten.map(Ast(_))
 
@@ -133,6 +134,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
   }
 
   private def createLambdaMethodNode(
+    lambdaExpr: LambdaExpr,
     lambdaName: String,
     parameters: Seq[Ast],
     returnType: Option[String]
@@ -141,12 +143,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
     val signature         = lambdaMethodSignature(returnType, parameters)
     val lambdaFullName    = composeMethodFullName(enclosingTypeName, lambdaName, signature)
 
-    NewMethod()
-      .name(lambdaName)
-      .fullName(lambdaFullName)
-      .signature(signature)
-      .filename(filename)
-      .code("<lambda>")
+    methodNode(lambdaExpr, lambdaName, "<lambda>", lambdaFullName, Some(signature), filename)
   }
 
   private def createAndPushLambdaTypeDecl(

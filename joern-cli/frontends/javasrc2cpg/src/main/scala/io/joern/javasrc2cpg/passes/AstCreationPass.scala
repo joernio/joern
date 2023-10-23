@@ -48,11 +48,13 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
 
   override def runOnPart(diffGraph: DiffGraphBuilder, filename: String): Unit = {
     val relativeFilename = Path.of(config.inputPath).relativize(Path.of(filename)).toString
-    sourceParser.parseAnalysisFile(relativeFilename) match {
-      case Some(compilationUnit) =>
+    sourceParser.parseAnalysisFile(relativeFilename, !config.disableFileContent) match {
+      case Some(compilationUnit, fileContent) =>
         symbolSolver.inject(compilationUnit)
+        val contentToUse = if (!config.disableFileContent) fileContent else None
         diffGraph.absorb(
-          new AstCreator(relativeFilename, compilationUnit, global, symbolSolver)(config.schemaValidation).createAst()
+          new AstCreator(relativeFilename, compilationUnit, contentToUse, global, symbolSolver)(config.schemaValidation)
+            .createAst()
         )
 
       case None => logger.warn(s"Skipping AST creation for $filename")

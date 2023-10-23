@@ -1,5 +1,7 @@
 package io.joern.x2cpg
 
+import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
+import io.shiftleft.codepropertygraph.generated.nodes.Block.{PropertyDefaults => BlockDefaults}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewAnnotation,
   NewBlock,
@@ -21,14 +23,14 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewTypeRef,
   NewUnknown
 }
-import io.shiftleft.codepropertygraph.generated.nodes.Block.{PropertyDefaults => BlockDefaults}
 import org.apache.commons.lang.StringUtils
-import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
   protected def line(node: Node): Option[Integer]
   protected def column(node: Node): Option[Integer]
   protected def lineEnd(node: Node): Option[Integer]
   protected def columnEnd(element: Node): Option[Integer]
+
+  protected def offset(node: Node): Option[(Int, Int)] = None
 
   protected def unknownNode(node: Node, code: String): NewUnknown = {
     NewUnknown()
@@ -293,6 +295,9 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
         .lineNumberEnd(lineEnd(node))
         .columnNumberEnd(columnEnd(node))
     signature.foreach { s => node_.signature(StringUtils.normalizeSpace(s)) }
+    offset(node).foreach { case (offset, offsetEnd) =>
+      node_.offset(offset).offsetEnd(offsetEnd)
+    }
     node_
   }
 

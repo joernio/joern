@@ -1,15 +1,14 @@
 package io.joern.pysrc2cpg
 
-import better.files.{File => BFile}
-import io.joern.x2cpg.passes.frontend.ImportsPass._
+import better.files.File as BFile
+import io.joern.x2cpg.passes.frontend.ImportsPass.*
 import io.joern.x2cpg.passes.frontend.XImportResolverPass
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.*
 
-import java.io.{File => JFile}
+import java.io.File as JFile
 import java.util.regex.{Matcher, Pattern}
-import better.files.File as BFile
 
 class ImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
 
@@ -127,7 +126,11 @@ class ImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
         val pyFile    = BFile(codeRoot) / s"$path.py"
         fileOrDir match {
           case f if f.isDirectory && !pyFile.exists =>
-            Seq(s"${path.replaceAll("\\.", sep)}${java.io.File.separator}$expEntity.py:<module>").toResolvedImport(cpg)
+            val namespace     = path.replaceAll("\\.", sep)
+            val module        = s"$expEntity.py:<module>"
+            val initSubmodule = s"__init__.py:<module>.$expEntity"
+            Seq(s"$namespace${JFile.separator}$module", s"$namespace${JFile.separator}$initSubmodule")
+              .toResolvedImport(cpg)
           case f if f.isDirectory && (f / s"$expEntity.py").exists =>
             Seq(s"${(f / s"$expEntity.py").pathAsString.stripPrefix(codeRoot)}:<module>").toResolvedImport(cpg)
           case _ =>

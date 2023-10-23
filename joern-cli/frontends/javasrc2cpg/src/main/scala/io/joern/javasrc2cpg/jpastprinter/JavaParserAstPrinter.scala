@@ -15,7 +15,7 @@ object JavaParserAstPrinter {
 
     SourceParser.getSourceFilenames(config).foreach { filename =>
       val relativeFilename = Path.of(config.inputPath).relativize(Path.of(filename)).toString
-      sourceParser.parseAnalysisFile(relativeFilename).foreach { compilationUnit =>
+      sourceParser.parseAnalysisFile(relativeFilename, saveFileContent = false).foreach { case (compilationUnit, _) =>
         println(relativeFilename)
         println(printer.output(compilationUnit))
       }

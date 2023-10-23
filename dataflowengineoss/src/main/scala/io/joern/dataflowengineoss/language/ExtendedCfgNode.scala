@@ -37,6 +37,18 @@ class ExtendedCfgNode(val traversal: Iterator[CfgNode]) extends AnyVal {
     reachedSources.cast[NodeType]
   }
 
+  /** Trims out path elements that represent module-level variable assignment desugaring
+    */
+  private def trimModuleVariableDesugarBlock(path: Vector[PathElement]): Vector[PathElement] = {
+    val moduleKeywords = Seq("<module>", ":program")
+    val codeMatcher    = s"(${moduleKeywords.mkString("|")}).*"
+    path.filterNot { x =>
+      x.node match
+        case block: Block => block.astChildren.code(codeMatcher).nonEmpty
+        case astNode      => astNode.inAssignment.code(codeMatcher).nonEmpty
+    }
+  }
+
   def reachableByFlows[A](sourceTrav: IterableOnce[A], sourceTravs: IterableOnce[A]*)(implicit
     context: EngineContext
   ): Iterator[Path] = {
@@ -51,8 +63,10 @@ class ExtendedCfgNode(val traversal: Iterator[CfgNode]) extends AnyVal {
         if (first.isDefined && !first.get.visible && !startingPoints.contains(first.get.node)) {
           None
         } else {
-          val visiblePathElements = result.path.filter(x => startingPoints.contains(x.node) || x.visible)
-          Some(Path(removeConsecutiveDuplicates(visiblePathElements.map(_.node))))
+          val visiblePathElements       = result.path.filter(x => startingPoints.contains(x.node) || x.visible)
+          val trimmedOfModuleDesugaring = trimModuleVariableDesugarBlock(visiblePathElements)
+          val deDuplicated              = removeConsecutiveDuplicates(trimmedOfModuleDesugaring.map(_.node))
+          Some(Path(deDuplicated))
         }
       }
       .filter(_.isDefined)

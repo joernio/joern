@@ -65,12 +65,20 @@ trait X2CpgConfig[R <: X2CpgConfig[R]] {
     this.asInstanceOf[R]
   }
 
+  var disableFileContent: Boolean = true
+
+  def withDisableFileContent(value: Boolean): R = {
+    this.disableFileContent = value
+    this.asInstanceOf[R]
+  }
+
   def withInheritedFields(config: R): R = {
     this.inputPath = config.inputPath
     this.outputPath = config.outputPath
     this.defaultIgnoredFilesRegex = config.defaultIgnoredFilesRegex
     this.ignoredFilesRegex = config.ignoredFilesRegex
     this.ignoredFiles = config.ignoredFiles
+    this.disableFileContent = config.disableFileContent
     this.asInstanceOf[R]
   }
 }
@@ -228,6 +236,15 @@ object X2Cpg {
       opt[Unit]("enable-early-schema-checking")
         .action((_, c) => c.withSchemaValidation(ValidationMode.Enabled))
         .text("enables early schema validation during AST creation (disabled by default)"),
+      opt[Unit]("enable-file-content")
+        .action((_, c) => c.withDisableFileContent(false))
+        .text(
+          "add the raw source code to the content field of FILE nodes to allow for method source retrieval via offset fields (disabled by default)"
+        ),
+      opt[Unit]("disable-file-content")
+        .action((_, c) => c.withDisableFileContent(true))
+        .hidden()
+        .text("currently unused option that will replace enable-file-content"),
       help("help").text("display this help message"),
       frontendSpecific
     )

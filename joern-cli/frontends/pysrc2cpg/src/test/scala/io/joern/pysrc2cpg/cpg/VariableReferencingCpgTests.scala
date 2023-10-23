@@ -81,8 +81,10 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
     }
 
     "test identifiers in line 1 and 3 reference to module method x variable" in {
+      val memberXNode = cpg.typeDecl.nameExact("<module>").member.name("x").head
+      cpg.fieldAccess.where(_.fieldIdentifier.canonicalNameExact("x")).lineNumber(1).member.head shouldBe memberXNode
+
       val localXNode = cpg.method.name("<module>").block.local.name("x").head
-      cpg.identifier("x").lineNumber(1).refsTo.head shouldBe localXNode
       cpg.identifier("x").lineNumber(3).refsTo.head shouldBe localXNode
     }
 
@@ -95,6 +97,10 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
       val f = cpg.local.nameExact("f").head
       f.lineNumber shouldBe Some(3)
       f.columnNumber shouldBe Some(1)
+
+      val xField = cpg.fieldAccess.where(_.fieldIdentifier.canonicalNameExact("x")).head
+      xField.lineNumber shouldBe Some(1)
+      xField.lineNumber shouldBe Some(1)
 
       val x = cpg.local("x").filterNot(_.definingBlock.astParent.isMethod.isEmpty).head
       val y = cpg.local("y").filterNot(_.definingBlock.astParent.isMethod.isEmpty).head
@@ -119,8 +125,10 @@ class VariableReferencingCpgTests extends AnyFreeSpec with Matchers {
     }
 
     "test identifiers in line 1 and 3 reference to module method x variable" in {
+      val memberXNode = cpg.typeDecl.nameExact("<module>").member.name("x").head
+      cpg.fieldAccess.where(_.fieldIdentifier.canonicalNameExact("x")).lineNumber(1).member.head shouldBe memberXNode
+
       val localXNode = cpg.method.name("<module>").block.local.name("x").head
-      cpg.identifier("x").lineNumber(1).refsTo.head shouldBe localXNode
       cpg.identifier("x").lineNumber(3).refsTo.head shouldBe localXNode
     }
 
