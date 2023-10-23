@@ -3,6 +3,7 @@ package io.joern.pysrc2cpg.passes
 import io.joern.pysrc2cpg.PySrc2CpgFixture
 import io.joern.x2cpg.passes.frontend.ImportsPass.*
 import io.joern.x2cpg.passes.frontend.{ImportsPass, XTypeHintCallLinker}
+import io.shiftleft.codepropertygraph.generated.nodes.Local
 import io.shiftleft.semanticcpg.language.*
 
 import java.io.File
@@ -213,6 +214,23 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |""".stripMargin,
       "bar.py"
     ).cpg
+
+    "be able to traverse from `foo.[x|y|db]` to its members" in {
+      val fields            = cpg.fieldAccess.where(_.fieldIdentifier.canonicalName("x", "y", "db")).l
+      val List(mDB, mX, mY) = fields.referencedMember.dedup.sortBy(_.name).l
+
+      mDB.name shouldBe "db"
+      mDB.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy"
+      mDB.typeDecl.fullName shouldBe "foo.py:<module>"
+
+      mX.name shouldBe "x"
+      mX.typeFullName shouldBe "__builtin.int"
+      mX.typeDecl.fullName shouldBe "foo.py:<module>"
+
+      mY.name shouldBe "y"
+      mY.typeFullName shouldBe "__builtin.str"
+      mY.typeDecl.fullName shouldBe "foo.py:<module>"
+    }
 
     "resolve correct imports via tag nodes" in {
       val List(foo1: UnknownMethod, foo2: UnknownTypeDecl) =
@@ -452,7 +470,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       val Some(selfFindFound) = cpg.typeDecl(".*InstallationsDAO.*").ast.isCall.name("find_one").headOption: @unchecked
       selfFindFound.dynamicTypeHintFullName shouldBe Seq(
         "__builtin.None.find_one",
-        "pymongo.py:<module>.MongoClient.__init__.<indexAccess>.<indexAccess>.find_one"
+        "pymongo.py:<module>.MongoClient.__init__.<returnValue>.<indexAccess>.<indexAccess>.find_one"
       )
     }
 
