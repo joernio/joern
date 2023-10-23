@@ -1,13 +1,13 @@
 package io.joern.pysrc2cpg.passes
 
-import io.joern.pysrc2cpg.PySrc2CpgFixture
+import io.joern.pysrc2cpg.{Py2CpgOnFileSystemConfig, PySrc2CpgFixture}
 import io.joern.x2cpg.passes.frontend.ImportsPass.*
 import io.joern.x2cpg.passes.frontend.{ImportsPass, XTypeHintCallLinker}
 import io.shiftleft.semanticcpg.language.*
 
 import java.io.File
 import scala.collection.immutable.Seq
-class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
+class PyTypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
   "literals declared from built-in types" should {
     lazy val cpg = code("""
@@ -25,15 +25,15 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "resolve 'x' identifier types despite shadowing" in {
       val List(xOuterScope, xInnerScope) = cpg.identifier("x").take(2).l
-      xOuterScope.dynamicTypeHintFullName shouldBe Seq("__builtin.int", "__builtin.str")
-      xInnerScope.dynamicTypeHintFullName shouldBe Seq("__builtin.int", "__builtin.str")
+      xOuterScope.possibleTypes.sorted shouldBe Seq("__builtin.int", "__builtin.str")
+      xInnerScope.possibleTypes.sorted shouldBe Seq("__builtin.int", "__builtin.str")
     }
 
     "resolve 'y' and 'z' identifier collection types" in {
       val List(zDict, zList, zTuple) = cpg.identifier("z").take(3).l
-      zDict.dynamicTypeHintFullName shouldBe Seq("__builtin.dict", "__builtin.list", "__builtin.tuple")
-      zList.dynamicTypeHintFullName shouldBe Seq("__builtin.dict", "__builtin.list", "__builtin.tuple")
-      zTuple.dynamicTypeHintFullName shouldBe Seq("__builtin.dict", "__builtin.list", "__builtin.tuple")
+      zDict.possibleTypes.sorted shouldBe Seq("__builtin.dict", "__builtin.list", "__builtin.tuple")
+      zList.possibleTypes.sorted shouldBe Seq("__builtin.dict", "__builtin.list", "__builtin.tuple")
+      zTuple.possibleTypes.sorted shouldBe Seq("__builtin.dict", "__builtin.list", "__builtin.tuple")
     }
 
     "resolve 'z' identifier calls conservatively" in {
@@ -41,7 +41,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       zAppend.methodFullName shouldBe "<unknownFullName>"
       // Since we don't have method nodes with this full name, this should belong to the call linker namespace
       zAppend.callee.astParentFullName.headOption shouldBe Some(XTypeHintCallLinker.namespace)
-      zAppend.dynamicTypeHintFullName shouldBe Seq(
+      zAppend.possibleTypes.sorted shouldBe Seq(
         "__builtin.dict.append",
         "__builtin.list.append",
         "__builtin.tuple.append"
@@ -70,7 +70,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         webClientT: UnknownTypeDecl,
         sendGridM: UnknownMethod,
         sendGridT: UnknownTypeDecl
-      ) = cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+      ) = cpg.call.where(_.referencedImports).toResolvedImport.toList: @unchecked
       webClientM.fullName shouldBe "slack_sdk.py:<module>.WebClient.__init__"
       webClientT.fullName shouldBe "slack_sdk.py:<module>.WebClient"
       sendGridM.fullName shouldBe "sendgrid.py:<module>.SendGridAPIClient.__init__"
@@ -183,7 +183,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "conservatively present either option when an imported function uses the same name as a builtin" in {
       val Some(absCall) = cpg.call("abs").headOption: @unchecked
-      absCall.dynamicTypeHintFullName shouldBe Seq("foo.py:<module>.abs", "__builtin.abs")
+      absCall.possibleTypes shouldBe Seq("foo.py:<module>.abs", "__builtin.abs")
     }
 
   }
@@ -216,11 +216,11 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "resolve correct imports via tag nodes" in {
       val List(foo1: UnknownMethod, foo2: UnknownTypeDecl) =
-        cpg.file(".*foo.py").ast.isCall.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.file(".*foo.py").ast.isCall.where(_.referencedImports).toResolvedImport.toList: @unchecked
       foo1.fullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.__init__"
       foo2.fullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy"
       val List(bar1: ResolvedTypeDecl, bar2: ResolvedMethod) =
-        cpg.file(".*bar.py").ast.isCall.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.file(".*bar.py").ast.isCall.where(_.referencedImports).toResolvedImport.toList: @unchecked
       bar1.fullName shouldBe "foo.py:<module>"
       bar2.fullName shouldBe "foo.py:<module>"
     }
@@ -240,9 +240,9 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         .name("z")
         .l
       z1.typeFullName shouldBe "ANY"
-      z1.dynamicTypeHintFullName shouldBe Seq("__builtin.int", "__builtin.str")
+      z1.possibleTypes.sorted shouldBe Seq("__builtin.int", "__builtin.str")
       z2.typeFullName shouldBe "ANY"
-      z2.dynamicTypeHintFullName shouldBe Seq("__builtin.int", "__builtin.str")
+      z2.possibleTypes.sorted shouldBe Seq("__builtin.int", "__builtin.str")
     }
 
     "resolve 'foo.d' field access object types correctly" in {
@@ -253,7 +253,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         .name("d")
         .headOption: @unchecked
       d.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy"
-      d.dynamicTypeHintFullName shouldBe Seq()
+      d.possibleTypes shouldBe empty
     }
 
     "resolve a 'createTable' call indirectly from 'foo.d' field access correctly" in {
@@ -264,7 +264,6 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         .name("createTable")
         .l
       d.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.createTable"
-      d.dynamicTypeHintFullName shouldBe Seq()
       d.callee(NoResolve).isExternal.headOption shouldBe Some(true)
     }
 
@@ -277,7 +276,6 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         .l
 
       d.methodFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.deleteTable"
-      d.dynamicTypeHintFullName shouldBe Seq()
       d.callee(NoResolve).isExternal.headOption shouldBe Some(true)
     }
 
@@ -309,7 +307,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "resolve correct imports via tag nodes" in {
       val List(a: ResolvedTypeDecl, b: ResolvedMethod, c: UnknownImport, d: ResolvedMember) =
-        cpg.file(".*UserController.py").ast.isCall.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.file(".*UserController.py").ast.isCall.where(_.referencedImports).toResolvedImport.toList: @unchecked
       a.fullName shouldBe "app.py:<module>"
       b.fullName shouldBe "app.py:<module>"
       c.path shouldBe "flask.py:<module>.jsonify"
@@ -317,7 +315,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       d.memberName shouldBe "db"
 
       val List(sqlAlchemyM: UnknownMethod, sqlAlchemyT: UnknownTypeDecl) =
-        cpg.file(".*app.py").ast.isCall.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.file(".*app.py").ast.isCall.where(_.referencedImports).toResolvedImport.toList: @unchecked
       sqlAlchemyM.fullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.__init__"
       sqlAlchemyT.fullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy"
     }
@@ -355,7 +353,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |""".stripMargin).cpg
 
     "resolve correct imports via tag nodes" in {
-      val List(logging: UnknownImport) = cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+      val List(logging: UnknownImport) = cpg.call.where(_.referencedImports).toResolvedImport.toList: @unchecked
       logging.path shouldBe "logging.py:<module>"
     }
 
@@ -379,7 +377,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "resolve correct imports via tag nodes" in {
       val List(error: UnknownImport, request: UnknownImport) =
-        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.call.where(_.referencedImports).toResolvedImport.toList: @unchecked
       error.path shouldBe "urllib.py:<module>.error"
       request.path shouldBe "urllib.py:<module>.request"
     }
@@ -435,11 +433,11 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |# dummy file to trigger isExternal = false on methods that are imported from here
         |""".stripMargin,
       "pymongo.py"
-    ).cpg
+    )
 
     "resolve correct imports via tag nodes" in {
       val List(a: ResolvedTypeDecl, b: ResolvedMethod, c: UnknownMethod, d: UnknownTypeDecl, e: UnknownImport) =
-        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.call.where(_.referencedImports).toResolvedImport.toList: @unchecked
 
       a.fullName shouldBe "MongoConnection.py:<module>.MongoConnection"
       b.fullName shouldBe "MongoConnection.py:<module>.MongoConnection.__init__"
@@ -450,16 +448,9 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "recover a potential type for `self.collection` using the assignment at `get_collection` as a type hint" in {
       val Some(selfFindFound) = cpg.typeDecl(".*InstallationsDAO.*").ast.isCall.name("find_one").headOption: @unchecked
-      selfFindFound.dynamicTypeHintFullName shouldBe Seq(
-        "__builtin.None.find_one",
-        "pymongo.py:<module>.MongoClient.__init__.<indexAccess>.<indexAccess>.find_one"
-      )
+      selfFindFound.methodFullName shouldBe "pymongo.py:<module>.MongoClient.__init__.<returnValue>.<indexAccess>.<indexAccess>.find_one"
     }
 
-    "correctly determine that, despite being unable to resolve the correct method full name, that it is an internal method" in {
-      val Some(selfFindFound) = cpg.typeDecl(".*InstallationsDAO.*").ast.isCall.name("find_one").headOption: @unchecked
-      selfFindFound.callee.isExternal.toSeq shouldBe Seq(true, true)
-    }
   }
 
   "a recursive field access based call type" should {
@@ -568,7 +559,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         sessionM: ResolvedMethod,
         sqlSessionM: UnknownMethod,
         sqlSessionT: UnknownTypeDecl
-      ) = cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+      ) = cpg.call.where(_.referencedImports).toResolvedImport.toList: @unchecked
       sessionT.fullName shouldBe Seq("data", "db_session.py:<module>").mkString(File.separator)
       sessionM.fullName shouldBe Seq("data", "db_session.py:<module>").mkString(File.separator)
       sqlSessionM.fullName shouldBe Seq("sqlalchemy", "orm.py:<module>.Session.__init__").mkString(File.separator)
@@ -655,7 +646,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "resolve correct imports via tag nodes" in {
       val List(sqlSessionM: UnknownMethod, sqlSessionT: UnknownTypeDecl, db: ResolvedMember) =
-        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.call.where(_.referencedImports).toResolvedImport.toList: @unchecked
       sqlSessionM.fullName shouldBe Seq("flask_sqlalchemy.py:<module>.SQLAlchemy.__init__").mkString(File.separator)
       sqlSessionT.fullName shouldBe Seq("flask_sqlalchemy.py:<module>.SQLAlchemy").mkString(File.separator)
       db.basePath shouldBe Seq("api", "__init__.py:<module>").mkString(File.separator)
@@ -936,7 +927,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "resolve correct imports via tag nodes" in {
       val List(djangoModels: UnknownImport, profileT: ResolvedTypeDecl, profileM: ResolvedMethod) =
-        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.call.where(_.referencedImports).toResolvedImport.toList: @unchecked
       djangoModels.path shouldBe Seq("django", "db.py:<module>.models").mkString(File.separator)
       profileT.fullName shouldBe "models.py:<module>.Profile"
       profileM.fullName shouldBe "models.py:<module>.Profile.__init__"
@@ -974,11 +965,11 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |	c.getBotoClient().getS3Object()
         |""".stripMargin,
       "impl.py"
-    )
+    ).withConfig(Py2CpgOnFileSystemConfig().withTypePropagationIterations(3))
 
     "resolve correct imports via tag nodes" in {
       val List(connectorT: ResolvedTypeDecl, connectorM: ResolvedMethod) =
-        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.call.where(_.referencedImports).toResolvedImport.toList: @unchecked
       connectorT.fullName shouldBe Seq("lib", "connector.py:<module>.Connector").mkString(File.separator)
       connectorM.fullName shouldBe Seq("lib", "connector.py:<module>.Connector.__init__").mkString(File.separator)
     }
@@ -1050,9 +1041,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "be able to handle a simple call off an alias" in {
       val Some(redisGet) = cpg.call.nameExact("publish_json").headOption: @unchecked
-      redisGet.methodFullName shouldBe Seq("db", "redis.py:<module>.RedisDB.get_redis.publish_json").mkString(
-        File.separator
-      )
+      redisGet.methodFullName shouldBe "aioredis.py:<module>.Redis.publish_json"
     }
   }
 
@@ -1104,6 +1093,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |""".stripMargin,
         Seq("oauth2", "__init__.py").mkString(File.separator)
       )
+      .withConfig(Py2CpgOnFileSystemConfig().withTypePropagationIterations(4))
 
     "instantiate the return value correctly under `from_string`" in {
       val Some(token) = cpg.method("from_string").ast.isIdentifier.nameExact("token").headOption: @unchecked

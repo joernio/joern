@@ -93,7 +93,7 @@ class SymbolTable[K <: SBKey](val keyFromNode: AstNode => Option[K]) {
   }
 
   def put(sbKey: K, typeFullNames: Set[String]): Set[String] =
-    if (typeFullNames.nonEmpty) {
+    if (!sbKey.identifier.isBlank && typeFullNames.nonEmpty) {
       val newEntry = coalesce(Set.empty, typeFullNames)
       table.put(sbKey, newEntry)
       newEntry
@@ -122,6 +122,7 @@ class SymbolTable[K <: SBKey](val keyFromNode: AstNode => Option[K]) {
 
   def append(sbKey: K, typeFullNames: Set[String]): Set[String] = {
     table.get(sbKey) match {
+      case _ if sbKey.identifier.isBlank      => Set.empty
       case Some(ts) if ts == typeFullNames    => ts
       case Some(ts) if typeFullNames.nonEmpty => put(sbKey, coalesce(ts, typeFullNames))
       case None if typeFullNames.nonEmpty     => put(sbKey, coalesce(Set.empty, typeFullNames))
@@ -152,6 +153,18 @@ class SymbolTable[K <: SBKey](val keyFromNode: AstNode => Option[K]) {
 
   def view: MapView[K, Set[String]] = table.view
 
+  /** @return
+    *   a deep copy of this symbol table.
+    */
+  def copy(): SymbolTable[K] = {
+    val sb = SymbolTable[K](keyFromNode)
+    this.table.foreach { case (k, v) => sb.table.put(k, Set.from(v)) }
+    sb
+  }
+
   def clear(): Unit = table.clear()
+
+  override def toString: String =
+    table.map { case (k, v) => s"$k -> [${v.mkString(",")}]" }.mkString("\n")
 
 }

@@ -1,33 +1,47 @@
 package io.joern.rubysrc2cpg.passes
 
+import io.joern.x2cpg.Defines as XDefines
 import io.joern.x2cpg.passes.frontend.*
+import io.joern.x2cpg.passes.frontend.ImportsPass.ResolvedTypeDecl
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import overflowdb.BatchedUpdate.DiffGraphBuilder
-import io.joern.x2cpg.Defines as XDefines
 
-class RubyTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
-    extends XTypeRecoveryPass[File](cpg, config) {
-  override protected def generateRecoveryPass(state: XTypeRecoveryState): XTypeRecovery[File] =
-    new RubyTypeRecovery(cpg, state)
+import java.util.concurrent.ExecutorService
+
+class RubyTypeRecoveryPass(cpg: Cpg, config: TypeRecoveryConfig = TypeRecoveryConfig())
+    extends XTypeRecoveryPass(cpg, config) {
+  override protected def generateRecoveryPass(state: TypeRecoveryState, executor: ExecutorService): XTypeRecovery =
+    new RubyTypeRecovery(cpg, state, executor)
 }
 
-private class RubyTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTypeRecovery[File](cpg, state) {
+private class RubyTypeRecovery(cpg: Cpg, state: TypeRecoveryState, executor: ExecutorService)
+    extends XTypeRecovery(cpg, state, executor) {
 
-  override def compilationUnit: Iterator[File] = cpg.file.iterator
+  override protected def recoverTypesForProcedure(
+    cpg: Cpg,
+    procedure: Method,
+    initialSymbolTable: SymbolTable[LocalKey],
+    builder: DiffGraphBuilder,
+    state: TypeRecoveryState
+  ): RecoverTypesForProcedure = RecoverForRubyFile(cpg, procedure, initialSymbolTable, builder, state)
 
-  override def generateRecoveryForCompilationUnitTask(
-    unit: File,
-    builder: DiffGraphBuilder
-  ): RecoverForXCompilationUnit[File] = {
-    val newConfig = state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
-    new RecoverForRubyFile(cpg, unit, builder, state.copy(config = newConfig))
-  }
+  override protected def loadImports(i: ImportsPass.ResolvedImport, symbolTable: SymbolTable[LocalKey]): Unit =
+    i match {
+      case ResolvedTypeDecl(fullName, alias, _) =>
+        symbolTable.append(LocalVar(fullName.split("\\.").lastOption.getOrElse(alias)), fullName)
+      case _ => super.loadImports(i, symbolTable)
+    }
 }
 
-private class RecoverForRubyFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, state: XTypeRecoveryState)
-    extends RecoverForXCompilationUnit[File](cpg, cu, builder, state) {
+private class RecoverForRubyFile(
+  cpg: Cpg,
+  procedure: Method,
+  symbolTable: SymbolTable[LocalKey],
+  builder: DiffGraphBuilder,
+  state: TypeRecoveryState
+) extends RecoverTypesForProcedure(cpg, procedure, symbolTable, builder, state) {
 
   /** A heuristic method to determine if a call is a constructor or not.
     */
@@ -40,17 +54,6 @@ private class RecoverForRubyFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, 
   override protected def isConstructor(name: String): Boolean =
     !name.isBlank && (name == "new" || name == XDefines.ConstructorMethodName)
 
-  override def visitImport(i: Import): Unit = for {
-    resolvedImport <- i.call.tag
-    alias          <- i.importedAs
-  } {
-    import io.joern.x2cpg.passes.frontend.ImportsPass.*
-    ResolvedImport.tagToResolvedImport(resolvedImport).foreach {
-      case ResolvedTypeDecl(fullName, _) =>
-        symbolTable.append(LocalVar(fullName.split("\\.").lastOption.getOrElse(alias)), fullName)
-      case _ => super.visitImport(i)
-    }
-  }
   override def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
 
     def isMatching(cName: String, code: String) = {
@@ -67,9 +70,9 @@ private class RecoverForRubyFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, 
   override def methodReturnValues(methodFullNames: Seq[String]): Set[String] = {
     // Check if we have a corresponding member to resolve type
     val memberTypes = methodFullNames.flatMap { fullName =>
-      val memberName = fullName.split("\\.").lastOption
+      val memberName = fullName.split(pathSep).lastOption
       if (memberName.isDefined) {
-        val typeDeclFullName = fullName.stripSuffix(s".${memberName.get}")
+        val typeDeclFullName = fullName.stripSuffix(s"$pathSep${memberName.get}")
         cpg.typeDecl.fullName(typeDeclFullName).member.nameExact(memberName.get).typeFullName.l
       } else
         List.empty
@@ -108,7 +111,7 @@ private class RecoverForRubyFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, 
     }
   }
 
-  protected def setCallMethodFullNameFromBaseScopeResolution(c: Call): Set[String] = {
+  private def setCallMethodFullNameFromBaseScopeResolution(c: Call): Set[String] = {
     val recTypes = c.argument.headOption
       .map {
         case x: Call if x.name.equals("<operator>.scopeResolution") =>
@@ -119,11 +122,26 @@ private class RecoverForRubyFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, 
     symbolTable.append(c, callTypes)
   }
 
-  override protected def visitIdentifierAssignedToTypeRef(i: Identifier, t: TypeRef, rec: Option[String]): Set[String] =
+  override protected def visitIdentifierAssignedToTypeRef(
+    i: Identifier,
+    t: TypeRef,
+    rec: Option[String]
+  ): Set[String] = {
+    val receiver = rec match
+      case Some(x) => Option(x)
+      case None    => Option("this")
     t.typ.referencedTypeDecl
       .map(_.fullName.stripSuffix("<meta>"))
-      .map(td => symbolTable.append(CallAlias(i.name, rec), Set(td)))
+      .map(td => symbolTable.append(CallAlias(i.name, receiver), Set(td)))
       .headOption
-      .getOrElse(super.visitIdentifierAssignedToTypeRef(i, t, rec))
+      .getOrElse(super.visitIdentifierAssignedToTypeRef(i, t, receiver))
+  }
+
+  override protected def visitIdentifierAssignedToMethodRef(
+    i: Identifier,
+    m: MethodRef,
+    rec: Option[String] = None
+  ): Set[String] =
+    super.visitIdentifierAssignedToMethodRef(i, m, Option("this"))
 
 }

@@ -3,6 +3,7 @@ package io.joern.rubysrc2cpg.passes
 import io.joern.rubysrc2cpg.Config
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.rubysrc2cpg.utils.PackageTable
+import io.joern.x2cpg.passes.frontend.ImportsPass.CallToResolvedImportExt
 import io.joern.x2cpg.passes.frontend.ImportsPass.{
   ResolvedMethod,
   ResolvedTypeDecl,
@@ -70,8 +71,8 @@ class RubyTypeRecoveryTests
     )
     "resolve 'x' identifier types despite shadowing" in {
       val List(xOuterScope, xInnerScope) = cpg.identifier("x").take(2).l
-      xOuterScope.dynamicTypeHintFullName shouldBe Seq("__builtin.Integer", "__builtin.String")
-      xInnerScope.dynamicTypeHintFullName shouldBe Seq("__builtin.Integer", "__builtin.String")
+      xOuterScope.possibleTypes shouldBe Seq("__builtin.Integer", "__builtin.String")
+      xInnerScope.possibleTypes shouldBe Seq("__builtin.Integer", "__builtin.String")
     }
 
     "resolve module constant type" in {
@@ -140,10 +141,10 @@ class RubyTypeRecoveryTests
     // TODO Waiting for Module modelling to be done
     "resolve correct imports via tag nodes" ignore {
       val List(foo: ResolvedTypeDecl) =
-        cpg.file(".*foo.rb").ast.isCall.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.file(".*foo.rb").ast.isCall.where(_.referencedImports).toResolvedImport.toList: @unchecked
       foo.fullName shouldBe "dbi::program.DBI"
       val List(bar: ResolvedTypeDecl) =
-        cpg.file(".*bar.rb").ast.isCall.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.file(".*bar.rb").ast.isCall.where(_.referencedImports).toResolvedImport.toList: @unchecked
       bar.fullName shouldBe "foo.rb::program.FooModule"
     }
 
@@ -202,7 +203,7 @@ class RubyTypeRecoveryTests
         |""".stripMargin).cpg
 
     "resolve correct imports via tag nodes" in {
-      val List(logging: ResolvedMethod, _) = cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+      val List(logging: ResolvedMethod, _) = cpg.call.where(_.referencedImports).toResolvedImport.toList: @unchecked
       logging.fullName shouldBe s"logger::program.Logger.${XDefines.ConstructorMethodName}"
     }
 

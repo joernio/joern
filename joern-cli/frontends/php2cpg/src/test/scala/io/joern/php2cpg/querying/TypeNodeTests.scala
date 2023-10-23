@@ -27,7 +27,6 @@ class TypeNodeTests extends PhpCode2CpgFixture {
     val cpg = code("""<?php\n$x = 3;""")
 
     "have corresponding type nodes created" in {
-      println(cpg.literal.toList)
       cpg.typ.fullName.toSet shouldEqual Set("ANY", "int")
     }
 

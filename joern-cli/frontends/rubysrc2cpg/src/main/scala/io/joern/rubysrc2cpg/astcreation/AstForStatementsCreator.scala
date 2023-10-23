@@ -249,7 +249,8 @@ trait AstForStatementsCreator(filename: String)(implicit withSchemaValidation: V
     val methodIdentifierAsts = astForMethodIdentifierContext(ctx.methodIdentifier(), text(ctx))
     methodIdentifierAsts.headOption.foreach(methodNameAsIdentifierStack.push)
     val argsAsts = astForArguments(ctx.argumentsWithoutParentheses().arguments())
-
+    // TODO: We need a receiver of some kind
+    val receiverAst = Option(Ast(createThisIdentifier(ctx)))
     /* get args without the method def in it */
     val argAstsWithoutMethods = argsAsts.filterNot(_.root.exists(_.isInstanceOf[NewMethod]))
 
@@ -282,9 +283,9 @@ trait AstForStatementsCreator(filename: String)(implicit withSchemaValidation: V
         resolveRelativePath(filename, argsAsts, callNode)
       } else if (prefixMethods.contains(callNode.name)) {
         /* we remove the method definition AST from argument and add its corresponding identifier form */
-        Seq(callAst(callNode, argAstsWithoutMethods ++ methodToIdentifierAsts))
+        Seq(callAst(callNode, argAstsWithoutMethods ++ methodToIdentifierAsts, receiverAst))
       } else {
-        Seq(callAst(callNode, argsAsts))
+        Seq(callAst(callNode, argAstsWithoutMethods, receiverAst))
       }
     } else {
       argsAsts

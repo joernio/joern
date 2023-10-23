@@ -5,7 +5,7 @@ import io.joern.pysrc2cpg.*
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
-import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
+import io.joern.x2cpg.passes.frontend.TypeRecoveryConfig
 import io.shiftleft.codepropertygraph.Cpg
 
 import java.nio.file.Path
@@ -32,8 +32,8 @@ case class PythonSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends
     new DynamicTypeHintFullNamePass(cpg).createAndApply()
     new PythonInheritanceNamePass(cpg).createAndApply()
     val typeRecoveryConfig = pyConfig match
-      case Some(config) => XTypeRecoveryConfig(config.typePropagationIterations, !config.disableDummyTypes)
-      case None         => XTypeRecoveryConfig()
+      case Some(config) => TypeRecoveryConfig(config.typePropagationIterations, !config.disableDummyTypes)
+      case None         => TypeRecoveryConfig()
     new PythonTypeRecoveryPass(cpg, typeRecoveryConfig).createAndApply()
     new PythonTypeHintCallLinker(cpg).createAndApply()
     new NaiveCallLinker(cpg).createAndApply()

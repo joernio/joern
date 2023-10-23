@@ -21,7 +21,7 @@ import io.joern.javasrc2cpg.util.{Delombok, SourceParser}
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.datastructures.Global
-import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
+import io.joern.x2cpg.passes.frontend.TypeRecoveryConfig
 import io.joern.x2cpg.utils.dependency.DependencyResolver
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass

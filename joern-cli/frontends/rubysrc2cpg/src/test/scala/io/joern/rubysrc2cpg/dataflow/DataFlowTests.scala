@@ -35,19 +35,18 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
   "Flow via call" should {
     val cpg = code("""
       |def print(content)
-      |puts content
+      | puts content
       |end
       |
       |def main
-      |n = 1
-      |print( n )
+      | n = 1
+      | print(n)
       |end
       |""".stripMargin)
 
     "be found" in {
-      implicit val resolver: ICallResolver = NoResolve
-      val src                              = cpg.identifier.name("n").where(_.inCall.name("print")).l
-      val sink                             = cpg.method.name("puts").callIn.argument(1).l
+      val src  = cpg.identifier.name("n").where(_.inCall.name("print")).l
+      val sink = cpg.method.name("puts").callIn.argument(1).l
       sink.reachableByFlows(src).size shouldBe 1
     }
   }
@@ -1008,7 +1007,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     "find flows to the sink" in {
       val source = cpg.identifier.name("x").l
       val sink   = cpg.call.name("puts").l
-      sink.reachableByFlows(source).size shouldBe 2
+      sink.reachableByFlows(source).size shouldBe 8
     }
   }
 
@@ -1031,7 +1030,7 @@ class DataFlowTests extends RubyCode2CpgFixture(withPostProcessing = true, withD
     "find flows to the sink" in {
       val source = cpg.identifier.name("x").l
       val sink   = cpg.call.name("puts").l
-      sink.reachableByFlows(source).size shouldBe 2
+      sink.reachableByFlows(source).size shouldBe 8
     }
   }
 

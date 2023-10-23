@@ -49,11 +49,29 @@ object ImportsPass {
     def label: String
 
     def serialize: String
+
+    def alias: String
+  }
+
+  implicit class CallToResolvedImportExt(traversal: Iterator[Call]) {
+
+    def toResolvedImport: Iterator[ResolvedImport] =
+      traversal
+        .flatMap(c =>
+          c.referencedImports.flatMap(i =>
+            for {
+              alias <- i.importedAs
+            } yield c.tag.toResolvedImport(alias)
+          )
+        )
+        .flatten
+        .distinct
+
   }
 
   implicit class TagToResolvedImportExt(traversal: Iterator[Tag]) {
-    def toResolvedImport: Iterator[ResolvedImport] =
-      traversal.flatMap(ResolvedImport.tagToResolvedImport)
+    def toResolvedImport(alias: String): Iterator[ResolvedImport] =
+      traversal.flatMap(ResolvedImport.tagToResolvedImport(_, alias))
   }
 
   object ResolvedImport {
@@ -71,19 +89,19 @@ object ImportsPass {
     val OPT_BASE_PATH = "BASE_PATH"
     val OPT_NAME      = "NAME"
 
-    def tagToResolvedImport(tag: Tag): Option[ResolvedImport] = Option(tag.name match {
+    def tagToResolvedImport(tag: Tag, alias: String): Option[ResolvedImport] = Option(tag.name match {
       case RESOLVED_METHOD =>
         val opts = valueToOptions(tag.value)
         ResolvedMethod(opts(OPT_FULL_NAME), opts(OPT_ALIAS), opts.get(OPT_RECEIVER))
-      case RESOLVED_TYPE_DECL => ResolvedTypeDecl(tag.value)
+      case RESOLVED_TYPE_DECL => ResolvedTypeDecl(tag.value, alias)
       case RESOLVED_MEMBER =>
         val opts = valueToOptions(tag.value)
-        ResolvedMember(opts(OPT_BASE_PATH), opts(OPT_NAME))
+        ResolvedMember(opts(OPT_BASE_PATH), opts(OPT_NAME), alias)
       case UNKNOWN_METHOD =>
         val opts = valueToOptions(tag.value)
         UnknownMethod(opts(OPT_FULL_NAME), opts(OPT_ALIAS), opts.get(OPT_RECEIVER))
-      case UNKNOWN_TYPE_DECL => UnknownTypeDecl(tag.value)
-      case UNKNOWN_IMPORT    => UnknownImport(tag.value)
+      case UNKNOWN_TYPE_DECL => UnknownTypeDecl(tag.value, alias)
+      case UNKNOWN_IMPORT    => UnknownImport(tag.value, alias)
       case _                 => null
     })
 
@@ -113,13 +131,20 @@ object ImportsPass {
         .mkString(sep)
   }
 
-  case class ResolvedTypeDecl(fullName: String, override val label: String = RESOLVED_TYPE_DECL)
-      extends ResolvedImport {
+  case class ResolvedTypeDecl(
+    fullName: String,
+    override val alias: String,
+    override val label: String = RESOLVED_TYPE_DECL
+  ) extends ResolvedImport {
     override def serialize: String = fullName
   }
 
-  case class ResolvedMember(basePath: String, memberName: String, override val label: String = RESOLVED_MEMBER)
-      extends ResolvedImport {
+  case class ResolvedMember(
+    basePath: String,
+    memberName: String,
+    override val alias: String,
+    override val label: String = RESOLVED_MEMBER
+  ) extends ResolvedImport {
     override def serialize: String = Seq(OPT_BASE_PATH, basePath.encode, OPT_NAME, memberName.encode).mkString(sep)
   }
 
@@ -136,11 +161,16 @@ object ImportsPass {
         .mkString(sep)
   }
 
-  case class UnknownTypeDecl(fullName: String, override val label: String = UNKNOWN_TYPE_DECL) extends ResolvedImport {
+  case class UnknownTypeDecl(
+    fullName: String,
+    override val alias: String,
+    override val label: String = UNKNOWN_TYPE_DECL
+  ) extends ResolvedImport {
     override def serialize: String = fullName
   }
 
-  case class UnknownImport(path: String, override val label: String = UNKNOWN_IMPORT) extends ResolvedImport {
+  case class UnknownImport(path: String, override val alias: String, override val label: String = UNKNOWN_IMPORT)
+      extends ResolvedImport {
     override def serialize: String = path
   }
 }

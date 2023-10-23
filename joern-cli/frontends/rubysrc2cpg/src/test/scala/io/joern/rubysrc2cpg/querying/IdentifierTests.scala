@@ -35,7 +35,8 @@ class IdentifierTests extends RubyCode2CpgFixture {
       cpg.identifier.name("num3").size shouldBe 1
       cpg.identifier.name("sum").size shouldBe 2
       cpg.identifier.name("ret").size shouldBe 2
-      cpg.identifier.size shouldBe 16 // 2 identifier node is for methodRef's assigment
+      cpg.identifier.name("this").size shouldBe 2
+      cpg.identifier.size shouldBe 18 // 2 identifier node is for methodRef's assigment
     }
 
     "identify a single call node" in {

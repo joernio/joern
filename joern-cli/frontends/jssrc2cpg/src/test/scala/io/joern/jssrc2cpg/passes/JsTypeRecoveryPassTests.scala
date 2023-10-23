@@ -4,7 +4,7 @@ import io.joern.jssrc2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.joern.x2cpg.passes.frontend.ImportsPass._
 import io.shiftleft.semanticcpg.language._
 
-class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
+class JsTypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
   "literals declared from built-in types" should {
     val cpg = code("""
@@ -22,8 +22,8 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
     "resolve 'x' identifier types despite shadowing" in {
       val List(xOuterScope, xInnerScope) = cpg.identifier.nameExact("x").l
-      xOuterScope.dynamicTypeHintFullName shouldBe Seq("__ecma.String", "__ecma.Number")
-      xInnerScope.dynamicTypeHintFullName shouldBe Seq("__ecma.String", "__ecma.Number")
+      xOuterScope.possibleTypes shouldBe Seq("__ecma.String", "__ecma.Number")
+      xInnerScope.possibleTypes shouldBe Seq("__ecma.String", "__ecma.Number")
     }
 
     "resolve 'z' types correctly" in {
@@ -57,7 +57,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
     "resolve correct imports via tag nodes" in {
       val List(a: UnknownMethod, b: UnknownTypeDecl, x: UnknownMethod, y: UnknownTypeDecl) =
-        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.call.where(_.referencedImports).toResolvedImport.toList: @unchecked
       a.fullName shouldBe "slack_sdk:WebClient"
       b.fullName shouldBe "slack_sdk:WebClient"
       x.fullName shouldBe "sendgrid:SendGridAPIClient"
@@ -141,7 +141,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
     "resolve correct imports via tag nodes" in {
       val List(a: ResolvedMember, b: ResolvedMember, c: ResolvedMember, d: UnknownMethod, e: UnknownTypeDecl) =
-        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.call.where(_.referencedImports).toResolvedImport.toList: @unchecked
       a.basePath shouldBe "Foo.ts::program"
       a.memberName shouldBe "x"
       b.basePath shouldBe "Foo.ts::program"
@@ -167,25 +167,25 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
     "resolve 'foo.x' and 'foo.y' field access primitive types correctly" in {
       val List(z1, z2) = cpg.file.name(".*Bar.*").ast.isIdentifier.nameExact("z").l
       z1.typeFullName shouldBe "ANY"
-      z1.dynamicTypeHintFullName shouldBe Seq("__ecma.Number", "__ecma.String")
+      z1.possibleTypes.sorted shouldBe Seq("__ecma.Number", "__ecma.String")
       z2.typeFullName shouldBe "ANY"
-      z2.dynamicTypeHintFullName shouldBe Seq("__ecma.Number", "__ecma.String")
+      z2.possibleTypes.sorted shouldBe Seq("__ecma.Number", "__ecma.String")
     }
 
     "resolve 'foo.d' field access object types correctly" in {
       val List(d1, d2, d3) = cpg.file.name(".*Bar.*").ast.isIdentifier.nameExact("d").l
       d1.typeFullName shouldBe "flask_sqlalchemy:SQLAlchemy"
-      d1.dynamicTypeHintFullName shouldBe Seq()
+      d1.possibleTypes shouldBe empty
       d2.typeFullName shouldBe "flask_sqlalchemy:SQLAlchemy"
-      d2.dynamicTypeHintFullName shouldBe Seq()
+      d2.possibleTypes shouldBe empty
       d3.typeFullName shouldBe "flask_sqlalchemy:SQLAlchemy"
-      d3.dynamicTypeHintFullName shouldBe Seq()
+      d3.possibleTypes shouldBe empty
     }
 
     "resolve a 'createTable' call indirectly from 'foo.d' field access correctly" in {
       val List(d) = cpg.file.name(".*Bar.*").ast.isCall.name("createTable").l
       d.methodFullName shouldBe "flask_sqlalchemy:SQLAlchemy:createTable"
-      d.dynamicTypeHintFullName shouldBe Seq()
+      d.possibleTypes shouldBe empty
       d.callee(NoResolve).isExternal.headOption shouldBe Some(true)
     }
 
@@ -197,7 +197,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         .name("deleteTable")
         .l
       d.methodFullName shouldBe "flask_sqlalchemy:SQLAlchemy:deleteTable"
-      d.dynamicTypeHintFullName shouldBe empty
+      d.possibleTypes shouldBe empty
       d.callee(NoResolve).isExternal.headOption shouldBe Some(true)
     }
 
@@ -229,7 +229,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
     )
 
     "resolve correct imports via tag nodes" in {
-      val List(x: ResolvedMethod) = cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+      val List(x: ResolvedMethod) = cpg.call.where(_.referencedImports).toResolvedImport.toList: @unchecked
       x.fullName shouldBe "util.js::program:getIncrementalInteger"
     }
 
@@ -258,7 +258,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
     "resolve correct imports via tag nodes" in {
       val List(x: UnknownMethod, y: UnknownTypeDecl) =
-        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.call.where(_.referencedImports).toResolvedImport.toList: @unchecked
       x.fullName shouldBe "googleapis"
       y.fullName shouldBe "googleapis"
     }
@@ -279,10 +279,15 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
         |""".stripMargin)
 
     "resolve correct imports via tag nodes" in {
-      val List(x: UnknownMethod, y: UnknownTypeDecl, z: UnknownMethod) =
-        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+      val List(w: UnknownMethod, x: UnknownTypeDecl, y: UnknownMethod, z: UnknownTypeDecl) =
+        cpg.call.where(_.referencedImports).toResolvedImport.toList: @unchecked
+      w.alias shouldBe "google"
+      w.fullName shouldBe "googleapis"
+      x.alias shouldBe "google"
       x.fullName shouldBe "googleapis"
+      y.alias shouldBe "_tmp_0"
       y.fullName shouldBe "googleapis"
+      z.alias shouldBe "_tmp_0"
       z.fullName shouldBe "googleapis"
     }
 
@@ -381,7 +386,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
     "resolve correct imports via tag nodes" in {
       val List(a: ResolvedTypeDecl, b: ResolvedMethod, c: ResolvedMethod, d: UnknownMethod, e: UnknownTypeDecl) =
-        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.call.where(_.referencedImports).toResolvedImport.toList: @unchecked
       a.fullName shouldBe "foo.js::program"
       b.fullName shouldBe "foo.js::program:literalFunction"
       c.fullName shouldBe "foo.js::program:get"

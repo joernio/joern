@@ -25,7 +25,7 @@ class DoBlockTest extends RubyCode2CpgFixture {
       name.name shouldBe "name"
       age.name shouldBe "age"
 
-      val List(value, unit) = nameMethod.local.l
+      val List(unit, value) = nameMethod.local.l
       value.name shouldBe "value"
       unit.name shouldBe "unit"
     }

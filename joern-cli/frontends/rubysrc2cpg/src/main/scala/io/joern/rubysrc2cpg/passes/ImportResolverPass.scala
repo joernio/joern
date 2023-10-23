@@ -23,10 +23,10 @@ class ImportResolverPass(cpg: Cpg, packageTableInfo: PackageTable) extends XImpo
     diffGraph: DiffGraphBuilder
   ): Unit = {
 
-    resolveEntities(importedEntity, importCall, fileName).foreach(x => resolvedImportToTag(x, importCall, diffGraph))
+    resolveEntities(importedEntity, importedAs, fileName).foreach(x => resolvedImportToTag(x, importCall, diffGraph))
   }
 
-  private def resolveEntities(expEntity: String, importCall: Call, fileName: String): Set[ResolvedImport] = {
+  private def resolveEntities(expEntity: String, alias: String, fileName: String): Set[ResolvedImport] = {
 
     // TODO
     /* Currently we are considering only case where exposed module are Classes,
@@ -54,13 +54,13 @@ class ImportResolverPass(cpg: Cpg, packageTableInfo: PackageTable) extends XImpo
           .flatMap { typeDeclModel =>
             Seq(
               ResolvedMethod(s"${typeDeclModel.fullName}.${XDefines.ConstructorMethodName}", "new"),
-              ResolvedTypeDecl(typeDeclModel.fullName)
+              ResolvedTypeDecl(typeDeclModel.fullName, alias)
             )
           }
           .distinct
 
         val importNodesFromModule = packageTableInfo.getModule(expEntity).flatMap { moduleModel =>
-          Seq(ResolvedTypeDecl(moduleModel.fullName))
+          Seq(ResolvedTypeDecl(moduleModel.fullName, alias))
         }
         (importNodesFromTypeDecl ++ importNodesFromModule).toSet
       } else {
@@ -69,14 +69,17 @@ class ImportResolverPass(cpg: Cpg, packageTableInfo: PackageTable) extends XImpo
           .where(_.file.name(filePattern))
           .fullName
           .flatMap(fullName =>
-            Seq(ResolvedTypeDecl(fullName), ResolvedMethod(s"$fullName.${XDefines.ConstructorMethodName}", "new"))
+            Seq(
+              ResolvedTypeDecl(fullName, alias),
+              ResolvedMethod(s"$fullName.${XDefines.ConstructorMethodName}", "new")
+            )
           )
           .toSet
 
         val resolvedModules = cpg.namespaceBlock
           .whereNot(_.nameExact("<global>"))
           .where(_.file.name(filePattern))
-          .flatMap(module => Seq(ResolvedTypeDecl(module.fullName)))
+          .flatMap(module => Seq(ResolvedTypeDecl(module.fullName, alias)))
           .toSet
 
         // Expose methods which are directly present in a file, without any module, TypeDecl

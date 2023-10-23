@@ -8,7 +8,7 @@ import io.joern.jssrc2cpg.utils.AstGenRunner
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
-import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
+import io.joern.x2cpg.passes.frontend.TypeRecoveryConfig
 import io.joern.x2cpg.utils.{HashUtil, Report}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.CpgPassBase
@@ -58,8 +58,8 @@ object JsSrc2Cpg {
 
   def postProcessingPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] = {
     val typeRecoveryConfig = config
-      .map(c => XTypeRecoveryConfig(c.typePropagationIterations, !c.disableDummyTypes))
-      .getOrElse(XTypeRecoveryConfig())
+      .map(c => TypeRecoveryConfig(c.typePropagationIterations, !c.disableDummyTypes))
+      .getOrElse(TypeRecoveryConfig())
     List(
       new JavaScriptInheritanceNamePass(cpg),
       new ConstClosurePass(cpg),

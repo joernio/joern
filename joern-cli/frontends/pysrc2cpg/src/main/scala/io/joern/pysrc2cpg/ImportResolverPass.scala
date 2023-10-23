@@ -70,10 +70,10 @@ class ImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
         val resolvedEntities =
           traversal.flatMap(x => cpg.typeDecl.fullNameExact(x) ++ cpg.method.fullNameExact(x)).collect {
             case x: Method   => ResolvedMethod(x.fullName, alias)
-            case x: TypeDecl => ResolvedTypeDecl(x.fullName)
+            case x: TypeDecl => ResolvedTypeDecl(x.fullName, alias)
           }
         if (resolvedEntities.isEmpty) {
-          traversal.filterNot(_.contains("__init__.py")).map(x => UnknownImport(x))
+          traversal.filterNot(_.contains("__init__.py")).map(x => UnknownImport(x, alias))
         } else {
           resolvedEntities
         }
@@ -117,9 +117,10 @@ class ImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
             ResolvedMethod(t.method.nameExact(m.name).fullName.head, alias)
           case (t, m) if t.astSiblings.isMethod.fullNameExact(t.fullName).ast.isTypeDecl.nameExact(m.name).nonEmpty =>
             ResolvedTypeDecl(
-              t.astSiblings.isMethod.fullNameExact(t.fullName).ast.isTypeDecl.nameExact(m.name).fullName.head
+              t.astSiblings.isMethod.fullNameExact(t.fullName).ast.isTypeDecl.nameExact(m.name).fullName.head,
+              alias
             )
-          case (t, m) => ResolvedMember(t.fullName, m.name)
+          case (t, m) => ResolvedMember(t.fullName, m.name, alias)
         }
       case _ =>
         // Case 4:  Import from module using alias, e.g. import bar from foo as faz
@@ -136,13 +137,13 @@ class ImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
     }).flatMap {
       // If we import the constructor, we also import the type
       case x: ResolvedMethod if isMaybeConstructor =>
-        Seq(ResolvedMethod(Seq(x.fullName, "__init__").mkString(pathSep), alias), ResolvedTypeDecl(x.fullName))
+        Seq(ResolvedMethod(Seq(x.fullName, "__init__").mkString(pathSep), alias), ResolvedTypeDecl(x.fullName, alias))
       // If we import the type, we also import the constructor
       case x: ResolvedTypeDecl if isMaybeConstructor =>
         Seq(x, ResolvedMethod(Seq(x.fullName, "__init__").mkString(pathSep), alias))
       // If we can determine the import is a constructor, then it is likely not a member
       case x: UnknownImport if isMaybeConstructor =>
-        Seq(UnknownMethod(Seq(x.path, "__init__").mkString(pathSep), alias), UnknownTypeDecl(x.path))
+        Seq(UnknownMethod(Seq(x.path, "__init__").mkString(pathSep), alias), UnknownTypeDecl(x.path, alias))
       case x => Seq(x)
     }.toSet
   }

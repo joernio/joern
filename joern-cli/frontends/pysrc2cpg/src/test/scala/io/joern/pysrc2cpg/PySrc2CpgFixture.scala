@@ -3,9 +3,10 @@ package io.joern.pysrc2cpg
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
-import io.joern.x2cpg.X2Cpg
+import io.joern.x2cpg.{X2Cpg, X2CpgConfig}
 import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
+import io.joern.x2cpg.passes.frontend.{TypeRecoveryConfig, TypeRecoveryParserConfig}
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, LanguageFrontend, TestCpg}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
@@ -39,7 +40,14 @@ class PySrcTestCpg extends TestCpg with PythonFrontend {
     new ImportResolverPass(this).createAndApply()
     new PythonInheritanceNamePass(this).createAndApply()
     new DynamicTypeHintFullNamePass(this).createAndApply()
-    new PythonTypeRecoveryPass(this).createAndApply()
+    getConfig() match
+      case Some(config: X2CpgConfig[_] with TypeRecoveryParserConfig[_]) =>
+        new PythonTypeRecoveryPass(
+          this,
+          TypeRecoveryConfig(config.typePropagationIterations, !config.disableDummyTypes)
+        ).createAndApply()
+      case _ => new PythonTypeRecoveryPass(this).createAndApply()
+
     new PythonTypeHintCallLinker(this).createAndApply()
     new NaiveCallLinker(this).createAndApply()
 

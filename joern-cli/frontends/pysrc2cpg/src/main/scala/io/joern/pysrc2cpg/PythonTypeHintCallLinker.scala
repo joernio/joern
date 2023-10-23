@@ -23,7 +23,9 @@ class PythonTypeHintCallLinker(cpg: Cpg) extends XTypeHintCallLinker(cpg) {
     } else if (methodNames.sizeIs > 1) {
       val nonDummyMethodNames =
         methodNames.filterNot(x => isDummyType(x) || x.startsWith(PythonAstVisitor.builtinPrefix + "None"))
-      super.setCallees(call, nonDummyMethodNames, builder)
+
+      if (nonDummyMethodNames.nonEmpty) super.setCallees(call, nonDummyMethodNames, builder)
+      else super.setCallees(call, methodNames, builder)
     }
   }
 

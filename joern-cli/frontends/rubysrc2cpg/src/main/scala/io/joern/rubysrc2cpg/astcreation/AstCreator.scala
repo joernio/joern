@@ -567,6 +567,8 @@ class AstCreator(
     val parenAst    = astForArgumentsWithParenthesesContext(ctx.argumentsWithParentheses())
     val callNode    = methodIdAst.head.nodes.filter(_.isInstanceOf[NewCall]).head.asInstanceOf[NewCall]
     callNode.name(resolveAlias(callNode.name))
+    // TODO: We need a receiver of some kind
+    val receiverAst = Option(Ast(createThisIdentifier(ctx)))
 
     if (ctx.block() != null) {
       val isYieldMethod = if (callNode.name.endsWith(YIELD_SUFFIX)) {
@@ -578,13 +580,13 @@ class AstCreator(
       if (isYieldMethod) {
         val methAst = astForBlock(ctx.block(), Some(callNode.name))
         blockMethods.addOne(methAst)
-        Seq(callAst(callNode, parenAst))
+        Seq(callAst(callNode, parenAst, receiverAst))
       } else {
         val blockAst = Seq(astForBlock(ctx.block()))
-        Seq(callAst(callNode, parenAst ++ blockAst))
+        Seq(callAst(callNode, parenAst ++ blockAst, receiverAst))
       }
     } else
-      Seq(callAst(callNode, parenAst))
+      Seq(callAst(callNode, parenAst, receiverAst))
   }
 
   def astForCallNode(ctx: ParserRuleContext, code: String, isYieldBlock: Boolean = false): Ast = {
@@ -596,8 +598,9 @@ class AstCreator(
       if (isBuiltin(calleeName)) builtInCallNames.add(calleeName)
       calleeName
     }
-
-    callAst(callNode(ctx, code, name, DynamicCallUnknownFullName, DispatchTypes.STATIC_DISPATCH))
+    // TODO: We need some kind of receiver, so I'm adding this
+    val thisNode = Option(Ast(createThisIdentifier(ctx)))
+    callAst(callNode(ctx, code, name, DynamicCallUnknownFullName, DispatchTypes.STATIC_DISPATCH), base = thisNode)
   }
 
   private def astForMethodOnlyIdentifier(ctx: MethodOnlyIdentifierContext): Seq[Ast] = {
