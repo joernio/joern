@@ -14,28 +14,6 @@ import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scala.util.{Failure, Success, Try}
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
-  private def createFunctionTypeAndTypeDecl(
-    node: ParserNodeInfo,
-    method: NewMethod,
-    methodName: String,
-    methodFullName: String,
-    signature: String
-  ): Ast = {
-
-    val parentNode: NewTypeDecl = methodAstParentStack.collectFirst { case t: NewTypeDecl => t }.getOrElse {
-      // TODO: Need to add respective Unit test to test this possibility, as looks to me as dead code.
-      //  Replicated it from 'c2cpg' by referring AstForFunctionsCreator.
-      val astParentType     = methodAstParentStack.head.label
-      val astParentFullName = methodAstParentStack.head.properties(PropertyNames.FULL_NAME).toString
-      val typeDeclNode_ =
-        typeDeclNode(node, methodName, methodFullName, method.filename, methodName, astParentType, astParentFullName)
-      Ast.storeInDiffGraph(Ast(typeDeclNode_), diffGraph)
-      typeDeclNode_
-    }
-
-    val functionBinding = NewBinding().name(methodName).methodFullName(methodFullName).signature(signature)
-    Ast(functionBinding).withBindsEdge(parentNode, functionBinding).withRefEdge(functionBinding, method)
-  }
 
   def astForFuncDecl(funcDecl: ParserNodeInfo): Seq[Ast] = {
     val (name, methodFullname, signature, params, receiverInfo, genericTypeMethodMap) = processFuncDecl(funcDecl.json)
@@ -61,10 +39,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       case Some(_, typeFullName, _, _) =>
         // if method is related to Struct then fill astParentFullName and astParentType
         methodNode_.astParentType(NodeTypes.TYPE_DECL).astParentFullName(typeFullName)
-        Ast.storeInDiffGraph(astForMethod, diffGraph)
-        Seq.empty
       case _ =>
-        Seq(astForMethod)
+        methodNode_.astParentType(NodeTypes.TYPE_DECL).astParentFullName(fullyQualifiedPackage)
+    Ast.storeInDiffGraph(astForMethod, diffGraph)
+    Seq.empty
   }
 
   private def astForReceiver(receiverInfo: Option[(String, String, String, ParserNodeInfo)]): Seq[Ast] = {

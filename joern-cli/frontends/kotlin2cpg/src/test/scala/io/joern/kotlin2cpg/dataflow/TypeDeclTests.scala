@@ -2,7 +2,7 @@ package io.joern.kotlin2cpg.dataflow
 
 import io.joern.dataflowengineoss.language.toExtendedCfgNode
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = true) {
   implicit val resolver: ICallResolver = NoResolve
@@ -112,6 +112,26 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = true) {
             ("println(this.x)", Some(7))
           )
         )
+    }
+  }
+
+  "CPG for classes with secondary constructors" should {
+    val cpg = code("""
+        |class AClass {
+        |    var x: String
+        |    constructor(q: String) {
+        |        this.x = q
+        |    }
+        |    constructor(p: String, r: Int) {
+        |        this.x = p
+        |    }
+        |}
+        |""".stripMargin)
+
+    "have their own instance of primaryCtorCall nodes" in {
+      val List(call1, call2) = cpg.method.nameExact("<init>").filter(_.parameter.size > 1).call.nameExact("<init>").l
+      call1.method.fullName shouldBe "AClass.<init>:void(java.lang.String)"
+      call2.method.fullName shouldBe "AClass.<init>:void(java.lang.String,int)"
     }
   }
 

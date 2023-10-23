@@ -9,8 +9,11 @@ import io.shiftleft.semanticcpg.language._
 
 import java.io.{File => JFile}
 import java.util.regex.{Matcher, Pattern}
+import better.files.File as BFile
 
 class ImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
+
+  private lazy val root = cpg.metaData.root.headOption.getOrElse("").stripSuffix(JFile.separator)
 
   override protected def optionalResolveImport(
     fileName: String,
@@ -24,7 +27,13 @@ class ImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
       val namespace = importedEntity.stripSuffix(s".${splitName.last}")
       (relativizeNamespace(namespace, fileName), splitName.last)
     } else {
-      ("", importedEntity)
+      val currDir = BFile(root) / fileName match
+        case x if x.isDirectory => x
+        case x                  => x.parent
+
+      val relCurrDir = currDir.pathAsString.stripPrefix(root).stripPrefix(JFile.separator)
+
+      (relCurrDir, importedEntity)
     }
 
     resolveEntities(namespace, entityName, importedAs).foreach(x => resolvedImportToTag(x, importCall, diffGraph))

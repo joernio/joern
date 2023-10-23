@@ -52,7 +52,7 @@ class DownloadDependenciesPass(parentGoMod: GoModHelper) {
         Some(config),
         astGenResult.parsedModFile.flatMap(modFile => GoAstJsonParser.readModFile(Paths.get(modFile)).map(x => x))
       )
-      new MethodAndTypeCacheBuilderPass(astGenResult.parsedFiles, config, goMod).process()
+      new MethodAndTypeCacheBuilderPass(None, astGenResult.parsedFiles, config, goMod).process()
     }
   }
 }
