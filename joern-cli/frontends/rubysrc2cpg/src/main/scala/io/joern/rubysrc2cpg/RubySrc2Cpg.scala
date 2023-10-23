@@ -1,9 +1,9 @@
 package io.joern.rubysrc2cpg
 
 import better.files.File
-import io.joern.rubysrc2cpg.astcreation.ResourceManagedParser
-import io.joern.rubysrc2cpg.passes.*
-import io.joern.rubysrc2cpg.utils.PackageTable
+import io.joern.rubysrc2cpg.deprecated.astcreation.ResourceManagedParser
+import io.joern.rubysrc2cpg.deprecated.passes.*
+import io.joern.rubysrc2cpg.deprecated.utils.PackageTable
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.datastructures.Global
@@ -28,23 +28,34 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
     withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
       new MetaDataPass(cpg, Languages.RUBYSRC, config.inputPath).createAndApply()
       new ConfigFileCreationPass(cpg).createAndApply()
-      Using.resource(new ResourceManagedParser(config.antlrCacheMemLimit)) { parser =>
-        if (config.enableDependencyDownload && !scala.util.Properties.isWin) {
-          val tempDir = File.newTemporaryDirectory()
-          try {
-            downloadDependency(config.inputPath, tempDir.toString())
-            new AstPackagePass(cpg, tempDir.toString(), global, parser, RubySrc2Cpg.packageTableInfo, config.inputPath)(
-              config.schemaValidation
-            ).createAndApply()
-          } finally {
-            tempDir.delete()
-          }
-        }
-
-        val astCreationPass = new AstCreationPass(cpg, global, parser, RubySrc2Cpg.packageTableInfo, config)
-        astCreationPass.createAndApply()
-        TypeNodePass.withRegisteredTypes(astCreationPass.allUsedTypes(), cpg).createAndApply()
+      if (config.useDeprecatedFrontend) {
+        deprecatedCreateCpgAction(cpg, config)
+      } else {
+        newCreateCpgAction(cpg, config)
       }
+    }
+  }
+
+  private def newCreateCpgAction(cpg: Cpg, config: Config): Unit = {
+    // TODO
+  }
+
+  private def deprecatedCreateCpgAction(cpg: Cpg, config: Config): Unit = {
+    Using.resource(new ResourceManagedParser(config.antlrCacheMemLimit)) { parser =>
+      if (config.enableDependencyDownload && !scala.util.Properties.isWin) {
+        val tempDir = File.newTemporaryDirectory()
+        try {
+          downloadDependency(config.inputPath, tempDir.toString())
+          new AstPackagePass(cpg, tempDir.toString(), global, parser, RubySrc2Cpg.packageTableInfo, config.inputPath)(
+            config.schemaValidation
+          ).createAndApply()
+        } finally {
+          tempDir.delete()
+        }
+      }
+      val astCreationPass = new AstCreationPass(cpg, global, parser, RubySrc2Cpg.packageTableInfo, config)
+      astCreationPass.createAndApply()
+      TypeNodePass.withRegisteredTypes(astCreationPass.allUsedTypes(), cpg).createAndApply()
     }
   }
 
@@ -71,18 +82,23 @@ object RubySrc2Cpg {
 
   val packageTableInfo = new PackageTable()
 
-  def postProcessingPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] =
-    List(
-      // TODO commented below two passes, as waiting on Dependency download PR to get merged
-      new IdentifierToCallPass(cpg),
-      new ImportResolverPass(cpg, packageTableInfo),
-      new RubyTypeRecoveryPass(cpg),
-      new RubyTypeHintCallLinker(cpg),
-      new NaiveCallLinker(cpg),
+  def postProcessingPasses(cpg: Cpg, config: Config): List[CpgPassBase] = {
+    if (config.useDeprecatedFrontend) {
+      List(
+        // TODO commented below two passes, as waiting on Dependency download PR to get merged
+        new IdentifierToCallPass(cpg),
+        new ImportResolverPass(cpg, packageTableInfo),
+        new RubyTypeRecoveryPass(cpg),
+        new RubyTypeHintCallLinker(cpg),
+        new NaiveCallLinker(cpg),
 
-      // Some of passes above create new methods, so, we
-      // need to run the ASTLinkerPass one more time
-      new AstLinkerPass(cpg)
-    )
+        // Some of passes above create new methods, so, we
+        // need to run the ASTLinkerPass one more time
+        new AstLinkerPass(cpg)
+      )
+    } else {
+      List()
+    }
+  }
 
 }
