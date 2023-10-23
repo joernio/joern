@@ -131,8 +131,9 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
             createIdentifierNode(tmpVariableName, Load, lineAndColumn)
           ).collect {
             // Signal that these are module-related de-sugaring operations
-            case x: NewIdentifier => x.code(s"<module>.${x.code}")
-            case x: NewCall       => x.code(s"<module>.${x.code}")
+            case x: NewIdentifier                             => x.code(s"<module>.${x.code}")
+            case x: NewCall if !x.code.startsWith("<module>") => x.code(s"<module>.${x.code}")
+            case x                                            => x
           }
           val targetNode = convert(targetAstNode)
           // Generate a block, and make it look like the "sugared" code that is being parsed
