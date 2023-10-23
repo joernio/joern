@@ -92,6 +92,8 @@ class LambdaTests extends JavaSrcCode2CpgFixture(withOssDataflow = true) {
         |       userPayload.forEach(item -> {
         |           userNamesList.add(item + myValue);
         |           sink2(myValue);
+        |           sink3(userNamesList);
+        |           sink4(userPayload);
         |       });
         |       sink1(userNamesList);
         |       return;
@@ -114,6 +116,19 @@ class LambdaTests extends JavaSrcCode2CpgFixture(withOssDataflow = true) {
 
       sink.reachableByFlows(source).isEmpty shouldBe false
     }
+
+    "be found for case 3" in {
+      def source = cpg.identifier("userNamesList").head
+      def sink   = cpg.call("sink3")
+      sink.reachableByFlows(source).isEmpty shouldBe false
+    }
+
+    "be found for case 4" in {
+      def source = cpg.identifier("userPayload").head
+      def sink   = cpg.call("sink4")
+      sink.reachableByFlows(source).isEmpty shouldBe false
+    }
+
   }
 
 }
