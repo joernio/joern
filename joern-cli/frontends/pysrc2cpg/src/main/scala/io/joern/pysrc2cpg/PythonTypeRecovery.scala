@@ -22,6 +22,8 @@ class PythonTypeRecoveryPass(cpg: Cpg, config: TypeRecoveryConfig = TypeRecovery
 private class PythonTypeRecovery(cpg: Cpg, state: TypeRecoveryState, executor: ExecutorService)
     extends XTypeRecovery(cpg, state, executor) {
 
+  import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
+
   override val initialSymbolTable: SymbolTable[LocalKey] = SymbolTable[LocalKey](fromNodeToLocalPythonKey)
 
   override def loadImports(i: ResolvedImport, symbolTable: SymbolTable[LocalKey]): Unit = i match {
@@ -30,8 +32,7 @@ private class PythonTypeRecovery(cpg: Cpg, state: TypeRecoveryState, executor: E
         .fullNameExact(basePath)
         .member
         .nameExact(memberName)
-        .flatMap(m => m.typeFullName +: (m.dynamicTypeHintFullName ++ m.possibleTypes))
-        .filterNot(_ == "ANY")
+        .flatMap(_.getKnownTypes)
         .toSet
       symbolTable.put(LocalVar(alias), memberTypes)
     case _ => super.loadImports(i, symbolTable)
@@ -66,6 +67,8 @@ private class RecoverForPythonProcedure(
   builder: DiffGraphBuilder,
   state: TypeRecoveryState
 ) extends RecoverTypesForProcedure(cpg, procedure, symbolTable, builder, state) {
+
+  import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
 
   override def visitAssignments(a: OpNodes.Assignment): Set[String] = {
     a.argumentOut.l match {
@@ -132,8 +135,7 @@ private class RecoverForPythonProcedure(
     fa.astChildren.l match {
       case List(base: Identifier, fi: FieldIdentifier) if base.name.equals("self") && fieldParents.nonEmpty =>
         val referencedFields = cpg.typeDecl.fullNameExact(fieldParents.toSeq: _*).member.nameExact(fi.canonicalName)
-        val globalTypes =
-          referencedFields.flatMap(m => m.typeFullName +: m.dynamicTypeHintFullName).filterNot(_ == Constants.ANY).toSet
+        val globalTypes      = referencedFields.flatMap(_.getKnownTypes).toSet
         associateTypes(i, globalTypes)
       case _ => super.visitIdentifierAssignedToFieldLoad(i, fa)
     }

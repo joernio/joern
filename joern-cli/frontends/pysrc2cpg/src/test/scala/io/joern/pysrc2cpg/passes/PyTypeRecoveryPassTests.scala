@@ -433,7 +433,7 @@ class PyTypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) 
         |# dummy file to trigger isExternal = false on methods that are imported from here
         |""".stripMargin,
       "pymongo.py"
-    ).withConfig(Py2CpgOnFileSystemConfig().withTypePropagationIterations(4))
+    )
 
     "resolve correct imports via tag nodes" in {
       val List(a: ResolvedTypeDecl, b: ResolvedMethod, c: UnknownMethod, d: UnknownTypeDecl, e: UnknownImport) =
@@ -448,15 +448,9 @@ class PyTypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) 
 
     "recover a potential type for `self.collection` using the assignment at `get_collection` as a type hint" in {
       val Some(selfFindFound) = cpg.typeDecl(".*InstallationsDAO.*").ast.isCall.name("find_one").headOption: @unchecked
-      selfFindFound.possibleTypes shouldBe Seq(
-        "pymongo.py:<module>.MongoClient.__init__.<indexAccess>.<indexAccess>.find_one"
-      )
+      selfFindFound.methodFullName shouldBe "pymongo.py:<module>.MongoClient.__init__.<returnValue>.<indexAccess>.<indexAccess>.find_one"
     }
 
-    "correctly determine that, despite being unable to resolve the correct method full name, that it is an internal method" in {
-      val Some(selfFindFound) = cpg.typeDecl(".*InstallationsDAO.*").ast.isCall.name("find_one").headOption: @unchecked
-      selfFindFound.callee.isExternal.toSeq shouldBe Seq(true, true)
-    }
   }
 
   "a recursive field access based call type" should {

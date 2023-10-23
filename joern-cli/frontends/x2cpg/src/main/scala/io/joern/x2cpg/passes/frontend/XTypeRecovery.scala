@@ -1243,11 +1243,7 @@ abstract class RecoverTypesForProcedure(
   protected def storeCallTypeInfo(c: Call, types: Seq[String]): Unit =
     if (types.nonEmpty) {
       state.changesWereMade.compareAndSet(false, true)
-      builder.setNodeProperty(
-        c,
-        PropertyNames.POSSIBLE_TYPES,
-        (c.possibleTypes ++ c.dynamicTypeHintFullName ++ types).distinct
-      )
+      builder.setNodeProperty(c, PropertyNames.POSSIBLE_TYPES, (c.getKnownTypes ++ types).toSeq)
     }
 
   /** Allows one to modify the types assigned to identifiers.
