@@ -40,6 +40,8 @@ private class RecoverForJavaScriptProcedure(
   state: TypeRecoveryState
 ) extends RecoverTypesForProcedure(cpg, procedure, symbolTable, builder, state) {
 
+  import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
+
   override protected val pathSep = ':'
 
   /** A heuristic method to determine if a call is a constructor or not.

@@ -104,6 +104,16 @@ private class RecoverForPythonProcedure(
     }
   }
 
+  override def visitStatementsInBlock(b: Block, assignmentTarget: Option[Identifier]): Set[String] = {
+    if (b.inAssignment.nonEmpty && b.expressionDown.assignment.argument(1).fieldAccess.code("<module>.*").nonEmpty) {
+      super.visitStatementsInBlock(b, assignmentTarget)
+      // Shortcut the actual value of the module access
+      visitAssignmentArguments(List(b.inAssignment.target.head, b.expressionDown.assignment.head.source))
+    } else {
+      super.visitStatementsInBlock(b, assignmentTarget)
+    }
+  }
+
   override def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
     val constructorPaths = symbolTable.get(c).map(_.stripSuffix(s"${pathSep}__init__"))
     associateTypes(i, constructorPaths)
@@ -175,7 +185,8 @@ private class RecoverForPythonProcedure(
     }
   }
 
-  override protected def postSetTypeInformation(): Unit =
+  override protected def postSetTypeInformation(): Unit = {
+    super.postSetTypeInformation()
     procedure.typeDecl
       .map(t => t -> t.inheritsFromTypeFullName.partition(itf => symbolTable.contains(LocalVar(itf))))
       .foreach { case (t, (identifierTypes, otherTypes)) =>
@@ -186,6 +197,7 @@ private class RecoverForPythonProcedure(
           builder.setNodeProperty(t, PropertyNames.INHERITS_FROM_TYPE_FULL_NAME, resolvedTypes)
         }
       }
+  }
 
   override def prepopulateSymbolTable(): Unit = {
     procedure.ast.isMethodRef.where(_.astSiblings.isIdentifier.nameExact("classmethod")).referencedMethod.foreach {
@@ -219,8 +231,17 @@ private class RecoverForPythonProcedure(
 
   override protected def setTypes(n: StoredNode, types: Seq[String]): Unit = n match {
     case _: Call => super.setTypes(n, types.filterNot(_.startsWith("__builtin.None")))
-    case _ => super.setTypes(n, types.filterNot(_.matches("__builtin\\.None.+")))
+    case _       => super.setTypes(n, types.filterNot(_.matches("__builtin\\.None.+")))
   }
 
+  override protected def handlePotentialFunctionPointer(
+    funcPtr: Expression,
+    baseTypes: Set[String],
+    funcName: String,
+    baseName: Option[String]
+  ): Unit = {
+    if (funcName != "<module>")
+      super.handlePotentialFunctionPointer(funcPtr, baseTypes, funcName, baseName)
+  }
 
 }

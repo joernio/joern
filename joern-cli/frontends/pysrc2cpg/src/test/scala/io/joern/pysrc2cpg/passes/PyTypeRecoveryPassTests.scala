@@ -41,7 +41,11 @@ class PyTypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) 
       zAppend.methodFullName shouldBe "<unknownFullName>"
       // Since we don't have method nodes with this full name, this should belong to the call linker namespace
       zAppend.callee.astParentFullName.headOption shouldBe Some(XTypeHintCallLinker.namespace)
-      zAppend.possibleTypes.sorted shouldBe Seq("__builtin.dict.append", "__builtin.list.append", "__builtin.tuple.append")
+      zAppend.possibleTypes.sorted shouldBe Seq(
+        "__builtin.dict.append",
+        "__builtin.list.append",
+        "__builtin.tuple.append"
+      )
     }
   }
 
@@ -429,7 +433,7 @@ class PyTypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) 
         |# dummy file to trigger isExternal = false on methods that are imported from here
         |""".stripMargin,
       "pymongo.py"
-    ).cpg
+    ).withConfig(Py2CpgOnFileSystemConfig().withTypePropagationIterations(4))
 
     "resolve correct imports via tag nodes" in {
       val List(a: ResolvedTypeDecl, b: ResolvedMethod, c: UnknownMethod, d: UnknownTypeDecl, e: UnknownImport) =
@@ -1095,6 +1099,7 @@ class PyTypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) 
         |""".stripMargin,
         Seq("oauth2", "__init__.py").mkString(File.separator)
       )
+      .withConfig(Py2CpgOnFileSystemConfig().withTypePropagationIterations(4))
 
     "instantiate the return value correctly under `from_string`" in {
       val Some(token) = cpg.method("from_string").ast.isIdentifier.nameExact("token").headOption: @unchecked
