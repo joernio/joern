@@ -3,11 +3,14 @@ package io.joern.php2cpg.passes
 import io.joern.x2cpg.passes.frontend._
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
+
+import scala.annotation.tailrec
+import scala.collection.mutable
 
 class PhpTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
     extends XTypeRecoveryPass[NamespaceBlock](cpg, config) {
@@ -46,6 +49,8 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
       }
     case _ => super.prepopulateSymbolTableEntry(x)
   }
+
+  protected val methodTypesTable = mutable.Map[Method, mutable.HashSet[String]]()
 
   override def isConstructor(c: Call): Boolean =
     isConstructor(c.name) && c.code.endsWith(")")
@@ -180,6 +185,65 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
   override protected def visitIdentifierAssignedToFieldLoad(i: Identifier, fa: FieldAccess): Set[String] = {
     logger.debug(s"visiting field identifier: ${getFieldName(fa)}")
     super.visitIdentifierAssignedToFieldLoad(i, fa)
+  }
+
+  override protected def visitReturns(ret: Return): Unit = {
+    logger.debug(s"visiting return: ${ret.method.name}:(ID${ret.id})")
+    /* A bug in XTypeRecovery mishandles functions that have multiple return
+     * statements. We add a new "symbol table" (methodTypesTable) for method
+     * return types as they get collected across the multiple return statements
+     * for a single function.
+     */
+
+    val m = ret.method
+    val existingTypes = mutable.HashSet.from(
+      (m.methodReturn.typeFullName +: m.methodReturn.dynamicTypeHintFullName)
+        .filterNot(_ == "ANY")
+    )
+    logger.debug(s"- existing types: ${existingTypes.mkString(", ")}")
+    existingTypes.addAll(methodTypesTable.getOrElse(m, mutable.HashSet()))
+    logger.debug(s"- existing types + methodTypesTable: ${existingTypes.mkString(", ")}")
+
+    @tailrec
+    def extractTypes(xs: List[CfgNode]): Set[String] = xs match {
+      case ::(head: Literal, Nil) if head.typeFullName != "ANY" =>
+        Set(head.typeFullName)
+      case ::(head: Call, Nil) if head.name == Operators.fieldAccess =>
+        val fieldAccess = new FieldAccess(head)
+        val (sym, ts)   = getSymbolFromCall(fieldAccess)
+        val cpgTypes = cpg.typeDecl
+          .fullNameExact(ts.map(_.compUnitFullName).toSeq: _*)
+          .member
+          .nameExact(sym.identifier)
+          .flatMap(m => m.typeFullName +: m.dynamicTypeHintFullName)
+          .filterNot { x => x == "ANY" || x == "this" }
+          .toSet
+        if (cpgTypes.nonEmpty) cpgTypes
+        else symbolTable.get(sym)
+      case ::(head: Call, Nil) if symbolTable.contains(head) =>
+        val callPaths    = symbolTable.get(head)
+        val returnValues = methodReturnValues(callPaths.toSeq)
+        if (returnValues.isEmpty)
+          callPaths.map(c => s"$c$pathSep${XTypeRecovery.DummyReturnType}")
+        else
+          returnValues
+      case ::(head: Call, Nil) if head.argumentOut.headOption.exists(symbolTable.contains) =>
+        symbolTable
+          .get(head.argumentOut.head)
+          .map(t => Seq(t, head.name, XTypeRecovery.DummyReturnType).mkString(pathSep.toString))
+      case ::(identifier: Identifier, Nil) if symbolTable.contains(identifier) =>
+        symbolTable.get(identifier)
+      case ::(head: Call, Nil) =>
+        extractTypes(head.argument.l)
+      case _ => Set.empty
+    }
+    val returnTypes = extractTypes(ret.argumentOut.l)
+    logger.debug(s"- extracted types: ${returnTypes.mkString(", ")}")
+    existingTypes.addAll(returnTypes)
+    logger.debug(s"- new existing types: ${existingTypes.mkString(", ")}")
+
+    methodTypesTable.update(m, existingTypes)
+    builder.setNodeProperty(ret.method.methodReturn, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, existingTypes)
   }
 
   /** Necessary to change the filter regex from (this|self) to (\\$this|this), in order to account for $this PHP

@@ -208,7 +208,7 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture() {
 
     "identify both possible return types" in {
       val List(fooMethod) = cpg.method("foo_multiple_returns").take(1).l
-      fooMethod.methodReturn.dynamicTypeHintFullName shouldBe Seq("int", "string")
+      fooMethod.methodReturn.dynamicTypeHintFullName.toSet shouldBe Set("int", "string")
     }
   }
 
