@@ -73,9 +73,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
   }
 
   override def visitAssignments(a: OpNodes.Assignment): Set[String] = {
-    logger.debug(s"visiting assigment: ${a.name}")
-    logger.debug(s"- arguments: ${a.argumentOut.l.mkString(" ")}")
-    logger.debug(s"- iteration: ${state.currentIteration}")
+    logger.debug(s"visiting assigment: ${a.name}\n- arguments: ${a.argumentOut.l.mkString(" ")}\n- iteration: ${state.currentIteration}")
     super.visitAssignments(a)
   }
 
@@ -170,8 +168,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
   }
 
   override protected def visitCallAssignedToCall(x: Call, y: Call): Set[String] = {
-    logger.debug(s"visiting call ${x.name} assigned to call ${y.name}")
-    logger.debug(s"- ${x.name}: [${getTypesFromCall(y).mkString(", ")}]")
+    logger.debug(s"visiting call ${x.name} assigned to call ${y.name}\n- ${x.name}: [${getTypesFromCall(y).mkString(", ")}]")
     super.visitCallAssignedToCall(x, y)
   }
 
@@ -235,8 +232,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
     case _ if symbolTable.contains(c) => symbolTable.get(c)
     case Operators.indexAccess        => getIndexAccessTypes(c)
     case n => {
-      logger.debug(s"Unknown RHS call type '$n' @ ${c.name}")
-      logger.debug("- looking up in CPG")
+      logger.debug(s"Unknown RHS call type '$n' @ ${c.name}\n- looking up in CPG")
       methodReturnValues(Seq(c.methodFullName))
     }
   }
@@ -251,8 +247,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
           .getOrElse(XTypeRecovery.DummyIndexAccess)
       else x.name
 
-    logger.debug(s"Index access to collection var")
-    logger.debug(s"- call name: ${c.name}")
+    logger.debug(s"Index access to collection var\n- call name: ${c.name}")
 
     val collectionVar = Option(c.argumentOut.l match {
       case List(i: Identifier, idx: Literal)    => CollectionVar(i.name, idx.code)
