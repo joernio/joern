@@ -32,13 +32,6 @@ private class PhpTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XType
 private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraphBuilder, state: XTypeRecoveryState)
     extends RecoverForXCompilationUnit[NamespaceBlock](cpg, cu, builder, state) {
 
-  /** A lookup table for any PHP builtins with known types. The methodReturnValues method will refer to this table when
-    * an unknown function is encountered.
-    */
-  protected val builtinsSymbolTable = Map[String, Set[String]](
-    // "strtolower"    -> Set("string"),
-  )
-
   override protected def prepopulateSymbolTable(): Unit = {
     logger.debug(s"prepopulating symbol table")
     super.prepopulateSymbolTable()
@@ -73,7 +66,8 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
   }
 
   override def visitAssignments(a: OpNodes.Assignment): Set[String] = {
-    logger.debug(s"visiting assigment: ${a.name}\n- arguments: ${a.argumentOut.l.mkString(" ")}\n- iteration: ${state.currentIteration}")
+    logger.debug(s"""visiting assigment: ${a.name}
+      |- arguments: ${a.argumentOut.l.mkString(" ")}\n- iteration: ${state.currentIteration}""".stripMargin)
     super.visitAssignments(a)
   }
 
@@ -168,7 +162,8 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
   }
 
   override protected def visitCallAssignedToCall(x: Call, y: Call): Set[String] = {
-    logger.debug(s"visiting call ${x.name} assigned to call ${y.name}\n- ${x.name}: [${getTypesFromCall(y).mkString(", ")}]")
+    logger.debug(s"""visiting call ${x.name} assigned to call ${y.name}
+      |- ${x.name}: [${getTypesFromCall(y).mkString(", ")}]""".stripMargin)
     super.visitCallAssignedToCall(x, y)
   }
 
@@ -309,11 +304,9 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
       .toSet
     logger.debug(s"method return values: ${rs.mkString(",")}")
     if (rs.isEmpty)
-      // Look up in builtins table or else return dummy return type
-      // TODO: Remove - no longer necessary now that PhpSetKnownTypes is
-      // implemented.
+      // Return dummy return type if not found.
       methodFullNames
-        .flatMap(m => builtinsSymbolTable.getOrElse(m, Set(m.concat(s"$pathSep${XTypeRecovery.DummyReturnType}"))))
+        .flatMap(m => Set(m.concat(s"$pathSep${XTypeRecovery.DummyReturnType}")))
         .toSet
     else rs
   }
