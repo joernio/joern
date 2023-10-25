@@ -3,7 +3,6 @@ package io.joern.gosrc2cpg.datastructures
 import io.joern.gosrc2cpg.astcreation.Defines
 import io.joern.x2cpg.datastructures.Global
 
-import java.util.Map
 import java.util.concurrent.ConcurrentHashMap
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
 

@@ -43,26 +43,21 @@ class VariableReferencingTests extends GoCodeToCpgSuite {
     val cpg = code("""package main
         |var x = 1
         |func main(){
-        |y:=x
+        | y := x
         |}
         |""".stripMargin)
 
+    "check Global Member node" in {
+      val List(x) = cpg.typeDecl("main").l
+      val List(a) = x.member.l
+      a.name shouldBe "x"
+      a.typeFullName shouldBe "int"
+    }
+
     "test local variable exists" in {
-      val List(localNode) = cpg.method("main.Test0.go").local.nameExact("x").l
-      localNode.code shouldBe "x"
-      localNode.closureBindingId shouldBe None
-    }
-
-    "test identifier association to local" in {
-      val List(localNode) = cpg.method("main.Test0.go").local.nameExact("x").l
-      localNode.referencingIdentifiers.lineNumber(2).code.head shouldBe "x"
-      localNode.referencingIdentifiers.lineNumber(4).code.head shouldBe "x"
-    }
-
-    "test global variable line and column numbers" in {
-      val List(localNode) = cpg.method("main.Test0.go").local.nameExact("x").l
-      localNode.lineNumber shouldBe Some(2)
-      localNode.columnNumber shouldBe Some(5)
+      val List(localNode) = cpg.local.l
+      localNode.name shouldBe "y"
+      localNode.typeFullName shouldBe "int"
     }
   }
 
