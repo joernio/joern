@@ -3,7 +3,7 @@ import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg
-import io.joern.x2cpg.utils.NodeBuilders.newOperatorCallNode
+import io.joern.x2cpg.utils.NodeBuilders.{newFieldIdentifierNode, newOperatorCallNode}
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.NewFieldIdentifier
@@ -82,18 +82,7 @@ trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { thi
     val callNode =
       newOperatorCallNode(Operators.fieldAccess, info.code, Some(fieldTypeFullName), line(info), column(info))
     Seq(
-      callAst(
-        callNode,
-        identifierAsts ++ Seq(
-          Ast(
-            NewFieldIdentifier()
-              .canonicalName(fieldIdentifier)
-              .lineNumber(line(info))
-              .columnNumber(column(info))
-              .code(fieldIdentifier)
-          )
-        )
-      )
+      callAst(callNode, identifierAsts ++ Seq(Ast(newFieldIdentifierNode(fieldIdentifier, line(info), column(info)))))
     )
   }
 }

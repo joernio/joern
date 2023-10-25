@@ -66,10 +66,10 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult, go
     val declsAsts = rootNode
       .json(ParserKeys.Decls)
       .arr
-      .flatMap(item => {
+      .flatMap { item =>
         val node = createParserNodeInfo(item)
         astForNode(node, true)
-      })
+      }
       .toList
     methodAstParentStack.pop()
     scope.popScope()
