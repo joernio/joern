@@ -70,7 +70,7 @@ class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
       case refType: ResolvedReferenceType =>
         nameOrFullName(refType.getTypeDeclaration.get, fullyQualified)
       case lazyType: LazyType =>
-        lazyType match {
+        Try(lazyType match {
           case _ if lazyType.isReferenceType =>
             nameOrFullName(lazyType.asReferenceType(), typeParamValues, fullyQualified)
           case _ if lazyType.isTypeVariable =>
@@ -81,7 +81,7 @@ class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
             nameOrFullName(lazyType.asPrimitive(), typeParamValues, fullyQualified)
           case _ if lazyType.isWildcard =>
             nameOrFullName(lazyType.asWildcard(), typeParamValues, fullyQualified)
-        }
+        }).toOption.flatten
       case tpe @ (_: ResolvedVoidType | _: ResolvedPrimitiveType) =>
         Some(tpe.describe())
       case arrayType: ResolvedArrayType =>
