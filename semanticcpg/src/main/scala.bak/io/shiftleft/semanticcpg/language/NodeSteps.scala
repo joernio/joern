@@ -1,8 +1,8 @@
 package io.shiftleft.semanticcpg.language
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.nodes._
-import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.v2.v2.nodes._
+import io.shiftleft.codepropertygraph.generated.v2.v2.{EdgeTypes, NodeTypes}
 import io.shiftleft.semanticcpg.codedumper.CodeDumper
 // import overflowdb.traversal._
 // // TODO bring back: import overflowdb.traversal.help.Doc

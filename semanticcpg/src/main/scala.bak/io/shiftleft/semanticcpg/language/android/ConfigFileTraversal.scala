@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.language.android
 
 import io.joern.semanticcpg.utils.SecureXmlParsing
-import io.shiftleft.codepropertygraph.generated.nodes
+import io.shiftleft.codepropertygraph.generated.v2.nodes
 
 class ConfigFileTraversal(val traversal: Iterator[nodes.ConfigFile]) extends AnyVal {
   def usesCleartextTraffic =

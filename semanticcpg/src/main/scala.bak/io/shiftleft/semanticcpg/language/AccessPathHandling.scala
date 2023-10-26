@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.language
 
-import io.shiftleft.codepropertygraph.generated.{Operators, Properties, PropertyNames}
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.v2.{Operators, Properties, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.v2.nodes._
 import io.shiftleft.semanticcpg.accesspath._
 import org.slf4j.LoggerFactory
 

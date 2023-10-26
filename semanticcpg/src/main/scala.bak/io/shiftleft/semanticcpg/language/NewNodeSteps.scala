@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language
 
-import io.shiftleft.codepropertygraph.generated.nodes.NewNode
+import io.shiftleft.codepropertygraph.generated.v2.nodes.NewNode
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 trait HasStoreMethod {

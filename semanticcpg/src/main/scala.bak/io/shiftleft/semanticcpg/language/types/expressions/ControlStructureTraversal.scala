@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.language.types.expressions
 
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, ControlStructure, Expression}
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Properties}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{AstNode, ControlStructure, Expression}
+import io.shiftleft.codepropertygraph.generated.v2.{ControlStructureTypes, Properties}
 import io.shiftleft.semanticcpg.language.*
 // TODO bring back: import overflowdb.traversal.help.Doc
 

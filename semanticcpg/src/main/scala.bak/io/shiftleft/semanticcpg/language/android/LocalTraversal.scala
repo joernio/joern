@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language.android
 
-import io.shiftleft.codepropertygraph.generated.nodes.Local
+import io.shiftleft.codepropertygraph.generated.v2.nodes.Local
 import io.shiftleft.semanticcpg.language.*
 
 class LocalTraversal(val traversal: Iterator[Local]) extends AnyVal {
