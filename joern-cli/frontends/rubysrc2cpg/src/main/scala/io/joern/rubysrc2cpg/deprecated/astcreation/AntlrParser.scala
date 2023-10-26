@@ -1,6 +1,10 @@
 package io.joern.rubysrc2cpg.deprecated.astcreation
 
-import io.joern.rubysrc2cpg.deprecated.parser.{DeprecatedRubyLexer, DeprecatedRubyLexerPostProcessor, DeprecatedRubyParser}
+import io.joern.rubysrc2cpg.deprecated.parser.{
+  DeprecatedRubyLexer,
+  DeprecatedRubyLexerPostProcessor,
+  DeprecatedRubyParser
+}
 import org.antlr.v4.runtime.*
 import org.antlr.v4.runtime.atn.ATN
 import org.antlr.v4.runtime.dfa.DFA
