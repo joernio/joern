@@ -509,10 +509,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
       if (implicitReturnAroundLastStatement && statements.nonEmpty) {
         val _returnNode          = returnNode(statements.last, Constants.retCode)
         val astsForLastStatement = astsForExpression(statements.last, Some(1))
-        (astsForLastStatement.dropRight(1), Some(returnAst(_returnNode, Seq(astsForLastStatement.last))))
+        (
+          astsForLastStatement.dropRight(1),
+          Some(returnAst(_returnNode, Seq(astsForLastStatement.lastOption.getOrElse(Ast()))))
+        )
       } else if (statements.nonEmpty) {
         val astsForLastStatement = astsForExpression(statements.last, None)
-        (astsForLastStatement.dropRight(1), Some(astsForLastStatement.last))
+        (astsForLastStatement.dropRight(1), Some(astsForLastStatement.lastOption.getOrElse(Ast())))
       } else (Seq(), None)
 
     if (pushToScope) scope.popScope()
