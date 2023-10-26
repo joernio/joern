@@ -13,7 +13,8 @@ import io.shiftleft.semanticcpg.language.nodemethods.*
 import io.shiftleft.semanticcpg.language.types.expressions.generalizations.*
 import io.shiftleft.semanticcpg.language.types.expressions.{CallTraversal => OriginalCall, *}
 //import io.shiftleft.semanticcpg.language.types.propertyaccessors._
-//import io.shiftleft.semanticcpg.language.types.structure.{MethodTraversal => OriginalMethod, _}
+// import io.shiftleft.semanticcpg.language.types.structure.{MethodTraversal => OriginalMethod}
+import io.shiftleft.semanticcpg.language.types.structure.*
 //import overflowdb.NodeOrDetachedNode
 
 /** Language for traversing the code property graph
@@ -42,7 +43,7 @@ package object language extends /* operatorextension.Implicits with */ LowPrioIm
 //     new MethodParameterOutMethods(node)
 //   implicit def toIdentifierMethods(node: Identifier): IdentifierMethods = new IdentifierMethods(node)
 //   implicit def toLiteralMethods(node: Literal): LiteralMethods          = new LiteralMethods(node)
-//   implicit def toLocalMethods(node: Local): LocalMethods                = new LocalMethods(node)
+  implicit def toLocalMethods(node: Local): LocalMethods                = new LocalMethods(node)
 //   implicit def toMethodRefMethods(node: MethodRef): MethodRefMethods    = new MethodRefMethods(node)
 
 //   // Implicit conversions from Step[NodeType, Label] to corresponding Step classes.
@@ -93,7 +94,7 @@ package object language extends /* operatorextension.Implicits with */ LowPrioIm
 //     new AnnotationParameterAssignTraversal(a.iterator)
 
 //   implicit def toMember(traversal: IterableOnce[Member]): MemberTraversal = new MemberTraversal(traversal.iterator)
-//   implicit def toLocal(traversal: IterableOnce[Local]): LocalTraversal    = new LocalTraversal(traversal.iterator)
+  implicit def toLocal(traversal: IterableOnce[Local]): LocalTraversal    = new LocalTraversal(traversal.iterator)
 //   implicit def toMethod(traversal: IterableOnce[Method]): OriginalMethod  = new OriginalMethod(traversal.iterator)
 
 //   implicit def singleToMethodParameterInTrav[A <: MethodParameterIn](a: A): MethodParameterTraversal =
