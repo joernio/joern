@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.deprecated.astcreation
 
+import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.{HereDocArgumentContext, HereDocLiteralContext}
 import io.joern.rubysrc2cpg.deprecated.parser.HereDocHandling
-import io.joern.rubysrc2cpg.deprecated.parser.RubyParser.{HereDocArgumentContext, HereDocLiteralContext}
 import io.joern.rubysrc2cpg.deprecated.passes.Defines
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewIdentifier, NewLiteral}

@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.deprecated.astcreation
 
-import io.joern.rubysrc2cpg.deprecated.parser.RubyParser
-import io.joern.rubysrc2cpg.deprecated.parser.RubyParser.*
+import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser
+import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.*
 import io.joern.rubysrc2cpg.deprecated.passes.Defines
 import io.joern.rubysrc2cpg.deprecated.utils.PackageContext
 import io.joern.x2cpg.Ast.storeInDiffGraph
@@ -84,7 +84,7 @@ class AstCreator(
     }
   }
 
-  private def createAstForProgramCtx(programCtx: RubyParser.ProgramContext) = {
+  private def createAstForProgramCtx(programCtx: DeprecatedRubyParser.ProgramContext) = {
     val name     = ":program"
     val fullName = s"$relativeFilename:$name"
     val programMethod =
@@ -276,16 +276,16 @@ class AstCreator(
   }
 
   protected def astForIndexingArgumentsContext(ctx: IndexingArgumentsContext): Seq[Ast] = ctx match {
-    case ctx: RubyParser.CommandOnlyIndexingArgumentsContext =>
+    case ctx: DeprecatedRubyParser.CommandOnlyIndexingArgumentsContext =>
       astForCommand(ctx.command())
-    case ctx: RubyParser.ExpressionsOnlyIndexingArgumentsContext =>
+    case ctx: DeprecatedRubyParser.ExpressionsOnlyIndexingArgumentsContext =>
       ctx
         .expressions()
         .expression()
         .asScala
         .flatMap(astForExpressionContext)
         .toSeq
-    case ctx: RubyParser.ExpressionsAndSplattingIndexingArgumentsContext =>
+    case ctx: DeprecatedRubyParser.ExpressionsAndSplattingIndexingArgumentsContext =>
       val expAsts = ctx
         .expressions()
         .expression()
@@ -297,7 +297,7 @@ class AstCreator(
       Seq(callAst(callNode, expAsts ++ splatAsts))
     case ctx: AssociationsOnlyIndexingArgumentsContext =>
       astForAssociationsContext(ctx.associations())
-    case ctx: RubyParser.SplattingOnlyIndexingArgumentsContext =>
+    case ctx: DeprecatedRubyParser.SplattingOnlyIndexingArgumentsContext =>
       astForExpressionOrCommand(ctx.splattingArgument().expressionOrCommand())
     case _ =>
       logger.error(s"astForIndexingArgumentsContext() $relativeFilename, ${text(ctx)} All contexts mismatched.")
@@ -667,7 +667,7 @@ class AstCreator(
       val argsAsts   = astForArguments(ctx.argumentsWithoutParentheses().arguments())
       val doBlockAst = Seq(astForDoBlock(ctx.doBlock()))
       argsAsts ++ doBlockAst
-    case ctx: RubyParser.ArgsAndDoBlockAndMethodIdCommandWithDoBlockContext =>
+    case ctx: DeprecatedRubyParser.ArgsAndDoBlockAndMethodIdCommandWithDoBlockContext =>
       val methodIdAsts = astForMethodIdentifierContext(ctx.methodIdentifier(), text(ctx))
       methodIdAsts.headOption.flatMap(_.root) match
         case Some(methodIdRoot: NewCall) if methodIdRoot.name == "define_method" =>
@@ -683,7 +683,7 @@ class AstCreator(
           val argsAsts    = astForArguments(ctx.argumentsWithoutParentheses().arguments())
           val doBlockAsts = Seq(astForDoBlock(ctx.doBlock()))
           methodIdAsts ++ argsAsts ++ doBlockAsts
-    case ctx: RubyParser.PrimaryMethodArgsDoBlockCommandWithDoBlockContext =>
+    case ctx: DeprecatedRubyParser.PrimaryMethodArgsDoBlockCommandWithDoBlockContext =>
       val argsAsts       = astForArguments(ctx.argumentsWithoutParentheses().arguments())
       val doBlockAsts    = Seq(astForDoBlock(ctx.doBlock()))
       val methodNameAsts = astForMethodNameContext(ctx.methodName())

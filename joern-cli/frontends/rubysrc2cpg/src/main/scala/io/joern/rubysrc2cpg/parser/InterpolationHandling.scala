@@ -1,8 +1,8 @@
-package io.joern.rubysrc2cpg.deprecated.parser
+package io.joern.rubysrc2cpg.parser
 
 import scala.collection.mutable
 
-trait InterpolationHandling { this: DeprecatedRubyLexerBase =>
+trait InterpolationHandling { this: RubyLexerBase =>
 
   private val interpolationEndTokenType = mutable.Stack[Int]()
 

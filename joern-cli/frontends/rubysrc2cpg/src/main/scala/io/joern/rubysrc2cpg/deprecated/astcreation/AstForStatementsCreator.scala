@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.deprecated.astcreation
 
 import better.files.File
-import io.joern.rubysrc2cpg.deprecated.parser.RubyParser.*
+import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.*
 import io.joern.rubysrc2cpg.deprecated.passes.Defines
 import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
 import io.joern.x2cpg.Imports.createImportNodeAndLink

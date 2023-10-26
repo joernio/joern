@@ -1,4 +1,4 @@
-lexer grammar RubyLexer;
+lexer grammar DeprecatedRubyLexer;
 
 // --------------------------------------------------------
 // Auxiliary tokens and features
@@ -29,7 +29,7 @@ tokens {
 }
 
 options {
-    superClass = RubyLexerBase;
+    superClass = DeprecatedRubyLexerBase;
 }
 
 // --------------------------------------------------------

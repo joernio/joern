@@ -1,9 +1,9 @@
-package io.joern.rubysrc2cpg.deprecated.parser
+package io.joern.rubysrc2cpg.parser
 
-import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyLexer.*
+import io.joern.rubysrc2cpg.parser.RubyLexer.*
 import org.antlr.v4.runtime.Recognizer.EOF
 
-trait RegexLiteralHandling { this: DeprecatedRubyLexerBase =>
+trait RegexLiteralHandling { this: RubyLexerBase =>
 
   /* When encountering '/', we need to decide whether this is a binary operator (e.g. `x / y`) or
    * a regular expression delimiter (e.g. `/(eu|us)/`) occurrence. Our approach is to look at the

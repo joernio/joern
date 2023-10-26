@@ -1,6 +1,6 @@
-package io.joern.rubysrc2cpg.deprecated.parser
+package io.joern.rubysrc2cpg.parser
 
-import io.joern.rubysrc2cpg.deprecated.parser.RubyLexer.*
+import io.joern.rubysrc2cpg.parser.RubyLexer.*
 import org.antlr.v4.runtime.Recognizer.EOF
 import org.antlr.v4.runtime.{CharStream, Lexer, Token}
 
