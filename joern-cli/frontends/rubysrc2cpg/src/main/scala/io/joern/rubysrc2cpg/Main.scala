@@ -5,8 +5,11 @@ import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery}
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
 import scopt.OParser
 
-final case class Config(enableDependencyDownload: Boolean = false, antlrCacheMemLimit: Double = 0.6d)
-    extends X2CpgConfig[Config]
+final case class Config(
+  enableDependencyDownload: Boolean = false,
+  antlrCacheMemLimit: Double = 0.6d,
+  useDeprecatedFrontend: Boolean = false
+) extends X2CpgConfig[Config]
     with TypeRecoveryParserConfig[Config] {
 
   def withEnableDependencyDownload(value: Boolean): Config = {
@@ -15,6 +18,10 @@ final case class Config(enableDependencyDownload: Boolean = false, antlrCacheMem
 
   def withAntlrCacheMemoryLimit(value: Double): Config = {
     copy(antlrCacheMemLimit = value).withInheritedFields(this)
+  }
+
+  def withUseDeprecatedFrontend(value: Boolean): Config = {
+    copy(useDeprecatedFrontend = value).withInheritedFields(this)
   }
 }
 
@@ -43,6 +50,9 @@ private object Frontend {
             success
         }
         .text("sets the heap usage threshold at which the ANTLR DFA cache is cleared during parsing (default 0.6)"),
+      opt[Unit]("useDeprecatedFrontend")
+        .action((_, c) => c.withUseDeprecatedFrontend(true))
+        .text("uses the original (but deprecated) Ruby frontend (default false)"),
       XTypeRecovery.parserOptions
     )
   }
