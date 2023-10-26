@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language.types.structure
 
-import io.shiftleft.codepropertygraph.generated.nodes
+import io.shiftleft.codepropertygraph.generated.v2.nodes
 import overflowdb.traversal._
 
 /** An (Java-) annotation, e.g., @Test.

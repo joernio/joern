@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language.operatorextension
 
-import io.shiftleft.codepropertygraph.generated.nodes.Call
+import io.shiftleft.codepropertygraph.generated.v2.nodes.Call
 
 object OpNodes {
   class Assignment(call: Call)  extends Call(call.graph, call.id)

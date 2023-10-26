@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.dotgenerator
 
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
+import io.shiftleft.codepropertygraph.generated.v2.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.v2.nodes.StoredNode
 import io.shiftleft.semanticcpg.dotgenerator.DotSerializer.Edge
 
 import scala.jdk.CollectionConverters._

@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language.dotextension
 
-import io.shiftleft.codepropertygraph.generated.nodes.AstNode
+import io.shiftleft.codepropertygraph.generated.v2.nodes.AstNode
 import io.shiftleft.semanticcpg.dotgenerator.DotAstGenerator
 import overflowdb.traversal.*
 
