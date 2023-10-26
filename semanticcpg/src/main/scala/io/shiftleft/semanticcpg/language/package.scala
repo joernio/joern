@@ -23,6 +23,7 @@ import io.shiftleft.semanticcpg.language.types.structure.*
   * `steps` package, e.g. `Steps`
   */
 package object language extends /* operatorextension.Implicits with */ LowPrioImplicits  /* with NodeTraversalImplicits */ {
+
   // Implicit conversions from generated node types. We use these to add methods
   // to generated node types.
 
@@ -73,25 +74,25 @@ package object language extends /* operatorextension.Implicits with */ LowPrioIm
 //   implicit def iterOnceToIdentifierTrav[A <: Identifier](a: IterableOnce[A]): IdentifierTraversal =
 //     new IdentifierTraversal(a.iterator)
 
-//   implicit def singleToAnnotationTrav[A <: Annotation](a: A): AnnotationTraversal =
-//     new AnnotationTraversal(Iterator.single(a))
-//   implicit def iterOnceToAnnotationTrav[A <: Annotation](a: IterableOnce[A]): AnnotationTraversal =
-//     new AnnotationTraversal(a.iterator)
+  implicit def singleToAnnotationTrav[A <: Annotation](a: A): AnnotationTraversal =
+    new AnnotationTraversal(Iterator.single(a))
+  implicit def iterOnceToAnnotationTrav[A <: Annotation](a: IterableOnce[A]): AnnotationTraversal =
+    new AnnotationTraversal(a.iterator)
 
-//   implicit def singleToDependencyTrav[A <: Dependency](a: A): DependencyTraversal =
-//     new DependencyTraversal(Iterator.single(a))
+  implicit def singleToDependencyTrav[A <: Dependency](a: A): DependencyTraversal =
+    new DependencyTraversal(Iterator.single(a))
 
-//   implicit def iterToDependencyTrav[A <: Dependency](a: IterableOnce[A]): DependencyTraversal =
-//     new DependencyTraversal(a.iterator)
+  implicit def iterToDependencyTrav[A <: Dependency](a: IterableOnce[A]): DependencyTraversal =
+    new DependencyTraversal(a.iterator)
 
-//   implicit def singleToAnnotationParameterAssignTrav[A <: AnnotationParameterAssign](
-//     a: A
-//   ): AnnotationParameterAssignTraversal =
-//     new AnnotationParameterAssignTraversal(Iterator.single(a))
-//   implicit def iterOnceToAnnotationParameterAssignTrav[A <: AnnotationParameterAssign](
-//     a: IterableOnce[A]
-//   ): AnnotationParameterAssignTraversal =
-//     new AnnotationParameterAssignTraversal(a.iterator)
+  implicit def singleToAnnotationParameterAssignTrav[A <: AnnotationParameterAssign](
+    a: A
+  ): AnnotationParameterAssignTraversal =
+    new AnnotationParameterAssignTraversal(Iterator.single(a))
+  implicit def iterOnceToAnnotationParameterAssignTrav[A <: AnnotationParameterAssign](
+    a: IterableOnce[A]
+  ): AnnotationParameterAssignTraversal =
+    new AnnotationParameterAssignTraversal(a.iterator)
 
 //   implicit def toMember(traversal: IterableOnce[Member]): MemberTraversal = new MemberTraversal(traversal.iterator)
   implicit def toLocal(traversal: IterableOnce[Local]): LocalTraversal    = new LocalTraversal(traversal.iterator)
@@ -122,16 +123,16 @@ package object language extends /* operatorextension.Implicits with */ LowPrioIm
 //   implicit def iterOnceToNamespaceBlockTrav[A <: NamespaceBlock](a: IterableOnce[A]): NamespaceBlockTraversal =
 //     new NamespaceBlockTraversal(a.iterator)
 
-//   implicit def singleToFileTrav[A <: File](a: A): FileTraversal =
-//     new FileTraversal(Iterator.single(a))
-//   implicit def iterOnceToFileTrav[A <: File](a: IterableOnce[A]): FileTraversal =
-//     new FileTraversal(a.iterator)
+  implicit def singleToFileTrav[A <: File](a: A): FileTraversal =
+    new FileTraversal(Iterator.single(a))
+  implicit def iterOnceToFileTrav[A <: File](a: IterableOnce[A]): FileTraversal =
+    new FileTraversal(a.iterator)
 
-//   implicit def singleToImportTrav[A <: Import](a: A): ImportTraversal =
-//     new ImportTraversal(Iterator.single(a))
+  implicit def singleToImportTrav[A <: Import](a: A): ImportTraversal =
+    new ImportTraversal(Iterator.single(a))
 
-//   implicit def iterToImportTrav[A <: Import](a: IterableOnce[A]): ImportTraversal =
-//     new ImportTraversal(a.iterator)
+  implicit def iterToImportTrav[A <: Import](a: IterableOnce[A]): ImportTraversal =
+    new ImportTraversal(a.iterator)
 
   // Call graph extension
   // implicit def singleToMethodTravCallGraphExt[A <: Method](a: A): MethodTraversal =
@@ -262,7 +263,7 @@ package object language extends /* operatorextension.Implicits with */ LowPrioIm
     new ExpressionTraversal[A](a.iterator)
 }
 
- trait LowPrioImplicits extends io.joern.odb2.Implicits with io.joern.odb2.Traversal {
+ trait LowPrioImplicits extends io.joern.odb2.Implicits with io.joern.odb2.Traversal /* with io.shiftleft.codepropertygraph.generated.v2.Language */ {
    implicit def iterableOnceToIterator[A](iterableOnce: IterableOnce[A]): Iterator[A] =
      iterableOnce.iterator
 

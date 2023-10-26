@@ -1,6 +1,7 @@
 package io.shiftleft.semanticcpg.language.types.structure
 
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
+import io.shiftleft.codepropertygraph.generated.v2.Language.*
 import io.shiftleft.semanticcpg.language.*
 
 /** An annotation parameter-assignment, e.g., `foo=value` in @Test(foo=value)
@@ -16,7 +17,7 @@ class AnnotationParameterAssignTraversal(val traversal: Iterator[AnnotationParam
     */
   def value: Iterator[Expression] =
     traversal
-      .flatMap(_.astOut)
+      .flatMap(_._astOut)
       .filterNot(_.isInstanceOf[AnnotationParameter])
       .cast[Expression]
 }

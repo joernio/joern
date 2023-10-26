@@ -1,6 +1,7 @@
 package io.shiftleft.semanticcpg.language.types.structure
 
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{Call, Import, NamespaceBlock}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
+import io.shiftleft.codepropertygraph.generated.v2.Language.*
 import io.shiftleft.semanticcpg.language.*
 
 class ImportTraversal(val traversal: Iterator[Import]) extends AnyVal {
@@ -10,6 +11,8 @@ class ImportTraversal(val traversal: Iterator[Import]) extends AnyVal {
   def call: Iterator[Call] = traversal._isCallForImportIn.cast[Call]
 
   def namespaceBlock: Iterator[NamespaceBlock] =
-    call.method.namespaceBlock
+    // TODO
+    ???
+    // call.method.namespaceBlock
 
 }
