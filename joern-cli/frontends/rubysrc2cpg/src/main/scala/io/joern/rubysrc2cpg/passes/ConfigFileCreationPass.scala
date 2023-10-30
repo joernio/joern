@@ -1,9 +1,9 @@
-package io.joern.rubysrc2cpg.deprecated.passes
+package io.joern.rubysrc2cpg.passes
 
 import better.files.File
 import io.joern.x2cpg.passes.frontend.XConfigFileCreationPass
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 import scala.util.Try
 

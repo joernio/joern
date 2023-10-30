@@ -1,9 +1,7 @@
 package io.joern.rubysrc2cpg
 
 import better.files.File
-import io.joern.rubysrc2cpg.deprecated.astcreation.ResourceManagedParser
-import io.joern.rubysrc2cpg.deprecated.passes.*
-import io.joern.rubysrc2cpg.deprecated.utils.PackageTable
+import io.joern.rubysrc2cpg.passes.{AstCreationPass, ConfigFileCreationPass}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.datastructures.Global
@@ -37,23 +35,34 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
   }
 
   private def newCreateCpgAction(cpg: Cpg, config: Config): Unit = {
-    // TODO
+    Using.resource(new parser.ResourceManagedParser(config.antlrCacheMemLimit)) { parser =>
+      // TODO: enableDependencyDownload
+      // TODO: TypeNodePass
+      val astCreationPass = new AstCreationPass(cpg, parser, config)
+      astCreationPass.createAndApply()
+    }
   }
 
   private def deprecatedCreateCpgAction(cpg: Cpg, config: Config): Unit = {
-    Using.resource(new ResourceManagedParser(config.antlrCacheMemLimit)) { parser =>
+    Using.resource(new deprecated.astcreation.ResourceManagedParser(config.antlrCacheMemLimit)) { parser =>
       if (config.enableDependencyDownload && !scala.util.Properties.isWin) {
         val tempDir = File.newTemporaryDirectory()
         try {
           downloadDependency(config.inputPath, tempDir.toString())
-          new AstPackagePass(cpg, tempDir.toString(), global, parser, RubySrc2Cpg.packageTableInfo, config.inputPath)(
-            config.schemaValidation
-          ).createAndApply()
+          new deprecated.passes.AstPackagePass(
+            cpg,
+            tempDir.toString(),
+            global,
+            parser,
+            RubySrc2Cpg.packageTableInfo,
+            config.inputPath
+          )(config.schemaValidation).createAndApply()
         } finally {
           tempDir.delete()
         }
       }
-      val astCreationPass = new AstCreationPass(cpg, global, parser, RubySrc2Cpg.packageTableInfo, config)
+      val astCreationPass =
+        new deprecated.passes.AstCreationPass(cpg, global, parser, RubySrc2Cpg.packageTableInfo, config)
       astCreationPass.createAndApply()
       TypeNodePass.withRegisteredTypes(astCreationPass.allUsedTypes(), cpg).createAndApply()
     }
@@ -80,16 +89,16 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
 
 object RubySrc2Cpg {
 
-  val packageTableInfo = new PackageTable()
+  val packageTableInfo = new deprecated.utils.PackageTable()
 
   def postProcessingPasses(cpg: Cpg, config: Config): List[CpgPassBase] = {
     if (config.useDeprecatedFrontend) {
       List(
         // TODO commented below two passes, as waiting on Dependency download PR to get merged
-        new IdentifierToCallPass(cpg),
-        new ImportResolverPass(cpg, packageTableInfo),
-        new RubyTypeRecoveryPass(cpg),
-        new RubyTypeHintCallLinker(cpg),
+        new deprecated.passes.IdentifierToCallPass(cpg),
+        new deprecated.passes.ImportResolverPass(cpg, packageTableInfo),
+        new deprecated.passes.RubyTypeRecoveryPass(cpg),
+        new deprecated.passes.RubyTypeHintCallLinker(cpg),
         new NaiveCallLinker(cpg),
 
         // Some of passes above create new methods, so, we
