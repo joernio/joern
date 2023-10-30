@@ -75,7 +75,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       classDeclarations.collectAll[KtProperty].filter(_.getInitializer != null).map { decl =>
         val initializerAsts = astsForExpression(decl.getInitializer, None)
         val rhsAst =
-          if (initializerAsts.size == 1) initializerAsts.headOption.getOrElse(Ast())
+          if (initializerAsts.size == 1)
+            initializerAsts.headOption.getOrElse(Ast(unknownNode(decl.getInitializer, Constants.empty)))
           else Ast(unknownNode(decl, "<empty>"))
 
         val thisIdentifier = newIdentifierNode(Constants.this_, classFullName, Seq(classFullName))
@@ -275,8 +276,9 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       } else if (expr.getInitializer.isInstanceOf[KtIfExpression]) {
         astForIfAsExpression(expr.getInitializer.asInstanceOf[KtIfExpression], None, None)
       } else {
-        val assignmentNode   = operatorCallNode(Operators.assignment, s"$tmpName = ${rhsCall.getText}", None)
-        val assignmentRhsAst = astsForExpression(rhsCall, None).headOption.getOrElse(Ast())
+        val assignmentNode = operatorCallNode(Operators.assignment, s"$tmpName = ${rhsCall.getText}", None)
+        val assignmentRhsAst =
+          astsForExpression(rhsCall, None).headOption.getOrElse(Ast(unknownNode(rhsCall, Constants.empty)))
         callAst(assignmentNode, List(assignmentLhsAst, assignmentRhsAst))
       }
     val tmpAssignmentPrologue = rhsCall match {
@@ -428,7 +430,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       methodAst(
         secondaryCtorMethodNode,
         constructorParamsAsts,
-        ctorMethodBlockAsts.headOption.getOrElse(Ast()),
+        ctorMethodBlockAsts.headOption.getOrElse(Ast(unknownNode(ctor.getBodyExpression, Constants.empty))),
         ctorMethodReturnNode
       )
     }
@@ -451,8 +453,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val idx     = idxOpt.getOrElse(Random.nextInt())
     val tmpName = s"tmp_obj_$idx"
 
-    val typeDeclAsts     = astsForClassOrObject(expr.getObjectDeclaration, Some(ctx))
-    val typeDeclAst      = typeDeclAsts.headOption.getOrElse(Ast())
+    val typeDeclAsts = astsForClassOrObject(expr.getObjectDeclaration, Some(ctx))
+    val typeDeclAst  = typeDeclAsts.headOption.getOrElse(Ast(unknownNode(expr.getObjectDeclaration, Constants.empty)))
     val typeDeclFullName = typeDeclAst.root.get.asInstanceOf[NewTypeDecl].fullName
 
     val localForTmp = localNode(expr, tmpName, tmpName, typeDeclFullName)
@@ -569,8 +571,9 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
           .map(AnonymousObjectContext(_))
           .getOrElse(AnonymousObjectContext(expr.getContainingKtFile))
 
-      val typeDeclAsts     = astsForClassOrObject(typedExpr.getObjectDeclaration, Some(ctx))
-      val typeDeclAst      = typeDeclAsts.headOption.getOrElse(Ast())
+      val typeDeclAsts = astsForClassOrObject(typedExpr.getObjectDeclaration, Some(ctx))
+      val typeDeclAst =
+        typeDeclAsts.headOption.getOrElse(Ast(unknownNode(typedExpr.getObjectDeclaration, Constants.empty)))
       val typeDeclFullName = typeDeclAst.root.get.asInstanceOf[NewTypeDecl].fullName
 
       val node = localNode(expr, expr.getName, expr.getName, typeDeclFullName)
