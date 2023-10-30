@@ -1063,7 +1063,12 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         .filterNot(m => addedNodes.contains(s"${funcPtr.id()}${NodeTypes.METHOD_REF}$pathSep${m.fullName}"))
         .map(m => m -> createMethodRef(baseName, funcName, m.fullName, funcPtr.lineNumber, funcPtr.columnNumber))
         .foreach { case (m, mRef) =>
-          funcPtr.astParent
+          funcPtr
+            .map { ptr =>
+              ptr.astParent match
+                case parent: Call if parent.name.startsWith("<operator>") => ptr
+                case parent                                               => parent
+            }
             .filterNot(_.astChildren.isMethodRef.exists(_.methodFullName == mRef.methodFullName))
             .foreach { inCall =>
               state.changesWereMade.compareAndSet(false, true)
