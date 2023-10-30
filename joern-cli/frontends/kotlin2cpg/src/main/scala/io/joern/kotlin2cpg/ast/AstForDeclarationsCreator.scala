@@ -75,8 +75,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       classDeclarations.collectAll[KtProperty].filter(_.getInitializer != null).map { decl =>
         val initializerAsts = astsForExpression(decl.getInitializer, None)
         val rhsAst =
-          if (initializerAsts.size == 1)
-            initializerAsts.headOption.getOrElse(Ast(unknownNode(decl.getInitializer, Constants.empty)))
+          if (initializerAsts.size == 1) initializerAsts.head
           else Ast(unknownNode(decl, "<empty>"))
 
         val thisIdentifier = newIdentifierNode(Constants.this_, classFullName, Seq(classFullName))
