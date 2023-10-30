@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.deprecated.parser
 
-import io.joern.rubysrc2cpg.deprecated.parser.RubyLexer.*
-import io.joern.rubysrc2cpg.deprecated.parser.RubyLexerPostProcessor
+import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyLexer.*
+import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyLexerPostProcessor
 import org.antlr.v4.runtime.*
 import org.antlr.v4.runtime.Token.EOF
 import org.scalatest.flatspec.AnyFlatSpec
@@ -23,7 +23,7 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
   }
 
   private def tokenizer(code: String, postProcessor: TokenSource => TokenSource): Iterable[Int] = {
-    val lexer               = new RubyLexer(CharStreams.fromString(code))
+    val lexer               = new DeprecatedRubyLexer(CharStreams.fromString(code))
     val syntaxErrorListener = new RubySyntaxErrorListener
     lexer.addErrorListener(syntaxErrorListener)
     val stream = new CommonTokenStream(postProcessor(lexer))
@@ -38,7 +38,7 @@ class RubyLexerTests extends AnyFlatSpec with Matchers {
 
   def tokenize(code: String): Iterable[Int] = tokenizer(code, identity)
 
-  def tokenizeOpt(code: String): Iterable[Int] = tokenizer(code, RubyLexerPostProcessor.apply)
+  def tokenizeOpt(code: String): Iterable[Int] = tokenizer(code, DeprecatedRubyLexerPostProcessor.apply)
 
   "Single-line comments" should "be discarded" in {
     val code =

@@ -1,6 +1,10 @@
 package io.joern.rubysrc2cpg.deprecated.astcreation
 
-import io.joern.rubysrc2cpg.deprecated.parser.{RubyLexer, RubyLexerPostProcessor, RubyParser}
+import io.joern.rubysrc2cpg.deprecated.parser.{
+  DeprecatedRubyLexer,
+  DeprecatedRubyLexerPostProcessor,
+  DeprecatedRubyParser
+}
 import org.antlr.v4.runtime.*
 import org.antlr.v4.runtime.atn.ATN
 import org.antlr.v4.runtime.dfa.DFA
@@ -14,12 +18,12 @@ import scala.util.Try
   */
 class AntlrParser(filename: String) {
 
-  private val charStream  = CharStreams.fromFileName(filename)
-  private val lexer       = new RubyLexer(charStream)
-  private val tokenStream = new CommonTokenStream(RubyLexerPostProcessor(lexer))
-  val parser: RubyParser  = new RubyParser(tokenStream)
+  private val charStream           = CharStreams.fromFileName(filename)
+  private val lexer                = new DeprecatedRubyLexer(charStream)
+  private val tokenStream          = new CommonTokenStream(DeprecatedRubyLexerPostProcessor(lexer))
+  val parser: DeprecatedRubyParser = new DeprecatedRubyParser(tokenStream)
 
-  def parse(): Try[RubyParser.ProgramContext] = Try(parser.program())
+  def parse(): Try[DeprecatedRubyParser.ProgramContext] = Try(parser.program())
 }
 
 /** A re-usable parser object that clears the ANTLR DFA-cache if it determines that the memory usage is becoming large.
@@ -39,7 +43,7 @@ class ResourceManagedParser(clearLimit: Double) extends AutoCloseable {
   private var maybeDecisionToDFA: Option[Array[DFA]] = None
   private var maybeAtn: Option[ATN]                  = None
 
-  def parse(filename: String): Try[RubyParser.ProgramContext] = {
+  def parse(filename: String): Try[DeprecatedRubyParser.ProgramContext] = {
     val antlrParser = AntlrParser(filename)
     val interp      = antlrParser.parser.getInterpreter
     // We need to grab a live instance in order to get the static variables as they are protected from static access

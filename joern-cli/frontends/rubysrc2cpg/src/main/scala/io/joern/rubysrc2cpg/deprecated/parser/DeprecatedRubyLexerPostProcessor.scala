@@ -1,6 +1,6 @@
 package io.joern.rubysrc2cpg.deprecated.parser
 
-import io.joern.rubysrc2cpg.deprecated.parser.RubyLexer.*
+import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyLexer.*
 import org.antlr.v4.runtime.Recognizer.EOF
 import org.antlr.v4.runtime.misc.Pair
 import org.antlr.v4.runtime.{CommonToken, ListTokenSource, Token, TokenSource}
@@ -8,9 +8,9 @@ import org.antlr.v4.runtime.{CommonToken, ListTokenSource, Token, TokenSource}
 import scala.::
 import scala.jdk.CollectionConverters.*
 
-/** Simplifies the token stream obtained from `RubyLexer`.
+/** Simplifies the token stream obtained from `DeprecatedRubyLexer`.
   */
-object RubyLexerPostProcessor {
+object DeprecatedRubyLexerPostProcessor {
 
   def apply(tokenSource: TokenSource): ListTokenSource = {
     var tokens = tokenSource.toSeq

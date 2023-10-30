@@ -1,11 +1,11 @@
-parser grammar RubyParser;
+parser grammar DeprecatedRubyParser;
 
 @header {
     package io.joern.rubysrc2cpg.deprecated.parser;
 }
 
 options {
-    tokenVocab = RubyLexer;
+    tokenVocab = DeprecatedRubyLexer;
 }
 
 // --------------------------------------------------------

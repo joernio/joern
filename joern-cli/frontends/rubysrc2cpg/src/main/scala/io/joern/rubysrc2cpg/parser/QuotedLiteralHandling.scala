@@ -1,8 +1,8 @@
-package io.joern.rubysrc2cpg.deprecated.parser
+package io.joern.rubysrc2cpg.parser
 
 import scala.collection.mutable
 
-trait QuotedLiteralHandling { this: DeprecatedRubyLexerBase =>
+trait QuotedLiteralHandling { this: RubyLexerBase =>
 
   private val delimiters    = mutable.Stack[Int]()
   private val endTokenTypes = mutable.Stack[Int]()

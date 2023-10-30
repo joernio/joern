@@ -1,6 +1,6 @@
 package io.joern.rubysrc2cpg.deprecated.astcreation
 
-import io.joern.rubysrc2cpg.deprecated.parser.RubyParser.*
+import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.*
 import io.joern.rubysrc2cpg.deprecated.passes.Defines
 import io.joern.rubysrc2cpg.deprecated.passes.Defines.*
 import io.joern.x2cpg.{Ast, ValidationMode}
@@ -97,7 +97,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForIsDefinedExpression(ctx: IsDefinedExpressionContext): Ast =
     astForBinaryOperatorExpression(ctx, RubyOperators.defined, Seq(ctx.expression()))
 
-  // TODO: Maybe merge (in RubyParser.g4) isDefinedExpression with isDefinedPrimaryExpression?
+  // TODO: Maybe merge (in DeprecatedRubyParser.g4) isDefinedExpression with isDefinedPrimaryExpression?
   protected def astForIsDefinedPrimaryExpression(ctx: IsDefinedPrimaryContext): Ast = {
     val argsAst = astForExpressionOrCommand(ctx.expressionOrCommand())
     val call    = callNode(ctx, text(ctx), RubyOperators.defined, RubyOperators.defined, DispatchTypes.STATIC_DISPATCH)

@@ -1,8 +1,8 @@
-package io.joern.rubysrc2cpg.deprecated.parser
+package io.joern.rubysrc2cpg.parser
 
 import better.files.EOF
 
-trait HereDocHandling { this: DeprecatedRubyLexerBase =>
+trait HereDocHandling { this: RubyLexerBase =>
 
   /** @see
     *   <a

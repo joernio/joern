@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.deprecated.astcreation
 
-import io.joern.rubysrc2cpg.deprecated.parser.RubyParser
-import io.joern.rubysrc2cpg.deprecated.parser.RubyParser.*
+import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser
+import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.*
 import io.joern.rubysrc2cpg.deprecated.passes.Defines
 import io.joern.rubysrc2cpg.deprecated.passes.Defines.getBuiltInType
 import io.joern.x2cpg.{Ast, ValidationMode}
@@ -13,46 +13,46 @@ import scala.jdk.CollectionConverters.CollectionHasAsScala
 
 trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  protected def astForNilLiteral(ctx: RubyParser.NilPseudoVariableIdentifierContext): Ast =
+  protected def astForNilLiteral(ctx: DeprecatedRubyParser.NilPseudoVariableIdentifierContext): Ast =
     Ast(literalNode(ctx, text(ctx), Defines.NilClass))
 
-  protected def astForTrueLiteral(ctx: RubyParser.TruePseudoVariableIdentifierContext): Ast =
+  protected def astForTrueLiteral(ctx: DeprecatedRubyParser.TruePseudoVariableIdentifierContext): Ast =
     Ast(literalNode(ctx, text(ctx), Defines.TrueClass))
 
-  protected def astForFalseLiteral(ctx: RubyParser.FalsePseudoVariableIdentifierContext): Ast =
+  protected def astForFalseLiteral(ctx: DeprecatedRubyParser.FalsePseudoVariableIdentifierContext): Ast =
     Ast(literalNode(ctx, text(ctx), Defines.FalseClass))
 
-  protected def astForSelfPseudoIdentifier(ctx: RubyParser.SelfPseudoVariableIdentifierContext): Ast =
+  protected def astForSelfPseudoIdentifier(ctx: DeprecatedRubyParser.SelfPseudoVariableIdentifierContext): Ast =
     Ast(createIdentifierWithScope(ctx, text(ctx), text(ctx), Defines.Object))
 
-  protected def astForFilePseudoIdentifier(ctx: RubyParser.FilePseudoVariableIdentifierContext): Ast =
+  protected def astForFilePseudoIdentifier(ctx: DeprecatedRubyParser.FilePseudoVariableIdentifierContext): Ast =
     Ast(createIdentifierWithScope(ctx, text(ctx), text(ctx), getBuiltInType(Defines.String)))
 
-  protected def astForLinePseudoIdentifier(ctx: RubyParser.LinePseudoVariableIdentifierContext): Ast =
+  protected def astForLinePseudoIdentifier(ctx: DeprecatedRubyParser.LinePseudoVariableIdentifierContext): Ast =
     Ast(createIdentifierWithScope(ctx, text(ctx), text(ctx), getBuiltInType(Defines.Integer)))
 
-  protected def astForEncodingPseudoIdentifier(ctx: RubyParser.EncodingPseudoVariableIdentifierContext): Ast =
+  protected def astForEncodingPseudoIdentifier(ctx: DeprecatedRubyParser.EncodingPseudoVariableIdentifierContext): Ast =
     Ast(createIdentifierWithScope(ctx, text(ctx), text(ctx), Defines.Encoding))
 
-  protected def astForNumericLiteral(ctx: RubyParser.NumericLiteralContext): Ast = {
+  protected def astForNumericLiteral(ctx: DeprecatedRubyParser.NumericLiteralContext): Ast = {
     val numericTypeName =
       if (isFloatLiteral(ctx.unsignedNumericLiteral)) getBuiltInType(Defines.Float) else getBuiltInType(Defines.Integer)
     Ast(literalNode(ctx, text(ctx), numericTypeName))
   }
 
-  protected def astForSymbolLiteral(ctx: RubyParser.SymbolContext): Ast =
+  protected def astForSymbolLiteral(ctx: DeprecatedRubyParser.SymbolContext): Ast =
     Ast(literalNode(ctx, text(ctx), Defines.Symbol))
 
-  protected def astForSingleQuotedStringLiteral(ctx: RubyParser.SingleQuotedStringLiteralContext): Ast =
+  protected def astForSingleQuotedStringLiteral(ctx: DeprecatedRubyParser.SingleQuotedStringLiteralContext): Ast =
     Ast(literalNode(ctx, text(ctx), getBuiltInType(Defines.String)))
 
-  protected def astForDoubleQuotedStringLiteral(ctx: RubyParser.DoubleQuotedStringLiteralContext): Ast =
+  protected def astForDoubleQuotedStringLiteral(ctx: DeprecatedRubyParser.DoubleQuotedStringLiteralContext): Ast =
     Ast(literalNode(ctx, text(ctx), getBuiltInType(Defines.String)))
 
-  protected def astForRegularExpressionLiteral(ctx: RubyParser.RegularExpressionLiteralContext): Ast =
+  protected def astForRegularExpressionLiteral(ctx: DeprecatedRubyParser.RegularExpressionLiteralContext): Ast =
     Ast(literalNode(ctx, text(ctx), Defines.Regexp))
 
-  private def isFloatLiteral(ctx: RubyParser.UnsignedNumericLiteralContext): Boolean =
+  private def isFloatLiteral(ctx: DeprecatedRubyParser.UnsignedNumericLiteralContext): Boolean =
     Option(ctx.FLOAT_LITERAL_WITH_EXPONENT).isDefined || Option(ctx.FLOAT_LITERAL_WITHOUT_EXPONENT).isDefined
 
   // TODO: Return Ast instead of Seq[Ast]
