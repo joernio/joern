@@ -110,7 +110,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val lhsArgs = astsForExpression(expr.getLeft, None)
     val rhsArgs = astsForExpression(expr.getRight, None)
     lhsArgs.dropRight(1) ++ rhsArgs.dropRight(1) ++ Seq(
-      callAst(withArgumentIndex(node, argIdx).argumentName(argNameMaybe), List(lhsArgs.last, rhsArgs.last))
+      callAst(
+        withArgumentIndex(node, argIdx).argumentName(argNameMaybe),
+        List(
+          lhsArgs.lastOption.getOrElse(Ast(unknownNode(expr.getLeft, Constants.empty))),
+          rhsArgs.lastOption.getOrElse(Ast(unknownNode(expr.getRight, Constants.empty)))
+        )
+      )
         .withChildren(annotations.map(astForAnnotationEntry))
     )
   }
@@ -120,8 +126,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     argIdx: Option[Int],
     argNameMaybe: Option[String]
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val receiverAst = astsForExpression(expr.getReceiverExpression, Some(1)).head
-    val argAsts     = selectorExpressionArgAsts(expr)
+    val receiverAst = astsForExpression(expr.getReceiverExpression, Some(1)).headOption
+      .getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.empty)))
+    val argAsts = selectorExpressionArgAsts(expr)
     registerType(typeInfoProvider.containingDeclType(expr, TypeConstants.any))
     val retType = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val node = withArgumentIndex(
@@ -136,8 +143,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     argIdx: Option[Int],
     argNameMaybe: Option[String]
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val receiverAst = astsForExpression(expr.getReceiverExpression, Some(0)).head
-    val argAsts     = selectorExpressionArgAsts(expr)
+    val receiverAst = astsForExpression(expr.getReceiverExpression, Some(0)).headOption
+      .getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.empty)))
+    val argAsts = selectorExpressionArgAsts(expr)
 
     val (astDerivedMethodFullName, astDerivedSignature) = astDerivedFullNameWithSignature(expr, argAsts)
     val (fullName, signature) =
@@ -166,8 +174,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     argIdx: Option[Int],
     argNameMaybe: Option[String]
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val receiverAst = astsForExpression(expr.getReceiverExpression, Some(0)).head
-    val argAsts     = selectorExpressionArgAsts(expr)
+    val receiverAst = astsForExpression(expr.getReceiverExpression, Some(0)).headOption
+      .getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.empty)))
+    val argAsts = selectorExpressionArgAsts(expr)
 
     val (astDerivedMethodFullName, astDerivedSignature) = astDerivedFullNameWithSignature(expr, argAsts)
     val (fullName, signature) =
@@ -263,8 +272,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     argIdx: Option[Int],
     argNameMaybe: Option[String]
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val receiverAst = astsForExpression(expr.getReceiverExpression, Some(1)).head
-    val argAsts     = selectorExpressionArgAsts(expr)
+    val receiverAst = astsForExpression(expr.getReceiverExpression, Some(1)).headOption
+      .getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.empty)))
+    val argAsts = selectorExpressionArgAsts(expr)
 
     val (astDerivedMethodFullName, astDerivedSignature) = astDerivedFullNameWithSignature(expr, argAsts)
     val (fullName, signature) =
@@ -300,8 +310,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       if (callKind == CallKinds.DynamicCall) DispatchTypes.DYNAMIC_DISPATCH
       else DispatchTypes.STATIC_DISPATCH
 
-    val receiverAst = astsForExpression(expr.getReceiverExpression, Some(argIdxForReceiver)).head
-    val argAsts     = selectorExpressionArgAsts(expr)
+    val receiverAst = astsForExpression(expr.getReceiverExpression, Some(argIdxForReceiver)).headOption
+      .getOrElse(Ast(unknownNode(expr.getReceiverExpression, Constants.empty)))
+    val argAsts = selectorExpressionArgAsts(expr)
 
     val (astDerivedMethodFullName, astDerivedSignature) = astDerivedFullNameWithSignature(expr, argAsts)
     val (fullName, signature) =
@@ -499,7 +510,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
       withIndex(expr.getValueArguments.asScala.toSeq) { case (arg, idx) =>
         val argNameOpt = if (arg.isNamed) Option(arg.getArgumentName.getAsName.toString) else None
         val asts       = astsForExpression(arg.getArgumentExpression, Option(idx), argNameOpt)
-        (asts.dropRight(1), asts.last)
+        (asts.dropRight(1), asts.lastOption.getOrElse(Ast(unknownNode(arg.getArgumentExpression, Constants.empty))))
       }
     val astsForTrails    = argAstsWithTrail.map(_._2)
     val astsForNonTrails = argAstsWithTrail.map(_._1).flatten

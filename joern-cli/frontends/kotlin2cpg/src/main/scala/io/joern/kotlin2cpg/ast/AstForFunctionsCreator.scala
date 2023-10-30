@@ -57,7 +57,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
             val blockChildAsts =
               if (asts.nonEmpty) {
                 val allStatementsButLast = asts.dropRight(1)
-                val lastStatementAst     = asts.last
+                val lastStatementAst     = asts.lastOption.getOrElse(Ast(unknownNode(expr, Constants.empty)))
                 val returnAst_           = returnAst(returnNode(expr, Constants.retCode), Seq(lastStatementAst))
                 (allStatementsButLast ++ Seq(returnAst_)).toList
               } else List()
@@ -71,7 +71,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     methodAstParentStack.pop()
     scope.popScope()
 
-    val bodyAst           = bodyAsts.head
+    val bodyAst           = bodyAsts.headOption.getOrElse(Ast(unknownNode(ktFn, Constants.empty)))
     val otherBodyAsts     = bodyAsts.drop(1)
     val explicitTypeName  = Option(ktFn.getTypeReference).map(_.getText).getOrElse(TypeConstants.any)
     val typeFullName      = registerType(typeInfoProvider.returnType(ktFn, explicitTypeName))
@@ -172,7 +172,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     val returnTypeFullName     = TypeConstants.javaLangObject
     val lambdaTypeDeclFullName = fullName.split(":").head
 
-    val bodyAst = bodyAsts.head
+    val bodyAst = bodyAsts.headOption.getOrElse(Ast(unknownNode(fn, Constants.empty)))
     val lambdaMethodAst = methodAst(
       lambdaMethodNode,
       parametersAsts,
@@ -293,7 +293,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     val returnTypeFullName     = registerType(typeInfoProvider.returnTypeFullName(expr))
     val lambdaTypeDeclFullName = fullName.split(":").head
 
-    val bodyAst = bodyAsts.head
+    val bodyAst = bodyAsts.headOption.getOrElse(Ast(unknownNode(expr, Constants.empty)))
     val lambdaMethodAst = methodAst(
       lambdaMethodNode,
       parametersAsts,
