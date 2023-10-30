@@ -270,8 +270,10 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
       val cpgFilename = baseCpgFilename(name)
       report("Creating working copy of CPG to be safe")
       val cpgFile         = File(cpgFilename)
+      val projectDir0     = projectDir(name)
       val workingCopyPath = projectDir(name).resolve(Project.workCpgFileName)
       val workingCopyName = workingCopyPath.toAbsolutePath.toString
+      mkdirs(projectDir0)
       cp(cpgFile, workingCopyPath)
       report(s"Loading base CPG from: $workingCopyName")
 
