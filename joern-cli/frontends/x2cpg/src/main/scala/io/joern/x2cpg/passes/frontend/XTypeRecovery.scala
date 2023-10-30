@@ -899,8 +899,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     )
     @tailrec
     def extractTypes(xs: List[CfgNode]): Set[String] = xs match {
-      case ::(head: Literal, Nil) if head.typeFullName != "ANY" =>
-        Set(head.typeFullName)
+      case ::(head: Literal, Nil) => getLiteralType(head)
       case ::(head: Call, Nil) if head.name == Operators.fieldAccess =>
         val fieldAccess = new FieldAccess(head)
         val (sym, ts)   = getSymbolFromCall(fieldAccess)

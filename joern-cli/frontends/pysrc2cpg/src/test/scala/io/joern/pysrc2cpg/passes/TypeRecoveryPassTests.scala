@@ -1180,4 +1180,22 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
   }
 
+  "Literals as the returns of calls" should {
+    val cpg = code("""
+        |def foo():
+        | return "bar"
+        |
+        |x = foo()
+        |""".stripMargin)
+
+    "set the literal's type" in {
+      val barLiteral :: Nil = cpg.method("foo").methodReturn.toReturn.ast.isLiteral.l: @unchecked
+      barLiteral.typeFullName shouldBe "__builtin.str"
+    }
+
+    "set the method's return value correctly" in {
+      cpg.method("foo").methodReturn.typeFullName.head shouldBe "__builtin.str"
+    }
+  }
+
 }
