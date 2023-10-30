@@ -192,8 +192,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     node match {
       case f: CPPASTFieldReference =>
         f.getFieldOwner.getEvaluation match {
-          case evaluation: EvalMemberAccess => cleanType(evaluation.getOwnerType.toString, stripKeywords)
-          case evaluation: EvalBinding      => cleanType(evaluation.getType.toString, stripKeywords)
+          case evaluation: EvalBinding => cleanType(evaluation.getType.toString, stripKeywords)
           case _ => cleanType(ASTTypeUtil.getType(f.getFieldOwner.getExpressionType), stripKeywords)
         }
       case f: IASTFieldReference =>
