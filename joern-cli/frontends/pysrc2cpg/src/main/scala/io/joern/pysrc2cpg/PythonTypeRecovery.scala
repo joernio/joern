@@ -9,6 +9,8 @@ import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
+import scala.collection.immutable.{AbstractSet, SortedSet}
+
 class PythonTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
     extends XTypeRecoveryPass[File](cpg, config) {
 
@@ -170,7 +172,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
     (s.startsWith("\"") || s.startsWith("'")) && (s.endsWith("\"") || s.endsWith("'"))
 
   override def getLiteralType(l: Literal): Set[String] = {
-    (l.code match {
+    val literalTypes = (l.code match {
       case code if code.toIntOption.isDefined                  => Some(s"${PythonAstVisitor.builtinPrefix}int")
       case code if code.toDoubleOption.isDefined               => Some(s"${PythonAstVisitor.builtinPrefix}float")
       case code if "True".equals(code) || "False".equals(code) => Some(s"${PythonAstVisitor.builtinPrefix}bool")
@@ -178,6 +180,8 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
       case code if isPyString(code)                            => Some(s"${PythonAstVisitor.builtinPrefix}str")
       case _                                                   => None
     }).toSet
+    setTypes(l, literalTypes.toSeq)
+    literalTypes
   }
 
   override def createCallFromIdentifierTypeFullName(typeFullName: String, callName: String): String = {
