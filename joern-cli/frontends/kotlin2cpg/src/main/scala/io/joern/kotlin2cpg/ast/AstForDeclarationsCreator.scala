@@ -6,8 +6,8 @@ import io.joern.kotlin2cpg.psi.PsiUtils
 import io.joern.kotlin2cpg.psi.PsiUtils.nonUnderscoreDestructuringEntries
 import io.joern.kotlin2cpg.types.{AnonymousObjectContext, TypeConstants, TypeInfoProvider}
 import io.joern.x2cpg.utils.NodeBuilders
-import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newIdentifierNode, newLocalNode, newMethodReturnNode}
-import io.joern.x2cpg.{Ast, Defines, ValidationMode}
+import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newIdentifierNode, newMethodReturnNode}
+import io.joern.x2cpg.{Ast, AstNodeBuilder, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewMethod, NewTypeDecl}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
@@ -248,7 +248,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       case _                   => false
     }
     val tmpName         = s"${Constants.tmpLocalPrefix}${tmpKeyPool.next}"
-    val localForTmpNode = newLocalNode(tmpName, callRhsTypeFullName)
+    val localForTmpNode = localNode(expr, tmpName, tmpName, callRhsTypeFullName)
     scope.addToScope(localForTmpNode.name, localForTmpNode)
     val localForTmpAst = Ast(localForTmpNode)
 

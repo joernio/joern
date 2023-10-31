@@ -4,8 +4,8 @@ import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.ast.Nodes.modifierNode
 import io.joern.kotlin2cpg.types.{TypeConstants, TypeInfoProvider}
 import io.joern.x2cpg.utils.NodeBuilders
-import io.joern.x2cpg.{Ast, ValidationMode}
-import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newClosureBindingNode, newLocalNode, newMethodReturnNode}
+import io.joern.x2cpg.{Ast, AstNodeBuilder, ValidationMode}
+import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newClosureBindingNode, newMethodReturnNode}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewLocal, NewMember, NewMethodParameterIn, NewNode}
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
@@ -146,7 +146,13 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val localsForCaptured = closureBindingEntriesForCaptured.map { case (closureBindingNode, capturedNodeContext) =>
       val node =
-        newLocalNode(capturedNodeContext.name, capturedNodeContext.typeFullName, closureBindingNode.closureBindingId)
+        localNode(
+          fn,
+          capturedNodeContext.name,
+          capturedNodeContext.name,
+          capturedNodeContext.typeFullName,
+          closureBindingNode.closureBindingId
+        )
       scope.addToScope(capturedNodeContext.name, node)
       node
     }
@@ -236,7 +242,13 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val localsForCaptured = closureBindingEntriesForCaptured.map { case (closureBindingNode, capturedNodeContext) =>
       val node =
-        newLocalNode(capturedNodeContext.name, capturedNodeContext.typeFullName, closureBindingNode.closureBindingId)
+        localNode(
+          expr,
+          capturedNodeContext.name,
+          capturedNodeContext.name,
+          capturedNodeContext.typeFullName,
+          closureBindingNode.closureBindingId
+        )
       scope.addToScope(capturedNodeContext.name, node)
       node
     }

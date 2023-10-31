@@ -236,6 +236,7 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
       .columnNumber(column(node))
   }
 
+  // USING THIS METHOD
   protected def localNode(
     node: Node,
     name: String,

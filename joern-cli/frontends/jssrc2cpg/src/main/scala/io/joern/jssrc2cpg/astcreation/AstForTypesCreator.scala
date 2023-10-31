@@ -4,9 +4,9 @@ import io.joern.jssrc2cpg.datastructures.BlockScope
 import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
-import io.joern.x2cpg.{Ast, ValidationMode}
+import io.joern.x2cpg.{Ast, ValidationMode, AstNodeBuilder}
 import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newLocalNode}
+import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes, Operators}
 import ujson.Value
@@ -389,7 +389,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       val constructorRefNode =
         methodRefNode(clazz, constructorNode.code, constructorNode.fullName, constructorNode.fullName)
 
-      val idLocal = newLocalNode(typeName, Defines.Any).order(0)
+      val idLocal = localNode(clazz, typeName, typeName, Defines.Any).order(0)
       diffGraph.addEdge(localAstParentStack.head, idLocal, EdgeTypes.AST)
       scope.addVariable(typeName, idLocal, BlockScope)
       scope.addVariableReference(typeName, classIdNode)
