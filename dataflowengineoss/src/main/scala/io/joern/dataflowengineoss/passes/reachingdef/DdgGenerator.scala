@@ -1,12 +1,12 @@
 package io.joern.dataflowengineoss.passes.reachingdef
 
-import io.joern.dataflowengineoss.{globalFromLiteral, identifierToFirstUsages}
 import io.joern.dataflowengineoss.queryengine.AccessPathUsage.toTrackedBaseAndAccessPathSimple
 import io.joern.dataflowengineoss.semanticsloader.Semantics
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.joern.dataflowengineoss.{globalFromLiteral, identifierToFirstUsages}
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators, PropertyNames}
 import io.shiftleft.semanticcpg.accesspath.MatchResult
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.{Set, mutable}
@@ -186,8 +186,15 @@ class DdgGenerator(semantics: Semantics) {
         }
       }
 
+      // NOTE: Below connects REACHING_DEF edges between method boundaries of closures. In the case of PARENT -> CHILD
+      // this brings no inconsistent flows, but from CHILD -> PARENT we have observed inconsistencies. This form of
+      // modelling data-flow is unsound as the engine assumes REACHING_DEF edges are intraprocedural.
+      // See PR #3735 on Joern for details
       val globalIdentifiers =
-        method.ast.isLiteral.flatMap(globalFromLiteral).collectAll[Identifier].l
+        (method._callViaContainsOut ++ method._returnViaContainsOut).ast.isLiteral
+          .flatMap(globalFromLiteral)
+          .collectAll[Identifier]
+          .l
       globalIdentifiers
         .foreach { global =>
           identifierToFirstUsages(global).map { identifier =>
