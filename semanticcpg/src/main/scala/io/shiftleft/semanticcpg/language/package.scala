@@ -52,15 +52,15 @@ package object language extends /* operatorextension.Implicits with */ LowPrioIm
 //   // then you need to add an implicit conversion from `Steps[NodeType]` to your type
 //   // here.
 
-//   implicit def singleToTypeTrav[A <: Type](a: A): TypeTraversal =
-//     new TypeTraversal(Iterator.single(a))
-//   implicit def iterOnceToTypeTrav[A <: Type](a: IterableOnce[A]): TypeTraversal =
-//     new TypeTraversal(a.iterator)
+  implicit def singleToTypeTrav[A <: Type](a: A): TypeTraversal =
+    new TypeTraversal(Iterator.single(a))
+  implicit def iterOnceToTypeTrav[A <: Type](a: IterableOnce[A]): TypeTraversal =
+    new TypeTraversal(a.iterator)
 
-//   implicit def singleToTypeDeclTrav[A <: TypeDecl](a: A): TypeDeclTraversal =
-//     new TypeDeclTraversal(Iterator.single(a))
-//   implicit def iterOnceToTypeDeclTrav[A <: TypeDecl](a: IterableOnce[A]): TypeDeclTraversal =
-//     new TypeDeclTraversal(a.iterator)
+  implicit def singleToTypeDeclTrav[A <: TypeDecl](a: A): TypeDeclTraversal =
+    new TypeDeclTraversal(Iterator.single(a))
+  implicit def iterOnceToTypeDeclTrav[A <: TypeDecl](a: IterableOnce[A]): TypeDeclTraversal =
+    new TypeDeclTraversal(a.iterator)
 
   implicit def iterOnceToOriginalCallTrav(traversal: Iterator[Call]): OriginalCall = new OriginalCall(traversal)
 
@@ -94,7 +94,7 @@ package object language extends /* operatorextension.Implicits with */ LowPrioIm
   ): AnnotationParameterAssignTraversal =
     new AnnotationParameterAssignTraversal(a.iterator)
 
-//   implicit def toMember(traversal: IterableOnce[Member]): MemberTraversal = new MemberTraversal(traversal.iterator)
+  implicit def toMember(traversal: IterableOnce[Member]): MemberTraversal = new MemberTraversal(traversal.iterator)
   implicit def toLocal(traversal: IterableOnce[Local]): LocalTraversal    = new LocalTraversal(traversal.iterator)
   // implicit def toMethod(traversal: IterableOnce[Method]): OriginalMethod  = new OriginalMethod(traversal.iterator)
 
@@ -113,15 +113,15 @@ package object language extends /* operatorextension.Implicits with */ LowPrioIm
 //   implicit def iterOnceToMethodReturnTrav[A <: MethodReturn](a: IterableOnce[A]): MethodReturnTraversal =
 //     new MethodReturnTraversal(a.iterator)
 
-//   implicit def singleToNamespaceTrav[A <: Namespace](a: A): NamespaceTraversal =
-//     new NamespaceTraversal(Iterator.single(a))
-//   implicit def iterOnceToNamespaceTrav[A <: Namespace](a: IterableOnce[A]): NamespaceTraversal =
-//     new NamespaceTraversal(a.iterator)
+  implicit def singleToNamespaceTrav[A <: Namespace](a: A): NamespaceTraversal =
+    new NamespaceTraversal(Iterator.single(a))
+  implicit def iterOnceToNamespaceTrav[A <: Namespace](a: IterableOnce[A]): NamespaceTraversal =
+    new NamespaceTraversal(a.iterator)
 
-//   implicit def singleToNamespaceBlockTrav[A <: NamespaceBlock](a: A): NamespaceBlockTraversal =
-//     new NamespaceBlockTraversal(Iterator.single(a))
-//   implicit def iterOnceToNamespaceBlockTrav[A <: NamespaceBlock](a: IterableOnce[A]): NamespaceBlockTraversal =
-//     new NamespaceBlockTraversal(a.iterator)
+  implicit def singleToNamespaceBlockTrav[A <: NamespaceBlock](a: A): NamespaceBlockTraversal =
+    new NamespaceBlockTraversal(Iterator.single(a))
+  implicit def iterOnceToNamespaceBlockTrav[A <: NamespaceBlock](a: IterableOnce[A]): NamespaceBlockTraversal =
+    new NamespaceBlockTraversal(a.iterator)
 
   implicit def singleToFileTrav[A <: File](a: A): FileTraversal =
     new FileTraversal(Iterator.single(a))
