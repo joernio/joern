@@ -313,7 +313,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     methodScopeNodeId: NewNode,
     variableName: String
   ): (NewNode, ScopeType) = {
-    println("createMethodLocalForUnresolvedReference: " + variableName)
     val local = newLocalNode(variableName, Defines.Any).order(0)
     diffGraph.addEdge(methodScopeNodeId, local, EdgeTypes.AST)
     (local, MethodScope)
