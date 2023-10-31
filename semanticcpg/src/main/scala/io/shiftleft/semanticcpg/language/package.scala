@@ -64,10 +64,10 @@ package object language extends /* operatorextension.Implicits with */ LowPrioIm
 
   implicit def iterOnceToOriginalCallTrav(traversal: Iterator[Call]): OriginalCall = new OriginalCall(traversal)
 
-//   implicit def singleToControlStructureTrav[A <: ControlStructure](a: A): ControlStructureTraversal =
-//     new ControlStructureTraversal(Iterator.single(a))
-//   implicit def iterOnceToControlStructureTrav[A <: ControlStructure](a: IterableOnce[A]): ControlStructureTraversal =
-//     new ControlStructureTraversal(a.iterator)
+  implicit def singleToControlStructureTrav[A <: ControlStructure](a: A): ControlStructureTraversal =
+    new ControlStructureTraversal(Iterator.single(a))
+  implicit def iterOnceToControlStructureTrav[A <: ControlStructure](a: IterableOnce[A]): ControlStructureTraversal =
+    new ControlStructureTraversal(a.iterator)
 
 //   implicit def singleToIdentifierTrav[A <: Identifier](a: A): IdentifierTraversal =
 //     new IdentifierTraversal(Iterator.single(a))
@@ -96,7 +96,7 @@ package object language extends /* operatorextension.Implicits with */ LowPrioIm
 
 //   implicit def toMember(traversal: IterableOnce[Member]): MemberTraversal = new MemberTraversal(traversal.iterator)
   implicit def toLocal(traversal: IterableOnce[Local]): LocalTraversal    = new LocalTraversal(traversal.iterator)
-//   implicit def toMethod(traversal: IterableOnce[Method]): OriginalMethod  = new OriginalMethod(traversal.iterator)
+  // implicit def toMethod(traversal: IterableOnce[Method]): OriginalMethod  = new OriginalMethod(traversal.iterator)
 
 //   implicit def singleToMethodParameterInTrav[A <: MethodParameterIn](a: A): MethodParameterTraversal =
 //     new MethodParameterTraversal(Iterator.single(a))

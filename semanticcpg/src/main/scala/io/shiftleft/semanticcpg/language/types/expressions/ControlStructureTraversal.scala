@@ -1,7 +1,8 @@
 package io.shiftleft.semanticcpg.language.types.expressions
 
 import io.shiftleft.codepropertygraph.generated.v2.nodes.{AstNode, ControlStructure, Expression}
-import io.shiftleft.codepropertygraph.generated.v2.{ControlStructureTypes, Properties}
+import io.shiftleft.codepropertygraph.generated.v2.ControlStructureTypes
+import io.shiftleft.codepropertygraph.generated.v2.Language.*
 import io.shiftleft.semanticcpg.language.*
 // TODO bring back: import overflowdb.traversal.help.Doc
 
@@ -15,7 +16,7 @@ class ControlStructureTraversal(val traversal: Iterator[ControlStructure]) exten
 
   // TODO bring back: @Doc(info = "The condition associated with this control structure")
   def condition: Iterator[Expression] =
-    traversal.flatMap(_.conditionOut).collectAll[Expression]
+    traversal.flatMap(_._conditionOut).collectAll[Expression]
 
   // TODO bring back: @Doc(info = "Control structures where condition.code matches regex")
   def condition(regex: String): Iterator[ControlStructure] =
@@ -23,11 +24,11 @@ class ControlStructureTraversal(val traversal: Iterator[ControlStructure]) exten
 
   // TODO bring back: @Doc(info = "Sub tree taken when condition evaluates to true")
   def whenTrue: Iterator[AstNode] =
-    traversal.out.has(Properties.ORDER, secondChildIndex: Int).cast[AstNode]
+     traversal.out.collectAll[AstNode].order(secondChildIndex)
 
   // TODO bring back: @Doc(info = "Sub tree taken when condition evaluates to false")
   def whenFalse: Iterator[AstNode] =
-    traversal.out.has(Properties.ORDER, thirdChildIndex).cast[AstNode]
+    traversal.out.collectAll[AstNode].order(thirdChildIndex)
 
   // TODO bring back: @Doc(info = "Only `Try` control structures")
   def isTry: Iterator[ControlStructure] =
