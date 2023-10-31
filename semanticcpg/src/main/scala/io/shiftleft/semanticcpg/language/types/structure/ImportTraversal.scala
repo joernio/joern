@@ -11,8 +11,6 @@ class ImportTraversal(val traversal: Iterator[Import]) extends AnyVal {
   def call: Iterator[Call] = traversal._isCallForImportIn.cast[Call]
 
   def namespaceBlock: Iterator[NamespaceBlock] =
-    // TODO
-    ???
-    // call.method.namespaceBlock
+    call.method.namespaceBlock
 
 }
