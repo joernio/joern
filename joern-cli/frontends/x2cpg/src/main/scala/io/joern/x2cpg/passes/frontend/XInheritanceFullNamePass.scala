@@ -5,7 +5,7 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 import java.io.File
 import java.nio.file.Paths
@@ -57,7 +57,9 @@ abstract class XInheritanceFullNamePass(cpg: Cpg) extends ForkJoinParallelCpgPas
   }
 
   protected def resolveInheritedTypeFullName(td: TypeDecl, builder: DiffGraphBuilder): Seq[TypeDeclBase] = {
-    val qualifiedNamesInScope = td.file.ast
+    val callsOfInterest     = td.file.method.flatMap(_._callViaContainsOut)
+    val typeDeclsOfInterest = td.file.typeDecl
+    val qualifiedNamesInScope = (callsOfInterest ++ typeDeclsOfInterest)
       .flatMap(extractTypeDeclFromNode)
       .filterNot(_.endsWith(moduleName))
       .l
