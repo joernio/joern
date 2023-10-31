@@ -4,7 +4,7 @@ import io.joern.jssrc2cpg.datastructures.*
 import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
-import io.joern.x2cpg.{Ast, ValidationMode}
+import io.joern.x2cpg.{Ast, ValidationMode, AstNodeBuilder}
 import io.joern.x2cpg.utils.NodeBuilders.{newClosureBindingNode, newLocalNode}
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies}
@@ -69,9 +69,9 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     defaultName
       .orElse(codeForBabelNodeInfo(nodeInfo).headOption)
       .getOrElse {
-        val tmpName   = generateUnusedVariableName(usedVariableNames, "_tmp")
-        val localNode = newLocalNode(tmpName, Defines.Any).order(0)
-        diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
+        val tmpName    = generateUnusedVariableName(usedVariableNames, "_tmp")
+        val nLocalNode = localNode(nodeInfo, tmpName, tmpName, Defines.Any).order(0)
+        diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
         tmpName
       }
   }

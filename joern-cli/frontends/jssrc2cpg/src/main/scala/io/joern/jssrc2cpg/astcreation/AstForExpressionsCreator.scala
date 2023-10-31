@@ -3,9 +3,8 @@ package io.joern.jssrc2cpg.astcreation
 import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.{Defines, EcmaBuiltins, GlobalBuiltins}
-import io.joern.x2cpg.{Ast, ValidationMode}
+import io.joern.x2cpg.{Ast, ValidationMode, AstNodeBuilder}
 import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.utils.NodeBuilders.newLocalNode
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
 
@@ -110,7 +109,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     localAstParentStack.push(blockNode)
 
     val tmpAllocName      = generateUnusedVariableName(usedVariableNames, "_tmp")
-    val localTmpAllocNode = newLocalNode(tmpAllocName, Defines.Any).order(0)
+    val localTmpAllocNode = localNode(newExpr, tmpAllocName, tmpAllocName, Defines.Any).order(0)
     val tmpAllocNode1     = identifierNode(newExpr, tmpAllocName)
     diffGraph.addEdge(localAstParentStack.head, localTmpAllocNode, EdgeTypes.AST)
     scope.addVariableReference(tmpAllocName, tmpAllocNode1)
@@ -356,7 +355,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       localAstParentStack.push(blockNode)
 
       val tmpName      = generateUnusedVariableName(usedVariableNames, "_tmp")
-      val localTmpNode = newLocalNode(tmpName, Defines.Any).order(0)
+      val localTmpNode = localNode(arrExpr, tmpName, tmpName, Defines.Any).order(0)
       val tmpArrayNode = identifierNode(arrExpr, tmpName)
       diffGraph.addEdge(localAstParentStack.head, localTmpNode, EdgeTypes.AST)
       scope.addVariableReference(tmpName, tmpArrayNode)
@@ -425,9 +424,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     scope.pushNewBlockScope(blockNode)
     localAstParentStack.push(blockNode)
 
-    val tmpName   = generateUnusedVariableName(usedVariableNames, "_tmp")
-    val localNode = newLocalNode(tmpName, Defines.Any).order(0)
-    diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
+    val tmpName      = generateUnusedVariableName(usedVariableNames, "_tmp")
+    val localTmpNode = localNode(objExpr, tmpName, tmpName, Defines.Any).order(0)
+    diffGraph.addEdge(localAstParentStack.head, localTmpNode, EdgeTypes.AST)
 
     val propertiesAsts = objExpr.json("properties").arr.toList.map { property =>
       val nodeInfo = createBabelNodeInfo(property)

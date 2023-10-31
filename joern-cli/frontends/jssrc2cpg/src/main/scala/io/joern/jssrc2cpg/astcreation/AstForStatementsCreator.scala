@@ -4,8 +4,7 @@ import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.jssrc2cpg.passes.Defines
-import io.joern.x2cpg.{Ast, ValidationMode}
-import io.joern.x2cpg.utils.NodeBuilders.newLocalNode
+import io.joern.x2cpg.{Ast, ValidationMode, AstNodeBuilder}
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
@@ -306,7 +305,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
     // _iterator assignment:
     val iteratorName      = generateUnusedVariableName(usedVariableNames, "_iterator")
-    val iteratorLocalNode = newLocalNode(iteratorName, Defines.Any).order(0)
+    val iteratorLocalNode = localNode(forInOfStmt, iteratorName, iteratorName, Defines.Any).order(0)
     val iteratorNode      = identifierNode(forInOfStmt, iteratorName)
     diffGraph.addEdge(localAstParentStack.head, iteratorLocalNode, EdgeTypes.AST)
     scope.addVariableReference(iteratorName, iteratorNode)
@@ -336,7 +335,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
     // _result:
     val resultName      = generateUnusedVariableName(usedVariableNames, "_result")
-    val resultLocalNode = newLocalNode(resultName, Defines.Any).order(0)
+    val resultLocalNode = localNode(forInOfStmt, resultName, resultName, Defines.Any).order(0)
     val resultNode      = identifierNode(forInOfStmt, resultName)
     diffGraph.addEdge(localAstParentStack.head, resultLocalNode, EdgeTypes.AST)
     scope.addVariableReference(resultName, resultNode)
@@ -344,7 +343,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     // loop variable:
     val loopVariableName = idNodeInfo.code
 
-    val loopVariableLocalNode = newLocalNode(loopVariableName, Defines.Any).order(0)
+    val loopVariableLocalNode = localNode(forInOfStmt, loopVariableName, loopVariableName, Defines.Any).order(0)
     val loopVariableNode      = identifierNode(forInOfStmt, loopVariableName)
     diffGraph.addEdge(localAstParentStack.head, loopVariableLocalNode, EdgeTypes.AST)
     scope.addVariableReference(loopVariableName, loopVariableNode)
@@ -457,7 +456,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
     // _iterator assignment:
     val iteratorName      = generateUnusedVariableName(usedVariableNames, "_iterator")
-    val iteratorLocalNode = newLocalNode(iteratorName, Defines.Any).order(0)
+    val iteratorLocalNode = localNode(forInOfStmt, iteratorName, iteratorName, Defines.Any).order(0)
     val iteratorNode      = identifierNode(forInOfStmt, iteratorName)
     diffGraph.addEdge(localAstParentStack.head, iteratorLocalNode, EdgeTypes.AST)
     scope.addVariableReference(iteratorName, iteratorNode)
@@ -487,7 +486,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
     // _result:
     val resultName      = generateUnusedVariableName(usedVariableNames, "_result")
-    val resultLocalNode = newLocalNode(resultName, Defines.Any).order(0)
+    val resultLocalNode = localNode(forInOfStmt, resultName, resultName, Defines.Any).order(0)
     val resultNode      = identifierNode(forInOfStmt, resultName)
     diffGraph.addEdge(localAstParentStack.head, resultLocalNode, EdgeTypes.AST)
     scope.addVariableReference(resultName, resultNode)
@@ -599,7 +598,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
     // _iterator assignment:
     val iteratorName      = generateUnusedVariableName(usedVariableNames, "_iterator")
-    val iteratorLocalNode = newLocalNode(iteratorName, Defines.Any).order(0)
+    val iteratorLocalNode = localNode(forInOfStmt, iteratorName, iteratorName, Defines.Any).order(0)
     val iteratorNode      = identifierNode(forInOfStmt, iteratorName)
     diffGraph.addEdge(localAstParentStack.head, iteratorLocalNode, EdgeTypes.AST)
     scope.addVariableReference(iteratorName, iteratorNode)
@@ -628,7 +627,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
     // _result:
     val resultName      = generateUnusedVariableName(usedVariableNames, "_result")
-    val resultLocalNode = newLocalNode(resultName, Defines.Any).order(0)
+    val resultLocalNode = localNode(forInOfStmt, resultName, resultName, Defines.Any).order(0)
     val resultNode      = identifierNode(forInOfStmt, resultName)
     diffGraph.addEdge(localAstParentStack.head, resultLocalNode, EdgeTypes.AST)
     scope.addVariableReference(resultName, resultNode)
@@ -636,7 +635,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     // loop variable:
     val loopVariableNames = idNodeInfo.json("properties").arr.toList.map(code)
 
-    val loopVariableLocalNodes = loopVariableNames.map(newLocalNode(_, Defines.Any).order(0))
+    val loopVariableLocalNodes = loopVariableNames.map(varName => localNode(forInOfStmt, varName, varName, Defines.Any))
     val loopVariableNodes      = loopVariableNames.map(identifierNode(forInOfStmt, _))
     loopVariableLocalNodes.foreach(diffGraph.addEdge(localAstParentStack.head, _, EdgeTypes.AST))
     loopVariableNames.zip(loopVariableNodes).foreach { case (loopVariableName, loopVariableNode) =>
@@ -753,7 +752,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
     // _iterator assignment:
     val iteratorName      = generateUnusedVariableName(usedVariableNames, "_iterator")
-    val iteratorLocalNode = newLocalNode(iteratorName, Defines.Any).order(0)
+    val iteratorLocalNode = localNode(forInOfStmt, iteratorName, iteratorName, Defines.Any).order(0)
     val iteratorNode      = identifierNode(forInOfStmt, iteratorName)
     diffGraph.addEdge(localAstParentStack.head, iteratorLocalNode, EdgeTypes.AST)
     scope.addVariableReference(iteratorName, iteratorNode)
@@ -781,7 +780,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
     // _result:
     val resultName      = generateUnusedVariableName(usedVariableNames, "_result")
-    val resultLocalNode = newLocalNode(resultName, Defines.Any).order(0)
+    val resultLocalNode = localNode(forInOfStmt, resultName, resultName, Defines.Any).order(0)
     val resultNode      = identifierNode(forInOfStmt, resultName)
     diffGraph.addEdge(localAstParentStack.head, resultLocalNode, EdgeTypes.AST)
     scope.addVariableReference(resultName, resultNode)
@@ -789,7 +788,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     // loop variable:
     val loopVariableNames = idNodeInfo.json("elements").arr.toList.map(code)
 
-    val loopVariableLocalNodes = loopVariableNames.map(newLocalNode(_, Defines.Any).order(0))
+    val loopVariableLocalNodes = loopVariableNames.map(varName => localNode(forInOfStmt, varName, varName, Defines.Any))
     val loopVariableNodes      = loopVariableNames.map(identifierNode(forInOfStmt, _))
     loopVariableLocalNodes.foreach(diffGraph.addEdge(localAstParentStack.head, _, EdgeTypes.AST))
     loopVariableNames.zip(loopVariableNodes).foreach { case (loopVariableName, loopVariableNode) =>

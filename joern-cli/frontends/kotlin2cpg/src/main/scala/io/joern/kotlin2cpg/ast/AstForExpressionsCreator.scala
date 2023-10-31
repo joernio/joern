@@ -3,8 +3,7 @@ package io.joern.kotlin2cpg.ast
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.ast.Nodes.operatorCallNode
 import io.joern.kotlin2cpg.types.{CallKinds, TypeConstants, TypeInfoProvider}
-import io.joern.x2cpg.utils.NodeBuilders.newLocalNode
-import io.joern.x2cpg.{Ast, Defines, ValidationMode}
+import io.joern.x2cpg.{Ast, AstNodeBuilder, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import org.jetbrains.kotlin.lexer.{KtToken, KtTokens}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewMethodRef}
@@ -491,7 +490,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val typeFullName = registerType(typeInfoProvider.expressionType(expr, Defines.UnresolvedNamespace))
     val tmpBlockNode = blockNode(expr, "", typeFullName)
     val tmpName      = s"${Constants.tmpLocalPrefix}${tmpKeyPool.next}"
-    val tmpLocalNode = newLocalNode(tmpName, typeFullName)
+    val tmpLocalNode = localNode(expr, tmpName, tmpName, typeFullName)
     scope.addToScope(tmpName, tmpLocalNode)
     val tmpLocalAst = Ast(tmpLocalNode)
 

@@ -3,9 +3,9 @@ package io.joern.jssrc2cpg.astcreation
 import io.joern.jssrc2cpg.datastructures.{BlockScope, MethodScope}
 import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
-import io.joern.x2cpg.{Ast, ValidationMode}
+import io.joern.x2cpg.{Ast, ValidationMode, AstNodeBuilder}
 import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newLocalNode}
+import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode}
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier as _, *}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes}
 import ujson.Value
@@ -62,8 +62,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           val paramName = nodeInfo.code.replace("...", "")
           val tpe       = typeFor(nodeInfo)
           if (createLocals) {
-            val localNode = newLocalNode(paramName, tpe).order(0)
-            diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
+            val localTmpNode = localNode(nodeInfo, paramName, paramName, tpe).order(0)
+            diffGraph.addEdge(localAstParentStack.head, localTmpNode, EdgeTypes.AST)
           }
           parameterInNode(nodeInfo, paramName, nodeInfo.code, index, true, EvaluationStrategies.BY_VALUE, Option(tpe))
         case AssignmentPattern =>
@@ -123,9 +123,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
                   val localParamNode = identifierNode(elementNodeInfo, elemName)
                   localParamNode.typeFullName = tpe
 
-                  val localNode = newLocalNode(elemName, tpe).order(0)
-                  diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
-                  scope.addVariable(elemName, localNode, MethodScope)
+                  val localTmpNode = localNode(elementNodeInfo, elemName, elemName, tpe).order(0)
+                  diffGraph.addEdge(localAstParentStack.head, localTmpNode, EdgeTypes.AST)
+                  scope.addVariable(elemName, localTmpNode, MethodScope)
 
                   val paramNode = identifierNode(elementNodeInfo, paramName)
                   scope.addVariableReference(paramName, paramNode)
@@ -178,9 +178,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
                 val localParamNode = identifierNode(elementNodeInfo, elemName)
                 localParamNode.typeFullName = tpe
 
-                val localNode = newLocalNode(elemName, tpe).order(0)
-                diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
-                scope.addVariable(elemName, localNode, MethodScope)
+                val localTmpNode = localNode(elementNodeInfo, elemName, elemName, tpe).order(0)
+                diffGraph.addEdge(localAstParentStack.head, localTmpNode, EdgeTypes.AST)
+                scope.addVariable(elemName, localTmpNode, MethodScope)
 
                 val paramNode = identifierNode(elementNodeInfo, paramName)
                 scope.addVariableReference(paramName, paramNode)
@@ -198,8 +198,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
                 )
                 // Handle identifiers referring to locals created by destructured parameters
                 assignmentCallAst.nodes
-                  .collect { case i: NewIdentifier if localNode.name == i.name => i }
-                  .map { i => assignmentCallAst.withRefEdge(i, localNode) }
+                  .collect { case i: NewIdentifier if localTmpNode.name == i.name => i }
+                  .map { i => assignmentCallAst.withRefEdge(i, localTmpNode) }
                   .reduce(_ merge _)
               case RestElement => handleRestInParameters(elementNodeInfo, nodeInfo, paramName)
               case _           => astForNodeWithFunctionReference(elementNodeInfo.json)
@@ -367,7 +367,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     val callAst = if (shouldCreateAssignmentCall && shouldCreateFunctionReference) {
       val idNode  = identifierNode(func, methodName)
-      val idLocal = newLocalNode(methodName, methodFullName).order(0)
+      val idLocal = localNode(func, methodName, methodName, methodFullName).order(0)
       diffGraph.addEdge(localAstParentStack.head, idLocal, EdgeTypes.AST)
       scope.addVariable(methodName, idLocal, BlockScope)
       scope.addVariableReference(methodName, idNode)
