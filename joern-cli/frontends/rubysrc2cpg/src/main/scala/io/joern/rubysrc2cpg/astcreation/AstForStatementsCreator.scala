@@ -185,6 +185,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case _: StaticLiteral    => astForReturnStatement(ReturnExpression(ctx, List(ctx))) :: Nil
       case _: BinaryExpression => astForReturnStatement(ReturnExpression(ctx, List(ctx))) :: Nil
       case _: UnaryExpression  => astForReturnStatement(ReturnExpression(ctx, List(ctx))) :: Nil
+      case _: SimpleIdentifier => astForReturnStatement(ReturnExpression(ctx, List(ctx))) :: Nil
       case node: SingleAssignment =>
         astForSingleAssignment(node) :: List(astForReturnStatement(ReturnExpression(ctx, List(node.lhs))))
       case node: AttributeAssignment =>

@@ -42,4 +42,17 @@ class MethodReturnTests extends RubyCode2CpgFixture {
     r.lineNumber shouldBe Some(2)
   }
 
+  "implicit RETURN node for `x` exists" in {
+    val cpg = code("""
+        |def f(x)
+        | x
+        |end
+        |""".stripMargin)
+
+    val List(f)         = cpg.method.name("f").l
+    val List(r: Return) = f.methodReturn.cfgIn.l: @unchecked
+    r.code shouldBe "x"
+    r.lineNumber shouldBe Some(3)
+  }
+
 }

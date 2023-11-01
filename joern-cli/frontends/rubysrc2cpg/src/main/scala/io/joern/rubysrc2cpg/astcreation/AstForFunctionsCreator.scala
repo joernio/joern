@@ -33,6 +33,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         astForStatementListReturningLastExpression(StatementList(node.body, List(node.body)))
       case _: SingleAssignment =>
         astForStatementListReturningLastExpression(StatementList(node.body, List(node.body)))
+      case _: SimpleIdentifier =>
+        astForStatementListReturningLastExpression(StatementList(node.body, List(node.body)))
       case body =>
         logger.warn(
           s"Non-linear method bodies are not supported yet: ${body.text} (${body.getClass.getSimpleName}) ($relativeFileName), skipping"
