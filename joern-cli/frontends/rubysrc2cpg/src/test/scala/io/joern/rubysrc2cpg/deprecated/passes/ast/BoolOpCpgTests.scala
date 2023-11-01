@@ -1,14 +1,13 @@
 package io.joern.rubysrc2cpg.deprecated.passes.ast
 
-import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes, DispatchTypes, Operators, nodes}
+import io.joern.rubysrc2cpg.testfixtures.{DifferentInNewFrontend, RubyCode2CpgFixture, SameInNewFrontend}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 class BoolOpCpgTests extends RubyCode2CpgFixture(useDeprecatedFrontend = true) {
   val cpg = code("""x or y or z""".stripMargin)
 
-  "test boolOp 'or' call node properties" in {
+  "test boolOp 'or' call node properties" taggedAs SameInNewFrontend in {
     val orCall = cpg.call.head
 //    val orCall = cpg.call.methodFullName(Operators.logicalOr).head
     orCall.code shouldBe "x or y or z"
@@ -18,7 +17,7 @@ class BoolOpCpgTests extends RubyCode2CpgFixture(useDeprecatedFrontend = true) {
   }
 
   // TODO: Fix this multi logicalOr operation
-  "test boolOp 'or' ast children" ignore {
+  "test boolOp 'or' ast children" taggedAs DifferentInNewFrontend ignore {
     cpg.call
       .methodFullName(Operators.logicalOr)
       .astChildren
@@ -43,7 +42,7 @@ class BoolOpCpgTests extends RubyCode2CpgFixture(useDeprecatedFrontend = true) {
   }
 
   // TODO: Fix this multi logicalOr operation arguments
-  "test boolOp 'or' arguments" ignore {
+  "test boolOp 'or' arguments" taggedAs DifferentInNewFrontend ignore {
     cpg.call
       .methodFullName(Operators.logicalOr)
       .argument

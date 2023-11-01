@@ -1,9 +1,8 @@
 package io.joern.rubysrc2cpg.deprecated.passes.ast
 
-import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes, Operators}
+import io.joern.rubysrc2cpg.testfixtures.{DifferentInNewFrontend, RubyCode2CpgFixture, SameInNewFrontend}
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 class MethodOneTests extends RubyCode2CpgFixture(useDeprecatedFrontend = true) {
 
@@ -28,7 +27,7 @@ class MethodOneTests extends RubyCode2CpgFixture(useDeprecatedFrontend = true) {
       }
     }
 
-    "should return correct number of lines" in {
+    "should return correct number of lines" taggedAs SameInNewFrontend in {
       cpg.method.name("foo").numberOfLines.l shouldBe List(3)
     }
 
@@ -41,7 +40,7 @@ class MethodOneTests extends RubyCode2CpgFixture(useDeprecatedFrontend = true) {
       cpg.method.name("foo").methodReturn.typeFullName.head shouldBe "String"
     }
 
-    "should allow traversing to method" in {
+    "should allow traversing to method" taggedAs DifferentInNewFrontend in {
       cpg.methodReturn.method.name.l shouldBe List("foo", ":program", "<operator>.assignment")
     }
 
@@ -128,7 +127,7 @@ class MethodOneTests extends RubyCode2CpgFixture(useDeprecatedFrontend = true) {
         |end
         |""".stripMargin)
 
-    "contain empty array" in {
+    "contain empty array" taggedAs SameInNewFrontend in {
       cpg.method.name("foo").size shouldBe 1
       cpg.method.name("foo").block.containsCallTo(Operators.arrayInitializer).size shouldBe 1
     }
@@ -145,7 +144,7 @@ class MethodOneTests extends RubyCode2CpgFixture(useDeprecatedFrontend = true) {
         |end
         |""".stripMargin)
 
-    "contain empty array" in {
+    "contain empty array" taggedAs DifferentInNewFrontend in {
       cpg.identifier("c").astParent.isCallTo("attr_accessor").size shouldBe 1
     }
   }
@@ -174,7 +173,7 @@ class MethodOneTests extends RubyCode2CpgFixture(useDeprecatedFrontend = true) {
           |end
           |""".stripMargin)
 
-      "have function identifier as argument and function definition" ignore {
+      "have function identifier as argument and function definition" taggedAs DifferentInNewFrontend ignore {
         /* FIXME: We are capturing the prefixes but order in ast is private -> attr_reader -> LITERAL(bar)
          *   We should duplicate the bar node and set parent as both methods */
         cpg.identifier("bar").astParent.isCallTo("private").size shouldBe 1

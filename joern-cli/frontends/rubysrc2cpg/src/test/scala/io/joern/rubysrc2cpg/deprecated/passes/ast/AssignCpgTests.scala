@@ -1,22 +1,23 @@
 package io.joern.rubysrc2cpg.deprecated.passes.ast
 
-import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.joern.rubysrc2cpg.testfixtures.{DifferentInNewFrontend, RubyCode2CpgFixture, SameInNewFrontend}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
 import io.shiftleft.semanticcpg.language.*
+import org.scalatest.Tag
 
 class AssignCpgTests extends RubyCode2CpgFixture(useDeprecatedFrontend = true) {
 
   "single target assign" should {
     val cpg = code("""x = 2""".stripMargin)
 
-    "test local and identifier nodes" in {
+    "test local and identifier nodes" taggedAs SameInNewFrontend in {
       val localX = cpg.local.head
       localX.name shouldBe "x"
       val List(idX) = localX.referencingIdentifiers.l: @unchecked
       idX.name shouldBe "x"
     }
 
-    "test assignment node properties" in {
+    "test assignment node properties" taggedAs SameInNewFrontend in {
       val assignCall = cpg.call.methodFullName(Operators.assignment).head
       assignCall.code shouldBe "x = 2"
       assignCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
@@ -24,7 +25,7 @@ class AssignCpgTests extends RubyCode2CpgFixture(useDeprecatedFrontend = true) {
       assignCall.columnNumber shouldBe Some(2)
     }
 
-    "test assignment node ast children" in {
+    "test assignment node ast children" taggedAs SameInNewFrontend in {
       cpg.call
         .methodFullName(Operators.assignment)
         .astChildren
@@ -41,7 +42,7 @@ class AssignCpgTests extends RubyCode2CpgFixture(useDeprecatedFrontend = true) {
         .code shouldBe "2"
     }
 
-    "test assignment node arguments" in {
+    "test assignment node arguments" taggedAs SameInNewFrontend in {
       cpg.call
         .methodFullName(Operators.assignment)
         .argument
@@ -150,13 +151,13 @@ class AssignCpgTests extends RubyCode2CpgFixture(useDeprecatedFrontend = true) {
       cpg.all.collect { case block: nodes.Block if block.code != "" => block }.head
     }
 
-    "test block exists" in {
+    "test block exists" taggedAs DifferentInNewFrontend in {
       // Throws if block does not exist.
       getSurroundingBlock
     }
 
     // TODO: Fix the code property of the Block node
-    "test block node properties" ignore {
+    "test block node properties" taggedAs DifferentInNewFrontend ignore {
       val block = getSurroundingBlock
       block.code shouldBe
         """tmp0 = list
@@ -166,12 +167,12 @@ class AssignCpgTests extends RubyCode2CpgFixture(useDeprecatedFrontend = true) {
     }
 
     // TODO: Need to fix the local variables
-    "test local node" ignore {
+    "test local node" taggedAs DifferentInNewFrontend ignore {
       cpg.method.name("Test0.rb::program").local.name("tmp0").headOption should not be empty
     }
 
     // TODO: Need to fix the code property
-    "test tmp variable assignment" ignore {
+    "test tmp variable assignment" taggedAs DifferentInNewFrontend ignore {
       val block         = getSurroundingBlock
       val tmpAssignNode = block.astChildren.isCall.sortBy(_.order).head
       tmpAssignNode.code shouldBe "tmp0 = list"
@@ -183,7 +184,7 @@ class AssignCpgTests extends RubyCode2CpgFixture(useDeprecatedFrontend = true) {
   "empty array assignment" should {
     val cpg = code("""x.y = []""".stripMargin)
 
-    "have an empty assignment" in {
+    "have an empty assignment" taggedAs DifferentInNewFrontend in {
       val List(assignment) = cpg.call.name(Operators.assignment).l
       assignment.argument.where(_.argumentIndex(2)).isCall.name.l shouldBe List(Operators.arrayInitializer)
       assignment.argument.where(_.argumentIndex(2)).isCall.argument.l shouldBe List()

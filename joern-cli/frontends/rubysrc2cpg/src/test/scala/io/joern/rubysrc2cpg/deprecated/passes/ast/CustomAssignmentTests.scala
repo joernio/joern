@@ -1,6 +1,6 @@
 package io.joern.rubysrc2cpg.deprecated.passes.ast
 
-import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.joern.rubysrc2cpg.testfixtures.{DifferentInNewFrontend, RubyCode2CpgFixture}
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, MethodRef, TypeRef}
 import io.shiftleft.semanticcpg.language.*
 
@@ -10,7 +10,7 @@ class CustomAssignmentTests extends RubyCode2CpgFixture(withPostProcessing = tru
     val cpg = code("""
         |puts "This is ruby"
         |""".stripMargin)
-    "be created for builtin presence" in {
+    "be created for builtin presence" taggedAs DifferentInNewFrontend in {
       val List(putsAssignmentCall, _) = cpg.call.l
       putsAssignmentCall.name shouldBe "<operator>.assignment"
 

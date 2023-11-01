@@ -10,6 +10,7 @@ import io.joern.x2cpg.{ValidationMode, X2Cpg}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
+import org.scalatest.Tag
 
 import java.io.File
 
@@ -81,3 +82,11 @@ class RubyCfgTestCpg(useDeprecatedFrontend: Boolean = true)
   override val fileSuffix: String = ".rb"
 
 }
+
+/** Denotes a test which has been similarly ported to the new frontend.
+  */
+object SameInNewFrontend extends Tag("SameInNewFrontend")
+
+/** Denotes a test which has been ported to the new frontend, but has different expectations.
+  */
+object DifferentInNewFrontend extends Tag("DifferentInNewFrontend")

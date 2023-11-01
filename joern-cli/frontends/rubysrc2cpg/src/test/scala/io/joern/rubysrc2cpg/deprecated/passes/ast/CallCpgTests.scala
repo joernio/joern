@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.deprecated.passes.ast
 
 import io.joern.rubysrc2cpg.deprecated.passes.Defines
-import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.joern.rubysrc2cpg.testfixtures.{RubyCode2CpgFixture, SameInNewFrontend}
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, MethodRef}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, nodes}
 import io.shiftleft.semanticcpg.language.*
@@ -10,7 +10,7 @@ class CallCpgTests extends RubyCode2CpgFixture(withPostProcessing = true, useDep
   "simple call method" should {
     val cpg = code("""foo("a", b)""".stripMargin)
 
-    "test call node properties" in {
+    "test call node properties" taggedAs SameInNewFrontend in {
       val callNode = cpg.call.name("foo").head
       callNode.code shouldBe """foo("a", b)"""
       callNode.signature shouldBe ""
@@ -18,7 +18,7 @@ class CallCpgTests extends RubyCode2CpgFixture(withPostProcessing = true, useDep
       callNode.lineNumber shouldBe Some(1)
     }
 
-    "test call arguments" in {
+    "test call arguments" taggedAs SameInNewFrontend in {
       val callNode = cpg.call.name("foo").head
       val arg1     = callNode.argument(1)
       arg1.code shouldBe "\"a\""
@@ -27,7 +27,7 @@ class CallCpgTests extends RubyCode2CpgFixture(withPostProcessing = true, useDep
       arg2.code shouldBe "b"
     }
 
-    "test astChildren" in {
+    "test astChildren" taggedAs SameInNewFrontend in {
       val callNode = cpg.call.name("foo").head
       val children = callNode.astChildren
       children.size shouldBe 2
