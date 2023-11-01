@@ -170,19 +170,14 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val block = blockNode(node)
     scope.pushNewScope(block)
 
-    val stmtAsts = if (node.statements.isEmpty) {
-      Seq()
-    } else if (node.statements.length == 1) {
-      astsForImplicitReturnStatement(node.statements.head)
-    } else {
-      val headStmts = node.statements.take(node.statements.length - 1)
-      val lastStmt  = node.statements.last
-      headStmts.flatMap(astsForStatement) ++ astsForImplicitReturnStatement(lastStmt)
-    }
+    val stmtAsts = node.statements.size match
+      case 0 => List()
+      case n =>
+        val (headStmts, lastStmt) = node.statements.splitAt(n - 1)
+        headStmts.flatMap(astsForStatement) ++ lastStmt.flatMap(astsForImplicitReturnStatement)
 
     scope.popScope()
-    blockAst(block, stmtAsts.toList)
-
+    blockAst(block, stmtAsts)
   }
 
   protected def astsForImplicitReturnStatement(ctx: ParserRuleContext): List[Ast] = {

@@ -21,7 +21,7 @@ class ClassTests extends RubyCode2CpgFixture {
     classC.method.l shouldBe List()
   }
 
-  "`class C < D` is represented by a TYPE_DECL node inheriting from `D`" ignore {
+  "`class C < D` is represented by a TYPE_DECL node inheriting from `D`" in {
     val cpg = code("""
                      |class C < D
                      |
