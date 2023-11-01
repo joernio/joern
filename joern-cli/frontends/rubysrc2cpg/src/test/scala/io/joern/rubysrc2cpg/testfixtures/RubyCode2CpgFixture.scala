@@ -1,5 +1,6 @@
 package io.joern.rubysrc2cpg.testfixtures
 
+import io.joern.dataflowengineoss.language.Path
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.rubysrc2cpg.deprecated.utils.PackageTable
@@ -68,6 +69,10 @@ class RubyCode2CpgFixture(
   implicit val resolver: ICallResolver           = NoResolve
   implicit lazy val engineContext: EngineContext = EngineContext()
 
+  protected def flowToResultPairs(path: Path): List[(String, Integer)] =
+    path.resultPairs().collect { case (firstElement: String, secondElement: Option[Integer]) =>
+      (firstElement, secondElement.get)
+    }
 }
 
 class RubyCfgTestCpg(useDeprecatedFrontend: Boolean = true)
