@@ -37,9 +37,9 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
   private def newCreateCpgAction(cpg: Cpg, config: Config): Unit = {
     Using.resource(new parser.ResourceManagedParser(config.antlrCacheMemLimit)) { parser =>
       // TODO: enableDependencyDownload
-      // TODO: TypeNodePass
       val astCreationPass = new AstCreationPass(cpg, parser, config)
       astCreationPass.createAndApply()
+      TypeNodePass.withTypesFromCpg(cpg).createAndApply()
     }
   }
 
