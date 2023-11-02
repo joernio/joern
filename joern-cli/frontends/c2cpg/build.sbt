@@ -5,7 +5,6 @@ dependsOn(Projects.semanticcpg, Projects.dataflowengineoss % Test, Projects.x2cp
 libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
   "com.diffplug.spotless"   % "spotless-eclipse-cdt"       % "10.5.0",
-  "org.jline"               % "jline"                      % "3.23.0",
   "org.scalatest"          %% "scalatest"                  % Versions.scalatest % Test
 )
 
