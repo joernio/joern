@@ -223,7 +223,7 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture() {
       |
       |   function bar() {
       |     $tmp_bar = self::static_method();
-      |     return $tmp;
+      |     return $tmp_bar;
       |   }
       |}
       |
