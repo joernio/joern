@@ -234,30 +234,30 @@ package object language extends /* operatorextension.Implicits with */ LowPrioIm
 
   // EvalType accessors ~
 
-//   // ~ Modifier accessors
-//   implicit def singleToModifierAccessorsMember[A <: Member](a: A): ModifierAccessors[A] =
-//     new ModifierAccessors[A](Iterator.single(a))
-//   implicit def iterOnceToModifierAccessorsMember[A <: Member](a: IterableOnce[A]): ModifierAccessors[A] =
-//     new ModifierAccessors[A](a.iterator)
+  // ~ Modifier accessors
+  implicit def singleToModifierAccessorsMember[A <: Member](a: A): ModifierAccessors[A] =
+    new ModifierAccessors[A](Iterator.single(a))
+  implicit def iterOnceToModifierAccessorsMember[A <: Member](a: IterableOnce[A]): ModifierAccessors[A] =
+    new ModifierAccessors[A](a.iterator)
 
-//   implicit def singleToModifierAccessorsMethod[A <: Method](a: A): ModifierAccessors[A] =
-//     new ModifierAccessors[A](Iterator.single(a))
-//   implicit def iterOnceToModifierAccessorsMethod[A <: Method](a: IterableOnce[A]): ModifierAccessors[A] =
-//     new ModifierAccessors[A](a.iterator)
+  implicit def singleToModifierAccessorsMethod[A <: Method](a: A): ModifierAccessors[A] =
+    new ModifierAccessors[A](Iterator.single(a))
+  implicit def iterOnceToModifierAccessorsMethod[A <: Method](a: IterableOnce[A]): ModifierAccessors[A] =
+    new ModifierAccessors[A](a.iterator)
 
-//   implicit def singleToModifierAccessorsTypeDecl[A <: TypeDecl](a: A): ModifierAccessors[A] =
-//     new ModifierAccessors[A](Iterator.single(a))
-//   implicit def iterOnceToModifierAccessorsTypeDecl[A <: TypeDecl](a: IterableOnce[A]): ModifierAccessors[A] =
-//     new ModifierAccessors[A](a.iterator)
-//   // Modifier accessors ~
+  implicit def singleToModifierAccessorsTypeDecl[A <: TypeDecl](a: A): ModifierAccessors[A] =
+    new ModifierAccessors[A](Iterator.single(a))
+  implicit def iterOnceToModifierAccessorsTypeDecl[A <: TypeDecl](a: IterableOnce[A]): ModifierAccessors[A] =
+    new ModifierAccessors[A](a.iterator)
+  // Modifier accessors ~
 
-//   implicit class NewNodeTypeDeco[NodeType <: NewNode](val node: NodeType) extends AnyVal {
+  implicit class NewNodeTypeDeco[NodeType <: NewNode](val node: NodeType) extends AnyVal {
 
-//     /** Start a new traversal from this node
-//       */
-//     def start: Iterator[NodeType] =
-//       Iterator.single(node)
-//   }
+    /** Start a new traversal from this node
+      */
+    def start: Iterator[NodeType] =
+      Iterator.single(node)
+  }
 
   implicit def toExpression[A <: Expression](a: IterableOnce[A]): ExpressionTraversal[A] =
     new ExpressionTraversal[A](a.iterator)
