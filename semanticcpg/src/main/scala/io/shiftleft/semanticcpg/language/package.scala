@@ -13,7 +13,7 @@ import io.shiftleft.semanticcpg.language.nodemethods.*
 import io.shiftleft.semanticcpg.language.types.expressions.generalizations.*
 import io.shiftleft.semanticcpg.language.types.expressions.{CallTraversal => OriginalCall, *}
 //import io.shiftleft.semanticcpg.language.types.propertyaccessors._
-// import io.shiftleft.semanticcpg.language.types.structure.{MethodTraversal => OriginalMethod}
+import io.shiftleft.semanticcpg.language.types.structure.{MethodTraversal => OriginalMethod}
 import io.shiftleft.semanticcpg.language.types.structure.*
 //import overflowdb.NodeOrDetachedNode
 
@@ -96,7 +96,7 @@ package object language extends /* operatorextension.Implicits with */ LowPrioIm
 
   implicit def toMember(traversal: IterableOnce[Member]): MemberTraversal = new MemberTraversal(traversal.iterator)
   implicit def toLocal(traversal: IterableOnce[Local]): LocalTraversal    = new LocalTraversal(traversal.iterator)
-  // implicit def toMethod(traversal: IterableOnce[Method]): OriginalMethod  = new OriginalMethod(traversal.iterator)
+  implicit def toMethod(traversal: IterableOnce[Method]): OriginalMethod  = new OriginalMethod(traversal.iterator)
 
 //   implicit def singleToMethodParameterInTrav[A <: MethodParameterIn](a: A): MethodParameterTraversal =
 //     new MethodParameterTraversal(Iterator.single(a))
@@ -110,8 +110,8 @@ package object language extends /* operatorextension.Implicits with */ LowPrioIm
 //   ): MethodParameterOutTraversal =
 //     new MethodParameterOutTraversal(a.iterator)
 
-//   implicit def iterOnceToMethodReturnTrav[A <: MethodReturn](a: IterableOnce[A]): MethodReturnTraversal =
-//     new MethodReturnTraversal(a.iterator)
+  implicit def iterOnceToMethodReturnTrav[A <: MethodReturn](a: IterableOnce[A]): MethodReturnTraversal =
+    new MethodReturnTraversal(a.iterator)
 
   implicit def singleToNamespaceTrav[A <: Namespace](a: A): NamespaceTraversal =
     new NamespaceTraversal(Iterator.single(a))
@@ -264,8 +264,9 @@ package object language extends /* operatorextension.Implicits with */ LowPrioIm
 }
 
  trait LowPrioImplicits extends io.joern.odb2.Implicits with io.joern.odb2.traversal.Language /* with io.shiftleft.codepropertygraph.generated.v2.Language */ {
-   implicit def iterableOnceToIterator[A](iterableOnce: IterableOnce[A]): Iterator[A] =
-     iterableOnce.iterator
+
+   // implicit def iterableOnceToIterator[A](iterableOnce: IterableOnce[A]): Iterator[A] =
+   //  iterableOnce.iterator
 
    //   implicit def singleToCfgNodeTraversal[A <: CfgNode](a: A): CfgNodeTraversal[A] =
 //     new CfgNodeTraversal[A](Iterator.single(a))
