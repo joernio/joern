@@ -98,17 +98,17 @@ package object language extends /* operatorextension.Implicits with */ LowPrioIm
   implicit def toLocal(traversal: IterableOnce[Local]): LocalTraversal    = new LocalTraversal(traversal.iterator)
   implicit def toMethod(traversal: IterableOnce[Method]): OriginalMethod  = new OriginalMethod(traversal.iterator)
 
-//   implicit def singleToMethodParameterInTrav[A <: MethodParameterIn](a: A): MethodParameterTraversal =
-//     new MethodParameterTraversal(Iterator.single(a))
-//   implicit def iterOnceToMethodParameterInTrav[A <: MethodParameterIn](a: IterableOnce[A]): MethodParameterTraversal =
-//     new MethodParameterTraversal(a.iterator)
+  implicit def singleToMethodParameterInTrav[A <: MethodParameterIn](a: A): MethodParameterTraversal =
+    new MethodParameterTraversal(Iterator.single(a))
+  implicit def iterOnceToMethodParameterInTrav[A <: MethodParameterIn](a: IterableOnce[A]): MethodParameterTraversal =
+    new MethodParameterTraversal(a.iterator)
 
-//   implicit def singleToMethodParameterOutTrav[A <: MethodParameterOut](a: A): MethodParameterOutTraversal =
-//     new MethodParameterOutTraversal(Iterator.single(a))
-//   implicit def iterOnceToMethodParameterOutTrav[A <: MethodParameterOut](
-//     a: IterableOnce[A]
-//   ): MethodParameterOutTraversal =
-//     new MethodParameterOutTraversal(a.iterator)
+  implicit def singleToMethodParameterOutTrav[A <: MethodParameterOut](a: A): MethodParameterOutTraversal =
+    new MethodParameterOutTraversal(Iterator.single(a))
+  implicit def iterOnceToMethodParameterOutTrav[A <: MethodParameterOut](
+    a: IterableOnce[A]
+  ): MethodParameterOutTraversal =
+    new MethodParameterOutTraversal(a.iterator)
 
   implicit def iterOnceToMethodReturnTrav[A <: MethodReturn](a: IterableOnce[A]): MethodReturnTraversal =
     new MethodReturnTraversal(a.iterator)
