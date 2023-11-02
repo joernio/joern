@@ -242,8 +242,10 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
     existingTypes.addAll(returnTypes)
     logger.debug(s"- new existing types: ${existingTypes.mkString(", ")}")
 
-    methodTypesTable.update(m, existingTypes)
-    builder.setNodeProperty(ret.method.methodReturn, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, existingTypes)
+    val saveTypes = existingTypes.filterNot(_.endsWith(s"${XTypeRecovery.DummyReturnType}"))
+    methodTypesTable.update(m, saveTypes)
+    logger.debug(s"- saving types: ${saveTypes.mkString(", ")}")
+    builder.setNodeProperty(ret.method.methodReturn, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, saveTypes)
   }
 
   /** Necessary to change the filter regex from (this|self) to (\\$this|this), in order to account for $this PHP
