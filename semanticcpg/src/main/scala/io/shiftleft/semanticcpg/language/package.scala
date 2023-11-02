@@ -12,7 +12,7 @@ import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language.nodemethods.*
 import io.shiftleft.semanticcpg.language.types.expressions.generalizations.*
 import io.shiftleft.semanticcpg.language.types.expressions.{CallTraversal => OriginalCall, *}
-//import io.shiftleft.semanticcpg.language.types.propertyaccessors._
+import io.shiftleft.semanticcpg.language.types.propertyaccessors.*
 import io.shiftleft.semanticcpg.language.types.structure.{MethodTraversal => OriginalMethod}
 import io.shiftleft.semanticcpg.language.types.structure.*
 //import overflowdb.NodeOrDetachedNode
@@ -192,47 +192,47 @@ package object language extends /* operatorextension.Implicits with */ LowPrioIm
 //   implicit def toNodeTypeStarters(cpg: Cpg): NodeTypeStarters    = new NodeTypeStarters(cpg)
 //   implicit def toTagTraversal(trav: Iterator[Tag]): TagTraversal = new TagTraversal(trav)
 
-//   // ~ EvalType accessors
-//   implicit def singleToEvalTypeAccessorsLocal[A <: Local](a: A): EvalTypeAccessors[A] =
-//     new EvalTypeAccessors[A](Iterator.single(a))
-//   implicit def iterOnceToEvalTypeAccessorsLocal[A <: Local](a: IterableOnce[A]): EvalTypeAccessors[A] =
-//     new EvalTypeAccessors[A](a.iterator)
+  // ~ EvalType accessors
+  implicit def singleToEvalTypeAccessorsLocal[A <: Local](a: A): EvalTypeAccessors[A] =
+    new EvalTypeAccessors[A](Iterator.single(a))
+  implicit def iterOnceToEvalTypeAccessorsLocal[A <: Local](a: IterableOnce[A]): EvalTypeAccessors[A] =
+    new EvalTypeAccessors[A](a.iterator)
 
-//   implicit def singleToEvalTypeAccessorsMember[A <: Member](a: A): EvalTypeAccessors[A] =
-//     new EvalTypeAccessors[A](Iterator.single(a))
-//   implicit def iterOnceToEvalTypeAccessorsMember[A <: Member](a: IterableOnce[A]): EvalTypeAccessors[A] =
-//     new EvalTypeAccessors[A](a.iterator)
+  implicit def singleToEvalTypeAccessorsMember[A <: Member](a: A): EvalTypeAccessors[A] =
+    new EvalTypeAccessors[A](Iterator.single(a))
+  implicit def iterOnceToEvalTypeAccessorsMember[A <: Member](a: IterableOnce[A]): EvalTypeAccessors[A] =
+    new EvalTypeAccessors[A](a.iterator)
 
-//   implicit def singleToEvalTypeAccessorsMethod[A <: Method](a: A): EvalTypeAccessors[A] =
-//     new EvalTypeAccessors[A](Iterator.single(a))
-//   implicit def iterOnceToEvalTypeAccessorsMethod[A <: Method](a: IterableOnce[A]): EvalTypeAccessors[A] =
-//     new EvalTypeAccessors[A](a.iterator)
+  implicit def singleToEvalTypeAccessorsMethod[A <: Method](a: A): EvalTypeAccessors[A] =
+    new EvalTypeAccessors[A](Iterator.single(a))
+  implicit def iterOnceToEvalTypeAccessorsMethod[A <: Method](a: IterableOnce[A]): EvalTypeAccessors[A] =
+    new EvalTypeAccessors[A](a.iterator)
 
-//   implicit def singleToEvalTypeAccessorsParameterIn[A <: MethodParameterIn](a: A): EvalTypeAccessors[A] =
-//     new EvalTypeAccessors[A](Iterator.single(a))
-//   implicit def iterOnceToEvalTypeAccessorsParameterIn[A <: MethodParameterIn](
-//     a: IterableOnce[A]
-//   ): EvalTypeAccessors[A] =
-//     new EvalTypeAccessors[A](a.iterator)
+  implicit def singleToEvalTypeAccessorsParameterIn[A <: MethodParameterIn](a: A): EvalTypeAccessors[A] =
+    new EvalTypeAccessors[A](Iterator.single(a))
+  implicit def iterOnceToEvalTypeAccessorsParameterIn[A <: MethodParameterIn](
+    a: IterableOnce[A]
+  ): EvalTypeAccessors[A] =
+    new EvalTypeAccessors[A](a.iterator)
 
-//   implicit def singleToEvalTypeAccessorsParameterOut[A <: MethodParameterOut](a: A): EvalTypeAccessors[A] =
-//     new EvalTypeAccessors[A](Iterator.single(a))
-//   implicit def iterOnceToEvalTypeAccessorsParameterOut[A <: MethodParameterOut](
-//     a: IterableOnce[A]
-//   ): EvalTypeAccessors[A] =
-//     new EvalTypeAccessors[A](a.iterator)
+  implicit def singleToEvalTypeAccessorsParameterOut[A <: MethodParameterOut](a: A): EvalTypeAccessors[A] =
+    new EvalTypeAccessors[A](Iterator.single(a))
+  implicit def iterOnceToEvalTypeAccessorsParameterOut[A <: MethodParameterOut](
+    a: IterableOnce[A]
+  ): EvalTypeAccessors[A] =
+    new EvalTypeAccessors[A](a.iterator)
 
-//   implicit def singleToEvalTypeAccessorsMethodReturn[A <: MethodReturn](a: A): EvalTypeAccessors[A] =
-//     new EvalTypeAccessors[A](Iterator.single(a))
-//   implicit def iterOnceToEvalTypeAccessorsMethodReturn[A <: MethodReturn](a: IterableOnce[A]): EvalTypeAccessors[A] =
-//     new EvalTypeAccessors[A](a.iterator)
+  implicit def singleToEvalTypeAccessorsMethodReturn[A <: MethodReturn](a: A): EvalTypeAccessors[A] =
+    new EvalTypeAccessors[A](Iterator.single(a))
+  implicit def iterOnceToEvalTypeAccessorsMethodReturn[A <: MethodReturn](a: IterableOnce[A]): EvalTypeAccessors[A] =
+    new EvalTypeAccessors[A](a.iterator)
 
-//   implicit def singleToEvalTypeAccessorsExpression[A <: Expression](a: A): EvalTypeAccessors[A] =
-//     new EvalTypeAccessors[A](Iterator.single(a))
-//   implicit def iterOnceToEvalTypeAccessorsExpression[A <: Expression](a: IterableOnce[A]): EvalTypeAccessors[A] =
-//     new EvalTypeAccessors[A](a.iterator)
+  implicit def singleToEvalTypeAccessorsExpression[A <: Expression](a: A): EvalTypeAccessors[A] =
+    new EvalTypeAccessors[A](Iterator.single(a))
+  implicit def iterOnceToEvalTypeAccessorsExpression[A <: Expression](a: IterableOnce[A]): EvalTypeAccessors[A] =
+    new EvalTypeAccessors[A](a.iterator)
 
-//   // EvalType accessors ~
+  // EvalType accessors ~
 
 //   // ~ Modifier accessors
 //   implicit def singleToModifierAccessorsMember[A <: Member](a: A): ModifierAccessors[A] =
