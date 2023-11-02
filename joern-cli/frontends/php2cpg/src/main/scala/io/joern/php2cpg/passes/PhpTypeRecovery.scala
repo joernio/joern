@@ -194,7 +194,6 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
      * return types as they get collected across the multiple return statements
      * for a single function.
      */
-
     val m = ret.method
     val existingTypes = mutable.HashSet.from(
       (m.methodReturn.typeFullName +: m.methodReturn.dynamicTypeHintFullName)
@@ -242,7 +241,27 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
     existingTypes.addAll(returnTypes)
     logger.debug(s"- new existing types: ${existingTypes.mkString(", ")}")
 
-    val saveTypes = existingTypes.filterNot(_.endsWith(s"${XTypeRecovery.DummyReturnType}"))
+    // Look up whether the function return is already known (either in the CPG
+    // or in the methodTypesTable) and if it is known and in our set, then
+    // remove it from the saveTypes set.
+    val saveTypes = existingTypes.filterNot(typeName => {
+      if (typeName.endsWith(s"${XTypeRecovery.DummyReturnType}"))
+        // 1. Get methodFullName from typeName
+        // 2. Check if types for methodFullName are known
+        //    - if they are, check if they are in the existingTypes.
+        //      - if they are, remove this method dummy from the set by returning true
+        //    - else, keep method dummy in the set by returning false.
+        typeName.split(pathSep).headOption match {
+          case Some(methodName) => {
+            val methodReturns = methodReturnValues(Seq(methodName))
+                .filterNot(_.endsWith(s"${XTypeRecovery.DummyReturnType}"))
+            !methodReturns.isEmpty
+          }
+          case None => false
+        }
+      else
+        false
+    })
     methodTypesTable.update(m, saveTypes)
     logger.debug(s"- saving types: ${saveTypes.mkString(", ")}")
     builder.setNodeProperty(ret.method.methodReturn, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, saveTypes)
