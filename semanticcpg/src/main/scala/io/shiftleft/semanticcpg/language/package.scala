@@ -69,10 +69,10 @@ package object language extends /* operatorextension.Implicits with */ LowPrioIm
   implicit def iterOnceToControlStructureTrav[A <: ControlStructure](a: IterableOnce[A]): ControlStructureTraversal =
     new ControlStructureTraversal(a.iterator)
 
-//   implicit def singleToIdentifierTrav[A <: Identifier](a: A): IdentifierTraversal =
-//     new IdentifierTraversal(Iterator.single(a))
-//   implicit def iterOnceToIdentifierTrav[A <: Identifier](a: IterableOnce[A]): IdentifierTraversal =
-//     new IdentifierTraversal(a.iterator)
+  implicit def singleToIdentifierTrav[A <: Identifier](a: A): IdentifierTraversal =
+    new IdentifierTraversal(Iterator.single(a))
+  implicit def iterOnceToIdentifierTrav[A <: Identifier](a: IterableOnce[A]): IdentifierTraversal =
+    new IdentifierTraversal(a.iterator)
 
   implicit def singleToAnnotationTrav[A <: Annotation](a: A): AnnotationTraversal =
     new AnnotationTraversal(Iterator.single(a))
