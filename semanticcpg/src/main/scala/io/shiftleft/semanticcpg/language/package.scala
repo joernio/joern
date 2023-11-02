@@ -263,7 +263,7 @@ package object language extends /* operatorextension.Implicits with */ LowPrioIm
     new ExpressionTraversal[A](a.iterator)
 }
 
- trait LowPrioImplicits extends io.joern.odb2.Implicits with io.joern.odb2.traversal.Language /* with io.shiftleft.codepropertygraph.generated.v2.Language */ {
+ trait LowPrioImplicits extends io.joern.odb2.Implicits with io.joern.odb2.traversal.Language with io.shiftleft.codepropertygraph.generated.v2.Language {
 
    // implicit def iterableOnceToIterator[A](iterableOnce: IterableOnce[A]): Iterator[A] =
    //  iterableOnce.iterator
