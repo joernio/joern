@@ -31,7 +31,7 @@ package object language extends /* operatorextension.Implicits with */ LowPrioIm
 
    implicit def cfgNodeToAsNode(node: CfgNode): AstNodeMethods                 = new AstNodeMethods(node)
 //   implicit def toExtendedNode(node: NodeOrDetachedNode): NodeMethods          = new NodeMethods(node)
-//   implicit def toExtendedStoredNode(node: StoredNode): StoredNodeMethods      = new StoredNodeMethods(node)
+  implicit def toExtendedStoredNode(node: StoredNode): StoredNodeMethods      = new StoredNodeMethods(node)
   implicit def toAstNodeMethods(node: AstNode): AstNodeMethods                = new AstNodeMethods(node)
    implicit def toCfgNodeMethods(node: CfgNode): CfgNodeMethods                = new CfgNodeMethods(node)
   implicit def toExpressionMethods(node: Expression): ExpressionMethods       = new ExpressionMethods(node)
@@ -181,10 +181,10 @@ package object language extends /* operatorextension.Implicits with */ LowPrioIm
 //   implicit def iterableOnceToSteps[A](iterableOnce: IterableOnce[A]): Steps[A] =
 //     new Steps(iterableOnce.iterator)
 
-//   implicit def traversalToSteps[A](trav: Iterator[A]): Steps[A] =
-//     new Steps(trav)
-//   implicit def iterOnceToNodeSteps[A <: StoredNode](a: IterableOnce[A]): NodeSteps[A] =
-//     new NodeSteps[A](a.iterator)
+  implicit def traversalToSteps[A](trav: Iterator[A]): Steps[A] =
+    new Steps(trav)
+//  implicit def iterOnceToNodeSteps[A <: StoredNode](a: IterableOnce[A]): NodeSteps[A] =
+//    new NodeSteps[A](a.iterator)
 
 //   implicit def toNewNodeTrav[NodeType <: NewNode](trav: Iterator[NodeType]): NewNodeSteps[NodeType] =
 //     new NewNodeSteps[NodeType](trav)
