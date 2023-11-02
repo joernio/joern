@@ -1,12 +1,11 @@
 package io.shiftleft.semanticcpg.language.types.propertyaccessors
 
 import io.shiftleft.codepropertygraph.generated.v2.ModifierTypes
-import io.shiftleft.codepropertygraph.generated.v2.nodes.Modifier
-import io.shiftleft.codepropertygraph.generated.v2.traversal.toModifierTraversalExtGen
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{Modifier, StoredNode}
+import io.shiftleft.codepropertygraph.generated.v2.Language.*
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.*
 
-class ModifierAccessors[A <: Node](val traversal: Iterator[A]) extends AnyVal {
+class ModifierAccessors[A <: StoredNode](val traversal: Iterator[A]) extends AnyVal {
 
   /** Filter: only `public` nodes */
   def isPublic: Iterator[A] =
