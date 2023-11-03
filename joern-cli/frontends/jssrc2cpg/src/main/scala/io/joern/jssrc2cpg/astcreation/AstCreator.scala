@@ -253,4 +253,5 @@ class AstCreator(
   protected def column(node: BabelNodeInfo): Option[Integer]    = node.columnNumber
   protected def lineEnd(node: BabelNodeInfo): Option[Integer]   = node.lineNumberEnd
   protected def columnEnd(node: BabelNodeInfo): Option[Integer] = node.columnNumberEnd
+  protected def code(node: BabelNodeInfo): String               = node.code
 }

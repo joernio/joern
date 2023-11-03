@@ -30,7 +30,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     node match
       case simpleIdentifier: SimpleIdentifier => Some(simpleIdentifier.text)
       case _ =>
-        logger.warn(s"Qualified base class names are not supported yet: ${node.text} ($relativeFileName), skipping")
+        logger.warn(s"Qualified base class names are not supported yet: ${code(node)} ($relativeFileName), skipping")
         None
   }
 
@@ -42,7 +42,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       name = className,
       fullName = computeClassFullName(className),
       filename = relativeFileName,
-      code = node.text,
+      code = code(node),
       astParentType = getEnclosingAstType,
       astParentFullName = getEnclosingAstFullName,
       inherits = inheritsFrom,
@@ -67,7 +67,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     ParserAst(nameCtx) match
       case nameAsSymbol: StaticLiteral if nameAsSymbol.isSymbol =>
         val fieldName   = nameAsSymbol.innerText.prepended('@')
-        val memberNode_ = memberNode(nameAsSymbol, fieldName, node.text, Defines.Any)
+        val memberNode_ = memberNode(nameAsSymbol, fieldName, code(node), Defines.Any)
         val memberAst   = Ast(memberNode_)
         val getterAst   = Option.when(node.hasGetter)(astForGetterMethod(node, fieldName))
         val setterAst   = Option.when(node.hasSetter)(astForSetterMethod(node, fieldName))

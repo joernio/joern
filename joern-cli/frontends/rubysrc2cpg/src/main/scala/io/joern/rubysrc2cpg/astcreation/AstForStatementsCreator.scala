@@ -52,7 +52,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
             ParserAst(ctx) match
               case node: ElseClause => astForElseClause(node)
               case node =>
-                logger.warn(s"Expecting else clause in ${node.text} ($relativeFileName), skipping")
+                logger.warn(s"Expecting else clause in ${code(node)} ($relativeFileName), skipping")
                 astForUnknown(node)
           )
           .toList
@@ -66,7 +66,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           case elsIfNode =>
             logger.warn(s"Expecting elsif clause in ${elsIfNode.text} ($relativeFileName), skipping")
             Nil
-    val ifNode = controlStructureNode(node, ControlStructureTypes.IF, node.text)
+    val ifNode = controlStructureNode(node, ControlStructureTypes.IF, code(node))
     controlStructureAst(ifNode, Some(conditionAst), thenAst :: elseAsts)
   }
 
@@ -74,7 +74,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     ParserAst(node.thenClause) match
       case stmtList: StatementList => astForStatementList(stmtList)
       case node =>
-        logger.warn(s"Expecting statement list in ${node.text} ($relativeFileName), skipping")
+        logger.warn(s"Expecting statement list in ${code(node)} ($relativeFileName), skipping")
         astForUnknown(node)
   }
 
@@ -89,11 +89,11 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         ParserAst(ctx) match
           case elseNode: ElseClause => astForElseClause(elseNode)
           case elseNode =>
-            logger.warn(s"Expecting else clause in ${node.text} ($relativeFileName), skipping")
+            logger.warn(s"Expecting else clause in ${code(node)} ($relativeFileName), skipping")
             astForUnknown(elseNode)
       )
       .toList
-    val ifNode = controlStructureNode(node, ControlStructureTypes.IF, node.text)
+    val ifNode = controlStructureNode(node, ControlStructureTypes.IF, code(node))
     controlStructureAst(ifNode, Some(notConditionAst), thenAst :: elseAsts)
   }
 
@@ -120,7 +120,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val rubyBlock   = ParserAst(node.block).asInstanceOf[Block]
     val blockParams = rubyBlock.parameters
     if (blockParams.nonEmpty) {
-      logger.warn(s"Blocks with parameters are not supported yet: ${node.text} ($relativeFileName), skipping")
+      logger.warn(s"Blocks with parameters are not supported yet: ${code(node)} ($relativeFileName), skipping")
       astForUnknown(node)
     } else {
       val outerBlock = blockNode(node)
@@ -142,7 +142,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val rubyBlock   = ParserAst(node.block).asInstanceOf[Block]
     val blockParams = rubyBlock.parameters
     if (blockParams.nonEmpty) {
-      logger.warn(s"Blocks with parameters are not supported yet: ${node.text}, skipping")
+      logger.warn(s"Blocks with parameters are not supported yet: ${code(node)}, skipping")
       astForUnknown(node)
     } else {
       val outerBlock = blockNode(node)
@@ -162,7 +162,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   protected def astForReturnStatement(node: ReturnExpression): Ast = {
     val argumentAsts = node.expressions.map(astForExpression)
-    val returnNode_  = returnNode(node, node.text)
+    val returnNode_  = returnNode(node, code(node))
     returnAst(returnNode_, argumentAsts)
   }
 
@@ -203,10 +203,10 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   protected def astForReturnFieldAccess(node: MemberAccess): Ast = {
-    returnAst(returnNode(node, node.text), List(astForFieldAccess(node)))
+    returnAst(returnNode(node, code(node)), List(astForFieldAccess(node)))
   }
 
   protected def astForReturnMemberCall(node: MemberAccess): Ast = {
-    returnAst(returnNode(node, node.text), List(astForMemberAccess(node)))
+    returnAst(returnNode(node, code(node)), List(astForMemberAccess(node)))
   }
 }

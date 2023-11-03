@@ -116,6 +116,7 @@ class AstCreator(
   protected def column(node: Node): Option[Integer]    = node.getBegin.map(x => Integer.valueOf(x.column)).toScala
   protected def lineEnd(node: Node): Option[Integer]   = node.getEnd.map(x => Integer.valueOf(x.line)).toScala
   protected def columnEnd(node: Node): Option[Integer] = node.getEnd.map(x => Integer.valueOf(x.column)).toScala
+  protected def code(node: Node): String               = "" // TODO: javasrc2cpg uses custom code strings everywhere
 
   private val lineOffsetTable = OffsetUtils.getLineOffsetTable(fileContent)
 

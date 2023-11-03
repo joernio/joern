@@ -33,16 +33,16 @@ trait AstNodeBuilder { this: AstCreator =>
   }
 
   protected def newJumpTargetNode(node: IASTNode): NewJumpTarget = {
-    val code = nodeSignature(node)
+    val codeString = code(node)
     val name = node match {
-      case label: IASTLabelStatement    => ASTStringUtil.getSimpleName(label.getName)
-      case _ if code.startsWith("case") => "case"
-      case _                            => "default"
+      case label: IASTLabelStatement          => ASTStringUtil.getSimpleName(label.getName)
+      case _ if codeString.startsWith("case") => "case"
+      case _                                  => "default"
     }
     NewJumpTarget()
       .parserTypeName(node.getClass.getSimpleName)
       .name(name)
-      .code(code)
+      .code(codeString)
       .lineNumber(line(node))
       .columnNumber(column(node))
   }

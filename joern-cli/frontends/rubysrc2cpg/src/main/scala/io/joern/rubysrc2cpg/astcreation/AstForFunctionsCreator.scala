@@ -15,7 +15,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       node = node,
       name = node.methodName,
       fullName = computeMethodFullName(node.methodName),
-      code = node.text,
+      code = code(node),
       signature = None,
       fileName = relativeFileName
     )
@@ -51,18 +51,18 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       case node: MandatoryParameter =>
         val parameterIn = parameterInNode(
           node = node,
-          name = node.text,
-          code = node.text,
+          name = code(node),
+          code = code(node),
           index = index,
           isVariadic = false,
           evaluationStrategy = EvaluationStrategies.BY_REFERENCE,
           typeFullName = None
         )
-        scope.addToScope(node.text, parameterIn)
+        scope.addToScope(code(node), parameterIn)
         Ast(parameterIn)
       case node =>
         logger.warn(
-          s"Non-mandatory parameters are not supported yet: ${node.text} (${node.getClass.getSimpleName} ($relativeFileName), skipping"
+          s"Non-mandatory parameters are not supported yet: ${code(node)} (${node.getClass.getSimpleName} ($relativeFileName), skipping"
         )
         astForUnknown(node)
   }
@@ -74,7 +74,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           node = node,
           name = node.methodName,
           fullName = computeMethodFullName(node.methodName),
-          code = node.text,
+          code = code(node),
           signature = None,
           fileName = relativeFileName,
           astParentType = Some(getEnclosingAstType),

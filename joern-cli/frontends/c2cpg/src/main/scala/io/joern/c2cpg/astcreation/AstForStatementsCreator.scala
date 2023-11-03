@@ -16,8 +16,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   import io.joern.c2cpg.astcreation.AstCreatorHelper.OptionSafeAst
 
   protected def astForBlockStatement(blockStmt: IASTCompoundStatement, order: Int = -1): Ast = {
-    val code      = nodeSignature(blockStmt)
-    val blockCode = if (code == "{}" || code.isEmpty) Defines.empty else code
+    val codeString = code(blockStmt)
+    val blockCode  = if (codeString == "{}" || codeString.isEmpty) Defines.empty else codeString
     val node = blockNode(blockStmt, blockCode, registerType(Defines.voidTypeName))
       .order(order)
       .argumentIndex(order)
@@ -56,17 +56,17 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     }
 
   private def astForReturnStatement(ret: IASTReturnStatement): Ast = {
-    val cpgReturn = returnNode(ret, nodeSignature(ret))
+    val cpgReturn = returnNode(ret, code(ret))
     val expr      = nullSafeAst(ret.getReturnValue)
     Ast(cpgReturn).withChild(expr).withArgEdge(cpgReturn, expr.root)
   }
 
   private def astForBreakStatement(br: IASTBreakStatement): Ast = {
-    Ast(controlStructureNode(br, ControlStructureTypes.BREAK, nodeSignature(br)))
+    Ast(controlStructureNode(br, ControlStructureTypes.BREAK, code(br)))
   }
 
   private def astForContinueStatement(cont: IASTContinueStatement): Ast = {
-    Ast(controlStructureNode(cont, ControlStructureTypes.CONTINUE, nodeSignature(cont)))
+    Ast(controlStructureNode(cont, ControlStructureTypes.CONTINUE, code(cont)))
   }
 
   private def astForGotoStatement(goto: IASTGotoStatement): Ast = {
@@ -92,8 +92,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astForDoStatement(doStmt: IASTDoStatement): Ast = {
-    val code         = nodeSignature(doStmt)
-    val doNode       = controlStructureNode(doStmt, ControlStructureTypes.DO, code)
+    val codeString   = code(doStmt)
+    val doNode       = controlStructureNode(doStmt, ControlStructureTypes.DO, codeString)
     val conditionAst = astForConditionExpression(doStmt.getCondition)
     val bodyAst      = nullSafeAst(doStmt.getBody)
     controlStructureAst(doNode, Some(conditionAst), bodyAst, placeConditionLast = true)

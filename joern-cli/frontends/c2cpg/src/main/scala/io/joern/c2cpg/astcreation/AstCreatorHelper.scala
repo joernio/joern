@@ -41,7 +41,7 @@ object AstCreatorHelper {
 
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  import AstCreatorHelper._
+  import io.joern.c2cpg.astcreation.AstCreatorHelper._
 
   private var usedVariablePostfix: Int = 0
 
@@ -87,6 +87,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     val path = nullSafeFileLocation(node).map(_.getFileName).getOrElse(filename)
     SourceFiles.toRelativePath(path, config.inputPath)
   }
+
+  protected def code(node: IASTNode): String = shortenCode(nodeSignature(node))
 
   protected def line(node: IASTNode): Option[Integer] = {
     nullSafeFileLocation(node).map(_.getStartingLineNumber)
@@ -232,9 +234,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     }
   }
 
-  protected def shortenCode(code: String, length: Int = MaxCodeLength): String =
-    StringUtils.abbreviate(code, math.max(MinCodeLength, length))
-
   private def notHandledText(node: IASTNode): String =
     s"""Node '${node.getClass.getSimpleName}' not handled yet!
        |  Code: '${node.getRawSignature}'
@@ -247,11 +246,11 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       val text = notHandledText(node)
       logger.info(text)
     }
-    Ast(unknownNode(node, nodeSignature(node)))
+    Ast(unknownNode(node, code(node)))
   }
 
   protected def nullSafeCode(node: IASTNode): String = {
-    Option(node).map(nodeSignature).getOrElse("")
+    Option(node).map(code).getOrElse("")
   }
 
   protected def nullSafeAst(node: IASTExpression, argIndex: Int): Ast = {
@@ -339,7 +338,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         s"${fullName(e.getParent)}.${ASTStringUtil.getSimpleName(e.getName)}"
       case d: IASTIdExpression              => ASTStringUtil.getSimpleName(d.getName)
       case _: IASTTranslationUnit           => ""
-      case u: IASTUnaryExpression           => nodeSignature(u.getOperand)
+      case u: IASTUnaryExpression           => code(u.getOperand)
       case other if other.getParent != null => fullName(other.getParent)
       case other if other != null           => notHandledYet(other); ""
       case null                             => ""
@@ -406,7 +405,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     allIncludes.map { include =>
       val name            = include.getName.toString
       val _dependencyNode = newDependencyNode(name, name, IncludeKeyword)
-      val importNode      = newImportNode(nodeSignature(include), name, name, include)
+      val importNode      = newImportNode(code(include), name, name, include)
       diffGraph.addNode(_dependencyNode)
       diffGraph.addEdge(importNode, _dependencyNode, EdgeTypes.IMPORTS)
       Ast(importNode)
@@ -423,7 +422,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   private def astForDecltypeSpecifier(decl: ICPPASTDecltypeSpecifier): Ast = {
     val op       = "<operator>.typeOf"
-    val cpgUnary = callNode(decl, nodeSignature(decl), op, op, DispatchTypes.STATIC_DISPATCH)
+    val cpgUnary = callNode(decl, code(decl), op, op, DispatchTypes.STATIC_DISPATCH)
     val operand  = nullSafeAst(decl.getDecltypeExpression)
     callAst(cpgUnary, List(operand))
   }
@@ -434,7 +433,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     val op = Operators.assignment
     val calls = withIndex(d.getDesignators) { (des, o) =>
       val callNode_ =
-        callNode(d, nodeSignature(d), op, op, DispatchTypes.STATIC_DISPATCH)
+        callNode(d, code(d), op, op, DispatchTypes.STATIC_DISPATCH)
           .argumentIndex(o)
       val left  = astForNode(des)
       val right = astForNode(d.getOperand)
@@ -450,7 +449,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     val op = Operators.assignment
     val calls = withIndex(d.getDesignators) { (des, o) =>
       val callNode_ =
-        callNode(d, nodeSignature(d), op, op, DispatchTypes.STATIC_DISPATCH)
+        callNode(d, code(d), op, op, DispatchTypes.STATIC_DISPATCH)
           .argumentIndex(o)
       val left  = astForNode(des)
       val right = astForNode(d.getOperand)
@@ -463,14 +462,14 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   private def astForCPPASTConstructorInitializer(c: ICPPASTConstructorInitializer): Ast = {
     val name = "<operator>.constructorInitializer"
     val callNode_ =
-      callNode(c, nodeSignature(c), name, name, DispatchTypes.STATIC_DISPATCH)
+      callNode(c, code(c), name, name, DispatchTypes.STATIC_DISPATCH)
     val args = c.getArguments.toList.map(a => astForNode(a))
     callAst(callNode_, args)
   }
 
   private def astForCASTArrayRangeDesignator(des: CASTArrayRangeDesignator): Ast = {
     val op         = Operators.arrayInitializer
-    val callNode_  = callNode(des, nodeSignature(des), op, op, DispatchTypes.STATIC_DISPATCH)
+    val callNode_  = callNode(des, code(des), op, op, DispatchTypes.STATIC_DISPATCH)
     val floorAst   = nullSafeAst(des.getRangeFloor)
     val ceilingAst = nullSafeAst(des.getRangeCeiling)
     callAst(callNode_, List(floorAst, ceilingAst))
@@ -478,7 +477,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   private def astForCPPASTArrayRangeDesignator(des: CPPASTArrayRangeDesignator): Ast = {
     val op         = Operators.arrayInitializer
-    val callNode_  = callNode(des, nodeSignature(des), op, op, DispatchTypes.STATIC_DISPATCH)
+    val callNode_  = callNode(des, code(des), op, op, DispatchTypes.STATIC_DISPATCH)
     val floorAst   = nullSafeAst(des.getRangeFloor)
     val ceilingAst = nullSafeAst(des.getRangeCeiling)
     callAst(callNode_, List(floorAst, ceilingAst))

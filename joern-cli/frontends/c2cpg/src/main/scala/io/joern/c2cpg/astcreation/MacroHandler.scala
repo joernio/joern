@@ -154,7 +154,7 @@ trait MacroHandler(implicit withSchemaValidation: ValidationMode) { this: AstCre
   @nowarn
   def nodeSignature(node: IASTNode): String = {
     import org.eclipse.cdt.core.dom.ast.ASTSignatureUtil.getNodeSignature
-    val sig = if (isExpandedFromMacro(node)) {
+    if (isExpandedFromMacro(node)) {
       val sig = getNodeSignature(node)
       if (sig.isEmpty) {
         node.getRawSignature
@@ -164,7 +164,6 @@ trait MacroHandler(implicit withSchemaValidation: ValidationMode) { this: AstCre
     } else {
       node.getRawSignature
     }
-    shortenCode(sig)
   }
 
   private def isExpandedFromMacro(node: IASTNode): Boolean = expandedFromMacro(node).nonEmpty

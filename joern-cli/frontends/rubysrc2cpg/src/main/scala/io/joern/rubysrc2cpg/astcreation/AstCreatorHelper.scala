@@ -27,6 +27,7 @@ trait AstCreatorHelper { this: AstCreator =>
   override def columnEnd(node: ParserNode): Option[Integer] = node.columnEnd
   override def line(node: ParserNode): Option[Integer]      = node.line
   override def lineEnd(node: ParserNode): Option[Integer]   = node.lineEnd
+  override def code(node: ParserNode): String               = shortenCode(node.text)
 
   protected def isBuiltin(x: String): Boolean      = builtinFunctions.contains(x)
   protected def prefixAsBuiltin(x: String): String = s"$builtinPrefix$pathSep$x"

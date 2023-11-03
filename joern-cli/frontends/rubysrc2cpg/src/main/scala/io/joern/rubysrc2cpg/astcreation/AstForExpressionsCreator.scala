@@ -32,7 +32,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case _                           => astForUnknown(node)
 
   protected def astForStaticLiteral(node: StaticLiteral): Ast = {
-    Ast(literalNode(node, node.text, node.typeFullName))
+    Ast(literalNode(node, code(node), node.typeFullName))
   }
 
   protected def astForDynamicLiteral(node: DynamicLiteral): Ast = {
@@ -56,13 +56,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           )
           astForUnknown(stmtList)
         case node =>
-          logger.warn(s"Unsupported interpolated literal content: ${node.text} ($relativeFileName), skipping")
+          logger.warn(s"Unsupported interpolated literal content: ${code(node)} ($relativeFileName), skipping")
           astForUnknown(node)
     }
     callAst(
       callNode(
         node = node,
-        code = node.text,
+        code = code(node),
         name = Operators.formatString,
         methodFullName = Operators.formatString,
         dispatchType = DispatchTypes.STATIC_DISPATCH,
@@ -76,23 +76,23 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForUnary(node: UnaryExpression): Ast = {
     getUnaryOperatorName(node.op) match
       case None =>
-        logger.warn(s"Unrecognized unary operator: ${node.text} ($relativeFileName), skipping")
+        logger.warn(s"Unrecognized unary operator: ${code(node)} ($relativeFileName), skipping")
         astForUnknown(node)
       case Some(op) =>
         val expressionAst = astForExpression(node.expression)
-        val call          = callNode(node, node.text, op, op, DispatchTypes.STATIC_DISPATCH)
+        val call          = callNode(node, code(node), op, op, DispatchTypes.STATIC_DISPATCH)
         callAst(call, Seq(expressionAst))
   }
 
   protected def astForBinary(node: BinaryExpression): Ast = {
     getBinaryOperatorName(node.op) match
       case None =>
-        logger.warn(s"Unrecognized binary operator: ${node.text} ($relativeFileName), skipping")
+        logger.warn(s"Unrecognized binary operator: ${code(node)} ($relativeFileName), skipping")
         astForUnknown(node)
       case Some(op) =>
         val lhsAst = astForExpression(node.lhs)
         val rhsAst = astForExpression(node.rhs)
-        val call   = callNode(node, node.text, op, op, DispatchTypes.STATIC_DISPATCH)
+        val call   = callNode(node, code(node), op, op, DispatchTypes.STATIC_DISPATCH)
         callAst(call, Seq(lhsAst, rhsAst))
   }
 
@@ -100,7 +100,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val conditionAst = astForExpression(node.condition)
     val thenAst      = astForExpression(node.trueBranch)
     val elseAst      = astForExpression(node.falseBranch)
-    val call = callNode(node, node.text, Operators.conditional, Operators.conditional, DispatchTypes.STATIC_DISPATCH)
+    val call = callNode(node, code(node), Operators.conditional, Operators.conditional, DispatchTypes.STATIC_DISPATCH)
     callAst(call, Seq(conditionAst, thenAst, elseAst))
   }
 
@@ -113,26 +113,26 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val fullName        = node.methodName // TODO
     val fieldAccessAst  = astForFieldAccess(MemberAccess(node.ctx, node.target, node.op, node.methodName))
     val argumentAsts    = node.arguments.map(astForExpression)
-    val fieldAccessCall = callNode(node, node.text, node.methodName, fullName, DispatchTypes.STATIC_DISPATCH)
+    val fieldAccessCall = callNode(node, code(node), node.methodName, fullName, DispatchTypes.STATIC_DISPATCH)
     callAst(fieldAccessCall, argumentAsts, Some(fieldAccessAst))
   }
 
   protected def astForIndexAccess(node: IndexAccess): Ast = {
     val indexAsts = node.indices.map(astForExpression)
     val targetAst = astForExpression(node.target)
-    val call = callNode(node, node.text, Operators.indexAccess, Operators.indexAccess, DispatchTypes.STATIC_DISPATCH)
+    val call = callNode(node, code(node), Operators.indexAccess, Operators.indexAccess, DispatchTypes.STATIC_DISPATCH)
     callAst(call, indexAsts, Some(targetAst))
   }
 
   protected def astForSingleAssignment(node: SingleAssignment): Ast = {
     getAssignmentOperatorName(node.op) match
       case None =>
-        logger.warn(s"Unrecognized assignment operator: ${node.text} ($relativeFileName), skipping")
+        logger.warn(s"Unrecognized assignment operator: ${code(node)} ($relativeFileName), skipping")
         astForUnknown(node)
       case Some(op) =>
         val lhsAst        = astForExpression(node.lhs)
         val rhsAst        = astForExpression(node.rhs)
-        val call          = callNode(node, node.text, op, op, DispatchTypes.STATIC_DISPATCH)
+        val call          = callNode(node, code(node), op, op, DispatchTypes.STATIC_DISPATCH)
         val assignmentAst = callAst(call, Seq(lhsAst, rhsAst))
         scope.lookupVariable(node.lhs.getText) match
           case None =>
@@ -155,7 +155,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   protected def astForSimpleIdentifier(node: SimpleIdentifier): Ast = {
-    val name = node.text
+    val name = code(node)
     scope.lookupVariable(name) match
       case None    => astForSimpleCall(SimpleCall(node.ctx, node.ctx, List()))
       case Some(_) => Ast(identifierNode(node, name, name, node.typeFullName.getOrElse(Defines.Any)))
@@ -173,13 +173,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForRange(node: RangeExpression): Ast = {
     val lbAst = astForExpression(node.lowerBound)
     val ubAst = astForExpression(node.upperBound)
-    val call  = callNode(node, node.text, Operators.range, Operators.range, DispatchTypes.STATIC_DISPATCH)
+    val call  = callNode(node, code(node), Operators.range, Operators.range, DispatchTypes.STATIC_DISPATCH)
     callAst(call, Seq(lbAst, ubAst))
   }
 
   protected def astForArrayLiteral(node: ArrayLiteral): Ast = {
     if (node.isDynamic) {
-      logger.warn(s"Interpolated array literals are not supported yet: ${node.text} ($relativeFileName), skipping")
+      logger.warn(s"Interpolated array literals are not supported yet: ${code(node)} ($relativeFileName), skipping")
       astForUnknown(node)
     } else {
       val argumentsType = if (node.isStringArray) {
@@ -190,7 +190,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       val argumentLiterals = node.elements.map(StaticLiteral(_, argumentsType))
       val argumentAsts     = argumentLiterals.map(astForExpression)
       val call =
-        callNode(node, node.text, Operators.arrayInitializer, Operators.arrayInitializer, DispatchTypes.STATIC_DISPATCH)
+        callNode(
+          node,
+          code(node),
+          Operators.arrayInitializer,
+          Operators.arrayInitializer,
+          DispatchTypes.STATIC_DISPATCH
+        )
       callAst(call, argumentAsts)
     }
   }
@@ -200,12 +206,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       ParserAst(ctx) match
         case associationNode: Association => astForAssociation(associationNode) :: Nil
         case node =>
-          logger.warn(s"Could not represent element: ${node.text} ($relativeFileName), skipping")
+          logger.warn(s"Could not represent element: ${code(node)} ($relativeFileName), skipping")
           astForUnknown(node) :: Nil
     )
     val call = callNode(
       node,
-      node.text,
+      code(node),
       RubyOperators.hashInitializer,
       RubyOperators.hashInitializer,
       DispatchTypes.STATIC_DISPATCH
@@ -217,13 +223,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val key   = astForExpression(node.key)
     val value = astForExpression(node.value)
     val call =
-      callNode(node, node.text, RubyOperators.association, RubyOperators.association, DispatchTypes.STATIC_DISPATCH)
+      callNode(node, code(node), RubyOperators.association, RubyOperators.association, DispatchTypes.STATIC_DISPATCH)
     callAst(call, Seq(key, value))
   }
 
   protected def astForUnknown(node: ParserNode): Ast = {
     val className = node.getClass.getSimpleName
-    val text      = node.text
+    val text      = code(node)
     logger.warn(s"Could not represent expression: $text ($className) ($relativeFileName), skipping")
     Ast(unknownNode(node, text))
   }
@@ -233,7 +239,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val methodName     = memberAccess.methodName
     val methodFullName = methodName // TODO
     val argumentAsts   = node.arguments.map(astForExpression)
-    val call           = callNode(node, node.text, methodName, methodFullName, DispatchTypes.STATIC_DISPATCH)
+    val call           = callNode(node, code(node), methodName, methodFullName, DispatchTypes.STATIC_DISPATCH)
     callAst(call, argumentAsts, None, Some(receiverAst))
   }
 
@@ -241,7 +247,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val methodName     = methodIdentifier.ctx.getText
     val methodFullName = methodName // TODO
     val argumentAst    = node.arguments.map(astForExpression)
-    val call           = callNode(node, node.text, methodName, methodFullName, DispatchTypes.STATIC_DISPATCH)
+    val call           = callNode(node, code(node), methodName, methodFullName, DispatchTypes.STATIC_DISPATCH)
     callAst(call, argumentAst, None, None)
   }
 

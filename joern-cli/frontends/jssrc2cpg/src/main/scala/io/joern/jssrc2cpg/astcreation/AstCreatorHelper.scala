@@ -23,12 +23,8 @@ import scala.util.Try
 
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  // maximum length of code fields in number of characters
-  private val MaxCodeLength: Int = 1000
-  private val MinCodeLength: Int = 50
-
   protected def createBabelNodeInfo(json: Value): BabelNodeInfo = {
-    val c     = shortenCode(code(json))
+    val c     = code(json)
     val ln    = line(json)
     val cn    = column(json)
     val lnEnd = lineEnd(json)
@@ -40,7 +36,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def notHandledYet(node: BabelNodeInfo): Ast = {
     val text =
       s"""Node type '${node.node}' not handled yet!
-         |  Code: '${shortenCode(node.code, length = 50)}'
+         |  Code: '${node.code}'
          |  File: '${parserResult.fullPath}'
          |  Line: ${node.lineNumber.getOrElse(-1)}
          |  Column: ${node.columnNumber.getOrElse(-1)}
@@ -89,11 +85,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def code(node: Value): String = {
     val startIndex = start(node).getOrElse(0)
     val endIndex   = Math.min(end(node).getOrElse(0), parserResult.fileContent.length)
-    parserResult.fileContent.substring(startIndex, endIndex).trim
+    shortenCode(parserResult.fileContent.substring(startIndex, endIndex).trim)
   }
-
-  private def shortenCode(code: String, length: Int = MaxCodeLength): String =
-    StringUtils.abbreviate(code, math.max(MinCodeLength, length))
 
   protected def hasKey(node: Value, key: String): Boolean = Try(node(key)).isSuccess
 
