@@ -1,6 +1,8 @@
 package io.shiftleft.semanticcpg
 
 //import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.v2.CpgNodeStarters
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 //import io.shiftleft.codepropertygraph.generated.traversal.NodeTraversalImplicits
 //import io.shiftleft.semanticcpg.language.bindingextension.{
@@ -27,7 +29,8 @@ package object language extends /* operatorextension.Implicits with */ LowPrioIm
   // Implicit conversions from generated node types. We use these to add methods
   // to generated node types.
 
-  // TODO continue here
+  // TODO generate in flatgraph
+  implicit def cpgToGeneratedNodeStarters(cpg: Cpg): CpgNodeStarters = CpgNodeStarters(cpg)
 
    implicit def cfgNodeToAsNode(node: CfgNode): AstNodeMethods                 = new AstNodeMethods(node)
   implicit def toExtendedNode(node: AbstractNode): NodeMethods                 = new NodeMethods(node)
