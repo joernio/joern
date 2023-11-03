@@ -90,7 +90,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     arguments: Iterable[ExpressionContext]
   ): Ast = {
     val argsAst = arguments.flatMap(astForExpressionContext)
-    val call    = callNode(ctx, text(ctx), name, name, DispatchTypes.STATIC_DISPATCH)
+    val call    = callNode(ctx, code(ctx), name, name, DispatchTypes.STATIC_DISPATCH)
     callAst(call, argsAst.toList)
   }
 
@@ -100,7 +100,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   // TODO: Maybe merge (in DeprecatedRubyParser.g4) isDefinedExpression with isDefinedPrimaryExpression?
   protected def astForIsDefinedPrimaryExpression(ctx: IsDefinedPrimaryContext): Ast = {
     val argsAst = astForExpressionOrCommand(ctx.expressionOrCommand())
-    val call    = callNode(ctx, text(ctx), RubyOperators.defined, RubyOperators.defined, DispatchTypes.STATIC_DISPATCH)
+    val call    = callNode(ctx, code(ctx), RubyOperators.defined, RubyOperators.defined, DispatchTypes.STATIC_DISPATCH)
     callAst(call, argsAst.toList)
   }
 
@@ -120,7 +120,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     ) {
       val node = callNode(
         ctx,
-        text(ctx),
+        code(ctx),
         RubyOperators.formattedString,
         RubyOperators.formattedString,
         DispatchTypes.STATIC_DISPATCH,
@@ -158,7 +158,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case ctx: PrimaryInsideBracketsSingleLeftHandSideContext =>
       val primaryAsts     = astForPrimaryContext(ctx.primary)
       val argsAsts        = astForArguments(ctx.arguments)
-      val indexAccessCall = createOpCall(ctx.LBRACK, Operators.indexAccess, text(ctx))
+      val indexAccessCall = createOpCall(ctx.LBRACK, Operators.indexAccess, code(ctx))
       Seq(callAst(indexAccessCall, primaryAsts ++ argsAsts))
     case ctx: XdotySingleLeftHandSideContext =>
       // TODO handle obj.foo=arg being interpreted as obj.foo(arg) here.
@@ -172,7 +172,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           val node = createIdentifierWithScope(ctx, name, name, Defines.Any, List(Defines.Any))
           val yAst = Ast(node)
 
-          val callNode = createOpCall(localVar, Operators.fieldAccess, text(ctx))
+          val callNode = createOpCall(localVar, Operators.fieldAccess, code(ctx))
           Seq(callAst(callNode, xAsts ++ Seq(yAst)))
         case None =>
           Seq.empty
@@ -192,7 +192,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     val operatorName = getOperatorName(ctx.op)
     val opCallNode =
-      callNode(ctx, text(ctx), operatorName, operatorName, DispatchTypes.STATIC_DISPATCH, None, Option(Defines.Any))
+      callNode(ctx, code(ctx), operatorName, operatorName, DispatchTypes.STATIC_DISPATCH, None, Option(Defines.Any))
         .lineNumber(ctx.op.getLine)
         .columnNumber(ctx.op.getCharPositionInLine)
     if (leftAst.size == 1 && rightAst.size > 1) {
@@ -250,7 +250,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case Some(node) if node.name == "Array" => Operators.arrayInitializer
       case _                                  => Operators.indexAccess
 
-    val callNode = createOpCall(ctx.LBRACK, operator, text(ctx))
+    val callNode = createOpCall(ctx.LBRACK, operator, code(ctx))
     Seq(callAst(callNode, lhsExpressionAst ++ rhsExpressionAst))
 
   }
@@ -277,7 +277,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           Ast(
             callNode(
               ctx,
-              text(inter),
+              code(inter),
               RubyOperators.formattedValue,
               RubyOperators.formattedValue,
               DispatchTypes.STATIC_DISPATCH,
@@ -337,7 +337,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val stringExpressionAsts = ctx.stringExpression().asScala.flatMap(astForStringExpression)
     val callNode_ = callNode(
       ctx,
-      text(ctx),
+      code(ctx),
       RubyOperators.stringConcatenation,
       RubyOperators.stringConcatenation,
       DispatchTypes.STATIC_DISPATCH
@@ -349,7 +349,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val testAst = astForExpressionContext(ctx.expression(0))
     val thenAst = astForExpressionContext(ctx.expression(1))
     val elseAst = astForExpressionContext(ctx.expression(2))
-    val ifNode  = controlStructureNode(ctx, ControlStructureTypes.IF, text(ctx))
+    val ifNode  = controlStructureNode(ctx, ControlStructureTypes.IF, code(ctx))
     controlStructureAst(ifNode, testAst.headOption, thenAst ++ elseAst)
   }
 
@@ -368,13 +368,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   //       to revisit how to represent them.
   protected def astForSuperCall(ctx: ParserRuleContext, arguments: Seq[Ast]): Ast = {
     val call =
-      callNode(ctx, text(ctx), RubyOperators.superKeyword, RubyOperators.superKeyword, DispatchTypes.STATIC_DISPATCH)
+      callNode(ctx, code(ctx), RubyOperators.superKeyword, RubyOperators.superKeyword, DispatchTypes.STATIC_DISPATCH)
     callAst(call, arguments.toList)
   }
 
   protected def astForYieldCall(ctx: ParserRuleContext, argumentsCtx: Option[ArgumentsContext]): Ast = {
     val args = argumentsCtx.map(astForArguments).getOrElse(Seq())
-    val call = callNode(ctx, text(ctx), UNRESOLVED_YIELD, UNRESOLVED_YIELD, DispatchTypes.STATIC_DISPATCH)
+    val call = callNode(ctx, code(ctx), UNRESOLVED_YIELD, UNRESOLVED_YIELD, DispatchTypes.STATIC_DISPATCH)
     callAst(call, args)
   }
 
@@ -415,7 +415,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val thenAst   = astForCompoundStatement(ctx.thenClause().compoundStatement())
     val elsifAsts = Option(ctx.elsifClause).map(_.asScala).getOrElse(Seq()).map(astForElsifClause)
     val elseAst = Option(ctx.elseClause()).map(ctx => astForCompoundStatement(ctx.compoundStatement())).getOrElse(Seq())
-    val ifNode  = controlStructureNode(ctx, ControlStructureTypes.IF, text(ctx))
+    val ifNode  = controlStructureNode(ctx, ControlStructureTypes.IF, code(ctx))
     controlStructureAst(ifNode, testAst.headOption)
       .withChildren(thenAst)
       .withChildren(elsifAsts.toSeq)
@@ -423,7 +423,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForElsifClause(ctx: ElsifClauseContext): Ast = {
-    val ifNode  = controlStructureNode(ctx, ControlStructureTypes.IF, text(ctx))
+    val ifNode  = controlStructureNode(ctx, ControlStructureTypes.IF, code(ctx))
     val testAst = astForExpressionOrCommand(ctx.expressionOrCommand())
     val bodyAst = astForCompoundStatement(ctx.thenClause().compoundStatement())
     controlStructureAst(ifNode, testAst.headOption, bodyAst)
@@ -457,7 +457,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
      * 4. Otherwise default to identifier node creation since there is no reason (point 2) to create a call node
      */
 
-    val variableName      = text(ctx)
+    val variableName      = code(ctx)
     val isSelfFieldAccess = variableName.startsWith("@")
     if (isSelfFieldAccess) {
       // Very basic field detection
@@ -489,7 +489,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val thenAst = astForCompoundStatement(ctx.thenClause().compoundStatement())
     val elseAst =
       Option(ctx.elseClause()).map(_.compoundStatement()).map(st => astForCompoundStatement(st)).getOrElse(Seq())
-    val ifNode = controlStructureNode(ctx, ControlStructureTypes.IF, text(ctx))
+    val ifNode = controlStructureNode(ctx, ControlStructureTypes.IF, code(ctx))
     controlStructureAst(ifNode, testAst.headOption, thenAst ++ elseAst)
   }
 
@@ -500,12 +500,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       Seq()
 
   private def astForNonExpandedQuotedString(ctx: NonExpandedQuotedStringLiteralContext): Ast = {
-    Ast(literalNode(ctx, text(ctx), getBuiltInType(Defines.String)))
+    Ast(literalNode(ctx, code(ctx), getBuiltInType(Defines.String)))
   }
 
   // TODO: handle interpolation
   protected def astForQuotedRegexInterpolation(ctx: QuotedRegexInterpolationContext): Seq[Ast] = {
-    Seq(Ast(literalNode(ctx, text(ctx), Defines.Regexp)))
+    Seq(Ast(literalNode(ctx, code(ctx), Defines.Regexp)))
   }
 
 }

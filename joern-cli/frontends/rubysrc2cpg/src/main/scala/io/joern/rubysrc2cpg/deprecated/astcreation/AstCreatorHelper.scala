@@ -12,7 +12,7 @@ import org.antlr.v4.runtime.{ParserRuleContext, Token}
 import scala.collection.mutable
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  import GlobalTypes.*
+  import io.joern.rubysrc2cpg.deprecated.astcreation.GlobalTypes.*
 
   protected def line(ctx: ParserRuleContext): Option[Integer] = Option(ctx.getStart.getLine)
 
@@ -21,6 +21,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def lineEnd(ctx: ParserRuleContext): Option[Integer] = Option(ctx.getStop.getLine)
 
   protected def columnEnd(ctx: ParserRuleContext): Option[Integer] = Option(ctx.getStop.getCharPositionInLine)
+
+  override def code(node: ParserRuleContext): String = shortenCode(text(node))
 
   protected def text(ctx: ParserRuleContext): String = {
     val a     = ctx.getStart.getStartIndex
@@ -123,10 +125,10 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     createIdentifierWithScope(ctx, "this", "this", typeFullName, dynamicTypeHints)
 
   protected def newFieldIdentifier(ctx: ParserRuleContext): NewFieldIdentifier = {
-    val code = text(ctx)
-    val name = code.replaceAll("@", "")
+    val c    = code(ctx)
+    val name = c.replaceAll("@", "")
     NewFieldIdentifier()
-      .code(code)
+      .code(c)
       .canonicalName(name)
       .lineNumber(ctx.start.getLine)
       .columnNumber(ctx.start.getCharPositionInLine)
@@ -134,7 +136,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   protected def astForFieldAccess(ctx: ParserRuleContext, baseNode: NewNode): Ast = {
     val fieldAccess =
-      callNode(ctx, text(ctx), Operators.fieldAccess, Operators.fieldAccess, DispatchTypes.STATIC_DISPATCH)
+      callNode(ctx, code(ctx), Operators.fieldAccess, Operators.fieldAccess, DispatchTypes.STATIC_DISPATCH)
     val fieldIdentifier = newFieldIdentifier(ctx)
     val astChildren     = Seq(baseNode, fieldIdentifier)
     callAst(fieldAccess, astChildren.map(Ast.apply))

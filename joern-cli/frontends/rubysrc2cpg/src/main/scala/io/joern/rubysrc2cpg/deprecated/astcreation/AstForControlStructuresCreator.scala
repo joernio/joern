@@ -23,8 +23,8 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
   }
 
   protected def astForCaseExpressionPrimaryContext(ctx: CaseExpressionPrimaryContext): Seq[Ast] = {
-    val code = s"case ${Option(ctx.caseExpression().expressionOrCommand).map(_.getText).getOrElse("")}".stripTrailing()
-    val switchNode = controlStructureNode(ctx, ControlStructureTypes.SWITCH, code)
+    val codeString = s"case ${Option(ctx.caseExpression().expressionOrCommand).map(code).getOrElse("")}".stripTrailing()
+    val switchNode = controlStructureNode(ctx, ControlStructureTypes.SWITCH, codeString)
     val conditionAst = Option(ctx.caseExpression().expressionOrCommand()).toList
       .flatMap(astForExpressionOrCommand)
       .headOption
@@ -35,7 +35,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
       .asScala
       .flatMap(wh => {
         val whenNode =
-          jumpTargetNode(wh, "case", s"case ${wh.getText}", Option(wh.getClass.getSimpleName))
+          jumpTargetNode(wh, "case", s"case ${code(wh)}", Option(wh.getClass.getSimpleName))
 
         val whenACondAsts = astForWhenArgumentContext(wh.whenArgument())
         val thenAsts = astForCompoundStatement(
@@ -80,12 +80,12 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
          * This is break with args inside a block. The argument passed to break will be returned by the bloc
          * Model this as a return since this is effectively a  return
          */
-        val retNode = returnNode(ctx.BREAK(), text(ctx))
+        val retNode = returnNode(ctx.BREAK(), code(ctx))
         val argAst  = astForArguments(args)
         Seq(returnAst(retNode, argAst))
       case None =>
         Seq(
-          astForControlStructure(ctx.getClass.getSimpleName, ctx.BREAK(), ControlStructureTypes.BREAK, text(ctx))
+          astForControlStructure(ctx.getClass.getSimpleName, ctx.BREAK(), ControlStructureTypes.BREAK, code(ctx))
             .withChildren(astForArguments(ctx.arguments))
         )
     }
@@ -95,7 +95,7 @@ trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMo
     val parserTypeName = ctx.getClass.getSimpleName
     val controlStructureAst = ctx.jumpExpression() match
       case expr if expr.BREAK() != null =>
-        astForControlStructure(parserTypeName, expr.BREAK(), ControlStructureTypes.BREAK, text(ctx))
+        astForControlStructure(parserTypeName, expr.BREAK(), ControlStructureTypes.BREAK, code(ctx))
       case expr if expr.NEXT() != null =>
         astForControlStructure(parserTypeName, expr.NEXT(), ControlStructureTypes.CONTINUE, Defines.ModifierNext)
       case expr if expr.REDO() != null =>

@@ -14,43 +14,43 @@ import scala.jdk.CollectionConverters.CollectionHasAsScala
 trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def astForNilLiteral(ctx: DeprecatedRubyParser.NilPseudoVariableIdentifierContext): Ast =
-    Ast(literalNode(ctx, text(ctx), Defines.NilClass))
+    Ast(literalNode(ctx, code(ctx), Defines.NilClass))
 
   protected def astForTrueLiteral(ctx: DeprecatedRubyParser.TruePseudoVariableIdentifierContext): Ast =
-    Ast(literalNode(ctx, text(ctx), Defines.TrueClass))
+    Ast(literalNode(ctx, code(ctx), Defines.TrueClass))
 
   protected def astForFalseLiteral(ctx: DeprecatedRubyParser.FalsePseudoVariableIdentifierContext): Ast =
-    Ast(literalNode(ctx, text(ctx), Defines.FalseClass))
+    Ast(literalNode(ctx, code(ctx), Defines.FalseClass))
 
   protected def astForSelfPseudoIdentifier(ctx: DeprecatedRubyParser.SelfPseudoVariableIdentifierContext): Ast =
-    Ast(createIdentifierWithScope(ctx, text(ctx), text(ctx), Defines.Object))
+    Ast(createIdentifierWithScope(ctx, code(ctx), code(ctx), Defines.Object))
 
   protected def astForFilePseudoIdentifier(ctx: DeprecatedRubyParser.FilePseudoVariableIdentifierContext): Ast =
-    Ast(createIdentifierWithScope(ctx, text(ctx), text(ctx), getBuiltInType(Defines.String)))
+    Ast(createIdentifierWithScope(ctx, code(ctx), code(ctx), getBuiltInType(Defines.String)))
 
   protected def astForLinePseudoIdentifier(ctx: DeprecatedRubyParser.LinePseudoVariableIdentifierContext): Ast =
-    Ast(createIdentifierWithScope(ctx, text(ctx), text(ctx), getBuiltInType(Defines.Integer)))
+    Ast(createIdentifierWithScope(ctx, code(ctx), code(ctx), getBuiltInType(Defines.Integer)))
 
   protected def astForEncodingPseudoIdentifier(ctx: DeprecatedRubyParser.EncodingPseudoVariableIdentifierContext): Ast =
-    Ast(createIdentifierWithScope(ctx, text(ctx), text(ctx), Defines.Encoding))
+    Ast(createIdentifierWithScope(ctx, code(ctx), code(ctx), Defines.Encoding))
 
   protected def astForNumericLiteral(ctx: DeprecatedRubyParser.NumericLiteralContext): Ast = {
     val numericTypeName =
       if (isFloatLiteral(ctx.unsignedNumericLiteral)) getBuiltInType(Defines.Float) else getBuiltInType(Defines.Integer)
-    Ast(literalNode(ctx, text(ctx), numericTypeName))
+    Ast(literalNode(ctx, code(ctx), numericTypeName))
   }
 
   protected def astForSymbolLiteral(ctx: DeprecatedRubyParser.SymbolContext): Ast =
-    Ast(literalNode(ctx, text(ctx), Defines.Symbol))
+    Ast(literalNode(ctx, code(ctx), Defines.Symbol))
 
   protected def astForSingleQuotedStringLiteral(ctx: DeprecatedRubyParser.SingleQuotedStringLiteralContext): Ast =
-    Ast(literalNode(ctx, text(ctx), getBuiltInType(Defines.String)))
+    Ast(literalNode(ctx, code(ctx), getBuiltInType(Defines.String)))
 
   protected def astForDoubleQuotedStringLiteral(ctx: DeprecatedRubyParser.DoubleQuotedStringLiteralContext): Ast =
-    Ast(literalNode(ctx, text(ctx), getBuiltInType(Defines.String)))
+    Ast(literalNode(ctx, code(ctx), getBuiltInType(Defines.String)))
 
   protected def astForRegularExpressionLiteral(ctx: DeprecatedRubyParser.RegularExpressionLiteralContext): Ast =
-    Ast(literalNode(ctx, text(ctx), Defines.Regexp))
+    Ast(literalNode(ctx, code(ctx), Defines.Regexp))
 
   private def isFloatLiteral(ctx: DeprecatedRubyParser.UnsignedNumericLiteralContext): Boolean =
     Option(ctx.FLOAT_LITERAL_WITH_EXPONENT).isDefined || Option(ctx.FLOAT_LITERAL_WITHOUT_EXPONENT).isDefined
@@ -68,7 +68,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astForEmptyArrayInitializer(ctx: ParserRuleContext): Ast = {
-    Ast(callNode(ctx, text(ctx), Operators.arrayInitializer, Operators.arrayInitializer, DispatchTypes.STATIC_DISPATCH))
+    Ast(callNode(ctx, code(ctx), Operators.arrayInitializer, Operators.arrayInitializer, DispatchTypes.STATIC_DISPATCH))
   }
 
   private def astForNonExpandedWordArrayConstructor(ctx: NonExpandedWordArrayConstructorContext): Seq[Ast] = {
@@ -78,7 +78,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astForNonExpandedWordArrayElement(ctx: NonExpandedArrayElementContext): Ast = {
-    Ast(literalNode(ctx, text(ctx), Defines.String, List(Defines.String)))
+    Ast(literalNode(ctx, code(ctx), Defines.String, List(Defines.String)))
   }
 
   private def astForNonExpandedSymbolArrayConstructor(ctx: NonExpandedSymbolArrayConstructorContext): Seq[Ast] = {
@@ -95,6 +95,6 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astForNonExpandedSymbolArrayElement(ctx: NonExpandedArrayElementContext): Ast = {
-    Ast(literalNode(ctx, text(ctx), Defines.Symbol))
+    Ast(literalNode(ctx, code(ctx), Defines.Symbol))
   }
 }

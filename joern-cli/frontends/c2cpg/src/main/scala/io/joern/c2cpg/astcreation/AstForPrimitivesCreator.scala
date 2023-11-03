@@ -9,11 +9,11 @@ import org.eclipse.cdt.internal.core.model.ASTStringUtil
 trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def astForComment(comment: IASTComment): Ast =
-    Ast(newCommentNode(comment, nodeSignature(comment), fileName(comment)))
+    Ast(newCommentNode(comment, code(comment), fileName(comment)))
 
   protected def astForLiteral(lit: IASTLiteralExpression): Ast = {
     val tpe = cleanType(ASTTypeUtil.getType(lit.getExpressionType))
-    Ast(literalNode(lit, nodeSignature(lit), registerType(tpe)))
+    Ast(literalNode(lit, code(lit), registerType(tpe)))
   }
 
   protected def astForIdentifier(ident: IASTNode): Ast = {
@@ -21,7 +21,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
       case id: IASTIdExpression => ASTStringUtil.getSimpleName(id.getName)
       case id: IASTName if ASTStringUtil.getSimpleName(id).isEmpty && id.getBinding != null => id.getBinding.getName
       case id: IASTName if ASTStringUtil.getSimpleName(id).isEmpty => uniqueName("name", "", "")._1
-      case _                                                       => nodeSignature(ident)
+      case _                                                       => code(ident)
     }
     val variableOption = scope.lookupVariable(identifierName)
     val identifierTypeName = variableOption match {
@@ -41,7 +41,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
       case None => typeFor(ident)
     }
 
-    val node = identifierNode(ident, identifierName, nodeSignature(ident), registerType(cleanType(identifierTypeName)))
+    val node = identifierNode(ident, identifierName, code(ident), registerType(cleanType(identifierTypeName)))
     variableOption match {
       case Some((variable, _)) =>
         Ast(node).withRefEdge(node, variable)
@@ -51,7 +51,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
 
   protected def astForFieldReference(fieldRef: IASTFieldReference): Ast = {
     val op     = if (fieldRef.isPointerDereference) Operators.indirectFieldAccess else Operators.fieldAccess
-    val ma     = callNode(fieldRef, nodeSignature(fieldRef), op, op, DispatchTypes.STATIC_DISPATCH)
+    val ma     = callNode(fieldRef, code(fieldRef), op, op, DispatchTypes.STATIC_DISPATCH)
     val owner  = astForExpression(fieldRef.getFieldOwner)
     val member = fieldIdentifierNode(fieldRef, fieldRef.getFieldName.toString, fieldRef.getFieldName.toString)
     callAst(ma, List(owner, Ast(member)))
@@ -62,7 +62,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
 
   protected def astForInitializerList(l: IASTInitializerList): Ast = {
     val op           = Operators.arrayInitializer
-    val initCallNode = callNode(l, nodeSignature(l), op, op, DispatchTypes.STATIC_DISPATCH)
+    val initCallNode = callNode(l, code(l), op, op, DispatchTypes.STATIC_DISPATCH)
 
     val MAX_INITIALIZERS = 1000
     val clauses          = l.getClauses.slice(0, MAX_INITIALIZERS)
@@ -81,18 +81,18 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
 
   protected def astForQualifiedName(qualId: CPPASTQualifiedName): Ast = {
     val op = Operators.fieldAccess
-    val ma = callNode(qualId, nodeSignature(qualId), op, op, DispatchTypes.STATIC_DISPATCH)
+    val ma = callNode(qualId, code(qualId), op, op, DispatchTypes.STATIC_DISPATCH)
 
     def fieldAccesses(names: List[IASTNode], argIndex: Int = -1): Ast = names match {
       case Nil => Ast()
       case head :: Nil =>
         astForNode(head)
       case head :: tail =>
-        val code = s"${nodeSignature(head)}::${tail.map(nodeSignature).mkString("::")}"
+        val codeString = s"${code(head)}::${tail.map(code).mkString("::")}"
         val callNode_ =
-          callNode(head, nodeSignature(head), op, op, DispatchTypes.STATIC_DISPATCH)
+          callNode(head, code(head), op, op, DispatchTypes.STATIC_DISPATCH)
             .argumentIndex(argIndex)
-        callNode_.code = code
+        callNode_.code = codeString
         val arg1 = astForNode(head)
         val arg2 = fieldAccesses(tail)
         callAst(callNode_, List(arg1, arg2))

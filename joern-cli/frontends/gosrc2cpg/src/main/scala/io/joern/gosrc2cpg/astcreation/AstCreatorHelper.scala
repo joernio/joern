@@ -16,17 +16,12 @@ import scala.util.{Failure, Success, Try}
 
 trait AstCreatorHelper { this: AstCreator =>
 
-  // maximum length of code fields in number of characters
-  private val MaxCodeLength: Int = 1000
-  private val MinCodeLength: Int = 50
-
   private val parserNodeCache = mutable.TreeMap[Long, ParserNodeInfo]()
 
   protected def createParserNodeInfo(json: Value): ParserNodeInfo = {
-
     Try(json(ParserKeys.NodeReferenceId).num.toLong) match
       case Failure(_) =>
-        val c     = shortenCode(code(json).toOption.getOrElse(""))
+        val c     = code(json)
         val ln    = line(json)
         val cn    = column(json)
         val lnEnd = lineEndNo(json)
@@ -93,8 +88,12 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   private def nodeType(node: Value): ParserNode = fromString(node(ParserKeys.NodeType).str, relPathFileName)
-  protected def code(node: Value): Try[String] = Try {
 
+  protected def code(node: Value): String = {
+    codeForValue(node).toOption.fold("")(shortenCode)
+  }
+
+  private def codeForValue(node: Value): Try[String] = Try {
     val lineNumber    = line(node).get
     val colNumber     = column(node).get - 1
     val lineEndNumber = lineEndNo(node).get
@@ -113,9 +112,6 @@ trait AstCreatorHelper { this: AstCreator =>
       stringList.mkString("\n")
     }
   }
-
-  private def shortenCode(code: String, length: Int = MaxCodeLength): String =
-    StringUtils.abbreviate(code, math.max(MinCodeLength, length))
 
   protected def line(node: Value): Option[Integer] = Try(node(ParserKeys.NodeLineNo).num).toOption.map(_.toInt)
 
@@ -267,4 +263,6 @@ trait AstCreatorHelper { this: AstCreator =>
   override protected def lineEnd(node: ParserNodeInfo): Option[Integer] = node.lineNumberEnd
 
   override protected def columnEnd(node: ParserNodeInfo): Option[Integer] = node.columnNumberEnd
+
+  override protected def code(node: ParserNodeInfo): String = node.code
 }

@@ -39,7 +39,7 @@ trait AstForStatementsCreator(filename: String)(implicit withSchemaValidation: V
 
   private def astForUndefStatement(ctx: UndefStatementContext): Ast = {
     val undefNames = ctx.definedMethodNameOrSymbol().asScala.flatMap(astForDefinedMethodNameOrSymbolContext).toSeq
-    val call       = callNode(ctx, text(ctx), RubyOperators.undef, RubyOperators.undef, DispatchTypes.STATIC_DISPATCH)
+    val call       = callNode(ctx, code(ctx), RubyOperators.undef, RubyOperators.undef, DispatchTypes.STATIC_DISPATCH)
     callAst(call, undefNames)
   }
 
@@ -66,7 +66,7 @@ trait AstForStatementsCreator(filename: String)(implicit withSchemaValidation: V
   private def astForIfModifierStatement(ctx: ModifierStatementContext): Ast = {
     val lhs    = astForStatement(ctx.statement(0))
     val rhs    = astForStatement(ctx.statement(1)).headOption
-    val ifNode = controlStructureNode(ctx, ControlStructureTypes.IF, text(ctx))
+    val ifNode = controlStructureNode(ctx, ControlStructureTypes.IF, code(ctx))
     lhs.headOption.flatMap(_.root) match
       // If the LHS is a `next` command with a return value, then this if statement is its condition and it becomes a
       // `return`
@@ -79,7 +79,7 @@ trait AstForStatementsCreator(filename: String)(implicit withSchemaValidation: V
   private def astForUnlessModifierStatement(ctx: ModifierStatementContext): Ast = {
     val lhs    = astForStatement(ctx.statement(0))
     val rhs    = astForStatement(ctx.statement(1))
-    val ifNode = controlStructureNode(ctx, ControlStructureTypes.IF, text(ctx))
+    val ifNode = controlStructureNode(ctx, ControlStructureTypes.IF, code(ctx))
     controlStructureAst(ifNode, lhs.headOption, rhs)
   }
 
@@ -98,7 +98,7 @@ trait AstForStatementsCreator(filename: String)(implicit withSchemaValidation: V
   private def astForRescueModifierStatement(ctx: ModifierStatementContext): Ast = {
     val lhs       = astForStatement(ctx.statement(0))
     val rhs       = astForStatement(ctx.statement(1))
-    val throwNode = controlStructureNode(ctx, ControlStructureTypes.THROW, text(ctx))
+    val throwNode = controlStructureNode(ctx, ControlStructureTypes.THROW, code(ctx))
     controlStructureAst(throwNode, rhs.headOption, lhs)
   }
 
@@ -218,7 +218,7 @@ trait AstForStatementsCreator(filename: String)(implicit withSchemaValidation: V
 
   private def astForNotKeywordExpressionOrCommand(ctx: NotExpressionOrCommandContext): Ast = {
     val exprOrCommandAst = astForExpressionOrCommand(ctx.expressionOrCommand())
-    val call             = callNode(ctx, text(ctx), Operators.not, Operators.not, DispatchTypes.STATIC_DISPATCH)
+    val call             = callNode(ctx, code(ctx), Operators.not, Operators.not, DispatchTypes.STATIC_DISPATCH)
     callAst(call, exprOrCommandAst)
   }
 
@@ -229,13 +229,13 @@ trait AstForStatementsCreator(filename: String)(implicit withSchemaValidation: V
 
   private def astForOrExpressionOrCommand(ctx: OrAndExpressionOrCommandContext): Ast = {
     val argsAst = ctx.expressionOrCommand().asScala.flatMap(astForExpressionOrCommand)
-    val call    = callNode(ctx, text(ctx), Operators.or, Operators.or, DispatchTypes.STATIC_DISPATCH)
+    val call    = callNode(ctx, code(ctx), Operators.or, Operators.or, DispatchTypes.STATIC_DISPATCH)
     callAst(call, argsAst.toList)
   }
 
   private def astForAndExpressionOrCommand(ctx: OrAndExpressionOrCommandContext): Ast = {
     val argsAst = ctx.expressionOrCommand().asScala.flatMap(astForExpressionOrCommand)
-    val call    = callNode(ctx, text(ctx), Operators.and, Operators.and, DispatchTypes.STATIC_DISPATCH)
+    val call    = callNode(ctx, code(ctx), Operators.and, Operators.and, DispatchTypes.STATIC_DISPATCH)
     callAst(call, argsAst.toList)
   }
 
@@ -246,7 +246,7 @@ trait AstForStatementsCreator(filename: String)(implicit withSchemaValidation: V
     astForYieldCall(ctx, Option(ctx.argumentsWithoutParentheses().arguments()))
 
   private def astForSimpleMethodCommand(ctx: SimpleMethodCommandContext): Seq[Ast] = {
-    val methodIdentifierAsts = astForMethodIdentifierContext(ctx.methodIdentifier(), text(ctx))
+    val methodIdentifierAsts = astForMethodIdentifierContext(ctx.methodIdentifier(), code(ctx))
     methodIdentifierAsts.headOption.foreach(methodNameAsIdentifierStack.push)
     val argsAsts = astForArguments(ctx.argumentsWithoutParentheses().arguments())
 
@@ -298,7 +298,7 @@ trait AstForStatementsCreator(filename: String)(implicit withSchemaValidation: V
       .map(methodName =>
         callNode(
           ctx,
-          text(ctx),
+          code(ctx),
           methodName,
           DynamicCallUnknownFullName,
           DispatchTypes.STATIC_DISPATCH,
@@ -391,7 +391,7 @@ trait AstForStatementsCreator(filename: String)(implicit withSchemaValidation: V
           columnEnd(compoundStmtCtx).head
         ).head
       case None =>
-        val blockNode_    = blockNode(ctx, text(ctx), Defines.Any)
+        val blockNode_    = blockNode(ctx, code(ctx), Defines.Any)
         val blockBodyAst  = astForCompoundStatement(compoundStmtCtx)
         val blockParamAst = blockParamCtx.flatMap(astForBlockParameterContext)
         blockAst(blockNode_, blockBodyAst.toList ++ blockParamAst)

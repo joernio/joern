@@ -1708,6 +1708,7 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
   protected def column(phpNode: PhpNode): Option[Integer]    = None
   protected def lineEnd(phpNode: PhpNode): Option[Integer]   = None
   protected def columnEnd(phpNode: PhpNode): Option[Integer] = None
+  protected def code(phpNode: PhpNode): String               = "" // Sadly, the Php AST does not carry any code fields
 }
 
 object AstCreator {
