@@ -29,10 +29,7 @@ package object language extends /* operatorextension.Implicits with */ LowPrioIm
   // Implicit conversions from generated node types. We use these to add methods
   // to generated node types.
 
-  // TODO generate in flatgraph
-  implicit def cpgToGeneratedNodeStarters(cpg: Cpg): CpgNodeStarters = CpgNodeStarters(cpg)
-
-   implicit def cfgNodeToAsNode(node: CfgNode): AstNodeMethods                 = new AstNodeMethods(node)
+  implicit def cfgNodeToAsNode(node: CfgNode): AstNodeMethods                 = new AstNodeMethods(node)
   implicit def toExtendedNode(node: AbstractNode): NodeMethods                 = new NodeMethods(node)
   implicit def toExtendedStoredNode(node: StoredNode): StoredNodeMethods      = new StoredNodeMethods(node)
   implicit def toAstNodeMethods(node: AstNode): AstNodeMethods                = new AstNodeMethods(node)
