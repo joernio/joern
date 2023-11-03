@@ -3,8 +3,8 @@ package io.shiftleft.semanticcpg.language.types.structure
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.codepropertygraph.generated.v2.Language.*
 import io.shiftleft.semanticcpg.language.*
-
-import scala.jdk.CollectionConverters.*
+//
+//import scala.jdk.CollectionConverters.*
 
 class MethodParameterOutTraversal(val traversal: Iterator[MethodParameterOut]) extends AnyVal {
 
@@ -17,7 +17,7 @@ class MethodParameterOutTraversal(val traversal: Iterator[MethodParameterOut]) e
   def index(num: Int): Iterator[MethodParameterOut] =
     traversal.filter { _.index == num }
 
-  /* get all parameters from (and including)
+    /* get all parameters from (and including)
    * method parameter indexes are  based, i.e. first parameter has index  (that's how java2cpg generates it) */
   def indexFrom(num: Int): Iterator[MethodParameterOut] =
     traversal.filter(_.index >= num)

@@ -103,8 +103,9 @@ package object language extends /* operatorextension.Implicits with */ LowPrioIm
   implicit def iterOnceToMethodParameterInTrav[A <: MethodParameterIn](a: IterableOnce[A]): MethodParameterTraversal =
     new MethodParameterTraversal(a.iterator)
 
-  implicit def singleToMethodParameterOutTrav[A <: MethodParameterOut](a: A): MethodParameterOutTraversal =
-    new MethodParameterOutTraversal(Iterator.single(a))
+  // TODO drop the other 'singleTo*Trav' as well?
+//  implicit def singleToMethodParameterOutTrav[A <: MethodParameterOut](a: A): MethodParameterOutTraversal =
+//    new MethodParameterOutTraversal(Iterator.single(a))
   implicit def iterOnceToMethodParameterOutTrav[A <: MethodParameterOut](
     a: IterableOnce[A]
   ): MethodParameterOutTraversal =
