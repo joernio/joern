@@ -1,15 +1,14 @@
 package io.shiftleft.semanticcpg
 
-//import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.CpgNodeStarters
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-//import io.shiftleft.codepropertygraph.generated.traversal.NodeTraversalImplicits
-//import io.shiftleft.semanticcpg.language.bindingextension.{
-//  MethodTraversal => BindingMethodTraversal,
-//  TypeDeclTraversal => BindingTypeDeclTraversal
-//}
-//import io.shiftleft.semanticcpg.language.callgraphextension.{CallTraversal, MethodTraversal}
+import io.shiftleft.semanticcpg.language.bindingextension.{
+  MethodTraversal => BindingMethodTraversal,
+  TypeDeclTraversal => BindingTypeDeclTraversal
+}
+import io.shiftleft.semanticcpg.language.callgraphextension.{CallTraversal, MethodTraversal}
 //import io.shiftleft.semanticcpg.language.dotextension.{AstNodeDot, CfgNodeDot, InterproceduralNodeDot}
 import io.shiftleft.semanticcpg.language.nodemethods.*
 import io.shiftleft.semanticcpg.language.types.expressions.generalizations.*
@@ -17,7 +16,6 @@ import io.shiftleft.semanticcpg.language.types.expressions.{CallTraversal => Ori
 import io.shiftleft.semanticcpg.language.types.propertyaccessors.*
 import io.shiftleft.semanticcpg.language.types.structure.{MethodTraversal => OriginalMethod}
 import io.shiftleft.semanticcpg.language.types.structure.*
-//import overflowdb.NodeOrDetachedNode
 
 /** Language for traversing the code property graph
   *
@@ -136,32 +134,32 @@ package object language extends operatorextension.Implicits with LowPrioImplicit
     new ImportTraversal(a.iterator)
 
   // Call graph extension
-  // implicit def singleToMethodTravCallGraphExt[A <: Method](a: A): MethodTraversal =
-  //   new MethodTraversal(Iterator.single(a))
-  // implicit def iterOnceToMethodTravCallGraphExt[A <: Method](a: IterableOnce[A]): MethodTraversal =
-  //   new MethodTraversal(a.iterator)
-  // implicit def singleToCallTrav[A <: Call](a: A): CallTraversal =
-  //   new CallTraversal(Iterator.single(a))
-  // implicit def iterOnceToCallTrav[A <: Call](a: IterableOnce[A]): CallTraversal =
-  //   new CallTraversal(a.iterator)
+   implicit def singleToMethodTravCallGraphExt[A <: Method](a: A): MethodTraversal =
+     new MethodTraversal(Iterator.single(a))
+   implicit def iterOnceToMethodTravCallGraphExt[A <: Method](a: IterableOnce[A]): MethodTraversal =
+     new MethodTraversal(a.iterator)
+   implicit def singleToCallTrav[A <: Call](a: A): CallTraversal =
+     new CallTraversal(Iterator.single(a))
+   implicit def iterOnceToCallTrav[A <: Call](a: IterableOnce[A]): CallTraversal =
+     new CallTraversal(a.iterator)
   // / Call graph extension
 
 //   // Binding extensions
-//   implicit def singleToBindingMethodTrav[A <: Method](a: A): BindingMethodTraversal =
-//     new BindingMethodTraversal(Iterator.single(a))
-//   implicit def iterOnceToBindingMethodTrav[A <: Method](a: IterableOnce[A]): BindingMethodTraversal =
-//     new BindingMethodTraversal(a.iterator)
+   implicit def singleToBindingMethodTrav[A <: Method](a: A): BindingMethodTraversal =
+     new BindingMethodTraversal(Iterator.single(a))
+   implicit def iterOnceToBindingMethodTrav[A <: Method](a: IterableOnce[A]): BindingMethodTraversal =
+     new BindingMethodTraversal(a.iterator)
 
-//   implicit def singleToBindingTypeDeclTrav[A <: TypeDecl](a: A): BindingTypeDeclTraversal =
-//     new BindingTypeDeclTraversal(Iterator.single(a))
-//   implicit def iterOnceToBindingTypeDeclTrav[A <: TypeDecl](a: IterableOnce[A]): BindingTypeDeclTraversal =
-//     new BindingTypeDeclTraversal(a.iterator)
+   implicit def singleToBindingTypeDeclTrav[A <: TypeDecl](a: A): BindingTypeDeclTraversal =
+     new BindingTypeDeclTraversal(Iterator.single(a))
+   implicit def iterOnceToBindingTypeDeclTrav[A <: TypeDecl](a: IterableOnce[A]): BindingTypeDeclTraversal =
+     new BindingTypeDeclTraversal(a.iterator)
 
 //   implicit def singleToAstNodeDot[A <: AstNode](a: A): AstNodeDot[A] =
 //     new AstNodeDot(Iterator.single(a))
 //   implicit def iterOnceToAstNodeDot[A <: AstNode](a: IterableOnce[A]): AstNodeDot[A] =
 //     new AstNodeDot(a.iterator)
-
+//
 //   implicit def singleToCfgNodeDot[A <: Method](a: A): CfgNodeDot =
 //     new CfgNodeDot(Iterator.single(a))
 //   implicit def iterOnceToCfgNodeDot[A <: Method](a: IterableOnce[A]): CfgNodeDot =
