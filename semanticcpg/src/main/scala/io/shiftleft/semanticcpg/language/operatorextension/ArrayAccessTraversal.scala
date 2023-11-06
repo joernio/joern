@@ -16,14 +16,14 @@ class ArrayAccessTraversal(val traversal: Iterator[OpNodes.ArrayAccess]) extends
   def subscript: Iterator[Identifier] = traversal.flatMap(_.subscript)
 
   // TODO bring back: // TODO bring back: @Doc(
-    info = "Determine whether array access has constant offset",
-    longInfo = """
-        Determine if array access is at constant numeric offset, e.g.,
-        `buf[10]` but not `buf[i + 10]`, and for simplicity, not even `buf[1+2]`,
-        `buf[PROBABLY_A_CONSTANT]` or `buf[PROBABLY_A_CONSTANT + 1]`,
-        or even `buf[PROBABLY_A_CONSTANT]`.
-        """
-  )
+//    info = "Determine whether array access has constant offset",
+//    longInfo = """
+//        Determine if array access is at constant numeric offset, e.g.,
+//        `buf[10]` but not `buf[i + 10]`, and for simplicity, not even `buf[1+2]`,
+//        `buf[PROBABLY_A_CONSTANT]` or `buf[PROBABLY_A_CONSTANT + 1]`,
+//        or even `buf[PROBABLY_A_CONSTANT]`.
+//        """
+//  )
   def usesConstantOffset: Iterator[OpNodes.ArrayAccess] = traversal.filter(_.usesConstantOffset)
 
   // TODO bring back: // TODO bring back: @Doc(info = "If `array` is a lone identifier, return its name")
