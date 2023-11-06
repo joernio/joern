@@ -6,7 +6,6 @@ import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.codepropertygraph.generated.v2.Language.*
 import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, NodeTypes}
 import io.shiftleft.semanticcpg.codedumper.CodeDumper
-// import overflowdb.traversal._
 // // TODO bring back: import overflowdb.traversal.help.Doc
 
 /** Steps for all node types
@@ -31,7 +30,8 @@ class NodeSteps[NodeType <: StoredNode](val traversal: Iterator[NodeType]) exten
       case comment: Comment =>
         comment._astIn.iterator.collectAll[File]
       case node =>
-        node.repeat(_.coalesce(_.out(EdgeTypes.SOURCE_FILE), _.in(EdgeTypes.AST)))(_.until(_.hasLabel(NodeTypes.FILE)))
+        node.repeat(_.coalesce(_._sourceFileOut, _._astIn))(_.until(_.is[File]))
+//        node.repeat(_.coalesce(_.out(EdgeTypes.SOURCE_FILE), _.in(EdgeTypes.AST)))(_.until(_.hasLabel(NodeTypes.FILE)))
     }
   }
 
@@ -85,11 +85,6 @@ class NodeSteps[NodeType <: StoredNode](val traversal: Iterator[NodeType]) exten
       CodeDumper.dump(node.location, language, rootPath, highlight)
     }.l
   }
-
-  /* follow the incoming edges of the given type as long as possible */
-  protected def walkIn(edgeType: String): Iterator[StoredNode] =
-    traversal
-      .repeat(_.in(edgeType))(_.until(_.in(edgeType).countTrav.filter(_ == 0)))
 
   // @Doc(
   //   info = "Tag node with `tagName`",

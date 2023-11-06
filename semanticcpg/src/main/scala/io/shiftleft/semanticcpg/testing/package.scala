@@ -41,7 +41,7 @@ package object testing {
           graph.addNode(namespace)
           graph.addEdge(namespaceBlock, namespace, EdgeKinds.REF)
           if (inFile.isDefined) {
-            val fileNode = cpg.file.name(inFile.get).head
+            val fileNode = cpg.file(inFile.get).head
             graph.addEdge(namespaceBlock, fileNode, EdgeKinds.SOURCE_FILE)
           }
         }
@@ -77,7 +77,7 @@ package object testing {
             graph.addEdge(namespaceBlock, typeDeclNode, EdgeKinds.AST)
           }
           if (inFile.isDefined) {
-            val fileNode = cpg.file.name(inFile.get).head
+            val fileNode = cpg.file(inFile.get).head
             graph.addEdge(typeDeclNode, fileNode, EdgeKinds.SOURCE_FILE)
           }
         }
@@ -115,7 +115,7 @@ package object testing {
         graph.addEdge(method, modifier, EdgeKinds.AST)
 
         if (inTypeDecl.isDefined) {
-          val typeDeclNode = cpg.typeDecl.name(inTypeDecl.get).head
+          val typeDeclNode = cpg.typeDecl(inTypeDecl.get).head
           graph.addEdge(typeDeclNode, method, EdgeKinds.AST)
         }
       }
@@ -128,16 +128,16 @@ package object testing {
       withCustom { (graph, cpg) =>
         implicit val diffGraph: DiffGraphBuilder = graph
         methodTags.foreach { case (k, v) =>
-          cpg.method.name(methodName).newTagNodePair(k, v).store()(diffGraph)
+          cpg.method(methodName).newTagNodePair(k, v).store()(diffGraph)
         }
         paramTags.foreach { case (k, v) =>
-          cpg.method.name(methodName).parameter.newTagNodePair(k, v).store()(diffGraph)
+          cpg.method(methodName).parameter.newTagNodePair(k, v).store()(diffGraph)
         }
       }
 
     def withCallInMethod(methodName: String, callName: String, code: Option[String] = None): MockCpg =
       withCustom { (graph, cpg) =>
-        val methodNode = cpg.method.name(methodName).head
+        val methodNode = cpg.method(methodName).head
         val blockNode  = methodNode.block
         val callNode   = NewCall().name(callName).code(code.getOrElse(callName))
         graph.addNode(callNode)
@@ -147,8 +147,8 @@ package object testing {
 
     def withMethodCall(calledMethod: String, callingMethod: String, code: Option[String] = None): MockCpg =
       withCustom { (graph, cpg) =>
-        val callingMethodNode = cpg.method.name(callingMethod).head
-        val calledMethodNode  = cpg.method.name(calledMethod).head
+        val callingMethodNode = cpg.method(callingMethod).head
+        val calledMethodNode  = cpg.method(calledMethod).head
         val callNode          = NewCall().name(calledMethod).code(code.getOrElse(calledMethod))
         graph.addEdge(callNode, calledMethodNode, EdgeKinds.CALL)
         graph.addEdge(callingMethodNode, callNode, EdgeKinds.CONTAINS)
@@ -156,7 +156,7 @@ package object testing {
 
     def withLocalInMethod(methodName: String, localName: String): MockCpg =
       withCustom { (graph, cpg) =>
-        val methodNode = cpg.method.name(methodName).head
+        val methodNode = cpg.method(methodName).head
         val blockNode  = methodNode.block
         val typeNode   = NewType().name("alocaltype")
         val localNode  = NewLocal().name(localName).typeFullName("alocaltype")
@@ -168,7 +168,7 @@ package object testing {
 
     def withLiteralArgument(callName: String, literalCode: String): MockCpg = {
       withCustom { (graph, cpg) =>
-        val callNode    = cpg.call.name(callName).head
+        val callNode    = cpg.call(callName).head
         val methodNode  = callNode.method
         val literalNode = NewLiteral().code(literalCode)
         val typeDecl = NewTypeDecl()
@@ -189,7 +189,7 @@ package object testing {
       withArgument(callName, NewCall().name(callArgName).code(code).argumentIndex(index))
 
     def withArgument(callName: String, newNode: NewNode): MockCpg = withCustom { (graph, cpg) =>
-      val callNode   = cpg.call.name(callName).head
+      val callNode   = cpg.call(callName).head
       val methodNode = callNode.method
       val typeDecl   = NewTypeDecl().name("abc")
       graph.addEdge(callNode, newNode, EdgeKinds.AST)
