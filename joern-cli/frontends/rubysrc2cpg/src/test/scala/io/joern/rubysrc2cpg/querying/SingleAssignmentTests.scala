@@ -18,7 +18,12 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
 
     val List(lhs, rhs) = assignment.argument.l
     lhs.code shouldBe "x"
+    lhs.order shouldBe 1
+    lhs.argumentIndex shouldBe 1
+
     rhs.code shouldBe "1"
+    rhs.order shouldBe 2
+    rhs.argumentIndex shouldBe 2
   }
 
   "`+=` is represented by an `assignmentPlus` operator call" in {

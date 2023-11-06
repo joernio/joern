@@ -21,6 +21,23 @@ class CallTests extends RubyCode2CpgFixture {
     hello.lineNumber shouldBe Some(2)
   }
 
+  "`foo(1,2)` is represented by a CALL node" in {
+    val cpg = code("""
+        |foo(1,2)
+        |""".stripMargin)
+
+    val List(foo) = cpg.call.name("foo").l
+    foo.code shouldBe "foo(1,2)"
+    foo.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+    foo.lineNumber shouldBe Some(2)
+
+    val one = foo.argument(1)
+    one.code shouldBe "1"
+
+    val two = foo.argument(2)
+    two.code shouldBe "2"
+  }
+
   "`x.y(1)` is represented by a `y` CALL with argument `1` and receiver `x.y`" ignore {
     val cpg = code("""
                      |x.y(1)

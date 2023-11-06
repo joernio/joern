@@ -1,7 +1,8 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.Return
+import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Return}
 import io.shiftleft.semanticcpg.language.*
 
 class MethodReturnTests extends RubyCode2CpgFixture {
@@ -52,6 +53,19 @@ class MethodReturnTests extends RubyCode2CpgFixture {
     val List(f)         = cpg.method.name("f").l
     val List(r: Return) = f.methodReturn.cfgIn.l: @unchecked
     r.code shouldBe "x"
+    r.lineNumber shouldBe Some(3)
+  }
+
+  "explicit RETURN node for `\"\"` exists" in {
+    val cpg = code("""
+        |def foo
+        | return ""
+        |end
+        |""".stripMargin)
+
+    val List(f)         = cpg.method.name("foo").l
+    val List(r: Return) = f.methodReturn.cfgIn.l: @unchecked
+    r.code shouldBe "return \"\""
     r.lineNumber shouldBe Some(3)
   }
 
