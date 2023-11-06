@@ -17,7 +17,7 @@ class CallGraphGenerator {
       srcMethod <- vertices
       _ = storeInSubgraph(srcMethod, subgraph)
       child <- srcMethod.call
-      tgt   <- child.callOut
+      tgt   <- child._callOut.collectAll[Method] // TODO define as named step in graph
     } yield {
       storeInSubgraph(tgt, subgraph)
       Edge(srcMethod, tgt, label = child.dispatchType.stripSuffix("_DISPATCH"))
