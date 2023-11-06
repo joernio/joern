@@ -12,7 +12,9 @@ import java.util.regex.{Matcher, Pattern}
 
 class ImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
 
-  private lazy val root = cpg.metaData.root.headOption.getOrElse("").stripSuffix(JFile.separator)
+  private lazy val root = BFile(cpg.metaData.root.headOption.getOrElse("").stripSuffix(JFile.separator)) match
+    case f if f.isDirectory => f.pathAsString
+    case f                  => f.parent.pathAsString
 
   override protected def optionalResolveImport(
     fileName: String,
@@ -81,7 +83,7 @@ class ImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
 
     implicit class CalleeAsInitExt(val name: String) {
       def asInit: String = if (name.contains("__init__.py")) name
-      else name.replace(".py", s"${JFile.separator}__init__.py")
+      else name.replaceAll("\\.py$", s"${JFile.separator}__init__.py")
 
       def withInit: Seq[String] = Seq(name, name.asInit)
     }
