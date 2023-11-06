@@ -187,8 +187,8 @@ package object language extends operatorextension.Implicits with LowPrioImplicit
   implicit def toNewNodeTrav[NodeType <: NewNode](trav: Iterator[NodeType]): NewNodeSteps[NodeType] =
     new NewNodeSteps[NodeType](trav)
 
-//   implicit def toNodeTypeStarters(cpg: Cpg): NodeTypeStarters    = new NodeTypeStarters(cpg)
-//   implicit def toTagTraversal(trav: Iterator[Tag]): TagTraversal = new TagTraversal(trav)
+  implicit def toNodeTypeStarters(cpg: Cpg): NodeTypeStarters    = new NodeTypeStarters(cpg)
+  implicit def toTagTraversal(trav: Iterator[Tag]): TagTraversal = new TagTraversal(trav)
 
   // ~ EvalType accessors
   implicit def singleToEvalTypeAccessorsLocal[A <: Local](a: A): EvalTypeAccessors[A] =
