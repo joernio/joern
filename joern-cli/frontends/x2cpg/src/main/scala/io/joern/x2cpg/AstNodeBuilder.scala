@@ -25,6 +25,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
 }
 import org.apache.commons.lang.StringUtils
 
+import scala.util.Try
 trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
   protected def line(node: Node): Option[Integer]
   protected def column(node: Node): Option[Integer]
@@ -46,7 +47,7 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
 
   protected def unknownNode(node: Node, code: String): NewUnknown = {
     NewUnknown()
-      .parserTypeName(node.getClass.getSimpleName)
+      .parserTypeName(Try(node.getClass.getSimpleName).toOption.getOrElse(Defines.Unknown))
       .code(code)
       .lineNumber(line(node))
       .columnNumber(column(node))
