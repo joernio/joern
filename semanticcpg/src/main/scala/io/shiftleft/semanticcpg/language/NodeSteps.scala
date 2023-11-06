@@ -3,6 +3,7 @@ package io.shiftleft.semanticcpg.language
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.nodes.StoredNode
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
+import io.shiftleft.codepropertygraph.generated.v2.Language.*
 import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, NodeTypes}
 import io.shiftleft.semanticcpg.codedumper.CodeDumper
 // import overflowdb.traversal._
@@ -23,15 +24,16 @@ class NodeSteps[NodeType <: StoredNode](val traversal: Iterator[NodeType]) exten
   //     |the file node that represents that source file.
   //     |"""
   // )
-  def file: Iterator[File] =
-    traversal
-      .choose(_.label) {
-        case NodeTypes.NAMESPACE => _.in(EdgeTypes.REF).out(EdgeTypes.SOURCE_FILE)
-        case NodeTypes.COMMENT   => _.in(EdgeTypes.AST).hasLabel(NodeTypes.FILE)
-        case _ =>
-          _.repeat(_.coalesce(_.out(EdgeTypes.SOURCE_FILE), _.in(EdgeTypes.AST)))(_.until(_.hasLabel(NodeTypes.FILE)))
-      }
-      .cast[File]
+  def file: Iterator[File] = {
+    traversal.flatMap {
+      case namespace: Namespace =>
+        namespace._refIn.iterator._sourceFileOut.cast[File]
+      case comment: Comment =>
+        comment._astIn.iterator.collectAll[File]
+      case node =>
+        node.repeat(_.coalesce(_.out(EdgeTypes.SOURCE_FILE), _.in(EdgeTypes.AST)))(_.until(_.hasLabel(NodeTypes.FILE)))
+    }
+  }
 
   // @Doc(
   //   info = "Location, including filename and line number",
@@ -85,7 +87,7 @@ class NodeSteps[NodeType <: StoredNode](val traversal: Iterator[NodeType]) exten
   }
 
   /* follow the incoming edges of the given type as long as possible */
-  protected def walkIn(edgeType: String): Iterator[Node] =
+  protected def walkIn(edgeType: String): Iterator[StoredNode] =
     traversal
       .repeat(_.in(edgeType))(_.until(_.in(edgeType).countTrav.filter(_ == 0)))
 
