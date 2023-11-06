@@ -3,8 +3,6 @@ package io.shiftleft.semanticcpg.language.types.structure
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.codepropertygraph.generated.v2.Language.*
 import io.shiftleft.semanticcpg.language.*
-//
-//import scala.jdk.CollectionConverters.*
 
 class MethodParameterOutTraversal(val traversal: Iterator[MethodParameterOut]) extends AnyVal {
 
