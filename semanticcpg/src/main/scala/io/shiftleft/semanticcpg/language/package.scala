@@ -24,7 +24,7 @@ import io.shiftleft.semanticcpg.language.types.structure.*
   * Implicit conversions to specific steps, based on the node at hand. Automatically in scope when using anything in the
   * `steps` package, e.g. `Steps`
   */
-package object language extends /* operatorextension.Implicits with */ LowPrioImplicits  /* with NodeTraversalImplicits */ {
+package object language extends operatorextension.Implicits with LowPrioImplicits  /* with NodeTraversalImplicits */ {
 
   // Implicit conversions from generated node types. We use these to add methods
   // to generated node types.
