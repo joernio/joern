@@ -12,7 +12,9 @@ import java.util.regex.{Matcher, Pattern}
 
 class ImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
 
-  private lazy val root = cpg.metaData.root.headOption.getOrElse("").stripSuffix(JFile.separator)
+  private lazy val root = BFile(cpg.metaData.root.headOption.getOrElse("").stripSuffix(JFile.separator)) match
+    case f if f.isDirectory => f.pathAsString
+    case f                  => f.parent.pathAsString
 
   override protected def optionalResolveImport(
     fileName: String,
