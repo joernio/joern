@@ -9,7 +9,7 @@ import io.shiftleft.semanticcpg.language.bindingextension.{
   TypeDeclTraversal => BindingTypeDeclTraversal
 }
 import io.shiftleft.semanticcpg.language.callgraphextension.{CallTraversal, MethodTraversal}
-//import io.shiftleft.semanticcpg.language.dotextension.{AstNodeDot, CfgNodeDot, InterproceduralNodeDot}
+import io.shiftleft.semanticcpg.language.dotextension.{AstNodeDot, CfgNodeDot, InterproceduralNodeDot}
 import io.shiftleft.semanticcpg.language.nodemethods.*
 import io.shiftleft.semanticcpg.language.types.expressions.generalizations.*
 import io.shiftleft.semanticcpg.language.types.expressions.{CallTraversal => OriginalCall, *}
@@ -155,30 +155,30 @@ package object language extends operatorextension.Implicits with LowPrioImplicit
    implicit def iterOnceToBindingTypeDeclTrav[A <: TypeDecl](a: IterableOnce[A]): BindingTypeDeclTraversal =
      new BindingTypeDeclTraversal(a.iterator)
 
-//   implicit def singleToAstNodeDot[A <: AstNode](a: A): AstNodeDot[A] =
-//     new AstNodeDot(Iterator.single(a))
-//   implicit def iterOnceToAstNodeDot[A <: AstNode](a: IterableOnce[A]): AstNodeDot[A] =
-//     new AstNodeDot(a.iterator)
-//
-//   implicit def singleToCfgNodeDot[A <: Method](a: A): CfgNodeDot =
-//     new CfgNodeDot(Iterator.single(a))
-//   implicit def iterOnceToCfgNodeDot[A <: Method](a: IterableOnce[A]): CfgNodeDot =
-//     new CfgNodeDot(a.iterator)
+  implicit def singleToAstNodeDot[A <: AstNode](a: A): AstNodeDot[A] =
+    new AstNodeDot(Iterator.single(a))
+  implicit def iterOnceToAstNodeDot[A <: AstNode](a: IterableOnce[A]): AstNodeDot[A] =
+    new AstNodeDot(a.iterator)
 
-//   implicit def graphToInterproceduralDot(cpg: Cpg): InterproceduralNodeDot =
-//     new InterproceduralNodeDot(cpg)
+  implicit def singleToCfgNodeDot[A <: Method](a: A): CfgNodeDot =
+    new CfgNodeDot(Iterator.single(a))
+  implicit def iterOnceToCfgNodeDot[A <: Method](a: IterableOnce[A]): CfgNodeDot =
+    new CfgNodeDot(a.iterator)
 
-//   /** Warning: implicitly lifting `Node -> Traversal` opens a broad space with a lot of accidental complexity and is
-//     * considered a historical accident. We only keep it around because we want to preserve `reachableBy(Node*)`, which
-//     * unfortunately (due to type erasure) can't be an overload of `reachableBy(Traversal*)`.
-//     *
-//     * In most places you should explicitly call `Iterator.single` instead of relying on this implicit.
-//     */
-//   implicit def toTraversal[NodeType <: StoredNode](node: NodeType): Iterator[NodeType] =
-//     Iterator.single(node)
+  implicit def graphToInterproceduralDot(cpg: Cpg): InterproceduralNodeDot =
+    new InterproceduralNodeDot(cpg)
 
-//   implicit def iterableOnceToSteps[A](iterableOnce: IterableOnce[A]): Steps[A] =
-//     new Steps(iterableOnce.iterator)
+  /** Warning: implicitly lifting `Node -> Traversal` opens a broad space with a lot of accidental complexity and is
+    * considered a historical accident. We only keep it around because we want to preserve `reachableBy(Node*)`, which
+    * unfortunately (due to type erasure) can't be an overload of `reachableBy(Traversal*)`.
+    *
+    * In most places you should explicitly call `Iterator.single` instead of relying on this implicit.
+    */
+  implicit def toTraversal[NodeType <: StoredNode](node: NodeType): Iterator[NodeType] =
+    Iterator.single(node)
+
+  implicit def iterableOnceToSteps[A](iterableOnce: IterableOnce[A]): Steps[A] =
+    new Steps(iterableOnce.iterator)
 
   implicit def traversalToSteps[A](trav: Iterator[A]): Steps[A] =
     new Steps(trav)

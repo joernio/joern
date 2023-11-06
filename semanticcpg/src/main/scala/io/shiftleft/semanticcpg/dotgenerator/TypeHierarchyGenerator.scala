@@ -18,7 +18,7 @@ class TypeHierarchyGenerator {
       srcTypeDecl <- vertices
       srcType     <- srcTypeDecl._typeViaRefIn.l
       _ = storeInSubgraph(srcType, subgraph, typeToIsExternal)
-      tgtType <- srcTypeDecl.inheritsFromOut
+      tgtType <- srcTypeDecl._inheritsFromOut.collectAll[Type] //TODO define as named step in schema
     } yield {
       storeInSubgraph(tgtType, subgraph, typeToIsExternal)
       Edge(tgtType, srcType)

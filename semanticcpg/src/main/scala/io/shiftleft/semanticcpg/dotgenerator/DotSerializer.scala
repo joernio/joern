@@ -73,7 +73,7 @@ object DotSerializer {
 
   private def stringRepr(vertex: StoredNode): String = {
     val lineNoMaybe = Accessors.getNodePropertyOption[Integer](vertex.graph, vertex.nodeKind, PropertyKinds.LINE_NUMBER, vertex.seq())
-    StringEscapeUtils.escapeHtml(vertex match
+    StringEscapeUtils.escapeHtml(vertex match {
       case call: Call                            => (call.name, limit(call.code)).toString
       case contrl: ControlStructure              => (contrl.label, contrl.controlStructureType, contrl.code).toString
       case expr: Expression                      => (expr.label, limit(expr.code), limit(toCfgNode(expr).code)).toString
