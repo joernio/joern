@@ -1,5 +1,9 @@
 parser grammar RubyParser;
 
+@header {
+    package io.joern.rubysrc2cpg.parser;
+}
+
 options {
     tokenVocab = RubyLexer;
 }
@@ -13,349 +17,96 @@ program
     ;
 
 compoundStatement
-    :   (SEMI | NL)* statements? (SEMI | NL)*
+    :   statements? (SEMI | NL)*
     ;
 
-// --------------------------------------------------------
-// Statements
-// --------------------------------------------------------
-
 statements
-    :   statement ((SEMI | NL)+ statement)*
+    :   (SEMI | NL)*  statement ((SEMI | NL)+ statement)*
     ;
 
 statement
-    :   ALIAS NL? definedMethodNameOrSymbol NL? definedMethodNameOrSymbol                                           # aliasStatement
-    |   UNDEF NL? definedMethodNameOrSymbol (COMMA NL? definedMethodNameOrSymbol)*                                  # undefStatement
-    |   BEGIN_ LCURLY compoundStatement RCURLY                                                                      # beginStatement
-    |   END_ LCURLY compoundStatement RCURLY                                                                        # endStatement
-    |   statement mod=(IF | UNLESS | WHILE | UNTIL | RESCUE) NL? statement                                          # modifierStatement
-    |   expressionOrCommand                                                                                         # expressionOrCommandStatement
+    :   expressionOrCommand
+        # expressionOrCommandStatement
+    |   ALIAS NL* oldName=definedMethodNameOrSymbol newName=definedMethodNameOrSymbol
+        # aliasStatement
+    |   UNDEF NL* definedMethodNameOrSymbol (COMMA NL* definedMethodNameOrSymbol)*
+        # undefStatement
+    |   statement statementModifier NL* expressionOrCommand
+        # modifierStatement
+    |   singleAssignmentStatement
+        # singleAssignmentStatementStatement
+    |   multipleAssignmentStatement
+        # multipleAssignmentStatementStatement
     ;
 
-// --------------------------------------------------------
-// Expressions
-// --------------------------------------------------------
-
-expressionOrCommand
-    :   expression                                                                                                  # expressionExpressionOrCommand
-    |   (EMARK NL?)? invocationWithoutParentheses                                                                   # invocationExpressionOrCommand
-    |   NOT NL? expressionOrCommand                                                                                 # notExpressionOrCommand
-    |   <assoc=right> expressionOrCommand op=(OR | AND) NL? expressionOrCommand                                     # orAndExpressionOrCommand
+definedMethodNameOrSymbol
+    :   definedMethodName
+    |   symbol
     ;
 
-expression
-    :   <assoc=right> singleLeftHandSide op=(EQ | ASSIGNMENT_OPERATOR) NL? multipleRightHandSide                    # singleAssignmentExpression
-    |   <assoc=right> multipleLeftHandSide EQ NL? multipleRightHandSide                                             # multipleAssignmentExpression
-    |   primary                                                                                                     # primaryExpression
-    |   op=(TILDE | PLUS | EMARK) NL? expression                                                                    # unaryExpression
-    |   <assoc=right> expression STAR2 NL? expression                                                               # powerExpression
-    |   MINUS NL? expression                                                                                        # unaryMinusExpression
-    |   expression op=(STAR | SLASH | PERCENT) NL? expression                                                       # multiplicativeExpression
-    |   expression op=(PLUS | MINUS) NL? expression                                                                 # additiveExpression
-    |   expression op=(LT2 | GT2) NL? expression                                                                    # bitwiseShiftExpression
-    |   expression op=AMP NL? expression                                                                            # bitwiseAndExpression
-    |   expression op=(BAR | CARET) NL? expression                                                                  # bitwiseOrExpression
-    |   expression op=(GT | GTEQ | LT | LTEQ) NL? expression                                                        # relationalExpression
-    |   expression op=(LTEQGT | EQ2 | EQ3 | EMARKEQ | EQTILDE | EMARKTILDE) NL? expression?                         # equalityExpression
-    |   expression op=AMP2 NL? expression                                                                           # operatorAndExpression
-    |   expression op=BAR2 NL? expression                                                                           # operatorOrExpression
-    |   expression op=(DOT2 | DOT3) NL? expression?                                                                 # rangeExpression
-    |   expression QMARK NL? expression NL? COLON NL? expression                                                    # conditionalOperatorExpression
-    |   IS_DEFINED NL? expression                                                                                   # isDefinedExpression
+singleAssignmentStatement
+    :   variable assignmentOperator NL* methodInvocationWithoutParentheses
+    |   COLON2 CONSTANT_IDENTIFIER assignmentOperator NL* methodInvocationWithoutParentheses
+    |   primary LBRACK indexingArgumentList? RBRACK assignmentOperator NL* methodInvocationWithoutParentheses
+    |   primary (DOT | COLON2) methodName assignmentOperator NL* methodInvocationWithoutParentheses
     ;
 
-primary
-    :   classDefinition                                                                                                     # classDefinitionPrimary
-    |   moduleDefinition                                                                                                    # moduleDefinitionPrimary
-    |   methodDefinition                                                                                                    # methodDefinitionPrimary
-    |   procDefinition                                                                                                      # procDefinitionPrimary
-    |   yieldWithOptionalArgument                                                                                           # yieldWithOptionalArgumentPrimary
-    |   ifExpression                                                                                                        # ifExpressionPrimary
-    |   unlessExpression                                                                                                    # unlessExpressionPrimary
-    |   caseExpression                                                                                                      # caseExpressionPrimary
-    |   whileExpression                                                                                                     # whileExpressionPrimary
-    |   untilExpression                                                                                                     # untilExpressionPrimary
-    |   forExpression                                                                                                       # forExpressionPrimary
-    |   RETURN argumentsWithParentheses                                                                                     # returnWithParenthesesPrimary
-    |   jumpExpression                                                                                                      # jumpExpressionPrimary
-    |   beginExpression                                                                                                     # beginExpressionPrimary
-    |   LPAREN compoundStatement RPAREN                                                                                     # groupingExpressionPrimary
-    |   variableReference                                                                                                   # variableReferencePrimary
-    |   COLON2 CONSTANT_IDENTIFIER                                                                                          # simpleScopedConstantReferencePrimary
-    |   primary COLON2 CONSTANT_IDENTIFIER                                                                                  # chainedScopedConstantReferencePrimary
-    |   arrayConstructor                                                                                                    # arrayConstructorPrimary
-    |   hashConstructor                                                                                                     # hashConstructorPrimary
-    |   literal                                                                                                             # literalPrimary
-    |   stringExpression                                                                                                    # stringExpressionPrimary
-    |   stringInterpolation                                                                                                 # stringInterpolationPrimary
-    |   quotedStringExpression                                                                                              # quotedStringExpressionPrimary
-    |   regexInterpolation                                                                                                  # regexInterpolationPrimary
-    |   quotedRegexInterpolation                                                                                            # quotedRegexInterpolationPrimary
-    |   IS_DEFINED LPAREN expressionOrCommand RPAREN                                                                        # isDefinedPrimary
-    |   SUPER argumentsWithParentheses? block?                                                                              # superExpressionPrimary
-    |   primary LBRACK indexingArguments? RBRACK                                                                            # indexingExpressionPrimary
-    |   methodOnlyIdentifier                                                                                                # methodOnlyIdentifierPrimary
-    |   methodIdentifier block                                                                                              # invocationWithBlockOnlyPrimary
-    |   methodIdentifier argumentsWithParentheses block?                                                                    # invocationWithParenthesesPrimary
-    |   primary NL? (DOT | COLON2| AMPDOT) NL? methodName argumentsWithParentheses? block?                                  # chainedInvocationPrimary
-    |   primary COLON2 methodName block?                                                                                    # chainedInvocationWithoutArgumentsPrimary
+multipleAssignmentStatement
+    :   leftHandSide EQ NL* multipleRightHandSide
+    |   packingLeftHandSide EQ NL* (methodInvocationWithoutParentheses | operatorExpression)
+    |   multipleLeftHandSide EQ NL* multipleRightHandSide
+    |   multipleLeftHandSideExceptPacking EQ NL* (methodInvocationWithoutParentheses | operatorExpression)
     ;
 
-// --------------------------------------------------------
-// Assignments
-// --------------------------------------------------------
-
-singleLeftHandSide
-    :   variableIdentifier                                                                                          # variableIdentifierOnlySingleLeftHandSide
-    |   primary LBRACK arguments? RBRACK                                                                            # primaryInsideBracketsSingleLeftHandSide
-    |   primary (DOT | COLON2) (LOCAL_VARIABLE_IDENTIFIER | CONSTANT_IDENTIFIER)                                    # xdotySingleLeftHandSide
-    |   COLON2 CONSTANT_IDENTIFIER                                                                                  # scopedConstantAccessSingleLeftHandSide
+leftHandSide
+    :   variable (EQ primary)?
+        # variableLeftHandSide
+    |   primary LBRACK indexingArgumentList? RBRACK
+        # indexingLeftHandSide
+    |   primary (DOT | COLON2) (LOCAL_VARIABLE_IDENTIFIER | CONSTANT_IDENTIFIER)
+        # memberAccessLeftHandSide
+    |   COLON2 CONSTANT_IDENTIFIER
+        # qualifiedLeftHandSide
     ;
 
 multipleLeftHandSide
-    :   (multipleLeftHandSideItem COMMA NL?)+ (multipleLeftHandSideItem | packingLeftHandSide)?                     # multipleLeftHandSideAndpackingLeftHandSideMultipleLeftHandSide
-    |   packingLeftHandSide                                                                                         # packingLeftHandSideOnlyMultipleLeftHandSide
-    |   groupedLeftHandSide                                                                                         # groupedLeftHandSideOnlyMultipleLeftHandSide
+    :   (multipleLeftHandSideItem COMMA)+ multipleLeftHandSideItem?
+    |   (multipleLeftHandSideItem COMMA)+ packingLeftHandSide? (COMMA? NL* procParameter)? COMMA?
+    |   packingLeftHandSide
+    |   groupedLeftHandSide
     ;
 
-multipleLeftHandSideItem
-    :   singleLeftHandSide
+multipleLeftHandSideExceptPacking
+    :   (multipleLeftHandSideItem COMMA)+ multipleLeftHandSideItem?
+    |   (multipleLeftHandSideItem COMMA)+ packingLeftHandSide?
     |   groupedLeftHandSide
     ;
 
 packingLeftHandSide
-    :   STAR singleLeftHandSide
+    :   STAR leftHandSide?
     ;
 
 groupedLeftHandSide
     :   LPAREN multipleLeftHandSide RPAREN
     ;
 
+multipleLeftHandSideItem
+    :   leftHandSide
+    |   groupedLeftHandSide
+    ;
+
 multipleRightHandSide
-    :   expressionOrCommands (COMMA NL? splattingArgument)?
-    |   splattingArgument
+    :   operatorExpressionList2 (COMMA splattingRightHandSide)?
+    |   splattingRightHandSide
     ;
-
-expressionOrCommands
-    :   expressionOrCommand (COMMA NL? expressionOrCommand)*
-    ;
-
-// --------------------------------------------------------
-// Invocation expressions
-// --------------------------------------------------------
-
-invocationWithoutParentheses
-    :   chainedCommandWithDoBlock                                                                                               # chainedCommandDoBlockInvocationWithoutParentheses
-    |   command                                                                                                                 # singleCommandOnlyInvocationWithoutParentheses
-    |   RETURN arguments?                                                                                                       # returnArgsInvocationWithoutParentheses
-    |   BREAK arguments                                                                                                         # breakArgsInvocationWithoutParentheses
-    |   NEXT arguments                                                                                                          # nextArgsInvocationWithoutParentheses
-    ;
-
-command
-    :   SUPER argumentsWithoutParentheses                                                                                               # superCommand
-    |   YIELD argumentsWithoutParentheses                                                                                               # yieldCommand
-    |   methodIdentifier argumentsWithoutParentheses                                                                                    # simpleMethodCommand
-    |   primary (DOT | COLON2| AMPDOT) NL? methodName argumentsWithoutParentheses                                                       # memberAccessCommand
-    ;
-
-chainedCommandWithDoBlock
-    :   commandWithDoBlock ((DOT | COLON2) methodName argumentsWithParentheses?)*
-    ;
-
-commandWithDoBlock
-    :   SUPER argumentsWithoutParentheses doBlock                                                                               # argsAndDoBlockCommandWithDoBlock
-    |   methodIdentifier argumentsWithoutParentheses doBlock                                                                    # argsAndDoBlockAndMethodIdCommandWithDoBlock
-    |   primary (DOT | COLON2) methodName argumentsWithoutParentheses doBlock                                                   # primaryMethodArgsDoBlockCommandWithDoBlock
-    ;
-
-argumentsWithoutParentheses
-    :   arguments
-    ;
-
-arguments
-    :   argument (COMMA NL? argument)*
-    ;
-    
-argument
-    :   HERE_DOC_IDENTIFIER                                                                                                     # hereDocArgument
-    |   blockArgument                                                                                                           # blockArgumentArgument
-    |   splattingArgument                                                                                                       # splattingArgumentArgument
-    |   association                                                                                                             # associationArgument
-    |   expression                                                                                                              # expressionArgument
-    |   command                                                                                                                 # commandArgument
-    ;
-
-blockArgument
-    :   AMP expression
+     
+splattingRightHandSide
+    :   splattingArgument
     ;
 
 // --------------------------------------------------------
-// Arguments
+// Method invocation expressions
 // --------------------------------------------------------
-
-splattingArgument
-    :   STAR expressionOrCommand
-    |   STAR2 expressionOrCommand
-    ;
-
-indexingArguments
-    :   expressions (COMMA NL?)?                                                                                                # expressionsOnlyIndexingArguments
-    |   expressions COMMA NL? splattingArgument                                                                                 # expressionsAndSplattingIndexingArguments
-    |   associations (COMMA NL?)?                                                                                               # associationsOnlyIndexingArguments
-    |   splattingArgument                                                                                                       # splattingOnlyIndexingArguments
-    |   command                                                                                                                 # commandOnlyIndexingArguments
-    ;
-
-argumentsWithParentheses
-    :   LPAREN NL? RPAREN                                                                                                       # blankArgsArgumentsWithParentheses
-    |   LPAREN NL? arguments (COMMA)? NL? RPAREN                                                                                # argsOnlyArgumentsWithParentheses
-    |   LPAREN NL? expressions COMMA NL? chainedCommandWithDoBlock NL? RPAREN                                                   # expressionsAndChainedCommandWithDoBlockArgumentsWithParentheses
-    |   LPAREN NL? chainedCommandWithDoBlock NL? RPAREN                                                                         # chainedCommandWithDoBlockOnlyArgumentsWithParentheses
-    ;
-
-expressions
-    :   expression (COMMA NL? expression)*
-    ;
-
-// --------------------------------------------------------
-// Blocks
-// --------------------------------------------------------
-
-block
-    :   braceBlock                                                                                                              # braceBlockBlock
-    |   doBlock                                                                                                                 # doBlockBlock
-    ;
-
-braceBlock
-    :   LCURLY NL? blockParameter? bodyStatement RCURLY
-    ;
-
-doBlock
-    :   DO NL? blockParameter? bodyStatement END
-    ;
-
-blockParameter
-    :   BAR blockParameters? BAR
-    ;
-
-blockParameters
-    :   singleLeftHandSide
-    |   multipleLeftHandSide
-    ;
-
-// --------------------------------------------------------
-// Arrays
-// --------------------------------------------------------
-
-arrayConstructor
-    :   LBRACK NL? indexingArguments? NL? RBRACK                                                                    # bracketedArrayConstructor
-    |   QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_START
-        nonExpandedArrayElements?
-        QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END                                                                # nonExpandedWordArrayConstructor
-    |   QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_START
-        nonExpandedArrayElements?
-        QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END                                                                # nonExpandedSymbolArrayConstructor
-    |   QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_START
-        expandedArrayElements?
-        QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_END                                                                    # expandedSymbolArrayConstructor
-    |   QUOTED_EXPANDED_STRING_ARRAY_LITERAL_START
-        expandedArrayElements?
-        QUOTED_EXPANDED_STRING_ARRAY_LITERAL_END                                                                    # expandedWordArrayConstructor
-    ;
-
-
-expandedArrayElements
-    :   EXPANDED_ARRAY_ITEM_SEPARATOR*
-        expandedArrayElement (EXPANDED_ARRAY_ITEM_SEPARATOR+ expandedArrayElement)*
-        EXPANDED_ARRAY_ITEM_SEPARATOR*
-    ;
-    
-expandedArrayElement
-    :   (EXPANDED_ARRAY_ITEM_CHARACTER | delimitedArrayItemInterpolation)+
-    ;
-
-delimitedArrayItemInterpolation
-    :   DELIMITED_ARRAY_ITEM_INTERPOLATION_BEGIN
-        compoundStatement
-        DELIMITED_ARRAY_ITEM_INTERPOLATION_END
-    ;
-
-nonExpandedArrayElements
-    :   NON_EXPANDED_ARRAY_ITEM_SEPARATOR*
-        nonExpandedArrayElement (NON_EXPANDED_ARRAY_ITEM_SEPARATOR+ nonExpandedArrayElement)*
-        NON_EXPANDED_ARRAY_ITEM_SEPARATOR*
-    ;
-
-nonExpandedArrayElement
-    :   NON_EXPANDED_ARRAY_ITEM_CHARACTER+
-    ;
-
-// --------------------------------------------------------
-// Hashes
-// --------------------------------------------------------
-
-hashConstructor
-    :   LCURLY NL? (hashConstructorElements COMMA?)? NL? RCURLY
-    ;
-
-hashConstructorElements
-    :   hashConstructorElement (COMMA NL? hashConstructorElement)*
-    ;
-
-hashConstructorElement
-    :   association
-    |   STAR2 expression
-    ;
-
-associations
-    :   association (COMMA NL? association)*
-    ;
-
-association
-    :   (expression | keyword) (EQGT|COLON) (NL? expression)?
-    ;
-
-// --------------------------------------------------------
-// Method definitions
-// --------------------------------------------------------
-
-methodDefinition
-    :   DEF NL? methodNamePart methodParameterPart bodyStatement END
-    |   DEF NL? methodIdentifier methodParameterPart EQ NL? expression
-    ;
-    
-
-procDefinition
-    :   MINUSGT (LPAREN parameters? RPAREN)? block
-    ;
-
-methodNamePart
-    :   definedMethodName                                                                                           # simpleMethodNamePart
-    |   singletonObject NL? (DOT | COLON2) NL? definedMethodName                                                    # singletonMethodNamePart
-    ;
-
-singletonObject
-    :   variableIdentifier
-    |   pseudoVariableIdentifier
-    |   LPAREN expressionOrCommand RPAREN
-    ;
-
-definedMethodName
-    :   methodName
-    |   assignmentLikeMethodIdentifier
-    ;
-
-assignmentLikeMethodIdentifier
-    :   ASSIGNMENT_LIKE_METHOD_IDENTIFIER
-    ;
-
-methodName
-    :   methodIdentifier
-    |   operatorMethodName
-    |   keyword
-    ;
 
 methodIdentifier
     :   LOCAL_VARIABLE_IDENTIFIER
@@ -363,34 +114,425 @@ methodIdentifier
     |   methodOnlyIdentifier
     ;
 
+methodName
+    :   methodIdentifier
+    |   keyword
+    |   pseudoVariable
+    ;
+
 methodOnlyIdentifier
-    :   (LOCAL_VARIABLE_IDENTIFIER | CONSTANT_IDENTIFIER | keyword) (EMARK | QMARK)
+    :   (CONSTANT_IDENTIFIER | LOCAL_VARIABLE_IDENTIFIER | pseudoVariable) (EMARK | QMARK)
+    ;
+    
+methodInvocationWithoutParentheses
+    :   command
+        # commandMethodInvocationWithoutParentheses
+    |   chainedCommandWithDoBlock ((DOT | COLON2) methodName commandArgumentList)?
+        # chainedMethodInvocationWithoutParentheses
+    |   RETURN primaryValueList
+        # returnMethodInvocationWithoutParentheses
+    |   BREAK primaryValueList
+        # breakMethodInvocationWithoutParentheses
+    |   NEXT primaryValueList
+        # nextMethodInvocationWithoutParentheses
+    |   YIELD primaryValueList
+        # yieldMethodInvocationWithoutParentheses
+    ;
+
+command
+    :   primary NL? (AMPDOT | DOT | COLON2) methodName commandArgument
+        # memberAccessCommand
+    |   methodIdentifier commandArgument
+        # simpleCommand
+    ;
+
+commandArgument
+    :   commandArgumentList
+        # commandArgumentCommandArgumentList
+    |   command
+        # commandCommandArgumentList
+    ;
+
+chainedCommandWithDoBlock
+    :   commandWithDoBlock chainedMethodInvocation*
+    ;
+
+chainedMethodInvocation
+    :   (DOT | COLON2) methodName argumentWithParentheses?
+    ;
+
+commandWithDoBlock
+    :   SUPER argumentList doBlock
+    |   methodIdentifier argumentList doBlock
+    |   primary (DOT | COLON2) methodName argumentList doBlock
+    ;
+
+indexingArgumentList
+    :   command
+        # commandIndexingArgumentList
+    |   operatorExpressionList COMMA?
+        # operatorExpressionListIndexingArgumentList
+    |   operatorExpressionList COMMA splattingArgument
+        # operatorExpressionListWithSplattingArgumentIndexingArgumentList
+    |   associationList COMMA?
+        # associationListIndexingArgumentList
+    |   splattingArgument
+        # splattingArgumentIndexingArgumentList
+    ;
+
+splattingArgument
+    :   STAR operatorExpression
+    |   STAR2 operatorExpression
+    ;
+
+operatorExpressionList
+    :   operatorExpression (COMMA NL* operatorExpression)*
+    ;
+    
+operatorExpressionList2
+    :   operatorExpression (COMMA NL* operatorExpression)+
+    ;
+
+argumentWithParentheses
+    :   LPAREN NL* COMMA? NL* RPAREN
+        # emptyArgumentWithParentheses
+    |   LPAREN NL* argumentList COMMA? NL* RPAREN
+        # argumentListArgumentWithParentheses
+    |   LPAREN NL* operatorExpressionList COMMA NL* chainedCommandWithDoBlock COMMA? NL* RPAREN
+        # operatorExpressionsAndChainedCommandWithBlockArgumentWithParentheses
+    |   LPAREN NL* chainedCommandWithDoBlock COMMA? NL* RPAREN
+        # chainedCommandWithDoBlockArgumentWithParentheses
+    ;
+
+argumentList
+    :   blockArgument
+        # blockArgumentArgumentList
+    |   splattingArgument (COMMA NL* blockArgument)?
+        # splattingArgumentArgumentList
+    |   operatorExpressionList (COMMA NL* associationList)? (COMMA NL* splattingArgument)? (COMMA NL* blockArgument)?
+        # operatorsArgumentList
+    |   associationList (COMMA NL* splattingArgument)? (COMMA NL* blockArgument)?
+        # associationsArgumentList
+    |   command
+        # singleCommandArgumentList
+    ;
+    
+commandArgumentList
+    :   associationList
+    |   primaryValueList (COMMA NL* associationList)?
+    ;    
+
+primaryValueList
+    :   primaryValue (COMMA NL* primaryValue)*
+    ;
+
+blockArgument
+    :   AMP operatorExpression
+    ;
+    
+// --------------------------------------------------------
+// Expressions
+// --------------------------------------------------------
+
+expressionOrCommand
+    :   operatorExpression
+        # operatorExpressionOrCommand
+    |   EMARK? methodInvocationWithoutParentheses
+        # commandExpressionOrCommand
+    |   NOT NL* expressionOrCommand
+        # notExpressionOrCommand
+    |   lhs=expressionOrCommand binOp=(AND|OR) NL* rhs=expressionOrCommand
+        # keywordAndOrExpressionOrCommand
+    ;
+
+operatorExpression
+    :   primary
+        # primaryOperatorExpression
+    |   operatorExpression QMARK NL* operatorExpression NL* COLON NL* operatorExpression
+        # ternaryOperatorExpression
+    ;
+
+primary
+    :   RETURN
+        # returnWithoutArguments
+    |   BREAK
+        # breakWithoutArguments
+    |   NEXT
+        # nextWithoutArguments
+    |   REDO
+        # redoWithoutArguments
+    |   RETRY
+        # retryWithoutArguments
+    |   primaryValue
+        # primaryValuePrimary
+    ;
+
+primaryValue
+    :   // Assignment expressions
+        lhs=variable assignmentOperator NL* rhs=operatorExpression
+        # localVariableAssignmentExpression
+    |   primaryValue op=(DOT | COLON2) methodName assignmentOperator NL* operatorExpression
+        # attributeAssignmentExpression
+    |   COLON2 CONSTANT_IDENTIFIER assignmentOperator NL* operatorExpression
+        # constantAssignmentExpression
+    |   primaryValue LBRACK indexingArgumentList? RBRACK assignmentOperator NL* operatorExpression
+        # bracketAssignmentExpression
+    |   primaryValue assignmentOperator NL* operatorExpression RESCUE operatorExpression
+        # assignmentWithRescue
+        
+        // Definitions
+    |   CLASS classPath (LT commandOrPrimaryValue)? (SEMI | NL) bodyStatement END
+        # classDefinition
+    |   CLASS LT2 commandOrPrimaryValue (SEMI | NL) bodyStatement END
+        # singletonClassDefinition
+    |   MODULE classPath bodyStatement END
+        # moduleDefinition
+    |   DEF definedMethodName methodParameterPart bodyStatement END
+        # methodDefinition
+    |   DEF singletonObject op=(DOT | COLON2) definedMethodName methodParameterPart bodyStatement END
+        # singletonMethodDefinition
+    |   DEF definedMethodName (LPAREN parameterList? RPAREN)? EQ NL* commandOrPrimaryValue
+        # endlessMethodDefinition
+    |   MINUSGT (LPAREN parameterList? RPAREN)? block
+        # lambdaExpression
+
+        // Control structures
+    |   IF NL* commandOrPrimaryValue thenClause elsifClause* elseClause? END
+        # ifExpression
+    |   UNLESS NL* commandOrPrimaryValue thenClause elseClause? END
+        # unlessExpression
+    |   UNTIL NL* commandOrPrimaryValue doClause END
+        # untilExpression
+    |   YIELD argumentWithParentheses?
+        # yieldExpression
+    |   BEGIN bodyStatement END
+        # beginEndExpression
+    |   CASE NL* commandOrPrimaryValue (SEMI | NL)* whenClause+ elseClause? END
+        # caseWithExpression
+    |   CASE (SEMI | NL)* whenClause+ elseClause? END
+        # caseWithoutExpression
+    |   WHILE NL* commandOrPrimaryValue doClause END
+        # whileExpression
+    |   FOR NL* forVariable IN NL* commandOrPrimaryValue doClause END
+        # forExpression
+    
+        // Non-nested calls
+    |   SUPER argumentWithParentheses? block?
+        # superWithParentheses
+    |   SUPER argumentList? block?
+        # superWithoutParentheses
+    |   isDefinedKeyword LPAREN expressionOrCommand RPAREN
+        # isDefinedExpression
+    |   isDefinedKeyword primaryValue
+        # isDefinedCommand
+    |   methodOnlyIdentifier
+        # methodCallExpression
+    |   methodIdentifier block
+        # methodCallWithBlockExpression
+    |   methodIdentifier argumentWithParentheses block?
+        # methodCallWithParenthesesExpression
+    |   variableReference
+        # methodCallOrVariableReference
+        
+        // Literals
+    |   LBRACK NL* indexingArgumentList? NL* RBRACK
+        # bracketedArrayLiteral
+    |   QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_START quotedNonExpandedArrayElementList? QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END
+        # quotedNonExpandedStringArrayLiteral
+    |   QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_START quotedNonExpandedArrayElementList? QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END
+        # quotedNonExpandedSymbolArrayLiteral
+    |   QUOTED_EXPANDED_STRING_ARRAY_LITERAL_START quotedExpandedArrayElementList? QUOTED_EXPANDED_STRING_ARRAY_LITERAL_END
+        # quotedExpandedStringArrayLiteral
+    |   QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_START quotedExpandedArrayElementList? QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_END
+        # quotedExpandedSymbolArrayLiteral
+    |   LCURLY NL* (associationList COMMA?)? NL* RCURLY
+        # hashLiteral
+    |   sign=(PLUS | MINUS)? unsignedNumericLiteral
+        # numericLiteral
+    |   singleQuotedString singleOrDoubleQuotedString*
+        # singleQuotedStringExpression
+    |   doubleQuotedString singleOrDoubleQuotedString*
+        # doubleQuotedStringExpression
+    |   QUOTED_NON_EXPANDED_STRING_LITERAL_START NON_EXPANDED_LITERAL_CHARACTER_SEQUENCE? QUOTED_NON_EXPANDED_STRING_LITERAL_END
+        # quotedNonExpandedStringLiteral
+    |   QUOTED_EXPANDED_STRING_LITERAL_START quotedExpandedLiteralStringContent* QUOTED_EXPANDED_STRING_LITERAL_END
+        # quotedExpandedStringLiteral
+    |   QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_START quotedExpandedLiteralStringContent* QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_END
+        # quotedExpandedExternalCommandLiteral
+    |   symbol
+        # symbolExpression
+    |   REGULAR_EXPRESSION_START regexpLiteralContent* REGULAR_EXPRESSION_END
+        # regularExpressionLiteral
+    |   QUOTED_EXPANDED_REGULAR_EXPRESSION_START quotedExpandedLiteralStringContent* QUOTED_EXPANDED_REGULAR_EXPRESSION_END
+        # quotedExpandedRegularExpressionLiteral
+    
+    |   LPAREN compoundStatement RPAREN
+        # groupingStatement
+    
+        // Member accesses
+    |   primaryValue LBRACK indexingArgumentList? RBRACK
+        # indexingAccessExpression
+    |   primaryValue NL* op=(AMPDOT | DOT | COLON2) NL* methodName argumentWithParentheses? block?
+        # memberAccessExpression
+    
+        // Unary and binary expressions
+    |   unaryOperator primaryValue
+        # unaryExpression
+    |   <assoc=right> primaryValue powerOperator=STAR2    NL* primaryValue
+        # powerExpression
+    |   MINUS primaryValue
+        # unaryMinusExpression
+    |   primaryValue multiplicativeOperator NL* primaryValue
+        # multiplicativeExpression
+    |   primaryValue additiveOperator       NL* primaryValue
+        # additiveExpression
+    |   primaryValue bitwiseShiftOperator   NL* primaryValue
+        # shiftExpression
+    |   primaryValue bitwiseAndOperator=AMP NL* primaryValue
+        # bitwiseAndExpression
+    |   primaryValue bitwiseOrOperator      NL* primaryValue
+        # bitwiseOrExpression
+    |   primaryValue relationalOperator     NL* primaryValue
+        # relationalExpression
+    |   primaryValue equalityOperator       NL* primaryValue
+        # equalityExpression
+    |   primaryValue andOperator=AMP2       NL* primaryValue
+        # logicalAndExpression
+    |   primaryValue orOperator=BAR2        NL* primaryValue
+        # logicalOrExpression
+    |   primaryValue rangeOperator          NL* primaryValue
+        # rangeExpression
+    ;
+
+commandOrPrimaryValue
+    :   command
+        # commandCommandOrPrimaryValue
+    |   NOT commandOrPrimaryValue
+        # notCommandOrPrimaryValue
+    |   commandOrPrimaryValue (AND|OR) NL* commandOrPrimaryValue
+        # keywordAndOrCommandOrPrimaryValue
+    |   primaryValue
+        # primaryValueCommandOrPrimaryValue
+    ;
+
+block
+    :   LCURLY NL* blockParameter? compoundStatement RCURLY
+        # curlyBracesBlock
+    |   doBlock
+        # doBlockBlock
+    ;
+
+doBlock
+    :   DO NL* blockParameter? bodyStatement END
+    ;
+
+blockParameter
+    :   BAR NL* BAR
+    |   BAR NL* blockParameterList NL* BAR
+    ;
+
+blockParameterList
+    :   leftHandSide
+        # singleElementBlockParameterList
+    |   multipleLeftHandSide
+        # multipleElementBlockParameterList
+    ;
+
+thenClause
+    :   (SEMI | NL)+ compoundStatement
+    |   (SEMI | NL)? THEN compoundStatement
+    ;
+
+elseClause
+    :   ELSE compoundStatement
+    ;
+
+elsifClause
+    :   ELSIF NL* expressionOrCommand thenClause
+    ;
+
+whenClause
+    :   WHEN NL* whenArgument thenClause
+    ;
+
+whenArgument
+    :   operatorExpressionList (COMMA splattingArgument)?
+    |   splattingArgument
+    ;
+
+doClause
+    :   (SEMI | NL)+ compoundStatement
+    |   DO compoundStatement
+    ;
+
+forVariable
+    :   leftHandSide
+    |   multipleLeftHandSide
+    ;
+
+bodyStatement
+    :   compoundStatement rescueClause* elseClause? ensureClause?
+    ;
+
+rescueClause
+    :   RESCUE exceptionClassList? exceptionVariableAssignment? thenClause
+    ;
+
+exceptionClassList
+    :   operatorExpression
+    |   multipleRightHandSide
+    ;
+
+exceptionVariableAssignment
+    :   EQGT leftHandSide
+    ;
+    
+ensureClause
+    :   ENSURE compoundStatement
+    ;
+
+definedMethodName
+    :   methodName
+    |   ASSIGNMENT_LIKE_METHOD_IDENTIFIER
+    |   LBRACK RBRACK EQ?
+    |   EQ2
+    |   EQ3
+    |   LTEQGT
     ;
 
 methodParameterPart
-    :   LPAREN NL? parameters? NL? RPAREN
-    |   parameters?
+    :   LPAREN NL* parameterList? NL* RPAREN
+    |   parameterList? (SEMI | NL)
     ;
 
-parameters
-    :   parameter (COMMA NL? parameter)*
-    ;
-    
-parameter
-    :   optionalParameter   
-    |   mandatoryParameter
-    |   arrayParameter
-    |   hashParameter
-    |   keywordParameter
+parameterList
+    :   mandatoryOrOptionalParameterList (COMMA NL* arrayParameter)? (COMMA NL* hashParameter)? (COMMA NL* procParameter)?
+    |   arrayParameter (COMMA NL* hashParameter)? (COMMA NL* procParameter)?
+    |   hashParameter (COMMA NL* procParameter)?
     |   procParameter
     ;
 
+mandatoryOrOptionalParameterList
+    :   mandatoryOrOptionalParameter (COMMA NL* mandatoryOrOptionalParameter)*
+    ;
+    
+mandatoryOrOptionalParameter
+    :   mandatoryParameter
+        # mandatoryMandatoryOrOptionalParameter
+    |   optionalParameter
+        # optionalMandatoryOrOptionalParameter
+    ;
+
 mandatoryParameter
-    :   LOCAL_VARIABLE_IDENTIFIER
+    :   LOCAL_VARIABLE_IDENTIFIER COLON?
     ;
 
 optionalParameter
-    :   LOCAL_VARIABLE_IDENTIFIER EQ NL? expression
+    :   optionalParameterName (EQ|COLON) NL* operatorExpression
+    ;
+
+optionalParameterName
+    :   LOCAL_VARIABLE_IDENTIFIER
     ;
 
 arrayParameter
@@ -401,292 +543,247 @@ hashParameter
     :   STAR2 LOCAL_VARIABLE_IDENTIFIER?
     ;
 
-keywordParameter
-    :   LOCAL_VARIABLE_IDENTIFIER COLON (NL? expression)?
-    ;
-
 procParameter
-    :   AMP LOCAL_VARIABLE_IDENTIFIER?
+    :   AMP procParameterName
     ;
 
-
-// --------------------------------------------------------
-// Conditional expressions
-// --------------------------------------------------------
-
-ifExpression
-    :   IF NL? expressionOrCommand thenClause elsifClause* elseClause? END
+procParameterName
+    :   LOCAL_VARIABLE_IDENTIFIER
     ;
 
-thenClause
-    :   (SEMI | NL)+ compoundStatement
-    |   (SEMI | NL)? THEN compoundStatement
-    ;
-
-elsifClause
-    :   ELSIF NL? expressionOrCommand thenClause
-    ;
-
-elseClause
-    :   ELSE compoundStatement
-    ;
-
-unlessExpression
-    :   UNLESS NL? expressionOrCommand thenClause elseClause? END
-    ;
-
-caseExpression
-    :   CASE NL? expressionOrCommand? (SEMI | NL)* whenClause+ elseClause? END
-    ;
-
-whenClause
-    :   WHEN NL? whenArgument thenClause
-    ;
-
-whenArgument
-    :   expressions (COMMA splattingArgument)?
-    |   splattingArgument
-    ;
-
-// --------------------------------------------------------
-// Iteration expressions
-// --------------------------------------------------------
-
-whileExpression
-    :   WHILE NL? expressionOrCommand doClause END
-    ;
-
-doClause
-    :   (SEMI | NL)+ compoundStatement
-    |   DO compoundStatement
-    ;
-
-untilExpression
-    :   UNTIL NL? expressionOrCommand doClause END
-    ;
-
-forExpression
-    :   FOR NL? forVariable IN NL? expressionOrCommand doClause END
-    ;
-
-forVariable
-    :   singleLeftHandSide
-    |   multipleLeftHandSide
-    ;
-
-// --------------------------------------------------------
-// Begin expression
-// --------------------------------------------------------
-
-beginExpression
-    :   BEGIN bodyStatement END
-    ;
-
-bodyStatement
-    :   compoundStatement rescueClause* elseClause? ensureClause?
-    ;
-
-rescueClause
-    :   RESCUE exceptionClass? NL? exceptionVariableAssignment? thenClause
-    ;
-
-exceptionClass
-    :   expression
-    |   multipleRightHandSide
-    ;
-
-exceptionVariableAssignment
-    :   EQGT singleLeftHandSide
-    ;
-
-ensureClause
-    :   ENSURE compoundStatement
-    ;
-
-// --------------------------------------------------------
-// Class definitions
-// --------------------------------------------------------
-
-classDefinition
-    :   CLASS NL? classOrModuleReference (LT NL? expressionOrCommand)? bodyStatement END
-    |   CLASS NL? LT2 NL? expressionOrCommand (SEMI | NL)+ bodyStatement END
-    ;
-
-classOrModuleReference
-    :   scopedConstantReference
+classPath
+    :   COLON2 CONSTANT_IDENTIFIER
+        # topClassPath
     |   CONSTANT_IDENTIFIER
+        # className
+    |   classPath COLON2 CONSTANT_IDENTIFIER
+        # nestedClassPath
     ;
 
-// --------------------------------------------------------
-// Module definitions
-// --------------------------------------------------------
-
-moduleDefinition
-    :   MODULE NL? classOrModuleReference bodyStatement END
+singletonObject
+    :   variableReference
+        #variableReferenceSingletonObject
+    |   LPAREN expressionOrCommand RPAREN
+        #expressionSingletonObject
     ;
-
-// --------------------------------------------------------
-// Yield expressions
-// --------------------------------------------------------
-
-yieldWithOptionalArgument
-    :   YIELD (LPAREN arguments? RPAREN)?
-    ;
-
-// --------------------------------------------------------
-// Jump expressions
-// --------------------------------------------------------
-
-jumpExpression
-    :   BREAK
-    |   NEXT
-    |   REDO
-    |   RETRY
-    ;
-
-// --------------------------------------------------------
-// Variable references
-// --------------------------------------------------------
 
 variableReference
-    :   variableIdentifier                                                                                          # variableIdentifierVariableReference
-    |   pseudoVariableIdentifier                                                                                    # pseudoVariableIdentifierVariableReference
+    :   variable
+        # variableVariableReference
+    |   pseudoVariable
+        # pseudoVariableVariableReference
+    |   COLON2 CONSTANT_IDENTIFIER
+        # constantVariableReference
     ;
 
-variableIdentifier
-    :   LOCAL_VARIABLE_IDENTIFIER
-    |   GLOBAL_VARIABLE_IDENTIFIER
-    |   INSTANCE_VARIABLE_IDENTIFIER
-    |   CLASS_VARIABLE_IDENTIFIER
-    |   CONSTANT_IDENTIFIER
-    ;
-
-pseudoVariableIdentifier
-    :   NIL                                                                                                         # nilPseudoVariableIdentifier
-    |   TRUE                                                                                                        # truePseudoVariableIdentifier
-    |   FALSE                                                                                                       # falsePseudoVariableIdentifier
-    |   SELF                                                                                                        # selfPseudoVariableIdentifier
-    |   FILE__                                                                                                      # filePseudoVariableIdentifier
-    |   LINE__                                                                                                      # linePseudoVariableIdentifier
-    |   ENCODING__                                                                                                  # encodingPseudoVariableIdentifier
-    ;
-
-scopedConstantReference
-    :   COLON2 CONSTANT_IDENTIFIER
-    |   primary COLON2 CONSTANT_IDENTIFIER
-    ;
-
-// --------------------------------------------------------
-// Literals
-// --------------------------------------------------------
-
-literal
-    :   HERE_DOC                                                                                                    # hereDocLiteral
-    |   numericLiteral                                                                                              # numericLiteralLiteral
-    |   symbol                                                                                                      # symbolLiteral
-    |   REGULAR_EXPRESSION_START REGULAR_EXPRESSION_BODY? REGULAR_EXPRESSION_END                                    # regularExpressionLiteral
+associationList
+    :   association (COMMA NL* association)*
     ;
     
+association
+    :   associationKey (EQGT | COLON) NL* operatorExpression
+    ;
+    
+associationKey
+    :   operatorExpression
+    |   keyword
+    ;
+
+regexpLiteralContent
+    :   REGULAR_EXPRESSION_BODY
+    |   REGULAR_EXPRESSION_INTERPOLATION_BEGIN compoundStatement REGULAR_EXPRESSION_INTERPOLATION_END
+    ;
+
+singleQuotedString
+    :   SINGLE_QUOTED_STRING_LITERAL
+    ;
+
+singleOrDoubleQuotedString
+    :   singleQuotedString
+    |   doubleQuotedString
+    ;
+
+doubleQuotedString
+    :   DOUBLE_QUOTED_STRING_START doubleQuotedStringContent* DOUBLE_QUOTED_STRING_END
+    ;
+
+quotedExpandedExternalCommandString
+    :   QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_START 
+        quotedExpandedLiteralStringContent*
+        QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_END
+    ;
+
+doubleQuotedStringContent
+    :   DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE
+    |   STRING_INTERPOLATION_BEGIN compoundStatement STRING_INTERPOLATION_END
+    ;
+
+quotedNonExpandedLiteralString
+    :   QUOTED_NON_EXPANDED_STRING_LITERAL_START NON_EXPANDED_LITERAL_CHARACTER_SEQUENCE? QUOTED_NON_EXPANDED_STRING_LITERAL_END
+    ;
+
+quotedExpandedLiteralString
+    :   QUOTED_EXPANDED_STRING_LITERAL_START quotedExpandedLiteralStringContent* QUOTED_EXPANDED_STRING_LITERAL_END
+    ;
+
+quotedExpandedLiteralStringContent
+    :   EXPANDED_LITERAL_CHARACTER_SEQUENCE
+    |   DELIMITED_STRING_INTERPOLATION_BEGIN compoundStatement DELIMITED_STRING_INTERPOLATION_END
+    ;
+
+quotedNonExpandedArrayElementContent
+    :   NON_EXPANDED_ARRAY_ITEM_CHARACTER+
+    ;
+    
+quotedExpandedArrayElementContent
+    :   EXPANDED_ARRAY_ITEM_CHARACTER
+    |   DELIMITED_ARRAY_ITEM_INTERPOLATION_BEGIN compoundStatement DELIMITED_ARRAY_ITEM_INTERPOLATION_END
+    ;
+
+quotedExpandedArrayElement
+    :   quotedExpandedArrayElementContent+
+    ;
+
+quotedNonExpandedArrayElementList
+    :   NON_EXPANDED_ARRAY_ITEM_SEPARATOR*
+        quotedNonExpandedArrayElementContent 
+        (NON_EXPANDED_ARRAY_ITEM_SEPARATOR+ quotedNonExpandedArrayElementContent)*
+        NON_EXPANDED_ARRAY_ITEM_SEPARATOR*
+    ;
+
+quotedExpandedArrayElementList
+    :   EXPANDED_ARRAY_ITEM_SEPARATOR*
+        quotedExpandedArrayElement
+        (EXPANDED_ARRAY_ITEM_SEPARATOR+ quotedExpandedArrayElement)*
+        EXPANDED_ARRAY_ITEM_SEPARATOR*
+    ;
+
 symbol
     :   SYMBOL_LITERAL
-    |   COLON stringExpression
-    ;
-
-// --------------------------------------------------------
-// Strings
-// --------------------------------------------------------
-
-stringExpression
-    :   simpleString                                                                                                # simpleStringExpression
-    |   stringInterpolation                                                                                         # interpolatedStringExpression
-    |   stringExpression stringExpression+                                                                          # concatenatedStringExpression
-    ;
-
-quotedStringExpression
-    :   QUOTED_NON_EXPANDED_STRING_LITERAL_START 
-        NON_EXPANDED_LITERAL_CHARACTER_SEQUENCE? 
-        QUOTED_NON_EXPANDED_STRING_LITERAL_END                                                                      # nonExpandedQuotedStringLiteral
-    |   QUOTED_EXPANDED_STRING_LITERAL_START
-        (EXPANDED_LITERAL_CHARACTER_SEQUENCE | delimitedStringInterpolation)*
-        QUOTED_EXPANDED_STRING_LITERAL_END                                                                          # expandedQuotedStringLiteral
-    |   QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_START
-        (EXPANDED_LITERAL_CHARACTER_SEQUENCE | delimitedStringInterpolation)*
-        QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_END                                                                # expandedExternalCommandLiteral
-    ;
-
-simpleString
-    :   SINGLE_QUOTED_STRING_LITERAL                                                                                # singleQuotedStringLiteral
-    |   DOUBLE_QUOTED_STRING_START DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE? DOUBLE_QUOTED_STRING_END                # doubleQuotedStringLiteral
-    ;
-
-delimitedStringInterpolation
-    :   DELIMITED_STRING_INTERPOLATION_BEGIN
-        compoundStatement
-        DELIMITED_STRING_INTERPOLATION_END
-    ;
-
-stringInterpolation
-    :   DOUBLE_QUOTED_STRING_START
-        (DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE | interpolatedStringSequence)+
-        DOUBLE_QUOTED_STRING_END
-    ;
-
-interpolatedStringSequence
-    :   STRING_INTERPOLATION_BEGIN compoundStatement STRING_INTERPOLATION_END
-    ;
-
-// --------------------------------------------------------
-// Regex interpolation
-// --------------------------------------------------------
-
-regexInterpolation
-    :   REGULAR_EXPRESSION_START
-        (REGULAR_EXPRESSION_BODY | interpolatedRegexSequence)+
-        REGULAR_EXPRESSION_END
-    ;
-
-interpolatedRegexSequence
-    :   REGULAR_EXPRESSION_INTERPOLATION_BEGIN compoundStatement REGULAR_EXPRESSION_INTERPOLATION_END
-    ;
-
-quotedRegexInterpolation
-    :   QUOTED_EXPANDED_REGULAR_EXPRESSION_START
-        (EXPANDED_LITERAL_CHARACTER_SEQUENCE | delimitedStringInterpolation)*
-        QUOTED_EXPANDED_REGULAR_EXPRESSION_END
+        # pureSymbolLiteral
+    |   COLON singleQuotedString
+        # singleQuotedSymbolLiteral
+    |   COLON doubleQuotedString
+        # doubleQuotedSymbolLiteral
     ;
 
 
 // --------------------------------------------------------
-// Numerics
+// Commons
 // --------------------------------------------------------
 
-numericLiteral
-    :   (PLUS | MINUS)? unsignedNumericLiteral
+isDefinedKeyword
+    :   IS_DEFINED
+    ;
+
+assignmentOperator
+    :   EQ
+    |   ASSIGNMENT_OPERATOR
+    ;
+
+statementModifier
+    :   IF
+    |   UNLESS
+    |   WHILE
+    |   UNTIL
+    |   RESCUE
+    ;
+
+variable
+    :   CONSTANT_IDENTIFIER
+        # constantIdentifierVariable
+    |   GLOBAL_VARIABLE_IDENTIFIER
+        # globalIdentifierVariable
+    |   CLASS_VARIABLE_IDENTIFIER
+        # classIdentifierVariable
+    |   INSTANCE_VARIABLE_IDENTIFIER
+        # instanceIdentifierVariable
+    |   LOCAL_VARIABLE_IDENTIFIER
+        # localIdentifierVariable
+    ;
+
+pseudoVariable
+    :   NIL
+        # nilPseudoVariable
+    |   TRUE
+        # truePseudoVariable
+    |   FALSE
+        # falsePseudoVariable
+    |   SELF
+        # selfPseudoVariable
+    |   LINE__
+        # linePseudoVariable
+    |   FILE__
+        # filePseudoVariable
+    |   ENCODING__
+        # encodingPseudoVariable
     ;
 
 unsignedNumericLiteral
     :   DECIMAL_INTEGER_LITERAL
+        # decimalUnsignedLiteral
     |   BINARY_INTEGER_LITERAL
+        # binaryUnsignedLiteral
     |   OCTAL_INTEGER_LITERAL
+        # octalUnsignedLiteral
     |   HEXADECIMAL_INTEGER_LITERAL
+        # hexadecimalUnsignedLiteral
     |   FLOAT_LITERAL_WITHOUT_EXPONENT
+        # floatWithoutExponentUnsignedLiteral
     |   FLOAT_LITERAL_WITH_EXPONENT
+        # floatWithExponentUnsignedLiteral
     ;
 
-// --------------------------------------------------------
-// Helpers
-// --------------------------------------------------------
+unaryOperator
+    :   TILDE
+    |   PLUS
+    |   EMARK
+    ;
 
-definedMethodNameOrSymbol
-    :   definedMethodName
-    |   symbol
+multiplicativeOperator
+    :   STAR
+    |   SLASH
+    |   PERCENT
+    ;
+
+additiveOperator
+    :   PLUS
+    |   MINUS
+    ;
+
+bitwiseShiftOperator
+    :   LT2
+    |   GT2
+    ;
+
+bitwiseOrOperator
+    :   BAR
+    |   CARET
+    ;
+
+relationalOperator
+    :   GT
+    |   GTEQ
+    |   LT
+    |   LTEQ
+    ;
+
+equalityOperator
+    :   LTEQGT
+    |   EQ2
+    |   EQ3
+    |   EMARKEQ
+    |   EQTILDE
+    |   EMARKTILDE
+    ;
+
+rangeOperator
+    :   DOT2
+    |   DOT3
     ;
 
 keyword
-    :   LINE__
-    |   ENCODING__
-    |   FILE__
-    |   BEGIN_
+    :   BEGIN_
     |   END_
     |   ALIAS
     |   AND
@@ -702,53 +799,22 @@ keyword
     |   END
     |   ENSURE
     |   FOR
-    |   FALSE
     |   IF
     |   IN
     |   MODULE
     |   NEXT
-    |   NIL
     |   NOT
     |   OR
     |   REDO
     |   RESCUE
     |   RETRY
     |   RETURN
-    |   SELF
     |   SUPER
     |   THEN
-    |   TRUE
     |   UNDEF
     |   UNLESS
     |   UNTIL
     |   WHEN
     |   WHILE
     |   YIELD
-    ;
-
-operatorMethodName
-    :   CARET
-    |   AMP
-    |   BAR
-    |   LTEQGT
-    |   EQ2
-    |   EQ3
-    |   EQTILDE
-    |   GT
-    |   GTEQ
-    |   LT
-    |   LTEQ
-    |   LT2
-    |   GT2
-    |   PLUS
-    |   MINUS
-    |   STAR
-    |   SLASH
-    |   PERCENT
-    |   STAR2
-    |   TILDE
-    |   PLUSAT
-    |   MINUSAT
-    |   LBRACK RBRACK
-    |   LBRACK RBRACK EQ
     ;

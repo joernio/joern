@@ -330,17 +330,8 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     val endLine      = declaration.getEnd.map(x => Integer.valueOf(x.line)).toScala
     val endColumn    = declaration.getEnd.map(x => Integer.valueOf(x.column)).toScala
 
-    val methodNode = NewMethod()
-      .name(declaration.getNameAsString)
-      .code(code)
-      .isExternal(false)
-      .filename(filename)
-      .lineNumber(line(declaration))
-      .columnNumber(columnNumber)
-      .lineNumberEnd(endLine)
-      .columnNumberEnd(endColumn)
-
-    methodNode
+    val placeholderFullName = ""
+    methodNode(declaration, declaration.getNameAsString(), code, placeholderFullName, None, filename)
   }
 
   def thisNodeForMethod(maybeTypeFullName: Option[String], lineNumber: Option[Integer]): NewMethodParameterIn = {

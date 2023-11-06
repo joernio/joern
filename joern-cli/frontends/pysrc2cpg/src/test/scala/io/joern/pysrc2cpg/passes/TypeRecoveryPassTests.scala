@@ -1,12 +1,12 @@
 package io.joern.pysrc2cpg.passes
 
 import io.joern.pysrc2cpg.PySrc2CpgFixture
+import io.joern.x2cpg.passes.frontend.ImportsPass.*
 import io.joern.x2cpg.passes.frontend.{ImportsPass, XTypeHintCallLinker}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.Local
+import io.shiftleft.semanticcpg.language.*
 
 import java.io.File
-import io.joern.x2cpg.passes.frontend.ImportsPass._
-
 import scala.collection.immutable.Seq
 class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
@@ -214,6 +214,23 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |""".stripMargin,
       "bar.py"
     ).cpg
+
+    "be able to traverse from `foo.[x|y|db]` to its members" in {
+      val fields            = cpg.fieldAccess.where(_.fieldIdentifier.canonicalName("x", "y", "db")).l
+      val List(mDB, mX, mY) = fields.referencedMember.dedup.sortBy(_.name).l
+
+      mDB.name shouldBe "db"
+      mDB.typeFullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy"
+      mDB.typeDecl.fullName shouldBe "foo.py:<module>"
+
+      mX.name shouldBe "x"
+      mX.typeFullName shouldBe "__builtin.int"
+      mX.typeDecl.fullName shouldBe "foo.py:<module>"
+
+      mY.name shouldBe "y"
+      mY.typeFullName shouldBe "__builtin.str"
+      mY.typeDecl.fullName shouldBe "foo.py:<module>"
+    }
 
     "resolve correct imports via tag nodes" in {
       val List(foo1: UnknownMethod, foo2: UnknownTypeDecl) =
@@ -453,7 +470,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       val Some(selfFindFound) = cpg.typeDecl(".*InstallationsDAO.*").ast.isCall.name("find_one").headOption: @unchecked
       selfFindFound.dynamicTypeHintFullName shouldBe Seq(
         "__builtin.None.find_one",
-        "pymongo.py:<module>.MongoClient.__init__.<indexAccess>.<indexAccess>.find_one"
+        "pymongo.py:<module>.MongoClient.__init__.<returnValue>.<indexAccess>.<indexAccess>.find_one"
       )
     }
 
@@ -1118,6 +1135,67 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       token.typeFullName shouldBe Seq("oauth2", "__init__.py:<module>.Token").mkString(File.separator)
     }
 
+  }
+
+  "Imports from two module neighbours" should {
+
+    lazy val cpg = code(
+      """
+        |from fastapi import FastAPI
+        |import itemsrouter
+        |app = FastAPI()
+        |app.include_router(
+        |    itemsrouter.router,
+        |    prefix="/items",
+        |    tags=["items"],
+        |    responses={404: {"description": "Not found"}},
+        |)
+        |""".stripMargin,
+      Seq("code", "main.py").mkString(File.separator)
+    ).moreCode(
+      """
+        |from fastapi import APIRouter
+        |
+        |router = APIRouter()
+        |fake_items_db = {"plumbus": {"name": "Plumbus"}, "gun": {"name": "Portal Gun"}}
+        |@router.get("/")
+        |async def read_items():
+        |    return fake_items_db
+        |
+        |""".stripMargin,
+      Seq("code", "itemsrouter.py").mkString(File.separator)
+    )
+
+    "preserve the filename path relative to the root and not themselves" in {
+      val itemsrouter = cpg.identifier.where(_.typeFullName(".*itemsrouter.py:<module>")).l
+      itemsrouter.forall(
+        _.typeFullName == Seq("code", "itemsrouter.py:<module>").mkString(File.separator)
+      ) shouldBe true
+    }
+
+    "correctly infer the `fastapi` types" in {
+      cpg.identifier("fastapi").forall(_.typeFullName == "fastapi.py:<module>.APIRouter") shouldBe true
+      cpg.identifier("app").forall(_.typeFullName == "fastapi.py:<module>.FastAPI") shouldBe true
+    }
+
+  }
+
+  "Literals as the returns of calls" should {
+    val cpg = code("""
+        |def foo():
+        | return "bar"
+        |
+        |x = foo()
+        |""".stripMargin)
+
+    "set the literal's type" in {
+      val barLiteral :: Nil = cpg.method("foo").methodReturn.toReturn.ast.isLiteral.l: @unchecked
+      barLiteral.typeFullName shouldBe "__builtin.str"
+    }
+
+    "set the method's return value correctly" in {
+      cpg.method("foo").methodReturn.typeFullName.head shouldBe "__builtin.str"
+    }
   }
 
 }

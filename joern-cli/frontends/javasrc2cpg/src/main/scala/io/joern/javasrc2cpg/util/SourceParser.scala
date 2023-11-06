@@ -32,10 +32,24 @@ class SourceParser private (originalInputPath: Path, analysisRoot: Path, typesRo
     * @param relativeFilename
     *   path to the input file relative to the project root.
     */
-  def parseAnalysisFile(relativeFilename: String): Option[CompilationUnit] = {
+  def parseAnalysisFile(
+    relativeFilename: String,
+    saveFileContent: Boolean
+  ): Option[(CompilationUnit, Option[String])] = {
     val analysisFilename = analysisRoot.resolve(relativeFilename).toString
     // Need to store tokens for position information.
-    fileIfExists(analysisFilename).flatMap(parse(_, storeTokens = true))
+    fileIfExists(analysisFilename).flatMap { file =>
+      val compilationUnit = parse(file, storeTokens = true)
+      val fileContent = Option
+        .when(saveFileContent) {
+          Try(file.contentAsString(Charset.defaultCharset()))
+            .orElse(Try(file.contentAsString(StandardCharsets.ISO_8859_1)))
+            .toOption
+        }
+        .flatten
+
+      compilationUnit.map(cu => (cu, fileContent))
+    }
   }
 
   /** Parse the given file into a JavaParser CompliationUnit that will be used for reading type information. These

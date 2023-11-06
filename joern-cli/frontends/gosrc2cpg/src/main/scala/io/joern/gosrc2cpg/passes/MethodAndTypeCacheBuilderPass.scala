@@ -28,13 +28,13 @@ class MethodAndTypeCacheBuilderPass(cpgOpt: Option[Cpg], astFiles: List[String],
     val allResults: Future[List[(AstCreator, DiffGraphBuilder)]] = Future.sequence(futures)
     val results                                                  = Await.result(allResults, Duration.Inf)
     val (astCreators, diffGraphs)                                = results.unzip
-    cpgOpt.map(cpg => {
-      diffGraphs.foreach(diffGraph => {
+    cpgOpt.map { cpg =>
+      diffGraphs.foreach { diffGraph =>
         overflowdb.BatchedUpdate
           .applyDiff(cpg.graph, diffGraph, null, null)
           .transitiveModifications()
-      })
-    })
+      }
+    }
     astCreators
   }
 }

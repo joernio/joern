@@ -10,7 +10,6 @@ libraryDependencies ++= Seq(
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin, Antlr4Plugin)
 
-Antlr4 / antlr4PackageName := Some("io.joern.rubysrc2cpg.parser")
-Antlr4 / antlr4Version     := Versions.antlr
-Antlr4 / antlr4GenVisitor  := true
-Antlr4 / javaSource        := (Compile / sourceManaged).value
+Antlr4 / antlr4Version    := Versions.antlr
+Antlr4 / antlr4GenVisitor := true
+Antlr4 / javaSource       := (Compile / sourceManaged).value

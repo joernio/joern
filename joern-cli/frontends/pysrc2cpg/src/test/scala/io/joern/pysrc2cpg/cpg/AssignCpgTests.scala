@@ -1,8 +1,8 @@
 package io.joern.pysrc2cpg.cpg
 
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
 import io.joern.pysrc2cpg.Py2CpgTestContext
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
+import io.shiftleft.semanticcpg.language.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -11,8 +11,8 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
     lazy val cpg = Py2CpgTestContext.buildCpg("""x = 2""".stripMargin)
 
     "test assignment node properties" in {
-      val assignCall = cpg.call.methodFullName(Operators.assignment).head
-      assignCall.code shouldBe "x = 2"
+      val _ :: assignCall :: _ = cpg.call.methodFullName(Operators.assignment).l: @unchecked
+      assignCall.code shouldBe "<module>.x = 2"
       assignCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       assignCall.lineNumber shouldBe Some(1)
       assignCall.columnNumber shouldBe Some(1)
@@ -24,12 +24,15 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
         .astChildren
         .order(1)
         .isIdentifier
-        .head
-        .code shouldBe "x"
+        .code
+        .contains("x") shouldBe true
       cpg.call
         .methodFullName(Operators.assignment)
         .astChildren
         .order(2)
+        .astChildren
+        .order(1)
+        .astChildren
         .isLiteral
         .head
         .code shouldBe "2"
@@ -38,9 +41,9 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
     "test assignment node arguments" in {
       cpg.call
         .methodFullName(Operators.assignment)
+        .last
         .argument
         .argumentIndex(1)
-        .isIdentifier
         .head
         .code shouldBe "x"
       cpg.call
@@ -150,7 +153,7 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
     lazy val cpg = Py2CpgTestContext.buildCpg("""x: y = z""".stripMargin)
 
     "test assignment node properties" in {
-      val assignCall = cpg.call.methodFullName(Operators.assignment).head
+      val _ :: assignCall :: _ = cpg.call.methodFullName(Operators.assignment).l: @unchecked
       assignCall.code shouldBe "x = z"
       assignCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       assignCall.lineNumber shouldBe Some(1)
@@ -160,6 +163,7 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
     "test assignment node ast children" in {
       cpg.call
         .methodFullName(Operators.assignment)
+        .last
         .astChildren
         .order(1)
         .isIdentifier
@@ -177,6 +181,7 @@ class AssignCpgTests extends AnyFreeSpec with Matchers {
     "test assignment node arguments" in {
       cpg.call
         .methodFullName(Operators.assignment)
+        .last
         .argument
         .argumentIndex(1)
         .isIdentifier

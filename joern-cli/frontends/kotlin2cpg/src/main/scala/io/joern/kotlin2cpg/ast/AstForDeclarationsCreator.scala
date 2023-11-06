@@ -6,34 +6,12 @@ import io.joern.kotlin2cpg.psi.PsiUtils
 import io.joern.kotlin2cpg.psi.PsiUtils.nonUnderscoreDestructuringEntries
 import io.joern.kotlin2cpg.types.{AnonymousObjectContext, TypeConstants, TypeInfoProvider}
 import io.joern.x2cpg.utils.NodeBuilders
-import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newIdentifierNode, newLocalNode, newMethodReturnNode}
-import io.joern.x2cpg.{Ast, Defines, ValidationMode}
+import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newIdentifierNode, newMethodReturnNode}
+import io.joern.x2cpg.{Ast, AstNodeBuilder, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewMethod, NewTypeDecl}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
-import org.jetbrains.kotlin.psi.{
-  KtAnnotationEntry,
-  KtArrayAccessExpression,
-  KtBlockExpression,
-  KtCallExpression,
-  KtClass,
-  KtClassOrObject,
-  KtDeclaration,
-  KtDestructuringDeclaration,
-  KtDotQualifiedExpression,
-  KtExpression,
-  KtIfExpression,
-  KtNameReferenceExpression,
-  KtNamedFunction,
-  KtObjectLiteralExpression,
-  KtParameter,
-  KtPostfixExpression,
-  KtProperty,
-  KtPsiUtil,
-  KtQualifiedExpression,
-  KtSecondaryConstructor,
-  KtWhenExpression
-}
 import io.shiftleft.semanticcpg.language.*
+import org.jetbrains.kotlin.psi.*
 
 import scala.jdk.CollectionConverters.*
 import scala.util.Random
@@ -270,7 +248,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       case _                   => false
     }
     val tmpName         = s"${Constants.tmpLocalPrefix}${tmpKeyPool.next}"
-    val localForTmpNode = newLocalNode(tmpName, callRhsTypeFullName)
+    val localForTmpNode = localNode(expr, tmpName, tmpName, callRhsTypeFullName)
     scope.addToScope(localForTmpNode.name, localForTmpNode)
     val localForTmpAst = Ast(localForTmpNode)
 
@@ -297,8 +275,9 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       } else if (expr.getInitializer.isInstanceOf[KtIfExpression]) {
         astForIfAsExpression(expr.getInitializer.asInstanceOf[KtIfExpression], None, None)
       } else {
-        val assignmentNode   = operatorCallNode(Operators.assignment, s"$tmpName = ${rhsCall.getText}", None)
-        val assignmentRhsAst = astsForExpression(rhsCall, None).head
+        val assignmentNode = operatorCallNode(Operators.assignment, s"$tmpName = ${rhsCall.getText}", None)
+        val assignmentRhsAst =
+          astsForExpression(rhsCall, None).headOption.getOrElse(Ast(unknownNode(rhsCall, Constants.empty)))
         callAst(assignmentNode, List(assignmentLhsAst, assignmentRhsAst))
       }
     val tmpAssignmentPrologue = rhsCall match {
@@ -417,6 +396,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     implicit typeInfoProvider: TypeInfoProvider
   ): Seq[Ast] = {
     ctors.map { ctor =>
+      val primaryCtorCallAst    = List(Ast(primaryCtorCall.copy))
       val constructorParams     = ctor.getValueParameters.asScala.toList
       val defaultSignature      = typeInfoProvider.anySignature(constructorParams)
       val defaultFullName       = s"$classFullName.${TypeConstants.initPrefix}:$defaultSignature"
@@ -435,10 +415,10 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       val ctorMethodBlockAsts =
         ctor.getBodyExpression match {
           case b: KtBlockExpression =>
-            astsForBlock(b, None, None, preStatements = Option(Seq(Ast(primaryCtorCall))))
+            astsForBlock(b, None, None, preStatements = Option(primaryCtorCallAst))
           case null =>
             val node = NewBlock().code(Constants.empty).typeFullName(TypeConstants.any)
-            Seq(blockAst(node, List(Ast(primaryCtorCall))))
+            Seq(blockAst(node, primaryCtorCallAst))
         }
       scope.popScope()
 
@@ -446,7 +426,12 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         newMethodReturnNode(TypeConstants.void, None, line(ctor), column(ctor))
 
       // TODO: see if necessary to take the other asts for the ctorMethodBlock
-      methodAst(secondaryCtorMethodNode, constructorParamsAsts, ctorMethodBlockAsts.head, ctorMethodReturnNode)
+      methodAst(
+        secondaryCtorMethodNode,
+        constructorParamsAsts,
+        ctorMethodBlockAsts.headOption.getOrElse(Ast(unknownNode(ctor.getBodyExpression, Constants.empty))),
+        ctorMethodReturnNode
+      )
     }
   }
 
@@ -467,8 +452,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val idx     = idxOpt.getOrElse(Random.nextInt())
     val tmpName = s"tmp_obj_$idx"
 
-    val typeDeclAsts     = astsForClassOrObject(expr.getObjectDeclaration, Some(ctx))
-    val typeDeclAst      = typeDeclAsts.head
+    val typeDeclAsts = astsForClassOrObject(expr.getObjectDeclaration, Some(ctx))
+    val typeDeclAst  = typeDeclAsts.headOption.getOrElse(Ast(unknownNode(expr.getObjectDeclaration, Constants.empty)))
     val typeDeclFullName = typeDeclAst.root.get.asInstanceOf[NewTypeDecl].fullName
 
     val localForTmp = localNode(expr, tmpName, tmpName, typeDeclFullName)
@@ -585,8 +570,9 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
           .map(AnonymousObjectContext(_))
           .getOrElse(AnonymousObjectContext(expr.getContainingKtFile))
 
-      val typeDeclAsts     = astsForClassOrObject(typedExpr.getObjectDeclaration, Some(ctx))
-      val typeDeclAst      = typeDeclAsts.head
+      val typeDeclAsts = astsForClassOrObject(typedExpr.getObjectDeclaration, Some(ctx))
+      val typeDeclAst =
+        typeDeclAsts.headOption.getOrElse(Ast(unknownNode(typedExpr.getObjectDeclaration, Constants.empty)))
       val typeDeclFullName = typeDeclAst.root.get.asInstanceOf[NewTypeDecl].fullName
 
       val node = localNode(expr, expr.getName, expr.getName, typeDeclFullName)

@@ -1,6 +1,6 @@
 package io.joern.rubysrc2cpg.parser
 
-import io.joern.rubysrc2cpg.parser.RubyLexer._
+import io.joern.rubysrc2cpg.parser.RubyLexer.*
 import org.antlr.v4.runtime.Recognizer.EOF
 
 trait RegexLiteralHandling { this: RubyLexerBase =>
