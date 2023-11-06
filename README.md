@@ -85,7 +85,7 @@ A new release is [created automatically](.github/workflows/release.yml) once per
 ### Intellij IDEA
 * [Download Intellij Community](https://www.jetbrains.com/idea/download)
 * Install and run it
-* Install the [Scala Plugin](https://plugins.jetbrains.com/plugin/1347-scala) - just search and install from within Intellij. Pro tip: switch to the 'nightlies build' for the Scala plugin: File -> Settings -> Languages & Frameworks -> Scala -> Updates -> Update channel -> Select 'nightly builds' and press 'check now'
+* Install the [Scala Plugin](https://plugins.jetbrains.com/plugin/1347-scala) - just search and install from within Intellij.
 * Important: open `sbt` in your local joern repository, run `compile` and keep it open - this will allow us to use the BSP build in the next step
 * Back to Intellij: open project: select your local joern clone: select to open as `BSP project` (i.e. _not_ `sbt project`!)
 * Await the import and indexing to complete, then you can start, e.g. `Build -> build project` or run a test
