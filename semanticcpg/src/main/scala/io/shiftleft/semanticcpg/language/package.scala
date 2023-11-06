@@ -261,20 +261,20 @@ package object language extends operatorextension.Implicits with LowPrioImplicit
     new ExpressionTraversal[A](a.iterator)
 }
 
- trait LowPrioImplicits extends io.joern.odb2.Implicits with io.joern.odb2.traversal.Language /* with io.shiftleft.codepropertygraph.generated.v2.Language */ {
+trait LowPrioImplicits extends io.joern.odb2.Implicits with io.joern.odb2.traversal.Language /* with io.shiftleft.codepropertygraph.generated.v2.Language */ {
 
    // implicit def iterableOnceToIterator[A](iterableOnce: IterableOnce[A]): Iterator[A] =
    //  iterableOnce.iterator
 
-   //   implicit def singleToCfgNodeTraversal[A <: CfgNode](a: A): CfgNodeTraversal[A] =
-//     new CfgNodeTraversal[A](Iterator.single(a))
-//   implicit def iterOnceToCfgNodeTraversal[A <: CfgNode](a: IterableOnce[A]): CfgNodeTraversal[A] =
-//     new CfgNodeTraversal[A](a.iterator)
+  implicit def singleToCfgNodeTraversal[A <: CfgNode](a: A): CfgNodeTraversal[A] =
+    new CfgNodeTraversal[A](Iterator.single(a))
+  implicit def iterOnceToCfgNodeTraversal[A <: CfgNode](a: IterableOnce[A]): CfgNodeTraversal[A] =
+    new CfgNodeTraversal[A](a.iterator)
 
-   implicit def singleToAstNodeTraversal[A <: AstNode](a: A): AstNodeTraversal[A] =
-     new AstNodeTraversal[A](Iterator.single(a))
-   implicit def iterOnceToAstNodeTraversal[A <: AstNode](a: IterableOnce[A]): AstNodeTraversal[A] =
-     new AstNodeTraversal[A](a.iterator)
+  implicit def singleToAstNodeTraversal[A <: AstNode](a: A): AstNodeTraversal[A] =
+    new AstNodeTraversal[A](Iterator.single(a))
+  implicit def iterOnceToAstNodeTraversal[A <: AstNode](a: IterableOnce[A]): AstNodeTraversal[A] =
+    new AstNodeTraversal[A](a.iterator)
 
   implicit def singleToDeclarationNodeTraversal[A <: Declaration](a: A): DeclarationTraversal[A] =
     new DeclarationTraversal[A](Iterator.single(a))

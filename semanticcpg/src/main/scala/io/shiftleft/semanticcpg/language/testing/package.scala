@@ -2,7 +2,8 @@ package io.shiftleft.semanticcpg
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, Languages, ModifierTypes}
+import io.shiftleft.codepropertygraph.generated.v2.{EdgeKinds, Languages, ModifierTypes}
+import io.shiftleft.codepropertygraph.generated.v2.Language.*
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
 import io.joern.odb2.DiffGraphBuilder
@@ -38,10 +39,10 @@ package object testing {
           val namespace      = NewNamespace().name(name)
           graph.addNode(namespaceBlock)
           graph.addNode(namespace)
-          graph.addEdge(namespaceBlock, namespace, EdgeTypes.REF)
+          graph.addEdge(namespaceBlock, namespace, EdgeKinds.REF)
           if (inFile.isDefined) {
             val fileNode = cpg.file.name(inFile.get).head
-            graph.addEdge(namespaceBlock, fileNode, EdgeTypes.SOURCE_FILE)
+            graph.addEdge(namespaceBlock, fileNode, EdgeKinds.SOURCE_FILE)
           }
         }
       }
@@ -67,17 +68,17 @@ package object testing {
           graph.addNode(typeNode)
           graph.addNode(member)
           graph.addNode(modifier)
-          graph.addEdge(typeNode, typeDeclNode, EdgeTypes.REF)
-          graph.addEdge(typeDeclNode, member, EdgeTypes.AST)
-          graph.addEdge(member, modifier, EdgeTypes.AST)
+          graph.addEdge(typeNode, typeDeclNode, EdgeKinds.REF)
+          graph.addEdge(typeDeclNode, member, EdgeKinds.AST)
+          graph.addEdge(member, modifier, EdgeKinds.AST)
 
           if (inNamespace.isDefined) {
             val namespaceBlock = cpg.namespaceBlock(inNamespace.get).head
-            graph.addEdge(namespaceBlock, typeDeclNode, EdgeTypes.AST)
+            graph.addEdge(namespaceBlock, typeDeclNode, EdgeKinds.AST)
           }
           if (inFile.isDefined) {
             val fileNode = cpg.file.name(inFile.get).head
-            graph.addEdge(typeDeclNode, fileNode, EdgeTypes.SOURCE_FILE)
+            graph.addEdge(typeDeclNode, fileNode, EdgeKinds.SOURCE_FILE)
           }
         }
       }
@@ -105,17 +106,17 @@ package object testing {
         graph.addNode(paramOut)
         graph.addNode(block)
         graph.addNode(modifier)
-        graph.addEdge(method, retParam, EdgeTypes.AST)
-        graph.addEdge(method, param, EdgeTypes.AST)
-        graph.addEdge(param, paramOut, EdgeTypes.PARAMETER_LINK)
-        graph.addEdge(method, block, EdgeTypes.AST)
-        graph.addEdge(param, paramType, EdgeTypes.EVAL_TYPE)
-        graph.addEdge(paramOut, paramType, EdgeTypes.EVAL_TYPE)
-        graph.addEdge(method, modifier, EdgeTypes.AST)
+        graph.addEdge(method, retParam, EdgeKinds.AST)
+        graph.addEdge(method, param, EdgeKinds.AST)
+        graph.addEdge(param, paramOut, EdgeKinds.PARAMETER_LINK)
+        graph.addEdge(method, block, EdgeKinds.AST)
+        graph.addEdge(param, paramType, EdgeKinds.EVAL_TYPE)
+        graph.addEdge(paramOut, paramType, EdgeKinds.EVAL_TYPE)
+        graph.addEdge(method, modifier, EdgeKinds.AST)
 
         if (inTypeDecl.isDefined) {
           val typeDeclNode = cpg.typeDecl.name(inTypeDecl.get).head
-          graph.addEdge(typeDeclNode, method, EdgeTypes.AST)
+          graph.addEdge(typeDeclNode, method, EdgeKinds.AST)
         }
       }
 
@@ -140,8 +141,8 @@ package object testing {
         val blockNode  = methodNode.block
         val callNode   = NewCall().name(callName).code(code.getOrElse(callName))
         graph.addNode(callNode)
-        graph.addEdge(blockNode, callNode, EdgeTypes.AST)
-        graph.addEdge(methodNode, callNode, EdgeTypes.CONTAINS)
+        graph.addEdge(blockNode, callNode, EdgeKinds.AST)
+        graph.addEdge(methodNode, callNode, EdgeKinds.CONTAINS)
       }
 
     def withMethodCall(calledMethod: String, callingMethod: String, code: Option[String] = None): MockCpg =
@@ -149,8 +150,8 @@ package object testing {
         val callingMethodNode = cpg.method.name(callingMethod).head
         val calledMethodNode  = cpg.method.name(calledMethod).head
         val callNode          = NewCall().name(calledMethod).code(code.getOrElse(calledMethod))
-        graph.addEdge(callNode, calledMethodNode, EdgeTypes.CALL)
-        graph.addEdge(callingMethodNode, callNode, EdgeTypes.CONTAINS)
+        graph.addEdge(callNode, calledMethodNode, EdgeKinds.CALL)
+        graph.addEdge(callingMethodNode, callNode, EdgeKinds.CONTAINS)
       }
 
     def withLocalInMethod(methodName: String, localName: String): MockCpg =
@@ -161,8 +162,8 @@ package object testing {
         val localNode  = NewLocal().name(localName).typeFullName("alocaltype")
         graph.addNode(localNode)
         graph.addNode(typeNode)
-        graph.addEdge(blockNode, localNode, EdgeTypes.AST)
-        graph.addEdge(localNode, typeNode, EdgeTypes.EVAL_TYPE)
+        graph.addEdge(blockNode, localNode, EdgeKinds.AST)
+        graph.addEdge(localNode, typeNode, EdgeKinds.EVAL_TYPE)
       }
 
     def withLiteralArgument(callName: String, literalCode: String): MockCpg = {
@@ -176,8 +177,8 @@ package object testing {
 
         graph.addNode(typeDecl)
         graph.addNode(literalNode)
-        graph.addEdge(callNode, literalNode, EdgeTypes.AST)
-        graph.addEdge(methodNode, literalNode, EdgeTypes.CONTAINS)
+        graph.addEdge(callNode, literalNode, EdgeKinds.AST)
+        graph.addEdge(methodNode, literalNode, EdgeKinds.CONTAINS)
       }
     }
 
@@ -191,10 +192,10 @@ package object testing {
       val callNode   = cpg.call.name(callName).head
       val methodNode = callNode.method
       val typeDecl   = NewTypeDecl().name("abc")
-      graph.addEdge(callNode, newNode, EdgeTypes.AST)
-      graph.addEdge(callNode, newNode, EdgeTypes.ARGUMENT)
-      graph.addEdge(methodNode, newNode, EdgeTypes.CONTAINS)
-      graph.addEdge(newNode, typeDecl, EdgeTypes.REF)
+      graph.addEdge(callNode, newNode, EdgeKinds.AST)
+      graph.addEdge(callNode, newNode, EdgeKinds.ARGUMENT)
+      graph.addEdge(methodNode, newNode, EdgeKinds.CONTAINS)
+      graph.addEdge(newNode, typeDecl, EdgeKinds.REF)
       graph.addNode(newNode)
     }
 
