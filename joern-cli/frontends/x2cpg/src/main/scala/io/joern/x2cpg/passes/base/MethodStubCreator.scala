@@ -8,7 +8,7 @@ import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Evalu
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
-import overflowdb.BatchedUpdate.DiffGraphBuilder
+import io.joern.odb2.DiffGraphBuilder
 
 import scala.collection.mutable
 import scala.util.Try

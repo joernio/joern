@@ -8,7 +8,7 @@ import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.objectweb.asm.Type
 import org.slf4j.LoggerFactory
-import overflowdb.BatchedUpdate.DiffGraphBuilder
+import io.joern.odb2.DiffGraphBuilder
 import soot.jimple.*
 import soot.jimple.internal.JimpleLocal
 import soot.tagkit.*
