@@ -101,9 +101,8 @@ package object language extends operatorextension.Implicits with LowPrioImplicit
   implicit def iterOnceToMethodParameterInTrav[A <: MethodParameterIn](a: IterableOnce[A]): MethodParameterTraversal =
     new MethodParameterTraversal(a.iterator)
 
-  // TODO drop the other 'singleTo*Trav' as well?
-//  implicit def singleToMethodParameterOutTrav[A <: MethodParameterOut](a: A): MethodParameterOutTraversal =
-//    new MethodParameterOutTraversal(Iterator.single(a))
+ implicit def singleToMethodParameterOutTrav[A <: MethodParameterOut](a: A): MethodParameterOutTraversal =
+   new MethodParameterOutTraversal(Iterator.single(a))
   implicit def iterOnceToMethodParameterOutTrav[A <: MethodParameterOut](
     a: IterableOnce[A]
   ): MethodParameterOutTraversal =
@@ -185,8 +184,8 @@ package object language extends operatorextension.Implicits with LowPrioImplicit
 //  implicit def iterOnceToNodeSteps[A <: StoredNode](a: IterableOnce[A]): NodeSteps[A] =
 //    new NodeSteps[A](a.iterator)
 
-//   implicit def toNewNodeTrav[NodeType <: NewNode](trav: Iterator[NodeType]): NewNodeSteps[NodeType] =
-//     new NewNodeSteps[NodeType](trav)
+  implicit def toNewNodeTrav[NodeType <: NewNode](trav: Iterator[NodeType]): NewNodeSteps[NodeType] =
+    new NewNodeSteps[NodeType](trav)
 
 //   implicit def toNodeTypeStarters(cpg: Cpg): NodeTypeStarters    = new NodeTypeStarters(cpg)
 //   implicit def toTagTraversal(trav: Iterator[Tag]): TagTraversal = new TagTraversal(trav)
