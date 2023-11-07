@@ -183,4 +183,17 @@ class MethodOneTests extends RubyCode2CpgFixture(useDeprecatedFrontend = true) {
       }
     }
   }
+
+  "Function with double splat arg without explicit hash" should {
+    val cpg = code("""
+        |def foo(**)
+        |  x(y.merge(**),)
+        |end
+        |""".stripMargin)
+
+    "have a method node created for it" in {
+      cpg.method.name("foo").size shouldBe 1
+      cpg.method.name("foo").parameter.name("param_0").size shouldBe 1
+    }
+  }
 }
