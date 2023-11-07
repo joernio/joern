@@ -16,8 +16,7 @@ class IntraMethodDataflowTests extends PhpCode2CpgFixture(runOssDataflow = true)
   }
 
   "flows between function calls should be found" in {
-    val cpg = code(
-      """<?php
+    val cpg = code("""<?php
         |function Foo() {
         |  $my_input = input();
         |  sink($my_input);
@@ -25,8 +24,8 @@ class IntraMethodDataflowTests extends PhpCode2CpgFixture(runOssDataflow = true)
         |""".stripMargin)
 
     val source = cpg.call("input")
-    val sink = cpg.call("sink")
-    val flows = sink.reachableByFlows(source)
+    val sink   = cpg.call("sink")
+    val flows  = sink.reachableByFlows(source)
 
     flows.size shouldBe 1
   }
