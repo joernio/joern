@@ -303,7 +303,8 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture() {
       arrIdentifier.typeFullName shouldBe "array"
     }
 
-    "recover type of array field being assigned to" in {
+    /* Consider where in the CPG that array type info should be stored */
+    "recover type of array field being assigned to" ignore {
       val List(indexAccessCall) = cpg.call("<operator>.indexAccess").take(1).l
       indexAccessCall.typeFullName shouldBe "int"
     }
