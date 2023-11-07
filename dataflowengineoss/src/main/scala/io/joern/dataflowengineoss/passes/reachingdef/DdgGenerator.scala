@@ -356,7 +356,7 @@ private class UsageAnalyzer(
         call.argumentOption(1).exists(x => nodeToString(use).contains(x.code))
       case call: Call =>
         nodeToString(use).contains(call.code)
-      case identifier: Identifier => nodeToString(use).contains(identifier.code)
+      case identifier: Identifier => nodeToString(use).contains(identifier.name)
       case _                      => false
     }
   }
