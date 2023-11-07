@@ -94,7 +94,7 @@ Thank you for taking time to contribute to Joern! Here are a few guidelines to e
     - Immediately CC/@/email spam other contributors, the team will review the PR and assign the most appropriate contributor to review the PR. Joern is maintained by industry partners and researchers alike, for the most part with their own goals and priorities, and additional help is largely volunteer work. If your PR is going stale, then reach out to us in follow-up comments with @'s asking for an explanation of priority or planning of when it may be addressed (if ever, depending on quality).
     - Leave the description body empty, this makes reviewing the purpose of the PR difficult.
 * Remember to:
-    - Format your code with `scalafmt`, i.e., `sbt scalafmt test:scalafmt`.
+    - Remember to format your code, i.e. run `sbt scalafmt Test/scalafmt`
     - Add a unit test to verify your change.
 
 ### IDE setup
