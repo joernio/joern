@@ -19,6 +19,7 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTIdExpression, CPPFunc
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTArrayRangeDesignator
 import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalMemberAccess
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFieldReference
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPMethod
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import java.nio.file.{Path, Paths}
@@ -212,8 +213,14 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         cleanType(ASTTypeUtil.getNodeType(node))
       case s: CPPASTIdExpression =>
         s.getEvaluation match {
-          case evaluation: EvalMemberAccess => cleanType(evaluation.getOwnerType.toString, stripKeywords)
-          case _                            => cleanType(ASTTypeUtil.getNodeType(s), stripKeywords)
+          case evaluation: EvalMemberAccess =>
+            cleanType(evaluation.getOwnerType.toString, stripKeywords)
+          case evalBinding: EvalBinding =>
+            evalBinding.getBinding match {
+              case m: CPPMethod => cleanType(fullName(m.getDefinition))
+              case _            => cleanType(ASTTypeUtil.getNodeType(s), stripKeywords)
+            }
+          case _ => cleanType(ASTTypeUtil.getNodeType(s), stripKeywords)
         }
       case _: IASTIdExpression | _: IASTName | _: IASTDeclarator =>
         cleanType(ASTTypeUtil.getNodeType(node), stripKeywords)
@@ -294,16 +301,11 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         val evaluation = d.getEvaluation.asInstanceOf[EvalBinding]
         evaluation.getBinding match {
           case f: CPPFunction if f.getDeclarations != null =>
-            usingDeclarationMappings.getOrElse(
-              fixQualifiedName(ASTStringUtil.getSimpleName(d.getName)),
-              f.getDeclarations.headOption.map(n => ASTStringUtil.getSimpleName(n.getName)).getOrElse(f.getName)
-            )
+            f.getDeclarations.headOption.map(n => s"${fullName(n)}").getOrElse(f.getName)
           case f: CPPFunction if f.getDefinition != null =>
-            usingDeclarationMappings.getOrElse(
-              fixQualifiedName(ASTStringUtil.getSimpleName(d.getName)),
-              ASTStringUtil.getSimpleName(f.getDefinition.getName)
-            )
-          case other => other.getName
+            s"${fullName(f.getDefinition)}"
+          case other =>
+            other.getName
         }
       case alias: ICPPASTNamespaceAlias => alias.getMappingName.toString
       case namespace: ICPPASTNamespaceDefinition if ASTStringUtil.getSimpleName(namespace.getName).nonEmpty =>
@@ -328,6 +330,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case f: IASTFunctionDeclarator
           if ASTStringUtil.getSimpleName(f.getName).isEmpty && f.getNestedDeclarator != null =>
         s"${fullName(f.getParent)}.${shortName(f.getNestedDeclarator)}"
+      case f: IASTFunctionDeclarator if f.getParent.isInstanceOf[IASTFunctionDefinition] =>
+        s"${fullName(f.getParent)}"
       case f: IASTFunctionDeclarator =>
         s"${fullName(f.getParent)}.${ASTStringUtil.getSimpleName(f.getName)}"
       case f: IASTFunctionDefinition if f.getDeclarator != null =>
