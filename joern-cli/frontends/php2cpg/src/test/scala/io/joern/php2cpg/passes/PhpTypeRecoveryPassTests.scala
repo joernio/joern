@@ -341,6 +341,50 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture() {
     }
   }
 
+  "methods that are dynamically invoked" should {
+    lazy val cpg = code(
+      """
+        |<?php
+        |class ClassA {
+        | function foo() {
+        |   return 5;
+        | }
+        |
+        | function bar() {
+        |   return $this->foo();
+        | }
+        |}
+        |
+        |function baz() {
+        | $a = new ClassA();
+        | return $a->foo();
+        |}
+      """.stripMargin).cpg
+
+    /* This seems like it's outside of the type recovery pass? More appropriate
+     * in the AST generation?
+     */
+    "be properly resolved when called with $this" in {
+      val List(fooCall) = cpg.method("bar").ast.isCall.take(1).l
+      fooCall.methodFullName shouldBe "ClassA->foo"
+    }
+
+    "be properly resolved when called through class with known type" in {
+      val List(fooCall) = cpg.method("baz").ast.isCall.filter(_.code == "$a->foo()").take(1).l
+      fooCall.methodFullName shouldBe "ClassA->foo"
+    }
+
+    "propagate type information to calling method" in {
+      val List(bazMethod) = cpg.method("baz").take(1).l
+      bazMethod.methodReturn.dynamicTypeHintFullName shouldBe Seq("int")
+    }
+
+    "propagate type information to calling method when called with $this" in {
+      val List(barMethod) = cpg.method("bar").take(1).l
+      barMethod.methodReturn.dynamicTypeHintFullName shouldBe Seq("int")
+    }
+  }
+
   "modules that import modules" should {
     lazy val cpg = code(
       """

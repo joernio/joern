@@ -1,5 +1,6 @@
 package io.joern.php2cpg.passes
 
+import io.joern.x2cpg.Defines
 import io.joern.x2cpg.passes.frontend._
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
@@ -12,7 +13,7 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 import scala.annotation.tailrec
 import scala.collection.mutable
 
-class PhpTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
+class PhpTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig(iterations = 3))
     extends XTypeRecoveryPass[NamespaceBlock](cpg, config) {
 
   override protected def generateRecoveryPass(state: XTypeRecoveryState): XTypeRecovery[NamespaceBlock] =
@@ -65,8 +66,14 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
     cu.ast.isCall.nameExact(Operators.assignment).map(new OpNodes.Assignment(_))
   }
 
+  protected def unresolvedDynamicCalls: Iterator[Call] = cu.ast.isCall
+    .filter(_.dispatchType == "DYNAMIC_DISPATCH")
+    .filter(_.methodFullName.startsWith(Defines.UnresolvedNamespace))
+
   override def compute(): Boolean = {
     logger.debug(s"compute() file: ${cu.file.name.l.mkString(" ")}")
+    // Note that we override postSetTypeInformation to iterate over and resolve
+    // the unresolvedDynamicCalls.
     super.compute()
   }
 
@@ -198,6 +205,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
     val existingTypes = mutable.HashSet.from(
       (m.methodReturn.typeFullName +: m.methodReturn.dynamicTypeHintFullName)
         .filterNot(_ == "ANY")
+        .filterNot(_.startsWith(Defines.UnresolvedNamespace))
     )
     logger.debug(s"- existing types: ${existingTypes.mkString(", ")}")
     existingTypes.addAll(methodTypesTable.getOrElse(m, mutable.HashSet()))
@@ -245,7 +253,9 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
     // or in the methodTypesTable) and if it is known and in our set, then
     // remove it from the saveTypes set.
     val saveTypes = existingTypes.filterNot(typeName => {
-      if (typeName.endsWith(s"${XTypeRecovery.DummyReturnType}"))
+      if (typeName.startsWith(Defines.UnresolvedNamespace))
+        true
+      else if (typeName.endsWith(s"${XTypeRecovery.DummyReturnType}"))
         // 1. Get methodFullName from typeName
         // 2. Check if types for methodFullName are known
         //    - if they are, check if they are in the existingTypes.
@@ -394,5 +404,39 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
         .flatMap(m => Set(m.concat(s"$pathSep${XTypeRecovery.DummyReturnType}")))
         .toSet
     else rs
+  }
+
+  protected def visitUnresolvedDynamicCall(c: Call): Unit = {
+    // If we know the type of the method's first parameter, use that to
+    // determine the method scope.
+    // TODO: Are there methods / instances where this doesn't work? Static methods?
+    // TODO: What if the first parameter could take multiple types?
+    // TODO: Test on nested dynamic calls, e.g. foo->bar->baz()
+
+    if (c.argument.exists(_.argumentIndex == 0)) {
+      val p = c.argument(0)
+      p match {
+        case p: Identifier => {
+          val ts = (p.typeFullName +: p.dynamicTypeHintFullName)
+            .filterNot(_.equals("ANY")).distinct
+          ts match {
+            case Seq() =>
+            case Seq(t) => {
+              // Need to update the call node method full name and dynamic type hint full name
+              // Or maybe just the dynamic type hint full name?
+              val newFullName = t + "->" + c.name
+              builder.setNodeProperty(c, PropertyNames.METHOD_FULL_NAME, newFullName)
+              builder.setNodeProperty(c, PropertyNames.TYPE_FULL_NAME, s"${newFullName}$pathSep${XTypeRecovery.DummyReturnType}")
+              builder.setNodeProperty(c, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty)
+            }
+            case _ => { /* TODO */ }
+          }
+        }
+      }
+    }
+  }
+
+  override protected def postSetTypeInformation(): Unit = {
+    unresolvedDynamicCalls.foreach(visitUnresolvedDynamicCall)
   }
 }
