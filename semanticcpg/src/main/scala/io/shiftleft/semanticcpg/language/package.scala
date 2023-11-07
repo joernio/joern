@@ -22,7 +22,7 @@ import io.shiftleft.semanticcpg.language.types.structure.*
   * Implicit conversions to specific steps, based on the node at hand. Automatically in scope when using anything in the
   * `steps` package, e.g. `Steps`
   */
-package object language extends operatorextension.Implicits with LowPrioImplicits  /* with NodeTraversalImplicits */ {
+package object language extends operatorextension.Implicits with LowPrioImplicits /* with NodeTraversalImplicits */ {
 
   // Implicit conversions from generated node types. We use these to add methods
   // to generated node types.
@@ -261,7 +261,9 @@ package object language extends operatorextension.Implicits with LowPrioImplicit
     new ExpressionTraversal[A](a.iterator)
 }
 
-trait LowPrioImplicits extends io.joern.odb2.Implicits with io.joern.odb2.traversal.Language /* with io.shiftleft.codepropertygraph.generated.v2.Language */ {
+trait LowPrioImplicits extends io.joern.odb2.Implicits
+    with io.joern.odb2.traversal.Language
+    with io.shiftleft.codepropertygraph.generated.v2.Language {
 
    // implicit def iterableOnceToIterator[A](iterableOnce: IterableOnce[A]): Iterator[A] =
    //  iterableOnce.iterator
@@ -280,4 +282,5 @@ trait LowPrioImplicits extends io.joern.odb2.Implicits with io.joern.odb2.traver
     new DeclarationTraversal[A](Iterator.single(a))
   implicit def iterOnceToDeclarationNodeTraversal[A <: Declaration](a: IterableOnce[A]): DeclarationTraversal[A] =
     new DeclarationTraversal[A](a.iterator)
- }
+}
+
