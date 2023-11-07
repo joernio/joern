@@ -2,6 +2,8 @@ package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.parser.ParserAst
 import io.joern.rubysrc2cpg.parser.ParserAst.*
+import io.joern.rubysrc2cpg.passes.Defines
+import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
@@ -180,12 +182,10 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     blockAst(block, stmtAsts)
   }
 
-  protected def astsForImplicitReturnStatement(ctx: ParserRuleContext): List[Ast] = {
+  private def astsForImplicitReturnStatement(ctx: ParserRuleContext): List[Ast] = {
     ParserAst(ctx) match
-      case _: StaticLiteral    => astForReturnStatement(ReturnExpression(ctx, List(ctx))) :: Nil
-      case _: BinaryExpression => astForReturnStatement(ReturnExpression(ctx, List(ctx))) :: Nil
-      case _: UnaryExpression  => astForReturnStatement(ReturnExpression(ctx, List(ctx))) :: Nil
-      case _: SimpleIdentifier => astForReturnStatement(ReturnExpression(ctx, List(ctx))) :: Nil
+      case _: (ArrayLiteral | HashLiteral | StaticLiteral | BinaryExpression | UnaryExpression | SimpleIdentifier) =>
+        astForReturnStatement(ReturnExpression(ctx, List(ctx))) :: Nil
       case node: SingleAssignment =>
         astForSingleAssignment(node) :: List(astForReturnStatement(ReturnExpression(ctx, List(node.lhs))))
       case node: AttributeAssignment =>
@@ -195,6 +195,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         )
       case node: MemberAccess    => astForReturnMemberCall(node) :: Nil
       case ret: ReturnExpression => astForReturnStatement(ret) :: Nil
+      case node: MethodDeclaration =>
+        List(astForMethodDeclaration(node), astForReturnMethodDeclarationSymbolName(node))
       case node =>
         logger.warn(
           s"Implicit return here not supported yet: ${ctx.getText} (${node.getClass.getSimpleName}), skipping"
@@ -204,6 +206,14 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   protected def astForReturnFieldAccess(node: MemberAccess): Ast = {
     returnAst(returnNode(node, code(node)), List(astForFieldAccess(node)))
+  }
+
+  // The evaluation of a MethodDeclaration returns its name in symbol form.
+  // E.g. `def f = 0` ===> `:f`
+  private def astForReturnMethodDeclarationSymbolName(node: MethodDeclaration): Ast = {
+    val literalNode_ = literalNode(node, s":${node.methodName}", getBuiltInType(Defines.Symbol))
+    val returnNode_  = returnNode(node, literalNode_.code)
+    returnAst(returnNode_, Seq(Ast(literalNode_)))
   }
 
   protected def astForReturnMemberCall(node: MemberAccess): Ast = {
