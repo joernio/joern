@@ -86,7 +86,7 @@ A new release is [created automatically](.github/workflows/release.yml) once per
 
 Thank you for taking time to contribute to Joern! Here are a few guidelines to ensure your pull request will get merged as soon as possible:
 
-* Try make use of the templates as far as possible, however they may not suite all needs. The minimum we would like to see is:
+* Try to make use of the templates as far as possible, however they may not suit all needs. The minimum we would like to see is:
     - A title that briefly describes the change and purpose of the PR, preferably with the affected module in square brackets, e.g. `[javasrc2cpg] Addition Operator Fix`.
     - A short description of the changes in the body of the PR. This could be in bullet points or paragraphs.
     - A link or reference to the related issue, if any exists.
