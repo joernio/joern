@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.Language.*
+import io.shiftleft.codepropertygraph.generated.v2.accessors.Lang.accessPropertyOverlays
 import io.shiftleft.codepropertygraph.generated.v2.PropertyKinds
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*

@@ -1,34 +1,35 @@
 package io.shiftleft.semanticcpg.language.android
 
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.v2.CpgNodeStarters
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.codepropertygraph.generated.v2.Language.*
 import io.shiftleft.semanticcpg.language.*
 
-class NodeTypeStarters(cpg: Cpg) {
+class NodeTypeStarters(cpg: Cpg) extends CpgNodeStarters(cpg) {
   def webView: Iterator[Local] =
-    cpg.local.typeFullNameExact("android.webkit.WebView")
+    local.typeFullNameExact("android.webkit.WebView")
 
   def appManifest: Iterator[ConfigFile] =
-    cpg.configFile.filter(_.name.endsWith(Constants.androidManifestXml))
+    configFile.filter(_.name.endsWith(Constants.androidManifestXml))
 
   def getExternalStorageDir: Iterator[Call] =
-    cpg.call
+    call
       .nameExact("getExternalStorageDirectory")
       .where(_.argument(0).isIdentifier.typeFullNameExact("android.os.Environment"))
 
   def dexClassLoader: Iterator[Local] =
-    cpg.local.typeFullNameExact("dalvik.system.DexClassLoader")
+    local.typeFullNameExact("dalvik.system.DexClassLoader")
 
   def broadcastReceivers: Iterator[TypeDecl] =
-    cpg.method
+    method
       .nameExact("onReceive")
       .where(_.parameter.index(1).typeFullNameExact("android.content.Context"))
       .where(_.parameter.index(2).typeFullNameExact("android.content.Intent"))
       .typeDecl
 
   def registerReceiver: Iterator[Call] =
-    cpg.call
+    call
       .nameExact("registerReceiver")
       .where(_.argument(2).isIdentifier.typeFullNameExact("android.content.IntentFilter"))
 
