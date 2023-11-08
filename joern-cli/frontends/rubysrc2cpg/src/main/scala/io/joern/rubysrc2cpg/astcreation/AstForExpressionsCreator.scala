@@ -5,6 +5,7 @@ import io.joern.rubysrc2cpg.parser.ParserAst.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.{RubyOperators, getBuiltInType}
 import io.joern.x2cpg.{Ast, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewLiteral}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import org.antlr.v4.runtime.ParserRuleContext
 
@@ -29,6 +30,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: ArrayLiteral          => astForArrayLiteral(node)
     case node: HashLiteral           => astForHashLiteral(node)
     case node: Association           => astForAssociation(node)
+    case node: IfExpression          => astForIfExpression(node)
     case _                           => astForUnknown(node)
 
   protected def astForStaticLiteral(node: StaticLiteral): Ast = {
@@ -225,6 +227,24 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val call =
       callNode(node, code(node), RubyOperators.association, RubyOperators.association, DispatchTypes.STATIC_DISPATCH)
     callAst(call, Seq(key, value))
+  }
+
+  // Recursively lowers into a ternary conditional call
+  protected def astForIfExpression(node: IfExpression): Ast = {
+    def builder(node: IfExpression, conditionAst: Ast, thenAst: Ast, elseAsts: List[Ast]): Ast = {
+      // We want to make sure there's always an «else» clause in a ternary operator.
+      // The default value is a `nil` literal.
+      val elseAsts_ = if (elseAsts.isEmpty) {
+        val nilLiteral = Ast(NewLiteral().code("nil").typeFullName(getBuiltInType(Defines.NilClass)))
+        List(blockAst(NewBlock(), List(nilLiteral)))
+      } else {
+        elseAsts
+      }
+
+      val call = callNode(node, code(node), Operators.conditional, Operators.conditional, DispatchTypes.STATIC_DISPATCH)
+      callAst(call, conditionAst :: thenAst :: elseAsts_)
+    }
+    foldIfExpression(builder)(node)
   }
 
   protected def astForUnknown(node: ParserNode): Ast = {
