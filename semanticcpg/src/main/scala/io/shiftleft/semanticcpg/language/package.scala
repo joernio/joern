@@ -21,7 +21,12 @@ import io.shiftleft.semanticcpg.language.types.structure.*
   * Implicit conversions to specific steps, based on the node at hand. Automatically in scope when using anything in the
   * `steps` package, e.g. `Steps`
   */
-package object language extends operatorextension.Implicits with LowPrioImplicits {
+package object language
+    extends ImplicitsForBaseTypes 
+    with LowPrioImplicits
+    with operatorextension.Implicits
+    with io.shiftleft.codepropertygraph.generated.v2.Language
+{
 
   // Implicit conversions from generated node types. We use these to add methods
   // to generated node types.
@@ -254,11 +259,7 @@ package object language extends operatorextension.Implicits with LowPrioImplicit
     new ExpressionTraversal[A](a.iterator)
 }
 
-trait LowPrioImplicits extends io.joern.odb2.Implicits
-    with io.joern.odb2.traversal.Language
-    with io.shiftleft.codepropertygraph.generated.v2.Language
-    with ImplicitsForBaseTypes 
-{
+trait LowPrioImplicits {
 
   implicit def singleToAstNodeDot[A <: AstNode](a: A): AstNodeDot[A] =
     new AstNodeDot(Iterator.single(a))

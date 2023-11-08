@@ -1,7 +1,6 @@
 package io.shiftleft.semanticcpg.language.operatorextension.nodemethods
 
 import io.shiftleft.codepropertygraph.generated.v2.nodes.{Expression, Identifier}
-import io.shiftleft.codepropertygraph.generated.v2.Language.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 

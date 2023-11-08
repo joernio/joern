@@ -3,7 +3,6 @@
 // import io.shiftleft.codepropertygraph.Cpg
 // import io.shiftleft.codepropertygraph.generated.v2.nodes.StoredNode
 // import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-// import io.shiftleft.codepropertygraph.generated.v2.Language.*
 // import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, NodeTypes}
 // import io.shiftleft.semanticcpg.codedumper.CodeDumper
 // // // TODO bring back: import overflowdb.traversal.help.Doc
