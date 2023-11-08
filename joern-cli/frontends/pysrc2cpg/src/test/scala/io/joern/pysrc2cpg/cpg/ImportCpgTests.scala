@@ -36,4 +36,18 @@ class ImportCpgTests extends AnyFreeSpec with Matchers {
     importedEntity.code shouldBe "a.b"
   }
 
+  "test 'from ... import' statement with hierarchical name" in {
+    lazy val cpg = Py2CpgTestContext.buildCpg("""from a.b import c""".stripMargin)
+    val assignment = cpg.call.code(".*=.*import.*").l
+
+    val lhsIdentifier = assignment.argument(1).isIdentifier.head
+    lhsIdentifier.code shouldBe "c"
+
+    val fromLiteral = assignment.argument(2).isCall.argument(1).head
+    fromLiteral.code shouldBe "a.b"
+
+    val importedEntity = assignment.argument(2).isCall.argument(2).head
+    importedEntity.code shouldBe "c"
+  }
+
 }
