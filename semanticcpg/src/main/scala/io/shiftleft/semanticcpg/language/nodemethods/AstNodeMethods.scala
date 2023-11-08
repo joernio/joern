@@ -2,7 +2,6 @@ package io.shiftleft.semanticcpg.language.nodemethods
 
 import io.shiftleft.Implicits.IterableOnceDeco
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.v2.Language.*
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.nodemethods.AstNodeMethods.lastExpressionInBlock
@@ -114,8 +113,7 @@ class AstNodeMethods(val node: AstNode) extends AnyVal with NodeExtension {
       case member: Member          => member
       case node: MethodParameterIn => node.method
 
-      case node: MethodParameterOut =>
-        node.method.methodReturn
+      case node: MethodParameterOut => node.method.methodReturn
 
       case node: Call if MemberAccess.isGenericMemberAccessName(node.name) =>
         parentExpansion(node)

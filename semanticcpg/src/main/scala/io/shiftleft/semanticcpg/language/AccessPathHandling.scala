@@ -2,8 +2,8 @@ package io.shiftleft.semanticcpg.language
 
 import io.shiftleft.codepropertygraph.generated.v2.{Operators, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.v2.nodes._
-import io.shiftleft.codepropertygraph.generated.v2.Language.*
 import io.shiftleft.semanticcpg.accesspath._
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
