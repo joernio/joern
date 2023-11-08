@@ -437,6 +437,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
             case _ => { /* TODO */ }
           }
         }
+        case _ =>
       }
     }
   }
