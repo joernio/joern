@@ -1,6 +1,6 @@
 name := "semanticcpg2"
 
-val flatGraphVersion = "0.0.0+94-ad5471aa+20231107-1225"
+val flatGraphVersion = "0.0.0+95-9d67efe7"
 
 libraryDependencies ++= Seq(
   "io.joern" %% "joern-generated" % flatGraphVersion,
