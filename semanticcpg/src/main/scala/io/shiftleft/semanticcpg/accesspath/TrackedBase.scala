@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.accesspath
 
-import io.shiftleft.codepropertygraph.generated.v2.nodes._
-import io.shiftleft.codepropertygraph.generated.v2.Language.*
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
+import io.shiftleft.semanticcpg.language.*
 
 trait TrackedBase
 case class TrackedNamedVariable(name: String) extends TrackedBase

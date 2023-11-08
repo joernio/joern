@@ -1,7 +1,6 @@
 package io.shiftleft.semanticcpg.language.callgraphextension
 
 import io.shiftleft.codepropertygraph.generated.v2.nodes.{Call, Import, Method}
-import io.shiftleft.codepropertygraph.generated.v2.Language.*
 import io.shiftleft.semanticcpg.language.*
 
 class CallTraversal(val traversal: Iterator[Call]) extends AnyVal {

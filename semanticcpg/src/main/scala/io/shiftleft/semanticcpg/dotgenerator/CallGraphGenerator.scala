@@ -3,7 +3,6 @@ package io.shiftleft.semanticcpg.dotgenerator
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.nodes.{Method, StoredNode}
 // TODO cleanup imports
-// import io.shiftleft.codepropertygraph.generated.v2.Language.*
 import io.shiftleft.codepropertygraph.generated.v2.accessors.Lang.*
 import io.shiftleft.codepropertygraph.generated.v2.neighboraccessors.Lang.*
 

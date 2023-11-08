@@ -1,10 +1,10 @@
 package io.shiftleft.semanticcpg.language.android
 
 import io.joern.semanticcpg.utils.SecureXmlParsing
-import io.shiftleft.codepropertygraph.generated.v2.nodes
-import io.shiftleft.codepropertygraph.generated.v2.Language.*
+import io.shiftleft.codepropertygraph.generated.v2.nodes.ConfigFile
+import io.shiftleft.semanticcpg.language.*
 
-class ConfigFileTraversal(val traversal: Iterator[nodes.ConfigFile]) extends AnyVal {
+class ConfigFileTraversal(val traversal: Iterator[ConfigFile]) extends AnyVal {
   def usesCleartextTraffic =
     traversal
       .filter(_.name.endsWith(Constants.androidManifestXml))
