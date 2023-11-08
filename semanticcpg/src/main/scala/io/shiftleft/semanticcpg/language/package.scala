@@ -1,7 +1,6 @@
 package io.shiftleft.semanticcpg
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.CpgNodeStarters
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language.bindingextension.{
@@ -22,17 +21,16 @@ import io.shiftleft.semanticcpg.language.types.structure.*
   * Implicit conversions to specific steps, based on the node at hand. Automatically in scope when using anything in the
   * `steps` package, e.g. `Steps`
   */
-package object language extends operatorextension.Implicits with LowPrioImplicits /* with NodeTraversalImplicits */ {
+package object language extends operatorextension.Implicits with LowPrioImplicits {
 
   // Implicit conversions from generated node types. We use these to add methods
   // to generated node types.
-
   implicit def cfgNodeToAsNode(node: CfgNode): AstNodeMethods                 = new AstNodeMethods(node)
   implicit def toExtendedNode(node: AbstractNode): NodeMethods                 = new NodeMethods(node)
   implicit def toExtendedStoredNode(node: StoredNode): StoredNodeMethods      = new StoredNodeMethods(node)
   implicit def toAstNodeMethods(node: AstNode): AstNodeMethods                = new AstNodeMethods(node)
-   implicit def toCfgNodeMethods(node: CfgNode): CfgNodeMethods                = new CfgNodeMethods(node)
   implicit def toExpressionMethods(node: Expression): ExpressionMethods       = new ExpressionMethods(node)
+
   implicit def toMethodMethods(node: Method): MethodMethods                   = new MethodMethods(node)
   implicit def toMethodReturnMethods(node: MethodReturn): MethodReturnMethods = new MethodReturnMethods(node)
   implicit def toCallMethods(node: Call): CallMethods = new CallMethods(node)
@@ -45,10 +43,10 @@ package object language extends operatorextension.Implicits with LowPrioImplicit
   implicit def toLocalMethods(node: Local): LocalMethods                = new LocalMethods(node)
   implicit def toMethodRefMethods(node: MethodRef): MethodRefMethods    = new MethodRefMethods(node)
 
-//   // Implicit conversions from Step[NodeType, Label] to corresponding Step classes.
-//   // If you introduce a new Step-type, that is, one that inherits from `Steps[NodeType]`,
-//   // then you need to add an implicit conversion from `Steps[NodeType]` to your type
-//   // here.
+  // Implicit conversions from Step[NodeType, Label] to corresponding Step classes.
+  // If you introduce a new Step-type, that is, one that inherits from `Steps[NodeType]`,
+  // then you need to add an implicit conversion from `Steps[NodeType]` to your type
+  // here.
 
   implicit def singleToTypeTrav[A <: Type](a: A): TypeTraversal =
     new TypeTraversal(Iterator.single(a))
@@ -154,11 +152,6 @@ package object language extends operatorextension.Implicits with LowPrioImplicit
    implicit def iterOnceToBindingTypeDeclTrav[A <: TypeDecl](a: IterableOnce[A]): BindingTypeDeclTraversal =
      new BindingTypeDeclTraversal(a.iterator)
 
-  implicit def singleToAstNodeDot[A <: AstNode](a: A): AstNodeDot[A] =
-    new AstNodeDot(Iterator.single(a))
-  implicit def iterOnceToAstNodeDot[A <: AstNode](a: IterableOnce[A]): AstNodeDot[A] =
-    new AstNodeDot(a.iterator)
-
   implicit def singleToCfgNodeDot[A <: Method](a: A): CfgNodeDot =
     new CfgNodeDot(Iterator.single(a))
   implicit def iterOnceToCfgNodeDot[A <: Method](a: IterableOnce[A]): CfgNodeDot =
@@ -263,14 +256,20 @@ package object language extends operatorextension.Implicits with LowPrioImplicit
 
 trait LowPrioImplicits extends io.joern.odb2.Implicits
     with io.joern.odb2.traversal.Language
-    // with io.shiftleft.codepropertygraph.generated.v2.Language
+    with io.shiftleft.codepropertygraph.generated.v2.Language
+    with ImplicitsForBaseTypes 
 {
+
+  implicit def singleToAstNodeDot[A <: AstNode](a: A): AstNodeDot[A] =
+    new AstNodeDot(Iterator.single(a))
+  implicit def iterOnceToAstNodeDot[A <: AstNode](a: IterableOnce[A]): AstNodeDot[A] =
+    new AstNodeDot(a.iterator)
 
    // implicit def iterableOnceToIterator[A](iterableOnce: IterableOnce[A]): Iterator[A] =
    //  iterableOnce.iterator
 
-  implicit def singleToCfgNodeTraversal[A <: CfgNode](a: A): CfgNodeTraversal[A] =
-    new CfgNodeTraversal[A](Iterator.single(a))
+  // implicit def singleToCfgNodeTraversal[A <: CfgNode](a: A): CfgNodeTraversal[A] =
+    // new CfgNodeTraversal[A](Iterator.single(a))
   implicit def iterOnceToCfgNodeTraversal[A <: CfgNode](a: IterableOnce[A]): CfgNodeTraversal[A] =
     new CfgNodeTraversal[A](a.iterator)
 
@@ -283,5 +282,16 @@ trait LowPrioImplicits extends io.joern.odb2.Implicits
     new DeclarationTraversal[A](Iterator.single(a))
   implicit def iterOnceToDeclarationNodeTraversal[A <: Declaration](a: IterableOnce[A]): DeclarationTraversal[A] =
     new DeclarationTraversal[A](a.iterator)
+}
+
+trait ImplicitsForBaseTypes {
+  // conversions for base type extension methods
+  // n.b. these need to be in lower priority implicits to disambiguate them from e.g. the generated steps - prime example being CfgNode.method
+  // implicit def cfgNodeToAsNode(node: CfgNode): AstNodeMethods                 = new AstNodeMethods(node)
+  // implicit def toExtendedNode(node: AbstractNode): NodeMethods                 = new NodeMethods(node)
+  // implicit def toExtendedStoredNode(node: StoredNode): StoredNodeMethods      = new StoredNodeMethods(node)
+  // implicit def toAstNodeMethods(node: AstNode): AstNodeMethods                = new AstNodeMethods(node)
+   implicit def toCfgNodeMethods(node: CfgNode): CfgNodeMethods                = new CfgNodeMethods(node)
+  // implicit def toExpressionMethods(node: Expression): ExpressionMethods       = new ExpressionMethods(node)
 }
 
