@@ -264,7 +264,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
         typeName.split(pathSep).headOption match {
           case Some(methodName) => {
             val methodReturns = methodReturnValues(Seq(methodName))
-                .filterNot(_.endsWith(s"${XTypeRecovery.DummyReturnType}"))
+              .filterNot(_.endsWith(s"${XTypeRecovery.DummyReturnType}"))
             !methodReturns.isEmpty
           }
           case None => false
@@ -418,7 +418,8 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
       p match {
         case p: Identifier => {
           val ts = (p.typeFullName +: p.dynamicTypeHintFullName)
-            .filterNot(_.equals("ANY")).distinct
+            .filterNot(_.equals("ANY"))
+            .distinct
           ts match {
             case Seq() =>
             case Seq(t) => {
@@ -426,7 +427,11 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
               // Or maybe just the dynamic type hint full name?
               val newFullName = t + "->" + c.name
               builder.setNodeProperty(c, PropertyNames.METHOD_FULL_NAME, newFullName)
-              builder.setNodeProperty(c, PropertyNames.TYPE_FULL_NAME, s"${newFullName}$pathSep${XTypeRecovery.DummyReturnType}")
+              builder.setNodeProperty(
+                c,
+                PropertyNames.TYPE_FULL_NAME,
+                s"${newFullName}$pathSep${XTypeRecovery.DummyReturnType}"
+              )
               builder.setNodeProperty(c, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty)
             }
             case _ => { /* TODO */ }

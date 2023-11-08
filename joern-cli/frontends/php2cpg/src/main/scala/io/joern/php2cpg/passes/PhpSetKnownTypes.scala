@@ -23,14 +23,12 @@ case class KnownFunction(
   pTypes: Seq[Seq[String]]
 )
 
-/**
- * Sets the return and parameter types for builtin functions with known function
- * signatures.
- *
- * TODO: Need to handle variadic arguments.
- */
+/** Sets the return and parameter types for builtin functions with known function signatures.
+  *
+  * TODO: Need to handle variadic arguments.
+  */
 class PhpSetKnownTypesPass(cpg: Cpg, knownTypesFile: Option[JFile] = None)
-  extends ForkJoinParallelCpgPass[KnownFunction](cpg) {
+    extends ForkJoinParallelCpgPass[KnownFunction](cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -38,10 +36,10 @@ class PhpSetKnownTypesPass(cpg: Cpg, knownTypesFile: Option[JFile] = None)
     /* parse file and return each row as a KnownFunction object */
     val source = knownTypesFile match {
       case Some(file) => Source.fromFile(file)
-      case _ => Source.fromResource("known_function_signatures.txt")
+      case _          => Source.fromResource("known_function_signatures.txt")
     }
     val contents = source.getLines().filterNot(_.startsWith("//"))
-    val arr = contents.map(line => createKnownFunctionFromLine(line)).toArray
+    val arr      = contents.map(line => createKnownFunctionFromLine(line)).toArray
     source.close
     arr
   }
@@ -79,11 +77,7 @@ class PhpSetKnownTypesPass(cpg: Cpg, knownTypesFile: Option[JFile] = None)
   def scanParamTypes(pTypesRawArr: Array[String]): Seq[Seq[String]] =
     pTypesRawArr.map(paramTypeRaw => paramTypeRaw.split(",").map(_.strip).toSeq).toSeq
 
-  protected def setTypes(
-    builder: overflowdb.BatchedUpdate.DiffGraphBuilder,
-    n: StoredNode,
-    types: Seq[String]
-  ): Unit =
+  protected def setTypes(builder: overflowdb.BatchedUpdate.DiffGraphBuilder, n: StoredNode, types: Seq[String]): Unit =
     if (types.size == 1) builder.setNodeProperty(n, PropertyNames.TYPE_FULL_NAME, types.head)
     else builder.setNodeProperty(n, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, types)
 }

@@ -343,8 +343,7 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture() {
   }
 
   "methods that are dynamically invoked" should {
-    lazy val cpg = code(
-      """
+    lazy val cpg = code("""
         |<?php
         |class ClassA {
         | function foo() {
