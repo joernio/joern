@@ -11,7 +11,7 @@ check_installed() {
 
 check_installed curl
 
-# MacOS is known to ship Bash version < 4
+# macOS is known to ship 'bash' version < 4
 if [[ "$OSTYPE" == "darwin"* ]]; then
   BASH_VERSION=`bash --version | grep "GNU bash, version " | awk '{print $4}' | cut -d. -f1`
   if [[ $BASH_VERSION -lt  4 ]]; then
