@@ -22,15 +22,13 @@ import io.shiftleft.semanticcpg.language.types.structure.*
   * `steps` package, e.g. `Steps`
   */
 package object language
-    extends ImplicitsForBaseTypes 
-    with LowPrioImplicits
+    extends io.shiftleft.codepropertygraph.generated.v2.Language
     with operatorextension.Implicits
-    with io.shiftleft.codepropertygraph.generated.v2.Language
-{
+    with LowPrioImplicits {
 
   // Implicit conversions from generated node types. We use these to add methods
   // to generated node types.
-  implicit def cfgNodeToAsNode(node: CfgNode): AstNodeMethods                 = new AstNodeMethods(node)
+  implicit def cfgNodeToAstNode(node: CfgNode): AstNodeMethods                 = new AstNodeMethods(node)
   implicit def toExtendedNode(node: AbstractNode): NodeMethods                 = new NodeMethods(node)
   implicit def toExtendedStoredNode(node: StoredNode): StoredNodeMethods      = new StoredNodeMethods(node)
   implicit def toAstNodeMethods(node: AstNode): AstNodeMethods                = new AstNodeMethods(node)
@@ -266,6 +264,8 @@ trait LowPrioImplicits {
   implicit def iterOnceToAstNodeDot[A <: AstNode](a: IterableOnce[A]): AstNodeDot[A] =
     new AstNodeDot(a.iterator)
 
+  implicit def toCfgNodeMethods(node: CfgNode): CfgNodeMethods                = new CfgNodeMethods(node)
+
    // implicit def iterableOnceToIterator[A](iterableOnce: IterableOnce[A]): Iterator[A] =
    //  iterableOnce.iterator
 
@@ -284,15 +284,3 @@ trait LowPrioImplicits {
   implicit def iterOnceToDeclarationNodeTraversal[A <: Declaration](a: IterableOnce[A]): DeclarationTraversal[A] =
     new DeclarationTraversal[A](a.iterator)
 }
-
-trait ImplicitsForBaseTypes {
-  // conversions for base type extension methods
-  // n.b. these need to be in lower priority implicits to disambiguate them from e.g. the generated steps - prime example being CfgNode.method
-  // implicit def cfgNodeToAsNode(node: CfgNode): AstNodeMethods                 = new AstNodeMethods(node)
-  // implicit def toExtendedNode(node: AbstractNode): NodeMethods                 = new NodeMethods(node)
-  // implicit def toExtendedStoredNode(node: StoredNode): StoredNodeMethods      = new StoredNodeMethods(node)
-  // implicit def toAstNodeMethods(node: AstNode): AstNodeMethods                = new AstNodeMethods(node)
-   implicit def toCfgNodeMethods(node: CfgNode): CfgNodeMethods                = new CfgNodeMethods(node)
-  // implicit def toExpressionMethods(node: Expression): ExpressionMethods       = new ExpressionMethods(node)
-}
-
