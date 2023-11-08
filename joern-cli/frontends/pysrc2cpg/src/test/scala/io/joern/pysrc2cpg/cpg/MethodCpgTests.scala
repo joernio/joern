@@ -14,7 +14,7 @@ class MethodCpgTests extends AnyFreeSpec with Matchers {
         |   pass
         |""".stripMargin, "a/b.py")
 
-    "foo" in {
+    "test method full name" in {
       val method = cpg.method.name("method").head
       method.fullName shouldBe "a/b.py:<module>.method"
     }
