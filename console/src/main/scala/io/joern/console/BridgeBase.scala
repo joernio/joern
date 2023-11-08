@@ -237,9 +237,9 @@ trait InteractiveShell { this: BridgeBase =>
       replpp.Config(
         predefFiles = predefFile +: config.additionalImports,
         nocolors = config.nocolors,
-        dependencies = config.dependencies,
-        resolvers = config.resolvers,
         verbose = config.verbose,
+        classpathConfig = replpp.Config
+          .ForClasspath(inheritClasspath = true, dependencies = config.dependencies, resolvers = config.resolvers),
         greeting = Option(greeting),
         prompt = Option(promptStr),
         onExitCode = Option(onExitCode),
@@ -264,9 +264,9 @@ trait ScriptExecution { this: BridgeBase =>
           scriptFile = Option(scriptFile),
           command = config.command,
           params = config.params,
-          dependencies = config.dependencies,
-          resolvers = config.resolvers,
-          verbose = config.verbose
+          verbose = config.verbose,
+          classpathConfig = replpp.Config
+            .ForClasspath(inheritClasspath = true, dependencies = config.dependencies, resolvers = config.resolvers)
         )
       )
       if (config.verbose && scriptReturn.isFailure) {
@@ -398,9 +398,9 @@ trait ServerHandling { this: BridgeBase =>
 
     val baseConfig = replpp.Config(
       predefFiles = predefFile +: config.additionalImports,
-      dependencies = config.dependencies,
-      resolvers = config.resolvers,
-      verbose = true // always print what's happening - helps debugging
+      verbose = true, // always print what's happening - helps debugging
+      classpathConfig = replpp.Config
+        .ForClasspath(inheritClasspath = true, dependencies = config.dependencies, resolvers = config.resolvers)
     )
 
     replpp.server.ReplServer.startHttpServer(

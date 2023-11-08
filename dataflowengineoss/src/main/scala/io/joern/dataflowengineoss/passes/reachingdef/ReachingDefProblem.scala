@@ -1,8 +1,8 @@
 package io.joern.dataflowengineoss.passes.reachingdef
 
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.utils.MemberAccess.{isFieldAccess, isGenericMemberAccessName}
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -227,14 +227,10 @@ class ReachingDefTransferFunction(flowGraph: ReachingDefFlowGraph)
   private def initKill(method: Method, gen: Map[StoredNode, Set[Definition]]): Map[StoredNode, Set[Definition]] = {
 
     val allIdentifiers: Map[String, List[CfgNode]] = {
-      val results = mutable.Map.empty[String, List[CfgNode]]
-      method.ast
-        .collect {
-          case identifier: Identifier =>
-            (identifier.name, identifier)
-          case methodParameterIn: MethodParameterIn =>
-            (methodParameterIn.name, methodParameterIn)
-        }
+      val results             = mutable.Map.empty[String, List[CfgNode]]
+      val identifierName2Node = method._identifierViaContainsOut.map { identifier => (identifier.name, identifier) }
+      val paramName2Node      = method.parameter.map { parameter => (parameter.name, parameter) }
+      (identifierName2Node ++ paramName2Node)
         .foreach { case (name, node) =>
           val oldValues = results.getOrElse(name, Nil)
           results.put(name, node :: oldValues)

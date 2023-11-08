@@ -19,7 +19,7 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
     val diffGraph = new DiffGraphBuilder
     try {
 
-      cpgOpt.map(_ => {
+      cpgOpt.map { _ =>
         // We don't want to process this part when third party dependencies are being processed.
         val result = GoGlobal.recordAliasToNamespaceMapping(declaredPackageName, fullyQualifiedPackage)
         if (result == null) {
@@ -28,8 +28,7 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
           val ast      = astForPackage(rootNode)
           Ast.storeInDiffGraph(ast, diffGraph)
         }
-      })
-
+      }
       findAndProcess(parserResult.json)
       processPackageLevelGolbalVaraiblesAndConstants(parserResult.json)
     } catch {

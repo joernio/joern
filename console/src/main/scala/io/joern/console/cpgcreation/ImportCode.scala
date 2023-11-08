@@ -11,7 +11,7 @@ import java.nio.file.Path
 import scala.util.{Failure, Success, Try}
 
 class ImportCode[T <: Project](console: io.joern.console.Console[T]) extends Reporting {
-  import io.joern.console.Console._
+  import io.joern.console.Console.*
 
   private val config             = console.config
   private val workspace          = console.workspace
@@ -60,10 +60,11 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) extends Rep
   def csharp: Frontend          = new BinaryFrontend("csharp", Languages.CSHARP, "C# Source Frontend (Roslyn)")
   def llvm: Frontend            = new BinaryFrontend("llvm", Languages.LLVM, "LLVM Bitcode Frontend")
   def php: SourceBasedFrontend  = new SourceBasedFrontend("php", Languages.PHP, "PHP source frontend", "php")
-  def ruby: SourceBasedFrontend = new SourceBasedFrontend("ruby", Languages.RUBYSRC, "Ruby source frontend", "rb")
+  def ruby: SourceBasedFrontend = new RubyFrontend("Ruby source frontend", false)
+  def rubyDeprecated: SourceBasedFrontend = new RubyFrontend("Ruby source deprecated frontend", true)
 
   private def allFrontends: List[Frontend] =
-    List(c, cpp, ghidra, kotlin, java, jvm, javascript, jssrc, golang, llvm, php, python, csharp, ruby)
+    List(c, cpp, ghidra, kotlin, java, jvm, javascript, jssrc, golang, llvm, php, python, csharp, ruby, rubyDeprecated)
 
   // this is only abstract to force people adding frontends to make a decision whether the frontend consumes binaries or source
   abstract class Frontend(val name: String, val language: String, val description: String = "") {
@@ -100,6 +101,31 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) extends Rep
       }
     }
   }
+
+  /** Only a wrapper so as to more easily pick the deprecated variant without having to provide the
+    * `--useDeprecatedFrontend` flag each time.
+    *
+    * @param useDeprecatedFrontend
+    *   If set, will invoke the frontend with the `--useDeprecatedFrontend` flag
+    */
+  private class RubyFrontend(description: String, useDeprecatedFrontend: Boolean = false)
+      extends SourceBasedFrontend("ruby", Languages.RUBYSRC, description, "rb") {
+    private val deprecatedFlag = "--useDeprecatedFrontend"
+
+    private def addDeprecatedFlagIfNeeded(args: List[String]): List[String] = {
+      Option.when(useDeprecatedFrontend && !args.contains(deprecatedFlag))(deprecatedFlag).toList ++ args
+    }
+
+    override def cpgGeneratorForLanguage(
+      language: String,
+      config: FrontendConfig,
+      rootPath: Path,
+      args: List[String]
+    ): Option[CpgGenerator] = {
+      super.cpgGeneratorForLanguage(language, config, rootPath, addDeprecatedFlagIfNeeded(args))
+    }
+  }
+
   class CFrontend(name: String, extension: String = "c")
       extends SourceBasedFrontend(name, Languages.NEWC, "Eclipse CDT Based Frontend for C/C++", extension)
 

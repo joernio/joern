@@ -1,13 +1,13 @@
 package io.joern.jssrc2cpg.passes
 
-import io.joern.x2cpg.passes.frontend.ImportsPass._
+import io.joern.x2cpg.Defines as XDefines
+import io.joern.x2cpg.passes.frontend.ImportsPass.*
 import io.joern.x2cpg.passes.frontend.XImportResolverPass
-import io.joern.x2cpg.{Defines => XDefines}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Method, MethodRef}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
-import java.io.{File => JFile}
+import java.io.File as JFile
 import java.util.regex.{Matcher, Pattern}
 import scala.util.{Failure, Success, Try}
 
@@ -59,7 +59,7 @@ class ImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
 
     def targetAssignments = targetModule
       .nameExact(":program")
-      .ast
+      .flatMap(_._callViaContainsOut)
       .assignment
 
     val matchingExports = if (isImportingModule) {
@@ -82,11 +82,11 @@ class ImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
          exp.argument.l match {
            case ::(expCall: Call, ::(b: Identifier, _))
                if expCall.code.matches("^(module.)?exports[.]?.*") && b.name == alias =>
-             val moduleMethods      = targetModule.ast.isMethod.l
+             val moduleMethods      = targetModule.repeat(_.astChildren.isMethod)(_.emit).l
              lazy val methodMatches = moduleMethods.name(b.name).l
              lazy val constructorMatches =
                moduleMethods.fullName(s".*${b.name}$pathSep${XDefines.ConstructorMethodName}$$").l
-             lazy val moduleExportsThisVariable = moduleMethods.ast.isLocal
+             lazy val moduleExportsThisVariable = moduleMethods.body.local
                .where(_.nameExact(b.name))
                .nonEmpty
              // Exported function with only the name of the function

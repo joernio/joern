@@ -4,8 +4,8 @@ import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.ast.Nodes.modifierNode
 import io.joern.kotlin2cpg.types.{TypeConstants, TypeInfoProvider}
 import io.joern.x2cpg.utils.NodeBuilders
-import io.joern.x2cpg.{Ast, ValidationMode}
-import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newClosureBindingNode, newLocalNode, newMethodReturnNode}
+import io.joern.x2cpg.{Ast, AstNodeBuilder, ValidationMode}
+import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newClosureBindingNode, newMethodReturnNode}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewLocal, NewMember, NewMethodParameterIn, NewNode}
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
@@ -57,7 +57,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
             val blockChildAsts =
               if (asts.nonEmpty) {
                 val allStatementsButLast = asts.dropRight(1)
-                val lastStatementAst     = asts.last
+                val lastStatementAst     = asts.lastOption.getOrElse(Ast(unknownNode(expr, Constants.empty)))
                 val returnAst_           = returnAst(returnNode(expr, Constants.retCode), Seq(lastStatementAst))
                 (allStatementsButLast ++ Seq(returnAst_)).toList
               } else List()
@@ -71,7 +71,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     methodAstParentStack.pop()
     scope.popScope()
 
-    val bodyAst           = bodyAsts.head
+    val bodyAst           = bodyAsts.headOption.getOrElse(Ast(unknownNode(ktFn, Constants.empty)))
     val otherBodyAsts     = bodyAsts.drop(1)
     val explicitTypeName  = Option(ktFn.getTypeReference).map(_.getText).getOrElse(TypeConstants.any)
     val typeFullName      = registerType(typeInfoProvider.returnType(ktFn, explicitTypeName))
@@ -146,7 +146,13 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val localsForCaptured = closureBindingEntriesForCaptured.map { case (closureBindingNode, capturedNodeContext) =>
       val node =
-        newLocalNode(capturedNodeContext.name, capturedNodeContext.typeFullName, closureBindingNode.closureBindingId)
+        localNode(
+          fn,
+          capturedNodeContext.name,
+          capturedNodeContext.name,
+          capturedNodeContext.typeFullName,
+          closureBindingNode.closureBindingId
+        )
       scope.addToScope(capturedNodeContext.name, node)
       node
     }
@@ -172,7 +178,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     val returnTypeFullName     = TypeConstants.javaLangObject
     val lambdaTypeDeclFullName = fullName.split(":").head
 
-    val bodyAst = bodyAsts.head
+    val bodyAst = bodyAsts.headOption.getOrElse(Ast(unknownNode(fn, Constants.empty)))
     val lambdaMethodAst = methodAst(
       lambdaMethodNode,
       parametersAsts,
@@ -236,7 +242,13 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val localsForCaptured = closureBindingEntriesForCaptured.map { case (closureBindingNode, capturedNodeContext) =>
       val node =
-        newLocalNode(capturedNodeContext.name, capturedNodeContext.typeFullName, closureBindingNode.closureBindingId)
+        localNode(
+          expr,
+          capturedNodeContext.name,
+          capturedNodeContext.name,
+          capturedNodeContext.typeFullName,
+          closureBindingNode.closureBindingId
+        )
       scope.addToScope(capturedNodeContext.name, node)
       node
     }
@@ -293,7 +305,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     val returnTypeFullName     = registerType(typeInfoProvider.returnTypeFullName(expr))
     val lambdaTypeDeclFullName = fullName.split(":").head
 
-    val bodyAst = bodyAsts.head
+    val bodyAst = bodyAsts.headOption.getOrElse(Ast(unknownNode(expr, Constants.empty)))
     val lambdaMethodAst = methodAst(
       lambdaMethodNode,
       parametersAsts,

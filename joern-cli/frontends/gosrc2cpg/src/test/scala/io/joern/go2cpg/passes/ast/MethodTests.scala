@@ -2,7 +2,7 @@ package io.joern.go2cpg.passes.ast
 
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
 import io.joern.gosrc2cpg.astcreation.Defines
-import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
 import java.io.File
@@ -1597,12 +1597,18 @@ class MethodTests extends GoCodeToCpgSuite {
       name.typeFullName shouldBe "string"
     }
 
-    "test basic ast structure for identifiers" in {
+    "check Global Member node" in {
+      val List(x)    = cpg.typeDecl("main").l
+      val List(a, b) = x.member.l
+      a.name shouldBe "person"
+      a.typeFullName shouldBe "main.Name"
+      b.name shouldBe "personName"
+      b.typeFullName shouldBe "string"
+    }
 
-      val List(personName, person, _) = cpg.identifier.l
-      person.name shouldBe "person"
-      personName.name shouldBe "personName"
-      personName.typeFullName shouldBe "string"
+    "Check fieldAccess node for global variable access" in {
+      val List(x) = cpg.call(Operators.fieldAccess).l
+      x.typeFullName shouldBe "string"
     }
   }
 

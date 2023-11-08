@@ -3,8 +3,8 @@ package io.joern.kotlin2cpg.ast
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.ast.Nodes.operatorCallNode
 import io.joern.kotlin2cpg.types.{TypeConstants, TypeInfoProvider}
-import io.joern.x2cpg.{Ast, ValidationMode}
-import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newLocalNode}
+import io.joern.x2cpg.{Ast, AstNodeBuilder, ValidationMode}
+import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode}
 import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import org.jetbrains.kotlin.psi.{
@@ -61,7 +61,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForForWithDestructuringLHS(expr: KtForExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val loopRangeText         = expr.getLoopRange.getText
     val iteratorName          = s"${Constants.iteratorPrefix}${iteratorKeyPool.next()}"
-    val localForIterator      = newLocalNode(iteratorName, TypeConstants.any)
+    val localForIterator      = localNode(expr, iteratorName, iteratorName, TypeConstants.any)
     val iteratorAssignmentLhs = newIdentifierNode(iteratorName, TypeConstants.any)
     val iteratorLocalAst      = Ast(localForIterator).withRefEdge(iteratorAssignmentLhs, localForIterator)
 
@@ -117,7 +117,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
         .toList
 
     val tmpName     = s"${Constants.tmpLocalPrefix}${tmpKeyPool.next}"
-    val localForTmp = newLocalNode(tmpName, TypeConstants.any)
+    val localForTmp = localNode(expr, tmpName, tmpName, TypeConstants.any)
     scope.addToScope(localForTmp.name, localForTmp)
     val localForTmpAst = Ast(localForTmp)
 
@@ -180,7 +180,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForForWithSimpleVarLHS(expr: KtForExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val loopRangeText         = expr.getLoopRange.getText
     val iteratorName          = s"${Constants.iteratorPrefix}${iteratorKeyPool.next()}"
-    val iteratorLocal         = newLocalNode(iteratorName, TypeConstants.any)
+    val iteratorLocal         = localNode(expr, iteratorName, iteratorName, TypeConstants.any)
     val iteratorAssignmentLhs = newIdentifierNode(iteratorName, TypeConstants.any)
     val iteratorLocalAst      = Ast(iteratorLocal).withRefEdge(iteratorAssignmentLhs, iteratorLocal)
 
@@ -226,7 +226,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
       typeInfoProvider.typeFullName(expr.getLoopParameter, TypeConstants.any)
     )
     val loopParameterName  = expr.getLoopParameter.getText
-    val loopParameterLocal = newLocalNode(loopParameterName, loopParameterTypeFullName)
+    val loopParameterLocal = localNode(expr, loopParameterName, loopParameterName, loopParameterTypeFullName)
     scope.addToScope(loopParameterName, loopParameterLocal)
 
     val loopParameterIdentifier = newIdentifierNode(loopParameterName, TypeConstants.any)
@@ -509,10 +509,19 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
       if (implicitReturnAroundLastStatement && statements.nonEmpty) {
         val _returnNode          = returnNode(statements.last, Constants.retCode)
         val astsForLastStatement = astsForExpression(statements.last, Some(1))
-        (astsForLastStatement.dropRight(1), Some(returnAst(_returnNode, Seq(astsForLastStatement.last))))
+        if (astsForLastStatement.isEmpty)
+          (Seq(), None)
+        else
+          (
+            astsForLastStatement.dropRight(1),
+            Some(returnAst(_returnNode, Seq(astsForLastStatement.lastOption.getOrElse(Ast()))))
+          )
       } else if (statements.nonEmpty) {
         val astsForLastStatement = astsForExpression(statements.last, None)
-        (astsForLastStatement.dropRight(1), Some(astsForLastStatement.last))
+        if (astsForLastStatement.isEmpty)
+          (Seq(), None)
+        else
+          (astsForLastStatement.dropRight(1), Some(astsForLastStatement.lastOption.getOrElse(Ast())))
       } else (Seq(), None)
 
     if (pushToScope) scope.popScope()

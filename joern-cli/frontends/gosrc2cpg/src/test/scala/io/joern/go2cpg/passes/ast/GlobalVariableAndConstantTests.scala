@@ -22,10 +22,23 @@ class GlobalVariableAndConstantTests extends GoCodeToCpgSuite {
         |}
         |""".stripMargin)
 
-    "Check LOCAL node" in {
-      val List(a, b) = cpg.local.l
+    "Check package Type Decl" in {
+      val List(x) = cpg.typeDecl("main").l
+      x.fullName shouldBe "main"
+    }
+
+    "Traversal from package type decl to global variable member nodes" in {
+      val List(x)    = cpg.typeDecl("main").l
+      val List(a, b) = x.member.l
+      a.name shouldBe "FooConst"
       a.typeFullName shouldBe "string"
+      b.name shouldBe "BarVar"
       b.typeFullName shouldBe "int"
+    }
+
+    "Be correct for Field Access CALL Node for Global variable access" in {
+      val List(x) = cpg.call(Operators.fieldAccess).l
+      x.typeFullName shouldBe "string"
     }
   }
 
