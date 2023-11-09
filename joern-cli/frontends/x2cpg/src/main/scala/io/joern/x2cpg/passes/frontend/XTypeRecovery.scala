@@ -103,7 +103,6 @@ abstract class XTypeRecoveryPass[CompilationUnitType <: AstNode](
     def getFieldBaseTypes(fieldAccess: FieldAccess): Iterator[TypeDecl] = {
       fieldAccess.argument(1) match
         case x: Call if x.name == Operators.fieldAccess =>
-          val childFieldAccess = FieldAccess(x)
           cpg.typeDecl.fullNameExact(FieldAccess(x).referencedMember.getKnownTypes.toSeq*)
         case x: Call if !x.name.startsWith("<operator>") =>
           if (!x.typeFullName.matches(XTypeRecovery.unknownTypePattern.pattern.pattern()))
