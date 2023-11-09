@@ -4,14 +4,11 @@ import better.files.File
 import io.joern.swiftsrc2cpg.Config
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.utils.{Environment, ExternalCommand}
-import io.shiftleft.utils.IOUtils
-import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
 import scala.util.Failure
 import scala.util.Success
-import scala.util.matching.Regex
 import scala.util.Try
 
 object AstGenRunner {

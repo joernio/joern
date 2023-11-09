@@ -1,6 +1,5 @@
 import scala.sys.process.stringToProcess
 import scala.util.Try
-import versionsort.VersionHelper
 import com.typesafe.config.{Config, ConfigFactory}
 
 name := "swiftsrc2cpg"
@@ -18,10 +17,10 @@ lazy val astGenVersion = settingKey[String]("astgen version")
 astGenVersion := appProperties.value.getString("swiftsrc2cpg.astgen_version")
 
 libraryDependencies ++= Seq(
-  "io.shiftleft"              %% "codepropertygraph" % Versions.cpg,
-  "com.lihaoyi"               %% "upickle"           % Versions.upickle,
-  "com.typesafe"               % "config"            % "1.4.2",
-  "org.scalatest"             %% "scalatest"         % Versions.scalatest % Test
+  "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
+  "com.lihaoyi"   %% "upickle"           % Versions.upickle,
+  "com.typesafe"   % "config"            % "1.4.2",
+  "org.scalatest" %% "scalatest"         % Versions.scalatest % Test
 )
 
 Compile / doc / scalacOptions ++= Seq("-doc-title", "semanticcpg apidocs", "-doc-version", version.value)
@@ -31,9 +30,9 @@ Test / fork := false
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
-lazy val AstgenWin    = "SwiftAstGen-win.exe"
-lazy val AstgenLinux  = "SwiftAstGen-linux"
-lazy val AstgenMac    = "SwiftAstGen-mac"
+lazy val AstgenWin   = "SwiftAstGen-win.exe"
+lazy val AstgenLinux = "SwiftAstGen-linux"
+lazy val AstgenMac   = "SwiftAstGen-mac"
 
 lazy val astGenDlUrl = settingKey[String]("astgen download url")
 astGenDlUrl := s"https://github.com/joernio/swiftastgen/releases/download/v${astGenVersion.value}/"
@@ -41,7 +40,7 @@ astGenDlUrl := s"https://github.com/joernio/swiftastgen/releases/download/v${ast
 def hasCompatibleAstGenVersion(astGenVersion: String): Boolean = {
   Try("SwiftAstGen -h".!).toOption match {
     case Some(0) => true
-    case _ => false
+    case _       => false
   }
 }
 

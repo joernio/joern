@@ -18,7 +18,7 @@ abstract class AbstractPassTest extends AnyWordSpec with Matchers with Inside {
   private implicit val schemaValidationMode: ValidationMode = ValidationMode.Enabled
 
   protected object AstFixture extends Fixture {
-    def apply(code: String, filename: String = "code.swift", tsTypes: Boolean = false)(f: Cpg => Unit): Unit = {
+    def apply(code: String, filename: String = "code.swift")(f: Cpg => Unit): Unit = {
       File.usingTemporaryDirectory("swiftsrc2cpgTests") { dir =>
         val cpg  = newEmptyCpg()
         val file = dir / filename

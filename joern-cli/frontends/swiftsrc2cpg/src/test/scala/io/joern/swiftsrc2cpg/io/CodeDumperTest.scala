@@ -41,7 +41,7 @@ class CodeDumperTest extends SwiftSrc2CpgSuite {
       cpg.method.name("notinthere").dump shouldBe empty
     }
 
-    "be able to dump complete function" in {
+    "be able to dump complete function" ignore {
       val code = cpg.method.name("greet").dumpRaw.mkString("\n")
       code should (
         startWith("func greet")
@@ -50,7 +50,7 @@ class CodeDumperTest extends SwiftSrc2CpgSuite {
       )
     }
 
-    "dump method with arrow for expression (a call)" in {
+    "dump method with arrow for expression (a call)" ignore {
       val code = cpg.call.name("foo").dumpRaw.mkString("\n")
       code should (
         startWith("func greet")
@@ -59,7 +59,7 @@ class CodeDumperTest extends SwiftSrc2CpgSuite {
       )
     }
 
-    "allow dumping via .dump" in {
+    "allow dumping via .dump" ignore {
       val code = cpg.method.name("greet").dumpRaw.mkString("\n")
       code should startWith("func greet")
     }

@@ -52,9 +52,9 @@ class AstCreator(
     val fileNode       = NewFile().name(parserResult.filename).order(1)
     val namespaceBlock = globalNamespaceBlock()
     methodAstParentStack.push(namespaceBlock)
-    val translationUnitAst =
+    val astForFakeMethod =
       astInFakeMethod(namespaceBlock.fullName, parserResult.filename, parserResult.ast)
-    val ast = Ast(fileNode).withChild(Ast(namespaceBlock).withChild(translationUnitAst))
+    val ast = Ast(fileNode).withChild(Ast(namespaceBlock).withChild(astForFakeMethod))
     Ast.storeInDiffGraph(ast, diffGraph)
     createVariableReferenceLinks()
     diffGraph
