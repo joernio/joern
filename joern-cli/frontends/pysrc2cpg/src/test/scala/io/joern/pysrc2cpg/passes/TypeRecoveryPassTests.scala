@@ -3,11 +3,11 @@ package io.joern.pysrc2cpg.passes
 import io.joern.pysrc2cpg.PySrc2CpgFixture
 import io.joern.x2cpg.passes.frontend.ImportsPass.*
 import io.joern.x2cpg.passes.frontend.{ImportsPass, XTypeHintCallLinker}
-import io.shiftleft.codepropertygraph.generated.nodes.Local
 import io.shiftleft.semanticcpg.language.*
 
 import java.io.File
 import scala.collection.immutable.Seq
+
 class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
   "literals declared from built-in types" should {
@@ -71,7 +71,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         webClientT: UnknownTypeDecl,
         sendGridM: UnknownMethod,
         sendGridT: UnknownTypeDecl
-      ) = cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+      ) = cpg.call.where(_.referencedImports).tag.toEvaluatedImport.toList: @unchecked
       webClientM.fullName shouldBe "slack_sdk.py:<module>.WebClient.__init__"
       webClientT.fullName shouldBe "slack_sdk.py:<module>.WebClient"
       sendGridM.fullName shouldBe "sendgrid.py:<module>.SendGridAPIClient.__init__"
@@ -234,11 +234,11 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "resolve correct imports via tag nodes" in {
       val List(foo1: UnknownMethod, foo2: UnknownTypeDecl) =
-        cpg.file(".*foo.py").ast.isCall.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.file(".*foo.py").ast.isCall.where(_.referencedImports).tag.toEvaluatedImport.toList: @unchecked
       foo1.fullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.__init__"
       foo2.fullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy"
       val List(bar1: ResolvedTypeDecl, bar2: ResolvedMethod) =
-        cpg.file(".*bar.py").ast.isCall.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.file(".*bar.py").ast.isCall.where(_.referencedImports).tag.toEvaluatedImport.toList: @unchecked
       bar1.fullName shouldBe "foo.py:<module>"
       bar2.fullName shouldBe "foo.py:<module>"
     }
@@ -327,7 +327,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "resolve correct imports via tag nodes" in {
       val List(a: ResolvedTypeDecl, b: ResolvedMethod, c: UnknownImport, d: ResolvedMember) =
-        cpg.file(".*UserController.py").ast.isCall.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.file(".*UserController.py").ast.isCall.where(_.referencedImports).tag.toEvaluatedImport.toList: @unchecked
       a.fullName shouldBe "app.py:<module>"
       b.fullName shouldBe "app.py:<module>"
       c.path shouldBe "flask.py:<module>.jsonify"
@@ -335,7 +335,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
       d.memberName shouldBe "db"
 
       val List(sqlAlchemyM: UnknownMethod, sqlAlchemyT: UnknownTypeDecl) =
-        cpg.file(".*app.py").ast.isCall.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.file(".*app.py").ast.isCall.where(_.referencedImports).tag.toEvaluatedImport.toList: @unchecked
       sqlAlchemyM.fullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy.__init__"
       sqlAlchemyT.fullName shouldBe "flask_sqlalchemy.py:<module>.SQLAlchemy"
     }
@@ -373,7 +373,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |""".stripMargin).cpg
 
     "resolve correct imports via tag nodes" in {
-      val List(logging: UnknownImport) = cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+      val List(logging: UnknownImport) = cpg.call.where(_.referencedImports).tag.toEvaluatedImport.toList: @unchecked
       logging.path shouldBe "logging.py:<module>"
     }
 
@@ -397,7 +397,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "resolve correct imports via tag nodes" in {
       val List(error: UnknownImport, request: UnknownImport) =
-        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.call.where(_.referencedImports).tag.toEvaluatedImport.toList: @unchecked
       error.path shouldBe "urllib.py:<module>.error"
       request.path shouldBe "urllib.py:<module>.request"
     }
@@ -448,16 +448,11 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         |        return dict(res).get("customerId", None)
         |""".stripMargin,
       "InstallationDao.py"
-    ).moreCode(
-      """
-        |# dummy file to trigger isExternal = false on methods that are imported from here
-        |""".stripMargin,
-      "pymongo.py"
-    ).cpg
+    )
 
     "resolve correct imports via tag nodes" in {
       val List(a: ResolvedTypeDecl, b: ResolvedMethod, c: UnknownMethod, d: UnknownTypeDecl, e: UnknownImport) =
-        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.call.where(_.referencedImports).tag.toEvaluatedImport.toList: @unchecked
 
       a.fullName shouldBe "MongoConnection.py:<module>.MongoConnection"
       b.fullName shouldBe "MongoConnection.py:<module>.MongoConnection.__init__"
@@ -586,7 +581,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
         sessionM: ResolvedMethod,
         sqlSessionM: UnknownMethod,
         sqlSessionT: UnknownTypeDecl
-      ) = cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+      ) = cpg.call.where(_.referencedImports).tag.toEvaluatedImport.toList: @unchecked
       sessionT.fullName shouldBe Seq("data", "db_session.py:<module>").mkString(File.separator)
       sessionM.fullName shouldBe Seq("data", "db_session.py:<module>").mkString(File.separator)
       sqlSessionM.fullName shouldBe Seq("sqlalchemy", "orm.py:<module>.Session.__init__").mkString(File.separator)
@@ -673,7 +668,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "resolve correct imports via tag nodes" in {
       val List(sqlSessionM: UnknownMethod, sqlSessionT: UnknownTypeDecl, db: ResolvedMember) =
-        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.call.where(_.referencedImports).tag.toEvaluatedImport.toList: @unchecked
       sqlSessionM.fullName shouldBe Seq("flask_sqlalchemy.py:<module>.SQLAlchemy.__init__").mkString(File.separator)
       sqlSessionT.fullName shouldBe Seq("flask_sqlalchemy.py:<module>.SQLAlchemy").mkString(File.separator)
       db.basePath shouldBe Seq("api", "__init__.py:<module>").mkString(File.separator)
@@ -954,7 +949,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "resolve correct imports via tag nodes" in {
       val List(djangoModels: UnknownImport, profileT: ResolvedTypeDecl, profileM: ResolvedMethod) =
-        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.call.where(_.referencedImports).tag.toEvaluatedImport.toList: @unchecked
       djangoModels.path shouldBe Seq("django", "db.py:<module>.models").mkString(File.separator)
       profileT.fullName shouldBe "models.py:<module>.Profile"
       profileM.fullName shouldBe "models.py:<module>.Profile.__init__"
@@ -996,7 +991,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "resolve correct imports via tag nodes" in {
       val List(connectorT: ResolvedTypeDecl, connectorM: ResolvedMethod) =
-        cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.call.where(_.referencedImports).tag.toEvaluatedImport.toList: @unchecked
       connectorT.fullName shouldBe Seq("lib", "connector.py:<module>.Connector").mkString(File.separator)
       connectorM.fullName shouldBe Seq("lib", "connector.py:<module>.Connector.__init__").mkString(File.separator)
     }
@@ -1176,6 +1171,69 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     "correctly infer the `fastapi` types" in {
       cpg.identifier("fastapi").forall(_.typeFullName == "fastapi.py:<module>.APIRouter") shouldBe true
       cpg.identifier("app").forall(_.typeFullName == "fastapi.py:<module>.FastAPI") shouldBe true
+    }
+
+  }
+
+  "Modules imported from non-root modules" should {
+    val cpg = code(
+      """
+        |from fastapi import FastAPI
+        |import v1.appv1
+        |from v2.appv2 import appV2
+        |
+        |app = FastAPI(root_path="/api")
+        |
+        |app.mount("/v1", v1.appv1.appV1)
+        |app.mount("/v2", appV2)
+        |""".stripMargin,
+      Seq("code", "itemsrouter.py").mkString(File.separator)
+    ).moreCode(
+      """
+        |appV1 = "v1"
+        |""".stripMargin,
+      Seq("code", "v1", "appv1.py").mkString(File.separator)
+    ).moreCode(
+      """
+        |appV2 = "v2"
+        |""".stripMargin,
+      Seq("code", "v2", "appv2.py").mkString(File.separator)
+    )
+
+    "correctly resolve the type of the `appV1`, via member access" in {
+      val appV1 = cpg.member("appV1").ref.inAssignment.target.isIdentifier.head
+      appV1.typeFullName shouldBe "__builtin.str"
+    }
+
+    "correctly resolve the type of the `appV2`, via member access" in {
+      val appV2 = cpg.member("appV2").ref.inAssignment.target.isIdentifier.head
+      appV2.typeFullName shouldBe "__builtin.str"
+    }
+
+    // TODO: code.v1 is a directory with multiple modules, but is not a module itself and thus has no member nodes
+    //  pointing to the child modules. This means that field accesses of code.v1 have no base type to rely on failing
+    //  this test case
+    "correctly resolve the type of the `appV1` as a field access argument" ignore {
+      val appV1 = cpg.call
+        .methodFullNameExact("fastapi.py:<module>.FastAPI.mount")
+        .argument
+        .argumentIndex(2)
+        .fieldAccess
+        .where(_.fieldIdentifier.canonicalName("appV1"))
+        .referencedMember
+        .head
+      appV1.typeFullName shouldBe "__builtin.str"
+    }
+
+    "correctly resolve the type of the `appV2` as an identifier argument" in {
+      val appV2 = cpg.call
+        .methodFullNameExact("fastapi.py:<module>.FastAPI.mount")
+        .argument
+        .argumentIndex(2)
+        .isIdentifier
+        .name("appV2")
+        .head
+      appV2.typeFullName shouldBe "__builtin.str"
     }
 
   }

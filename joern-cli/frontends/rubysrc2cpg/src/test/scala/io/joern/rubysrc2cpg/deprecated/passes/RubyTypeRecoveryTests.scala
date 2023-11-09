@@ -138,10 +138,10 @@ class RubyTypeRecoveryTests
     // TODO Waiting for Module modelling to be done
     "resolve correct imports via tag nodes" ignore {
       val List(foo: ResolvedTypeDecl) =
-        cpg.file(".*foo.rb").ast.isCall.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.file(".*foo.rb").ast.isCall.where(_.referencedImports).tag.toEvaluatedImport.toList: @unchecked
       foo.fullName shouldBe "dbi::program.DBI"
       val List(bar: ResolvedTypeDecl) =
-        cpg.file(".*bar.rb").ast.isCall.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+        cpg.file(".*bar.rb").ast.isCall.where(_.referencedImports).tag.toEvaluatedImport.toList: @unchecked
       bar.fullName shouldBe "foo.rb::program.FooModule"
     }
 
@@ -200,7 +200,8 @@ class RubyTypeRecoveryTests
         |""".stripMargin).cpg
 
     "resolve correct imports via tag nodes" in {
-      val List(logging: ResolvedMethod, _) = cpg.call.where(_.referencedImports).tag.toResolvedImport.toList: @unchecked
+      val List(logging: ResolvedMethod, _) =
+        cpg.call.where(_.referencedImports).tag.toEvaluatedImport.toList: @unchecked
       logging.fullName shouldBe s"logger::program.Logger.${XDefines.ConstructorMethodName}"
     }
 
