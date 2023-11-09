@@ -149,23 +149,3 @@ class MethodTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
   }
 }
-
-class MethodTestsTrial extends KotlinCode2CpgFixture(withOssDataflow = false) {
-  "CPG for code with call with argument with type with template" should {
-    val cpg = code("""
-        |package mypkg.{% package_name %}
-        |
-        |import myActivity.someValue.{% name %}Binding
-        |
-        |@AndroidEntryPoint
-        |class {% name %}Activity : BaseActivity<{% name %}ViewModel, Activity{% name %}Binding>() {
-        |    override val layoutResId = R.layout.{% layout_name %}
-        |    override val viewModelClass = {% name %}ViewModel::class.java
-        |}
-        |""".stripMargin)
-
-    "should contain a METHOD node with correct FULL_NAME set" in {
-      cpg.method.count(_.name == null) shouldBe 7
-    }
-  }
-}
