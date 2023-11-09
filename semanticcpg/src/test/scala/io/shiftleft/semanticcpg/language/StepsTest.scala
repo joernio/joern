@@ -1,30 +1,30 @@
-// package io.shiftleft.semanticcpg.language
+package io.shiftleft.semanticcpg.language
 
-// import io.shiftleft.codepropertygraph.Cpg
-// import io.shiftleft.codepropertygraph.Cpg.docSearchPackages
-// import io.shiftleft.codepropertygraph.generated.nodes.*
-// import io.shiftleft.codepropertygraph.generated.{NodeTypes, Properties}
-// import io.shiftleft.semanticcpg.testing.MockCpg
-// import org.json4s.*
-// import org.json4s.native.JsonMethods.parse
-// import org.scalatest.matchers.should.Matchers
-// import org.scalatest.wordspec.AnyWordSpec
+import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
+import io.shiftleft.codepropertygraph.generated.v2.{NodeTypes, PropertyNames}
+import io.shiftleft.semanticcpg.testing.MockCpg
+import io.shiftleft.semanticcpg.language.*
+import org.json4s.*
+import org.json4s.native.JsonMethods.parse
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-// import scala.jdk.CollectionConverters.IteratorHasAsScala
+import scala.jdk.CollectionConverters.IteratorHasAsScala
 
-// class StepsTest extends AnyWordSpec with Matchers {
+class StepsTest extends AnyWordSpec with Matchers {
 
-//   private val cpg: Cpg = MockCpg()
-//     .withFile("afile.c")
-//     .withNamespace("anamespace")
-//     .withTypeDecl("AClass", inNamespace = Some("anamespace"), inFile = Some("afile.c"))
-//     .withMethod("foo", inTypeDecl = Some("AClass"))
-//     .withMethod("woo", inTypeDecl = Some("AClass"))
-//     .withCallInMethod("foo", "acall")
-//     .withLocalInMethod("foo", "local")
-//     .withLiteralArgument("acall", "moo")
-//     .withIdentifierArgument("acall", "anidentifier")
-//     .cpg
+  private val cpg: Cpg = MockCpg()
+    .withFile("afile.c")
+    .withNamespace("anamespace")
+    .withTypeDecl("AClass", inNamespace = Some("anamespace"), inFile = Some("afile.c"))
+    .withMethod("foo", inTypeDecl = Some("AClass"))
+    .withMethod("woo", inTypeDecl = Some("AClass"))
+    .withCallInMethod("foo", "acall")
+    .withLocalInMethod("foo", "local")
+    .withLiteralArgument("acall", "moo")
+    .withIdentifierArgument("acall", "anidentifier")
+    .cpg
 
 //   "generic cpg" should {
 
@@ -352,4 +352,4 @@
 //     assertDoesNotCompile("cpg.id(1).outV") // `.outV` is only available on Traversal[Edge]
 //   }
 
-// }
+}

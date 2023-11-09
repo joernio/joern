@@ -177,8 +177,8 @@ package object language
 
   implicit def traversalToSteps[A](trav: Iterator[A]): Steps[A] =
     new Steps(trav)
-//  implicit def iterOnceToNodeSteps[A <: StoredNode](a: IterableOnce[A]): NodeSteps[A] =
-//    new NodeSteps[A](a.iterator)
+  implicit def iterOnceToNodeSteps[A <: StoredNode](a: IterableOnce[A]): NodeSteps[A] =
+    new NodeSteps[A](a.iterator)
 
   implicit def toNewNodeTrav[NodeType <: NewNode](trav: Iterator[NodeType]): NewNodeSteps[NodeType] =
     new NewNodeSteps[NodeType](trav)
