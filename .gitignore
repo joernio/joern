@@ -29,6 +29,9 @@ null
 **/astgen-macos
 **/astgen-macos-arm
 **/astgen-linux
+**/SwiftAstGen-win.exe
+**/SwiftAstGen-mac
+**/SwiftAstGen-linux
 **/php2cpg/bin
 /foo.c
 /woo.c

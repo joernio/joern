@@ -14,6 +14,7 @@ dependsOn(
   Projects.jssrc2cpg,
   Projects.pysrc2cpg,
   Projects.rubysrc2cpg,
+  Projects.swiftsrc2cpg,
   Projects.x2cpg % "compile->compile;test->test"
 )
 
