@@ -19,7 +19,14 @@ class AstCreationPass(config: Config, cpg: Cpg, parser: PhpParser)(implicit with
 
   val PhpSourceFileExtensions: Set[String] = Set(".php")
 
-  override def generateParts(): Array[String] = SourceFiles.determine(config.inputPath, PhpSourceFileExtensions).toArray
+  override def generateParts(): Array[String] = SourceFiles
+    .determine(
+      config.inputPath,
+      PhpSourceFileExtensions,
+      ignoredFilesRegex = Some(config.ignoredFilesRegex),
+      ignoredFilesPath = Some(config.ignoredFiles)
+    )
+    .toArray
 
   override def runOnPart(diffGraph: DiffGraphBuilder, filename: String): Unit = {
     val relativeFilename = if (filename == config.inputPath) {

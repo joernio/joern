@@ -144,7 +144,12 @@ class AstGenRunner(config: Config) {
     logger.info(s"Running goastgen in '$config.inputPath' ...")
     runAstGenNative(config.inputPath, out, config.ignoredFilesRegex.toString()) match {
       case Success(result) =>
-        val srcFiles      = SourceFiles.determine(out.toString(), Set(".json"))
+        val srcFiles = SourceFiles.determine(
+          out.toString(),
+          Set(".json"),
+          ignoredFilesRegex = Some(config.ignoredFilesRegex),
+          ignoredFilesPath = Some(config.ignoredFiles)
+        )
         val parsedModFile = filterModFile(srcFiles, out)
         val parsed        = filterFiles(srcFiles, out)
         val skipped       = skippedFiles(in, result.toList)

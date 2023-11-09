@@ -16,7 +16,14 @@ class AstCreationPass(cpg: Cpg, parser: ResourceManagedParser, config: Config)
   private val RubySourceFileExtensions = Set(".rb")
 
   override def generateParts(): Array[String] = {
-    SourceFiles.determine(config.inputPath, RubySourceFileExtensions, config).toArray
+    SourceFiles
+      .determine(
+        config.inputPath,
+        RubySourceFileExtensions,
+        ignoredFilesRegex = Some(config.ignoredFilesRegex),
+        ignoredFilesPath = Some(config.ignoredFiles)
+      )
+      .toArray
   }
 
   override def runOnPart(diffGraph: DiffGraphBuilder, fileName: String): Unit = {

@@ -26,14 +26,15 @@ class AstCreationPass(cpg: Cpg, config: Config, report: Report = new Report())
     s"(.*[$EscapedFileSeparator])?CMakeFiles[$EscapedFileSeparator].*".r
   )
 
-  override def generateParts(): Array[String] =
-    SourceFiles
-      .determine(
-        config.inputPath,
-        FileDefaults.SOURCE_FILE_EXTENSIONS ++ FileDefaults.HEADER_FILE_EXTENSIONS,
-        config.withDefaultIgnoredFilesRegex(DefaultIgnoredFolders)
-      )
-      .toArray
+  override def generateParts(): Array[String] = SourceFiles
+    .determine(
+      config.inputPath,
+      FileDefaults.SOURCE_FILE_EXTENSIONS ++ FileDefaults.HEADER_FILE_EXTENSIONS,
+      ignoredDefaultRegex = Some(DefaultIgnoredFolders),
+      ignoredFilesRegex = Some(config.ignoredFilesRegex),
+      ignoredFilesPath = Some(config.ignoredFiles)
+    )
+    .toArray
 
   override def runOnPart(diffGraph: DiffGraphBuilder, filename: String): Unit = {
     val path    = Paths.get(filename).toAbsolutePath
