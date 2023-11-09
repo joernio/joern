@@ -176,4 +176,30 @@ class CallTests extends CCodeToCpgSuite {
     }
   }
 
+  "CallTest 6" should {
+    val cpg = code(
+      """
+        |class A {
+        |  public:
+        |    void foo1(){
+        |      foo2();
+        |    }
+        |	static void foo2() {}
+        |};
+        |
+        |int main() {
+        |  A a;
+        |  a.foo1();
+        |}
+        |""".stripMargin,
+      "test.cpp"
+    )
+    "have correct type full names for calls" in {
+      val List(foo2Call) = cpg.call("foo2").l
+      foo2Call.methodFullName shouldBe "A.foo2"
+      val List(foo2Method) = cpg.method("foo2").l
+      foo2Method.fullName shouldBe "A.foo2"
+    }
+  }
+
 }
