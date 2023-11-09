@@ -12,11 +12,8 @@ class AstNodeTraversal[A <: AstNode](val traversal: Iterator[A]) extends AnyVal 
   /** Nodes of the AST rooted in this node, including the node itself.
     */
   // TODO bring back @Doc(info = "All nodes of the abstract syntax tree")
-  def ast: Iterator[AstNode] = {
-    // TODO bring back .repeat
-    //    traversal.repeat(_.out(EdgeTypes.AST))(_.emit).cast[AstNode]
-    ???
-  }
+  def ast: Iterator[AstNode] =
+    traversal.repeat(_._astOut)(_.emit).cast[AstNode]
 
   /** All nodes of the abstract syntax tree rooted in this node, which match `predicate`. Equivalent of `match` in the
     * original CPG paper.

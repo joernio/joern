@@ -43,78 +43,53 @@ class StepsTest extends AnyWordSpec with Matchers {
        val publicMethods = allMethods.where(_.isPublic)
        allMethods.size should be > publicMethods.toList.size
      }
-
-//     "filter on id" when {
-//       "providing one" in {
-//         // find an arbitrary method so we can find it again in the next step
-//         val method: Method        = cpg.method.head
-//         val results: List[Method] = cpg.method.id(method.id).toList
-//         results.size shouldBe 1
-//         results.head.underlying.id
-//       }
-//
-//       "providing multiple" in {
-//         // find two arbitrary methods so we can find it again in the next step
-//         val methods               = cpg.method.toList.take(2)
-//         val results: List[Method] = cpg.method.id(methods.map(_.id): _*).toList
-//
-//         results.size shouldBe 2
-//         results.toSet shouldBe methods.toSet
-//       }
-//     }
    }
 
-//   "find that all method returns are linked to a method" in {
-//     val returnsWithMethods = cpg.method.methodReturn.l
-//     val returns            = cpg.methodReturn.l
-//     returnsWithMethods.size shouldBe returns.size
-//   }
-//
-//   "allow for comprehensions" in {
-//     case class MethodParamPairs(methodName: String, paramName: String)
-//
-//     val query = for {
-//       method <- cpg.method
-//       param  <- method.parameter
-//     } yield MethodParamPairs(method.name, param.name)
-//
-//     val pairs: List[MethodParamPairs] = query.toList
-//     pairs.size should be > 0
-//   }
-//
-//   "allow lists in map/flatMap/forComprehension" in {
-//     cpg.method.map { method =>
-//       (method.name, method.parameter.l)
-//     }.size should be > 1
-//   }
-//
-//   "allow side effects" in {
-//     var i = 0
-//     cpg.method.sideEffect(_ => i = i + 1).exec()
-//     i should be > 0
-//   }
-//
-//   "allow retrieving ids" in {
-//     cpg.method.id.l should not be empty
-//   }
-//
-//   "when calling for an AST node's parent block" should {
-//
-//     "return the parent block for a block's AST child" in {
-//       val List(block: Block)        = cpg.method("woo").block.l
-//       val blockDirectChild: AstNode = cpg.method("woo").block.ast.head
-//       val blockLeafChild: AstNode   = cpg.method("woo").block.ast.last
-//
-//       blockDirectChild.parentBlock.head shouldBe block
-//       blockLeafChild.parentBlock.head shouldBe block
-//     }
-//
-//     "return an empty traversal if no block is found" in {
-//       cpg.method("woo").parentBlock.map(_.label).isEmpty shouldBe true
-//     }
-//
-//   }
-//
+   "find that all method returns are linked to a method" in {
+     val returnsWithMethods = cpg.method.methodReturn.l
+     val returns            = cpg.methodReturn.l
+     returnsWithMethods.size shouldBe returns.size
+   }
+
+   "allow for comprehensions" in {
+     case class MethodParamPairs(methodName: String, paramName: String)
+
+     val query = for {
+       method <- cpg.method
+       param  <- method.parameter
+     } yield MethodParamPairs(method.name, param.name)
+
+     val pairs: List[MethodParamPairs] = query.toList
+     pairs.size should be > 0
+   }
+
+   "allow lists in map/flatMap/forComprehension" in {
+     cpg.method.map { method =>
+       (method.name, method.parameter.l)
+     }.size should be > 1
+   }
+
+   "allow side effects" in {
+     var i = 0
+     cpg.method.sideEffect(_ => i = i + 1).exec()
+     i should be > 0
+   }
+
+   "when calling for an AST node's parent block" should {
+     "return the parent block for a block's AST child" in {
+       val List(block: Block)        = cpg.method("woo").block.l
+       val blockDirectChild: AstNode = cpg.method("woo").block.ast.head
+       val blockLeafChild: AstNode   = cpg.method("woo").block.ast.last
+
+       blockDirectChild.parentBlock.head shouldBe block
+       blockLeafChild.parentBlock.head shouldBe block
+     }
+
+     "return an empty traversal if no block is found" in {
+       cpg.method("woo").parentBlock.map(_.label).isEmpty shouldBe true
+     }
+   }
+
 //   "toJson" when {
 //     "operating on StoredNode" in {
 //       val json   = cpg.method.nameExact("foo").toJson
