@@ -60,14 +60,8 @@ object SourceFiles {
     case _                                       => true
   }
 
-  /** For a given input path, determine all source files by inspecting filename extensions.
-    */
-  def determine(inputPath: String, sourceFileExtensions: Set[String]): List[String] = {
-    determine(Set(inputPath), sourceFileExtensions)
-  }
-
-  /** For given input paths, determine all source files by inspecting filename extensions and filter the result
-    * according to ignoredDefaultRegex, ignoredFilesRegex and ignoredFilesPath.
+  /** For given input paths, determine all source files by inspecting filename extensions and filter the result if
+    * following arguments ignoredDefaultRegex, ignoredFilesRegex and ignoredFilesPath are used
     */
   def determine(
     inputPath: String,
