@@ -1,8 +1,10 @@
 package io.joern.jimple2cpg.querying.dataflow
 
-import io.joern.dataflowengineoss.language._
+import io.joern.dataflowengineoss.language.*
 import io.joern.jimple2cpg.testfixtures.JimpleDataFlowCodeToCpgSuite
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.*
 
 class TryTests extends JimpleDataFlowCodeToCpgSuite {
 
@@ -95,11 +97,15 @@ class TryTests extends JimpleDataFlowCodeToCpgSuite {
         |        System.out.println(s);
         |    }
         |
+        |    public void spooky() throws Exception {
+        |    }
+        |
         |    public void test8() {
         |        String s = "MALICIOUS";
         |
         |        try {
         |            s = "SAFE";
+        |            spooky();
         |        } catch (Exception e) {
         |            s = "ALSO SAFE";
         |        }
@@ -116,6 +122,41 @@ class TryTests extends JimpleDataFlowCodeToCpgSuite {
         |            s = "MALICIOUS";
         |        } finally {
         |            s = "SAFE";
+        |        }
+        |
+        |        System.out.println(s);
+        |    }
+        |
+        |    public void test10() {
+        |        String s = "MALICIOUS";
+        |
+        |        try {
+        |            spooky();
+        |            s = "SAFE";
+        |            try {
+        |               s = "MALICIOUS";
+        |            } finally {
+        |               s = "SAFE";
+        |            }
+        |        } catch (Exception e) {
+        |            s = "SAFE";
+        |        }
+        |
+        |        System.out.println(s);
+        |    }
+        |
+        |    public void test11() {
+        |        String s = "MALICIOUS";
+        |
+        |        try {
+        |            spooky();
+        |            s = "SAFE";
+        |            try {
+        |               s = "MALICIOUS";
+        |            } finally {
+        |               s = "SAFE";
+        |            }
+        |        } catch (Exception e) {
         |        }
         |
         |        System.out.println(s);
@@ -169,6 +210,14 @@ class TryTests extends JimpleDataFlowCodeToCpgSuite {
     "not find a path if `MALICIOUS` is reassigned in FINALLY" in {
       val (source, sink) = getConstSourceSink("test9")
       sink.reachableBy(source).size shouldBe 0
+    }
+    "not find a path if `MALICIOUS` has `SAFE` assigned in all paths of nested try-catch" in {
+      val (source, sink) = getConstSourceSink("test10")
+      sink.reachableBy(source).size shouldBe 0
+    }
+    "find a path if `MALICIOUS` untouched in outer handler of nested try-catch" in {
+      val (source, sink) = getConstSourceSink("test11")
+      sink.reachableBy(source).size shouldBe 1
     }
   }
 }
