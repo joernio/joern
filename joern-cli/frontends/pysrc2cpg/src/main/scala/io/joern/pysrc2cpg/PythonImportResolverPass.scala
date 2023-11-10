@@ -30,8 +30,10 @@ class PythonImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
         moduleMethod.astChildren.foreach {
           case moduleFunction: Method =>
             moduleCache.put(s"$modulePath.${moduleFunction.name}", ImportableFunction(moduleFunction))
-          case moduleType: TypeDecl => moduleCache.put(s"$modulePath.${moduleType.name}", ImportableType(moduleType))
-          case _                    => // do nothing
+          // Ignore types for functions that are used for method pointers
+          case moduleType: TypeDecl if moduleMethod.astChildren.isMethod.fullNameExact(moduleType.fullName).isEmpty =>
+            moduleCache.put(s"$modulePath.${moduleType.name}", ImportableType(moduleType))
+          case _ => // do nothing
         }
       }
       moduleType.member.foreach { moduleMember =>
