@@ -1,5 +1,6 @@
 package io.joern.c2cpg.passes
 
+import io.joern.c2cpg.C2Cpg.DefaultIgnoredFolders
 import io.joern.c2cpg.Config
 import io.joern.c2cpg.parser.{CdtParser, FileDefaults}
 import io.joern.x2cpg.SourceFiles
@@ -22,6 +23,7 @@ class PreprocessorPass(config: Config) {
       .determine(
         config.inputPath,
         FileDefaults.SOURCE_FILE_EXTENSIONS,
+        ignoredDefaultRegex = Some(DefaultIgnoredRegex),
         ignoredFilesRegex = Some(config.ignoredFilesRegex),
         ignoredFilesPath = Some(config.ignoredFiles)
       )
