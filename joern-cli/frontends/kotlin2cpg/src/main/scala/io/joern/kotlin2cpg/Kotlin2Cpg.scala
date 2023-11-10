@@ -74,14 +74,24 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
         case None             => None
       }
 
-      val filesWithKtExtension = SourceFiles.determine(sourceDir, Set(".kt"))
+      val filesWithKtExtension = SourceFiles.determine(
+        sourceDir,
+        Set(".kt"),
+        ignoredFilesRegex = Some(config.ignoredFilesRegex),
+        ignoredFilesPath = Some(config.ignoredFiles)
+      )
       if (filesWithKtExtension.isEmpty) {
         println(s"The provided input directory does not contain files ending in '.kt' `$sourceDir`. Exiting.")
         System.exit(1)
       }
       logger.info(s"Starting CPG generation for input directory `$sourceDir`.")
 
-      val filesWithJavaExtension = SourceFiles.determine(sourceDir, Set(".java"))
+      val filesWithJavaExtension = SourceFiles.determine(
+        sourceDir,
+        Set(".java"),
+        ignoredFilesRegex = Some(config.ignoredFilesRegex),
+        ignoredFilesPath = Some(config.ignoredFiles)
+      )
       if (filesWithJavaExtension.nonEmpty) {
         logger.info(s"Found ${filesWithJavaExtension.size} files with the `.java` extension.")
       }

@@ -34,6 +34,23 @@ class SourceFilesTests extends AnyWordSpec with Matchers with Inside {
     "input is symlink to directory" in {
       SourceFiles.determine(s"$resourcesRoot/symlink-to-testcode", cSourceFileExtensions).size shouldBe 3
     }
+
+    "ignoreByRegex is used" in {
+      SourceFiles
+        .determine(s"$resourcesRoot/testcode", cSourceFileExtensions, ignoredFilesRegex = Some(".*[.]h".r))
+        .size shouldBe 1
+    }
+
+    "ignoreByFilePath is used" in {
+      SourceFiles
+        .determine(
+          s"$resourcesRoot/testcode",
+          cSourceFileExtensions,
+          ignoredFilesPath = Some(Seq(File(s"$resourcesRoot/testcode").pathAsString))
+        )
+        .size shouldBe 0
+    }
+
   }
 
   "throw an exception" when {
