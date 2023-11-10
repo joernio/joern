@@ -51,3 +51,10 @@ slices.json
 flake.nix
 flake.lock
 .direnv
+
+##############
+# Metals LSP #
+##############
+**/.metals
+**/metals.sbt
+*.semanticdb

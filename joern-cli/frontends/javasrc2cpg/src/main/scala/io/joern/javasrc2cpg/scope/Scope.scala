@@ -1,25 +1,11 @@
 package io.joern.javasrc2cpg.scope
 
-import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
-import io.shiftleft.codepropertygraph.generated.nodes.NewNamespace
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
-import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
-import io.shiftleft.codepropertygraph.generated.nodes.NewTypeParameter
-import io.shiftleft.codepropertygraph.generated.nodes.NewImport
-import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethodParameterIn
-import io.shiftleft.codepropertygraph.generated.nodes.NewMember
-import io.shiftleft.codepropertygraph.generated.nodes.NewNode
-import io.shiftleft.codepropertygraph.generated.nodes.DeclarationNew
-
-import io.joern.javasrc2cpg.scope.Scope._
 import io.joern.javasrc2cpg.astcreation.ExpectedType
-
-import scala.collection.mutable
-import io.joern.x2cpg.utils.ListUtils._
-import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
-import io.joern.x2cpg.Ast
+import io.joern.javasrc2cpg.scope.Scope.*
 import io.joern.javasrc2cpg.util.NameConstants
+import io.joern.x2cpg.Ast
+import io.joern.x2cpg.utils.ListUtils.*
+import io.shiftleft.codepropertygraph.generated.nodes.*
 
 // TODO: Added for backwards compatibility with old scope methods, but is no longer
 //  strictly necessary due to stricter scope variable classes. Refactor AstCreator
@@ -181,7 +167,7 @@ class Scope {
   }
 
   // TODO: Refactor and remove this
-  def capturedVariables: List[ScopeVariable] = {
+  def variablesInScope: List[ScopeVariable] = {
     scopeStack
       .flatMap(_.getVariables())
       .collect {
