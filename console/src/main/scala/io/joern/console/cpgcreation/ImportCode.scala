@@ -66,7 +66,24 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) extends Rep
   def rubyDeprecated: SourceBasedFrontend = new RubyFrontend("Ruby source deprecated frontend", true)
 
   private def allFrontends: List[Frontend] =
-    List(c, cpp, ghidra, kotlin, java, jvm, javascript, jssrc, swiftsrc, golang, llvm, php, python, csharp, ruby, rubyDeprecated)
+    List(
+      c,
+      cpp,
+      ghidra,
+      kotlin,
+      java,
+      jvm,
+      javascript,
+      jssrc,
+      swiftsrc,
+      golang,
+      llvm,
+      php,
+      python,
+      csharp,
+      ruby,
+      rubyDeprecated
+    )
 
   // this is only abstract to force people adding frontends to make a decision whether the frontend consumes binaries or source
   abstract class Frontend(val name: String, val language: String, val description: String = "") {
