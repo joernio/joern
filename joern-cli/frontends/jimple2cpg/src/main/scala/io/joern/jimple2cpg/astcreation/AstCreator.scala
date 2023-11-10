@@ -271,6 +271,8 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
 
   override def lineEnd(node: Host): Option[Integer] = None
 
+  override def code(node: Host): String = node.toString
+
   /** Tracks AST scope.
     */
   protected val stack: mutable.Stack[Ast] = mutable.Stack.empty
