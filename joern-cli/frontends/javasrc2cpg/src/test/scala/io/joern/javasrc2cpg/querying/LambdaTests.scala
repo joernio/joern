@@ -1,20 +1,9 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.edges.{Capture, Ref}
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  Binding,
-  Call,
-  ClosureBinding,
-  Identifier,
-  Local,
-  MethodParameterIn,
-  MethodRef,
-  Return
-}
-import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.jIteratortoTraversal
+import io.shiftleft.semanticcpg.language.*
 
 class LambdaTests extends JavaSrcCode2CpgFixture {
   "unresolved lambda parameters should have an ANY type" in {
@@ -104,7 +93,7 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
 
     "create a method body for the lambda method" in {
       cpg.typeDecl.name("Foo").method.name(".*lambda.*").block.astChildren.l match {
-        case List(_: Local, _: Local, returnNode: Return) =>
+        case List(fallBack: Local, returnNode: Return) =>
           returnNode.code shouldBe "return lambdaInput.length() > 5 ? \"Long\" : fallback;"
           returnNode.astChildren.l match {
             case List(expr: Call) =>
@@ -112,6 +101,7 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
 
             case result => fail(s"Expected return conditional, but got $result")
           }
+          fallBack.name shouldBe "fallback"
 
         case result => fail(s"Expected lambda body with single return but got $result")
       }
@@ -119,11 +109,7 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
 
     "create locals for captured identifiers in the lambda method" in {
       cpg.typeDecl.name("Foo").method.name(".*lambda.*").local.sortBy(_.name) match {
-        case Seq(fallbackLocal: Local, inputLocal: Local) =>
-          inputLocal.name shouldBe "input"
-          inputLocal.code shouldBe "input"
-          inputLocal.typeFullName shouldBe "java.lang.String"
-
+        case Seq(fallbackLocal: Local) =>
           fallbackLocal.name shouldBe "fallback"
           fallbackLocal.code shouldBe "fallback"
           fallbackLocal.typeFullName shouldBe "java.lang.String"
@@ -134,7 +120,7 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
 
     "create closure bindings for captured identifiers" in {
       cpg.all.collectAll[ClosureBinding].sortBy(_.closureOriginalName) match {
-        case Seq(fallbackClosureBinding, _) =>
+        case Seq(fallbackClosureBinding) =>
           fallbackClosureBinding.label shouldBe "CLOSURE_BINDING"
 
           val fallbackLocal = cpg.method.name(".*lambda.*").local.name("fallback").head
@@ -691,5 +677,40 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
         case result => fail(s"Expected single binding to apply method but got $result")
       }
     }
+  }
+
+  "lambda capturing local variables" should {
+
+    val cpg = code("""
+        |public class Foo {
+        |
+        | public void foo(Object arg) {
+        |       String myValue = "abc";
+        |       List<String> userPayload = new ArrayList<>();
+        |       List<String> userNamesList = userPayload.stream.map(item -> {
+        |         sink2(myValue);
+        |         return item + myValue;
+        |       });
+        |       sink1(userNamesList);
+        |       return;
+        | }
+        |
+        |}
+        |""".stripMargin)
+
+    "be captured precisely" in {
+      cpg.all.collectAll[ClosureBinding].l match {
+        case myValue :: Nil =>
+          myValue.closureOriginalName.head shouldBe "myValue"
+          myValue._localViaRefOut.name shouldBe "myValue"
+          myValue._captureIn.collectFirst { case x: MethodRef =>
+            x.methodFullName
+          }.head shouldBe "Foo.lambda$0:<unresolvedSignature>(1)"
+
+        case result =>
+          fail(s"Expected single closure binding to collect but got $result")
+      }
+    }
+
   }
 }
