@@ -1,25 +1,22 @@
 package io.joern.swiftsrc2cpg.astcreation
 
 import io.joern.swiftsrc2cpg.Config
-import io.joern.swiftsrc2cpg.datastructures.{MethodScope, Scope}
+import io.joern.swiftsrc2cpg.datastructures.Scope
 import io.joern.swiftsrc2cpg.parser.SwiftJsonParser.ParseResult
-import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.SourceFileSyntax
-import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.SwiftNode
+import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.swiftsrc2cpg.passes.Defines
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, AstNodeBuilder as X2CpgAstNodeBuilder}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
-import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 import io.shiftleft.codepropertygraph.generated.nodes.NewFile
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeRef
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
-import ujson.Value
 
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
@@ -30,6 +27,14 @@ class AstCreator(
   val usedTypes: ConcurrentHashMap[(String, String), Boolean]
 )(implicit withSchemaValidation: ValidationMode)
     extends AstCreatorBase(parserResult.filename)
+    with AstForSwiftTokenCreator
+    with AstForSyntaxCreator
+    with AstForExprSyntaxCreator
+    with AstForTypeSyntaxCreator
+    with AstForDeclSyntaxCreator
+    with AstForPatternSyntaxCreator
+    with AstForStmtSyntaxCreator
+    with AstForSyntaxCollectionCreator
     with AstCreatorHelper
     with X2CpgAstNodeBuilder[SwiftNode, AstCreator] {
 
@@ -88,7 +93,15 @@ class AstCreator(
   }
 
   protected def astForNode(node: SwiftNode): Ast = node match {
-    case _ => notHandledYet(node)
+    case swiftToken: SwiftToken             => astForSwiftToken(swiftToken)
+    case syntax: Syntax                     => astForSyntax(syntax)
+    case exprSyntax: ExprSyntax             => astForExprSyntax(exprSyntax)
+    case typeSyntax: TypeSyntax             => astForTypeSyntax(typeSyntax)
+    case declSyntax: DeclSyntax             => astForDeclSyntax(declSyntax)
+    case patternSyntax: PatternSyntax       => astForPatternSyntax(patternSyntax)
+    case stmtSyntax: StmtSyntax             => astForStmtSyntax(stmtSyntax)
+    case syntaxCollection: SyntaxCollection => astForSyntaxCollection(syntaxCollection)
+    case null                               => notHandledYet(node)
   }
 
   protected def line(node: SwiftNode): Option[Integer]      = node.startLine.map(Integer.valueOf)

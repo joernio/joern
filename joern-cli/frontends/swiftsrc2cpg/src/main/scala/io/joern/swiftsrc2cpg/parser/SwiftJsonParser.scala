@@ -2,7 +2,6 @@ package io.joern.swiftsrc2cpg.parser
 
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.SwiftNode
 import io.shiftleft.utils.IOUtils
-import ujson.Value.Value
 
 import java.nio.file.Path
 import java.nio.file.Paths
