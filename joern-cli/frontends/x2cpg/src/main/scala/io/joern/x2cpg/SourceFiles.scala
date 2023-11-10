@@ -53,11 +53,13 @@ object SourceFiles {
     ignoredFilesRegex: Option[Regex] = None,
     ignoredFilesPath: Option[Seq[String]] = None
   ): List[String] = files.filter {
-    case filePath if ignoredFilesPath.isDefined => !isIgnoredByFileList(filePath, ignoredFilesPath.get)
-    case filePath if ignoredDefaultRegex.isDefined =>
-      !isIgnoredByDefaultRegex(filePath, inputPath, ignoredDefaultRegex.get)
-    case filePath if ignoredFilesRegex.isDefined => !isIgnoredByRegex(filePath, inputPath, ignoredFilesRegex.get)
-    case _                                       => true
+    case filePath
+        if ignoredDefaultRegex.isDefined && isIgnoredByDefaultRegex(filePath, inputPath, ignoredDefaultRegex.get) =>
+      false
+    case filePath if ignoredFilesRegex.isDefined && isIgnoredByRegex(filePath, inputPath, ignoredFilesRegex.get) =>
+      false
+    case filePath if ignoredFilesPath.isDefined && isIgnoredByFileList(filePath, ignoredFilesPath.get) => false
+    case _                                                                                             => true
   }
 
   /** For given input paths, determine all source files by inspecting filename extensions and filter the result if

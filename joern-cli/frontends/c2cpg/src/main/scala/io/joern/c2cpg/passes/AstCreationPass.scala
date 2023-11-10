@@ -1,5 +1,6 @@
 package io.joern.c2cpg.passes
 
+import io.joern.c2cpg.C2Cpg.DefaultIgnoredFolders
 import io.joern.c2cpg.Config
 import io.joern.c2cpg.astcreation.AstCreator
 import io.joern.c2cpg.parser.{CdtParser, FileDefaults}
@@ -18,13 +19,6 @@ class AstCreationPass(cpg: Cpg, config: Config, report: Report = new Report())
 
   private val file2OffsetTable: ConcurrentHashMap[String, Array[Int]] = new ConcurrentHashMap()
   private val parser: CdtParser                                       = new CdtParser(config)
-
-  private val EscapedFileSeparator = Pattern.quote(java.io.File.separator)
-  private val DefaultIgnoredFolders: List[Regex] = List(
-    "\\..*".r,
-    s"(.*[$EscapedFileSeparator])?tests?[$EscapedFileSeparator].*".r,
-    s"(.*[$EscapedFileSeparator])?CMakeFiles[$EscapedFileSeparator].*".r
-  )
 
   override def generateParts(): Array[String] = SourceFiles
     .determine(
