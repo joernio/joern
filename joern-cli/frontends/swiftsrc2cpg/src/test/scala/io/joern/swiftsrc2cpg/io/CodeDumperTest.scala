@@ -13,19 +13,18 @@ class CodeDumperTest extends SwiftSrc2CpgSuite {
 
   private val codeString = """
    |// A comment
-   |func greet(person: String) -> String {
-   |  let greeting = "Hello, " + person + "!"
-   |  foo()
-   |  return greeting
-   |}
-   |""".stripMargin
+   |func my_func(param1: Int) -> Int {
+   |  let x: Int = foo(p: param1)
+   |}""".stripMargin
 
-  private val cpg = code(codeString, "main.swift")
+  private val cpg = code(codeString, "test.swift")
 
-  private val path = File(cpg.metaData.root.head) / "main.swift"
+  private val path = File(cpg.metaData.root.head) / "test.swift"
 
   override def beforeAll(): Unit = {
     super.beforeAll()
+    // we have to restore the input file because CPG creation in SwiftSrc2CpgSuite
+    // deletes it right after the CPG is ready.
     path.createFileIfNotExists(createParents = true)
     path.writeText(codeString)
   }
@@ -42,10 +41,10 @@ class CodeDumperTest extends SwiftSrc2CpgSuite {
     }
 
     "be able to dump complete function" ignore {
-      val code = cpg.method.name("greet").dumpRaw.mkString("\n")
+      val code = cpg.method.name("my_func").dumpRaw.mkString("\n")
       code should (
-        startWith("func greet")
-          and include("let greeting")
+        startWith("func my_func")
+          and include("foo(p: param1)")
           and endWith("}")
       )
     }
@@ -53,17 +52,28 @@ class CodeDumperTest extends SwiftSrc2CpgSuite {
     "dump method with arrow for expression (a call)" ignore {
       val code = cpg.call.name("foo").dumpRaw.mkString("\n")
       code should (
-        startWith("func greet")
-          and include regex s".*foo.*${Pattern.quote(CodeDumper.arrow(Option("main.swift:<global>:greet")).toString)}.*"
+        startWith("func")
+          and include regex (".*" + "let x: Int = foo" + ".*" + Pattern.quote(
+            CodeDumper.arrow(Option("my_func")).toString
+          ) + ".*")
           and endWith("}")
       )
     }
 
-    "allow dumping via .dump" ignore {
-      val code = cpg.method.name("greet").dumpRaw.mkString("\n")
-      code should startWith("func greet")
+    "methodCode should return nothing on invalid filename" in {
+      CodeDumper.code("fooNonexisting", 1, 2) shouldBe empty
     }
 
+    "allow dumping via .dump" ignore {
+      val code = cpg.method.name("my_func").dumpRaw.mkString("\n")
+      code should startWith("func my_func")
+    }
+
+    "allow dumping callIn" ignore {
+      implicit val resolver: ICallResolver = NoResolve
+      val code                             = cpg.method.name("foo").callIn.dumpRaw.mkString("\n")
+      code should startWith("func my_func")
+    }
   }
 
 }

@@ -66,30 +66,16 @@ class AstCreator(
   }
 
   private def astInFakeMethod(fullName: String, path: String, ast: SwiftNode): Ast = {
-    val allSiftNodes = ast match {
-      case sourceFile: SourceFileSyntax => sourceFile.statements.children
-      case _                            => Seq.empty
-    }
-    val name = NamespaceTraversal.globalNamespaceName
-
-    val fakeGlobalTypeDecl =
-      typeDeclNode(ast, name, fullName, path, name, NodeTypes.NAMESPACE_BLOCK, fullName)
+    val sourceFileAst      = astForNode(ast)
+    val name               = NamespaceTraversal.globalNamespaceName
+    val fakeGlobalTypeDecl = typeDeclNode(ast, name, fullName, path, name, NodeTypes.NAMESPACE_BLOCK, fullName)
     methodAstParentStack.push(fakeGlobalTypeDecl)
-
     val fakeGlobalMethod =
       methodNode(ast, name, name, fullName, None, path, Option(NodeTypes.TYPE_DECL), Option(fullName))
     methodAstParentStack.push(fakeGlobalMethod)
     scope.pushNewMethodScope(fullName, name, fakeGlobalMethod, None)
-
-    val blockNode_ = blockNode(ast, "<empty>", Defines.Any)
-
-    val childrenAsts = allSiftNodes.map(astForNode)
-    setArgumentIndices(childrenAsts)
-
     val methodReturn = newMethodReturnNode(Defines.Any, None, line(ast), column(ast))
-    Ast(fakeGlobalTypeDecl).withChild(
-      methodAst(fakeGlobalMethod, Seq.empty, blockAst(blockNode_, childrenAsts.toList), methodReturn)
-    )
+    Ast(fakeGlobalTypeDecl).withChild(methodAst(fakeGlobalMethod, Seq.empty, sourceFileAst, methodReturn))
   }
 
   protected def astForNode(node: SwiftNode): Ast = node match {

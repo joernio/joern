@@ -1,6 +1,7 @@
 package io.joern.swiftsrc2cpg.astcreation
 
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
+import io.joern.swiftsrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
 
@@ -123,7 +124,9 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForPrimaryAssociatedTypeSyntax(node: PrimaryAssociatedTypeSyntax): Ast = notHandledYet(node)
   private def astForReturnClauseSyntax(node: ReturnClauseSyntax): Ast                   = notHandledYet(node)
   private def astForSameTypeRequirementSyntax(node: SameTypeRequirementSyntax): Ast     = notHandledYet(node)
-  private def astForSourceFileSyntax(node: SourceFileSyntax): Ast                       = notHandledYet(node)
+  private def astForSourceFileSyntax(node: SourceFileSyntax): Ast = {
+    astForNode(node.statements)
+  }
   private def astForSpecializeAvailabilityArgumentSyntax(node: SpecializeAvailabilityArgumentSyntax): Ast =
     notHandledYet(node)
   private def astForSpecializeTargetFunctionArgumentSyntax(node: SpecializeTargetFunctionArgumentSyntax): Ast =

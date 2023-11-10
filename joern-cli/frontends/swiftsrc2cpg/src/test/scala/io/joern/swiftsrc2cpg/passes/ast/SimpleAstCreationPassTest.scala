@@ -12,7 +12,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
         |let x = 1;
         |""".stripMargin) { cpg =>
       val List(method) = cpg.method.nameExact("<global>").l
-      cpg.method.astChildren.isBlock.astChildren.code.l shouldBe List("let x = 1;")
+      method.astChildren.isBlock.astChildren.code.l shouldBe List("let x = 1;")
     }
   }
 

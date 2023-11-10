@@ -1,6 +1,7 @@
 package io.joern.swiftsrc2cpg.astcreation
 
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
+import io.joern.swiftsrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
 
@@ -18,7 +19,14 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
   private def astForClosureShorthandParameterListSyntax(node: ClosureShorthandParameterListSyntax): Ast = notHandledYet(
     node
   )
-  private def astForCodeBlockItemListSyntax(node: CodeBlockItemListSyntax): Ast                   = notHandledYet(node)
+  private def astForCodeBlockItemListSyntax(node: CodeBlockItemListSyntax): Ast = {
+    val blockNode_ = blockNode(node, "<empty>", Defines.Any)
+    scope.pushNewBlockScope(blockNode_)
+    val childrenAsts = node.children.map(astForNode)
+    setArgumentIndices(childrenAsts)
+    scope.popScope()
+    blockAst(blockNode_, childrenAsts.toList)
+  }
   private def astForCompositionTypeElementListSyntax(node: CompositionTypeElementListSyntax): Ast = notHandledYet(node)
   private def astForConditionElementListSyntax(node: ConditionElementListSyntax): Ast             = notHandledYet(node)
   private def astForDeclModifierListSyntax(node: DeclModifierListSyntax): Ast                     = notHandledYet(node)
