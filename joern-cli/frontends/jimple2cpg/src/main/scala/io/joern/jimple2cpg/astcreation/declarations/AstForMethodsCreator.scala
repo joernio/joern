@@ -1,6 +1,6 @@
 package io.joern.jimple2cpg.astcreation.declarations
 
-import io.joern.jimple2cpg.astcreation.{AstCreator, TrappedUnitType}
+import io.joern.jimple2cpg.astcreation.{AstCreator}
 import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
@@ -18,6 +18,8 @@ import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
 
 import cats.syntax.all.*;
+import scala.collection.mutable.ArrayBuffer
+import io.joern.jimple2cpg.astcreation.statements.BodyStatementsInfo
 
 trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -27,7 +29,8 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
   private val JVM_LANGS = HashSet("scala", "clojure", "groovy", "kotlin", "jython", "jruby")
 
   protected def astForMethod(methodDeclaration: SootMethod, typeDecl: RefType): Ast = {
-    val methodNode = createMethodNode(methodDeclaration, typeDecl)
+    val bodyStatementsInfo = BodyStatementsInfo()
+    val methodNode         = createMethodNode(methodDeclaration, typeDecl)
     try {
       if (!methodDeclaration.isConcrete) {
         // Soot is not able to parse origin parameter names of abstract methods
@@ -70,7 +73,7 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
             .lineNumberEnd(methodBody.toString.split('\n').filterNot(_.isBlank).length)
             .code(methodBody.toString),
           parameterAsts,
-          astForMethodBody(methodBody),
+          astForMethodBody(methodBody, bodyStatementsInfo),
           astForMethodReturn(methodDeclaration),
           astsForModifiers(methodDeclaration),
           astsForHostTags(methodDeclaration)
@@ -104,22 +107,18 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
         )
     } finally {
       // Join all targets with CFG edges - this seems to work from what is seen on DotFiles
-      controlTargets.foreach { case (asts, unit) =>
+      bodyStatementsInfo.targets.foreach { case (asts, unit) =>
         asts.headOption match {
           case Some(value) =>
-            diffGraph.addEdge(value.root.get, unitToAsts(unit).last.root.get, EdgeTypes.CFG)
+            diffGraph.addEdge(value.root.get, bodyStatementsInfo.unitToAsts(unit).last.root.get, EdgeTypes.CFG)
           case None =>
         }
       }
-      controlEdges.foreach { case (a, b) =>
-        val aNode = unitToAsts(a).last.root.get
-        val bNode = unitToAsts(b).last.root.get
+      bodyStatementsInfo.edges.foreach { case (a, b) =>
+        val aNode = bodyStatementsInfo.unitToAsts(a).last.root.get
+        val bNode = bodyStatementsInfo.unitToAsts(b).last.root.get
         diffGraph.addEdge(aNode, bNode, EdgeTypes.CFG)
       }
-      // Clear these maps
-      controlEdges.clear()
-      controlTargets.clear()
-      unitToAsts.clear()
     }
   }
 
@@ -208,7 +207,7 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
     }
   }
 
-  private def astForMethodBody(body: Body): Ast = {
+  private def astForMethodBody(body: Body, info: BodyStatementsInfo): Ast = {
     val jimpleParams = body.getParameterLocals.asScala.toList
     // Don't let parameters also become locals (avoiding duplication)
     val jimpleLocals = body.getLocals.asScala.filterNot(l => jimpleParams.contains(l) || l.getName == "this").toList
@@ -218,23 +217,33 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
       val code         = s"$typeFullName $name"
       Ast(localNode(body, name, code, typeFullName))
     }
+
     // Indicate trap boundaries
+    val pushTraps: mutable.HashMap[SUnit, List[Trap]] = mutable.HashMap.empty
+    val popTraps: mutable.HashMap[SUnit, Int]         = mutable.HashMap.empty
     body.getTraps.asScala.toList.reverseIterator.foreach { trap =>
-      UnitTrapExt.pushTraps.updateWith(trap.getBeginUnit)(Option(List(trap)) combine _)
-      UnitTrapExt.popTraps.updateWith(trap.getEndUnit)(Option(List(trap)) combine _)
+      pushTraps.updateWith(trap.getBeginUnit)(Option(List(trap)) combine _)
+      popTraps.updateWith(trap.getEndUnit)(Option(1) combine _)
     }
 
     stack.push(Ast(blockNode(body)).withChildren(locals))
 
     val trapStack = new mutable.Stack[soot.Trap];
     body.getUnits.asScala.filterNot(isIgnoredUnit).foreach { statement =>
-      UnitTrapExt.popTraps.getOrElse(statement, List.empty).foreach(_ => trapStack.pop())
-      UnitTrapExt.pushTraps.getOrElse(statement, List.empty).foreach(trapStack.push)
-      val asts = astsForStatement(statement)
+      // Remove traps that ended on the previous unit
+      (1 to popTraps.getOrElse(statement, 0)).foreach(_ => trapStack.pop)
+
+      // Add traps that apply to this unit
+      pushTraps.getOrElse(statement, List.empty).foreach(trapStack.push)
+
+      val asts = astsForStatement(statement, info)
+
+      // Add a control edge to the handler for each trap applying to this unit
       trapStack.foreach { trap =>
         val handler = trap.getHandlerUnit();
-        controlEdges.addOne(statement -> handler)
+        info.edges.addOne(statement -> handler)
       }
+
       stack.push(stack.pop().withChildren(asts))
     }
 

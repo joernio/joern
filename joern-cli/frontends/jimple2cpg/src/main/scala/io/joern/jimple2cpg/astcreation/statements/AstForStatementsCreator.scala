@@ -1,7 +1,6 @@
 package io.joern.jimple2cpg.astcreation.statements
 
-import io.joern.jimple2cpg.astcreation.TrappedUnitType.{END, HANDLER, START}
-import io.joern.jimple2cpg.astcreation.{AstCreator, TrappedUnitType}
+import io.joern.jimple2cpg.astcreation.AstCreator
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, PropertyNames}
@@ -12,19 +11,20 @@ import soot.{Unit, Value}
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.CollectionHasAsScala
+import scala.collection.mutable.ArrayBuffer
 
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  protected def astsForStatement(statement: soot.Unit): Seq[Ast] = {
+  protected def astsForStatement(statement: soot.Unit, info: BodyStatementsInfo): Seq[Ast] = {
     val stmt = statement match {
       case x: AssignStmt       => astsForDefinition(x)
       case x: InvokeStmt       => astsForExpression(x.getInvokeExpr, statement)
       case x: ReturnStmt       => astsForReturnStmt(x)
       case x: ReturnVoidStmt   => astsForReturnVoidStmt(x)
-      case x: IfStmt           => astsForIfStmt(x)
-      case x: GotoStmt         => astsForGotoStmt(x)
+      case x: IfStmt           => astsForIfStmt(x, info)
+      case x: GotoStmt         => astsForGotoStmt(x, info)
       case x: LookupSwitchStmt => astsForLookupSwitchStmt(x)
       case x: TableSwitchStmt  => astsForTableSwitchStmt(x)
       case x: ThrowStmt        => astsForThrowStmt(x)
@@ -36,10 +36,10 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         Seq(astForUnknownStmt(x, None))
     }
     // Populate standard control-flow information
-    unitToAsts.put(statement, stmt)
+    info.unitToAsts.put(statement, stmt)
     statement.getBoxesPointingToThis.asScala
       .filterNot(_.getUnit == statement)
-      .foreach(y => controlEdges.addOne(y.getUnit -> statement))
+      .foreach(y => info.edges.addOne(y.getUnit -> statement))
     stmt
   }
 
@@ -203,14 +203,14 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     )
   }
 
-  private def astsForIfStmt(ifStmt: IfStmt): Seq[Ast] = {
+  private def astsForIfStmt(ifStmt: IfStmt, info: BodyStatementsInfo): Seq[Ast] = {
     // bytecode/jimple ASTs are flat so there will not be nested bodies
     val condition = astsForValue(ifStmt.getCondition, ifStmt)
-    controlTargets.put(condition, ifStmt.getTarget)
+    info.targets.put(condition, ifStmt.getTarget)
     condition
   }
 
-  private def astsForGotoStmt(gotoStmt: GotoStmt): Seq[Ast] = {
+  private def astsForGotoStmt(gotoStmt: GotoStmt, info: BodyStatementsInfo): Seq[Ast] = {
     // bytecode/jimple ASTs are flat so there will not be nested bodies
     val gotoAst = Seq(
       Ast(
@@ -220,7 +220,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           .columnNumber(column(gotoStmt))
       )
     )
-    controlTargets.put(gotoAst, gotoStmt.getTarget)
+    info.targets.put(gotoAst, gotoStmt.getTarget)
     gotoAst
   }
 
@@ -248,3 +248,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
 }
+
+class BodyStatementsInfo(
+  val unitToAsts: mutable.HashMap[soot.Unit, Seq[Ast]] = mutable.HashMap.empty,
+  val targets: mutable.HashMap[Seq[Ast], soot.Unit] = mutable.HashMap.empty,
+  val edges: ArrayBuffer[(soot.Unit, soot.Unit)] = mutable.ArrayBuffer.empty
+)
