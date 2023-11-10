@@ -33,8 +33,8 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
   private val logger                                         = LoggerFactory.getLogger(getClass)
   protected val unitToAsts: mutable.HashMap[SUnit, Seq[Ast]] = mutable.HashMap.empty
   // Cfg information
-  protected val controlTargets: mutable.HashMap[Seq[Ast], SUnit]        = mutable.HashMap.empty
-  protected val controlEdges: ArrayBuffer[(SUnit, SUnit)] = mutable.ArrayBuffer.empty
+  protected val controlTargets: mutable.HashMap[Seq[Ast], SUnit] = mutable.HashMap.empty
+  protected val controlEdges: ArrayBuffer[(SUnit, SUnit)]        = mutable.ArrayBuffer.empty
 
   /** Add `typeName` to a global map and return it. The map is later passed to a pass that creates TYPE nodes for each
     * key in the map.
@@ -284,7 +284,7 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
     /** Maps trap units to their trap.
       */
     val pushTraps: mutable.HashMap[SUnit, List[Trap]] = mutable.HashMap.empty
-    val popTraps: mutable.HashMap[SUnit, List[Trap]] = mutable.HashMap.empty
+    val popTraps: mutable.HashMap[SUnit, List[Trap]]  = mutable.HashMap.empty
   }
 
   /** Extends a Soot unit to give enriched try-catch information.

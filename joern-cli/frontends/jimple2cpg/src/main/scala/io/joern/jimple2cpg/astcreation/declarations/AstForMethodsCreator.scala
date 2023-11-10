@@ -231,7 +231,7 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
       UnitTrapExt.popTraps.getOrElse(statement, List.empty).foreach(_ => trapStack.pop())
       UnitTrapExt.pushTraps.getOrElse(statement, List.empty).foreach(trapStack.push)
       val asts = astsForStatement(statement)
-      trapStack.foreach { trap => 
+      trapStack.foreach { trap =>
         val handler = trap.getHandlerUnit();
         controlEdges.addOne(statement -> handler)
       }
