@@ -90,7 +90,7 @@ class RubyImportResolverPass(cpg: Cpg, packageTableInfo: PackageTable) extends X
           .toSet
         resolvedTypeDecls ++ resolvedModules ++ resolvedMethods
       }
-    }
+    }.collectAll[EvaluatedImport].toSet
 
     finalResolved
   }
