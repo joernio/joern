@@ -43,7 +43,7 @@ class PythonImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
   private def fileToPythonImportNotation(filename: String): String =
     filename
       .stripPrefix(codeRootDir)
-      .replaceAll(JFile.separator, ".")
+      .replaceAll(Matcher.quoteReplacement(JFile.separator), ".")
       .stripSuffix(".py")
       .stripSuffix(".__init__")
 
