@@ -10,7 +10,7 @@ class SwiftMetaDataPass(cpg: Cpg, hash: String, inputPath: String) extends CpgPa
 
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     val absolutePathToRoot = File(inputPath).path.toAbsolutePath.toString
-    val metaNode           = NewMetaData().language("SWIFTSRC").root(absolutePathToRoot).hash(hash).version("0.1")
+    val metaNode = NewMetaData().language(Languages.SWIFTSRC).root(absolutePathToRoot).hash(hash).version("0.1")
     diffGraph.addNode(metaNode)
   }
 

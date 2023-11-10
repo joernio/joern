@@ -26,7 +26,7 @@ object CpgGeneratorFactory {
     Languages.KOTLIN,
     Languages.NEWC,
     Languages.JAVASRC,
-    "SWIFTSRC" // TODO: replace with Languages.SWIFTSRC
+    Languages.SWIFTSRC
   )
 }
 

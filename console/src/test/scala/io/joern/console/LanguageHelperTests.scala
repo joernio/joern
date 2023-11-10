@@ -61,7 +61,7 @@ class LanguageHelperTests extends AnyWordSpec with Matchers {
       File.usingTemporaryDirectory("oculartests") { tmpDir =>
         val subdir = mkdir(tmpDir / "subdir")
         touch(subdir / "main.swift")
-        guessLanguage(tmpDir.pathAsString) shouldBe Some("SWIFTSRC")
+        guessLanguage(tmpDir.pathAsString) shouldBe Some(Languages.SWIFTSRC)
       }
     }
 

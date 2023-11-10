@@ -58,7 +58,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) extends Rep
   def jssrc: SourceBasedFrontend =
     new SourceBasedFrontend("jssrc", Languages.JSSRC, "Javascript/Typescript Source Frontend based on astgen", "js")
   def swiftsrc: SourceBasedFrontend =
-    new SourceBasedFrontend("swiftsrc", "SWIFTSRC", "Swift Source Frontend based on swiftastgen", "swift")
+    new SourceBasedFrontend("swiftsrc", Languages.SWIFTSRC, "Swift Source Frontend based on swiftastgen", "swift")
   def csharp: Frontend          = new BinaryFrontend("csharp", Languages.CSHARP, "C# Source Frontend (Roslyn)")
   def llvm: Frontend            = new BinaryFrontend("llvm", Languages.LLVM, "LLVM Bitcode Frontend")
   def php: SourceBasedFrontend  = new SourceBasedFrontend("php", Languages.PHP, "PHP source frontend", "php")
