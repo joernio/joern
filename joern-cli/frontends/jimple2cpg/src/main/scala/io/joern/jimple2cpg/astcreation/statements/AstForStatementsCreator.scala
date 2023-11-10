@@ -17,7 +17,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  protected def astsForStatement(statement: soot.Unit, info: BodyStatementsInfo): Seq[Ast] = {
+  protected def astsForStatement(statement: soot.Unit, info: BodyControlInfo): Seq[Ast] = {
     val stmt = statement match {
       case x: AssignStmt       => astsForDefinition(x)
       case x: InvokeStmt       => astsForExpression(x.getInvokeExpr, statement)
@@ -203,14 +203,14 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     )
   }
 
-  private def astsForIfStmt(ifStmt: IfStmt, info: BodyStatementsInfo): Seq[Ast] = {
+  private def astsForIfStmt(ifStmt: IfStmt, info: BodyControlInfo): Seq[Ast] = {
     // bytecode/jimple ASTs are flat so there will not be nested bodies
     val condition = astsForValue(ifStmt.getCondition, ifStmt)
     info.targets.put(condition, ifStmt.getTarget)
     condition
   }
 
-  private def astsForGotoStmt(gotoStmt: GotoStmt, info: BodyStatementsInfo): Seq[Ast] = {
+  private def astsForGotoStmt(gotoStmt: GotoStmt, info: BodyControlInfo): Seq[Ast] = {
     // bytecode/jimple ASTs are flat so there will not be nested bodies
     val gotoAst = Seq(
       Ast(
@@ -249,7 +249,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
 }
 
-class BodyStatementsInfo(
+class BodyControlInfo(
   val unitToAsts: mutable.HashMap[soot.Unit, Seq[Ast]] = mutable.HashMap.empty,
   val targets: mutable.HashMap[Seq[Ast], soot.Unit] = mutable.HashMap.empty,
   val edges: ArrayBuffer[(soot.Unit, soot.Unit)] = mutable.ArrayBuffer.empty

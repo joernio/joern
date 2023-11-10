@@ -19,7 +19,7 @@ import scala.util.{Failure, Success, Try}
 
 import cats.syntax.all.*;
 import scala.collection.mutable.ArrayBuffer
-import io.joern.jimple2cpg.astcreation.statements.BodyStatementsInfo
+import io.joern.jimple2cpg.astcreation.statements.BodyControlInfo
 
 trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -29,7 +29,7 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
   private val JVM_LANGS = HashSet("scala", "clojure", "groovy", "kotlin", "jython", "jruby")
 
   protected def astForMethod(methodDeclaration: SootMethod, typeDecl: RefType): Ast = {
-    val bodyStatementsInfo = BodyStatementsInfo()
+    val bodyStatementsInfo = BodyControlInfo()
     val methodNode         = createMethodNode(methodDeclaration, typeDecl)
     try {
       if (!methodDeclaration.isConcrete) {
@@ -207,7 +207,7 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
     }
   }
 
-  private def astForMethodBody(body: Body, info: BodyStatementsInfo): Ast = {
+  private def astForMethodBody(body: Body, info: BodyControlInfo): Ast = {
     val jimpleParams = body.getParameterLocals.asScala.toList
     // Don't let parameters also become locals (avoiding duplication)
     val jimpleLocals = body.getLocals.asScala.filterNot(l => jimpleParams.contains(l) || l.getName == "this").toList
