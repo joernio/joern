@@ -22,7 +22,6 @@ class MethodTests extends JimpleCode2CpgFixture {
     x.code.trim.startsWith("int foo(int, int)") shouldBe true
     x.signature shouldBe "int(int,int)"
     x.isExternal shouldBe false
-    x.order shouldBe 1
     x.filename should (
       startWith(File.separator) or // Unix
         startWith regex "[A-Z]:"   // Windows

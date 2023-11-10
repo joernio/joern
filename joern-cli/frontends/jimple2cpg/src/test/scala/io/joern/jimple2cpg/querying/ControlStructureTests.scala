@@ -1,12 +1,11 @@
 package io.joern.jimple2cpg.querying
 
 import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
-import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.edges.Ref
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.*
+import io.shiftleft.semanticcpg.language.*
 class ControlStructureTests extends JimpleCode2CpgFixture {
-
   "try-with-resource blocks" should {
     val cpg = code("""
         |import java.io.FileReader;
@@ -24,92 +23,6 @@ class ControlStructureTests extends JimpleCode2CpgFixture {
         |}
         |""".stripMargin, "Foo.java")
 
-
-    /*
-    throw br#4
-        static java.lang.String foo(java.lang.String) throws java.io.IOException
-        {
-            java.lang.Throwable $stack8, $stack9, $stack11, l4, $stack12, l3#3, br#4;
-            java.io.FileReader $stack5, fr;
-            java.lang.String path, l3;
-            java.io.BufferedReader $stack6, br;
-
-            path := @parameter0: java.lang.String;
-
-            $stack5 = new java.io.FileReader;
-
-            specialinvoke $stack5.<java.io.FileReader: void <init>(java.lang.String)>(path);
-
-            fr = $stack5;
-
-         label01:
-            $stack6 = new java.io.BufferedReader;
-
-            specialinvoke $stack6.<java.io.BufferedReader: void <init>(java.io.Reader)>(fr);
-
-            br = $stack6;
-
-         label02:
-            l3 = virtualinvoke br.<java.io.BufferedReader: java.lang.String readLine()>();
-
-         label03:
-            virtualinvoke br.<java.io.BufferedReader: void close()>();
-
-         label04:
-            virtualinvoke fr.<java.io.FileReader: void close()>();
-
-            return l3;
-
-         label05:
-            $stack12 := @caughtexception;
-
-            l3#3 = $stack12;
-
-         label06:
-            virtualinvoke br.<java.io.BufferedReader: void close()>();
-
-         label07:
-            goto label09;
-
-         label08:
-            $stack11 := @caughtexception;
-
-            l4 = $stack11;
-
-            virtualinvoke l3#3.<java.lang.Throwable: void addSuppressed(java.lang.Throwable)>(l4);
-
-         label09:
-            throw l3#3;
-
-         label10:
-            $stack9 := @caughtexception;
-
-            br#4 = $stack9;
-
-         label11:
-            virtualinvoke fr.<java.io.FileReader: void close()>();
-
-         label12:
-            goto label14;
-
-         label13:
-            $stack8 := @caughtexception;
-
-            l3#3 = $stack8;
-
-            virtualinvoke br#4.<java.lang.Throwable: void addSuppressed(java.lang.Throwable)>(l3#3);
-
-         label14:
-            throw br#4;
-
-            catch java.lang.Throwable from label02 to label03 with label05;
-            catch java.lang.Throwable from label06 to label07 with label08;
-            catch java.lang.Throwable from label01 to label04 with label10;
-            catch java.lang.Throwable from label05 to label10 with label10;
-            catch java.lang.Throwable from label11 to label12 with label13;
-        }
-
-     */
     "create nodes for resources" in {
       cpg.method.name("foo").dotAst.foreach(println)
       cpg.method.name("foo").body.astChildren.l match {

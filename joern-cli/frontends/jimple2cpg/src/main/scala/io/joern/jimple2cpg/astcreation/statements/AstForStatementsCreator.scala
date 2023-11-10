@@ -39,44 +39,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     unitToAsts.put(statement, stmt)
     statement.getBoxesPointingToThis.asScala
       .filterNot(_.getUnit == statement)
-      .foreach(y => nonExceptionalControlEdges.addOne(y.getUnit -> statement))
-    // Handle any try-catch info
-    handleTrappingLogic(statement, stmt)
+      .foreach(y => controlEdges.addOne(y.getUnit -> statement))
     stmt
-  }
-
-  private def handleTrappingLogic(statement: Unit, stmt: Seq[Ast]) = {
-    if (statement.isTrapUnit) {
-      statement.trapType match
-        // Step 1: A try-block is started
-        case START =>
-          val currentBlock = stack.pop()
-          // Create try-structure
-          val tryNode = controlStructureNode(statement, ControlStructureTypes.TRY, statement.toString())
-          val tryBlock = Ast(blockNode(statement).order(1)).withChildren(stmt)
-          val tryAst = Ast(tryNode) // we only add the block to this at the end
-          stack.push(currentBlock.withChild(tryAst))
-          stack.push(tryBlock)
-          UnitTrapExt.trapToAst.put(statement.correspondingTrap, tryAst)
-        // Step 2: The try-block is ended
-        case END =>
-          val currentBlock = stack.pop().withChildren(stmt)
-          val tryAst = UnitTrapExt.trapToAst(statement.correspondingTrap).withChild(currentBlock)
-          val parentBlock = stack.pop().withChild(tryAst)
-          stack.push(parentBlock)
-        // Step 3: A handler, if specified, is created.
-        case HANDLER =>
-          // TODO: The last try block may not be the one associated with this handler
-//          val currentBlock = stack.pop()
-          //          val tryAst = UnitTrapExt.trapToAst(statement.correspondingTrap)
-          val catchBlock = Ast(blockNode(statement).order(2)).withChildren(stmt)
-          stack.push(catchBlock)
-      //          UnitTrapExt.trapToAst.put(statement.correspondingTrap, tryAst)
-    } else {
-      // TODO Maybe we need to link the try here somehow
-      val currentBlock = stack.pop().withChildren(stmt)
-      stack.push(currentBlock)
-    }
   }
 
   /** Helper method for operator nodes.
@@ -111,8 +75,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
     val assignment = operatorNode(
       assignStmt,
-      s"$lhsCode = $rhsCode",
       Operators.assignment,
+      s"$lhsCode = $rhsCode",
       Option(registerType(leftOp.getType.toQuotedString))
     )
     Seq(callAst(assignment, identifier ++ initAsts))
@@ -224,7 +188,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     Seq(
       Ast(returnNode)
         .withChildren(astChildren)
-        .withArgEdges(returnNode, astChildren.flatMap(_.root))
+        .withArgEdges(returnNode, astChildren.flatMap(_.root), 1)
     )
   }
 
@@ -251,7 +215,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val gotoAst = Seq(
       Ast(
         NewUnknown()
-          .code(s"goto ${gotoStmt.getTarget}")
+          .code(s"goto ${line(gotoStmt.getTarget).getOrElse("<unknown>")}")
           .lineNumber(line(gotoStmt))
           .columnNumber(column(gotoStmt))
       )

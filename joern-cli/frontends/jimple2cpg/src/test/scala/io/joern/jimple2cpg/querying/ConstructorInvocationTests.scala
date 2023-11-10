@@ -120,7 +120,6 @@ class ConstructorInvocationTests extends JimpleCode2CpgFixture {
 
         init.argument.size shouldBe 3
         val List(obj: Identifier, initArg1: Literal, initArg2: Literal) = init.argument.l: @unchecked
-        obj.order shouldBe 0
         obj.argumentIndex shouldBe 0
         obj.name shouldBe "$stack1"
         obj.typeFullName shouldBe "Bar"
@@ -158,7 +157,6 @@ class ConstructorInvocationTests extends JimpleCode2CpgFixture {
 
         init.argument.size shouldBe 3
         val List(obj: Identifier, initArg1: Literal, initArg2: Literal) = init.argument.l: @unchecked
-        obj.order shouldBe 0
         obj.argumentIndex shouldBe 0
         obj.name shouldBe "$stack1"
         obj.typeFullName shouldBe "Bar"
@@ -178,14 +176,12 @@ class ConstructorInvocationTests extends JimpleCode2CpgFixture {
         val List(arrayAccess: Call, temp: Identifier) = assign.argument.l: @unchecked
         temp.name shouldBe "$stack1"
         temp.typeFullName shouldBe "Bar"
-        temp.order shouldBe 2
         temp.argumentIndex shouldBe 2
         temp.code shouldBe "$stack1"
 
         val alloc = allocAssign.argument(2).asInstanceOf[Call]
         alloc.name shouldBe Operators.alloc
         alloc.methodFullName shouldBe Operators.alloc
-        alloc.order shouldBe 2
         alloc.argumentIndex shouldBe 2
         alloc.code shouldBe "new Bar"
         alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
@@ -201,7 +197,6 @@ class ConstructorInvocationTests extends JimpleCode2CpgFixture {
 
         init.argument.size shouldBe 2
         val List(receiver: Identifier, initArg1: Literal) = init.argument.l: @unchecked
-        receiver.order shouldBe 0
         receiver.argumentIndex shouldBe 0
         receiver.name shouldBe "$stack1"
         receiver.typeFullName shouldBe "Bar"
@@ -225,7 +220,6 @@ class ConstructorInvocationTests extends JimpleCode2CpgFixture {
 
         val List(temp: Identifier, add: Call) = assignAddition.argument.l: @unchecked
         temp.name shouldBe "$stack3"
-        temp.order shouldBe 1
         temp.argumentIndex shouldBe 1
         temp.typeFullName shouldBe "int"
 
@@ -233,7 +227,6 @@ class ConstructorInvocationTests extends JimpleCode2CpgFixture {
 
         val List(obj: Identifier, additionResultPointer: Identifier) = init.argument.l: @unchecked
         obj.name shouldBe "this"
-        obj.order shouldBe 0
         obj.argumentIndex shouldBe 0
         obj.typeFullName shouldBe "Bar"
 

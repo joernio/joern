@@ -118,8 +118,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val callAst = Ast(callNode)
       .withChildren(thisAsts)
       .withChildren(argAsts)
-      .withArgEdges(callNode, thisAsts.flatMap(_.root))
-      .withArgEdges(callNode, argAsts.flatMap(_.root))
+      .withArgEdges(callNode, thisAsts.flatMap(_.root), 0)
+      .withArgEdges(callNode, argAsts.flatMap(_.root), 1)
 
     thisAsts.flatMap(_.root).headOption match {
       case Some(thisAst) => callAst.withReceiverEdge(callNode, thisAst)
@@ -163,7 +163,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val valueAsts = sizes.flatMap(astsForValue(_, parentUnit)).toSeq
     Ast(callBlock)
       .withChildren(valueAsts)
-      .withArgEdges(callBlock, valueAsts.flatMap(_.root))
+      .withArgEdges(callBlock, valueAsts.flatMap(_.root), 1)
   }
 
   private def astForUnaryExpr(methodName: String, unaryExpr: Expr, op: Value, parentUnit: soot.Unit): Ast = {
@@ -200,7 +200,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     Ast(callBlock)
       .withChildren(valueAsts)
-      .withArgEdges(callBlock, valueAsts.flatMap(_.root))
+      .withArgEdges(callBlock, valueAsts.flatMap(_.root), 1)
   }
 
 }

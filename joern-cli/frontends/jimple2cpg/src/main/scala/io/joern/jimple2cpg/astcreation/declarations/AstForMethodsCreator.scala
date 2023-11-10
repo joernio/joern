@@ -13,8 +13,11 @@ import soot.toolkits.graph.BriefUnitGraph
 import soot.{SootMethod, Local as SootLocal, Unit as SUnit, *}
 
 import scala.collection.immutable.HashSet
+import scala.collection.mutable
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
+
+import cats.syntax.all.*;
 
 trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -59,7 +62,7 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
         val parameterAsts =
           Seq(createThisNode(methodDeclaration, NewMethodParameterIn())) ++
             methodBody.getParameterLocals.asScala.zipWithIndex.map { case (param, index) =>
-              astForParameter(param, index, methodDeclaration, parameterAnnotations)
+              astForParameter(param, index + 1, methodDeclaration, parameterAnnotations)
             }
 
         methodAstWithAnnotations(
@@ -108,12 +111,13 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
           case None =>
         }
       }
-      nonExceptionalControlEdges.foreach { case (a, b) =>
+      controlEdges.foreach { case (a, b) =>
         val aNode = unitToAsts(a).last.root.get
         val bNode = unitToAsts(b).last.root.get
         diffGraph.addEdge(aNode, bNode, EdgeTypes.CFG)
       }
       // Clear these maps
+      controlEdges.clear()
       controlTargets.clear()
       unitToAsts.clear()
     }
@@ -198,7 +202,8 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
     parameterAnnotations.get(parameter.getName) match {
       case Some(annoRoot) =>
         val annotationAsts = annoRoot.getAnnotations.asScala.map(astsForAnnotations(_, methodDeclaration)).toSeq
-        paramAst.withChildren(annotationAsts)
+        paramAst
+          .withChildren(annotationAsts)
       case None => paramAst
     }
   }
@@ -214,16 +219,24 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
       Ast(localNode(body, name, code, typeFullName))
     }
     // Indicate trap boundaries
-    body.getTraps.asScala.foreach { trap =>
-      UnitTrapExt.unitTrapType.put(trap.getBeginUnit, TrappedUnitType.START)
-      UnitTrapExt.unitTrapType.put(trap.getHandlerUnit, TrappedUnitType.HANDLER)
-      UnitTrapExt.unitTrapType.put(trap.getEndUnit, TrappedUnitType.END)
-      trap.getUnitBoxes.asScala.map(_.getUnit).foreach(UnitTrapExt.unitToTrap.put(_, trap))
+    body.getTraps.asScala.toList.reverseIterator.foreach { trap =>
+      UnitTrapExt.pushTraps.updateWith(trap.getBeginUnit)(Option(List(trap)) combine _)
+      UnitTrapExt.popTraps.updateWith(trap.getEndUnit)(Option(List(trap)) combine _)
     }
 
     stack.push(Ast(blockNode(body)).withChildren(locals))
 
-    body.getUnits.asScala.filterNot(isIgnoredUnit).foreach(astsForStatement)
+    val trapStack = new mutable.Stack[soot.Trap];
+    body.getUnits.asScala.filterNot(isIgnoredUnit).foreach { statement =>
+      UnitTrapExt.popTraps.getOrElse(statement, List.empty).foreach(_ => trapStack.pop())
+      UnitTrapExt.pushTraps.getOrElse(statement, List.empty).foreach(trapStack.push)
+      val asts = astsForStatement(statement)
+      trapStack.foreach { trap => 
+        val handler = trap.getHandlerUnit();
+        controlEdges.addOne(statement -> handler)
+      }
+      stack.push(stack.pop().withChildren(asts))
+    }
 
     stack.pop()
   }

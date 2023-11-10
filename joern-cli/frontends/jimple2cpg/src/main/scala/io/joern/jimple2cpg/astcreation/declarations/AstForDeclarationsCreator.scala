@@ -117,6 +117,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode)
         .lineNumber(lineNo)
         .columnNumber(columnNo)
 
+      setArgumentIndices(astChildren.toSeq)
       Ast(paramAssign)
         .withChildren(astChildren)
     }
@@ -126,6 +127,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode)
     val elems = x.getValues.asScala.map(astForAnnotationElement(_, parent)).toSeq
     val code  = s"{${elems.flatMap(_.root).flatMap(_.properties.get(PropertyNames.CODE)).mkString(", ")}}"
     val array = NewArrayInitializer().code(code).lineNumber(line(parent)).columnNumber(column(parent))
+    setArgumentIndices(elems)
     (Ast(array).withChildren(elems), code)
   }
 

@@ -34,7 +34,7 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
   protected val unitToAsts: mutable.HashMap[SUnit, Seq[Ast]] = mutable.HashMap.empty
   // Cfg information
   protected val controlTargets: mutable.HashMap[Seq[Ast], SUnit]        = mutable.HashMap.empty
-  protected val nonExceptionalControlEdges: ArrayBuffer[(SUnit, SUnit)] = mutable.ArrayBuffer.empty
+  protected val controlEdges: ArrayBuffer[(SUnit, SUnit)] = mutable.ArrayBuffer.empty
 
   /** Add `typeName` to a global map and return it. The map is later passed to a pass that creates TYPE nodes for each
     * key in the map.
@@ -120,7 +120,7 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
     val astChildren = astsForValue(arrRef.getBase, parentUnit) ++ astsForValue(arrRef.getIndex, parentUnit)
     Ast(indexAccess)
       .withChildren(astChildren)
-      .withArgEdges(indexAccess, astChildren.flatMap(_.root))
+      .withArgEdges(indexAccess, astChildren.flatMap(_.root), 1)
   }
 
   protected def astForLocal(local: soot.Local, parentUnit: SUnit): Ast = {
@@ -222,7 +222,7 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
     // TODO
     Ast(fieldAccessBlock)
       .withChildren(argAsts)
-      .withArgEdges(fieldAccessBlock, argAsts.flatMap(_.root))
+      .withArgEdges(fieldAccessBlock, argAsts.flatMap(_.root), 1)
   }
 
   private def astForCaughtExceptionRef(caughtException: CaughtExceptionRef, parentUnit: SUnit): Ast = {
@@ -283,16 +283,8 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
 
     /** Maps trap units to their trap.
       */
-    val unitToTrap: mutable.HashMap[SUnit, Trap] = mutable.HashMap.empty
-
-    /** Maps a trap to its AST structure.
-      */
-    val trapToAst: mutable.HashMap[Trap, Ast] = mutable.HashMap.empty
-
-    /** Maps trap units to their type.
-      */
-    val unitTrapType: mutable.HashMap[SUnit, TrappedUnitType] = mutable.HashMap.empty
-
+    val pushTraps: mutable.HashMap[SUnit, List[Trap]] = mutable.HashMap.empty
+    val popTraps: mutable.HashMap[SUnit, List[Trap]] = mutable.HashMap.empty
   }
 
   /** Extends a Soot unit to give enriched try-catch information.
@@ -300,21 +292,6 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
   implicit class UnitTrapExt(unit: SUnit) {
 
     import UnitTrapExt.*
-
-    /** @return
-      *   true if this unit is a trap start, end, or handler unit.
-      */
-    def isTrapUnit: Boolean = unitTrapType.contains(unit)
-
-    /** @return
-      *   the type of trap unit this unit is.
-      */
-    def trapType: TrappedUnitType = unitTrapType(unit)
-
-    /** @return
-      *   the trap this unit corresponds to.
-      */
-    def correspondingTrap: Trap = unitToTrap(unit)
 
   }
 

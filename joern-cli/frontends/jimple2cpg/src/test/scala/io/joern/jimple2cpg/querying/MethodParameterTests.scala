@@ -40,7 +40,7 @@ class MethodParameterTests extends JimpleCode2CpgFixture {
     y.lineNumber shouldBe Some(3)
     y.columnNumber shouldBe None
     y.order shouldBe 2
-    y.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+    y.evaluationStrategy shouldBe EvaluationStrategies.BY_SHARING
   }
 
   "should allow traversing from parameter to method" in {

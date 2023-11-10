@@ -1,8 +1,10 @@
 package io.joern.jimple2cpg.querying.dataflow
 
-import io.joern.dataflowengineoss.language._
+import io.joern.dataflowengineoss.language.*
 import io.joern.jimple2cpg.testfixtures.JimpleDataFlowCodeToCpgSuite
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.*
 
 class TryTests extends JimpleDataFlowCodeToCpgSuite {
 
@@ -95,11 +97,15 @@ class TryTests extends JimpleDataFlowCodeToCpgSuite {
         |        System.out.println(s);
         |    }
         |
+        |    public void spooky() throws Exception {
+        |    }
+        |
         |    public void test8() {
         |        String s = "MALICIOUS";
         |
         |        try {
         |            s = "SAFE";
+        |            spooky();
         |        } catch (Exception e) {
         |            s = "ALSO SAFE";
         |        }
