@@ -126,6 +126,41 @@ class TryTests extends JimpleDataFlowCodeToCpgSuite {
         |
         |        System.out.println(s);
         |    }
+        |
+        |    public void test10() {
+        |        String s = "MALICIOUS";
+        |
+        |        try {
+        |            spooky();
+        |            s = "SAFE";
+        |            try {
+        |               s = "MALICIOUS";
+        |            } finally {
+        |               s = "SAFE";
+        |            }
+        |        } catch (Exception e) {
+        |            s = "SAFE";
+        |        }
+        |
+        |        System.out.println(s);
+        |    }
+        |
+        |    public void test11() {
+        |        String s = "MALICIOUS";
+        |
+        |        try {
+        |            spooky();
+        |            s = "SAFE";
+        |            try {
+        |               s = "MALICIOUS";
+        |            } finally {
+        |               s = "SAFE";
+        |            }
+        |        } catch (Exception e) {
+        |        }
+        |
+        |        System.out.println(s);
+        |    }
         |}
         |""".stripMargin)
 
@@ -175,6 +210,14 @@ class TryTests extends JimpleDataFlowCodeToCpgSuite {
     "not find a path if `MALICIOUS` is reassigned in FINALLY" in {
       val (source, sink) = getConstSourceSink("test9")
       sink.reachableBy(source).size shouldBe 0
+    }
+    "not find a path if `MALICIOUS` has `SAFE` assigned in all paths of nested try-catch" in {
+      val (source, sink) = getConstSourceSink("test10")
+      sink.reachableBy(source).size shouldBe 0
+    }
+    "find a path if `MALICIOUS` untouched in outer handler of nested try-catch" in {
+      val (source, sink) = getConstSourceSink("test11")
+      sink.reachableBy(source).size shouldBe 1
     }
   }
 }
