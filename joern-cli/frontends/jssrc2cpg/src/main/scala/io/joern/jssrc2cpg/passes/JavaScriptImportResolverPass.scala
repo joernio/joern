@@ -11,7 +11,7 @@ import java.io.File as JFile
 import java.util.regex.{Matcher, Pattern}
 import scala.util.{Failure, Success, Try}
 
-class ImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
+class JavaScriptImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
 
   private val pathPattern = Pattern.compile("[\"']([\\w/.]+)[\"']")
 
@@ -27,7 +27,7 @@ class ImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
     val alias       = importedAs
     val matcher     = pathPattern.matcher(rawEntity)
     val sep         = Matcher.quoteReplacement(JFile.separator)
-    val root        = s"$codeRoot${JFile.separator}"
+    val root        = s"$codeRootDir${JFile.separator}"
     val currentFile = s"$root$fileName"
     // We want to know if the import is local since if an external name is used to match internal methods we may have
     // false paths.
@@ -114,12 +114,12 @@ class ImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
              // Exported closure with a method ref within the AST of the RHS
              y.ast.isMethodRef.map(mRef => ResolvedMethod(mRef.methodFullName, alias, Option("this"))).toSet
            case _ =>
-             Set.empty[ResolvedImport]
+             Set.empty[EvaluatedImport]
          }
        }.toSet
      } else {
        Set(UnknownMethod(entity, alias, Option("this")), UnknownTypeDecl(entity))
-     }).foreach(x => resolvedImportToTag(x, importCall, diffGraph))
+     }).foreach(x => evaluatedImportToTag(x, importCall, diffGraph))
   }
 
 }
