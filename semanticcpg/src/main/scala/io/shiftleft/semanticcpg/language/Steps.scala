@@ -82,13 +82,10 @@ object Steps {
   private lazy val nodeSerializer = new CustomSerializer[AbstractNode](implicit format =>
     (
       { case _ => ??? },
-      { case node: AbstractNode with Product =>
-        val elementMap = (0 until node.productArity).map { i =>
-          val label   = node.productElementName(i)
-          val element = node.productElement(i)
-          label -> element
-        }.toMap + ("_label" -> node.label)
-        Extraction.decompose(elementMap)
+      { case node: AbstractNode =>
+        val properties = node.propertiesMap
+        properties.put("_label", node.label)
+        Extraction.decompose(properties.asScala)
       }
     )
   )
