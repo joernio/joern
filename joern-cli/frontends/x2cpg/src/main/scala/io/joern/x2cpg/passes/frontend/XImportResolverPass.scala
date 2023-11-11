@@ -1,7 +1,8 @@
 package io.joern.x2cpg.passes.frontend
 
-import io.joern.x2cpg.passes.frontend.ImportsPass.ResolvedImport
-import io.joern.x2cpg.passes.frontend.ImportsPass.ResolvedImport.*
+import better.files.File
+import io.joern.x2cpg.passes.frontend.ImportsPass.EvaluatedImport
+import io.joern.x2cpg.passes.frontend.ImportsPass.EvaluatedImport.*
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Import, Tag}
 import io.shiftleft.passes.ConcurrentWriterCpgPass
@@ -14,14 +15,18 @@ import java.util.Base64
 
 abstract class XImportResolverPass(cpg: Cpg) extends ConcurrentWriterCpgPass[Import](cpg) {
 
-  protected val logger: Logger   = LoggerFactory.getLogger(this.getClass)
-  protected val codeRoot: String = cpg.metaData.root.headOption.getOrElse(JFile.separator)
+  protected val logger: Logger = LoggerFactory.getLogger(this.getClass)
+  protected val codeRootDir: String = File(
+    cpg.metaData.root.headOption.getOrElse(JFile.separator).stripSuffix(JFile.separator)
+  ) match
+    case f if f.isDirectory => f.pathAsString
+    case f                  => f.parent.pathAsString
 
   override def generateParts(): Array[Import] = cpg.imports.toArray
 
   override def runOnPart(builder: DiffGraphBuilder, part: Import): Unit = for {
     call <- part.call
-    fileName = call.file.name.headOption.getOrElse("<unknown>").stripPrefix(codeRoot)
+    fileName = call.file.name.headOption.getOrElse("<unknown>").stripPrefix(codeRootDir)
     importedAs     <- part.importedAs
     importedEntity <- part.importedEntity
   } {
@@ -36,7 +41,7 @@ abstract class XImportResolverPass(cpg: Cpg) extends ConcurrentWriterCpgPass[Imp
     diffGraph: DiffGraphBuilder
   ): Unit
 
-  protected def resolvedImportToTag(x: ResolvedImport, importCall: Call, diffGraph: DiffGraphBuilder): Unit =
+  protected def evaluatedImportToTag(x: EvaluatedImport, importCall: Call, diffGraph: DiffGraphBuilder): Unit =
     importCall.start.newTagNodePair(x.label, x.serialize).store()(diffGraph)
 
 }
@@ -45,18 +50,28 @@ object ImportsPass {
 
   private val sep = ","
 
-  sealed trait ResolvedImport {
+  /** An import that has been evaluated as either resolved or not.
+    */
+  sealed trait EvaluatedImport {
     def label: String
 
     def serialize: String
   }
 
+  /** An import that has been resolved to a node in the CPG.
+    */
+  sealed trait ResolvedImport extends EvaluatedImport
+
+  /** An import that has not been successfully resolved to a node in the CPG. This is likely an external dependency.
+    */
+  sealed trait UnresolvedImport extends EvaluatedImport
+
   implicit class TagToResolvedImportExt(traversal: Iterator[Tag]) {
-    def toResolvedImport: Iterator[ResolvedImport] =
-      traversal.flatMap(ResolvedImport.tagToResolvedImport)
+    def toEvaluatedImport: Iterator[EvaluatedImport] =
+      traversal.flatMap(EvaluatedImport.tagToEvaluatedImport)
   }
 
-  object ResolvedImport {
+  object EvaluatedImport {
 
     val RESOLVED_METHOD    = "RESOLVED_METHOD"
     val RESOLVED_TYPE_DECL = "RESOLVED_TYPE_DECL"
@@ -71,7 +86,7 @@ object ImportsPass {
     val OPT_BASE_PATH = "BASE_PATH"
     val OPT_NAME      = "NAME"
 
-    def tagToResolvedImport(tag: Tag): Option[ResolvedImport] = Option(tag.name match {
+    def tagToEvaluatedImport(tag: Tag): Option[EvaluatedImport] = Option(tag.name match {
       case RESOLVED_METHOD =>
         val opts = valueToOptions(tag.value)
         ResolvedMethod(opts(OPT_FULL_NAME), opts(OPT_ALIAS), opts.get(OPT_RECEIVER))
@@ -128,7 +143,7 @@ object ImportsPass {
     alias: String,
     receiver: Option[String] = None,
     override val label: String = UNKNOWN_METHOD
-  ) extends ResolvedImport {
+  ) extends UnresolvedImport {
     override def serialize: String =
       (Seq(OPT_FULL_NAME, fullName.encode, OPT_ALIAS, alias.encode) ++ receiver
         .map(r => Seq(OPT_RECEIVER, r.encode))
@@ -136,11 +151,12 @@ object ImportsPass {
         .mkString(sep)
   }
 
-  case class UnknownTypeDecl(fullName: String, override val label: String = UNKNOWN_TYPE_DECL) extends ResolvedImport {
+  case class UnknownTypeDecl(fullName: String, override val label: String = UNKNOWN_TYPE_DECL)
+      extends UnresolvedImport {
     override def serialize: String = fullName
   }
 
-  case class UnknownImport(path: String, override val label: String = UNKNOWN_IMPORT) extends ResolvedImport {
+  case class UnknownImport(path: String, override val label: String = UNKNOWN_IMPORT) extends UnresolvedImport {
     override def serialize: String = path
   }
 }

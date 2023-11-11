@@ -96,7 +96,7 @@ object RubySrc2Cpg {
       List(
         // TODO commented below two passes, as waiting on Dependency download PR to get merged
         new deprecated.passes.IdentifierToCallPass(cpg),
-        new deprecated.passes.ImportResolverPass(cpg, packageTableInfo),
+        new deprecated.passes.RubyImportResolverPass(cpg, packageTableInfo),
         new deprecated.passes.RubyTypeRecoveryPass(cpg),
         new deprecated.passes.RubyTypeHintCallLinker(cpg),
         new NaiveCallLinker(cpg),

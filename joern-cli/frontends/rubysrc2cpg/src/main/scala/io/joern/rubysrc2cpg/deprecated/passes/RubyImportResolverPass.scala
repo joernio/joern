@@ -11,7 +11,7 @@ import io.shiftleft.semanticcpg.language.*
 
 import java.io.File as JFile
 import java.util.regex.{Matcher, Pattern}
-class ImportResolverPass(cpg: Cpg, packageTableInfo: PackageTable) extends XImportResolverPass(cpg) {
+class RubyImportResolverPass(cpg: Cpg, packageTableInfo: PackageTable) extends XImportResolverPass(cpg) {
 
   private val pathPattern = Pattern.compile("[\"']([\\w/.]+)[\"']")
 
@@ -23,10 +23,10 @@ class ImportResolverPass(cpg: Cpg, packageTableInfo: PackageTable) extends XImpo
     diffGraph: DiffGraphBuilder
   ): Unit = {
 
-    resolveEntities(importedEntity, importCall, fileName).foreach(x => resolvedImportToTag(x, importCall, diffGraph))
+    resolveEntities(importedEntity, importCall, fileName).foreach(x => evaluatedImportToTag(x, importCall, diffGraph))
   }
 
-  private def resolveEntities(expEntity: String, importCall: Call, fileName: String): Set[ResolvedImport] = {
+  private def resolveEntities(expEntity: String, importCall: Call, fileName: String): Set[EvaluatedImport] = {
 
     // TODO
     /* Currently we are considering only case where exposed module are Classes,
@@ -90,7 +90,7 @@ class ImportResolverPass(cpg: Cpg, packageTableInfo: PackageTable) extends XImpo
           .toSet
         resolvedTypeDecls ++ resolvedModules ++ resolvedMethods
       }
-    }
+    }.collectAll[EvaluatedImport].toSet
 
     finalResolved
   }
@@ -99,7 +99,7 @@ class ImportResolverPass(cpg: Cpg, packageTableInfo: PackageTable) extends XImpo
     val rawEntity   = expEntity.stripPrefix("./")
     val matcher     = pathPattern.matcher(rawEntity)
     val sep         = Matcher.quoteReplacement(JFile.separator)
-    val root        = s"$codeRoot${JFile.separator}"
+    val root        = s"$codeRootDir${JFile.separator}"
     val currentFile = s"$root$fileName"
     val entity      = if (matcher.find()) matcher.group(1) else rawEntity
     val resolvedPath = better.files

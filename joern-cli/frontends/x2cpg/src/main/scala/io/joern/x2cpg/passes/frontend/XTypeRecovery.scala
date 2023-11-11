@@ -98,19 +98,26 @@ abstract class XTypeRecoveryPass[CompilationUnitType <: AstNode](
   }
 
   private def linkMembersToTheirRefs(builder: DiffGraphBuilder): Unit = {
-    import XTypeRecovery.unknownTypePattern
+    import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromIteratorExt
+
+    def getFieldBaseTypes(fieldAccess: FieldAccess): Iterator[TypeDecl] = {
+      fieldAccess.argument(1) match
+        case x: Call if x.name == Operators.fieldAccess =>
+          cpg.typeDecl.fullNameExact(FieldAccess(x).referencedMember.getKnownTypes.toSeq*)
+        case x: Call if !x.name.startsWith("<operator>") =>
+          if (!x.typeFullName.matches(XTypeRecovery.unknownTypePattern.pattern.pattern()))
+            cpg.typeDecl.fullNameExact(x.typeFullName)
+          else
+            Iterator.empty
+        case x: Expression =>
+          cpg.typeDecl.fullNameExact(x.getKnownTypes.toSeq*)
+    }
+
     // Set all now-typed fieldAccess calls to their referencing members (if they exist)
     cpg.fieldAccess
-      .where(
-        _.and(
-          _.not(_.referencedMember),
-          _.argument(1).isIdentifier.typeFullNameNot(unknownTypePattern.pattern.pattern())
-        )
-      )
+      .whereNot(_.referencedMember)
       .foreach { fieldAccess =>
-        cpg.typeDecl
-          .fullNameExact(fieldAccess.argument(1).getKnownTypes.toSeq: _*)
-          .member
+        getFieldBaseTypes(fieldAccess).member
           .nameExact(fieldAccess.fieldIdentifier.canonicalName.toSeq: _*)
           .foreach(builder.addEdge(fieldAccess, _, EdgeTypes.REF))
       }
@@ -376,7 +383,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     import io.joern.x2cpg.passes.frontend.ImportsPass.*
     import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromIteratorExt
 
-    ResolvedImport.tagToResolvedImport(resolvedImport).foreach {
+    EvaluatedImport.tagToEvaluatedImport(resolvedImport).foreach {
       case ResolvedMethod(fullName, alias, receiver, _) =>
         symbolTable.append(CallAlias(alias, receiver), fullName)
       case ResolvedTypeDecl(fullName, _) =>
