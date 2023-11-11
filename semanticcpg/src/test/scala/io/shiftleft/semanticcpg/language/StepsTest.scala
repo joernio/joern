@@ -90,33 +90,33 @@ class StepsTest extends AnyWordSpec with Matchers {
      }
    }
 
-//   "toJson" when {
-//     "operating on StoredNode" in {
-//       val json   = cpg.method.nameExact("foo").toJson
-//       val parsed = parse(json).children.head // exactly one result for the above query
-//       (parsed \ "_label") shouldBe JString("METHOD")
-//       (parsed \ "name") shouldBe JString("foo")
-//     }
-//
-//     "operating on NewNode" in {
-//       implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder
-//       def location                             = cpg.method.name("foo").location
-//
-//       location.size shouldBe 1
-//       val parsedChildren = parse(location.toJson).children
-//       val parsed         = parsedChildren.head // exactly one result for the above query
-//       (parsed \ "symbol") shouldBe JString("foo")
-//       (parsed \ "className") shouldBe JString("AClass")
-//       (parsed \ "filename") shouldBe JString("N/A")
-//     }
-//
-//     "operating on primitive" in {
-//       val json   = cpg.method.name("foo").signature.toJson
-//       val parsed = parse(json).children.head // exactly one result for the above query
-//       parsed shouldBe JString("asignature")
-//     }
-//   }
-//
+   "toJson" when {
+     "operating on StoredNode" in {
+       val json   = cpg.method.nameExact("foo").toJson
+       val parsed = parse(json).children.head // exactly one result for the above query
+       (parsed \ "_label") shouldBe JString("METHOD")
+       (parsed \ "name") shouldBe JString("foo")
+     }
+
+     "operating on NewNode" in {
+       implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder
+       def location                             = cpg.method.name("foo").location
+
+       location.size shouldBe 1
+       val parsedChildren = parse(location.toJson).children
+       val parsed         = parsedChildren.head // exactly one result for the above query
+       (parsed \ "symbol") shouldBe JString("foo")
+       (parsed \ "className") shouldBe JString("AClass")
+       (parsed \ "filename") shouldBe JString("N/A")
+     }
+
+     "operating on primitive" in {
+       val json   = cpg.method.name("foo").signature.toJson
+       val parsed = parse(json).children.head // exactly one result for the above query
+       parsed shouldBe JString("asignature")
+     }
+   }
+
 //   ".p for pretty printing" should {
 //
 //     "use default `toString` if nothing else applies" in {
