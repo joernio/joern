@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language.types.expressions.generalizations
 
-import io.shiftleft.codepropertygraph.generated.v2.NodeTypes
+import io.shiftleft.codepropertygraph.generated.v2.NodeKinds
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language.*
 // TODO bring back @Help
@@ -37,11 +37,8 @@ class AstNodeTraversal[A <: AstNode](val traversal: Iterator[A]) extends AnyVal 
 
   /** Nodes of the AST rooted in this node, minus the node itself
     */
-  def astMinusRoot: Iterator[AstNode] = {
-    // TODO bring back .repeat
-//    traversal.repeat(_.out(EdgeTypes.AST))(_.emitAllButFirst).cast[AstNode]
-    ???
-  }
+  def astMinusRoot: Iterator[AstNode] =
+    traversal.repeat(_._astOut)(_.emitAllButFirst).cast[AstNode]
 
   /** Direct children of node in the AST. Siblings are ordered by their `order` fields
     */
@@ -50,14 +47,8 @@ class AstNodeTraversal[A <: AstNode](val traversal: Iterator[A]) extends AnyVal 
 
   /** Parent AST node
     */
-  def astParent: Iterator[AstNode] = {
-    // TODO replace by generated code
-    extension (iterator: Iterator[StoredNode]) {
-      def _astIn: Iterator[StoredNode] = ???
-    }
-
+  def astParent: Iterator[AstNode] =
     traversal._astIn.cast[AstNode]
-  }
 
   /** Siblings of this node in the AST, ordered by their `order` fields
     */
@@ -67,7 +58,7 @@ class AstNodeTraversal[A <: AstNode](val traversal: Iterator[A]) extends AnyVal 
   /** Traverses up the AST and returns the first block node.
     */
   def parentBlock: Iterator[Block] =
-    traversal.repeat(_._astIn)(_.emit.until(_.hasLabel(NodeTypes.BLOCK))).collectAll[Block]
+    traversal.repeat(_._astIn)(_.emit.until(_.hasKind(NodeKinds.BLOCK))).collectAll[Block]
 
   /** Nodes of the AST obtained by expanding AST edges backwards until the method root is reached
     */
@@ -82,28 +73,24 @@ class AstNodeTraversal[A <: AstNode](val traversal: Iterator[A]) extends AnyVal 
   /** Nodes of the AST obtained by expanding AST edges backwards until `root` or the method root is reached
     */
   def inAst(root: AstNode): Iterator[AstNode] = {
-    // TODO bring back repeat
-//    traversal
-//      .repeat(_.in(EdgeTypes.AST))(
-//        _.emit
-//          .until(_.or(_.hasLabel(NodeTypes.METHOD), _.filter(n => root != null && root == n)))
-//      )
-//      .cast[AstNode]
-    ???
+    traversal
+      .repeat(_._astIn)(
+        _.emit
+          .until(_.or(_.hasKind(NodeKinds.METHOD), _.filter(n => root != null && root == n)))
+      )
+      .cast[AstNode]
   }
 
   /** Nodes of the AST obtained by expanding AST edges backwards until `root` or the method root is reached, minus this
     * node
     */
   def inAstMinusLeaf(root: AstNode): Iterator[AstNode] = {
-    // TODO bring back repeat
-//    traversal
-//      .repeat(_.in(EdgeTypes.AST))(
-//        _.emitAllButFirst
-//          .until(_.or(_.hasLabel(NodeTypes.METHOD), _.filter(n => root != null && root == n)))
-//      )
-//      .cast[AstNode]
-    ???
+    traversal
+      .repeat(_._astIn)(
+        _.emitAllButFirst
+          .until(_.or(_.hasKind(NodeKinds.METHOD), _.filter(n => root != null && root == n)))
+      )
+      .cast[AstNode]
   }
 
   /** Traverse only to those AST nodes that are also control flow graph nodes
@@ -224,12 +211,10 @@ class AstNodeTraversal[A <: AstNode](val traversal: Iterator[A]) extends AnyVal 
     traversal.collectAll[TypeDecl]
 
   def walkAstUntilReaching(labels: List[String]): Iterator[StoredNode] = {
-    // TODO bring back repeat
-    ???
-//    traversal
-//      .repeat(_.out(EdgeTypes.AST))(_.emitAllButFirst.until(_.hasLabel(labels: _*)))
-//      .dedup
-//      .cast[StoredNode]
+    traversal
+      .repeat(_._astOut)(_.emitAllButFirst.until(_.hasLabel(labels: _*)))
+      .dedup
+      .cast[StoredNode]
   }
 
 }
