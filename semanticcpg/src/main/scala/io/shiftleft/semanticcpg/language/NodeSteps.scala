@@ -3,7 +3,7 @@ package io.shiftleft.semanticcpg.language
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.nodes.StoredNode
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, NodeKinds, NodeTypes}
 import io.shiftleft.semanticcpg.codedumper.CodeDumper
 // TODO bring back: import overflowdb.traversal.help.Doc
 
@@ -29,9 +29,7 @@ class NodeSteps[NodeType <: StoredNode](val traversal: Iterator[NodeType]) exten
       case comment: Comment =>
         comment._astIn.iterator.collectAll[File]
       case node =>
-        ??? // TODO bring back `.is` step
-        // node.repeat(_.coalesce(_._sourceFileOut, _._astIn))(_.until(_.is[File]))
-//        node.repeat(_.coalesce(_.out(EdgeTypes.SOURCE_FILE), _.in(EdgeTypes.AST)))(_.until(_.hasLabel(NodeTypes.FILE)))
+       node.repeat(_.coalesce(_._sourceFileOut, _._astIn))(_.until(_.hasKind(NodeKinds.FILE))).cast[File]
     }
   }
 
