@@ -3,7 +3,7 @@ package io.joern.javasrc2cpg.passes
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.passes.frontend.XTypeHintCallLinker
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.Call
+import io.shiftleft.codepropertygraph.generated.v2.nodes.Call
 import io.shiftleft.semanticcpg.language._
 
 import java.util.regex.Pattern

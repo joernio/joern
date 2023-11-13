@@ -104,11 +104,10 @@ package object language
   implicit def iterOnceToMethodParameterInTrav[A <: MethodParameterIn](a: IterableOnce[A]): MethodParameterTraversal =
     new MethodParameterTraversal(a.iterator)
 
-// implicit def singleToMethodParameterOutTrav[A <: MethodParameterOut](a: A): MethodParameterOutTraversal =
-//   new MethodParameterOutTraversal(Iterator.single(a))
-  implicit def iterOnceToMethodParameterOutTrav[A <: MethodParameterOut](
-    a: IterableOnce[A]
-  ): MethodParameterOutTraversal =
+  // note: this causes problems because MethodParameterOut has an `index` property and the `MethodParameterOutTraversal` defines an `index` step...
+//  implicit def singleToMethodParameterOutTrav[A <: MethodParameterOut](a: A): MethodParameterOutTraversal =
+//    new MethodParameterOutTraversal(Iterator.single(a))
+  implicit def iterOnceToMethodParameterOutTrav[A <: MethodParameterOut](a: IterableOnce[A]): MethodParameterOutTraversal =
     new MethodParameterOutTraversal(a.iterator)
 
   implicit def iterOnceToMethodReturnTrav[A <: MethodReturn](a: IterableOnce[A]): MethodReturnTraversal =

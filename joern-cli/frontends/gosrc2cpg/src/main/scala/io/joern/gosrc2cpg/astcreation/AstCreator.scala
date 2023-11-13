@@ -10,7 +10,7 @@ import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, AstNodeBuilder as X2
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import org.slf4j.{Logger, LoggerFactory}
-import io.joern.odb2.DiffGraphBuilder
+import flatgraph.DiffGraphBuilder
 import ujson.Value
 
 import scala.collection.mutable

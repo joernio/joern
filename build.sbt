@@ -2,26 +2,23 @@ name                     := "joern"
 ThisBuild / organization := "io.joern"
 ThisBuild / scalaVersion := "3.3.1"
 
-val cpgVersion = "1.4.23+12-faedfaf3"
-
-// TODO remove, usually we want to inherit this from cpg, just added as a shortcut during development
-// ThisBuild / dependencyOverrides += "io.joern" %% "odb2-core" % "0.0.0+97-e9aba06c" 
+val cpgVersion = "1.4.29+17-6d0992dd"
 
 // TODO uncomment
 // lazy val joerncli          = Projects.joerncli
 // lazy val querydb           = Projects.querydb
 // lazy val console           = Projects.console
-// lazy val dataflowengineoss = Projects.dataflowengineoss
+lazy val dataflowengineoss = Projects.dataflowengineoss
 // lazy val macros            = Projects.macros
 lazy val semanticcpg       = Projects.semanticcpg
 // lazy val benchmarks        = Projects.benchmarks
 // lazy val c2cpg             = Projects.c2cpg
 // lazy val ghidra2cpg        = Projects.ghidra2cpg
-// lazy val x2cpg             = Projects.x2cpg
+lazy val x2cpg             = Projects.x2cpg
 // lazy val pysrc2cpg         = Projects.pysrc2cpg
 // lazy val php2cpg           = Projects.php2cpg
 // lazy val jssrc2cpg         = Projects.jssrc2cpg
-// lazy val javasrc2cpg       = Projects.javasrc2cpg
+lazy val javasrc2cpg       = Projects.javasrc2cpg
 // lazy val jimple2cpg        = Projects.jimple2cpg
 // lazy val kotlin2cpg        = Projects.kotlin2cpg
 // lazy val rubysrc2cpg       = Projects.rubysrc2cpg
@@ -32,16 +29,16 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
 //   joerncli,
 //   querydb,
 //   console,
-//   dataflowengineoss,
+  dataflowengineoss,
 //   macros,
   semanticcpg,
 //   c2cpg,
-//   x2cpg,
+  x2cpg,
 //   pysrc2cpg,
 //   php2cpg,
 //   ghidra2cpg,
 //   jssrc2cpg,
-//   javasrc2cpg,
+  javasrc2cpg,
 //   jimple2cpg,
 //   kotlin2cpg,
 //   rubysrc2cpg,

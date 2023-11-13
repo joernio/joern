@@ -1,8 +1,8 @@
 package io.shiftleft.semanticcpg.language
 
-import io.joern.odb2.DiffGraphApplier.applyDiff
-import io.joern.odb2.DiffGraphBuilder
-import io.shiftleft.codepropertygraph.Cpg
+import flatgraph.DiffGraphApplier.applyDiff
+import flatgraph.DiffGraphBuilder
+import io.shiftleft.codepropertygraph.generated.v2.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -13,9 +13,9 @@ class NewNodeStepsTest extends AnyWordSpec with Matchers {
   import io.shiftleft.semanticcpg.language.NewNodeNodeStepsTest.*
 
   "stores NewNodes" in {
-    implicit val diffGraphBuilder: DiffGraphBuilder = new DiffGraphBuilder
+    implicit val diffGraphBuilder: DiffGraphBuilder = Cpg.newDiffGraphBuilder
     val newNode                                     = newTestNode()
-    val cpg                                         = Cpg.emptyCpg
+    val cpg                                         = Cpg.empty
     new NewNodeSteps(newNode.start).store()
 
     cpg.all.size shouldBe 0
@@ -30,13 +30,13 @@ class NewNodeStepsTest extends AnyWordSpec with Matchers {
 
   "stores containedNodes and connecting edge" when {
     "embedding a StoredNode and a NewNode" in {
-      val cpg                                         = Cpg.emptyCpg
+      val cpg                                         = Cpg.empty
       val newModifier = NewModifier()
-      applyDiff(cpg.graph, DiffGraphBuilder().addNode(newModifier))
+      applyDiff(cpg.graph, Cpg.newDiffGraphBuilder.addNode(newModifier))
       val existingContainedNode = newModifier.storedRef.get
       cpg.graph.allNodes.toSet shouldBe Set(existingContainedNode)
 
-      implicit val diffGraphBuilder: DiffGraphBuilder = new DiffGraphBuilder
+      implicit val diffGraphBuilder: DiffGraphBuilder = Cpg.newDiffGraphBuilder
       val newContainedNode = newTestNode()
       val newNode          = newTestNode(evidence = List(existingContainedNode, newContainedNode))
       new NewNodeSteps(newNode.start).store()
@@ -46,8 +46,8 @@ class NewNodeStepsTest extends AnyWordSpec with Matchers {
     }
 
     "embedding a NewNode recursively" in {
-      implicit val diffGraphBuilder: DiffGraphBuilder = new DiffGraphBuilder
-      val cpg                                         = Cpg.emptyCpg
+      implicit val diffGraphBuilder: DiffGraphBuilder = Cpg.newDiffGraphBuilder
+      val cpg                                         = Cpg.empty
       val newContainedNodeL1                          = newTestNode()
       val newContainedNodeL0                          = newTestNode(evidence = List(newContainedNodeL1))
       val newNode                                     = newTestNode(evidence = List(newContainedNodeL0))

@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language.types.structure
 
-import io.shiftleft.codepropertygraph.generated.v2.EdgeKinds
+import io.shiftleft.codepropertygraph.generated.v2.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.testing.MockCpg
@@ -57,8 +57,8 @@ class TypeTests extends AnyWordSpec with Matchers {
       .withTypeDecl("Derived")
       .withTypeDecl("DerivedFromDerived")
       .withCustom { case (graph, cpg) =>
-        graph.addEdge(cpg.typeDecl("Derived").head, cpg.typ.name("Base").head, EdgeKinds.INHERITS_FROM)
-        graph.addEdge(cpg.typeDecl("DerivedFromDerived").head, cpg.typ.name("Derived").head, EdgeKinds.INHERITS_FROM)
+        graph.addEdge(cpg.typeDecl("Derived").head, cpg.typ.name("Base").head, EdgeTypes.INHERITS_FROM)
+        graph.addEdge(cpg.typeDecl("DerivedFromDerived").head, cpg.typ.name("Derived").head, EdgeTypes.INHERITS_FROM)
       }
       .cpg
 
@@ -116,8 +116,8 @@ class TypeTests extends AnyWordSpec with Matchers {
       .withTypeDecl("Derived")
       .withTypeDecl("DerivedFromDerived")
       .withCustom { case (graph, cpg) =>
-        graph.addEdge(cpg.typeDecl("Derived").head, cpg.typ.name("Base").head, EdgeKinds.INHERITS_FROM)
-        graph.addEdge(cpg.typeDecl("DerivedFromDerived").head, cpg.typ.name("Derived").head, EdgeKinds.INHERITS_FROM)
+        graph.addEdge(cpg.typeDecl("Derived").head, cpg.typ.name("Base").head, EdgeTypes.INHERITS_FROM)
+        graph.addEdge(cpg.typeDecl("DerivedFromDerived").head, cpg.typ.name("Derived").head, EdgeTypes.INHERITS_FROM)
       }
       .cpg
 

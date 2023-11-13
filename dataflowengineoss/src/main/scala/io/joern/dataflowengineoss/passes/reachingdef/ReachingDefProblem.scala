@@ -1,7 +1,7 @@
 package io.joern.dataflowengineoss.passes.reachingdef
 
-import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
+import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.utils.MemberAccess.{isFieldAccess, isGenericMemberAccessName}
 import org.slf4j.{Logger, LoggerFactory}

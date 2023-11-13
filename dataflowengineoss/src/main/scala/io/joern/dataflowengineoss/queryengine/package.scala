@@ -1,6 +1,6 @@
 package io.joern.dataflowengineoss
 
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call, CfgNode}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{AstNode, Call, CfgNode}
 
 package object queryengine {
 

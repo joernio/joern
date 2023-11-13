@@ -1,14 +1,14 @@
 package io.joern.x2cpg.utils
 
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.PropertyNames
+import io.shiftleft.codepropertygraph.generated.v2.PropertyNames
 
 object AstPropertiesUtil {
 
   implicit class RootProperties(val ast: Ast) extends AnyVal {
 
     private def rootProperty(propertyName: String): Option[String] = {
-      ast.root.flatMap(_.properties.get(propertyName).map(_.toString))
+      ast.root.flatMap(node => Option(node.propertiesMap.get(propertyName)).map(_.toString))
     }
 
     def rootType: Option[String] = rootProperty(PropertyNames.TYPE_FULL_NAME)

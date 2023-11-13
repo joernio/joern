@@ -10,7 +10,7 @@ import io.joern.ghidra2cpg.utils.Utils._
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.CfgNodeNew
 import org.slf4j.LoggerFactory
-import io.joern.odb2.DiffGraphBuilder
+import flatgraph.DiffGraphBuilder
 
 import scala.jdk.CollectionConverters._
 import scala.language.implicitConversions

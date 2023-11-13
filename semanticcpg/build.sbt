@@ -1,9 +1,10 @@
 name := "semanticcpg"
 
-val flatGraphVersion = "0.0.0+105-6126d9d5"
+val flatGraphVersion = "0.0.4+7-5d198730"
 
 libraryDependencies ++= Seq(
   "io.joern" %% "joern-generated" % flatGraphVersion,
+  "io.joern" %% "flatgraph-core" % flatGraphVersion,
   "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
   "com.michaelpollmeier" %% "scala-repl-pp" % Versions.scalaReplPP,
   "org.json4s"    %% "json4s-native"     % Versions.json4s,

@@ -17,7 +17,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeRef
 import org.slf4j.{Logger, LoggerFactory}
-import io.joern.odb2.DiffGraphBuilder
+import flatgraph.DiffGraphBuilder
 import ujson.Value
 
 import java.util.concurrent.ConcurrentHashMap

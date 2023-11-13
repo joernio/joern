@@ -3,7 +3,7 @@ package io.joern.x2cpg.passes.frontend
 import io.joern.x2cpg.passes.base.TypeDeclStubCreator
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, PropertyNames}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language.*
 
@@ -41,8 +41,8 @@ abstract class XInheritanceFullNamePass(cpg: Cpg) extends ForkJoinParallelCpgPas
     inheritedTypes == Seq("ANY") || inheritedTypes == Seq("object") || inheritedTypes.isEmpty
 
   private def extractTypeDeclFromNode(node: AstNode): Option[String] = node match {
-    case x: Call if x.isCallForImportOut.nonEmpty =>
-      x.isCallForImportOut.importedEntity.map {
+    case x: Call if x._isCallForImportOut.nonEmpty =>
+      x._isCallForImportOut.cast[Import].importedEntity.map {
         case imp if relativePathPattern.matcher(imp).matches() =>
           imp.split(pathSep).toList match {
             case head :: next =>

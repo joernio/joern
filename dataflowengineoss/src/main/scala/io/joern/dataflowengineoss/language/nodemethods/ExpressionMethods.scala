@@ -1,7 +1,7 @@
 package io.joern.dataflowengineoss.language.nodemethods
 
 import io.joern.dataflowengineoss.semanticsloader.*
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Expression, Method}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{Call, Expression, Method}
 import io.shiftleft.semanticcpg.language.*
 
 class ExpressionMethods[NodeType <: Expression](val node: NodeType) extends AnyVal {

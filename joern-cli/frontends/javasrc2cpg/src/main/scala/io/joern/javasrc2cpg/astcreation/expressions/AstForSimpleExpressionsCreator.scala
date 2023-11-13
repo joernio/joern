@@ -23,8 +23,8 @@ import io.joern.javasrc2cpg.util.NameConstants
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newOperatorCallNode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewFieldIdentifier, NewLiteral, NewTypeRef}
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{NewCall, NewFieldIdentifier, NewLiteral, NewTypeRef}
+import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, Operators}
 
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
@@ -271,8 +271,8 @@ trait AstForSimpleExpressionsCreator { this: AstCreator =>
     identifierType: Option[String],
     fieldIdentifierName: String,
     returnType: Option[String],
-    lineNo: Option[Integer],
-    columnNo: Option[Integer]
+    lineNo: Option[Int],
+    columnNo: Option[Int]
   ): Ast = {
     val typeFullName     = identifierType.orElse(Some(TypeConstants.Any)).map(typeInfoCalc.registerType)
     val identifier       = newIdentifierNode(identifierName, typeFullName.getOrElse("ANY"))

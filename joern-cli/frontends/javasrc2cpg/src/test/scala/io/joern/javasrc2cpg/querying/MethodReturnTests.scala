@@ -27,7 +27,7 @@ class MethodReturnTests extends JavaSrcCode2CpgFixture {
     x.code shouldBe "return 1;"
     x.order shouldBe 1
     x.astChildren.size shouldBe 1
-    x.argumentOut.size shouldBe 1
+    x._argumentOut.size shouldBe 1
   }
 
   "should allow traversing to method" in {

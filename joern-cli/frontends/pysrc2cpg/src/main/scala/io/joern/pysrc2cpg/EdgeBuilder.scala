@@ -23,7 +23,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewUnknown
 }
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
-import io.joern.odb2.DiffGraphBuilder
+import flatgraph.DiffGraphBuilder
 
 class EdgeBuilder(diffGraph: DiffGraphBuilder) {
   def astEdge(dstNode: nodes.NewNode, srcNode: nodes.NewNode, order: Int): Unit = {

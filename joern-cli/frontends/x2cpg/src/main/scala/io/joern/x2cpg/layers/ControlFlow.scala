@@ -1,7 +1,7 @@
 package io.joern.x2cpg.layers
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.Languages
+import io.shiftleft.codepropertygraph.generated.v2.Languages
 import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext, LayerCreatorOptions}

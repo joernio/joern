@@ -4,11 +4,10 @@ import io.joern.x2cpg.Defines
 import io.joern.x2cpg.passes.base.MethodStubCreator.createMethodStub
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, EdgeTypes, EvaluationStrategies, NodeTypes}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
-import overflowdb.BatchedUpdate
-import io.joern.odb2.DiffGraphBuilder
+import flatgraph.DiffGraphBuilder
 
 import scala.collection.mutable
 import scala.util.Try
@@ -24,7 +23,7 @@ class MethodStubCreator(cpg: Cpg) extends CpgPass(cpg) {
   private val methodFullNameToNode   = mutable.LinkedHashMap[String, Method]()
   private val methodToParameterCount = mutable.LinkedHashMap[CallSummary, Int]()
 
-  override def run(dstGraph: BatchedUpdate.DiffGraphBuilder): Unit = {
+  override def run(dstGraph: DiffGraphBuilder): Unit = {
     for (method <- cpg.method) {
       methodFullNameToNode.put(method.fullName, method)
     }

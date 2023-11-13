@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language.types.expressions.generalizations
 
-import io.shiftleft.codepropertygraph.generated.v2.EdgeKinds
+import io.shiftleft.codepropertygraph.generated.v2.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.v2.nodes.Call
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.testing.MockCpg
@@ -17,9 +17,9 @@ class ExpressionTraversalTests extends AnyWordSpec with Matchers {
       val method = cpg.method("methodForCfgTest").head
       val call1  = cpg.call.name("call1").head
       val call2  = cpg.call.name("call2").head
-      graph.addEdge(method, call1, EdgeKinds.CFG)
-      graph.addEdge(call1, call2, EdgeKinds.CFG)
-      graph.addEdge(call2, method.methodReturn, EdgeKinds.CFG)
+      graph.addEdge(method, call1, EdgeTypes.CFG)
+      graph.addEdge(call1, call2, EdgeTypes.CFG)
+      graph.addEdge(call2, method.methodReturn, EdgeTypes.CFG)
     }
     .cpg
 
