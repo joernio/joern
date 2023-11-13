@@ -1,8 +1,8 @@
 package io.joern.x2cpg
 
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
-import io.shiftleft.codepropertygraph.generated.nodes.Block.{PropertyDefaults => BlockDefaults}
-import io.shiftleft.codepropertygraph.generated.nodes.{
+import io.shiftleft.codepropertygraph.generated.v2.nodes.Block.{PropertyDefaults => BlockDefaults}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{
   NewAnnotation,
   NewBlock,
   NewCall,

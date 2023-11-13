@@ -1,8 +1,8 @@
 package io.joern.x2cpg.passes.controlflow.cfgcreation
 
 import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.CfgEdgeType
-import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, EdgeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
+import io.shiftleft.codepropertygraph.generated.v2.{ControlStructureTypes, DispatchTypes, EdgeTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 import io.joern.odb2.DiffGraphBuilder
 

@@ -1,7 +1,7 @@
 package io.joern.x2cpg.utils
 
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.PropertyNames
+import io.shiftleft.codepropertygraph.generated.v2.PropertyNames
 
 object AstPropertiesUtil {
 

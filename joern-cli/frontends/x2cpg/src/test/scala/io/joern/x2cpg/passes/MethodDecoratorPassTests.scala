@@ -1,8 +1,8 @@
 package io.joern.x2cpg.passes
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn
+import io.shiftleft.codepropertygraph.generated.v2._
+import io.shiftleft.codepropertygraph.generated.v2.nodes.MethodParameterIn
 import io.joern.x2cpg.passes.base.MethodDecoratorPass
 import io.joern.x2cpg.testfixtures.EmptyGraphFixture
 import org.scalatest.matchers.should.Matchers

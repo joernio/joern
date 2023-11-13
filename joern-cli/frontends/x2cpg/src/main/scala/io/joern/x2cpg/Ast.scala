@@ -1,11 +1,10 @@
 package io.joern.x2cpg
 
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.nodes.AstNode.PropertyDefaults
+import io.shiftleft.codepropertygraph.generated.v2.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
+import io.shiftleft.codepropertygraph.generated.v2.nodes.AstNode.PropertyDefaults
 import org.slf4j.LoggerFactory
-import io.joern.odb2.DiffGraphBuilder
-import overflowdb.SchemaViolationException
+import io.joern.odb2.{DiffGraphBuilder, SchemaViolationException}
 
 case class AstEdge(src: NewNode, dst: NewNode)
 

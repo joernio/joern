@@ -1,7 +1,7 @@
 package io.joern.x2cpg.passes.frontend
 
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.Languages
+import io.shiftleft.codepropertygraph.generated.v2.Cpg
+import io.shiftleft.codepropertygraph.generated.v2.Languages
 import io.shiftleft.semanticcpg.language._
 
 object Dereference {

@@ -1,7 +1,7 @@
 package io.joern.x2cpg.utils
 
-import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
-import io.shiftleft.codepropertygraph.generated.nodes.{
+import io.shiftleft.codepropertygraph.generated.v2.nodes.Call.PropertyDefaults
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{
   NewAnnotationLiteral,
   NewBinding,
   NewCall,
@@ -14,7 +14,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewMethodReturn,
   NewModifier
 }
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies}
+import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, EvaluationStrategies}
 
 /** NodeBuilders helps with node creation and is intended to be used when functions from `x2cpg.AstCreatorBase` are not
   * appropriate; for example, in cases in which the node's line and column are _not_ set from the base ASTNode type of a

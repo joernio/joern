@@ -1,6 +1,6 @@
 package io.joern.x2cpg
 
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNodeNew, NewCall, NewClosureBinding, NewIdentifier}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{AstNodeNew, NewCall, NewClosureBinding, NewIdentifier}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import overflowdb.SchemaViolationException

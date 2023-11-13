@@ -1,14 +1,14 @@
 package io.joern.x2cpg.utils
 
 import io.joern.x2cpg.passes.frontend.Dereference
-import io.shiftleft.codepropertygraph.generated.PropertyNames
-import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
-import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
-import io.shiftleft.codepropertygraph.generated.Properties
-import io.shiftleft.codepropertygraph.generated.nodes.Method
+import io.shiftleft.codepropertygraph.generated.v2.PropertyNames
+import io.shiftleft.codepropertygraph.generated.v2.nodes.StoredNode
+import io.shiftleft.codepropertygraph.generated.v2.nodes.TypeDecl
+import io.shiftleft.codepropertygraph.generated.v2.Properties
+import io.shiftleft.codepropertygraph.generated.v2.nodes.Method
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.NamespaceBlock
-import io.shiftleft.codepropertygraph.generated.nodes.Type
+import io.shiftleft.codepropertygraph.generated.v2.nodes.NamespaceBlock
+import io.shiftleft.codepropertygraph.generated.v2.nodes.Type
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import overflowdb.NodeDb
