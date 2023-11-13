@@ -79,11 +79,8 @@ class AstNodeMethods(val node: AstNode) extends AnyVal with NodeExtension {
 
   /** Nodes of the AST rooted in this node, including the node itself.
     */
-  def ast: Iterator[AstNode] = {
-    // TODO bring back - needs AstNodeTraversal
-    ???
-//    Iterator.single(node).ast
-  }
+  def ast: Iterator[AstNode] =
+    Iterator.single(node).ast
 
   /** Textual representation of AST node
     */
@@ -97,9 +94,7 @@ class AstNodeMethods(val node: AstNode) extends AnyVal with NodeExtension {
     }
 
   def statement: AstNode =
-    // TODO bring back: need ExpressionMethods
-    ???
-//    statementInternal(node, _.parentExpression.get)
+    statementInternal(node, _.parentExpression.get)
 
   @scala.annotation.tailrec
   private def statementInternal(node: AstNode, parentExpansion: Expression => Expression): AstNode = {
