@@ -46,30 +46,31 @@ object SourceFiles {
     }
   }
 
+  /** Method to filter file based on the passed parameters
+    * @param file
+    * @param inputPath
+    * @param ignoredDefaultRegex
+    * @param ignoredFilesRegex
+    * @param ignoredFilesPath
+    * @return
+    */
+  def filterFile(
+    file: String,
+    inputPath: String,
+    ignoredDefaultRegex: Option[Seq[Regex]] = None,
+    ignoredFilesRegex: Option[Regex] = None,
+    ignoredFilesPath: Option[Seq[String]] = None
+  ): Boolean = !ignoredDefaultRegex.exists(isIgnoredByDefaultRegex(file, inputPath, _))
+    && !ignoredFilesRegex.exists(isIgnoredByRegex(file, inputPath, _))
+    && !ignoredFilesPath.exists(isIgnoredByFileList(file, _))
+
   private def filterFiles(
     files: List[String],
     inputPath: String,
     ignoredDefaultRegex: Option[Seq[Regex]] = None,
     ignoredFilesRegex: Option[Regex] = None,
     ignoredFilesPath: Option[Seq[String]] = None
-  ): List[String] = files.filter {
-    case filePath
-        if ignoredDefaultRegex.isDefined && ignoredDefaultRegex.get.nonEmpty && isIgnoredByDefaultRegex(
-          filePath,
-          inputPath,
-          ignoredDefaultRegex.get
-        ) =>
-      false
-    case filePath if ignoredFilesRegex.isDefined && isIgnoredByRegex(filePath, inputPath, ignoredFilesRegex.get) =>
-      false
-    case filePath
-        if ignoredFilesPath.isDefined && ignoredFilesPath.get.nonEmpty && isIgnoredByFileList(
-          filePath,
-          ignoredFilesPath.get
-        ) =>
-      false
-    case _ => true
-  }
+  ): List[String] = files.filter(filterFile(_, inputPath, ignoredDefaultRegex, ignoredFilesRegex, ignoredFilesPath))
 
   /** For given input paths, determine all source files by inspecting filename extensions and filter the result if
     * following arguments ignoredDefaultRegex, ignoredFilesRegex and ignoredFilesPath are used
