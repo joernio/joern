@@ -4,7 +4,7 @@ import io.joern.x2cpg.Defines
 import io.joern.x2cpg.passes.frontend._
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames, DispatchTypes}
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
@@ -67,7 +67,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
   }
 
   protected def unresolvedDynamicCalls: Iterator[Call] = cu.ast.isCall
-    .filter(_.dispatchType == "DYNAMIC_DISPATCH")
+    .filter(_.dispatchType == DispatchTypes.DYNAMIC_DISPATCH)
     .filter(_.methodFullName.startsWith(Defines.UnresolvedNamespace))
 
   override def compute(): Boolean = {
