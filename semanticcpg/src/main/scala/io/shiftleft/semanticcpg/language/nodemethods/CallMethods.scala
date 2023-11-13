@@ -33,9 +33,6 @@ class CallMethods(val node: Call) extends AnyVal with NodeExtension with HasLoca
       case expr: Expression if expr.argumentIndex == index => expr
     }
 
-  override def location: NewLocation = {
-    ???
-    // TODO bring back: need to convert CfgNodeMethods first for `node.method`
-//    LocationCreator(node, node.code, node.label, node.lineNumber, node.method)
-  }
+  override def location: NewLocation =
+    LocationCreator(node, node.code, node.label, node.lineNumber, node.method)
 }

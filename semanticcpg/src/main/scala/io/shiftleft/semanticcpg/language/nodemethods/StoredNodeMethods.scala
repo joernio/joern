@@ -14,7 +14,5 @@ class StoredNodeMethods(val node: StoredNode) extends AnyVal with NodeExtension 
   }
 
   def file: Iterator[File] = 
-    ???
-    // TODO bring back once NodeSteps is available
-    // Iterator.single(node).file
+    Iterator.single(node).file
 }
