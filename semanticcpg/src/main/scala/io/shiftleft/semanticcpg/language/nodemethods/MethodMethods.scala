@@ -65,9 +65,7 @@ class MethodMethods(val method: Method) extends AnyVal with NodeExtension with H
   /** The type declaration associated with this method, e.g., the class it is defined in.
     */
   def definingTypeDecl: Option[TypeDecl] =
-    // TODO: bring back: need MethodTraversal.scala first
-//    Iterator.single(method).definingTypeDecl.headOption
-    ???
+    Iterator.single(method).definingTypeDecl.headOption
 
   /** The type declaration associated with this method, e.g., the class it is defined in. Alias for 'definingTypeDecl'
     */
