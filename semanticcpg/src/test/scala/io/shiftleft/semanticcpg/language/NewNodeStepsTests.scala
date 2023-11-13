@@ -1,15 +1,16 @@
 package io.shiftleft.semanticcpg.language
 
+import io.joern.odb2.DiffGraphApplier.applyDiff
+import io.joern.odb2.DiffGraphBuilder
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import overflowdb.BatchedUpdate.{DiffGraphBuilder, applyDiff}
 
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 class NewNodeStepsTest extends AnyWordSpec with Matchers {
-  import io.shiftleft.semanticcpg.language.NewNodeNodeStepsTest._
+  import io.shiftleft.semanticcpg.language.NewNodeNodeStepsTest.*
 
   "stores NewNodes" in {
     implicit val diffGraphBuilder: DiffGraphBuilder = new DiffGraphBuilder
@@ -17,9 +18,9 @@ class NewNodeStepsTest extends AnyWordSpec with Matchers {
     val cpg                                         = Cpg.emptyCpg
     new NewNodeSteps(newNode.start).store()
 
-    cpg.graph.nodes.toList.size shouldBe 0
+    cpg.all.size shouldBe 0
     applyDiff(cpg.graph, diffGraphBuilder)
-    cpg.graph.nodes.toList.size shouldBe 1
+    cpg.all.size shouldBe 1
   }
 
   "can access the node label" in {
@@ -29,17 +30,19 @@ class NewNodeStepsTest extends AnyWordSpec with Matchers {
 
   "stores containedNodes and connecting edge" when {
     "embedding a StoredNode and a NewNode" in {
-      implicit val diffGraphBuilder: DiffGraphBuilder = new DiffGraphBuilder
       val cpg                                         = Cpg.emptyCpg
-      val existingContainedNode                       = cpg.graph.addNode(42L, "MODIFIER").asInstanceOf[StoredNode]
-      cpg.graph.V().asScala.toSet shouldBe Set(existingContainedNode)
+      val newModifier = NewModifier()
+      applyDiff(cpg.graph, DiffGraphBuilder().addNode(newModifier))
+      val existingContainedNode = newModifier.storedRef.get
+      cpg.graph.allNodes.toSet shouldBe Set(existingContainedNode)
 
+      implicit val diffGraphBuilder: DiffGraphBuilder = new DiffGraphBuilder
       val newContainedNode = newTestNode()
       val newNode          = newTestNode(evidence = List(existingContainedNode, newContainedNode))
       new NewNodeSteps(newNode.start).store()
-      cpg.graph.V().asScala.length shouldBe 1
+      cpg.all.length shouldBe 1
       applyDiff(cpg.graph, diffGraphBuilder)
-      cpg.graph.V().asScala.length shouldBe 3
+      cpg.all.length shouldBe 3
     }
 
     "embedding a NewNode recursively" in {
@@ -49,9 +52,9 @@ class NewNodeStepsTest extends AnyWordSpec with Matchers {
       val newContainedNodeL0                          = newTestNode(evidence = List(newContainedNodeL1))
       val newNode                                     = newTestNode(evidence = List(newContainedNodeL0))
       new NewNodeSteps(newNode.start).store()
-      cpg.graph.V().asScala.size shouldBe 0
+      cpg.all.size shouldBe 0
       applyDiff(cpg.graph, diffGraphBuilder)
-      cpg.graph.V().asScala.size shouldBe 3
+      cpg.all.size shouldBe 3
     }
 
   }
