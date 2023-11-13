@@ -18,9 +18,9 @@ import java.io.{File => JFile}
 case class KnownFunction(
   name: String,
   // return types. A function has at most one return value, but with one or more types.
-  rTypes: Seq[String],
+  rTypes: Seq[String] = Seq.empty,
   // Index 0 = parameter at P0. A function has potentially multiple parameters, each with one or more types.
-  pTypes: Seq[Seq[String]]
+  pTypes: Seq[Seq[String]] = Seq.empty
 )
 
 /** Sets the return and parameter types for builtin functions with known function signatures.
@@ -39,7 +39,7 @@ class PhpSetKnownTypesPass(cpg: Cpg, knownTypesFile: Option[JFile] = None)
       case _          => Source.fromResource("known_function_signatures.txt")
     }
     val contents = source.getLines().filterNot(_.startsWith("//"))
-    val arr      = contents.map(line => createKnownFunctionFromLine(line)).toArray
+    val arr      = contents.flatMap(line => createKnownFunctionFromLine(line)).toArray
     source.close
     arr
   }
@@ -53,19 +53,12 @@ class PhpSetKnownTypesPass(cpg: Cpg, knownTypesFile: Option[JFile] = None)
     })
   }
 
-  def createKnownFunctionFromLine(line: String): KnownFunction = {
-    val fields = line.split(";").map(_.strip)
-    fields.length match {
-      case length if (length < 2) => {
-        logger.warn(s"invalid known function signature for ${name}: no parameter types")
-        KnownFunction(fields(0), Seq(), Seq())
-      }
-      case length if (length < 3) => {
-        KnownFunction(fields(0), scanReturnTypes(fields(1)), Seq())
-      }
-      case length => {
-        KnownFunction(fields(0).strip, scanReturnTypes(fields(1)), scanParamTypes(fields.slice(2, length)))
-      }
+  def createKnownFunctionFromLine(line: String): Option[KnownFunction] = {
+    line.split(";").map(_.strip).toList match {
+      case Nil                      => None
+      case name :: Nil              => Some(KnownFunction(name))
+      case name :: rTypes :: Nil    => Some(KnownFunction(name, scanReturnTypes(rTypes)))
+      case name :: rTypes :: pTypes => Some(KnownFunction(name, scanReturnTypes(rTypes), scanParamTypes(pTypes)))
     }
   }
 
@@ -74,7 +67,7 @@ class PhpSetKnownTypesPass(cpg: Cpg, knownTypesFile: Option[JFile] = None)
 
   /* From a semicolon separated list of parameters, each with a comma separated list of types,
    * create a list of lists of types. */
-  def scanParamTypes(pTypesRawArr: Array[String]): Seq[Seq[String]] =
+  def scanParamTypes(pTypesRawArr: List[String]): Seq[Seq[String]] =
     pTypesRawArr.map(paramTypeRaw => paramTypeRaw.split(",").map(_.strip).toSeq).toSeq
 
   protected def setTypes(builder: overflowdb.BatchedUpdate.DiffGraphBuilder, n: StoredNode, types: Seq[String]): Unit =
