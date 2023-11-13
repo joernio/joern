@@ -49,22 +49,21 @@ class MethodTests extends AnyWordSpec with Matchers {
         queryResult shouldBe Set("namespace")
       }
 
-      // TODO MP bring back
-//      "method is directly within a namespace" in {
-//        val cpg = MockCpg()
-//          .withNamespace("namespace")
-//          .withMethod("foo")
-//          .withCustom { case (graph, cpg) =>
-//            val namespaceBlock = cpg.namespaceBlock("namespace").head
-//            val method         = cpg.method("foo").head
-//            graph.setNodeProperty(method, Method.PropertyNames.AstParentType, NamespaceBlock.Label)
-//            graph.addEdge(namespaceBlock, method, EdgeKinds.AST)
-//          }
-//          .cpg
-//
-//        val queryResult: Set[String] = cpg.method.namespace.name.l.distinct.toSet
-//        queryResult shouldBe Set("namespace")
-//      }
+      "method is directly within a namespace" in {
+        val cpg = MockCpg()
+          .withNamespace("namespace")
+          .withMethod("foo")
+          .withCustom { case (graph, cpg) =>
+            val namespaceBlock = cpg.namespaceBlock("namespace").head
+            val method         = cpg.method("foo").head
+            graph.setNodeProperty(method, Method.PropertyKinds.AstParentType, NamespaceBlock.Label)
+            graph.addEdge(namespaceBlock, method, EdgeKinds.AST)
+          }
+          .cpg
+
+        val queryResult: Set[String] = cpg.method.namespace.name.l.distinct.toSet
+        queryResult shouldBe Set("namespace")
+      }
     }
 
     "filter by name" in {
