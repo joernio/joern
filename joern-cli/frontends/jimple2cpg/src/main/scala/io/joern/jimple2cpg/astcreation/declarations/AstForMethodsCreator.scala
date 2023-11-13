@@ -1,6 +1,8 @@
 package io.joern.jimple2cpg.astcreation.declarations
 
-import io.joern.jimple2cpg.astcreation.{AstCreator}
+import cats.syntax.all.*
+import io.joern.jimple2cpg.astcreation.AstCreator
+import io.joern.jimple2cpg.astcreation.statements.BodyControlInfo
 import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
@@ -14,12 +16,9 @@ import soot.{SootMethod, Local as SootLocal, Unit as SUnit, *}
 
 import scala.collection.immutable.HashSet
 import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
-
-import cats.syntax.all.*;
-import scala.collection.mutable.ArrayBuffer
-import io.joern.jimple2cpg.astcreation.statements.BodyControlInfo
 
 trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -69,9 +68,7 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
             }
 
         methodAstWithAnnotations(
-          methodNode
-            .lineNumberEnd(methodBody.toString.split('\n').filterNot(_.isBlank).length)
-            .code(methodBody.toString),
+          methodNode.code(methodBody.toString),
           parameterAsts,
           astForMethodBody(methodBody, bodyStatementsInfo),
           astForMethodReturn(methodDeclaration),
