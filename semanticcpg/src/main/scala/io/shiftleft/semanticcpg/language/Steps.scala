@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language
 
-import io.shiftleft.codepropertygraph.generated.v2.nodes.AbstractNode
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{AbstractNode, StoredNode}
 import org.json4s.native.Serialization.{write, writePretty}
 import org.json4s.{CustomSerializer, Extraction, Formats}
 //import overflowdb.traversal.help.Doc
@@ -83,9 +83,12 @@ object Steps {
     (
       { case _ => ??? },
       { case node: AbstractNode =>
-        val properties = node.propertiesMap
-        properties.put("_label", node.label)
-        Extraction.decompose(properties.asScala)
+        val elementMap = (0 until node.productArity).map { i =>
+          val label = node.productElementName(i)
+          val element = node.productElement(i)
+          label -> element
+        }.toMap + ("_label" -> node.label)
+        Extraction.decompose(elementMap)
       }
     )
   )
