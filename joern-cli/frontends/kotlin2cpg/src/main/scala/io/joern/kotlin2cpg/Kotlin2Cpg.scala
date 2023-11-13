@@ -25,6 +25,7 @@ import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass, XTypeRecovery
 import io.joern.x2cpg.utils.dependency.{DependencyResolver, DependencyResolverParams, GradleConfigKeys}
 import io.joern.kotlin2cpg.interop.JavasrcInterop
 import io.joern.kotlin2cpg.jar4import.UsesService
+import io.joern.x2cpg.SourceFiles.filterFile
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language.*
@@ -142,13 +143,14 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
         )
 
       val sourceEntries = entriesForSources(environment.getSourceFiles.asScala, sourceDir)
-      val sources = sourceEntries.filterNot { entry =>
-        config.ignoredFiles.exists { pathToIgnore =>
-          val parent = Paths.get(pathToIgnore).toAbsolutePath
-          val child  = Paths.get(entry.filename)
-          child.startsWith(parent)
-        }
-      }
+      val sources = sourceEntries.filter(entry =>
+        SourceFiles.filterFile(
+          entry.filename,
+          config.inputPath,
+          ignoredFilesRegex = Some(config.ignoredFilesRegex),
+          ignoredFilesPath = Some(config.ignoredFiles)
+        )
+      )
       val configFiles      = entriesForConfigFiles(SourceFilesPicker.configFiles(sourceDir), sourceDir)
       val typeInfoProvider = new DefaultTypeInfoProvider(environment)
 

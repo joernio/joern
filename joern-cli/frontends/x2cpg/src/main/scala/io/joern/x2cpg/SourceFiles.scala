@@ -45,6 +45,27 @@ object SourceFiles {
       false
     }
   }
+  def filterFile(
+    file: String,
+    inputPath: String,
+    ignoredDefaultRegex: Option[Seq[Regex]] = None,
+    ignoredFilesRegex: Option[Regex] = None,
+    ignoredFilesPath: Option[Seq[String]] = None
+  ): Boolean = {
+    if ignoredDefaultRegex.isDefined && ignoredDefaultRegex.get.nonEmpty && isIgnoredByDefaultRegex(
+        file,
+        inputPath,
+        ignoredDefaultRegex.get
+      )
+    then false
+    else if ignoredFilesRegex.isDefined && isIgnoredByRegex(file, inputPath, ignoredFilesRegex.get) then false
+    else if ignoredFilesPath.isDefined && ignoredFilesPath.get.nonEmpty && isIgnoredByFileList(
+        file,
+        ignoredFilesPath.get
+      )
+    then false
+    else true
+  }
 
   private def filterFiles(
     files: List[String],
@@ -52,24 +73,7 @@ object SourceFiles {
     ignoredDefaultRegex: Option[Seq[Regex]] = None,
     ignoredFilesRegex: Option[Regex] = None,
     ignoredFilesPath: Option[Seq[String]] = None
-  ): List[String] = files.filter {
-    case filePath
-        if ignoredDefaultRegex.isDefined && ignoredDefaultRegex.get.nonEmpty && isIgnoredByDefaultRegex(
-          filePath,
-          inputPath,
-          ignoredDefaultRegex.get
-        ) =>
-      false
-    case filePath if ignoredFilesRegex.isDefined && isIgnoredByRegex(filePath, inputPath, ignoredFilesRegex.get) =>
-      false
-    case filePath
-        if ignoredFilesPath.isDefined && ignoredFilesPath.get.nonEmpty && isIgnoredByFileList(
-          filePath,
-          ignoredFilesPath.get
-        ) =>
-      false
-    case _ => true
-  }
+  ): List[String] = files.filter(filterFile(_, inputPath, ignoredDefaultRegex, ignoredFilesRegex, ignoredFilesPath))
 
   /** For given input paths, determine all source files by inspecting filename extensions and filter the result if
     * following arguments ignoredDefaultRegex, ignoredFilesRegex and ignoredFilesPath are used
