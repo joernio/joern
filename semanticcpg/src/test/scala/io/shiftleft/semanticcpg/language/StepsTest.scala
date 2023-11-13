@@ -117,42 +117,42 @@ class StepsTest extends AnyWordSpec with Matchers {
      }
    }
 
-//   ".p for pretty printing" should {
-//
-//     "use default `toString` if nothing else applies" in {
-//       case class Foo(i: Int)
-//       val steps: Steps[Foo] = new Steps(Iterator.single(Foo(42)))
-//       steps.p.head shouldBe "Foo(42)"
-//     }
-//
-//     "render nodes as `(label,id): properties`" in {
-//       def mainMethods: Iterator[Method] = cpg.method.name("woo")
-//
-//       val nodeId  = mainMethods.head.id
-//       val printed = mainMethods.p.head
-//       printed.should(startWith(s"""(METHOD,$nodeId):"""))
-//       printed.should(include("IS_EXTERNAL: false"))
-//       printed.should(include("FULL_NAME: woo"))
-//     }
-//
-//     "allows to provide custom Show instance" in {
-//       def mainMethods: Steps[Method]                = cpg.method.name("woo")
-//       implicit val customShowInstance: Show[Method] = (_: Method) => "my custom pretty printer"
-//       mainMethods.p.head shouldBe "my custom pretty printer"
-//     }
-//
-//     "uses Show instance from package" in {
-//       object SomePackage {
-//         implicit def packageShowInstance: Show[Method] = { _ =>
-//           "package defined pretty printer"
-//         }
-//       }
-//
-//       import SomePackage.*
-//       def mainMethods: Steps[Method] = cpg.method.name("woo")
-//       mainMethods.p.head shouldBe "package defined pretty printer"
-//     }
-//   }
+   ".p for pretty printing" should {
+
+     "use default `toString` if nothing else applies" in {
+       case class Foo(i: Int)
+       val steps: Steps[Foo] = new Steps(Iterator.single(Foo(42)))
+       steps.p.head shouldBe "Foo(42)"
+     }
+
+     "render nodes as `(label,id): properties`" in {
+       def mainMethods: Iterator[Method] = cpg.method.name("woo")
+
+       val nodeId  = mainMethods.head.id
+       val printed = mainMethods.p.head
+       printed.should(startWith(s"""(METHOD,$nodeId):"""))
+       printed.should(include("IS_EXTERNAL: false"))
+       printed.should(include("FULL_NAME: woo"))
+     }
+
+     "allows to provide custom Show instance" in {
+       def mainMethods: Steps[Method]                = cpg.method.name("woo")
+       implicit val customShowInstance: Show[Method] = (_: Method) => "my custom pretty printer"
+       mainMethods.p.head shouldBe "my custom pretty printer"
+     }
+
+     "uses Show instance from package" in {
+       object SomePackage {
+         implicit def packageShowInstance: Show[Method] = { _ =>
+           "package defined pretty printer"
+         }
+       }
+
+       import SomePackage.*
+       def mainMethods: Steps[Method] = cpg.method.name("woo")
+       mainMethods.p.head shouldBe "package defined pretty printer"
+     }
+   }
 //
 //   "should work on both Iterator (e.g. Traversal) and IterableOnce (e.g. Seq)" in {
 //     val values  = Seq("a", "b")
