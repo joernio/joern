@@ -45,27 +45,24 @@ object SourceFiles {
       false
     }
   }
+
+  /** Method to filter file based on the passed parameters
+    * @param file
+    * @param inputPath
+    * @param ignoredDefaultRegex
+    * @param ignoredFilesRegex
+    * @param ignoredFilesPath
+    * @return
+    */
   def filterFile(
     file: String,
     inputPath: String,
     ignoredDefaultRegex: Option[Seq[Regex]] = None,
     ignoredFilesRegex: Option[Regex] = None,
     ignoredFilesPath: Option[Seq[String]] = None
-  ): Boolean = {
-    if ignoredDefaultRegex.isDefined && ignoredDefaultRegex.get.nonEmpty && isIgnoredByDefaultRegex(
-        file,
-        inputPath,
-        ignoredDefaultRegex.get
-      )
-    then false
-    else if ignoredFilesRegex.isDefined && isIgnoredByRegex(file, inputPath, ignoredFilesRegex.get) then false
-    else if ignoredFilesPath.isDefined && ignoredFilesPath.get.nonEmpty && isIgnoredByFileList(
-        file,
-        ignoredFilesPath.get
-      )
-    then false
-    else true
-  }
+  ): Boolean = !ignoredDefaultRegex.exists(isIgnoredByDefaultRegex(file, inputPath, _))
+    && !ignoredFilesRegex.exists(isIgnoredByRegex(file, inputPath, _))
+    && !ignoredFilesPath.exists(isIgnoredByFileList(file, _))
 
   private def filterFiles(
     files: List[String],

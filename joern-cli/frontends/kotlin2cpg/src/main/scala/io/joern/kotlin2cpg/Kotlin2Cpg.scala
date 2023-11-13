@@ -78,8 +78,8 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
       val filesWithKtExtension = SourceFiles.determine(
         sourceDir,
         Set(".kt"),
-        ignoredFilesRegex = Some(config.ignoredFilesRegex),
-        ignoredFilesPath = Some(config.ignoredFiles)
+        ignoredFilesRegex = Option(config.ignoredFilesRegex),
+        ignoredFilesPath = Option(config.ignoredFiles)
       )
       if (filesWithKtExtension.isEmpty) {
         println(s"The provided input directory does not contain files ending in '.kt' `$sourceDir`. Exiting.")
@@ -90,8 +90,8 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
       val filesWithJavaExtension = SourceFiles.determine(
         sourceDir,
         Set(".java"),
-        ignoredFilesRegex = Some(config.ignoredFilesRegex),
-        ignoredFilesPath = Some(config.ignoredFiles)
+        ignoredFilesRegex = Option(config.ignoredFilesRegex),
+        ignoredFilesPath = Option(config.ignoredFiles)
       )
       if (filesWithJavaExtension.nonEmpty) {
         logger.info(s"Found ${filesWithJavaExtension.size} files with the `.java` extension.")
@@ -147,8 +147,8 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
         SourceFiles.filterFile(
           entry.filename,
           config.inputPath,
-          ignoredFilesRegex = Some(config.ignoredFilesRegex),
-          ignoredFilesPath = Some(config.ignoredFiles)
+          ignoredFilesRegex = Option(config.ignoredFilesRegex),
+          ignoredFilesPath = Option(config.ignoredFiles)
         )
       )
       val configFiles      = entriesForConfigFiles(SourceFilesPicker.configFiles(sourceDir), sourceDir)

@@ -19,9 +19,9 @@ object JavaParserAstPrinter {
       .determine(
         config.inputPath,
         JavaSrc2Cpg.sourceFileExtensions,
-        ignoredDefaultRegex = Some(JavaSrc2Cpg.DefaultIgnoredFilesRegex),
-        ignoredFilesRegex = Some(config.ignoredFilesRegex),
-        ignoredFilesPath = Some(config.ignoredFiles)
+        ignoredDefaultRegex = Option(JavaSrc2Cpg.DefaultIgnoredFilesRegex),
+        ignoredFilesRegex = Option(config.ignoredFilesRegex),
+        ignoredFilesPath = Option(config.ignoredFiles)
       )
       .foreach { filename =>
         val relativeFilename = Path.of(config.inputPath).relativize(Path.of(filename)).toString
