@@ -4,7 +4,7 @@ import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import scala.collection.immutable.List

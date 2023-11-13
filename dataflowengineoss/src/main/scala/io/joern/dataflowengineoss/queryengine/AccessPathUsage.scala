@@ -1,6 +1,6 @@
 package io.joern.dataflowengineoss.queryengine
 
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.accesspath._
 import io.shiftleft.semanticcpg.language.{AccessPathHandling, toCallMethods}
 import io.shiftleft.semanticcpg.utils.MemberAccess

@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.language
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import overflowdb.BatchedUpdate.{DiffGraphBuilder, applyDiff}

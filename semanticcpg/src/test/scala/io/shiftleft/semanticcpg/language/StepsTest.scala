@@ -1,10 +1,10 @@
 package io.shiftleft.semanticcpg.language
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.codepropertygraph.generated.v2.NodeKinds
-import io.shiftleft.semanticcpg.testing.MockCpg
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.testing.MockCpg
 import org.json4s.*
 import org.json4s.native.JsonMethods.parse
 import org.scalatest.matchers.should.Matchers
