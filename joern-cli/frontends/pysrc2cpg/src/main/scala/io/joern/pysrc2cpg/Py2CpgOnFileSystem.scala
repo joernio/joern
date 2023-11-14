@@ -66,8 +66,8 @@ class Py2CpgOnFileSystem extends X2CpgFrontend[Py2CpgOnFileSystemConfig] {
         .determine(
           config.inputPath,
           Set(".py"),
-          ignoredFilesRegex = Some(config.ignoredFilesRegex),
-          ignoredFilesPath = Some(config.ignoredFiles)
+          ignoredFilesRegex = Option(config.ignoredFilesRegex),
+          ignoredFilesPath = Option(config.ignoredFiles)
         )
         .map(x => Path.of(x))
         .filter { file => filterIgnoreDirNames(file, inputPath, ignoreDirNamesSet) }

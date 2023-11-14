@@ -23,8 +23,8 @@ class AstCreationPass(config: Config, cpg: Cpg, parser: PhpParser)(implicit with
     .determine(
       config.inputPath,
       PhpSourceFileExtensions,
-      ignoredFilesRegex = Some(config.ignoredFilesRegex),
-      ignoredFilesPath = Some(config.ignoredFiles)
+      ignoredFilesRegex = Option(config.ignoredFilesRegex),
+      ignoredFilesPath = Option(config.ignoredFiles)
     )
     .toArray
 

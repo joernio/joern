@@ -32,8 +32,8 @@ class AstCreationPass(
       .determine(
         config.inputPath,
         RubySourceFileExtensions,
-        ignoredFilesRegex = Some(config.ignoredFilesRegex),
-        ignoredFilesPath = Some(config.ignoredFiles)
+        ignoredFilesRegex = Option(config.ignoredFilesRegex),
+        ignoredFilesPath = Option(config.ignoredFiles)
       )
       .toArray
 

@@ -45,9 +45,9 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
       SourceFiles.determine(
         config.inputPath,
         JavaSrc2Cpg.sourceFileExtensions,
-        ignoredDefaultRegex = Some(JavaSrc2Cpg.DefaultIgnoredFilesRegex),
-        ignoredFilesRegex = Some(config.ignoredFilesRegex),
-        ignoredFilesPath = Some(config.ignoredFiles)
+        ignoredDefaultRegex = Option(JavaSrc2Cpg.DefaultIgnoredFilesRegex),
+        ignoredFilesRegex = Option(config.ignoredFilesRegex),
+        ignoredFilesPath = Option(config.ignoredFiles)
       )
     )
     .toArray

@@ -147,8 +147,8 @@ class AstGenRunner(config: Config) {
         val srcFiles = SourceFiles.determine(
           out.toString(),
           Set(".json"),
-          ignoredFilesRegex = Some(config.ignoredFilesRegex),
-          ignoredFilesPath = Some(config.ignoredFiles)
+          ignoredFilesRegex = Option(config.ignoredFilesRegex),
+          ignoredFilesPath = Option(config.ignoredFiles)
         )
         val parsedModFile = filterModFile(srcFiles, out)
         val parsed        = filterFiles(srcFiles, out)
