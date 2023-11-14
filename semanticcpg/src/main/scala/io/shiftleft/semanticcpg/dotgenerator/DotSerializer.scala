@@ -4,6 +4,7 @@ import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.utils.MemberAccess
+import org.apache.commons.lang.StringEscapeUtils
 
 import java.util.Optional
 import scala.collection.immutable.HashMap
@@ -49,7 +50,7 @@ object DotSerializer {
 
   private def namedGraphBegin(root: AstNode): mutable.StringBuilder = {
     val sb = new mutable.StringBuilder
-    val name = escape(root match {
+    val name = StringEscapeUtils.escapeHtml(root match {
       case method: Method => method.name
       case _              => ""
     })
@@ -70,7 +71,7 @@ object DotSerializer {
 
   private def stringRepr(vertex: StoredNode): String = {
     val maybeLineNo: Optional[AnyRef] = vertex.propertyOption(PropertyNames.LINE_NUMBER)
-    escape(vertex match {
+    StringEscapeUtils.escapeHtml(vertex match {
       case call: Call                            => (call.name, limit(call.code)).toString
       case contrl: ControlStructure              => (contrl.label, contrl.controlStructureType, contrl.code).toString
       case expr: Expression                      => (expr.label, limit(expr.code), limit(toCfgNode(expr).code)).toString
@@ -110,44 +111,22 @@ object DotSerializer {
 
   private def edgeToDot(edge: Edge, withEdgeTypes: Boolean): String = {
     val edgeLabel = if (withEdgeTypes) {
-      edge.edgeType + ": " + escape(edge.label)
+      edge.edgeType + ": " + StringEscapeUtils.escapeHtml(edge.label)
     } else {
-      escape(edge.label)
+      StringEscapeUtils.escapeHtml(edge.label)
     }
     val labelStr = Some(s""" [ label = "$edgeLabel"] """).filter(_ => edgeLabel != "").getOrElse("")
     s"""  "${edge.src.id}" -> "${edge.dst.id}" """ + labelStr
   }
 
   def nodesToSubGraphs(subgraph: String, children: Seq[StoredNode], idx: Int): String = {
-    val escapedName = escape(subgraph)
+    val escapedName = StringEscapeUtils.escapeHtml(subgraph)
     val childString = children.map { c => s"    \"${c.id()}\";" }.mkString("\n")
     s"""  subgraph cluster_$idx {
        |$childString
        |    label = "$escapedName";
        |  }
        |""".stripMargin
-  }
-
-  /** Escapes common characters that do not conform to HTML character sets.
-    * @see
-    *   https://www.w3.org/TR/html4/sgml/entities.html
-    */
-  private def escapedChar(ch: Char): String = ch match {
-    case '"' => "&quot;"
-    case '<' => "&lt;"
-    case '>' => "&gt;"
-    case '&' => "&amp;"
-    case _ =>
-      if (ch.isControl) "\\0" + Integer.toOctalString(ch.toInt)
-      else String.valueOf(ch)
-  }
-
-  private def escape(str: String): String = {
-    if (str == null) {
-      ""
-    } else {
-      str.flatMap(escapedChar)
-    }
   }
 
   private def graphEnd(sb: mutable.StringBuilder): String = {

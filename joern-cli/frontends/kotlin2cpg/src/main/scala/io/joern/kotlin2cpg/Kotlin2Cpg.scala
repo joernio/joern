@@ -25,6 +25,7 @@ import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass, XTypeRecovery
 import io.joern.x2cpg.utils.dependency.{DependencyResolver, DependencyResolverParams, GradleConfigKeys}
 import io.joern.kotlin2cpg.interop.JavasrcInterop
 import io.joern.kotlin2cpg.jar4import.UsesService
+import io.joern.x2cpg.SourceFiles.filterFile
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.semanticcpg.language.*
@@ -74,14 +75,24 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
         case None             => None
       }
 
-      val filesWithKtExtension = SourceFiles.determine(sourceDir, Set(".kt"))
+      val filesWithKtExtension = SourceFiles.determine(
+        sourceDir,
+        Set(".kt"),
+        ignoredFilesRegex = Option(config.ignoredFilesRegex),
+        ignoredFilesPath = Option(config.ignoredFiles)
+      )
       if (filesWithKtExtension.isEmpty) {
         println(s"The provided input directory does not contain files ending in '.kt' `$sourceDir`. Exiting.")
         System.exit(1)
       }
       logger.info(s"Starting CPG generation for input directory `$sourceDir`.")
 
-      val filesWithJavaExtension = SourceFiles.determine(sourceDir, Set(".java"))
+      val filesWithJavaExtension = SourceFiles.determine(
+        sourceDir,
+        Set(".java"),
+        ignoredFilesRegex = Option(config.ignoredFilesRegex),
+        ignoredFilesPath = Option(config.ignoredFiles)
+      )
       if (filesWithJavaExtension.nonEmpty) {
         logger.info(s"Found ${filesWithJavaExtension.size} files with the `.java` extension.")
       }
@@ -132,13 +143,14 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
         )
 
       val sourceEntries = entriesForSources(environment.getSourceFiles.asScala, sourceDir)
-      val sources = sourceEntries.filterNot { entry =>
-        config.ignoredFiles.exists { pathToIgnore =>
-          val parent = Paths.get(pathToIgnore).toAbsolutePath
-          val child  = Paths.get(entry.filename)
-          child.startsWith(parent)
-        }
-      }
+      val sources = sourceEntries.filter(entry =>
+        SourceFiles.filterFile(
+          entry.filename,
+          config.inputPath,
+          ignoredFilesRegex = Option(config.ignoredFilesRegex),
+          ignoredFilesPath = Option(config.ignoredFiles)
+        )
+      )
       val configFiles      = entriesForConfigFiles(SourceFilesPicker.configFiles(sourceDir), sourceDir)
       val typeInfoProvider = new DefaultTypeInfoProvider(environment)
 

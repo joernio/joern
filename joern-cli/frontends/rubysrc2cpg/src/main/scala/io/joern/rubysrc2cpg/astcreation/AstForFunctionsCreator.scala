@@ -27,13 +27,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     val stmtBlockAst = ParserAst(node.body) match
       case stmtList: StatementList => astForStatementListReturningLastExpression(stmtList)
-      case _: StaticLiteral =>
-        astForStatementListReturningLastExpression(StatementList(node.body, List(node.body)))
-      case _: BinaryExpression =>
-        astForStatementListReturningLastExpression(StatementList(node.body, List(node.body)))
-      case _: SingleAssignment =>
-        astForStatementListReturningLastExpression(StatementList(node.body, List(node.body)))
-      case _: SimpleIdentifier =>
+      case _: (StaticLiteral | BinaryExpression | SingleAssignment | SimpleIdentifier | ArrayLiteral | HashLiteral) =>
         astForStatementListReturningLastExpression(StatementList(node.body, List(node.body)))
       case body =>
         logger.warn(

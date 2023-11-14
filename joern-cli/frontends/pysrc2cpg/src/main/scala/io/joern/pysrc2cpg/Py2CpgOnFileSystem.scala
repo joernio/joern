@@ -63,7 +63,12 @@ class Py2CpgOnFileSystem extends X2CpgFrontend[Py2CpgOnFileSystemConfig] {
       }
 
       val inputFiles = SourceFiles
-        .determine(config.inputPath, Set(".py"), config)
+        .determine(
+          config.inputPath,
+          Set(".py"),
+          ignoredFilesRegex = Option(config.ignoredFilesRegex),
+          ignoredFilesPath = Option(config.ignoredFiles)
+        )
         .map(x => Path.of(x))
         .filter { file => filterIgnoreDirNames(file, inputPath, ignoreDirNamesSet) }
         .filter { file =>

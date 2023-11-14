@@ -1,6 +1,7 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Literal}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
@@ -72,6 +73,34 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
     xAssignment_.code shouldBe "x = 1"
     or.code shouldBe "x = 1 or 2"
     two.code shouldBe "2"
+  }
+
+  "`if-else-end` on the RHS of an assignment is represented by a `conditional` operator call" in {
+    val cpg = code("""
+        |x = if true then 20 else 40 end
+        |""".stripMargin)
+
+    val List(assignment) = cpg.assignment.l
+    val rhs              = assignment.argument(2).asInstanceOf[Call]
+
+    rhs.code shouldBe "if true then 20 else 40 end"
+    rhs.methodFullName shouldBe Operators.conditional
+
+    val test      = rhs.argument(1)
+    val thenBlock = rhs.argument(2).asInstanceOf[Block]
+    val elseBlock = rhs.argument(3).asInstanceOf[Block]
+
+    test.code shouldBe "true"
+    test.lineNumber shouldBe Some(2)
+
+    val List(twenty: Literal) = thenBlock.astChildren.l: @unchecked
+    val List(forty: Literal)  = elseBlock.astChildren.l: @unchecked
+
+    twenty.code shouldBe "20"
+    twenty.lineNumber shouldBe Some(2)
+
+    forty.code shouldBe "40"
+    forty.lineNumber shouldBe Some(2)
   }
 
 }

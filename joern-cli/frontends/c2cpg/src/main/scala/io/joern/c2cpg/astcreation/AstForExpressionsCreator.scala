@@ -103,8 +103,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     val shortName = fixQualifiedName(name)
     val fullName = typeFor(call.getFunctionNameExpression) match {
-      case t if t != Defines.anyTypeName => s"${dereferenceTypeFullName(t)}.$shortName"
-      case _                             => shortName
+      case t if t == shortName || t.endsWith(s".$shortName") => dereferenceTypeFullName(t)
+      case t if t != Defines.anyTypeName                     => s"${dereferenceTypeFullName(t)}.$shortName"
+      case _                                                 => shortName
     }
     val cpgCall = callNode(call, code(call), shortName, fullName, dd)
     val args    = call.getArguments.toList.map(a => astForNode(a))

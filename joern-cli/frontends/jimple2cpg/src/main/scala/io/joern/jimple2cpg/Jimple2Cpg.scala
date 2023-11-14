@@ -144,6 +144,9 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
     // keep variable names
     Options.v().setPhaseOption("jb.sils", "enabled:false")
     Options.v().setPhaseOption("jb", "use-original-names:true")
+    // Keep exceptions
+    Options.v().set_show_exception_dests(true)
+    Options.v().set_omit_excepting_unit_edges(false)
     // output jimple
     Options.v().set_output_format(Options.output_format_jimple)
     Options.v().set_output_dir(outDir.canonicalPath)

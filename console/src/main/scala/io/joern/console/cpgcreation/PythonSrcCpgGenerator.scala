@@ -28,7 +28,7 @@ case class PythonSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends
 
   override def applyPostProcessingPasses(cpg: Cpg): Cpg = {
     new ImportsPass(cpg).createAndApply()
-    new ImportResolverPass(cpg).createAndApply()
+    new PythonImportResolverPass(cpg).createAndApply()
     new DynamicTypeHintFullNamePass(cpg).createAndApply()
     new PythonInheritanceNamePass(cpg).createAndApply()
     val typeRecoveryConfig = pyConfig match

@@ -1,7 +1,7 @@
 package io.joern.c2cpg
 
 import io.joern.c2cpg.datastructures.CGlobal
-import io.joern.c2cpg.passes.{AstCreationPass, TypeDeclNodePass, PreprocessorPass}
+import io.joern.c2cpg.passes.{AstCreationPass, PreprocessorPass, TypeDeclNodePass}
 import io.joern.c2cpg.utils.Report
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
@@ -9,7 +9,9 @@ import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 
+import java.util.regex.Pattern
 import scala.util.Try
+import scala.util.matching.Regex
 
 class C2Cpg extends X2CpgFrontend[Config] {
 
@@ -30,4 +32,15 @@ class C2Cpg extends X2CpgFrontend[Config] {
     println(stmts)
   }
 
+}
+
+object C2Cpg {
+
+  private val EscapedFileSeparator = Pattern.quote(java.io.File.separator)
+
+  val DefaultIgnoredFolders: List[Regex] = List(
+    "\\..*".r,
+    s"(.*[$EscapedFileSeparator])?tests?[$EscapedFileSeparator].*".r,
+    s"(.*[$EscapedFileSeparator])?CMakeFiles[$EscapedFileSeparator].*".r
+  )
 }

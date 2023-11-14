@@ -40,7 +40,17 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
   val global: Global = new Global()
   private val logger = LoggerFactory.getLogger(classOf[AstCreationPass])
 
-  private val sourceFilenames = SourceParser.getSourceFilenames(config, sourcesOverride)
+  private val sourceFilenames = sourcesOverride
+    .getOrElse(
+      SourceFiles.determine(
+        config.inputPath,
+        JavaSrc2Cpg.sourceFileExtensions,
+        ignoredDefaultRegex = Option(JavaSrc2Cpg.DefaultIgnoredFilesRegex),
+        ignoredFilesRegex = Option(config.ignoredFilesRegex),
+        ignoredFilesPath = Option(config.ignoredFiles)
+      )
+    )
+    .toArray
 
   val (sourceParser, symbolSolver) = initParserAndUtils(config, sourceFilenames)
 

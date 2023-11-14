@@ -18,7 +18,6 @@ class MemberTests extends JimpleCode2CpgFixture {
     x.name shouldBe "x"
     x.code shouldBe "int x"
     x.typeFullName shouldBe "int"
-    x.order shouldBe 2 // The other child is the <init> method
   }
 
   "should allow traversing from MEMBER to TYPE_DECL" in {
