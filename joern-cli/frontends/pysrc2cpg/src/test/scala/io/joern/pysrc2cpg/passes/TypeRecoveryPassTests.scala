@@ -3,7 +3,10 @@ package io.joern.pysrc2cpg.passes
 import io.joern.pysrc2cpg.PySrc2CpgFixture
 import io.joern.x2cpg.passes.frontend.ImportsPass.*
 import io.joern.x2cpg.passes.frontend.{ImportsPass, XTypeHintCallLinker}
+import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Member}
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 
 import java.io.File
 import scala.collection.immutable.Seq
@@ -1253,6 +1256,91 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "set the method's return value correctly" in {
       cpg.method("foo").methodReturn.typeFullName.head shouldBe "__builtin.str"
+    }
+  }
+
+  "Resolved module variable references" should {
+    val cpg = code(
+      """from fastapi import FastAPI
+        |import itemsrouter
+        |import usersrouter
+        |
+        |app = FastAPI()
+        |
+        |app.include_router(
+        |    itemsrouter.router,
+        |    prefix="/items",
+        |    tags=["items"],
+        |    responses={404: {"description": "Not found"}},
+        |)
+        |app.include_router(
+        |    usersrouter.normal_router,
+        |    usersrouter.admin_router,
+        |    prefix="/users",
+        |    tags=["users"],
+        |    responses={404: {"description": "Not found"}},
+        |)
+        |""".stripMargin,
+      "main.py"
+    )
+      .moreCode(
+        """
+        |from fastapi import APIRouter
+        |
+        |router = APIRouter()
+        |fake_items_db = {"gun": {"name": "Portal Gun"}}
+        |
+        |@router.get("/")
+        |async def read_items():
+        |    return fake_items_db
+        |""".stripMargin,
+        "itemsrouter.py"
+      )
+      .moreCode(
+        """
+          |from fastapi import APIRouter
+          |
+          |normal_router = APIRouter()
+          |admin_router = APIRouter()
+          |fake_users_db = {"plumbus": {"name": "Plumbus"}}
+          |fake_admins_db = {"flumbus": {"name": "Flumbus"}}
+          |
+          |@normal_router.get("/")
+          |async def read_users():
+          |    return fake_users_db
+          |
+          |@admin_router.get("/admin")
+          |    return fake_admins_db
+          |
+          |""".stripMargin,
+        "usersrouter.py"
+      )
+
+    "enable traversing from a module variable, to its references, back to other module variable references" in {
+      val appIncludeRouterCalls =
+        cpg.moduleVariables
+          .where(_.typeFullName(".*FastAPI.*"))
+          .invokingCalls
+          .nameExact("include_router")
+          .l
+      val includedRouters      = appIncludeRouterCalls.argument.argumentIndexGte(1).l
+      val definitionsOfRouters = includedRouters.isCall.fieldAccess.referencedMember.moduleVariables.definitions.l
+      val List(adminRouter, normalRouter, itemsRouter) =
+        definitionsOfRouters.map(x => (x.code, x.method.fullName)).sortBy(_._1).l: @unchecked
+
+      adminRouter shouldBe ("admin_router = APIRouter()", "usersrouter.py:<module>")
+      normalRouter shouldBe ("normal_router = APIRouter()", "usersrouter.py:<module>")
+      itemsRouter shouldBe ("router = APIRouter()", "itemsrouter.py:<module>")
+    }
+
+    "enable traversing from a module variable, to its referencing local" in {
+      val appIncludeRouterCalls =
+        cpg.moduleVariables
+          .where(_.typeFullName(".*FastAPI.*"))
+          .l
+      val appLocal = appIncludeRouterCalls.moduleVariableRefs.referencingLocals.head
+      appLocal.name shouldBe "app"
+      appLocal.method.fullName.head shouldBe "main.py:<module>"
     }
   }
 
