@@ -6,6 +6,8 @@ import io.joern.swiftsrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
+import io.shiftleft.codepropertygraph.generated.nodes.NewModifier
+import io.shiftleft.codepropertygraph.generated.ModifierTypes
 
 trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -13,9 +15,16 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForAccessorEffectSpecifiersSyntax(node: AccessorEffectSpecifiersSyntax): Ast = notHandledYet(node)
   private def astForAccessorParametersSyntax(node: AccessorParametersSyntax): Ast             = notHandledYet(node)
   private def astForArrayElementSyntax(node: ArrayElementSyntax): Ast                         = notHandledYet(node)
-  private def astForAttributeSyntax(node: AttributeSyntax): Ast                               = notHandledYet(node)
-  private def astForAvailabilityArgumentSyntax(node: AvailabilityArgumentSyntax): Ast         = notHandledYet(node)
-  private def astForAvailabilityConditionSyntax(node: AvailabilityConditionSyntax): Ast       = notHandledYet(node)
+
+  private def astForAttributeSyntax(node: AttributeSyntax): Ast = {
+    val arguments     = node.arguments.map(astForNode).toList
+    val attributeCode = code(node)
+    val name          = code(node.attributeName)
+    annotationAst(annotationNode(node, attributeCode, name, name), arguments)
+  }
+
+  private def astForAvailabilityArgumentSyntax(node: AvailabilityArgumentSyntax): Ast   = notHandledYet(node)
+  private def astForAvailabilityConditionSyntax(node: AvailabilityConditionSyntax): Ast = notHandledYet(node)
   private def astForAvailabilityLabeledArgumentSyntax(node: AvailabilityLabeledArgumentSyntax): Ast = notHandledYet(
     node
   )
@@ -46,9 +55,21 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     node: ConventionWitnessMethodAttributeArgumentsSyntax
   ): Ast = notHandledYet(node)
   private def astForDeclModifierDetailSyntax(node: DeclModifierDetailSyntax): Ast = notHandledYet(node)
-  private def astForDeclModifierSyntax(node: DeclModifierSyntax): Ast             = notHandledYet(node)
-  private def astForDeclNameArgumentSyntax(node: DeclNameArgumentSyntax): Ast     = notHandledYet(node)
-  private def astForDeclNameArgumentsSyntax(node: DeclNameArgumentsSyntax): Ast   = notHandledYet(node)
+
+  private def astForDeclModifierSyntax(node: DeclModifierSyntax): Ast = {
+    val modifierType = code(node.name) match {
+      case "final"                       => Some(ModifierTypes.FINAL)
+      case "private" | "fileprivate"     => Some(ModifierTypes.PRIVATE)
+      case "internal"                    => Some(ModifierTypes.INTERNAL)
+      case "public" | "open" | "package" => Some(ModifierTypes.PUBLIC)
+      case "static"                      => Some(ModifierTypes.STATIC)
+      case _                             => None
+    }
+    modifierType.fold(Ast())(m => Ast(NewModifier().modifierType(m)))
+  }
+
+  private def astForDeclNameArgumentSyntax(node: DeclNameArgumentSyntax): Ast   = notHandledYet(node)
+  private def astForDeclNameArgumentsSyntax(node: DeclNameArgumentsSyntax): Ast = notHandledYet(node)
   private def astForDeinitializerEffectSpecifiersSyntax(node: DeinitializerEffectSpecifiersSyntax): Ast = notHandledYet(
     node
   )

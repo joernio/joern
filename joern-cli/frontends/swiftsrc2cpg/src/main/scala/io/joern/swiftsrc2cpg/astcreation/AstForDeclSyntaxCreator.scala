@@ -8,7 +8,9 @@ import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Stack.*
 import io.shiftleft.codepropertygraph.generated.nodes.NewBinding
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
+import io.shiftleft.codepropertygraph.generated.nodes.NewModifier
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
+import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import org.apache.commons.lang.StringUtils
 
 trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
@@ -57,10 +59,12 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForFunctionDeclSyntax(node: FunctionDeclSyntax): Ast = {
-    // TODO: handle attributes
-    // TODO: handle modifier
     // TODO: handle genericParameterClause
     // TODO: handle genericWhereClause
+    val attributes = node.attributes.children.map(astForNode)
+    val modifiers =
+      node.modifiers.children.flatMap(c => astForNode(c).root.map(_.asInstanceOf[NewModifier])) :+ NewModifier()
+        .modifierType(ModifierTypes.VIRTUAL)
     val (methodName, methodFullName) = calcMethodNameAndFullName(node)
     val filename                     = parserResult.filename
     val returnType                   = node.signature.returnClause.map(c => code(c.`type`)).getOrElse(Defines.Any)
@@ -78,13 +82,16 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     val methodReturnNode =
       newMethodReturnNode(returnType, dynamicTypeHintFullName = None, line = line(node), column = column(node))
-    val astForMethod = node.body match {
-      case Some(bodyNode) =>
-        val bodyAst = astForNode(bodyNode)
-        methodAst(methodNode_, parameterAsts, bodyAst, methodReturnNode)
-      case None =>
-        methodAst(methodNode_, parameterAsts, Ast(), methodReturnNode)
-    }
+    val astForMethodBody = node.body.map(astForNode).getOrElse(Ast())
+    val astForMethod =
+      methodAstWithAnnotations(
+        methodNode_,
+        parameterAsts,
+        astForMethodBody,
+        methodReturnNode,
+        modifiers = modifiers,
+        annotations = attributes
+      )
 
     scope.popScope()
     methodAstParentStack.pop()

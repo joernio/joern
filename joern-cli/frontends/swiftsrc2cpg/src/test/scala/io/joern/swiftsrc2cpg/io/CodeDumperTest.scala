@@ -60,7 +60,7 @@ class CodeDumperTest extends SwiftSrc2CpgSuite {
       )
     }
 
-    "allow dumping via .dump" ignore {
+    "allow dumping via .dump" in {
       val code = cpg.method.name("my_func").dumpRaw.mkString("\n")
       code should startWith("func my_func")
     }
