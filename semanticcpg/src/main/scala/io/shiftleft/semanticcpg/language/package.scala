@@ -1,24 +1,24 @@
 package io.shiftleft.semanticcpg
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.traversal.NodeTraversalImplicits
 import io.shiftleft.semanticcpg.language.bindingextension.{
-  MethodTraversal => BindingMethodTraversal,
-  TypeDeclTraversal => BindingTypeDeclTraversal
+  MethodTraversal as BindingMethodTraversal,
+  TypeDeclTraversal as BindingTypeDeclTraversal
 }
 import io.shiftleft.semanticcpg.language.callgraphextension.{CallTraversal, MethodTraversal}
 import io.shiftleft.semanticcpg.language.dotextension.{AstNodeDot, CfgNodeDot, InterproceduralNodeDot}
-import io.shiftleft.semanticcpg.language.nodemethods._
+import io.shiftleft.semanticcpg.language.nodemethods.*
 import io.shiftleft.semanticcpg.language.types.expressions.generalizations.{
   AstNodeTraversal,
   CfgNodeTraversal,
   DeclarationTraversal,
   ExpressionTraversal
 }
-import io.shiftleft.semanticcpg.language.types.expressions.{CallTraversal => OriginalCall, _}
-import io.shiftleft.semanticcpg.language.types.propertyaccessors._
-import io.shiftleft.semanticcpg.language.types.structure.{MethodTraversal => OriginalMethod, _}
+import io.shiftleft.semanticcpg.language.types.expressions.{CallTraversal as OriginalCall, *}
+import io.shiftleft.semanticcpg.language.types.propertyaccessors.*
+import io.shiftleft.semanticcpg.language.types.structure.{MethodTraversal as OriginalMethod, *}
 import overflowdb.NodeOrDetachedNode
 
 /** Language for traversing the code property graph
@@ -26,7 +26,11 @@ import overflowdb.NodeOrDetachedNode
   * Implicit conversions to specific steps, based on the node at hand. Automatically in scope when using anything in the
   * `steps` package, e.g. `Steps`
   */
-package object language extends operatorextension.Implicits with LowPrioImplicits with NodeTraversalImplicits {
+package object language
+    extends operatorextension.Implicits
+    with modulevariable.Implicits
+    with LowPrioImplicits
+    with NodeTraversalImplicits {
   // Implicit conversions from generated node types. We use these to add methods
   // to generated node types.
 
