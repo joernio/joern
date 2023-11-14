@@ -1325,11 +1325,12 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
           .l
       val includedRouters      = appIncludeRouterCalls.argument.argumentIndexGte(1).l
       val definitionsOfRouters = includedRouters.isCall.fieldAccess.referencedMember.moduleVariables.definitions.l
-      val List(adminRouter, itemsRouter, normalRouter) =
-        definitionsOfRouters.map(x => (x.code, x.method.fullName)).sorted.l: @unchecked
-      itemsRouter shouldBe ("router = APIRouter()", "itemsrouter.py:<module>")
-      normalRouter shouldBe ("normal_router = APIRouter()", "usersrouter.py:<module>")
+      val List(adminRouter, normalRouter, itemsRouter) =
+        definitionsOfRouters.map(x => (x.code, x.method.fullName)).sortBy(_._1).l: @unchecked
+
       adminRouter shouldBe ("admin_router = APIRouter()", "usersrouter.py:<module>")
+      normalRouter shouldBe ("normal_router = APIRouter()", "usersrouter.py:<module>")
+      itemsRouter shouldBe ("router = APIRouter()", "itemsrouter.py:<module>")
     }
 
     "enable traversing from a module variable, to its referencing local" in {
