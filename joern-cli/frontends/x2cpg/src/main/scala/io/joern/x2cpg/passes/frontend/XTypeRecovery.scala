@@ -1099,8 +1099,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     baseName: Option[String],
     funcName: String,
     methodFullName: String,
-    lineNo: Option[Integer],
-    columnNo: Option[Integer]
+    lineNo: Option[Int],
+    columnNo: Option[Int]
   ): NewMethodRef =
     NewMethodRef()
       .code(s"${baseName.map(_.appended(pathSep)).getOrElse("")}$funcName")

@@ -8,6 +8,7 @@ import io.shiftleft.codepropertygraph.generated.v2.nodes.Method
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.nodes.NamespaceBlock
 import io.shiftleft.codepropertygraph.generated.v2.nodes.Type
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -99,7 +100,7 @@ trait LinkingUtil {
 
   def linkToMultiple[SRC_NODE_TYPE <: StoredNode](
     cpg: Cpg,
-    srcLabels: List[String],
+    srcKind: Int,
     dstNodeLabel: String,
     edgeType: String,
     dstNodeMap: String => Option[StoredNode],
@@ -109,7 +110,7 @@ trait LinkingUtil {
   ): Unit = {
     var loggedDeprecationWarning = false
     val dereference              = Dereference(cpg)
-    cpg.graph.nodes(srcLabels: _*).asScala.cast[SRC_NODE_TYPE].foreach { srcNode =>
+    cpg.graph.nodes(srcKind).cast[SRC_NODE_TYPE].foreach { srcNode =>
       if (!srcNode.outE(edgeType).hasNext) {
         getDstFullNames(srcNode).foreach { dstFullName =>
           val dereferenceDstFullName = dereference.dereferenceTypeFullName(dstFullName)
