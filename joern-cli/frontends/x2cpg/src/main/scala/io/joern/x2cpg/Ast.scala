@@ -1,6 +1,6 @@
 package io.joern.x2cpg
 
-import io.shiftleft.codepropertygraph.generated.v2.EdgeKinds
+import io.shiftleft.codepropertygraph.generated.v2.{EdgeKinds, EdgeTypes}
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.codepropertygraph.generated.v2.nodes.AstNode.PropertyDefaults
 import org.slf4j.LoggerFactory
@@ -105,7 +105,7 @@ case class Ast(
       nodes ++ other.nodes,
       edges = edges ++ other.edges ++ root.toList.flatMap(r =>
         other.root.toList.map { rc =>
-          Ast.neighbourValidation(r, rc, EdgeKinds.AST)
+          Ast.neighbourValidation(r, rc, EdgeTypes.AST)
           AstEdge(r, rc)
         }
       ),
@@ -145,32 +145,32 @@ case class Ast(
   }
 
   def withConditionEdge(src: NewNode, dst: NewNode): Ast = {
-    Ast.neighbourValidation(src, dst, EdgeKinds.CONDITION)
+    Ast.neighbourValidation(src, dst, EdgeTypes.CONDITION)
     this.copy(conditionEdges = conditionEdges ++ List(AstEdge(src, dst)))
   }
 
   def withRefEdge(src: NewNode, dst: NewNode): Ast = {
-    Ast.neighbourValidation(src, dst, EdgeKinds.REF)
+    Ast.neighbourValidation(src, dst, EdgeTypes.REF)
     this.copy(refEdges = refEdges ++ List(AstEdge(src, dst)))
   }
 
   def withBindsEdge(src: NewNode, dst: NewNode): Ast = {
-    Ast.neighbourValidation(src, dst, EdgeKinds.BINDS)
+    Ast.neighbourValidation(src, dst, EdgeTypes.BINDS)
     this.copy(bindsEdges = bindsEdges ++ List(AstEdge(src, dst)))
   }
 
   def withReceiverEdge(src: NewNode, dst: NewNode): Ast = {
-    Ast.neighbourValidation(src, dst, EdgeKinds.RECEIVER)
+    Ast.neighbourValidation(src, dst, EdgeTypes.RECEIVER)
     this.copy(receiverEdges = receiverEdges ++ List(AstEdge(src, dst)))
   }
 
   def withArgEdge(src: NewNode, dst: NewNode): Ast = {
-    Ast.neighbourValidation(src, dst, EdgeKinds.ARGUMENT)
+    Ast.neighbourValidation(src, dst, EdgeTypes.ARGUMENT)
     this.copy(argEdges = argEdges ++ List(AstEdge(src, dst)))
   }
 
   def withArgEdges(src: NewNode, dsts: Seq[NewNode]): Ast = {
-    dsts.foreach(dst => Ast.neighbourValidation(src, dst, EdgeKinds.ARGUMENT))
+    dsts.foreach(dst => Ast.neighbourValidation(src, dst, EdgeTypes.ARGUMENT))
     this.copy(argEdges = argEdges ++ dsts.map(AstEdge(src, _)))
   }
 
@@ -179,7 +179,7 @@ case class Ast(
     this.copy(argEdges = argEdges ++ dsts.map { dst =>
       addArgumentIndex(dst, index)
       index += 1
-      Ast.neighbourValidation(src, dst, EdgeKinds.ARGUMENT)
+      Ast.neighbourValidation(src, dst, EdgeTypes.ARGUMENT)
       AstEdge(src, dst)
     })
   }
@@ -197,22 +197,22 @@ case class Ast(
   }
 
   def withConditionEdges(src: NewNode, dsts: List[NewNode]): Ast = {
-    dsts.foreach(dst => Ast.neighbourValidation(src, dst, EdgeKinds.CONDITION))
+    dsts.foreach(dst => Ast.neighbourValidation(src, dst, EdgeTypes.CONDITION))
     this.copy(conditionEdges = conditionEdges ++ dsts.map(AstEdge(src, _)))
   }
 
   def withRefEdges(src: NewNode, dsts: List[NewNode]): Ast = {
-    dsts.foreach(dst => Ast.neighbourValidation(src, dst, EdgeKinds.REF))
+    dsts.foreach(dst => Ast.neighbourValidation(src, dst, EdgeTypes.REF))
     this.copy(refEdges = refEdges ++ dsts.map(AstEdge(src, _)))
   }
 
   def withBindsEdges(src: NewNode, dsts: List[NewNode]): Ast = {
-    dsts.foreach(dst => Ast.neighbourValidation(src, dst, EdgeKinds.BINDS))
+    dsts.foreach(dst => Ast.neighbourValidation(src, dst, EdgeTypes.BINDS))
     this.copy(bindsEdges = bindsEdges ++ dsts.map(AstEdge(src, _)))
   }
 
   def withReceiverEdges(src: NewNode, dsts: List[NewNode]): Ast = {
-    dsts.foreach(dst => Ast.neighbourValidation(src, dst, EdgeKinds.RECEIVER))
+    dsts.foreach(dst => Ast.neighbourValidation(src, dst, EdgeTypes.RECEIVER))
     this.copy(receiverEdges = receiverEdges ++ dsts.map(AstEdge(src, _)))
   }
 
