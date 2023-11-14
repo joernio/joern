@@ -4,6 +4,7 @@ import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.swiftsrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
+import io.joern.x2cpg.datastructures.Stack.*
 
 trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
@@ -22,8 +23,10 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
   private def astForCodeBlockItemListSyntax(node: CodeBlockItemListSyntax): Ast = {
     val blockNode_ = blockNode(node, "<empty>", Defines.Any)
     scope.pushNewBlockScope(blockNode_)
+    localAstParentStack.push(blockNode_)
     val childrenAsts = node.children.map(astForNode)
     setArgumentIndices(childrenAsts)
+    localAstParentStack.pop()
     scope.popScope()
     blockAst(blockNode_, childrenAsts.toList)
   }

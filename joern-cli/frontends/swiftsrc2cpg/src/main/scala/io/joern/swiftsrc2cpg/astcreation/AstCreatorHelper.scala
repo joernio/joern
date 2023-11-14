@@ -1,6 +1,7 @@
 package io.joern.swiftsrc2cpg.astcreation
 
 import io.joern.swiftsrc2cpg.datastructures.*
+import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.FunctionDeclSyntax
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.SwiftNode
 import io.joern.swiftsrc2cpg.passes.Defines
 import io.joern.x2cpg.{Ast, ValidationMode}
@@ -53,9 +54,9 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       .collect { case methodScopeElement: MethodScopeElement => methodScopeElement.name }
       .mkString(":")
 
-  private def calcMethodName(func: SwiftNode): String = ??? // TODO
+  private def calcMethodName(func: FunctionDeclSyntax): String = code(func.name)
 
-  protected def calcMethodNameAndFullName(func: SwiftNode): (String, String) = {
+  protected def calcMethodNameAndFullName(func: FunctionDeclSyntax): (String, String) = {
     // functionNode.getName is not necessarily unique and thus the full name calculated based on the scope
     // is not necessarily unique. Specifically we have this problem with lambda functions which are defined
     // in the same scope.

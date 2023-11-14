@@ -1,9 +1,11 @@
 package io.joern.swiftsrc2cpg.astcreation
 
+import io.joern.swiftsrc2cpg.datastructures.MethodScope
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.swiftsrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
+import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 
 trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -28,11 +30,15 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForClosureParameterSyntax(node: ClosureParameterSyntax): Ast                   = notHandledYet(node)
   private def astForClosureShorthandParameterSyntax(node: ClosureShorthandParameterSyntax): Ast = notHandledYet(node)
   private def astForClosureSignatureSyntax(node: ClosureSignatureSyntax): Ast                   = notHandledYet(node)
-  private def astForCodeBlockItemSyntax(node: CodeBlockItemSyntax): Ast                         = notHandledYet(node)
-  private def astForCodeBlockSyntax(node: CodeBlockSyntax): Ast                                 = notHandledYet(node)
-  private def astForCompositionTypeElementSyntax(node: CompositionTypeElementSyntax): Ast       = notHandledYet(node)
-  private def astForConditionElementSyntax(node: ConditionElementSyntax): Ast                   = notHandledYet(node)
-  private def astForConformanceRequirementSyntax(node: ConformanceRequirementSyntax): Ast       = notHandledYet(node)
+  private def astForCodeBlockItemSyntax(node: CodeBlockItemSyntax): Ast = {
+    astForNode(node.item)
+  }
+  private def astForCodeBlockSyntax(node: CodeBlockSyntax): Ast = {
+    astForNode(node.statements)
+  }
+  private def astForCompositionTypeElementSyntax(node: CompositionTypeElementSyntax): Ast = notHandledYet(node)
+  private def astForConditionElementSyntax(node: ConditionElementSyntax): Ast             = notHandledYet(node)
+  private def astForConformanceRequirementSyntax(node: ConformanceRequirementSyntax): Ast = notHandledYet(node)
   private def astForConventionAttributeArgumentsSyntax(node: ConventionAttributeArgumentsSyntax): Ast = notHandledYet(
     node
   )
@@ -69,15 +75,39 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForExpressionSegmentSyntax(node: ExpressionSegmentSyntax): Ast               = notHandledYet(node)
   private def astForFunctionEffectSpecifiersSyntax(node: FunctionEffectSpecifiersSyntax): Ast = notHandledYet(node)
   private def astForFunctionParameterClauseSyntax(node: FunctionParameterClauseSyntax): Ast   = notHandledYet(node)
-  private def astForFunctionParameterSyntax(node: FunctionParameterSyntax): Ast               = notHandledYet(node)
-  private def astForFunctionSignatureSyntax(node: FunctionSignatureSyntax): Ast               = notHandledYet(node)
-  private def astForGenericArgumentClauseSyntax(node: GenericArgumentClauseSyntax): Ast       = notHandledYet(node)
-  private def astForGenericArgumentSyntax(node: GenericArgumentSyntax): Ast                   = notHandledYet(node)
-  private def astForGenericParameterClauseSyntax(node: GenericParameterClauseSyntax): Ast     = notHandledYet(node)
-  private def astForGenericParameterSyntax(node: GenericParameterSyntax): Ast                 = notHandledYet(node)
-  private def astForGenericRequirementSyntax(node: GenericRequirementSyntax): Ast             = notHandledYet(node)
-  private def astForGenericWhereClauseSyntax(node: GenericWhereClauseSyntax): Ast             = notHandledYet(node)
-  private def astForIfConfigClauseSyntax(node: IfConfigClauseSyntax): Ast                     = notHandledYet(node)
+
+  private def astForFunctionParameterSyntax(node: FunctionParameterSyntax): Ast = {
+    // TODO: handle attributes
+    // TODO: handle modifiers
+    // TODO: handle secondName
+    // TODO: handle ellipsis
+    // TODO: handle defaultValue
+    val name = code(node.firstName)
+    val tpe  = code(node.`type`)
+    registerType(tpe, tpe)
+    val parameterNode =
+      parameterInNode(
+        node,
+        name,
+        code(node),
+        // TODO: check if we start with index 0 or 1
+        node.json("index").num.toInt,
+        false,
+        EvaluationStrategies.BY_VALUE,
+        Option(tpe)
+      )
+    scope.addVariable(name, parameterNode, MethodScope)
+    Ast(parameterNode)
+  }
+
+  private def astForFunctionSignatureSyntax(node: FunctionSignatureSyntax): Ast           = notHandledYet(node)
+  private def astForGenericArgumentClauseSyntax(node: GenericArgumentClauseSyntax): Ast   = notHandledYet(node)
+  private def astForGenericArgumentSyntax(node: GenericArgumentSyntax): Ast               = notHandledYet(node)
+  private def astForGenericParameterClauseSyntax(node: GenericParameterClauseSyntax): Ast = notHandledYet(node)
+  private def astForGenericParameterSyntax(node: GenericParameterSyntax): Ast             = notHandledYet(node)
+  private def astForGenericRequirementSyntax(node: GenericRequirementSyntax): Ast         = notHandledYet(node)
+  private def astForGenericWhereClauseSyntax(node: GenericWhereClauseSyntax): Ast         = notHandledYet(node)
+  private def astForIfConfigClauseSyntax(node: IfConfigClauseSyntax): Ast                 = notHandledYet(node)
   private def astForImplementsAttributeArgumentsSyntax(node: ImplementsAttributeArgumentsSyntax): Ast = notHandledYet(
     node
   )

@@ -9,10 +9,10 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
   "AST generation for simple fragments" should {
 
     "have correct structure for simple variable decl" in AstFixture("""
-        |let x = 1;
+        |let x = 1
         |""".stripMargin) { cpg =>
       val List(method) = cpg.method.nameExact("<global>").l
-      method.astChildren.isBlock.astChildren.code.l shouldBe List("let x = 1;")
+      method.astChildren.isBlock.astChildren.code.l shouldBe List("let x = 1")
     }
   }
 

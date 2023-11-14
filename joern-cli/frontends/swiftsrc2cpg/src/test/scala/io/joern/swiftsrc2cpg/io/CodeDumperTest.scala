@@ -40,7 +40,7 @@ class CodeDumperTest extends SwiftSrc2CpgSuite {
       cpg.method.name("notinthere").dump shouldBe empty
     }
 
-    "be able to dump complete function" ignore {
+    "be able to dump complete function" in {
       val code = cpg.method.name("my_func").dumpRaw.mkString("\n")
       code should (
         startWith("func my_func")
