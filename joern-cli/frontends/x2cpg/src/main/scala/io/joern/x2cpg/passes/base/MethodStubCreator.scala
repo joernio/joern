@@ -4,7 +4,7 @@ import io.joern.x2cpg.Defines
 import io.joern.x2cpg.passes.base.MethodStubCreator.createMethodStub
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, EdgeTypes, EvaluationStrategies, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, EdgeKinds, EvaluationStrategies, NodeTypes}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate
@@ -116,7 +116,7 @@ object MethodStubCreator {
         .typeFullName("ANY")
 
       dstGraph.addNode(param)
-      dstGraph.addEdge(methodNode, param, EdgeTypes.AST)
+      dstGraph.addEdge(methodNode, param, EdgeKinds.AST)
     }
 
     val blockNode = NewBlock()
@@ -125,7 +125,7 @@ object MethodStubCreator {
       .typeFullName("ANY")
 
     dstGraph.addNode(blockNode)
-    dstGraph.addEdge(methodNode, blockNode, EdgeTypes.AST)
+    dstGraph.addEdge(methodNode, blockNode, EdgeKinds.AST)
 
     val methodReturn = NewMethodReturn()
       .order(2)
@@ -134,7 +134,7 @@ object MethodStubCreator {
       .typeFullName("ANY")
 
     dstGraph.addNode(methodReturn)
-    dstGraph.addEdge(methodNode, methodReturn, EdgeTypes.AST)
+    dstGraph.addEdge(methodNode, methodReturn, EdgeKinds.AST)
 
     methodNode
   }

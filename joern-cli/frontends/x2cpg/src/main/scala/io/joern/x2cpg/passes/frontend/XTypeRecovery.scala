@@ -3,13 +3,12 @@ package io.joern.x2cpg.passes.frontend
 import io.joern.x2cpg.{Defines, X2CpgConfig}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, NodeTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.v2.{EdgeKinds, NodeTypes, Operators, PropertyKinds, PropertyNames}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
 import org.slf4j.{Logger, LoggerFactory}
-import overflowdb.BatchedUpdate
 import io.joern.odb2.DiffGraphBuilder
 import scopt.OParser
 
@@ -119,7 +118,7 @@ abstract class XTypeRecoveryPass[CompilationUnitType <: AstNode](
       .foreach { fieldAccess =>
         getFieldBaseTypes(fieldAccess).member
           .nameExact(fieldAccess.fieldIdentifier.canonicalName.toSeq: _*)
-          .foreach(builder.addEdge(fieldAccess, _, EdgeTypes.REF))
+          .foreach(builder.addEdge(fieldAccess, _, EdgeKinds.REF))
       }
   }
 
@@ -754,11 +753,11 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       sb.toString()
     }
 
-    lazy val typesFromBaseCall = fa.argumentOut.headOption match
+    lazy val typesFromBaseCall = fa._argumentOut.headOption match
       case Some(call: Call) => getTypesFromCall(call)
       case _                => Set.empty[String]
 
-    fa.argumentOut.l match {
+    fa._argumentOut.l match {
       case ::(i: Identifier, ::(f: FieldIdentifier, _)) if i.name.matches("(self|this)") => wrapName(f.canonicalName)
       case ::(i: Identifier, ::(f: FieldIdentifier, _)) => wrapName(s"${i.name}$pathSep${f.canonicalName}")
       case ::(c: Call, ::(f: FieldIdentifier, _)) if c.name.equals(Operators.fieldAccess) =>
@@ -775,7 +774,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       case ::(_: TypeRef, ::(f: FieldIdentifier, _)) =>
         f.canonicalName
       case xs =>
-        logger.warn(s"Unhandled field structure ${xs.map(x => (x.label, x.code)).mkString(",")} @ ${debugLocation(fa)}")
+        val debugInfo = xs.collect { case x: CfgNode => (x.label(), x.code) }.mkString(",")
+        logger.warn(s"Unhandled field structure $debugInfo @ ${debugLocation(fa)}")
         wrapName("<unknown>")
     }
   }
@@ -842,7 +842,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     */
   protected def visitIdentifierAssignedToFieldLoad(i: Identifier, fa: FieldAccess): Set[String] = {
     val fieldName = getFieldName(fa)
-    fa.argumentOut.l match {
+    fa._argumentOut.l match {
       case ::(base: Identifier, ::(fi: FieldIdentifier, _)) if symbolTable.contains(LocalVar(base.name)) =>
         // Get field from global table if referenced as a variable
         val localTypes = symbolTable.get(LocalVar(base.name))
@@ -948,7 +948,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     }
     val returnTypes = extractTypes(ret.argumentOut.l)
     existingTypes.addAll(returnTypes)
-    builder.setNodeProperty(ret.method.methodReturn, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, existingTypes)
+    builder.setNodeProperty(ret.method.methodReturn, PropertyKinds.DYNAMIC_TYPE_HINT_FULL_NAME, existingTypes)
   }
 
   /** Using an entry from the symbol table, will queue the CPG modification to persist the recovered type information.
@@ -1113,12 +1113,12 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     */
   private def integrateMethodRef(funcPtr: Expression, m: Method, mRef: NewMethodRef, inCall: AstNode) = {
     builder.addNode(mRef)
-    builder.addEdge(mRef, m, EdgeTypes.REF)
-    builder.addEdge(inCall, mRef, EdgeTypes.AST)
-    builder.addEdge(funcPtr.method, mRef, EdgeTypes.CONTAINS)
+    builder.addEdge(mRef, m, EdgeKinds.REF)
+    builder.addEdge(inCall, mRef, EdgeKinds.AST)
+    builder.addEdge(funcPtr.method, mRef, EdgeKinds.CONTAINS)
     inCall match {
       case x: Call =>
-        builder.addEdge(x, mRef, EdgeTypes.ARGUMENT)
+        builder.addEdge(x, mRef, EdgeKinds.ARGUMENT)
         mRef.argumentIndex(x.argumentOut.size + 1)
       case x =>
         mRef.argumentIndex(x.astChildren.size + 1)
@@ -1207,7 +1207,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       state.changesWereMade.compareAndSet(false, true)
       builder.setNodeProperty(
         c,
-        PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
+        PropertyKinds.DYNAMIC_TYPE_HINT_FULL_NAME,
         (c.dynamicTypeHintFullName ++ types).distinct
       )
     }
@@ -1222,15 +1222,15 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   protected def storeDefaultTypeInfo(n: StoredNode, types: Seq[String]): Unit =
     if (types.toSet != n.getKnownTypes) {
       state.changesWereMade.compareAndSet(false, true)
-      setTypes(n, (n.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty) ++ types).distinct)
+      setTypes(n, (n.property(PropertyKinds.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty) ++ types).distinct)
     }
 
   /** If there is only 1 type hint then this is set to the `typeFullName` property and `dynamicTypeHintFullName` is
     * cleared. If not then `dynamicTypeHintFullName` is set to the types.
     */
   protected def setTypes(n: StoredNode, types: Seq[String]): Unit =
-    if (types.size == 1) builder.setNodeProperty(n, PropertyNames.TYPE_FULL_NAME, types.head)
-    else builder.setNodeProperty(n, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, types)
+    if (types.size == 1) builder.setNodeProperty(n, PropertyKinds.TYPE_FULL_NAME, types.head)
+    else builder.setNodeProperty(n, PropertyKinds.DYNAMIC_TYPE_HINT_FULL_NAME, types)
 
   /** Allows one to modify the types assigned to locals.
     */

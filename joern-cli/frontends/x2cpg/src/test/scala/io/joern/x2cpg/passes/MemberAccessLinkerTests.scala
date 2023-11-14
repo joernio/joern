@@ -14,7 +14,7 @@ class MemberAccessLinkerTests extends AnyWordSpec with Matchers {
     val member = NewMember().name("aaa")
     graph.addNode(call)
     graph.addNode(member)
-    graph.addEdge(call, member, EdgeTypes.REF)
+    graph.addEdge(call, member, EdgeKinds.REF)
   }.cpg
 
   "have a reference to correct member" in {

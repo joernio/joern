@@ -1,7 +1,7 @@
 package io.joern.x2cpg.passes.base
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, nodes}
+import io.shiftleft.codepropertygraph.generated.v2.{EdgeKinds, nodes}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
@@ -38,7 +38,7 @@ class MethodDecoratorPass(cpg: Cpg) extends CpgPass(cpg) {
         } else {
           if (parameterIn.typeFullName == null) {
             val evalType = parameterIn.typ
-            dstGraph.addEdge(parameterOut, evalType, EdgeTypes.EVAL_TYPE)
+            dstGraph.addEdge(parameterOut, evalType, EdgeKinds.EVAL_TYPE)
             if (!loggedMissingTypeFullName) {
               logger.warn("Using deprecated CPG format with missing TYPE_FULL_NAME on METHOD_PARAMETER_IN nodes.")
               loggedMissingTypeFullName = true
@@ -46,8 +46,8 @@ class MethodDecoratorPass(cpg: Cpg) extends CpgPass(cpg) {
           }
 
           dstGraph.addNode(parameterOut)
-          dstGraph.addEdge(method.get, parameterOut, EdgeTypes.AST)
-          dstGraph.addEdge(parameterIn, parameterOut, EdgeTypes.PARAMETER_LINK)
+          dstGraph.addEdge(method.get, parameterOut, EdgeKinds.AST)
+          dstGraph.addEdge(parameterIn, parameterOut, EdgeKinds.PARAMETER_LINK)
         }
       } else if (!loggedDeprecatedWarning) {
         logger.warn("Using deprecated CPG format with PARAMETER_LINK edges")

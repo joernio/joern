@@ -2,7 +2,7 @@ package io.joern.x2cpg.passes
 
 import io.shiftleft.OverflowDbTestInstance
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.v2.{EdgeKinds, NodeTypes}
 import io.joern.x2cpg.passes.base.ContainsEdgePass
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -16,26 +16,26 @@ class ContainsEdgePassTest extends AnyWordSpec with Matchers {
 
   "Files " can {
     "contain Methods" in Fixture { fixture =>
-      fixture.methodVertex.in(EdgeTypes.CONTAINS).asScala.toList shouldBe List(fixture.fileVertex)
+      fixture.methodVertex.in(EdgeKinds.CONTAINS).asScala.toList shouldBe List(fixture.fileVertex)
     }
     "contain Classes" in Fixture { fixture =>
-      fixture.typeDeclVertex.in(EdgeTypes.CONTAINS).asScala.toList shouldBe List(fixture.fileVertex)
+      fixture.typeDeclVertex.in(EdgeKinds.CONTAINS).asScala.toList shouldBe List(fixture.fileVertex)
     }
   }
 
   "Classes " can {
     "contain Methods" in Fixture { fixture =>
-      fixture.typeMethodVertex.in(EdgeTypes.CONTAINS).asScala.toList shouldBe List(fixture.typeDeclVertex)
+      fixture.typeMethodVertex.in(EdgeKinds.CONTAINS).asScala.toList shouldBe List(fixture.typeDeclVertex)
     }
   }
 
   "Methods " can {
     "contain Methods" in Fixture { fixture =>
-      fixture.innerMethodVertex.in(EdgeTypes.CONTAINS).asScala.toList shouldBe List(fixture.methodVertex)
+      fixture.innerMethodVertex.in(EdgeKinds.CONTAINS).asScala.toList shouldBe List(fixture.methodVertex)
     }
     "contain expressions" in Fixture { fixture =>
-      fixture.expressionVertex.in(EdgeTypes.CONTAINS).asScala.toList shouldBe List(fixture.methodVertex)
-      fixture.innerExpressionVertex.in(EdgeTypes.CONTAINS).asScala.toList shouldBe List(fixture.innerMethodVertex)
+      fixture.expressionVertex.in(EdgeKinds.CONTAINS).asScala.toList shouldBe List(fixture.methodVertex)
+      fixture.innerExpressionVertex.in(EdgeKinds.CONTAINS).asScala.toList shouldBe List(fixture.innerMethodVertex)
     }
   }
 
@@ -53,13 +53,13 @@ object ContainsEdgePassTest {
     val expressionVertex      = graph + NodeTypes.CALL
     val innerExpressionVertex = graph + NodeTypes.CALL
 
-    fileVertex --- EdgeTypes.AST --> typeDeclVertex
-    typeDeclVertex --- EdgeTypes.AST --> typeMethodVertex
+    fileVertex --- EdgeKinds.AST --> typeDeclVertex
+    typeDeclVertex --- EdgeKinds.AST --> typeMethodVertex
 
-    fileVertex --- EdgeTypes.AST --> methodVertex
-    methodVertex --- EdgeTypes.AST --> innerMethodVertex
-    methodVertex --- EdgeTypes.AST --> expressionVertex
-    innerMethodVertex --- EdgeTypes.AST --> innerExpressionVertex
+    fileVertex --- EdgeKinds.AST --> methodVertex
+    methodVertex --- EdgeKinds.AST --> innerMethodVertex
+    methodVertex --- EdgeKinds.AST --> expressionVertex
+    innerMethodVertex --- EdgeKinds.AST --> innerExpressionVertex
 
     val containsEdgeCalculator = new ContainsEdgePass(new Cpg(graph))
     containsEdgeCalculator.createAndApply()

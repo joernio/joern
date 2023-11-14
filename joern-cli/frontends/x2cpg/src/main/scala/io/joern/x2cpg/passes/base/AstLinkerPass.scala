@@ -3,7 +3,7 @@ package io.joern.x2cpg.passes.base
 import io.joern.x2cpg.utils.LinkingUtil
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.nodes.StoredNode
-import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.v2.{EdgeKinds, NodeTypes}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
 
@@ -54,9 +54,9 @@ class AstLinkerPass(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {
 
     astParentOption match {
       case Some(astParent) =>
-        dstGraph.addEdge(astParent, astChild, EdgeTypes.AST)
+        dstGraph.addEdge(astParent, astChild, EdgeKinds.AST)
       case None =>
-        logFailedSrcLookup(EdgeTypes.AST, astParentType, astParentFullName, astChild.label, astChild.id.toString)
+        logFailedSrcLookup(EdgeKinds.AST, astParentType, astParentFullName, astChild.label, astChild.id.toString)
     }
   }
 }

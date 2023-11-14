@@ -2,7 +2,7 @@ package io.joern.x2cpg.passes.callgraph
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, EdgeTypes}
+import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, EdgeKinds}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
@@ -47,7 +47,7 @@ class StaticCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     val resolvedMethodOption = methodFullNameToNode.get(call.methodFullName)
     if (resolvedMethodOption.isDefined) {
       resolvedMethodOption.get.foreach { dst =>
-        dstGraph.addEdge(call, dst, EdgeTypes.CALL)
+        dstGraph.addEdge(call, dst, EdgeKinds.CALL)
       }
     } else {
       logger.info(

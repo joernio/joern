@@ -1,7 +1,7 @@
 package io.joern.x2cpg.passes.controlflow.codepencegraph
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.v2.EdgeKinds
 import io.shiftleft.codepropertygraph.generated.v2.nodes.{
   Call,
   ControlStructure,
@@ -35,7 +35,7 @@ class CdgPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
       postDomFrontierNodes.foreach {
         case postDomFrontierNode @ (_: Literal | _: Identifier | _: Call | _: MethodRef | _: Unknown |
             _: ControlStructure | _: JumpTarget) =>
-          dstGraph.addEdge(postDomFrontierNode, node, EdgeTypes.CDG)
+          dstGraph.addEdge(postDomFrontierNode, node, EdgeKinds.CDG)
         case postDomFrontierNode =>
           val nodeLabel  = postDomFrontierNode.label
           val containsIn = postDomFrontierNode._containsIn

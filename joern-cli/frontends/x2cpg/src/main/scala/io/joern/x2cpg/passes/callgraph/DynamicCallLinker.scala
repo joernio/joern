@@ -3,7 +3,7 @@ package io.joern.x2cpg.passes.callgraph
 import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.nodes.{Call, Method, TypeDecl}
-import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, EdgeTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, EdgeKinds, PropertyNames}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import org.slf4j.{Logger, LoggerFactory}
@@ -189,7 +189,7 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
         (if (externalMs.nonEmpty && internalMs.nonEmpty) internalMs else tgtMs)
           .foreach { tgtM =>
             if (!callsOut.contains(tgtM.fullName)) {
-              dstGraph.addEdge(call, tgtM, EdgeTypes.CALL)
+              dstGraph.addEdge(call, tgtM, EdgeKinds.CALL)
             } else {
               fallbackToStaticResolution(call, dstGraph)
             }
@@ -204,7 +204,7 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     */
   private def fallbackToStaticResolution(call: Call, dstGraph: DiffGraphBuilder): Unit = {
     methodMap.get(call.methodFullName) match {
-      case Some(tgtM) => dstGraph.addEdge(call, tgtM, EdgeTypes.CALL)
+      case Some(tgtM) => dstGraph.addEdge(call, tgtM, EdgeKinds.CALL)
       case None       => printLinkingError(call)
     }
   }

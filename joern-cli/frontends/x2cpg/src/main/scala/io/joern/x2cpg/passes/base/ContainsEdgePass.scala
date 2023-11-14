@@ -2,7 +2,7 @@ package io.joern.x2cpg.passes.base
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.v2.{EdgeKinds, NodeTypes}
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 
 import scala.collection.mutable
@@ -23,7 +23,7 @@ class ContainsEdgePass(cpg: Cpg) extends ConcurrentWriterCpgPass[AstNode](cpg) {
     while (queue.nonEmpty) {
       val parent = queue.removeHead()
       for (nextNode <- parent._astOut) {
-        if (isDestinationType(nextNode)) dstGraph.addEdge(source, nextNode, EdgeTypes.CONTAINS)
+        if (isDestinationType(nextNode)) dstGraph.addEdge(source, nextNode, EdgeKinds.CONTAINS)
         if (!isSourceType(nextNode)) queue.append(nextNode)
       }
     }

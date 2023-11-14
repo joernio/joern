@@ -3,7 +3,7 @@ package io.joern.x2cpg.passes.frontend
 import io.joern.x2cpg.passes.base.TypeDeclStubCreator
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.v2.{EdgeKinds, PropertyNames}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language.*
 
@@ -33,7 +33,7 @@ abstract class XInheritanceFullNamePass(cpg: Cpg) extends ForkJoinParallelCpgPas
     if (resolvedTypeDecls.nonEmpty) {
       val fullNames = resolvedTypeDecls.map(_.fullName)
       builder.setNodeProperty(source, PropertyNames.INHERITS_FROM_TYPE_FULL_NAME, fullNames)
-      cpg.typ.fullNameExact(fullNames: _*).foreach(tgt => builder.addEdge(source, tgt, EdgeTypes.INHERITS_FROM))
+      cpg.typ.fullNameExact(fullNames: _*).foreach(tgt => builder.addEdge(source, tgt, EdgeKinds.INHERITS_FROM))
     }
   }
 

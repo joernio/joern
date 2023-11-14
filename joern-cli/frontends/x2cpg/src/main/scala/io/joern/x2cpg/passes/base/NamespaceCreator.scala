@@ -1,7 +1,7 @@
 package io.joern.x2cpg.passes.base
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.v2.EdgeKinds
 import io.shiftleft.codepropertygraph.generated.v2.nodes.NewNamespace
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
@@ -20,7 +20,7 @@ class NamespaceCreator(cpg: Cpg) extends CpgPass(cpg) {
       .foreach { case (name: String, blocks) =>
         val namespace = NewNamespace().name(name)
         dstGraph.addNode(namespace)
-        blocks.foreach(block => dstGraph.addEdge(block, namespace, EdgeTypes.REF))
+        blocks.foreach(block => dstGraph.addEdge(block, namespace, EdgeKinds.REF))
       }
   }
 

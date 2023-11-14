@@ -2,7 +2,7 @@ package io.joern.x2cpg.passes.controlflow.cfgcreation
 
 import io.joern.x2cpg.passes.controlflow.cfgcreation.Cfg.CfgEdgeType
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.v2.{ControlStructureTypes, DispatchTypes, EdgeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.v2.{ControlStructureTypes, DispatchTypes, EdgeKinds, Operators}
 import io.shiftleft.semanticcpg.language.*
 import io.joern.odb2.DiffGraphBuilder
 
@@ -60,7 +60,7 @@ class CfgCreator(entryNode: Method, diffGraph: DiffGraphBuilder) {
     cfgForMethod(entryNode).withResolvedJumpToLabel().edges.foreach { edge =>
       // TODO: we are ignoring edge.edgeType because the
       //  CFG spec doesn't define an edge type at the moment
-      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.CFG)
+      diffGraph.addEdge(edge.src, edge.dst, EdgeKinds.CFG)
     }
   }
 

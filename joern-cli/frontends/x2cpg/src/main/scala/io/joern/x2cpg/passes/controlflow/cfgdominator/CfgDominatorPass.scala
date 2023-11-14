@@ -1,7 +1,7 @@
 package io.joern.x2cpg.passes.controlflow.cfgdominator
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.v2.EdgeKinds
 import io.shiftleft.codepropertygraph.generated.v2.nodes.{Method, StoredNode}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
@@ -33,7 +33,7 @@ class CfgDominatorPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
     cfgNodeToImmediateDominator: mutable.LinkedHashMap[StoredNode, StoredNode]
   ): Unit = {
     cfgNodeToImmediateDominator.foreach { case (node, immediateDominator) =>
-      dstGraph.addEdge(immediateDominator, node, EdgeTypes.DOMINATE)
+      dstGraph.addEdge(immediateDominator, node, EdgeKinds.DOMINATE)
     }
   }
 
@@ -42,7 +42,7 @@ class CfgDominatorPass(cpg: Cpg) extends ForkJoinParallelCpgPass[Method](cpg) {
     cfgNodeToPostImmediateDominator: mutable.LinkedHashMap[StoredNode, StoredNode]
   ): Unit = {
     cfgNodeToPostImmediateDominator.foreach { case (node, immediatePostDominator) =>
-      dstGraph.addEdge(immediatePostDominator, node, EdgeTypes.POST_DOMINATE)
+      dstGraph.addEdge(immediatePostDominator, node, EdgeKinds.POST_DOMINATE)
     }
   }
 }

@@ -1,6 +1,6 @@
 package io.joern.x2cpg
 
-import io.shiftleft.codepropertygraph.generated.v2.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.v2.EdgeKinds
 import io.shiftleft.codepropertygraph.generated.v2.nodes.{CallBase, NewImport}
 import io.joern.odb2.DiffGraphBuilder
 
@@ -16,7 +16,7 @@ object Imports {
       .importedAs(importedAs)
       .importedEntity(importedEntity)
     diffGraph.addNode(importNode)
-    call.foreach { c => diffGraph.addEdge(c, importNode, EdgeTypes.IS_CALL_FOR_IMPORT) }
+    call.foreach { c => diffGraph.addEdge(c, importNode, EdgeKinds.IS_CALL_FOR_IMPORT) }
     importNode
   }
 

@@ -4,18 +4,12 @@ import io.joern.x2cpg.passes.frontend.Dereference
 import io.shiftleft.codepropertygraph.generated.v2.PropertyNames
 import io.shiftleft.codepropertygraph.generated.v2.nodes.StoredNode
 import io.shiftleft.codepropertygraph.generated.v2.nodes.TypeDecl
-import io.shiftleft.codepropertygraph.generated.v2.Properties
 import io.shiftleft.codepropertygraph.generated.v2.nodes.Method
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.nodes.NamespaceBlock
 import io.shiftleft.codepropertygraph.generated.v2.nodes.Type
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import overflowdb.NodeDb
-import overflowdb.PropertyKey
-import overflowdb.NodeRef
-import overflowdb.traversal._
-import overflowdb.traversal.ChainedImplicitsTemp._
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
@@ -38,7 +32,7 @@ trait LinkingUtil {
   def namespaceBlockFullNameToNode(cpg: Cpg, x: String): Option[NamespaceBlock] =
     nodesWithFullName(cpg, x).collectFirst { case x: NamespaceBlock => x }
 
-  def nodesWithFullName(cpg: Cpg, x: String): mutable.Seq[NodeRef[_ <: NodeDb]] =
+  def nodesWithFullName(cpg: Cpg, x: String): mutable.Seq[StoredNode] =
     cpg.graph.indexManager.lookup(PropertyNames.FULL_NAME, x).asScala
 
   /** For all nodes `n` with a label in `srcLabels`, determine the value of `n.\$dstFullNameKey`, use that to lookup the

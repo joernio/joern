@@ -4,7 +4,7 @@ import io.joern.x2cpg.passes.base.MethodStubCreator
 import io.joern.x2cpg.passes.frontend.XTypeRecovery.isDummyType
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, NodeTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.v2.{EdgeKinds, NodeTypes, PropertyNames}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 import io.shiftleft.semanticcpg.language.*
@@ -80,7 +80,7 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
   }
 
   def linkCallToCallee(call: Call, method: MethodBase, builder: DiffGraphBuilder): Unit = {
-    builder.addEdge(call, method, EdgeTypes.CALL)
+    builder.addEdge(call, method, EdgeKinds.CALL)
     method match {
       case method: Method =>
         builder.setNodeProperty(call, PropertyNames.TYPE_FULL_NAME, method.methodReturn.typeFullName)
@@ -168,7 +168,7 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     builder.addNode(speculativeNamespace)
     newMethods.iterator
       .filter(_.astParentFullName == XTypeHintCallLinker.namespace)
-      .foreach(m => builder.addEdge(speculativeNamespace, m, EdgeTypes.AST))
+      .foreach(m => builder.addEdge(speculativeNamespace, m, EdgeKinds.AST))
   }
 }
 

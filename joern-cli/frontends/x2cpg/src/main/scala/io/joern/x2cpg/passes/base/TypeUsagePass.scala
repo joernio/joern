@@ -2,7 +2,7 @@ package io.joern.x2cpg.passes.base
 
 import io.joern.x2cpg.utils.LinkingUtil
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, NodeTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.v2.{EdgeKinds, NodeTypes, PropertyNames}
 import io.shiftleft.passes.CpgPass
 
 class TypeUsagePass(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {
@@ -13,7 +13,7 @@ class TypeUsagePass(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {
       cpg,
       srcLabels = List(NodeTypes.TYPE),
       dstNodeLabel = NodeTypes.TYPE_DECL,
-      edgeType = EdgeTypes.REF,
+      edgeType = EdgeKinds.REF,
       dstNodeMap = typeDeclFullNameToNode(cpg, _),
       dstFullNameKey = PropertyNames.TYPE_DECL_FULL_NAME,
       dstGraph,
@@ -38,7 +38,7 @@ class TypeUsagePass(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {
         NodeTypes.UNKNOWN
       ),
       dstNodeLabel = NodeTypes.TYPE,
-      edgeType = EdgeTypes.EVAL_TYPE,
+      edgeType = EdgeKinds.EVAL_TYPE,
       dstNodeMap = typeFullNameToNode(cpg, _),
       dstFullNameKey = "TYPE_FULL_NAME",
       dstGraph,

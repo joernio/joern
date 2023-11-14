@@ -24,7 +24,7 @@ class MethodDecoratorPassTests extends AnyWordSpec with Matchers {
       )
       .asInstanceOf[MethodParameterIn]
 
-    method --- EdgeTypes.AST --> parameterIn
+    method --- EdgeKinds.AST --> parameterIn
 
     val methodDecorator = new MethodDecoratorPass(new Cpg(graph))
     methodDecorator.createAndApply()
