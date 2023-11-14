@@ -221,9 +221,10 @@ case class Ast(
     * copy.
     */
   def subTreeCopy(node: AstNodeNew, argIndex: Int = -1, replacementNode: Option[AstNodeNew] = None): Ast = {
-    val newNode = replacementNode match
+    val newNode = replacementNode match {
       case Some(n) => n
-      case None    => node.copy
+      case None    => node.copy()
+    }
     if (argIndex != -1) {
       // newNode.order = argIndex
       newNode match {

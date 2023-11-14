@@ -2,9 +2,9 @@ package io.joern.x2cpg.passes.base
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.nodes.{NewFile, StoredNode}
-import io.shiftleft.codepropertygraph.generated.v2.{EdgeKinds, NodeTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.v2.{EdgeKinds, EdgeTypes, NodeTypes, PropertyNames}
 import io.shiftleft.passes.CpgPass
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 import io.joern.x2cpg.utils.LinkingUtil
 
@@ -43,7 +43,7 @@ class FileCreationPass(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {
       cpg,
       srcLabels = List(NodeTypes.NAMESPACE_BLOCK, NodeTypes.TYPE_DECL, NodeTypes.METHOD, NodeTypes.COMMENT),
       dstNodeLabel = NodeTypes.FILE,
-      edgeType = EdgeKinds.SOURCE_FILE,
+      edgeType = EdgeTypes.SOURCE_FILE,
       dstNodeMap = { x =>
         originalFileNameToNode.get(x)
       },

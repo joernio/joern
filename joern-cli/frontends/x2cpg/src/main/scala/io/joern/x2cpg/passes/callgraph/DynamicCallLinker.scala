@@ -5,9 +5,8 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.nodes.{Call, Method, TypeDecl}
 import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, EdgeKinds, PropertyNames}
 import io.shiftleft.passes.CpgPass
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.{Logger, LoggerFactory}
-import overflowdb.{NodeDb, NodeRef}
 
 import scala.collection.mutable
 import scala.jdk.CollectionConverters._
@@ -114,8 +113,8 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     if (visitedNodes.contains(cur)) return visitedNodes
     visitedNodes.addOne(cur)
 
-    (if (inSuperDirection) cpg.typeDecl.fullNameExact(cur.fullName).flatMap(_.inheritsFromOut.referencedTypeDecl)
-     else cpg.typ.fullNameExact(cur.fullName).flatMap(_.inheritsFromIn))
+    (if (inSuperDirection) cpg.typeDecl.fullNameExact(cur.fullName).flatMap(_._inheritsFromOut.referencedTypeDecl)
+     else cpg.typ.fullNameExact(cur.fullName).flatMap(_._inheritsFromIn))
       .collectAll[TypeDecl]
       .to(mutable.LinkedHashSet) match {
       case classesToEval if classesToEval.isEmpty => visitedNodes
@@ -174,7 +173,7 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
 
     validM.get(call.methodFullName) match {
       case Some(tgts) =>
-        val callsOut = call.callOut.fullName.toSetImmutable
+        val callsOut = call._callOut.fullName.toSetImmutable
         val tgtMs = tgts
           .flatMap(destMethod =>
             if (cpg.graph.indexManager.isIndexed(PropertyNames.FULL_NAME)) {

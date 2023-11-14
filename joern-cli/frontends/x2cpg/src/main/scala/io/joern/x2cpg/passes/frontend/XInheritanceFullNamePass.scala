@@ -3,7 +3,7 @@ package io.joern.x2cpg.passes.frontend
 import io.joern.x2cpg.passes.base.TypeDeclStubCreator
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.v2.{EdgeKinds, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.v2.{EdgeKinds, PropertyKinds}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language.*
 
@@ -32,7 +32,7 @@ abstract class XInheritanceFullNamePass(cpg: Cpg) extends ForkJoinParallelCpgPas
     val resolvedTypeDecls = resolveInheritedTypeFullName(source, builder)
     if (resolvedTypeDecls.nonEmpty) {
       val fullNames = resolvedTypeDecls.map(_.fullName)
-      builder.setNodeProperty(source, PropertyNames.INHERITS_FROM_TYPE_FULL_NAME, fullNames)
+      builder.setNodeProperty(source, PropertyKinds.INHERITS_FROM_TYPE_FULL_NAME, fullNames)
       cpg.typ.fullNameExact(fullNames: _*).foreach(tgt => builder.addEdge(source, tgt, EdgeKinds.INHERITS_FROM))
     }
   }
@@ -41,8 +41,8 @@ abstract class XInheritanceFullNamePass(cpg: Cpg) extends ForkJoinParallelCpgPas
     inheritedTypes == Seq("ANY") || inheritedTypes == Seq("object") || inheritedTypes.isEmpty
 
   private def extractTypeDeclFromNode(node: AstNode): Option[String] = node match {
-    case x: Call if x.isCallForImportOut.nonEmpty =>
-      x.isCallForImportOut.importedEntity.map {
+    case x: Call if x._isCallForImportOut.nonEmpty =>
+      x._isCallForImportOut.importedEntity.map {
         case imp if relativePathPattern.matcher(imp).matches() =>
           imp.split(pathSep).toList match {
             case head :: next =>

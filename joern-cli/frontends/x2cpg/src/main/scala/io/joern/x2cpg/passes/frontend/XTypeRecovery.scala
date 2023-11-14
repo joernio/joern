@@ -68,7 +68,7 @@ abstract class XTypeRecoveryPass[CompilationUnitType <: AstNode](
 
   import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
 
-  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit =
+  override def run(builder: DiffGraphBuilder): Unit =
     if (config.iterations > 0) {
       val stopEarly = new AtomicBoolean(false)
       val state     = XTypeRecoveryState(config, stopEarly = stopEarly)
@@ -416,7 +416,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     * @param a
     *   assignment call pointer.
     */
-  protected def visitAssignments(a: Assignment): Set[String] = visitAssignmentArguments(a.argumentOut.l)
+  protected def visitAssignments(a: Assignment): Set[String] = visitAssignmentArguments(a._argumentOut.l)
 
   protected def visitAssignmentArguments(args: List[AstNode]): Set[String] = args match {
     case List(i: Identifier, b: Block)                             => visitIdentifierAssignedToBlock(i, b)
@@ -826,7 +826,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           .getOrElse(XTypeRecovery.DummyIndexAccess)
       else x.name
 
-    Option(c.argumentOut.l match {
+    Option(c._argumentOut.l match {
       case List(i: Identifier, idx: Literal)    => CollectionVar(i.name, idx.code)
       case List(i: Identifier, idx: Identifier) => CollectionVar(i.name, idx.code)
       case List(c: Call, idx: Call)             => CollectionVar(callName(c), callName(idx))
@@ -936,9 +936,9 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           callPaths.map(c => s"$c$pathSep${XTypeRecovery.DummyReturnType}")
         else
           returnValues
-      case ::(head: Call, Nil) if head.argumentOut.headOption.exists(symbolTable.contains) =>
+      case ::(head: Call, Nil) if head._argumentOut.headOption.exists(symbolTable.contains) =>
         symbolTable
-          .get(head.argumentOut.head)
+          .get(head._argumentOut.head)
           .map(t => Seq(t, head.name, XTypeRecovery.DummyReturnType).mkString(pathSep.toString))
       case ::(identifier: Identifier, Nil) if symbolTable.contains(identifier) =>
         symbolTable.get(identifier)
@@ -946,7 +946,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         extractTypes(head.argument.l)
       case _ => Set.empty
     }
-    val returnTypes = extractTypes(ret.argumentOut.l)
+    val returnTypes = extractTypes(ret._argumentOut.l)
     existingTypes.addAll(returnTypes)
     builder.setNodeProperty(ret.method.methodReturn, PropertyKinds.DYNAMIC_TYPE_HINT_FULL_NAME, existingTypes)
   }

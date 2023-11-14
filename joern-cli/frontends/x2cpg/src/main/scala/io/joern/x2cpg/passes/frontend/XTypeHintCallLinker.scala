@@ -4,7 +4,7 @@ import io.joern.x2cpg.passes.base.MethodStubCreator
 import io.joern.x2cpg.passes.frontend.XTypeRecovery.isDummyType
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.v2.{EdgeKinds, NodeTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.v2.{EdgeKinds, NodeTypes, PropertyKinds}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 import io.shiftleft.semanticcpg.language.*
@@ -83,7 +83,7 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     builder.addEdge(call, method, EdgeKinds.CALL)
     method match {
       case method: Method =>
-        builder.setNodeProperty(call, PropertyNames.TYPE_FULL_NAME, method.methodReturn.typeFullName)
+        builder.setNodeProperty(call, PropertyKinds.TYPE_FULL_NAME, method.methodReturn.typeFullName)
       case _ =>
     }
   }
@@ -91,10 +91,10 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
   protected def setCallees(call: Call, methodNames: Seq[String], builder: DiffGraphBuilder): Unit = {
     val nonDummyTypes = methodNames.filterNot(isDummyType)
     if (methodNames.sizeIs == 1) {
-      builder.setNodeProperty(call, PropertyNames.METHOD_FULL_NAME, methodNames.head)
+      builder.setNodeProperty(call, PropertyKinds.METHOD_FULL_NAME, methodNames.head)
       builder.setNodeProperty(
         call,
-        PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
+        PropertyKinds.DYNAMIC_TYPE_HINT_FULL_NAME,
         call.dynamicTypeHintFullName.diff(methodNames)
       )
     } else if (methodNames.sizeIs > 1 && methodNames != nonDummyTypes) {
@@ -117,7 +117,7 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
       if (methodName.contains(pathSep) && methodName.length > methodName.lastIndexOf(pathSep) + 1)
         methodName.substring(methodName.lastIndexOf(pathSep) + 1)
       else methodName
-    createMethodStub(name, methodName, call.argumentOut.size, isExternal, builder)
+    createMethodStub(name, methodName, call._argumentOut.size, isExternal, builder)
   }
 
   /** Try to extract a type full name from the method full name, if one exists in the CPG then we are lucky and we use
