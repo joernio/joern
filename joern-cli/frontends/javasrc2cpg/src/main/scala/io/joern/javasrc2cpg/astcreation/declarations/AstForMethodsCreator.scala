@@ -12,14 +12,7 @@ import io.joern.javasrc2cpg.util.Util.*
 import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.utils.NodeBuilders.*
 import io.joern.x2cpg.{Ast, Defines}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  NewBlock,
-  NewIdentifier,
-  NewMethod,
-  NewMethodParameterIn,
-  NewMethodReturn,
-  NewModifier
-}
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, ModifierTypes}
 
 import scala.jdk.CollectionConverters.*
@@ -167,6 +160,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
 
   private def astForParameter(parameter: Parameter, childNum: Int): Ast = {
     val maybeArraySuffix = if (parameter.isVarArgs) "[]" else ""
+    val parameterName    = parameter.getName.toString
     val typeFullName =
       typeInfoCalc
         .fullName(parameter.getType)
@@ -178,7 +172,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     typeInfoCalc.registerType(typeFullName)
 
     val parameterNode = NewMethodParameterIn()
-      .name(parameter.getName.toString)
+      .name(parameterName)
       .code(parameter.toString)
       .lineNumber(line(parameter))
       .columnNumber(column(parameter))
@@ -186,6 +180,9 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       .typeFullName(typeFullName)
       .index(childNum)
       .order(childNum)
+    scope.enclosingMethodFullName
+      .map(createClosureBindingId(_, parameterName))
+      .foreach(parameterNode.closureBindingId)
     val annotationAsts = parameter.getAnnotations.asScala.map(astForAnnotationExpr)
     val ast            = Ast(parameterNode)
 

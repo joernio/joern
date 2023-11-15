@@ -294,7 +294,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
           }
 
         localOrCapturedLocalNodeOption.foreach { localOrCapturedLocalNode =>
-          diffGraph.addEdge(currentReference, localOrCapturedLocalNode, EdgeTypes.REF)
+//          diffGraph.addEdge(currentReference, localOrCapturedLocalNode, EdgeTypes.REF)
           currentReference = nextReference
         }
         currentScope = currentScope.get.surroundingScope

@@ -1,24 +1,16 @@
 package io.joern.x2cpg.utils
 
 import io.joern.x2cpg.passes.frontend.Dereference
-import io.shiftleft.codepropertygraph.generated.PropertyNames
-import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
-import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
-import io.shiftleft.codepropertygraph.generated.Properties
-import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.NamespaceBlock
-import io.shiftleft.codepropertygraph.generated.nodes.Type
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-import overflowdb.NodeDb
-import overflowdb.PropertyKey
-import overflowdb.NodeRef
-import overflowdb.traversal._
-import overflowdb.traversal.ChainedImplicitsTemp._
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{Properties, PropertyNames}
+import org.slf4j.{Logger, LoggerFactory}
+import overflowdb.traversal.*
+import overflowdb.traversal.ChainedImplicitsTemp.*
+import overflowdb.{NodeDb, NodeRef, PropertyKey}
 
 import scala.collection.mutable
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 trait LinkingUtil {
 
@@ -40,6 +32,18 @@ trait LinkingUtil {
 
   def nodesWithFullName(cpg: Cpg, x: String): mutable.Seq[NodeRef[_ <: NodeDb]] =
     cpg.graph.indexManager.lookup(PropertyNames.FULL_NAME, x).asScala
+
+  def localClosureBindingIdToNode(cpg: Cpg, x: String): Option[Local] =
+    nodesWithClosureBindingId(cpg, x).collectFirst { case x: Local => x }
+
+  def parameterClosureBindingIdToNode(cpg: Cpg, x: String): Option[MethodParameterIn] =
+    nodesWithClosureBindingId(cpg, x).collectFirst { case x: MethodParameterIn => x }
+
+  def closureBindingIdToNode(cpg: Cpg, x: String): Option[ClosureBinding] =
+    nodesWithClosureBindingId(cpg, x).collectFirst { case x: ClosureBinding => x }
+
+  def nodesWithClosureBindingId(cpg: Cpg, x: String): mutable.Seq[NodeRef[_ <: NodeDb]] =
+    cpg.graph.indexManager.lookup(PropertyNames.CLOSURE_BINDING_ID, x).asScala
 
   /** For all nodes `n` with a label in `srcLabels`, determine the value of `n.\$dstFullNameKey`, use that to lookup the
     * destination node in `dstNodeMap`, and create an edge of type `edgeType` between `n` and the destination node.

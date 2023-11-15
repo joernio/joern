@@ -20,6 +20,7 @@ object Base {
     new MethodDecoratorPass(cpg),
     new AstLinkerPass(cpg),
     new ContainsEdgePass(cpg),
+    new CaptureBindingLinkerPass(cpg),
     new TypeUsagePass(cpg)
   )
 

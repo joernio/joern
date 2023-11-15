@@ -5,11 +5,7 @@ import com.github.javaparser.ast.stmt.{BlockStmt, Statement}
 import com.github.javaparser.resolution.declarations.ResolvedMethodDeclaration
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
 import com.github.javaparser.resolution.types.{ResolvedReferenceType, ResolvedType, ResolvedTypeVariable}
-import io.joern.javasrc2cpg.astcreation.expressions.AstForLambdasCreator.{
-  ClosureBindingEntry,
-  LambdaBody,
-  LambdaImplementedInfo
-}
+import io.joern.javasrc2cpg.astcreation.expressions.AstForLambdasCreator.{ClosureBindingEntry, LambdaBody, LambdaImplementedInfo}
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.javasrc2cpg.scope.Scope.ScopeVariable
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.{ObjectMethodSignatures, TypeConstants}
@@ -53,6 +49,10 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
 
   private def nextLambdaName(): String = {
     s"$LambdaNamePrefix${lambdaKeyPool.next}"
+  }
+
+  protected def createClosureBindingId(methodFullName: String, variableName: String): String = {
+    s"$filename:$methodFullName:$variableName"
   }
 
   private def createAndPushLambdaMethod(
@@ -206,9 +206,8 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
     bindingEntries: Iterable[ClosureBindingEntry],
     methodRef: NewMethodRef
   ): Unit = {
-    bindingEntries.foreach { case ClosureBindingEntry(nodeTypeInfo, closureBinding) =>
+    bindingEntries.foreach { case ClosureBindingEntry(_, closureBinding) =>
       diffGraph.addNode(closureBinding)
-      diffGraph.addEdge(closureBinding, nodeTypeInfo.node, EdgeTypes.REF)
       diffGraph.addEdge(methodRef, closureBinding, EdgeTypes.CAPTURE)
     }
   }
@@ -269,7 +268,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
     capturedVariables
       .groupBy(_.name)
       .map { case (name, variables) =>
-        val closureBindingId   = s"$filename:$lambdaMethodName:$name"
+        val closureBindingId   = createClosureBindingId(lambdaMethodName, name)
         val closureBindingNode = newClosureBindingNode(closureBindingId, name, EvaluationStrategies.BY_SHARING)
 
         val scopeVariable = variables.head

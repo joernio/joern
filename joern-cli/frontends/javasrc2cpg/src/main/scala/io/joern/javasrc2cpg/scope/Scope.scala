@@ -117,6 +117,12 @@ class Scope {
 
   def enclosingTypeDeclFullName: Option[String] = enclosingTypeDecl.map(_.fullName)
 
+  def enclosingMethod: Option[NewMethod] = scopeStack.collectFirst { case methodScope: MethodScope =>
+    methodScope.method
+  }
+
+  def enclosingMethodFullName: Option[String] = enclosingMethod.map(_.fullName)
+
   def enclosingMethodReturnType: Option[ExpectedType] = scopeStack.collectFirst { case methodScope: MethodScope =>
     methodScope.returnType
   }
