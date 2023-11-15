@@ -1,6 +1,6 @@
 package io.joern.x2cpg
 
-import io.shiftleft.codepropertygraph.generated.v2.{EdgeKinds, EdgeTypes}
+import io.shiftleft.codepropertygraph.generated.v2.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.codepropertygraph.generated.v2.nodes.AstNode.PropertyDefaults
 import org.slf4j.LoggerFactory
@@ -29,24 +29,24 @@ object Ast {
       diffGraph.addNode(node)
     }
     ast.edges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeKinds.AST)
+      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.AST)
     }
     ast.conditionEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeKinds.CONDITION)
+      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.CONDITION)
     }
     ast.receiverEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeKinds.RECEIVER)
+      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.RECEIVER)
     }
     ast.refEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeKinds.REF)
+      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.REF)
     }
 
     ast.argEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeKinds.ARGUMENT)
+      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.ARGUMENT)
     }
 
     ast.bindsEdges.foreach { edge =>
-      diffGraph.addEdge(edge.src, edge.dst, EdgeKinds.BINDS)
+      diffGraph.addEdge(edge.src, edge.dst, EdgeTypes.BINDS)
     }
   }
 

@@ -100,7 +100,7 @@ trait LinkingUtil {
 
   def linkToMultiple[SRC_NODE_TYPE <: StoredNode](
     cpg: Cpg,
-    srcKind: Int,
+    srcLabels: List[String],
     dstNodeLabel: String,
     edgeType: String,
     dstNodeMap: String => Option[StoredNode],
@@ -124,7 +124,8 @@ trait LinkingUtil {
           }
         }
       } else {
-        val dstFullNames = srcNode.out(edgeType).property(Properties.FULL_NAME).l
+        // TODO MP get typed properties back?
+        val dstFullNames = srcNode.out(edgeType).property[String](PropertyNames.FULL_NAME).l
         dstGraph.setNodeProperty(srcNode, dstFullNameKey, dstFullNames.map(dereference.dereferenceTypeFullName))
         if (!loggedDeprecationWarning) {
           logger.info(

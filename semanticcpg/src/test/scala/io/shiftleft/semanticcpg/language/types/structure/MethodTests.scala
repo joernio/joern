@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language.types.structure
 
-import io.shiftleft.codepropertygraph.generated.v2.EdgeKinds
+import io.shiftleft.codepropertygraph.generated.v2.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.v2.nodes.{CfgNode, Expression, Literal, Method, NamespaceBlock, TypeDecl}
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.testing.MockCpg
@@ -21,8 +21,8 @@ class MethodTests extends AnyWordSpec with Matchers {
       val method       = cpg.method("foo").head
       val call         = cpg.call.name("call").head
       val methodReturn = cpg.method("foo").methodReturn.head
-      graph.addEdge(method, call, EdgeKinds.CFG)
-      graph.addEdge(call, methodReturn, EdgeKinds.CFG)
+      graph.addEdge(method, call, EdgeTypes.CFG)
+      graph.addEdge(call, methodReturn, EdgeTypes.CFG)
     }
     .cpg
 
@@ -56,8 +56,8 @@ class MethodTests extends AnyWordSpec with Matchers {
           .withCustom { case (graph, cpg) =>
             val namespaceBlock = cpg.namespaceBlock("namespace").head
             val method         = cpg.method("foo").head
-            graph.setNodeProperty(method, Method.PropertyKinds.AstParentType, NamespaceBlock.Label)
-            graph.addEdge(namespaceBlock, method, EdgeKinds.AST)
+            graph.setNodeProperty(method, Method.PropertyNames.AstParentType, NamespaceBlock.Label)
+            graph.addEdge(namespaceBlock, method, EdgeTypes.AST)
           }
           .cpg
 

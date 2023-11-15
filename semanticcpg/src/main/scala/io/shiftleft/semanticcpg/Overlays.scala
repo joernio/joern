@@ -2,7 +2,7 @@ package io.shiftleft.semanticcpg
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.accessors.Lang.accessPropertyOverlays
-import io.shiftleft.codepropertygraph.generated.v2.PropertyKinds
+import io.shiftleft.codepropertygraph.generated.v2.PropertyNames
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
 import io.joern.odb2.DiffGraphBuilder
@@ -15,7 +15,7 @@ object Overlays {
         cpg.metaData.headOption match {
           case Some(metaData) =>
             val newValue = metaData.overlays :+ overlayName
-            diffGraph.setNodeProperty(metaData, PropertyKinds.OVERLAYS, newValue)
+            diffGraph.setNodeProperty(metaData, PropertyNames.OVERLAYS, newValue)
           case None =>
             System.err.println("Missing metaData block")
         }
@@ -29,7 +29,7 @@ object Overlays {
         cpg.metaData.headOption match {
           case Some(metaData) =>
             val newValue = metaData.overlays.dropRight(1)
-            diffGraph.setNodeProperty(metaData, PropertyKinds.OVERLAYS, newValue)
+            diffGraph.setNodeProperty(metaData, PropertyNames.OVERLAYS, newValue)
           case None =>
             System.err.println("Missing metaData block")
         }
