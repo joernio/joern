@@ -8,8 +8,7 @@ import org.scalatest.matchers.should.Matchers
 
 class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
   "normal argument function" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg(
-      """def func(a, b):
+    lazy val cpg = Py2CpgTestContext.buildCpg("""def func(a, b):
         |  pass
         |""".stripMargin)
 
@@ -83,8 +82,7 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
   }
 
   "positional argument function" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg(
-      """def func(a, b, /):
+    lazy val cpg = Py2CpgTestContext.buildCpg("""def func(a, b, /):
         |  pass
         |""".stripMargin)
 
@@ -102,8 +100,7 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
   }
 
   "mixed argument function" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg(
-      """def func(a, b, /, c):
+    lazy val cpg = Py2CpgTestContext.buildCpg("""def func(a, b, /, c):
         |  pass
         |""".stripMargin)
 
@@ -126,8 +123,7 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
   }
 
   "decorated function" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg(
-      """@abc(arg)
+    lazy val cpg = Py2CpgTestContext.buildCpg("""@abc(arg)
         |@staticmethod
         |def func():
         |  pass
@@ -141,8 +137,7 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
   }
 
   "type hinted function" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg(
-      """
+    lazy val cpg = Py2CpgTestContext.buildCpg("""
         |from typing import List, Optional
         |
         |def func1(a: int, b: int) -> float:
@@ -203,13 +198,14 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
   }
 
   "module function" - {
-    lazy val cpg = Py2CpgTestContext.buildCpg(
-      """
+    lazy val cpg = Py2CpgTestContext.buildCpg("""
         |""".stripMargin)
     "test existence of MODULE modifier on module method node" in {
       cpg.method
         .name("<module>")
-        .modifier.modifierType(ModifierTypes.MODULE).nonEmpty shouldBe true
+        .modifier
+        .modifierType(ModifierTypes.MODULE)
+        .nonEmpty shouldBe true
     }
   }
 }
