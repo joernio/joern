@@ -96,6 +96,7 @@ class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode
         "<module>",
         methodFullName,
         Some("<module>"),
+        ModifierTypes.VIRTUAL :: ModifierTypes.MODULE :: Nil,
         parameterProvider = () => MethodParameters.empty(),
         bodyProvider = () =>
           createBuiltinIdentifiers(memOpCalculator.names)
@@ -332,6 +333,7 @@ class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode
         methodName,
         methodFullName,
         scopeName,
+        ModifierTypes.VIRTUAL :: Nil,
         parameterProvider,
         bodyProvider,
         returns,
@@ -351,6 +353,7 @@ class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode
     name: String,
     fullName: String,
     scopeName: Option[String],
+    modifiers: List[String],
     parameterProvider: () => MethodParameters,
     bodyProvider: () => Iterable[nodes.NewNode],
     returns: Option[ast.iexpr],
@@ -367,8 +370,12 @@ class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode
 
     contextStack.pushMethod(scopeName, methodNode, blockNode, methodRefNode)
 
-    val virtualModifierNode = nodeBuilder.modifierNode(ModifierTypes.VIRTUAL)
-    edgeBuilder.astEdge(virtualModifierNode, methodNode, 0)
+    var order = 0
+    for (modifier <- modifiers) {
+      val modifierNode = nodeBuilder.modifierNode(modifier)
+      edgeBuilder.astEdge(modifierNode, methodNode, order)
+      order += 1
+    }
 
     val methodParameter = parameterProvider()
     val parameterOrder  = new AutoIncIndex(methodParameter.posStartIndex)
@@ -601,6 +608,7 @@ class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode
       adapterMethodName,
       adapterMethodFullName,
       Some(adaptedMethodName),
+      ModifierTypes.VIRTUAL :: Nil,
       parameterProvider = () => {
         MethodParameters(
           0,
@@ -692,6 +700,7 @@ class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode
       methodName,
       methodFullName,
       Some(methodName),
+      ModifierTypes.VIRTUAL :: Nil,
       parameterProvider = () => {
         MethodParameters(1, convert(parametersWithoutSelf, 1))
       },
@@ -742,6 +751,7 @@ class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode
       newMethodName,
       newMethodStubFullName,
       Some(newMethodName),
+      ModifierTypes.VIRTUAL :: Nil,
       parameterProvider = () => {
         MethodParameters(
           0,
