@@ -1,0 +1,56 @@
+// function name;   r1, r2;     p1_t1, p1_t2;       p2_t1; ...
+add_post_meta;      int, bool;  int;                string;     mixed;    bool
+apply_filters;      mixed;        string;             mixed;        mixed
+array_map;          array;      callable, null;     array;      array;  array
+array_merge;        array;      array;              array;      array
+array_walk_recursive;   bool;   array, object;      callable;   mixed
+base64_decode;      string;     string;             bool
+base64_encode;      string;     string
+count;              int;        array, countable;   int
+current;            mixed;        array, object
+do_action;          ;           string;             mixed;
+echo;               void;       string
+empty;              bool;       mixed
+explode;            array;      string;             string;     int
+floatval;           float;      mixed
+in_array;           bool;       mixed;                array;      bool
+intval;             int;        mixed
+is_array;           bool;       mixed
+is_bool;            bool;       mixed
+is_double;          bool;       mixed
+is_float;           bool;       mixed
+is_int;             bool;       mixed
+is_integer;         bool;       mixed
+is_iterable;        bool;       mixed
+is_long;            bool;       mixed
+is_null;            bool;       mixed
+is_numeric;         bool;       mixed
+is_object;          bool;       mixed
+is_real;            bool;       mixed
+is_resource;        bool;       mixed
+is_scalar;          bool;       mixed
+is_string;          bool;       mixed
+isset;              bool;       mixed;                array;      bool
+list;               array;      mixed;                mixed;        mixed;    mixed
+maybe_unserialize;  mixed;        string
+number_format;      string;     float;              int;        string, null;   string, null
+preg_match;         int, bool;  string;             string;     array;  int;    int
+preg_match_all;     int, bool;  string;             string;     array;  int;    int
+preg_replace;       string, array, null;    string, array;  string, array; string, array;   int; int
+printf;             int;        string;             mixed;        mixed;    mixed;    mixed
+rawurldecode;       string;     string
+rtrim;              string;     string;             string
+selected;           string;     mixed;                mixed;        bool
+serialize;          string;     mixed
+sort;               bool;       array;              int
+sprintf;            string;     string;             mixed
+strip_tags;         string;     string;             array, string, null
+strpos;             int, bool;  string;             string;     int
+strtolower;         string;     string
+strtotime;          int, bool;  string;             int, null
+substr;             string;     string;             int;        int, null
+trim;               string;     string;             string
+unserialize;        mixed;        string;             array
+urldecode;          string;     string
+var_dump;           ;           mixed;                mixed
+wp_json_encode;     string,bool;    mixed;            int;    int
