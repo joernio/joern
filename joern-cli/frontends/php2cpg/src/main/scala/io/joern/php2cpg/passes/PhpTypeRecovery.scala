@@ -52,12 +52,8 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
   override protected def isConstructor(name: String): Boolean =
     !name.isBlank && name.charAt(0).isUpper
 
-  override def assignments: Iterator[Assignment] = {
-    logger.debug(
-      s"[assignments] assignments: ${cu.ast.isCall.nameExact(Operators.assignment).l.map(a => a.code).mkString("; ")}"
-    )
+  override def assignments: Iterator[Assignment] =
     cu.ast.isCall.nameExact(Operators.assignment).map(new OpNodes.Assignment(_))
-  }
 
   protected def unresolvedDynamicCalls: Iterator[Call] = cu.ast.isCall
     .filter(_.dispatchType == DispatchTypes.DYNAMIC_DISPATCH)
@@ -180,7 +176,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
 
   /* Reference the PythonTypeRecovery implementation. The XTypeRecovery one seems incorrect. */
   override protected def getFieldParents(fa: FieldAccess): Set[String] = {
-    if (fa.method.name == "<module>") {
+    if (fa.method.name == "<global>") {
       Set(fa.method.fullName)
     } else if (fa.method.typeDecl.nonEmpty) {
       val parentTypes       = fa.method.typeDecl.fullName.toSet
@@ -200,9 +196,9 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
 
   override protected def indexAccessToCollectionVar(c: Call): Option[CollectionVar] = {
     def callName(x: Call) =
-      if (x.name.equals(Operators.fieldAccess))
+      if (x.name == Operators.fieldAccess)
         getFieldName(new FieldAccess(x))
-      else if (x.name.equals(Operators.indexAccess))
+      else if (x.name == Operators.indexAccess)
         indexAccessToCollectionVar(x)
           .map(cv => s"${cv.identifier}[${cv.idx}]")
           .getOrElse(XTypeRecovery.DummyIndexAccess)
@@ -241,7 +237,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
       .fullNameExact(methodFullNames: _*)
       .methodReturn
       .flatMap(mr => mr.typeFullName +: mr.dynamicTypeHintFullName)
-      .filterNot(_.equals("ANY"))
+      .filterNot(_ == "ANY")
       .filterNot(_.endsWith("alloc.<init>"))
       .filterNot(_.endsWith(s"${XTypeRecovery.DummyReturnType}"))
       .toSet
@@ -265,7 +261,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
       c.argument(0) match {
         case p: Identifier => {
           val ts = (p.typeFullName +: p.dynamicTypeHintFullName)
-            .filterNot(_.equals("ANY"))
+            .filterNot(_ == "ANY")
             .distinct
           ts match {
             case Seq() =>
