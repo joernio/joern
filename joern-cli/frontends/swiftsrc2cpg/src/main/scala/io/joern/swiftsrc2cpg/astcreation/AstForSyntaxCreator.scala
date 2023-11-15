@@ -8,6 +8,8 @@ import io.joern.x2cpg.ValidationMode
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.nodes.NewModifier
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
+import io.shiftleft.codepropertygraph.generated.nodes.NewAnnotationParameter
+import io.shiftleft.codepropertygraph.generated.nodes.NewAnnotationParameterAssign
 
 trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -17,10 +19,19 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForArrayElementSyntax(node: ArrayElementSyntax): Ast                         = notHandledYet(node)
 
   private def astForAttributeSyntax(node: AttributeSyntax): Ast = {
-    val arguments     = node.arguments.map(astForNode).toList
+    val argumentAsts = node.arguments match {
+      case Some(argument) =>
+        val argumentAst    = astForNode(argument)
+        val parameter      = NewAnnotationParameter().code("argument")
+        val assign         = NewAnnotationParameterAssign().code(code(argument))
+        val assignChildren = List(Ast(parameter), argumentAst)
+        setArgumentIndices(assignChildren)
+        List(Ast(assign).withChild(Ast(parameter)).withChild(argumentAst))
+      case None => Nil
+    }
     val attributeCode = code(node)
     val name          = code(node.attributeName)
-    annotationAst(annotationNode(node, attributeCode, name, name), arguments)
+    annotationAst(annotationNode(node, attributeCode, name, name), argumentAsts)
   }
 
   private def astForAvailabilityArgumentSyntax(node: AvailabilityArgumentSyntax): Ast   = notHandledYet(node)
