@@ -5,6 +5,12 @@ import io.shiftleft.semanticcpg.language._
 
 class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture() {
 
+  /* TODO: Future tests to specify correct type recovery behaviors:
+   * - Method call inherited from a super class should be recovered
+   * - A type hint on a parameter should be sufficient to resolve method full names at calls
+   * - Parameter types on builtins with variadic parameters
+   */
+
   "literals declared from built-in types" should {
     lazy val cpg = code("""
       |<?php
@@ -361,9 +367,6 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture() {
         |}
       """.stripMargin).cpg
 
-    /* This seems like it's outside of the type recovery pass? More appropriate
-     * in the AST generation?
-     */
     "be properly resolved when called with $this" in {
       val List(fooCall) = cpg.method("bar").ast.isCall.take(1).l
       fooCall.methodFullName shouldBe "ClassA->foo"
@@ -419,11 +422,4 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture() {
       barMethod.methodReturn.dynamicTypeHintFullName shouldBe Seq("int")
     }
   }
-
-  /* TODO: remaining tests:
-   * - Method call inherited from a super class should be recovered
-   * - A type hint on a parameter should be sufficient to resolve method full names at calls
-   * - Parameter types on builtins with variadic parameters
-   */
-
 }
