@@ -238,6 +238,10 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
     literalNode(string, Some(Constants.builtinStrType), lineAndColumn)
   }
 
+  def bytesLiteralNode(string: String, lineAndColumn: LineAndColumn): nodes.NewLiteral = {
+    literalNode(string, Some(Constants.builtinBytesType), lineAndColumn)
+  }
+
   def intLiteralNode(string: String, lineAndColumn: LineAndColumn): nodes.NewLiteral = {
     literalNode(string, Some(Constants.builtinIntType), lineAndColumn)
   }

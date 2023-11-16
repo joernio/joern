@@ -1816,10 +1816,17 @@ class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode
   def convert(constant: ast.Constant): nodes.NewNode = {
     constant.value match {
       case stringConstant: ast.StringConstant =>
-        nodeBuilder.stringLiteralNode(
-          stringConstant.prefix + stringConstant.quote + stringConstant.value + stringConstant.quote,
-          lineAndColOf(constant)
-        )
+        if (stringConstant.prefix.contains("b") || stringConstant.prefix.contains("B")) {
+          nodeBuilder.bytesLiteralNode(
+            stringConstant.prefix + stringConstant.quote + stringConstant.value + stringConstant.quote,
+            lineAndColOf(constant)
+          )
+        } else {
+          nodeBuilder.stringLiteralNode(
+            stringConstant.prefix + stringConstant.quote + stringConstant.value + stringConstant.quote,
+            lineAndColOf(constant)
+          )
+        }
       case stringConstant: ast.JoinedStringConstant =>
         nodeBuilder.stringLiteralNode(stringConstant.value, lineAndColOf(constant))
       case boolConstant: ast.BoolConstant =>

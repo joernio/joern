@@ -5,14 +5,14 @@ import io.shiftleft.semanticcpg.language.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
-class NumCpgTests extends AnyFreeSpec with Matchers {
-  lazy val cpg = Py2CpgTestContext.buildCpg("""1""".stripMargin)
+class StrLiteralCpgTests extends AnyFreeSpec with Matchers {
+  lazy val cpg = Py2CpgTestContext.buildCpg(""""abc"""".stripMargin)
 
-  "test num literal node properties" in {
+  "test string literal node properties" in {
     val literal = cpg.literal.head
-    literal.code shouldBe "1"
+    literal.code shouldBe "\"abc\""
     literal.typeFullName shouldBe Constants.ANY
-    literal.dynamicTypeHintFullName should contain only (Constants.builtinIntType)
+    literal.dynamicTypeHintFullName should contain only (Constants.builtinStrType)
     literal.lineNumber shouldBe Some(1)
     literal.columnNumber shouldBe Some(1)
   }
