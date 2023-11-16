@@ -32,9 +32,9 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
     "have correct closure bindings" in AstFixture("""
         |func foo() -> {
-        |  var x = 1
+        |  let x = 1
         |  func bar() -> {
-        |    var x = 2
+        |    x = 2
         |  }
         |}
         |""".stripMargin) { cpg =>
@@ -43,7 +43,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(fooLocalX)      = fooBlock.astChildren.isLocal.nameExact("x").l
       val List(barRef)         = fooBlock.astChildren.isCall.astChildren.isMethodRef.l
       val List(closureBinding) = barRef.captureOut.l
-      closureBinding.closureBindingId shouldBe Option("code.js:<global>:foo:bar:x")
+      closureBinding.closureBindingId shouldBe Option("code.swift:<global>:foo:bar:x")
       closureBinding.closureOriginalName shouldBe Option("x")
       closureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
       closureBinding.refOut.head shouldBe fooLocalX
@@ -51,7 +51,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(barMethod)      = cpg.method.nameExact("bar").l
       val List(barMethodBlock) = barMethod.astChildren.isBlock.l
       val List(barLocals)      = barMethodBlock.astChildren.isLocal.l
-      barLocals.closureBindingId shouldBe Option("code.js:<global>:foo:bar:x")
+      barLocals.closureBindingId shouldBe Option("code.swift:<global>:foo:bar:x")
 
       val List(identifierX) = barMethodBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("x").l
       identifierX.refOut.head shouldBe barLocals
