@@ -48,6 +48,7 @@ class FileCreationPass(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {
         originalFileNameToNode.get(x)
       },
       dstFullNameKey = PropertyNames.FILENAME,
+      dstDefaultPropertyValue = File.PropertyDefaults.FILENAME,
       dstGraph,
       Some(createFileIfDoesNotExist)
     )

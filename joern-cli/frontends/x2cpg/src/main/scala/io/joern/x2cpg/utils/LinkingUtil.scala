@@ -46,6 +46,7 @@ trait LinkingUtil {
     edgeType: String,
     dstNodeMap: String => Option[StoredNode],
     dstFullNameKey: String,
+    dstDefaultPropertyValue: Any,
     dstGraph: DiffGraphBuilder,
     dstNotExistsHandler: Option[(StoredNode, String) => Unit]
   ): Unit = {
@@ -61,7 +62,7 @@ trait LinkingUtil {
           .propertyOption[String](dstFullNameKey)
           .filter { dstFullName =>
             val dereferenceDstFullName = dereference.dereferenceTypeFullName(dstFullName)
-            srcNode.propertyDefaultValue(dstFullNameKey) != dereferenceDstFullName
+            dstDefaultPropertyValue != dereferenceDstFullName
           }
           .map { dstFullName =>
             // for `UNKNOWN` this is not always set, so we're using an Option here

@@ -16,6 +16,7 @@ class TypeUsagePass(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {
       edgeType = EdgeTypes.REF,
       dstNodeMap = typeDeclFullNameToNode(cpg, _),
       dstFullNameKey = PropertyNames.TYPE_DECL_FULL_NAME,
+      dstDefaultPropertyValue = TODO,
       dstGraph,
       None
     )
@@ -41,6 +42,7 @@ class TypeUsagePass(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {
       edgeType = EdgeTypes.EVAL_TYPE,
       dstNodeMap = typeFullNameToNode(cpg, _),
       dstFullNameKey = "TYPE_FULL_NAME",
+      dstDefaultPropertyValue = TODO,
       dstGraph,
       None
     )
