@@ -3556,25 +3556,34 @@ iexpr setOrDictOrSetCompOrDictComp(): {
   ArrayList<iexpr> valueExpressions = new ArrayList<iexpr>();
   ArrayList<Comprehension> comprehensions = null;
   // If isSet is false it is a dict.
-  boolean isSet = true;
+  boolean isSet = false;
 } {
   <CURLY_OPEN> { startToken = token; }
   (
     (
       (
-        dictKeyOrSetValueExpr = expression()
-      | dictKeyOrSetValueExpr = starredBitwiseOr()
-      | (<DOUBLE_STAR> doubleStarExpr = expression() { isSet = false; })
+        (
+          (dictKeyOrSetValueExpr = expression()
+          | dictKeyOrSetValueExpr = starredBitwiseOr()
+          )
+          (
+            (
+              <COLON> dictValueExpr = expression()
+              {
+                if (doubleStarExpr != null) {
+                  throw new ParseException("TODO");
+                }
+              }
+            )
+          | (
+              {
+                isSet = true;
+              }
+            )
+          )
+        )
+      | <DOUBLE_STAR> doubleStarExpr = expression()
       )
-      (
-        <COLON> dictValueExpr = expression()
-        {
-          if (doubleStarExpr != null) {
-            throw new ParseException("TODO");
-          }
-          isSet = false;
-        }
-      )?
       (
         (comprehensions = forIfClauses())
       | (
