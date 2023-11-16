@@ -145,7 +145,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
                     done = true
                     someLocalNode
                 }
-              case _: BlockScopeElement => None
+              case _: BlockScopeElement =>
+                None
             }
           }
 

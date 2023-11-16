@@ -18,6 +18,45 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       assignY.code shouldBe """var y: String = "2""""
     }
 
+    "have corresponding type decl with correct bindings for function" in AstFixture("func method() -> {}") { cpg =>
+      val List(typeDecl) = cpg.typeDecl.nameExact("method").l
+      typeDecl.fullName should endWith(".swift:<global>:method")
+
+      val List(binding) = typeDecl.bindsOut.l
+      binding.name shouldBe ""
+      binding.signature shouldBe ""
+
+      val List(boundMethod) = binding.refOut.l
+      boundMethod shouldBe cpg.method.nameExact("method").head
+    }
+
+    "have correct closure bindings" in AstFixture("""
+        |func foo() -> {
+        |  var x = 1
+        |  func bar() -> {
+        |    var x = 2
+        |  }
+        |}
+        |""".stripMargin) { cpg =>
+      val List(fooMethod)      = cpg.method.nameExact("foo").l
+      val List(fooBlock)       = fooMethod.astChildren.isBlock.l
+      val List(fooLocalX)      = fooBlock.astChildren.isLocal.nameExact("x").l
+      val List(barRef)         = fooBlock.astChildren.isCall.astChildren.isMethodRef.l
+      val List(closureBinding) = barRef.captureOut.l
+      closureBinding.closureBindingId shouldBe Option("code.js:<global>:foo:bar:x")
+      closureBinding.closureOriginalName shouldBe Option("x")
+      closureBinding.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
+      closureBinding.refOut.head shouldBe fooLocalX
+
+      val List(barMethod)      = cpg.method.nameExact("bar").l
+      val List(barMethodBlock) = barMethod.astChildren.isBlock.l
+      val List(barLocals)      = barMethodBlock.astChildren.isLocal.l
+      barLocals.closureBindingId shouldBe Option("code.js:<global>:foo:bar:x")
+
+      val List(identifierX) = barMethodBlock.astChildren.isCall.astChildren.isIdentifier.nameExact("x").l
+      identifierX.refOut.head shouldBe barLocals
+    }
+
     "have correct structure for annotated function" in AstFixture("""
         |@bar(x: "y")
         |func foo() -> {

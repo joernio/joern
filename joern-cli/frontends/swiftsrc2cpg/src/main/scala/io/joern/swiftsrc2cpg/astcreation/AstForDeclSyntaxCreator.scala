@@ -15,6 +15,10 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 
+import scala.collection.immutable.AbstractSeq
+import scala.collection.immutable.LinearSeq
+import scala.xml.NodeSeq
+
 trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
@@ -28,7 +32,11 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForEnumDeclSyntax(node: EnumDeclSyntax): Ast                           = notHandledYet(node)
   private def astForExtensionDeclSyntax(node: ExtensionDeclSyntax): Ast                 = notHandledYet(node)
 
-  private def astForFunctionDeclSyntax(node: FunctionDeclSyntax): Ast = {
+  protected def astForFunctionLike(
+    node: FunctionDeclSyntax,
+    shouldCreateFunctionReference: Boolean = false,
+    shouldCreateAssignmentCall: Boolean = false
+  ): Ast = {
     // TODO: handle genericParameterClause
     // TODO: handle genericWhereClause
     val attributes = node.attributes.children.map(astForNode)
@@ -37,37 +45,93 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         .modifierType(ModifierTypes.VIRTUAL)
     val (methodName, methodFullName) = calcMethodNameAndFullName(node)
     val filename                     = parserResult.filename
-    val returnType                   = node.signature.returnClause.map(c => code(c.`type`)).getOrElse(Defines.Any)
+
+    val methodRefNode_ = if (!shouldCreateFunctionReference) {
+      None
+    } else {
+      Option(methodRefNode(node, methodName, methodFullName, methodFullName))
+    }
+
+    val callAst = if (shouldCreateAssignmentCall && shouldCreateFunctionReference) {
+      val idNode  = identifierNode(node, methodName)
+      val idLocal = localNode(node, methodName, methodName, methodFullName).order(0)
+      diffGraph.addEdge(localAstParentStack.head, idLocal, EdgeTypes.AST)
+      scope.addVariable(methodName, idLocal, BlockScope)
+      scope.addVariableReference(methodName, idNode)
+      val assignmentCode = s"func $methodName = ${code(node)}"
+      val assignment     = createAssignmentCallAst(idNode, methodRefNode_.get, assignmentCode, line(node), column(node))
+      assignment
+    } else {
+      Ast()
+    }
+
+    val capturingRefNode =
+      if (shouldCreateFunctionReference) {
+        methodRefNode_
+      } else {
+        typeRefIdStack.headOption
+      }
+
+    val returnType = node.signature.returnClause.map(c => code(c.`type`)).getOrElse(Defines.Any)
     registerType(returnType, returnType)
 
     val signature = s"$returnType $methodFullName ${code(node.signature.parameterClause)}"
 
     val codeString  = code(node)
     val methodNode_ = methodNode(node, methodName, codeString, methodFullName, Some(signature), filename)
-
+    val block       = blockNode(node, "<empty>", Defines.Any)
     methodAstParentStack.push(methodNode_)
-    scope.pushNewMethodScope(methodFullName, methodName, methodNode_, None)
+    scope.pushNewMethodScope(methodFullName, methodName, block, capturingRefNode)
+    localAstParentStack.push(block)
 
     val parameterAsts = node.signature.parameterClause.parameters.children.map(astForNode)
 
+    val bodyStmtAsts = node.body match {
+      case Some(bodyNode) =>
+        bodyNode.statements.children.toList match {
+          case Nil => List.empty[Ast]
+          case head :: Nil if head.item.isInstanceOf[ArrowExprSyntax] =>
+            val retCode = code(head)
+            List(returnAst(returnNode(head, retCode), List(astForNodeWithFunctionReference(head.item))))
+          case children =>
+            val childrenAsts = children.map(astForNode)
+            setArgumentIndices(childrenAsts)
+            childrenAsts
+        }
+      case None =>
+        List.empty[Ast]
+    }
+
     val methodReturnNode =
       newMethodReturnNode(returnType, dynamicTypeHintFullName = None, line = line(node), column = column(node))
-    val astForMethodBody = node.body.map(astForNode).getOrElse(Ast())
+
     val astForMethod =
       methodAstWithAnnotations(
         methodNode_,
         parameterAsts,
-        astForMethodBody,
+        blockAst(block, bodyStmtAsts),
         methodReturnNode,
         modifiers = modifiers,
         annotations = attributes
       )
 
     scope.popScope()
+    localAstParentStack.pop()
     methodAstParentStack.pop()
 
-    val typeDeclAst = createFunctionTypeAndTypeDecl(node, methodNode_, methodName, methodFullName)
-    astForMethod.merge(typeDeclAst)
+    val typeDeclAst = createFunctionTypeAndTypeDeclAst(node, methodNode_, methodName, methodFullName)
+    Ast.storeInDiffGraph(astForMethod, diffGraph)
+    Ast.storeInDiffGraph(typeDeclAst, diffGraph)
+    diffGraph.addEdge(methodAstParentStack.head, methodNode_, EdgeTypes.AST)
+
+    methodRefNode_ match {
+      case Some(ref) if callAst.nodes.isEmpty => Ast(ref)
+      case _                                  => callAst
+    }
+  }
+
+  private def astForFunctionDeclSyntax(node: FunctionDeclSyntax): Ast = {
+    astForFunctionLike(node)
   }
 
   private def astForIfConfigDeclSyntax(node: IfConfigDeclSyntax): Ast               = notHandledYet(node)

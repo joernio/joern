@@ -214,35 +214,32 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     .columnNumber(column)
     .typeFullName(Defines.Any)
 
-  protected def createFunctionTypeAndTypeDecl(
-    node: FunctionDeclSyntax,
-    method: NewMethod,
+  protected def createFunctionTypeAndTypeDeclAst(
+    node: SwiftNode,
+    methodNode: NewMethod,
     methodName: String,
     methodFullName: String
   ): Ast = {
-    val normalizedName     = StringUtils.normalizeSpace(methodName)
-    val normalizedFullName = StringUtils.normalizeSpace(methodFullName)
+    registerType(methodName, methodFullName)
 
-    val parentNode: NewTypeDecl = methodAstParentStack.collectFirst { case t: NewTypeDecl => t }.getOrElse {
-      val astParentType     = methodAstParentStack.head.label
-      val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
-      val typeDeclNode_ = typeDeclNode(
+    val parentNode        = methodAstParentStack.head
+    val astParentType     = parentNode.label
+    val astParentFullName = parentNode.properties("FULL_NAME").toString
+    val functionTypeDeclNode =
+      typeDeclNode(
         node,
-        normalizedName,
-        normalizedFullName,
-        method.filename,
-        normalizedName,
-        astParentType,
-        astParentFullName
+        methodName,
+        methodFullName,
+        parserResult.filename,
+        methodName,
+        astParentType = astParentType,
+        astParentFullName = astParentFullName,
+        List(Defines.Any)
       )
-      Ast.storeInDiffGraph(Ast(typeDeclNode_), diffGraph)
-      typeDeclNode_
-    }
+    Ast.storeInDiffGraph(Ast(functionTypeDeclNode), diffGraph)
 
-    method.astParentFullName = parentNode.fullName
-    method.astParentType = parentNode.label
-    val functionBinding = NewBinding().name("").signature("").methodFullName("")
-    Ast(parentNode).withBindsEdge(parentNode, functionBinding).withRefEdge(functionBinding, method)
+    val bindingNode = NewBinding().name("").signature("")
+    Ast(functionTypeDeclNode).withBindsEdge(functionTypeDeclNode, bindingNode).withRefEdge(bindingNode, methodNode)
   }
 
 }

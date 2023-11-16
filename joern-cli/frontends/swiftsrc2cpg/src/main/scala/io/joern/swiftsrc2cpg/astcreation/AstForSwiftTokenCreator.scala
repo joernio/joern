@@ -24,8 +24,10 @@ trait AstForSwiftTokenCreator(implicit withSchemaValidation: ValidationMode) { t
     val name = code(node)
     Ast(identifierNode(node, name, name, Defines.Any))
   }
-  private def astForInfixQuestionMarkToken(node: infixQuestionMark): Ast             = Ast()
-  private def astForIntegerLiteralToken(node: integerLiteral): Ast                   = Ast()
+  private def astForInfixQuestionMarkToken(node: infixQuestionMark): Ast = Ast()
+  private def astForIntegerLiteralToken(node: integerLiteral): Ast = {
+    Ast(literalNode(node, code(node), Option(Defines.Int)))
+  }
   private def astForKeywordToken(node: keyword): Ast                                 = Ast()
   private def astForLeftAngleToken(node: leftAngle): Ast                             = Ast()
   private def astForLeftBraceToken(node: leftBrace): Ast                             = Ast()

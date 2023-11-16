@@ -3,24 +3,33 @@ package io.joern.swiftsrc2cpg.astcreation
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.Operators
 
 trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
-  private def astForArrayExprSyntax(node: ArrayExprSyntax): Ast                                 = notHandledYet(node)
-  private def astForArrowExprSyntax(node: ArrowExprSyntax): Ast                                 = notHandledYet(node)
-  private def astForAsExprSyntax(node: AsExprSyntax): Ast                                       = notHandledYet(node)
-  private def astForAssignmentExprSyntax(node: AssignmentExprSyntax): Ast                       = notHandledYet(node)
-  private def astForAwaitExprSyntax(node: AwaitExprSyntax): Ast                                 = notHandledYet(node)
-  private def astForBinaryOperatorExprSyntax(node: BinaryOperatorExprSyntax): Ast               = notHandledYet(node)
-  private def astForBooleanLiteralExprSyntax(node: BooleanLiteralExprSyntax): Ast               = notHandledYet(node)
-  private def astForBorrowExprSyntax(node: BorrowExprSyntax): Ast                               = notHandledYet(node)
-  private def astForCanImportExprSyntax(node: CanImportExprSyntax): Ast                         = notHandledYet(node)
-  private def astForCanImportVersionInfoSyntax(node: CanImportVersionInfoSyntax): Ast           = notHandledYet(node)
-  private def astForClosureExprSyntax(node: ClosureExprSyntax): Ast                             = notHandledYet(node)
-  private def astForConsumeExprSyntax(node: ConsumeExprSyntax): Ast                             = notHandledYet(node)
-  private def astForCopyExprSyntax(node: CopyExprSyntax): Ast                                   = notHandledYet(node)
-  private def astForDeclReferenceExprSyntax(node: DeclReferenceExprSyntax): Ast                 = notHandledYet(node)
+  private def astForArrayExprSyntax(node: ArrayExprSyntax): Ast                       = notHandledYet(node)
+  private def astForArrowExprSyntax(node: ArrowExprSyntax): Ast                       = notHandledYet(node)
+  private def astForAsExprSyntax(node: AsExprSyntax): Ast                             = notHandledYet(node)
+  private def astForAssignmentExprSyntax(node: AssignmentExprSyntax): Ast             = notHandledYet(node)
+  private def astForAwaitExprSyntax(node: AwaitExprSyntax): Ast                       = notHandledYet(node)
+  private def astForBinaryOperatorExprSyntax(node: BinaryOperatorExprSyntax): Ast     = notHandledYet(node)
+  private def astForBooleanLiteralExprSyntax(node: BooleanLiteralExprSyntax): Ast     = notHandledYet(node)
+  private def astForBorrowExprSyntax(node: BorrowExprSyntax): Ast                     = notHandledYet(node)
+  private def astForCanImportExprSyntax(node: CanImportExprSyntax): Ast               = notHandledYet(node)
+  private def astForCanImportVersionInfoSyntax(node: CanImportVersionInfoSyntax): Ast = notHandledYet(node)
+  private def astForClosureExprSyntax(node: ClosureExprSyntax): Ast                   = notHandledYet(node)
+  private def astForConsumeExprSyntax(node: ConsumeExprSyntax): Ast                   = notHandledYet(node)
+  private def astForCopyExprSyntax(node: CopyExprSyntax): Ast                         = notHandledYet(node)
+  private def astForDeclReferenceExprSyntax(node: DeclReferenceExprSyntax): Ast = {
+    // TODO: proper handling
+    notHandledYet(node)
+    val name      = code(node)
+    val identNode = identifierNode(node, name)
+    scope.addVariableReference(name, identNode)
+    Ast(identNode)
+  }
   private def astForDictionaryExprSyntax(node: DictionaryExprSyntax): Ast                       = notHandledYet(node)
   private def astForDiscardAssignmentExprSyntax(node: DiscardAssignmentExprSyntax): Ast         = notHandledYet(node)
   private def astForDoExprSyntax(node: DoExprSyntax): Ast                                       = notHandledYet(node)
@@ -31,35 +40,67 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForGenericSpecializationExprSyntax(node: GenericSpecializationExprSyntax): Ast = notHandledYet(node)
   private def astForIfExprSyntax(node: IfExprSyntax): Ast                                       = notHandledYet(node)
   private def astForInOutExprSyntax(node: InOutExprSyntax): Ast                                 = notHandledYet(node)
-  private def astForInfixOperatorExprSyntax(node: InfixOperatorExprSyntax): Ast                 = notHandledYet(node)
-  private def astForIntegerLiteralExprSyntax(node: IntegerLiteralExprSyntax): Ast               = notHandledYet(node)
-  private def astForIsExprSyntax(node: IsExprSyntax): Ast                                       = notHandledYet(node)
-  private def astForKeyPathExprSyntax(node: KeyPathExprSyntax): Ast                             = notHandledYet(node)
-  private def astForMacroExpansionExprSyntax(node: MacroExpansionExprSyntax): Ast               = notHandledYet(node)
-  private def astForMemberAccessExprSyntax(node: MemberAccessExprSyntax): Ast                   = notHandledYet(node)
-  private def astForMissingExprSyntax(node: MissingExprSyntax): Ast                             = notHandledYet(node)
-  private def astForNilLiteralExprSyntax(node: NilLiteralExprSyntax): Ast                       = notHandledYet(node)
-  private def astForOptionalChainingExprSyntax(node: OptionalChainingExprSyntax): Ast           = notHandledYet(node)
-  private def astForPackElementExprSyntax(node: PackElementExprSyntax): Ast                     = notHandledYet(node)
-  private def astForPackExpansionExprSyntax(node: PackExpansionExprSyntax): Ast                 = notHandledYet(node)
-  private def astForPatternExprSyntax(node: PatternExprSyntax): Ast                             = notHandledYet(node)
-  private def astForPostfixIfConfigExprSyntax(node: PostfixIfConfigExprSyntax): Ast             = notHandledYet(node)
-  private def astForPostfixOperatorExprSyntax(node: PostfixOperatorExprSyntax): Ast             = notHandledYet(node)
-  private def astForPrefixOperatorExprSyntax(node: PrefixOperatorExprSyntax): Ast               = notHandledYet(node)
-  private def astForRegexLiteralExprSyntax(node: RegexLiteralExprSyntax): Ast                   = notHandledYet(node)
-  private def astForSequenceExprSyntax(node: SequenceExprSyntax): Ast                           = notHandledYet(node)
-  private def astForSimpleStringLiteralExprSyntax(node: SimpleStringLiteralExprSyntax): Ast     = notHandledYet(node)
-  private def astForStringLiteralExprSyntax(node: StringLiteralExprSyntax): Ast                 = notHandledYet(node)
-  private def astForSubscriptCallExprSyntax(node: SubscriptCallExprSyntax): Ast                 = notHandledYet(node)
-  private def astForSuperExprSyntax(node: SuperExprSyntax): Ast                                 = notHandledYet(node)
-  private def astForSwitchExprSyntax(node: SwitchExprSyntax): Ast                               = notHandledYet(node)
-  private def astForTernaryExprSyntax(node: TernaryExprSyntax): Ast                             = notHandledYet(node)
-  private def astForTryExprSyntax(node: TryExprSyntax): Ast                                     = notHandledYet(node)
-  private def astForTupleExprSyntax(node: TupleExprSyntax): Ast                                 = notHandledYet(node)
-  private def astForTypeExprSyntax(node: TypeExprSyntax): Ast                                   = notHandledYet(node)
-  private def astForUnresolvedAsExprSyntax(node: UnresolvedAsExprSyntax): Ast                   = notHandledYet(node)
-  private def astForUnresolvedIsExprSyntax(node: UnresolvedIsExprSyntax): Ast                   = notHandledYet(node)
-  private def astForUnresolvedTernaryExprSyntax(node: UnresolvedTernaryExprSyntax): Ast         = notHandledYet(node)
+  private def astForInfixOperatorExprSyntax(node: InfixOperatorExprSyntax): Ast = {
+    val op = code(node.operator) match {
+      case "="    => Operators.assignment
+      case "+="   => Operators.assignmentPlus
+      case "-="   => Operators.assignmentMinus
+      case "*="   => Operators.assignmentMultiplication
+      case "/="   => Operators.assignmentDivision
+      case "%="   => Operators.assignmentModulo
+      case "**="  => Operators.assignmentExponentiation
+      case "&="   => Operators.assignmentAnd
+      case "&&="  => Operators.assignmentAnd
+      case "|="   => Operators.assignmentOr
+      case "||="  => Operators.assignmentOr
+      case "^="   => Operators.assignmentXor
+      case "<<="  => Operators.assignmentShiftLeft
+      case ">>="  => Operators.assignmentArithmeticShiftRight
+      case ">>>=" => Operators.assignmentLogicalShiftRight
+      case "??="  => Operators.notNullAssert
+      case other =>
+        logger.warn(s"Unknown assignment operator: '$other'")
+        Operators.assignment
+    }
+
+    val lhsAst    = astForNode(node.leftOperand)
+    val rhsAst    = astForNodeWithFunctionReference(node.rightOperand)
+    val callNode_ = callNode(node, code(node), op, DispatchTypes.STATIC_DISPATCH)
+    val argAsts   = List(lhsAst, rhsAst)
+    callAst(callNode_, argAsts)
+  }
+
+  private def astForIntegerLiteralExprSyntax(node: IntegerLiteralExprSyntax): Ast = {
+    astForNode(node.literal)
+  }
+
+  private def astForIsExprSyntax(node: IsExprSyntax): Ast                                   = notHandledYet(node)
+  private def astForKeyPathExprSyntax(node: KeyPathExprSyntax): Ast                         = notHandledYet(node)
+  private def astForMacroExpansionExprSyntax(node: MacroExpansionExprSyntax): Ast           = notHandledYet(node)
+  private def astForMemberAccessExprSyntax(node: MemberAccessExprSyntax): Ast               = notHandledYet(node)
+  private def astForMissingExprSyntax(node: MissingExprSyntax): Ast                         = notHandledYet(node)
+  private def astForNilLiteralExprSyntax(node: NilLiteralExprSyntax): Ast                   = notHandledYet(node)
+  private def astForOptionalChainingExprSyntax(node: OptionalChainingExprSyntax): Ast       = notHandledYet(node)
+  private def astForPackElementExprSyntax(node: PackElementExprSyntax): Ast                 = notHandledYet(node)
+  private def astForPackExpansionExprSyntax(node: PackExpansionExprSyntax): Ast             = notHandledYet(node)
+  private def astForPatternExprSyntax(node: PatternExprSyntax): Ast                         = notHandledYet(node)
+  private def astForPostfixIfConfigExprSyntax(node: PostfixIfConfigExprSyntax): Ast         = notHandledYet(node)
+  private def astForPostfixOperatorExprSyntax(node: PostfixOperatorExprSyntax): Ast         = notHandledYet(node)
+  private def astForPrefixOperatorExprSyntax(node: PrefixOperatorExprSyntax): Ast           = notHandledYet(node)
+  private def astForRegexLiteralExprSyntax(node: RegexLiteralExprSyntax): Ast               = notHandledYet(node)
+  private def astForSequenceExprSyntax(node: SequenceExprSyntax): Ast                       = notHandledYet(node)
+  private def astForSimpleStringLiteralExprSyntax(node: SimpleStringLiteralExprSyntax): Ast = notHandledYet(node)
+  private def astForStringLiteralExprSyntax(node: StringLiteralExprSyntax): Ast             = notHandledYet(node)
+  private def astForSubscriptCallExprSyntax(node: SubscriptCallExprSyntax): Ast             = notHandledYet(node)
+  private def astForSuperExprSyntax(node: SuperExprSyntax): Ast                             = notHandledYet(node)
+  private def astForSwitchExprSyntax(node: SwitchExprSyntax): Ast                           = notHandledYet(node)
+  private def astForTernaryExprSyntax(node: TernaryExprSyntax): Ast                         = notHandledYet(node)
+  private def astForTryExprSyntax(node: TryExprSyntax): Ast                                 = notHandledYet(node)
+  private def astForTupleExprSyntax(node: TupleExprSyntax): Ast                             = notHandledYet(node)
+  private def astForTypeExprSyntax(node: TypeExprSyntax): Ast                               = notHandledYet(node)
+  private def astForUnresolvedAsExprSyntax(node: UnresolvedAsExprSyntax): Ast               = notHandledYet(node)
+  private def astForUnresolvedIsExprSyntax(node: UnresolvedIsExprSyntax): Ast               = notHandledYet(node)
+  private def astForUnresolvedTernaryExprSyntax(node: UnresolvedTernaryExprSyntax): Ast     = notHandledYet(node)
 
   protected def astForExprSyntax(exprSyntax: ExprSyntax): Ast = exprSyntax match {
     case node: ArrayExprSyntax                 => astForArrayExprSyntax(node)

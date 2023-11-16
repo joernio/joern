@@ -78,6 +78,22 @@ class AstCreator(
     Ast(fakeGlobalTypeDecl).withChild(methodAst(fakeGlobalMethod, Seq.empty, sourceFileAst, methodReturn))
   }
 
+  protected def astForNodeWithFunctionReferenceAndCall(node: SwiftNode): Ast = {
+    node match {
+      case func: FunctionDeclSyntax =>
+        astForFunctionLike(func, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
+      case _ => astForNode(node)
+    }
+  }
+
+  protected def astForNodeWithFunctionReference(node: SwiftNode): Ast = {
+    node match {
+      case func: FunctionDeclSyntax =>
+        astForFunctionLike(func, shouldCreateFunctionReference = true)
+      case _ => astForNode(node)
+    }
+  }
+
   protected def astForNode(node: SwiftNode): Ast = node match {
     case swiftToken: SwiftToken             => astForSwiftToken(swiftToken)
     case syntax: Syntax                     => astForSyntax(syntax)

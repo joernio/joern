@@ -51,7 +51,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForClosureShorthandParameterSyntax(node: ClosureShorthandParameterSyntax): Ast = notHandledYet(node)
   private def astForClosureSignatureSyntax(node: ClosureSignatureSyntax): Ast                   = notHandledYet(node)
   private def astForCodeBlockItemSyntax(node: CodeBlockItemSyntax): Ast = {
-    astForNode(node.item)
+    astForNodeWithFunctionReferenceAndCall(node.item)
   }
   private def astForCodeBlockSyntax(node: CodeBlockSyntax): Ast = {
     astForNode(node.statements)
@@ -143,10 +143,14 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForImplementsAttributeArgumentsSyntax(node: ImplementsAttributeArgumentsSyntax): Ast = notHandledYet(
     node
   )
-  private def astForImportPathComponentSyntax(node: ImportPathComponentSyntax): Ast             = notHandledYet(node)
-  private def astForInheritanceClauseSyntax(node: InheritanceClauseSyntax): Ast                 = notHandledYet(node)
-  private def astForInheritedTypeSyntax(node: InheritedTypeSyntax): Ast                         = notHandledYet(node)
-  private def astForInitializerClauseSyntax(node: InitializerClauseSyntax): Ast                 = notHandledYet(node)
+  private def astForImportPathComponentSyntax(node: ImportPathComponentSyntax): Ast = notHandledYet(node)
+  private def astForInheritanceClauseSyntax(node: InheritanceClauseSyntax): Ast     = notHandledYet(node)
+  private def astForInheritedTypeSyntax(node: InheritedTypeSyntax): Ast             = notHandledYet(node)
+
+  private def astForInitializerClauseSyntax(node: InitializerClauseSyntax): Ast = {
+    astForNodeWithFunctionReference(node.value)
+  }
+
   private def astForKeyPathComponentSyntax(node: KeyPathComponentSyntax): Ast                   = notHandledYet(node)
   private def astForKeyPathOptionalComponentSyntax(node: KeyPathOptionalComponentSyntax): Ast   = notHandledYet(node)
   private def astForKeyPathPropertyComponentSyntax(node: KeyPathPropertyComponentSyntax): Ast   = notHandledYet(node)
