@@ -1,4 +1,4 @@
-package io.joern.php2cpg.datastructures
+package io.joern.php2cpg.utils
 
 import io.joern.php2cpg.astcreation.AstCreator.NameConstants
 import io.joern.php2cpg.utils.PhpScopeElement
@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
-class Scope extends X2CpgScope[String, NewNode, PhpScopeElement] {
+class Scope(implicit nextClosureName: () => String) extends X2CpgScope[String, NewNode, PhpScopeElement] {
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 

@@ -51,8 +51,8 @@ class TsAstCreationPassTest extends AbstractPassTest {
         |const a = (): string | undefined => undefined;
         |(({ [a() ?? "d"]: c = "" }) => {})();
         |""".stripMargin) { cpg =>
-      cpg.method.name.sorted.l shouldBe List(":program", "anonymous", "anonymous1")
-      val params = cpg.method.nameExact("anonymous1").parameter.l
+      cpg.method.name.sorted.l shouldBe List(":program", "<lambda>0", "<lambda>1")
+      val params = cpg.method.nameExact("<lambda>1").parameter.l
       params.code.l shouldBe List("this", """{ [a() ?? "d"]: c = "" }""")
       params.name.l shouldBe List("this", "param1_0")
     }
@@ -60,14 +60,14 @@ class TsAstCreationPassTest extends AbstractPassTest {
     "create methods for const exports" in TsAstFixture(
       "export const getApiA = (req: Request) => { const user = req.user as UserDocument; }"
     ) { cpg =>
-      cpg.method.name.sorted.l shouldBe List(":program", "anonymous")
+      cpg.method.name.sorted.l shouldBe List(":program", "<lambda>0")
       cpg.assignment.code.l shouldBe List(
         "const user = req.user as UserDocument",
         "const getApiA = (req: Request) => { const user = req.user as UserDocument; }",
         "exports.getApiA = getApiA"
       )
-      inside(cpg.method.name("anonymous").l) { case List(anon) =>
-        anon.fullName shouldBe "code.ts::program:anonymous"
+      inside(cpg.method.name("<lambda>0").l) { case List(anon) =>
+        anon.fullName shouldBe "code.ts::program:<lambda>0"
         anon.ast.isIdentifier.name.l shouldBe List("user", "req")
       }
     }

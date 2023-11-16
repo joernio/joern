@@ -1,37 +1,28 @@
 package io.joern.php2cpg.astcreation
 
 import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants, operatorSymbols}
-import io.joern.php2cpg.datastructures.{ArrayIndexTracker, Scope}
-import io.joern.php2cpg.parser.Domain.PhpModifiers.containsAccessModifier
+import io.joern.php2cpg.datastructures.ArrayIndexTracker
 import io.joern.php2cpg.parser.Domain.*
+import io.joern.php2cpg.parser.Domain.PhpModifiers.containsAccessModifier
+import io.joern.php2cpg.utils.Scope
 import io.joern.x2cpg.Ast.storeInDiffGraph
-import io.joern.x2cpg.datastructures.Global
-import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
-import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode}
 import io.joern.x2cpg.Defines.{StaticInitMethodName, UnresolvedNamespace, UnresolvedSignature}
-import io.joern.x2cpg.utils.NodeBuilders.{
-  newFieldIdentifierNode,
-  newIdentifierNode,
-  newMethodReturnNode,
-  newModifierNode,
-  newOperatorCallNode
-}
+import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
+import io.joern.x2cpg.utils.NodeBuilders.*
+import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
-import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
-import io.shiftleft.codepropertygraph.generated.nodes.Local.PropertyDefaults as LocalDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate
-import io.joern.x2cpg.passes.frontend.MetaDataPass
 
 class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidation: ValidationMode)
     extends AstCreatorBase(filename)
     with AstNodeBuilder[PhpNode, AstCreator] {
 
   private val logger          = LoggerFactory.getLogger(AstCreator.getClass)
-  private val scope           = new Scope()
+  private val scope           = new Scope()(() => nextClosureName())
   private val tmpKeyPool      = new IntervalKeyPool(first = 0, last = Long.MaxValue)
   private val globalNamespace = globalNamespaceBlock()
 

@@ -58,7 +58,7 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
       }
     }
 
-    "link exported anonymous functions across file boundaries correctly" in {
+    "link exported <lambda> functions across file boundaries correctly" in {
       val cpg: Cpg = code(
         """
           |const bar = require('./bar.js');
@@ -71,10 +71,10 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
       ).moreCode(
         """
           |module.exports = {
-          |  sayhi: function() { // this will be called anonymous
+          |  sayhi: function() { // this will be called <lambda>0
           |    console.log("Hello World!");
           |  },
-          |  saybye: function() { // this will be called anonymous1
+          |  saybye: function() { // this will be called <lambda>1
           |    console.log("Good-bye!");
           |  }
           |}
@@ -83,7 +83,7 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
       ).moreCode(
         """
           |module.exports = {
-          |  sayhowdy: function() { // this will be called anonymous
+          |  sayhowdy: function() { // this will be called <lambda>0
           |    console.log("Howdy World!");
           |  }
           |}
@@ -91,28 +91,28 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
         "baz.js"
       )
 
-      inside(cpg.method.fullNameExact("bar.js::program:anonymous").l) { case List(m) =>
-        m.name shouldBe "anonymous"
-        m.fullName shouldBe "bar.js::program:anonymous"
+      inside(cpg.method.fullNameExact("bar.js::program:<lambda>0").l) { case List(m) =>
+        m.name shouldBe "<lambda>0"
+        m.fullName shouldBe "bar.js::program:<lambda>0"
       }
 
-      inside(cpg.method.fullNameExact("bar.js::program:anonymous").callIn(NoResolve).l) { case List(call) =>
+      inside(cpg.method.fullNameExact("bar.js::program:<lambda>0").callIn(NoResolve).l) { case List(call) =>
         call.code shouldBe "bar.sayhi()"
-        call.methodFullName shouldBe "bar.js::program:anonymous"
+        call.methodFullName shouldBe "bar.js::program:<lambda>0"
         inside(call.expressionDown.isIdentifier.l) { case List(receiver: Identifier) =>
           receiver.name shouldBe "bar"
           receiver.typeFullName shouldBe "bar.js::program"
         }
       }
 
-      inside(cpg.method.fullNameExact("baz.js::program:anonymous").l) { case List(m) =>
-        m.name shouldBe "anonymous"
-        m.fullName shouldBe "baz.js::program:anonymous"
+      inside(cpg.method.fullNameExact("baz.js::program:<lambda>0").l) { case List(m) =>
+        m.name shouldBe "<lambda>0"
+        m.fullName shouldBe "baz.js::program:<lambda>0"
       }
 
-      inside(cpg.method.fullNameExact("baz.js::program:anonymous").callIn(NoResolve).l) { case List(call) =>
+      inside(cpg.method.fullNameExact("baz.js::program:<lambda>0").callIn(NoResolve).l) { case List(call) =>
         call.code shouldBe "baz.sayhowdy()"
-        call.methodFullName shouldBe "baz.js::program:anonymous"
+        call.methodFullName shouldBe "baz.js::program:<lambda>0"
         inside(call.expressionDown.isIdentifier.l) { case List(receiver: Identifier) =>
           receiver.name shouldBe "baz"
           receiver.typeFullName shouldBe "baz.js::program"
@@ -132,7 +132,7 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
       ).moreCode(
         """
           |module.exports = {
-          |  sayhi: function() { // this will be called anonymous
+          |  sayhi: function() { // this will be called <lambda>0
           |    console.log("Hello World, love BAR");
           |  }
           |}
@@ -141,7 +141,7 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
       ).moreCode(
         """
           |module.exports = {
-          |  sayhi: function() { // this will be called anonymous
+          |  sayhi: function() { // this will be called <lambda>0
           |    console.log("Howdy World, love BAZ");
           |  }
           |}
@@ -151,16 +151,16 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
 
       // Because of flow-insensitivity, it could point to either "sayhi"
       inside(cpg.call("sayhi").callee(NoResolve).l) { case List(m1, m2) =>
-        m1.fullName shouldBe "bar.js::program:anonymous"
-        m2.fullName shouldBe "baz.js::program:anonymous"
+        m1.fullName shouldBe "bar.js::program:<lambda>0"
+        m2.fullName shouldBe "baz.js::program:<lambda>0"
       }
 
-      inside(cpg.method.fullNameExact("bar.js::program:anonymous").l) { case List(m) =>
-        m.name shouldBe "anonymous"
-        m.fullName shouldBe "bar.js::program:anonymous"
+      inside(cpg.method.fullNameExact("bar.js::program:<lambda>0").l) { case List(m) =>
+        m.name shouldBe "<lambda>0"
+        m.fullName shouldBe "bar.js::program:<lambda>0"
       }
 
-      inside(cpg.method.fullNameExact("bar.js::program:anonymous").callIn(NoResolve).l) { case List(call) =>
+      inside(cpg.method.fullNameExact("bar.js::program:<lambda>0").callIn(NoResolve).l) { case List(call) =>
         call.code shouldBe "barOrBaz.sayhi()"
         call.methodFullName shouldBe "<unknownFullName>"
         inside(call.expressionDown.isIdentifier.l) { case List(receiver: Identifier) =>
@@ -169,12 +169,12 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
         }
       }
 
-      inside(cpg.method.fullNameExact("baz.js::program:anonymous").l) { case List(m) =>
-        m.name shouldBe "anonymous"
-        m.fullName shouldBe "baz.js::program:anonymous"
+      inside(cpg.method.fullNameExact("baz.js::program:<lambda>0").l) { case List(m) =>
+        m.name shouldBe "<lambda>0"
+        m.fullName shouldBe "baz.js::program:<lambda>0"
       }
 
-      inside(cpg.method.fullNameExact("baz.js::program:anonymous").callIn(NoResolve).l) { case List(call) =>
+      inside(cpg.method.fullNameExact("baz.js::program:<lambda>0").callIn(NoResolve).l) { case List(call) =>
         call.code shouldBe "barOrBaz.sayhi()"
         call.methodFullName shouldBe "<unknownFullName>"
         inside(call.expressionDown.isIdentifier.l) { case List(receiver: Identifier) =>

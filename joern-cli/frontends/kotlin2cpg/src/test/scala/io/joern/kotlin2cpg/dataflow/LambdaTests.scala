@@ -28,7 +28,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = true) {
             ("mapOf(p to 1, \"two\" to 2, \"three\" to 3)", Some(4)),
             ("val m = mapOf(p to 1, \"two\" to 2, \"three\" to 3)", Some(4)),
             ("m.forEach { (k, v) ->  println(k) }", Some(5)),
-            ("<lambda>(k, v)", Some(5)),
+            ("<lambda>0(k, v)", Some(5)),
             ("println(k)", Some(5))
           )
         )

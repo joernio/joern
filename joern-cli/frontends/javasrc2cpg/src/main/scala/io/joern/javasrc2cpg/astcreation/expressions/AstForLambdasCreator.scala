@@ -48,13 +48,6 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
 
   private val logger = LoggerFactory.getLogger(this.getClass)
 
-  private val LambdaNamePrefix = "lambda$"
-  private val lambdaKeyPool    = new IntervalKeyPool(first = 0, last = Long.MaxValue)
-
-  private def nextLambdaName(): String = {
-    s"$LambdaNamePrefix${lambdaKeyPool.next}"
-  }
-
   private def createAndPushLambdaMethod(
     expr: LambdaExpr,
     lambdaMethodName: String,
@@ -217,7 +210,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
   def astForLambdaExpr(expr: LambdaExpr, expectedType: ExpectedType): Ast = {
     scope.pushMethodScope(NewMethod(), expectedType)
 
-    val lambdaMethodName = nextLambdaName()
+    val lambdaMethodName = nextClosureName()
 
     val variablesInScope = scope.variablesInScope
 

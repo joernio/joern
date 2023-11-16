@@ -45,7 +45,6 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   protected val lambdaBindingInfoQueue: mutable.ArrayBuffer[BindingInfo]       = mutable.ArrayBuffer.empty
   protected val methodAstParentStack: Stack[NewNode]                           = new Stack()
 
-  protected val lambdaKeyPool   = new IntervalKeyPool(first = 1, last = Long.MaxValue)
   protected val tmpKeyPool      = new IntervalKeyPool(first = 1, last = Long.MaxValue)
   protected val iteratorKeyPool = new IntervalKeyPool(first = 1, last = Long.MaxValue)
 

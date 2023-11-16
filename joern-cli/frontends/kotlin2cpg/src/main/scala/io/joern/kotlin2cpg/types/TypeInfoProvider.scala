@@ -86,11 +86,11 @@ trait TypeInfoProvider {
 
   def fullNameWithSignature(expr: KtNamedFunction, or: (String, String)): (String, String)
 
-  def fullNameWithSignatureAsLambda(expr: KtNamedFunction, keyPool: KeyPool): (String, String)
+  def fullNameWithSignatureAsLambda(expr: KtNamedFunction, lambdaName: String): (String, String)
 
   def fullNameWithSignature(expr: KtClassLiteralExpression, or: (String, String)): (String, String)
 
-  def fullNameWithSignature(expr: KtLambdaExpression, keyPool: KeyPool): (String, String)
+  def fullNameWithSignature(expr: KtLambdaExpression, lambdaName: String): (String, String)
 
   def anySignature(args: Seq[Any]): String
 

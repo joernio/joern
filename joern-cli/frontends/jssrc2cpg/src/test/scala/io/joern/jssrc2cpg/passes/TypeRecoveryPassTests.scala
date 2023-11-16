@@ -244,9 +244,9 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
     }
 
     "resolve the full name of the currying from the closure" in {
-      val List(x) = cpg.file("util.js").ast.isCall.nameExact("anonymous").lineNumber(4).l
-      x.name shouldBe "anonymous"
-      x.methodFullName shouldBe "util.js::program:anonymous"
+      val List(x) = cpg.file("util.js").ast.isCall.nameExact("<lambda>0").lineNumber(4).l
+      x.name shouldBe "<lambda>0"
+      x.methodFullName shouldBe "util.js::program:<lambda>0"
     }
   }
 
