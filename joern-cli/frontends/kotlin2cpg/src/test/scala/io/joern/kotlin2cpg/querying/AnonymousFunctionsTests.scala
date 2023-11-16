@@ -22,7 +22,7 @@ class AnonymousFunctionsTests extends KotlinCode2CpgFixture(withOssDataflow = fa
         |""".stripMargin)
 
     "should contain a METHOD node for the anonymous fn with the correct props set" in {
-      val List(m) = cpg.method.fullName(".*lambda.*1.*").l
+      val List(m) = cpg.method.fullName(".*lambda.*0.*").l
       m.fullName shouldBe "mypkg.<f_Test0.kt>.<lambda>0:java.lang.Object(java.lang.Object)"
       m.signature shouldBe "java.lang.Object(java.lang.Object)"
     }
@@ -56,8 +56,8 @@ class AnonymousFunctionsTests extends KotlinCode2CpgFixture(withOssDataflow = fa
         |""".stripMargin)
 
     "should contain a METHOD node for the anonymous fn with the correct props set" in {
-      val List(m) = cpg.method.fullName(".*lambda.*1.*").l
-      m.fullName shouldBe "mypkg.<f_Test0.kt>.<lambda>:java.lang.Object(java.lang.Object)"
+      val List(m) = cpg.method.fullName(".*lambda.*0.*").l
+      m.fullName shouldBe "mypkg.<f_Test0.kt>.<lambda>0:java.lang.Object(java.lang.Object)"
       m.signature shouldBe "java.lang.Object(java.lang.Object)"
     }
 
