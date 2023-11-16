@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.language
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.NodeKinds
+import io.shiftleft.codepropertygraph.generated.v2.NodeTypes
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.testing.MockCpg
@@ -252,7 +252,7 @@ class StepsTest extends AnyWordSpec with Matchers {
 
      def methodParameterOut =
        cpg.graph
-         .nodes(NodeKinds.METHOD_PARAMETER_OUT)
+         .nodes(NodeTypes.METHOD_PARAMETER_OUT)
          .cast[MethodParameterOut]
          .name("param1")
      methodParameterOut.typ.name.head shouldBe "paramtype"
@@ -274,7 +274,7 @@ class StepsTest extends AnyWordSpec with Matchers {
      file.typeDecl.name.head shouldBe "AClass"
      file.head.typeDecl.name.head shouldBe "AClass"
 
-     def block = cpg.graph.nodes(NodeKinds.BLOCK).cast[Block].typeFullName("int")
+     def block = cpg.graph.nodes(NodeTypes.BLOCK).cast[Block].typeFullName("int")
      block.local.name.size shouldBe 1
      block.flatMap(_.local.name).size shouldBe 1
 

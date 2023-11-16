@@ -55,14 +55,15 @@ trait LinkingUtil {
       // If the source node does not have any outgoing edges of this type
       // This check is just required for backward compatibility
       if (srcNode.outE(edgeType).isEmpty) {
-        val key = new PropertyKey[String](dstFullNameKey)
+        // TODO MP get typed properties back?
+//        val key = new PropertyKey[String](dstFullNameKey)
         srcNode
-          .propertyOption(key)
+          .propertyOption[String](dstFullNameKey)
           .filter { dstFullName =>
             val dereferenceDstFullName = dereference.dereferenceTypeFullName(dstFullName)
             srcNode.propertyDefaultValue(dstFullNameKey) != dereferenceDstFullName
           }
-          .ifPresent { dstFullName =>
+          .map { dstFullName =>
             // for `UNKNOWN` this is not always set, so we're using an Option here
             val srcStoredNode          = srcNode.asInstanceOf[StoredNode]
             val dereferenceDstFullName = dereference.dereferenceTypeFullName(dstFullName)
@@ -78,7 +79,8 @@ trait LinkingUtil {
             }
           }
       } else {
-        srcNode.out(edgeType).property(Properties.FULL_NAME).nextOption() match {
+        // TODO MP get typed properties back?
+        srcNode.out(edgeType).property[String](PropertyNames.FULL_NAME).nextOption() match {
           case Some(dstFullName) =>
             dstGraph.setNodeProperty(
               srcNode.asInstanceOf[StoredNode],
@@ -110,7 +112,7 @@ trait LinkingUtil {
   ): Unit = {
     var loggedDeprecationWarning = false
     val dereference              = Dereference(cpg)
-    cpg.graph.nodes(srcKind).cast[SRC_NODE_TYPE].foreach { srcNode =>
+    cpg.graph.nodes(srcLabels: _*).cast[SRC_NODE_TYPE].foreach { srcNode =>
       if (!srcNode.outE(edgeType).hasNext) {
         getDstFullNames(srcNode).foreach { dstFullName =>
           val dereferenceDstFullName = dereference.dereferenceTypeFullName(dstFullName)
