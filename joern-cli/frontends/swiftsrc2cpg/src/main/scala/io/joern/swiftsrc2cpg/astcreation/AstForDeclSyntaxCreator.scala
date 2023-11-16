@@ -1,5 +1,7 @@
 package io.joern.swiftsrc2cpg.astcreation
 
+import io.joern.swiftsrc2cpg.datastructures.BlockScope
+import io.joern.swiftsrc2cpg.datastructures.MethodScope
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.swiftsrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
@@ -10,8 +12,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewBinding
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
 import io.shiftleft.codepropertygraph.generated.nodes.NewModifier
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
-import org.apache.commons.lang.StringUtils
 
 trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
@@ -25,38 +27,6 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForEnumCaseDeclSyntax(node: EnumCaseDeclSyntax): Ast                   = notHandledYet(node)
   private def astForEnumDeclSyntax(node: EnumDeclSyntax): Ast                           = notHandledYet(node)
   private def astForExtensionDeclSyntax(node: ExtensionDeclSyntax): Ast                 = notHandledYet(node)
-
-  private def createFunctionTypeAndTypeDecl(
-    node: FunctionDeclSyntax,
-    method: NewMethod,
-    methodName: String,
-    methodFullName: String,
-    signature: String
-  ): Ast = {
-    val normalizedName     = StringUtils.normalizeSpace(methodName)
-    val normalizedFullName = StringUtils.normalizeSpace(methodFullName)
-
-    val parentNode: NewTypeDecl = methodAstParentStack.collectFirst { case t: NewTypeDecl => t }.getOrElse {
-      val astParentType     = methodAstParentStack.head.label
-      val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
-      val typeDeclNode_ = typeDeclNode(
-        node,
-        normalizedName,
-        normalizedFullName,
-        method.filename,
-        normalizedName,
-        astParentType,
-        astParentFullName
-      )
-      Ast.storeInDiffGraph(Ast(typeDeclNode_), diffGraph)
-      typeDeclNode_
-    }
-
-    method.astParentFullName = parentNode.fullName
-    method.astParentType = parentNode.label
-    val functionBinding = NewBinding().name(normalizedName).methodFullName(normalizedFullName).signature(signature)
-    Ast(functionBinding).withBindsEdge(parentNode, functionBinding).withRefEdge(functionBinding, method)
-  }
 
   private def astForFunctionDeclSyntax(node: FunctionDeclSyntax): Ast = {
     // TODO: handle genericParameterClause
@@ -96,7 +66,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     scope.popScope()
     methodAstParentStack.pop()
 
-    val typeDeclAst = createFunctionTypeAndTypeDecl(node, methodNode_, methodName, methodFullName, signature)
+    val typeDeclAst = createFunctionTypeAndTypeDecl(node, methodNode_, methodName, methodFullName)
     astForMethod.merge(typeDeclAst)
   }
 
@@ -113,7 +83,74 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForStructDeclSyntax(node: StructDeclSyntax): Ast                   = notHandledYet(node)
   private def astForSubscriptDeclSyntax(node: SubscriptDeclSyntax): Ast             = notHandledYet(node)
   private def astForTypeAliasDeclSyntax(node: TypeAliasDeclSyntax): Ast             = notHandledYet(node)
-  private def astForVariableDeclSyntax(node: VariableDeclSyntax): Ast               = notHandledYet(node)
+
+  private def astForVariableDeclSyntax(node: VariableDeclSyntax): Ast = {
+    val attributeAsts = node.attributes.children.map(astForNode)
+    val modifiers     = node.modifiers.children.flatMap(c => astForNode(c).root.map(_.asInstanceOf[NewModifier]))
+    val kind          = code(node.bindingSpecifier)
+    val scopeType = if (kind == "let") {
+      BlockScope
+    } else {
+      MethodScope
+    }
+
+    val bindingAsts = node.bindings.children.map { binding =>
+      val name = binding.pattern match {
+        case expr: ExpressionPatternSyntax =>
+          notHandledYet(expr)
+          code(expr)
+        case ident: IdentifierPatternSyntax =>
+          code(ident.identifier)
+        case isType: IsTypePatternSyntax =>
+          notHandledYet(isType)
+          code(isType)
+        case missing: MissingPatternSyntax =>
+          code(missing.placeholder)
+        case tuple: TuplePatternSyntax =>
+          notHandledYet(tuple)
+          code(tuple)
+        case valueBinding: ValueBindingPatternSyntax =>
+          notHandledYet(valueBinding)
+          code(valueBinding)
+        case wildcard: WildcardPatternSyntax =>
+          notHandledYet(wildcard)
+          generateUnusedVariableName(usedVariableNames, "wildcard")
+      }
+      val typeFullName = binding.typeAnnotation.map(code).getOrElse(Defines.Any)
+      val nLocalNode   = localNode(binding, name, name, typeFullName).order(0)
+      scope.addVariable(name, nLocalNode, scopeType)
+      diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
+
+      val initAsts = binding.initializer.map(astForNode) ++ binding.accessorBlock.map(astForNode)
+      if (initAsts.isEmpty) {
+        Ast()
+      } else {
+        val patternAst = astForNode(binding.pattern)
+        modifiers.foreach { mod =>
+          patternAst.root.foreach { r => diffGraph.addEdge(r, mod, EdgeTypes.AST) }
+        }
+        attributeAsts.foreach { attrAst =>
+          patternAst.root.foreach { r => attrAst.root.foreach { attr => diffGraph.addEdge(r, attr, EdgeTypes.AST) } }
+        }
+        createAssignmentCallAst(
+          patternAst,
+          initAsts.head,
+          s"$kind ${code(binding)}",
+          line = line(binding),
+          column = column(binding)
+        )
+      }
+    }
+
+    bindingAsts match {
+      case Nil         => Ast()
+      case head :: Nil => head
+      case _ =>
+        val block = blockNode(node, code(node), Defines.Any)
+        setArgumentIndices(bindingAsts)
+        blockAst(block, bindingAsts.toList)
+    }
+  }
 
   protected def astForDeclSyntax(declSyntax: DeclSyntax): Ast = declSyntax match {
     case node: AccessorDeclSyntax          => astForAccessorDeclSyntax(node)

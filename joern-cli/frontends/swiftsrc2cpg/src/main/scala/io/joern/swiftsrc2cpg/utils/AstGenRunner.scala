@@ -20,10 +20,10 @@ object AstGenRunner {
     skippedFiles: List[(String, String)] = List.empty
   )
 
-  // directory for the SwiftAstGen binary from the env var SWIFTASTGEN_BIN
-  private val AstGenBinDir: Option[String] = scala.util.Properties.envOrNone("SWIFTASTGEN_BIN").flatMap {
-    case path if File(path).isDirectory => Option(path)
-    case path if File(path).exists      => File(path).parentOption.map(_.pathAsString)
+  // full path to the SwiftAstGen binary from the env var SWIFTASTGEN_BIN
+  private val AstGenBin: Option[String] = scala.util.Properties.envOrNone("SWIFTASTGEN_BIN").flatMap {
+    case path if File(path).isDirectory => Some((File(path) / "SwiftAstGen").pathAsString)
+    case path if File(path).exists      => Some(File(path).pathAsString)
     case _                              => None
   }
 
@@ -53,9 +53,10 @@ object AstGenRunner {
   }
 
   private def hasCompatibleAstGenVersionAtPath(path: Option[String]): Boolean = {
-    val localPath    = path.getOrElse(".")
-    val debugMsgPath = path.getOrElse("PATH")
-    ExternalCommand.run("SwiftAstGen -h", localPath).toOption match {
+    val astGenCommand = path.getOrElse("SwiftAstGen")
+    val localPath     = path.flatMap(File(_).parentOption.map(_.pathAsString)).getOrElse(".")
+    val debugMsgPath  = path.getOrElse("PATH")
+    ExternalCommand.run(s"$astGenCommand -h", localPath).toOption match {
       case Some(_) =>
         logger.debug(s"Using SwiftAstGen from $debugMsgPath")
         true
@@ -68,10 +69,10 @@ object AstGenRunner {
     *   the full path to the astgen binary found on the system
     */
   private def compatibleAstGenPath(): String = {
-    AstGenBinDir match
+    AstGenBin match
       // 1. case: we try it at env var SWIFTASTGEN_BIN
       case Some(path) if hasCompatibleAstGenVersionAtPath(Option(path)) =>
-        s"$path/SwiftAstGen"
+        path
       // 2. case: we try it with the systems PATH
       case _ if hasCompatibleAstGenVersionAtPath(None) =>
         "SwiftAstGen"

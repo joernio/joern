@@ -8,11 +8,14 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
   "AST generation for simple fragments" should {
 
-    "have correct structure for simple variable decl" in AstFixture("""
+    "have correct structure for simple variable declarations" in AstFixture("""
         |let x = 1
+        |var y: String = "2"
         |""".stripMargin) { cpg =>
-      val List(method) = cpg.method.nameExact("<global>").l
-      method.astChildren.isBlock.astChildren.code.l shouldBe List("let x = 1")
+      val List(method)           = cpg.method.nameExact("<global>").l
+      val List(assignX, assignY) = method.assignment.l
+      assignX.code shouldBe "let x = 1"
+      assignY.code shouldBe """var y: String = "2""""
     }
 
     "have correct structure for annotated function" in AstFixture("""

@@ -36,6 +36,7 @@ class AstCreator(
     with AstForStmtSyntaxCreator
     with AstForSyntaxCollectionCreator
     with AstCreatorHelper
+    with AstNodeBuilder
     with X2CpgAstNodeBuilder[SwiftNode, AstCreator] {
 
   protected val logger: Logger = LoggerFactory.getLogger(classOf[AstCreator])
@@ -46,7 +47,6 @@ class AstCreator(
   protected val typeRefIdStack                = new Stack[NewTypeRef]
   protected val dynamicInstanceTypeStack      = new Stack[String]
   protected val localAstParentStack           = new Stack[NewBlock]()
-  protected val rootTypeDecl                  = new Stack[NewTypeDecl]()
   protected val typeFullNameToPostfix         = mutable.HashMap.empty[String, Int]
   protected val functionNodeToNameAndFullName = mutable.HashMap.empty[SwiftNode, (String, String)]
   protected val usedVariableNames             = mutable.HashMap.empty[String, Int]
@@ -66,7 +66,6 @@ class AstCreator(
   }
 
   private def astInFakeMethod(fullName: String, path: String, ast: SwiftNode): Ast = {
-    val sourceFileAst      = astForNode(ast)
     val name               = NamespaceTraversal.globalNamespaceName
     val fakeGlobalTypeDecl = typeDeclNode(ast, name, fullName, path, name, NodeTypes.NAMESPACE_BLOCK, fullName)
     methodAstParentStack.push(fakeGlobalTypeDecl)
@@ -74,7 +73,8 @@ class AstCreator(
       methodNode(ast, name, name, fullName, None, path, Option(NodeTypes.TYPE_DECL), Option(fullName))
     methodAstParentStack.push(fakeGlobalMethod)
     scope.pushNewMethodScope(fullName, name, fakeGlobalMethod, None)
-    val methodReturn = newMethodReturnNode(Defines.Any, None, line(ast), column(ast))
+    val sourceFileAst = astForNode(ast)
+    val methodReturn  = newMethodReturnNode(Defines.Any, None, line(ast), column(ast))
     Ast(fakeGlobalTypeDecl).withChild(methodAst(fakeGlobalMethod, Seq.empty, sourceFileAst, methodReturn))
   }
 
