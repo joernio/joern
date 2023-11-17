@@ -5,7 +5,8 @@ import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
 import io.joern.pysrc2cpg.PySrc2CpgFixture
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Literal, Member, Method}
-import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language._
+import org.scalatest.Ignore
 
 import java.io.File
 
@@ -301,8 +302,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         "models.py"
       )
 
-    val List(method: Method) =
-      cpg.identifier.name("foo").inAssignment.source.isBlock.ast.isCall.nameExact("Foo").callee.l
+    val List(method: Method) = cpg.identifier.name("foo").inAssignment.source.isCall.callee.l
     method.fullName shouldBe "models.py:<module>.Foo.__init__"
     val List(typeDeclFullName) = method.typeDecl.fullName.l
     typeDeclFullName shouldBe "models.py:<module>.Foo"
@@ -321,8 +321,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         "models.py"
       )
 
-    val List(method: Method) =
-      cpg.identifier.name("foo").inAssignment.source.isBlock.ast.isCall.nameExact("Foo").callee.l
+    val List(method: Method) = cpg.identifier.name("foo").inAssignment.source.isCall.callee.l
     method.fullName shouldBe "models.py:<module>.Foo.__init__"
     val List(typeDeclFullName) = method.typeDecl.fullName.l
     typeDeclFullName shouldBe "models.py:<module>.Foo"
@@ -588,27 +587,6 @@ class RegexDefinedFlowsDataFlowTests
     val sinks   = cpg.call.methodFullName(".*log.*(debug|info|error).*").l
     val flows   = sinks.reachableByFlows(sources).l
     flows.size shouldBe 2
-  }
-
-  "flow across interprocedural module variables" in {
-    val cpg: Cpg = code(
-      """
-        |a = 42
-        |""".stripMargin,
-      "foo.py"
-    )
-      .moreCode(
-        """
-          |import foo
-          |
-          |print(foo.a)
-          |""".stripMargin,
-        "bar.py"
-      )
-
-    val source = cpg.literal("42").l
-    val sink   = cpg.call.code("print.*").argument.l
-    sink.reachableByFlows(source).size shouldBe 1
   }
 
 }

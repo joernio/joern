@@ -5,7 +5,7 @@ import io.joern.pysrc2cpg.memop.*
 import io.joern.pythonparser.ast
 import io.joern.x2cpg.ValidationMode
 import io.shiftleft.codepropertygraph.generated.*
-import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewNode, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewNode, NewTypeDecl}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.mutable
@@ -32,7 +32,7 @@ class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode
 
   protected val contextStack = new ContextStack()
 
-  protected var memOpMap: AstNodeToMemoryOperationMap = _
+  private var memOpMap: AstNodeToMemoryOperationMap = _
 
   private val members = mutable.Map.empty[NewTypeDecl, List[String]]
 
@@ -98,10 +98,7 @@ class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode
         Some("<module>"),
         ModifierTypes.VIRTUAL :: ModifierTypes.MODULE :: Nil,
         parameterProvider = () => MethodParameters.empty(),
-        bodyProvider = () =>
-          createBuiltinIdentifiers(memOpCalculator.names)
-            ++ createModuleIdentifier(methodFullName)
-            ++ module.stmts.map(convert),
+        bodyProvider = () => createBuiltinIdentifiers(memOpCalculator.names) ++ module.stmts.map(convert),
         returns = None,
         isAsync = false,
         methodRefNode = None,
@@ -169,20 +166,6 @@ class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode
     }
 
     result
-  }
-
-  /** Creates the base for the implicit field accesses of module-level variable references.
-    * @param moduleFullName
-    *   the target module.
-    * @return
-    *   the assignment of the module identifier.
-    */
-  private def createModuleIdentifier(moduleFullName: String): Iterable[nodes.NewNode] = {
-    val lineAndColumn = LineAndColumn(1, 1, 1, 1)
-    // Create implicit identifier
-    val moduleIdentifier = createIdentifierNode("<module>", Store, lineAndColumn)
-    val moduleTypeRef    = createTypeRef("<module>", moduleFullName, lineAndColumn)
-    Seq(createAssignment(moduleIdentifier, moduleTypeRef, lineAndColumn))
   }
 
   private def unhandled(node: ast.iast with ast.iattributes): NewNode = {
@@ -401,7 +384,7 @@ class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode
 
     // For every method that is a module, the local variables can be imported by other modules. This behaviour is
     // much like fields so they are to be linked as fields to this method type
-    if (name == "<module>") contextStack.createMemberLinks(typeDeclNode, edgeBuilder.astEdge, edgeBuilder.refEdge)
+    if (name == "<module>") contextStack.createMemberLinks(typeDeclNode, edgeBuilder.astEdge)
 
     contextStack.pop()
     edgeBuilder.astEdge(typeDeclNode, contextStack.astParent, contextStack.order.getAndInc)
@@ -1897,12 +1880,11 @@ class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode
 
   def convert(name: ast.Name): nodes.NewNode = {
     val memoryOperation = memOpMap.get(name).get
+    val identifier      = createIdentifierNode(name.id, memoryOperation, lineAndColOf(name))
     if (contextStack.isClassContext && memoryOperation == Store) {
-      createAndRegisterMember(name.id, lineAndColOf(name))
-      createIdentifierNode(name.id, memoryOperation, lineAndColOf(name))
-    } else {
-      createIdentifierNode(name.id, memoryOperation, lineAndColOf(name))
+      createAndRegisterMember(identifier.name, lineAndColOf(name))
     }
+    identifier
   }
 
   // TODO test
