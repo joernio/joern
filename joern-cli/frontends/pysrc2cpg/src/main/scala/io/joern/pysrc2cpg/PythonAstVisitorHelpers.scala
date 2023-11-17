@@ -548,7 +548,7 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     accessChain match {
       case accessIndex :: tail =>
         val baseNode  = createIndexAccessChain(rootNode, tail, lineAndColumn)
-        val indexNode = nodeBuilder.numberLiteralNode(accessIndex, lineAndColumn)
+        val indexNode = nodeBuilder.intLiteralNode(accessIndex.toString, lineAndColumn)
 
         createIndexAccess(baseNode, indexNode, lineAndColumn)
       case Nil =>
