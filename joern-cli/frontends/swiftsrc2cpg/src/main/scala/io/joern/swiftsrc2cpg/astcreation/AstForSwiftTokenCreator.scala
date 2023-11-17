@@ -19,15 +19,22 @@ trait AstForSwiftTokenCreator(implicit withSchemaValidation: ValidationMode) { t
   private def astForEndOfFileToken(node: endOfFile): Ast               = Ast()
   private def astForEqualToken(node: equal): Ast                       = Ast()
   private def astForExclamationMarkToken(node: exclamationMark): Ast   = Ast()
-  private def astForFloatLiteralToken(node: floatLiteral): Ast         = Ast()
+
+  private def astForFloatLiteralToken(node: floatLiteral): Ast = {
+    Ast(literalNode(node, code(node), Option(Defines.Float)))
+  }
+
   private def astForIdentifierToken(node: identifier): Ast = {
     val name = code(node)
     Ast(identifierNode(node, name, name, Defines.Any))
   }
+
   private def astForInfixQuestionMarkToken(node: infixQuestionMark): Ast = Ast()
+
   private def astForIntegerLiteralToken(node: integerLiteral): Ast = {
     Ast(literalNode(node, code(node), Option(Defines.Int)))
   }
+
   private def astForKeywordToken(node: keyword): Ast                                 = Ast()
   private def astForLeftAngleToken(node: leftAngle): Ast                             = Ast()
   private def astForLeftBraceToken(node: leftBrace): Ast                             = Ast()

@@ -8,16 +8,9 @@ import io.joern.x2cpg.Ast
 import io.joern.x2cpg.utils.NodeBuilders.*
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Stack.*
-import io.shiftleft.codepropertygraph.generated.nodes.NewBinding
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
 import io.shiftleft.codepropertygraph.generated.nodes.NewModifier
-import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
-
-import scala.collection.immutable.AbstractSeq
-import scala.collection.immutable.LinearSeq
-import scala.xml.NodeSeq
 
 trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
@@ -32,6 +25,14 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForEnumDeclSyntax(node: EnumDeclSyntax): Ast                           = notHandledYet(node)
   private def astForExtensionDeclSyntax(node: ExtensionDeclSyntax): Ast                 = notHandledYet(node)
 
+  private def modifiersForFunctionLike(node: FunctionDeclSyntax): Seq[NewModifier] = {
+    val virtualModifier = NewModifier().modifierType(ModifierTypes.VIRTUAL)
+    val modifiers       = node.modifiers.children.flatMap(c => astForNode(c).root.map(_.asInstanceOf[NewModifier]))
+    (virtualModifier +: modifiers).zipWithIndex.map { case (m, index) =>
+      m.order(index)
+    }
+  }
+
   protected def astForFunctionLike(
     node: FunctionDeclSyntax,
     shouldCreateFunctionReference: Boolean = false,
@@ -39,10 +40,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   ): Ast = {
     // TODO: handle genericParameterClause
     // TODO: handle genericWhereClause
-    val attributes = node.attributes.children.map(astForNode)
-    val modifiers =
-      node.modifiers.children.flatMap(c => astForNode(c).root.map(_.asInstanceOf[NewModifier])) :+ NewModifier()
-        .modifierType(ModifierTypes.VIRTUAL)
+    val attributes                   = node.attributes.children.map(astForNode)
+    val modifiers                    = modifiersForFunctionLike(node)
     val (methodName, methodFullName) = calcMethodNameAndFullName(node)
     val filename                     = parserResult.filename
 

@@ -76,7 +76,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
       case "static"                      => Some(ModifierTypes.STATIC)
       case _                             => None
     }
-    modifierType.fold(Ast())(m => Ast(NewModifier().modifierType(m)))
+    modifierType.fold(Ast())(m => Ast(NewModifier().modifierType(m).order(0)))
   }
 
   private def astForDeclNameArgumentSyntax(node: DeclNameArgumentSyntax): Ast   = notHandledYet(node)

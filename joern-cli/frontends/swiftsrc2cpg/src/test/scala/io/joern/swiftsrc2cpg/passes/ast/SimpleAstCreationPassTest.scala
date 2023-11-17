@@ -8,6 +8,26 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
   "AST generation for simple fragments" should {
 
+    "have module modifier at the top level module method node" in AstFixture("") { cpg =>
+      val List(method)                = cpg.method.nameExact("<global>").l
+      val List(modVirtual, modModule) = method.modifier.l
+      modVirtual.modifierType shouldBe ModifierTypes.VIRTUAL
+      modVirtual.order shouldBe 0
+      modModule.modifierType shouldBe ModifierTypes.MODULE
+      modModule.order shouldBe 1
+    }
+
+    "have correct modifier for a function" in AstFixture("private static func foo() -> {}") { cpg =>
+      val List(method)                            = cpg.method.nameExact("foo").l
+      val List(modVirtual, modPrivate, modStatic) = method.modifier.l
+      modVirtual.modifierType shouldBe ModifierTypes.VIRTUAL
+      modVirtual.order shouldBe 0
+      modPrivate.modifierType shouldBe ModifierTypes.PRIVATE
+      modPrivate.order shouldBe 1
+      modStatic.modifierType shouldBe ModifierTypes.STATIC
+      modStatic.order shouldBe 2
+    }
+
     "have correct structure for simple variable declarations" in AstFixture("""
         |let x = 1
         |var y: String = "2"

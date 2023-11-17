@@ -8,6 +8,7 @@ import io.joern.swiftsrc2cpg.passes.Defines
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, AstNodeBuilder as X2CpgAstNodeBuilder}
+import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
@@ -15,6 +16,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewFile
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeRef
+import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
@@ -75,7 +77,10 @@ class AstCreator(
     scope.pushNewMethodScope(fullName, name, fakeGlobalMethod, None)
     val sourceFileAst = astForNode(ast)
     val methodReturn  = newMethodReturnNode(Defines.Any, None, line(ast), column(ast))
-    Ast(fakeGlobalTypeDecl).withChild(methodAst(fakeGlobalMethod, Seq.empty, sourceFileAst, methodReturn))
+    val modifiers = Seq(newModifierNode(ModifierTypes.VIRTUAL).order(0), newModifierNode(ModifierTypes.MODULE).order(1))
+    Ast(fakeGlobalTypeDecl).withChild(
+      methodAst(fakeGlobalMethod, Seq.empty, sourceFileAst, methodReturn, modifiers = modifiers)
+    )
   }
 
   protected def astForNodeWithFunctionReferenceAndCall(node: SwiftNode): Ast = {
