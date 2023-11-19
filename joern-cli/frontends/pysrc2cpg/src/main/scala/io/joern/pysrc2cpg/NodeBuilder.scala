@@ -223,28 +223,35 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
     addNodeToDiff(fieldIdentifierNode)
   }
 
-  def numberLiteralNode(number: Int, lineAndColumn: LineAndColumn): nodes.NewLiteral = {
-    numberLiteralNode(number.toString, lineAndColumn)
-  }
-
-  def numberLiteralNode(number: String, lineAndColumn: LineAndColumn): nodes.NewLiteral = {
+  def literalNode(string: String, dynamicTypeHint: Option[String], lineAndColumn: LineAndColumn): nodes.NewLiteral = {
     val literalNode = nodes
       .NewLiteral()
-      .code(number)
+      .code(string)
       .typeFullName(Constants.ANY)
+      .dynamicTypeHintFullName(dynamicTypeHint.toList)
       .lineNumber(lineAndColumn.line)
       .columnNumber(lineAndColumn.column)
     addNodeToDiff(literalNode)
   }
 
   def stringLiteralNode(string: String, lineAndColumn: LineAndColumn): nodes.NewLiteral = {
-    val literalNode = nodes
-      .NewLiteral()
-      .code(string)
-      .typeFullName(Constants.ANY)
-      .lineNumber(lineAndColumn.line)
-      .columnNumber(lineAndColumn.column)
-    addNodeToDiff(literalNode)
+    literalNode(string, Some(Constants.builtinStrType), lineAndColumn)
+  }
+
+  def bytesLiteralNode(string: String, lineAndColumn: LineAndColumn): nodes.NewLiteral = {
+    literalNode(string, Some(Constants.builtinBytesType), lineAndColumn)
+  }
+
+  def intLiteralNode(string: String, lineAndColumn: LineAndColumn): nodes.NewLiteral = {
+    literalNode(string, Some(Constants.builtinIntType), lineAndColumn)
+  }
+
+  def floatLiteralNode(string: String, lineAndColumn: LineAndColumn): nodes.NewLiteral = {
+    literalNode(string, Some(Constants.builtinFloatType), lineAndColumn)
+  }
+
+  def complexLiteralNode(string: String, lineAndColumn: LineAndColumn): nodes.NewLiteral = {
+    literalNode(string, Some(Constants.builtinComplexType), lineAndColumn)
   }
 
   def blockNode(code: String, lineAndColumn: LineAndColumn): nodes.NewBlock = {

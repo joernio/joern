@@ -1816,25 +1816,32 @@ class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode
   def convert(constant: ast.Constant): nodes.NewNode = {
     constant.value match {
       case stringConstant: ast.StringConstant =>
-        nodeBuilder.stringLiteralNode(
-          stringConstant.prefix + stringConstant.quote + stringConstant.value + stringConstant.quote,
-          lineAndColOf(constant)
-        )
+        if (stringConstant.prefix.contains("b") || stringConstant.prefix.contains("B")) {
+          nodeBuilder.bytesLiteralNode(
+            stringConstant.prefix + stringConstant.quote + stringConstant.value + stringConstant.quote,
+            lineAndColOf(constant)
+          )
+        } else {
+          nodeBuilder.stringLiteralNode(
+            stringConstant.prefix + stringConstant.quote + stringConstant.value + stringConstant.quote,
+            lineAndColOf(constant)
+          )
+        }
       case stringConstant: ast.JoinedStringConstant =>
         nodeBuilder.stringLiteralNode(stringConstant.value, lineAndColOf(constant))
       case boolConstant: ast.BoolConstant =>
         val boolStr = if (boolConstant.value) "True" else "False"
-        nodeBuilder.stringLiteralNode(boolStr, lineAndColOf(constant))
+        nodeBuilder.intLiteralNode(boolStr, lineAndColOf(constant))
       case intConstant: ast.IntConstant =>
-        nodeBuilder.numberLiteralNode(intConstant.value, lineAndColOf(constant))
+        nodeBuilder.intLiteralNode(intConstant.value, lineAndColOf(constant))
       case floatConstant: ast.FloatConstant =>
-        nodeBuilder.numberLiteralNode(floatConstant.value, lineAndColOf(constant))
+        nodeBuilder.floatLiteralNode(floatConstant.value, lineAndColOf(constant))
       case imaginaryConstant: ast.ImaginaryConstant =>
-        nodeBuilder.numberLiteralNode(imaginaryConstant.value + "j", lineAndColOf(constant))
+        nodeBuilder.complexLiteralNode(imaginaryConstant.value + "j", lineAndColOf(constant))
       case ast.NoneConstant =>
-        nodeBuilder.numberLiteralNode("None", lineAndColOf(constant))
+        nodeBuilder.literalNode("None", None, lineAndColOf(constant))
       case ast.EllipsisConstant =>
-        nodeBuilder.numberLiteralNode("...", lineAndColOf(constant))
+        nodeBuilder.literalNode("...", None, lineAndColOf(constant))
     }
   }
 
