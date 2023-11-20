@@ -1,8 +1,7 @@
 package io.joern.x2cpg.passes.base
 
-import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.nodes.{File, NewFile, StoredNode}
-import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, NodeTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.v2.{Cpg, EdgeTypes, NodeTypes, PropertyNames}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal

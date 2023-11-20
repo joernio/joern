@@ -13,7 +13,7 @@ import scala.collection.mutable
 // The trait LanguageFrontend is mixed in and not property/field of this class in order
 // to allow the configuration of language frontend specific properties on the CPG object.
 // TODO MP cleanup: rename to TestLanguageFrontend or something?
-abstract class TestCpg extends /* Cpg() with */ LanguageFrontend {
+abstract class TestCpg extends Cpg(Cpg.empty.graph) with LanguageFrontend {
   private var _graph            = Option.empty[Graph]
   private val codeFileNamePairs = mutable.ArrayBuffer.empty[(String, Path)]
   private var fileNameCounter   = 0
@@ -86,7 +86,7 @@ abstract class TestCpg extends /* Cpg() with */ LanguageFrontend {
   }
 
   // TODO MP get 'close' back
-  override def close(): Unit = {
+  /*override*/ def close(): Unit = {
     ???
 //    _graph.foreach(_.close())
   }
