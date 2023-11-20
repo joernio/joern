@@ -6,7 +6,6 @@ import io.shiftleft.codepropertygraph.generated.v2.{EdgeKinds, NodeTypes}
 import io.joern.x2cpg.passes.controlflow.cfgdominator.CfgDominatorPass
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import overflowdb._
 
 import scala.jdk.CollectionConverters._
 

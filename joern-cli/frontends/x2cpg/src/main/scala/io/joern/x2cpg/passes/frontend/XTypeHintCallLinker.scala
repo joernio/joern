@@ -4,9 +4,8 @@ import io.joern.x2cpg.passes.base.MethodStubCreator
 import io.joern.x2cpg.passes.frontend.XTypeRecovery.isDummyType
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, NodeTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, EdgeTypes, NodeTypes, PropertyNames}
 import io.shiftleft.passes.CpgPass
-import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 import io.shiftleft.semanticcpg.language.*
 
 import java.util.regex.Pattern
@@ -148,7 +147,7 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
         name,
         fullName,
         "",
-        DispatchTypes.DYNAMIC_DISPATCH.name(),
+        DispatchTypes.DYNAMIC_DISPATCH,
         argSize,
         builder,
         isExternal,

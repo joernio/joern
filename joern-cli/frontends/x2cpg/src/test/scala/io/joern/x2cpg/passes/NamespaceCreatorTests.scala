@@ -7,7 +7,6 @@ import io.joern.x2cpg.passes.base.NamespaceCreator
 import io.joern.x2cpg.testfixtures.EmptyGraphFixture
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-import overflowdb._
 
 class NamespaceCreatorTests extends AnyWordSpec with Matchers {
   "NamespaceCreateor test " in EmptyGraphFixture { graph =>
