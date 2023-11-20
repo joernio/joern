@@ -1,10 +1,12 @@
 package io.joern.rubysrc2cpg.parser
 
 import org.antlr.v4.runtime.*
-import org.antlr.v4.runtime.atn.ATN
+import org.antlr.v4.runtime.atn.{ATN, ATNConfigSet}
 import org.antlr.v4.runtime.dfa.DFA
 import org.slf4j.LoggerFactory
 
+import java.util
+import scala.collection.mutable.ListBuffer
 import scala.util.Try
 
 /** A consumable wrapper for the RubyParser class used to parse the given file and be disposed thereafter.
@@ -18,7 +20,52 @@ class AntlrParser(filename: String) {
   private val tokenStream = new CommonTokenStream(RubyLexerPostProcessor(lexer))
   val parser: RubyParser  = new RubyParser(tokenStream)
 
-  def parse(): Try[RubyParser.ProgramContext] = Try(parser.program())
+  def parse(): (Try[RubyParser.ProgramContext], List[String]) = {
+    val errors = ListBuffer[String]()
+    parser.removeErrorListeners()
+    parser.addErrorListener(new ANTLRErrorListener {
+      override def syntaxError(
+        recognizer: Recognizer[_, _],
+        offendingSymbol: Any,
+        line: Int,
+        charPositionInLine: Int,
+        msg: String,
+        e: RecognitionException
+      ): Unit = {
+        val errorMessage = s"Syntax error on $filename:$line:$charPositionInLine"
+        errors.append(errorMessage)
+      }
+
+      override def reportAmbiguity(
+        recognizer: Parser,
+        dfa: DFA,
+        startIndex: Int,
+        stopIndex: Int,
+        exact: Boolean,
+        ambigAlts: util.BitSet,
+        configs: ATNConfigSet
+      ): Unit = {}
+
+      override def reportAttemptingFullContext(
+        recognizer: Parser,
+        dfa: DFA,
+        startIndex: Int,
+        stopIndex: Int,
+        conflictingAlts: util.BitSet,
+        configs: ATNConfigSet
+      ): Unit = {}
+
+      override def reportContextSensitivity(
+        recognizer: Parser,
+        dfa: DFA,
+        startIndex: Int,
+        stopIndex: Int,
+        prediction: Int,
+        configs: ATNConfigSet
+      ): Unit = {}
+    })
+    (Try(parser.program()), errors.toList)
+  }
 }
 
 /** A re-usable parser object that clears the ANTLR DFA-cache if it determines that the memory usage is becoming large.
@@ -49,7 +96,9 @@ class ResourceManagedParser(clearLimit: Double) extends AutoCloseable {
       logger.info(s"Runtime memory consumption at $usedMemory, clearing ANTLR DFA cache")
       clearDFA()
     }
-    antlrParser.parse()
+    val (programCtx, errors) = antlrParser.parse()
+    errors.foreach(logger.warn)
+    programCtx
   }
 
   /** Clears the shared DFA cache.
