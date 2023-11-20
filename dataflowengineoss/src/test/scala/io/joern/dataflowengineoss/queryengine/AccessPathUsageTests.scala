@@ -1,6 +1,5 @@
 package io.joern.dataflowengineoss.queryengine
 
-import io.shiftleft.OverflowDbTestInstance
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, Operators, Properties}
 import io.joern.dataflowengineoss.queryengine.AccessPathUsage.toTrackedBaseAndAccessPathSimple

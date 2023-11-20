@@ -1,6 +1,7 @@
 package io.joern.x2cpg
 
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{AstNodeNew, NewCall, NewClosureBinding, NewIdentifier}
+import io.joern.odb2.SchemaViolationException
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{AstNodeNew, Call, NewCall, NewClosureBinding, NewIdentifier}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -34,7 +35,7 @@ class AstTests extends AnyWordSpec with Matchers {
       copied.root match {
         case Some(root: NewCall) =>
           root should not be Some(moo)
-          root.properties("NAME") shouldBe "moo"
+          root.propertiesMap.get(Call.PropertyNames.Name) shouldBe "moo"
           root.argumentIndex shouldBe 123
         case _ => fail()
       }

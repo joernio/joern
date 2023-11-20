@@ -1,12 +1,12 @@
 package io.joern.x2cpg.testfixtures
 
-import io.shiftleft.OverflowDbTestInstance
-import overflowdb.Graph
+import io.joern.odb2.Graph
+import io.shiftleft.codepropertygraph.generated.v2.Cpg
 
 object EmptyGraphFixture {
   def apply[T](fun: Graph => T): T = {
-    val graph = OverflowDbTestInstance.create
+    val graph = Cpg.empty.graph
     try fun(graph)
-    finally { graph.close() }
+    finally ??? // TODO get graph.close back graph.close()
   }
 }

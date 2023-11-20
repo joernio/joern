@@ -1,8 +1,8 @@
 package io.joern.x2cpg.passes
 
-import io.shiftleft.codepropertygraph.generated.v2._
+import io.shiftleft.codepropertygraph.generated.v2.*
 import io.shiftleft.codepropertygraph.generated.v2.nodes.{NewCall, NewMember}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.testing.MockCpg
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -14,7 +14,7 @@ class MemberAccessLinkerTests extends AnyWordSpec with Matchers {
     val member = NewMember().name("aaa")
     graph.addNode(call)
     graph.addNode(member)
-    graph.addEdge(call, member, EdgeKinds.REF)
+    graph.addEdge(call, member, EdgeTypes.REF)
   }.cpg
 
   "have a reference to correct member" in {

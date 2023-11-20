@@ -1,9 +1,8 @@
 package io.joern.x2cpg.testfixtures
 
 import io.joern.x2cpg.X2CpgConfig
-import io.shiftleft.codepropertygraph.Cpg
-import overflowdb.Graph
-
+import io.joern.odb2.Graph
+import io.shiftleft.codepropertygraph.generated.v2.{Cpg, NodeTypes}
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths}
 import java.util.Comparator
@@ -13,7 +12,8 @@ import scala.collection.mutable
 // Lazily populated test CPG which is created upon first access to the underlying graph.
 // The trait LanguageFrontend is mixed in and not property/field of this class in order
 // to allow the configuration of language frontend specific properties on the CPG object.
-abstract class TestCpg extends Cpg() with LanguageFrontend {
+// TODO MP cleanup: rename to TestLanguageFrontend or something?
+abstract class TestCpg extends /* Cpg() with */ LanguageFrontend {
   private var _graph            = Option.empty[Graph]
   private val codeFileNamePairs = mutable.ArrayBuffer.empty[(String, Path)]
   private var fileNameCounter   = 0
@@ -85,7 +85,9 @@ abstract class TestCpg extends Cpg() with LanguageFrontend {
     _graph.get
   }
 
+  // TODO MP get 'close' back
   override def close(): Unit = {
-    _graph.foreach(_.close())
+    ???
+//    _graph.foreach(_.close())
   }
 }
