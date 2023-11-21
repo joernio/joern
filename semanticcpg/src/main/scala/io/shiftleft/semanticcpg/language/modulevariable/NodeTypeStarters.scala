@@ -9,6 +9,6 @@ class NodeTypeStarters(cpg: Cpg) {
 
   @Doc(info = "All module-level variables, e.g., variables declared at the root of a file in Python or JavaScript.")
   def moduleVariables: Iterator[OpNodes.ModuleVariable] =
-    cpg.member.moduleVariables
+    cpg.method.isModule.local.moduleVariables
 
 }

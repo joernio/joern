@@ -3,9 +3,10 @@ package io.joern.dataflowengineoss.queryengine
 import io.joern.dataflowengineoss.globalFromLiteral
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.importresolver.{EvaluatedImport, ResolvedMember, ResolvedTypeDecl}
+import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.Assignment
 import io.shiftleft.semanticcpg.language.operatorextension.allAssignmentTypes
 import io.shiftleft.semanticcpg.utils.MemberAccess.isFieldAccess
 import org.slf4j.LoggerFactory
@@ -63,6 +64,16 @@ class SourceTravsToStartingPointsTask[NodeType](sourceTravs: IterableOnce[NodeTy
 class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode]] {
 
   private val cpg = Cpg(src.graph())
+  private lazy val memberToImportingModule: Map[Member, List[(String, Method)]] = cpg.call
+    .where(_.method.isModule)
+    .flatMap(x =>
+      x.referencedImports
+        .flatMap(extractAliasMemberPair)
+        .map { case (alias, member) => member -> (alias, x.method) }
+    )
+    .groupBy(_._1)
+    .map { case (member, xs) => member -> xs.map(_._2) }
+  private val typeDeclToMembers = cpg.typeDecl.map { x => x.fullName -> x.member.l }.toMap
 
   override def compute(): List[CfgNode] = sourceToStartingPoints(src)
 
@@ -71,7 +82,12 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
       case methodReturn: MethodReturn =>
         methodReturn.method.callIn.l
       case lit: Literal =>
-        List(lit) ++ usages(targetsToClassIdentifierPair(literalToInitializedMembers(lit))) ++ globalFromLiteral(lit)
+        val uses = usages(targetsToClassIdentifierPair(literalToInitializedMembers(lit)))
+        val globals = globalFromLiteral(lit).flatMap {
+          case x: Identifier if x.isModuleVariable => x +: moduleVarToUsages(x)
+          case x                                   => x :: Nil
+        }.l
+        lit :: (uses ++ globals)
       case member: Member =>
         usages(targetsToClassIdentifierPair(List(member)))
       case x: Declaration =>
@@ -91,9 +107,9 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
 
   private def withFieldAndIndexAccesses(nodes: List[CfgNode]): List[CfgNode] =
     nodes.flatMap {
-      case identifier: Identifier =>
-        List(identifier) ++ fieldAndIndexAccesses(identifier)
-      case x => List(x)
+      case moduleVar: Identifier if moduleVar.isModuleVariable => moduleVar :: moduleVarToUsages(moduleVar)
+      case identifier: Identifier                              => identifier :: fieldAndIndexAccesses(identifier)
+      case x                                                   => x :: Nil
     }
 
   private def fieldAndIndexAccesses(identifier: Identifier): List[CfgNode] =
@@ -101,7 +117,49 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
       .nameExact(identifier.name)
       .inCall
       .collect { case c if isFieldAccess(c.name) => c }
-      .l
+      .toList
+
+  private def extractAliasMemberPair(i: Import): Seq[(String, Member)] = {
+    i.importedAs
+      .map { alias =>
+        i.call.tag
+          .flatMap(EvaluatedImport.tagToEvaluatedImport)
+          .flatMap {
+            case ResolvedMember(basePath, memberName, _) =>
+              cpg.typeDecl.fullNameExact(basePath).member.nameExact(memberName).map(m => alias -> m)
+            case ResolvedTypeDecl(typeFullName, _) =>
+              cpg.typeDecl.fullNameExact(typeFullName).member.map(m => alias -> m)
+            case _ => Seq.empty
+          }
+          .toSeq
+      }
+      .getOrElse(Seq.empty)
+  }
+
+  private def moduleVarToUsages(moduleVar: Identifier): List[CfgNode] = {
+    typeDeclToMembers
+      .getOrElse(moduleVar.method.fullName, List.empty)
+      .nameExact(moduleVar.name)
+      .flatMap(memberToImportingModule.get)
+      .flatMap { xs =>
+        xs.flatMap { case (alias, importingModule) =>
+          val directAccess = importingModule
+            .flatMap(_._identifierViaContainsOut.nameExact(alias))
+            .sortBy(i => (i.lineNumber, i.columnNumber))
+            .filterNot(notLeftHandOfAssignment)
+            .headOption
+            .toList
+          val accessedAsFields = importingModule
+            .flatMap(_.fieldAccess.where(_.fieldIdentifier.canonicalNameExact(alias))) // TODO: This does not check LHS
+            .sortBy(i => (i.lineNumber, i.columnNumber))
+            .filterNot(notLeftHandOfAssignment)
+            .headOption
+            .toList
+          (directAccess ++ accessedAsFields).collectAll[CfgNode]
+        }
+      }
+      .toList
+  }
 
   private def usages(pairs: List[(TypeDecl, AstNode)]): List[CfgNode] = {
     pairs.flatMap { case (typeDecl, astNode) =>
@@ -184,8 +242,8 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
               // If a member shares the name of the identifier then we consider this as a member
               lit.method.typeDecl.member.name.toSet.contains(identifier.name) =>
           List(identifier)
-        case call: Call if call.name == Operators.fieldAccess => call.ast.isFieldIdentifier.l
-        case _                                                => List[Expression]()
+        case call: Call if isFieldAccess(call.name) => call.ast.isFieldIdentifier.l
+        case _                                      => List[Expression]()
       }
       .l
 

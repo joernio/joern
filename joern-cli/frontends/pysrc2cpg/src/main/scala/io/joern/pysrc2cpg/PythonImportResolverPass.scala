@@ -1,11 +1,11 @@
 package io.joern.pysrc2cpg
 
 import better.files.File
-import io.joern.x2cpg.passes.frontend.ImportsPass.*
 import io.joern.x2cpg.passes.frontend.XImportResolverPass
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.importresolver.*
 
 import java.io.File as JFile
 import java.util.regex.Matcher

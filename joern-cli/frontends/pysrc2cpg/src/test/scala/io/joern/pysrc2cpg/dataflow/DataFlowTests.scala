@@ -5,8 +5,7 @@ import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
 import io.joern.pysrc2cpg.PySrc2CpgFixture
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Literal, Member, Method}
-import io.shiftleft.semanticcpg.language._
-import org.scalatest.Ignore
+import io.shiftleft.semanticcpg.language.*
 
 import java.io.File
 
@@ -587,6 +586,50 @@ class RegexDefinedFlowsDataFlowTests
     val sinks   = cpg.call.methodFullName(".*log.*(debug|info|error).*").l
     val flows   = sinks.reachableByFlows(sources).l
     flows.size shouldBe 2
+  }
+
+  "flow across interprocedural module variables" should {
+
+    "handle simple import and field-based usage of a literal" in {
+      val cpg: Cpg = code(
+        """
+          |a = 42
+          |""".stripMargin,
+        "foo.py"
+      )
+        .moreCode(
+          """
+            |import foo
+            |
+            |print(foo.a)
+            |""".stripMargin,
+          "bar.py"
+        )
+      val source = cpg.literal("42").l
+      val sink   = cpg.call.name("print.*").l
+      sink.reachableByFlows(source).size shouldBe 1
+    }
+
+    "handle simple import and aliased usage of a literal" in {
+      val cpg: Cpg = code(
+        """
+          |a = 42
+          |""".stripMargin,
+        "foo.py"
+      )
+        .moreCode(
+          """
+            |from foo import a as b
+            |
+            |print(b)
+            |""".stripMargin,
+          "bar.py"
+        )
+      val source = cpg.literal("42").l
+      val sink   = cpg.call.name("print.*").l
+      sink.reachableByFlows(source).size shouldBe 1
+    }
+
   }
 
 }

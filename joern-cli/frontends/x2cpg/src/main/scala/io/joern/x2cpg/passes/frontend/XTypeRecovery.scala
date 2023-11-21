@@ -6,6 +6,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, Operators, PropertyNames}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.importresolver.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
 import org.slf4j.{Logger, LoggerFactory}
@@ -18,6 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import scala.annotation.tailrec
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
+import scala.util.matching.Regex
 
 /** @param iterations
   *   the number of iterations to run.
@@ -93,6 +95,7 @@ abstract class XTypeRecoveryPass[CompilationUnitType <: AstNode](
 
   private def linkMembersToTheirRefs(builder: DiffGraphBuilder): Unit = {
     import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromIteratorExt
+    import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
 
     def getFieldBaseTypes(fieldAccess: FieldAccess): Iterator[TypeDecl] = {
       fieldAccess.argument(1) match
@@ -199,6 +202,8 @@ object XTypeRecovery {
   val DummyIndexAccess                      = "<indexAccess>"
   private lazy val DummyTokens: Set[String] = Set(DummyReturnType, DummyMemberLoad, DummyIndexAccess)
 
+  val unknownTypePattern: Regex = s"(i?)(UNKNOWN|ANY|${Defines.UnresolvedNamespace}).*".r
+
   def dummyMemberType(prefix: String, memberName: String, sep: Char = '.'): String =
     s"$prefix$sep$DummyMemberLoad($memberName)"
 
@@ -233,6 +238,26 @@ object XTypeRecovery {
     )
   }
 
+  // The below are convenience calls for accessing type properties, one day when this pass uses `Tag` nodes instead of
+  // the symbol table then perhaps this would work out better
+  implicit class AllNodeTypesFromNodeExt(x: StoredNode) {
+    def allTypes: Iterator[String] = (x.property(PropertyNames.TYPE_FULL_NAME, "ANY") +: x.property(
+      PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
+      Seq.empty
+    )).iterator
+
+    def getKnownTypes: Set[String] = {
+      x.allTypes.toSet.filterNot(XTypeRecovery.unknownTypePattern.matches)
+    }
+  }
+
+  implicit class AllNodeTypesFromIteratorExt(x: Iterator[StoredNode]) {
+    def allTypes: Iterator[String] = x.flatMap(_.allTypes)
+
+    def getKnownTypes: Set[String] =
+      x.allTypes.toSet.filterNot(XTypeRecovery.unknownTypePattern.matches)
+  }
+
 }
 
 /** Performs type recovery from the root of a compilation unit level
@@ -252,6 +277,9 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   builder: DiffGraphBuilder,
   state: XTypeRecoveryState
 ) extends RecursiveTask[Boolean] {
+
+  import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
+  import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromIteratorExt
 
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
 
@@ -350,8 +378,6 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     resolvedImport <- i.call.tag
     alias          <- i.importedAs
   } {
-    import io.joern.x2cpg.passes.frontend.ImportsPass.*
-
     EvaluatedImport.tagToEvaluatedImport(resolvedImport).foreach {
       case ResolvedMethod(fullName, alias, receiver, _) =>
         symbolTable.append(CallAlias(alias, receiver), fullName)
@@ -547,11 +573,14 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       // We have been able to resolve the type inter-procedurally
       associateTypes(i, globalTypes)
     } else if (baseTypes.nonEmpty) {
+      lazy val existingMembers = cpg.typeDecl.fullNameExact(baseTypes.toSeq: _*).member.nameExact(fieldName)
       if (baseTypes.equals(symbolTable.get(LocalVar(fieldFullName)))) {
         associateTypes(i, baseTypes)
-      } else {
+      } else if (existingMembers.isEmpty) {
         // If not available, use a dummy variable that can be useful for call matching
         associateTypes(i, baseTypes.map(t => XTypeRecovery.dummyMemberType(t, fieldName, pathSep)))
+      } else {
+        Set.empty
       }
     } else {
       // Assign dummy
@@ -653,7 +682,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     */
   protected def getTypesFromCall(c: Call): Set[String] = c.name match {
     case Operators.fieldAccess        => symbolTable.get(LocalVar(getFieldName(new FieldAccess(c))))
-    case _ if symbolTable.contains(c) => symbolTable.get(c)
+    case _ if symbolTable.contains(c) => methodReturnValues(symbolTable.get(c).toSeq)
     case Operators.indexAccess        => getIndexAccessTypes(c)
     case n =>
       logger.debug(s"Unknown RHS call type '$n' @ ${debugLocation(c)}")
@@ -1027,7 +1056,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   /** In the case this field access is a function pointer, we would want to make sure this has a method ref.
     */
-  private def handlePotentialFunctionPointer(
+  protected def handlePotentialFunctionPointer(
     funcPtr: Expression,
     baseTypes: Set[String],
     funcName: String,
@@ -1203,27 +1232,5 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** Allows an implementation to perform an operation once type persistence is complete.
     */
   protected def postSetTypeInformation(): Unit = {}
-
-  private val unknownTypePattern = s"(i?)(UNKNOWN|ANY|${Defines.UnresolvedNamespace}).*".r
-
-  // The below are convenience calls for accessing type properties, one day when this pass uses `Tag` nodes instead of
-  // the symbol table then perhaps this would work out better
-  implicit class AllNodeTypesFromNodeExt(x: StoredNode) {
-    def allTypes: Iterator[String] = (x.property(PropertyNames.TYPE_FULL_NAME, "ANY") +: x.property(
-      PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
-      Seq.empty
-    )).iterator
-
-    def getKnownTypes: Set[String] = {
-      x.allTypes.toSet.filterNot(unknownTypePattern.matches)
-    }
-  }
-
-  implicit class AllNodeTypesFromIteratorExt(x: Iterator[StoredNode]) {
-    def allTypes: Iterator[String] = x.flatMap(_.allTypes)
-
-    def getKnownTypes: Set[String] =
-      x.allTypes.toSet.filterNot(unknownTypePattern.matches)
-  }
 
 }

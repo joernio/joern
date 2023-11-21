@@ -1,10 +1,11 @@
 package io.joern.pysrc2cpg
 
-import io.joern.x2cpg.passes.frontend._
+import io.joern.x2cpg.passes.frontend.*
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.importresolver.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -48,7 +49,6 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
 
   override def visitImport(i: Import): Unit = {
     if (i.importedAs.isDefined && i.importedEntity.isDefined) {
-      import io.joern.x2cpg.passes.frontend.ImportsPass.*
 
       val entityName = i.importedAs.get
       i.call.tag.flatMap(EvaluatedImport.tagToEvaluatedImport).foreach {
@@ -184,7 +184,8 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
     }
   }
 
-  override protected def postSetTypeInformation(): Unit =
+  override protected def postSetTypeInformation(): Unit = {
+    super.postSetTypeInformation()
     cu.typeDecl
       .map(t => t -> t.inheritsFromTypeFullName.partition(itf => symbolTable.contains(LocalVar(itf))))
       .foreach { case (t, (identifierTypes, otherTypes)) =>
@@ -195,6 +196,7 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
           builder.setNodeProperty(t, PropertyNames.INHERITS_FROM_TYPE_FULL_NAME, resolvedTypes)
         }
       }
+  }
 
   override def prepopulateSymbolTable(): Unit = {
     cu.ast.isMethodRef.where(_.astSiblings.isIdentifier.nameExact("classmethod")).referencedMethod.foreach {
@@ -217,5 +219,15 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
       .map(td => symbolTable.append(CallAlias(i.name, rec), Set(td)))
       .headOption
       .getOrElse(super.visitIdentifierAssignedToTypeRef(i, t, rec))
+
+  override protected def handlePotentialFunctionPointer(
+    funcPtr: Expression,
+    baseTypes: Set[String],
+    funcName: String,
+    baseName: Option[String]
+  ): Unit = {
+    if (funcName != "<module>")
+      super.handlePotentialFunctionPointer(funcPtr, baseTypes, funcName, baseName)
+  }
 
 }
