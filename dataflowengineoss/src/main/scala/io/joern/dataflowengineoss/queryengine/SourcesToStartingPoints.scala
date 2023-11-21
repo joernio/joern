@@ -64,16 +64,6 @@ class SourceTravsToStartingPointsTask[NodeType](sourceTravs: IterableOnce[NodeTy
 class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode]] {
 
   private val cpg = Cpg(src.graph())
-  private lazy val memberToImportingModule: Map[Member, List[(String, Method)]] = cpg.call
-    .where(_.method.isModule)
-    .flatMap(x =>
-      x.referencedImports
-        .flatMap(extractAliasMemberPair)
-        .map { case (alias, member) => member -> (alias, x.method) }
-    )
-    .groupBy(_._1)
-    .map { case (member, xs) => member -> xs.map(_._2) }
-  private val typeDeclToMembers = cpg.typeDecl.map { x => x.fullName -> x.member.l }.toMap
 
   override def compute(): List[CfgNode] = sourceToStartingPoints(src)
 
@@ -84,7 +74,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
       case lit: Literal =>
         val uses = usages(targetsToClassIdentifierPair(literalToInitializedMembers(lit)))
         val globals = globalFromLiteral(lit).flatMap {
-          case x: Identifier if x.isModuleVariable => x +: moduleVarToUsages(x)
+          case x: Identifier if x.isModuleVariable => x +: moduleVariableToFirstUsagesAcrossProgram(x)
           case x                                   => x :: Nil
         }.l
         lit :: (uses ++ globals)
@@ -107,9 +97,10 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
 
   private def withFieldAndIndexAccesses(nodes: List[CfgNode]): List[CfgNode] =
     nodes.flatMap {
-      case moduleVar: Identifier if moduleVar.isModuleVariable => moduleVar :: moduleVarToUsages(moduleVar)
-      case identifier: Identifier                              => identifier :: fieldAndIndexAccesses(identifier)
-      case x                                                   => x :: Nil
+      case moduleVar: Identifier if moduleVar.isModuleVariable =>
+        moduleVar :: moduleVariableToFirstUsagesAcrossProgram(moduleVar)
+      case identifier: Identifier => identifier :: fieldAndIndexAccesses(identifier)
+      case x                      => x :: Nil
     }
 
   private def fieldAndIndexAccesses(identifier: Identifier): List[CfgNode] =
@@ -136,30 +127,21 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
       .getOrElse(Seq.empty)
   }
 
-  private def moduleVarToUsages(moduleVar: Identifier): List[CfgNode] = {
-    typeDeclToMembers
-      .getOrElse(moduleVar.method.fullName, List.empty)
-      .nameExact(moduleVar.name)
-      .flatMap(memberToImportingModule.get)
-      .flatMap { xs =>
-        xs.flatMap { case (alias, importingModule) =>
-          val directAccess = importingModule
-            .flatMap(_._identifierViaContainsOut.nameExact(alias))
-            .sortBy(i => (i.lineNumber, i.columnNumber))
-            .filterNot(notLeftHandOfAssignment)
-            .headOption
-            .toList
-          val accessedAsFields = importingModule
-            .flatMap(_.fieldAccess.where(_.fieldIdentifier.canonicalNameExact(alias))) // TODO: This does not check LHS
-            .sortBy(i => (i.lineNumber, i.columnNumber))
-            .filterNot(notLeftHandOfAssignment)
-            .headOption
-            .toList
-          (directAccess ++ accessedAsFields).collectAll[CfgNode]
-        }
+  /** Finds the first usages of this module variable across all importing modules.
+    *
+    * TODO: This is wrapped in a try-catch because of the deprecated Ruby frontend crashing this process due to a
+    * missing `.method` parent node in the contains graph.
+    */
+  private def moduleVariableToFirstUsagesAcrossProgram(moduleVar: Identifier): List[CfgNode] = Try {
+    moduleVar.start.moduleVariables.references
+      .groupBy(_.method)
+      .map {
+        case (sameModule, references) if moduleVar.method == sameModule => references
+        case (_, references)                                            => references.filterNot(notLeftHandOfAssignment)
       }
+      .flatMap(_.sortBy(i => (i.lineNumber, i.columnNumber)).headOption)
       .toList
-  }
+  }.getOrElse(List.empty)
 
   private def usages(pairs: List[(TypeDecl, AstNode)]): List[CfgNode] = {
     pairs.flatMap { case (typeDecl, astNode) =>
@@ -227,7 +209,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
   /** For a literal, determine if it is used in the initialization of any member variables. Return list of initialized
     * members. An initialized member is either an identifier or a field-identifier.
     */
-  private def literalToInitializedMembers(lit: Literal): List[Expression] =
+  private def literalToInitializedMembers(lit: Literal): List[CfgNode] =
     lit.inAssignment
       .or(
         _.method.nameExact(Defines.StaticInitMethodName, Defines.ConstructorMethodName, "__init__"),
@@ -238,12 +220,12 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
       .flatMap {
         case identifier: Identifier
             // If these are the same, then the parent method is the module-level type
-            if Option(identifier.method.fullName) == identifier.method.typeDecl.fullName.headOption ||
+            if identifier.method.typeDecl.fullName.contains(identifier.method.fullName) ||
               // If a member shares the name of the identifier then we consider this as a member
               lit.method.typeDecl.member.name.toSet.contains(identifier.name) =>
-          List(identifier)
+          identifier :: Nil
         case call: Call if isFieldAccess(call.name) => call.ast.isFieldIdentifier.l
-        case _                                      => List[Expression]()
+        case _                                      => Nil
       }
       .l
 

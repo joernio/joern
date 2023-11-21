@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.deprecated.passes
 import io.joern.rubysrc2cpg.deprecated.utils.PackageTable
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines as XDefines
-import io.joern.x2cpg.passes.frontend.ImportsPass.{ResolvedMethod, ResolvedTypeDecl, TagToResolvedImportExt}
+import io.shiftleft.semanticcpg.language.importresolver.*
 import io.shiftleft.semanticcpg.language.*
 
 import scala.collection.immutable.List
@@ -138,10 +138,10 @@ class RubyTypeRecoveryTests
     // TODO Waiting for Module modelling to be done
     "resolve correct imports via tag nodes" ignore {
       val List(foo: ResolvedTypeDecl) =
-        cpg.file(".*foo.rb").ast.isCall.where(_.referencedImports).tag.toEvaluatedImport.toList: @unchecked
+        cpg.file(".*foo.rb").ast.isCall.where(_.referencedImports).tag._toEvaluatedImport.toList: @unchecked
       foo.fullName shouldBe "dbi::program.DBI"
       val List(bar: ResolvedTypeDecl) =
-        cpg.file(".*bar.rb").ast.isCall.where(_.referencedImports).tag.toEvaluatedImport.toList: @unchecked
+        cpg.file(".*bar.rb").ast.isCall.where(_.referencedImports).tag._toEvaluatedImport.toList: @unchecked
       bar.fullName shouldBe "foo.rb::program.FooModule"
     }
 
@@ -201,7 +201,7 @@ class RubyTypeRecoveryTests
 
     "resolve correct imports via tag nodes" in {
       val List(logging: ResolvedMethod, _) =
-        cpg.call.where(_.referencedImports).tag.toEvaluatedImport.toList: @unchecked
+        cpg.call.where(_.referencedImports).tag._toEvaluatedImport.toList: @unchecked
       logging.fullName shouldBe s"logger::program.Logger.${XDefines.ConstructorMethodName}"
     }
 
