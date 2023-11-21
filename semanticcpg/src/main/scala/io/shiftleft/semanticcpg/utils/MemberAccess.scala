@@ -1,7 +1,6 @@
 package io.shiftleft.semanticcpg.utils
 
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.semanticcpg.language.operatorextension.allAssignmentTypes
 
 object MemberAccess {
 
@@ -34,10 +33,6 @@ object MemberAccess {
     (name == Operators.indexAccess) ||
     (name == Operators.indirectIndexAccess) ||
     (name == Operators.getElementPtr)
-  }
-
-  def isAssignment(name: String): Boolean = {
-    allAssignmentTypes.contains(name)
   }
 
 }
