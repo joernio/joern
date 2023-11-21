@@ -37,19 +37,22 @@ class ModuleVariableTraversal(traversal: Iterator[OpNodes.ModuleVariable]) exten
         val modules       = cpg.method.isModule.l
         val variableNames = variables.name.toSet
         val immediateRef  = variables.referencingIdentifiers
-        val externalRefs = modules.call.where(_.referencedImports).flatMap { call =>
-          val module = call.method
-          call.referencedImports
-            .flatMap(extractAliasNodePair)
-            .filter {
-              case (_, node: Member) => variableNames.contains(node.name)
-              case _                 => false
-            }
-            .flatMap { case (alias, _) =>
-              module.local.nameExact(alias).referencingIdentifiers ++
-                module.fieldAccess.fieldIdentifier.canonicalNameExact(alias)
-            }
-        }
+        val externalRefs = modules.call
+          .where(_.referencedImports)
+          .flatMap { call =>
+            val module = call.method
+            call.referencedImports
+              .flatMap(extractAliasNodePair)
+              .filter {
+                case (_, node: Member)   => variableNames.contains(node.name)
+                case (_, node: TypeDecl) => node.member.name.exists(variableNames.contains)
+                case _                   => false
+              }
+              .flatMap { case (alias, _) =>
+                module.local.nameExact(alias).referencingIdentifiers ++
+                  module.fieldAccess.fieldIdentifier.canonicalNameExact(alias)
+              }
+          }
         (immediateRef ++ externalRefs).collectAll[Identifier | FieldIdentifier]
       case None => Iterator.empty
   }

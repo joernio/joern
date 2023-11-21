@@ -5,7 +5,6 @@ import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.semanticcpg.language.importresolver.{EvaluatedImport, ResolvedMember, ResolvedTypeDecl}
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.Assignment
 import io.shiftleft.semanticcpg.language.operatorextension.allAssignmentTypes
 import io.shiftleft.semanticcpg.utils.MemberAccess.isFieldAccess
@@ -109,23 +108,6 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
       .inCall
       .collect { case c if isFieldAccess(c.name) => c }
       .toList
-
-  private def extractAliasMemberPair(i: Import): Seq[(String, Member)] = {
-    i.importedAs
-      .map { alias =>
-        i.call.tag
-          .flatMap(EvaluatedImport.tagToEvaluatedImport)
-          .flatMap {
-            case ResolvedMember(basePath, memberName, _) =>
-              cpg.typeDecl.fullNameExact(basePath).member.nameExact(memberName).map(m => alias -> m)
-            case ResolvedTypeDecl(typeFullName, _) =>
-              cpg.typeDecl.fullNameExact(typeFullName).member.map(m => alias -> m)
-            case _ => Seq.empty
-          }
-          .toSeq
-      }
-      .getOrElse(Seq.empty)
-  }
 
   /** Finds the first usages of this module variable across all importing modules.
     *
