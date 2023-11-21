@@ -1,7 +1,7 @@
 package io.joern.dataflowengineoss.queryengine
 
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, Operators, Properties}
+import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, NodeTypes, Operators, Properties}
 import io.joern.dataflowengineoss.queryengine.AccessPathUsage.toTrackedBaseAndAccessPathSimple
 import io.shiftleft.semanticcpg.accesspath._
 import org.scalatest.matchers.should.Matchers._

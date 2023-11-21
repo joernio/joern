@@ -1,7 +1,8 @@
 package io.joern.x2cpg.passes
 
-import io.shiftleft.codepropertygraph.generated.v2.{Cpg, EdgeKinds, EdgeTypes, NodeTypes}
+import io.joern.odb2.misc.TestUtils.*
 import io.joern.x2cpg.passes.controlflow.cfgdominator.CfgDominatorPass
+import io.shiftleft.codepropertygraph.generated.v2.{Cpg, EdgeKinds, EdgeTypes, NodeTypes}
 import io.shiftleft.codepropertygraph.generated.v2.nodes.{NewMethod, NewMethodReturn, NewUnknown}
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.matchers.should.Matchers

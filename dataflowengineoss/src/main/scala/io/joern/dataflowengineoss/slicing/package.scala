@@ -2,11 +2,10 @@ package io.joern.dataflowengineoss
 
 import better.files.File
 import io.circe.{Decoder, Encoder, HCursor, Json}
-import io.shiftleft.codepropertygraph.generated.PropertyNames
-import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.v2.PropertyNames
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
-import overflowdb.PropertyKey
 
 import java.util.concurrent.{ExecutorService, Executors}
 import java.util.regex.Pattern
@@ -166,8 +165,8 @@ package object slicing {
     typeFullName: String = "",
     parentMethod: String = "",
     parentFile: String = "",
-    lineNumber: Option[Integer] = None,
-    columnNumber: Option[Integer] = None
+    lineNumber: Option[Int] = None,
+    columnNumber: Option[Int] = None
   )
 
   implicit val encodeSliceNode: Encoder[SliceNode] = Encoder.instance {

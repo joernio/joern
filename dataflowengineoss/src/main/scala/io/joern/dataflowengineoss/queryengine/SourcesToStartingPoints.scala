@@ -3,8 +3,8 @@ package io.joern.dataflowengineoss.queryengine
 import io.joern.dataflowengineoss.globalFromLiteral
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.v2.Operators
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.allAssignmentTypes
 import io.shiftleft.semanticcpg.utils.MemberAccess.isFieldAccess
@@ -62,7 +62,7 @@ class SourceTravsToStartingPointsTask[NodeType](sourceTravs: IterableOnce[NodeTy
   */
 class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode]] {
 
-  private val cpg = Cpg(src.graph())
+  private val cpg = Cpg(src.graph)
 
   override def compute(): List[CfgNode] = sourceToStartingPoints(src)
 

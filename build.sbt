@@ -8,7 +8,7 @@ val cpgVersion = "1.4.25+13-764b001c"
 // lazy val joerncli          = Projects.joerncli
 // lazy val querydb           = Projects.querydb
 // lazy val console           = Projects.console
-// lazy val dataflowengineoss = Projects.dataflowengineoss
+lazy val dataflowengineoss = Projects.dataflowengineoss
 // lazy val macros            = Projects.macros
 lazy val semanticcpg       = Projects.semanticcpg
 // lazy val benchmarks        = Projects.benchmarks
@@ -29,7 +29,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
 //   joerncli,
 //   querydb,
 //   console,
-//   dataflowengineoss,
+  dataflowengineoss,
 //   macros,
   semanticcpg,
 //   c2cpg,
