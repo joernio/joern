@@ -8,7 +8,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
   "AST generation for simple fragments" should {
 
-    "have module modifier at the top level module method node" ignore AstFixture("") { cpg =>
+    "have module modifier at the top level module method node" in AstFixture("") { cpg =>
       val List(method)                = cpg.method.nameExact("<global>").l
       val List(modVirtual, modModule) = method.modifier.l
       modVirtual.modifierType shouldBe ModifierTypes.VIRTUAL
@@ -17,7 +17,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       modModule.order shouldBe 1
     }
 
-    "have correct modifier for a function" ignore AstFixture("private static func foo() -> {}") { cpg =>
+    "have correct modifier for a function" in AstFixture("private static func foo() -> {}") { cpg =>
       val List(method)                            = cpg.method.nameExact("foo").l
       val List(modVirtual, modPrivate, modStatic) = method.modifier.l
       modVirtual.modifierType shouldBe ModifierTypes.VIRTUAL
@@ -28,7 +28,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       modStatic.order shouldBe 2
     }
 
-    "have correct structure for simple variable declarations" ignore AstFixture("""
+    "have correct structure for simple variable declarations" in AstFixture("""
         |let x = 1
         |var y: String = "2"
         |""".stripMargin) { cpg =>
@@ -38,7 +38,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       assignY.code shouldBe """var y: String = "2""""
     }
 
-    "have corresponding type decl with correct bindings for function" ignore AstFixture("func method() -> {}") { cpg =>
+    "have corresponding type decl with correct bindings for function" in AstFixture("func method() -> {}") { cpg =>
       val List(typeDecl) = cpg.typeDecl.nameExact("method").l
       typeDecl.fullName should endWith(".swift:<global>:method")
 
@@ -50,7 +50,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       boundMethod shouldBe cpg.method.nameExact("method").head
     }
 
-    "have correct closure bindings" ignore AstFixture("""
+    "have correct closure bindings" in AstFixture("""
         |func foo() -> {
         |  let x = 1
         |  func bar() -> {
@@ -77,7 +77,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       identifierX.refOut.head shouldBe barLocals
     }
 
-    "have correct structure for annotated function" ignore AstFixture("""
+    "have correct structure for annotated function" in AstFixture("""
         |@bar(x: "y")
         |func foo() -> {
         |  let x = 1
