@@ -1,7 +1,7 @@
 package io.joern.dataflowengineoss.slicing
 
 import io.joern.dataflowengineoss.language.*
-import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.v2.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.PropertyNames
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language.*
@@ -33,9 +33,9 @@ object DataFlowSlicing {
       val sliceNodesIdSet = sliceNodes.id.toSet
       // Lazily set up the rest if the filters are satisfied
       lazy val sliceEdges = sliceNodes
-        .flatMap(_.outE)
-        .filter(x => sliceNodesIdSet.contains(x.inNode().id()))
-        .map { e => SliceEdge(e.outNode().id(), e.inNode().id(), e.label()) }
+        .outE
+        .filter(x => sliceNodesIdSet.contains(x.dst.id()))
+        .map { e => SliceEdge(e.src.id(), e.dst.id(), e.label) }
         .toSet
       lazy val slice = Option(DataFlowSlice(sliceNodes.map(cfgNodeToSliceNode).toSet, sliceEdges))
 
@@ -67,8 +67,8 @@ object DataFlowSlicing {
       case n: TypeRef   => sliceNode.copy(name = n.typeFullName, code = n.code)
       case n =>
         sliceNode.copy(
-          name = n.property(PropertyNames.NAME, ""),
-          typeFullName = n.property(PropertyNames.TYPE_FULL_NAME, "")
+          name = n.propertyOption[String](PropertyNames.NAME).getOrElse(""),
+          typeFullName = n.propertyOption[String](PropertyNames.TYPE_FULL_NAME).getOrElse("")
         )
     }
   }

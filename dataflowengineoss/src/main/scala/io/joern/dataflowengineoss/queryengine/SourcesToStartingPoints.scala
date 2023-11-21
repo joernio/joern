@@ -69,7 +69,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
   private def sourceToStartingPoints(src: StoredNode): List[CfgNode] = {
     src match {
       case methodReturn: MethodReturn =>
-        methodReturn.method.callIn.l
+        methodReturn.method._callIn.cast[Call].l
       case lit: Literal =>
         List(lit) ++ usages(targetsToClassIdentifierPair(literalToInitializedMembers(lit))) ++ globalFromLiteral(lit)
       case member: Member =>

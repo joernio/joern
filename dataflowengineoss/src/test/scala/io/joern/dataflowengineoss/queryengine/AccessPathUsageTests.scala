@@ -1,12 +1,12 @@
 package io.joern.dataflowengineoss.queryengine
 
+import flatgraph.{GNode, Graph}
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, NodeTypes, Operators, Properties}
+import io.shiftleft.codepropertygraph.generated.v2.{Cpg, EdgeTypes, NodeTypes, Operators}
 import io.joern.dataflowengineoss.queryengine.AccessPathUsage.toTrackedBaseAndAccessPathSimple
-import io.shiftleft.semanticcpg.accesspath._
-import org.scalatest.matchers.should.Matchers._
+import io.shiftleft.semanticcpg.accesspath.*
+import org.scalatest.matchers.should.Matchers.*
 import org.scalatest.wordspec.AnyWordSpec
-import overflowdb._
 
 class AccessPathUsageTests extends AnyWordSpec {
 
@@ -21,9 +21,9 @@ class AccessPathUsageTests extends AnyWordSpec {
   private val VS = VariablePointerShift
   private val S  = PointerShift
 
-  private val g = OverflowDbTestInstance.create
+  private val g = Cpg.empty.graph
 
-  private def genCALL(graph: Graph, op: String, args: Node*): Call = {
+  private def genCALL(graph: Graph, op: String, args: GNode*): Call = {
     val ret = graph + NodeTypes.CALL // (NodeTypes.CALL, Properties.NAME -> op)
     ret.setProperty(Properties.NAME, op)
     args.reverse.zipWithIndex.foreach { case (arg, idx) =>

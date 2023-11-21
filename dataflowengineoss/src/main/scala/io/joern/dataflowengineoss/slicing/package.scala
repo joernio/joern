@@ -402,13 +402,12 @@ package object slicing {
       *   extracted.
       */
     def fromNode(node: StoredNode, typeMap: Map[String, String] = Map.empty[String, String]): DefComponent = {
-      val nodeType = (node.property(PropertyNames.TYPE_FULL_NAME, "ANY") +: node.property(
-        PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
-        Seq.empty[String]
-      )).filterNot(_.matches("(ANY|UNKNOWN)")).headOption.getOrElse("ANY")
+      val typeFullNameProperty = node.propertyOption[String](PropertyNames.TYPE_FULL_NAME).getOrElse("ANY")
+      val dynamicTypeHintFullNamesProperty = node.propertyOption[Seq[String]](PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME).getOrElse(Seq.empty)
+      val nodeType = (typeFullNameProperty +: dynamicTypeHintFullNamesProperty).filterNot(_.matches("(ANY|UNKNOWN)")).headOption.getOrElse("ANY")
       val typeFullName = typeMap.getOrElse(nodeType, nodeType)
-      val lineNumber   = Option(node.property(new PropertyKey[Integer](PropertyNames.LINE_NUMBER))).map(_.toInt)
-      val columnNumber = Option(node.property(new PropertyKey[Integer](PropertyNames.COLUMN_NUMBER))).map(_.toInt)
+      val lineNumber = node.propertyOption[Int](PropertyNames.LINE_NUMBER)
+      val columnNumber = node.propertyOption[Int](PropertyNames.COLUMN_NUMBER)
       node match {
         case x: MethodParameterIn => ParamDef(x.name, typeFullName, x.index, lineNumber, columnNumber)
         case x: Call if x.code.startsWith("new ") =>
