@@ -9,6 +9,7 @@ import io.shiftleft.semanticcpg.language._
 class CopyExprTests extends AbstractPassTest {
 
   "CopyExprTests" should {
+
     "testGlobal" ignore AstFixture("""
         |var global: Int = 5
         |func testGlobal() {

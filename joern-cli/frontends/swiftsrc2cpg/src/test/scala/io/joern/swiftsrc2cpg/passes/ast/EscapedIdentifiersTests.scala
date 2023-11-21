@@ -7,7 +7,9 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 
 class EscapedIdentifiersTests extends AbstractPassTest {
+
   "EscapedIdentifiersTests" should {
+
     "testEscapedIdentifiers1" ignore AstFixture("""
       func `protocol`() {}
       """) { cpg => ??? }
@@ -51,6 +53,7 @@ class EscapedIdentifiersTests extends AbstractPassTest {
     "testEscapedIdentifiers10" ignore AstFixture("""
       typealias `Self` = Int
       """) { cpg => ??? }
+
   }
 
 }

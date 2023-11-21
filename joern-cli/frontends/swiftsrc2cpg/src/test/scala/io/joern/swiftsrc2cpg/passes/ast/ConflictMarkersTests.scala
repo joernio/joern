@@ -7,7 +7,9 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 
 class ConflictMarkersTests extends AbstractPassTest {
+
   "ConflictMarkersTests" should {
+
     "testConflictMarkers2" ignore AstFixture("""
         |prefix operator <<<<<<<
         |infix operator <<<<<<<

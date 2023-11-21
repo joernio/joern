@@ -7,6 +7,7 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 
 class BuiltinWordTests extends AbstractPassTest {
+
   "BuiltinWordTests" should {
 
     "testBuiltinWord1" ignore AstFixture("precedencegroup AssignmentPrecedence { assignment: true }") { cpg => ??? }

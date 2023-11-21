@@ -5,7 +5,9 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 
 class DirectiveTests extends AbstractPassTest {
+
   "DirectiveTests" should {
+
     "testSwitchIfConfig" ignore AstFixture("""
       |switch x {
       |  case 1: fallthrough
@@ -57,11 +59,11 @@ class DirectiveTests extends AbstractPassTest {
 
     "testHasAttribute" ignore AstFixture("""
       |@frozen
-      |      #if hasAttribute(foo)
-      |      @foo
-      |      #endif
-      |      public struct S2 { }
-      |      """.stripMargin) { cpg => ??? }
+      |#if hasAttribute(foo)
+      |@foo
+      |#endif
+      |public struct S2 { }
+      |""".stripMargin) { cpg => ??? }
   }
 
 }

@@ -9,6 +9,7 @@ import io.shiftleft.semanticcpg.language._
 class AsyncSyntaxTests extends AbstractPassTest {
 
   "AsyncSyntaxTests" should {
+
     "testAsyncSyntax1" ignore AstFixture("""
         |func asyncGlobal1() async { }
         |func asyncGlobal2() async throws { }
