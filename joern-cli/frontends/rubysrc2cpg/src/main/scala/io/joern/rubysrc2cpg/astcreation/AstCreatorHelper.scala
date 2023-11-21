@@ -1,6 +1,6 @@
 package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.astcreation.GlobalTypes.{builtinFunctions, builtinPrefix}
-import io.joern.rubysrc2cpg.parser.ParserAst.ParserNode
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.RubyNode
 import io.joern.x2cpg.datastructures.Scope
 import io.joern.x2cpg.datastructures.Stack.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -23,11 +23,11 @@ trait AstCreatorHelper { this: AstCreator =>
   protected def computeClassFullName(name: String): String  = s"$getEnclosingAstFullName.$name"
   protected def computeMethodFullName(name: String): String = s"$getEnclosingAstFullName:$name"
 
-  override def column(node: ParserNode): Option[Integer]    = node.column
-  override def columnEnd(node: ParserNode): Option[Integer] = node.columnEnd
-  override def line(node: ParserNode): Option[Integer]      = node.line
-  override def lineEnd(node: ParserNode): Option[Integer]   = node.lineEnd
-  override def code(node: ParserNode): String               = shortenCode(node.text)
+  override def column(node: RubyNode): Option[Integer]    = node.column
+  override def columnEnd(node: RubyNode): Option[Integer] = node.columnEnd
+  override def line(node: RubyNode): Option[Integer]      = node.line
+  override def lineEnd(node: RubyNode): Option[Integer]   = node.lineEnd
+  override def code(node: RubyNode): String               = shortenCode(node.text)
 
   protected def isBuiltin(x: String): Boolean      = builtinFunctions.contains(x)
   protected def prefixAsBuiltin(x: String): String = s"$builtinPrefix$pathSep$x"

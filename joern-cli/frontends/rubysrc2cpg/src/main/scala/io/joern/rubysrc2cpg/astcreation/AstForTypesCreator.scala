@@ -1,12 +1,10 @@
 package io.joern.rubysrc2cpg.astcreation
 
-import io.joern.rubysrc2cpg.parser.ParserAst
-import io.joern.rubysrc2cpg.parser.ParserAst.*
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, Operators}
-import org.antlr.v4.runtime.ParserRuleContext
 
 import scala.collection.immutable.List
 
@@ -14,19 +12,19 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
   protected def astForModuleDeclaration(node: ModuleDeclaration): Ast = {
     // TODO: Might be wrong here (hence this placeholder), but I'm assuming modules ~= abstract classes.
-    val classDecl = ClassDeclaration(node.ctx, node.moduleName, None, node.body)
+    val classDecl = ClassDeclaration(node.moduleName, None, node.body)(node.span)
     astForClassDeclaration(classDecl)
   }
 
   protected def astForClassDeclaration(node: ClassDeclaration): Ast = {
-    ParserAst(node.className) match
+    node.className match
       case name: SimpleIdentifier => astForSimpleNamedClassDeclaration(node, name)
       case name =>
         logger.warn(s"Qualified class names are not supported yet: ${name.text} ($relativeFileName), skipping")
         astForUnknown(node)
   }
 
-  private def getBaseClassName(node: ParserNode): Option[String] = {
+  private def getBaseClassName(node: RubyNode): Option[String] = {
     node match
       case simpleIdentifier: SimpleIdentifier => Some(simpleIdentifier.text)
       case _ =>
@@ -36,7 +34,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
   private def astForSimpleNamedClassDeclaration(node: ClassDeclaration, nameIdentifier: SimpleIdentifier): Ast = {
     val className    = nameIdentifier.text
-    val inheritsFrom = node.baseClass.flatMap(ParserAst.apply.andThen(getBaseClassName)).toList
+    val inheritsFrom = node.baseClass.flatMap(getBaseClassName).toList
     val typeDecl = typeDeclNode(
       node = node,
       name = className,
@@ -52,7 +50,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     scope.pushNewScope(typeDecl)
     // TODO: ctor
     val classBody =
-      ParserAst(node.body).asInstanceOf[StatementList] // for now (bodyStatement is a superset of stmtList)
+      node.body.asInstanceOf[StatementList] // for now (bodyStatement is a superset of stmtList)
     val classBodyAsts = classBody.statements.flatMap(astsForStatement)
     scope.popScope()
     methodAstParentStack.pop()
@@ -63,8 +61,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     node.fieldNames.flatMap(astsForSingleFieldDeclaration(node, _))
   }
 
-  private def astsForSingleFieldDeclaration(node: FieldsDeclaration, nameCtx: ParserRuleContext): Seq[Ast] = {
-    ParserAst(nameCtx) match
+  private def astsForSingleFieldDeclaration(node: FieldsDeclaration, nameNode: RubyNode): Seq[Ast] = {
+    nameNode match
       case nameAsSymbol: StaticLiteral if nameAsSymbol.isSymbol =>
         val fieldName   = nameAsSymbol.innerText.prepended('@')
         val memberNode_ = memberNode(nameAsSymbol, fieldName, code(node), Defines.Any)
@@ -73,7 +71,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         val setterAst   = Option.when(node.hasSetter)(astForSetterMethod(node, fieldName))
         Seq(memberAst) ++ getterAst.toList ++ setterAst.toList
       case _ =>
-        logger.warn(s"Unsupported field declaration: ${nameCtx.getText}, skipping")
+        logger.warn(s"Unsupported field declaration: ${nameNode.text}, skipping")
         Seq()
   }
 
