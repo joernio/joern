@@ -3,7 +3,7 @@ package io.joern.x2cpg.passes.frontend
 import io.joern.x2cpg.passes.frontend.TypeNodePass.fullToShortName
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.nodes.NewType
-import io.shiftleft.passes.{KeyPool, CpgPass}
+import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.codepropertygraph.generated.v2.PropertyNames
 
@@ -15,8 +15,8 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
   * Alternatively, set `getTypesFromCpg = true`. If this is set, the `registeredTypes` argument will be ignored.
   * Instead, type nodes will be created for every unique `TYPE_FULL_NAME` value in the CPG.
   */
-class TypeNodePass private (registeredTypes: List[String], cpg: Cpg, keyPool: Option[KeyPool], getTypesFromCpg: Boolean)
-    extends CpgPass(cpg, "types", keyPool) {
+class TypeNodePass private (registeredTypes: List[String], cpg: Cpg, getTypesFromCpg: Boolean)
+  extends CpgPass(cpg, "types") {
 
   private def getTypeDeclTypes(): mutable.Set[String] = {
     val typeDeclTypes = mutable.Set[String]()
@@ -71,12 +71,12 @@ object TypeNodePass {
   // at the start and cutting off the matched group before the signature.
   private val lambdaTypeRegex = raw".*\.(.*):.*\(.*\)".r
 
-  def withTypesFromCpg(cpg: Cpg, keyPool: Option[KeyPool] = None): TypeNodePass = {
-    new TypeNodePass(Nil, cpg, keyPool, getTypesFromCpg = true)
+  def withTypesFromCpg(cpg: Cpg): TypeNodePass = {
+    new TypeNodePass(Nil, cpg, getTypesFromCpg = true)
   }
 
-  def withRegisteredTypes(registeredTypes: List[String], cpg: Cpg, keyPool: Option[KeyPool] = None): TypeNodePass = {
-    new TypeNodePass(registeredTypes, cpg, keyPool, getTypesFromCpg = false)
+  def withRegisteredTypes(registeredTypes: List[String], cpg: Cpg): TypeNodePass = {
+    new TypeNodePass(registeredTypes, cpg, getTypesFromCpg = false)
   }
 
   def fullToShortName(typeName: String): String = {
