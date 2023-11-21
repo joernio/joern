@@ -37,7 +37,8 @@ class PythonImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
         }
       }
       moduleType.member.foreach { moduleMember =>
-        moduleCache.put(s"$modulePath.${moduleMember.name}", ModuleVariable(moduleType.fullName, moduleMember))
+        moduleCache
+          .getOrElseUpdate(s"$modulePath.${moduleMember.name}", ModuleVariable(moduleType.fullName, moduleMember))
       }
     }
   }
