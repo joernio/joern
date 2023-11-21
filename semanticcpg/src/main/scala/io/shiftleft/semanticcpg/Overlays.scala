@@ -5,7 +5,7 @@ import io.shiftleft.codepropertygraph.generated.v2.accessors.Lang.accessProperty
 import io.shiftleft.codepropertygraph.generated.v2.PropertyNames
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
-import io.joern.odb2.DiffGraphBuilder
+import flatgraph.DiffGraphBuilder
 
 object Overlays {
 

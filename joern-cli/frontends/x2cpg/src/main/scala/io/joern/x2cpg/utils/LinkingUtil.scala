@@ -17,7 +17,7 @@ import scala.jdk.CollectionConverters._
 
 trait LinkingUtil {
 
-  import io.joern.odb2.DiffGraphBuilder
+  import flatgraph.DiffGraphBuilder
 
   val logger: Logger = LoggerFactory.getLogger(classOf[LinkingUtil])
 

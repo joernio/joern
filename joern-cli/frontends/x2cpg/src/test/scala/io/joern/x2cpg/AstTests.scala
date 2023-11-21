@@ -1,6 +1,6 @@
 package io.joern.x2cpg
 
-import io.joern.odb2.SchemaViolationException
+import flatgraph.SchemaViolationException
 import io.shiftleft.codepropertygraph.generated.v2.nodes.{AstNodeNew, Call, NewCall, NewClosureBinding, NewIdentifier}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec

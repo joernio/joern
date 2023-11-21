@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.dotgenerator
 
-import io.joern.odb2.Accessors
+import flatgraph.Accessors
 import io.shiftleft.codepropertygraph.generated.v2.PropertyKinds
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language.*

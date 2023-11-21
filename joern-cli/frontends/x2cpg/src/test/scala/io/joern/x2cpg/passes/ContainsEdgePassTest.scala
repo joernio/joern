@@ -1,6 +1,6 @@
 package io.joern.x2cpg.passes
 
-import io.joern.odb2.misc.TestUtils.*
+import flatgraph.misc.TestUtils.*
 import io.joern.x2cpg.passes.base.ContainsEdgePass
 import io.shiftleft.codepropertygraph.generated.v2.{Cpg, EdgeTypes, NodeTypes}
 import io.shiftleft.semanticcpg.language.*

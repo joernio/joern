@@ -1,6 +1,6 @@
 package io.joern.x2cpg
 
-import io.joern.odb2.DiffGraphBuilder
+import flatgraph.DiffGraphBuilder
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.shiftleft.codepropertygraph.generated.v2.Cpg

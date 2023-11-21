@@ -2,7 +2,7 @@ package io.joern.x2cpg
 
 import io.shiftleft.codepropertygraph.generated.v2.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.v2.nodes.{CallBase, NewImport}
-import io.joern.odb2.DiffGraphBuilder
+import flatgraph.DiffGraphBuilder
 
 object Imports {
 

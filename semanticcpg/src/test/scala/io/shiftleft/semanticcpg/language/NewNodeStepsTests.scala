@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.language
 
-import io.joern.odb2.DiffGraphApplier.applyDiff
-import io.joern.odb2.DiffGraphBuilder
+import flatgraph.DiffGraphApplier.applyDiff
+import flatgraph.DiffGraphBuilder
 import io.shiftleft.codepropertygraph.generated.v2.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import org.scalatest.matchers.should.Matchers

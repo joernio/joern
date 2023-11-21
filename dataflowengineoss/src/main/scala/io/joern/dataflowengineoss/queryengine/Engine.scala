@@ -1,6 +1,6 @@
 package io.joern.dataflowengineoss.queryengine
 
-import io.joern.odb2.Edge
+import flatgraph.Edge
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.passes.reachingdef.EdgeValidator

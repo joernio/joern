@@ -1,6 +1,6 @@
 package io.joern.x2cpg.testfixtures
 
-import io.joern.odb2.Graph
+import flatgraph.Graph
 import io.shiftleft.codepropertygraph.generated.v2.Cpg
 
 object EmptyGraphFixture {

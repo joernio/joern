@@ -4,7 +4,7 @@ import io.shiftleft.codepropertygraph.generated.v2.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.codepropertygraph.generated.v2.nodes.AstNode.PropertyDefaults
 import org.slf4j.LoggerFactory
-import io.joern.odb2.{DiffGraphBuilder, SchemaViolationException}
+import flatgraph.{DiffGraphBuilder, SchemaViolationException}
 
 case class AstEdge(src: NewNode, dst: NewNode)
 

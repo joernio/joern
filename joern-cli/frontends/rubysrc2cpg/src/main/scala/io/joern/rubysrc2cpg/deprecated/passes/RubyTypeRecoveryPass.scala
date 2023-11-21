@@ -4,7 +4,7 @@ import io.joern.x2cpg.passes.frontend.*
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
-import io.joern.odb2.DiffGraphBuilder
+import flatgraph.DiffGraphBuilder
 import io.joern.x2cpg.Defines as XDefines
 
 class RubyTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())

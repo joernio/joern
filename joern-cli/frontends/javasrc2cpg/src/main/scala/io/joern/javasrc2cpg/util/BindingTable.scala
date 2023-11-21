@@ -3,7 +3,7 @@ package io.joern.javasrc2cpg.util
 import scala.collection.mutable
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.joern.x2cpg.utils.NodeBuilders.newBindingNode
-import io.joern.odb2.DiffGraphBuilder
+import flatgraph.DiffGraphBuilder
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 
 case class BindingTableEntry(name: String, signature: String, implementingMethodFullName: String)

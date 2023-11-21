@@ -9,7 +9,7 @@ import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
 import org.slf4j.{Logger, LoggerFactory}
-import io.joern.odb2.DiffGraphBuilder
+import flatgraph.DiffGraphBuilder
 import scopt.OParser
 
 import java.util.concurrent.RecursiveTask

@@ -4,7 +4,7 @@ import io.joern.x2cpg.ValidationMode
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import overflowdb.BatchedUpdate
-import io.joern.odb2.DiffGraphBuilder
+import flatgraph.DiffGraphBuilder
 
 object Py2Cpg {
   case class InputPair(content: String, relFileName: String)
