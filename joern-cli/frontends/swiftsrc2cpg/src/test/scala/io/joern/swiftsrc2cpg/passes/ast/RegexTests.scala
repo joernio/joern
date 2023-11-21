@@ -19,58 +19,25 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 
 class RegexTests extends AbstractPassTest {
-  "testRegex1" ignore AstFixture("") { cpg =>
-    assertParse(
-      """
-      _ = /abc/
-      _ = #/abc/#
-      _ = ##/abc/##
-      """
-    )
-  }
 
-  "testRegex3" ignore AstFixture("") { cpg =>
-    assertParse(
-      """
-      foo(/abc/, #/abc/#, ##/abc/##)
-      """
-    )
-  }
+  "RegexTests" should {
 
-  "testRegex4" ignore AstFixture("") { cpg =>
-    assertParse(
-      """
-      let arr = [/abc/, #/abc/#, ##/abc/##]
-      """
-    )
-  }
+    "testRegex1" ignore AstFixture("""
+        |_ = /abc/
+        |_ = #/abc/#
+        |_ = ##/abc/##
+        |""".stripMargin) { cpg => ??? }
 
-  "testRegex5" ignore AstFixture("") { cpg =>
-    assertParse(
-      #"""
-      _ = /\w+/.self
-      _ = #/\w+/#.self
-      _ = ##/\w+/##.self
-      """#
-    )
-  }
+    "testRegex3" ignore AstFixture("foo(/abc/, #/abc/#, ##/abc/##)") { cpg => ??? }
 
-  "testRegex6" ignore AstFixture("") { cpg =>
-    assertParse(
-      ##"""
-      _ = /#\/\#\\/
-      _ = #/#/\/\#\\/#
-      _ = ##/#|\|\#\\/##
-      """##
-    )
-  }
+    "testRegex4" ignore AstFixture("let arr = [/abc/, #/abc/#, ##/abc/##]") { cpg => ??? }
 
-  "testRegex7" ignore AstFixture("") { cpg =>
-    assertParse(
-      """
-      _ = (#/[*/#, #/+]/#, #/.]/#)
-      """
-    )
+    "testRegex5" ignore AstFixture("""
+        |_ = /\w+/.self
+        |_ = #/\w+/#.self
+        |_ = ##/\w+/##.self
+        |""".stripMargin) { cpg => ??? }
+
   }
 
 }
