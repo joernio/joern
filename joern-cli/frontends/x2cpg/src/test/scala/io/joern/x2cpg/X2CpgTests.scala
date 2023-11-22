@@ -21,11 +21,9 @@ class X2CpgTests extends AnyWordSpec with Matchers {
       file.delete()
       file.exists shouldBe false
       val cpg = X2Cpg.newEmptyCpg(Some(file.path.toString))
+      cpg.close()
       file.exists shouldBe true
       Files.size(file.path) should not be 0
-      // TODO discuss with Bernhard, implement AutoClosable etc.
-      ???
-      //      cpg.close()
     }
 
     "overwrite existing file to create empty CPG" in {
@@ -34,11 +32,9 @@ class X2CpgTests extends AnyWordSpec with Matchers {
         Files.size(file.path) shouldBe 0
         val cpg = X2Cpg.newEmptyCpg(Some(file.path.toString))
         cpg.graph.allNodes.hasNext shouldBe false
+        cpg.close()
         file.exists shouldBe true
         Files.size(file.path) should not be 0
-        // TODO discuss with Bernhard, implement AutoClosable etc.
-        ???
-//        cpg.close()
       }
     }
   }
