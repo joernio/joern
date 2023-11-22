@@ -55,13 +55,13 @@ object ContainsEdgePassTest {
     val innerExpressionVertex = graph.addNode(NewCall())
 
     // TODO MP get arrow syntax back
-//    fileVertex --- EdgeKinds.AST --> typeDeclVertex
-//    typeDeclVertex --- EdgeKinds.AST --> typeMethodVertex
+//    fileVertex --- EdgeTypes.AST --> typeDeclVertex
+//    typeDeclVertex --- EdgeTypes.AST --> typeMethodVertex
 //
-//    fileVertex --- EdgeKinds.AST --> methodVertex
-//    methodVertex --- EdgeKinds.AST --> innerMethodVertex
-//    methodVertex --- EdgeKinds.AST --> expressionVertex
-//    innerMethodVertex --- EdgeKinds.AST --> innerExpressionVertex
+//    fileVertex --- EdgeTypes.AST --> methodVertex
+//    methodVertex --- EdgeTypes.AST --> innerMethodVertex
+//    methodVertex --- EdgeTypes.AST --> expressionVertex
+//    innerMethodVertex --- EdgeTypes.AST --> innerExpressionVertex
     graph.applyDiff { diffGraphBuilder =>
       diffGraphBuilder.addEdge(fileVertex, typeDeclVertex, EdgeTypes.AST)
       diffGraphBuilder.addEdge(typeDeclVertex, typeMethodVertex, EdgeTypes.AST)

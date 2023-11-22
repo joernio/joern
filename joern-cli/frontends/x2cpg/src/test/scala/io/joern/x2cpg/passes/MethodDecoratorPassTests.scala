@@ -23,7 +23,7 @@ class MethodDecoratorPassTests extends AnyWordSpec with Matchers {
     )
 
     // TODO MP get arrow syntax back
-//    method --- EdgeKinds.AST --> parameterIn
+//    method --- EdgeTypes.AST --> parameterIn
     graph.applyDiff { diffGraphBuilder =>
       diffGraphBuilder.addEdge(method, parameterIn, EdgeTypes.AST)
     }

@@ -85,9 +85,7 @@ abstract class TestCpg extends Cpg(Cpg.empty.graph) with LanguageFrontend {
     _graph.get
   }
 
-  // TODO MP get 'close' back
-  /*override*/ def close(): Unit = {
-    ???
-//    _graph.foreach(_.close())
+  override def close(): Unit = {
+    _graph.foreach(_.close())
   }
 }

@@ -2,7 +2,7 @@ package io.joern.x2cpg.passes
 
 import flatgraph.misc.TestUtils.*
 import io.joern.x2cpg.passes.controlflow.cfgdominator.CfgDominatorPass
-import io.shiftleft.codepropertygraph.generated.v2.{Cpg, EdgeKinds, EdgeTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.v2.{Cpg, EdgeTypes, NodeTypes}
 import io.shiftleft.codepropertygraph.generated.v2.nodes.{NewMethod, NewMethodReturn, NewUnknown}
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.matchers.should.Matchers
@@ -24,16 +24,16 @@ class CfgDominatorPassTests extends AnyWordSpec with Matchers {
     val v6 = graph.addNode(NewMethodReturn())
 
     // TODO MP get arrow syntax back
-//    v0 --- EdgeKinds.AST --> v6
-//
-//    v0 --- EdgeKinds.CFG --> v1
-//    v1 --- EdgeKinds.CFG --> v2
-//    v2 --- EdgeKinds.CFG --> v3
-//    v2 --- EdgeKinds.CFG --> v5
-//    v3 --- EdgeKinds.CFG --> v4
-//    v4 --- EdgeKinds.CFG --> v2
-//    v4 --- EdgeKinds.CFG --> v5
-//    v5 --- EdgeKinds.CFG --> v6
+//    v0 --- EdgeTypes.AST --> v6
+//               
+//    v0 --- EdgeTypes.CFG --> v1
+//    v1 --- EdgeTypes.CFG --> v2
+//    v2 --- EdgeTypes.CFG --> v3
+//    v2 --- EdgeTypes.CFG --> v5
+//    v3 --- EdgeTypes.CFG --> v4
+//    v4 --- EdgeTypes.CFG --> v2
+//    v4 --- EdgeTypes.CFG --> v5
+//    v5 --- EdgeTypes.CFG --> v6
     graph.applyDiff { diffGraphBuilder =>
       diffGraphBuilder.addEdge(v0, v6, EdgeTypes.AST)
 

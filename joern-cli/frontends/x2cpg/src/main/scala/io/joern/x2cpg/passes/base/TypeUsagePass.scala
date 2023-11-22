@@ -2,7 +2,7 @@ package io.joern.x2cpg.passes.base
 
 import io.joern.x2cpg.utils.LinkingUtil
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.{EdgeKinds, EdgeTypes, NodeTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, NodeTypes, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.v2.nodes.{Type, TypeDecl}
 import io.shiftleft.passes.CpgPass
 
