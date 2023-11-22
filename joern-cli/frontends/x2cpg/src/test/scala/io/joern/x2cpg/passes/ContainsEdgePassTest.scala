@@ -2,13 +2,11 @@ package io.joern.x2cpg.passes
 
 import flatgraph.misc.TestUtils.*
 import io.joern.x2cpg.passes.base.ContainsEdgePass
-import io.shiftleft.codepropertygraph.generated.v2.{Cpg, EdgeTypes, NodeTypes}
-import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.codepropertygraph.generated.v2.nodes.{NewCall, NewFile, NewMethod, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.v2.{Cpg, EdgeTypes}
+import io.shiftleft.semanticcpg.language.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
-
-import scala.jdk.CollectionConverters.*
 
 class ContainsEdgePassTest extends AnyWordSpec with Matchers {
 
@@ -80,7 +78,7 @@ object ContainsEdgePassTest {
     def apply[T](fun: Fixture => T): T = {
       val fixture = new Fixture()
       try fun(fixture)
-      finally ??? // TODO MP get close back fixture.graph.close()
+      finally fixture.graph.close()
     }
   }
 }

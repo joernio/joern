@@ -13,9 +13,7 @@ class X2CpgTests extends AnyWordSpec with Matchers {
     "create an empty in-memory CPG when no output path is given" in {
       val cpg = X2Cpg.newEmptyCpg(None)
       cpg.graph.allNodes.hasNext shouldBe false
-      // TODO discuss with Bernhard, implement AutoClosable etc.
-      ???
-//      cpg.close()
+      cpg.close()
     }
 
     "create file if it does not exist" in {
