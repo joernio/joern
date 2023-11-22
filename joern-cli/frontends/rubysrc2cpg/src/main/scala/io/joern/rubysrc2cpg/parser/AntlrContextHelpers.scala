@@ -1,11 +1,29 @@
 package io.joern.rubysrc2cpg.parser
 
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.TextSpan
 import io.joern.rubysrc2cpg.parser.RubyParser.*
 import org.antlr.v4.runtime.ParserRuleContext
+import org.antlr.v4.runtime.misc.Interval
 
 import scala.jdk.CollectionConverters.*
 
 object AntlrContextHelpers {
+
+  sealed implicit class ParserRuleContextHelper(ctx: ParserRuleContext) {
+    def toTextSpan: TextSpan = {
+      // The stopIndex could precede startIndex for rules that do not consume anything, cf. `getStop`.
+      // We need to make sure this doesn't happen when building the `text` field.
+      val startIndex = ctx.getStart.getStartIndex
+      val stopIndex  = math.max(startIndex, ctx.getStop.getStopIndex)
+      TextSpan(
+        line = Option(ctx.getStart.getLine),
+        column = Option(ctx.getStart.getCharPositionInLine),
+        lineEnd = Option(ctx.getStop.getLine),
+        columnEnd = Option(ctx.getStop.getCharPositionInLine),
+        text = ctx.getStart.getInputStream.getText(new Interval(startIndex, stopIndex))
+      )
+    }
+  }
 
   sealed implicit class CompoundStatementContextHelper(ctx: CompoundStatementContext) {
     def getStatements: List[ParserRuleContext] =
