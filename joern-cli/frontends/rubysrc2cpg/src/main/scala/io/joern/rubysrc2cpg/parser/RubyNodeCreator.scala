@@ -26,6 +26,16 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     StatementList(ctx.getStatements.map(visit))(ctx.toTextSpan)
   }
 
+  override def visitGroupingStatement(ctx: RubyParser.GroupingStatementContext): RubyNode = {
+    // When there's only 1 statement, we can use it directly, instead of wrapping it in a StatementList.
+    val statements = ctx.compoundStatement().getStatements.map(visit)
+    if (statements.size == 1) {
+      statements.head
+    } else {
+      StatementList(statements)(ctx.toTextSpan)
+    }
+  }
+
   override def visitStatements(ctx: RubyParser.StatementsContext): RubyNode = {
     StatementList(ctx.statement().asScala.map(visit).toList)(ctx.toTextSpan)
   }
@@ -78,6 +88,10 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
         val thenBody  = visit(ctx.statement())
         val elseBody  = None
         UnlessExpression(condition, thenBody, elseBody)(ctx.toTextSpan)
+      case "while" =>
+        val condition = visit(ctx.expressionOrCommand())
+        val body      = visit(ctx.statement())
+        WhileExpression(condition, body)(ctx.toTextSpan)
       case _ =>
         Unknown()(ctx.toTextSpan)
   }

@@ -21,6 +21,19 @@ class ControlStructureTests extends RubyCode2CpgFixture(withPostProcessing = tru
       Set(List(("x = 10", 2), ("x", 2), ("x - 1", 4), ("x = x - 1", 4), ("x > 0", 3), ("puts x", 6)))
   }
 
+  "flow through body of a `... while ...` statement" in {
+    val cpg = code("""
+        |x = 0
+        |x = x + 1 while x < 10
+        |puts x
+        |""".stripMargin)
+    val source = cpg.literal("0")
+    val sink   = cpg.method.name("puts").callIn.argument
+    val flows  = sink.reachableByFlows(source)
+    flows.map(flowToResultPairs).toSet shouldBe
+      Set(List(("x = 0", 2), ("x", 2), ("x + 1", 3), ("x = x + 1", 3), ("x < 10", 3), ("puts x", 4)))
+  }
+
   "flow through body of an `until-end` statement" in {
     val cpg = code("""
         |x = 10
