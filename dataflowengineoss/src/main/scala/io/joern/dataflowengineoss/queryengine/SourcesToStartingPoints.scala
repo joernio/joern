@@ -81,9 +81,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
       case x: Identifier =>
         val fieldAndIndexAccesses = withFieldAndIndexAccesses(x :: Nil)
         val capturedReferences    = x.refsTo.capturedByMethodRef.referencedMethod.flatMap(m => usagesForName(x.name, m))
-        // If this identifier is an arg to a call, then we consider the call a sink. But only twice deep, as semantics
-        // may affect the behaviour here.
-        val inCall = x.start.repeat(_.astParent)(_.maxDepth(1)).isCall.l
+        val inCall = x.inCall.l // If this identifier is an arg to a call, then we consider the call a sink.
 
         x :: inCall ++ fieldAndIndexAccesses ++ capturedReferences
       case x: Call    => (x :: x._receiverIn.l).collect { case y: CfgNode => y }
