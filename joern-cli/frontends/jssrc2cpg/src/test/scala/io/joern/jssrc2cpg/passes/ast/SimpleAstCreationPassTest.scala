@@ -484,7 +484,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     "have correct parameter order in lambda function with ignored param" in AstFixture("var x = ([, param]) => param") {
       cpg =>
         val lambdaFullName    = "code.js::program:<lambda>0"
-        val List(lambda)      = cpg.method.fullNameExact(lambdaFullName).l
+        val List(lambda)      = cpg.method.fullNameExact(lambdaFullName).isLambda.l
         val List(lambdaBlock) = lambda.astChildren.isBlock.l
 
         val List(param1, param2) = lambda.parameter.l
@@ -504,7 +504,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       "var x = ({x, ...rest}) => x + rest"
     ) { cpg =>
       val lambdaFullName    = "code.js::program:<lambda>0"
-      val List(lambda)      = cpg.method.fullNameExact(lambdaFullName).l
+      val List(lambda)      = cpg.method.fullNameExact(lambdaFullName).isLambda.l
       val List(lambdaBlock) = lambda.astChildren.isBlock.l
 
       val List(param1, param2) = lambda.parameter.l
@@ -527,7 +527,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       "var x = ([x, ...rest]) => x + rest"
     ) { cpg =>
       val lambdaFullName    = "code.js::program:<lambda>0"
-      val List(lambda)      = cpg.method.fullNameExact(lambdaFullName).l
+      val List(lambda)      = cpg.method.fullNameExact(lambdaFullName).isLambda.l
       val List(lambdaBlock) = lambda.astChildren.isBlock.l
 
       val List(param1, param2) = lambda.parameter.l

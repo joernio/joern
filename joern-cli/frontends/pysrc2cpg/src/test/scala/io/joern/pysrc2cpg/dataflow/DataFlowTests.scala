@@ -301,8 +301,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         "models.py"
       )
 
-    val List(method: Method) =
-      cpg.identifier.name("foo").inAssignment.source.isBlock.ast.isCall.nameExact("Foo").callee.l
+    val List(method: Method) = cpg.identifier.name("foo").inAssignment.source.isCall.callee.l
     method.fullName shouldBe "models.py:<module>.Foo.__init__"
     val List(typeDeclFullName) = method.typeDecl.fullName.l
     typeDeclFullName shouldBe "models.py:<module>.Foo"
@@ -321,8 +320,7 @@ class DataFlowTests extends PySrc2CpgFixture(withOssDataflow = true) {
         "models.py"
       )
 
-    val List(method: Method) =
-      cpg.identifier.name("foo").inAssignment.source.isBlock.ast.isCall.nameExact("Foo").callee.l
+    val List(method: Method) = cpg.identifier.name("foo").inAssignment.source.isCall.callee.l
     method.fullName shouldBe "models.py:<module>.Foo.__init__"
     val List(typeDeclFullName) = method.typeDecl.fullName.l
     typeDeclFullName shouldBe "models.py:<module>.Foo"
@@ -590,25 +588,48 @@ class RegexDefinedFlowsDataFlowTests
     flows.size shouldBe 2
   }
 
-  "flow across interprocedural module variables" in {
-    val cpg: Cpg = code(
-      """
-        |a = 42
-        |""".stripMargin,
-      "foo.py"
-    )
-      .moreCode(
-        """
-          |import foo
-          |
-          |print(foo.a)
-          |""".stripMargin,
-        "bar.py"
-      )
+  "flow across interprocedural module variables" should {
 
-    val source = cpg.literal("42").l
-    val sink   = cpg.call.code("print.*").argument.l
-    sink.reachableByFlows(source).size shouldBe 1
+    "handle simple import and field-based usage of a literal" in {
+      val cpg: Cpg = code(
+        """
+          |a = 42
+          |""".stripMargin,
+        "foo.py"
+      )
+        .moreCode(
+          """
+            |import foo
+            |
+            |print(foo.a)
+            |""".stripMargin,
+          "bar.py"
+        )
+      val source = cpg.literal("42").l
+      val sink   = cpg.call.name("print.*").l
+      sink.reachableByFlows(source).size shouldBe 1
+    }
+
+    "handle simple import and aliased usage of a literal" in {
+      val cpg: Cpg = code(
+        """
+          |a = 42
+          |""".stripMargin,
+        "foo.py"
+      )
+        .moreCode(
+          """
+            |from foo import a as b
+            |
+            |print(b)
+            |""".stripMargin,
+          "bar.py"
+        )
+      val source = cpg.literal("42").l
+      val sink   = cpg.call.name("print.*").l
+      sink.reachableByFlows(source).size shouldBe 1
+    }
+
   }
 
 }

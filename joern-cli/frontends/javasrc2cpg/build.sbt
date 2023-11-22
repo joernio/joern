@@ -4,7 +4,7 @@ dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->t
 
 libraryDependencies ++= Seq(
   "io.shiftleft"           %% "codepropertygraph"             % Versions.cpg,
-  "com.github.javaparser"   % "javaparser-symbol-solver-core" % "3.25.5",
+  "com.github.javaparser"   % "javaparser-symbol-solver-core" % "3.25.6",
   "org.gradle"              % "gradle-tooling-api"            % Versions.gradleTooling,
   "org.scalatest"          %% "scalatest"                     % Versions.scalatest % Test,
   "org.projectlombok"       % "lombok"                        % "1.18.28",

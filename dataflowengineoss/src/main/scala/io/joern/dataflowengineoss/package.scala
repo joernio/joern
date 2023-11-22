@@ -5,9 +5,8 @@ import io.shiftleft.semanticcpg.language.*
 
 package object dataflowengineoss {
 
-  def globalFromLiteral(lit: Literal): Iterator[Expression] = lit.start
-    .where(_.inAssignment.method.nameExact("<module>", ":package"))
-    .inAssignment
+  def globalFromLiteral(lit: Literal): Iterator[Expression] = lit.start.inAssignment
+    .where(_.method.isModule)
     .argument(1)
 
   def identifierToFirstUsages(node: Identifier): List[Identifier] = node.refsTo.flatMap(identifiersFromCapturedScopes).l

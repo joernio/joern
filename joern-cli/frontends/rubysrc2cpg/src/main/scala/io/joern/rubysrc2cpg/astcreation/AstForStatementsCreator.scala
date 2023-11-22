@@ -1,19 +1,15 @@
 package io.joern.rubysrc2cpg.astcreation
 
-import io.joern.rubysrc2cpg.parser.ParserAst
-import io.joern.rubysrc2cpg.parser.ParserAst.*
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
-import org.antlr.v4.runtime.ParserRuleContext
 
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  protected def astsForStatement(ctx: ParserRuleContext): Seq[Ast] = astsForStatement(ParserAst(ctx))
-
-  protected def astsForStatement(node: ParserNode): Seq[Ast] = node match
+  protected def astsForStatement(node: RubyNode): Seq[Ast] = node match
     case node: WhileExpression            => astForWhileStatement(node) :: Nil
     case node: UntilExpression            => astForUntilStatement(node) :: Nil
     case node: IfExpression               => astForIfStatement(node) :: Nil
@@ -37,7 +33,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   // `until T do B` is lowered as `while !T do B`
   private def astForUntilStatement(node: UntilExpression): Ast = {
-    val notCondition = astForExpression(UnaryExpression(node.condition, "!", node.condition))
+    val notCondition = astForExpression(UnaryExpression("!", node.condition)(node.condition.span))
     val bodyAsts     = astsForStatement(node.body)
     whileAst(Some(notCondition), bodyAsts)
   }
@@ -59,23 +55,23 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     builder(node, conditionAst, thenAst, elseAsts)
   }
 
-  private def astForThenClause(ctx: ParserRuleContext): Ast = {
-    ParserAst(ctx) match
+  private def astForThenClause(node: RubyNode): Ast = {
+    node match
       case stmtList: StatementList => astForStatementList(stmtList)
-      case _                       => astForStatementList(StatementList(ctx, List(ctx)))
+      case _                       => astForStatementList(StatementList(List(node))(node.span))
   }
 
   private def astsForElseClauses(
-    elsIfClauses: List[ParserRuleContext],
-    elseClause: Option[ParserRuleContext],
+    elsIfClauses: List[RubyNode],
+    elseClause: Option[RubyNode],
     astForIf: IfExpression => Ast
   ): List[Ast] = {
     elsIfClauses match
       case Nil => elseClause.map(astForElseClause).toList
-      case elsIfCtx :: rest =>
-        ParserAst(elsIfCtx) match
+      case elsIfNode :: rest =>
+        elsIfNode match
           case elsIfNode: ElsIfClause =>
-            val newIf         = IfExpression(elsIfNode.ctx, elsIfNode.condition, elsIfNode.thenClause, rest, elseClause)
+            val newIf = IfExpression(elsIfNode.condition, elsIfNode.thenClause, rest, elseClause)(elsIfNode.span)
             val wrappingBlock = blockNode(elsIfNode)
             val wrappedAst    = Ast(wrappingBlock).withChild(astForIf(newIf))
             wrappedAst :: Nil
@@ -84,17 +80,14 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
             Nil
   }
 
-  private def astForElseClause(node: ElseClause): Ast = {
-    ParserAst(node.thenClause) match
-      case stmtList: StatementList => astForStatementList(stmtList)
-      case node =>
-        logger.warn(s"Expecting statement list in ${code(node)} ($relativeFileName), skipping")
-        astForUnknown(node)
-  }
-
-  private def astForElseClause(ctx: ParserRuleContext): Ast = {
-    ParserAst(ctx) match
-      case elseNode: ElseClause => astForElseClause(elseNode)
+  private def astForElseClause(node: RubyNode): Ast = {
+    node match
+      case elseNode: ElseClause =>
+        elseNode.thenClause match
+          case stmtList: StatementList => astForStatementList(stmtList)
+          case node =>
+            logger.warn(s"Expecting statement list in ${code(node)} ($relativeFileName), skipping")
+            astForUnknown(node)
       case elseNode =>
         logger.warn(s"Expecting else clause in ${code(elseNode)} ($relativeFileName), skipping")
         astForUnknown(elseNode)
@@ -102,10 +95,10 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   // `unless T do B` is lowered as `if !T then B`
   private def astForUnlessStatement(node: UnlessExpression): Ast = {
-    val notConditionAst = astForExpression(UnaryExpression(node.condition, "!", node.condition))
-    val thenAst = ParserAst(node.trueBranch) match
+    val notConditionAst = astForExpression(UnaryExpression("!", node.condition)(node.condition.span))
+    val thenAst = node.trueBranch match
       case stmtList: StatementList => astForStatementList(stmtList)
-      case _                       => astForStatementList(StatementList(node.trueBranch, List(node.trueBranch)))
+      case _                       => astForStatementList(StatementList(List(node.trueBranch))(node.trueBranch.span))
     val elseAsts = node.falseBranch.map(astForElseClause).toList
     val ifNode   = controlStructureNode(node, ControlStructureTypes.IF, code(node))
     controlStructureAst(ifNode, Some(notConditionAst), thenAst :: elseAsts)
@@ -131,7 +124,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
    *  and pass in the block (a closure) as an argument to `foo`, i.e. `foo(<args>, <block>)`.
    */
   private def astForSimpleCallWithBlock(node: SimpleCallWithBlock): Ast = {
-    val rubyBlock   = ParserAst(node.block).asInstanceOf[Block]
+    val rubyBlock   = node.block.asInstanceOf[Block]
     val blockParams = rubyBlock.parameters
     if (blockParams.nonEmpty) {
       logger.warn(s"Blocks with parameters are not supported yet: ${code(node)} ($relativeFileName), skipping")
@@ -141,7 +134,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       val callAst    = astForSimpleCall(node.withoutBlock)
       methodAstParentStack.push(outerBlock)
       scope.pushNewScope(outerBlock)
-      val stmtAsts = ParserAst(rubyBlock.body) match
+      val stmtAsts = rubyBlock.body match
         case stmtList: StatementList => stmtList.statements.flatMap(astsForStatement)
         case body =>
           logger.warn(s"Non-linear method bodies are not supported yet: ${body.text} ($relativeFileName), skippipg")
@@ -153,7 +146,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astForMemberCallWithBlock(node: MemberCallWithBlock): Ast = {
-    val rubyBlock   = ParserAst(node.block).asInstanceOf[Block]
+    val rubyBlock   = node.block.asInstanceOf[Block]
     val blockParams = rubyBlock.parameters
     if (blockParams.nonEmpty) {
       logger.warn(s"Blocks with parameters are not supported yet: ${code(node)}, skipping")
@@ -163,7 +156,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       val callAst    = astForMemberCall(node.withoutBlock)
       methodAstParentStack.push(outerBlock)
       scope.pushNewScope(outerBlock)
-      val stmtAsts = ParserAst(rubyBlock.body) match
+      val stmtAsts = rubyBlock.body match
         case stmtList: StatementList => stmtList.statements.flatMap(astsForStatement)
         case body =>
           logger.warn(s"Non-linear method bodies are not supported yet: ${body.text}, skipping")
@@ -194,26 +187,24 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     blockAst(block, stmtAsts)
   }
 
-  private def astsForImplicitReturnStatement(ctx: ParserRuleContext): List[Ast] = {
-    ParserAst(ctx) match
+  private def astsForImplicitReturnStatement(node: RubyNode): List[Ast] = {
+    node match
       case _: (ArrayLiteral | HashLiteral | StaticLiteral | BinaryExpression | UnaryExpression | SimpleIdentifier |
             IfExpression) =>
-        astForReturnStatement(ReturnExpression(ctx, List(ctx))) :: Nil
+        astForReturnStatement(ReturnExpression(List(node))(node.span)) :: Nil
       case node: SingleAssignment =>
-        astForSingleAssignment(node) :: List(astForReturnStatement(ReturnExpression(ctx, List(node.lhs))))
+        astForSingleAssignment(node) :: List(astForReturnStatement(ReturnExpression(List(node.lhs))(node.span)))
       case node: AttributeAssignment =>
         List(
           astForAttributeAssignment(node),
-          astForReturnFieldAccess(MemberAccess(node.ctx, node.target, node.op, node.attributeName))
+          astForReturnFieldAccess(MemberAccess(node.target, node.op, node.attributeName)(node.span))
         )
       case node: MemberAccess    => astForReturnMemberCall(node) :: Nil
       case ret: ReturnExpression => astForReturnStatement(ret) :: Nil
       case node: MethodDeclaration =>
         List(astForMethodDeclaration(node), astForReturnMethodDeclarationSymbolName(node))
       case node =>
-        logger.warn(
-          s"Implicit return here not supported yet: ${ctx.getText} (${node.getClass.getSimpleName}), skipping"
-        )
+        logger.warn(s"Implicit return here not supported yet: ${node.text} (${node.getClass.getSimpleName}), skipping")
         List()
   }
 

@@ -1,12 +1,21 @@
 package io.joern.php2cpg
 
 import io.joern.php2cpg.parser.PhpParser
-import io.joern.php2cpg.passes.{AnyTypePass, AstCreationPass, AstParentInfoPass, ClosureRefPass, LocalCreationPass}
+import io.joern.php2cpg.passes.{
+  AnyTypePass,
+  AstCreationPass,
+  AstParentInfoPass,
+  ClosureRefPass,
+  LocalCreationPass,
+  PhpSetKnownTypesPass,
+  PhpTypeRecoveryPass
+}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
-import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
+import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass, XTypeRecoveryConfig}
 import io.joern.x2cpg.utils.ExternalCommand
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.codepropertygraph.generated.Languages
 import org.slf4j.LoggerFactory
 
@@ -66,5 +75,15 @@ class Php2Cpg extends X2CpgFrontend[Config] {
       Failure(new RuntimeException("php not found or version not supported"))
     }
 
+  }
+}
+
+object Php2Cpg {
+
+  def postProcessingPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] = {
+    val typeRecoveryConfig = config
+      .map(c => XTypeRecoveryConfig(c.typePropagationIterations, !c.disableDummyTypes))
+      .getOrElse(XTypeRecoveryConfig(iterations = 3))
+    List(new PhpSetKnownTypesPass(cpg), new PhpTypeRecoveryPass(cpg, typeRecoveryConfig))
   }
 }

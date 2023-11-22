@@ -62,10 +62,10 @@ object AstGenRunner {
     skippedFiles: List[(String, String)] = List.empty
   )
 
-  // directory for the astgen binary from the env var ASTGEN_BIN
-  private val AstGenBinDir: Option[String] = scala.util.Properties.envOrNone("ASTGEN_BIN").flatMap {
-    case path if File(path).isDirectory => Some(path)
-    case path if File(path).exists      => File(path).parentOption.map(_.pathAsString)
+  // full path to the astgen binary from the env var ASTGEN_BIN
+  private val AstGenBin: Option[String] = scala.util.Properties.envOrNone("ASTGEN_BIN").flatMap {
+    case path if File(path).isDirectory => Some((File(path) / "astgen").pathAsString)
+    case path if File(path).exists      => Some(File(path).pathAsString)
     case _                              => None
   }
 
@@ -99,9 +99,10 @@ object AstGenRunner {
   }
 
   private def hasCompatibleAstGenVersionAtPath(astGenVersion: String, path: Option[String]): Boolean = {
-    val localPath    = path.getOrElse(".")
-    val debugMsgPath = path.getOrElse("PATH")
-    ExternalCommand.run("astgen --version", localPath).toOption.map(_.mkString.strip()) match {
+    val astGenCommand = path.getOrElse("astgen")
+    val localPath     = path.flatMap(File(_).parentOption.map(_.pathAsString)).getOrElse(".")
+    val debugMsgPath  = path.getOrElse("PATH")
+    ExternalCommand.run(s"$astGenCommand --version", localPath).toOption.map(_.mkString.strip()) match {
       case Some(installedVersion)
           if installedVersion != "unknown" && Try(VersionHelper.compare(installedVersion, astGenVersion)).toOption
             .getOrElse(-1) >= 0 =>
@@ -121,10 +122,10 @@ object AstGenRunner {
     *   the full path to the astgen binary found on the system
     */
   private def compatibleAstGenPath(astGenVersion: String): String = {
-    AstGenBinDir match
+    AstGenBin match
       // 1. case: we try it at env var ASTGEN_BIN
       case Some(path) if hasCompatibleAstGenVersionAtPath(astGenVersion, Some(path)) =>
-        s"$path/astgen"
+        path
       // 2. case: we try it with the systems PATH
       case _ if hasCompatibleAstGenVersionAtPath(astGenVersion, None) =>
         "astgen"

@@ -29,6 +29,7 @@ import overflowdb.NodeOrDetachedNode
 package object language
     extends operatorextension.Implicits
     with modulevariable.Implicits
+    with importresolver.Implicits
     with LowPrioImplicits
     with NodeTraversalImplicits {
   // Implicit conversions from generated node types. We use these to add methods

@@ -1,14 +1,15 @@
 package io.joern.pysrc2cpg
 
 import io.joern.pysrc2cpg.ContextStack.transferLineColInfo
-import io.joern.pysrc2cpg.memop.*
+import io.joern.pysrc2cpg.memop._
 import io.shiftleft.codepropertygraph.generated.nodes
-import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.nodes._
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
 
 object ContextStack {
+  private val logger = LoggerFactory.getLogger(getClass)
 
   def transferLineColInfo(src: NewIdentifier, tgt: NewLocal): Unit = {
     src.lineNumber match {
@@ -22,6 +23,7 @@ object ContextStack {
 }
 
 class ContextStack {
+  import ContextStack.logger
 
   private trait Context {
     val astParent: nodes.NewNode
@@ -68,12 +70,6 @@ class ContextStack {
     var lambdaCounter: Int = 0
   ) extends Context {}
 
-  private trait Reference {
-    def identifier: nodes.NewIdentifier | nodes.NewFieldIdentifier
-
-    def stack: List[Context]
-  }
-
   private case class VariableReference(
     identifier: nodes.NewIdentifier,
     memOp: MemoryOperation,
@@ -83,13 +79,10 @@ class ContextStack {
     // instances because the changes in the variable
     // maps need to be in sync.
     stack: List[Context]
-  ) extends Reference
-
-  private case class FieldReference(identifier: nodes.NewFieldIdentifier, fieldAccess: NewCall, stack: List[Context])
-      extends Reference
+  )
 
   private var stack                   = List[Context]()
-  private val variableReferences      = mutable.ArrayBuffer.empty[Reference]
+  private val variableReferences      = mutable.ArrayBuffer.empty[VariableReference]
   private var moduleMethodContext     = Option.empty[MethodContext]
   private var fileNamespaceBlock      = Option.empty[nodes.NewNamespaceBlock]
   private val fileNamespaceBlockOrder = new AutoIncIndex(1)
@@ -142,10 +135,6 @@ class ContextStack {
     variableReferences.append(VariableReference(identifier, memOp, stack))
   }
 
-  def addFieldReference(identifier: nodes.NewFieldIdentifier, fieldAccess: NewCall): Unit = {
-    variableReferences.append(FieldReference(identifier, fieldAccess, stack))
-  }
-
   def getAndIncLambdaCounter(): Int = {
     val result = stack.head.lambdaCounter
     stack.head.lambdaCounter += 1
@@ -155,9 +144,6 @@ class ContextStack {
   private def findEnclosingMethodContext(contextStack: List[Context]): MethodContext = {
     contextStack.find(_.isInstanceOf[MethodContext]).get.asInstanceOf[MethodContext]
   }
-
-  def findEnclosingMethod(): Option[NewMethod] =
-    stack.find(_.isInstanceOf[MethodContext]).map(_.astParent).collect { case x: NewMethod => x }
 
   def findEnclosingTypeDecl(): Option[NewNode] = {
     stack.find(_.isInstanceOf[ClassContext]) match {
@@ -174,14 +160,13 @@ class ContextStack {
     createRefEdge: (nodes.NewNode, nodes.NewNode) => Unit,
     createCaptureEdge: (nodes.NewNode, nodes.NewNode) => Unit
   ): Unit = {
-    val identifierReferences = variableReferences.collect { case x: VariableReference => x }
     // Before we do any linking, we iterate over all variable references and
     // create a variable in the module method context for each global variable
     // with a store operation on it.
     // This is necessary because there might be load/delete operations
     // referencing the global variable which are syntactically before the store
     // operations.
-    identifierReferences.foreach { case VariableReference(identifier, memOp, contextStack) =>
+    variableReferences.foreach { case VariableReference(identifier, memOp, contextStack) =>
       val name = identifier.name
       if (
         memOp == Store &&
@@ -198,7 +183,7 @@ class ContextStack {
     // Variable references processing needs to be ordered by context depth in
     // order to make sure that variables captured into deeper nested contexts
     // are already created.
-    val sortedVariableRefs = identifierReferences.sortBy(_.stack.size)
+    val sortedVariableRefs = variableReferences.sortBy(_.stack.size)
     sortedVariableRefs.foreach { case VariableReference(identifier, memOp, contextStack) =>
       val name = identifier.name
       // Store and delete operations look up variable only in method scope.
@@ -267,53 +252,40 @@ class ContextStack {
     }
   }
 
+  /** Assignments to variables on the module-level may be exported to other modules and behave as inter-procedurally
+    * global variables.
+    * @param lhs
+    *   the LHS node of an assignment
+    */
+  def considerAsGlobalVariable(lhs: NewNode): Unit = {
+    lhs match {
+      case n: NewIdentifier if findEnclosingMethodContext(stack).scopeName.contains("<module>") =>
+        addGlobalVariable(n.name)
+      case _ =>
+    }
+  }
+
   /** For module-methods, the variables of this method can be imported into other modules which resembles behaviour much
     * like fields/members. This inter-procedural accessibility should be marked via the module's type decl node.
     */
-  def createMemberLinks(
-    moduleTypeDecl: NewTypeDecl,
-    astEdgeLinker: (NewNode, NewNode, Int) => Unit,
-    refEdgeLinker: (NewNode, NewNode) => Unit
-  ): Unit = {
-    val globalVariables = findEnclosingMethodContext(stack).globalVariables
-    val globalVarReferences = variableReferences
-      .filter(_.identifier match
-        case x: nodes.NewIdentifier      => globalVariables.contains(x.name)
-        case x: nodes.NewFieldIdentifier => globalVariables.contains(x.canonicalName)
-      )
-    val members = globalVarReferences
+  def createMemberLinks(moduleTypeDecl: NewTypeDecl, astEdgeLinker: (NewNode, NewNode, Int) => Unit): Unit = {
+    val globalVarsForEnclMethod = findEnclosingMethodContext(stack).globalVariables
+    variableReferences
       .map(_.identifier)
+      .filter(i => globalVarsForEnclMethod.contains(i.name))
       .sortBy(i => (i.lineNumber, i.columnNumber))
-      .distinctBy {
-        case x: nodes.NewIdentifier      => x.name
-        case x: nodes.NewFieldIdentifier => x.canonicalName
-      }
-      .map { i =>
-        val name = i match
-          case x: nodes.NewIdentifier      => x.name
-          case x: nodes.NewFieldIdentifier => x.canonicalName
-
-        val dynamicTypeHintFullName = i match
-          case x: nodes.NewIdentifier      => x.dynamicTypeHintFullName
-          case _: nodes.NewFieldIdentifier => Seq.empty
-
+      .distinctBy(_.name)
+      .map(i =>
         NewMember()
-          .name(name)
+          .name(i.name)
           .typeFullName(Constants.ANY)
-          .dynamicTypeHintFullName(dynamicTypeHintFullName)
+          .dynamicTypeHintFullName(i.dynamicTypeHintFullName)
           .lineNumber(i.lineNumber)
           .columnNumber(i.columnNumber)
-          .code(name)
-      }
+          .code(i.name)
+      )
       .zipWithIndex
-      .map { case (m, idx) =>
-        astEdgeLinker(m, moduleTypeDecl, idx + 1)
-        m
-      }
-
-    globalVarReferences.collect { case x: FieldReference => x }.foreach { fi =>
-      members.find(_.name == fi.identifier.canonicalName).foreach(member => refEdgeLinker(member, fi.fieldAccess))
-    }
+      .foreach { case (m, idx) => astEdgeLinker(m, moduleTypeDecl, idx + 1) }
   }
 
   private def linkLocalOrCapturing(
@@ -454,12 +426,6 @@ class ContextStack {
       case methodContext: MethodContext if methodContext.isClassBodyMethod => true
       case _                                                               => false
     })
-  }
-
-  def isModuleContext: Boolean = {
-    stack.headOption match
-      case Some(methodContext: MethodContext) => methodContext.scopeName.contains("<module>")
-      case _                                  => false
   }
 
 }

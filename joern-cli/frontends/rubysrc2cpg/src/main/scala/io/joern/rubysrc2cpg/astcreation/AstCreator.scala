@@ -1,10 +1,12 @@
 package io.joern.rubysrc2cpg.astcreation
 
-import io.joern.rubysrc2cpg.parser.ParserAst.*
-import io.joern.rubysrc2cpg.parser.{ParserAst, ResourceManagedParser}
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
+import io.joern.rubysrc2cpg.parser.{ResourceManagedParser, RubyNodeCreator}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode}
+import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
+import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.{Logger, LoggerFactory}
@@ -20,7 +22,7 @@ class AstCreator(protected val filename: String, parser: ResourceManagedParser, 
     with AstForExpressionsCreator
     with AstForFunctionsCreator
     with AstForTypesCreator
-    with AstNodeBuilder[ParserNode, AstCreator] {
+    with AstNodeBuilder[RubyNode, AstCreator] {
 
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
 
@@ -30,7 +32,7 @@ class AstCreator(protected val filename: String, parser: ResourceManagedParser, 
   override def createAst(): BatchedUpdate.DiffGraphBuilder = {
     parser.parse(filename) match
       case Success(programCtx) =>
-        val rootNode = ParserAst(programCtx).asInstanceOf[StatementList]
+        val rootNode = new RubyNodeCreator().visit(programCtx).asInstanceOf[StatementList]
         val ast      = astForRubyFile(rootNode)
         Ast.storeInDiffGraph(ast, diffGraph)
         diffGraph
@@ -79,6 +81,6 @@ class AstCreator(protected val filename: String, parser: ResourceManagedParser, 
     scope.popScope()
     methodAstParentStack.pop()
 
-    methodAst(methodNode_, Seq.empty, bodyAst, methodReturn)
+    methodAst(methodNode_, Seq.empty, bodyAst, methodReturn, newModifierNode(ModifierTypes.MODULE) :: Nil)
   }
 }
