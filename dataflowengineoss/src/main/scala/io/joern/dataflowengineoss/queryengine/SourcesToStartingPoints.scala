@@ -79,13 +79,13 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
       case member: Member =>
         usages(targetsToClassIdentifierPair(List(member)))
       case x: Identifier =>
-        val fieldAndIndexAccesses = withFieldAndIndexAccesses(x :: Nil).flatMap {
+        val fieldAndIndexAccesses = withFieldAndIndexAccesses(x :: Nil)
+        val capturedReferences = x.refsTo.capturedByMethodRef.referencedMethod.flatMap(firstUsagesForName(x.name, _)).l
+
+        (x :: fieldAndIndexAccesses ++ capturedReferences) flatMap {
           case x: Call => sourceToStartingPoints(x) // Handle the case if this is an arg to another call
           case x       => x :: Nil
         }
-        val capturedReferences = x.refsTo.capturedByMethodRef.referencedMethod.flatMap(firstUsagesForName(x.name, _)).l
-
-        x :: fieldAndIndexAccesses ++ capturedReferences
       case x: Call    => x :: x._receiverIn.collectAll[CfgNode].l
       case x: CfgNode => x :: Nil
       case _          => Nil
