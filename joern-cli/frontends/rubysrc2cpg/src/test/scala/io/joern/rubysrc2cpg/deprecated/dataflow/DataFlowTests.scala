@@ -2500,7 +2500,7 @@ class DataFlowTests
 
     val source = cpg.literal.code("b").l
     val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).size shouldBe 1
+    sink.reachableByFlows(source).size shouldBe 2
   }
 
   "flow through hash containing splatting literal" in {
@@ -2587,7 +2587,7 @@ class DataFlowTests
 
     val source = cpg.literal.code("b").l
     val sink   = cpg.call.name("puts").l
-    sink.reachableByFlows(source).size shouldBe 1
+    sink.reachableByFlows(source).size shouldBe 2
   }
 
   "flow through array constructor using []" in {

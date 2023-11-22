@@ -1,8 +1,8 @@
 package io.joern.jssrc2cpg.passes
 
 import io.joern.jssrc2cpg.testfixtures.DataFlowCodeToCpgSuite
-import io.joern.x2cpg.passes.frontend.ImportsPass._
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.importresolver.*
+import io.shiftleft.semanticcpg.language.*
 
 class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
@@ -57,7 +57,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
     "resolve correct imports via tag nodes" in {
       val List(a: UnknownMethod, b: UnknownTypeDecl, x: UnknownMethod, y: UnknownTypeDecl) =
-        cpg.call.where(_.referencedImports).tag.toEvaluatedImport.toList: @unchecked
+        cpg.call.where(_.referencedImports).tag._toEvaluatedImport.toList: @unchecked
       a.fullName shouldBe "slack_sdk:WebClient"
       b.fullName shouldBe "slack_sdk:WebClient"
       x.fullName shouldBe "sendgrid:SendGridAPIClient"
@@ -141,7 +141,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
     "resolve correct imports via tag nodes" in {
       val List(a: ResolvedMember, b: ResolvedMember, c: ResolvedMember, d: UnknownMethod, e: UnknownTypeDecl) =
-        cpg.call.where(_.referencedImports).tag.toEvaluatedImport.toList: @unchecked
+        cpg.call.where(_.referencedImports).tag._toEvaluatedImport.toList: @unchecked
       a.basePath shouldBe "Foo.ts::program"
       a.memberName shouldBe "x"
       b.basePath shouldBe "Foo.ts::program"
@@ -229,7 +229,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
     )
 
     "resolve correct imports via tag nodes" in {
-      val List(x: ResolvedMethod) = cpg.call.where(_.referencedImports).tag.toEvaluatedImport.toList: @unchecked
+      val List(x: ResolvedMethod) = cpg.call.where(_.referencedImports).tag._toEvaluatedImport.toList: @unchecked
       x.fullName shouldBe "util.js::program:getIncrementalInteger"
     }
 
@@ -258,7 +258,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
     "resolve correct imports via tag nodes" in {
       val List(x: UnknownMethod, y: UnknownTypeDecl) =
-        cpg.call.where(_.referencedImports).tag.toEvaluatedImport.toList: @unchecked
+        cpg.call.where(_.referencedImports).tag._toEvaluatedImport.toList: @unchecked
       x.fullName shouldBe "googleapis"
       y.fullName shouldBe "googleapis"
     }
@@ -280,7 +280,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
     "resolve correct imports via tag nodes" in {
       val List(x: UnknownMethod, y: UnknownTypeDecl, z: UnknownMethod) =
-        cpg.call.where(_.referencedImports).tag.toEvaluatedImport.toList: @unchecked
+        cpg.call.where(_.referencedImports).tag._toEvaluatedImport.toList: @unchecked
       x.fullName shouldBe "googleapis"
       y.fullName shouldBe "googleapis"
       z.fullName shouldBe "googleapis"
@@ -381,7 +381,7 @@ class TypeRecoveryPassTests extends DataFlowCodeToCpgSuite {
 
     "resolve correct imports via tag nodes" in {
       val List(a: ResolvedTypeDecl, b: ResolvedMethod, c: ResolvedMethod, d: UnknownMethod, e: UnknownTypeDecl) =
-        cpg.call.where(_.referencedImports).tag.toEvaluatedImport.toList: @unchecked
+        cpg.call.where(_.referencedImports).tag._toEvaluatedImport.toList: @unchecked
       a.fullName shouldBe "foo.js::program"
       b.fullName shouldBe "foo.js::program:literalFunction"
       c.fullName shouldBe "foo.js::program:get"

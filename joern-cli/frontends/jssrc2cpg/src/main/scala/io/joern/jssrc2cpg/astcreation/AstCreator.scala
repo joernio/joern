@@ -7,9 +7,9 @@ import io.joern.jssrc2cpg.parser.BabelJsonParser.ParseResult
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
+import io.joern.x2cpg.utils.NodeBuilders.{newMethodReturnNode, newModifierNode}
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, AstNodeBuilder as X2CpgAstNodeBuilder}
-import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, ModifierTypes, NodeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 import io.shiftleft.codepropertygraph.generated.nodes.NewFile
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
@@ -124,7 +124,13 @@ class AstCreator(
     methodAstParentStack.pop()
 
     functionTypeAndTypeDeclAst.withChild(
-      methodAst(programMethod, List(Ast(thisParam)), blockAst(blockNode, methodChildren), methodReturn)
+      methodAst(
+        programMethod,
+        Ast(thisParam) :: Nil,
+        blockAst(blockNode, methodChildren),
+        methodReturn,
+        newModifierNode(ModifierTypes.MODULE) :: Nil
+      )
     )
   }
 

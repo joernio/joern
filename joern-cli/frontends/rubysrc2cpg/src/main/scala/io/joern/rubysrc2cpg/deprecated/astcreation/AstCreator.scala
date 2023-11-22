@@ -8,6 +8,7 @@ import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
 import io.joern.x2cpg.X2Cpg.stripQuotes
 import io.joern.x2cpg.datastructures.Global
+import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -190,7 +191,8 @@ class AstCreator(
           blockNode(programCtx),
           locals ++ builtInMethodAst ++ methodRefAssignmentAsts ++ typeRefAssignmentAst ++ methodDefInArgumentAsts ++ statementAsts.toList
         ),
-        methodRetNode
+        methodRetNode,
+        newModifierNode(ModifierTypes.MODULE) :: Nil
       )
 
     scope.popScope()

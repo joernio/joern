@@ -44,7 +44,7 @@ private class RecoverForRubyFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, 
     resolvedImport <- i.call.tag
     alias          <- i.importedAs
   } {
-    import io.joern.x2cpg.passes.frontend.ImportsPass.*
+    import io.shiftleft.semanticcpg.language.importresolver.*
     EvaluatedImport.tagToEvaluatedImport(resolvedImport).foreach {
       case ResolvedTypeDecl(fullName, _) =>
         symbolTable.append(LocalVar(fullName.split("\\.").lastOption.getOrElse(alias)), fullName)
