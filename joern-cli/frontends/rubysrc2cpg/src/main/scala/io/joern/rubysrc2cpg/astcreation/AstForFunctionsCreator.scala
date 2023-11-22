@@ -1,7 +1,6 @@
 package io.joern.rubysrc2cpg.astcreation
 
-import io.joern.rubysrc2cpg.parser.ParserAst
-import io.joern.rubysrc2cpg.parser.ParserAst.*
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.{Ast, ValidationMode}
@@ -21,14 +20,14 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     )
     methodAstParentStack.push(method)
 
-    val parameterAsts = node.parameters.zipWithIndex.map { case (parameterCtx, index) =>
-      astForParameter(ParserAst(parameterCtx), index)
+    val parameterAsts = node.parameters.zipWithIndex.map { case (parameterNode, index) =>
+      astForParameter(parameterNode, index)
     }
 
-    val stmtBlockAst = ParserAst(node.body) match
+    val stmtBlockAst = node.body match
       case stmtList: StatementList => astForStatementListReturningLastExpression(stmtList)
       case _: (StaticLiteral | BinaryExpression | SingleAssignment | SimpleIdentifier | ArrayLiteral | HashLiteral) =>
-        astForStatementListReturningLastExpression(StatementList(node.body, List(node.body)))
+        astForStatementListReturningLastExpression(StatementList(List(node.body))(node.body.span))
       case body =>
         logger.warn(
           s"Non-linear method bodies are not supported yet: ${body.text} (${body.getClass.getSimpleName}) ($relativeFileName), skipping"
@@ -40,7 +39,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   }
 
   // TODO: remaining cases
-  protected def astForParameter(node: ParserNode, index: Int): Ast = {
+  protected def astForParameter(node: RubyNode, index: Int): Ast = {
     node match
       case node: MandatoryParameter =>
         val parameterIn = parameterInNode(
@@ -61,8 +60,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         astForUnknown(node)
   }
 
-  protected def astForSingletonMethodDeclaration(node: ParserAst.SingletonMethodDeclaration): Ast = {
-    ParserAst(node.target) match
+  protected def astForSingletonMethodDeclaration(node: SingletonMethodDeclaration): Ast = {
+    node.target match
       case _: SelfIdentifier =>
         val method = methodNode(
           node = node,
@@ -77,11 +76,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         methodAstParentStack.push(method)
         scope.pushNewScope(method)
 
-        val parameterAsts = node.parameters.zipWithIndex.map { case (parameterCtx, index) =>
-          astForParameter(ParserAst(parameterCtx), index)
+        val parameterAsts = node.parameters.zipWithIndex.map { case (parameterNode, index) =>
+          astForParameter(parameterNode, index)
         }
 
-        val stmtBlockAst = ParserAst(node.body) match
+        val stmtBlockAst = node.body match
           case stmtList: StatementList => astForStatementList(stmtList)
           case body =>
             logger.warn(s"Non-linear method bodies are not supported yet: ${body.text}, skipping")
