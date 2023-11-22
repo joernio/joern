@@ -5,7 +5,6 @@ import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.Assignment
 import io.shiftleft.semanticcpg.language.operatorextension.allAssignmentTypes
 import io.shiftleft.semanticcpg.utils.MemberAccess.isFieldAccess
 import org.slf4j.LoggerFactory
@@ -79,18 +78,17 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
         lit :: (uses ++ globals)
       case member: Member =>
         usages(targetsToClassIdentifierPair(List(member)))
-      case x: Declaration =>
-        List(x).collectAll[CfgNode].toList
       case x: Identifier =>
-        (withFieldAndIndexAccesses(
-          List(x).collectAll[CfgNode].toList ++ x.refsTo.collectAll[Local].flatMap(sourceToStartingPoints)
-        ) ++ x.refsTo.capturedByMethodRef.referencedMethod.flatMap(m => usagesForName(x.name, m))).flatMap {
-          case x: Call => sourceToStartingPoints(x)
-          case x       => List(x)
-        }
-      case x: Call =>
-        (x._receiverIn.l :+ x).collect { case y: CfgNode => y }
-      case x => List(x).collect { case y: CfgNode => y }
+        val fieldAndIndexAccesses = withFieldAndIndexAccesses(x :: Nil)
+        val capturedReferences    = x.refsTo.capturedByMethodRef.referencedMethod.flatMap(m => usagesForName(x.name, m))
+        // If this identifier is an arg to a call, then we consider the call a sink. But only twice deep, as semantics
+        // may affect the behaviour here.
+        val inCall = x.start.repeat(_.astParent)(_.maxDepth(1)).isCall.l
+
+        x :: inCall ++ fieldAndIndexAccesses ++ capturedReferences
+      case x: Call    => (x :: x._receiverIn.l).collect { case y: CfgNode => y }
+      case x: CfgNode => x :: Nil
+      case _          => Nil
     }
   }
 
@@ -107,7 +105,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
       .nameExact(identifier.name)
       .inCall
       .collect { case c if isFieldAccess(c.name) => c }
-      .toList
+      .l
 
   /** Finds the first usages of this module variable across all importing modules.
     *
