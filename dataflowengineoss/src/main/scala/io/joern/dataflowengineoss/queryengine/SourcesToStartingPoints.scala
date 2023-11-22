@@ -72,19 +72,21 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
       case lit: Literal =>
         val uses = usages(targetsToClassIdentifierPair(literalToInitializedMembers(lit)))
         val globals = globalFromLiteral(lit).flatMap {
-          case x: Identifier if x.isModuleVariable => x +: moduleVariableToFirstUsagesAcrossProgram(x)
+          case x: Identifier if x.isModuleVariable => x :: moduleVariableToFirstUsagesAcrossProgram(x)
           case x                                   => x :: Nil
-        }.l
+        }
         lit :: (uses ++ globals)
       case member: Member =>
         usages(targetsToClassIdentifierPair(List(member)))
       case x: Identifier =>
-        val fieldAndIndexAccesses = withFieldAndIndexAccesses(x :: Nil)
-        val capturedReferences    = x.refsTo.capturedByMethodRef.referencedMethod.flatMap(m => usagesForName(x.name, m))
-        val inCall = x.inCall.l // If this identifier is an arg to a call, then we consider the call a sink.
+        val fieldAndIndexAccesses = withFieldAndIndexAccesses(x :: Nil).flatMap {
+          case x: Call => sourceToStartingPoints(x) // Handle the case if this is an arg to another call
+          case x       => x :: Nil
+        }
+        val capturedReferences = x.refsTo.capturedByMethodRef.referencedMethod.flatMap(firstUsagesForName(x.name, _)).l
 
-        x :: inCall ++ fieldAndIndexAccesses ++ capturedReferences
-      case x: Call    => (x :: x._receiverIn.l).collect { case y: CfgNode => y }
+        x :: fieldAndIndexAccesses ++ capturedReferences
+      case x: Call    => x :: x._receiverIn.collectAll[CfgNode].l
       case x: CfgNode => x :: Nil
       case _          => Nil
     }
@@ -114,8 +116,8 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
     moduleVar.start.moduleVariables.references
       .groupBy(_.method)
       .map {
-        case (sameModule, references) if moduleVar.method == sameModule => references
-        case (_, references)                                            => references.filterNot(notLeftHandOfAssignment)
+        case (sameModule, _) if moduleVar.method == sameModule => fieldAndIndexAccesses(moduleVar)
+        case (_, references)                                   => references.filterNot(notLeftHandOfAssignment)
       }
       .flatMap(_.sortBy(i => (i.lineNumber, i.columnNumber)).headOption)
       .toList
@@ -154,9 +156,9 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
   private def firstUsagesOf(astNode: AstNode, m: Method, typeDecl: TypeDecl): List[Expression] = {
     astNode match {
       case member: Member =>
-        usagesForName(member.name, m)
+        firstUsagesForName(member.name, m)
       case identifier: Identifier =>
-        usagesForName(identifier.name, m)
+        firstUsagesForName(identifier.name, m)
       case fieldIdentifier: FieldIdentifier =>
         val fieldIdentifiers = m.ast.isFieldIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
         fieldIdentifiers
@@ -170,10 +172,10 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
     }
   }
 
-  private def usagesForName(name: String, m: Method): List[Expression] = {
-    val identifiers      = m.ast.isIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
+  private def firstUsagesForName(name: String, m: Method): List[Expression] = {
+    val identifiers      = m._identifierViaContainsOut.l
     val identifierUsages = identifiers.nameExact(name).takeWhile(notLeftHandOfAssignment).l
-    val fieldIdentifiers = m.ast.isFieldIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
+    val fieldIdentifiers = m.fieldAccess.fieldIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
     val thisRefs         = Seq("this", "self") ++ m.typeDecl.name.headOption.toList
     val fieldAccessUsages = fieldIdentifiers.isFieldIdentifier
       .canonicalNameExact(name)
@@ -181,7 +183,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
       .where(_.argument(1).codeExact(thisRefs: _*))
       .takeWhile(notLeftHandOfAssignment)
       .l
-    (identifierUsages ++ fieldAccessUsages).headOption.toList
+    (identifierUsages ++ fieldAccessUsages).sortBy(x => (x.lineNumber, x.columnNumber)).headOption.toList
   }
 
   /** For a literal, determine if it is used in the initialization of any member variables. Return list of initialized
@@ -211,7 +213,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
     def methods(x: AstNode): List[Method] = {
       x match {
         case m: Method => m :: m.astMinusRoot.isMethod.flatMap(methods).l
-        case _         => List()
+        case _         => Nil
       }
     }
     typeDecl.method.flatMap(methods).l
