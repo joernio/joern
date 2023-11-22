@@ -3,22 +3,15 @@ package io.joern.kotlin2cpg.ast
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.ast.Nodes.modifierNode
 import io.joern.kotlin2cpg.types.{TypeConstants, TypeInfoProvider}
-import io.joern.x2cpg.utils.NodeBuilders
-import io.joern.x2cpg.{Ast, AstNodeBuilder, ValidationMode}
-import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newClosureBindingNode, newMethodReturnNode}
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewLocal, NewMember, NewMethodParameterIn, NewNode}
-import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
-import org.jetbrains.kotlin.psi.{
-  KtAnnotationEntry,
-  KtLambdaExpression,
-  KtNamedFunction,
-  KtParameter,
-  KtReturnExpression
-}
-import io.shiftleft.semanticcpg.language.*
-
 import io.joern.x2cpg.datastructures.Stack.StackWrapper
+import io.joern.x2cpg.utils.NodeBuilders
+import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newClosureBindingNode, newMethodReturnNode, newModifierNode}
+import io.joern.x2cpg.{Ast, AstNodeBuilder, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes}
+import io.shiftleft.semanticcpg.language.*
+import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
+import org.jetbrains.kotlin.psi.*
 
 import java.util.UUID.nameUUIDFromBytes
 import scala.jdk.CollectionConverters.*
@@ -183,8 +176,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       lambdaMethodNode,
       parametersAsts,
       bodyAst,
-      newMethodReturnNode(returnTypeFullName, None, line(fn), column(fn))
-    ).withChild(Ast(modifierNode(ModifierTypes.VIRTUAL)))
+      newMethodReturnNode(returnTypeFullName, None, line(fn), column(fn)),
+      modifierNode(ModifierTypes.VIRTUAL) :: modifierNode(ModifierTypes.LAMBDA) :: Nil
+    )
 
     val _methodRefNode =
       withArgumentIndex(methodRefNode(fn, fn.getText, fullName, lambdaTypeDeclFullName), argIdxMaybe)
@@ -310,8 +304,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       lambdaMethodNode,
       parametersAsts,
       bodyAst,
-      newMethodReturnNode(returnTypeFullName, None, line(expr), column(expr))
-    ).withChild(Ast(modifierNode(ModifierTypes.VIRTUAL)))
+      newMethodReturnNode(returnTypeFullName, None, line(expr), column(expr)),
+      newModifierNode(ModifierTypes.VIRTUAL) :: newModifierNode(ModifierTypes.LAMBDA) :: Nil
+    )
 
     val _methodRefNode =
       withArgumentIndex(methodRefNode(expr, expr.getText, fullName, lambdaTypeDeclFullName), argIdxMaybe)

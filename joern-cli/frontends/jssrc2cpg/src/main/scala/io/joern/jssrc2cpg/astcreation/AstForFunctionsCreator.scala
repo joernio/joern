@@ -3,9 +3,9 @@ package io.joern.jssrc2cpg.astcreation
 import io.joern.jssrc2cpg.datastructures.{BlockScope, MethodScope}
 import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
-import io.joern.x2cpg.{Ast, ValidationMode, AstNodeBuilder}
 import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode}
+import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newModifierNode}
+import io.joern.x2cpg.{Ast, AstNodeBuilder, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier as _, *}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes}
 import ujson.Value
@@ -304,8 +304,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     methodBlockContent: List[Ast] = List.empty
   ): NewMethod = {
     val (methodName, methodFullName) = calcMethodNameAndFullName(func)
-    val methodNode_         = methodNode(func, methodName, func.code, methodFullName, None, parserResult.filename)
-    val virtualModifierNode = NewModifier().modifierType(ModifierTypes.VIRTUAL)
+    val methodNode_ = methodNode(func, methodName, func.code, methodFullName, None, parserResult.filename)
+    val modifiers =
+      newModifierNode(ModifierTypes.VIRTUAL) :: (if methodName.startsWith("anonymous") then
+                                                   newModifierNode(ModifierTypes.LAMBDA) :: Nil
+                                                 else Nil)
     methodAstParentStack.push(methodNode_)
 
     val thisNode =
@@ -334,7 +337,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       )
 
     val mAst = if (methodBlockContent.isEmpty) {
-      methodStubAst(methodNode_, thisNode +: paramNodes, methodReturnNode, List(virtualModifierNode))
+      methodStubAst(methodNode_, thisNode +: paramNodes, methodReturnNode, modifiers)
     } else {
       setArgumentIndices(methodBlockContent)
       val bodyAst = blockAst(NewBlock(), methodBlockContent)
@@ -343,7 +346,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         (thisNode +: paramNodes).map(Ast(_)),
         bodyAst,
         methodReturnNode,
-        annotations = astsForDecorators(func)
+        modifiers,
+        astsForDecorators(func)
       )
     }
 
@@ -378,8 +382,10 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       Ast()
     }
 
-    val methodNode_         = methodNode(func, methodName, func.code, methodFullName, None, parserResult.filename)
-    val virtualModifierNode = NewModifier().modifierType(ModifierTypes.VIRTUAL)
+    val methodNode_ = methodNode(func, methodName, func.code, methodFullName, None, parserResult.filename)
+    val modifierNodes = newModifierNode(ModifierTypes.VIRTUAL) :: (if methodName.startsWith("anonymous") then
+                                                                     newModifierNode(ModifierTypes.LAMBDA) :: Nil
+                                                                   else Nil)
 
     methodAstParentStack.push(methodNode_)
 
@@ -442,7 +448,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         (thisNode +: paramNodes).map(Ast(_)),
         blockAst(blockNode, methodBlockChildren),
         methodReturnNode,
-        List(virtualModifierNode),
+        modifierNodes,
         astsForDecorators(func)
       )
     Ast.storeInDiffGraph(mAst, diffGraph)

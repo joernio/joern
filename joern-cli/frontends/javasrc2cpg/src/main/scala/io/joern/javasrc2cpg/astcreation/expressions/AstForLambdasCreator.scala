@@ -102,8 +102,9 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
     val virtualModifier = Some(newModifierNode(ModifierTypes.VIRTUAL))
     val staticModifier  = Option.when(thisParam.isEmpty)(newModifierNode(ModifierTypes.STATIC))
     val privateModifier = Some(newModifierNode(ModifierTypes.PRIVATE))
+    val lambdaModifier  = Some(newModifierNode(ModifierTypes.LAMBDA))
 
-    val modifiers = List(virtualModifier, staticModifier, privateModifier).flatten.map(Ast(_))
+    val modifiers = List(virtualModifier, staticModifier, privateModifier, lambdaModifier).flatten.map(Ast(_))
 
     val lambdaMethodAstWithoutRefs =
       Ast(lambdaMethodNode)

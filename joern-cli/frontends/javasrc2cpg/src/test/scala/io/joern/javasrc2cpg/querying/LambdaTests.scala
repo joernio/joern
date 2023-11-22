@@ -69,7 +69,7 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "create a method node for the lambda" in {
-      cpg.typeDecl.name("Foo").method.name(".*lambda.*").l match {
+      cpg.typeDecl.name("Foo").method.name(".*lambda.*").isLambda.l match {
         case List(lambdaMethod) =>
           // Lambda body creation tested separately
           lambdaMethod.name shouldBe "lambda$0"
@@ -184,7 +184,7 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
     // Only test the method node for type info, since this is effectively the same test as above
     // with a different source for the expected type.
     "create a method node for the lambda" in {
-      cpg.typeDecl.name("Foo").method.name(".*lambda.*").l match {
+      cpg.typeDecl.name("Foo").method.name(".*lambda.*").isLambda.l match {
         case List(lambdaMethod) =>
           // Lambda body creation tested separately
           lambdaMethod.name shouldBe "lambda$0"
@@ -217,7 +217,7 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
     // Only test the method node for type info, since this is effectively the same test as above
     // with a different source for the expected type.
     "create a method node for the lambda" in {
-      cpg.typeDecl.name("Foo").method.name(".*lambda.*").l match {
+      cpg.typeDecl.name("Foo").method.name(".*lambda.*").isLambda.l match {
         case List(lambdaMethod) =>
           // Lambda body creation tested separately
           lambdaMethod.name shouldBe "lambda$0"
@@ -250,7 +250,7 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
     // Only test the method node for type info, since this is effectively the same test as above
     // with a different source for the expected type.
     "create a method node for the lambda" in {
-      cpg.typeDecl.name("Foo").method.name(".*lambda.*").l match {
+      cpg.typeDecl.name("Foo").method.name(".*lambda.*").isLambda.l match {
         case List(lambdaMethod) =>
           // Lambda body creation tested separately
           lambdaMethod.name shouldBe "lambda$0"

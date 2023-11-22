@@ -29,11 +29,11 @@ class CallbackTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
 
     "should contain a METHOD node for the lambda" in {
-      cpg.method.fullName(".*lambda.*").size shouldBe 1
+      cpg.method.fullName(".*lambda.*").isLambda.size shouldBe 1
     }
 
     "METHOD node should have the correct number of parameters" in {
-      cpg.method.fullName(".*lambda.*").parameter.size shouldBe 1
+      cpg.method.fullName(".*lambda.*").isLambda.parameter.size shouldBe 1
     }
 
     "method parameter should have the correct properties set" in {

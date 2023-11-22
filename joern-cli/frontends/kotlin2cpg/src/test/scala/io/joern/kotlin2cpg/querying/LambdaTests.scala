@@ -131,8 +131,9 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     }
 
     "should contain a METHOD node for the lambda with a corresponding MODIFIER which has the correct props set" in {
-      val List(mod) = cpg.method.fullName(".*lambda.*").modifier.l
-      mod.modifierType shouldBe ModifierTypes.VIRTUAL
+      val List(mod1, mod2) = cpg.method.fullName(".*lambda.*").modifier.l
+      mod1.modifierType shouldBe ModifierTypes.VIRTUAL
+      mod2.modifierType shouldBe ModifierTypes.LAMBDA
     }
 
     "should contain a METHOD_PARAMETER_IN for the lambda with the correct properties set" in {
@@ -270,8 +271,9 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     }
 
     "should contain a METHOD node for the lambda with a corresponding MODIFIER which has the correct props set" in {
-      val List(mod) = cpg.method.fullName(".*lambda.*").modifier.l
-      mod.modifierType shouldBe ModifierTypes.VIRTUAL
+      val List(mod1, mod2) = cpg.method.fullName(".*lambda.*").modifier.l
+      mod1.modifierType shouldBe ModifierTypes.VIRTUAL
+      mod2.modifierType shouldBe ModifierTypes.LAMBDA
     }
 
     "should contain a METHOD_PARAMETER_IN for the lambda with the correct properties set" in {
@@ -348,8 +350,9 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     }
 
     "should contain a METHOD node for the lambda with a corresponding MODIFIER which has the correct props set" in {
-      val List(mod) = cpg.method.fullName(".*lambda.*").modifier.l
-      mod.modifierType shouldBe ModifierTypes.VIRTUAL
+      val List(mod1, mod2) = cpg.method.fullName(".*lambda.*").modifier.l
+      mod1.modifierType shouldBe ModifierTypes.VIRTUAL
+      mod2.modifierType shouldBe ModifierTypes.LAMBDA
     }
 
     "should contain a METHOD_PARAMETER_IN for the lambda with the correct properties set" in {

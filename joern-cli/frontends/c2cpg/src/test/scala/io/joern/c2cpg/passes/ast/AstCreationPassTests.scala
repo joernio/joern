@@ -121,14 +121,14 @@ class AstCreationPassTests extends AbstractPassTest {
         }
       }
 
-      inside(cpg.method.fullNameExact(lambda1FullName).l) { case List(l1) =>
+      inside(cpg.method.fullNameExact(lambda1FullName).isLambda.l) { case List(l1) =>
         l1.name shouldBe lambda1FullName
         l1.code should startWith("[] (int a, int b) -> int")
         l1.signature shouldBe "int anonymous_lambda_0 (int,int)"
         l1.body.code shouldBe "{ return a + b; }"
       }
 
-      inside(cpg.method.fullNameExact(lambda2FullName).l) { case List(l2) =>
+      inside(cpg.method.fullNameExact(lambda2FullName).isLambda.l) { case List(l2) =>
         l2.name shouldBe lambda2FullName
         l2.code should startWith("[] (string a, string b) -> string")
         l2.signature shouldBe "string anonymous_lambda_1 (string,string)"
@@ -178,7 +178,7 @@ class AstCreationPassTests extends AbstractPassTest {
         }
       }
 
-      inside(cpg.method.fullNameExact(lambdaFullName).l) { case List(l1) =>
+      inside(cpg.method.fullNameExact(lambdaFullName).isLambda.l) { case List(l1) =>
         l1.name shouldBe lambdaName
         l1.code should startWith("[] (int a, int b) -> int")
         l1.signature shouldBe signature
@@ -220,7 +220,7 @@ class AstCreationPassTests extends AbstractPassTest {
         }
       }
 
-      inside(cpg.method.fullNameExact(lambdaFullName).l) { case List(l1) =>
+      inside(cpg.method.fullNameExact(lambdaFullName).isLambda.l) { case List(l1) =>
         l1.name shouldBe lambdaName
         l1.code should startWith("[] (int a, int b) -> int")
         l1.signature shouldBe signature
@@ -270,7 +270,7 @@ class AstCreationPassTests extends AbstractPassTest {
         }
       }
 
-      inside(cpg.method.fullNameExact(lambda1Name).l) { case List(l1) =>
+      inside(cpg.method.fullNameExact(lambda1Name).isLambda.l) { case List(l1) =>
         l1.name shouldBe lambda1Name
         l1.code should startWith("[](int n) -> int")
         l1.signature shouldBe signature1
