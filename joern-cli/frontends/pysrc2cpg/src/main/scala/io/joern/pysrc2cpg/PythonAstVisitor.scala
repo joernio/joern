@@ -304,7 +304,8 @@ class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode
     bodyProvider: () => Iterable[nodes.NewNode],
     returns: Option[ast.iexpr],
     isAsync: Boolean,
-    lineAndColumn: LineAndColumn
+    lineAndColumn: LineAndColumn,
+    additionalModifiers: List[String] = List.empty
   ): (nodes.NewMethod, nodes.NewMethodRef) = {
     val methodFullName = calculateFullNameFromContext(methodName)
 
@@ -316,7 +317,7 @@ class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode
         methodName,
         methodFullName,
         scopeName,
-        ModifierTypes.VIRTUAL :: Nil,
+        ModifierTypes.VIRTUAL :: additionalModifiers,
         parameterProvider,
         bodyProvider,
         returns,
@@ -1393,7 +1394,8 @@ class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode
       () => Iterable.single(convert(new ast.Return(lambda.body, lambda.attributeProvider))),
       returns = None,
       isAsync = false,
-      lineAndColOf(lambda)
+      lineAndColOf(lambda),
+      ModifierTypes.LAMBDA :: Nil
     )
     methodRefNode
   }

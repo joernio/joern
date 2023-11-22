@@ -223,9 +223,10 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
     val constructorModifier   = Option.when(isConstructor)(ModifierTypes.CONSTRUCTOR)
     val defaultAccessModifier = Option.unless(containsAccessModifier(decl.modifiers))(ModifierTypes.PUBLIC)
 
-    val allModifiers = constructorModifier ++: defaultAccessModifier ++: decl.modifiers
-    val modifiers    = allModifiers.map(newModifierNode)
-    val modifierString = decl.modifiers match {
+    val allModifiers      = constructorModifier ++: defaultAccessModifier ++: decl.modifiers
+    val modifiers         = allModifiers.map(newModifierNode)
+    val excludedModifiers = Set(ModifierTypes.MODULE, ModifierTypes.LAMBDA)
+    val modifierString = decl.modifiers.filterNot(excludedModifiers.contains) match {
       case Nil  => ""
       case mods => s"${mods.mkString(" ")} "
     }
@@ -1425,7 +1426,7 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
     // Create method for closure
     val name = PhpNameExpr(methodName, closureExpr.attributes)
     // TODO Check for static modifier
-    val modifiers = if (closureExpr.isStatic) ModifierTypes.STATIC :: Nil else Nil
+    val modifiers = ModifierTypes.LAMBDA :: (if (closureExpr.isStatic) ModifierTypes.STATIC :: Nil else Nil)
     val methodDecl = PhpMethodDecl(
       name,
       closureExpr.params,

@@ -1,16 +1,17 @@
 package io.joern.c2cpg.astcreation
 
-import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
-import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.joern.x2cpg.datastructures.Stack.*
+import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.joern.x2cpg.{Ast, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, ModifierTypes}
+import org.apache.commons.lang.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.ICPPASTLambdaExpression
 import org.eclipse.cdt.core.dom.ast.gnu.c.ICASTKnRFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.c.{CASTFunctionDeclarator, CASTParameterDeclaration}
 import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTFunctionDeclarator, CPPASTParameterDeclaration}
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
-import io.joern.x2cpg.datastructures.Stack.*
-import org.apache.commons.lang.StringUtils
 
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -118,7 +119,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       methodNode_,
       parameterNodes.map(Ast(_)),
       astForMethodBody(Option(lambdaExpression.getBody)),
-      newMethodReturnNode(lambdaExpression, registerType(returnType))
+      newMethodReturnNode(lambdaExpression, registerType(returnType)),
+      newModifierNode(ModifierTypes.LAMBDA) :: Nil
     )
     val typeDeclAst = createFunctionTypeAndTypeDecl(lambdaExpression, methodNode_, name, fullname, signature)
     Ast.storeInDiffGraph(astForLambda.merge(typeDeclAst), diffGraph)

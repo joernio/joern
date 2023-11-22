@@ -3,6 +3,7 @@ package io.joern.rubysrc2cpg.deprecated.astcreation
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.*
 import io.joern.rubysrc2cpg.deprecated.passes.Defines
 import io.joern.rubysrc2cpg.deprecated.utils.PackageContext
+import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes}
@@ -305,14 +306,14 @@ trait AstForFunctionsCreator(packageContext: PackageContext)(implicit withSchema
     val methodRetNode = NewMethodReturn()
       .typeFullName(Defines.Any)
 
-    val publicModifier = NewModifier().modifierType(ModifierTypes.PUBLIC)
+    val modifiers = newModifierNode(ModifierTypes.PUBLIC) :: newModifierNode(ModifierTypes.LAMBDA) :: Nil
 
     val methAst = methodAst(
       newMethodNode,
       astMethodParam,
       blockAst(blockNode(ctx), locals ++ astBody.toList),
       methodRetNode,
-      Seq(publicModifier)
+      modifiers
     )
     blockMethods.addOne(methAst)
 
