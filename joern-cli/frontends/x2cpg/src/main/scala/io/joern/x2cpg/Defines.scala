@@ -26,6 +26,9 @@ object Defines {
   // method/function interface information. In those cases please use this value.
   val DynamicCallUnknownFullName = "<unknownFullName>"
 
+  // Anonymous functions, lambdas, and closures, follow the naming scheme of $LambdaPrefix$int
+  val ClosurePrefix = "<lambda>"
+
   val LeftAngularBracket = "<"
   val Unknown            = "<unknown>"
 }
