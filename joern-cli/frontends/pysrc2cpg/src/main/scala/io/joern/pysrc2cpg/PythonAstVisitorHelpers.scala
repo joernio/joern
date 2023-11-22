@@ -2,8 +2,7 @@ package io.joern.pysrc2cpg
 
 import io.joern.pysrc2cpg.memop.{Load, MemoryOperation, Store}
 import io.joern.pythonparser.ast
-import io.joern.pythonparser.ast.Name
-import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 
 import scala.collection.immutable.{::, Nil}
@@ -103,48 +102,9 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     ) {
       // No lowering or wrapping in a block is required if we have a single target and
       // no decomposition.
-      val targetAstNode   = targets.head
-      val memoryOperation = memOpMap.get(targetAstNode).get
+      val targetNode = convert(targets.head)
 
-      targetAstNode match
-        case name: Name if contextStack.isModuleContext && memoryOperation == Store =>
-          // Module-level variables are implicitly interprocedurally accessible and should
-          // be treated as members. The code below ensures a strong update on the member and
-          // then aliases onto an identifier, e.g., `x = 1` becomes
-          /*
-             x = {
-               <module>.x = 1
-               tmp = <module>.x
-               tmp
-             }
-           */
-          contextStack.addGlobalVariable(name.id)
-
-          val tmpVariableName = getUnusedName()
-          val stmts = Iterable(
-            createAssignment(generateModuleFieldAccess(name, Store), valueNode, lineAndColumn),
-            createAssignment(
-              createIdentifierNode(tmpVariableName, Store, lineAndColumn),
-              generateModuleFieldAccess(name, Load),
-              lineAndColumn
-            ),
-            createIdentifierNode(tmpVariableName, Load, lineAndColumn)
-          ).collect {
-            // Signal that these are module-related de-sugaring operations
-            case x: NewIdentifier                             => x.code(s"<module>.${x.code}")
-            case x: NewCall if !x.code.startsWith("<module>") => x.code(s"<module>.${x.code}")
-            case x                                            => x
-          }
-          val targetNode = convert(targetAstNode)
-          // Generate a block, and make it look like the "sugared" code that is being parsed
-          val block = createBlock(stmts, lineAndColumn)
-            .asInstanceOf[NewBlock]
-            .code(s"${codeOf(targetNode)} = ${codeOf(valueNode)}")
-          val desugaredModuleAssign = createAssignment(targetNode, block, lineAndColumn).asInstanceOf[NewCall]
-          // Get rid of code that looks like `targetNode = targetNode = value`
-          desugaredModuleAssign.code(desugaredModuleAssign.code.split("=").tail.mkString("=").trim)
-          Iterable.single(desugaredModuleAssign)
-        case _ => Iterable.single(createAssignment(convert(targetAstNode), valueNode, lineAndColumn))
+      Iterable.single(createAssignment(targetNode, valueNode, lineAndColumn))
     } else {
       // Lowering of x, (y,z) = a = b = c:
       // Note: No surrounding block is created. This is the duty of the caller.
@@ -207,17 +167,6 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     }
 
     result
-  }
-
-  private def createModuleIdentifier(node: ast.iexpr, memoryOperation: MemoryOperation): NewNode =
-    contextStack
-      .findEnclosingMethod()
-      .map(m => createIdentifierNode("<module>", memoryOperation, lineAndColOf(node), m.fullName))
-      .getOrElse(createIdentifierNode("<module>", memoryOperation, lineAndColOf(node), Constants.ANY))
-
-  private def generateModuleFieldAccess(name: Name, memoryOperation: MemoryOperation) = {
-    val moduleIdentifier = createModuleIdentifier(name, memoryOperation)
-    createFieldAccess(moduleIdentifier, name.id, lineAndColOf(name))
   }
 
   protected def createComprehensionLowering(
@@ -488,6 +437,9 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     val callNode = nodeBuilder.callNode(code, Operators.assignment, DispatchTypes.STATIC_DISPATCH, lineAndColumn)
 
     addAstChildrenAsArguments(callNode, 1, lhsNode, rhsNode)
+    // Do not include imports or function pointers
+    if (!codeOf(rhsNode).startsWith("import(") && codeOf(rhsNode) != s"def ${codeOf(lhsNode)}(...)")
+      contextStack.considerAsGlobalVariable(lhsNode)
 
     callNode
   }
@@ -522,10 +474,9 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
   protected def createIdentifierNode(
     name: String,
     memOp: MemoryOperation,
-    lineAndColumn: LineAndColumn,
-    typeFullName: String = Constants.ANY
+    lineAndColumn: LineAndColumn
   ): NewIdentifier = {
-    val identifierNode = nodeBuilder.identifierNode(name, lineAndColumn, typeFullName)
+    val identifierNode = nodeBuilder.identifierNode(name, lineAndColumn)
     contextStack.addVariableReference(identifierNode, memOp)
     identifierNode
   }
@@ -561,8 +512,6 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
 
     val code     = codeOf(baseNode) + "." + codeOf(fieldIdNode)
     val callNode = nodeBuilder.callNode(code, Operators.fieldAccess, DispatchTypes.STATIC_DISPATCH, lineAndColumn)
-
-    contextStack.addFieldReference(fieldIdNode, callNode)
 
     addAstChildrenAsArguments(callNode, 1, baseNode, fieldIdNode)
     callNode

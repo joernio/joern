@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.deprecated.passes
 import better.files.File
 import io.joern.rubysrc2cpg.deprecated.utils.PackageTable
 import io.joern.x2cpg.Defines as XDefines
-import io.joern.x2cpg.passes.frontend.ImportsPass.*
+import io.shiftleft.semanticcpg.language.importresolver.*
 import io.joern.x2cpg.passes.frontend.XImportResolverPass
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Call

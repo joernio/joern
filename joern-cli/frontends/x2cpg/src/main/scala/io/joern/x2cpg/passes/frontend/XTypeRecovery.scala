@@ -6,6 +6,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, Operators, PropertyNames}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.importresolver.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
 import org.slf4j.{Logger, LoggerFactory}
@@ -67,8 +68,6 @@ abstract class XTypeRecoveryPass[CompilationUnitType <: AstNode](
   config: XTypeRecoveryConfig = XTypeRecoveryConfig()
 ) extends CpgPass(cpg) {
 
-  import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
-
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit =
     if (config.iterations > 0) {
       val stopEarly = new AtomicBoolean(false)
@@ -82,8 +81,6 @@ abstract class XTypeRecoveryPass[CompilationUnitType <: AstNode](
         if (stopEarly.get() && config.enabledDummyTypes) {
           generateRecoveryPass(state.copy(currentIteration = config.iterations - 1)).createAndApply()
         }
-
-        postTypeRecoveryAndPropagation(builder)
       } finally {
         state.clear()
       }
@@ -99,6 +96,7 @@ abstract class XTypeRecoveryPass[CompilationUnitType <: AstNode](
 
   private def linkMembersToTheirRefs(builder: DiffGraphBuilder): Unit = {
     import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromIteratorExt
+    import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
 
     def getFieldBaseTypes(fieldAccess: FieldAccess): Iterator[TypeDecl] = {
       fieldAccess.argument(1) match
@@ -250,7 +248,7 @@ object XTypeRecovery {
     )).iterator
 
     def getKnownTypes: Set[String] = {
-      x.allTypes.toSet.filterNot(unknownTypePattern.matches)
+      x.allTypes.toSet.filterNot(XTypeRecovery.unknownTypePattern.matches)
     }
   }
 
@@ -258,7 +256,7 @@ object XTypeRecovery {
     def allTypes: Iterator[String] = x.flatMap(_.allTypes)
 
     def getKnownTypes: Set[String] =
-      x.allTypes.toSet.filterNot(unknownTypePattern.matches)
+      x.allTypes.toSet.filterNot(XTypeRecovery.unknownTypePattern.matches)
   }
 
 }
@@ -282,6 +280,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 ) extends RecursiveTask[Boolean] {
 
   import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
+  import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromIteratorExt
 
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
 
@@ -380,9 +379,6 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     resolvedImport <- i.call.tag
     alias          <- i.importedAs
   } {
-    import io.joern.x2cpg.passes.frontend.ImportsPass.*
-    import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromIteratorExt
-
     EvaluatedImport.tagToEvaluatedImport(resolvedImport).foreach {
       case ResolvedMethod(fullName, alias, receiver, _) =>
         symbolTable.append(CallAlias(alias, receiver), fullName)
