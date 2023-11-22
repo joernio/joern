@@ -237,4 +237,21 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     str.lineNumber shouldBe Some(2)
   }
 
+  "`... while ...` statement is represented by a `WHILE` CONTROL_STRUCTURE node" in {
+    val cpg = code("""
+        |puts 'hi' while (true)
+        |""".stripMargin)
+
+    val List(whileNode) = cpg.whileBlock.l
+    val List(whileCond) = whileNode.condition.isLiteral.l
+    val List(putsHi)    = whileNode.whenTrue.isCall.l
+
+    whileCond.code shouldBe "true"
+    whileCond.lineNumber shouldBe Some(2)
+
+    putsHi.methodFullName shouldBe "puts"
+    putsHi.code shouldBe "puts 'hi'"
+    putsHi.lineNumber shouldBe Some(2)
+  }
+
 }
