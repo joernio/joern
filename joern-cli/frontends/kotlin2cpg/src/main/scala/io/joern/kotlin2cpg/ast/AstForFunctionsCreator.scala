@@ -176,8 +176,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
       lambdaMethodNode,
       parametersAsts,
       bodyAst,
-      newMethodReturnNode(returnTypeFullName, None, line(fn), column(fn))
-    ).withChildren(modifierNode(ModifierTypes.VIRTUAL) :: modifierNode(ModifierTypes.LAMBDA) :: Nil map (Ast(_)))
+      newMethodReturnNode(returnTypeFullName, None, line(fn), column(fn)),
+      modifierNode(ModifierTypes.VIRTUAL) :: modifierNode(ModifierTypes.LAMBDA) :: Nil
+    )
 
     val _methodRefNode =
       withArgumentIndex(methodRefNode(fn, fn.getText, fullName, lambdaTypeDeclFullName), argIdxMaybe)

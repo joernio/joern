@@ -144,7 +144,7 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
     }
 
     "create a typeDecl node inheriting from correct interface" in {
-      cpg.typeDecl.name(".*lambda.*").isLambda.l match {
+      cpg.typeDecl.name(".*lambda.*").l match {
         case List(lambdaDecl) =>
           lambdaDecl.name shouldBe "lambda$0"
           lambdaDecl.fullName shouldBe "Foo.lambda$0:java.lang.String(java.lang.String)"
