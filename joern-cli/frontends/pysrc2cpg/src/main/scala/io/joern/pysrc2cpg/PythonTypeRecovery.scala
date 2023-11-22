@@ -5,6 +5,7 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.importresolver.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -48,7 +49,6 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
 
   override def visitImport(i: Import): Unit = {
     if (i.importedAs.isDefined && i.importedEntity.isDefined) {
-      import io.joern.x2cpg.passes.frontend.ImportsPass.*
 
       val entityName = i.importedAs.get
       i.call.tag.flatMap(EvaluatedImport.tagToEvaluatedImport).foreach {
@@ -108,16 +108,6 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
       case "<operator>.setLiteral"   => associateTypes(i, Set(s"${PythonAstVisitor.builtinPrefix}set"))
       case Operators.conditional     => associateTypes(i, Set(s"${PythonAstVisitor.builtinPrefix}bool"))
       case _                         => super.visitIdentifierAssignedToOperator(i, c, operation)
-    }
-  }
-
-  override def visitStatementsInBlock(b: Block, assignmentTarget: Option[Identifier]): Set[String] = {
-    if (b.inAssignment.nonEmpty && b.expressionDown.assignment.argument(1).fieldAccess.code("<module>.*").nonEmpty) {
-      super.visitStatementsInBlock(b, assignmentTarget)
-      // Shortcut the actual value of the module access
-      visitAssignmentArguments(List(b.inAssignment.target.head, b.expressionDown.assignment.head.source))
-    } else {
-      super.visitStatementsInBlock(b, assignmentTarget)
     }
   }
 

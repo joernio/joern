@@ -40,6 +40,10 @@ class ModifierAccessors[A <: Node](val traversal: Iterator[A]) extends AnyVal {
   def isVirtual: Iterator[A] =
     hasModifier(ModifierTypes.VIRTUAL)
 
+  /** Filter: only `module` nodes */
+  def isModule: Iterator[A] =
+    hasModifier(ModifierTypes.MODULE)
+
   /** Filter: only `lambda` methods */
   def isLambda: Iterator[A] =
     hasModifier(ModifierTypes.LAMBDA)
