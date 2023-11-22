@@ -19,7 +19,6 @@ astGenVersion := appProperties.value.getString("swiftsrc2cpg.astgen_version")
 libraryDependencies ++= Seq(
   "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
   "com.lihaoyi"   %% "upickle"           % Versions.upickle,
-  "com.typesafe"   % "config"            % "1.4.2",
   "org.scalatest" %% "scalatest"         % Versions.scalatest % Test
 )
 
