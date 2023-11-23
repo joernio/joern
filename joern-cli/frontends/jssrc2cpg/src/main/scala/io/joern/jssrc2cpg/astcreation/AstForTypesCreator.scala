@@ -4,9 +4,9 @@ import io.joern.jssrc2cpg.datastructures.BlockScope
 import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
-import io.joern.x2cpg.{Ast, ValidationMode, AstNodeBuilder}
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode}
+import io.joern.x2cpg.utils.NodeBuilders.newBindingNode
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes, Operators}
 import ujson.Value
@@ -31,26 +31,23 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       typeDeclNode(alias, aliasName, aliasFullName, parserResult.filename, alias.code, astParentType, astParentFullName)
     seenAliasTypes.add(aliasTypeDeclNode)
 
-    val typeDeclNodeAst =
-      if (!Defines.JsTypes.contains(name) && !seenAliasTypes.exists(_.name == name)) {
-        val (typeName, typeFullName) = calcTypeNameAndFullName(alias, Option(name))
-        val typeDeclNode_ = typeDeclNode(
-          alias,
-          typeName,
-          typeFullName,
-          parserResult.filename,
-          alias.code,
-          astParentType,
-          astParentFullName,
-          alias = Option(aliasFullName)
-        )
-        registerType(typeName, typeFullName)
-        Ast(typeDeclNode_)
-      } else {
-        seenAliasTypes
-          .collectFirst { case typeDecl if typeDecl.name == name => Ast(typeDecl.aliasTypeFullName(aliasFullName)) }
-          .getOrElse(Ast())
-      }
+    if (!Defines.JsTypes.contains(name) && !seenAliasTypes.exists(_.name == name)) {
+      val (typeName, typeFullName) = calcTypeNameAndFullName(alias, Option(name))
+      val typeDeclNode_ = typeDeclNode(
+        alias,
+        typeName,
+        typeFullName,
+        parserResult.filename,
+        alias.code,
+        astParentType,
+        astParentFullName,
+        alias = Option(aliasFullName)
+      )
+      registerType(typeName, typeFullName)
+      diffGraph.addEdge(methodAstParentStack.head, typeDeclNode_, EdgeTypes.AST)
+    } else {
+      seenAliasTypes.find(t => t.name == name).foreach(_.aliasTypeFullName(aliasFullName))
+    }
 
     // adding all class methods / functions and uninitialized, non-static members
     val membersAndInitializers = (alias.node match {
@@ -59,7 +56,6 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       case _             => classMembersForTypeAlias(createBabelNodeInfo(alias.json("typeAnnotation")))
     }).filter(member => isClassMethodOrUninitializedMemberOrObjectProperty(member) && !isStaticMember(member))
       .map(m => astForClassMember(m, aliasTypeDeclNode))
-    typeDeclNodeAst.root.foreach(diffGraph.addEdge(methodAstParentStack.head, _, EdgeTypes.AST))
     Ast(aliasTypeDeclNode).withChildren(membersAndInitializers)
   }
 
