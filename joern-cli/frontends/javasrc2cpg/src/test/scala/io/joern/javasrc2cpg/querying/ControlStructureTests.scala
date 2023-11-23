@@ -14,8 +14,7 @@ import io.shiftleft.codepropertygraph.generated.v2.nodes.{
   Local,
   Return
 }
-import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.toNodeTraversal
+import io.shiftleft.semanticcpg.language.*
 
 import scala.jdk.CollectionConverters._
 
@@ -183,7 +182,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       iterIdentifier.typeFullName shouldBe "java.lang.String[]"
       iterIdentifier.order shouldBe 1
       iterIdentifier.argumentIndex shouldBe 1
-      iterIdentifier.refOut.toSet should contain(cpg.local.nameExact("$iterLocal0").head)
+      iterIdentifier._refOut.toSet should contain(cpg.local.nameExact("$iterLocal0").head)
 
       arrayInitializer.name shouldBe Operators.arrayInitializer
       arrayInitializer.methodFullName shouldBe Operators.arrayInitializer
@@ -224,7 +223,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           idx.typeFullName shouldBe "int"
           idx.order shouldBe 1
           idx.argumentIndex shouldBe 1
-          idx.refOut.toSet should contain(idxLocal)
+          idx._refOut.toSet should contain(idxLocal)
 
           zeroLiteral.code shouldBe "0"
           zeroLiteral.typeFullName shouldBe "int"
@@ -252,7 +251,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           idx.typeFullName shouldBe "int"
           idx.order shouldBe 1
           idx.argumentIndex shouldBe 1
-          idx.refOut.toSet should contain(idxLocal)
+          idx._refOut.toSet should contain(idxLocal)
 
           arraySize.name shouldBe Operators.fieldAccess
           arraySize.typeFullName shouldBe "int"
@@ -265,7 +264,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
               items.typeFullName shouldBe "java.lang.String[]"
               items.order shouldBe 1
               items.argumentIndex shouldBe 1
-              items.refOut.toSet should contain(cpg.method.name("foo").local.nameExact("$iterLocal0").head)
+              items._refOut.toSet should contain(cpg.method.name("foo").local.nameExact("$iterLocal0").head)
 
               length.code shouldBe "length"
               length.order shouldBe 2
@@ -294,7 +293,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           idx.typeFullName shouldBe "int"
           idx.order shouldBe 1
           idx.argumentIndex shouldBe 1
-          idx.refOut.toSet should contain(idxLocal)
+          idx._refOut.toSet should contain(idxLocal)
 
         case result => fail(s"Expected single argument to ++ call but got $result")
       }
@@ -324,7 +323,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           itemIdentifier.typeFullName shouldBe "java.lang.String"
           itemIdentifier.order shouldBe 1
           itemIdentifier.argumentIndex shouldBe 1
-          itemIdentifier.refOut.toSet should contain(itemLocal)
+          itemIdentifier._refOut.toSet should contain(itemLocal)
 
           indexAccess.name shouldBe Operators.indexAccess
           indexAccess.typeFullName shouldBe "java.lang.String"
@@ -338,13 +337,13 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           iterLocal.typeFullName shouldBe "java.lang.String[]"
           iterLocal.order shouldBe 1
           iterLocal.argumentIndex shouldBe 1
-          iterLocal.refOut.toSet should contain(cpg.local.nameExact("$iterLocal0").head)
+          iterLocal._refOut.toSet should contain(cpg.local.nameExact("$iterLocal0").head)
 
           idx.name shouldBe "$idx0"
           idx.typeFullName shouldBe "int"
           idx.order shouldBe 2
           idx.argumentIndex shouldBe 2
-          idx.refOut.toSet should contain(idxLocal)
+          idx._refOut.toSet should contain(idxLocal)
         case result => fail(s"Expected item = iterLocal0[idx] args but got $result")
       }
 
@@ -357,7 +356,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           item.typeFullName shouldBe "java.lang.String"
           item.order shouldBe 1
           item.argumentIndex shouldBe 1
-          item.refOut.toSet should contain(itemLocal)
+          item._refOut.toSet should contain(itemLocal)
 
         case result => fail(s"Expected single identifier argument to sink but got $result")
       }
@@ -404,7 +403,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           idx.typeFullName shouldBe "int"
           idx.order shouldBe 1
           idx.argumentIndex shouldBe 1
-          idx.refOut.toSet should contain(idxLocal)
+          idx._refOut.toSet should contain(idxLocal)
 
           zeroLiteral.code shouldBe "0"
           zeroLiteral.typeFullName shouldBe "int"
@@ -432,7 +431,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           idx.typeFullName shouldBe "int"
           idx.order shouldBe 1
           idx.argumentIndex shouldBe 1
-          idx.refOut.toSet should contain(idxLocal)
+          idx._refOut.toSet should contain(idxLocal)
 
           arraySize.name shouldBe Operators.fieldAccess
           arraySize.typeFullName shouldBe "int"
@@ -445,7 +444,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
               items.typeFullName shouldBe "java.lang.String[]"
               items.order shouldBe 1
               items.argumentIndex shouldBe 1
-              items.refOut.toSet should contain(cpg.parameter.name("items").head)
+              items._refOut.toSet should contain(cpg.parameter.name("items").head)
 
               length.code shouldBe "length"
               length.order shouldBe 2
@@ -474,7 +473,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           idx.typeFullName shouldBe "int"
           idx.order shouldBe 1
           idx.argumentIndex shouldBe 1
-          idx.refOut.toSet should contain(idxLocal)
+          idx._refOut.toSet should contain(idxLocal)
 
         case result => fail(s"Expected single argument to ++ call but got $result")
       }
@@ -504,7 +503,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           itemIdentifier.typeFullName shouldBe "java.lang.String"
           itemIdentifier.order shouldBe 1
           itemIdentifier.argumentIndex shouldBe 1
-          itemIdentifier.refOut.toSet should contain(itemLocal)
+          itemIdentifier._refOut.toSet should contain(itemLocal)
 
           indexAccess.name shouldBe Operators.indexAccess
           indexAccess.typeFullName shouldBe "java.lang.String"
@@ -518,13 +517,13 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           items.typeFullName shouldBe "java.lang.String[]"
           items.order shouldBe 1
           items.argumentIndex shouldBe 1
-          items.refOut.toSet should contain(cpg.parameter.name("items").head)
+          items._refOut.toSet should contain(cpg.parameter.name("items").head)
 
           idx.name shouldBe "$idx0"
           idx.typeFullName shouldBe "int"
           idx.order shouldBe 2
           idx.argumentIndex shouldBe 2
-          idx.refOut.toSet should contain(idxLocal)
+          idx._refOut.toSet should contain(idxLocal)
         case result => fail(s"Expected item = items[idx] args but got $result")
       }
 
@@ -537,7 +536,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           item.typeFullName shouldBe "java.lang.String"
           item.order shouldBe 1
           item.argumentIndex shouldBe 1
-          item.refOut.toSet should contain(itemLocal)
+          item._refOut.toSet should contain(itemLocal)
 
         case result => fail(s"Expected single identifier argument to sink but got $result")
       }
@@ -592,7 +591,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       target.typeFullName shouldBe "java.util.Iterator"
       target.order shouldBe 1
       target.argumentIndex shouldBe 1
-      target.refOut.toSet should contain(iterLocal)
+      target._refOut.toSet should contain(iterLocal)
 
       iteratorCall.name shouldBe "iterator"
       iteratorCall.methodFullName shouldBe "java.util.List.iterator:java.util.Iterator()"
@@ -637,7 +636,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           receiver.typeFullName shouldBe "java.util.Iterator"
           receiver.order shouldBe 1
           receiver.argumentIndex shouldBe 0
-          receiver.refOut.toSet should contain(iterLocal)
+          receiver._refOut.toSet should contain(iterLocal)
 
         case result => fail(s"Expected single identifier receiver but got $result")
       }
@@ -680,7 +679,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       assignTarget.typeFullName shouldBe "java.lang.String"
       assignTarget.order shouldBe 1
       assignTarget.argumentIndex shouldBe 1
-      assignTarget.refOut.toSet should contain(itemLocal)
+      assignTarget._refOut.toSet should contain(itemLocal)
 
       assignSource.name shouldBe "next"
       assignSource.methodFullName shouldBe "java.util.Iterator.next:java.lang.Object()"
@@ -694,7 +693,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           iterIdent.typeFullName shouldBe "java.util.Iterator"
           iterIdent.order shouldBe 1
           iterIdent.argumentIndex shouldBe 0
-          iterIdent.refOut.toSet should contain(iterLocal)
+          iterIdent._refOut.toSet should contain(iterLocal)
 
         case result => fail(s"Expected single identifier receiver but got $result")
       }
@@ -711,7 +710,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
           itemIdent.typeFullName shouldBe "java.lang.String"
           itemIdent.order shouldBe 1
           itemIdent.argumentIndex shouldBe 1
-          itemIdent.refOut.toSet should contain(itemLocal)
+          itemIdent._refOut.toSet should contain(itemLocal)
 
         case result => fail(s"Expected single identifier arg to sink but got $result")
       }

@@ -6,17 +6,10 @@ import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.javasrc2cpg.scope.NodeTypeInfo
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.x2cpg.Ast
+import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.utils.NodeBuilders.{newCallNode, newFieldIdentifierNode, newIdentifierNode, newOperatorCallNode}
 import io.shiftleft.codepropertygraph.generated.v2.nodes.Call.PropertyDefaults
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{
-  NewBlock,
-  NewControlStructure,
-  NewLiteral,
-  NewLocal,
-  NewMember,
-  NewMethodParameterIn,
-  NewNode
-}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{NewBlock, NewControlStructure, NewLiteral, NewLocal, NewMember, NewMethodParameterIn, NewNode}
 import io.shiftleft.codepropertygraph.generated.v2.{ControlStructureTypes, DispatchTypes, Operators}
 import org.slf4j.LoggerFactory
 
