@@ -3,7 +3,7 @@ package io.joern.javasrc2cpg.passes
 import better.files.File
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.NewMetaData
+import io.shiftleft.codepropertygraph.generated.v2.nodes.NewMetaData
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.utils.ProjectRoot
 import overflowdb.BatchedUpdate

@@ -13,8 +13,8 @@ import io.joern.x2cpg.passes.frontend.TypeNodePass
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.joern.x2cpg.utils.NodeBuilders.newOperatorCallNode
 import io.joern.x2cpg.{Ast, Defines}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewFieldIdentifier, NewIdentifier, NewLocal}
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{NewCall, NewFieldIdentifier, NewIdentifier, NewLocal}
+import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, Operators}
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.*
@@ -75,7 +75,7 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
         case List(identifier: NewIdentifier) =>
           // In this case we have a simple assign. No block needed.
           // e.g. Foo f = new Foo();
-          val initAst = completeInitForConstructor(partialConstructor, Ast(identifier.copy))
+          val initAst = completeInitForConstructor(partialConstructor, Ast(identifier.copy()))
           Seq(callAst(callNode, targetAst ++ argsAsts), initAst)
 
         case _ =>
@@ -121,8 +121,8 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
 
   def assignmentsForVarDecl(
     variables: Iterable[VariableDeclarator],
-    lineNumber: Option[Integer],
-    columnNumber: Option[Integer]
+    lineNumber: Option[Int],
+    columnNumber: Option[Int]
   ): Seq[Ast] = {
     val variablesWithInitializers =
       variables.filter(_.getInitializer.toScala.isDefined)
@@ -193,7 +193,7 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
 
   private def copyAstForVarDeclInit(targetAst: Ast): Ast = {
     targetAst.root match {
-      case Some(identifier: NewIdentifier) => Ast(identifier.copy)
+      case Some(identifier: NewIdentifier) => Ast(identifier.copy())
 
       case Some(fieldAccess: NewCall) if fieldAccess.name == Operators.fieldAccess =>
         val maybeIdentifier = targetAst.nodes.collectFirst { case node if node.isInstanceOf[NewIdentifier] => node }
@@ -201,8 +201,8 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
 
         (maybeIdentifier, maybeField) match {
           case (Some(identifier), Some(fieldIdentifier)) =>
-            val args = List(identifier, fieldIdentifier).map(node => Ast(node.copy))
-            callAst(fieldAccess.copy, args)
+            val args = List(identifier, fieldIdentifier).map(node => Ast(node.copy()))
+            callAst(fieldAccess.copy(), args)
 
           case _ =>
             logger.warn(s"Attempting to copy field access without required children: ${fieldAccess.code}")

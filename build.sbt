@@ -18,7 +18,7 @@ lazy val x2cpg             = Projects.x2cpg
 // lazy val pysrc2cpg         = Projects.pysrc2cpg
 // lazy val php2cpg           = Projects.php2cpg
 // lazy val jssrc2cpg         = Projects.jssrc2cpg
-// lazy val javasrc2cpg       = Projects.javasrc2cpg
+lazy val javasrc2cpg       = Projects.javasrc2cpg
 // lazy val jimple2cpg        = Projects.jimple2cpg
 // lazy val kotlin2cpg        = Projects.kotlin2cpg
 // lazy val rubysrc2cpg       = Projects.rubysrc2cpg
@@ -38,7 +38,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
 //   php2cpg,
 //   ghidra2cpg,
 //   jssrc2cpg,
-//   javasrc2cpg,
+  javasrc2cpg,
 //   jimple2cpg,
 //   kotlin2cpg,
 //   rubysrc2cpg,

@@ -6,7 +6,7 @@ import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.NameConstants
 import io.joern.x2cpg.{Ast, Defines}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewLocal, NewMethodParameterIn}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{NewLocal, NewMethodParameterIn}
 
 import scala.util.Success
 
