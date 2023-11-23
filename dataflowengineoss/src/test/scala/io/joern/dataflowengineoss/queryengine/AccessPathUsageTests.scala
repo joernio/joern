@@ -2,6 +2,7 @@ package io.joern.dataflowengineoss.queryengine
 
 import flatgraph.{GNode, Graph}
 import flatgraph.misc.TestUtils.*
+import io.shiftleft.codepropertygraph.generated.v2.PropertyNames
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.codepropertygraph.generated.v2.{Cpg, EdgeTypes, NodeTypes, Operators}
 import io.joern.dataflowengineoss.queryengine.AccessPathUsage.toTrackedBaseAndAccessPathSimple
@@ -29,10 +30,8 @@ class AccessPathUsageTests extends AnyWordSpec {
     val newCall = NewCall().name(op)
     diffGraphBuilder.addNode(newCall)
     args.reverse.zipWithIndex.foreach { case (arg, idx) =>
-      val argumentIndex = idx + 1
-      // in flatgraph, edges can have one or zero properties - because we know that it's an Argument edge, the property
-      // is the argumentIndex (as defined in the schema)
-      diffGraphBuilder.addEdge(newCall, arg, EdgeTypes.ARGUMENT, argumentIndex)
+      diffGraphBuilder.setNodeProperty(arg, PropertyNames.ARGUMENT_INDEX, idx + 1)
+      diffGraphBuilder.addEdge(newCall, arg, EdgeTypes.ARGUMENT)
     }
     diffGraphBuilder.apply(graph)
     newCall.storedRef.get
