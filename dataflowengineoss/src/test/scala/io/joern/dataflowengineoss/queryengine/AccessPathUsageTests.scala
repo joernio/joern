@@ -1,6 +1,7 @@
 package io.joern.dataflowengineoss.queryengine
 
 import flatgraph.{GNode, Graph}
+import flatgraph.misc.TestUtils.*
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.codepropertygraph.generated.v2.{Cpg, EdgeTypes, NodeTypes, Operators}
 import io.joern.dataflowengineoss.queryengine.AccessPathUsage.toTrackedBaseAndAccessPathSimple
@@ -24,32 +25,27 @@ class AccessPathUsageTests extends AnyWordSpec {
   private val g = Cpg.empty.graph
 
   private def genCALL(graph: Graph, op: String, args: GNode*): Call = {
-    val ret = graph + NodeTypes.CALL // (NodeTypes.CALL, Properties.NAME -> op)
-    ret.setProperty(Properties.NAME, op)
+    val diffGraphBuilder = Cpg.newDiffGraphBuilder
+    val newCall = NewCall().name(op)
+    diffGraphBuilder.addNode(newCall)
     args.reverse.zipWithIndex.foreach { case (arg, idx) =>
-      ret --- EdgeTypes.ARGUMENT --> arg
-      arg.setProperty(Properties.ARGUMENT_INDEX, idx + 1)
+      val argumentIndex = idx + 1
+      // in flatgraph, edges can have one or zero properties - because we know that it's an Argument edge, the property
+      // is the argumentIndex (as defined in the schema)
+      diffGraphBuilder.addEdge(newCall, arg, EdgeTypes.ARGUMENT, argumentIndex)
     }
-    ret.asInstanceOf[Call]
+    diffGraphBuilder.apply(graph)
+    newCall.storedRef.get
   }
 
-  private def genLit(graph: Graph, payload: String): Literal = {
-    val ret = graph + NodeTypes.LITERAL
-    ret.setProperty(Properties.CODE, payload)
-    ret.asInstanceOf[Literal]
-  }
+  private def genLit(graph: Graph, payload: String): Literal =
+    graph.addNode(NewLiteral().code(payload))
 
-  private def genID(graph: Graph, payload: String): Identifier = {
-    val ret = graph + NodeTypes.IDENTIFIER
-    ret.setProperty(Properties.NAME, payload)
-    ret.asInstanceOf[Identifier]
-  }
+  private def genID(graph: Graph, payload: String): Identifier =
+    graph.addNode(NewIdentifier().name(payload))
 
-  private def genFID(graph: Graph, payload: String): FieldIdentifier = {
-    val ret = graph + NodeTypes.FIELD_IDENTIFIER
-    ret.setProperty(Properties.CANONICAL_NAME, payload)
-    ret.asInstanceOf[FieldIdentifier]
-  }
+  private def genFID(graph: Graph, payload: String): FieldIdentifier =
+    graph.addNode(NewFieldIdentifier().canonicalName(payload))
 
   private def toTrackedAccessPath(node: StoredNode): AccessPath = toTrackedBaseAndAccessPathSimple(node)._2
 
