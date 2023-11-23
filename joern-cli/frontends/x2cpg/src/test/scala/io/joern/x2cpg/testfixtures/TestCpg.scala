@@ -14,7 +14,7 @@ import scala.collection.mutable
 // to allow the configuration of language frontend specific properties on the CPG object.
 // TODO MP cleanup: rename to TestLanguageFrontend or something?
 abstract class TestCpg extends Cpg(Cpg.empty.graph) with LanguageFrontend {
-  private var _graph            = Option.empty[Graph]
+  private var _graph0           = Option.empty[Graph]
   private val codeFileNamePairs = mutable.ArrayBuffer.empty[(String, Path)]
   private var fileNameCounter   = 0
 
@@ -44,7 +44,7 @@ abstract class TestCpg extends Cpg(Cpg.empty.graph) with LanguageFrontend {
   }
 
   private def checkGraphEmpty(): Unit = {
-    if (_graph.isDefined) {
+    if (_graph0.isDefined) {
       throw new RuntimeException("Modifying test data is not allowed after accessing graph.")
     }
   }
@@ -73,19 +73,19 @@ abstract class TestCpg extends Cpg(Cpg.empty.graph) with LanguageFrontend {
   }
 
   override def graph: Graph = {
-    if (_graph.isEmpty) {
+    if (_graph0.isEmpty) {
       val codeDir = codeToFileSystem()
       try {
-        _graph = Option(execute(codeDir.toFile).graph)
+        _graph0 = Option(execute(codeDir.toFile).graph)
         applyPasses()
       } finally {
         deleteDir(codeDir)
       }
     }
-    _graph.get
+    _graph0.get
   }
 
   override def close(): Unit = {
-    _graph.foreach(_.close())
+    _graph0.foreach(_.close())
   }
 }
