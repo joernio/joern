@@ -99,16 +99,20 @@ abstract class XTypeRecoveryPass[CompilationUnitType <: AstNode](
     import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
 
     def getFieldBaseTypes(fieldAccess: FieldAccess): Iterator[TypeDecl] = {
-      fieldAccess.argument(1) match
-        case x: Call if x.name == Operators.fieldAccess =>
-          cpg.typeDecl.fullNameExact(FieldAccess(x).referencedMember.getKnownTypes.toSeq*)
-        case x: Call if !x.name.startsWith("<operator>") =>
-          if (!x.typeFullName.matches(XTypeRecovery.unknownTypePattern.pattern.pattern()))
-            cpg.typeDecl.fullNameExact(x.typeFullName)
-          else
-            Iterator.empty
-        case x: Expression =>
-          cpg.typeDecl.fullNameExact(x.getKnownTypes.toSeq*)
+      fieldAccess.argumentOption(1) match
+        case Some(y) =>
+          y match
+            case x: Call if x.name == Operators.fieldAccess =>
+              cpg.typeDecl.fullNameExact(FieldAccess(x).referencedMember.getKnownTypes.toSeq*)
+            case x: Call if !x.name.startsWith("<operator>") =>
+              if (!x.typeFullName.matches(XTypeRecovery.unknownTypePattern.pattern.pattern()))
+                cpg.typeDecl.fullNameExact(x.typeFullName)
+              else
+                Iterator.empty
+            case x: Expression =>
+              cpg.typeDecl.fullNameExact(x.getKnownTypes.toSeq*)
+        case None =>
+          Iterator.empty
     }
 
     // Set all now-typed fieldAccess calls to their referencing members (if they exist)
