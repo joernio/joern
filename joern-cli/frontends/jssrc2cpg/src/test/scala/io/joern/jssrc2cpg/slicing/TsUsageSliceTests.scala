@@ -119,7 +119,7 @@ class TsUsageSliceTests extends DataFlowCodeToCpgSuite {
     "extract 'time' parameter slice from the lambda in 'loop'" in {
       val slice =
         programSlice.objectSlices
-          .find(x => x.fullName == "main.ts::program:Game:loop:anonymous")
+          .find(x => x.fullName == "main.ts::program:Game:loop:<lambda>1")
           .flatMap(_.slices.headOption)
           .get
       slice.definedBy shouldBe Some(ParamDef("time", "ANY", 1, Some(68), Some(31)))

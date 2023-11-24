@@ -1,6 +1,8 @@
 package io.joern.c2cpg.astcreation
 
 import io.joern.x2cpg.datastructures.Stack.*
+import io.joern.x2cpg.{Ast, ValidationMode}
+import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -102,10 +104,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         }
       case null => Defines.anyTypeName
     }
-    val (name, fullname) = uniqueName("lambda", "", fullName(lambdaExpression))
-    val signature        = s"$returnType $fullname ${parameterListSignature(lambdaExpression)}"
-    val codeString       = code(lambdaExpression)
-    val methodNode_      = methodNode(lambdaExpression, name, codeString, fullname, Some(signature), filename)
+    val name        = nextClosureName()
+    val fullname    = s"${fullName(lambdaExpression)}$name"
+    val signature   = s"$returnType $fullname ${parameterListSignature(lambdaExpression)}"
+    val codeString  = code(lambdaExpression)
+    val methodNode_ = methodNode(lambdaExpression, name, codeString, fullname, Some(signature), filename)
 
     scope.pushNewScope(methodNode_)
     val parameterNodes = withIndex(parameters(lambdaExpression.getDeclarator)) { (p, i) =>

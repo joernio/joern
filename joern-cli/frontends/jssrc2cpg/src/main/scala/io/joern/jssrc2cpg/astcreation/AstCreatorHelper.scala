@@ -4,22 +4,15 @@ import io.joern.jssrc2cpg.datastructures.*
 import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
-import io.joern.x2cpg.{Ast, ValidationMode, AstNodeBuilder}
 import io.joern.x2cpg.utils.NodeBuilders.{newClosureBindingNode, newLocalNode}
-import io.shiftleft.codepropertygraph.generated.nodes.NewNode
+import io.joern.x2cpg.{Ast, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies}
-import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
-import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
-import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
-import io.shiftleft.codepropertygraph.generated.nodes.NewTypeRef
-import org.apache.commons.lang.StringUtils
 import ujson.Value
 
-import scala.collection.mutable
-import scala.collection.SortedMap
+import scala.collection.{SortedMap, mutable}
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
-import scala.util.Success
-import scala.util.Try
+import scala.util.{Success, Try}
 
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -169,13 +162,13 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   private def calcMethodName(func: BabelNodeInfo): String = func.node match {
-    case TSCallSignatureDeclaration      => "anonymous"
+    case TSCallSignatureDeclaration      => nextClosureName()
     case TSConstructSignatureDeclaration => io.joern.x2cpg.Defines.ConstructorMethodName
     case _ if isMethodOrGetSet(func) =>
       if (hasKey(func.json("key"), "name")) func.json("key")("name").str
       else code(func.json("key"))
     case _ if safeStr(func.json, "kind").contains("constructor") => io.joern.x2cpg.Defines.ConstructorMethodName
-    case _ if func.json("id").isNull                             => "anonymous"
+    case _ if func.json("id").isNull                             => nextClosureName()
     case _                                                       => func.json("id")("name").str
   }
 

@@ -6,6 +6,7 @@ import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newModifierNode}
 import io.joern.x2cpg.{Ast, AstNodeBuilder, ValidationMode}
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier as _, *}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes}
 import ujson.Value
@@ -306,7 +307,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val (methodName, methodFullName) = calcMethodNameAndFullName(func)
     val methodNode_ = methodNode(func, methodName, func.code, methodFullName, None, parserResult.filename)
     val modifiers =
-      newModifierNode(ModifierTypes.VIRTUAL) :: (if methodName.startsWith("anonymous") then
+      newModifierNode(ModifierTypes.VIRTUAL) :: (if methodName.startsWith(Defines.ClosurePrefix) then
                                                    newModifierNode(ModifierTypes.LAMBDA) :: Nil
                                                  else Nil)
     methodAstParentStack.push(methodNode_)
@@ -383,7 +384,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     }
 
     val methodNode_ = methodNode(func, methodName, func.code, methodFullName, None, parserResult.filename)
-    val modifierNodes = newModifierNode(ModifierTypes.VIRTUAL) :: (if methodName.startsWith("anonymous") then
+    val modifierNodes = newModifierNode(ModifierTypes.VIRTUAL) :: (if methodName.startsWith(Defines.ClosurePrefix) then
                                                                      newModifierNode(ModifierTypes.LAMBDA) :: Nil
                                                                    else Nil)
 

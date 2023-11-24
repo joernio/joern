@@ -118,8 +118,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     argNameMaybe: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val (fullName, signature) = typeInfoProvider.fullNameWithSignatureAsLambda(fn, lambdaKeyPool)
-    val lambdaMethodNode      = methodNode(fn, Constants.lambdaName, fullName, signature, relativizedPath)
+    val name                  = nextClosureName()
+    val (fullName, signature) = typeInfoProvider.fullNameWithSignatureAsLambda(fn, name)
+    val lambdaMethodNode      = methodNode(fn, name, fullName, signature, relativizedPath)
 
     case class NodeContext(node: NewNode, name: String, typeFullName: String)
     val closureBindingEntriesForCaptured = scope
@@ -215,8 +216,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     argNameMaybe: Option[String],
     annotations: Seq[KtAnnotationEntry] = Seq()
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val (fullName, signature) = typeInfoProvider.fullNameWithSignature(expr, lambdaKeyPool)
-    val lambdaMethodNode      = methodNode(expr, Constants.lambdaName, fullName, signature, relativizedPath)
+    val name                  = nextClosureName()
+    val (fullName, signature) = typeInfoProvider.fullNameWithSignature(expr, name)
+    val lambdaMethodNode      = methodNode(expr, name, fullName, signature, relativizedPath)
 
     case class NodeContext(node: NewNode, name: String, typeFullName: String)
     val closureBindingEntriesForCaptured = scope

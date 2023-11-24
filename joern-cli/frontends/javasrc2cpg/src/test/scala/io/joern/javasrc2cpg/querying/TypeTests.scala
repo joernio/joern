@@ -141,8 +141,8 @@ class NewTypeTests extends JavaSrcCode2CpgFixture {
           |    }
           |}
           |""".stripMargin)
-      cpg.method.nameExact("lambda$0").fullName.l match {
-        case List(fullName) => fullName shouldBe "Test.lambda$0:int(java.lang.Object,java.lang.Object)"
+      cpg.method.nameExact("<lambda>0").fullName.l match {
+        case List(fullName) => fullName shouldBe "Test.<lambda>0:int(java.lang.Object,java.lang.Object)"
 
         case res => fail(s"Expected fullName but got $res")
       }

@@ -46,13 +46,13 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
     "have return node for arrow functions" in AstFixture("const foo = () => 42;") { cpg =>
       // Return node is necessary data flow
-      val methodBlock = cpg.method("anonymous").astChildren.isBlock
+      val methodBlock = cpg.method("<lambda>0").astChildren.isBlock
       val literal     = methodBlock.astChildren.isReturn.astChildren.isLiteral.head
       literal.code shouldBe "42"
     }
 
     "have only 1 Block Node for arrow functions" in AstFixture("const foo = () => {return 42;}") { cpg =>
-      cpg.method("anonymous").ast.isBlock.size shouldBe 1
+      cpg.method("<lambda>0").ast.isBlock.size shouldBe 1
     }
 
     "have correct structure for FILENAME property" in AstFixture("let x = 1;") { cpg =>
@@ -483,7 +483,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
     "have correct parameter order in lambda function with ignored param" in AstFixture("var x = ([, param]) => param") {
       cpg =>
-        val lambdaFullName    = "code.js::program:anonymous"
+        val lambdaFullName    = "code.js::program:<lambda>0"
         val List(lambda)      = cpg.method.fullNameExact(lambdaFullName).isLambda.l
         val List(lambdaBlock) = lambda.astChildren.isBlock.l
 
@@ -503,7 +503,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     "have correct parameter in lambda function rest param in object" in AstFixture(
       "var x = ({x, ...rest}) => x + rest"
     ) { cpg =>
-      val lambdaFullName    = "code.js::program:anonymous"
+      val lambdaFullName    = "code.js::program:<lambda>0"
       val List(lambda)      = cpg.method.fullNameExact(lambdaFullName).isLambda.l
       val List(lambdaBlock) = lambda.astChildren.isBlock.l
 
@@ -526,7 +526,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     "have correct parameter in lambda function rest param in array" in AstFixture(
       "var x = ([x, ...rest]) => x + rest"
     ) { cpg =>
-      val lambdaFullName    = "code.js::program:anonymous"
+      val lambdaFullName    = "code.js::program:<lambda>0"
       val List(lambda)      = cpg.method.fullNameExact(lambdaFullName).isLambda.l
       val List(lambdaBlock) = lambda.astChildren.isBlock.l
 
@@ -549,8 +549,8 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     "have two lambda functions in same scope level with different full names" in AstFixture("""
         |var x = (a) => a;
         |var y = (b) => b;""".stripMargin) { cpg =>
-      val lambda1FullName = "code.js::program:anonymous"
-      val lambda2FullName = "code.js::program:anonymous1"
+      val lambda1FullName = "code.js::program:<lambda>0"
+      val lambda2FullName = "code.js::program:<lambda>1"
 
       cpg.method.fullNameExact(lambda1FullName).size shouldBe 1
       cpg.method.fullNameExact(lambda2FullName).size shouldBe 1
@@ -574,13 +574,13 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     "be correct for lambdas returning lambdas" in AstFixture("() => async () => { }") { cpg =>
       cpg.method.fullName.sorted.l shouldBe List(
         "code.js::program",
-        "code.js::program:anonymous",
-        "code.js::program:anonymous:anonymous"
+        "code.js::program:<lambda>0",
+        "code.js::program:<lambda>0:<lambda>1"
       )
-      val List(ret) = cpg.method.fullNameExact("code.js::program:anonymous").block.astChildren.isReturn.l
+      val List(ret) = cpg.method.fullNameExact("code.js::program:<lambda>0").block.astChildren.isReturn.l
       ret.code shouldBe "async () => { }"
       val List(ref) = ret.astChildren.isMethodRef.l
-      ref.methodFullName shouldBe "code.js::program:anonymous:anonymous"
+      ref.methodFullName shouldBe "code.js::program:<lambda>0:<lambda>1"
     }
 
     "be correct for ThisExpression" in AstFixture("function foo() { this.bar = 1 }") { cpg =>
@@ -1358,7 +1358,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
         val List(switchExpr) = switch.astChildren.isMethodRef.l
         switchExpr.order shouldBe 1
-        switchExpr.code shouldBe "anonymous"
+        switchExpr.code shouldBe "<lambda>0"
       }
     }
 
