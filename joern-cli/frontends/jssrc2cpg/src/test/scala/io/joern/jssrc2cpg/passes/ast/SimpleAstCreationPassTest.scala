@@ -166,6 +166,39 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       tmpReturn.name shouldBe "_tmp_0"
     }
 
+    "have correct structure for array literal with too many values" in AstFixture(
+      s"var x = [1, 2, ${("n" * 1500).mkString(",")}]"
+    ) { cpg =>
+      val List(methodBlock) = cpg.method.nameExact(":program").astChildren.isBlock.l
+
+      val List(xAssignment) = methodBlock.astChildren.isCall.l
+      xAssignment.name shouldBe Operators.assignment
+
+      val List(pushBlock) = xAssignment.astChildren.isBlock.l
+
+      val List(tmpLocal) = pushBlock.astChildren.isLocal.l
+      tmpLocal.name shouldBe "_tmp_0"
+
+      val List(tmpAssignment) = pushBlock.astChildren.isCall.codeExact("_tmp_0 = __ecma.Array.factory()").l
+      tmpAssignment.name shouldBe Operators.assignment
+
+      val List(arrayCall) = tmpAssignment.astChildren.isCall.l
+      arrayCall.name shouldBe EcmaBuiltins.arrayFactory
+      arrayCall.code shouldBe s"${EcmaBuiltins.arrayFactory}()"
+      arrayCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+      checkLiterals(pushBlock, 1)
+      checkLiterals(pushBlock, 2)
+
+      // all other elements are truncated
+      val List(literalNode) = pushBlock.astChildren.isLiteral.l
+      literalNode.code shouldBe "<too-many-initializers>"
+      literalNode.argumentIndex shouldBe 1002
+
+      val List(tmpReturn) = pushBlock.astChildren.isIdentifier.l
+      tmpReturn.name shouldBe "_tmp_0"
+    }
+
     "have correct structure for untagged runtime node in call" in AstFixture(s"foo(`Hello $${world}!`)") { cpg =>
       val List(method)      = cpg.method.nameExact(":program").l
       val List(methodBlock) = method.astChildren.isBlock.l
