@@ -69,7 +69,7 @@ abstract class XTypeRecoveryPass[CompilationUnitType <: AstNode](
 
   import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
 
-  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit =
+  override def run(builder: DiffGraphBuilder): Unit =
     if (config.iterations > 0) {
       val stopEarly = new AtomicBoolean(false)
       val state     = XTypeRecoveryState(config, stopEarly = stopEarly)

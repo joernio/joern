@@ -1,20 +1,23 @@
 package io.shiftleft.semanticcpg.language.modulevariable
 
-import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.v2.Cpg
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.Assignment
-import overflowdb.traversal.help.Doc
+// TODO bring back help/doc
+//import overflowdb.traversal.help.Doc
 
 class ModuleVariableTraversal(traversal: Iterator[OpNodes.ModuleVariable]) extends AnyVal {
 
-  @Doc(info = "All assignments where the module variables in this traversal are the target across the program")
+  // TODO bring back help/doc
+//  @Doc(info = "All assignments where the module variables in this traversal are the target across the program")
   def definitions: Iterator[Assignment] = traversal.references.flatMap {
     case x: Identifier      => x.start.inAssignment.filter(_.target == x)
     case x: FieldIdentifier => x.inAssignment.filter(_.target.contains(x.inFieldAccess))
   }
 
-  @Doc(info = "Calls this module variable invokes across the program")
+  // TODO bring back help/doc
+//  @Doc(info = "Calls this module variable invokes across the program")
   def invokingCalls: Iterator[Call] =
     traversal.references
       .flatMap {
@@ -26,13 +29,14 @@ class ModuleVariableTraversal(traversal: Iterator[OpNodes.ModuleVariable]) exten
       .dedup
       .iterator
 
-  @Doc(info =
-    "References of this module variable across the codebase, as either identifiers or field identifiers, depending on" +
-      " how the variable was imported"
-  )
+  // TODO bring back help/doc
+//  @Doc(info =
+//    "References of this module variable across the codebase, as either identifiers or field identifiers, depending on" +
+//      " how the variable was imported"
+//  )
   def references: Iterator[Identifier | FieldIdentifier] = {
     val variables = traversal.toList
-    variables.headOption.map(node => Cpg(node.graph())) match
+    variables.headOption.map(node => Cpg(node.graph)) match
       case Some(cpg) =>
         val modules       = cpg.method.isModule.l
         val variableNames = variables.name.toSet
@@ -73,12 +77,13 @@ class ModuleVariableTraversal(traversal: Iterator[OpNodes.ModuleVariable]) exten
       .getOrElse(Seq.empty)
   }
 
-  @Doc(info = "The referencing member nodes of these module variables.")
+  // TODO bring back help/doc
+//  @Doc(info = "The referencing member nodes of these module variables.")
   def referencingMembers: Iterator[Member] = {
     val variables          = traversal.toList
     lazy val moduleNames   = variables.method.isModule.fullName.dedup.toSeq
     lazy val variableNames = variables.name.toSeq
-    variables.headOption.map(node => Cpg(node.graph())) match
+    variables.headOption.map(node => Cpg(node.graph)) match
       case Some(cpg) => cpg.typeDecl.fullNameExact(moduleNames*).member.nameExact(variableNames*)
       case None      => Iterator.empty
   }

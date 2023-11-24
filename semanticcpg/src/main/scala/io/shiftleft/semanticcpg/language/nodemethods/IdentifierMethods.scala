@@ -9,6 +9,6 @@ class IdentifierMethods(val identifier: Identifier) extends AnyVal with NodeExte
     LocationCreator(identifier, identifier.name, identifier.label, identifier.lineNumber, identifier.method)
   }
 
-  def isModuleVariable: Boolean = identifier.refOut.collectAll[Declaration].method.isModule.nonEmpty
+  def isModuleVariable: Boolean = identifier._refOut.collectAll[Declaration].method.isModule.nonEmpty
 
 }

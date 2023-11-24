@@ -26,8 +26,7 @@ package object language
     with operatorextension.Implicits
     with modulevariable.Implicits
     with importresolver.Implicits
-    with LowPrioImplicits
-    with NodeTraversalImplicits {
+    with LowPrioImplicits {
   // Implicit conversions from generated node types. We use these to add methods
   // to generated node types.
   implicit def cfgNodeToAstNode(node: CfgNode): AstNodeMethods                 = new AstNodeMethods(node)
