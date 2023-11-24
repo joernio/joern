@@ -1,31 +1,25 @@
 package io.joern.php2cpg.utils
 
-import io.joern.php2cpg.astcreation.AstCreator.NameConstants
 import io.joern.php2cpg.parser.Domain.InstanceMethodDelimiter
-import io.shiftleft.codepropertygraph.generated.nodes.{NewNode, NewMethod, NewTypeDecl, NewNamespaceBlock}
-import io.shiftleft.passes.IntervalKeyPool
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
 
-import collection.mutable
-
-class PhpScopeElement private (val node: NewNode, scopeName: String) {
-  private lazy val closureNameIdxPool = new IntervalKeyPool(0, Long.MaxValue)
+class PhpScopeElement private (val node: NewNode, scopeName: String)(implicit nextClosureName: () => String) {
 
   def getClosureMethodName: String = {
-    s"$scopeName$InstanceMethodDelimiter${NameConstants.Closure}${closureNameIdxPool.next()}"
+    s"$scopeName$InstanceMethodDelimiter${nextClosureName()}"
   }
 }
 
 object PhpScopeElement {
-  def apply(method: NewMethod): PhpScopeElement = {
+  def apply(method: NewMethod)(implicit nextClosureName: () => String): PhpScopeElement = {
     new PhpScopeElement(method, method.fullName)
   }
 
-  def apply(typeDecl: NewTypeDecl): PhpScopeElement = {
+  def apply(typeDecl: NewTypeDecl)(implicit nextClosureName: () => String): PhpScopeElement = {
     new PhpScopeElement(typeDecl, typeDecl.fullName)
   }
 
-  def apply(namespace: NewNamespaceBlock): PhpScopeElement = {
+  def apply(namespace: NewNamespaceBlock)(implicit nextClosureName: () => String): PhpScopeElement = {
     new PhpScopeElement(namespace, namespace.fullName)
   }
 

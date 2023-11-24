@@ -11,16 +11,16 @@ class MixedAstCreationPassTest extends AbstractPassTest {
 
   "AST method full names" should {
     "anonymous arrow function full name 1" in AstFixture("var func = (x) => x;") { cpg =>
-      cpg.method.fullName.toSetMutable should contain("code.js::program:anonymous")
+      cpg.method.fullName.toSetMutable should contain("code.js::program:<lambda>0")
     }
     "anonymous arrow function full name 2" in AstFixture("this.func = (x) => x;") { cpg =>
-      cpg.method.fullName.toSetMutable should contain("code.js::program:anonymous")
+      cpg.method.fullName.toSetMutable should contain("code.js::program:<lambda>0")
     }
     "anonymous function expression full name 1" in AstFixture("var func = function (x) {x};") { cpg =>
-      cpg.method.fullName.toSetMutable should contain("code.js::program:anonymous")
+      cpg.method.fullName.toSetMutable should contain("code.js::program:<lambda>0")
     }
     "anonymous function expression full name 2" in AstFixture("this.func = function (x) {x};") { cpg =>
-      cpg.method.fullName.toSetMutable should contain("code.js::program:anonymous")
+      cpg.method.fullName.toSetMutable should contain("code.js::program:<lambda>0")
     }
     "anonymous constructor full name 1" in AstFixture("class X { constructor(){} }") { cpg =>
       cpg.method.fullName.toSetMutable should contain(
@@ -190,7 +190,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
         |  );
         |};
         """.stripMargin) { cpg =>
-      cpg.local.name("value").closureBindingId.l shouldBe List("code.js::program:anonymous:anonymous:value")
+      cpg.local.name("value").closureBindingId.l shouldBe List("code.js::program:<lambda>0:<lambda>1:value")
     }
 
     "have correct closure binding (argument to call)" in AstFixture(
@@ -205,7 +205,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
         |};""".stripMargin,
       "code.ts"
     ) { cpg =>
-      cpg.local.name("opts").closureBindingId.l shouldBe List("code.ts::program:anonymous:opts")
+      cpg.local.name("opts").closureBindingId.l shouldBe List("code.ts::program:<lambda>0:opts")
     }
 
     "have correct closure binding (destructing assignment)" in AstFixture("""
@@ -216,8 +216,8 @@ class MixedAstCreationPassTest extends AbstractPassTest {
         |  console.log(closureB);
         |}
         """.stripMargin) { cpg =>
-      cpg.local.name("closureA").closureBindingId.l shouldBe List("code.js::program:anonymous:closureA")
-      cpg.local.name("closureB").closureBindingId.l shouldBe List("code.js::program:anonymous:closureB")
+      cpg.local.name("closureA").closureBindingId.l shouldBe List("code.js::program:<lambda>0:closureA")
+      cpg.local.name("closureB").closureBindingId.l shouldBe List("code.js::program:<lambda>0:closureB")
     }
 
     "have correct closure binding (single variable)" in AstFixture("""
@@ -448,18 +448,18 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       val List(fooLocalX) = fooBlock.astChildren.isLocal.nameExact("x").l
 
       val List(anon1Ref) =
-        fooBlock.astChildren.isCall.astChildren.isMethodRef.methodFullNameExact("code.js::program:foo:anonymous").l
+        fooBlock.astChildren.isCall.astChildren.isMethodRef.methodFullNameExact("code.js::program:foo:<lambda>0").l
 
       val List(closureBindingXAnon1) = anon1Ref.captureOut.l
-      closureBindingXAnon1.closureBindingId shouldBe Option("code.js::program:foo:anonymous:x")
+      closureBindingXAnon1.closureBindingId shouldBe Option("code.js::program:foo:<lambda>0:x")
       closureBindingXAnon1.closureOriginalName shouldBe Option("x")
       closureBindingXAnon1.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
       closureBindingXAnon1.refOut.head shouldBe fooLocalX
 
       val List(anon2Ref) =
-        fooBlock.astChildren.isCall.astChildren.isMethodRef.methodFullNameExact("code.js::program:foo:anonymous1").l
+        fooBlock.astChildren.isCall.astChildren.isMethodRef.methodFullNameExact("code.js::program:foo:<lambda>1").l
       val List(closureBindingXAnon2) = anon2Ref.captureOut.l
-      closureBindingXAnon2.closureBindingId shouldBe Option("code.js::program:foo:anonymous1:x")
+      closureBindingXAnon2.closureBindingId shouldBe Option("code.js::program:foo:<lambda>1:x")
       closureBindingXAnon2.closureOriginalName shouldBe Option("x")
       closureBindingXAnon2.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
       closureBindingXAnon2.refOut.head shouldBe fooLocalX
@@ -499,10 +499,10 @@ class MixedAstCreationPassTest extends AbstractPassTest {
         |var anon3 = x => {
         |  var anon4 = y => {};
         |}""".stripMargin) { cpg =>
-      cpg.method.lineNumber(2).head.fullName shouldBe "code.js::program:anonymous"
-      cpg.method.lineNumber(3).head.fullName shouldBe "code.js::program:anonymous:anonymous"
-      cpg.method.lineNumber(5).head.fullName shouldBe "code.js::program:anonymous1"
-      cpg.method.lineNumber(6).head.fullName shouldBe "code.js::program:anonymous1:anonymous"
+      cpg.method.lineNumber(2).head.fullName shouldBe "code.js::program:<lambda>0"
+      cpg.method.lineNumber(3).head.fullName shouldBe "code.js::program:<lambda>0:<lambda>1"
+      cpg.method.lineNumber(5).head.fullName shouldBe "code.js::program:<lambda>2"
+      cpg.method.lineNumber(6).head.fullName shouldBe "code.js::program:<lambda>2:<lambda>3"
     }
   }
 
@@ -803,7 +803,7 @@ class MixedAstCreationPassTest extends AbstractPassTest {
       val List(param) = cpg.identifier.name("param1_0").refsTo.collectAll[MethodParameterIn].l
       param.name shouldBe "param1_0"
       param.code shouldBe "{ value }"
-      param.method.fullName shouldBe "code.js::program:anonymous"
+      param.method.fullName shouldBe "code.js::program:<lambda>0"
     }
 
     "have correct structure for object deconstruction in function parameter" in AstFixture(

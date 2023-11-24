@@ -191,8 +191,8 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
           propName.code shouldBe "[propName: string]: any;"
           foo.name shouldBe "foo"
           foo.code shouldBe "\"foo\": string;"
-          anon.name shouldBe "anonymous"
-          anon.dynamicTypeHintFullName shouldBe Seq("code.ts::program:Greeter:anonymous")
+          anon.name shouldBe "<lambda>0"
+          anon.dynamicTypeHintFullName shouldBe Seq("code.ts::program:Greeter:<lambda>0")
           anon.code shouldBe "(source: string, subString: string): boolean;"
           toString.name shouldBe "toString"
           toString.code shouldBe "toString(): string;"
@@ -202,8 +202,8 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
           constructor.fullName shouldBe s"code.ts::program:Greeter:${io.joern.x2cpg.Defines.ConstructorMethodName}"
           constructor.code shouldBe "new: Greeter"
           greeter.method.isConstructor.head shouldBe constructor
-          anon.name shouldBe "anonymous"
-          anon.fullName shouldBe "code.ts::program:Greeter:anonymous"
+          anon.name shouldBe "<lambda>0"
+          anon.fullName shouldBe "code.ts::program:Greeter:<lambda>0"
           anon.code shouldBe "(source: string, subString: string): boolean;"
           anon.parameter.name.l shouldBe List("this", "source", "subString")
           anon.parameter.code.l shouldBe List("this", "source: string", "subString: string")

@@ -23,7 +23,7 @@ class CodeToCpg(cpg: Cpg, inputProvider: Iterable[InputProvider], schemaValidati
       val astVisitor = new PythonAstVisitor(inputPair.relFileName, nodeToCode, PythonV2AndV3)(schemaValidationMode)
       astVisitor.convert(astRoot)
 
-      diffGraph.absorb(astVisitor.getDiffGraph)
+      diffGraph.absorb(astVisitor.createAst())
     } catch {
       case exception: Throwable =>
         logger.warn(s"Failed to convert file ${inputPair.relFileName}", exception)

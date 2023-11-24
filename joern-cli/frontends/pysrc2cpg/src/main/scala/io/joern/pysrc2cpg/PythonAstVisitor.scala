@@ -3,7 +3,7 @@ package io.joern.pysrc2cpg
 import io.joern.pysrc2cpg.PythonAstVisitor.{builtinPrefix, metaClassSuffix}
 import io.joern.pysrc2cpg.memop.*
 import io.joern.pythonparser.ast
-import io.joern.x2cpg.ValidationMode
+import io.joern.x2cpg.{AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.{NewNode, NewTypeDecl}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -24,7 +24,8 @@ object PythonV2AndV3 extends PythonVersion
 
 class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode, version: PythonVersion)(implicit
   withSchemaValidation: ValidationMode
-) extends PythonAstVisitorHelpers {
+) extends AstCreatorBase(relFileName)
+    with PythonAstVisitorHelpers {
 
   private val diffGraph     = new DiffGraphBuilder()
   protected val nodeBuilder = new NodeBuilder(diffGraph)
@@ -40,9 +41,7 @@ class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode
   // is no more specific type than ast.istmt.
   private val functionDefToMethod = mutable.Map.empty[ast.istmt, nodes.NewMethod]
 
-  def getDiffGraph: DiffGraphBuilder = {
-    diffGraph
-  }
+  override def createAst(): DiffGraphBuilder = diffGraph
 
   private def createIdentifierLinks(): Unit = {
     contextStack.createIdentifierLinks(
@@ -1386,7 +1385,7 @@ class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode
         lambdaCounter.toString
       }
 
-    val name = "<lambda>" + lambdaNumberSuffix
+    val name = nextClosureName()
     val (_, methodRefNode) = createMethodAndMethodRef(
       name,
       Some(name),
