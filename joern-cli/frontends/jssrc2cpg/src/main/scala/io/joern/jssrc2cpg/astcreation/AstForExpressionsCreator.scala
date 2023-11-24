@@ -344,7 +344,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   protected def astForArrayExpression(arrExpr: BabelNodeInfo): Ast = {
-    val elements = Try(arrExpr.json("elements").arr).toOption.toList.flatten
+    val MAX_INITIALIZERS = 1000
+    val elementsJsons    = Try(arrExpr.json("elements").arr).toOption.toList.flatten
+    val elements         = elementsJsons.slice(0, MAX_INITIALIZERS)
     if (elements.isEmpty) {
       Ast(
         callNode(arrExpr, s"${EcmaBuiltins.arrayFactory}()", EcmaBuiltins.arrayFactory, DispatchTypes.STATIC_DISPATCH)
@@ -402,7 +404,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       scope.popScope()
       localAstParentStack.pop()
 
-      val blockChildrenAsts = assignmentTmpArrayCallNode +: elementAsts :+ Ast(tmpArrayReturnNode)
+      val blockChildrenAsts = if (elementsJsons.length > MAX_INITIALIZERS) {
+        val placeholder = literalNode(arrExpr, "<too-many-initializers>", Defines.Any)
+        assignmentTmpArrayCallNode +: elementAsts :+ Ast(placeholder) :+ Ast(tmpArrayReturnNode)
+      } else { assignmentTmpArrayCallNode +: elementAsts :+ Ast(tmpArrayReturnNode) }
       setArgumentIndices(blockChildrenAsts)
       blockAst(blockNode, blockChildrenAsts)
     }
