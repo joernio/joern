@@ -17,7 +17,7 @@ case class CSharpCpgGenerator(config: FrontendConfig, rootPath: Path) extends Cp
     } else if (ossAvailable) {
       generateOss(inputPath, outputPath)
     } else {
-      Failure(new AssertionError("No Java language frontend present"))
+      Failure(new AssertionError("No C# language frontend present"))
     }
   }
 
