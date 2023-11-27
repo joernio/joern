@@ -105,7 +105,7 @@ class TsAstCreationPassTest extends AbstractPassTest {
         arg.code shouldBe "arg: string"
         arg.index shouldBe 1
         val List(parentTypeDecl) = cpg.typeDecl.name(":program").l
-        parentTypeDecl.bindsOut.flatMap(_.refOut).l should contain(func)
+        parentTypeDecl._bindsOut.flatMap(_._refOut).l should contain(func)
     }
 
     "have correct structure for type assertion" in TsAstFixture("let emptyArray = <VNode[]>[];") { cpg =>

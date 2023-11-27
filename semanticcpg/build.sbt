@@ -1,6 +1,6 @@
 name := "semanticcpg"
 
-val flatGraphVersion = "0.0.5+3-368a2e46"
+val flatGraphVersion = "0.0.5+4-27b095f7"
 
 libraryDependencies ++= Seq(
 <<<<<<< HEAD

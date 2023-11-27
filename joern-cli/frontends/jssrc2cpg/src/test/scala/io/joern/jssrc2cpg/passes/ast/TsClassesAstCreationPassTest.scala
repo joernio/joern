@@ -324,7 +324,7 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
       val List(credentialsParam) = cpg.parameter.nameExact("credentials").l
       credentialsParam.typeFullName shouldBe "code.ts::program:Test:run:_anon_cdecl"
       // should not produce dangling nodes that are meant to be inside procedures
-      cpg.all.collectAll[CfgNode].whereNot(_._astIn).size shouldBe 0
+      cpg.all.collectAll[CfgNode].whereNot(_.astParent).size shouldBe 0
       cpg.identifier.count(_.refsTo.size > 1) shouldBe 0
       cpg.identifier.whereNot(_.refsTo).size shouldBe 0
     }
@@ -341,7 +341,7 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
       val List(credentialsParam) = cpg.parameter.nameExact("param1_0").l
       credentialsParam.typeFullName shouldBe "code.ts::program:apiCall:_anon_cdecl"
       // should not produce dangling nodes that are meant to be inside procedures
-      cpg.all.collectAll[CfgNode].whereNot(_._astIn).size shouldBe 0
+      cpg.all.collectAll[CfgNode].whereNot(_.astParent).size shouldBe 0
       cpg.identifier.count(_.refsTo.size > 1) shouldBe 0
       cpg.identifier.whereNot(_.refsTo).size shouldBe 0
     }
