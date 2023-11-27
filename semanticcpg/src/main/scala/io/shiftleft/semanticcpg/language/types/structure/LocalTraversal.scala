@@ -1,6 +1,5 @@
 package io.shiftleft.semanticcpg.language.types.structure
 
-import io.shiftleft.codepropertygraph.generated.v2.NodeKinds
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -13,7 +12,7 @@ class LocalTraversal(val traversal: Iterator[Local]) extends AnyVal {
   def method: Iterator[Method] = {
     // TODO The following line of code is here for backwards compatibility.
     // Use the lower commented out line once not required anymore.
-    traversal.repeat(_._astIn)(_.until(_.hasKind(NodeKinds.METHOD))).cast[Method]
+    traversal.repeat(_._astIn)(_.until(_.hasLabel(Method.Label))).cast[Method]
 //    definingBlock.method
   }
 
