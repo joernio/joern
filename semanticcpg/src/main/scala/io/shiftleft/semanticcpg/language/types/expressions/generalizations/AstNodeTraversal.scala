@@ -1,6 +1,5 @@
 package io.shiftleft.semanticcpg.language.types.expressions.generalizations
 
-import io.shiftleft.codepropertygraph.generated.v2.NodeKinds
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language.*
 // TODO bring back @Help
@@ -58,7 +57,7 @@ class AstNodeTraversal[A <: AstNode](val traversal: Iterator[A]) extends AnyVal 
   /** Traverses up the AST and returns the first block node.
     */
   def parentBlock: Iterator[Block] =
-    traversal.repeat(_._astIn)(_.emit.until(_.hasKind(NodeKinds.BLOCK))).collectAll[Block]
+    traversal.repeat(_._astIn)(_.emit.until(_.hasLabel(Block.Label))).collectAll[Block]
 
   /** Nodes of the AST obtained by expanding AST edges backwards until the method root is reached
     */
@@ -76,7 +75,7 @@ class AstNodeTraversal[A <: AstNode](val traversal: Iterator[A]) extends AnyVal 
     traversal
       .repeat(_._astIn)(
         _.emit
-          .until(_.or(_.hasKind(NodeKinds.METHOD), _.filter(n => root != null && root == n)))
+          .until(_.or(_.hasLabel(Method.Label), _.filter(n => root != null && root == n)))
       )
       .cast[AstNode]
   }
@@ -88,7 +87,7 @@ class AstNodeTraversal[A <: AstNode](val traversal: Iterator[A]) extends AnyVal 
     traversal
       .repeat(_._astIn)(
         _.emitAllButFirst
-          .until(_.or(_.hasKind(NodeKinds.METHOD), _.filter(n => root != null && root == n)))
+          .until(_.or(_.hasLabel(Method.Label), _.filter(n => root != null && root == n)))
       )
       .cast[AstNode]
   }
