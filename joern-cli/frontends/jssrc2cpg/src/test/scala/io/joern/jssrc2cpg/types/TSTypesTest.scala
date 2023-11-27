@@ -2,7 +2,7 @@ package io.joern.jssrc2cpg.types
 
 import io.joern.jssrc2cpg.passes.AbstractPassTest
 import io.joern.jssrc2cpg.passes.Defines
-import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.v2.Operators
 import io.shiftleft.semanticcpg.language._
 
 class TSTypesTest extends AbstractPassTest {

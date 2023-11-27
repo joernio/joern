@@ -9,13 +9,13 @@ import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders.{newMethodReturnNode, newModifierNode}
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, AstNodeBuilder as X2CpgAstNodeBuilder}
-import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, ModifierTypes, NodeTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
-import io.shiftleft.codepropertygraph.generated.nodes.NewFile
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
-import io.shiftleft.codepropertygraph.generated.nodes.NewNode
-import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
-import io.shiftleft.codepropertygraph.generated.nodes.NewTypeRef
+import io.shiftleft.codepropertygraph.generated.v2.{EvaluationStrategies, ModifierTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.NewBlock
+import io.shiftleft.codepropertygraph.generated.v2.nodes.NewFile
+import io.shiftleft.codepropertygraph.generated.v2.nodes.NewMethod
+import io.shiftleft.codepropertygraph.generated.v2.nodes.NewNode
+import io.shiftleft.codepropertygraph.generated.v2.nodes.NewTypeDecl
+import io.shiftleft.codepropertygraph.generated.v2.nodes.NewTypeRef
 import org.slf4j.{Logger, LoggerFactory}
 import flatgraph.DiffGraphBuilder
 import ujson.Value
@@ -255,9 +255,9 @@ class AstCreator(
 
   private def astsForProgram(program: BabelNodeInfo): List[Ast] = createBlockStatementAsts(program.json("body"))
 
-  protected def line(node: BabelNodeInfo): Option[Integer]      = node.lineNumber
-  protected def column(node: BabelNodeInfo): Option[Integer]    = node.columnNumber
-  protected def lineEnd(node: BabelNodeInfo): Option[Integer]   = node.lineNumberEnd
-  protected def columnEnd(node: BabelNodeInfo): Option[Integer] = node.columnNumberEnd
+  protected def line(node: BabelNodeInfo): Option[Int]      = node.lineNumber
+  protected def column(node: BabelNodeInfo): Option[Int]    = node.columnNumber
+  protected def lineEnd(node: BabelNodeInfo): Option[Int]   = node.lineNumberEnd
+  protected def columnEnd(node: BabelNodeInfo): Option[Int] = node.columnNumberEnd
   protected def code(node: BabelNodeInfo): String               = node.code
 }

@@ -4,7 +4,7 @@ import io.joern.x2cpg.Defines as XDefines
 import io.shiftleft.semanticcpg.language.importresolver.*
 import io.joern.x2cpg.passes.frontend.XImportResolverPass
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Method, MethodRef}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{Call, Identifier, Method, MethodRef}
 import io.shiftleft.semanticcpg.language.*
 
 import java.io.File as JFile

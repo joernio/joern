@@ -1,10 +1,10 @@
 package io.joern.jssrc2cpg.passes.ast
 
 import io.joern.jssrc2cpg.passes.AbstractPassTest
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.MethodParameterIn
+import io.shiftleft.codepropertygraph.generated.v2.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.v2.EvaluationStrategies
+import io.shiftleft.codepropertygraph.generated.v2.Operators
+import io.shiftleft.codepropertygraph.generated.v2.nodes.MethodParameterIn
 import io.shiftleft.semanticcpg.language._
 
 class MixedAstCreationPassTest extends AbstractPassTest {

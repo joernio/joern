@@ -2,8 +2,8 @@ package io.joern.jssrc2cpg.passes
 
 import better.files.File
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.NewMetaData
-import io.shiftleft.codepropertygraph.generated.Languages
+import io.shiftleft.codepropertygraph.generated.v2.nodes.NewMetaData
+import io.shiftleft.codepropertygraph.generated.v2.Languages
 import io.shiftleft.passes.CpgPass
 
 class JsMetaDataPass(cpg: Cpg, hash: String, inputPath: String) extends CpgPass(cpg) {
