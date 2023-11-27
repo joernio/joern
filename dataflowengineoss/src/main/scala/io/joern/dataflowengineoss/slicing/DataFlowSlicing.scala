@@ -2,7 +2,7 @@ package io.joern.dataflowengineoss.slicing
 
 import io.joern.dataflowengineoss.language.*
 import io.shiftleft.codepropertygraph.generated.v2.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.PropertyNames
+import io.shiftleft.codepropertygraph.generated.v2.PropertyKeys
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
@@ -67,8 +67,8 @@ object DataFlowSlicing {
       case n: TypeRef   => sliceNode.copy(name = n.typeFullName, code = n.code)
       case n =>
         sliceNode.copy(
-          name = n.propertyOption[String](PropertyNames.NAME).getOrElse(""),
-          typeFullName = n.propertyOption[String](PropertyNames.TYPE_FULL_NAME).getOrElse("")
+          name = n.property(PropertyKeys.Name),
+          typeFullName = n.property(PropertyKeys.TypeFullName)
         )
     }
   }

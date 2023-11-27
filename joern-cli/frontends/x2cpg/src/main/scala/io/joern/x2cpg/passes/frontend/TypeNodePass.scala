@@ -2,13 +2,13 @@ package io.joern.x2cpg.passes.frontend
 
 import io.joern.x2cpg.passes.frontend.TypeNodePass.fullToShortName
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.v2.PropertyKeys
 import io.shiftleft.codepropertygraph.generated.v2.nodes.NewType
 import io.shiftleft.passes.CpgPass
-import io.shiftleft.semanticcpg.language._
-import io.shiftleft.codepropertygraph.generated.v2.PropertyNames
+import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 import scala.collection.mutable
-import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 /** Creates a `TYPE` node for each type in `usedTypes` as well as all inheritsFrom type names in the CPG
   *
@@ -29,9 +29,8 @@ class TypeNodePass private (registeredTypes: List[String], cpg: Cpg, getTypesFro
 
   def getTypeFullNamesFromCpg(): Set[String] = {
     cpg.all
-      .map(_.property[String](PropertyNames.TYPE_FULL_NAME))
+      .map(_.property(PropertyKeys.TypeFullName))
       .filter(_ != null)
-      .map(_.toString)
       .toSet
   }
 

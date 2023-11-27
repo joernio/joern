@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.language
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.NodeTypes
+import io.shiftleft.codepropertygraph.generated.v2.{NodeTypes, PropertyKeys}
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.testing.MockCpg
@@ -316,6 +316,72 @@ class StepsTest extends AnyWordSpec with Matchers {
      // modifierAccessors
      method.modifier.modifierType.toSetMutable shouldBe Set("modifiertype")
      method.head.modifier.modifierType.toSetMutable shouldBe Set("modifiertype")
+   }
+
+   "generic typed property access should resolve the correct type" when {
+
+     "using a mandatory property" in {
+       val cpg = MockCpg().withMethod("foo").cpg
+       val fooMethod = cpg.method.name("foo").head
+
+       val forSingle = fooMethod.property(PropertyKeys.Name)
+       // verify that it resolves to `String` (in a separate statement so that we don't help the compiler)
+       val forSingleTyped: String = forSingle
+       forSingleTyped shouldBe "foo"
+
+       val forTraversal = Iterator(fooMethod).property(PropertyKeys.Name)
+       // verify that it resolves to `Iterator[String]` (in a separate statement so that we don't help the compiler)
+       val forTraversalTyped: Iterator[String] = forTraversal
+       forTraversalTyped.l shouldBe List("foo")
+     }
+
+     "using an optional property" in {
+       val cpg = MockCpg().withCustom { (diffGraphBuilder, _) =>
+         diffGraphBuilder.addNode(NewMethod().name("withoutHash"))
+         diffGraphBuilder.addNode(NewMethod().name("withHash").hash("abcde"))
+       }.cpg
+
+       val withoutHash = cpg.method.name("withoutHash").head
+       val withHash = cpg.method.name("withHash").head
+
+       val forSingle1 = withoutHash.property(PropertyKeys.Hash)
+       // verify that it resolves to `Option[String]` (in a separate statement so that we don't help the compiler)
+       val forSingleTyped1: Option[String] = forSingle1
+       forSingleTyped1 shouldBe None
+       val forSingle2 = withHash.property(PropertyKeys.Hash)
+       forSingle2 shouldBe Some("abcde")
+
+       val forTraversal1 = Iterator(withoutHash).property(PropertyKeys.Hash)
+       // verify that it resolves to `Iterator[String]` (in a separate statement so that we don't help the compiler)
+       val forTraversalTyped1: Iterator[String] = forTraversal1
+       forTraversalTyped1.l shouldBe Nil
+       val forTraversal2 = withHash.property(PropertyKeys.Hash)
+       forTraversal2.l shouldBe List("abcde")
+     }
+
+     "using a multi-property" in {
+       val cpg = MockCpg().withCustom { (diffGraphBuilder, _) =>
+         diffGraphBuilder.addNode(NewCall().name("withoutDynamicTypeHintFullName"))
+         diffGraphBuilder.addNode(NewCall().name("withDynamicTypeHintFullName").dynamicTypeHintFullName(Seq("one", "two")))
+       }.cpg
+
+       val withoutDynamicTypeHintFullName = cpg.call.name("withoutDynamicTypeHintFullName").head
+       val withDynamicTypeHintFullName = cpg.call.name("withDynamicTypeHintFullName").head
+
+       val forSingle1 = withoutDynamicTypeHintFullName.property(PropertyKeys.DynamicTypeHintFullName)
+       // verify that it resolves to `Option[String]` (in a separate statement so that we don't help the compiler)
+       val forSingleTyped1: Seq[String] = forSingle1
+       forSingleTyped1 shouldBe Nil
+       val forSingle2 = withDynamicTypeHintFullName.property(PropertyKeys.DynamicTypeHintFullName)
+       forSingle2 shouldBe Seq("one", "two")
+
+       val forTraversal1 = Iterator(withoutDynamicTypeHintFullName).property(PropertyKeys.DynamicTypeHintFullName)
+       // verify that it resolves to `Iterator[String]` (in a separate statement so that we don't help the compiler)
+       val forTraversalTyped1: Iterator[String] = forTraversal1
+       forTraversalTyped1.l shouldBe Nil
+       val forTraversal2 = withDynamicTypeHintFullName.property(PropertyKeys.DynamicTypeHintFullName)
+       forTraversal2.l shouldBe Seq("one", "two")
+     }
    }
 
 }
