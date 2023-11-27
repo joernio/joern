@@ -5,12 +5,12 @@ import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.{Ast, ValidationMode, AstNodeBuilder}
-import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.NewJumpLabel
-import io.shiftleft.codepropertygraph.generated.nodes.NewJumpTarget
+import io.shiftleft.codepropertygraph.generated.v2.ControlStructureTypes
+import io.shiftleft.codepropertygraph.generated.v2.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.v2.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.v2.Operators
+import io.shiftleft.codepropertygraph.generated.v2.nodes.NewJumpLabel
+import io.shiftleft.codepropertygraph.generated.v2.nodes.NewJumpTarget
 import ujson.Obj
 import ujson.Value
 

@@ -4,7 +4,7 @@ import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.utils.PackageJsonParser
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.NewDependency
+import io.shiftleft.codepropertygraph.generated.v2.nodes.NewDependency
 import io.shiftleft.passes.CpgPass
 
 import java.nio.file.Paths

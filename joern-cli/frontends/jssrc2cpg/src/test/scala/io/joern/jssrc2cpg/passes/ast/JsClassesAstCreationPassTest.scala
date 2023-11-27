@@ -2,10 +2,10 @@ package io.joern.jssrc2cpg.passes.ast
 
 import io.joern.jssrc2cpg.passes.AbstractPassTest
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.Identifier
-import io.shiftleft.codepropertygraph.generated.nodes.MethodRef
-import io.shiftleft.codepropertygraph.generated.ModifierTypes
+import io.shiftleft.codepropertygraph.generated.v2.Operators
+import io.shiftleft.codepropertygraph.generated.v2.nodes.Identifier
+import io.shiftleft.codepropertygraph.generated.v2.nodes.MethodRef
+import io.shiftleft.codepropertygraph.generated.v2.ModifierTypes
 import io.shiftleft.semanticcpg.language._
 
 class JsClassesAstCreationPassTest extends AbstractPassTest {

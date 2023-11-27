@@ -1,8 +1,8 @@
 package io.joern.jssrc2cpg.passes
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.PropertyNames
-import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Method, MethodRef}
+import io.shiftleft.codepropertygraph.generated.v2.PropertyNames
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{Identifier, Method, MethodRef}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 

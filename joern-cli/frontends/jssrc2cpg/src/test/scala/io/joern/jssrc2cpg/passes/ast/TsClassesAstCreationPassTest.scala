@@ -1,8 +1,8 @@
 package io.joern.jssrc2cpg.passes.ast
 
 import io.joern.jssrc2cpg.passes.{AbstractPassTest, Defines}
-import io.shiftleft.codepropertygraph.generated.ModifierTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode, Declaration, Identifier}
+import io.shiftleft.codepropertygraph.generated.v2.ModifierTypes
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{Call, CfgNode, Declaration, Identifier}
 import io.shiftleft.semanticcpg.language.*
 
 class TsClassesAstCreationPassTest extends AbstractPassTest {

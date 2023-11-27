@@ -1,8 +1,8 @@
 package io.joern.jssrc2cpg.passes
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{NewNamespaceBlock, NewType, NewTypeDecl}
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{NewNamespaceBlock, NewType, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, NodeTypes}
 import io.shiftleft.passes.CpgPass
 
 class BuiltinTypesPass(cpg: Cpg) extends CpgPass(cpg) {
