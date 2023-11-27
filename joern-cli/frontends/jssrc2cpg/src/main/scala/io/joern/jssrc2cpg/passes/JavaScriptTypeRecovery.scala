@@ -49,8 +49,8 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
   override protected def prepopulateSymbolTableEntry(x: AstNode): Unit = x match {
     case x @ (_: Identifier | _: Local | _: MethodParameterIn)
         if x.propertyOption(PropertyKeys.TypeFullName).getOrElse(Defines.Any) != Defines.Any =>
-      val typeFullName = x.property(PropertyNames.TYPE_FULL_NAME, Defines.Any)
-      val typeHints    = symbolTable.get(LocalVar(x.property(PropertyNames.TYPE_FULL_NAME, Defines.Any))) - typeFullName
+      val typeFullName = x.propertyOption(PropertyKeys.TypeFullName).getOrElse(Defines.Any)
+      val typeHints    = symbolTable.get(LocalVar(typeFullName)) - typeFullName
       lazy val cpgTypeFullName = cpg.typeDecl.nameExact(typeFullName).fullName.toSet
       val resolvedTypeHints =
         if (typeHints.nonEmpty) symbolTable.put(x, typeHints)

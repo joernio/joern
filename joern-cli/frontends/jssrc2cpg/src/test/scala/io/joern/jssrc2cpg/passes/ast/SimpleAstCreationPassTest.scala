@@ -2,7 +2,7 @@ package io.joern.jssrc2cpg.passes.ast
 
 import io.joern.jssrc2cpg.passes.{AbstractPassTest, Defines, EcmaBuiltins}
 import io.shiftleft.codepropertygraph.generated.v2._
-import io.shiftleft.codepropertygraph.generated.v2.v2.nodes.*
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language._
 
 class SimpleAstCreationPassTest extends AbstractPassTest {
@@ -334,7 +334,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(assignment)  = methodBlock.astChildren.isCall.l
       val List(identifierX) = assignment.astChildren.isIdentifier.l
 
-      val List(localXViaRef) = identifierX.refOut.l
+      val List(localXViaRef) = identifierX._refOut.l
       localXViaRef shouldBe localX
 
       val List(block) = assignment.astChildren.isBlock.l
@@ -364,7 +364,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(assignment)  = methodBlock.astChildren.isCall.l
       val List(identifierX) = assignment.astChildren.isIdentifier.l
 
-      val List(localXViaRef) = identifierX.refOut.l
+      val List(localXViaRef) = identifierX._refOut.l
       localXViaRef shouldBe localX
 
       val List(block) = assignment.astChildren.isBlock.l
@@ -393,7 +393,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(assignment)  = methodBlock.astChildren.isCall.l
       val List(identifierX) = assignment.astChildren.isIdentifier.l
 
-      val List(localXViaRef) = identifierX.refOut.l
+      val List(localXViaRef) = identifierX._refOut.l
       localXViaRef shouldBe localX
 
       val List(block) = assignment.astChildren.isBlock.l
@@ -412,7 +412,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(assignment)  = methodBlock.astChildren.isCall.l
       val List(identifierX) = assignment.astChildren.isIdentifier.l
 
-      val List(localXViaRef) = identifierX.refOut.l
+      val List(localXViaRef) = identifierX._refOut.l
       localXViaRef shouldBe localX
 
       val List(block) = assignment.astChildren.isBlock.l
@@ -429,7 +429,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(assignment)  = methodBlock.astChildren.isCall.l
       val List(identifierX) = assignment.astChildren.isIdentifier.l
 
-      val List(localXViaRef) = identifierX.refOut.l
+      val List(localXViaRef) = identifierX._refOut.l
       localXViaRef shouldBe localX
 
       val List(block) = assignment.astChildren.isBlock.l
@@ -445,7 +445,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(assignment)  = methodBlock.astChildren.isCall.l
       val List(identifierX) = assignment.astChildren.isIdentifier.l
 
-      val List(localXViaRef) = identifierX.refOut.l
+      val List(localXViaRef) = identifierX._refOut.l
       localXViaRef shouldBe localX
 
       val List(block) = assignment.astChildren.isBlock.l
@@ -511,7 +511,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(methodIdentifier) = assignment.astChildren.isIdentifier.argumentIndex(1).l
       methodIdentifier.name shouldBe "method"
 
-      methodIdentifier.refOut.head shouldBe localForMethod
+      methodIdentifier._refOut.head shouldBe localForMethod
     }
 
     "have correct parameter order in lambda function with ignored param" in AstFixture("var x = ([, param]) => param") {
@@ -784,11 +784,11 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(typeDecl) = cpg.typeDecl.nameExact("method").l
       typeDecl.fullName should endWith("code.js::program:method")
 
-      val List(binding) = typeDecl.bindsOut.l
+      val List(binding) = typeDecl._bindsOut.cast[Binding].l
       binding.name shouldBe ""
       binding.signature shouldBe ""
 
-      val List(boundMethod) = binding.refOut.l
+      val List(boundMethod) = binding._refOut.l
       boundMethod shouldBe cpg.method.nameExact("method").head
     }
 
