@@ -1,4 +1,4 @@
-import sbt._
+import sbt.*
 
 object Projects {
   val frontendsRoot = file("joern-cli/frontends")
@@ -23,4 +23,6 @@ object Projects {
   lazy val kotlin2cpg  = project.in(frontendsRoot / "kotlin2cpg")
   lazy val rubysrc2cpg = project.in(frontendsRoot / "rubysrc2cpg")
   lazy val gosrc2cpg   = project.in(frontendsRoot / "gosrc2cpg")
+  lazy val csharpsrc2cpg = project.in(frontendsRoot / "csharpsrc2cpg")
+
 }
