@@ -2,12 +2,12 @@ package io.joern.php2cpg.querying
 
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, Local, Member, Method}
+import io.shiftleft.codepropertygraph.generated.v2.{ModifierTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{Call, Identifier, Literal, Local, Member, Method}
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.codepropertygraph.generated.nodes.Block
-import io.shiftleft.codepropertygraph.generated.nodes.MethodRef
-import io.shiftleft.codepropertygraph.generated.nodes.TypeRef
+import io.shiftleft.codepropertygraph.generated.v2.nodes.Block
+import io.shiftleft.codepropertygraph.generated.v2.nodes.MethodRef
+import io.shiftleft.codepropertygraph.generated.v2.nodes.TypeRef
 
 class TypeDeclTests extends PhpCode2CpgFixture {
 

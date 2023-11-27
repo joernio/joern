@@ -10,12 +10,10 @@ import io.joern.x2cpg.Defines.{StaticInitMethodName, UnresolvedNamespace, Unreso
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
 import io.joern.x2cpg.utils.NodeBuilders.*
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.*
-import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.passes.IntervalKeyPool
+import io.shiftleft.codepropertygraph.generated.v2.*
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
-import overflowdb.BatchedUpdate
 
 class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidation: ValidationMode)
     extends AstCreatorBase(filename)
@@ -158,7 +156,7 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
     Ast(thisNode)
   }
 
-  private def thisIdentifier(lineNumber: Option[Integer]): NewIdentifier = {
+  private def thisIdentifier(lineNumber: Option[Int]): NewIdentifier = {
     val typ = scope.getEnclosingTypeDeclTypeName
     newIdentifierNode(NameConstants.This, typ.getOrElse("ANY"), typ.toList, lineNumber)
       .code(s"$$${NameConstants.This}")
@@ -532,7 +530,7 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
     wrapMultipleInBlock(imports, line(stmt))
   }
 
-  private def astForKeyValPair(key: PhpExpr, value: PhpExpr, lineNo: Option[Integer]): Ast = {
+  private def astForKeyValPair(key: PhpExpr, value: PhpExpr, lineNo: Option[Int]): Ast = {
     val keyAst   = astForExpr(key)
     val valueAst = astForExpr(value)
 
@@ -556,7 +554,7 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
     val iteratorAssignAst = simpleAssignAst(Ast(iterIdentifier), iterValue, line(stmt))
 
     // - Assigned item assign
-    val itemInitAst = getItemAssignAstForForeach(stmt, assignItemTargetAst, iterIdentifier.copy)
+    val itemInitAst = getItemAssignAstForForeach(stmt, assignItemTargetAst, iterIdentifier.copy())
 
     // Condition ast
     val isNullName = PhpOperators.isNull
@@ -569,7 +567,7 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
     val conditionAst = callAst(notIsNull, isNullAst :: Nil)
 
     // Update asts
-    val nextIterIdent = Ast(iterIdentifier.copy)
+    val nextIterIdent = Ast(iterIdentifier.copy())
     val nextSignature = "void()"
     val nextCallCode  = s"${nextIterIdent.rootCodeOrEmpty}->next()"
     val nextCallNode = callNode(
@@ -632,7 +630,7 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
     simpleAssignAst(assignItemTargetAst, valueAst, line(stmt))
   }
 
-  private def simpleAssignAst(target: Ast, source: Ast, lineNo: Option[Integer]): Ast = {
+  private def simpleAssignAst(target: Ast, source: Ast, lineNo: Option[Int]): Ast = {
     val code     = s"${target.rootCodeOrEmpty} = ${source.rootCodeOrEmpty}"
     val callNode = newOperatorCallNode(Operators.assignment, code, line = lineNo)
     callAst(callNode, target :: source :: Nil)
@@ -1499,11 +1497,11 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
       Some(initSignature),
       Some(TypeConstants.Any)
     )
-    val initReceiver = Ast(tmpIdentifier.copy)
+    val initReceiver = Ast(tmpIdentifier.copy())
     val initCallAst  = callAst(initCallNode, initArgs, base = Option(initReceiver))
 
     // Return identifier
-    val returnIdentifierAst = Ast(tmpIdentifier.copy)
+    val returnIdentifierAst = Ast(tmpIdentifier.copy())
 
     Ast(blockNode(expr, "", TypeConstants.Any))
       .withChild(allocAssignAst)
@@ -1696,10 +1694,10 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
     }
   }
 
-  protected def line(phpNode: PhpNode): Option[Integer]      = phpNode.attributes.lineNumber
-  protected def column(phpNode: PhpNode): Option[Integer]    = None
-  protected def lineEnd(phpNode: PhpNode): Option[Integer]   = None
-  protected def columnEnd(phpNode: PhpNode): Option[Integer] = None
+  protected def line(phpNode: PhpNode): Option[Int]      = phpNode.attributes.lineNumber
+  protected def column(phpNode: PhpNode): Option[Int]    = None
+  protected def lineEnd(phpNode: PhpNode): Option[Int]   = None
+  protected def columnEnd(phpNode: PhpNode): Option[Int] = None
   protected def code(phpNode: PhpNode): String               = "" // Sadly, the Php AST does not carry any code fields
 }
 

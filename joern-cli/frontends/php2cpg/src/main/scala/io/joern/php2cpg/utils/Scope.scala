@@ -4,7 +4,7 @@ import io.joern.php2cpg.astcreation.AstCreator.NameConstants
 import io.joern.php2cpg.utils.PhpScopeElement
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.datastructures.{Scope => X2CpgScope}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.LoggerFactory
 

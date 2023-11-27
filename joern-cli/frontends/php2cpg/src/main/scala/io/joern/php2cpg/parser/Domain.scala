@@ -8,7 +8,7 @@ import io.joern.php2cpg.parser.Domain.PhpCast.{CastTypeMap, isCastType}
 import io.joern.php2cpg.parser.Domain.PhpUnaryOp.{UnaryOpTypeMap, isUnaryOpType}
 import io.joern.php2cpg.parser.Domain.PhpUseType.{PhpUseType, getUseType}
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.v2.{ModifierTypes, Operators}
 import org.slf4j.LoggerFactory
 import ujson.{Arr, Obj, Str, Value}
 
@@ -71,7 +71,7 @@ object Domain {
   // Used for creating the default constructor.
   val ConstructorMethodName = "__construct"
 
-  final case class PhpAttributes(lineNumber: Option[Integer], kind: Option[Int])
+  final case class PhpAttributes(lineNumber: Option[Int], kind: Option[Int])
   object PhpAttributes {
     val Empty: PhpAttributes = PhpAttributes(None, None)
 
