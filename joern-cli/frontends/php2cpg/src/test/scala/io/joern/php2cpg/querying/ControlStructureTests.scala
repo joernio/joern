@@ -4,8 +4,8 @@ import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
 import io.joern.php2cpg.parser.Domain.PhpOperators
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{
+import io.shiftleft.codepropertygraph.generated.v2.{ControlStructureTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{
   Block,
   Call,
   ControlStructure,
@@ -16,7 +16,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   Local
 }
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.codepropertygraph.generated.nodes.AstNode
+import io.shiftleft.codepropertygraph.generated.v2.nodes.AstNode
 
 import scala.util.Try
 

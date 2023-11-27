@@ -16,7 +16,7 @@ import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass, XTypeRecovery
 import io.joern.x2cpg.utils.ExternalCommand
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.CpgPassBase
-import io.shiftleft.codepropertygraph.generated.Languages
+import io.shiftleft.codepropertygraph.generated.v2.Languages
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable

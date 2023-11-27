@@ -2,8 +2,8 @@ package io.joern.php2cpg.querying
 
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, Local}
+import io.shiftleft.codepropertygraph.generated.v2.{ModifierTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{Call, Identifier, Literal, Local}
 import io.shiftleft.semanticcpg.language._
 
 class MethodTests extends PhpCode2CpgFixture {

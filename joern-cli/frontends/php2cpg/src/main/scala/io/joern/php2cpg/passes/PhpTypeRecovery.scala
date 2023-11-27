@@ -3,8 +3,8 @@ package io.joern.php2cpg.passes
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.passes.frontend._
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames, DispatchTypes}
+import io.shiftleft.codepropertygraph.generated.v2.nodes._
+import io.shiftleft.codepropertygraph.generated.v2.{Operators, PropertyNames, DispatchTypes}
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
