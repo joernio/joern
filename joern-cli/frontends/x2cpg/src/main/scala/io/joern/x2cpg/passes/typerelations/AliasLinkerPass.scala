@@ -2,7 +2,7 @@ package io.joern.x2cpg.passes.typerelations
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.nodes.TypeDecl
-import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, NodeTypes, PropertyKeys, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, NodeTypes, PropertyNames}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
 import io.joern.x2cpg.utils.LinkingUtil
@@ -20,7 +20,7 @@ class AliasLinkerPass(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {
       getDstFullNames = (srcNode: TypeDecl) => {
         srcNode.aliasTypeFullName
       },
-      dstFullNameKey = PropertyKeys.AliasTypeFullName,
+      dstFullNameKey = PropertyNames.ALIAS_TYPE_FULL_NAME,
       dstGraph
     )
   }

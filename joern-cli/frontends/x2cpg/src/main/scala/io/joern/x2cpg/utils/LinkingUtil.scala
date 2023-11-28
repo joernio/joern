@@ -1,8 +1,7 @@
 package io.joern.x2cpg.utils
 
-import flatgraph.PropertyKey
 import io.joern.x2cpg.passes.frontend.Dereference
-import io.shiftleft.codepropertygraph.generated.v2.{PropertyKeys, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.v2.PropertyNames
 import io.shiftleft.codepropertygraph.generated.v2.nodes.StoredNode
 import io.shiftleft.codepropertygraph.generated.v2.nodes.TypeDecl
 import io.shiftleft.codepropertygraph.generated.v2.nodes.Method
@@ -13,7 +12,8 @@ import io.shiftleft.semanticcpg.language.*
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
-import scala.jdk.CollectionConverters.*
+import scala.collection.mutable
+import scala.jdk.CollectionConverters._
 
 trait LinkingUtil {
 
@@ -45,7 +45,7 @@ trait LinkingUtil {
     dstNodeLabel: String,
     edgeType: String,
     dstNodeMap: String => Option[StoredNode],
-    dstFullNameKey: PropertyKey[String, _],
+    dstFullNameKey: String,
     dstDefaultPropertyValue: Any,
     dstGraph: DiffGraphBuilder,
     dstNotExistsHandler: Option[(StoredNode, String) => Unit]
@@ -56,8 +56,10 @@ trait LinkingUtil {
       // If the source node does not have any outgoing edges of this type
       // This check is just required for backward compatibility
       if (srcNode.outE(edgeType).isEmpty) {
+        // TODO MP get typed properties back?
+//        val key = new PropertyKey[String](dstFullNameKey)
         srcNode
-          .propertyOption(dstFullNameKey.name)
+          .propertyOption[String](dstFullNameKey)
           .filter { dstFullName =>
             val dereferenceDstFullName = dereference.dereferenceTypeFullName(dstFullName)
             dstDefaultPropertyValue != dereferenceDstFullName
@@ -78,11 +80,12 @@ trait LinkingUtil {
             }
           }
       } else {
-        srcNode.out(edgeType).property(PropertyKeys.FullName).nextOption() match {
+        // TODO MP get typed properties back?
+        srcNode.out(edgeType).property[String](PropertyNames.FULL_NAME).nextOption() match {
           case Some(dstFullName) =>
             dstGraph.setNodeProperty(
               srcNode.asInstanceOf[StoredNode],
-              dstFullNameKey.name,
+              dstFullNameKey,
               dereference.dereferenceTypeFullName(dstFullName)
             )
           case None => logger.info(s"Missing outgoing edge of type $edgeType from node $srcNode")
@@ -105,7 +108,7 @@ trait LinkingUtil {
     edgeType: String,
     dstNodeMap: String => Option[StoredNode],
     getDstFullNames: SRC_NODE_TYPE => Iterable[String],
-    dstFullNameKey: PropertyKey[String, _],
+    dstFullNameKey: String,
     dstGraph: DiffGraphBuilder
   ): Unit = {
     var loggedDeprecationWarning = false
@@ -124,8 +127,9 @@ trait LinkingUtil {
           }
         }
       } else {
-        val dstFullNames = srcNode.out(edgeType).property(PropertyKeys.FullName).l
-        dstGraph.setNodeProperty(srcNode, dstFullNameKey.name, dstFullNames.map(dereference.dereferenceTypeFullName))
+        // TODO MP get typed properties back?
+        val dstFullNames = srcNode.out(edgeType).property[String](PropertyNames.FULL_NAME).l
+        dstGraph.setNodeProperty(srcNode, dstFullNameKey, dstFullNames.map(dereference.dereferenceTypeFullName))
         if (!loggedDeprecationWarning) {
           logger.info(
             s"Using deprecated CPG format with already existing $edgeType edge between" +
