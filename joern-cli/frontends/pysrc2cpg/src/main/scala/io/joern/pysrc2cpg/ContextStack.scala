@@ -2,8 +2,8 @@ package io.joern.pysrc2cpg
 
 import io.joern.pysrc2cpg.ContextStack.transferLineColInfo
 import io.joern.pysrc2cpg.memop._
-import io.shiftleft.codepropertygraph.generated.nodes
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.v2.nodes
+import io.shiftleft.codepropertygraph.generated.v2.nodes._
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable

@@ -3,7 +3,7 @@ package io.joern.scanners.c
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 import io.joern.scanners._
 import io.joern.console._
-import io.shiftleft.codepropertygraph.generated.nodes
+import io.shiftleft.codepropertygraph.generated.v2.nodes
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.shiftleft.semanticcpg.language._
 import io.joern.macros.QueryMacros._

@@ -2,8 +2,8 @@ package io.joern.jimple2cpg.querying
 
 import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.Identifier
+import io.shiftleft.codepropertygraph.generated.v2.Operators
+import io.shiftleft.codepropertygraph.generated.v2.nodes.Identifier
 import io.shiftleft.semanticcpg.language.{toNodeTypeStarters, _}
 
 class ArithmeticOperationsTests extends JimpleCode2CpgFixture {

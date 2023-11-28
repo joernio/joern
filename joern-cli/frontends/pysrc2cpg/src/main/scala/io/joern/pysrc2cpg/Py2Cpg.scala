@@ -2,7 +2,7 @@ package io.joern.pysrc2cpg
 
 import io.joern.x2cpg.ValidationMode
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.Languages
+import io.shiftleft.codepropertygraph.generated.v2.Languages
 import overflowdb.BatchedUpdate
 import flatgraph.DiffGraphBuilder
 

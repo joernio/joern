@@ -3,8 +3,8 @@ import io.joern.rubysrc2cpg.astcreation.GlobalTypes.{builtinFunctions, builtinPr
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.RubyNode
 import io.joern.x2cpg.datastructures.Scope
 import io.joern.x2cpg.datastructures.Stack.*
-import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
+import io.shiftleft.codepropertygraph.generated.v2.{Operators, PropertyNames}
 
 trait AstCreatorHelper { this: AstCreator =>
 

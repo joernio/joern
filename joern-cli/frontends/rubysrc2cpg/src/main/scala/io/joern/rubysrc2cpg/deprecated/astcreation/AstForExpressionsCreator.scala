@@ -4,8 +4,8 @@ import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.*
 import io.joern.rubysrc2cpg.deprecated.passes.Defines
 import io.joern.rubysrc2cpg.deprecated.passes.Defines.*
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{AstNodeNew, NewCall, NewIdentifier}
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, ModifierTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{AstNodeNew, NewCall, NewIdentifier}
+import io.shiftleft.codepropertygraph.generated.v2.{ControlStructureTypes, DispatchTypes, ModifierTypes, Operators}
 import org.antlr.v4.runtime.ParserRuleContext
 import org.slf4j.LoggerFactory
 

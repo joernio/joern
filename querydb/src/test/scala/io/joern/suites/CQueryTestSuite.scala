@@ -1,7 +1,7 @@
 package io.joern.suites
 
 import io.joern.util.QueryUtil
-import io.shiftleft.codepropertygraph.generated.nodes
+import io.shiftleft.codepropertygraph.generated.v2.nodes
 import io.joern.console.scan._
 import io.joern.console.QueryBundle
 import io.joern.console.Query

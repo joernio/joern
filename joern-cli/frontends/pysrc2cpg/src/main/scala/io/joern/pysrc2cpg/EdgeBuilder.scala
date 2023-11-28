@@ -1,6 +1,6 @@
 package io.joern.pysrc2cpg
 
-import io.shiftleft.codepropertygraph.generated.nodes.{
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{
   NewBlock,
   NewCall,
   NewControlStructure,
@@ -22,7 +22,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewTypeRef,
   NewUnknown
 }
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
+import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, nodes}
 import flatgraph.DiffGraphBuilder
 
 class EdgeBuilder(diffGraph: DiffGraphBuilder) {

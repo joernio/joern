@@ -3,7 +3,7 @@ package io.joern.go2cpg.passes.ast
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
 import io.joern.dataflowengineoss.language.*
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 
 class BuiltInMethodCallTests extends GoCodeToCpgSuite {
 

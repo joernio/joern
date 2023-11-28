@@ -1,7 +1,7 @@
 package io.joern.c2cpg.querying
 
 import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
-import io.shiftleft.codepropertygraph.generated.{Languages, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.v2.{Languages, NodeTypes}
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 

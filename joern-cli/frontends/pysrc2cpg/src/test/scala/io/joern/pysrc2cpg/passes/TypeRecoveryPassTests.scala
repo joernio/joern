@@ -2,7 +2,7 @@ package io.joern.pysrc2cpg.passes
 
 import io.joern.pysrc2cpg.PySrc2CpgFixture
 import io.joern.x2cpg.passes.frontend.XTypeHintCallLinker
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Member}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{Call, Identifier, Member}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.importresolver.*
 

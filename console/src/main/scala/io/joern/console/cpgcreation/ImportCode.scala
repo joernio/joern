@@ -4,7 +4,7 @@ import better.files.File
 import io.joern.console.workspacehandling.Project
 import io.joern.console.{ConsoleException, FrontendConfig, Reporting}
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.Languages
+import io.shiftleft.codepropertygraph.generated.v2.Languages
 import overflowdb.traversal.help.Table
 
 import java.nio.file.Path

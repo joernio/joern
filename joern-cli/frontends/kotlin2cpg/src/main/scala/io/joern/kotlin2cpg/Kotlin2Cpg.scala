@@ -27,7 +27,7 @@ import io.joern.kotlin2cpg.interop.JavasrcInterop
 import io.joern.kotlin2cpg.jar4import.UsesService
 import io.joern.x2cpg.SourceFiles.filterFile
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.Languages
+import io.shiftleft.codepropertygraph.generated.v2.Languages
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.utils.IOUtils
 

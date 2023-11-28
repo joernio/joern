@@ -5,8 +5,8 @@ import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.utils.NodeBuilders.newOperatorCallNode
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewFieldIdentifier}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{NewCall, NewFieldIdentifier}
+import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, Operators}
 
 import scala.util.{Success, Try}
 

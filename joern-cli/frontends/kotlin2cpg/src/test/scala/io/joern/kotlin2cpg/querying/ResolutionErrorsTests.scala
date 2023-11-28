@@ -3,7 +3,7 @@ package io.joern.kotlin2cpg.querying
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.joern.kotlin2cpg.types.TypeConstants
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.v2.Operators
 import io.shiftleft.semanticcpg.language._
 
 class ResolutionErrorsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {

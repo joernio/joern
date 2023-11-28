@@ -1,7 +1,7 @@
 package io.joern.kotlin2cpg.validation
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, ControlStructure, Literal}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{Call, ControlStructure, Literal}
 import io.shiftleft.semanticcpg.language._
 
 class ArgumentIndexTests extends KotlinCode2CpgFixture(withOssDataflow = false) {

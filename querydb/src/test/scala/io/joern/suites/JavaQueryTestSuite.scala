@@ -6,7 +6,7 @@ import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.joern.util.QueryUtil
 import io.joern.x2cpg.testfixtures.TestCpg
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Literal, Method, StoredNode}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{Call, Literal, Method, StoredNode}
 
 class JavaQueryTestSuite[QB <: QueryBundle](val queryBundle: QB)
     extends JavaSrcCode2CpgFixture(withOssDataflow = true) {

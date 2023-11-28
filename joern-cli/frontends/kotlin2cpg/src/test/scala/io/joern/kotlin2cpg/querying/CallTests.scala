@@ -1,8 +1,8 @@
 package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{Call, Identifier}
+import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
 class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
