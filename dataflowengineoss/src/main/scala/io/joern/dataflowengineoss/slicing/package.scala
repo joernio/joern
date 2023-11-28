@@ -2,7 +2,7 @@ package io.joern.dataflowengineoss
 
 import better.files.File
 import io.circe.{Decoder, Encoder, HCursor, Json}
-import io.shiftleft.codepropertygraph.generated.v2.PropertyNames
+import io.shiftleft.codepropertygraph.generated.v2.PropertyKeys
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
@@ -402,12 +402,12 @@ package object slicing {
       *   extracted.
       */
     def fromNode(node: StoredNode, typeMap: Map[String, String] = Map.empty[String, String]): DefComponent = {
-      val typeFullNameProperty = node.propertyOption[String](PropertyNames.TYPE_FULL_NAME).getOrElse("ANY")
-      val dynamicTypeHintFullNamesProperty = node.propertyOption[Seq[String]](PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME).getOrElse(Seq.empty)
+      val typeFullNameProperty = node.propertyOption(PropertyKeys.TypeFullName).getOrElse("ANY")
+      val dynamicTypeHintFullNamesProperty = node.property(PropertyKeys.DynamicTypeHintFullName)
       val nodeType = (typeFullNameProperty +: dynamicTypeHintFullNamesProperty).filterNot(_.matches("(ANY|UNKNOWN)")).headOption.getOrElse("ANY")
       val typeFullName = typeMap.getOrElse(nodeType, nodeType)
-      val lineNumber = node.propertyOption[Int](PropertyNames.LINE_NUMBER)
-      val columnNumber = node.propertyOption[Int](PropertyNames.COLUMN_NUMBER)
+      val lineNumber = node.property(PropertyKeys.LineNumber)
+      val columnNumber = node.property(PropertyKeys.ColumnNumber)
       node match {
         case x: MethodParameterIn => ParamDef(x.name, typeFullName, x.index, lineNumber, columnNumber)
         case x: Call if x.code.startsWith("new ") =>

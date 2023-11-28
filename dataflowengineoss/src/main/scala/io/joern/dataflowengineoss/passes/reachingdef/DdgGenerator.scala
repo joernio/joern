@@ -4,7 +4,7 @@ import io.joern.dataflowengineoss.queryengine.AccessPathUsage.toTrackedBaseAndAc
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.joern.dataflowengineoss.{globalFromLiteral, identifierToFirstUsages}
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, Operators}
 import io.shiftleft.semanticcpg.accesspath.MatchResult
 import io.shiftleft.semanticcpg.language.*
 import flatgraph.DiffGraphBuilder
