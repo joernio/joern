@@ -1,8 +1,8 @@
 package io.joern.ghidra2cpg.passes
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
+import io.shiftleft.codepropertygraph.generated.v2.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{Call, Method}
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.shiftleft.semanticcpg.language._
 

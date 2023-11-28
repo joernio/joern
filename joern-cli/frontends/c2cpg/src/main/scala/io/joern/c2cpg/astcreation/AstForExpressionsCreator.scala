@@ -1,7 +1,7 @@
 package io.joern.c2cpg.astcreation
 
-import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewIdentifier, NewMethodRef}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{NewCall, NewIdentifier, NewMethodRef}
+import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, Operators}
 import io.joern.x2cpg.{Ast, ValidationMode}
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.*

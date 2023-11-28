@@ -5,7 +5,7 @@ import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.macros.QueryMacros._
 import io.joern.scanners._
-import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.v2.Operators
 import io.shiftleft.semanticcpg.language._
 
 object SQLInjection extends QueryBundle {

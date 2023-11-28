@@ -3,8 +3,8 @@ package io.joern.jimple2cpg.astcreation.declarations
 import io.joern.jimple2cpg.astcreation.{AstCreator}
 import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.*
-import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.v2.*
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import org.slf4j.LoggerFactory
 import soot.jimple.*
 import soot.jimple.internal.JimpleLocal

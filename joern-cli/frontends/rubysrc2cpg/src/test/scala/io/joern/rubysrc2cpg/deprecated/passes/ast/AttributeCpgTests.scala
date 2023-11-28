@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.deprecated.passes.ast
 
 import io.joern.rubysrc2cpg.testfixtures.{RubyCode2CpgFixture, SameInNewFrontend}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
 class AttributeCpgTests extends RubyCode2CpgFixture(useDeprecatedFrontend = true) {

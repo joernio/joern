@@ -1,7 +1,7 @@
 package io.joern.jimple2cpg.querying
 import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.ModifierTypes
+import io.shiftleft.codepropertygraph.generated.v2.ModifierTypes
 import io.shiftleft.semanticcpg.language._
 
 import java.io.File

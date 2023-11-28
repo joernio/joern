@@ -1,7 +1,7 @@
 package io.joern.c2cpg.astcreation
 
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{
+import io.shiftleft.codepropertygraph.generated.v2.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{
   AstNodeNew,
   ExpressionNew,
   NewBlock,
@@ -10,7 +10,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewNode
 }
 import io.joern.x2cpg.{Ast, AstEdge, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
+import io.shiftleft.codepropertygraph.generated.v2.nodes.NewLocal
 import org.apache.commons.lang.StringUtils
 import org.eclipse.cdt.core.dom.ast.{IASTMacroExpansionLocation, IASTNode, IASTPreprocessorMacroDefinition}
 import org.eclipse.cdt.core.dom.ast.IASTBinaryExpression

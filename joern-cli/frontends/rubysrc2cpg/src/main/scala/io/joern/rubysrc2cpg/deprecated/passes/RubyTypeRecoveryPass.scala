@@ -2,7 +2,7 @@ package io.joern.rubysrc2cpg.deprecated.passes
 
 import io.joern.x2cpg.passes.frontend.*
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import flatgraph.DiffGraphBuilder
 import io.joern.x2cpg.Defines as XDefines

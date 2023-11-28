@@ -2,7 +2,7 @@ package io.joern.ghidra2cpg.passes.mips
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, PropertyNames}
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.shiftleft.semanticcpg.language._
 

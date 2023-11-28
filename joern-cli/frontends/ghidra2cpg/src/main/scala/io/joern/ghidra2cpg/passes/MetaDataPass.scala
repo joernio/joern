@@ -1,7 +1,7 @@
 package io.joern.ghidra2cpg.passes
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.{Languages, nodes}
+import io.shiftleft.codepropertygraph.generated.v2.{Languages, nodes}
 import io.shiftleft.passes.CpgPass
 
 class MetaDataPass(filename: String, cpg: Cpg) extends CpgPass(cpg) {

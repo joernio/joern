@@ -1,8 +1,8 @@
 package io.joern.rubysrc2cpg.deprecated.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{Block, ControlStructure}
+import io.shiftleft.codepropertygraph.generated.v2.ControlStructureTypes
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{Block, ControlStructure}
 import io.shiftleft.semanticcpg.language.*
 class ControlStructureTests extends RubyCode2CpgFixture(useDeprecatedFrontend = true) {
 

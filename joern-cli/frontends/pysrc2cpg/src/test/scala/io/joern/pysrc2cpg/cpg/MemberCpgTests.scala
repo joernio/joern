@@ -1,7 +1,7 @@
 package io.joern.pysrc2cpg.cpg
 
 import io.joern.pysrc2cpg.Py2CpgTestContext
-import io.shiftleft.codepropertygraph.generated.nodes.Member
+import io.shiftleft.codepropertygraph.generated.v2.nodes.Member
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers

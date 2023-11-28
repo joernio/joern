@@ -2,7 +2,7 @@ package io.joern.jimple2cpg.querying
 
 import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.Local
+import io.shiftleft.codepropertygraph.generated.v2.nodes.Local
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.Ignore
 

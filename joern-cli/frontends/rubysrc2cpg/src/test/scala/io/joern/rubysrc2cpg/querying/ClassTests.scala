@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Return}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{Identifier, Return}
 import io.shiftleft.semanticcpg.language.*
 
 class ClassTests extends RubyCode2CpgFixture {

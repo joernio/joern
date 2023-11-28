@@ -3,8 +3,8 @@ package io.joern.rubysrc2cpg.deprecated.passes.ast
 import io.joern.rubysrc2cpg.deprecated.astcreation.AstCreator
 import io.joern.rubysrc2cpg.deprecated.passes.Defines
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal, NewIdentifier}
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{Identifier, Literal, NewIdentifier}
+import io.shiftleft.codepropertygraph.generated.v2.{ControlStructureTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
 class SimpleAstCreationPassTest extends RubyCode2CpgFixture(useDeprecatedFrontend = true) {

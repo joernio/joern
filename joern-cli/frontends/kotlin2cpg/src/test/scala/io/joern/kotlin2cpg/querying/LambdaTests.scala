@@ -2,9 +2,9 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes}
-import io.shiftleft.codepropertygraph.generated.edges.{Capture, Ref}
-import io.shiftleft.codepropertygraph.generated.nodes.{
+import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes}
+import io.shiftleft.codepropertygraph.generated.v2.edges.{Capture, Ref}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{
   Binding,
   Block,
   Call,

@@ -3,8 +3,8 @@ package io.joern.rubysrc2cpg.deprecated.astcreation
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.*
 import io.joern.rubysrc2cpg.deprecated.passes.Defines
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
-import io.shiftleft.codepropertygraph.generated.nodes.NewControlStructure
+import io.shiftleft.codepropertygraph.generated.v2.ControlStructureTypes
+import io.shiftleft.codepropertygraph.generated.v2.nodes.NewControlStructure
 
 import scala.jdk.CollectionConverters.*
 trait AstForControlStructuresCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>

@@ -4,7 +4,7 @@ import io.joern.pysrc2cpg.PythonAstVisitor.{allBuiltinClasses, builtinPrefix, ty
 import io.joern.pythonparser.ast
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.utils.NodeBuilders
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, nodes}
+import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, EvaluationStrategies, nodes}
 import flatgraph.DiffGraphBuilder
 
 class NodeBuilder(diffGraph: DiffGraphBuilder) {

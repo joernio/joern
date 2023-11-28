@@ -1,7 +1,7 @@
 package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, ModifierTypes}
+import io.shiftleft.codepropertygraph.generated.v2.{EvaluationStrategies, ModifierTypes}
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.Ignore
 

@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.deprecated.passes
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.utils.Environment
 import io.joern.x2cpg.utils.Environment.OperatingSystemType
-import io.shiftleft.codepropertygraph.generated.nodes.Method
+import io.shiftleft.codepropertygraph.generated.v2.nodes.Method
 import io.shiftleft.semanticcpg.language.*
 
 class UnknownConstructPass extends RubyCode2CpgFixture(useDeprecatedFrontend = true) {

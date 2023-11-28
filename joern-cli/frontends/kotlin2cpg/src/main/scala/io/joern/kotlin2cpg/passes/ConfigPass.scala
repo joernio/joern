@@ -2,7 +2,7 @@ package io.joern.kotlin2cpg.passes
 
 import io.joern.kotlin2cpg.FileContentAtPath
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.NewConfigFile
+import io.shiftleft.codepropertygraph.generated.v2.nodes.NewConfigFile
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import org.slf4j.LoggerFactory
 

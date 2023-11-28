@@ -1,7 +1,7 @@
 package io.joern.console
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
+import io.shiftleft.codepropertygraph.generated.v2.nodes.StoredNode
 
 case class CodeSnippet(content: String, filename: String)
 case class MultiFileCodeExamples(positive: List[List[CodeSnippet]], negative: List[List[CodeSnippet]])

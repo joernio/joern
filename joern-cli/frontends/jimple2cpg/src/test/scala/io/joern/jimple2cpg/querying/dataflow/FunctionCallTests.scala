@@ -4,7 +4,7 @@ import io.joern.dataflowengineoss.language.toExtendedCfgNode
 import io.joern.jimple2cpg.testfixtures.JimpleDataFlowCodeToCpgSuite
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.v2.Operators
 
 class FunctionCallTests extends JimpleDataFlowCodeToCpgSuite {
 

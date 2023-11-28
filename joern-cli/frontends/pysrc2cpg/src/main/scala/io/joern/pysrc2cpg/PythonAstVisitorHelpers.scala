@@ -2,8 +2,8 @@ package io.joern.pysrc2cpg
 
 import io.joern.pysrc2cpg.memop.{Load, MemoryOperation, Store}
 import io.joern.pythonparser.ast
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.v2.nodes._
+import io.shiftleft.codepropertygraph.generated.v2.{ControlStructureTypes, DispatchTypes, Operators}
 
 import scala.collection.immutable.{::, Nil}
 import scala.collection.mutable

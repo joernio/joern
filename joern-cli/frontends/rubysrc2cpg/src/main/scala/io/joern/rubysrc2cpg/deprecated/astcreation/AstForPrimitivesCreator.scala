@@ -5,8 +5,8 @@ import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.*
 import io.joern.rubysrc2cpg.deprecated.passes.Defines
 import io.joern.rubysrc2cpg.deprecated.passes.Defines.getBuiltInType
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.NewCall
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.NewCall
+import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, Operators}
 import org.antlr.v4.runtime.ParserRuleContext
 
 import scala.jdk.CollectionConverters.CollectionHasAsScala

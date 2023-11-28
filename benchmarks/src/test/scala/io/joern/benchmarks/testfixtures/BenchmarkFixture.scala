@@ -9,8 +9,8 @@ import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.joern.javasrc2cpg.{JavaSrc2Cpg, Config => JavaSrcConfig}
 import io.joern.jimple2cpg.{Jimple2Cpg, Config => JimpleConfig}
-import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
-import io.shiftleft.codepropertygraph.generated.{Cpg, Languages}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.CfgNode
+import io.shiftleft.codepropertygraph.generated.v2.{Cpg, Languages}
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import io.shiftleft.utils.ProjectRoot

@@ -3,9 +3,9 @@ package io.joern.go2cpg.passes.ast
 import io.joern.dataflowengineoss.language.*
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
 import io.joern.gosrc2cpg.astcreation.Defines
-import io.shiftleft.codepropertygraph.generated.edges.Ref
-import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
+import io.shiftleft.codepropertygraph.generated.v2.edges.Ref
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
+import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, Operators, nodes}
 import io.shiftleft.semanticcpg.language.*
 import overflowdb.traversal.{jIteratortoTraversal, toNodeTraversal}
 

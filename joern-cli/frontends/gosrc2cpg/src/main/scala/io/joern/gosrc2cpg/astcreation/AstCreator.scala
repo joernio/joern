@@ -8,8 +8,8 @@ import io.joern.x2cpg.datastructures.Scope
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, AstNodeBuilder as X2CpgAstNodeBuilder}
-import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.NewNode
+import io.shiftleft.codepropertygraph.generated.v2.{ModifierTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.NewNode
 import org.slf4j.{Logger, LoggerFactory}
 import flatgraph.DiffGraphBuilder
 import ujson.Value

@@ -2,7 +2,7 @@ package io.joern.kotlin2cpg.types
 
 import io.joern.kotlin2cpg.psi.PsiUtils
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.v2.Operators
 import io.shiftleft.passes.KeyPool
 import org.jetbrains.kotlin.cli.jvm.compiler.{
   KotlinCoreEnvironment,

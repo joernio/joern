@@ -6,8 +6,8 @@ import io.joern.ghidra2cpg.passes.FunctionPass
 import io.joern.ghidra2cpg.processors.ArmProcessor
 import io.joern.ghidra2cpg.utils.Utils.{checkIfExternal, createMethodNode, createReturnNode}
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.NewBlock
+import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, nodes}
 
 class ArmFunctionPass(
   currentProgram: Program,

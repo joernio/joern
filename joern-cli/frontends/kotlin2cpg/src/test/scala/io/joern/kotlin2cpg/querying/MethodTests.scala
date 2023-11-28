@@ -1,7 +1,7 @@
 package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Return}
+import io.shiftleft.codepropertygraph.generated.v2.nodes.{Block, Call, Return}
 import io.shiftleft.semanticcpg.language._
 
 class MethodTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
