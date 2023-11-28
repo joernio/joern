@@ -7,35 +7,35 @@ import io.shiftleft.semanticcpg.language.operatorextension.*
 class OpAstNodeMethods[A <: AstNode](val node: A) extends AnyVal {
 
   def assignment: Iterator[OpNodes.Assignment] =
-    astDown(allAssignmentTypes).map(new OpNodes.Assignment(_))
+    astDown(allAssignmentTypes).cast[OpNodes.Assignment]
 
   def arithmetic: Iterator[OpNodes.Arithmetic] =
-    astDown(allArithmeticTypes).map(new OpNodes.Arithmetic(_))
+    astDown(allArithmeticTypes).cast[OpNodes.Arithmetic]
 
   def arrayAccess: Iterator[OpNodes.ArrayAccess] =
-    astDown(allArrayAccessTypes).map(new OpNodes.ArrayAccess(_))
+    astDown(allArrayAccessTypes).cast[OpNodes.ArrayAccess]
 
   def fieldAccess: Iterator[OpNodes.FieldAccess] =
-    astDown(allFieldAccessTypes).map(new OpNodes.FieldAccess(_))
+    astDown(allFieldAccessTypes).cast[OpNodes.FieldAccess]
 
   private def astDown(callNames: Set[String]): Iterator[Call] =
     node.ast.isCall.filter(x => callNames.contains(x.name))
 
   def inAssignment: Iterator[OpNodes.Assignment] =
     astUp(allAssignmentTypes)
-      .map(new OpNodes.Assignment(_))
+      .cast[OpNodes.Assignment]
 
   def inArithmetic: Iterator[OpNodes.Arithmetic] =
     astUp(allArithmeticTypes)
-      .map(new OpNodes.Arithmetic(_))
+      .cast[OpNodes.Arithmetic]
 
   def inArrayAccess: Iterator[OpNodes.ArrayAccess] =
     astUp(allArrayAccessTypes)
-      .map(new OpNodes.ArrayAccess(_))
+      .cast[OpNodes.ArrayAccess]
 
   def inFieldAccess: Iterator[OpNodes.FieldAccess] =
     astUp(allFieldAccessTypes)
-      .map(new OpNodes.FieldAccess(_))
+      .cast[OpNodes.FieldAccess]
 
   private def astUp(strings: Set[String]): Iterator[Call] =
     node.inAstMinusLeaf.isCall

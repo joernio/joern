@@ -133,7 +133,9 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
           case ::(fa: Call, ::(i: Identifier, _)) if fa.name == Operators.fieldAccess =>
             symbolTable.append(
               c,
-              visitIdentifierAssignedToFieldLoad(i, new FieldAccess(fa)).map(t => s"$t$pathSep$ConstructorMethodName")
+              visitIdentifierAssignedToFieldLoad(i, fa.asInstanceOf[FieldAccess]).map(t =>
+                s"$t$pathSep$ConstructorMethodName"
+              )
             )
           case _ => Set.empty
         }

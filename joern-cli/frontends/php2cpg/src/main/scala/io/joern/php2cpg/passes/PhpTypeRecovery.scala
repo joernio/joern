@@ -53,7 +53,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
     !name.isBlank && name.charAt(0).isUpper
 
   override def assignments: Iterator[Assignment] =
-    cu.ast.isCall.nameExact(Operators.assignment).map(new OpNodes.Assignment(_))
+    cu.ast.isCall.nameExact(Operators.assignment).cast[Assignment]
 
   protected def unresolvedDynamicCalls: Iterator[Call] = cu.ast.isCall
     .filter(_.dispatchType == DispatchTypes.DYNAMIC_DISPATCH)
@@ -110,7 +110,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
       case ::(head: Literal, Nil) if head.typeFullName != "ANY" =>
         Set(head.typeFullName)
       case ::(head: Call, Nil) if head.name == Operators.fieldAccess =>
-        val fieldAccess = new FieldAccess(head)
+        val fieldAccess = head.asInstanceOf[FieldAccess]
         val (sym, ts)   = getSymbolFromCall(fieldAccess)
         val cpgTypes = cpg.typeDecl
           .fullNameExact(ts.map(_.compUnitFullName).toSeq: _*)
@@ -188,7 +188,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
   }
 
   override protected def getTypesFromCall(c: Call): Set[String] = c.name match {
-    case Operators.fieldAccess        => symbolTable.get(LocalVar(getFieldName(new FieldAccess(c))))
+    case Operators.fieldAccess        => symbolTable.get(LocalVar(getFieldName(c.asInstanceOf[FieldAccess])))
     case _ if symbolTable.contains(c) => symbolTable.get(c)
     case Operators.indexAccess        => getIndexAccessTypes(c)
     case n                            => methodReturnValues(Seq(c.methodFullName))
@@ -197,7 +197,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
   override protected def indexAccessToCollectionVar(c: Call): Option[CollectionVar] = {
     def callName(x: Call) =
       if (x.name == Operators.fieldAccess)
-        getFieldName(new FieldAccess(x))
+        getFieldName(x.asInstanceOf[FieldAccess])
       else if (x.name == Operators.indexAccess)
         indexAccessToCollectionVar(x)
           .map(cv => s"${cv.identifier}[${cv.idx}]")
