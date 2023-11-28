@@ -135,7 +135,7 @@ class AstGenRunner(config: Config) {
   }
 
   private def runAstGenNative(in: String, out: File, exclude: String): Try[Seq[String]] = {
-    val excludeCommand = if (exclude.isEmpty) "" else s"-exclude $exclude"
+    val excludeCommand = if (exclude.isEmpty) "" else s"-exclude \"$exclude\""
     ExternalCommand.run(s"$astGenCommand $excludeCommand -out ${out.toString()} $in", ".")
   }
 
