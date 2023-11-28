@@ -62,7 +62,7 @@ package object language
   implicit def iterOnceToTypeDeclTrav[A <: TypeDecl](a: IterableOnce[A]): TypeDeclTraversal =
     new TypeDeclTraversal(a.iterator)
 
-  implicit def iterOnceToOriginalCallTrav(traversal: Iterator[Call]): OriginalCall = new OriginalCall(traversal)
+  implicit def iterOnceToOriginalCallTrav(traversal: IterableOnce[Call]): OriginalCall = new OriginalCall(traversal)
 
   implicit def singleToControlStructureTrav[A <: ControlStructure](a: A): ControlStructureTraversal =
     new ControlStructureTraversal(Iterator.single(a))

@@ -1,5 +1,6 @@
 package io.joern.rubysrc2cpg.astcreation
 
+import flatgraph.DiffGraphBuilder
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.parser.{ResourceManagedParser, RubyNodeCreator}
 import io.joern.rubysrc2cpg.passes.Defines
@@ -10,7 +11,6 @@ import io.shiftleft.codepropertygraph.generated.v2.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.{Logger, LoggerFactory}
-import overflowdb.BatchedUpdate
 
 import scala.util.{Failure, Success}
 
@@ -29,7 +29,7 @@ class AstCreator(protected val filename: String, parser: ResourceManagedParser, 
   protected val relativeFileName: String =
     projectRoot.map(filename.stripPrefix).map(_.stripPrefix(java.io.File.separator)).getOrElse(filename)
 
-  override def createAst(): BatchedUpdate.DiffGraphBuilder = {
+  override def createAst(): DiffGraphBuilder = {
     parser.parse(filename) match
       case Success(programCtx) =>
         val rootNode = new RubyNodeCreator().visit(programCtx).asInstanceOf[StatementList]
