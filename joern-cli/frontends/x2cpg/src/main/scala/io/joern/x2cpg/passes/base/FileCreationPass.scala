@@ -1,7 +1,7 @@
 package io.joern.x2cpg.passes.base
 
 import io.shiftleft.codepropertygraph.generated.v2.nodes.{File, NewFile, StoredNode}
-import io.shiftleft.codepropertygraph.generated.v2.{Cpg, EdgeTypes, NodeTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.v2.{Cpg, EdgeTypes, NodeTypes, PropertyKeys}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
@@ -46,7 +46,7 @@ class FileCreationPass(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {
       dstNodeMap = { x =>
         originalFileNameToNode.get(x)
       },
-      dstFullNameKey = PropertyNames.FILENAME,
+      dstFullNameKey = PropertyKeys.Filename,
       dstDefaultPropertyValue = File.PropertyDefaults.Name,
       dstGraph,
       Some(createFileIfDoesNotExist)
