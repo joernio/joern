@@ -1,12 +1,12 @@
 package io.joern.pysrc2cpg
 
+import flatgraph.DiffGraphBuilder
 import io.joern.x2cpg.passes.frontend.ImportStringHandling
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.PropertyNames
 import io.shiftleft.codepropertygraph.generated.v2.nodes.{CfgNode, MethodParameterIn, MethodReturn, StoredNode}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language._
-import overflowdb.BatchedUpdate
 
 import java.io.File
 import java.util.regex.{Matcher, Pattern}
@@ -75,7 +75,7 @@ class DynamicTypeHintFullNamePass(cpg: Cpg) extends ForkJoinParallelCpgPass[CfgN
     fullName.replaceFirst("\\.py:<module>", "").replaceAll(Pattern.quote(File.separator), ".")
 
   private def setTypeHints(
-    diffGraph: BatchedUpdate.DiffGraphBuilder,
+    diffGraph: DiffGraphBuilder,
     node: StoredNode,
     typeHint: String,
     alias: String,
