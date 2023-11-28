@@ -65,7 +65,7 @@ class ModuleVariableAsMemberTraversal(traversal: Iterator[Member]) extends AnyVa
 class ModuleVariableAsExpressionTraversal(traversal: Iterator[Expression]) extends AnyVal {
 
   // TODO bring back help/doc
-  @Doc(info = "Expression nodes representing module variables")
+//  @Doc(info = "Expression nodes representing module variables")
   def moduleVariables: Iterator[OpNodes.ModuleVariable] = {
     traversal.flatMap {
       case x: Identifier                              => x.start.moduleVariables
