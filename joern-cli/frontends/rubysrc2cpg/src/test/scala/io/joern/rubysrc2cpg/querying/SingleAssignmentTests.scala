@@ -42,6 +42,51 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
     rhs.code shouldBe "1"
   }
 
+  "`||=` is represented by an `assignmentOr` operator call" in {
+    val cpg = code("""
+        |x ||= false
+        |""".stripMargin)
+
+    val List(assignment) = cpg.call(Operators.assignmentOr).l
+    assignment.code shouldBe "x ||= false"
+    assignment.lineNumber shouldBe Some(2)
+    assignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+    val List(lhs, rhs) = assignment.argument.l
+    lhs.code shouldBe "x"
+    rhs.code shouldBe "false"
+  }
+
+  "`&&=` is represented by an `assignmentAnd` operator call" in {
+    val cpg = code("""
+        |x &&= true
+        |""".stripMargin)
+
+    val List(assignment) = cpg.call(Operators.assignmentAnd).l
+    assignment.code shouldBe "x &&= true"
+    assignment.lineNumber shouldBe Some(2)
+    assignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+    val List(lhs, rhs) = assignment.argument.l
+    lhs.code shouldBe "x"
+    rhs.code shouldBe "true"
+  }
+
+  "`/=` is represented by an `assignmentDivision` operator call" in {
+    val cpg = code("""
+        |x /= 10
+        |""".stripMargin)
+
+    val List(assignment) = cpg.call(Operators.assignmentDivision).l
+    assignment.code shouldBe "x /= 10"
+    assignment.lineNumber shouldBe Some(2)
+    assignment.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+    val List(lhs, rhs) = assignment.argument.l
+    lhs.code shouldBe "x"
+    rhs.code shouldBe "10"
+  }
+
   "`=` is right-associative" in {
     val cpg = code("""
                      |x = y = 1
