@@ -1,5 +1,6 @@
 package io.joern.php2cpg.astcreation
 
+import flatgraph.DiffGraphBuilder
 import io.joern.php2cpg.astcreation.AstCreator.{NameConstants, TypeConstants, operatorSymbols}
 import io.joern.php2cpg.datastructures.ArrayIndexTracker
 import io.joern.php2cpg.parser.Domain.*
@@ -8,11 +9,13 @@ import io.joern.php2cpg.utils.Scope
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.Defines.{StaticInitMethodName, UnresolvedNamespace, UnresolvedSignature}
 import io.joern.x2cpg.utils.AstPropertiesUtil.RootProperties
+import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.utils.NodeBuilders.*
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.v2.*
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
+import scala.jdk.CollectionConverters.*
 import org.slf4j.LoggerFactory
 
 class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidation: ValidationMode)
@@ -26,7 +29,7 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
 
   private def getNewTmpName(prefix: String = "tmp"): String = s"$prefix${tmpKeyPool.next.toString}"
 
-  override def createAst(): BatchedUpdate.DiffGraphBuilder = {
+  override def createAst(): DiffGraphBuilder = {
     val ast = astForPhpFile(phpAst)
     storeInDiffGraph(ast, diffGraph)
     diffGraph
@@ -1649,7 +1652,7 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
       case nameExpr: PhpNameExpr =>
         scope
           .lookupVariable(nameExpr.name)
-          .flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME).map(_.toString))
+          .flatMap(_.propertiesMap.asScala.get(PropertyNames.TYPE_FULL_NAME).map(_.toString))
           .getOrElse(nameExpr.name)
 
       case expr =>
