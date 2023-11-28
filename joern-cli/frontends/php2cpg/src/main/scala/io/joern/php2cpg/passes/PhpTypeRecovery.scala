@@ -1,14 +1,14 @@
 package io.joern.php2cpg.passes
 
+import flatgraph.DiffGraphBuilder
 import io.joern.x2cpg.Defines
-import io.joern.x2cpg.passes.frontend._
+import io.joern.x2cpg.passes.frontend.*
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.nodes._
-import io.shiftleft.codepropertygraph.generated.v2.{Operators, PropertyNames, DispatchTypes}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.v2.nodes.*
+import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, Operators, PropertyNames}
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}
-import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -128,9 +128,9 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
           callPaths.map(c => s"$c$pathSep${XTypeRecovery.DummyReturnType}")
         else
           returnValues
-      case ::(head: Call, Nil) if head.argumentOut.headOption.exists(symbolTable.contains) =>
+      case ::(head: Call, Nil) if head._argumentOut.cast[CfgNode].headOption.exists(symbolTable.contains) =>
         symbolTable
-          .get(head.argumentOut.head)
+          .get(head._argumentOut.cast[CfgNode].head)
           .map(t => Seq(t, head.name, XTypeRecovery.DummyReturnType).mkString(pathSep.toString))
       case ::(identifier: Identifier, Nil) if symbolTable.contains(identifier) =>
         symbolTable.get(identifier)
@@ -138,7 +138,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
         extractTypes(head.argument.l)
       case _ => Set.empty
     }
-    val returnTypes = extractTypes(ret.argumentOut.l)
+    val returnTypes = extractTypes(ret._argumentOut.cast[CfgNode].l)
     existingTypes.addAll(returnTypes)
 
     /* Check whether method return is already known, and if so, remove dummy value */
@@ -204,7 +204,7 @@ private class RecoverForPhpFile(cpg: Cpg, cu: NamespaceBlock, builder: DiffGraph
           .getOrElse(XTypeRecovery.DummyIndexAccess)
       else x.name
 
-    val collectionVar = Option(c.argumentOut.l match {
+    val collectionVar = Option(c._argumentOut.cast[CfgNode].l match {
       case List(i: Identifier, idx: Literal)    => CollectionVar(i.name, idx.code)
       case List(i: Identifier, idx: Identifier) => CollectionVar(i.name, idx.code)
       case List(c: Call, idx: Call)             => CollectionVar(callName(c), callName(idx))
