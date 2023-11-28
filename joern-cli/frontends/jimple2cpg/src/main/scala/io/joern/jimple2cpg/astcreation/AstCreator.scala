@@ -255,21 +255,21 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
     }
   }
 
-  override def line(node: Host): Option[Integer] = {
+  override def line(node: Host): Option[Int] = {
     if (node == null) None
     else if (node.getJavaSourceStartLineNumber == -1) None
     else Option(node.getJavaSourceStartLineNumber)
   }
 
-  override def column(node: Host): Option[Integer] = {
+  override def column(node: Host): Option[Int] = {
     if (node == null) None
     else if (node.getJavaSourceStartColumnNumber == -1) None
     else Option(node.getJavaSourceStartColumnNumber)
   }
 
-  override def columnEnd(node: Host): Option[Integer] = None
+  override def columnEnd(node: Host): Option[Int] = None
 
-  override def lineEnd(node: Host): Option[Integer] = None
+  override def lineEnd(node: Host): Option[Int] = None
 
   override def code(node: Host): String = node.toString
 

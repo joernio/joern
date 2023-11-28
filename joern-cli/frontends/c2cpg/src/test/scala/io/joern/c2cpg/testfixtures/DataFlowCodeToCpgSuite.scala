@@ -25,7 +25,7 @@ class DataFlowCodeToCpgSuite extends Code2CpgFixture(() => new DataFlowTestCpg()
   protected implicit val context: EngineContext = EngineContext()
 
   protected def flowToResultPairs(path: Path): List[(String, Integer)] =
-    path.resultPairs().collect { case (firstElement: String, secondElement: Option[Integer]) =>
+    path.resultPairs().collect { case (firstElement: String, secondElement: Option[Int]) =>
       (firstElement, secondElement.getOrElse(-1))
     }
 

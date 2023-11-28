@@ -71,7 +71,7 @@ class RubyCode2CpgFixture(
   implicit lazy val engineContext: EngineContext = EngineContext()
 
   protected def flowToResultPairs(path: Path): List[(String, Integer)] =
-    path.resultPairs().collect { case (firstElement: String, secondElement: Option[Integer]) =>
+    path.resultPairs().collect { case (firstElement: String, secondElement: Option[Int]) =>
       (firstElement, secondElement.get)
     }
 }
