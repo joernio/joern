@@ -9,7 +9,6 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
-import overflowdb.BatchedUpdate
 
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
 

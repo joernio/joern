@@ -53,7 +53,7 @@ class MethodTests extends RubyCode2CpgFixture {
     f.numberOfLines shouldBe 1
     f.parameter.size shouldBe 0
 
-    val List(r: Return) = f.methodReturn.cfgIn.l: @unchecked
+    val List(r: Return) = f.methodReturn._cfgIn.l: @unchecked
     r.code shouldBe "puts 'hi'"
     r.lineNumber shouldBe Some(2)
   }
@@ -71,7 +71,7 @@ class MethodTests extends RubyCode2CpgFixture {
     f.numberOfLines shouldBe 1
     f.parameter.size shouldBe 1
 
-    val List(r: Return) = f.methodReturn.cfgIn.l: @unchecked
+    val List(r: Return) = f.methodReturn._cfgIn.l: @unchecked
     r.code shouldBe "x.class"
     r.lineNumber shouldBe Some(2)
   }

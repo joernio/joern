@@ -55,8 +55,8 @@ class IdentifierToCallPass(cpg: Cpg) extends ConcurrentWriterCpgPass[Method](cpg
         .order(i.order)
       // Persist node in-place
       diffGraph.addNode(call)
-      i.outE.filterNot(_.label == EdgeTypes.REF).foreach(e => diffGraph.addEdge(call, e.inNode, e.label))
-      i.inE.foreach(e => diffGraph.addEdge(e.outNode, call, e.label))
+      i.outE.filterNot(_.label == EdgeTypes.REF).foreach(e => diffGraph.addEdge(call, e.dst, e.label))
+      i.inE.foreach(e => diffGraph.addEdge(e.src, call, e.label))
       // Remove identifiers
       i.outE(EdgeTypes.REF).foreach(diffGraph.removeEdge)
       diffGraph.removeNode(i)

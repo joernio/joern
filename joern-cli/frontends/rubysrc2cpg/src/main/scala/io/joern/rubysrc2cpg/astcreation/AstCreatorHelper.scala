@@ -18,8 +18,8 @@ trait AstCreatorHelper { this: AstCreator =>
    * */
   protected val methodAstParentStack: Stack[NewNode] = new Stack()
 
-  protected def getEnclosingAstType: String     = methodAstParentStack.head.label()
-  protected def getEnclosingAstFullName: String = methodAstParentStack.head.properties(PropertyNames.FULL_NAME).toString
+  protected def getEnclosingAstType: String     = methodAstParentStack.head.label
+  protected def getEnclosingAstFullName: String = methodAstParentStack.head.propertiesMap.get(PropertyNames.FULL_NAME).toString
   protected def computeClassFullName(name: String): String  = s"$getEnclosingAstFullName.$name"
   protected def computeMethodFullName(name: String): String = s"$getEnclosingAstFullName:$name"
 
