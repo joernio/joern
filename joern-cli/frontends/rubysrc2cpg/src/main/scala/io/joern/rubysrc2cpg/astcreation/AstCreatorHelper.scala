@@ -68,10 +68,16 @@ trait AstCreatorHelper { this: AstCreator =>
     )
 
   protected val AssignmentOperatorNames: Map[String, String] = Map(
-    "="  -> Operators.assignment,
-    "+=" -> Operators.assignmentPlus,
-    "-=" -> Operators.assignmentMinus,
-    "*=" -> Operators.assignmentMultiplication
+    "="   -> Operators.assignment,
+    "+="  -> Operators.assignmentPlus,
+    "-="  -> Operators.assignmentMinus,
+    "*="  -> Operators.assignmentMultiplication,
+    "/="  -> Operators.assignmentDivision,
+    "%="  -> Operators.assignmentModulo,
+    "**=" -> Operators.assignmentExponentiation,
+    // Strictly speaking, `a ||= b` means `a || a = b`, but I reckon we wouldn't gain much representing it that way.
+    "||=" -> Operators.assignmentOr,
+    "&&=" -> Operators.assignmentAnd
   )
 }
 
