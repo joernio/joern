@@ -3,7 +3,7 @@ package io.joern.x2cpg.passes.frontend
 import io.joern.x2cpg.{Defines, X2CpgConfig}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, NodeTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, NodeTypes, Operators, PropertyKeys, PropertyNames}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.importresolver.*
@@ -247,8 +247,8 @@ object XTypeRecovery {
   // The below are convenience calls for accessing type properties, one day when this pass uses `Tag` nodes instead of
   // the symbol table then perhaps this would work out better
   implicit class AllNodeTypesFromNodeExt(x: StoredNode) {
-    def allTypes: Iterator[String] = (x.propertyOption[String](PropertyNames.TYPE_FULL_NAME).getOrElse("ANY") +:
-      x.propertyOption[Seq[String]](PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME).getOrElse(Seq.empty)
+    def allTypes: Iterator[String] = (x.propertyOption(PropertyKeys.TypeFullName).getOrElse("ANY") +:
+      x.property(PropertyKeys.DynamicTypeHintFullName)
     ).iterator
 
     def getKnownTypes: Set[String] = {

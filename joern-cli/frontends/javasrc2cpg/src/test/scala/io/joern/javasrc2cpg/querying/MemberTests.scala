@@ -1,7 +1,7 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, ModifierTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, ModifierTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.v2.nodes.{Call, FieldIdentifier, Identifier, Literal, Member}
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.Ignore

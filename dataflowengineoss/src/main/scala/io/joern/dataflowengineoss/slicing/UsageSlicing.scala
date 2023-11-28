@@ -2,7 +2,7 @@ package io.joern.dataflowengineoss.slicing
 
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.v2.{Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.v2.{Operators, PropertyKeys}
 import io.shiftleft.semanticcpg.language.*
 
 import java.util.concurrent.*
@@ -181,8 +181,8 @@ object UsageSlicing {
         .flatMap {
           case _: MethodRef => Option("LAMBDA")
           case x =>
-            x.propertyOption[String](PropertyNames.TYPE_FULL_NAME)
-              .orElse(x.propertyOption[Seq[String]](PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME).flatMap(_.headOption))
+            x.propertyOption(PropertyKeys.TypeFullName)
+              .orElse(x.property(PropertyKeys.DynamicTypeHintFullName).headOption)
               .getOrElse("ANY")
         }
         .collect { case x: String => x }

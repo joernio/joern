@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.dotgenerator
 
 import flatgraph.Accessors
-import io.shiftleft.codepropertygraph.generated.v2.PropertyNames
+import io.shiftleft.codepropertygraph.generated.v2.PropertyKeys
 import io.shiftleft.codepropertygraph.generated.v2.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.utils.MemberAccess
@@ -71,7 +71,7 @@ object DotSerializer {
   }
 
   private def stringRepr(vertex: StoredNode): String = {
-    val lineNoMaybe = vertex.propertyOption[Int](PropertyNames.LINE_NUMBER)
+    val lineNoMaybe = vertex.property(PropertyKeys.LineNumber)
     StringEscapeUtils.escapeHtml(vertex match {
       case call: Call                            => (call.name, limit(call.code)).toString
       case contrl: ControlStructure              => (contrl.label, contrl.controlStructureType, contrl.code).toString
