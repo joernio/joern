@@ -97,7 +97,7 @@ object CodeDumper {
     filename: String,
     startLine: Integer,
     endLine: Integer,
-    lineToHighlight: Option[Integer] = None,
+    lineToHighlight: Option[Int] = None,
     locationFullName: Option[String] = None
   ): String = {
     Try(IOUtils.readLinesInFile(Paths.get(filename))) match {

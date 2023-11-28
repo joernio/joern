@@ -87,11 +87,11 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   protected def code(node: IASTNode): String = shortenCode(nodeSignature(node))
 
-  protected def line(node: IASTNode): Option[Integer] = {
+  protected def line(node: IASTNode): Option[Int] = {
     nullSafeFileLocation(node).map(_.getStartingLineNumber)
   }
 
-  protected def lineEnd(node: IASTNode): Option[Integer] = {
+  protected def lineEnd(node: IASTNode): Option[Int] = {
     nullSafeFileLocationLast(node).map(_.getEndingLineNumber)
   }
 
@@ -108,14 +108,14 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     column
   }
 
-  protected def column(node: IASTNode): Option[Integer] = {
+  protected def column(node: IASTNode): Option[Int] = {
     val loc = nullSafeFileLocation(node)
     loc.map { x =>
       offsetToColumn(node, x.getNodeOffset)
     }
   }
 
-  protected def columnEnd(node: IASTNode): Option[Integer] = {
+  protected def columnEnd(node: IASTNode): Option[Int] = {
     val loc = nullSafeFileLocation(node)
     loc.map { x =>
       offsetToColumn(node, x.getNodeOffset + x.getNodeLength - 1)

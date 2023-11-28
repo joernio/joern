@@ -21,8 +21,8 @@ object Nodes {
     name: String,
     code: String,
     typeFullName: Option[String] = None,
-    line: Option[Integer] = None,
-    column: Option[Integer] = None
+    line: Option[Int] = None,
+    column: Option[Int] = None
   ): NewCall = {
     NewCall()
       .name(name)

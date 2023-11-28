@@ -113,13 +113,13 @@ trait AstCreatorHelper { this: AstCreator =>
     }
   }
 
-  protected def line(node: Value): Option[Integer] = Try(node(ParserKeys.NodeLineNo).num).toOption.map(_.toInt)
+  protected def line(node: Value): Option[Int] = Try(node(ParserKeys.NodeLineNo).num).toOption.map(_.toInt)
 
-  protected def column(node: Value): Option[Integer] = Try(node(ParserKeys.NodeColNo).num).toOption.map(_.toInt)
+  protected def column(node: Value): Option[Int] = Try(node(ParserKeys.NodeColNo).num).toOption.map(_.toInt)
 
-  protected def lineEndNo(node: Value): Option[Integer] = Try(node(ParserKeys.NodeLineEndNo).num).toOption.map(_.toInt)
+  protected def lineEndNo(node: Value): Option[Int] = Try(node(ParserKeys.NodeLineEndNo).num).toOption.map(_.toInt)
 
-  protected def columnEndNo(node: Value): Option[Integer] = Try(node(ParserKeys.NodeColEndNo).num).toOption.map(_.toInt)
+  protected def columnEndNo(node: Value): Option[Int] = Try(node(ParserKeys.NodeColEndNo).num).toOption.map(_.toInt)
 
   protected def positionLookupTables(source: String): Map[Int, String] = {
     source
@@ -256,13 +256,13 @@ trait AstCreatorHelper { this: AstCreator =>
   protected def fixQualifiedName(name: String): String =
     name.stripPrefix(Defines.qualifiedNameSeparator).replace(Defines.qualifiedNameSeparator, ".")
 
-  override protected def line(node: ParserNodeInfo): Option[Integer] = node.lineNumber
+  override protected def line(node: ParserNodeInfo): Option[Int] = node.lineNumber
 
-  override protected def column(node: ParserNodeInfo): Option[Integer] = node.columnNumber
+  override protected def column(node: ParserNodeInfo): Option[Int] = node.columnNumber
 
-  override protected def lineEnd(node: ParserNodeInfo): Option[Integer] = node.lineNumberEnd
+  override protected def lineEnd(node: ParserNodeInfo): Option[Int] = node.lineNumberEnd
 
-  override protected def columnEnd(node: ParserNodeInfo): Option[Integer] = node.columnNumberEnd
+  override protected def columnEnd(node: ParserNodeInfo): Option[Int] = node.columnNumberEnd
 
   override protected def code(node: ParserNodeInfo): String = node.code
 }

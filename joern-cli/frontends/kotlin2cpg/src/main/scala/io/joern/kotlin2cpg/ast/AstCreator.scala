@@ -76,7 +76,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   // TODO: use this everywhere in kotlin2cpg instead of manual .getText calls
   override def code(element: PsiElement): String = shortenCode(element.getText)
 
-  override def line(element: PsiElement): Option[Integer] = {
+  override def line(element: PsiElement): Option[Int] = {
     try {
       Some(
         element.getContainingFile.getViewProvider.getDocument
@@ -87,7 +87,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     }
   }
 
-  override def column(element: PsiElement): Option[Integer] = {
+  override def column(element: PsiElement): Option[Int] = {
     try {
       val lineNumber =
         element.getContainingFile.getViewProvider.getDocument
@@ -100,7 +100,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     }
   }
 
-  override def lineEnd(element: PsiElement): Option[Integer] = {
+  override def lineEnd(element: PsiElement): Option[Int] = {
     val lastElement = element match {
       case namedFn: KtNamedFunction =>
         Option(namedFn.getBodyBlockExpression)
@@ -111,7 +111,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     line(lastElement)
   }
 
-  override def columnEnd(element: PsiElement): Option[Integer] = {
+  override def columnEnd(element: PsiElement): Option[Int] = {
     val lastElement = element match {
       case namedFn: KtNamedFunction =>
         Option(namedFn.getBodyBlockExpression)
