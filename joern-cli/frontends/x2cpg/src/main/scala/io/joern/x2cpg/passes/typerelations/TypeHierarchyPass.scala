@@ -3,7 +3,7 @@ package io.joern.x2cpg.passes.typerelations
 import io.joern.x2cpg.utils.LinkingUtil
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.v2.nodes.TypeDecl
-import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, NodeTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, NodeTypes, PropertyKeys}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
 
@@ -25,7 +25,7 @@ class TypeHierarchyPass(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {
           Seq()
         }
       },
-      dstFullNameKey = PropertyNames.INHERITS_FROM_TYPE_FULL_NAME,
+      dstFullNameKey = PropertyKeys.InheritsFromTypeFullName,
       dstGraph
     )
   }
