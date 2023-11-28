@@ -6,18 +6,7 @@ import scopt.OParser
 
 /** Command line configuration parameters
   */
-final case class Config() extends X2CpgConfig[Config] {
-
-  override def withInputPath(inputPath: String): Config = {
-    this.inputPath = inputPath
-    this
-  }
-
-  override def withOutputPath(x: String): Config = {
-    this.outputPath = x
-    this
-  }
-}
+final case class Config() extends X2CpgConfig[Config]
 
 private object Frontend {
 

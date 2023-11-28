@@ -56,7 +56,7 @@ trait LinkingUtil {
   ): Unit = {
     var loggedDeprecationWarning = false
     val dereference              = Dereference(cpg)
-    (cpg.graph.nodes(srcLabels: _*)).foreach { srcNode =>
+    cpg.graph.nodes(srcLabels: _*).foreach { srcNode =>
       // If the source node does not have any outgoing edges of this type
       // This check is just required for backward compatibility
       if (srcNode.outE(edgeType).isEmpty) {

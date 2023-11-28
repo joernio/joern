@@ -1,13 +1,12 @@
 package io.joern
 
 import io.shiftleft.codepropertygraph.generated.nodes.{Declaration, Expression, Identifier, Literal}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 package object dataflowengineoss {
 
-  def globalFromLiteral(lit: Literal): Traversal[Expression] = lit.start
-    .where(_.inAssignment.method.nameExact("<module>", ":package"))
-    .inAssignment
+  def globalFromLiteral(lit: Literal): Iterator[Expression] = lit.start.inAssignment
+    .where(_.method.isModule)
     .argument(1)
 
   def identifierToFirstUsages(node: Identifier): List[Identifier] = node.refsTo.flatMap(identifiersFromCapturedScopes).l
@@ -16,6 +15,6 @@ package object dataflowengineoss {
     i.capturedByMethodRef.referencedMethod.ast.isIdentifier
       .nameExact(i.name)
       .sortBy(x => (x.lineNumber, x.columnNumber))
-      .toList
+      .l
 
 }

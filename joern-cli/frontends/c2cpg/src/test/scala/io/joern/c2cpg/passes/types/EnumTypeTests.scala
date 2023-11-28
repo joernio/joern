@@ -57,7 +57,7 @@ class EnumTypeTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
         case List(color, c) =>
           color.name shouldBe "color"
           color.code should startWith("typedef enum color")
-          color.aliasTypeFullName shouldBe None
+          color.aliasTypeFullName shouldBe Some("C")
           c.name shouldBe "C"
           c.aliasTypeFullName shouldBe Some("color")
           inside(color.astChildren.isMember.l) { case List(red, yellow, green, blue) =>
@@ -144,6 +144,23 @@ class EnumTypeTests extends CCodeToCpgSuite(fileSuffix = FileDefaults.CPP_EXT) {
         }
         anon.astChildren.isMethod shouldBe empty
       }
+    }
+
+    "be correct for anonymous enum with alias" in {
+      val cpg = code("""
+          |enum
+          |{
+          |    d,
+          |    e,
+          |    f
+          |} testing;""".stripMargin)
+      val List(anon) = cpg.typeDecl.name("testing").l
+      inside(anon.member.l) { case List(d, e, f) =>
+        d.name shouldBe "d"
+        e.name shouldBe "e"
+        f.name shouldBe "f"
+      }
+      anon.aliasTypeFullName shouldBe None
     }
 
     "be correct for enum access" in {

@@ -1,11 +1,10 @@
 package io.shiftleft.semanticcpg.dotgenerator
 
 import io.shiftleft.codepropertygraph.generated.nodes.AstNode
-import overflowdb.traversal._
 
 object DotAstGenerator {
 
-  def dotAst[T <: AstNode](traversal: Traversal[T]): Traversal[String] =
+  def dotAst[T <: AstNode](traversal: Iterator[T]): Iterator[String] =
     traversal.map(dotAst)
 
   def dotAst(astRoot: AstNode): String = {

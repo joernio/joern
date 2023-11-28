@@ -1,149 +1,187 @@
 package io.joern.joerncli
 
 import better.files.File
-import io.circe.generic.auto._
-import io.circe.syntax.EncoderOps
+import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.joerncli.JoernParse.ParserConfig
-import io.joern.joerncli.slicing._
+import io.joern.x2cpg.X2Cpg
+import io.joern.x2cpg.layers.Base
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
-import scala.jdk.CollectionConverters.MapHasAsScala
 import scala.language.postfixOps
 import scala.util.{Try, Using}
 
-/** The kind of mode to use for slicing.
-  */
-object SliceMode extends Enumeration {
-  type SliceModes = Value
-  val DataFlow, Usages = Value
-}
-
 object JoernSlice {
 
-  import io.joern.joerncli.SliceMode._
+  import io.joern.dataflowengineoss.slicing.*
 
-  implicit val sliceModeRead: scopt.Read[SliceModes] =
-    scopt.Read.reads(SliceMode withName)
-
-  case class Config(
-    inputPath: File = File("cpg.bin"),
-    outFile: File = File("slices"),
-    sliceMode: SliceModes = DataFlow,
-    sourceFile: Option[String] = None,
-    sliceDepth: Int = 20,
-    minNumCalls: Int = 1,
-    typeRecoveryDummyTypes: Boolean = false,
-    excludeOperatorCalls: Boolean = false
-  )
+  private val configParser = new scopt.OptionParser[BaseConfig[_]]("joern-slice") {
+    head("Extract various slices from the CPG.")
+    help("help")
+    arg[String]("cpg")
+      .text("input CPG file name, or source code - defaults to `cpg.bin`")
+      .optional()
+      .action((x, c) => c.withInputPath(File(x)))
+      .validate { x =>
+        val path = File(x)
+        if (path.isRegularFile || path.isDirectory) success
+        else failure(s"File at '$x' not found or not regular, e.g. a directory or source file.")
+      }
+    opt[String]('o', "out")
+      .text("the output file to write slices to - defaults to `slices`. The file is suffixed based on the mode.")
+      .action((x, c) => c.withOutputSliceFile(File(x)))
+    opt[Unit]("dummy-types")
+      .text(s"for generating CPGs that use type recovery, enables the use of dummy types - defaults to false.")
+      .action((_, c) => c.withDummyTypesEnabled(true))
+    opt[String]("file-filter")
+      .text(s"the name of the source file to generate slices from.")
+      .action((x, c) => c.withFileFilter(Option(x)))
+    opt[String]("method-name-filter")
+      .text(s"filters in slices that go through specific methods by names. Uses regex.")
+      .action((x, c) => c.withMethodNameFilter(Option(x)))
+    opt[String]("method-parameter-filter")
+      .text(s"filters in slices that go through methods with specific types on the method parameters. Uses regex.")
+      .action((x, c) => c.withMethodParamTypeFilter(Option(x)))
+    opt[String]("method-annotation-filter")
+      .text(s"filters in slices that go through methods with specific annotations on the methods. Uses regex.")
+      .action((x, c) => c.withMethodAnnotationFilter(Option(x)))
+    opt[Int]('p', "parallelism")
+      .text(s"the number of threads the executor pool should be specified with.")
+      .action((x, c) => c.withParallelism(x))
+      .validate(x => if (x <= 0) failure("Parallelism should be greater than 0") else success)
+    cmd("data-flow")
+      .action((_, _) => DataFlowConfig())
+      .children(
+        opt[Int]("slice-depth")
+          .text(s"the max depth to traverse the DDG for the data-flow slice - defaults to 20.")
+          .action((x, c) =>
+            c match {
+              case c: DataFlowConfig => c.copy(sliceDepth = x)
+              case _                 => c
+            }
+          ),
+        opt[String]("sink-filter")
+          .text(s"filters on the sink's `code` property. Uses regex.")
+          .action((x, c) =>
+            c match {
+              case c: DataFlowConfig => c.copy(sinkPatternFilter = Option(x))
+              case _                 => c
+            }
+          ),
+        opt[Unit]("end-at-external-method")
+          .text(s"all slices must end at a call to an external method - defaults to false.")
+          .action((_, c) =>
+            c match {
+              case c: DataFlowConfig => c.copy(mustEndAtExternalMethod = true)
+              case _                 => c
+            }
+          )
+      )
+    cmd("usages")
+      .action((_, _) => UsagesConfig())
+      .children(
+        opt[Int]("min-num-calls")
+          .text(s"the minimum number of calls required for a usage slice - defaults to 1.")
+          .action((x, c) =>
+            c match {
+              case c: UsagesConfig => c.copy(minNumCalls = x)
+              case _               => c
+            }
+          ),
+        opt[Unit]("exclude-operators")
+          .text(s"excludes operator calls in the slices - defaults to false.")
+          .action((_, c) =>
+            c match {
+              case c: UsagesConfig => c.copy(excludeOperatorCalls = true)
+              case _               => c
+            }
+          ),
+        opt[Unit]("exclude-source")
+          .text(s"excludes method source code in the slices - defaults to false.")
+          .action((_, c) =>
+            c match {
+              case c: UsagesConfig => c.copy(excludeMethodSource = true)
+              case _               => c
+            }
+          )
+      )
+  }
 
   def main(args: Array[String]): Unit = {
     parseConfig(args).foreach { config =>
-      val inputCpgPath =
-        if (config.inputPath.isDirectory) generateTempCpg(config)
-        else config.inputPath.pathAsString
-      Using.resource(CpgBasedTool.loadFromOdb(inputCpgPath)) { cpg =>
-        val slice: ProgramSlice = config.sliceMode match {
-          case DataFlow => DataFlowSlicing.calculateDataFlowSlice(cpg, config)
-          case Usages   => UsageSlicing.calculateUsageSlice(cpg, config)
-        }
-        storeSliceInNewCpg(config.outFile, slice)
-      }
-    }
-  }
-
-  private def generateTempCpg(config: Config): String = {
-    val tmpFile = File.newTemporaryFile("joern-slice", ".bin")
-    println(s"Generating CPG from code at ${config.inputPath.pathAsString}")
-    (JoernParse.run(
-      ParserConfig(config.inputPath.pathAsString, outputCpgFile = tmpFile.pathAsString),
-      if (config.typeRecoveryDummyTypes) List.empty else List("--no-dummyTypes")
-    ) match {
-      case Right(_) =>
-        println(s"Temporary CPG has been successfully generated at ${tmpFile.pathAsString}")
-        Right(tmpFile.deleteOnExit(swallowIOExceptions = true).pathAsString)
-      case x => x
-    }) match {
-      case Left(err)   => throw new RuntimeException(err)
-      case Right(path) => path
-    }
-  }
-
-  private def parseConfig(args: Array[String]): Option[Config] =
-    new scopt.OptionParser[Config]("joern-slice") {
-      head("Extract intra-procedural slices from the CPG.")
-      help("help")
-      arg[String]("cpg")
-        .text("input CPG file name - defaults to `cpg.bin`")
-        .optional()
-        .action { (x, c) =>
-          val path = File(x)
-          if (!path.isRegularFile) failure(s"File at '$x' not found or not regular, e.g. a directory.")
-          c.copy(inputPath = path)
-        }
-      opt[String]('o', "out")
-        .text("the output file to write slices to - defaults to `slices`. The file is suffixed based on the mode.")
-        .action((x, c) => c.copy(outFile = File(x)))
-      opt[SliceModes]('m', "mode")
-        .text(s"the kind of slicing to perform - defaults to `DataFlow`. Options: [${SliceMode.values.mkString(", ")}]")
-        .action((x, c) => c.copy(sliceMode = x))
-      opt[String]("source-file")
-        .text("the name of the source file to generate slices from.")
-        .optional()
-        .action((x, c) => c.copy(sourceFile = Some(x)))
-      opt[Int]("slice-depth")
-        .text(s"the max depth to traverse the DDG for the data-flow slice (for `DataFlow` mode) - defaults to 20.")
-        .action((x, c) => c.copy(minNumCalls = x))
-      opt[Int]("min-num-calls")
-        .text(s"the minimum number of calls required for a usage slice (for `Usage` mode) - defaults to 1.")
-        .action((x, c) => c.copy(minNumCalls = x))
-      opt[Boolean]("dummy-types")
-        .text(s"for generating CPGs that use type recovery, enables the use of dummy types - defaults to false.")
-        .action((x, c) => c.copy(typeRecoveryDummyTypes = x))
-      opt[Boolean]("exclude-operators")
-        .text(s"excludes operator calls in the slices - defaults to false.")
-        .action((x, c) => c.copy(excludeOperatorCalls = x))
-
-    }.parse(args, Config())
-
-  private def storeSliceInNewCpg(outFile: File, programSlice: ProgramSlice): Unit = {
-
-    def storeDataFlowSlices(cpg: Cpg, slices: Set[DataFlowSlice]): Unit = {
-      val graph = cpg.graph
-      slices.foreach { slice =>
-        slice.nodes.foreach { node =>
-          val keyValueSequence = node.propertiesMap().asScala.toList.flatMap { case (k, v) => List[Any](k, v) }
-          if (Option(graph.node(node.id())).isEmpty) graph.addNode(node.id(), node.label, keyValueSequence: _*)
-        }
-        slice.nodes.foreach { node =>
-          val outNode = graph.node(node.id())
-          slice.edges.get(node).toList.foreach { edges =>
-            edges.foreach { edge =>
-              val inNode = graph.node(edge.inNode().id())
-              if (!outNode.out(edge.label()).exists(_.id().equals(inNode.id())))
-                Try(outNode.addEdge(edge.label, inNode))
-            }
+      if (config.isInstanceOf[DefaultSliceConfig]) {
+        configParser.reportError("No command specified! Use --help for more information.")
+      } else {
+        val inputCpgPath =
+          if (
+            config.inputPath.isDirectory || !config.inputPath
+              .extension(includeDot = false)
+              .exists(_.matches("(bin|cpg)"))
+          ) {
+            generateTempCpg(config).get
+          } else {
+            config.inputPath.pathAsString
+          }
+        Using.resource(CpgBasedTool.loadFromOdb(inputCpgPath)) { cpg =>
+          checkAndApplyOverlays(cpg)
+          // Slice the CPG
+          (config match {
+            case x: DataFlowConfig => DataFlowSlicing.calculateDataFlowSlice(cpg, x)
+            case x: UsagesConfig   => Option(UsageSlicing.calculateUsageSlice(cpg, x))
+            case _                 => None
+          }) match {
+            case Some(programSlice: ProgramSlice) => saveSlice(config.outputSliceFile, programSlice)
+            case None                             => println("Empty slice, no file generated.")
           }
         }
       }
     }
+  }
+
+  /** Makes sure necessary passes are overlaid
+    */
+  private def checkAndApplyOverlays(cpg: Cpg): Unit = {
+    import io.shiftleft.semanticcpg.language.*
+
+    if (!cpg.metaData.overlays.contains(Base.overlayName)) {
+      println("Default overlays are not detected, applying defaults now")
+      X2Cpg.applyDefaultOverlays(cpg)
+    }
+    if (!cpg.metaData.overlays.contains(OssDataFlow.overlayName)) {
+      println("Data-flow overlay is not detected, applying now")
+      new OssDataFlow(new OssDataFlowOptions()).run(new LayerCreatorContext(cpg))
+    }
+  }
+
+  private def generateTempCpg(config: BaseConfig[_]): Try[String] = {
+    val tmpFile = File.newTemporaryFile("joern-slice", ".bin")
+    println(s"Generating CPG from code at ${config.inputPath.pathAsString}")
+
+    JoernParse
+      .run(
+        ParserConfig(config.inputPath.pathAsString, outputCpgFile = tmpFile.pathAsString),
+        if (config.dummyTypesEnabled) List.empty else List("--no-dummyTypes")
+      )
+      .map { _ =>
+        println(s"Temporary CPG has been successfully generated at ${tmpFile.pathAsString}")
+        tmpFile.deleteOnExit(swallowIOExceptions = true).pathAsString
+      }
+  }
+
+  private def parseConfig(args: Array[String]): Option[BaseConfig[_]] =
+    configParser.parse(args, DefaultSliceConfig())
+
+  private def saveSlice(outFile: File, programSlice: ProgramSlice): Unit = {
 
     def normalizePath(path: String, ext: String): String =
       if (path.endsWith(ext)) path
       else path + ext
 
-    val finalOutputPath = programSlice match {
-      case ProgramDataFlowSlice(dataFlowSlices) =>
-        val sliceCpg = File(normalizePath(outFile.pathAsString, ".cpg")).createFileIfNotExists()
-        Using.resource(Cpg.withStorage(sliceCpg.pathAsString)) { newCpg =>
-          storeDataFlowSlices(newCpg, dataFlowSlices.flatMap(_._2).toSet)
-        }
-        sliceCpg.pathAsString
-      case programUsageSlice: ProgramUsageSlice =>
-        val sliceCpg = File(normalizePath(outFile.pathAsString, ".json")).createFileIfNotExists()
-        sliceCpg.write(programUsageSlice.asJson.spaces2)
-        sliceCpg.pathAsString
-    }
+    val finalOutputPath =
+      File(normalizePath(outFile.pathAsString, ".json"))
+        .createFileIfNotExists()
+        .write(programSlice.toJsonPretty)
+        .pathAsString
     println(s"Slices have been successfully generated and written to $finalOutputPath")
   }
 

@@ -42,7 +42,7 @@ class SynchronizedTests extends JavaSrcCode2CpgFixture {
       publicModifier: Modifier,
       staticModifier: Modifier,
       _: MethodReturn
-    ) = method.astChildren.l
+    ) = method.astChildren.l: @unchecked
     param.code shouldBe "String s"
     body.astChildren.head shouldBe a[Return]
     publicModifier.modifierType shouldBe ModifierTypes.PUBLIC
@@ -54,7 +54,7 @@ class SynchronizedTests extends JavaSrcCode2CpgFixture {
     val List(syncBlock: Block) = method.ast.isBlock.where(_.astChildren.isModifier.modifierType("SYNCHRONIZED")).l
 
     syncBlock.astChildren.size shouldBe 3
-    val List(mod: Modifier, cond: Identifier, body: Block) = syncBlock.astChildren.l
+    val List(mod: Modifier, cond: Identifier, body: Block) = syncBlock.astChildren.l: @unchecked
 
     mod.modifierType shouldBe "SYNCHRONIZED"
     cond.code shouldBe "this"

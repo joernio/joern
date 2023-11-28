@@ -3,7 +3,6 @@ package io.joern.dataflowengineoss
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.joern.dataflowengineoss.language.dotextension.DdgNodeDot
 import io.joern.dataflowengineoss.language.nodemethods.{ExpressionMethods, ExtendedCfgNodeMethods}
-import overflowdb.traversal._
 
 package object language {
 
@@ -14,12 +13,12 @@ package object language {
     new ExpressionMethods(node)
 
   implicit def toExtendedCfgNode[NodeType <: CfgNode](traversal: IterableOnce[NodeType]): ExtendedCfgNode =
-    new ExtendedCfgNode(traversal)
+    new ExtendedCfgNode(traversal.iterator)
 
   implicit def toDdgNodeDot(traversal: IterableOnce[Method]): DdgNodeDot =
-    new DdgNodeDot(traversal)
+    new DdgNodeDot(traversal.iterator)
 
   implicit def toDdgNodeDotSingle(method: Method): DdgNodeDot =
-    new DdgNodeDot(method.start)
+    new DdgNodeDot(Iterator.single(method))
 
 }

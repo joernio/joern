@@ -3,12 +3,11 @@ package io.joern.x2cpg.passes.frontend
 import io.joern.x2cpg.passes.base.MethodStubCreator
 import io.joern.x2cpg.passes.frontend.XTypeRecovery.isDummyType
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, PropertyNames}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.proto.cpg.Cpg.DispatchTypes
-import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.Traversal
+import io.shiftleft.semanticcpg.language.*
 
 import java.util.regex.Pattern
 import scala.collection.mutable
@@ -23,10 +22,10 @@ import scala.collection.mutable
 abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
 
   implicit protected val resolver: NoResolve.type = NoResolve
-  private val fileNamePattern                     = Pattern.compile("^(.*(.py|.js)).*$")
+  private val fileNamePattern                     = Pattern.compile("^(.*(.py|.js|.rb)).*$")
   protected val pathSep: Char                     = '.'
 
-  protected def calls: Traversal[Call] = cpg.call
+  protected def calls: Iterator[Call] = cpg.call
     .nameNot("<operator>.*", "<operators>.*")
     .filter(c => calleeNames(c).nonEmpty && c.callee.isEmpty)
 
@@ -41,7 +40,7 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     val callerAndCallees = calls.map(call => (call, calleeNames(call))).toList
     val methodMap        = mapMethods(callerAndCallees, builder)
     linkCallsToCallees(callerAndCallees, methodMap, builder)
-    linkSpeculativeNamespaceNodes(methodMap.view.values.iterator.collectAll[NewMethod], builder)
+    linkSpeculativeNamespaceNodes(methodMap.view.values.collectAll[NewMethod], builder)
   }
 
   protected def mapMethods(
@@ -167,7 +166,7 @@ abstract class XTypeHintCallLinker(cpg: Cpg) extends CpgPass(cpg) {
       NewNamespaceBlock().name(XTypeHintCallLinker.namespace).fullName(XTypeHintCallLinker.namespace)
 
     builder.addNode(speculativeNamespace)
-    newMethods
+    newMethods.iterator
       .filter(_.astParentFullName == XTypeHintCallLinker.namespace)
       .foreach(m => builder.addEdge(speculativeNamespace, m, EdgeTypes.AST))
   }

@@ -16,6 +16,9 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   Local
 }
 import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.AstNode
+
+import scala.util.Try
 
 class ControlStructureTests extends PhpCode2CpgFixture {
   "switch statements" should {
@@ -1024,6 +1027,12 @@ class ControlStructureTests extends PhpCode2CpgFixture {
     }
   }
 
+  "foreach statements should not create parentless identifiers" in {
+    val cpg = code("""<?php foreach($GLOBALS as $x) {}""")
+
+    cpg.all.collectAll[Identifier].filter(node => Try(node.astParent).isFailure).toList shouldBe Nil
+  }
+
   "foreach statements with only simple values should be represented as a for" in {
     val cpg = code("""<?php
      |function foo($arr) {
@@ -1071,7 +1080,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         currentCall.name shouldBe "current"
         currentCall.methodFullName shouldBe s"Iterator.current"
         currentCall.code shouldBe "$iter_tmp0->current()"
-        inside(currentCall.argument(0) :: Nil) { case List(iterRecv: Identifier) =>
+        inside(currentCall.argument(0).start.l) { case List(iterRecv: Identifier) =>
           iterRecv.name shouldBe "iter_tmp0"
           iterRecv.argumentIndex shouldBe 0
         }
@@ -1089,7 +1098,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       nextCall.name shouldBe "next"
       nextCall.methodFullName shouldBe "Iterator.next"
       nextCall.code shouldBe "$iter_tmp0->next()"
-      inside(nextCall.argument(0) :: Nil) { case List(iterTmp: Identifier) =>
+      inside(nextCall.argument(0).start.l) { case List(iterTmp: Identifier) =>
         iterTmp.name shouldBe "iter_tmp0"
         iterTmp.code shouldBe "$iter_tmp0"
         iterTmp.argumentIndex shouldBe 0
@@ -1143,7 +1152,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
           currentCall.name shouldBe "current"
           currentCall.methodFullName shouldBe s"Iterator.current"
           currentCall.code shouldBe "$iter_tmp0->current()"
-          inside(currentCall.argument(0) :: Nil) { case List(iterRecv: Identifier) =>
+          inside(currentCall.argument(0).start.l) { case List(iterRecv: Identifier) =>
             iterRecv.name shouldBe "iter_tmp0"
             iterRecv.argumentIndex shouldBe 0
           }
@@ -1200,7 +1209,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         currentCall.name shouldBe "current"
         currentCall.methodFullName shouldBe s"Iterator.current"
         currentCall.code shouldBe "$iter_tmp0->current()"
-        inside(currentCall.argument(0) :: Nil) { case List(iterRecv: Identifier) =>
+        inside(currentCall.argument(0).start.l) { case List(iterRecv: Identifier) =>
           iterRecv.name shouldBe "iter_tmp0"
           iterRecv.argumentIndex shouldBe 0
         }

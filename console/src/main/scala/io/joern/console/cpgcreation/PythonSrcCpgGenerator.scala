@@ -1,9 +1,10 @@
 package io.joern.console.cpgcreation
 
 import io.joern.console.FrontendConfig
-import io.joern.pysrc2cpg._
+import io.joern.pysrc2cpg.*
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.passes.base.AstLinkerPass
+import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
 import io.shiftleft.codepropertygraph.Cpg
 
@@ -27,12 +28,15 @@ case class PythonSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends
 
   override def applyPostProcessingPasses(cpg: Cpg): Cpg = {
     new ImportsPass(cpg).createAndApply()
+    new PythonImportResolverPass(cpg).createAndApply()
     new DynamicTypeHintFullNamePass(cpg).createAndApply()
     new PythonInheritanceNamePass(cpg).createAndApply()
-    new PythonTypeRecoveryPass(cpg, XTypeRecoveryConfig(enabledDummyTypes = !pyConfig.forall(_.disableDummyTypes)))
-      .createAndApply()
+    val typeRecoveryConfig = pyConfig match
+      case Some(config) => XTypeRecoveryConfig(config.typePropagationIterations, !config.disableDummyTypes)
+      case None         => XTypeRecoveryConfig()
+    new PythonTypeRecoveryPass(cpg, typeRecoveryConfig).createAndApply()
     new PythonTypeHintCallLinker(cpg).createAndApply()
-    new PythonNaiveCallLinker(cpg).createAndApply()
+    new NaiveCallLinker(cpg).createAndApply()
 
     // Some of passes above create new methods, so, we
     // need to run the ASTLinkerPass one more time

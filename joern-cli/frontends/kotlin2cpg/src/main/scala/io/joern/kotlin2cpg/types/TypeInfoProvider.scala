@@ -1,6 +1,7 @@
 package io.joern.kotlin2cpg.types
 
 import io.shiftleft.passes.KeyPool
+import org.jetbrains.kotlin.descriptors.DescriptorVisibility
 import org.jetbrains.kotlin.psi.{
   KtAnnotationEntry,
   KtBinaryExpression,
@@ -8,6 +9,7 @@ import org.jetbrains.kotlin.psi.{
   KtClassLiteralExpression,
   KtClassOrObject,
   KtDestructuringDeclarationEntry,
+  KtElement,
   KtExpression,
   KtFile,
   KtLambdaArgument,
@@ -23,12 +25,18 @@ import org.jetbrains.kotlin.psi.{
   KtTypeReference
 }
 
-case class AnonymousObjectContext(declaration: KtNamedFunction)
+case class AnonymousObjectContext(declaration: KtElement)
 
 trait TypeInfoProvider {
+  def isExtensionFn(fn: KtNamedFunction): Boolean
+
+  def usedAsExpression(expr: KtExpression): Option[Boolean]
+
   def containingTypeDeclFullName(ktFn: KtNamedFunction, defaultValue: String): String
 
   def isStaticMethodCall(expr: KtQualifiedExpression): Boolean
+
+  def visibility(fn: KtNamedFunction): Option[DescriptorVisibility]
 
   def returnType(elem: KtNamedFunction, defaultValue: String): String
 
@@ -66,8 +74,6 @@ trait TypeInfoProvider {
 
   def bindingKind(expr: KtQualifiedExpression): CallKinds.CallKind
 
-  def isReferencingMember(expr: KtNameReferenceExpression): Boolean
-
   def fullNameWithSignature(expr: KtQualifiedExpression, or: (String, String)): (String, String)
 
   def fullNameWithSignature(call: KtCallExpression, or: (String, String)): (String, String)
@@ -80,9 +86,11 @@ trait TypeInfoProvider {
 
   def fullNameWithSignature(expr: KtNamedFunction, or: (String, String)): (String, String)
 
+  def fullNameWithSignatureAsLambda(expr: KtNamedFunction, lambdaName: String): (String, String)
+
   def fullNameWithSignature(expr: KtClassLiteralExpression, or: (String, String)): (String, String)
 
-  def fullNameWithSignature(expr: KtLambdaExpression, keyPool: KeyPool): (String, String)
+  def fullNameWithSignature(expr: KtLambdaExpression, lambdaName: String): (String, String)
 
   def anySignature(args: Seq[Any]): String
 

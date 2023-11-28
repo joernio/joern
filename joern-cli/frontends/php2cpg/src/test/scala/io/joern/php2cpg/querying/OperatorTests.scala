@@ -5,7 +5,7 @@ import io.joern.php2cpg.parser.Domain.{PhpDomainTypeConstants, PhpOperators}
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal, TypeRef}
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal, Local, TypeRef}
 import io.shiftleft.passes.IntervalKeyPool
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
@@ -610,7 +610,7 @@ class OperatorTests extends PhpCode2CpgFixture {
     inside(cpg.call.name("shell_exec").l) { case List(shellCall) =>
       shellCall.methodFullName shouldBe "shell_exec"
       shellCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
-      shellCall.code shouldBe "`ls -la`"
+      shellCall.code shouldBe "`\"ls -la\"`"
       shellCall.lineNumber shouldBe Some(2)
 
       inside(shellCall.argument.l) { case List(command: Literal) =>

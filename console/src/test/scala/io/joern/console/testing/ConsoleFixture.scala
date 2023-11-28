@@ -4,7 +4,7 @@ import better.files.Dsl.mkdir
 import better.files.File
 import io.joern.console.cpgcreation.{CCpgGenerator, CpgGenerator, CpgGeneratorFactory, ImportCode}
 import io.joern.console.workspacehandling.{Project, ProjectFile, WorkspaceLoader}
-import io.joern.console.{Console, ConsoleConfig, DefaultAmmoniteExecutor, FrontendConfig, InstallConfig}
+import io.joern.console.{Console, ConsoleConfig, FrontendConfig, InstallConfig}
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.utils.ProjectRoot
 
@@ -25,7 +25,7 @@ object ConsoleFixture {
         val console = constructor(workspaceDir.toString)
         fun(console, codeDir)
         Try(console.cpgs.foreach(cpg => cpg.close()))
-        Try(console.workspace.reset())
+        Try(console.workspace.reset)
       }
     }
   }
@@ -36,8 +36,7 @@ object TestWorkspaceLoader extends WorkspaceLoader[Project] {
   override def createProject(projectFile: ProjectFile, path: Path): Project = Project(projectFile, path)
 }
 
-class TestConsole(workspaceDir: String)
-    extends Console[Project](DefaultAmmoniteExecutor, TestWorkspaceLoader, File(workspaceDir)) {
+class TestConsole(workspaceDir: String) extends Console[Project](TestWorkspaceLoader, File(workspaceDir)) {
   override def config =
     new ConsoleConfig(install = new InstallConfig(Map("SHIFTLEFT_OCULAR_INSTALL_DIR" -> workspaceDir)))
 

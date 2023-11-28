@@ -95,16 +95,16 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       secondCtorParam.name shouldBe "x"
       secondCtorParam.typeFullName shouldBe "java.lang.String"
 
-      val List(memberSetCall: Call) = ctor.block.expressionDown.l
+      val List(memberSetCall: Call) = ctor.block.expressionDown.l: @unchecked
       memberSetCall.methodFullName shouldBe Operators.assignment
 
-      val List(memberSetCallLhs: Call, memberSetCallRhs: Identifier) = memberSetCall.argument.l
+      val List(memberSetCallLhs: Call, memberSetCallRhs: Identifier) = memberSetCall.argument.l: @unchecked
       memberSetCallLhs.code shouldBe "this.x"
       memberSetCallLhs.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       memberSetCallRhs.code shouldBe "x"
       memberSetCallRhs.typeFullName shouldBe "java.lang.String"
 
-      val List(_this: Identifier, x: FieldIdentifier) = memberSetCallLhs.argument.l
+      val List(_this: Identifier, x: FieldIdentifier) = memberSetCallLhs.argument.l: @unchecked
       _this.code shouldBe "this"
       _this.typeFullName shouldBe "mypkg.AClass"
       _this.dynamicTypeHintFullName shouldBe Seq("mypkg.AClass")
@@ -131,16 +131,16 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       secondCtorParam.name shouldBe "x"
       secondCtorParam.typeFullName shouldBe "java.lang.String"
 
-      val List(memberSetCall: Call) = ctor.block.expressionDown.l
+      val List(memberSetCall: Call) = ctor.block.expressionDown.l: @unchecked
       memberSetCall.methodFullName shouldBe Operators.assignment
 
-      val List(memberSetCallLhs: Call, memberSetCallRhs: Identifier) = memberSetCall.argument.l
+      val List(memberSetCallLhs: Call, memberSetCallRhs: Identifier) = memberSetCall.argument.l: @unchecked
       memberSetCallLhs.code shouldBe "this.x"
       memberSetCallLhs.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
       memberSetCallRhs.code shouldBe "x"
       memberSetCallRhs.typeFullName shouldBe "java.lang.String"
 
-      val List(_this: Identifier, x: FieldIdentifier) = memberSetCallLhs.argument.l
+      val List(_this: Identifier, x: FieldIdentifier) = memberSetCallLhs.argument.l: @unchecked
       _this.code shouldBe "this"
       _this.typeFullName shouldBe "mypkg.AClass"
       _this.dynamicTypeHintFullName shouldBe Seq("mypkg.AClass")
@@ -158,12 +158,12 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       p.name shouldBe "this"
       p.typeFullName shouldBe "mypkg.AClass"
 
-      val List(returnCall: Call) = componentN.block.expressionDown.isReturn.astChildren.l
+      val List(returnCall: Call) = componentN.block.expressionDown.isReturn.astChildren.l: @unchecked
       returnCall.methodFullName shouldBe Operators.fieldAccess
       returnCall.code shouldBe "this.x"
       returnCall.typeFullName shouldBe "java.lang.String"
 
-      val List(_this: Identifier, x: FieldIdentifier) = returnCall.argument.l
+      val List(_this: Identifier, x: FieldIdentifier) = returnCall.argument.l: @unchecked
       _this.code shouldBe "this"
       _this.typeFullName shouldBe "mypkg.AClass"
       _this.dynamicTypeHintFullName shouldBe Seq("mypkg.AClass")
@@ -376,6 +376,74 @@ class TypeDeclTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     "should contain a TYPE_DECL node for the nested class" in {
       val List(td) = cpg.typeDecl.nameExact("AnotherClass").l
       td.inheritsFromTypeFullName shouldBe List("another.made.up.pkg.SomeClass")
+    }
+  }
+
+  "CPG for code with class with call to fn member initializer" should {
+    val cpg = code("""
+        |package mypkg
+        |fun addB(a: String): String {
+        |    return a + "b"
+        |}
+        |class MyClass(val x: String) {
+        |    var m: String = addB(x)
+        |    fun printM() = println(this.m)
+        |}
+        |""".stripMargin)
+
+    "should contain CALL nodes for the member initializer" in {
+      val List(lhs: Call, rhs: Call) = cpg.call.code("this.*addB.*").argument.l: @unchecked
+      lhs.code shouldBe "this.m"
+      rhs.code shouldBe "addB(x)"
+      rhs.methodFullName shouldBe "mypkg.addB:java.lang.String(java.lang.String)"
+    }
+  }
+
+  "CPG for code with a simple interface" should {
+    val cpg = code("""
+        |package mypkg
+        |interface AnInterface {
+        |    fun doSomething(p: String)
+        |}
+        |""".stripMargin)
+
+    "should contain a TYPE_DECL node with the correct properties set" in {
+      val List(td) = cpg.typeDecl.nameExact("AnInterface").l
+      td.fullName shouldBe "mypkg.AnInterface"
+      td.inheritsFromTypeFullName shouldBe Seq("java.lang.Object")
+    }
+  }
+
+  "CPG for code with a simple functional interface" should {
+    val cpg = code("""
+        |package mypkg
+        |fun interface AFunInterface {
+        |    fun doSomething(p: String)
+        |}
+        |""".stripMargin)
+
+    "should contain a TYPE_DECL node with the correct properties set" in {
+      val List(td) = cpg.typeDecl.nameExact("AFunInterface").l
+      td.fullName shouldBe "mypkg.AFunInterface"
+      td.inheritsFromTypeFullName shouldBe Seq("java.lang.Object")
+    }
+  }
+
+  "CPG for code with secondary ctor calling super" should {
+    val cpg = code("""
+      |package mypkg
+      |open class PClass(val x: Int) {}
+      |class QClass : PClass {
+      |    constructor(x: Int, y: Int) : super(x)
+      |}
+      |""".stripMargin)
+
+    "should contain a METHOD node for the secondary ctor with a call to the primary ctor as the first child of its BLOCK" in {
+      val List(secondaryCtor: Method) =
+        cpg.method.name("<init>").where(_.parameter.nameExact("y")).l
+      val List(firstCallOfSecondaryCtor: Call) =
+        secondaryCtor.block.astChildren.collectAll[Call].take(1).l
+      firstCallOfSecondaryCtor.methodFullName shouldBe "mypkg.QClass.<init>:void()"
     }
   }
 }

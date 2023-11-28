@@ -4,8 +4,10 @@ import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.x2cpg.Defines
 import io.shiftleft.semanticcpg.language._
+import io.joern.javasrc2cpg.Config
 
-class LombokTests extends JavaSrcCode2CpgFixture(delombokMode = "run-delombok") {
+class LombokTests extends JavaSrcCode2CpgFixture {
+  val config = Config().withDelombokMode("run-delombok")
 
   "basic source with lombok annotations" should {
     val cpg = code(
@@ -16,7 +18,7 @@ class LombokTests extends JavaSrcCode2CpgFixture(delombokMode = "run-delombok") 
         |    @Getter private int value = 42;
         |}""".stripMargin,
       fileName = "Foo.java"
-    )
+    ).withConfig(config)
 
     "delombok the source correctly" in {
       cpg.method.name("getValue").l match {
@@ -37,22 +39,22 @@ class LombokTests extends JavaSrcCode2CpgFixture(delombokMode = "run-delombok") 
   "source with lombok annotations should have correct type information" in {
     val cpg = code(
       """
-		|import lombok.extern.java.Log;
-		|import lombok.Getter;
-		|
-		|@Log
-		|public class Foo {
-		|  @Getter
-		|  private String firstName;
-		|
-		|  public Foo() {
-		|    firstName = "WALLY";
-		|  }
-		|}""".stripMargin,
+        |import lombok.extern.java.Log;
+        |import lombok.Getter;
+        |
+        |@Log
+        |public class Foo {
+        |  @Getter
+        |  private String firstName;
+        |
+        |  public Foo() {
+        |    firstName = "WALLY";
+        |  }
+        |}""".stripMargin,
       fileName = "Foo.java"
     ).moreCode(
       """
-	    |public class Bar {
+        |public class Bar {
         |
         |  public void printObject(Object o) {
         |    System.out.println(o.toString());
@@ -65,7 +67,7 @@ class LombokTests extends JavaSrcCode2CpgFixture(delombokMode = "run-delombok") 
         |}
         |""".stripMargin,
       fileName = "Bar.java"
-    )
+    ).withConfig(config)
 
     // Getter type should be resolved since the getter code is included in the delombok source.
     cpg.call.name("getFirstName").head.methodFullName shouldBe "Foo.getFirstName:java.lang.String()"
@@ -74,7 +76,7 @@ class LombokTests extends JavaSrcCode2CpgFixture(delombokMode = "run-delombok") 
   }
 }
 
-class LombokTypesOnlyTests extends JavaSrcCode2CpgFixture(delombokMode = "types-only") {
+class LombokTypesOnlyTests extends JavaSrcCode2CpgFixture {
   "source with some lombok annotations should have correct type information" in {
     val cpg = code(
       """
@@ -106,7 +108,7 @@ class LombokTypesOnlyTests extends JavaSrcCode2CpgFixture(delombokMode = "types-
        |}
        |""".stripMargin,
       fileName = "Bar.java"
-    )
+    ).withConfig(Config().withDelombokMode("types-only"))
 
     // Getter type should be resolved since the getter code is included in the delombok source used for type info.
     cpg.call.name("getFirstName").head.methodFullName shouldBe "Foo.getFirstName:java.lang.String()"
@@ -115,7 +117,7 @@ class LombokTypesOnlyTests extends JavaSrcCode2CpgFixture(delombokMode = "types-
   }
 }
 
-class NoLombokTests extends JavaSrcCode2CpgFixture() {
+class NoLombokTests extends JavaSrcCode2CpgFixture {
   "source with some lombok annotations should have correct type information" in {
     val cpg = code(
       """

@@ -9,17 +9,22 @@ import io.shiftleft.semanticcpg.language._
 class MethodTests extends PhpCode2CpgFixture {
 
   "method nodes should be created with the correct fields" in {
-    val cpg = code("""<?php
+    val cpg = code(
+      """<?php
      |function foo(): int {}
-     |""".stripMargin)
+     |""".stripMargin,
+      fileName = "foo.php"
+    )
 
     inside(cpg.method.name("foo").l) { case List(fooMethod) =>
       fooMethod.fullName shouldBe s"foo"
       fooMethod.signature shouldBe s"${Defines.UnresolvedSignature}(0)"
       fooMethod.lineNumber shouldBe Some(2)
       fooMethod.code shouldBe "function foo()"
+      fooMethod.astParentType shouldBe "METHOD"
+      fooMethod.astParentFullName.endsWith("<global>") shouldBe true
 
-      inside(fooMethod.methodReturn :: Nil) { case List(methodReturn) =>
+      inside(fooMethod.methodReturn.start.l) { case List(methodReturn) =>
         methodReturn.typeFullName shouldBe "int"
         methodReturn.code shouldBe "RET"
         methodReturn.lineNumber shouldBe Some(2)
@@ -52,7 +57,7 @@ class MethodTests extends PhpCode2CpgFixture {
         |}
         |""".stripMargin)
 
-    inside(cpg.method.name("foo").body.astChildren.l) { case List(xLocal: Local, yLocal: Local, xAssign: Call) =>
+    inside(cpg.method.name("foo").body.astChildren.l) { case List(xLocal: Local, xAssign: Call, yLocal: Local) =>
       xLocal.name shouldBe "x"
       xLocal.code shouldBe "static $x"
       xLocal.lineNumber shouldBe Some(3)

@@ -4,9 +4,11 @@ import io.joern.x2cpg.Defines
 import io.joern.x2cpg.passes.base.MethodStubCreator.createMethodStub
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.codepropertygraph.generated.{CpgDiffGraphBuilder, DispatchTypes, EdgeTypes, EvaluationStrategies, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, NodeTypes}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
+import overflowdb.BatchedUpdate
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.mutable
 import scala.util.Try
@@ -22,12 +24,12 @@ class MethodStubCreator(cpg: Cpg) extends CpgPass(cpg) {
   private val methodFullNameToNode   = mutable.LinkedHashMap[String, Method]()
   private val methodToParameterCount = mutable.LinkedHashMap[CallSummary, Int]()
 
-  override def run(dstGraph: DiffGraphBuilder): Unit = {
+  override def run(dstGraph: BatchedUpdate.DiffGraphBuilder): Unit = {
     for (method <- cpg.method) {
       methodFullNameToNode.put(method.fullName, method)
     }
 
-    for (call <- cpg.call if call.methodFullName != Defines.DynamicCallUnknownFallName) {
+    for (call <- cpg.call if call.methodFullName != Defines.DynamicCallUnknownFullName) {
       methodToParameterCount.put(
         CallSummary(call.name, call.signature, call.methodFullName, call.dispatchType),
         call.argument.size
@@ -79,7 +81,7 @@ object MethodStubCreator {
     signature: String,
     dispatchType: String,
     parameterCount: Int,
-    dstGraph: CpgDiffGraphBuilder,
+    dstGraph: DiffGraphBuilder,
     isExternal: Boolean = true,
     astParentType: String = NodeTypes.NAMESPACE_BLOCK,
     astParentFullName: String = "<global>"

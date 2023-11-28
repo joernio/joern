@@ -98,7 +98,7 @@ class ConstructorInvocationTests extends JimpleCode2CpgFixture {
     cpg.typeDecl.name("Bar").method.name("test1").l match {
       case List(method) =>
         val List(_: Local, _: Local, assign: Call, init: Call, _: Call, _: Return) =
-          method.astChildren.isBlock.astChildren.l
+          method.astChildren.isBlock.astChildren.l: @unchecked
 
         assign.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
         assign.name shouldBe Operators.assignment
@@ -119,8 +119,7 @@ class ConstructorInvocationTests extends JimpleCode2CpgFixture {
         init.code shouldBe "$stack1.Bar(4, 2)"
 
         init.argument.size shouldBe 3
-        val List(obj: Identifier, initArg1: Literal, initArg2: Literal) = init.argument.l
-        obj.order shouldBe 0
+        val List(obj: Identifier, initArg1: Literal, initArg2: Literal) = init.argument.l: @unchecked
         obj.argumentIndex shouldBe 0
         obj.name shouldBe "$stack1"
         obj.typeFullName shouldBe "Bar"
@@ -136,7 +135,7 @@ class ConstructorInvocationTests extends JimpleCode2CpgFixture {
     cpg.typeDecl.name("Bar").method.name("test2").l match {
       case List(method) =>
         val List(_: Local, _: Local, assign: Call, init: Call, _: Call, _: Return) =
-          method.astChildren.isBlock.astChildren.l
+          method.astChildren.isBlock.astChildren.l: @unchecked
 
         assign.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
         assign.name shouldBe Operators.assignment
@@ -157,8 +156,7 @@ class ConstructorInvocationTests extends JimpleCode2CpgFixture {
         init.code shouldBe "$stack1.Bar(4, 2)"
 
         init.argument.size shouldBe 3
-        val List(obj: Identifier, initArg1: Literal, initArg2: Literal) = init.argument.l
-        obj.order shouldBe 0
+        val List(obj: Identifier, initArg1: Literal, initArg2: Literal) = init.argument.l: @unchecked
         obj.argumentIndex shouldBe 0
         obj.name shouldBe "$stack1"
         obj.typeFullName shouldBe "Bar"
@@ -175,17 +173,15 @@ class ConstructorInvocationTests extends JimpleCode2CpgFixture {
       case List(method) =>
         val List(allocAssign: Call, init: Call, assign: Call, _: Call, indexAccess: Call) =
           method.call.l
-        val List(arrayAccess: Call, temp: Identifier) = assign.argument.l
+        val List(arrayAccess: Call, temp: Identifier) = assign.argument.l: @unchecked
         temp.name shouldBe "$stack1"
         temp.typeFullName shouldBe "Bar"
-        temp.order shouldBe 2
         temp.argumentIndex shouldBe 2
         temp.code shouldBe "$stack1"
 
         val alloc = allocAssign.argument(2).asInstanceOf[Call]
         alloc.name shouldBe Operators.alloc
         alloc.methodFullName shouldBe Operators.alloc
-        alloc.order shouldBe 2
         alloc.argumentIndex shouldBe 2
         alloc.code shouldBe "new Bar"
         alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
@@ -200,8 +196,7 @@ class ConstructorInvocationTests extends JimpleCode2CpgFixture {
         init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
 
         init.argument.size shouldBe 2
-        val List(receiver: Identifier, initArg1: Literal) = init.argument.l
-        receiver.order shouldBe 0
+        val List(receiver: Identifier, initArg1: Literal) = init.argument.l: @unchecked
         receiver.argumentIndex shouldBe 0
         receiver.name shouldBe "$stack1"
         receiver.typeFullName shouldBe "Bar"
@@ -223,17 +218,15 @@ class ConstructorInvocationTests extends JimpleCode2CpgFixture {
         init.typeFullName shouldBe "void"
         init.signature shouldBe "void(int)"
 
-        val List(temp: Identifier, add: Call) = assignAddition.argument.l
+        val List(temp: Identifier, add: Call) = assignAddition.argument.l: @unchecked
         temp.name shouldBe "$stack3"
-        temp.order shouldBe 1
         temp.argumentIndex shouldBe 1
         temp.typeFullName shouldBe "int"
 
         add.code shouldBe "x + y"
 
-        val List(obj: Identifier, additionResultPointer: Identifier) = init.argument.l
+        val List(obj: Identifier, additionResultPointer: Identifier) = init.argument.l: @unchecked
         obj.name shouldBe "this"
-        obj.order shouldBe 0
         obj.argumentIndex shouldBe 0
         obj.typeFullName shouldBe "Bar"
 

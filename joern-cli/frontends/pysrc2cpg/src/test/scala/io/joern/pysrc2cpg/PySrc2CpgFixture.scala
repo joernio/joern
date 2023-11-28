@@ -5,6 +5,7 @@ import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.passes.base.AstLinkerPass
+import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, LanguageFrontend, TestCpg}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
@@ -35,11 +36,12 @@ class PySrcTestCpg extends TestCpg with PythonFrontend {
   override def applyPasses(): Unit = {
     X2Cpg.applyDefaultOverlays(this)
     new ImportsPass(this).createAndApply()
+    new PythonImportResolverPass(this).createAndApply()
     new PythonInheritanceNamePass(this).createAndApply()
     new DynamicTypeHintFullNamePass(this).createAndApply()
     new PythonTypeRecoveryPass(this).createAndApply()
     new PythonTypeHintCallLinker(this).createAndApply()
-    new PythonNaiveCallLinker(this).createAndApply()
+    new NaiveCallLinker(this).createAndApply()
 
     // Some of passes above create new methods, so, we
     // need to run the ASTLinkerPass one more time

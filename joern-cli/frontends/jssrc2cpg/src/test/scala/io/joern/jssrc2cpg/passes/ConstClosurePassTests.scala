@@ -45,16 +45,16 @@ class ConstClosurePassTests extends DataFlowCodeToCpgSuite {
       val List(foo) = cpg.method.name("foo").l
       foo.name shouldBe "foo"
       foo.fullName.endsWith("program:foo") shouldBe true
-      val Some(fooCall) = cpg.call("foo").headOption
+      val List(fooCall) = cpg.call("foo").l
       fooCall.methodFullName.endsWith("program:foo") shouldBe true
     }
 
     "keep the identifier assigned to the anonymous name if it is reassigned later" in {
-      val List(bar) = cpg.method.name("anonymous1").l
-      bar.name shouldBe "anonymous1"
-      bar.fullName.endsWith("program:anonymous1") shouldBe true
-      val Some(barCall) = cpg.call("bar").headOption
-      barCall.methodFullName.endsWith("program:anonymous1") shouldBe true
+      val List(bar) = cpg.method.name("<lambda>1").l
+      bar.name shouldBe "<lambda>1"
+      bar.fullName.endsWith("program:<lambda>1") shouldBe true
+      val List(barCall) = cpg.call("bar").l
+      barCall.methodFullName.endsWith("program:<lambda>1") shouldBe true
     }
   }
 

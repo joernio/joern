@@ -1,22 +1,26 @@
 package io.joern.c2cpg.astcreation
 
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
-import io.joern.x2cpg.Ast
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
-import org.eclipse.cdt.core.dom.ast._
-import org.eclipse.cdt.core.dom.ast.cpp._
+import org.eclipse.cdt.core.dom.ast.*
+import org.eclipse.cdt.core.dom.ast.cpp.*
 import org.eclipse.cdt.core.dom.ast.gnu.IGNUASTGotoStatement
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTIfStatement
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTIfStatement
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTNamespaceAlias
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
-trait AstForStatementsCreator { this: AstCreator =>
+trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   import io.joern.c2cpg.astcreation.AstCreatorHelper.OptionSafeAst
 
   protected def astForBlockStatement(blockStmt: IASTCompoundStatement, order: Int = -1): Ast = {
-    val node = blockNode(blockStmt, Defines.empty, registerType(Defines.voidTypeName)).order(order).argumentIndex(order)
+    val codeString = code(blockStmt)
+    val blockCode  = if (codeString == "{}" || codeString.isEmpty) Defines.empty else codeString
+    val node = blockNode(blockStmt, blockCode, registerType(Defines.voidTypeName))
+      .order(order)
+      .argumentIndex(order)
     scope.pushNewScope(node)
     var currOrder = 1
     val childAsts = blockStmt.getStatements.flatMap { stmt =>
@@ -52,17 +56,17 @@ trait AstForStatementsCreator { this: AstCreator =>
     }
 
   private def astForReturnStatement(ret: IASTReturnStatement): Ast = {
-    val cpgReturn = returnNode(ret, nodeSignature(ret))
+    val cpgReturn = returnNode(ret, code(ret))
     val expr      = nullSafeAst(ret.getReturnValue)
     Ast(cpgReturn).withChild(expr).withArgEdge(cpgReturn, expr.root)
   }
 
   private def astForBreakStatement(br: IASTBreakStatement): Ast = {
-    Ast(controlStructureNode(br, ControlStructureTypes.BREAK, nodeSignature(br)))
+    Ast(controlStructureNode(br, ControlStructureTypes.BREAK, code(br)))
   }
 
   private def astForContinueStatement(cont: IASTContinueStatement): Ast = {
-    Ast(controlStructureNode(cont, ControlStructureTypes.CONTINUE, nodeSignature(cont)))
+    Ast(controlStructureNode(cont, ControlStructureTypes.CONTINUE, code(cont)))
   }
 
   private def astForGotoStatement(goto: IASTGotoStatement): Ast = {
@@ -88,8 +92,8 @@ trait AstForStatementsCreator { this: AstCreator =>
   }
 
   private def astForDoStatement(doStmt: IASTDoStatement): Ast = {
-    val code         = nodeSignature(doStmt)
-    val doNode       = controlStructureNode(doStmt, ControlStructureTypes.DO, code)
+    val codeString   = code(doStmt)
+    val doNode       = controlStructureNode(doStmt, ControlStructureTypes.DO, codeString)
     val conditionAst = astForConditionExpression(doStmt.getCondition)
     val bodyAst      = nullSafeAst(doStmt.getBody)
     controlStructureAst(doNode, Some(conditionAst), bodyAst, placeConditionLast = true)

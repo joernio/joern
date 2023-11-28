@@ -1,6 +1,7 @@
 package io.joern.x2cpg
 
 import better.files.File
+import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.X2Cpg.{applyDefaultOverlays, withErrorsToConsole}
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
 import io.shiftleft.codepropertygraph.Cpg
@@ -10,16 +11,15 @@ import overflowdb.Config
 import scopt.OParser
 
 import java.io.PrintWriter
-import java.nio.file.Files
-import java.nio.file.Paths
-import scala.util.{Failure, Success, Try}
+import java.nio.file.{Files, Paths}
 import scala.util.matching.Regex
+import scala.util.{Failure, Success, Try}
 
 object X2CpgConfig {
   def defaultOutputPath: String = "cpg.bin"
 }
 
-trait X2CpgConfig[R] {
+trait X2CpgConfig[R <: X2CpgConfig[R]] {
   var inputPath: String  = ""
   var outputPath: String = X2CpgConfig.defaultOutputPath
 
@@ -57,6 +57,30 @@ trait X2CpgConfig[R] {
     if (path.isAbsolute) { path.toString }
     else { Paths.get(inputPath, ignore).toAbsolutePath.normalize().toString }
   }
+
+  var schemaValidation: ValidationMode = ValidationMode.Disabled
+
+  def withSchemaValidation(value: ValidationMode): R = {
+    this.schemaValidation = value
+    this.asInstanceOf[R]
+  }
+
+  var disableFileContent: Boolean = true
+
+  def withDisableFileContent(value: Boolean): R = {
+    this.disableFileContent = value
+    this.asInstanceOf[R]
+  }
+
+  def withInheritedFields(config: R): R = {
+    this.inputPath = config.inputPath
+    this.outputPath = config.outputPath
+    this.defaultIgnoredFilesRegex = config.defaultIgnoredFilesRegex
+    this.ignoredFilesRegex = config.ignoredFilesRegex
+    this.ignoredFiles = config.ignoredFiles
+    this.disableFileContent = config.disableFileContent
+    this.asInstanceOf[R]
+  }
 }
 
 /** Base class for `Main` classes of CPG frontends.
@@ -70,7 +94,7 @@ trait X2CpgConfig[R] {
   * @param frontend
   *   the frontend to use for CPG creation
   */
-abstract class X2CpgMain[T <: X2CpgConfig[T], X <: X2CpgFrontend[_]](cmdLineParser: OParser[Unit, T], frontend: X)(
+abstract class X2CpgMain[T <: X2CpgConfig[T], X <: X2CpgFrontend[_]](val cmdLineParser: OParser[Unit, T], frontend: X)(
   implicit defaultConfig: T
 ) {
 
@@ -185,7 +209,7 @@ object X2Cpg {
     */
   private def commandLineParser[R <: X2CpgConfig[R]](frontendSpecific: OParser[_, R]): OParser[_, R] = {
     val builder = OParser.builder[R]
-    import builder._
+    import builder.*
     OParser.sequence(
       arg[String]("input-dir")
         .text("source directory")
@@ -209,6 +233,18 @@ object X2Cpg {
           c
         }
         .text("a regex specifying files to exclude during CPG generation (paths relative to <input-dir> are matched)"),
+      opt[Unit]("enable-early-schema-checking")
+        .action((_, c) => c.withSchemaValidation(ValidationMode.Enabled))
+        .text("enables early schema validation during AST creation (disabled by default)"),
+      opt[Unit]("enable-file-content")
+        .action((_, c) => c.withDisableFileContent(false))
+        .text(
+          "add the raw source code to the content field of FILE nodes to allow for method source retrieval via offset fields (disabled by default)"
+        ),
+      opt[Unit]("disable-file-content")
+        .action((_, c) => c.withDisableFileContent(true))
+        .hidden()
+        .text("currently unused option that will replace enable-file-content"),
       help("help").text("display this help message"),
       frontendSpecific
     )

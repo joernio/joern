@@ -1,12 +1,12 @@
 package io.joern.dataflowengineoss.passes.reachingdef
 
-import io.joern.dataflowengineoss.{globalFromLiteral, identifierToFirstUsages}
 import io.joern.dataflowengineoss.queryengine.AccessPathUsage.toTrackedBaseAndAccessPathSimple
 import io.joern.dataflowengineoss.semanticsloader.Semantics
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.joern.dataflowengineoss.{globalFromLiteral, identifierToFirstUsages}
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators, PropertyNames}
 import io.shiftleft.semanticcpg.accesspath.MatchResult
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.{Set, mutable}
@@ -112,7 +112,7 @@ class DdgGenerator(semantics: Semantics) {
     def addEdgesToReturn(ret: Return): Unit = {
       // This handles `return new Bar()`, which is lowered to
       // `return {Bar tmp = Bar.alloc(); tmp.init(); tmp}`
-      usageAnalyzer.uses(ret).iterator.collectAll[Block].foreach(block => addEdgeForBlock(block, ret))
+      usageAnalyzer.uses(ret).collectAll[Block].foreach(block => addEdgeForBlock(block, ret))
       usageAnalyzer.usedIncomingDefs(ret).foreach { case (use: CfgNode, inElements) =>
         addEdge(use, ret, use.code)
         inElements
@@ -186,8 +186,15 @@ class DdgGenerator(semantics: Semantics) {
         }
       }
 
+      // NOTE: Below connects REACHING_DEF edges between method boundaries of closures. In the case of PARENT -> CHILD
+      // this brings no inconsistent flows, but from CHILD -> PARENT we have observed inconsistencies. This form of
+      // modelling data-flow is unsound as the engine assumes REACHING_DEF edges are intraprocedural.
+      // See PR #3735 on Joern for details
       val globalIdentifiers =
-        method.ast.isLiteral.flatMap(globalFromLiteral).collectAll[Identifier].l
+        (method._callViaContainsOut ++ method._returnViaContainsOut).ast.isLiteral
+          .flatMap(globalFromLiteral)
+          .collectAll[Identifier]
+          .l
       globalIdentifiers
         .foreach { global =>
           identifierToFirstUsages(global).map { identifier =>
@@ -258,8 +265,9 @@ private class UsageAnalyzer(
 
   val numberToNode: Map[Definition, StoredNode] = problem.flowGraph.asInstanceOf[ReachingDefFlowGraph].numberToNode
 
-  private val allNodes             = in.keys.toList
-  private val containerSet         = Set(Operators.fieldAccess, Operators.indexAccess, Operators.indirectIndexAccess)
+  private val allNodes = in.keys.toList
+  private val containerSet =
+    Set(Operators.fieldAccess, Operators.indexAccess, Operators.indirectIndexAccess, Operators.indirectFieldAccess)
   private val indirectionAccessSet = Set(Operators.addressOf, Operators.indirection)
   val usedIncomingDefs: Map[StoredNode, Map[StoredNode, Set[Definition]]] = initUsedIncomingDefs()
 
@@ -288,7 +296,7 @@ private class UsageAnalyzer(
     inElement match {
       case call: Call if containerSet.contains(call.name) =>
         call.argument.headOption.exists { base =>
-          nodeToString(use).contains(base.code)
+          nodeToString(use) == nodeToString(base)
         }
       case _ => false
     }
@@ -302,11 +310,11 @@ private class UsageAnalyzer(
         inElement match {
           case param: MethodParameterIn =>
             call.argument.headOption.exists { base =>
-              base.code == param.name
+              nodeToString(base).contains(param.name)
             }
           case identifier: Identifier =>
             call.argument.headOption.exists { base =>
-              base.code == identifier.name
+              nodeToString(base).contains(identifier.name)
             }
           case _ => false
         }
@@ -348,13 +356,14 @@ private class UsageAnalyzer(
         call.argumentOption(1).exists(x => nodeToString(use).contains(x.code))
       case call: Call =>
         nodeToString(use).contains(call.code)
-      case identifier: Identifier => nodeToString(use).contains(identifier.code)
+      case identifier: Identifier => nodeToString(use).contains(identifier.name)
       case _                      => false
     }
   }
 
   private def nodeToString(node: StoredNode): Option[String] = {
     node match {
+      case ident: Identifier     => Some(ident.name)
       case exp: Expression       => Some(exp.code)
       case p: MethodParameterIn  => Some(p.name)
       case p: MethodParameterOut => Some(p.name)

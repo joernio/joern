@@ -10,6 +10,77 @@ import java.io.File
 
 class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
 
+  "a call with an unresolved argument with an ANY type" when {
+    "there is only one matching method should be resolved" in {
+      val cpg = code(
+        """
+          |package foo;
+          |
+          |import a.b.Bar;
+          |
+          |public class Foo {
+          |  public static Bar test(String s) {
+          |    return new Bar(s);
+          |  }
+          |
+          |  public void sink(Bar b) {}
+          |}
+          |""".stripMargin,
+        fileName = "Foo.java"
+      ).moreCode("""
+          |import foo.Foo;
+          |
+          |import baz.Baz;
+          |
+          |class Test {
+          |  public static Bar stringCall() {
+          |    sink(Foo.test(Baz.getString()));
+          |  }
+          |}
+          |""".stripMargin)
+
+      cpg.method.name("stringCall").call.name("test").methodFullName.l shouldBe List(
+        "foo.Foo.test:a.b.Bar(java.lang.String)"
+      )
+    }
+
+    "there are multiple matching methods should not be resolved" in {
+      val cpg = code(
+        """
+          |package foo;
+          |
+          |import a.b.Bar;
+          |
+          |public class Foo {
+          |  public static Bar test(String s) {
+          |    return new Bar(s);
+          |  }
+          |
+          |  public static Bar test(Integer i) {
+          |    return new Bar(s);
+          |  }
+          |  public void sink(Bar b) {}
+          |}
+          |""".stripMargin,
+        fileName = "Foo.java"
+      ).moreCode("""
+          |import foo.Foo;
+          |
+          |import baz.Baz;
+          |
+          |class Test {
+          |  public static Bar stringCall() {
+          |    sink(Foo.test(Baz.getString()));
+          |  }
+          |}
+          |""".stripMargin)
+
+      cpg.method.name("stringCall").call.name("test").methodFullName.l shouldBe List(
+        "foo.Foo.test:<unresolvedSignature>(1)"
+      )
+    }
+  }
+
   "methodFullNames for unresolved methods in source" should {
     val cpg = code(
       """
@@ -48,6 +119,47 @@ class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
       val methodFullName = cpg.call.name("getSgClient").head.methodFullName
       methodFullName shouldBe "org.codeminers.thirdparty.ThirdParty.getSgClient:com.sendgrid.SendGrid()"
     }
+  }
+
+  "method names should be inferred correctly based on call argument type information" in {
+    val cpg = code(
+      """
+      |package foo;
+      |
+      |import a.b.Bar;
+      |
+      |public class Foo {
+      |  public static Bar test(String s) {
+      |    return new Bar(s);
+      |  }
+      |
+      |  public static Bar test(Integer i) {
+      |    return new Bar(s);
+      |  }
+      |  public void sink(Bar b) {}
+      |}
+      |""".stripMargin,
+      fileName = "Foo.java"
+    ).moreCode("""
+      |import foo.Foo;
+      |
+      |class Test {
+      |  public static Bar stringCall(String s) {
+      |    sink(Foo.test(s));
+      |  }
+      |
+      |  public static Bar intCall(Integer i) {
+      |    sink(Foo.test(i));
+      |  }
+      |}
+      |""".stripMargin)
+
+    cpg.method.name("stringCall").call.name("test").methodFullName.l shouldBe List(
+      "foo.Foo.test:a.b.Bar(java.lang.String)"
+    )
+    cpg.method.name("intCall").call.name("test").methodFullName.l shouldBe List(
+      "foo.Foo.test:a.b.Bar(java.lang.Integer)"
+    )
   }
 
   "type information for constructor invocations" should {
@@ -243,14 +355,14 @@ class JavaTypeRecoveryPassTests extends JavaSrcCode2CpgFixture(enableTypeRecover
     )
 
     "should be resolved using dummy return values" in {
-      val Some(getResultList) = cpg.call("getResultList").headOption
+      val Some(getResultList) = cpg.call("getResultList").headOption: @unchecked
       // Changes the below from <unresolvedNamespace>.getResultList:<unresolvedSignature>(0) to:
       getResultList.methodFullName shouldBe "org.hibernate.Session.createNamedQuery:<unresolvedSignature>(2).<returnValue>.getResultList:<unresolvedSignature>(0)"
       getResultList.dynamicTypeHintFullName shouldBe Seq()
     }
 
     "hint that `transaction` may be of the null type" in {
-      val Some(transaction) = cpg.identifier("transaction").headOption
+      val Some(transaction) = cpg.identifier("transaction").headOption: @unchecked
       transaction.typeFullName shouldBe "org.hibernate.Transaction"
       transaction.dynamicTypeHintFullName.contains("null")
     }

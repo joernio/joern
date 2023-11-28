@@ -1,6 +1,10 @@
 package io.joern.javasrc2cpg.util
 
 import scala.collection.mutable
+import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
+import io.joern.x2cpg.utils.NodeBuilders.newBindingNode
+import overflowdb.BatchedUpdate.DiffGraphBuilder
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
 
 case class BindingTableEntry(name: String, signature: String, implementingMethodFullName: String)
 
@@ -33,6 +37,18 @@ trait BindingTableAdapter[InputTypeDecl, AstTypeDecl, AstMethodDecl, TypeMap] {
 }
 
 object BindingTable {
+  def createBindingNodes(diffGraph: DiffGraphBuilder, typeDeclNode: NewTypeDecl, bindingTable: BindingTable): Unit = {
+    // We only sort to get stable output.
+    val sortedEntries =
+      bindingTable.getEntries.toBuffer.sortBy((entry: BindingTableEntry) => s"${entry.name}${entry.signature}")
+
+    sortedEntries.foreach { entry =>
+      val bindingNode = newBindingNode(entry.name, entry.signature, entry.implementingMethodFullName)
+
+      diffGraph.addNode(bindingNode)
+      diffGraph.addEdge(typeDeclNode, bindingNode, EdgeTypes.BINDS)
+    }
+  }
 
   def createBindingTable[InputTypeDecl, AstTypeDecl, AstMethodDecl, TypeMap](
     typeDeclFullName: String,
@@ -44,7 +60,13 @@ object BindingTable {
 
     // Take over all binding table entries for parent class/interface binding tables.
     adapter.directParents(typeDecl).filterNot(adapter.typeDeclEquals(_, typeDecl)).foreach { parentTypeDecl =>
-      val parentBindingTable = getBindingTable(parentTypeDecl)
+      val parentBindingTable =
+        try {
+          getBindingTable(parentTypeDecl)
+        } catch {
+          case e: StackOverflowError =>
+            throw new RuntimeException(s"SOE getting binding table for $typeDeclFullName")
+        }
       parentBindingTable.getEntries.foreach { entry =>
         bindingTable.add(entry)
       }

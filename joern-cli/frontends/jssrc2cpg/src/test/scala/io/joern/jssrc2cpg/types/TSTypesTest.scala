@@ -47,13 +47,13 @@ class TSTypesTest extends AbstractPassTest {
     args.name shouldBe "args"
     args.code shouldBe "...args"
     args.isVariadic shouldBe true
-    args.typeFullName shouldBe s"${Defines.Any}[]"
+    args.typeFullName shouldBe Defines.Any
   }
 
   "have return types for arrow functions" in AstFixture("const foo = () => 42;", tsTypes = true) { cpg =>
     val List(foo) = cpg.identifier("foo").l
     foo.typeFullName shouldBe s"() => ${Defines.Number}"
-    val List(ret) = cpg.method("anonymous").methodReturn.l
+    val List(ret) = cpg.method("<lambda>0").methodReturn.l
     ret.typeFullName shouldBe Defines.Number
   }
 
@@ -103,7 +103,7 @@ class TSTypesTest extends AbstractPassTest {
     p2.typeFullName shouldBe Defines.String
     val List(barRet) = cpg.method("bar").methodReturn.l
     barRet.typeFullName shouldBe "Foo"
-    cpg.typ.name.sorted shouldBe (List(
+    cpg.typ.name.sorted.l shouldBe (List(
       ":program",
       io.joern.x2cpg.Defines.ConstructorMethodName,
       "Foo",
@@ -319,9 +319,9 @@ class TSTypesTest extends AbstractPassTest {
       ":program",
       "getApiB",
       "getApiC",
-      "anonymous",
+      "<lambda>0",
       "getFoo",
-      "anonymous",
+      "<lambda>1",
       "CustomResponse",
       "Request",
       "Response",

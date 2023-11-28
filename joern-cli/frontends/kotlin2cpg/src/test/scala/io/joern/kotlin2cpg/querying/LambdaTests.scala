@@ -4,11 +4,19 @@ import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes}
 import io.shiftleft.codepropertygraph.generated.edges.{Capture, Ref}
-import io.shiftleft.codepropertygraph.generated.nodes.{Binding, Block, ClosureBinding, MethodRef, Return}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  Binding,
+  Block,
+  Call,
+  ClosureBinding,
+  Local,
+  MethodRef,
+  Return,
+  TypeDecl
+}
+import io.shiftleft.semanticcpg.language.*
 import overflowdb.traversal.jIteratortoTraversal
-
-import scala.jdk.CollectionConverters.IteratorHasAsScala
+import io.joern.x2cpg.Defines
 
 class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDefaultJars = true) {
   "CPG for code with a simple lambda which captures a method parameter" should {
@@ -30,7 +38,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       cb.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
       cb.closureBindingId should not be None
 
-      cb.outE.asScala.collectAll[Ref].size shouldBe 1
+      cb._refOut.size shouldBe 1
     }
 
     "should contain a CALL node with the signature of the lambda" in {
@@ -67,7 +75,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       cb.evaluationStrategy shouldBe EvaluationStrategies.BY_REFERENCE
       cb.closureBindingId should not be None
 
-      cb.outE.asScala.collectAll[Ref].size shouldBe 1
+      cb._refOut.size shouldBe 1
     }
   }
 
@@ -82,8 +90,8 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
         |""".stripMargin)
 
     "should contain a METHOD node for the lambda the correct props set" in {
-      val List(m) = cpg.method.fullName(".*lambda.*1.*").l
-      m.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:java.lang.Object(java.lang.Object)"
+      val List(m) = cpg.method.fullName(".*lambda.*0.*").l
+      m.fullName shouldBe "mypkg.<f_Test0.kt>.<lambda>0:java.lang.Object(java.lang.Object)"
       m.signature shouldBe "java.lang.Object(java.lang.Object)"
     }
   }
@@ -109,7 +117,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
 
     "should contain a METHOD node for the lambda the correct props set" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:java.lang.Object(java.lang.Object)"
+      m.fullName shouldBe "mypkg.<f_Test0.kt>.<lambda>0:java.lang.Object(java.lang.Object)"
       m.signature shouldBe "java.lang.Object(java.lang.Object)"
       m.lineNumber shouldBe Some(6)
       m.columnNumber shouldBe Some(14)
@@ -124,8 +132,9 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     }
 
     "should contain a METHOD node for the lambda with a corresponding MODIFIER which has the correct props set" in {
-      val List(mod) = cpg.method.fullName(".*lambda.*").modifier.l
-      mod.modifierType shouldBe ModifierTypes.VIRTUAL
+      val List(mod1, mod2) = cpg.method.fullName(".*lambda.*").modifier.l
+      mod1.modifierType shouldBe ModifierTypes.VIRTUAL
+      mod2.modifierType shouldBe ModifierTypes.LAMBDA
     }
 
     "should contain a METHOD_PARAMETER_IN for the lambda with the correct properties set" in {
@@ -157,8 +166,8 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       Option(td.astParent).isDefined shouldBe true
 
       val List(bm) = cpg.typeDecl.fullName(".*lambda.*").boundMethod.l
-      bm.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:java.lang.Object(java.lang.Object)"
-      bm.name shouldBe Constants.lambdaName
+      bm.fullName shouldBe "mypkg.<f_Test0.kt>.<lambda>0:java.lang.Object(java.lang.Object)"
+      bm.name shouldBe s"${Defines.ClosurePrefix}0"
 
       val List(b) = bm.refIn.collect { case r: Binding => r }.l
       b.signature shouldBe "java.lang.Object(java.lang.Object)"
@@ -200,7 +209,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
 
     "should contain a METHOD node for the lambda the correct props set" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:java.lang.Object(java.lang.Object)"
+      m.fullName shouldBe "mypkg.<f_Test0.kt>.<lambda>0:java.lang.Object(java.lang.Object)"
       m.signature shouldBe "java.lang.Object(java.lang.Object)"
     }
 
@@ -215,6 +224,32 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     }
   }
 
+  "CPG for code containing a lambda with parameter destructuring and an `_` entry" should {
+    val cpg = code("""
+      |package mypkg
+      |
+      |fun f1(p: String) {
+      |    val m = mapOf(p to 1, "two" to 2, "three" to 3)
+      |    m.forEach { (k, _) ->
+      |        println(k)
+      |    }
+      |}
+      |""".stripMargin)
+
+    "should contain a METHOD node for the lambda the correct props set" in {
+      val List(m) = cpg.method.fullName(".*lambda.*").l
+      m.fullName shouldBe "mypkg.<f_Test0.kt>.<lambda>0:java.lang.Object(java.lang.Object)"
+      m.signature shouldBe "java.lang.Object(java.lang.Object)"
+    }
+
+    "should contain one METHOD_PARAMETER_IN node for the lambda with the correct properties set" in {
+      val List(p1) = cpg.method.fullName(".*lambda.*").parameter.l
+      p1.code shouldBe "k"
+      p1.index shouldBe 1
+      p1.typeFullName shouldBe "java.lang.String"
+    }
+  }
+
   "CPG for code with a scope function lambda" should {
     val cpg = code("""
         |package mypkg
@@ -226,7 +261,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
 
     "should contain a METHOD node for the lambda the correct props set" in {
       val List(m) = cpg.method.fullName(".*lambda.*").l
-      m.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:java.lang.Object(java.lang.Object)"
+      m.fullName shouldBe "mypkg.<f_Test0.kt>.<lambda>0:java.lang.Object(java.lang.Object)"
       m.signature shouldBe "java.lang.Object(java.lang.Object)"
     }
 
@@ -237,8 +272,9 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     }
 
     "should contain a METHOD node for the lambda with a corresponding MODIFIER which has the correct props set" in {
-      val List(mod) = cpg.method.fullName(".*lambda.*").modifier.l
-      mod.modifierType shouldBe ModifierTypes.VIRTUAL
+      val List(mod1, mod2) = cpg.method.fullName(".*lambda.*").modifier.l
+      mod1.modifierType shouldBe ModifierTypes.VIRTUAL
+      mod2.modifierType shouldBe ModifierTypes.LAMBDA
     }
 
     "should contain a METHOD_PARAMETER_IN for the lambda with the correct properties set" in {
@@ -272,8 +308,8 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       Option(td.astParent).isDefined shouldBe true
 
       val List(bm) = cpg.typeDecl.fullName(".*lambda.*").boundMethod.l
-      bm.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:java.lang.Object(java.lang.Object)"
-      bm.name shouldBe Constants.lambdaName
+      bm.fullName shouldBe "mypkg.<f_Test0.kt>.<lambda>0:java.lang.Object(java.lang.Object)"
+      bm.name shouldBe s"${Defines.ClosurePrefix}0"
 
       val List(b) = bm.refIn.collect { case r: Binding => r }.l
       b.signature shouldBe "java.lang.Object(java.lang.Object)"
@@ -299,8 +335,8 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
         |""".stripMargin)
 
     "should contain a METHOD node for the lambda the correct props set" in {
-      val List(m) = cpg.method.fullName(".*lambda.*1.*").l
-      m.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:java.lang.Object(java.lang.Object)"
+      val List(m) = cpg.method.fullName(".*lambda.*0.*").l
+      m.fullName shouldBe "mypkg.<f_Test0.kt>.<lambda>0:java.lang.Object(java.lang.Object)"
       m.signature shouldBe "java.lang.Object(java.lang.Object)"
       m.lineNumber shouldBe Some(6)
       m.columnNumber shouldBe Some(28)
@@ -315,8 +351,9 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     }
 
     "should contain a METHOD node for the lambda with a corresponding MODIFIER which has the correct props set" in {
-      val List(mod) = cpg.method.fullName(".*lambda.*").modifier.l
-      mod.modifierType shouldBe ModifierTypes.VIRTUAL
+      val List(mod1, mod2) = cpg.method.fullName(".*lambda.*").modifier.l
+      mod1.modifierType shouldBe ModifierTypes.VIRTUAL
+      mod2.modifierType shouldBe ModifierTypes.LAMBDA
     }
 
     "should contain a METHOD_PARAMETER_IN for the lambda with the correct properties set" in {
@@ -339,8 +376,8 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       td.code shouldBe "LAMBDA_TYPE_DECL"
 
       val List(bm) = cpg.typeDecl.fullName(".*lambda.*").boundMethod.l
-      bm.fullName shouldBe "mypkg.<lambda><f_Test0.kt_no1>:java.lang.Object(java.lang.Object)"
-      bm.name shouldBe Constants.lambdaName
+      bm.fullName shouldBe "mypkg.<f_Test0.kt>.<lambda>0:java.lang.Object(java.lang.Object)"
+      bm.name shouldBe s"${Defines.ClosurePrefix}0"
 
       val List(b) = bm.refIn.collect { case r: Binding => r }.l
       b.signature shouldBe "java.lang.Object(java.lang.Object)"
@@ -410,7 +447,7 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
     }
 
     "should contain a METHOD node for the second lambda with the correct props set" in {
-      val List(m) = cpg.method.fullName(".*lambda.*2.*").l
+      val List(m) = cpg.method.fullName(".*lambda.*1.*").l
       m.signature shouldBe "java.lang.Object(java.lang.Object)"
     }
 
@@ -473,11 +510,11 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
         |""".stripMargin)
 
     "should contain a single LOCAL node inside the BLOCK of the first lambda" in {
-      cpg.method.fullName(".*lambda.*1.*").block.astChildren.isLocal.size shouldBe 1
+      cpg.method.fullName(".*lambda.*0.*").block.astChildren.isLocal.size shouldBe 1
     }
 
     "should contain two LOCAL nodes inside the BLOCK of the second lambda" in {
-      cpg.method.fullName(".*lambda.*2.*").block.astChildren.isLocal.size shouldBe 2
+      cpg.method.fullName(".*lambda.*1.*").block.astChildren.isLocal.size shouldBe 2
     }
   }
 
@@ -492,4 +529,42 @@ class LambdaTests extends KotlinCode2CpgFixture(withOssDataflow = false, withDef
       cpg.method.fullName(".*lambda.*").l should not be empty
     }
   }
+
+  "CPG for code with `lazy` lambda call" should {
+    val cpg = code("""
+        |package mypkg
+        |fun f1(p: String) {
+        |    val l1 = lazy { p }
+        |    println(l1.value)
+        |}
+        |""".stripMargin)
+
+    "contain a METHOD node for the lambda with the correct signature" in {
+      val List(m) = cpg.method.fullName(".*lambda.*").l
+      m.signature shouldBe "java.lang.Object()"
+    }
+
+    "contain a BINDING node for the lambda with the correct signature" in {
+      val List(b) = cpg.all.collect { case b: Binding => b }.l
+      b.signature shouldBe "java.lang.Object()"
+    }
+  }
+
+  "CPG for code with non-scope-function single-parameter lambda call" should {
+    val cpg = code("""
+        |package mypkg
+        |fun f1(p: String) {
+        |    val r = Result.success(p)
+        |    r.onSuccess { println(it) }
+        |}
+        |""".stripMargin)
+
+    "contain a METHOD node for the lambda with a PARAMETER with implicit parameter name" in {
+      val List(m) = cpg.method.fullName(".*lambda.*").l
+      m.signature shouldBe "java.lang.Object(java.lang.Object)"
+      val List(p) = m.parameter.l
+      p.name shouldBe "it"
+    }
+  }
+
 }

@@ -62,4 +62,20 @@ class LocalTests extends PhpCode2CpgFixture {
       }
     }
   }
+
+  "nested static locals should be created correctly" in {
+    val cpg = code("""<?php
+          |function foo($y) {
+          |  if ($y) {
+          |    static $x  = 1;
+          |  }
+          |}
+          |""".stripMargin)
+    println(cpg.local.name.l)
+    inside(cpg.local.l) { case List(xLocal) =>
+      xLocal.name shouldBe "x"
+      xLocal.code shouldBe "static $x"
+      xLocal.lineNumber shouldBe Some(4)
+    }
+  }
 }

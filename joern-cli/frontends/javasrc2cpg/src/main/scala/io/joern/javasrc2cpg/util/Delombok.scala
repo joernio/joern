@@ -2,6 +2,7 @@ package io.joern.javasrc2cpg.util
 
 import better.files.File
 import io.joern.x2cpg.utils.ExternalCommand
+import io.joern.javasrc2cpg.util.Delombok.DelombokMode.*
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
@@ -66,6 +67,19 @@ object Delombok {
       case Failure(e) =>
         logger.warn(s"Failed to create temporary directory for delomboked source. Methods and types may be missing", e)
         projectDir
+    }
+  }
+
+  def parseDelombokModeOption(delombokModeStr: Option[String]): DelombokMode = {
+    delombokModeStr.map(_.toLowerCase) match {
+      case None                 => Default
+      case Some("no-delombok")  => NoDelombok
+      case Some("default")      => Default
+      case Some("types-only")   => TypesOnly
+      case Some("run-delombok") => RunDelombok
+      case Some(value) =>
+        logger.warn(s"Found unrecognised delombok mode `$value`. Using default instead.")
+        Default
     }
   }
 }

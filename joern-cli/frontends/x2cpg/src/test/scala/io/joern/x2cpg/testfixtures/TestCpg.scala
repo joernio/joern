@@ -1,11 +1,13 @@
 package io.joern.x2cpg.testfixtures
 
+import io.joern.x2cpg.X2CpgConfig
 import io.shiftleft.codepropertygraph.Cpg
 import overflowdb.Graph
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths}
 import java.util.Comparator
+import scala.annotation.nowarn
 import scala.collection.mutable
 
 // Lazily populated test CPG which is created upon first access to the underlying graph.
@@ -16,7 +18,11 @@ abstract class TestCpg extends Cpg() with LanguageFrontend {
   private val codeFileNamePairs = mutable.ArrayBuffer.empty[(String, Path)]
   private var fileNameCounter   = 0
 
+  @nowarn
   protected def codeFilePreProcessing(codeFile: Path): Unit = {}
+
+  @nowarn
+  protected def codeDirPreProcessing(rootFile: Path, codeFiles: List[Path]): Unit = {}
 
   protected def applyPasses(): Unit
 
@@ -32,6 +38,11 @@ abstract class TestCpg extends Cpg() with LanguageFrontend {
     this
   }
 
+  def withConfig(config: X2CpgConfig[_]): this.type = {
+    setConfig(config)
+    this
+  }
+
   private def checkGraphEmpty(): Unit = {
     if (_graph.isDefined) {
       throw new RuntimeException("Modifying test data is not allowed after accessing graph.")
@@ -40,7 +51,7 @@ abstract class TestCpg extends Cpg() with LanguageFrontend {
 
   private def codeToFileSystem(): Path = {
     val tmpDir = Files.createTempDirectory("x2cpgTestTmpDir")
-    codeFileNamePairs.foreach { case (code, fileName) =>
+    val codeFiles = codeFileNamePairs.map { case (code, fileName) =>
       if (fileName.getParent != null) {
         Files.createDirectories(tmpDir.resolve(fileName.getParent))
       }
@@ -48,7 +59,9 @@ abstract class TestCpg extends Cpg() with LanguageFrontend {
       val codeFile    = tmpDir.resolve(Paths.get(fileName.toString))
       Files.write(codeFile, codeAsBytes)
       codeFilePreProcessing(codeFile)
-    }
+      codeFile
+    }.toList
+    codeDirPreProcessing(tmpDir, codeFiles)
     tmpDir
   }
 

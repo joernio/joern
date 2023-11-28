@@ -1094,4 +1094,14 @@ class ParserTests extends AnyFreeSpec with Matchers {
     testT("match[1] = 0")
     testT("match * 2")
   }
+
+  "non-latin identifier name tests" in {
+    testT("print(Σ_1)")
+    testT("print(ø2)")
+    testT("print(_x)")
+    testT("print(Ǝ1)")
+    testT("print(ƹ0)")
+    testT("print(ש0)")
+    testT("print(ߕ)")
+  }
 }

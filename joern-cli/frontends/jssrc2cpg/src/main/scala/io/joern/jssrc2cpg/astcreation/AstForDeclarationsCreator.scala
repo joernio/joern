@@ -1,20 +1,19 @@
 package io.joern.jssrc2cpg.astcreation
 
 import io.joern.jssrc2cpg.datastructures.{BlockScope, MethodScope, ScopeType}
-import io.joern.jssrc2cpg.parser.BabelAst._
+import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
-import io.joern.x2cpg.Ast
-import io.joern.x2cpg.datastructures.Stack._
-import io.joern.x2cpg.utils.NodeBuilders.{newDependencyNode, newLocalNode}
+import io.joern.x2cpg.{Ast, ValidationMode, AstNodeBuilder}
+import io.joern.x2cpg.datastructures.Stack.*
+import io.joern.x2cpg.utils.NodeBuilders.{newDependencyNode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewImport}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes}
-import io.shiftleft.semanticcpg.language._
 import ujson.Value
 
 import scala.util.Try
 
-trait AstForDeclarationsCreator { this: AstCreator =>
+trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   private val DefaultsKey    = "default"
   private val ExportKeyword  = "exports"
@@ -38,9 +37,13 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       case FunctionDeclaration if hasName(obj.json) => Seq(obj.json("id")("name").str)
       case FunctionExpression if hasName(obj.json)  => Seq(obj.json("id")("name").str)
       case ClassExpression if hasName(obj.json)     => Seq(obj.json("id")("name").str)
-      case VariableDeclarator if hasName(obj.json)  => Seq(obj.json("id")("name").str)
-      case VariableDeclarator                       => Seq(code(obj.json("id")))
-      case MemberExpression                         => Seq(code(obj.json("property")))
+      case VariableDeclarator if hasName(obj.json) =>
+        createBabelNodeInfo(obj.json("id")).node match {
+          case ArrayPattern => obj.json("id")("elements").arr.toSeq.map(createBabelNodeInfo).map(_.code)
+          case _            => Seq(obj.json("id")("name").str)
+        }
+      case VariableDeclarator => Seq(code(obj.json("id")))
+      case MemberExpression   => Seq(code(obj.json("property")))
       case ObjectExpression =>
         obj.json("properties").arr.toSeq.flatMap(d => codeForBabelNodeInfo(createBabelNodeInfo(d)))
       case VariableDeclaration =>
@@ -129,10 +132,10 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     } else {
       val strippedCode = cleanImportName(fromName).stripPrefix("_")
       val id           = identifierNode(declaration, s"_$strippedCode")
-      val localNode    = newLocalNode(id.code, Defines.Any).order(0)
-      scope.addVariable(id.code, localNode, BlockScope)
+      val nLocalNode   = localNode(declaration, id.code, id.code, Defines.Any).order(0)
+      scope.addVariable(id.code, nLocalNode, BlockScope)
       scope.addVariableReference(id.code, id)
-      diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
+      diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
 
       val sourceCallArgNode = literalNode(declaration, s"\"${fromName.stripPrefix("_")}\"", None)
       val sourceCall =
@@ -337,9 +340,9 @@ trait AstForDeclarationsCreator { this: AstCreator =>
       case Identifier => idNodeInfo.json("name").str
       case _          => idNodeInfo.code
     }
-    val localNode = newLocalNode(idName, typeFullName).order(0)
-    scope.addVariable(idName, localNode, scopeType)
-    diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
+    val nLocalNode = localNode(declNodeInfo, idName, idName, typeFullName).order(0)
+    scope.addVariable(idName, nLocalNode, scopeType)
+    diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
 
     if (initNodeInfo.isEmpty) {
       Ast()
@@ -404,12 +407,12 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     isImportN: Boolean,
     nodeInfo: BabelNodeInfo
   ): Ast = {
-    val destName  = alias.getOrElse(name)
-    val destNode  = identifierNode(nodeInfo, destName)
-    val localNode = newLocalNode(destName, Defines.Any).order(0)
-    scope.addVariable(destName, localNode, BlockScope)
+    val destName   = alias.getOrElse(name)
+    val destNode   = identifierNode(nodeInfo, destName)
+    val nLocalNode = localNode(nodeInfo, destName, destName, Defines.Any).order(0)
+    scope.addVariable(destName, nLocalNode, BlockScope)
     scope.addVariableReference(destName, destNode)
-    diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
+    diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
 
     val destAst           = Ast(destNode)
     val sourceCallArgNode = literalNode(nodeInfo, s"\"$from\"", None)
@@ -495,7 +498,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     }
   }
 
-  def createImportNodeAndAttachToCall(
+  private def createImportNodeAndAttachToCall(
     impDecl: BabelNodeInfo,
     importedEntity: String,
     importedAs: String,
@@ -504,7 +507,7 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     createImportNodeAndAttachToCall(impDecl.code.stripSuffix(";"), importedEntity, importedAs, call)
   }
 
-  def createImportNodeAndAttachToCall(
+  private def createImportNodeAndAttachToCall(
     code: String,
     importedEntity: String,
     importedAs: String,
@@ -523,9 +526,9 @@ trait AstForDeclarationsCreator { this: AstCreator =>
   private def convertDestructingObjectElement(element: BabelNodeInfo, key: BabelNodeInfo, localTmpName: String): Ast = {
     val valueAst = astForNode(element.json)
 
-    val localNode = newLocalNode(element.code, Defines.Any).order(0)
-    diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
-    scope.addVariable(element.code, localNode, MethodScope)
+    val nLocalNode = localNode(element, element.code, element.code, Defines.Any).order(0)
+    diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
+    scope.addVariable(element.code, nLocalNode, MethodScope)
 
     val fieldAccessTmpNode = identifierNode(element, localTmpName)
     val keyNode            = createFieldIdentifierNode(key.code, key.lineNumber, key.columnNumber)
@@ -542,9 +545,9 @@ trait AstForDeclarationsCreator { this: AstCreator =>
   private def convertDestructingArrayElement(element: BabelNodeInfo, index: Int, localTmpName: String): Ast = {
     val valueAst = astForNode(element.json)
 
-    val localNode = newLocalNode(element.code, Defines.Any).order(0)
-    diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
-    scope.addVariable(element.code, localNode, MethodScope)
+    val nLocalNode = localNode(element, element.code, element.code, Defines.Any).order(0)
+    diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
+    scope.addVariable(element.code, nLocalNode, MethodScope)
 
     val fieldAccessTmpNode = identifierNode(element, localTmpName)
     val keyNode            = literalNode(element, index.toString, Option(Defines.Number))
@@ -669,10 +672,10 @@ trait AstForDeclarationsCreator { this: AstCreator =>
     scope.pushNewBlockScope(blockNode)
     localAstParentStack.push(blockNode)
 
-    val localNode = newLocalNode(localTmpName, Defines.Any).order(0)
-    val tmpNode   = identifierNode(pattern, localTmpName)
-    diffGraph.addEdge(localAstParentStack.head, localNode, EdgeTypes.AST)
-    scope.addVariable(localTmpName, localNode, BlockScope)
+    val nLocalNode = localNode(pattern, localTmpName, localTmpName, Defines.Any).order(0)
+    val tmpNode    = identifierNode(pattern, localTmpName)
+    diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
+    scope.addVariable(localTmpName, nLocalNode, BlockScope)
     scope.addVariableReference(localTmpName, tmpNode)
 
     val rhsAssignmentAst = paramName.map(createParamAst(pattern, _, sourceAst)).getOrElse(sourceAst)

@@ -317,14 +317,14 @@ class TsDecoratorAstCreationPassTest extends AbstractPassTest {
     "create methods for const exports" in TsAstFixture(
       "export const getApiA = (req: Request) => { const user = req.user as UserDocument; }"
     ) { cpg =>
-      cpg.method.name.sorted shouldBe List(":program", "anonymous")
+      cpg.method.name.sorted.l shouldBe List(":program", "<lambda>0")
       cpg.assignment.code.l shouldBe List(
         "const user = req.user as UserDocument",
         "const getApiA = (req: Request) => { const user = req.user as UserDocument; }",
         "exports.getApiA = getApiA"
       )
-      inside(cpg.method.name("anonymous").l) { case List(anon) =>
-        anon.fullName shouldBe "code.ts::program:anonymous"
+      inside(cpg.method.name("<lambda>0").l) { case List(anon) =>
+        anon.fullName shouldBe "code.ts::program:<lambda>0"
         anon.ast.isIdentifier.name.l shouldBe List("user", "req")
       }
     }
@@ -474,7 +474,7 @@ class TsDecoratorAstCreationPassTest extends AbstractPassTest {
         |interface A {};
         |interface B {};
         |""".stripMargin) { cpg =>
-      cpg.method.fullName.sorted shouldBe List(
+      cpg.method.fullName.sorted.l shouldBe List(
         "code.ts::program",
         s"code.ts::program:A:${io.joern.x2cpg.Defines.ConstructorMethodName}",
         s"code.ts::program:B:${io.joern.x2cpg.Defines.ConstructorMethodName}"
@@ -505,8 +505,8 @@ class TsDecoratorAstCreationPassTest extends AbstractPassTest {
           propName.code shouldBe "[propName: string]: any;"
           foo.name shouldBe "foo"
           foo.code shouldBe "\"foo\": string;"
-          anon.name shouldBe "anonymous"
-          anon.dynamicTypeHintFullName shouldBe Seq("code.ts::program:Greeter:anonymous")
+          anon.name shouldBe "<lambda>0"
+          anon.dynamicTypeHintFullName shouldBe Seq("code.ts::program:Greeter:<lambda>0")
           anon.code shouldBe "(source: string, subString: string): boolean;"
         }
         inside(cpg.typeDecl("Greeter").method.l) { case List(constructor, anon) =>
@@ -514,8 +514,8 @@ class TsDecoratorAstCreationPassTest extends AbstractPassTest {
           constructor.fullName shouldBe s"code.ts::program:Greeter:${io.joern.x2cpg.Defines.ConstructorMethodName}"
           constructor.code shouldBe "new: Greeter"
           greeter.method.isConstructor.head shouldBe constructor
-          anon.name shouldBe "anonymous"
-          anon.fullName shouldBe "code.ts::program:Greeter:anonymous"
+          anon.name shouldBe "<lambda>0"
+          anon.fullName shouldBe "code.ts::program:Greeter:<lambda>0"
           anon.code shouldBe "(source: string, subString: string): boolean;"
           anon.parameter.name.l shouldBe List("this", "source", "subString")
           anon.parameter.code.l shouldBe List("this", "source: string", "subString: string")

@@ -8,10 +8,34 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Id
 import io.shiftleft.semanticcpg.language.NoResolve
 import io.shiftleft.semanticcpg.language._
 import overflowdb.traversal.jIteratortoTraversal
-
-import scala.jdk.CollectionConverters.IteratorHasAsScala
+import overflowdb.traversal.toNodeTraversal
 
 class NewCallTests extends JavaSrcCode2CpgFixture {
+
+  "calls to imported nested classes should be resolved" in {
+    lazy val cpg = code("""
+      |import foo.Foo.Bar;
+      |
+      |class Test {
+      |  void test() {
+      |    Bar.bar();
+      |  }
+      |}""".stripMargin)
+      .moreCode(
+        """
+      |package foo;
+      |
+      |public class Foo {
+      |  public class Bar {
+      |    void bar() {}
+      |  }
+      |}
+      |""".stripMargin,
+        fileName = "Foo.java"
+      )
+
+    cpg.call.name("bar").methodFullName.l shouldBe List("foo.Foo$Bar.bar:void()")
+  }
 
   "constructor init method call" should {
     lazy val cpg = code("""
@@ -33,6 +57,45 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
     "contain a call to `<init>` with one of the arguments containing a REF edge to the newly-defined local" in {
       cpg.call.nameExact("<init>").argument(0).isIdentifier.outE.collectAll[Ref].l should not be List()
     }
+  }
+
+  "calls to methods with varargs should be resolved correctly" in {
+    val cpg = code("""
+        |class Test {
+        |  void foo(String... inputs) {
+        |    System.out.println(inputs.length);
+        |  }
+        |
+        |  void test() {
+        |    foo("a", "b");
+        |  }
+        |}
+      |""".stripMargin)
+
+    cpg.call.name("foo").methodFullName.toList shouldBe List("Test.foo:void(java.lang.String[])")
+  }
+
+  "calls to static methods in other files with varargs should be resolved correctly" in {
+    val cpg = code("""
+        |class Test {
+        |
+        |  void test(String[] inputs) {
+        |    Foo.foo("a", "b");
+        |  }
+        |}
+        |""".stripMargin)
+      .moreCode(
+        """
+        |class Foo {
+        |  static void foo(String... inputs) {
+        |    System.out.println(inputs.length);
+        |  }
+        |}
+        |""".stripMargin,
+        fileName = "Foo.java"
+      )
+
+    cpg.call.name("foo").methodFullName.toList shouldBe List("Foo.foo:void(java.lang.String[])")
   }
 
   "calls to static methods in different files should be resolved correctly" in {
@@ -100,7 +163,7 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
         .argument(0)
         .l match {
         case List(thisNode: Identifier) =>
-          thisNode.outE.asScala.collectAll[Ref].map(_.inNode).l match {
+          thisNode._refOut.l match {
             case List(paramNode: MethodParameterIn) =>
               paramNode.name shouldBe "this"
               paramNode.method.fullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"
@@ -331,6 +394,35 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
       superReceiver.columnNumber shouldBe Some(12)
     }
   }
+
+  "call to method in derived class using external package" should {
+    lazy val cpg = code("""
+        |import org.hibernate.Query;
+        |import org.hibernate.Session;
+        |import org.hibernate.SessionFactory;
+        |
+        |class Base {
+        |  Session getCurrentSession() {
+        |		return this.sessionFactory.getCurrentSession();
+        |	}
+        |}
+        |
+        |class Derived extends Base{
+        | void foo() {
+        |		Query q = getCurrentSession().createQuery("FROM User");
+        |		return;
+        |	}
+        |}
+        |""".stripMargin)
+
+    "have correct methodFullName" in {
+      cpg.call.nameExact("createQuery").methodFullName.head.split(":").head shouldBe "org.hibernate.Session.createQuery"
+      cpg.call
+        .nameExact("getCurrentSession")
+        .methodFullName
+        .last shouldBe "Derived.getCurrentSession:org.hibernate.Session()"
+    }
+  }
 }
 
 class CallTests extends JavaSrcCode2CpgFixture {
@@ -455,7 +547,7 @@ class CallTests extends JavaSrcCode2CpgFixture {
     call.signature shouldBe "java.lang.String(java.lang.String)"
     call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
-    val List(objName: Identifier, argument: Literal) = call.astChildren.l
+    val List(objName: Identifier, argument: Literal) = call.astChildren.l: @unchecked
 
     objName.order shouldBe 1
     objName.argumentIndex shouldBe 0
@@ -476,7 +568,7 @@ class CallTests extends JavaSrcCode2CpgFixture {
     call.signature shouldBe "java.lang.String(test.MyObject)"
     call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
-    val List(identifier: Identifier, argument: Call) = call.argument.l
+    val List(identifier: Identifier, argument: Call) = call.argument.l: @unchecked
     identifier.order shouldBe 1
     identifier.argumentIndex shouldBe 0
     identifier.code shouldBe "this"
@@ -485,7 +577,7 @@ class CallTests extends JavaSrcCode2CpgFixture {
     argument.name shouldBe Operators.fieldAccess
     argument.typeFullName shouldBe "test.MyObject"
 
-    val List(ident: Identifier, fieldIdent: FieldIdentifier) = argument.argument.l
+    val List(ident: Identifier, fieldIdent: FieldIdentifier) = argument.argument.l: @unchecked
     ident.name shouldBe "this"
     fieldIdent.canonicalName shouldBe "obj"
   }
@@ -499,7 +591,7 @@ class CallTests extends JavaSrcCode2CpgFixture {
     call.signature shouldBe "java.lang.String(test.MyObject)"
     call.dispatchType shouldBe DispatchTypes.DYNAMIC_DISPATCH
 
-    val List(objName: Identifier, argument: Call) = call.astChildren.l
+    val List(objName: Identifier, argument: Call) = call.astChildren.l: @unchecked
 
     objName.order shouldBe 1
     objName.argumentIndex shouldBe 0
@@ -512,7 +604,7 @@ class CallTests extends JavaSrcCode2CpgFixture {
     argument.order shouldBe 2
     argument.argumentIndex shouldBe 1
 
-    val List(ident: Identifier, fieldIdent: FieldIdentifier) = argument.argument.l
+    val List(ident: Identifier, fieldIdent: FieldIdentifier) = argument.argument.l: @unchecked
     ident.name shouldBe "this"
     fieldIdent.canonicalName shouldBe "obj"
   }

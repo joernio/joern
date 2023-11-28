@@ -62,6 +62,7 @@ class BindingTests extends JavaSrcCode2CpgFixture {
     }
 
     "have three bindings for OtherConsumer" in {
+
       val typeDecl = cpg.typeDecl(".*OtherConsumer.*").head
       val methodBinding = typeDecl.methodBinding
         .name("accept")

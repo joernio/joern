@@ -1,15 +1,13 @@
 package io.joern.jimple2cpg.testfixtures
 
-import io.joern.dataflowengineoss.language.Path
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
 import io.joern.x2cpg.testfixtures.Code2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
-import overflowdb.traversal.Traversal
 
 class JimpleDataflowTestCpg(val extraFlows: List[FlowSemantic] = List.empty) extends JimpleTestCpg {
 
@@ -32,7 +30,7 @@ class JimpleDataFlowCodeToCpgSuite(val extraFlows: List[FlowSemantic] = List.emp
 
   def getConstSourceSink(methodName: String, sourceCode: String = "\"MALICIOUS\"", sinkPattern: String = ".*println.*")(
     implicit cpg: Cpg
-  ): (Traversal[Literal], Traversal[Expression]) = {
+  ): (Iterator[Literal], Iterator[Expression]) = {
     getMultiFnSourceSink(methodName, methodName, sourceCode, sinkPattern)
   }
 
@@ -41,7 +39,7 @@ class JimpleDataFlowCodeToCpgSuite(val extraFlows: List[FlowSemantic] = List.emp
     sinkMethodName: String,
     sourceCode: String = "\"MALICIOUS\"",
     sinkPattern: String = ".*println.*"
-  )(implicit cpg: Cpg): (Traversal[Literal], Traversal[Expression]) = {
+  )(implicit cpg: Cpg): (Iterator[Literal], Iterator[Expression]) = {
     val sourceMethod = cpg.method(s".*$sourceMethodName").head
     val sinkMethod   = cpg.method(s".*$sinkMethodName").head
 

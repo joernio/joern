@@ -9,8 +9,8 @@ import com.github.javaparser.resolution.declarations.{
 }
 import com.github.javaparser.resolution.types._
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
-import com.github.javaparser.symbolsolver.logic.InferenceVariableType
-import com.github.javaparser.symbolsolver.model.typesystem.{LazyType, NullType}
+import com.github.javaparser.resolution.logic.InferenceVariableType
+import com.github.javaparser.resolution.model.typesystem.{LazyType, NullType}
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.{TypeConstants, TypeNameConstants}
 import io.joern.x2cpg.datastructures.Global
 import org.slf4j.LoggerFactory
@@ -70,7 +70,7 @@ class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
       case refType: ResolvedReferenceType =>
         nameOrFullName(refType.getTypeDeclaration.get, fullyQualified)
       case lazyType: LazyType =>
-        lazyType match {
+        Try(lazyType match {
           case _ if lazyType.isReferenceType =>
             nameOrFullName(lazyType.asReferenceType(), typeParamValues, fullyQualified)
           case _ if lazyType.isTypeVariable =>
@@ -81,7 +81,7 @@ class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
             nameOrFullName(lazyType.asPrimitive(), typeParamValues, fullyQualified)
           case _ if lazyType.isWildcard =>
             nameOrFullName(lazyType.asWildcard(), typeParamValues, fullyQualified)
-        }
+        }).toOption.flatten
       case tpe @ (_: ResolvedVoidType | _: ResolvedPrimitiveType) =>
         Some(tpe.describe())
       case arrayType: ResolvedArrayType =>

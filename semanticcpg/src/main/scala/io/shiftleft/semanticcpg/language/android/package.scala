@@ -13,18 +13,18 @@ package object android {
     new LocalTraversal(Iterator.single(a))
 
   implicit def iterOnceToLocalExt[A <: Local](a: IterableOnce[A]): LocalTraversal =
-    new LocalTraversal(iterableToTraversal(a))
+    new LocalTraversal(a.iterator)
 
   implicit def singleToConfigFileExt[A <: ConfigFile](a: A): ConfigFileTraversal =
     new ConfigFileTraversal(Iterator.single(a))
 
   implicit def iterOnceToConfigFileExt[A <: ConfigFile](a: IterableOnce[A]): ConfigFileTraversal =
-    new ConfigFileTraversal(iterableToTraversal(a))
+    new ConfigFileTraversal(a.iterator)
 
   implicit def singleToMethodExt[A <: Method](a: A): MethodTraversal =
     new MethodTraversal(Iterator.single(a))
 
   implicit def iterOnceToMethodExt[A <: Method](a: IterableOnce[A]): MethodTraversal =
-    new MethodTraversal(iterableToTraversal(a))
+    new MethodTraversal(a.iterator)
 
 }

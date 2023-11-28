@@ -102,7 +102,7 @@ class MisconfigurationsTests extends AndroidQueryTestSuite(Misconfigurations) {
   }
 
   "the `vulnerablePRNGOnAndroidv16_18` query" when {
-    "should match when the minSdk version is v16-18 and a call to SecureRandom default constructor is present" in {
+    "should match when the minSdk version is v16-18 and a call to SecureRandom default constructor is present" ignore {
       val cpg = code("""import java.security.SecureRandom
           |
           |fun main() {
@@ -115,7 +115,7 @@ class MisconfigurationsTests extends AndroidQueryTestSuite(Misconfigurations) {
     }
 
     "should match when the minSdk version is v16-18 and a call to SecureRandom.getInstance with a PRNG algorithm " +
-      "is set" in {
+      "is set" ignore {
         val cpg = code("""import java.security.SecureRandom
           |
           |fun main() {

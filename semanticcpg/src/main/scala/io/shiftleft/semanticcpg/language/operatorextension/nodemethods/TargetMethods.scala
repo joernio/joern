@@ -12,7 +12,6 @@ class TargetMethods(val expr: Expression) extends AnyVal {
       .cast[OpNodes.ArrayAccess]
       .collectFirst { case x if allArrayAccessTypes.contains(x.name) => x }
 
-
   def pointer: Option[Expression] =
     Option(expr).collect {
       case call: Call if call.name == Operators.indirection => call.argument(1)

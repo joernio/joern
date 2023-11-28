@@ -1,6 +1,6 @@
 package io.joern.x2cpg.testfixtures
 
-import org.scalatest.{BeforeAndAfterAll, Inside}
+import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Inside}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -17,6 +17,7 @@ class Code2CpgFixture[T <: TestCpg](testCpgFactory: () => T)
     extends AnyWordSpec
     with Matchers
     with BeforeAndAfterAll
+    with BeforeAndAfterEach
     with Inside {
   private val cpgs = mutable.ArrayBuffer.empty[TestCpg]
 

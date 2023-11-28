@@ -3,7 +3,6 @@ package io.joern.kotlin2cpg.querying
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
 import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.iterableToTraversal
 
 class LocalClassesTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
@@ -27,7 +26,7 @@ class LocalClassesTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       val List(td: TypeDecl) = cpg.typeDecl.nameExact("AClass").l
       td.fullName shouldBe "mypkg.main.AClass"
       td.method.filterNot { m => m.fullName.startsWith("mypkg.main.AClass") }.fullName.l shouldBe List()
-      td.inheritsFromTypeFullName shouldBe List("java.lang.Object")
+      td.inheritsFromTypeFullName.l shouldBe List("java.lang.Object")
     }
   }
 
@@ -60,7 +59,7 @@ class LocalClassesTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
         .filterNot { m => m.fullName.startsWith("mypkg.f1.AClass.doSomething.BClass") }
         .fullName
         .l shouldBe List()
-      td.inheritsFromTypeFullName shouldBe List("java.lang.Object")
+      td.inheritsFromTypeFullName.l shouldBe List("java.lang.Object")
     }
   }
 }

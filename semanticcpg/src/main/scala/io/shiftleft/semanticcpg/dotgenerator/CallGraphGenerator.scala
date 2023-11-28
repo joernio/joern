@@ -11,7 +11,7 @@ class CallGraphGenerator {
 
   def generate(cpg: Cpg): Graph = {
     val subgraph = mutable.HashMap.empty[String, Seq[StoredNode]]
-    val vertices = cpg.all.collect { case m: Method => m }.l
+    val vertices = cpg.method.l
     val edges = for {
       srcMethod <- vertices
       _ = storeInSubgraph(srcMethod, subgraph)

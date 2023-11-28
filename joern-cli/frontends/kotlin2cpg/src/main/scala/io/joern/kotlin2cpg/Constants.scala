@@ -17,7 +17,6 @@ object Constants {
   val iteratorPrefix                 = "iterator_"
   val javaUtilIterator               = "java.util.Iterator"
   val lambdaBindingName              = "invoke"    // the underlying _invoke_ fn for Kotlin FunctionX types
-  val lambdaName                     = "<lambda>"
   val lambdaTypeDeclName             = "LAMBDA_TYPE_DECL"
   val nextIteratorMethodName         = "next"
   val codePropUndefinedValue         = ""
@@ -30,6 +29,7 @@ object Constants {
   val this_                          = "this"
   val tmpLocalPrefix                 = "tmp_"
   val tryCode                        = "try"
+  val unusedDestructuringEntryText   = "_"
   val unknownOperator                = "<operator>.unknown"
   val when                           = "when"
   val wildcardImportName             = "*"

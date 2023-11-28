@@ -13,6 +13,7 @@
    -------------
    List("<operator>.indirectMemberAccess", "<operator>.assignment", "free_list", "free", "<operator>.notEquals")
  */
+
 @main def main(): List[String] = {
   cpg.method.name.l
 }

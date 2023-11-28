@@ -1,12 +1,13 @@
 package io.joern.pysrc2cpg
 
+import io.joern.x2cpg.ValidationMode
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import overflowdb.BatchedUpdate
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 object Py2Cpg {
-  case class InputPair(content: String, absFileName: String, relFileName: String)
+  case class InputPair(content: String, relFileName: String)
   type InputProvider = () => InputPair
 }
 
@@ -14,37 +15,36 @@ object Py2Cpg {
   *
   * @param inputProviders
   *   Set of functions which provide InputPairs. The functions must be safe to call from different threads.
-  * @param configInputProviders
-  *   Set of functions which provide InputPairs representing configuration files. The functions must be safe to call
-  *   from different threads.
   * @param outputCpg
   *   Empty target cpg which will be populated.
+  * @param inputPath
+  *   The project root.
+  * @param requirementsTxt
+  *   The configured name of the requirements txt file.
+  * @param schemaValidationMode
+  *   The boolean switch for enabling or disabling early schema checking during AST creation.
   */
 class Py2Cpg(
   inputProviders: Iterable[Py2Cpg.InputProvider],
-  configInputProviders: Iterable[Py2Cpg.InputProvider],
-  outputCpg: Cpg
+  outputCpg: Cpg,
+  inputPath: String,
+  requirementsTxt: String = "requirements.txt",
+  schemaValidationMode: ValidationMode
 ) {
   private val diffGraph   = new DiffGraphBuilder()
   private val nodeBuilder = new NodeBuilder(diffGraph)
   private val edgeBuilder = new EdgeBuilder(diffGraph)
 
   def buildCpg(): Unit = {
-    val metaData = nodeBuilder.metaNode(Languages.PYTHONSRC, version = "")
-    inputProviders.headOption match {
-      case Some(headInput: Py2Cpg.InputProvider) =>
-        val inputFile = headInput()
-        metaData.root(inputFile.absFileName.stripSuffix(inputFile.relFileName))
-      case _ =>
-    }
+    nodeBuilder.metaNode(Languages.PYTHONSRC, version = "").root(inputPath + java.io.File.separator)
     val globalNamespaceBlock =
       nodeBuilder.namespaceBlockNode(Constants.GLOBAL_NAMESPACE, Constants.GLOBAL_NAMESPACE, "N/A")
     nodeBuilder.typeNode(Constants.ANY, Constants.ANY)
     val anyTypeDecl = nodeBuilder.typeDeclNode(Constants.ANY, Constants.ANY, "N/A", Nil, LineAndColumn(1, 1, 1, 1))
     edgeBuilder.astEdge(anyTypeDecl, globalNamespaceBlock, 0)
     BatchedUpdate.applyDiff(outputCpg.graph, diffGraph)
-    new CodeToCpg(outputCpg, inputProviders).createAndApply()
-    new ConfigPass(outputCpg, configInputProviders).createAndApply()
-    new DendenciesFromRequirementsTxtPass(outputCpg).createAndApply()
+    new CodeToCpg(outputCpg, inputProviders, schemaValidationMode).createAndApply()
+    new ConfigFileCreationPass(outputCpg, requirementsTxt).createAndApply()
+    new DependenciesFromRequirementsTxtPass(outputCpg).createAndApply()
   }
 }

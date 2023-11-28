@@ -3,9 +3,10 @@ package io.joern.javasrc2cpg.passes
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.passes.frontend._
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.{CpgDiffGraphBuilder, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 class JavaTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
     extends XTypeRecoveryPass[Method](cpg, config) {
@@ -15,20 +16,18 @@ class JavaTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecovery
 
 private class JavaTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTypeRecovery[Method](cpg, state) {
 
-  override def compilationUnit: Traversal[Method] = cpg.method.isExternal(false)
+  override def compilationUnit: Iterator[Method] = cpg.method.isExternal(false).iterator
 
   override def generateRecoveryForCompilationUnitTask(
     unit: Method,
     builder: DiffGraphBuilder
-  ): RecoverForXCompilationUnit[Method] = new RecoverForJavaFile(
-    cpg,
-    unit,
-    builder,
-    state.copy(config = state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes))
-  )
+  ): RecoverForXCompilationUnit[Method] = {
+    val newConfig = state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
+    new RecoverForJavaFile(cpg, unit, builder, state.copy(config = newConfig))
+  }
 }
 
-private class RecoverForJavaFile(cpg: Cpg, cu: Method, builder: CpgDiffGraphBuilder, state: XTypeRecoveryState)
+private class RecoverForJavaFile(cpg: Cpg, cu: Method, builder: DiffGraphBuilder, state: XTypeRecoveryState)
     extends RecoverForXCompilationUnit[Method](cpg, cu, builder, state) {
 
   private def javaNodeToLocalKey(n: AstNode): Option[LocalKey] = n match {
@@ -51,9 +50,6 @@ private class RecoverForJavaFile(cpg: Cpg, cu: Method, builder: CpgDiffGraphBuil
         symbolTable.put(k, tss)
     }
   }
-
-  override protected def nodeExistingTypes(storedNode: StoredNode): Seq[String] =
-    super.nodeExistingTypes(storedNode).filterNot(_.startsWith(Defines.UnresolvedNamespace))
 
   // There seems to be issues with inferring these, often due to situations where super and this are confused on name
   // and code properties.

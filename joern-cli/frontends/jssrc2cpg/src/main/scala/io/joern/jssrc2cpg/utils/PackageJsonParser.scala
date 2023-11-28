@@ -43,7 +43,7 @@ object PackageJsonParser {
         val lockDepsPath = packageJsonPath.resolveSibling(Paths.get(PackageJsonLockFilename))
 
         val lockDeps = Try {
-          val content      = IOUtils.readLinesInFile(lockDepsPath).mkString("\n")
+          val content      = IOUtils.readEntireFile(lockDepsPath)
           val objectMapper = new ObjectMapper
           val packageJson  = objectMapper.readTree(content)
 
@@ -63,7 +63,7 @@ object PackageJsonParser {
 
         // lazy val because we only evaluate this in case no package lock file is available.
         lazy val deps = Try {
-          val content      = IOUtils.readLinesInFile(depsPath).mkString("\n")
+          val content      = IOUtils.readEntireFile(depsPath)
           val objectMapper = new ObjectMapper
           val packageJson  = objectMapper.readTree(content)
 

@@ -2,9 +2,8 @@ package io.shiftleft.semanticcpg.language.android
 
 import io.joern.semanticcpg.utils.SecureXmlParsing
 import io.shiftleft.codepropertygraph.generated.nodes
-import overflowdb.traversal._
 
-class ConfigFileTraversal(val traversal: Traversal[nodes.ConfigFile]) extends AnyVal {
+class ConfigFileTraversal(val traversal: Iterator[nodes.ConfigFile]) extends AnyVal {
   def usesCleartextTraffic =
     traversal
       .filter(_.name.endsWith(Constants.androidManifestXml))

@@ -1,32 +1,45 @@
 package io.joern.kotlin2cpg
 
 import better.files.File
+
 import java.nio.file.{Files, Paths}
 import org.jetbrains.kotlin.psi.KtFile
 import org.slf4j.LoggerFactory
+
 import scala.util.Try
 import scala.jdk.CollectionConverters.{CollectionHasAsScala, EnumerationHasAsScala}
-
 import io.joern.kotlin2cpg.files.SourceFilesPicker
-import io.joern.kotlin2cpg.passes.{AstCreationPass, ConfigPass}
+import io.joern.kotlin2cpg.passes.{
+  AstCreationPass,
+  ConfigPass,
+  DependenciesFromMavenCoordinatesPass,
+  KotlinTypeHintCallLinker,
+  KotlinTypeRecoveryPass
+}
 import io.joern.kotlin2cpg.compiler.{CompilerAPI, ErrorLoggingMessageCollector}
 import io.joern.kotlin2cpg.types.{ContentSourcesPicker, DefaultTypeInfoProvider}
 import io.joern.kotlin2cpg.utils.PathUtils
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
-import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
+import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass, XTypeRecoveryConfig}
 import io.joern.x2cpg.utils.dependency.{DependencyResolver, DependencyResolverParams, GradleConfigKeys}
 import io.joern.kotlin2cpg.interop.JavasrcInterop
 import io.joern.kotlin2cpg.jar4import.UsesService
+import io.joern.x2cpg.SourceFiles.filterFile
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.utils.IOUtils
 
 object Kotlin2Cpg {
   val language = "KOTLIN"
   case class InputPair(content: String, fileName: String)
   type InputProvider = () => InputPair
+
+  def postProcessingPass(cpg: Cpg): Unit = {
+    new KotlinTypeRecoveryPass(cpg).createAndApply()
+    new KotlinTypeHintCallLinker(cpg).createAndApply()
+  }
 }
 
 case class KtFileWithMeta(f: KtFile, relativizedPath: String, filename: String)
@@ -36,9 +49,9 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
   protected val logger = LoggerFactory.getLogger(getClass)
   val parsingError     = "KOTLIN2CPG_PARSING_ERROR"
   private val defaultKotlinStdlibContentRootJarPaths = Seq(
-    DefaultContentRootJarPath("jars/kotlin-stdlib-1.6.0.jar", isResource = true),
-    DefaultContentRootJarPath("jars/kotlin-stdlib-common-1.6.0.jar", isResource = true),
-    DefaultContentRootJarPath("jars/kotlin-stdlib-jdk8-1.6.0.jar", isResource = true)
+    DefaultContentRootJarPath("jars/kotlin-stdlib-1.9.0.jar", isResource = true),
+    DefaultContentRootJarPath("jars/kotlin-stdlib-common-1.9.0.jar", isResource = true),
+    DefaultContentRootJarPath("jars/kotlin-stdlib-jdk8-1.9.0.jar", isResource = true)
   )
 
   def createCpg(config: Config): Try[Cpg] = {
@@ -62,14 +75,24 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
         case None             => None
       }
 
-      val filesWithKtExtension = SourceFiles.determine(sourceDir, Set(".kt"))
+      val filesWithKtExtension = SourceFiles.determine(
+        sourceDir,
+        Set(".kt"),
+        ignoredFilesRegex = Option(config.ignoredFilesRegex),
+        ignoredFilesPath = Option(config.ignoredFiles)
+      )
       if (filesWithKtExtension.isEmpty) {
         println(s"The provided input directory does not contain files ending in '.kt' `$sourceDir`. Exiting.")
         System.exit(1)
       }
       logger.info(s"Starting CPG generation for input directory `$sourceDir`.")
 
-      val filesWithJavaExtension = SourceFiles.determine(sourceDir, Set(".java"))
+      val filesWithJavaExtension = SourceFiles.determine(
+        sourceDir,
+        Set(".java"),
+        ignoredFilesRegex = Option(config.ignoredFilesRegex),
+        ignoredFilesPath = Option(config.ignoredFiles)
+      )
       if (filesWithJavaExtension.nonEmpty) {
         logger.info(s"Found ${filesWithJavaExtension.size} files with the `.java` extension.")
       }
@@ -84,6 +107,11 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
         logger.info(s"Not downloading any dependencies.")
         Seq()
       }
+
+      val mavenCoordinates = if (config.generateNodesForDependencies) {
+        logger.info(s"Fetching maven coordinates.")
+        fetchMavenCoordinates(sourceDir, config)
+      } else Seq()
 
       val jarsAtConfigClassPath = findJarsIn(config.classpath)
       if (config.classpath.nonEmpty) {
@@ -106,42 +134,46 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
       if (dirsForSourcesToCompile.isEmpty) {
         logger.warn("The list of directories to analyze is empty.")
       }
-      val plugins = Seq()
       val environment =
         CompilerAPI.makeEnvironment(
           dirsForSourcesToCompile,
           filesWithJavaExtension,
           defaultContentRootJars,
-          plugins,
           messageCollector
         )
 
       val sourceEntries = entriesForSources(environment.getSourceFiles.asScala, sourceDir)
-      val sources = sourceEntries.filterNot { entry =>
-        config.ignoredFiles.exists { pathToIgnore =>
-          val parent = Paths.get(pathToIgnore).toAbsolutePath
-          val child  = Paths.get(entry.filename)
-          child.startsWith(parent)
-        }
-      }
+      val sources = sourceEntries.filter(entry =>
+        SourceFiles.filterFile(
+          entry.filename,
+          config.inputPath,
+          ignoredFilesRegex = Option(config.ignoredFilesRegex),
+          ignoredFilesPath = Option(config.ignoredFiles)
+        )
+      )
       val configFiles      = entriesForConfigFiles(SourceFilesPicker.configFiles(sourceDir), sourceDir)
       val typeInfoProvider = new DefaultTypeInfoProvider(environment)
 
       new MetaDataPass(cpg, Languages.KOTLIN, config.inputPath).createAndApply()
-      val astCreator = new AstCreationPass(sources, typeInfoProvider, cpg)
+      val astCreator = new AstCreationPass(sources, typeInfoProvider, cpg)(config.schemaValidation)
       astCreator.createAndApply()
       val kotlinAstCreatorTypes = astCreator.global.usedTypes.keys().asScala.toList
-      new TypeNodePass(kotlinAstCreatorTypes, cpg).createAndApply()
+      TypeNodePass.withRegisteredTypes(kotlinAstCreatorTypes, cpg).createAndApply()
 
       if (config.includeJavaSourceFiles && filesWithJavaExtension.nonEmpty) {
-        val javaAstCreator = JavasrcInterop.astCreationPass(filesWithJavaExtension, cpg)
+        val javaAstCreator = JavasrcInterop.astCreationPass(config.inputPath, filesWithJavaExtension, cpg)
         javaAstCreator.createAndApply()
         val javaAstCreatorTypes = javaAstCreator.global.usedTypes.keys().asScala.toList
-        new TypeNodePass((javaAstCreatorTypes.toSet -- kotlinAstCreatorTypes.toSet).toList, cpg).createAndApply()
+        TypeNodePass
+          .withRegisteredTypes((javaAstCreatorTypes.toSet -- kotlinAstCreatorTypes.toSet).toList, cpg)
+          .createAndApply()
       }
 
       val configCreator = new ConfigPass(configFiles, cpg)
       configCreator.createAndApply()
+
+      val dependenciesFromMavenCoordinatesPass = new DependenciesFromMavenCoordinatesPass(mavenCoordinates, cpg)
+      dependenciesFromMavenCoordinatesPass.createAndApply()
 
       val hasAtLeastOneMethodNode = cpg.method.take(1).nonEmpty
       if (!hasAtLeastOneMethodNode) {
@@ -175,8 +207,25 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
         deps
       case None =>
         logger.warn(s"Could not fetch dependencies for project at path $sourceDir")
-        println("Could not fetch dependencies when explicitly asked to. Exiting.")
-        System.exit(1)
+        println("Could not fetch dependencies when explicitly asked to.")
+        Seq()
+    }
+  }
+
+  private def fetchMavenCoordinates(sourceDir: String, config: Config): Seq[String] = {
+    val gradleParams = Map(
+      GradleConfigKeys.ProjectName       -> config.gradleProjectName,
+      GradleConfigKeys.ConfigurationName -> config.gradleConfigurationName
+    ).collect { case (key, Some(value)) => (key, value) }
+
+    val resolverParams = DependencyResolverParams(Map.empty, gradleParams)
+    DependencyResolver.getCoordinates(Paths.get(sourceDir), resolverParams) match {
+      case Some(coordinates) =>
+        logger.info(s"Found ${coordinates.size} maven coordinates.")
+        coordinates.toSeq
+      case None =>
+        logger.warn(s"Could not fetch coordinates for project at path $sourceDir")
+        println("Could not fetch coordinates when explicitly asked to.")
         Seq()
     }
   }

@@ -1,13 +1,26 @@
 package io.joern.jssrc2cpg.passes.ast
 
-import io.joern.jssrc2cpg.passes.AbstractPassTest
-import io.joern.jssrc2cpg.passes.Defines
+import io.joern.jssrc2cpg.passes.{AbstractPassTest, Defines}
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode, Declaration, Identifier}
+import io.shiftleft.semanticcpg.language.*
 
 class TsClassesAstCreationPassTest extends AbstractPassTest {
 
   "AST generation for TS classes" should {
+
+    "have correct structure for constructor parameter assignment" in TsAstFixture("""
+        |class D {
+        |  readonly noWiden = 1
+        |  constructor(readonly widen = 2) {
+        |    this.noWiden = 5;
+        |    this.widen = 6;
+        |  }
+        |}
+        |new D(7);
+        |""".stripMargin) { cpg =>
+      cpg.typeDecl.nameExact("D").method.isConstructor.parameter.name.l shouldBe List("this", "widen")
+    }
 
     "have correct structure for simple enum" in TsAstFixture("""
         |enum Direction {
@@ -146,7 +159,7 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
         |interface A {};
         |interface B {};
         |""".stripMargin) { cpg =>
-      cpg.method.fullName.sorted shouldBe List(
+      cpg.method.fullName.sorted.l shouldBe List(
         "code.ts::program",
         s"code.ts::program:A:${io.joern.x2cpg.Defines.ConstructorMethodName}",
         s"code.ts::program:B:${io.joern.x2cpg.Defines.ConstructorMethodName}"
@@ -160,6 +173,7 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
         |  [propName: string]: any;
         |  "foo": string;
         |  (source: string, subString: string): boolean;
+        |  toString(): string;
         |}
         |""".stripMargin) { cpg =>
       inside(cpg.typeDecl("Greeter").l) { case List(greeter) =>
@@ -168,7 +182,7 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
         greeter.fullName shouldBe "code.ts::program:Greeter"
         greeter.filename shouldBe "code.ts"
         greeter.file.name.head shouldBe "code.ts"
-        inside(cpg.typeDecl("Greeter").member.l) { case List(greeting, name, propName, foo, anon) =>
+        inside(cpg.typeDecl("Greeter").member.l) { case List(greeting, name, propName, foo, anon, toString) =>
           greeting.name shouldBe "greeting"
           greeting.code shouldBe "greeting: string;"
           name.name shouldBe "name"
@@ -177,20 +191,24 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
           propName.code shouldBe "[propName: string]: any;"
           foo.name shouldBe "foo"
           foo.code shouldBe "\"foo\": string;"
-          anon.name shouldBe "anonymous"
-          anon.dynamicTypeHintFullName shouldBe Seq("code.ts::program:Greeter:anonymous")
+          anon.name shouldBe "<lambda>0"
+          anon.dynamicTypeHintFullName shouldBe Seq("code.ts::program:Greeter:<lambda>0")
           anon.code shouldBe "(source: string, subString: string): boolean;"
+          toString.name shouldBe "toString"
+          toString.code shouldBe "toString(): string;"
         }
-        inside(cpg.typeDecl("Greeter").method.l) { case List(constructor, anon) =>
+        inside(cpg.typeDecl("Greeter").method.l) { case List(constructor, anon, toString) =>
           constructor.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
           constructor.fullName shouldBe s"code.ts::program:Greeter:${io.joern.x2cpg.Defines.ConstructorMethodName}"
           constructor.code shouldBe "new: Greeter"
           greeter.method.isConstructor.head shouldBe constructor
-          anon.name shouldBe "anonymous"
-          anon.fullName shouldBe "code.ts::program:Greeter:anonymous"
+          anon.name shouldBe "<lambda>0"
+          anon.fullName shouldBe "code.ts::program:Greeter:<lambda>0"
           anon.code shouldBe "(source: string, subString: string): boolean;"
           anon.parameter.name.l shouldBe List("this", "source", "subString")
           anon.parameter.code.l shouldBe List("this", "source: string", "subString: string")
+          toString.name shouldBe "toString"
+          toString.code shouldBe "toString(): string;"
         }
       }
     }
@@ -222,10 +240,10 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
        |  class Foo {};
        |}
        |""".stripMargin) { cpg =>
-      inside(cpg.namespaceBlock("A").l) { case List(a) =>
-        a.code should startWith("namespace A")
-        a.fullName shouldBe "code.ts::program:A"
-        a.typeDecl.name("Foo").head.fullName shouldBe "code.ts::program:A:Foo"
+      inside(cpg.namespaceBlock("A").l) { case List(namespaceBlockA) =>
+        namespaceBlockA.code should startWith("namespace A")
+        namespaceBlockA.fullName shouldBe "code.ts::program:A"
+        namespaceBlockA.typeDecl.name("Foo").head.fullName shouldBe "code.ts::program:A:Foo"
       }
     }
 
@@ -238,20 +256,20 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
         |  }
         |}
         |""".stripMargin) { cpg =>
-      inside(cpg.namespaceBlock("A").l) { case List(a) =>
-        a.code should startWith("namespace A")
-        a.fullName shouldBe "code.ts::program:A"
-        a.astChildren.astChildren.isNamespaceBlock.name("B").head shouldBe cpg.namespaceBlock("B").head
+      inside(cpg.namespaceBlock("A").l) { case List(namespaceBlockA) =>
+        namespaceBlockA.code should startWith("namespace A")
+        namespaceBlockA.fullName shouldBe "code.ts::program:A"
+        namespaceBlockA.astChildren.astChildren.isNamespaceBlock.name("B").head shouldBe cpg.namespaceBlock("B").head
       }
-      inside(cpg.namespaceBlock("B").l) { case List(b) =>
-        b.code should startWith("namespace B")
-        b.fullName shouldBe "code.ts::program:A:B"
-        b.astChildren.astChildren.isNamespaceBlock.name("C").head shouldBe cpg.namespaceBlock("C").head
+      inside(cpg.namespaceBlock("B").l) { case List(namespaceBlockB) =>
+        namespaceBlockB.code should startWith("namespace B")
+        namespaceBlockB.fullName shouldBe "code.ts::program:A:B"
+        namespaceBlockB.astChildren.astChildren.isNamespaceBlock.name("C").head shouldBe cpg.namespaceBlock("C").head
       }
-      inside(cpg.namespaceBlock("C").l) { case List(c) =>
-        c.code should startWith("namespace C")
-        c.fullName shouldBe "code.ts::program:A:B:C"
-        c.typeDecl.name("Foo").head.fullName shouldBe "code.ts::program:A:B:C:Foo"
+      inside(cpg.namespaceBlock("C").l) { case List(namespaceBlockC) =>
+        namespaceBlockC.code should startWith("namespace C")
+        namespaceBlockC.fullName shouldBe "code.ts::program:A:B:C"
+        namespaceBlockC.typeDecl.name("Foo").head.fullName shouldBe "code.ts::program:A:B:C:Foo"
       }
     }
 
@@ -260,21 +278,72 @@ class TsClassesAstCreationPassTest extends AbstractPassTest {
          |  class Foo {};
          |}
          |""".stripMargin) { cpg =>
-      inside(cpg.namespaceBlock("A").l) { case List(a) =>
-        a.code should startWith("namespace A")
-        a.fullName shouldBe "code.ts::program:A"
-        a.astChildren.isNamespaceBlock.name("B").head shouldBe cpg.namespaceBlock("B").head
+      inside(cpg.namespaceBlock("A").l) { case List(namespaceBlockA) =>
+        namespaceBlockA.code should startWith("namespace A")
+        namespaceBlockA.fullName shouldBe "code.ts::program:A"
+        namespaceBlockA.astChildren.isNamespaceBlock.name("B").head shouldBe cpg.namespaceBlock("B").head
       }
-      inside(cpg.namespaceBlock("B").l) { case List(b) =>
-        b.code should startWith("B.C")
-        b.fullName shouldBe "code.ts::program:A:B"
-        b.astChildren.isNamespaceBlock.name("C").head shouldBe cpg.namespaceBlock("C").head
+      inside(cpg.namespaceBlock("B").l) { case List(namespaceBlockB) =>
+        namespaceBlockB.code should startWith("B.C")
+        namespaceBlockB.fullName shouldBe "code.ts::program:A:B"
+        namespaceBlockB.astChildren.isNamespaceBlock.name("C").head shouldBe cpg.namespaceBlock("C").head
       }
-      inside(cpg.namespaceBlock("C").l) { case List(c) =>
-        c.code should startWith("C")
-        c.fullName shouldBe "code.ts::program:A:B:C"
-        c.typeDecl.name("Foo").head.fullName shouldBe "code.ts::program:A:B:C:Foo"
+      inside(cpg.namespaceBlock("C").l) { case List(namespaceBlockC) =>
+        namespaceBlockC.code should startWith("C")
+        namespaceBlockC.fullName shouldBe "code.ts::program:A:B:C"
+        namespaceBlockC.typeDecl.name("Foo").head.fullName shouldBe "code.ts::program:A:B:C:Foo"
       }
+    }
+
+    "AST generation for dynamically exported and defined class" in TsAstFixture("""
+        |export type User = {
+        |    email: string;
+        |    organizationIds: string[];
+        |    username: string;
+        |    name: string;
+        |    gender: string;
+        |}
+        |""".stripMargin) { cpg =>
+      val List(userType) = cpg.typeDecl.name("User").l
+      userType.member.name.l shouldBe List("email", "organizationIds", "username", "name", "gender")
+      userType.member.typeFullName.toSet shouldBe Set("__ecma.String", "string[]")
+    }
+
+    "AST generation for dynamically defined type in a parameter" in TsAstFixture("""
+        |class Test {
+        |    run(credentials: { username: string; password: string; }): string {
+        |        console.log(credentials);
+        |        return ``;
+        |    }
+        |}
+        |""".stripMargin) { cpg =>
+      val List(credentialsType) = cpg.typeDecl.nameExact("_anon_cdecl").l
+      credentialsType.fullName shouldBe "code.ts::program:Test:run:_anon_cdecl"
+      credentialsType.member.name.l shouldBe List("username", "password")
+      credentialsType.member.typeFullName.toSet shouldBe Set("__ecma.String")
+      val List(credentialsParam) = cpg.parameter.nameExact("credentials").l
+      credentialsParam.typeFullName shouldBe "code.ts::program:Test:run:_anon_cdecl"
+      // should not produce dangling nodes that are meant to be inside procedures
+      cpg.all.collectAll[CfgNode].whereNot(_._astIn).size shouldBe 0
+      cpg.identifier.count(_.refsTo.size > 1) shouldBe 0
+      cpg.identifier.whereNot(_.refsTo).size shouldBe 0
+    }
+
+    "AST generation for destructured type in a parameter" in TsAstFixture("""
+        |function apiCall({ username, password }) {
+        |    log(`${username}: ${password}`);
+        |}
+        |""".stripMargin) { cpg =>
+      val List(credentialsType) = cpg.typeDecl.nameExact("_anon_cdecl").l
+      credentialsType.fullName shouldBe "code.ts::program:apiCall:_anon_cdecl"
+      credentialsType.member.name.l shouldBe List("username", "password")
+      credentialsType.member.typeFullName.toSet shouldBe Set(Defines.Any)
+      val List(credentialsParam) = cpg.parameter.nameExact("param1_0").l
+      credentialsParam.typeFullName shouldBe "code.ts::program:apiCall:_anon_cdecl"
+      // should not produce dangling nodes that are meant to be inside procedures
+      cpg.all.collectAll[CfgNode].whereNot(_._astIn).size shouldBe 0
+      cpg.identifier.count(_.refsTo.size > 1) shouldBe 0
+      cpg.identifier.whereNot(_.refsTo).size shouldBe 0
     }
 
   }

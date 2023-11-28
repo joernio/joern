@@ -1,9 +1,9 @@
 package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.Identifier
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
@@ -206,7 +206,7 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       |""".stripMargin)
 
     "should contain a CALL node with arguments with the correct props set" in {
-      val List(firstArg: Identifier, secondArg: Identifier) = cpg.call.code("r.exec.*").argument.l
+      val List(firstArg: Identifier, secondArg: Identifier) = cpg.call.code("r.exec.*").argument.l: @unchecked
       firstArg.typeFullName shouldBe "java.lang.Runtime"
       secondArg.typeFullName shouldBe "java.lang.String"
     }
@@ -319,4 +319,280 @@ class CallTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
     }
   }
 
+  "CPG for code with call with argument with type with upper bound" should {
+    val cpg = code("""
+      |package mypkg
+      |open class Base
+      |class Second : Base()
+      |class Third : Base()
+      |
+      |fun <S:Base>doSomething(one: S) {
+      |    println(one)
+      |}
+      |fun f1() {
+      |    val s = Second()
+      |    val t = Third()
+      |    doSomething(s)
+      |    doSomething(t)
+      |}
+      |""".stripMargin)
+
+    "should contain a CALL node with arguments that have the argument name set" in {
+      val List(c1, c2) = cpg.call.code("doSomething.*").l
+      c1.methodFullName shouldBe "mypkg.doSomething:void(mypkg.Base)"
+      c2.methodFullName shouldBe "mypkg.doSomething:void(mypkg.Base)"
+    }
+  }
+
+  "CPG for code with qualified-expression call with argument with type with upper bound" should {
+    val cpg = code("""
+        |package mypkg
+        |fun f1() {
+        |    val ns = sequenceOf("four", "three", "two", "one")
+        |    val ml = mutableListOf<String>()
+        |    ns.mapIndexedNotNullTo(ml, { i, s -> s })
+        |}
+        |""".stripMargin)
+
+    "should contain a METHOD node with correct METHOD_FULL_NAME set" in {
+      val List(c) = cpg.method.nameExact("mapIndexedNotNullTo").callIn.l
+      c.methodFullName shouldBe "kotlin.sequences.Sequence.mapIndexedNotNullTo:java.lang.Object(java.util.Collection,kotlin.Function2)"
+    }
+  }
+
+  "CPG for code with simple call having literals passed in with argument names" should {
+    val cpg = code("""
+      |package mypkg
+      |fun f1(one: String, two: String)  = println(one + " " + two)
+      |fun f2() = f1(two = "this",  one = "that")
+      |""".stripMargin)
+
+    "should contain a CALL node with arguments with their ARGUMENT_NAME property set" in {
+      val List(c: Call) = cpg.method.nameExact("f1").callIn.l
+      c.argument.map(_.argumentName).flatten.l shouldBe List("two", "one")
+    }
+  }
+
+  "CPG for code with simple call having another call passed in with an argument name" should {
+    val cpg = code("""
+      |package mypkg
+      |fun f1(one: String, two: String)  = println(one + " " + two)
+      |fun f2() = f1(two = "this",  one = f3())
+      |fun f3() = "that"
+      |""".stripMargin)
+
+    "should contain a CALL node with arguments with their ARGUMENT_NAME property set" in {
+      val List(c: Call) = cpg.method.nameExact("f1").callIn.l
+      c.argument.map(_.argumentName).flatten.l shouldBe List("two", "one")
+    }
+  }
+
+  "CPG for code with simple call having a ctor call passed in with an argument name" should {
+    val cpg = code("""
+      |package mypkg
+      |data class X(val p: String)
+      |fun f1(one: X, two: String)  = println(one.p + " " + two)
+      |fun f2() = f1(two = "this",  one = X("that"))
+      |""".stripMargin)
+
+    "should contain a CALL node with arguments with their ARGUMENT_NAME property set" in {
+      val List(c: Call) = cpg.method.nameExact("f1").callIn.l
+      c.argument.map(_.argumentName).flatten.l shouldBe List("two", "one")
+    }
+  }
+
+  "CPG for code with simple call having an if-expression passed in with an argument name" should {
+    val cpg = code("""
+      |package mypkg
+      |fun f1(one: String, two: String)  = println(one + " " + two)
+      |fun f2() = f1(two = "this",  one = if(Random(1).nextBoolean()) "that" else "thatother")
+      |""".stripMargin)
+
+    "should contain a CALL node with arguments with their ARGUMENT_NAME property set" in {
+      val List(c: Call) = cpg.method.nameExact("f1").callIn.l
+      c.argument.map(_.argumentName).flatten.l shouldBe List("two", "one")
+    }
+  }
+
+  "CPG for code with simple call having a try-expression passed in with an argument name" should {
+    val cpg = code("""
+      |package mypkg
+      |fun f1(one: String, two: String)  = println(one + " " + two)
+      |fun f2() = f1(two = "this",  one = try { "that" } catch (e: Exception) { "thatother" })
+      |""".stripMargin)
+
+    "should contain a CALL node with arguments with their ARGUMENT_NAME property set" in {
+      val List(c: Call) = cpg.method.nameExact("f1").callIn.l
+      c.argument.map(_.argumentName).flatten.l shouldBe List("two", "one")
+    }
+  }
+
+  "CPG for code with simple call having an when-expression passed in with an argument name" should {
+    val cpg = code("""
+      |package mypkg
+      |fun f1(one: String, two: String)  = println(one + " " + two)
+      |fun f2() = f1(two = "this",  one = when(Random(1).nextBoolean()) { true -> "that" else -> "thatother" })
+      |""".stripMargin)
+
+    "should contain a CALL node with arguments with their ARGUMENT_NAME property set" in {
+      val List(c: Call) = cpg.method.nameExact("f1").callIn.l
+      c.argument.map(_.argumentName).flatten.l shouldBe List("two", "one")
+    }
+  }
+
+  "CPG for code with simple call having a simple qualified-expression passed in with an argument name" should {
+    val cpg = code("""
+      |package mypkg
+      |data class X(val p: String)
+      |fun f1(one: String, two: String)  = println(one + " " + two)
+      |fun f2() = {
+      |  val x = X("that")
+      |  f1(two = "this",  one = x.p)
+      |}
+      |""".stripMargin)
+
+    "should contain a CALL node with arguments with their ARGUMENT_NAME property set" in {
+      val List(c: Call) = cpg.method.nameExact("f1").callIn.l
+      c.argument.map(_.argumentName).flatten.l shouldBe List("two", "one")
+    }
+  }
+
+  "CPG for code with simple call having a qualified-expression with ctor passed in with an argument name" should {
+    val cpg = code("""
+      |package mypkg
+      |data class X(val p: String)
+      |fun f1(one: String, two: String)  = println(one + " " + two)
+      |fun f2() = f1(two = "this",  one = X("that").p)
+      |""".stripMargin)
+
+    "should contain a CALL node with arguments with their ARGUMENT_NAME property set" in {
+      val List(c: Call) = cpg.method.nameExact("f1").callIn.l
+      c.argument.map(_.argumentName).flatten.l shouldBe List("two", "one")
+    }
+  }
+
+  "CPG for code with simple call having a labeled expression passed in with an argument name" should {
+    val cpg = code("""
+      |package mypkg
+      |class X(val p: String) {
+      |  fun f2() = f1(two = "this",  one = alabel@ "that")
+      |}
+      |fun f1(one: String, two: String)  = println(one + " " + two)
+      |""".stripMargin)
+
+    "should contain a CALL node with arguments with their ARGUMENT_NAME property set" in {
+      val List(c: Call) = cpg.method.nameExact("f1").callIn.l
+      c.argument.map(_.argumentName).flatten.l shouldBe List("two", "one")
+    }
+  }
+
+  "CPG for code with simple call having a qualified-expression for `super` passed in with an argument name" should {
+    val cpg = code("""
+      |package mypkg
+      |class X(val p: String) {
+      |  fun f2() = f1(two = "this",  one = super.toString())
+      |}
+      |fun f1(one: String, two: String)  = println(one + " " + two)
+      |""".stripMargin)
+
+    "should contain a CALL node with arguments with their ARGUMENT_NAME property set" in {
+      val List(c: Call) = cpg.method.nameExact("f1").callIn.l
+      c.argument.map(_.argumentName).flatten.l shouldBe List("two", "one")
+    }
+  }
+
+  "CPG for code with simple call having a parenthesized expression passed in with an argument name" should {
+    val cpg = code("""
+      |package mypkg
+      |fun f1(one: String, two: String)  = println(one + " " + two)
+      |fun f2() = f1(two = "this",  one = ("that"))
+      |""".stripMargin)
+
+    "should contain a CALL node with arguments with their ARGUMENT_NAME property set" in {
+      val List(c: Call) = cpg.method.nameExact("f1").callIn.l
+      c.argument.map(_.argumentName).flatten.l shouldBe List("two", "one")
+    }
+  }
+
+  "CPG for code with simple call having an annotated expression passed in with an argument name" should {
+    val cpg = code("""
+      |package mypkg
+      |@Target(AnnotationTarget.EXPRESSION)
+      |@Retention(AnnotationRetention.SOURCE)
+      |annotation class Annotation
+      |fun f1(one: String, two: String)  = println(one + " " + two)
+      |fun f2() = f1(two = "this",  one = @Annotation "that")
+      |""".stripMargin)
+
+    "should contain a CALL node with arguments with their ARGUMENT_NAME property set" in {
+      val List(c: Call) = cpg.method.nameExact("f1").callIn.l
+      c.argument.map(_.argumentName).flatten.l shouldBe List("two", "one")
+    }
+  }
+
+  "CPG for code with simple call having a binary expression passed in with an argument name" should {
+    val cpg = code("""
+      |package mypkg
+      |fun f1(one: Int, two: String)  = println(one.toString() + " " + two)
+      |fun f2() = f1(two = "this",  one = 1 * 2)
+      |""".stripMargin)
+
+    "should contain a CALL node with arguments with their ARGUMENT_NAME property set" in {
+      val List(c: Call) = cpg.method.nameExact("f1").callIn.l
+      c.argument.map(_.argumentName).flatten.l shouldBe List("two", "one")
+    }
+  }
+
+  "CPG for code with simple call having a binary expression with type RHS passed in with an argument name" should {
+    val cpg = code("""
+      |package mypkg
+      |fun f1(one: String, two: String)  = println(one + " " + two)
+      |fun f2() = f1(two = "this",  one = "that" as String)
+      |""".stripMargin)
+
+    "should contain a CALL node with arguments with their ARGUMENT_NAME property set" in {
+      val List(c: Call) = cpg.method.nameExact("f1").callIn.l
+      c.argument.map(_.argumentName).flatten.l shouldBe List("two", "one")
+    }
+  }
+
+  "CPG for code with simple call having an object expression passed in with an argument name" should {
+    val cpg = code("""
+      |package mypkg
+      |interface I { fun that(): String }
+      |fun f1(one: I, two: String)  = println(one.that() + " " + two)
+      |fun f2() = f1(two = "this",  one = object : I { override fun that() = "that" })
+      |""".stripMargin)
+
+    "should contain a CALL node with arguments with their ARGUMENT_NAME property set" in {
+      val List(c: Call) = cpg.method.nameExact("f1").callIn.l
+      c.argument.map(_.argumentName).flatten.l shouldBe List("two", "one")
+    }
+  }
+
+  "CPG for code with simple call having a lambda passed in with an argument name" should {
+    val cpg = code("""
+      |package mypkg
+      |fun f1(one: () -> String, two: String)  = println(one() + " " + two)
+      |fun f2() = f1(two = "this",  one = { "that" })
+      |""".stripMargin)
+
+    "should contain a CALL node with arguments with their ARGUMENT_NAME property set" in {
+      val List(c: Call) = cpg.method.nameExact("f1").callIn.l
+      c.argument.map(_.argumentName).flatten.l shouldBe List("two", "one")
+    }
+  }
+
+  "CPG for code with simple call having an anonymous function passed in with an argument name" should {
+    val cpg = code("""
+      |package mypkg
+      |fun f1(one: () -> String, two: String)  = println(one() + " " + two)
+      |fun f2() = f1(two = "this",  one = fun(): String { return "that" })
+      |""".stripMargin)
+
+    "should contain a CALL node with arguments with their ARGUMENT_NAME property set" in {
+      val List(c: Call) = cpg.method.nameExact("f1").callIn.l
+      c.argument.map(_.argumentName).flatten.l shouldBe List("two", "one")
+    }
+  }
 }

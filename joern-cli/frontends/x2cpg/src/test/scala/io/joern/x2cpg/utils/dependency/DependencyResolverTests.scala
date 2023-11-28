@@ -5,6 +5,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
 import better.files.File
+import scala.annotation.nowarn
 
 class DependencyResolverTests extends AnyWordSpec with Matchers {
 
@@ -33,6 +34,7 @@ class DependencyResolverTests extends AnyWordSpec with Matchers {
       ExternalCommand.run("mvn --version", ".").get.exists(_.contains("Apache Maven")) shouldBe true
     }
 
+    @nowarn // otherwise scalac warns that this might be an interpolated expression
     val fixture = new Fixture(
       """
         |<project xmlns="http://maven.apache.org/POM/4.0.0"

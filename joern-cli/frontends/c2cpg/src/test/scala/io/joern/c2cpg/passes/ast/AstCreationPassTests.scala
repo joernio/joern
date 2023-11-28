@@ -11,6 +11,7 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
+import overflowdb.traversal.toNodeTraversal
 
 class AstCreationPassTests extends AbstractPassTest {
 
@@ -97,18 +98,14 @@ class AstCreationPassTests extends AbstractPassTest {
     "be correct for simple lambda expressions" in AstFixture(
       """
         |auto x = [] (int a, int b) -> int
-        |{
-        |    return a + b;
-        |};
+        | { return a + b; };
         |auto y = [] (string a, string b) -> string
-        |{
-        |    return a + b;
-        |};
+        | { return a + b; };
         |""".stripMargin,
       "test.cpp"
     ) { cpg =>
-      val lambda1FullName = "anonymous_lambda_0"
-      val lambda2FullName = "anonymous_lambda_1"
+      val lambda1FullName = "<lambda>0"
+      val lambda2FullName = "<lambda>1"
 
       cpg.local.name("x").order.l shouldBe List(1)
       cpg.local.name("y").order.l shouldBe List(3)
@@ -124,33 +121,35 @@ class AstCreationPassTests extends AbstractPassTest {
         }
       }
 
-      inside(cpg.method.fullNameExact(lambda1FullName).l) { case List(l1) =>
+      inside(cpg.method.fullNameExact(lambda1FullName).isLambda.l) { case List(l1) =>
         l1.name shouldBe lambda1FullName
         l1.code should startWith("[] (int a, int b) -> int")
-        l1.signature shouldBe "int anonymous_lambda_0 (int,int)"
+        l1.signature shouldBe s"int $lambda1FullName (int,int)"
+        l1.body.code shouldBe "{ return a + b; }"
       }
 
-      inside(cpg.method.fullNameExact(lambda2FullName).l) { case List(l2) =>
+      inside(cpg.method.fullNameExact(lambda2FullName).isLambda.l) { case List(l2) =>
         l2.name shouldBe lambda2FullName
         l2.code should startWith("[] (string a, string b) -> string")
-        l2.signature shouldBe "string anonymous_lambda_1 (string,string)"
+        l2.signature shouldBe s"string $lambda2FullName (string,string)"
+        l2.body.code shouldBe "{ return a + b; }"
       }
 
       inside(cpg.typeDecl(NamespaceTraversal.globalNamespaceName).head.bindsOut.l) {
         case List(bX: Binding, bY: Binding) =>
           bX.name shouldBe lambda1FullName
-          bX.signature shouldBe "int anonymous_lambda_0 (int,int)"
+          bX.signature shouldBe s"int $lambda1FullName (int,int)"
           inside(bX.refOut.l) { case List(method: Method) =>
             method.name shouldBe lambda1FullName
             method.fullName shouldBe lambda1FullName
-            method.signature shouldBe "int anonymous_lambda_0 (int,int)"
+            method.signature shouldBe s"int $lambda1FullName (int,int)"
           }
           bY.name shouldBe lambda2FullName
-          bY.signature shouldBe "string anonymous_lambda_1 (string,string)"
+          bY.signature shouldBe s"string $lambda2FullName (string,string)"
           inside(bY.refOut.l) { case List(method: Method) =>
             method.name shouldBe lambda2FullName
             method.fullName shouldBe lambda2FullName
-            method.signature shouldBe "string anonymous_lambda_1 (string,string)"
+            method.signature shouldBe s"string $lambda2FullName (string,string)"
           }
       }
     }
@@ -167,9 +166,9 @@ class AstCreationPassTests extends AbstractPassTest {
         |""".stripMargin,
       "test.cpp"
     ) { cpg =>
-      val lambdaName     = "anonymous_lambda_0"
-      val lambdaFullName = "Foo.anonymous_lambda_0"
-      val signature      = "int Foo.anonymous_lambda_0 (int,int)"
+      val lambdaName     = "<lambda>0"
+      val lambdaFullName = s"Foo.$lambdaName"
+      val signature      = s"int $lambdaFullName (int,int)"
 
       cpg.member.name("x").order.l shouldBe List(1)
 
@@ -179,7 +178,7 @@ class AstCreationPassTests extends AbstractPassTest {
         }
       }
 
-      inside(cpg.method.fullNameExact(lambdaFullName).l) { case List(l1) =>
+      inside(cpg.method.fullNameExact(lambdaFullName).isLambda.l) { case List(l1) =>
         l1.name shouldBe lambdaName
         l1.code should startWith("[] (int a, int b) -> int")
         l1.signature shouldBe signature
@@ -209,9 +208,9 @@ class AstCreationPassTests extends AbstractPassTest {
         |""".stripMargin,
       "test.cpp"
     ) { cpg =>
-      val lambdaName     = "anonymous_lambda_0"
-      val lambdaFullName = "A.B.Foo.anonymous_lambda_0"
-      val signature      = "int A.B.Foo.anonymous_lambda_0 (int,int)"
+      val lambdaName     = "<lambda>0"
+      val lambdaFullName = s"A.B.Foo.$lambdaName"
+      val signature      = s"int $lambdaFullName (int,int)"
 
       cpg.member.name("x").order.l shouldBe List(1)
 
@@ -221,7 +220,7 @@ class AstCreationPassTests extends AbstractPassTest {
         }
       }
 
-      inside(cpg.method.fullNameExact(lambdaFullName).l) { case List(l1) =>
+      inside(cpg.method.fullNameExact(lambdaFullName).isLambda.l) { case List(l1) =>
         l1.name shouldBe lambdaName
         l1.code should startWith("[] (int a, int b) -> int")
         l1.signature shouldBe signature
@@ -253,10 +252,10 @@ class AstCreationPassTests extends AbstractPassTest {
         |""".stripMargin,
       "test.cpp"
     ) { cpg =>
-      val lambda1Name = "anonymous_lambda_0"
-      val signature1  = "int anonymous_lambda_0 (int)"
-      val lambda2Name = "anonymous_lambda_1"
-      val signature2  = "int anonymous_lambda_1 (int)"
+      val lambda1Name = "<lambda>0"
+      val signature1  = s"int $lambda1Name (int)"
+      val lambda2Name = "<lambda>1"
+      val signature2  = s"int $lambda2Name (int)"
 
       cpg.local.name("x").order.l shouldBe List(1)
       cpg.local.name("foo1").order.l shouldBe List(3)
@@ -271,7 +270,7 @@ class AstCreationPassTests extends AbstractPassTest {
         }
       }
 
-      inside(cpg.method.fullNameExact(lambda1Name).l) { case List(l1) =>
+      inside(cpg.method.fullNameExact(lambda1Name).isLambda.l) { case List(l1) =>
         l1.name shouldBe lambda1Name
         l1.code should startWith("[](int n) -> int")
         l1.signature shouldBe signature1
@@ -1004,7 +1003,7 @@ class AstCreationPassTests extends AbstractPassTest {
         |typedef struct foo {
         |} abc;
       """.stripMargin) { cpg =>
-      cpg.typeDecl.name("abc").aliasTypeFullName("foo").size shouldBe 1
+      cpg.typeDecl.name("foo").aliasTypeFullName("abc").size shouldBe 1
     }
 
     "be correct for struct with local" in AstFixture("""
@@ -1066,7 +1065,7 @@ class AstCreationPassTests extends AbstractPassTest {
         |typedef enum foo {
         |} abc;
       """.stripMargin) { cpg =>
-      cpg.typeDecl.name("abc").aliasTypeFullName("foo").size shouldBe 1
+      cpg.typeDecl.name("foo").aliasTypeFullName("abc").size shouldBe 1
     }
 
     "be correct for classes with friends" in AstFixture(

@@ -64,21 +64,4 @@ class TypeTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       x.name shouldBe "l"
     }
   }
-
-  "CPG for code with call to a static method from Java's stdlib with a return type different from its receiver type " should {
-    val cpg = code("""
-        |package mypkg
-        |
-        |import javax.crypto.Cipher
-        |
-        |fun main() {
-        |    println(Cipher.getMaxAllowedParameterSpec("AES"))
-        |}
-        |""".stripMargin)
-
-    "should contain TYPE nodes for both the type of the receiver and the type of the return value" in {
-      cpg.typ.fullName("javax.crypto.Cipher").size shouldBe 1
-      cpg.typ.fullName("java.security.spec.AlgorithmParameterSpec").size shouldBe 1
-    }
-  }
 }

@@ -31,7 +31,7 @@ class SpecialOperatorTests extends JimpleCode2CpgFixture {
     call.argumentIndex shouldBe 2
     call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
 
-    val List(o: Identifier, t: TypeRef) = call.argument.l
+    val List(o: Identifier, t: TypeRef) = call.argument.l: @unchecked
     o.code shouldBe "o"
     o.order shouldBe 1
     o.argumentIndex shouldBe 1
@@ -55,7 +55,7 @@ class SpecialOperatorTests extends JimpleCode2CpgFixture {
     call.argumentIndex shouldBe 2
     call.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.toString
 
-    val List(t: TypeRef, i: Identifier) = call.argument.l
+    val List(t: TypeRef, i: Identifier) = call.argument.l: @unchecked
 
     t.order shouldBe 1
     t.argumentIndex shouldBe 1

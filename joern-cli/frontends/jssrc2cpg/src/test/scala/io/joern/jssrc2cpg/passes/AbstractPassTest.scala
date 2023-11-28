@@ -3,6 +3,7 @@ package io.joern.jssrc2cpg.passes
 import better.files.File
 import io.joern.jssrc2cpg.utils.AstGenRunner
 import io.joern.jssrc2cpg.Config
+import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
 import io.shiftleft.codepropertygraph.Cpg
 import org.scalatest.matchers.should.Matchers
@@ -12,6 +13,8 @@ import org.scalatest.Inside
 abstract class AbstractPassTest extends AnyWordSpec with Matchers with Inside {
 
   protected abstract class Fixture
+
+  private implicit val schemaValidationMode: ValidationMode = ValidationMode.Enabled
 
   protected object AstFixture extends Fixture {
     def apply(code: String, filename: String = "code.js", tsTypes: Boolean = false)(f: Cpg => Unit): Unit = {

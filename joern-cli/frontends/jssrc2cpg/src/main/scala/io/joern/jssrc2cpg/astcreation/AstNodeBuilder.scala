@@ -3,13 +3,13 @@ package io.joern.jssrc2cpg.astcreation
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg
-import io.joern.x2cpg.Ast
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 
-trait AstNodeBuilder { this: AstCreator =>
+trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
   protected def createMethodReturnNode(func: BabelNodeInfo): NewMethodReturn = {
     newMethodReturnNode(typeFor(func), line = func.lineNumber, column = func.columnNumber)
   }
@@ -44,8 +44,8 @@ trait AstNodeBuilder { this: AstCreator =>
   }
 
   protected def codeOf(node: NewNode): String = node match {
-    case node: AstNodeNew => node.code
-    case _                => ""
+    case astNodeNew: AstNodeNew => astNodeNew.code
+    case _                      => ""
   }
 
   protected def createIndexAccessCallAst(
@@ -132,11 +132,11 @@ trait AstNodeBuilder { this: AstCreator =>
   def callNode(node: BabelNodeInfo, code: String, name: String, dispatchType: String): NewCall = {
     val fullName =
       if (dispatchType == DispatchTypes.STATIC_DISPATCH) name
-      else x2cpg.Defines.DynamicCallUnknownFallName
+      else x2cpg.Defines.DynamicCallUnknownFullName
     callNode(node, code, name, fullName, dispatchType, None, Some(Defines.Any))
   }
 
-  protected def createCallNode(
+  private def createCallNode(
     code: String,
     callName: String,
     dispatchType: String,
@@ -146,7 +146,7 @@ trait AstNodeBuilder { this: AstCreator =>
     .code(code)
     .name(callName)
     .methodFullName(
-      if (dispatchType == DispatchTypes.STATIC_DISPATCH) callName else x2cpg.Defines.DynamicCallUnknownFallName
+      if (dispatchType == DispatchTypes.STATIC_DISPATCH) callName else x2cpg.Defines.DynamicCallUnknownFullName
     )
     .dispatchType(dispatchType)
     .lineNumber(line)

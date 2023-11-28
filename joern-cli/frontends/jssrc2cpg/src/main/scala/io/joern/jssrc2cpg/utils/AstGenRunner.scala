@@ -4,7 +4,7 @@ import better.files.File
 import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.preprocessing.EjsPreprocessor
 import io.joern.x2cpg.SourceFiles
-import io.joern.x2cpg.utils.ExternalCommand
+import io.joern.x2cpg.utils.{Environment, ExternalCommand}
 import io.shiftleft.utils.IOUtils
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
@@ -15,7 +15,6 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.matching.Regex
 import scala.util.Try
-import scala.sys.process.stringToProcess
 
 object AstGenRunner {
 
@@ -28,7 +27,14 @@ object AstGenRunner {
   private val MinifiedPathRegex: Regex = ".*([.-]min\\..*js|bundle\\.js)".r
 
   private val IgnoredTestsRegex: Seq[Regex] =
-    List(".*[.-]spec\\.js".r, ".*[.-]mock\\.js".r, ".*[.-]e2e\\.js".r, ".*[.-]test\\.js".r)
+    List(
+      ".*[.-]spec\\.js".r,
+      ".*[.-]mock\\.js".r,
+      ".*[.-]e2e\\.js".r,
+      ".*[.-]test\\.js".r,
+      ".*cypress\\.json".r,
+      ".*test.*\\.json".r
+    )
 
   private val IgnoredFilesRegex: Seq[Regex] = List(
     ".*jest\\.config.*".r,
@@ -45,13 +51,23 @@ object AstGenRunner {
     ".*rollup\\.config.*".r,
     ".*\\.types\\.js".r,
     ".*\\.cjs\\.js".r,
-    ".*eslint-local-rules\\.js".r
+    ".*eslint-local-rules\\.js".r,
+    ".*\\.devcontainer\\.json".r,
+    ".*Gruntfile\\.js".r,
+    ".*i18n.*\\.json".r
   )
 
   case class AstGenRunnerResult(
     parsedFiles: List[(String, String)] = List.empty,
     skippedFiles: List[(String, String)] = List.empty
   )
+
+  // full path to the astgen binary from the env var ASTGEN_BIN
+  private val AstGenBin: Option[String] = scala.util.Properties.envOrNone("ASTGEN_BIN").flatMap {
+    case path if File(path).isDirectory => Some((File(path) / "astgen").pathAsString)
+    case path if File(path).exists      => Some(File(path).pathAsString)
+    case _                              => None
+  }
 
   lazy private val executableName = Environment.operatingSystem match {
     case Environment.OperatingSystemType.Windows => "astgen-win.exe"
@@ -82,29 +98,51 @@ object AstGenRunner {
     Paths.get(fixedDir, "/bin/astgen").toAbsolutePath.toString
   }
 
-  private def hasCompatibleAstGenVersion(astGenVersion: String): Boolean = {
-    Try("astgen --version".!!).toOption.map(_.strip()) match {
+  private def hasCompatibleAstGenVersionAtPath(astGenVersion: String, path: Option[String]): Boolean = {
+    val astGenCommand = path.getOrElse("astgen")
+    val localPath     = path.flatMap(File(_).parentOption.map(_.pathAsString)).getOrElse(".")
+    val debugMsgPath  = path.getOrElse("PATH")
+    ExternalCommand.run(s"$astGenCommand --version", localPath).toOption.map(_.mkString.strip()) match {
       case Some(installedVersion)
-          if installedVersion != "unknown" && VersionHelper.compare(installedVersion, astGenVersion) >= 0 =>
-        logger.debug(s"Using local astgen v$installedVersion from systems PATH")
+          if installedVersion != "unknown" && Try(VersionHelper.compare(installedVersion, astGenVersion)).toOption
+            .getOrElse(-1) >= 0 =>
+        logger.debug(s"Using astgen v$installedVersion from $debugMsgPath")
         true
       case Some(installedVersion) =>
         logger.debug(
-          s"Found local astgen v$installedVersion in systems PATH but jssrc2cpg requires at least v$astGenVersion"
+          s"Found astgen v$installedVersion in $debugMsgPath but jssrc2cpg requires at least v$astGenVersion"
         )
         false
-      case _ => false
+      case _ =>
+        false
     }
+  }
+
+  /** @return
+    *   the full path to the astgen binary found on the system
+    */
+  private def compatibleAstGenPath(astGenVersion: String): String = {
+    AstGenBin match
+      // 1. case: we try it at env var ASTGEN_BIN
+      case Some(path) if hasCompatibleAstGenVersionAtPath(astGenVersion, Some(path)) =>
+        path
+      // 2. case: we try it with the systems PATH
+      case _ if hasCompatibleAstGenVersionAtPath(astGenVersion, None) =>
+        "astgen"
+      // otherwise: we use the default local astgen executable path
+      case _ =>
+        logger.debug(
+          s"Did not find any astgen binary on this system (environment variable ASTGEN_BIN not set and no entry in the systems PATH)"
+        )
+        val localPath = s"$executableDir/$executableName"
+        logger.debug(s"Using astgen from '$localPath'")
+        localPath
   }
 
   private lazy val astGenCommand = {
     val conf          = ConfigFactory.load
     val astGenVersion = conf.getString("jssrc2cpg.astgen_version")
-    if (hasCompatibleAstGenVersion(astGenVersion)) {
-      "astgen"
-    } else {
-      s"$executableDir/$executableName"
-    }
+    compatibleAstGenPath(astGenVersion)
   }
 }
 
@@ -214,7 +252,7 @@ class AstGenRunner(config: Config) {
   private def processEjsFiles(in: File, out: File, ejsFiles: List[String]): Try[Seq[String]] = {
     val tmpJsFiles = ejsFiles.map { ejsFilePath =>
       val ejsFile             = File(ejsFilePath)
-      val maybeTranspiledFile = File(ejsFilePath.stripSuffix(".ejs") + ".js")
+      val maybeTranspiledFile = File(s"${ejsFilePath.stripSuffix(".ejs")}.js")
       if (isTranspiledFile(maybeTranspiledFile.pathAsString)) {
         maybeTranspiledFile
       } else {
@@ -233,7 +271,7 @@ class AstGenRunner(config: Config) {
     val jsons = SourceFiles.determine(out.toString(), Set(".json"))
     jsons.foreach { jsonPath =>
       val jsonFile    = File(jsonPath)
-      val jsonContent = IOUtils.readLinesInFile(jsonFile.path).mkString
+      val jsonContent = IOUtils.readEntireFile(jsonFile.path)
       val json        = ujson.read(jsonContent)
       val fileName    = json("fullName").str
       val newFileName = fileName.patch(fileName.lastIndexOf(".js"), ".ejs", 3)

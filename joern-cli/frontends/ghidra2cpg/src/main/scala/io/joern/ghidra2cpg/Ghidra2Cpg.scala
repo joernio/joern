@@ -144,7 +144,7 @@ class Ghidra2Cpg extends X2CpgFrontend[Config] {
         new ReturnEdgesPass(cpg).createAndApply()
     }
 
-    new TypeNodePass(Types.types.toList, cpg).createAndApply()
+    TypeNodePass.withRegisteredTypes(Types.types.toList, cpg).createAndApply()
     new JumpPass(cpg).createAndApply()
     new LiteralPass(cpg, flatProgramAPI).createAndApply()
   }

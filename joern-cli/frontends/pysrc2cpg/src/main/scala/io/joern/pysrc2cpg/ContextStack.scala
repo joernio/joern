@@ -33,7 +33,7 @@ class ContextStack {
   }
 
   private class MethodContext(
-    val name: String,
+    val scopeName: Option[String],
     val astParent: nodes.NewNode,
     val order: AutoIncIndex,
     val isClassBodyMethod: Boolean = false,
@@ -46,7 +46,7 @@ class ContextStack {
   ) extends Context {}
 
   private class ClassContext(
-    val name: String,
+    val scopeName: Option[String],
     val astParent: nodes.NewNode,
     val order: AutoIncIndex,
     val variables: mutable.Map[String, nodes.NewNode] = mutable.Map.empty,
@@ -92,7 +92,7 @@ class ContextStack {
   }
 
   def pushMethod(
-    name: String,
+    scopeName: Option[String],
     methodNode: nodes.NewMethod,
     methodBlockNode: nodes.NewBlock,
     methodRefNode: Option[nodes.NewMethodRef]
@@ -100,15 +100,22 @@ class ContextStack {
     val isClassBodyMethod = stack.headOption.exists(_.isInstanceOf[ClassContext])
 
     val methodContext =
-      new MethodContext(name, methodNode, new AutoIncIndex(1), isClassBodyMethod, Some(methodBlockNode), methodRefNode)
+      new MethodContext(
+        scopeName,
+        methodNode,
+        new AutoIncIndex(1),
+        isClassBodyMethod,
+        Some(methodBlockNode),
+        methodRefNode
+      )
     if (moduleMethodContext.isEmpty) {
       moduleMethodContext = Some(methodContext)
     }
     push(methodContext)
   }
 
-  def pushClass(name: String, classNode: nodes.NewTypeDecl): Unit = {
-    push(new ClassContext(name, classNode, new AutoIncIndex(1)))
+  def pushClass(scopeName: Option[String], classNode: nodes.NewTypeDecl): Unit = {
+    push(new ClassContext(scopeName, classNode, new AutoIncIndex(1)))
   }
 
   def pushSpecialContext(): Unit = {
@@ -228,9 +235,18 @@ class ContextStack {
             case Some(variableNode) =>
               createRefEdge(variableNode, identifier)
             case None =>
-              logger.warn("Unable to link identifier. Resulting CPG will have invalid format.")
+              // When we could not find a matching variable we get here and create a local in
+              // the method context so that we can link something and fullfil the CPG
+              // format requirements.
+              // For example this happens when there are wildcard imports directly into the
+              // modules namespace.
+              val localNode = createLocal(name, None)
+              transferLineColInfo(identifier, localNode)
+              val methodContext = findEnclosingMethodContext(contextStack)
+              createAstEdge(localNode, methodContext.methodBlockNode.get, methodContext.order.getAndInc)
+              methodContext.variables.put(name, localNode)
+              createRefEdge(localNode, identifier)
           }
-
         }
       }
     }
@@ -243,7 +259,7 @@ class ContextStack {
     */
   def considerAsGlobalVariable(lhs: NewNode): Unit = {
     lhs match {
-      case n: NewIdentifier if findEnclosingMethodContext(stack).name == "<module>" =>
+      case n: NewIdentifier if findEnclosingMethodContext(stack).scopeName.contains("<module>") =>
         addGlobalVariable(n.name)
       case _ =>
     }
@@ -376,13 +392,12 @@ class ContextStack {
   def qualName: String = {
     stack
       .flatMap {
-        case methodContext: MethodContext if !methodContext.isClassBodyMethod =>
-          Some(methodContext.name)
+        case methodContext: MethodContext =>
+          methodContext.scopeName
         case specialBlockContext: SpecialBlockContext =>
           None
         case classContext: ClassContext =>
-          Some(classContext.name)
-        case _: MethodContext => None
+          classContext.scopeName
       }
       .reverse
       .mkString(".")
@@ -407,10 +422,9 @@ class ContextStack {
   }
 
   def isClassContext: Boolean = {
-    val stackTail = stack.tail
-    stackTail.nonEmpty && (stackTail.headOption match {
-      case Some(_: ClassContext) => true
-      case _                     => false
+    stack.nonEmpty && (stack.head match {
+      case methodContext: MethodContext if methodContext.isClassBodyMethod => true
+      case _                                                               => false
     })
   }
 

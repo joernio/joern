@@ -16,8 +16,8 @@ class MethodTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
        |}
        |""".stripMargin)
 
-    "should contain exactly two non-external methods" in {
-      cpg.method.isExternal(false).size shouldBe 2
+    "should contain exactly three non-external methods" in {
+      cpg.method.isExternal(false).size shouldBe 3
     }
 
     "should contain method nodes with the correct fields" in {
@@ -38,6 +38,14 @@ class MethodTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
       y.lineNumber shouldBe Some(6)
       x.columnNumber shouldBe Some(4)
       y.filename.endsWith(".kt") shouldBe true
+    }
+
+    "should contain MODIFIER nodes attached to the METHOD nodes" in {
+      val List(mod1) = cpg.method.nameExact("double").modifier.l
+      mod1.modifierType shouldBe "PUBLIC"
+
+      val List(mod2) = cpg.method.nameExact("main").modifier.l
+      mod2.modifierType shouldBe "PUBLIC"
     }
 
     "should allow traversing to parameters" in {
@@ -121,8 +129,23 @@ class MethodTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
 
     "should contain a RETURN node as the child of the METHOD's BLOCK" in {
       val List(m)         = cpg.method.nameExact("f1").l
-      val List(r: Return) = m.block.astChildren.l
-      val List(_: Block)  = r.astChildren.l
+      val List(r: Return) = m.block.astChildren.l: @unchecked
+      val List(_: Block)  = r.astChildren.l: @unchecked
+    }
+  }
+
+  "CPG for code with call with argument with type with upper bound" should {
+    val cpg = code("""
+      |package mypkg
+      |open class Base
+      |fun <S:Base>doSomething(one: S) {
+      |    println(one)
+      |}
+      |""".stripMargin)
+
+    "should contain a METHOD node with correct FULL_NAME set" in {
+      val List(m) = cpg.method.nameExact("doSomething").l
+      m.fullName shouldBe "mypkg.doSomething:void(mypkg.Base)"
     }
   }
 }

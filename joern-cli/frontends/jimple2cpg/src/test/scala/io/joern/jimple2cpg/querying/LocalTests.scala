@@ -34,4 +34,14 @@ class LocalTests extends JimpleCode2CpgFixture {
     y.typeFullName shouldBe "java.lang.Integer"
     y.order shouldBe 2
   }
+
+  "should allow traversing from local to identifier" in {
+    val ys = cpg.local.nameExact("y").referencingIdentifiers.l
+    ys.size shouldBe 2
+    ys.head.name shouldBe "y"
+    val xs = cpg.local.nameExact("$stack3").referencingIdentifiers.l
+    xs.size shouldBe 3
+    xs.head.name shouldBe "$stack3"
+  }
+
 }

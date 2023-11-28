@@ -1,11 +1,35 @@
 lexer grammar RubyLexer;
 
 // --------------------------------------------------------
-// Auxiliary tokens
+// Auxiliary tokens and features
 // --------------------------------------------------------
 
+@header {
+    package io.joern.rubysrc2cpg.parser;
+}
+
 tokens {
-    STRING_INTERPOLATION_END
+    STRING_INTERPOLATION_END,
+    REGULAR_EXPRESSION_INTERPOLATION_END,
+    REGULAR_EXPRESSION_START,
+    QUOTED_NON_EXPANDED_STRING_LITERAL_END,
+    QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END,
+    QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END,
+    QUOTED_EXPANDED_REGULAR_EXPRESSION_END,
+    QUOTED_EXPANDED_STRING_LITERAL_END,
+    QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_END,
+    QUOTED_EXPANDED_STRING_ARRAY_LITERAL_END,
+    QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_END,
+    DELIMITED_STRING_INTERPOLATION_END,
+    DELIMITED_ARRAY_ITEM_INTERPOLATION_END,
+    
+    // The following tokens are created by `RubyLexerPostProcessor` only.
+    NON_EXPANDED_LITERAL_CHARACTER_SEQUENCE,
+    EXPANDED_LITERAL_CHARACTER_SEQUENCE
+}
+
+options {
+    superClass = RubyLexerBase;
 }
 
 // --------------------------------------------------------
@@ -109,9 +133,9 @@ RPAREN: ')';
 LCURLY: '{';
 RCURLY: '}'
     {
-        if (_modeStack.size() > 1 && _modeStack.peek() == DOUBLE_QUOTED_STRING_MODE) {
+        if (isEndOfInterpolation()) {
             popMode();
-            setType(STRING_INTERPOLATION_END);
+            setType(popInterpolationEndTokenType());
         }
     }
 ;
@@ -124,6 +148,7 @@ DOT2: '..';
 DOT3: '...';
 QMARK: '?';
 EQGT: '=>';
+MINUSGT: '->';
 
 fragment PUNCTUATOR
     :   LBRACK
@@ -170,11 +195,20 @@ PLUS: '+';
 MINUS: '-';
 STAR: '*';
 STAR2: '**';
-SLASH: '/';
+SLASH: '/'
+    {
+        if (isStartOfRegexLiteral()) {
+            setType(REGULAR_EXPRESSION_START);
+            pushMode(REGULAR_EXPRESSION_MODE);
+        }
+    }
+;
 PERCENT: '%';
 TILDE: '~';
-PLUSAT: '+@';
-MINUSAT: '-@';
+// These tokens should only occur after a DEF token, as they are solely used to (re)define unary + and - operators.
+// This way we won't emit the wrong token in e.g. `x+@y` (which means + between x and @y)
+PLUSAT: '+@'  {previousNonWsTokenTypeOrEOF() == DEF}?;
+MINUSAT: '-@' {previousNonWsTokenTypeOrEOF() == DEF}?;
 
 ASSIGNMENT_OPERATOR
     :   ASSIGNMENT_OPERATOR_NAME '='
@@ -260,6 +294,117 @@ fragment SINGLE_QUOTED_STRING_NON_ESCAPED_CHARACTER_SEQUENCE
 DOUBLE_QUOTED_STRING_START
     :   '"'
         -> pushMode(DOUBLE_QUOTED_STRING_MODE)
+    ;
+
+QUOTED_NON_EXPANDED_STRING_LITERAL_START
+    :   '%q' {!Character.isAlphabetic(_input.LA(1))}?
+    {
+        pushQuotedDelimiter(_input.LA(1));
+        pushQuotedEndTokenType(QUOTED_NON_EXPANDED_STRING_LITERAL_END);
+        _input.consume();
+    }
+        -> pushMode(NON_EXPANDED_DELIMITED_STRING_MODE)
+    ;
+    
+QUOTED_EXPANDED_STRING_LITERAL_START
+    :   '%Q' {!Character.isAlphabetic(_input.LA(1))}?
+    {
+        pushQuotedDelimiter(_input.LA(1));
+        pushQuotedEndTokenType(QUOTED_EXPANDED_STRING_LITERAL_END);
+        _input.consume();
+        pushMode(EXPANDED_DELIMITED_STRING_MODE);
+    }
+    //  This check exists to prevent issuing a QUOTED_EXPANDED_STRING_LITERAL_START
+    //  in obvious arithmetic expressions, such as `20 %(x+1)`.
+    //  Note, however, that we can't have a perfect test at this stage. For instance,
+    //  in `x = 1; x %(2)`, it's clear that's an arithmetic expression, but we
+    //  will still emit a QUOTED_EXPANDED_STRING_LITERAL_START.
+    |   '%(' {!isNumericTokenType(previousTokenTypeOrEOF())}?
+    {
+        pushQuotedDelimiter('(');
+        pushQuotedEndTokenType(QUOTED_EXPANDED_STRING_LITERAL_END);
+        pushMode(EXPANDED_DELIMITED_STRING_MODE);
+    }
+    ;
+
+QUOTED_EXPANDED_REGULAR_EXPRESSION_START
+    :   '%r' {!Character.isAlphabetic(_input.LA(1))}?
+    {
+        pushQuotedDelimiter(_input.LA(1));
+        pushQuotedEndTokenType(QUOTED_EXPANDED_REGULAR_EXPRESSION_END);
+        _input.consume();
+    }
+        -> pushMode(EXPANDED_DELIMITED_STRING_MODE)
+    ;
+    
+QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_START
+    :   '%x' {!Character.isAlphabetic(_input.LA(1))}?
+    {
+        pushQuotedDelimiter(_input.LA(1));
+        pushQuotedEndTokenType(QUOTED_EXPANDED_EXTERNAL_COMMAND_LITERAL_END);
+        _input.consume();
+    }
+        -> pushMode(EXPANDED_DELIMITED_STRING_MODE)
+    ;
+
+// --------------------------------------------------------
+// String (Word) array literals
+// --------------------------------------------------------
+
+QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_START
+    :   '%w' {!Character.isAlphabetic(_input.LA(1))}?
+    {
+        pushQuotedDelimiter(_input.LA(1));
+        pushQuotedEndTokenType(QUOTED_NON_EXPANDED_STRING_ARRAY_LITERAL_END);
+        _input.consume();
+    }
+        -> pushMode(NON_EXPANDED_DELIMITED_ARRAY_MODE)
+    ;
+    
+QUOTED_EXPANDED_STRING_ARRAY_LITERAL_START
+    :   '%W' {!Character.isAlphabetic(_input.LA(1))}?
+    {
+        pushQuotedDelimiter(_input.LA(1));
+        pushQuotedEndTokenType(QUOTED_EXPANDED_STRING_ARRAY_LITERAL_END);
+        _input.consume();
+    }
+        -> pushMode(EXPANDED_DELIMITED_ARRAY_MODE)
+    ;
+
+// --------------------------------------------------------
+// Here doc literals
+// --------------------------------------------------------
+
+HERE_DOC_IDENTIFIER
+ : '<<' [-~]? [\t]* IDENTIFIER
+ ;
+
+HERE_DOC
+ : '<<' [-~]? [\t]* IDENTIFIER [a-zA-Z_0-9]* NL ( {!heredocEndAhead(getText())}? . )* [a-zA-Z_] [a-zA-Z_0-9]*
+ ;
+
+// --------------------------------------------------------
+// Symbol array literals
+// --------------------------------------------------------
+
+QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_START
+    :   '%i' {!Character.isAlphabetic(_input.LA(1))}?
+    {
+        pushQuotedDelimiter(_input.LA(1));
+        pushQuotedEndTokenType(QUOTED_NON_EXPANDED_SYMBOL_ARRAY_LITERAL_END);
+        _input.consume();
+    }
+        -> pushMode(NON_EXPANDED_DELIMITED_ARRAY_MODE)
+    ;
+
+QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_START
+    :   '%I' {!Character.isAlphabetic(_input.LA(1))}?
+    {
+        pushQuotedDelimiter(_input.LA(1));
+        pushQuotedEndTokenType(QUOTED_EXPANDED_SYMBOL_ARRAY_LITERAL_END);
+        _input.consume();
+    }
+        -> pushMode(EXPANDED_DELIMITED_ARRAY_MODE)
     ;
 
 // --------------------------------------------------------
@@ -349,7 +494,7 @@ fragment HEXADECIMAL_DIGIT
 // --------------------------------------------------------
 
 NL: LINE_TERMINATOR+;
-WS: WHITESPACE+;
+WS: WHITESPACE+ -> channel(HIDDEN);
 
 fragment WHITESPACE
     :   [\u0009]
@@ -373,7 +518,11 @@ fragment LINE_TERMINATOR
 // --------------------------------------------------------
 
 SYMBOL_LITERAL
-    :   ':' SYMBOL_NAME
+    :   ':' (SYMBOL_NAME | (CONSTANT_IDENTIFIER | LOCAL_VARIABLE_IDENTIFIER) '=')
+    // This check exists to prevent issuing a SYMBOL_LITERAL in whitespace-free associations, e.g. 
+    //      in `foo(x:y)`, so that `:y` is not a SYMBOL_LITERAL
+    // or   in `{:x=>1}`, so that `:x=` is not a SYMBOL_LITERAL
+    {previousTokenTypeOrEOF() != LOCAL_VARIABLE_IDENTIFIER && _input.LA(1) != '>'}?
     ;
 
 fragment SYMBOL_NAME
@@ -383,9 +532,13 @@ fragment SYMBOL_NAME
     |   CONSTANT_IDENTIFIER
     |   LOCAL_VARIABLE_IDENTIFIER
     |   METHOD_ONLY_IDENTIFIER
-    |   ASSIGNMENT_LIKE_METHOD_IDENTIFIER
     |   OPERATOR_METHOD_NAME
     |   KEYWORD
+    // NOTE: Even though we have PLUSAT and MINUSAT in OPERATOR_METHOD_NAME, the former
+    // are not emitted unless there's a DEF token before them, cf. their predicate.
+    // Thus, we need to add them explicitly here in order to recognize standalone SYMBOL_LITERAL tokens as well.
+    |   '+@'
+    |   '-@'
     ;
 
 // --------------------------------------------------------
@@ -398,6 +551,32 @@ LOCAL_VARIABLE_IDENTIFIER
 
 GLOBAL_VARIABLE_IDENTIFIER
     :   '$' IDENTIFIER_START_CHARACTER IDENTIFIER_CHARACTER*
+    |   '$' [0-9]+
+    |   '$!'
+    |   '$@'
+    |   '$~'
+    |   '$&'
+    |   '$`'
+    |   '$\''
+    |   '$+'
+    |   '$='
+    |   '$/'
+    |   '$\\'
+    |   '$,'
+    |   '$;'
+    |   '$.'
+    |   '$:'
+    |   '$<'
+    |   '$>'
+    |   '$_'
+    |   '$0'
+    |   '$*'
+    |   '$$'
+    |   '$?'
+    |   '$-a'
+    |   '$-i'
+    |   '$-l'
+    |   '$-p'
     ;
 
 INSTANCE_VARIABLE_IDENTIFIER
@@ -416,13 +595,18 @@ fragment METHOD_ONLY_IDENTIFIER
     :   (CONSTANT_IDENTIFIER | LOCAL_VARIABLE_IDENTIFIER) ('!' | '?')
     ;
 
-fragment ASSIGNMENT_LIKE_METHOD_IDENTIFIER
-    :   (CONSTANT_IDENTIFIER | LOCAL_VARIABLE_IDENTIFIER) '='
+
+// Similarly to PLUSAT/MINUSAT, this should only occur after a DEF token.
+// Otherwise, the assignment `x=nil` would be parsed as (ASSIGNMENT_LIKE_METHOD_IDENTIFIER, NIL)
+// instead of the more appropriate (LOCAL_VARIABLE_IDENTIFIER, EQ, NIL).
+ASSIGNMENT_LIKE_METHOD_IDENTIFIER
+    :   (CONSTANT_IDENTIFIER | LOCAL_VARIABLE_IDENTIFIER) '=' {previousNonWsTokenTypeOrEOF() == DEF}?
     ;
 
 fragment IDENTIFIER_CHARACTER
     :   IDENTIFIER_START_CHARACTER
     |   DECIMAL_DIGIT
+    |   '_'
     ;
 
 fragment IDENTIFIER_START_CHARACTER
@@ -478,6 +662,21 @@ fragment REST_OF_BEGIN_END_LINE
     ;
 
 // --------------------------------------------------------
+// Unrecognized characters
+// --------------------------------------------------------
+
+// Any other character shall still be recognized so that the
+// recovery mechanism in `io.joern.rubysrc2cpg.astcreation.AntlrParser`
+// also handles them. Otherwise, the lexer would complain, not emit
+// and the recovery mechanism would not be able to act.
+
+// Note: this must be the very last rule in this lexer specification, as
+// otherwise this token would take precedence over any token defined after.
+UNRECOGNIZED
+    :   .
+    ;
+
+// --------------------------------------------------------
 // Double quoted string mode
 // --------------------------------------------------------
 
@@ -492,14 +691,22 @@ DOUBLE_QUOTED_STRING_CHARACTER_SEQUENCE
     :   DOUBLE_QUOTED_STRING_CHARACTER+
     ;
 
-INTERPOLATED_CHARACTER_SEQUENCE
+fragment INTERPOLATED_CHARACTER_SEQUENCE_FRAGMENT
     :   '#' GLOBAL_VARIABLE_IDENTIFIER
     |   '#' CLASS_VARIABLE_IDENTIFIER
     |   '#' INSTANCE_VARIABLE_IDENTIFIER
     ;
 
+INTERPOLATED_CHARACTER_SEQUENCE
+    :   INTERPOLATED_CHARACTER_SEQUENCE_FRAGMENT
+    ;
+
 STRING_INTERPOLATION_BEGIN
-    :   '#{' {pushMode(DEFAULT_MODE);}
+    :   '#{' 
+    {
+        pushInterpolationEndTokenType(STRING_INTERPOLATION_END);
+        pushMode(DEFAULT_MODE);
+    }
     ;
 
 fragment DOUBLE_QUOTED_STRING_CHARACTER
@@ -548,7 +755,160 @@ fragment SIMPLE_ESCAPE_SEQUENCE
     ;
 
 fragment DOUBLE_ESCAPED_CHARACTER
-    :   [ntrfvaebs]
+    :   [ntrfvaebsu]
+    ;
+
+// --------------------------------------------------------
+// Expanded delimited string mode
+// --------------------------------------------------------
+
+mode EXPANDED_DELIMITED_STRING_MODE;
+
+DELIMITED_STRING_INTERPOLATION_BEGIN
+    :   '#{' 
+    {
+        pushInterpolationEndTokenType(DELIMITED_STRING_INTERPOLATION_END);
+        pushMode(DEFAULT_MODE);
+    }
+    ;
+
+EXPANDED_VARIABLE_CHARACTER_SEQUENCE
+    :   INTERPOLATED_CHARACTER_SEQUENCE_FRAGMENT
+    ;
+
+EXPANDED_LITERAL_CHARACTER
+    :   NON_EXPANDED_LITERAL_ESCAPE_SEQUENCE
+    |   NON_ESCAPED_LITERAL_CHARACTER
+    {
+        consumeQuotedCharAndMaybePopMode(_input.LA(-1));
+    }
+    ;
+
+// --------------------------------------------------------
+// Non-expanded delimited string mode
+// --------------------------------------------------------
+
+mode NON_EXPANDED_DELIMITED_STRING_MODE;
+
+
+fragment NON_EXPANDED_LITERAL_ESCAPE_SEQUENCE
+    :   '\\' NON_ESCAPED_LITERAL_CHARACTER
+    ;
+
+fragment NON_ESCAPED_LITERAL_CHARACTER
+    :   ~[\r\n]
+    |   '\n' {_input.LA(1) != '\r'}?
+    ;
+
+NON_EXPANDED_LITERAL_CHARACTER
+    :   NON_EXPANDED_LITERAL_ESCAPE_SEQUENCE
+    |   NON_ESCAPED_LITERAL_CHARACTER
+    {
+        consumeQuotedCharAndMaybePopMode(_input.LA(-1));
+    }
+    ;
+
+// --------------------------------------------------------
+// Expanded delimited array mode
+// --------------------------------------------------------
+
+mode EXPANDED_DELIMITED_ARRAY_MODE;
+
+DELIMITED_ARRAY_ITEM_INTERPOLATION_BEGIN
+    :   '#{'
+    {
+        pushInterpolationEndTokenType(DELIMITED_ARRAY_ITEM_INTERPOLATION_END);
+        pushMode(DEFAULT_MODE);
+    }
+    ;
+
+EXPANDED_ARRAY_ITEM_SEPARATOR
+    :   NON_EXPANDED_ARRAY_ITEM_DELIMITER
+    ;
+
+EXPANDED_ARRAY_ITEM_CHARACTER
+    :   NON_EXPANDED_LITERAL_ESCAPE_SEQUENCE
+    |   NON_ESCAPED_LITERAL_CHARACTER
+    {
+        consumeQuotedCharAndMaybePopMode(_input.LA(-1));
+    }
+    ;
+
+// --------------------------------------------------------
+// Non-expanded delimited array mode
+// --------------------------------------------------------
+
+mode NON_EXPANDED_DELIMITED_ARRAY_MODE;
+
+fragment NON_EXPANDED_ARRAY_ITEM_DELIMITER
+    :   [\u0009]
+    |   [\u000a]
+    |   [\u000b]
+    |   [\u000c]
+    |   [\u000d]
+    |   [\u0020]
+    |   '\\' ('\r'? '\n')
+    ;
+
+NON_EXPANDED_ARRAY_ITEM_SEPARATOR
+    :   NON_EXPANDED_ARRAY_ITEM_DELIMITER
+    ;
+
+NON_EXPANDED_ARRAY_ITEM_CHARACTER
+    :   NON_EXPANDED_LITERAL_ESCAPE_SEQUENCE
+    |   NON_ESCAPED_LITERAL_CHARACTER
+    {
+        consumeQuotedCharAndMaybePopMode(_input.LA(-1));
+    }
+    ;
+
+// --------------------------------------------------------
+// Regex literal mode
+// --------------------------------------------------------
+
+mode REGULAR_EXPRESSION_MODE;
+
+REGULAR_EXPRESSION_END
+    :   '/' REGULAR_EXPRESSION_OPTION*
+        -> popMode
+    ;
+
+REGULAR_EXPRESSION_BODY
+    :   REGULAR_EXPRESSION_CHARACTER+
+    ;
+
+REGULAR_EXPRESSION_INTERPOLATION_BEGIN
+    :   '#{' 
+    {
+        pushInterpolationEndTokenType(REGULAR_EXPRESSION_INTERPOLATION_END);
+        pushMode(DEFAULT_MODE);
+    }
+    ;
+
+fragment REGULAR_EXPRESSION_OPTION
+    :   [imxo]
+    ;
+
+fragment REGULAR_EXPRESSION_CHARACTER
+    :   ~[/#\\]
+    |   '#' {_input.LA(1) != '$' && _input.LA(1) != '@' && _input.LA(1) != '{'}?
+    |   REGULAR_EXPRESSION_NON_ESCAPED_SEQUENCE
+    |   REGULAR_EXPRESSION_ESCAPE_SEQUENCE
+    |   LINE_TERMINATOR_ESCAPE_SEQUENCE
+    |   INTERPOLATED_CHARACTER_SEQUENCE
+    ;
+
+fragment REGULAR_EXPRESSION_NON_ESCAPED_SEQUENCE
+    :   '\\' REGULAR_EXPRESSION_NON_ESCAPED_CHARACTER
+    ;
+
+fragment REGULAR_EXPRESSION_NON_ESCAPED_CHARACTER
+    :   ~[\r\n]
+    |   '\n' {_input.LA(1) != '\r'}?
+    ;
+
+fragment REGULAR_EXPRESSION_ESCAPE_SEQUENCE
+    :   '\\' '/'
     ;
 
 // --------------------------------------------------------

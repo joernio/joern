@@ -1,5 +1,7 @@
 package io.joern.x2cpg
 
+import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
+import io.shiftleft.codepropertygraph.generated.nodes.Block.{PropertyDefaults => BlockDefaults}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   NewAnnotation,
   NewBlock,
@@ -7,29 +9,45 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewControlStructure,
   NewFieldIdentifier,
   NewIdentifier,
+  NewImport,
+  NewJumpTarget,
   NewLiteral,
   NewLocal,
   NewMember,
   NewMethod,
   NewMethodParameterIn,
   NewMethodRef,
+  NewMethodReturn,
   NewReturn,
   NewTypeDecl,
   NewTypeRef,
   NewUnknown
 }
-import io.shiftleft.codepropertygraph.generated.nodes.Block.{PropertyDefaults => BlockDefaults}
 import org.apache.commons.lang.StringUtils
 
+import scala.util.Try
 trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
   protected def line(node: Node): Option[Integer]
   protected def column(node: Node): Option[Integer]
   protected def lineEnd(node: Node): Option[Integer]
   protected def columnEnd(element: Node): Option[Integer]
 
+  private val MinCodeLength: Int        = 50
+  private val DefaultMaxCodeLength: Int = 1000
+  // maximum length of code fields in number of characters
+  private lazy val MaxCodeLength: Int =
+    sys.env.get("JOERN_MAX_CODE_LENGTH").flatMap(_.toIntOption).getOrElse(DefaultMaxCodeLength)
+
+  protected def code(node: Node): String
+
+  protected def shortenCode(code: String): String =
+    StringUtils.abbreviate(code, math.max(MinCodeLength, MaxCodeLength))
+
+  protected def offset(node: Node): Option[(Int, Int)] = None
+
   protected def unknownNode(node: Node, code: String): NewUnknown = {
     NewUnknown()
-      .parserTypeName(node.getClass.getSimpleName)
+      .parserTypeName(Try(node.getClass.getSimpleName).toOption.getOrElse(Defines.Unknown))
       .code(code)
       .lineNumber(line(node))
       .columnNumber(column(node))
@@ -70,6 +88,15 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
       .dynamicTypeHintFullName(dynamicTypeHints)
       .lineNumber(line(node))
       .columnNumber(column(node))
+  }
+
+  protected def newImportNode(code: String, importedEntity: String, importedAs: String, include: Node): NewImport = {
+    NewImport()
+      .code(code)
+      .importedEntity(importedEntity)
+      .importedAs(importedAs)
+      .lineNumber(line(include))
+      .columnNumber(column(include))
   }
 
   protected def literalNode(
@@ -281,6 +308,27 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
         .lineNumberEnd(lineEnd(node))
         .columnNumberEnd(columnEnd(node))
     signature.foreach { s => node_.signature(StringUtils.normalizeSpace(s)) }
+    offset(node).foreach { case (offset, offsetEnd) =>
+      node_.offset(offset).offsetEnd(offsetEnd)
+    }
     node_
+  }
+
+  protected def methodReturnNode(node: Node, typeFullName: String): NewMethodReturn = {
+    newMethodReturnNode(typeFullName, None, line(node), column(node))
+  }
+
+  protected def jumpTargetNode(
+    node: Node,
+    name: String,
+    code: String,
+    parserTypeName: Option[String] = None
+  ): NewJumpTarget = {
+    NewJumpTarget()
+      .parserTypeName(parserTypeName.getOrElse(node.getClass.getSimpleName))
+      .name(name)
+      .code(code)
+      .lineNumber(line(node))
+      .columnNumber(column(node))
   }
 }

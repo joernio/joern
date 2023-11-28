@@ -1,31 +1,42 @@
 package io.joern.pysrc2cpg
 
-import io.joern.x2cpg.{X2Cpg, X2CpgConfig, X2CpgFrontend}
+import io.joern.x2cpg.passes.frontend.TypeRecoveryParserConfig
+import io.joern.x2cpg.{SourceFiles, X2Cpg, X2CpgConfig, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
-import java.nio.file.attribute.BasicFileAttributes
-import java.nio.file.{FileVisitResult, Files, Path, Paths, SimpleFileVisitor}
-import scala.collection.mutable
+
+import java.nio.file.*
 import scala.util.Try
+import scala.jdk.CollectionConverters._
 
 case class Py2CpgOnFileSystemConfig(
   venvDir: Path = Paths.get(".venv"),
   ignoreVenvDir: Boolean = true,
-  disableDummyTypes: Boolean = false,
+  ignorePaths: Seq[Path] = Nil,
+  ignoreDirNames: Seq[String] = Nil,
   requirementsTxt: String = "requirements.txt"
-) extends X2CpgConfig[Py2CpgOnFileSystemConfig] {
-
-  override def withInputPath(inputPath: String): Py2CpgOnFileSystemConfig = {
-    this.inputPath = inputPath
-    this
+) extends X2CpgConfig[Py2CpgOnFileSystemConfig]
+    with TypeRecoveryParserConfig[Py2CpgOnFileSystemConfig] {
+  def withVenvDir(venvDir: Path): Py2CpgOnFileSystemConfig = {
+    copy(venvDir = venvDir).withInheritedFields(this)
   }
 
-  override def withOutputPath(x: String): Py2CpgOnFileSystemConfig = {
-    this.outputPath = x
-    this
+  def withIgnoreVenvDir(value: Boolean): Py2CpgOnFileSystemConfig = {
+    copy(ignoreVenvDir = value).withInheritedFields(this)
   }
 
+  def withIgnorePaths(value: Seq[Path]): Py2CpgOnFileSystemConfig = {
+    copy(ignorePaths = value).withInheritedFields(this)
+  }
+
+  def withIgnoreDirNames(value: Seq[String]): Py2CpgOnFileSystemConfig = {
+    copy(ignoreDirNames = value).withInheritedFields(this)
+  }
+
+  def withRequirementsTxt(text: String): Py2CpgOnFileSystemConfig = {
+    copy(requirementsTxt = text).withInheritedFields(this)
+  }
 }
 
 class Py2CpgOnFileSystem extends X2CpgFrontend[Py2CpgOnFileSystemConfig] {
@@ -39,75 +50,52 @@ class Py2CpgOnFileSystem extends X2CpgFrontend[Py2CpgOnFileSystemConfig] {
     logConfiguration(config)
 
     X2Cpg.withNewEmptyCpg(config.outputPath, config) { (cpg, _) =>
-      val ignorePrefixes =
+      val venvIgnorePath =
         if (config.ignoreVenvDir) {
           config.venvDir :: Nil
         } else {
           Nil
         }
-      val inputFiles = collectInputFiles(Paths.get(config.inputPath), ignorePrefixes, config.requirementsTxt)
-      val inputProviders = inputFiles._1.map { inputFile => () =>
+      val inputPath         = Path.of(config.inputPath)
+      val ignoreDirNamesSet = config.ignoreDirNames.toSet
+      val absoluteIgnorePaths = (config.ignorePaths ++ venvIgnorePath).map { path =>
+        inputPath.resolve(path)
+      }
+
+      val inputFiles = SourceFiles
+        .determine(
+          config.inputPath,
+          Set(".py"),
+          ignoredFilesRegex = Option(config.ignoredFilesRegex),
+          ignoredFilesPath = Option(config.ignoredFiles)
+        )
+        .map(x => Path.of(x))
+        .filter { file => filterIgnoreDirNames(file, inputPath, ignoreDirNamesSet) }
+        .filter { file =>
+          !absoluteIgnorePaths.exists(ignorePath => file.startsWith(ignorePath))
+        }
+
+      val inputProviders = inputFiles.map { inputFile => () =>
         {
           val content = IOUtils.readLinesInFile(inputFile).mkString("\n")
-          Py2Cpg.InputPair(content, inputFile.toString, Paths.get(config.inputPath).relativize(inputFile).toString)
+          Py2Cpg.InputPair(content, inputPath.relativize(inputFile).toString)
         }
       }
-      val configInputProviders =
-        inputFiles._2.map { inputFile => () =>
-          {
-            val content = IOUtils.readLinesInFile(inputFile).mkString("\n")
-            Py2Cpg.InputPair(content, inputFile.toString, Paths.get(config.inputPath).relativize(inputFile).toString)
-          }
-        }
-      val py2Cpg = new Py2Cpg(inputProviders, configInputProviders, cpg)
+      val py2Cpg = new Py2Cpg(inputProviders, cpg, config.inputPath, config.requirementsTxt, config.schemaValidation)
       py2Cpg.buildCpg()
     }
   }
 
-  private def collectInputFiles(
-    inputDir: Path,
-    ignorePrefixes: Iterable[Path],
-    requirementsTxtFileName: String
-  ): (Iterable[Path], Option[Path]) = {
-    if (!Files.exists(inputDir)) {
-      logger.error(s"Cannot find $inputDir")
-      return (Iterable.empty, None)
+  private def filterIgnoreDirNames(file: Path, inputPath: Path, ignoreDirNamesSet: Set[String]): Boolean = {
+    var parts = inputPath.relativize(file).iterator().asScala.toList
+
+    if (!Files.isDirectory(file)) {
+      // we're only interested in the directories - drop the file part
+      parts = parts.dropRight(1)
     }
 
-    val inputFiles = mutable.ArrayBuffer.empty[Path]
-
-    Files.walkFileTree(
-      inputDir,
-      new SimpleFileVisitor[Path] {
-        override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
-          val relativeFile    = inputDir.relativize(file)
-          val relativeFileStr = relativeFile.toString
-          if (
-            relativeFileStr.endsWith(".py") &&
-            !ignorePrefixes.exists(prefix => relativeFile.startsWith(prefix))
-          ) {
-            inputFiles.append(file)
-          }
-          FileVisitResult.CONTINUE
-        }
-      }
-    )
-
-    var requirementsTxtMaybe: Option[Path] = None
-    Files.walkFileTree(
-      inputDir,
-      new SimpleFileVisitor[Path] {
-        override def visitFile(file: Path, attrs: BasicFileAttributes): FileVisitResult = {
-          val relativeFile    = inputDir.relativize(file)
-          val relativeFileStr = relativeFile.toString
-          if (relativeFileStr.endsWith(requirementsTxtFileName)) {
-            requirementsTxtMaybe = Some(file)
-          }
-          FileVisitResult.CONTINUE
-        }
-      }
-    )
-    (inputFiles, requirementsTxtMaybe)
+    val aPartIsInIgnoreSet = parts.exists(part => ignoreDirNamesSet.contains(part.toString))
+    !aPartIsInIgnoreSet
   }
 
   private def logConfiguration(config: Py2CpgOnFileSystemConfig): Unit = {
@@ -115,6 +103,8 @@ class Py2CpgOnFileSystem extends X2CpgFrontend[Py2CpgOnFileSystemConfig] {
     logger.info(s"Input directory: ${config.inputPath}")
     logger.info(s"Venv directory: ${config.venvDir}")
     logger.info(s"IgnoreVenvDir: ${config.ignoreVenvDir}")
+    logger.info(s"IgnorePaths: ${config.ignorePaths.mkString(", ")}")
+    logger.info(s"IgnoreDirNames: ${config.ignoreDirNames.mkString(", ")}")
     logger.info(s"No dummy types: ${config.disableDummyTypes}")
   }
 }

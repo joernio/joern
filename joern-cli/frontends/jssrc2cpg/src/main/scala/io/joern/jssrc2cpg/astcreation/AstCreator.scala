@@ -2,14 +2,14 @@ package io.joern.jssrc2cpg.astcreation
 
 import io.joern.jssrc2cpg.Config
 import io.joern.jssrc2cpg.datastructures.{MethodScope, Scope}
-import io.joern.jssrc2cpg.parser.BabelAst._
+import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelJsonParser.ParseResult
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
-import io.joern.x2cpg.datastructures.Stack._
-import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
-import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder => X2CpgAstNodeBuilder}
-import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
+import io.joern.x2cpg.datastructures.Stack.*
+import io.joern.x2cpg.utils.NodeBuilders.{newMethodReturnNode, newModifierNode}
+import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, AstNodeBuilder as X2CpgAstNodeBuilder}
+import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, ModifierTypes, NodeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 import io.shiftleft.codepropertygraph.generated.nodes.NewFile
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
@@ -27,7 +27,8 @@ class AstCreator(
   val config: Config,
   val parserResult: ParseResult,
   val usedTypes: ConcurrentHashMap[(String, String), Boolean]
-) extends AstCreatorBase(parserResult.filename)
+)(implicit withSchemaValidation: ValidationMode)
+    extends AstCreatorBase(parserResult.filename)
     with AstForExpressionsCreator
     with AstForPrimitivesCreator
     with AstForTypesCreator
@@ -123,7 +124,13 @@ class AstCreator(
     methodAstParentStack.pop()
 
     functionTypeAndTypeDeclAst.withChild(
-      methodAst(programMethod, List(Ast(thisParam)), blockAst(blockNode, methodChildren), methodReturn)
+      methodAst(
+        programMethod,
+        Ast(thisParam) :: Nil,
+        blockAst(blockNode, methodChildren),
+        methodReturn,
+        newModifierNode(ModifierTypes.MODULE) :: Nil
+      )
     )
   }
 
@@ -148,7 +155,9 @@ class AstCreator(
       case TSEnumDeclaration         => astForEnum(nodeInfo)
       case DeclareTypeAlias          => astForTypeAlias(nodeInfo)
       case TypeAlias                 => astForTypeAlias(nodeInfo)
+      case TypeCastExpression        => astForCastExpression(nodeInfo)
       case TSTypeAssertion           => astForCastExpression(nodeInfo)
+      case TSTypeCastExpression      => astForCastExpression(nodeInfo)
       case TSTypeAliasDeclaration    => astForTypeAlias(nodeInfo)
       case NewExpression             => astForNewExpression(nodeInfo)
       case ThisExpression            => astForThisExpression(nodeInfo)
@@ -216,6 +225,7 @@ class AstCreator(
       case JSXSpreadAttribute        => astForJsxSpreadAttribute(nodeInfo)
       case JSXFragment               => astForJsxFragment(nodeInfo)
       case JSXAttribute              => astForJsxAttribute(nodeInfo)
+      case WithStatement             => astForWithStatement(nodeInfo)
       case EmptyStatement            => Ast()
       case DebuggerStatement         => Ast()
       case _                         => notHandledYet(nodeInfo)
@@ -249,4 +259,5 @@ class AstCreator(
   protected def column(node: BabelNodeInfo): Option[Integer]    = node.columnNumber
   protected def lineEnd(node: BabelNodeInfo): Option[Integer]   = node.lineNumberEnd
   protected def columnEnd(node: BabelNodeInfo): Option[Integer] = node.columnNumberEnd
+  protected def code(node: BabelNodeInfo): String               = node.code
 }

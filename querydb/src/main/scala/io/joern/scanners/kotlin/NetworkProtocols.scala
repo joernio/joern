@@ -1,11 +1,9 @@
 package io.joern.scanners.kotlin
 
+import io.joern.console.*
+import io.joern.macros.QueryMacros.*
 import io.joern.scanners.{Crew, QueryTags}
-import io.shiftleft.codepropertygraph.generated._
-import io.joern.console._
-import io.joern.macros.QueryMacros._
-import io.shiftleft.semanticcpg.language._
-import overflowdb.traversal.Traversal
+import io.shiftleft.semanticcpg.language.*
 
 object NetworkProtocols extends QueryBundle {
 
@@ -26,7 +24,6 @@ object NetworkProtocols extends QueryBundle {
           .fullNameExact("java.net.URL.<init>:void(java.lang.String)")
           .callIn
           .where(_.argument.isLiteral.code("^[^h]*http:.*"))
-          .l
       }),
       tags = List(QueryTags.insecureNetworkTraffic, QueryTags.android),
       codeExamples = CodeExamples(

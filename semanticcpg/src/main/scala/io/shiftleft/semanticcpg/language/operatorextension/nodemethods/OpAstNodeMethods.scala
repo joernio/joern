@@ -1,49 +1,43 @@
 package io.shiftleft.semanticcpg.language.operatorextension.nodemethods
 
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Call}
-import io.shiftleft.semanticcpg.language._
-import io.shiftleft.semanticcpg.language.operatorextension.{
-  OpNodes,
-  allArithmeticTypes,
-  allArrayAccessTypes,
-  allAssignmentTypes,
-  allFieldAccessTypes
-}
+import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.operatorextension.*
 
 class OpAstNodeMethods[A <: AstNode](val node: A) extends AnyVal {
 
-  def assignment: Traversal[OpNodes.Assignment] =
+  def assignment: Iterator[OpNodes.Assignment] =
     astDown(allAssignmentTypes).cast[OpNodes.Assignment]
 
-  def arithmetic: Traversal[OpNodes.Arithmetic] =
+  def arithmetic: Iterator[OpNodes.Arithmetic] =
     astDown(allArithmeticTypes).cast[OpNodes.Arithmetic]
 
-  def arrayAccess: Traversal[OpNodes.ArrayAccess] =
+  def arrayAccess: Iterator[OpNodes.ArrayAccess] =
     astDown(allArrayAccessTypes).cast[OpNodes.ArrayAccess]
 
-  def fieldAccess: Traversal[OpNodes.FieldAccess] =
+  def fieldAccess: Iterator[OpNodes.FieldAccess] =
     astDown(allFieldAccessTypes).cast[OpNodes.FieldAccess]
 
-  private def astDown(callNames: Set[String]): Traversal[Call] =
+  private def astDown(callNames: Set[String]): Iterator[Call] =
     node.ast.isCall.filter(x => callNames.contains(x.name))
 
-  def inAssignment: Traversal[OpNodes.Assignment] =
+  def inAssignment: Iterator[OpNodes.Assignment] =
     astUp(allAssignmentTypes)
       .cast[OpNodes.Assignment]
 
-  def inArithmetic: Traversal[OpNodes.Arithmetic] =
+  def inArithmetic: Iterator[OpNodes.Arithmetic] =
     astUp(allArithmeticTypes)
       .cast[OpNodes.Arithmetic]
 
-  def inArrayAccess: Traversal[OpNodes.ArrayAccess] =
+  def inArrayAccess: Iterator[OpNodes.ArrayAccess] =
     astUp(allArrayAccessTypes)
       .cast[OpNodes.ArrayAccess]
 
-  def inFieldAccess: Traversal[OpNodes.FieldAccess] =
+  def inFieldAccess: Iterator[OpNodes.FieldAccess] =
     astUp(allFieldAccessTypes)
       .cast[OpNodes.FieldAccess]
 
-  private def astUp(strings: Set[String]): Traversal[Call] =
+  private def astUp(strings: Set[String]): Iterator[Call] =
     node.inAstMinusLeaf.isCall
       .filter(x => strings.contains(x.name))
 

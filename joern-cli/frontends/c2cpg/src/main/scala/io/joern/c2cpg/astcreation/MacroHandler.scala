@@ -9,7 +9,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewFieldIdentifier,
   NewNode
 }
-import io.joern.x2cpg.{Ast, AstEdge}
+import io.joern.x2cpg.{Ast, AstEdge, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
 import org.apache.commons.lang.StringUtils
 import org.eclipse.cdt.core.dom.ast.{IASTMacroExpansionLocation, IASTNode, IASTPreprocessorMacroDefinition}
@@ -20,7 +20,7 @@ import org.eclipse.cdt.internal.core.parser.scanner.MacroArgumentExtractor
 import scala.annotation.nowarn
 import scala.collection.mutable
 
-trait MacroHandler { this: AstCreator =>
+trait MacroHandler(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   private val nodeOffsetMacroPairs: mutable.Stack[(Int, IASTPreprocessorMacroDefinition)] = {
     mutable.Stack.from(
@@ -36,7 +36,12 @@ trait MacroHandler { this: AstCreator =>
     * invocation and attach `ast` as its child.
     */
   def asChildOfMacroCall(node: IASTNode, ast: Ast): Ast = {
+    // If a macro in a header file contained a method definition already seen in some
+    // source file we skipped that during the previous AST creation and returned an empty AST.
+    if (ast.root.isEmpty && isExpandedFromMacro(node)) return ast
+    // We do nothing for locals only.
     if (ast.nodes.size == 1 && ast.root.exists(_.isInstanceOf[NewLocal])) return ast
+    // Otherwise, we create the synthetic call AST.
     val matchingMacro = extractMatchingMacro(node)
     val macroCallAst  = matchingMacro.map { case (mac, args) => createMacroCallAst(ast, node, mac, args) }
     macroCallAst match {
@@ -149,7 +154,7 @@ trait MacroHandler { this: AstCreator =>
   @nowarn
   def nodeSignature(node: IASTNode): String = {
     import org.eclipse.cdt.core.dom.ast.ASTSignatureUtil.getNodeSignature
-    val sig = if (isExpandedFromMacro(node)) {
+    if (isExpandedFromMacro(node)) {
       val sig = getNodeSignature(node)
       if (sig.isEmpty) {
         node.getRawSignature
@@ -159,7 +164,6 @@ trait MacroHandler { this: AstCreator =>
     } else {
       node.getRawSignature
     }
-    shortenCode(sig)
   }
 
   private def isExpandedFromMacro(node: IASTNode): Boolean = expandedFromMacro(node).nonEmpty

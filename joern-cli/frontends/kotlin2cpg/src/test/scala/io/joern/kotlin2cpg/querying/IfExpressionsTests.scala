@@ -3,7 +3,7 @@ package io.joern.kotlin2cpg.querying
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Literal}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 
 class IfExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with simple `if`-expression" should {
@@ -63,7 +63,7 @@ class IfExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
         cpg.call.methodFullNameExact(Operators.conditional).where(_.argument(1).code(".*r < 33.*")).l
       parentConditional.argument.size shouldBe 3
 
-      val List(firstChild: Call, secondChild: Literal, thirdChild: Call) = parentConditional.argument.l
+      val List(firstChild: Call, secondChild: Literal, thirdChild: Call) = parentConditional.argument.l: @unchecked
       firstChild.code shouldBe "r < 33"
       firstChild.methodFullName shouldBe Operators.lessThan
       secondChild.code shouldBe "\"<33\""
@@ -74,7 +74,7 @@ class IfExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
         firstArgOfChildConditional: Call,
         secondArgOfChildConditional: Literal,
         thirdArgOfChildConditional: Literal
-      ) = thirdChild.argument.l
+      ) = thirdChild.argument.l: @unchecked
       firstArgOfChildConditional.code shouldBe "r < 66"
       firstArgOfChildConditional.methodFullName shouldBe Operators.lessThan
       secondArgOfChildConditional.code shouldBe "\">=33<66\""
@@ -307,4 +307,5 @@ class IfExpressionsTests extends KotlinCode2CpgFixture(withOssDataflow = false) 
       a3.order shouldBe 3
     }
   }
+
 }

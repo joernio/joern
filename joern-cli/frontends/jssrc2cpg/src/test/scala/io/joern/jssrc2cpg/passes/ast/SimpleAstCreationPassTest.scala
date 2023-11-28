@@ -9,6 +9,29 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
   "AST generation for simple fragments" should {
 
+    "have correct structure for with statement with block" in AstFixture("""
+        |with(foo()) {
+        |  bar();
+        |}
+        |""".stripMargin) { cpg =>
+      val List(method)      = cpg.method.nameExact(":program").l
+      val List(methodBlock) = method.astChildren.isBlock.l
+      val List(withBlock)   = methodBlock.astChildren.isBlock.l
+      withBlock.astChildren.isCall.code.l shouldBe List("foo()", "bar()")
+    }
+
+    "have correct structure for with statement without block" in AstFixture("""
+        |with(foo())
+        |  bar();
+        |baz();
+        |""".stripMargin) { cpg =>
+      val List(method)      = cpg.method.nameExact(":program").l
+      val List(methodBlock) = method.astChildren.isBlock.l
+      methodBlock.astChildren.isCall.code.l shouldBe List("baz()")
+      val List(withBlock) = methodBlock.astChildren.isBlock.l
+      withBlock.astChildren.isCall.code.l shouldBe List("foo()", "bar()")
+    }
+
     "have correct structure for long numeric literal" in AstFixture("console.log(1e20)") { cpg =>
       val List(lit) = cpg.literal.l
       lit.code shouldBe "1e20"
@@ -23,13 +46,13 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
     "have return node for arrow functions" in AstFixture("const foo = () => 42;") { cpg =>
       // Return node is necessary data flow
-      val methodBlock = cpg.method("anonymous").astChildren.isBlock
+      val methodBlock = cpg.method("<lambda>0").astChildren.isBlock
       val literal     = methodBlock.astChildren.isReturn.astChildren.isLiteral.head
       literal.code shouldBe "42"
     }
 
     "have only 1 Block Node for arrow functions" in AstFixture("const foo = () => {return 42;}") { cpg =>
-      cpg.method("anonymous").ast.isBlock.size shouldBe 1
+      cpg.method("<lambda>0").ast.isBlock.size shouldBe 1
     }
 
     "have correct structure for FILENAME property" in AstFixture("let x = 1;") { cpg =>
@@ -143,6 +166,39 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       tmpReturn.name shouldBe "_tmp_0"
     }
 
+    "have correct structure for array literal with too many values" in AstFixture(
+      s"var x = [1, 2, ${("n" * 1500).mkString(",")}]"
+    ) { cpg =>
+      val List(methodBlock) = cpg.method.nameExact(":program").astChildren.isBlock.l
+
+      val List(xAssignment) = methodBlock.astChildren.isCall.l
+      xAssignment.name shouldBe Operators.assignment
+
+      val List(pushBlock) = xAssignment.astChildren.isBlock.l
+
+      val List(tmpLocal) = pushBlock.astChildren.isLocal.l
+      tmpLocal.name shouldBe "_tmp_0"
+
+      val List(tmpAssignment) = pushBlock.astChildren.isCall.codeExact("_tmp_0 = __ecma.Array.factory()").l
+      tmpAssignment.name shouldBe Operators.assignment
+
+      val List(arrayCall) = tmpAssignment.astChildren.isCall.l
+      arrayCall.name shouldBe EcmaBuiltins.arrayFactory
+      arrayCall.code shouldBe s"${EcmaBuiltins.arrayFactory}()"
+      arrayCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+      checkLiterals(pushBlock, 1)
+      checkLiterals(pushBlock, 2)
+
+      // all other elements are truncated
+      val List(literalNode) = pushBlock.astChildren.isLiteral.l
+      literalNode.code shouldBe "<too-many-initializers>"
+      literalNode.argumentIndex shouldBe 1002
+
+      val List(tmpReturn) = pushBlock.astChildren.isIdentifier.l
+      tmpReturn.name shouldBe "_tmp_0"
+    }
+
     "have correct structure for untagged runtime node in call" in AstFixture(s"foo(`Hello $${world}!`)") { cpg =>
       val List(method)      = cpg.method.nameExact(":program").l
       val List(methodBlock) = method.astChildren.isBlock.l
@@ -152,7 +208,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
       val List(templateCall) = fooCall.astChildren.isCall.l
       templateCall.name shouldBe Operators.formatString
-      templateCall.code shouldBe Operators.formatString + "(\"Hello \", world, \"!\")"
+      templateCall.code shouldBe s"${Operators.formatString}(\"Hello \", world, \"!\")"
 
       val List(argument1) = templateCall.astChildren.isLiteral.order(1).l
       argument1.argumentIndex shouldBe 1
@@ -174,7 +230,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
       val List(call) = methodBlock.astChildren.isCall.l
       call.name shouldBe Operators.formatString
-      call.code shouldBe Operators.formatString + "(\"\", x + 1, \"\")"
+      call.code shouldBe s"${Operators.formatString}(\"\", x + 1, \"\")"
 
       val List(argument1) = call.astChildren.isLiteral.order(1).l
       argument1.argumentIndex shouldBe 1
@@ -194,12 +250,12 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(methodBlock) = method.astChildren.isBlock.l
 
       val List(rawCall) = methodBlock.astChildren.isCall.l
-      rawCall.code shouldBe "String.raw(" + Operators.formatString + """("../", 42, "\.."))"""
+      rawCall.code shouldBe s"String.raw(${Operators.formatString}(\"../\", 42, \"\\..\"))"
 
       val List(runtimeCall) = rawCall.astChildren.isCall.nameExact(Operators.formatString).l
       runtimeCall.order shouldBe 1
       runtimeCall.argumentIndex shouldBe 1
-      runtimeCall.code shouldBe Operators.formatString + """("../", 42, "\..")"""
+      runtimeCall.code shouldBe s"${Operators.formatString}(\"../\", 42, \"\\..\")"
 
       val List(argument1) = runtimeCall.astChildren.isLiteral.codeExact("\"../\"").l
       argument1.order shouldBe 1
@@ -460,8 +516,8 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
     "have correct parameter order in lambda function with ignored param" in AstFixture("var x = ([, param]) => param") {
       cpg =>
-        val lambdaFullName    = "code.js::program:anonymous"
-        val List(lambda)      = cpg.method.fullNameExact(lambdaFullName).l
+        val lambdaFullName    = "code.js::program:<lambda>0"
+        val List(lambda)      = cpg.method.fullNameExact(lambdaFullName).isLambda.l
         val List(lambdaBlock) = lambda.astChildren.isBlock.l
 
         val List(param1, param2) = lambda.parameter.l
@@ -480,8 +536,8 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     "have correct parameter in lambda function rest param in object" in AstFixture(
       "var x = ({x, ...rest}) => x + rest"
     ) { cpg =>
-      val lambdaFullName    = "code.js::program:anonymous"
-      val List(lambda)      = cpg.method.fullNameExact(lambdaFullName).l
+      val lambdaFullName    = "code.js::program:<lambda>0"
+      val List(lambda)      = cpg.method.fullNameExact(lambdaFullName).isLambda.l
       val List(lambdaBlock) = lambda.astChildren.isBlock.l
 
       val List(param1, param2) = lambda.parameter.l
@@ -503,8 +559,8 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     "have correct parameter in lambda function rest param in array" in AstFixture(
       "var x = ([x, ...rest]) => x + rest"
     ) { cpg =>
-      val lambdaFullName    = "code.js::program:anonymous"
-      val List(lambda)      = cpg.method.fullNameExact(lambdaFullName).l
+      val lambdaFullName    = "code.js::program:<lambda>0"
+      val List(lambda)      = cpg.method.fullNameExact(lambdaFullName).isLambda.l
       val List(lambdaBlock) = lambda.astChildren.isBlock.l
 
       val List(param1, param2) = lambda.parameter.l
@@ -526,8 +582,8 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     "have two lambda functions in same scope level with different full names" in AstFixture("""
         |var x = (a) => a;
         |var y = (b) => b;""".stripMargin) { cpg =>
-      val lambda1FullName = "code.js::program:anonymous"
-      val lambda2FullName = "code.js::program:anonymous1"
+      val lambda1FullName = "code.js::program:<lambda>0"
+      val lambda2FullName = "code.js::program:<lambda>1"
 
       cpg.method.fullNameExact(lambda1FullName).size shouldBe 1
       cpg.method.fullNameExact(lambda2FullName).size shouldBe 1
@@ -549,15 +605,15 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     }
 
     "be correct for lambdas returning lambdas" in AstFixture("() => async () => { }") { cpg =>
-      cpg.method.fullName.sorted shouldBe List(
+      cpg.method.fullName.sorted.l shouldBe List(
         "code.js::program",
-        "code.js::program:anonymous",
-        "code.js::program:anonymous:anonymous"
+        "code.js::program:<lambda>0",
+        "code.js::program:<lambda>0:<lambda>1"
       )
-      val List(ret) = cpg.method.fullNameExact("code.js::program:anonymous").block.astChildren.isReturn.l
+      val List(ret) = cpg.method.fullNameExact("code.js::program:<lambda>0").block.astChildren.isReturn.l
       ret.code shouldBe "async () => { }"
       val List(ref) = ret.astChildren.isMethodRef.l
-      ref.methodFullName shouldBe "code.js::program:anonymous:anonymous"
+      ref.methodFullName shouldBe "code.js::program:<lambda>0:<lambda>1"
     }
 
     "be correct for ThisExpression" in AstFixture("function foo() { this.bar = 1 }") { cpg =>
@@ -1335,7 +1391,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
         val List(switchExpr) = switch.astChildren.isMethodRef.l
         switchExpr.order shouldBe 1
-        switchExpr.code shouldBe "anonymous"
+        switchExpr.code shouldBe "<lambda>0"
       }
     }
 
@@ -1542,7 +1598,7 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     tmpAccess.code shouldBe s"_tmp_0.$keyName"
     tmpAccess.methodFullName shouldBe Operators.fieldAccess
     tmpAccess.argumentIndex shouldBe 1
-    val value = call.argument(2)
+    val List(value) = call.argument(2).start.l
     value.code shouldBe assignedValue
 
     val List(leftHandSideTmpId) = tmpAccess.astChildren.isIdentifier.nameExact("_tmp_0").l

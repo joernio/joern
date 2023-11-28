@@ -2,8 +2,6 @@ package io.joern.console.workspacehandling
 
 import better.files.Dsl.mkdirs
 import better.files.File
-import org.json4s.DefaultFormats
-import org.json4s.native.Serialization.{read => jsonRead}
 
 import java.nio.file.Path
 import scala.collection.mutable.ListBuffer
@@ -21,10 +19,7 @@ abstract class WorkspaceLoader[ProjectType <: Project] {
     val dirFile = File(path)
     val dirPath = dirFile.path.toAbsolutePath
 
-    if (!dirFile.exists) {
-      println(s"creating workspace directory: ${dirFile.path.toString}")
-      mkdirs(dirFile)
-    }
+    mkdirs(dirFile)
     new Workspace(ListBuffer.from(loadProjectsFromFs(dirPath)))
   }
 
@@ -43,21 +38,19 @@ abstract class WorkspaceLoader[ProjectType <: Project] {
       case Success(v) => Some(v)
       case Failure(e) =>
         System.err.println(s"Error loading project at $path - skipping: ")
-        System.err.println(e)
+        e.printStackTrace
         None
     }
   }
 
   def createProject(projectFile: ProjectFile, path: Path): ProjectType
 
-  private val PROJECTFILE_NAME              = "project.json"
-  implicit val formats: DefaultFormats.type = DefaultFormats
+  private val PROJECTFILE_NAME = "project.json"
 
   private def readProjectFile(projectDirName: Path): ProjectFile = {
     // TODO see `writeProjectFile`
-    val content = File(projectDirName.resolve(PROJECTFILE_NAME)).contentAsString
-    val map     = jsonRead[Map[String, String]](content)
-    ProjectFile(map("inputPath"), map("name"))
+    val data = ujson.read(projectDirName.resolve(PROJECTFILE_NAME))
+    ProjectFile(data("inputPath").str, data("name").str)
   }
 
 }

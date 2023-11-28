@@ -1,7 +1,8 @@
 package io.joern.pysrc2cpg.cpg
 
 import io.joern.pysrc2cpg.{Constants, Py2CpgTestContext}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.ModifierTypes
+import io.shiftleft.semanticcpg.language.*
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 
@@ -15,7 +16,7 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
       val methodNode = cpg.method.fullName("test.py:<module>.func").head
       methodNode.name shouldBe "func"
       methodNode.fullName shouldBe "test.py:<module>.func"
-      methodNode.filename shouldBe "<absoluteTestPath>/test.py"
+      methodNode.filename shouldBe "test.py"
       methodNode.isExternal shouldBe false
       methodNode.lineNumber shouldBe Some(1)
       methodNode.columnNumber shouldBe Some(1)
@@ -71,7 +72,7 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
 
       bindingTypeDecl.name shouldBe "func"
       bindingTypeDecl.fullName shouldBe "test.py:<module>.func"
-      bindingTypeDecl.filename shouldBe "<absoluteTestPath>/test.py"
+      bindingTypeDecl.filename shouldBe "test.py"
       bindingTypeDecl.lineNumber shouldBe Some(1)
       bindingTypeDecl.columnNumber shouldBe Some(1)
 
@@ -154,7 +155,7 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
       cpg.method
         .name("func1")
         .parameter
-        .dynamicTypeHintFullName
+        .typeFullName
         .dedup
         .l shouldBe Seq("__builtin.int")
     }
@@ -163,7 +164,7 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
       cpg.method
         .name("func2")
         .parameter
-        .dynamicTypeHintFullName
+        .typeFullName
         .dedup
         .l shouldBe Seq("typing.Optional")
     }
@@ -172,7 +173,7 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
       cpg.method
         .name("func1")
         .methodReturn
-        .dynamicTypeHintFullName
+        .typeFullName
         .dedup
         .l shouldBe Seq("__builtin.float")
     }
@@ -181,7 +182,7 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
       cpg.method
         .name("func2")
         .methodReturn
-        .dynamicTypeHintFullName
+        .typeFullName
         .dedup
         .l shouldBe Seq("typing.List")
     }
@@ -190,10 +191,21 @@ class FunctionDefCpgTests extends AnyFreeSpec with Matchers {
       cpg.method
         .name("func3")
         .parameter
-        .dynamicTypeHintFullName
+        .typeFullName
         .dedup
         .l shouldBe Seq("abc.Def")
     }
   }
 
+  "module function" - {
+    lazy val cpg = Py2CpgTestContext.buildCpg("""
+        |""".stripMargin)
+    "test existence of MODULE modifier on module method node" in {
+      cpg.method
+        .name("<module>")
+        .modifier
+        .modifierType(ModifierTypes.MODULE)
+        .nonEmpty shouldBe true
+    }
+  }
 }

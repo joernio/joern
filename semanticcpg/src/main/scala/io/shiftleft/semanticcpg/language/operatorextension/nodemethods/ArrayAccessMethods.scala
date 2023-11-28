@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.language.operatorextension.nodemethods
 
 import io.shiftleft.codepropertygraph.generated.nodes.{Expression, Identifier}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 
 class ArrayAccessMethods(val arrayAccess: OpNodes.ArrayAccess) extends AnyVal {
@@ -11,7 +11,7 @@ class ArrayAccessMethods(val arrayAccess: OpNodes.ArrayAccess) extends AnyVal {
 
   def offset: Expression = arrayAccess.argument(2)
 
-  def subscript: Traversal[Identifier] =
+  def subscript: Iterator[Identifier] =
     offset.ast.isIdentifier
 
   def usesConstantOffset: Boolean = {
@@ -21,7 +21,7 @@ class ArrayAccessMethods(val arrayAccess: OpNodes.ArrayAccess) extends AnyVal {
     }
   }
 
-  def simpleName: Traversal[String] = {
+  def simpleName: Iterator[String] = {
     arrayAccess.array match {
       case id: Identifier => Iterator.single(id.name)
       case _              => Iterator.empty

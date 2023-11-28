@@ -6,28 +6,23 @@ import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, LanguageFrontend, TestCpg}
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.{Expression, Literal}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.PropertyNames
+import io.shiftleft.codepropertygraph.generated.nodes.{Expression, Literal, StoredNode}
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
-import overflowdb.traversal.Traversal
 
 import java.io.File
 
 trait JavaSrcFrontend extends LanguageFrontend {
-  protected val delombokMode: String
-
   override val fileSuffix: String = ".java"
 
   override def execute(sourceCodeFile: File): Cpg = {
-    implicit val defaultConfig: Config =
-      Config(delombokMode = Some(delombokMode))
-    new JavaSrc2Cpg().createCpg(sourceCodeFile.getAbsolutePath).get
+    val config = getConfig().map(_.asInstanceOf[Config]).getOrElse(JavaSrc2Cpg.DefaultConfig)
+    new JavaSrc2Cpg().createCpg(sourceCodeFile.getAbsolutePath)(config).get
   }
 }
 
-class JavaSrcTestCpg(override protected val delombokMode: String, enableTypeRecovery: Boolean = false)
-    extends TestCpg
-    with JavaSrcFrontend {
+class JavaSrcTestCpg(enableTypeRecovery: Boolean = false) extends TestCpg with JavaSrcFrontend {
   private var _withOssDataflow = false
 
   def withOssDataflow(value: Boolean = true): this.type = {
@@ -47,11 +42,8 @@ class JavaSrcTestCpg(override protected val delombokMode: String, enableTypeReco
 
 }
 
-class JavaSrcCode2CpgFixture(
-  withOssDataflow: Boolean = false,
-  delombokMode: String = "default",
-  enableTypeRecovery: Boolean = false
-) extends Code2CpgFixture(() => new JavaSrcTestCpg(delombokMode, enableTypeRecovery).withOssDataflow(withOssDataflow)) {
+class JavaSrcCode2CpgFixture(withOssDataflow: Boolean = false, enableTypeRecovery: Boolean = false)
+    extends Code2CpgFixture(() => new JavaSrcTestCpg(enableTypeRecovery).withOssDataflow(withOssDataflow)) {
 
   implicit val resolver: ICallResolver           = NoResolve
   implicit lazy val engineContext: EngineContext = EngineContext()
@@ -61,7 +53,7 @@ class JavaSrcCode2CpgFixture(
     methodName: String,
     sourceCode: String = "\"MALICIOUS\"",
     sinkPattern: String = ".*println.*"
-  ): (Traversal[Literal], Traversal[Expression]) = {
+  ): (Iterator[Literal], Iterator[Expression]) = {
     getMultiFnSourceSink(cpg, methodName, methodName, sourceCode, sinkPattern)
   }
 
@@ -71,7 +63,7 @@ class JavaSrcCode2CpgFixture(
     sinkMethodName: String,
     sourceCode: String = "\"MALICIOUS\"",
     sinkPattern: String = ".*println.*"
-  ): (Traversal[Literal], Traversal[Expression]) = {
+  ): (Iterator[Literal], Iterator[Expression]) = {
     val sourceMethod = cpg.method(s".*$sourceMethodName.*").head
     val sinkMethod   = cpg.method(s".*$sinkMethodName.*").head
     def source       = sourceMethod.literal.code(sourceCode)

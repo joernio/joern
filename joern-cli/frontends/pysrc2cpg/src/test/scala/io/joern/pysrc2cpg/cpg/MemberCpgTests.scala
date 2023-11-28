@@ -16,14 +16,9 @@ class MemberCpgTests extends AnyFreeSpec with Matchers {
                                                 |
                                                 |""".stripMargin)
 
-    "should have a MEMBER" in {
-      val List(member: Member) = cpg.member.name("x").l
-      member.code shouldBe "x"
-    }
-
     "should have the MEMBER attached to the class" in {
-      val List(typeDecl) = cpg.member.name("x").typeDecl.l
-      typeDecl.name shouldBe "Foo"
+      val List(member) = cpg.typeDecl.name("Foo").member.name("x").l
+      member.name shouldBe "x"
     }
   }
 
@@ -69,7 +64,7 @@ class MemberCpgTests extends AnyFreeSpec with Matchers {
     }
 
     "should have the MEMBER fn attached to the meta class and have col+line no" in {
-      val List(memberFn) = cpg.typeDecl("Foo").where(node => node.member.name("replace").l).l
+      val List(memberFn) = cpg.typeDecl("Foo").where(node => node.member.name("replace")).l
       memberFn.fullName shouldBe "test.py:<module>.Foo"
       memberFn.lineNumber shouldBe Some(2)
       memberFn.columnNumber shouldBe Some(1)
