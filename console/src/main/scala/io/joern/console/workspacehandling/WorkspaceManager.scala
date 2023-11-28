@@ -1,15 +1,15 @@
 package io.joern.console.workspacehandling
 
-import better.files.Dsl._
-import better.files._
+import better.files.Dsl.*
+import better.files.*
 import io.joern.console.Reporting
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.cpgloading.{CpgLoader, CpgLoaderConfig}
 import org.json4s.DefaultFormats
-import org.json4s.native.Serialization.{write => jsonWrite}
+import org.json4s.native.Serialization.write as jsonWrite
 
 import java.net.URLEncoder
-import java.nio.file.Path
+import java.nio.file.{Path, Paths}
 import scala.collection.mutable.ListBuffer
 import scala.util.{Failure, Success, Try}
 
@@ -307,12 +307,11 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
 
   private def loadCpgRaw(cpgFilename: String): Option[Cpg] = {
     Try {
-      val odbConfig = Config.withDefaults.withStorageLocation(cpgFilename)
-      val config =
-        CpgLoaderConfig.withDefaults.doNotCreateIndexesOnLoad.withOverflowConfig(odbConfig)
-      val newCpg = CpgLoader.loadFromOverflowDb(config)
-      CpgLoader.createIndexes(newCpg)
-      newCpg
+      // TODO reimplement - in cpg build first
+      ???
+//      val newCpg = CpgLoader.loadFromFlatgraph(Paths.get(cpgFilename))
+//      CpgLoader.createIndexes(newCpg)
+//      newCpg
     } match {
       case Success(v) => Some(v)
       case Failure(ex) =>

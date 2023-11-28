@@ -1,11 +1,10 @@
 package io.joern.console.cpgcreation
 
-import better.files.Dsl._
+import better.files.Dsl.*
 import better.files.File
 import io.shiftleft.codepropertygraph.cpgloading.{CpgLoader, CpgLoaderConfig}
 import io.shiftleft.codepropertygraph.generated.v2.Languages
-import io.joern.console.ConsoleConfig
-import overflowdb.Config
+import io.joern.console.{ConsoleConfig, CpgConverter}
 
 import java.nio.file.Path
 import scala.util.Try
@@ -77,10 +76,12 @@ class CpgGeneratorFactory(config: ConsoleConfig) {
     }
   }
 
-  def convertProtoCpgToOverflowDb(srcFilename: String, dstFilename: String): Unit = {
-    val odbConfig = Config.withDefaults.withStorageLocation(dstFilename)
-    val config    = CpgLoaderConfig.withDefaults.doNotCreateIndexesOnLoad.withOverflowConfig(odbConfig)
-    CpgLoader.load(srcFilename, config).close
+  @deprecated("method got renamed to `convertProtoCpgToFlatgraph, please use that instead", "joern v3")
+  def convertProtoCpgToOverflowDb(srcFilename: String, dstFilename: String): Unit =
+    convertProtoCpgToFlatgraph(srcFilename, dstFilename)
+
+  def convertProtoCpgToFlatgraph(srcFilename: String, dstFilename: String): Unit = {
+    CpgConverter.convertProtoCpgToFlatgraph(srcFilename, dstFilename)
     File(srcFilename).delete()
   }
 

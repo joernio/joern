@@ -391,16 +391,19 @@ class ConsoleTests extends AnyWordSpec with Matchers {
 
   "cpg" should {
     "provide .help command" in ConsoleFixture() { (console, codeDir) =>
-      // part of Predefined.shared, which makes the below work in the repl without separate import
-      import io.shiftleft.codepropertygraph.Cpg.docSearchPackages
+      // TODO get help/doc back
+      ???
 
-      console.importCode(codeDir.toString)
-      val nodeStartersHelp = console.cpg.help
-      nodeStartersHelp should include(".all")
-      nodeStartersHelp should include(".controlStructure")
-
-      val methodStepsHelp = console.cpg.method.help
-      methodStepsHelp should include(".namespace")
+//      // part of Predefined.shared, which makes the below work in the repl without separate import
+//      import io.shiftleft.codepropertygraph.Cpg.docSearchPackages
+//
+//      console.importCode(codeDir.toString)
+//      val nodeStartersHelp = console.cpg.help
+//      nodeStartersHelp should include(".all")
+//      nodeStartersHelp should include(".controlStructure")
+//
+//      val methodStepsHelp = console.cpg.method.help
+//      methodStepsHelp should include(".namespace")
     }
   }
 
