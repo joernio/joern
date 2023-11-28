@@ -1,3 +1,4 @@
+import better.files.File as BetterFile
 import com.typesafe.config.{Config, ConfigFactory}
 import versionsort.VersionHelper
 
@@ -93,9 +94,13 @@ astGenDlTask := {
   astGenBinaryNames.value.foreach { fileName =>
     val dest = astGenDir / fileName
     if (!dest.exists) {
-      val url            = s"${astGenDlUrl.value}$fileName"
-      val downloadedFile = SimpleCache.downloadMaybe(url)
-      IO.copyFile(downloadedFile, dest)
+      val url            = s"${astGenDlUrl.value}${fileName.stripSuffix(".exe")}.zip"
+      val downloadedFile = BetterFile(SimpleCache.downloadMaybe(url).toPath)
+      BetterFile.temporaryDirectory("joern-").apply { unzipTarget =>
+        downloadedFile.unzipTo(unzipTarget)
+        unzipTarget.list.filter(_.name == fileName).foreach(exec => IO.copyFile(exec.toJava, dest))
+      }
+      downloadedFile.delete(swallowIOExceptions = true)
     }
   }
 
