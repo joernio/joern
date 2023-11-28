@@ -4,10 +4,16 @@ import io.shiftleft.codepropertygraph.cpgloading.{CpgLoader, CpgLoaderConfig}
 
 object CpgConverter {
 
-  def convertProtoCpgToOverflowDb(srcFilename: String, dstFilename: String): Unit = {
-    val odbConfig = Config.withDefaults.withStorageLocation(dstFilename)
-    val config    = CpgLoaderConfig.withDefaults.doNotCreateIndexesOnLoad.withOverflowConfig(odbConfig)
-    CpgLoader.load(srcFilename).close
+  def convertProtoCpgToFlatgraph(srcFilename: String, dstFilename: String): Unit = {
+    // TODO reimplement - in cpg build first
+    //    val odbConfig = Config.withDefaults.withStorageLocation(dstFilename)
+    //    val config    = CpgLoaderConfig.withDefaults.doNotCreateIndexesOnLoad.withOverflowConfig(odbConfig)
+    //    CpgLoader.load(srcFilename).close
+    ???
   }
+
+  @deprecated("method got renamed to `convertProtoCpgToFlatgraph, please use that instead", "joern v3")
+  def convertProtoCpgToOverflowDb(srcFilename: String, dstFilename: String): Unit =
+    convertProtoCpgToFlatgraph(srcFilename, dstFilename)
 
 }
