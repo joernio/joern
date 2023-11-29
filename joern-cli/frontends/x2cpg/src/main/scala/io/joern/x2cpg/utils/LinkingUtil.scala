@@ -56,8 +56,6 @@ trait LinkingUtil {
       // If the source node does not have any outgoing edges of this type
       // This check is just required for backward compatibility
       if (srcNode.outE(edgeType).isEmpty) {
-        // TODO MP get typed properties back?
-//        val key = new PropertyKey[String](dstFullNameKey)
         srcNode
           .propertyOption[String](dstFullNameKey)
           .filter { dstFullName =>
@@ -80,7 +78,6 @@ trait LinkingUtil {
             }
           }
       } else {
-        // TODO MP get typed properties back?
         srcNode.out(edgeType).property[String](PropertyNames.FULL_NAME).nextOption() match {
           case Some(dstFullName) =>
             dstGraph.setNodeProperty(
@@ -127,7 +124,6 @@ trait LinkingUtil {
           }
         }
       } else {
-        // TODO MP get typed properties back?
         val dstFullNames = srcNode.out(edgeType).property[String](PropertyNames.FULL_NAME).l
         dstGraph.setNodeProperty(srcNode, dstFullNameKey, dstFullNames.map(dereference.dereferenceTypeFullName))
         if (!loggedDeprecationWarning) {
