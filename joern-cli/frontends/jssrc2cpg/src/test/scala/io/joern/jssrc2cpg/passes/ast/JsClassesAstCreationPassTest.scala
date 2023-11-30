@@ -28,9 +28,9 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
         |function sink(par1) {}
         |""".stripMargin) { cpg =>
       val List(x1, x2) = cpg.local("x").l
-      x1.blockViaAstIn should not be empty
+      x1.definingBlock should not be empty
       x1.referencingIdentifiers.name.l shouldBe List("x")
-      x2.blockViaAstIn should not be empty
+      x2.definingBlock should not be empty
       x2.referencingIdentifiers.name.l shouldBe List("x")
     }
 
