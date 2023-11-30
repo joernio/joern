@@ -39,6 +39,12 @@ null
 **/goastgen-linux-arm64
 **/goastgen-macos
 **/goastgen-macos-arm64
+**/dotnetastgen-linux
+**/dotnetastgen-linux-arm
+**/dotnetastgen-win.exe
+**/dotnetastgen-win-arm.exe
+**/dotnetastgen-macos
+**/dotnetastgen-macos-arm
 slices.json
 
 ##############
