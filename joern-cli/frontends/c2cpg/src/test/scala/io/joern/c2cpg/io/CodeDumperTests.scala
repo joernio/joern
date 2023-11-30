@@ -3,23 +3,11 @@ package io.joern.c2cpg.io
 import better.files.File
 import io.joern.c2cpg.testfixtures.CCodeToCpgSuite
 import io.shiftleft.semanticcpg.codedumper.CodeDumper
-import io.shiftleft.semanticcpg.language.*
-
+import io.shiftleft.semanticcpg.language._
 
 import java.util.regex.Pattern
 
-// TODO remove
-object FooRemoveMe extends CCodeToCpgSuite {
-  def main(args: Array[String]): Unit = {
-    val codeString = "// A comment"
-    val cpg = code(codeString, "test.c")
-    println(cpg.all.size)
-    cpg.close()
-  }
-}
-
 class CodeDumperTests extends CCodeToCpgSuite {
-
 
   implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder
 
@@ -30,7 +18,7 @@ class CodeDumperTests extends CCodeToCpgSuite {
    |   int x = foo(param1);
    |}""".stripMargin
 
-  val cpg = code(codeString, "test.c")
+  private val cpg = code(codeString, "test.c")
 
   private val path = File(cpg.metaData.root.head) / "test.c"
 
