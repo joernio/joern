@@ -57,7 +57,7 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
     // func ptrs implementing N for C and its subclasses
     for (
       typeDecl <- cpg.typeDecl;
-      method   <- typeDecl._methodViaAstOut
+      method   <- typeDecl.methodViaAstOut
     ) {
       val methodName = method.fullName
       val candidates = allSubclasses(typeDecl.fullName).flatMap { staticLookup(_, method) }
@@ -129,7 +129,7 @@ class DynamicCallLinker(cpg: Cpg) extends CpgPass(cpg) {
   private def staticLookup(subclass: String, method: Method): Option[String] = {
     typeMap.get(subclass) match {
       case Some(sc) =>
-        sc._methodViaAstOut
+        sc.methodViaAstOut
           .nameExact(method.name)
           .and(_.signatureExact(method.signature))
           .map(_.fullName)

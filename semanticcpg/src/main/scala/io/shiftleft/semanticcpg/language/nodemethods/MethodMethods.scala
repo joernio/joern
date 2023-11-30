@@ -11,10 +11,10 @@ class MethodMethods(val method: Method) extends AnyVal with NodeExtension with H
   /** Traverse to annotations of method
     */
   def annotation: Iterator[Annotation] =
-    method._annotationViaAstOut
+    method.annotationViaAstOut
 
   def local: Iterator[Local] =
-    method._blockViaContainsOut.local
+    method.blockViaContainsOut.local
 
   /** All control structures of this method
     */

@@ -102,7 +102,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
     }
 
   private def fieldAndIndexAccesses(identifier: Identifier): List[CfgNode] =
-    identifier.method._identifierViaContainsOut
+    identifier.method.identifierViaContainsOut
       .nameExact(identifier.name)
       .inCall
       .collect { case c if isFieldAccess(c.name) => c }
@@ -174,7 +174,7 @@ class SourceToStartingPoints(src: StoredNode) extends RecursiveTask[List[CfgNode
   }
 
   private def firstUsagesForName(name: String, m: Method): List[Expression] = {
-    val identifiers      = m._identifierViaContainsOut.l
+    val identifiers      = m.identifierViaContainsOut.l
     val identifierUsages = identifiers.nameExact(name).takeWhile(notLeftHandOfAssignment).l
     val fieldIdentifiers = m.fieldAccess.fieldIdentifier.sortBy(x => (x.lineNumber, x.columnNumber)).l
     val thisRefs         = Seq("this", "self") ++ m.typeDecl.name.headOption.toList

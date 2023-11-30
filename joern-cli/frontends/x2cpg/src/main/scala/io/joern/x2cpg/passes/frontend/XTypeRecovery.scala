@@ -333,20 +333,20 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   protected def assignments: Iterator[Assignment] = cu match {
     case x: File =>
-      x.method.flatMap(_._callViaContainsOut).nameExact(Operators.assignment).cast[Assignment]
-    case x: Method => x.flatMap(_._callViaContainsOut).nameExact(Operators.assignment).cast[Assignment]
+      x.method.flatMap(_.callViaContainsOut).nameExact(Operators.assignment).cast[Assignment]
+    case x: Method => x.flatMap(_.callViaContainsOut).nameExact(Operators.assignment).cast[Assignment]
     case x         => x.ast.isCall.nameExact(Operators.assignment).cast[Assignment]
   }
 
   protected def returns: Iterator[Return] = cu match {
-    case x: File   => x.method.flatMap(_._returnViaContainsOut)
-    case x: Method => x._returnViaContainsOut
+    case x: File   => x.method.flatMap(_.returnViaContainsOut)
+    case x: Method => x.returnViaContainsOut
     case x         => x.ast.isReturn
   }
 
   protected def importNodes: Iterator[Import] = cu match {
-    case x: File   => x.method.flatMap(_._callViaContainsOut).referencedImports
-    case x: Method => x.file.method.flatMap(_._callViaContainsOut).referencedImports
+    case x: File   => x.method.flatMap(_.callViaContainsOut).referencedImports
+    case x: Method => x.file.method.flatMap(_.callViaContainsOut).referencedImports
     case x         => x.ast.isCall.referencedImports
   }
 

@@ -28,9 +28,9 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
         |function sink(par1) {}
         |""".stripMargin) { cpg =>
       val List(x1, x2) = cpg.local("x").l
-      x1._blockViaAstIn should not be empty
+      x1.blockViaAstIn should not be empty
       x1.referencingIdentifiers.name.l shouldBe List("x")
-      x2._blockViaAstIn should not be empty
+      x2.blockViaAstIn should not be empty
       x2.referencingIdentifiers.name.l shouldBe List("x")
     }
 
@@ -165,7 +165,7 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
       val List(program)         = cpg.method.nameExact(":program").l
       val List(programBlock)    = program.astChildren.isBlock.l
       val List(assignmentToTmp) = programBlock.astChildren.isCall.l
-      val List(rhs)             = assignmentToTmp._typeRefViaAstOut.l
+      val List(rhs)             = assignmentToTmp.typeRefViaAstOut.l
       rhs.typeFullName shouldBe "code.js::program:ClassA"
     }
 

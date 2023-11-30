@@ -10,7 +10,7 @@ class MethodReturnTraversal(val traversal: Iterator[MethodReturn]) extends AnyVa
 
   // TODO bring back: @Doc(info = "traverse to parent method")
   def method: Iterator[Method] =
-    traversal._methodViaAstIn
+    traversal.methodViaAstIn
 
   def returnUser(implicit callResolver: ICallResolver): Iterator[Call] =
     traversal.returnUser

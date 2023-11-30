@@ -71,7 +71,7 @@ class TypeTraversal(val traversal: Iterator[Type]) extends AnyVal {
     traversal.repeat(_.aliasType)(_.emitAllButFirst)
 
   def localOfType: Iterator[Local] =
-    traversal._localViaEvalTypeIn
+    traversal.localViaEvalTypeIn
 
   def memberOfType: Iterator[Member] =
     traversal._evalTypeIn.collectAll[Member]

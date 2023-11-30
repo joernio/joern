@@ -23,7 +23,7 @@ class ModuleVariableAsIdentifierTraversal(traversal: Iterator[Identifier]) exten
   // TODO bring back help/doc
   // @Doc(info = "Identifiers representing module variables")
   def moduleVariables: Iterator[OpNodes.ModuleVariable] = {
-    traversal.flatMap(_._localViaRefOut).moduleVariables
+    traversal.flatMap(_.localViaRefOut).moduleVariables
   }
 
 }

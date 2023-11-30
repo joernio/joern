@@ -9,15 +9,15 @@ class NamespaceBlockTraversal(val traversal: Iterator[NamespaceBlock]) extends A
    * TODO define a name in the schema
     */
   def namespace: Iterator[Namespace] =
-    traversal.flatMap(_._namespaceViaRefOut)
+    traversal.flatMap(_.namespaceViaRefOut)
 
   /** The type declarations defined in this namespace
    * TODO define a name in the schema
     */
   def typeDecl: Iterator[TypeDecl] =
-    traversal.flatMap(_._typeDeclViaAstOut)
+    traversal.flatMap(_.typeDeclViaAstOut)
 
   // TODO define a name in the schema
   def method: Iterator[Method] =
-    traversal.flatMap(_._methodViaAstOut)
+    traversal.flatMap(_.methodViaAstOut)
 }
