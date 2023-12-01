@@ -87,7 +87,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       case _ => None
   }
 
-  private def astForMethodParameter(params: Value, genericTypeMethodMap: Map[String, List[String]]): Seq[Ast] = {
+  protected def astForMethodParameter(params: Value, genericTypeMethodMap: Map[String, List[String]]): Seq[Ast] = {
     var index = 1
     params.arrOpt
       .getOrElse(List())

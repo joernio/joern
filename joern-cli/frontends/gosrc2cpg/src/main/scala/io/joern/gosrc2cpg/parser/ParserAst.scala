@@ -52,6 +52,7 @@ object ParserAst {
   object BasicLit            extends BasePrimitive
   object Ident               extends BasePrimitive
   object CompositeLit        extends BasePrimitive
+  object FuncLit             extends BasePrimitive
   object File                extends ParserNode
   object GenDecl             extends ParserNode
   object ImportSpec          extends ParserNode

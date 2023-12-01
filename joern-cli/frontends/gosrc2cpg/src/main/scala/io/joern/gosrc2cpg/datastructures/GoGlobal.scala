@@ -23,6 +23,8 @@ object GoGlobal extends Global {
     */
   val aliasToNameSpaceMapping: ConcurrentHashMap[String, String] = new ConcurrentHashMap()
 
+  val lambdaSignatureToLambdaTypeMap: ConcurrentHashMap[String, String] = new ConcurrentHashMap()
+
   // Mapping method fullname to its return type and signature
   val methodFullNameReturnTypeMap: ConcurrentHashMap[String, (String, String)] = new ConcurrentHashMap()
 
@@ -55,6 +57,10 @@ object GoGlobal extends Global {
 
   def recordFullNameToReturnType(methodFullName: String, returnType: String, signature: String): Unit = {
     methodFullNameReturnTypeMap.putIfAbsent(methodFullName, (returnType, signature))
+  }
+
+  def recordLambdaSigntureToLambdaType(signature: String, lambdaType: String): Unit = {
+    lambdaSignatureToLambdaTypeMap.putIfAbsent(signature, lambdaType)
   }
 
   def typesSeen(): List[String] = {
