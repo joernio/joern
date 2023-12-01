@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.deprecated.passes.ast
 
 import io.joern.rubysrc2cpg.testfixtures.{DifferentInNewFrontend, RubyCode2CpgFixture, SameInNewFrontend}
-import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, Operators, nodes}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.Tag
 

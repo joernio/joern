@@ -5,8 +5,8 @@ import io.joern.kotlin2cpg.ast.Nodes.operatorCallNode
 import io.joern.kotlin2cpg.types.{TypeConstants, TypeInfoProvider}
 import io.joern.x2cpg.{Ast, AstNodeBuilder, ValidationMode}
 import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode}
-import io.shiftleft.codepropertygraph.generated.v2.nodes.NewLocal
-import io.shiftleft.codepropertygraph.generated.v2.{ControlStructureTypes, DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import org.jetbrains.kotlin.psi.{
   KtAnnotationEntry,
   KtBlockExpression,

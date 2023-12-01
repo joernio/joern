@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language
 
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{AbstractNode, StoredNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{AbstractNode, StoredNode}
 import org.json4s.native.Serialization.{write, writePretty}
 import org.json4s.{CustomSerializer, Extraction, Formats}
 //import overflowdb.traversal.help.Doc

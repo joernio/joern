@@ -1,8 +1,8 @@
 package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{Call, Identifier, Literal, Local}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, Local}
 import io.shiftleft.semanticcpg.language._
 
 class DestructuringTests extends KotlinCode2CpgFixture(withOssDataflow = false) {

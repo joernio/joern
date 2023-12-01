@@ -2,9 +2,9 @@ package io.joern.dataflowengineoss.queryengine
 
 import flatgraph.{GNode, Graph}
 import flatgraph.misc.TestUtils.*
-import io.shiftleft.codepropertygraph.generated.v2.PropertyNames
-import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.v2.{Cpg, EdgeTypes, NodeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.PropertyNames
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, NodeTypes, Operators}
 import io.joern.dataflowengineoss.queryengine.AccessPathUsage.toTrackedBaseAndAccessPathSimple
 import io.shiftleft.semanticcpg.accesspath.*
 import org.scalatest.matchers.should.Matchers.*

@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language.modulevariable
 
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{Local, StaticType}
+import io.shiftleft.codepropertygraph.generated.nodes.{Local, StaticType}
 
 trait ModuleVariableT
 object OpNodes {

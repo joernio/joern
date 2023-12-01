@@ -1,7 +1,7 @@
 package io.joern.pysrc2cpg.cpg
 
 import io.joern.pysrc2cpg.PySrc2CpgFixture
-import io.shiftleft.codepropertygraph.generated.v2.NodeTypes
+import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.semanticcpg.language._
 
 class PatternMatchingTests extends PySrc2CpgFixture() {

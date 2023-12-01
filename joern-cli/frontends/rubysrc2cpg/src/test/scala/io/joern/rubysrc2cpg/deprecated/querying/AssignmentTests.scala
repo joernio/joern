@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.deprecated.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.v2.Operators
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
 
 class AssignmentTests extends RubyCode2CpgFixture(useDeprecatedFrontend = true) {

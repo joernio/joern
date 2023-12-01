@@ -2,12 +2,12 @@ package io.joern.c2cpg.passes.ast
 
 import io.joern.c2cpg.testfixtures.AbstractPassTest
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.ControlStructureTypes
-import io.shiftleft.codepropertygraph.generated.v2.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.v2.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.v2.NodeTypes
-import io.shiftleft.codepropertygraph.generated.v2.Operators
-import io.shiftleft.codepropertygraph.generated.v2.nodes.*
+import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.NodeTypes
+import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal

@@ -1,8 +1,8 @@
 package io.shiftleft.semanticcpg.language.nodemethods
 
-import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.v2.accessors.Lang.*
-import io.shiftleft.codepropertygraph.generated.v2.neighboraccessors.Lang.*
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.accessors.Lang.*
+import io.shiftleft.codepropertygraph.generated.neighboraccessors.Lang.*
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.*
 

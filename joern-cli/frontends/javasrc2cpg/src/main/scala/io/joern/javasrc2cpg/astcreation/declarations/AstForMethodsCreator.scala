@@ -12,7 +12,7 @@ import io.joern.javasrc2cpg.util.Util.*
 import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.utils.NodeBuilders.*
 import io.joern.x2cpg.{Ast, Defines}
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{
+import io.shiftleft.codepropertygraph.generated.nodes.{
   NewBlock,
   NewIdentifier,
   NewMethod,
@@ -20,7 +20,7 @@ import io.shiftleft.codepropertygraph.generated.v2.nodes.{
   NewMethodReturn,
   NewModifier
 }
-import io.shiftleft.codepropertygraph.generated.v2.{EvaluationStrategies, ModifierTypes}
+import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, ModifierTypes}
 
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional

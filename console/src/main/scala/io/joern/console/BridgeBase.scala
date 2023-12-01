@@ -4,7 +4,7 @@ import better.files.*
 import replpp.scripting.ScriptRunner
 
 import scala.jdk.CollectionConverters.*
-import io.shiftleft.codepropertygraph.generated.v2.Languages
+import io.shiftleft.codepropertygraph.generated.Languages
 import java.io.{InputStream, PrintStream, File as JFile}
 import java.net.URLClassLoader
 import java.nio.file.{Files, Path, Paths}

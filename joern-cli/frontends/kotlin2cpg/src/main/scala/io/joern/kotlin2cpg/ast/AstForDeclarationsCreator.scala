@@ -8,8 +8,8 @@ import io.joern.kotlin2cpg.types.{AnonymousObjectContext, TypeConstants, TypeInf
 import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newIdentifierNode, newMethodReturnNode}
 import io.joern.x2cpg.{Ast, AstNodeBuilder, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{NewBlock, NewCall, NewMethod, NewTypeDecl}
-import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, EdgeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewMethod, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 import org.jetbrains.kotlin.psi.*
 

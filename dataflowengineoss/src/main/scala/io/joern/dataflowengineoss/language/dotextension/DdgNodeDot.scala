@@ -4,7 +4,7 @@ import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.dotgenerator.{DotCpg14Generator, DotDdgGenerator, DotPdgGenerator}
 import io.joern.dataflowengineoss.language.*
 import io.joern.dataflowengineoss.semanticsloader.Semantics
-import io.shiftleft.codepropertygraph.generated.v2.nodes.Method
+import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.dotextension.{ImageViewer, Shared}
 

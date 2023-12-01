@@ -1,7 +1,7 @@
 package io.joern.pysrc2cpg.cpg
 
-import io.shiftleft.codepropertygraph.generated.v2.Operators
-import io.shiftleft.codepropertygraph.generated.v2.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.joern.pysrc2cpg.Py2CpgTestContext
 import io.shiftleft.semanticcpg.language._
 import org.scalatest.freespec.AnyFreeSpec

@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.language.modulevariable.nodemethods
 
-import io.shiftleft.codepropertygraph.generated.v2.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{CfgNode, FieldIdentifier, Identifier, Import, Member, TypeDecl}
+import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, FieldIdentifier, Identifier, Import, Member, TypeDecl}
 import io.shiftleft.semanticcpg.language.modulevariable.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes as OpExtNodes
 import io.shiftleft.semanticcpg.language.*

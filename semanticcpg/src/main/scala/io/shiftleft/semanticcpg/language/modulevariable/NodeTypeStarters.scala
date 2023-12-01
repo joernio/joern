@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language.modulevariable
 
-import io.shiftleft.codepropertygraph.generated.v2.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 // TODO bring back help/doc
 //import overflowdb.traversal.help.{Doc, TraversalSource}
 import io.shiftleft.semanticcpg.language.*

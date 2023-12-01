@@ -7,8 +7,8 @@ import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.{Ast, ValidationMode, AstNodeBuilder}
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders.{newDependencyNode}
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{NewCall, NewImport}
-import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, EdgeTypes}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewImport}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes}
 import ujson.Value
 
 import scala.util.Try

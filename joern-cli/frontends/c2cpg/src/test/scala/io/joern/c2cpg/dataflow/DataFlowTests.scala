@@ -3,8 +3,8 @@ package io.joern.c2cpg.dataflow
 import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
-import io.shiftleft.codepropertygraph.generated.v2.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{CfgNode, Identifier, Literal}
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.nodes.{CfgNode, Identifier, Literal}
 import io.shiftleft.semanticcpg.language._
 
 class DataFlowTests extends DataFlowCodeToCpgSuite {

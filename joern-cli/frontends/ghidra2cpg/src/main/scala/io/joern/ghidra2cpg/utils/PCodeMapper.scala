@@ -7,8 +7,8 @@ import ghidra.program.model.pcode.{HighFunction, PcodeOp, PcodeOpAST, Varnode}
 import io.joern.ghidra2cpg.Types
 //import io.joern.ghidra2cpg.utils.Utils.{createCallNode, createIdentifier, createLiteral}
 import io.joern.ghidra2cpg.utils.Utils._
-import io.shiftleft.codepropertygraph.generated.v2.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.v2.nodes.CfgNodeNew
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.nodes.CfgNodeNew
 import org.slf4j.LoggerFactory
 import flatgraph.DiffGraphBuilder
 

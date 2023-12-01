@@ -2,8 +2,8 @@ package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{Call, FieldIdentifier, Identifier, Member}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, Member}
 import io.shiftleft.semanticcpg.language._
 
 class CompanionObjectTests extends KotlinCode2CpgFixture(withOssDataflow = false) {

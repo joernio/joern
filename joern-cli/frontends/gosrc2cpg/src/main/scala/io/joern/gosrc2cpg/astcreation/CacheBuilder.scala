@@ -6,8 +6,8 @@ import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.gosrc2cpg.utils.UtilityConstants.fileSeparateorPattern
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.DiffGraphBuilder
-import io.shiftleft.codepropertygraph.generated.v2.nodes.NewNamespaceBlock
+import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
+import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
 import ujson.{Arr, Obj, Value}
 
 import java.io.File

@@ -4,7 +4,7 @@ import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.{HereDocArgum
 import io.joern.rubysrc2cpg.deprecated.parser.HereDocHandling
 import io.joern.rubysrc2cpg.deprecated.passes.Defines
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{NewCall, NewIdentifier, NewLiteral}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewIdentifier, NewLiteral}
 
 import scala.collection.immutable.Seq
 import scala.collection.mutable

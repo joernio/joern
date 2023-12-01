@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language.dotextension
 
-import io.shiftleft.codepropertygraph.generated.v2.nodes.Method
+import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.semanticcpg.dotgenerator.{DotCdgGenerator, DotCfgGenerator}
 import io.shiftleft.semanticcpg.language.*
 

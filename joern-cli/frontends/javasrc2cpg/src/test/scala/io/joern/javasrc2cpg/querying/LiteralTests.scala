@@ -2,7 +2,7 @@ package io.joern.javasrc2cpg.querying
 
 import com.github.javaparser.ast.expr.LiteralExpr
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{Identifier, Literal}
+import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
 import io.shiftleft.semanticcpg.language._
 
 class LiteralTests extends JavaSrcCode2CpgFixture {

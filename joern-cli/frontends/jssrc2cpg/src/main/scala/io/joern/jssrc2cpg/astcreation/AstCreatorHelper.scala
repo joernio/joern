@@ -6,8 +6,8 @@ import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.utils.NodeBuilders.{newClosureBindingNode, newLocalNode}
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, EvaluationStrategies}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies}
 import ujson.Value
 
 import scala.collection.{SortedMap, mutable}

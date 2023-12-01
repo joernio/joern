@@ -2,8 +2,8 @@ package io.joern.x2cpg.passes
 
 import flatgraph.misc.TestUtils.*
 import io.joern.x2cpg.passes.base.ContainsEdgePass
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{NewCall, NewFile, NewMethod, NewTypeDecl}
-import io.shiftleft.codepropertygraph.generated.v2.{Cpg, EdgeTypes}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewFile, NewMethod, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec

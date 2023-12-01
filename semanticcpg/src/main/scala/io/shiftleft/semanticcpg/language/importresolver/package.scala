@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language
 
-import io.shiftleft.codepropertygraph.generated.v2.nodes.Tag
+import io.shiftleft.codepropertygraph.generated.nodes.Tag
 
 import java.nio.charset.StandardCharsets
 import java.util.Base64

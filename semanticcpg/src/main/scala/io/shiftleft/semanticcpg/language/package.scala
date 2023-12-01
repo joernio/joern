@@ -1,8 +1,8 @@
 package io.shiftleft.semanticcpg
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.CpgNodeStarters
-import io.shiftleft.codepropertygraph.generated.v2.nodes.*
+import io.shiftleft.codepropertygraph.generated.CpgNodeStarters
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.bindingextension.{
   MethodTraversal as BindingMethodTraversal,
   TypeDeclTraversal as BindingTypeDeclTraversal
@@ -22,7 +22,7 @@ import io.shiftleft.semanticcpg.language.types.structure.*
   * `steps` package, e.g. `Steps`
   */
 package object language
-    extends io.shiftleft.codepropertygraph.generated.v2.Language
+    extends io.shiftleft.codepropertygraph.generated.Language
     with operatorextension.Implicits
     with modulevariable.Implicits
     with importresolver.Implicits

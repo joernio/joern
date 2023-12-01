@@ -4,8 +4,8 @@ import flatgraph.DiffGraphBuilder
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.passes.frontend.*
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.{Assignment, FieldAccess}

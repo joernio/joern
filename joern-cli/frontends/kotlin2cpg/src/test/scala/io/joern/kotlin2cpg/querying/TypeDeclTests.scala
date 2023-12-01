@@ -1,8 +1,8 @@
 package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.v2.Operators
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{
+import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.{
   Binding,
   Call,
   FieldIdentifier,
@@ -10,7 +10,7 @@ import io.shiftleft.codepropertygraph.generated.v2.nodes.{
   Method,
   MethodParameterIn
 }
-import io.shiftleft.codepropertygraph.generated.v2.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
 

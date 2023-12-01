@@ -5,8 +5,8 @@ import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
-import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, PropertyNames}
 
 trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
   protected def createMethodReturnNode(func: BabelNodeInfo): NewMethodReturn = {

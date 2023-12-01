@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language.operatorextension
 
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{Call, StaticType}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, StaticType}
 
 trait AssignmentT
 trait ArithmeticT

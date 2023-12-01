@@ -3,7 +3,7 @@ package io.joern.dataflowengineoss.passes.reachingdef
 import io.joern.dataflowengineoss.language._
 import io.joern.dataflowengineoss.queryengine.Engine.isOutputArgOfInternalMethod
 import io.joern.dataflowengineoss.semanticsloader.{FlowMapping, ParameterNode, PassThroughMapping, Semantics}
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{Call, CfgNode, Expression, StoredNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, CfgNode, Expression, StoredNode}
 import io.shiftleft.semanticcpg.language._
 
 object EdgeValidator {

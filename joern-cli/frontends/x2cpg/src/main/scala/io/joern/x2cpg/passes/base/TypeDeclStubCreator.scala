@@ -1,8 +1,8 @@
 package io.joern.x2cpg.passes.base
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.NodeTypes
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{NewTypeDecl, TypeDeclBase}
+import io.shiftleft.codepropertygraph.generated.NodeTypes
+import io.shiftleft.codepropertygraph.generated.nodes.{NewTypeDecl, TypeDeclBase}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.types.structure.{FileTraversal, NamespaceTraversal}

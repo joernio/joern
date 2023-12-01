@@ -3,7 +3,7 @@ package io.joern.console.cpgcreation
 import better.files.Dsl.*
 import better.files.File
 import io.shiftleft.codepropertygraph.cpgloading.{CpgLoader, CpgLoaderConfig}
-import io.shiftleft.codepropertygraph.generated.v2.Languages
+import io.shiftleft.codepropertygraph.generated.Languages
 import io.joern.console.{ConsoleConfig, CpgConverter}
 
 import java.nio.file.Path

@@ -3,8 +3,8 @@ package io.joern.joerncli
 import io.circe.Json
 import io.joern.joerncli.CpgBasedTool.exitIfInvalid
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.PropertyNames
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{AstNode, Method}
+import io.shiftleft.codepropertygraph.generated.PropertyNames
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Method}
 import io.shiftleft.semanticcpg.language.*
 import org.json4s.DefaultFormats
 import org.json4s.native.Serialization

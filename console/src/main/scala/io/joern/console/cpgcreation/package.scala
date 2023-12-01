@@ -1,6 +1,6 @@
 package io.joern.console
 
-import io.shiftleft.codepropertygraph.generated.v2.Languages
+import io.shiftleft.codepropertygraph.generated.Languages
 import better.files.File
 
 import java.nio.file.Path

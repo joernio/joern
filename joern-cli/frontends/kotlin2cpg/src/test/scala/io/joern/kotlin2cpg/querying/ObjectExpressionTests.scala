@@ -1,8 +1,8 @@
 package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.v2.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{Block, Call, Identifier, Local, Method, Return, TypeDecl}
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Local, Method, Return, TypeDecl}
 import io.shiftleft.semanticcpg.language.*
 
 class ObjectExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = false) {

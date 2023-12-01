@@ -1,8 +1,8 @@
 package io.joern.jimple2cpg.passes
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{Declaration, Method}
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.nodes.{Declaration, Method}
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.shiftleft.semanticcpg.language.*
 

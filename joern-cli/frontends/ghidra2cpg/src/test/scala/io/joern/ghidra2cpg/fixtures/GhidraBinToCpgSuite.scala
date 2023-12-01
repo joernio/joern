@@ -5,7 +5,7 @@ import io.shiftleft.codepropertygraph.Cpg
 import io.joern.x2cpg.testfixtures.LanguageFrontend
 import io.shiftleft.utils.ProjectRoot
 import org.apache.commons.io.FileUtils
-import io.shiftleft.codepropertygraph.generated.v2.nodes
+import io.shiftleft.codepropertygraph.generated.nodes
 import io.joern.dataflowengineoss.language._
 import io.shiftleft.semanticcpg.language._
 

@@ -8,7 +8,7 @@ import io.joern.php2cpg.parser.Domain.PhpCast.{CastTypeMap, isCastType}
 import io.joern.php2cpg.parser.Domain.PhpUnaryOp.{UnaryOpTypeMap, isUnaryOpType}
 import io.joern.php2cpg.parser.Domain.PhpUseType.{PhpUseType, getUseType}
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.v2.{ModifierTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
 import org.slf4j.LoggerFactory
 import ujson.{Arr, Obj, Str, Value}
 

@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.deprecated.passes.ast
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.v2.{EvaluationStrategies, NodeTypes, DispatchTypes, Operators, nodes}
+import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes, DispatchTypes, Operators, nodes}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 

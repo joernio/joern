@@ -1,8 +1,8 @@
 package io.shiftleft.semanticcpg
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.accessors.Lang.accessPropertyOverlays
-import io.shiftleft.codepropertygraph.generated.v2.PropertyNames
+import io.shiftleft.codepropertygraph.generated.accessors.Lang.accessPropertyOverlays
+import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
 import flatgraph.DiffGraphBuilder

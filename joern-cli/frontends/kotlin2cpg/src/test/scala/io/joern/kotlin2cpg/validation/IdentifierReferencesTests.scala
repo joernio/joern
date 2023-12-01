@@ -1,8 +1,8 @@
 package io.joern.kotlin2cpg.validation
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.v2.Operators
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{Identifier, Local, MethodParameterIn}
+import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Local, MethodParameterIn}
 import io.shiftleft.semanticcpg.language._
 
 // TODO: also add test with refs inside TYPE_DECL

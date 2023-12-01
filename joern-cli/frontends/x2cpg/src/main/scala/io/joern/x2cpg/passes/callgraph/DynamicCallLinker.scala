@@ -2,8 +2,8 @@ package io.joern.x2cpg.passes.callgraph
 
 import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{Call, Method, StoredNode, Type, TypeDecl}
-import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, EdgeTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method, StoredNode, Type, TypeDecl}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, PropertyNames}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.{Logger, LoggerFactory}

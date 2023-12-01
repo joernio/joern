@@ -23,9 +23,9 @@ import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, composeMethodLikeS
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newOperatorCallNode}
 import io.joern.x2cpg.{Ast, Defines}
-import io.shiftleft.codepropertygraph.generated.v2.nodes.Call.PropertyDefaults
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{NewBlock, NewCall, NewIdentifier}
-import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, EdgeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
+import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewIdentifier}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
 
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional

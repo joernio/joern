@@ -11,8 +11,8 @@ import io.joern.x2cpg.X2Cpg.stripQuotes
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode, Defines as XDefines}
-import io.shiftleft.codepropertygraph.generated.v2.*
-import io.shiftleft.codepropertygraph.generated.v2.nodes.*
+import io.shiftleft.codepropertygraph.generated.*
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.antlr.v4.runtime.ParserRuleContext
 import org.slf4j.LoggerFactory
 

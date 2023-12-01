@@ -1,8 +1,8 @@
 package io.joern.pysrc2cpg
 
 import io.joern.x2cpg.ValidationMode
-import io.shiftleft.codepropertygraph.generated.v2.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.Languages
+import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.Languages
 import flatgraph.{DiffGraphApplier, DiffGraphBuilder}
 
 object Py2Cpg {

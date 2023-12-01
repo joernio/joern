@@ -2,7 +2,7 @@ package io.joern.php2cpg.querying
 
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.codepropertygraph.generated.v2.nodes.Method
+import io.shiftleft.codepropertygraph.generated.nodes.Method
 
 class NamespaceTests extends PhpCode2CpgFixture {
   "namespaces should be able to contain statements as top-level AST children" in {

@@ -1,7 +1,7 @@
 package io.joern.ghidra2cpg.passes
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.nodes
+import io.shiftleft.codepropertygraph.generated.nodes
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 
 import java.io.File

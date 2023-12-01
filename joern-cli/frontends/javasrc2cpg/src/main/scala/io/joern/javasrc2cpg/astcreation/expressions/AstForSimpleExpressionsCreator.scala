@@ -23,8 +23,8 @@ import io.joern.javasrc2cpg.util.NameConstants
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newOperatorCallNode}
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{NewCall, NewFieldIdentifier, NewLiteral, NewTypeRef}
-import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewFieldIdentifier, NewLiteral, NewTypeRef}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
 
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional

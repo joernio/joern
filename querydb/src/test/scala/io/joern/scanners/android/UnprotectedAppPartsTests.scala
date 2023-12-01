@@ -1,7 +1,7 @@
 package io.joern.scanners.android
 
 import io.joern.console.scan._
-import io.shiftleft.codepropertygraph.generated.v2.nodes.CfgNode
+import io.shiftleft.codepropertygraph.generated.nodes.CfgNode
 import io.joern.suites.KotlinQueryTestSuite
 import io.shiftleft.semanticcpg.language._
 

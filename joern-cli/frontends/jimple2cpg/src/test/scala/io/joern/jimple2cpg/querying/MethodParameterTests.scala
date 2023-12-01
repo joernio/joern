@@ -2,7 +2,7 @@ package io.joern.jimple2cpg.querying
 
 import io.joern.jimple2cpg.testfixtures.JimpleCode2CpgFixture
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.EvaluationStrategies
+import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.semanticcpg.language._
 
 class MethodParameterTests extends JimpleCode2CpgFixture {

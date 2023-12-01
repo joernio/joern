@@ -2,8 +2,8 @@ package io.joern.rubysrc2cpg.deprecated.passes
 
 import io.joern.x2cpg.Defines as XDefines
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{Identifier, Local, Method, NewCall}
-import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, EdgeTypes}
+import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Local, Method, NewCall}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes}
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.shiftleft.semanticcpg.language.*
 

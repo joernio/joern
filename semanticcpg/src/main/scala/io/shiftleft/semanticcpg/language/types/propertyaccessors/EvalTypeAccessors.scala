@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.language.types.propertyaccessors
 
-import io.shiftleft.codepropertygraph.generated.v2.PropertyKeys
-import io.shiftleft.codepropertygraph.generated.v2.nodes.AstNode
+import io.shiftleft.codepropertygraph.generated.PropertyKeys
+import io.shiftleft.codepropertygraph.generated.nodes.AstNode
 import io.shiftleft.semanticcpg.language.*
 
 class EvalTypeAccessors[A <: AstNode](val traversal: Iterator[A]) extends AnyVal {

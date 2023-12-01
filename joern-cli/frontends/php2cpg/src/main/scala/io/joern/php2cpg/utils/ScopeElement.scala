@@ -1,7 +1,7 @@
 package io.joern.php2cpg.utils
 
 import io.joern.php2cpg.parser.Domain.InstanceMethodDelimiter
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewNamespaceBlock, NewNode, NewTypeDecl}
 
 class PhpScopeElement private (val node: NewNode, scopeName: String)(implicit nextClosureName: () => String) {
 

@@ -2,7 +2,7 @@ package io.joern.pysrc2cpg.cpg
 
 import io.joern.pysrc2cpg.Py2CpgTestContext
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.codepropertygraph.generated.v2.{ControlStructureTypes, nodes}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, nodes}
 import org.scalatest.freespec.AnyFreeSpec
 import org.scalatest.matchers.should.Matchers
 

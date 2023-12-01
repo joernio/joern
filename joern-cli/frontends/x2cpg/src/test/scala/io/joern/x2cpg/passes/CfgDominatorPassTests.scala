@@ -2,8 +2,8 @@ package io.joern.x2cpg.passes
 
 import flatgraph.misc.TestUtils.*
 import io.joern.x2cpg.passes.controlflow.cfgdominator.CfgDominatorPass
-import io.shiftleft.codepropertygraph.generated.v2.{Cpg, EdgeTypes, NodeTypes}
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{NewMethod, NewMethodReturn, NewUnknown}
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewMethodReturn, NewUnknown}
 import io.shiftleft.semanticcpg.language.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec

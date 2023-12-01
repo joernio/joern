@@ -5,8 +5,8 @@ import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserAst, ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.joern.x2cpg.{Ast, Defines as XDefines}
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{NewModifier, NewNode}
-import io.shiftleft.codepropertygraph.generated.v2.{EvaluationStrategies, ModifierTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewModifier, NewNode}
+import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, ModifierTypes, PropertyNames}
 import org.apache.commons.lang.StringUtils
 import ujson.Value
 

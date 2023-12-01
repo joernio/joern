@@ -2,7 +2,7 @@ package io.joern.x2cpg.testfixtures
 
 import io.joern.x2cpg.X2CpgConfig
 import flatgraph.Graph
-import io.shiftleft.codepropertygraph.generated.v2.{Cpg, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.{Cpg, NodeTypes}
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path, Paths}
 import java.util.Comparator

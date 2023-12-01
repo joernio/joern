@@ -10,7 +10,7 @@ import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.utils.Report
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.Languages
+import io.shiftleft.codepropertygraph.generated.Languages
 
 import java.nio.file.Paths
 import scala.util.Try

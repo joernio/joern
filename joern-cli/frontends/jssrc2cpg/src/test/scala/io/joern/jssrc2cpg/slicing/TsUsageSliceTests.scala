@@ -2,7 +2,7 @@ package io.joern.jssrc2cpg.slicing
 
 import io.joern.dataflowengineoss.slicing.*
 import io.joern.jssrc2cpg.testfixtures.DataFlowCodeToCpgSuite
-import io.shiftleft.codepropertygraph.generated.v2.Operators
+import io.shiftleft.codepropertygraph.generated.Operators
 
 class TsUsageSliceTests extends DataFlowCodeToCpgSuite {
 

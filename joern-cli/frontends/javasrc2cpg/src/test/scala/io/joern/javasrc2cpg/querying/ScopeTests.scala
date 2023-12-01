@@ -1,8 +1,8 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.v2.Operators
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{Call, FieldIdentifier, Identifier}
+import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier}
 import io.shiftleft.semanticcpg.language._
 
 class ScopeTests extends JavaSrcCode2CpgFixture {

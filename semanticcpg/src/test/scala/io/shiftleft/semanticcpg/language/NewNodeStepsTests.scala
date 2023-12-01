@@ -2,8 +2,8 @@ package io.shiftleft.semanticcpg.language
 
 import flatgraph.DiffGraphApplier.applyDiff
 import flatgraph.DiffGraphBuilder
-import io.shiftleft.codepropertygraph.generated.v2.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.nodes.*
+import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

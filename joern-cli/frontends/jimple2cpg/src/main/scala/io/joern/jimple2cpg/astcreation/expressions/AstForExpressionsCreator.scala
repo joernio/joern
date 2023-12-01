@@ -2,8 +2,8 @@ package io.joern.jimple2cpg.astcreation.expressions
 
 import io.joern.jimple2cpg.astcreation.AstCreator
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{NewCall, NewIdentifier, NewTypeRef}
-import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewIdentifier, NewTypeRef}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import org.slf4j.LoggerFactory
 import soot.{Unit as SUnit, *}
 import soot.jimple.*

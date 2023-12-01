@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.accesspath
 
-import io.shiftleft.codepropertygraph.generated.v2.nodes.*
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
 trait TrackedBase

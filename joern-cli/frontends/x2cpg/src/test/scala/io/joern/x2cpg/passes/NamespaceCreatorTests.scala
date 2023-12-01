@@ -1,11 +1,11 @@
 package io.joern.x2cpg.passes
 
 import flatgraph.misc.TestUtils.addNode
-import io.shiftleft.codepropertygraph.generated.v2.{Cpg, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.{Cpg, NodeTypes}
 import io.shiftleft.semanticcpg.language.*
 import io.joern.x2cpg.passes.base.NamespaceCreator
 import io.joern.x2cpg.testfixtures.EmptyGraphFixture
-import io.shiftleft.codepropertygraph.generated.v2.nodes.NewNamespaceBlock
+import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

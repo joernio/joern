@@ -7,8 +7,8 @@ import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newModifierNode}
 import io.joern.x2cpg.{Ast, AstNodeBuilder, ValidationMode}
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{Identifier as _, *}
-import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes}
+import io.shiftleft.codepropertygraph.generated.nodes.{Identifier as _, *}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes}
 import ujson.Value
 
 import scala.collection.mutable

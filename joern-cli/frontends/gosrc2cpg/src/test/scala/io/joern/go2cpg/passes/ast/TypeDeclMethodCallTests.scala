@@ -2,8 +2,8 @@ package io.joern.go2cpg.passes.ast
 
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
 import io.joern.gosrc2cpg.astcreation.Defines
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{Call, Identifier}
-import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, nodes}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, nodes}
 import io.shiftleft.semanticcpg.language.*
 
 class TypeDeclMethodCallTests extends GoCodeToCpgSuite {

@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language.nodemethods
 
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{MethodRef, NewLocation}
+import io.shiftleft.codepropertygraph.generated.nodes.{MethodRef, NewLocation}
 import io.shiftleft.semanticcpg.NodeExtension
 import io.shiftleft.semanticcpg.language.*
 

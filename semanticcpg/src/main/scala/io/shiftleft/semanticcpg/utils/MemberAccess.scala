@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.utils
 
-import io.shiftleft.codepropertygraph.generated.v2.Operators
+import io.shiftleft.codepropertygraph.generated.Operators
 
 object MemberAccess {
 

@@ -5,8 +5,8 @@ import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.{Defines, EcmaBuiltins, GlobalBuiltins}
 import io.joern.x2cpg.{Ast, ValidationMode, AstNodeBuilder}
 import io.joern.x2cpg.datastructures.Stack.*
-import io.shiftleft.codepropertygraph.generated.v2.nodes.NewNode
-import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, EdgeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.NewNode
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
 
 import scala.util.Try
 

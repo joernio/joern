@@ -3,8 +3,8 @@ package io.joern.x2cpg.passes.frontend
 import io.joern.x2cpg.passes.base.MethodStubCreator
 import io.joern.x2cpg.passes.frontend.XTypeRecovery.isDummyType
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, EdgeTypes, NodeTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, NodeTypes, PropertyNames}
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
 

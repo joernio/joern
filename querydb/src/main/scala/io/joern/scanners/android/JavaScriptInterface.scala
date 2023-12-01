@@ -23,7 +23,7 @@ object JavaScriptInterface extends QueryBundle {
       description = "-",
       score = 9,
       withStrRep({ cpg =>
-        import io.shiftleft.codepropertygraph.generated.v2.nodes.{Call, Identifier}
+        import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier}
         import io.shiftleft.semanticcpg.language.android.*
 
         def webViewsWithInsecureLoadUrlCalls =

@@ -1,7 +1,7 @@
 package io.joern.jssrc2cpg.passes
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.nodes.NewType
+import io.shiftleft.codepropertygraph.generated.nodes.NewType
 import io.shiftleft.passes.CpgPass
 
 class TypeNodePass(usedTypes: List[(String, String)], cpg: Cpg) extends CpgPass(cpg, "types") {

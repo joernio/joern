@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.language.modulevariable
 
-import io.shiftleft.codepropertygraph.generated.v2.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.nodes.*
+import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.Assignment
 // TODO bring back help/doc

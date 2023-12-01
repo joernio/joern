@@ -2,7 +2,7 @@ package io.joern.console
 
 import better.files.Dsl._
 import better.files._
-import io.shiftleft.codepropertygraph.generated.v2.Languages
+import io.shiftleft.codepropertygraph.generated.Languages
 import io.joern.console.cpgcreation.{guessLanguage, LlvmCpgGenerator}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec

@@ -7,8 +7,8 @@ import io.joern.x2cpg.Defines.DynamicCallUnknownFullName
 import io.joern.x2cpg.Imports.createImportNodeAndLink
 import io.joern.x2cpg.X2Cpg.stripQuotes
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.v2.{ControlStructureTypes, DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import org.antlr.v4.runtime.ParserRuleContext
 import org.slf4j.LoggerFactory
 

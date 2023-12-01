@@ -1,8 +1,8 @@
 package io.joern.dataflowengineoss.slicing
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.v2.{Operators, PropertyKeys}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{Operators, PropertyKeys}
 import io.shiftleft.semanticcpg.language.*
 
 import java.util.concurrent.*

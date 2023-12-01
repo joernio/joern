@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.language.importresolver
 
-import io.shiftleft.codepropertygraph.generated.v2.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{AstNode, Declaration, Member, Tag}
+import io.shiftleft.codepropertygraph.generated.Cpg
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Declaration, Member, Tag}
 import io.shiftleft.semanticcpg.language.*
 // TODO bring back help/doc
 //import overflowdb.traversal.help.Doc

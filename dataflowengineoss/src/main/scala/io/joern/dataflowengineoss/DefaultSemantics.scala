@@ -1,7 +1,7 @@
 package io.joern.dataflowengineoss
 
 import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, PassThroughMapping, Semantics}
-import io.shiftleft.codepropertygraph.generated.v2.Operators
+import io.shiftleft.codepropertygraph.generated.Operators
 
 import scala.annotation.unused
 

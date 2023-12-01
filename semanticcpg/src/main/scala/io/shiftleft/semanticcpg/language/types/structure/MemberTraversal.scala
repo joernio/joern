@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language.types.structure
 
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{Annotation, Call, Member}
+import io.shiftleft.codepropertygraph.generated.nodes.{Annotation, Call, Member}
 import io.shiftleft.semanticcpg.language.*
 
 /** A member variable of a class/type.

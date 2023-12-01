@@ -1,10 +1,10 @@
 package io.joern.rubysrc2cpg.deprecated.passes.ast
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.v2.ModifierTypes
+import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.semanticcpg.language.*
 import io.joern.x2cpg.Defines as XDefines
-import io.shiftleft.codepropertygraph.generated.v2.Operators
+import io.shiftleft.codepropertygraph.generated.Operators
 
 class TypeDeclAstCreationPassTest extends RubyCode2CpgFixture(useDeprecatedFrontend = true) {
 

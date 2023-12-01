@@ -4,7 +4,7 @@ import io.joern.console.*
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.macros.QueryMacros.*
 import io.joern.scanners.{Crew, QueryTags}
-import io.shiftleft.codepropertygraph.generated.v2.nodes.*
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
 object FileOpRace extends QueryBundle {

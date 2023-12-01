@@ -2,7 +2,7 @@ package io.joern.php2cpg.querying
 
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{Identifier, Literal}
+import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
 
 class ScalarTests extends PhpCode2CpgFixture {
   "int scalars should be represented correctly" in {

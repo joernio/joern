@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language.bindingextension
 
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{Binding, Method, TypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{Binding, Method, TypeDecl}
 import io.shiftleft.semanticcpg.language.*
 
 class MethodTraversal(val traversal: Iterator[Method]) extends AnyVal {

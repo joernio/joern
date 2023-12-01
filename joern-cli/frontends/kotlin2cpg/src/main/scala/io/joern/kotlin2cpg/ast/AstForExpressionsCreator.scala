@@ -4,9 +4,9 @@ import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.ast.Nodes.operatorCallNode
 import io.joern.kotlin2cpg.types.{CallKinds, TypeConstants, TypeInfoProvider}
 import io.joern.x2cpg.{Ast, AstNodeBuilder, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import org.jetbrains.kotlin.lexer.{KtToken, KtTokens}
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{NewMethodRef}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewMethodRef}
 import org.jetbrains.kotlin.psi.{
   KtAnnotationEntry,
   KtArrayAccessExpression,

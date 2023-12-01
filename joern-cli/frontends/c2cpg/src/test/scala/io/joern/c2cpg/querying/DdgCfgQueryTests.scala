@@ -1,7 +1,7 @@
 package io.joern.c2cpg.querying
 
 import io.joern.c2cpg.testfixtures.DataFlowCodeToCpgSuite
-import io.shiftleft.codepropertygraph.generated.v2.nodes
+import io.shiftleft.codepropertygraph.generated.nodes
 import io.joern.dataflowengineoss.language._
 import io.shiftleft.semanticcpg.language._
 

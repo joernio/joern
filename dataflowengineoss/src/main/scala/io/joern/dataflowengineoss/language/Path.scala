@@ -1,6 +1,6 @@
 package io.joern.dataflowengineoss.language
 
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{AstNode, CfgNode, Member, MethodParameterIn}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, Member, MethodParameterIn}
 import io.shiftleft.semanticcpg.language._
 import org.apache.commons.lang.StringUtils
 // TODO get help back

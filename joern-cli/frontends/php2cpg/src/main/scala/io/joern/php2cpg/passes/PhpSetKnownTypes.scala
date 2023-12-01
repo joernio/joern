@@ -3,9 +3,9 @@ package io.joern.php2cpg.passes
 import better.files.File
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPass
-import io.shiftleft.codepropertygraph.generated.v2.nodes._
-import io.shiftleft.codepropertygraph.generated.v2.PropertyNames
-import io.shiftleft.codepropertygraph.generated.v2.Operators
+import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.PropertyNames
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import org.slf4j.{Logger, LoggerFactory}

@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.language.types.propertyaccessors
 
-import io.shiftleft.codepropertygraph.generated.v2.ModifierTypes
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{Modifier, StoredNode}
+import io.shiftleft.codepropertygraph.generated.ModifierTypes
+import io.shiftleft.codepropertygraph.generated.nodes.{Modifier, StoredNode}
 import io.shiftleft.semanticcpg.language.*
 
 class ModifierAccessors[A <: StoredNode](val traversal: Iterator[A]) extends AnyVal {

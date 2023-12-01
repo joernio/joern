@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.language
 
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{AbstractNode, NewNode, StoredNode}
+import io.shiftleft.codepropertygraph.generated.nodes.{AbstractNode, NewNode, StoredNode}
 
 import scala.jdk.CollectionConverters.*
 

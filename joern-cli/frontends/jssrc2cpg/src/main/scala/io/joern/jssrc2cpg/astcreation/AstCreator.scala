@@ -9,13 +9,13 @@ import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders.{newMethodReturnNode, newModifierNode}
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, AstNodeBuilder as X2CpgAstNodeBuilder}
-import io.shiftleft.codepropertygraph.generated.v2.{EvaluationStrategies, ModifierTypes, NodeTypes}
-import io.shiftleft.codepropertygraph.generated.v2.nodes.NewBlock
-import io.shiftleft.codepropertygraph.generated.v2.nodes.NewFile
-import io.shiftleft.codepropertygraph.generated.v2.nodes.NewMethod
-import io.shiftleft.codepropertygraph.generated.v2.nodes.NewNode
-import io.shiftleft.codepropertygraph.generated.v2.nodes.NewTypeDecl
-import io.shiftleft.codepropertygraph.generated.v2.nodes.NewTypeRef
+import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, ModifierTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
+import io.shiftleft.codepropertygraph.generated.nodes.NewFile
+import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
+import io.shiftleft.codepropertygraph.generated.nodes.NewNode
+import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
+import io.shiftleft.codepropertygraph.generated.nodes.NewTypeRef
 import org.slf4j.{Logger, LoggerFactory}
 import flatgraph.DiffGraphBuilder
 import ujson.Value

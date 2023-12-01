@@ -2,8 +2,8 @@ package io.joern.rubysrc2cpg.deprecated.astcreation
 
 import flatgraph.DiffGraphBuilder
 import io.joern.x2cpg.datastructures.Scope
-import io.shiftleft.codepropertygraph.generated.v2.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{DeclarationNew, NewIdentifier, NewLocal, NewNode}
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.nodes.{DeclarationNew, NewIdentifier, NewLocal, NewNode}
 
 import scala.collection.mutable
 

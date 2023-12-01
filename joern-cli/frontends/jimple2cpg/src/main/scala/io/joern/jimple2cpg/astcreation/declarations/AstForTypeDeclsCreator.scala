@@ -2,8 +2,8 @@ package io.joern.jimple2cpg.astcreation.declarations
 
 import io.joern.jimple2cpg.astcreation.AstCreator
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.v2.*
-import io.shiftleft.codepropertygraph.generated.v2.nodes.*
+import io.shiftleft.codepropertygraph.generated.*
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import soot.tagkit.*
 import soot.{RefType, Local as _, *}
 

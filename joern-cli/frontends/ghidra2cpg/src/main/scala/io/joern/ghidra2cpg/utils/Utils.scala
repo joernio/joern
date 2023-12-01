@@ -2,8 +2,8 @@ package io.joern.ghidra2cpg.utils
 
 import ghidra.program.model.listing.{Function, Instruction, Program}
 import io.joern.ghidra2cpg.Types
-import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.v2.NodeTypes
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 
 import scala.jdk.CollectionConverters._

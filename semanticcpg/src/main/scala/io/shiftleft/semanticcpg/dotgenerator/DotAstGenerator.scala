@@ -1,6 +1,6 @@
 package io.shiftleft.semanticcpg.dotgenerator
 
-import io.shiftleft.codepropertygraph.generated.v2.nodes.AstNode
+import io.shiftleft.codepropertygraph.generated.nodes.AstNode
 
 object DotAstGenerator {
 

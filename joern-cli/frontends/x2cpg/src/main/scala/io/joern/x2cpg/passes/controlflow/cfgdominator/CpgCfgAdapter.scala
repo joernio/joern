@@ -1,6 +1,6 @@
 package io.joern.x2cpg.passes.controlflow.cfgdominator
 
-import io.shiftleft.codepropertygraph.generated.v2.nodes.StoredNode
+import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
 
 class CpgCfgAdapter extends CfgAdapter[StoredNode] {
 

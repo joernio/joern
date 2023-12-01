@@ -33,8 +33,8 @@ import io.joern.javasrc2cpg.util.{BindingTable, BindingTableAdapterForJavaparser
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.utils.OffsetUtils
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.v2.NodeTypes
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{NewClosureBinding, NewFile, NewImport, NewNamespaceBlock}
+import io.shiftleft.codepropertygraph.generated.NodeTypes
+import io.shiftleft.codepropertygraph.generated.nodes.{NewClosureBinding, NewFile, NewImport, NewNamespaceBlock}
 import org.slf4j.LoggerFactory
 import flatgraph.DiffGraphBuilder
 

@@ -5,8 +5,8 @@ import io.joern.rubysrc2cpg.deprecated.passes.Defines
 import io.joern.rubysrc2cpg.deprecated.utils.PackageContext
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
-import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, EdgeTypes, ModifierTypes}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, ModifierTypes}
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.tree.TerminalNode
 import org.slf4j.LoggerFactory

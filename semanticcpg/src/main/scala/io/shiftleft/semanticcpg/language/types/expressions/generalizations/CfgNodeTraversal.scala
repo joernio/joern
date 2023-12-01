@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.language.types.expressions.generalizations
 
-import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.v2.neighboraccessors.Lang.*
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.neighboraccessors.Lang.*
 import io.shiftleft.semanticcpg.language.*
 // TODO bring back @Help
 //import overflowdb.traversal.help

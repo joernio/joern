@@ -1,8 +1,8 @@
 package io.shiftleft.semanticcpg.dotgenerator
 
 import flatgraph.Accessors
-import io.shiftleft.codepropertygraph.generated.v2.PropertyKeys
-import io.shiftleft.codepropertygraph.generated.v2.nodes.*
+import io.shiftleft.codepropertygraph.generated.PropertyKeys
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.utils.MemberAccess
 import org.apache.commons.lang.StringEscapeUtils

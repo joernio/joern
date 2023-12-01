@@ -1,8 +1,8 @@
 package io.shiftleft.semanticcpg.language.android
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.CpgNodeStarters
-import io.shiftleft.codepropertygraph.generated.v2.nodes.*
+import io.shiftleft.codepropertygraph.generated.CpgNodeStarters
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
 class NodeTypeStarters(cpg: Cpg) extends CpgNodeStarters(cpg) {

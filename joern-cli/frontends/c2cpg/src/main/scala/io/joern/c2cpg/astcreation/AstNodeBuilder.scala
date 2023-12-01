@@ -1,7 +1,7 @@
 package io.joern.c2cpg.astcreation
 
 import io.joern.x2cpg.utils.NodeBuilders.{newMethodReturnNode => newMethodReturnNode_}
-import io.shiftleft.codepropertygraph.generated.v2.nodes.*
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.eclipse.cdt.core.dom.ast.{IASTLabelStatement, IASTNode}
 import org.eclipse.cdt.core.dom.ast.IASTPreprocessorIncludeStatement
 import org.eclipse.cdt.internal.core.model.ASTStringUtil

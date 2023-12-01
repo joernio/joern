@@ -4,8 +4,8 @@ import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.gosrc2cpg.utils.Operator
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.v2.nodes.NewCall
-import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.nodes.NewCall
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, PropertyNames}
 import ujson.Value
 
 import scala.collection.immutable.Seq

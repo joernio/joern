@@ -40,14 +40,14 @@ import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.{BindingTable, BindingTableEntry}
 import io.joern.x2cpg.utils.NodeBuilders.*
 import io.joern.x2cpg.{Ast, Defines}
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{
+import io.shiftleft.codepropertygraph.generated.nodes.{
   NewArrayInitializer,
   NewIdentifier,
   NewMethod,
   NewModifier,
   NewTypeDecl
 }
-import io.shiftleft.codepropertygraph.generated.v2.{ModifierTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable

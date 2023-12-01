@@ -3,7 +3,7 @@ package io.joern.scanners.java
 import io.joern.console.*
 import io.joern.macros.QueryMacros.*
 import io.joern.scanners.{Crew, QueryTags}
-import io.shiftleft.codepropertygraph.generated.v2.*
+import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.semanticcpg.language.*
 
 object CertificateChecks extends QueryBundle {

@@ -2,8 +2,8 @@ package io.joern.x2cpg.passes.frontend
 
 import io.joern.x2cpg.passes.frontend.TypeNodePass.fullToShortName
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.PropertyKeys
-import io.shiftleft.codepropertygraph.generated.v2.nodes.NewType
+import io.shiftleft.codepropertygraph.generated.PropertyKeys
+import io.shiftleft.codepropertygraph.generated.nodes.NewType
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal

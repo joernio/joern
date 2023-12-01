@@ -2,7 +2,7 @@ package io.joern.scanners.kotlin
 
 import io.joern.console.scan._
 import io.joern.suites.KotlinQueryTestSuite
-import io.shiftleft.codepropertygraph.generated.v2.nodes.Call
+import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.semanticcpg.language._
 class NetworkProtocolsTests extends KotlinQueryTestSuite(NetworkProtocols) {
 

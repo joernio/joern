@@ -5,7 +5,7 @@ import io.joern.console.{CodeSnippet, Query, QueryBundle}
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.joern.x2cpg.testfixtures.TestCpg
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{Call, Method}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
 import io.joern.console.scan._
 import io.shiftleft.utils.ProjectRoot
 

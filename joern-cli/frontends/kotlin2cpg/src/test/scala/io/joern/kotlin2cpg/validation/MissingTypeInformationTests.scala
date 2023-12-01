@@ -2,7 +2,7 @@ package io.joern.kotlin2cpg.validation
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{Call, Method}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
 import io.shiftleft.semanticcpg.language._
 
 class MissingTypeInformationTests extends KotlinCode2CpgFixture(withOssDataflow = false) {

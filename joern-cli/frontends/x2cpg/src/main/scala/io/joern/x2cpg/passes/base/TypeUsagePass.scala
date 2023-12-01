@@ -2,8 +2,8 @@ package io.joern.x2cpg.passes.base
 
 import io.joern.x2cpg.utils.LinkingUtil
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, NodeTypes, PropertyNames}
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{Type, TypeDecl}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.nodes.{Type, TypeDecl}
 import io.shiftleft.passes.CpgPass
 
 class TypeUsagePass(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {

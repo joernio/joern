@@ -4,7 +4,7 @@ import better.files.File
 import io.joern.console.workspacehandling.Project
 import io.joern.console.{ConsoleException, FrontendConfig, Reporting}
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.Languages
+import io.shiftleft.codepropertygraph.generated.Languages
 // TODO get help back
 //import overflowdb.traversal.help.Table
 

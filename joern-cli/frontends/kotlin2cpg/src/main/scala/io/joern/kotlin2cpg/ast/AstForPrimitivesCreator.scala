@@ -4,8 +4,8 @@ import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.ast.Nodes.{namespaceBlockNode, operatorCallNode}
 import io.joern.kotlin2cpg.types.{TypeConstants, TypeInfoProvider}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.v2.{DispatchTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.{
   NewAnnotation,
   NewAnnotationLiteral,
   NewImport,

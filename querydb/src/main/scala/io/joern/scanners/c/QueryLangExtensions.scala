@@ -1,6 +1,6 @@
 package io.joern.scanners.c
 
-import io.shiftleft.codepropertygraph.generated.v2.nodes
+import io.shiftleft.codepropertygraph.generated.nodes
 import io.shiftleft.semanticcpg.language.*
 
 import scala.util.Try

@@ -13,8 +13,8 @@ import io.joern.x2cpg.passes.frontend.TypeNodePass
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.joern.x2cpg.utils.NodeBuilders.newOperatorCallNode
 import io.joern.x2cpg.{Ast, Defines}
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{NewCall, NewFieldIdentifier, NewIdentifier, NewLocal}
-import io.shiftleft.codepropertygraph.generated.v2.{EdgeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewFieldIdentifier, NewIdentifier, NewLocal}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.*

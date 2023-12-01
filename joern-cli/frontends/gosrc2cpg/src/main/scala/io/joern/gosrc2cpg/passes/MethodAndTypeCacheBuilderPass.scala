@@ -6,7 +6,7 @@ import io.joern.gosrc2cpg.model.GoModHelper
 import io.joern.gosrc2cpg.parser.GoAstJsonParser
 import io.joern.x2cpg.SourceFiles
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.DiffGraphBuilder
+import io.shiftleft.codepropertygraph.generated.DiffGraphBuilder
 
 import java.nio.file.Paths
 import scala.concurrent.ExecutionContext.Implicits.global

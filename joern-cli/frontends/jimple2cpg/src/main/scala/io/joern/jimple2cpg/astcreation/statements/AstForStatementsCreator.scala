@@ -2,8 +2,8 @@ package io.joern.jimple2cpg.astcreation.statements
 
 import io.joern.jimple2cpg.astcreation.AstCreator
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.v2.{ControlStructureTypes, DispatchTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, PropertyNames}
 import org.slf4j.LoggerFactory
 import soot.jimple.*
 import soot.tagkit.Host

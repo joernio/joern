@@ -2,7 +2,7 @@ package io.joern.jssrc2cpg.passes
 
 import io.joern.jssrc2cpg.testfixtures.DataFlowCodeToCpgSuite
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.nodes.Identifier
+import io.shiftleft.codepropertygraph.generated.nodes.Identifier
 import io.shiftleft.semanticcpg.language._
 
 class CallLinkerPassTest extends DataFlowCodeToCpgSuite {

@@ -4,14 +4,14 @@ import com.github.javaparser.symbolsolver.cache.GuavaCache
 import com.google.common.cache.CacheBuilder
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.v2.{ModifierTypes, PropertyKeys}
-import io.shiftleft.codepropertygraph.generated.v2.nodes.{Call, Method}
+import io.shiftleft.codepropertygraph.generated.{ModifierTypes, PropertyKeys}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method}
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.shiftleft.semanticcpg.language.*
 
 import scala.jdk.OptionConverters.RichOptional
 import io.joern.x2cpg.Defines.UnresolvedNamespace
-import io.shiftleft.codepropertygraph.generated.v2.nodes.Call.PropertyNames
+import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyNames
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 
 class TypeInferencePass(cpg: Cpg) extends ConcurrentWriterCpgPass[Call](cpg) {

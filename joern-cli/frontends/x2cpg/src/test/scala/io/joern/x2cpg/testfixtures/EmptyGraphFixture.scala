@@ -1,7 +1,7 @@
 package io.joern.x2cpg.testfixtures
 
 import flatgraph.Graph
-import io.shiftleft.codepropertygraph.generated.v2.Cpg
+import io.shiftleft.codepropertygraph.generated.Cpg
 
 import scala.util.Using
 

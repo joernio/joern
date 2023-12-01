@@ -4,8 +4,8 @@ import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.KtFileWithMeta
 import io.joern.kotlin2cpg.ast.Nodes.{namespaceBlockNode, operatorCallNode}
 import io.joern.kotlin2cpg.types.{TypeConstants, TypeInfoProvider, TypeRenderer}
-import io.shiftleft.codepropertygraph.generated.v2.nodes.*
-import io.shiftleft.codepropertygraph.generated.v2.*
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.passes.IntervalKeyPool
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, Defines, ValidationMode}
 import io.joern.x2cpg.datastructures.Global
