@@ -136,6 +136,7 @@ object JdkJarTypeSolver {
 
   def fromJdkPath(jdkPath: String): JdkJarTypeSolver = {
     // not following symlinks, because some setups might have a loop, e.g. AWS's Corretto
+    // see https://github.com/joernio/joern/pull/3871
     val jarPaths = SourceFiles.determine(jdkPath, Set(JarExtension, JmodExtension))(VisitOptions.default)
     if (jarPaths.isEmpty) {
       throw new IllegalArgumentException(s"No .jar or .jmod files found at JDK path ${jdkPath}")
