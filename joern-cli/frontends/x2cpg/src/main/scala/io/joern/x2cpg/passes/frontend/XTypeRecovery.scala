@@ -159,17 +159,15 @@ trait TypeRecoveryParserConfig[R <: X2CpgConfig[R]] { this: R =>
 abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, state: XTypeRecoveryState) extends CpgPass(cpg) {
 
   override def run(builder: DiffGraphBuilder): Unit = {
-   compilationUnit
-      .map(unit => generateRecoveryForCompilationUnitTask(unit, builder).fork())
-      .map(_.get)
-      .reduceOption((a, b) => a || b)
-      .getOrElse(false)
+    for(cu <- compilationUnits){
+      generateRecoveryForCompilationUnitTask(unit, builder).run()
+    }
   }
 
   /** @return
     *   the compilation units as per how the language is compiled. e.g. file.
     */
-  def compilationUnit: Iterator[CompilationUnitType]
+  def compilationUnits: Iterator[CompilationUnitType]
 
   /** A factory method to generate a [[RecoverForXCompilationUnit]] task with the given parameters.
     *
@@ -270,7 +268,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   cu: CompilationUnitType,
   builder: DiffGraphBuilder,
   state: XTypeRecoveryState
-) extends RecursiveTask[Boolean] {
+) extends Runnable {
 
   import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
   import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromIteratorExt
@@ -339,7 +337,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     case x         => x.ast.isCall.referencedImports
   }
 
-  override def compute(): Boolean = try {
+  override def run(): Unit = try {
     // Set known aliases that point to imports for local and external methods/modules
     importNodes.foreach(visitImport)
     // Look at symbols with existing type info
@@ -355,7 +353,6 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     // Entrypoint for any final changes
     postSetTypeInformation()
     // Return number of changes
-    true
   } finally {
     symbolTable.clear()
   }

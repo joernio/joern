@@ -22,7 +22,7 @@ class PhpTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryC
 
 private class PhpTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTypeRecovery[NamespaceBlock](cpg, state) {
 
-  override def compilationUnit: Iterator[NamespaceBlock] = cpg.file.namespaceBlock.iterator
+  override def compilationUnits: Iterator[NamespaceBlock] = cpg.file.namespaceBlock.iterator
 
   override def generateRecoveryForCompilationUnitTask(
     unit: NamespaceBlock,

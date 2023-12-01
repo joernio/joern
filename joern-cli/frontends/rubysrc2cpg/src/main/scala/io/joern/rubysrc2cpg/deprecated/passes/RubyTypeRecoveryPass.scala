@@ -15,7 +15,7 @@ class RubyTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecovery
 
 private class RubyTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTypeRecovery[File](cpg, state) {
 
-  override def compilationUnit: Iterator[File] = cpg.file.iterator
+  override def compilationUnits: Iterator[File] = cpg.file.iterator
 
   override def generateRecoveryForCompilationUnitTask(
     unit: File,
