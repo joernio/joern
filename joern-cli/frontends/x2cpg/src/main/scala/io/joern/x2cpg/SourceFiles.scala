@@ -80,10 +80,11 @@ object SourceFiles {
     sourceFileExtensions: Set[String],
     ignoredDefaultRegex: Option[Seq[Regex]] = None,
     ignoredFilesRegex: Option[Regex] = None,
-    ignoredFilesPath: Option[Seq[String]] = None
+    ignoredFilesPath: Option[Seq[String]] = None,
+    followSymlinks: Boolean = true
   ): List[String] = {
     filterFiles(
-      determine(Set(inputPath), sourceFileExtensions),
+      determine(Set(inputPath), sourceFileExtensions, followSymlinks),
       inputPath,
       ignoredDefaultRegex,
       ignoredFilesRegex,
@@ -93,7 +94,7 @@ object SourceFiles {
 
   /** For a given array of input paths, determine all source files by inspecting filename extensions.
     */
-  def determine(inputPaths: Set[String], sourceFileExtensions: Set[String]): List[String] = {
+  def determine(inputPaths: Set[String], sourceFileExtensions: Set[String], followSymlinks: Boolean): List[String] = {
     def hasSourceFileExtension(file: File): Boolean =
       file.extension.exists(sourceFileExtensions.contains)
 
@@ -102,9 +103,10 @@ object SourceFiles {
 
     val (dirs, files) = inputFiles.partition(_.isDirectory)
 
+    val followOption  = if (followSymlinks) VisitOptions.follow else VisitOptions.default
     val matchingFiles = files.filter(hasSourceFileExtension).map(_.toString)
     val matchingFilesFromDirs = dirs
-      .flatMap(_.listRecursively(VisitOptions.follow))
+      .flatMap(_.listRecursively(followOption))
       .filter(hasSourceFileExtension)
       .map(_.pathAsString)
 
