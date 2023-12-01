@@ -28,8 +28,7 @@ private class PhpTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XType
     unit: NamespaceBlock,
     builder: DiffGraphBuilder
   ): RecoverForXCompilationUnit[NamespaceBlock] = {
-    val newConfig = state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
-    new RecoverForPhpFile(cpg, unit, builder, state.copy(config = newConfig))
+    new RecoverForPhpFile(cpg, unit, builder, state)
   }
 }
 

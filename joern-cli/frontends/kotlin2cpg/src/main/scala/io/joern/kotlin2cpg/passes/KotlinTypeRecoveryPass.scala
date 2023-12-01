@@ -23,8 +23,7 @@ private class KotlinTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XT
     unit: File,
     builder: DiffGraphBuilder
   ): RecoverForXCompilationUnit[File] = {
-    val newConfig = state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
-    new RecoverForKotlinFile(cpg, unit, builder, state.copy(config = newConfig))
+    new RecoverForKotlinFile(cpg, unit, builder, state)
   }
 }
 
@@ -71,7 +70,6 @@ private class RecoverForKotlinFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
 
   override protected def storeCallTypeInfo(c: Call, types: Seq[String]): Unit =
     if (types.nonEmpty) {
-      state.changesWereMade.compareAndSet(false, true)
       val signedTypes = types.map {
         case t if t.endsWith(c.signature) => t
         case t                            => s"$t:${c.signature}"

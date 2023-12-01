@@ -25,8 +25,7 @@ private class PythonTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XT
     unit: File,
     builder: DiffGraphBuilder
   ): RecoverForXCompilationUnit[File] = {
-    val newConfig = state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
-    new RecoverForPythonFile(cpg, unit, builder, state.copy(config = newConfig))
+    new RecoverForPythonFile(cpg, unit, builder, state)
   }
 
 }
@@ -192,7 +191,6 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
         val existingTypes = (identifierTypes ++ otherTypes).distinct
         val resolvedTypes = identifierTypes.map(LocalVar.apply).flatMap(symbolTable.get)
         if (existingTypes != resolvedTypes && resolvedTypes.nonEmpty) {
-          state.changesWereMade.compareAndExchange(false, true)
           builder.setNodeProperty(t, PropertyNames.INHERITS_FROM_TYPE_FULL_NAME, resolvedTypes)
         }
       }

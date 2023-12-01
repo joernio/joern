@@ -24,8 +24,7 @@ private class JavaScriptTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extend
     unit: File,
     builder: DiffGraphBuilder
   ): RecoverForXCompilationUnit[File] = {
-    val newConfig = state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
-    new RecoverForJavaScriptFile(cpg, unit, builder, state.copy(config = newConfig))
+    new RecoverForJavaScriptFile(cpg, unit, builder, state)
   }
 
 }

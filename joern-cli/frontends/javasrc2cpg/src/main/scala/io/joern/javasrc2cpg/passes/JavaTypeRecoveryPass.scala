@@ -22,8 +22,7 @@ private class JavaTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTyp
     unit: Method,
     builder: DiffGraphBuilder
   ): RecoverForXCompilationUnit[Method] = {
-    val newConfig = state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
-    new RecoverForJavaFile(cpg, unit, builder, state.copy(config = newConfig))
+    new RecoverForJavaFile(cpg, unit, builder, state)
   }
 }
 
@@ -59,7 +58,6 @@ private class RecoverForJavaFile(cpg: Cpg, cu: Method, builder: DiffGraphBuilder
 
   override protected def storeCallTypeInfo(c: Call, types: Seq[String]): Unit =
     if (types.nonEmpty) {
-      state.changesWereMade.compareAndSet(false, true)
       val signedTypes = types.map {
         case t if t.endsWith(c.signature) => t
         case t                            => s"$t:${c.signature}"

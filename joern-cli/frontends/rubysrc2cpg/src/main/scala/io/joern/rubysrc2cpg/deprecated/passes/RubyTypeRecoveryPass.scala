@@ -21,8 +21,7 @@ private class RubyTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTyp
     unit: File,
     builder: DiffGraphBuilder
   ): RecoverForXCompilationUnit[File] = {
-    val newConfig = state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
-    new RecoverForRubyFile(cpg, unit, builder, state.copy(config = newConfig))
+    new RecoverForRubyFile(cpg, unit, builder, state)
   }
 }
 
