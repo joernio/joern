@@ -46,8 +46,19 @@ class AnonymousFuncTests extends GoCodeToCpgSuite {
       cpg.methodRef.referencedMethod.fullName.l shouldBe List(s"main.main.${Defines.ClosurePrefix}0")
     }
 
-    "reflectes into lhs side TypeFullName" in {
+    "reflects into lhs side TypeFullName" in {
       cpg.local("add").typeFullName.l shouldBe List(s"main.main.${Defines.ClosurePrefix}0")
     }
+
+    "have call node created for lambda invocation" in {
+      cpg.call("add").methodFullName.l shouldBe List(s"main.main.${Defines.ClosurePrefix}0")
+    }
+
+    "able to traverse from call node to callee" in {
+      cpg.call("add").callee.fullName.l shouldBe List(s"main.main.${Defines.ClosurePrefix}0")
+    }
+
+    // TODO: Add TypeDecl test
+    // TODO: Add unit test for lambda defined outside method and part of package directly
   }
 }

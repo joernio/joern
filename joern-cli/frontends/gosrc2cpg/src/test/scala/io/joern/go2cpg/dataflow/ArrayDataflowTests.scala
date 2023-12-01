@@ -1,7 +1,8 @@
 package io.joern.go2cpg.dataflow
-import io.shiftleft.semanticcpg.language._
-import io.joern.dataflowengineoss.language._
+
+import io.joern.dataflowengineoss.language.*
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
+import io.shiftleft.semanticcpg.language.*
 
 class ArrayDataflowTests extends GoCodeToCpgSuite(withOssDataflow = true) {
   "Source to sink dataflow through arrays" should {
