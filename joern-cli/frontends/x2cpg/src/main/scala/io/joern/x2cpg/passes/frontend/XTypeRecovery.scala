@@ -161,7 +161,7 @@ abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, state: XT
 
   override def run(builder: DiffGraphBuilder): Unit = {
     for (cu <- compilationUnits) {
-      generateRecoveryForCompilationUnitTask(unit, builder).run()
+      generateRecoveryForCompilationUnitTask(cu, builder).run()
     }
   }
 
