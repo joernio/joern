@@ -1,52 +1,41 @@
-package io.joern.kotlin2cpg.passes
+package io.joern.javasrc2cpg.passes
 
-import io.joern.kotlin2cpg.Constants
 import io.joern.x2cpg.Defines
-import io.joern.x2cpg.passes.frontend.*
+import io.joern.x2cpg.passes.frontend._
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.PropertyNames
-import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
-class KotlinTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
-    extends XTypeRecoveryPass[File](cpg, config) {
-  override protected def generateRecoveryPass(state: XTypeRecoveryState): XTypeRecovery[File] =
-    new KotlinTypeRecovery(cpg, state)
+class JavaTypeRecoveryPassGenerator(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
+    extends XTypeRecoveryPassGenerator[Method](cpg, config) {
+  override protected def generateRecoveryPass(state: XTypeRecoveryState, iteration: Int): XTypeRecovery[Method] =
+    new JavaTypeRecovery(cpg, state, iteration)
 }
 
-private class KotlinTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTypeRecovery[File](cpg, state) {
+private class JavaTypeRecovery(cpg: Cpg, state: XTypeRecoveryState, iteration: Int)
+    extends XTypeRecovery[Method](cpg, state, iteration: Int) {
 
-  override def compilationUnits: Iterator[File] = cpg.file.iterator
+  override def compilationUnits: Iterator[Method] = cpg.method.isExternal(false).iterator
 
   override def generateRecoveryForCompilationUnitTask(
-    unit: File,
+    unit: Method,
     builder: DiffGraphBuilder
-  ): RecoverForXCompilationUnit[File] = {
-    new RecoverForKotlinFile(cpg, unit, builder, state)
+  ): RecoverForXCompilationUnit[Method] = {
+    new RecoverForJavaFile(cpg, unit, builder, state)
   }
 }
 
-private class RecoverForKotlinFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, state: XTypeRecoveryState)
-    extends RecoverForXCompilationUnit[File](cpg, cu, builder, state) {
+private class RecoverForJavaFile(cpg: Cpg, cu: Method, builder: DiffGraphBuilder, state: XTypeRecoveryState)
+    extends RecoverForXCompilationUnit[Method](cpg, cu, builder, state) {
 
-  private def kotlinNodeToLocalKey(n: AstNode): Option[LocalKey] = n match {
+  private def javaNodeToLocalKey(n: AstNode): Option[LocalKey] = n match {
     case i: Identifier if i.name == "this" && i.code == "super" => Option(LocalVar("super"))
     case _                                                      => SBKey.fromNodeToLocalKey(n)
   }
 
-  override protected val symbolTable = new SymbolTable[LocalKey](kotlinNodeToLocalKey)
-
-  override protected def importNodes: Iterator[Import] = cu.ast.isImport
-  override protected def visitImport(i: Import): Unit = {
-
-    val alias    = i.importedAs.getOrElse("")
-    val fullName = i.importedEntity.getOrElse("")
-    if (alias != Constants.wildcardImportName) {
-      symbolTable.append(CallAlias(alias), fullName)
-      symbolTable.append(LocalVar(alias), fullName)
-    }
-  }
+  override protected val symbolTable = new SymbolTable[LocalKey](javaNodeToLocalKey)
 
   override protected def isConstructor(c: Call): Boolean = isConstructor(c.name)
 

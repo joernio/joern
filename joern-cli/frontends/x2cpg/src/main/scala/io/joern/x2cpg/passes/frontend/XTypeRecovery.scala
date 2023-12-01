@@ -4,7 +4,7 @@ import io.joern.x2cpg.{Defines, X2CpgConfig}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, Operators, PropertyNames}
-import io.shiftleft.passes.CpgPass
+import io.shiftleft.passes.{CpgPass, CpgPassBase, ForkJoinParallelCpgPass}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.importresolver.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
@@ -50,42 +50,8 @@ class XTypeRecoveryState(
 
 }
 
-/** In order to propagate types across compilation units, but avoid the poor scalability of a fixed-point algorithm, the
-  * number of iterations can be configured using the iterations parameter. Note that iterations < 2 will not provide any
-  * interprocedural type recovery capabilities.
-  * @param cpg
-  *   the CPG to recovery types for.
-  *
-  * @tparam CompilationUnitType
-  *   the AstNode type used to represent a compilation unit of the language.
-  */
-abstract class XTypeRecoveryPass[CompilationUnitType <: AstNode](
-  cpg: Cpg,
-  config: XTypeRecoveryConfig = XTypeRecoveryConfig()
-) extends CpgPass(cpg) {
-
-  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit =
-    if (config.iterations > 0) {
-      val state = new XTypeRecoveryState(config)
-      try {
-        for (i <- Range(0, config.iterations)) {
-          state.currentIteration = i
-          generateRecoveryPass(state).createAndApply()
-        }
-      } finally {
-        state.clear()
-      }
-    }
-
-  protected def generateRecoveryPass(state: XTypeRecoveryState): XTypeRecovery[CompilationUnitType]
-
-  /** A hook for the end of the type recovery and propagation.
-    */
-  protected def postTypeRecoveryAndPropagation(builder: DiffGraphBuilder): Unit = {
-    linkMembersToTheirRefs(builder)
-  }
-
-  private def linkMembersToTheirRefs(builder: DiffGraphBuilder): Unit = {
+object XTypeRecoveryPassGenerator {
+  private def linkMembersToTheirRefs(cpg: Cpg, builder: DiffGraphBuilder): Unit = {
     import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromIteratorExt
     import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
 
@@ -115,6 +81,43 @@ abstract class XTypeRecoveryPass[CompilationUnitType <: AstNode](
           .foreach(builder.addEdge(fieldAccess, _, EdgeTypes.REF))
       }
   }
+
+}
+
+/** In order to propagate types across compilation units, but avoid the poor scalability of a fixed-point algorithm, the
+  * number of iterations can be configured using the iterations parameter. Note that iterations < 2 will not provide any
+  * interprocedural type recovery capabilities.
+  * @param cpg
+  *   the CPG to recovery types for.
+  *
+  * @tparam CompilationUnitType
+  *   the AstNode type used to represent a compilation unit of the language.
+  */
+abstract class XTypeRecoveryPassGenerator[CompilationUnitType <: AstNode](
+  cpg: Cpg,
+  config: XTypeRecoveryConfig = XTypeRecoveryConfig()
+) {
+
+  def generate(): List[CpgPassBase] = {
+    val state = new XTypeRecoveryState(config)
+    val res   = mutable.ArrayBuffer[CpgPassBase]()
+    for (i <- Range(0, config.iterations)) {
+      res.append(generateRecoveryPass(state, i))
+    }
+    if (postTypeRecoveryAndPropagation)
+      res.append(
+        new CpgPass(cpg):
+          override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+            XTypeRecoveryPassGenerator.linkMembersToTheirRefs(cpg, builder)
+          }
+      )
+    res.toList
+  }
+
+  /** A hook for the end of the type recovery and propagation.
+    */
+  protected def postTypeRecoveryAndPropagation: Boolean = false
+  protected def generateRecoveryPass(state: XTypeRecoveryState, iteration: Int): XTypeRecovery[CompilationUnitType]
 
 }
 
@@ -157,13 +160,23 @@ trait TypeRecoveryParserConfig[R <: X2CpgConfig[R]] { this: R =>
   * @tparam CompilationUnitType
   *   the AstNode type used to represent a compilation unit of the language.
   */
-abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, state: XTypeRecoveryState) extends CpgPass(cpg) {
+abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, state: XTypeRecoveryState, iteration: Int)
+    extends ForkJoinParallelCpgPass[CompilationUnitType](cpg) {
 
-  override def run(builder: DiffGraphBuilder): Unit = {
-    for (cu <- compilationUnits) {
-      generateRecoveryForCompilationUnitTask(cu, builder).run()
-    }
+  override def init(): Unit = {
+    super.init()
+    state.currentIteration = iteration
   }
+
+  override def finish(): Unit = {
+    if state.isFinalIteration then state.isFieldCache.clear()
+    super.finish()
+  }
+
+  override def generateParts(): Array[AnyRef] = compilationUnits.toArray[AnyRef]
+
+  override def runOnPart(builder: DiffGraphBuilder, part: CompilationUnitType): Unit =
+    generateRecoveryForCompilationUnitTask(part, builder).run()
 
   /** @return
     *   the compilation units as per how the language is compiled. e.g. file.

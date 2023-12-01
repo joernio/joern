@@ -96,15 +96,16 @@ object RubySrc2Cpg {
       List(
         // TODO commented below two passes, as waiting on Dependency download PR to get merged
         new deprecated.passes.IdentifierToCallPass(cpg),
-        new deprecated.passes.RubyImportResolverPass(cpg, packageTableInfo),
-        new deprecated.passes.RubyTypeRecoveryPass(cpg),
-        new deprecated.passes.RubyTypeHintCallLinker(cpg),
-        new NaiveCallLinker(cpg),
-
-        // Some of passes above create new methods, so, we
-        // need to run the ASTLinkerPass one more time
-        new AstLinkerPass(cpg)
+        new deprecated.passes.RubyImportResolverPass(cpg, packageTableInfo)
       )
+        ++ new deprecated.passes.RubyTypeRecoveryPassGenerator(cpg).generate() ++ List(
+          new deprecated.passes.RubyTypeHintCallLinker(cpg),
+          new NaiveCallLinker(cpg),
+
+          // Some of passes above create new methods, so, we
+          // need to run the ASTLinkerPass one more time
+          new AstLinkerPass(cpg)
+        )
     } else {
       List()
     }
