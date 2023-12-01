@@ -83,47 +83,14 @@ class PythonImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
       resolvedImports.foreach(x => evaluatedImportToTag(x, importCall, diffGraph))
     } else {
       // Here we use heuristics to guess the correct paths, and make the types look friendly for querying
-      unresolvableImportToUnknownImport(currDir, fileName, importedEntity, importedAs)
+      createPseudoImports(importedEntity, importedAs)
         .foreach(x => evaluatedImportToTag(x, importCall, diffGraph))
     }
   }
 
-  private def unresolvableImportToUnknownImport(
-    currDir: File,
-    currFileName: String,
-    importedEntity: String,
-    importedAs: String
-  ): Set[EvaluatedImport] = {
-    val (namespace, entityName) = if (importedEntity.contains(".")) {
-      val splitName = importedEntity.split('.').toSeq
-      val namespace = importedEntity.stripSuffix(s".${splitName.last}")
-      (relativizeNamespace(namespace, currFileName), splitName.last)
-    } else {
-      val relCurrDir = currDir.pathAsString.stripPrefix(codeRootDir).stripPrefix(JFile.separator)
-
-      (relCurrDir, importedEntity)
-    }
-
-    createPseudoImports(namespace, entityName, importedAs)
-  }
-
-  private def relativizeNamespace(path: String, fileName: String): String = if (path.startsWith(".")) {
-    // TODO: pysrc2cpg does not link files to the correct namespace nodes
-    val sep = Matcher.quoteReplacement(JFile.separator)
-    // The below gives us the full path of the relative "."
-    val relativeNamespace =
-      if (fileName.contains(JFile.separator))
-        fileName.substring(0, fileName.lastIndexOf(JFile.separator)).replaceAll(sep, ".")
-      else ""
-    (if (path.length > 1) relativeNamespace + path.replaceAll(sep, ".")
-     else relativeNamespace).stripPrefix(".")
-  } else path
-
   /** For an unresolveable import, create a best-effort path of what could be imported, as well as what kind of entity
     * may be imported.
     *
-    * @param path
-    *   the module path.
     * @param expEntity
     *   the name of the imported entity. This could be a function, module, or variable/field.
     * @param alias
@@ -131,9 +98,8 @@ class PythonImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
     * @return
     *   the possible callee names
     */
-  private def createPseudoImports(path: String, expEntity: String, alias: String): Set[EvaluatedImport] = {
+  private def createPseudoImports(expEntity: String, alias: String): Set[EvaluatedImport] = {
     val pathSep            = "."
-    val sep                = Matcher.quoteReplacement(JFile.separator)
     val isMaybeConstructor = expEntity.split("\\.").lastOption.exists(s => s.nonEmpty && s.charAt(0).isUpper)
 
     def toUnresolvedImport(pseudoPath: String): Set[EvaluatedImport] = {
@@ -144,20 +110,10 @@ class PythonImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
       }
     }
 
-    if (path.isBlank) {
-      if (expEntity.contains(".")) {
-        // Case 1: Qualified path: import foo.bar
-        val splitFunc = expEntity.split("\\.")
-        val name      = splitFunc.tail.mkString(".")
-        toUnresolvedImport(s"${splitFunc(0)}.py:<module>$pathSep$name")
-      } else {
-        // Case 2: import of a module: import foo => foo.py
-        toUnresolvedImport(s"$expEntity.py:<module>")
-      }
-    } else {
-      // Case 3: Import from module using alias, e.g. import bar from foo as faz
-      toUnresolvedImport(s"${path.replaceAll("\\.", sep)}.py:<module>$pathSep$expEntity")
-    }
+    expEntity.split("\\.").reverse.toList match
+      case name :: Nil => toUnresolvedImport(s"$name.py:<module>")
+      case name :: xs  => toUnresolvedImport(s"${xs.reverse.mkString(JFile.separator)}.py:<module>$pathSep$name")
+      case Nil         => Set.empty
   }
 
   private sealed trait ImportableEntity {
