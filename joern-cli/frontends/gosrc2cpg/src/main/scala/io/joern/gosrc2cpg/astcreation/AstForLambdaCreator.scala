@@ -18,7 +18,7 @@ trait AstForLambdaCreator(implicit withSchemaValidation: ValidationMode) { this:
       .collectFirst({ case m: NewMethod if !m.fullName.endsWith(parserResult.filename) => m.fullName })
       .getOrElse(fullyQualifiedPackage)
     val fullName = s"$baseFullName.$lambdaName"
-    val (signature, methodReturn, params, genericTypeMethodMap) = generateLambdaSignature(
+    val (signature, returnTypeStr, methodReturn, params, genericTypeMethodMap) = generateLambdaSignature(
       createParserNodeInfo(funcLiteral.json(ParserKeys.Type))
     )
     val methodNode_ = methodNode(funcLiteral, lambdaName, funcLiteral.code, fullName, Some(signature), relPathFileName)
@@ -40,14 +40,16 @@ trait AstForLambdaCreator(implicit withSchemaValidation: ValidationMode) { this:
       case _ =>
         methodNode_.astParentType(NodeTypes.METHOD).astParentFullName(baseFullName)
     Ast.storeInDiffGraph(astForMethod, diffGraph)
-    val typeFullName = GoGlobal.lambdaSignatureToLambdaTypeMap.getOrDefault(signature, fullName)
     // TODO: Create TypeDecl for lambda function for which we didnt find the type.
-    Seq(Ast(methodRefNode(funcLiteral, funcLiteral.code, fullName, typeFullName)))
+    // We need to create TypeDecl for every lambda function and set its inheritance with all the matching lambda types.
+    //    val typeFullName = GoGlobal.lambdaSignatureToLambdaTypeMap.getOrDefault(signature, fullName)
+    GoGlobal.recordFullNameToReturnType(fullName, returnTypeStr, signature)
+    Seq(Ast(methodRefNode(funcLiteral, funcLiteral.code, fullName, fullName)))
   }
 
   private def generateLambdaSignature(
     funcType: ParserNodeInfo
-  ): (String, NewMethodReturn, Value, Map[String, List[String]]) = {
+  ): (String, String, NewMethodReturn, Value, Map[String, List[String]]) = {
     val genericTypeMethodMap: Map[String, List[String]] = Map()
     val (returnTypeStr, returnTypeInfo) =
       getReturnType(funcType.json, genericTypeMethodMap).headOption
@@ -57,6 +59,6 @@ trait AstForLambdaCreator(implicit withSchemaValidation: ValidationMode) { this:
     val params = funcType.json(ParserKeys.Params)(ParserKeys.List)
     val signature =
       s"${XDefines.ClosurePrefix}(${parameterSignature(params, genericTypeMethodMap)})$returnTypeStr"
-    (signature, methodReturn, params, genericTypeMethodMap)
+    (signature, returnTypeStr, methodReturn, params, genericTypeMethodMap)
   }
 }

@@ -100,7 +100,19 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
             .getOrDefault(methodFullName, (Defines.anyTypeName, s"$methodFullName()"))
         val (signature, fullName, returnTypeFullName) =
           Defines.builtinFunctions.getOrElse(methodName, (signatureCache, methodFullName, returnTypeFullNameCache))
-        (methodName, signature, fullName, returnTypeFullName, Seq.empty)
+        val lambdaOption = scope.lookupVariable(methodName)
+        val (postLambdaFullname, postLambdaSignature, postLambdaReturnTypeFullName) = lambdaOption match
+          case Some((_, lambdaTypeFullName)) =>
+            val (lambdaReturnTypeFullNameCache, lambdaSignatureCache) =
+              GoGlobal.methodFullNameReturnTypeMap
+                .getOrDefault(lambdaTypeFullName, (returnTypeFullName, signature))
+            if (lambdaSignatureCache == signature) then
+              // This means we didn't find the lambda signature in methodFullNameReturnTypeMap cache.
+              (fullName, lambdaSignatureCache, lambdaReturnTypeFullNameCache)
+            else (lambdaTypeFullName, lambdaSignatureCache, lambdaReturnTypeFullNameCache)
+          case _ =>
+            (fullName, signature, returnTypeFullName)
+        (methodName, postLambdaSignature, postLambdaFullname, postLambdaReturnTypeFullName, Seq.empty)
       case Some(xnode) =>
         xnode.node match
           case Ident =>
