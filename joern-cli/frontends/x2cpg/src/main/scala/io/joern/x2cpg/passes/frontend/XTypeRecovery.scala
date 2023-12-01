@@ -38,10 +38,11 @@ case class XTypeRecoveryConfig(iterations: Int = 2, enabledDummyTypes: Boolean =
 class XTypeRecoveryState(
   val config: XTypeRecoveryConfig = XTypeRecoveryConfig(),
   var currentIteration: Int = 0,
-  val isFieldCache: TrieMap[Long, Boolean] = TrieMap.empty[Long, Boolean]) {
+  val isFieldCache: TrieMap[Long, Boolean] = TrieMap.empty[Long, Boolean]
+) {
   def isFinalIteration: Boolean = currentIteration == config.iterations - 1
 
-  def enableDummyTypesForThisIteration:Boolean =  isFinalIteration && config.enabledDummyTypes
+  def enableDummyTypesForThisIteration: Boolean = isFinalIteration && config.enabledDummyTypes
 
   def isFirstIteration: Boolean = currentIteration == 0
 
@@ -65,9 +66,9 @@ abstract class XTypeRecoveryPass[CompilationUnitType <: AstNode](
 
   override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit =
     if (config.iterations > 0) {
-      val state     = new XTypeRecoveryState(config)
+      val state = new XTypeRecoveryState(config)
       try {
-        for(i <- Range(0, config.iterations)){
+        for (i <- Range(0, config.iterations)) {
           state.currentIteration = i
           generateRecoveryPass(state).createAndApply()
         }
@@ -159,7 +160,7 @@ trait TypeRecoveryParserConfig[R <: X2CpgConfig[R]] { this: R =>
 abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, state: XTypeRecoveryState) extends CpgPass(cpg) {
 
   override def run(builder: DiffGraphBuilder): Unit = {
-    for(cu <- compilationUnits){
+    for (cu <- compilationUnits) {
       generateRecoveryForCompilationUnitTask(unit, builder).run()
     }
   }
@@ -1112,7 +1113,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   }
 
   protected def persistType(x: StoredNode, types: Set[String]): Unit = {
-    val filteredTypes = if (state.enableDummyTypesForThisIteration) types else types.filterNot(XTypeRecovery.isDummyType)
+    val filteredTypes =
+      if (state.enableDummyTypesForThisIteration) types else types.filterNot(XTypeRecovery.isDummyType)
     if (filteredTypes.nonEmpty) {
       storeNodeTypeInfo(x, filteredTypes.toSeq)
       x match {
@@ -1217,7 +1219,10 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** Allows one to modify the types assigned to locals.
     */
   protected def storeLocalTypeInfo(l: Local, types: Seq[String]): Unit = {
-    storeDefaultTypeInfo(l, if (state.enableDummyTypesForThisIteration) types else types.filterNot(XTypeRecovery.isDummyType))
+    storeDefaultTypeInfo(
+      l,
+      if (state.enableDummyTypesForThisIteration) types else types.filterNot(XTypeRecovery.isDummyType)
+    )
   }
 
   /** Allows an implementation to perform an operation once type persistence is complete.
