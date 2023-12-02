@@ -17,6 +17,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
       case BasicLit     => Seq(astForLiteral(primitive))
       case CompositeLit => astForCompositeLiteral(primitive)
       case Ident        => Seq(astForIdentifier(primitive))
+      case FuncLit      => astForFuncLiteral(primitive)
       case _            => Seq(Ast())
     }
   }
