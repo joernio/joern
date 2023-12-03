@@ -148,6 +148,28 @@ class LiteralTests extends RubyCode2CpgFixture {
     literal.typeFullName shouldBe "__builtin.String"
   }
 
+  "`%Q(hello world)` is represented by a LITERAL node" in {
+    val cpg = code("""
+        |%Q(hello world)
+        |""".stripMargin)
+
+    val List(literal) = cpg.literal.l
+    literal.code shouldBe "%Q(hello world)"
+    literal.lineNumber shouldBe Some(2)
+    literal.typeFullName shouldBe "__builtin.String"
+  }
+
+  "`%(foo \"bar\" baz)` is represented by a LITERAL node" in {
+    val cpg = code("""
+        |%(foo "bar" baz)
+        |""".stripMargin)
+
+    val List(literal) = cpg.literal.l
+    literal.code shouldBe "%(foo \"bar\" baz)"
+    literal.lineNumber shouldBe Some(2)
+    literal.typeFullName shouldBe "__builtin.String"
+  }
+
   """`%q<\n...\n>` is represented by a LITERAL node""" in {
     val cpg = code("""
         |%q<
