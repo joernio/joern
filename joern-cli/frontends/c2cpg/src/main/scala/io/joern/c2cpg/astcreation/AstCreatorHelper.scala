@@ -1,19 +1,25 @@
 package io.joern.c2cpg.astcreation
 
 import io.joern.c2cpg.datastructures.CGlobal
-import io.joern.x2cpg.utils.NodeBuilders.newDependencyNode
-import io.joern.x2cpg.{Ast, SourceFiles, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewNode}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.joern.x2cpg.{Ast, SourceFiles, ValidationMode}
+import io.joern.x2cpg.utils.NodeBuilders.newDependencyNode
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.utils.IOUtils
 import org.apache.commons.lang.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.c.{ICASTArrayDesignator, ICASTDesignatedInitializer, ICASTFieldDesignator}
+import org.eclipse.cdt.core.dom.ast.c.ICASTTypedefNameSpecifier
 import org.eclipse.cdt.core.dom.ast.cpp.*
 import org.eclipse.cdt.core.dom.ast.gnu.c.ICASTKnRFunctionDeclarator
 import org.eclipse.cdt.internal.core.dom.parser.c.CASTArrayRangeDesignator
-import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.{EvalBinding, EvalMemberAccess}
-import org.eclipse.cdt.internal.core.dom.parser.cpp.*
+import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalBinding
+import org.eclipse.cdt.internal.core.dom.parser.cpp.{CPPASTIdExpression, CPPFunction}
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTArrayRangeDesignator
+import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.EvalMemberAccess
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTFieldReference
+import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPMethod
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
 
 import java.nio.file.{Path, Paths}
@@ -334,12 +340,12 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         s"${fullName(f.getParent)}.${shortName(f)}"
       case e: IASTElaboratedTypeSpecifier =>
         s"${fullName(e.getParent)}.${ASTStringUtil.getSimpleName(e.getName)}"
-      case d: IASTIdExpression              => ASTStringUtil.getSimpleName(d.getName)
-      case _: IASTTranslationUnit           => ""
-      case u: IASTUnaryExpression           => code(u.getOperand)
-      case other if other != null           => notHandledYet(other); ""
-      case other if other.getParent != null => fullName(other.getParent)
-      case null                             => ""
+      case d: IASTIdExpression                               => ASTStringUtil.getSimpleName(d.getName)
+      case _: IASTTranslationUnit                            => ""
+      case u: IASTUnaryExpression                            => code(u.getOperand)
+      case other if other != null && other.getParent != null => fullName(other.getParent)
+      case other if other != null                            => notHandledYet(other); ""
+      case null                                              => ""
     }
     fixQualifiedName(qualifiedName).stripPrefix(".")
   }
