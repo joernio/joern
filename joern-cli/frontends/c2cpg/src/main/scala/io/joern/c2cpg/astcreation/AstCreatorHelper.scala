@@ -343,8 +343,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case d: IASTIdExpression              => ASTStringUtil.getSimpleName(d.getName)
       case _: IASTTranslationUnit           => ""
       case u: IASTUnaryExpression           => code(u.getOperand)
-      case other if other.getParent != null => fullName(other.getParent)
       case other if other != null           => notHandledYet(other); ""
+      case other if other.getParent != null => fullName(other.getParent)
       case null                             => ""
     }
     fixQualifiedName(qualifiedName).stripPrefix(".")
