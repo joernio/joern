@@ -4,6 +4,8 @@ import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
 import io.joern.x2cpg.Defines
 import io.shiftleft.semanticcpg.language.*
 
+import java.io.File
+
 class AnonymousFuncTests extends GoCodeToCpgSuite {
 
   "Simple Lambda expression" should {
@@ -121,6 +123,67 @@ class AnonymousFuncTests extends GoCodeToCpgSuite {
 
     "traversal from TypeDecl to lambda method" in {
       cpg.typeDecl(s"${Defines.ClosurePrefix}0").method.fullName.l shouldBe List(s"main.${Defines.ClosurePrefix}0")
+    }
+  }
+
+  "Lambda Type example" should {
+    val cpg = code(
+      """
+        |module joern.io/sample
+        |go 1.18
+        |""".stripMargin,
+      "go.mod"
+    ).moreCode(
+      """
+        |package fpkg
+        |type Sample func(int, int) int
+        |
+        |""".stripMargin,
+      Seq("lib", "lib.go").mkString(File.separator)
+    ).moreCode(
+      """
+        |package libtwo
+        |type SampleTwo func(int, int) int
+        |
+        |type SampleThree func(int) string
+        |""".stripMargin,
+      Seq("libtwo", "libtwo.go").mkString(File.separator)
+    ).moreCode(
+      """
+        |package main
+        |
+        |import "fmt"
+        |
+        |func main() {
+        |	// Define a lambda function and assign it to a variable
+        |	add := func(a, b int) int {
+        |		return a + b
+        |	}
+        |
+        |	// Call the lambda function
+        |	result := add(3, 5)
+        |	fmt.Println("Result:", result) // Output: 8
+        |}
+        |""".stripMargin,
+      "main.go"
+    )
+
+    "create TypeDecls for lambada types defined in another packages" in {
+      cpg.typeDecl.fullName.l shouldBe List(
+        "joern.io/sample/lib",
+        "joern.io/sample/libtwo",
+        "main",
+        "joern.io/sample/lib.Sample",
+        "joern.io/sample/libtwo.SampleTwo",
+        "joern.io/sample/libtwo.SampleThree",
+        "main.main.<lambda>0"
+      )
+    }
+
+    "map lambda TypeDecl to matching with the signature" in {
+      val inheritedFrom = cpg.typeDecl(s"${Defines.ClosurePrefix}0").inheritsFromTypeFullName.l
+      inheritedFrom contains "joern.io/sample/lib.Sample"
+      inheritedFrom contains "joern.io/sample/libtwo.SampleTwo"
     }
   }
 }

@@ -1,7 +1,7 @@
 package io.joern.gosrc2cpg.astcreation
 
 import io.joern.gosrc2cpg.datastructures.GoGlobal
-import io.joern.gosrc2cpg.parser.ParserAst.{GenDecl, ValueSpec}
+import io.joern.gosrc2cpg.parser.ParserAst.{FuncType, GenDecl, InterfaceType, StructType, ValueSpec}
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.gosrc2cpg.utils.UtilityConstants.fileSeparateorPattern
 import io.joern.x2cpg.{Ast, ValidationMode}
@@ -123,8 +123,16 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
     val name     = typeSepc(ParserKeys.Name)(ParserKeys.Name).str
     val fullName = fullyQualifiedPackage + Defines.dot + name
     val typeNode = createParserNodeInfo(typeSepc(ParserKeys.Type))
-    // astForStructType() function will record the member types
-    (name, fullName, astForStructType(typeNode, fullName))
+    val ast = typeNode.node match {
+      // As of don't see any use case where InterfaceType needs to be handled.
+      case InterfaceType => Seq.empty
+      // astForStructType() function will record the member types
+      case StructType => astForStructType(typeNode, fullName)
+      // Process lambda function types to record lambda function signature mapped to TypeFullName
+      case FuncType => processFuncType(typeNode, fullName)
+      case _        => Seq.empty
+    }
+    (name, fullName, ast)
   }
 
   protected def processImports(importDecl: Value): (String, String) = {

@@ -34,12 +34,16 @@ trait AstForLambdaCreator(implicit withSchemaValidation: ValidationMode) { this:
       )
     scope.popScope()
     methodAstParentStack.pop()
-    // TODO: We need to set the types defined for matching signature of the lambda as inehritied from
-    //    val typeFullName = GoGlobal.lambdaSignatureToLambdaTypeMap.getOrDefault(signature, fullName)
+
     val typeDeclNode_ = typeDeclNode(funcLiteral, lambdaName, fullName, relPathFileName, lambdaName)
     if baseFullName == fullyQualifiedPackage then
       typeDeclNode_.astParentType(NodeTypes.TYPE_DECL).astParentFullName(fullyQualifiedPackage)
     else typeDeclNode_.astParentType(NodeTypes.METHOD).astParentFullName(baseFullName)
+    val structTypes = Option(GoGlobal.lambdaSignatureToLambdaTypeMap.get(signature)) match {
+      case Some(types) => types.map(_._1)
+      case None        => Seq.empty
+    }
+    typeDeclNode_.inheritsFromTypeFullName(structTypes)
     Ast.storeInDiffGraph(Ast(typeDeclNode_), diffGraph)
     // Setting Lambda TypeDecl as its parent.
     methodNode_.astParentType(NodeTypes.TYPE_DECL)
@@ -49,18 +53,20 @@ trait AstForLambdaCreator(implicit withSchemaValidation: ValidationMode) { this:
     Seq(Ast(methodRefNode(funcLiteral, funcLiteral.code, fullName, fullName)))
   }
 
-  private def generateLambdaSignature(
+  protected def generateLambdaSignature(
     funcType: ParserNodeInfo
   ): (String, String, NewMethodReturn, Value, Map[String, List[String]]) = {
     val genericTypeMethodMap: Map[String, List[String]] = Map()
+    // TODO: While handling the tuple return type we need to handle it here as well.
     val (returnTypeStr, returnTypeInfo) =
       getReturnType(funcType.json, genericTypeMethodMap).headOption
         .getOrElse((Defines.voidTypeName, funcType))
     val methodReturn = methodReturnNode(returnTypeInfo, returnTypeStr)
 
-    val params = funcType.json(ParserKeys.Params)(ParserKeys.List)
+    val params         = funcType.json(ParserKeys.Params)(ParserKeys.List)
+    val paramSignature = parameterSignature(params, genericTypeMethodMap)
     val signature =
-      s"${XDefines.ClosurePrefix}(${parameterSignature(params, genericTypeMethodMap)})$returnTypeStr"
+      s"${XDefines.ClosurePrefix}($paramSignature)$returnTypeStr"
     (signature, returnTypeStr, methodReturn, params, genericTypeMethodMap)
   }
 }
