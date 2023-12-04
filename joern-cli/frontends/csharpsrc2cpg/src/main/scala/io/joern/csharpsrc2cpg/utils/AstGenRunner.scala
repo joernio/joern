@@ -22,7 +22,11 @@ object AstGenRunner {
   lazy val DotnetAstgenMacArm   = "dotnetastgen-macos-arm"
 
   lazy private val executableName = Environment.operatingSystem match {
-    case Environment.OperatingSystemType.Windows => DotnetAstgenWin
+    case Environment.OperatingSystemType.Windows =>
+      Environment.architecture match {
+        case Environment.ArchitectureType.X86 => DotnetAstgenWin
+        case Environment.ArchitectureType.ARM => DotnetAstgenWinArm
+      }
     case Environment.OperatingSystemType.Linux =>
       Environment.architecture match {
         case Environment.ArchitectureType.X86 => DotnetAstgenLinux
