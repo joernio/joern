@@ -117,6 +117,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       // much sense anyway.
       case Some(r: NewIdentifier) if r.name == shortName =>
         callAst(cpgCall, args)
+      case Some(r: NewMethodRef) if r.code == shortName =>
+        callAst(cpgCall, args)
       case Some(_) =>
         callAst(cpgCall, args, Option(rec))
       case None =>
