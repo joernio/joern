@@ -54,7 +54,7 @@ class ProjectParseTests extends CSharpCode2CpgFixture with BeforeAndAfterAll {
     "generate correct filenames" in ProjectParseTestsFixture(projectWithSubfolders) { (parsedFiles: Array[String]) =>
       println(parsedFiles)
       val fileNames = parsedFiles.map(filePath => {
-        val lastSlashIndex = filePath.lastIndexOf('/')
+        val lastSlashIndex = filePath.lastIndexOf(java.io.File.separator)
         val fileName       = if (lastSlashIndex >= 0) filePath.substring(lastSlashIndex + 1) else filePath
         fileName
       })

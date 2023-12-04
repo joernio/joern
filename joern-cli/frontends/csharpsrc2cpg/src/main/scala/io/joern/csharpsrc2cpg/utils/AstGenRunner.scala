@@ -102,7 +102,7 @@ class AstGenRunner(config: Config) {
       case out if !out.startsWith("Converted") =>
         val filename = out.substring(0, out.indexOf(" "))
         val reason   = out.substring(out.indexOf(" ") + 1)
-        logger.warn(s"\t- failed to parse '${in / filename}': '$reason'")
+        logger.warn(s"\t- failed to parse '${in}${java.io.File.separator}${filename}': '$reason'")
         Option(filename)
       case out =>
         logger.debug(s"\t+ $out")
