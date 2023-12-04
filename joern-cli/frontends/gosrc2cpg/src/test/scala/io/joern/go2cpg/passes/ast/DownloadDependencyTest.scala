@@ -143,7 +143,7 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
           |func (c *Client) setValue() {
           | key := "key"
           | value := "value"
-          | err := c.Client.Set(key, value).Err()
+          | err := c.rdb.Set(key, value).Err()
           |}
           |""".stripMargin)
       .withConfig(config)
