@@ -151,7 +151,7 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
     "Test basic ast structure" in {
       val List(typeDeclNode) = cpg.typeDecl.nameExact("Client").l
       typeDeclNode.fullName shouldBe "main.Client"
-      val List(members) = cpg.member.l
+      val List(members) = typeDeclNode.member.l
       members.size shouldBe 1
       members.typeFullName shouldBe "github.com/redis/go-redis/v9.redis.UnversalClient.<ReturnType>.<unknown>"
     }
