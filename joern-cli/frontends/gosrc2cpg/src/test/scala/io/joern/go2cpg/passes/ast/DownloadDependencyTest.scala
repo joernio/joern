@@ -120,7 +120,7 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
 
   // Note: methodFullName of call node is not resolving as per DownloadDependency so ignoring
   // the below unit tests, which tries to download the dependencies and resolve it.
-  "dependency resolution having type struct" ignore  {
+  "dependency resolution having type struct" ignore {
     val config = Config().withFetchDependencies(true)
     val cpg = code(
       """
