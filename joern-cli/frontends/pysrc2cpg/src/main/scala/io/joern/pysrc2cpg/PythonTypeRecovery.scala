@@ -10,7 +10,7 @@ import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
-class PythonTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
+class PythonTypeRecoveryPassGenerator(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
     extends XTypeRecoveryPassGenerator[File](cpg, config) {
 
   override protected def generateRecoveryPass(state: XTypeRecoveryState, iteration: Int): XTypeRecovery[File] =
@@ -39,13 +39,11 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
   /** Replaces the `this` prefix with the Pythonic `self` prefix for instance methods of functions local to this
     * compilation unit.
     */
-  private def fromNodeToLocalPythonKey(node: AstNode): Option[LocalKey] =
+  override protected def fromNodeToLocalKey(node: AstNode): Option[LocalKey] =
     node match {
       case n: Method => Option(CallAlias(n.name, Option("self")))
       case _         => SBKey.fromNodeToLocalKey(node)
     }
-
-  override val symbolTable: SymbolTable[LocalKey] = new SymbolTable[LocalKey](fromNodeToLocalPythonKey)
 
   override def visitImport(i: Import): Unit = {
     if (i.importedAs.isDefined && i.importedEntity.isDefined) {
@@ -97,8 +95,8 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
 
   /** If the parent method is module then it can be used as a field.
     */
-  override def isField(i: Identifier): Boolean =
-    state.isFieldCache.getOrElseUpdate(i.id(), i.method.name.matches("(<module>|__init__)") || super.isField(i))
+  override def isFieldUncached(i: Identifier): Boolean =
+    i.method.name.matches("(<module>|__init__)") || super.isFieldUncached(i)
 
   override def visitIdentifierAssignedToOperator(i: Identifier, c: Call, operation: String): Set[String] = {
     operation match {

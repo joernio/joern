@@ -102,8 +102,8 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
     .name
     .toSet
 
-  override protected def isField(i: Identifier): Boolean =
-    state.isFieldCache.getOrElseUpdate(i.id(), exportedIdentifiers.contains(i.name) || super.isField(i))
+  override protected def isFieldUncached(i: Identifier): Boolean =
+    exportedIdentifiers.contains(i.name) || super.isFieldUncached(i)
 
   override protected def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
     val constructorPaths = if (c.methodFullName.endsWith(".alloc")) {

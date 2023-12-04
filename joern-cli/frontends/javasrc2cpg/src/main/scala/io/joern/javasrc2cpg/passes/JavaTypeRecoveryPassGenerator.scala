@@ -30,19 +30,17 @@ private class JavaTypeRecovery(cpg: Cpg, state: XTypeRecoveryState, iteration: I
 private class RecoverForJavaFile(cpg: Cpg, cu: Method, builder: DiffGraphBuilder, state: XTypeRecoveryState)
     extends RecoverForXCompilationUnit[Method](cpg, cu, builder, state) {
 
-  private def javaNodeToLocalKey(n: AstNode): Option[LocalKey] = n match {
+  override protected def fromNodeToLocalKey(n: AstNode): Option[LocalKey] = n match {
     case i: Identifier if i.name == "this" && i.code == "super" => Option(LocalVar("super"))
     case _                                                      => SBKey.fromNodeToLocalKey(n)
   }
-
-  override protected val symbolTable = new SymbolTable[LocalKey](javaNodeToLocalKey)
 
   override protected def isConstructor(c: Call): Boolean = isConstructor(c.name)
 
   override protected def isConstructor(name: String): Boolean = !name.isBlank && name.charAt(0).isUpper
 
   override protected def postVisitImports(): Unit = {
-    symbolTable.view.foreach { case (k, ts) =>
+    for ((k, ts) <- symbolTable.itemsCopy) {
       val tss = ts.filterNot(_.startsWith(Defines.UnresolvedNamespace))
       if (tss.isEmpty)
         symbolTable.remove(k)

@@ -31,12 +31,10 @@ private class KotlinTypeRecovery(cpg: Cpg, state: XTypeRecoveryState, iteration:
 private class RecoverForKotlinFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, state: XTypeRecoveryState)
     extends RecoverForXCompilationUnit[File](cpg, cu, builder, state) {
 
-  private def kotlinNodeToLocalKey(n: AstNode): Option[LocalKey] = n match {
+  override protected def fromNodeToLocalKey(n: AstNode): Option[LocalKey] = n match {
     case i: Identifier if i.name == "this" && i.code == "super" => Option(LocalVar("super"))
     case _                                                      => SBKey.fromNodeToLocalKey(n)
   }
-
-  override protected val symbolTable = new SymbolTable[LocalKey](kotlinNodeToLocalKey)
 
   override protected def importNodes: Iterator[Import] = cu.ast.isImport
   override protected def visitImport(i: Import): Unit = {
@@ -54,7 +52,7 @@ private class RecoverForKotlinFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
   override protected def isConstructor(name: String): Boolean = !name.isBlank && name.charAt(0).isUpper
 
   override protected def postVisitImports(): Unit = {
-    symbolTable.view.foreach { case (k, ts) =>
+    for ((k, ts) <- symbolTable.itemsCopy) {
       val tss = ts.filterNot(_.startsWith(Defines.UnresolvedNamespace))
       if (tss.isEmpty)
         symbolTable.remove(k)

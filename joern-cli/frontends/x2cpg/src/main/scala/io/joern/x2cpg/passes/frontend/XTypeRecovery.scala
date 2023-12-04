@@ -32,22 +32,13 @@ case class XTypeRecoveryConfig(iterations: Int = 2, enabledDummyTypes: Boolean =
   *   the user defined config.
   * @param currentIteration
   *   the current iteration.
-  * @param isFieldCache
-  *   a cache for answering if a node represents a field or member.
   */
-class XTypeRecoveryState(
-  val config: XTypeRecoveryConfig = XTypeRecoveryConfig(),
-  var currentIteration: Int = 0,
-  val isFieldCache: TrieMap[Long, Boolean] = TrieMap.empty[Long, Boolean]
-) {
+class XTypeRecoveryState(val config: XTypeRecoveryConfig = XTypeRecoveryConfig(), var currentIteration: Int = 0) {
   def isFinalIteration: Boolean = currentIteration == config.iterations - 1
 
   def enableDummyTypesForThisIteration: Boolean = isFinalIteration && config.enabledDummyTypes
 
   def isFirstIteration: Boolean = currentIteration == 0
-
-  def clear(): Unit = isFieldCache.clear()
-
 }
 
 object XTypeRecoveryPassGenerator {
@@ -163,14 +154,11 @@ trait TypeRecoveryParserConfig[R <: X2CpgConfig[R]] { this: R =>
 abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, state: XTypeRecoveryState, iteration: Int)
     extends ForkJoinParallelCpgPass[CompilationUnitType](cpg) {
 
+  // fixme: neable or disable?
+  override def isParallel: Boolean = true
   override def init(): Unit = {
     super.init()
     state.currentIteration = iteration
-  }
-
-  override def finish(): Unit = {
-    if state.isFinalIteration then state.isFieldCache.clear()
-    super.finish()
   }
 
   override def generateParts(): Array[AnyRef] = compilationUnits.toArray[AnyRef]
@@ -291,7 +279,11 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   /** Stores type information for local structures that live within this compilation unit, e.g. local variables.
     */
-  protected val symbolTable = new SymbolTable[LocalKey](SBKey.fromNodeToLocalKey)
+  protected val symbolTable = new SymbolTable[LocalKey](fromNodeToLocalKey)
+
+  protected val isFieldCache = mutable.HashMap[Identifier, Boolean]()
+
+  protected def fromNodeToLocalKey(node: AstNode): Option[LocalKey] = SBKey.fromNodeToLocalKey(node)
 
   /** The root of the target codebase.
     */
@@ -351,7 +343,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     case x         => x.ast.isCall.referencedImports
   }
 
-  override def run(): Unit = try {
+  override def run(): Unit = {
     // Set known aliases that point to imports for local and external methods/modules
     importNodes.foreach(visitImport)
     // Look at symbols with existing type info
@@ -366,9 +358,6 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     setTypeInformation()
     // Entrypoint for any final changes
     postSetTypeInformation()
-    // Return number of changes
-  } finally {
-    symbolTable.clear()
   }
 
   private def debugLocation(n: AstNode): String = {
@@ -527,8 +516,10 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     *
     * This has found to be an expensive operation accessed often so we have memoized this step.
     */
-  protected def isField(i: Identifier): Boolean =
-    state.isFieldCache.getOrElseUpdate(i.id(), i.method.typeDecl.member.nameExact(i.name).nonEmpty)
+  protected final def isField(i: Identifier): Boolean =
+    isFieldCache.getOrElseUpdate(i, isFieldUncached(i))
+  protected def isFieldUncached(i: Identifier): Boolean =
+    i.method.typeDecl.member.nameExact(i.name).nonEmpty
 
   /** Associates the types with the identifier. This may sometimes be an identifier that should be considered a field
     * which this method uses [[isField]] to determine.
