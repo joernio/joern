@@ -2,10 +2,10 @@ package io.joern.gosrc2cpg.astcreation
 
 import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
-import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewMethodReturn, NewTypeDecl}
 import io.joern.x2cpg.datastructures.Stack.StackWrapper
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
+import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewMethodReturn}
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
 import ujson.Value
 
@@ -34,15 +34,17 @@ trait AstForLambdaCreator(implicit withSchemaValidation: ValidationMode) { this:
       )
     scope.popScope()
     methodAstParentStack.pop()
-    baseFullName match
-      case fullyQualifiedPackage =>
-        methodNode_.astParentType(NodeTypes.TYPE_DECL).astParentFullName(fullyQualifiedPackage)
-      case _ =>
-        methodNode_.astParentType(NodeTypes.METHOD).astParentFullName(baseFullName)
-    Ast.storeInDiffGraph(astForMethod, diffGraph)
-    // TODO: Create TypeDecl for lambda function for which we didnt find the type.
-    // We need to create TypeDecl for every lambda function and set its inheritance with all the matching lambda types.
+    // TODO: We need to set the types defined for matching signature of the lambda as inehritied from
     //    val typeFullName = GoGlobal.lambdaSignatureToLambdaTypeMap.getOrDefault(signature, fullName)
+    val typeDeclNode_ = typeDeclNode(funcLiteral, lambdaName, fullName, relPathFileName, lambdaName)
+    if baseFullName == fullyQualifiedPackage then
+      typeDeclNode_.astParentType(NodeTypes.TYPE_DECL).astParentFullName(fullyQualifiedPackage)
+    else typeDeclNode_.astParentType(NodeTypes.METHOD).astParentFullName(baseFullName)
+    Ast.storeInDiffGraph(Ast(typeDeclNode_), diffGraph)
+    // Setting Lambda TypeDecl as its parent.
+    methodNode_.astParentType(NodeTypes.TYPE_DECL)
+    methodNode_.astParentFullName(fullName)
+    Ast.storeInDiffGraph(astForMethod, diffGraph)
     GoGlobal.recordFullNameToReturnType(fullName, returnTypeStr, signature)
     Seq(Ast(methodRefNode(funcLiteral, funcLiteral.code, fullName, fullName)))
   }
