@@ -43,7 +43,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   kotlin2cpg,
   rubysrc2cpg,
   gosrc2cpg,
-  swiftsrc2cpg
+  swiftsrc2cpg,
   csharpsrc2cpg
 )
 
