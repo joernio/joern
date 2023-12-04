@@ -15,6 +15,7 @@ object AstGenRunner {
   private val logger = LoggerFactory.getLogger(getClass)
   case class AstGenRunnerResult(parsedFiles: List[String] = List.empty, skippedFiles: List[String] = List.empty)
   lazy val DotnetAstgenWin      = "dotnetastgen-win.exe"
+  lazy val DotnetAstgenWinArm   = "dotnetastgen-win-arm.exe"
   lazy val DotnetAstgenLinux    = "dotnetastgen-linux"
   lazy val DotnetAstgenLinuxArm = "dotnetastgen-linux-arm"
   lazy val DotnetAstgenMac      = "dotnetastgen-macos"

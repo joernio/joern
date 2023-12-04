@@ -19,7 +19,6 @@ class CSharpSrc2Cpg extends X2CpgFrontend[Config] {
       File.usingTemporaryDirectory("csharpsrc2cpgOut") { tmpDir =>
         report.print()
         val astGenResult = new AstGenRunner(config).execute(tmpDir)
-//        throw new NotImplementedError("CSharp2Cpg has not been implemented yet!")
       }
     }
   }

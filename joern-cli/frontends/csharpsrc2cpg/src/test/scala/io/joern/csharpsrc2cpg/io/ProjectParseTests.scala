@@ -12,7 +12,6 @@ class ProjectParseTests extends CSharpCode2CpgFixture with BeforeAndAfterAll {
 
   private val projectWithSubfolders: File = {
     val dir = File.newTemporaryDirectory("csharpsrc2cpgTestsSubfolders")
-    // "sub/c.js", "sub/d.js"
     List("a.cs", "b.cs").foreach { testFile =>
       val file = dir / testFile
       file.createIfNotExists(createParents = true)
@@ -43,6 +42,7 @@ class ProjectParseTests extends CSharpCode2CpgFixture with BeforeAndAfterAll {
         val cpg          = newEmptyCpg()
         val config       = Config().withInputPath(projectDir.toString).withOutputPath(tmpDir.toString)
         val astGenResult = new AstGenRunner(config).execute(tmpDir)
+//        TODO: Update the test case with AstCreationPass once that in place
 //        new AstCreationPass(cpg, astGenResult, config).createAndApply()
 //        f(cpg)
         f(astGenResult.parsedFiles.toArray)
@@ -58,12 +58,7 @@ class ProjectParseTests extends CSharpCode2CpgFixture with BeforeAndAfterAll {
         val fileName       = if (lastSlashIndex >= 0) filePath.substring(lastSlashIndex + 1) else filePath
         fileName
       })
-      fileNames.toList should contain allElementsOf List(
-        "a.json",
-        "b.json"
-//          "c.json",
-//          "d.json"
-      )
+      fileNames.toList should contain allElementsOf List("a.json", "b.json")
     }
 
   }
