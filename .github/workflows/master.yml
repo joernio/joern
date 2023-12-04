@@ -23,6 +23,10 @@ jobs:
         uses: ruby/setup-ruby@v1
         with:
           ruby-version: 2.7
+      - name: Set up Swift 
+        uses: SwiftyLab/setup-swift@latest
+        with:
+          swift-version: "5.9"
       - name: Install Bundler
         run: gem install bundler
       - name: Delete `.rustup` directory
