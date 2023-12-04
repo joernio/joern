@@ -17,8 +17,7 @@ class ProjectParseTests extends CSharpCode2CpgFixture with BeforeAndAfterAll {
     List("a.cs", "b.cs").foreach { testFile =>
       val file = dir / testFile
       file.createIfNotExists(createParents = true)
-      file.write(
-        s"""
+      file.write(s"""
            |using System;
            |
            |namespace HelloWorld
@@ -42,8 +41,8 @@ class ProjectParseTests extends CSharpCode2CpgFixture with BeforeAndAfterAll {
   private object ProjectParseTestsFixture {
     def apply(projectDir: File)(f: Array[String] => Unit): Unit = {
       File.usingTemporaryDirectory("csharpsrc2cpgTests") { tmpDir =>
-        val cpg = newEmptyCpg()
-        val config = Config().withInputPath(projectDir.toString).withOutputPath(tmpDir.toString)
+        val cpg          = newEmptyCpg()
+        val config       = Config().withInputPath(projectDir.toString).withOutputPath(tmpDir.toString)
         val astGenResult = new AstGenRunner(config).execute(tmpDir)
 //        new AstCreationPass(cpg, astGenResult, config).createAndApply()
 //        f(cpg)
@@ -54,17 +53,17 @@ class ProjectParseTests extends CSharpCode2CpgFixture with BeforeAndAfterAll {
 
   "Parsing a project" should {
     "generate correct filenames" in ProjectParseTestsFixture(projectWithSubfolders) { (parsedFiles: Array[String]) =>
-        println(parsedFiles)
-        val fileNames = parsedFiles.map(filePath => {
-          val path: Path = Paths.get(filePath)
-          path.getFileName.toString
-        })
-        fileNames.toList should contain allElementsOf List(
-          "a.json",
-          "b.json"
+      println(parsedFiles)
+      val fileNames = parsedFiles.map(filePath => {
+        val path: Path = Paths.get(filePath)
+        path.getFileName.toString
+      })
+      fileNames.toList should contain allElementsOf List(
+        "a.json",
+        "b.json"
 //          "c.json",
 //          "d.json"
-        )
+      )
     }
 
   }

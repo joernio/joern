@@ -11,14 +11,10 @@ import io.joern.csharpsrc2cpg.Config
 import java.nio.file.Paths
 import scala.util.{Failure, Success, Try}
 
-
 object AstGenRunner {
   private val logger = LoggerFactory.getLogger(getClass)
-  case class AstGenRunnerResult(
-                                 parsedFiles: List[String] = List.empty,
-                                 skippedFiles: List[String] = List.empty
-                               )
-  lazy val DotnetAstgenWin      = "dotnetastgen-windows.exe"
+  case class AstGenRunnerResult(parsedFiles: List[String] = List.empty, skippedFiles: List[String] = List.empty)
+  lazy val DotnetAstgenWin      = "dotnetastgen-win.exe"
   lazy val DotnetAstgenLinux    = "dotnetastgen-linux"
   lazy val DotnetAstgenLinuxArm = "dotnetastgen-linux-arm"
   lazy val DotnetAstgenMac      = "dotnetastgen-macos"
@@ -60,8 +56,8 @@ object AstGenRunner {
   private def hasCompatibleAstGenVersion(goastGenVersion: String): Boolean = {
     ExternalCommand.run("dotnetastgen -version", ".").toOption.map(_.mkString.strip()) match {
       case Some(installedVersion)
-        if installedVersion != "unknown" &&
-          Try(VersionHelper.compare(installedVersion, goastGenVersion)).toOption.getOrElse(-1) >= 0 =>
+          if installedVersion != "unknown" &&
+            Try(VersionHelper.compare(installedVersion, goastGenVersion)).toOption.getOrElse(-1) >= 0 =>
         logger.debug(s"Using local dotnetastgen v$installedVersion from systems PATH")
         true
       case Some(installedVersion) =>
@@ -90,7 +86,7 @@ class AstGenRunner(config: Config) {
   private def isIgnoredByUserConfig(filePath: String): Boolean = {
     lazy val isInIgnoredFiles = config.ignoredFiles.exists {
       case ignorePath if File(ignorePath).isDirectory => filePath.startsWith(ignorePath)
-      case ignorePath => filePath == ignorePath
+      case ignorePath                                 => filePath == ignorePath
     }
     lazy val isInIgnoredFileRegex = config.ignoredFilesRegex.matches(filePath)
     if (isInIgnoredFiles || isInIgnoredFileRegex) {
@@ -105,7 +101,7 @@ class AstGenRunner(config: Config) {
     val skipped = astGenOut.collect {
       case out if !out.startsWith("Converted") =>
         val filename = out.substring(0, out.indexOf(" "))
-        val reason = out.substring(out.indexOf(" ") + 1)
+        val reason   = out.substring(out.indexOf(" ") + 1)
         logger.warn(s"\t- failed to parse '${in / filename}': '$reason'")
         Option(filename)
       case out =>
@@ -119,8 +115,8 @@ class AstGenRunner(config: Config) {
     files.filter { file =>
       file.stripSuffix(".json").replace(out.pathAsString, config.inputPath) match {
         case filePath if isIgnoredByUserConfig(filePath) => false
-        case filePath if filePath.endsWith(".csproj") => false
-        case _ => true
+        case filePath if filePath.endsWith(".csproj")    => false
+        case _                                           => true
       }
     }
   }
@@ -130,7 +126,6 @@ class AstGenRunner(config: Config) {
     // val excludeCommand = if (exclude.isEmpty) "" else s"-exclude \"$exclude\""
     ExternalCommand.run(s"$astGenCommand -o ${out.toString()} -i $in", ".")
   }
-
 
   def execute(out: File): AstGenRunnerResult = {
     val in = File(config.inputPath)
@@ -143,7 +138,7 @@ class AstGenRunner(config: Config) {
           ignoredFilesRegex = Option(config.ignoredFilesRegex),
           ignoredFilesPath = Option(config.ignoredFiles)
         )
-        val parsed = filterFiles(srcFiles, out)
+        val parsed  = filterFiles(srcFiles, out)
         val skipped = skippedFiles(in, result.toList)
         AstGenRunnerResult(parsed, skipped)
       case Failure(f) =>
