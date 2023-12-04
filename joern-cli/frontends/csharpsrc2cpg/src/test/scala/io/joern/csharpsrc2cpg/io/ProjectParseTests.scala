@@ -1,7 +1,6 @@
 package io.joern.csharpsrc2cpg.io
 
 import better.files.File
-import java.nio.file.{Paths, Path}
 import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
 import io.joern.csharpsrc2cpg.{CSharpSrc2Cpg, Config}
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
@@ -55,8 +54,9 @@ class ProjectParseTests extends CSharpCode2CpgFixture with BeforeAndAfterAll {
     "generate correct filenames" in ProjectParseTestsFixture(projectWithSubfolders) { (parsedFiles: Array[String]) =>
       println(parsedFiles)
       val fileNames = parsedFiles.map(filePath => {
-        val path: Path = Paths.get(filePath)
-        path.getFileName.toString
+        val lastSlashIndex = filePath.lastIndexOf('/')
+        val fileName       = if (lastSlashIndex >= 0) filePath.substring(lastSlashIndex + 1) else filePath
+        fileName
       })
       fileNames.toList should contain allElementsOf List(
         "a.json",
