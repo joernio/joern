@@ -236,4 +236,40 @@ class TypeDeclMembersAndMemberMethodsTest extends GoCodeToCpgSuite {
       areaByReferenceNode.fullName shouldBe "main.StringAlias.SomeMethodOne"
     }
   }
+
+  "Member method of Struct type defined in another file but in the same package" should {
+    val cpg = code(
+      """
+        |module joern.io/sample
+        |go 1.18
+        |""".stripMargin,
+      "go.mod"
+    ).moreCode(
+      """
+        |package main
+        |type Sample struct {
+        |	name int
+        |}
+        |""".stripMargin,
+      "lib.go"
+    ).moreCode(
+      """
+        |package main
+        |func (sample Sample) someProcessing() int{
+        |  return 0
+        |}
+        |func foo(argc int, argv Sample) {
+        |}
+        |""".stripMargin,
+      "main.go"
+    )
+
+    "Have typeDecl created " in {
+      cpg.typeDecl("Sample").fullName.l shouldBe List("main.Sample")
+    }
+
+    "Have member method part of typeDecl" in {
+      cpg.typeDecl("Sample").method.fullName.l shouldBe List("main.Sample.someProcessing")
+    }
+  }
 }
