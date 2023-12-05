@@ -33,7 +33,7 @@ class DotNetAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
         diagnosticMap.put(SourceFiles.toRelativePath(fileName, in.pathAsString), Nil)
       case s"fail: DotNetAstGen.Program[0] Error(s) encountered while parsing: $_" => // ignore
       case s"fail: DotNetAstGen.Program[0] $reason" =>
-        val lastFile = SourceFiles.toRelativePath(diagnosticMap.last._1, in.pathAsString)
+        val (lastFile, _) = diagnosticMap.last
         diagnosticMap.updateWith(lastFile) {
           case Some(x) => Option(x :+ reason)
           case None    => Option(reason :: Nil)
@@ -49,12 +49,10 @@ class DotNetAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
 
     diagnosticMap.flatMap {
       case (filename, Nil) =>
-        logger.debug(s"Successfully parsed '$in${java.io.File.separator}$filename'")
+        logger.debug(s"Successfully parsed '$filename'")
         None
       case (filename, diagnostics) =>
-        logger.warn(
-          s"Failed to parse '$in${java.io.File.separator}$filename':\n${diagnostics.map(x => s" - $x").mkString("\n")}"
-        )
+        logger.warn(s"Failed to parse '$filename':\n${diagnostics.map(x => s" - $x").mkString("\n")}")
         Option(filename)
     }.toList
   }
