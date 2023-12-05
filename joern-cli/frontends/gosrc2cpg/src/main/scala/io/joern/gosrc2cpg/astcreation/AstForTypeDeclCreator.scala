@@ -6,7 +6,6 @@ import io.joern.x2cpg
 import io.joern.x2cpg.utils.NodeBuilders.{newFieldIdentifierNode, newOperatorCallNode}
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.NewFieldIdentifier
 import ujson.Value
 
 import scala.util.{Success, Try}
@@ -19,6 +18,12 @@ trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { thi
       typeDeclNode(typeSpecNode, name, fullName, relPathFileName, typeSpecNode.code)
     val modifier = addModifier(typeDeclNode_, name)
     Seq(Ast(typeDeclNode_).withChild(Ast(modifier)).withChildren(memberAsts))
+  }
+
+  protected def processFuncType(typeNode: ParserNodeInfo, typeDeclFullName: String): Seq[Ast] = {
+    val (signature, returnTypeFullName, _, _, _) = generateLambdaSignature(typeNode)
+    GoGlobal.recordLambdaSigntureToLambdaType(signature, typeDeclFullName, returnTypeFullName)
+    Seq.empty
   }
 
   protected def astForStructType(expr: ParserNodeInfo, typeDeclFullName: String): Seq[Ast] = {
