@@ -12,7 +12,7 @@ object DotNetJsonParser {
   def readFile(file: Path): ParserResult = {
     val jsonContent       = IOUtils.readLinesInFile(file).mkString
     val json              = ujson.read(jsonContent)
-    val fullFilePath      = file.toAbsolutePath.toString
+    val fullFilePath      = json(ParserKeys.FileName).str
     val filePath          = Paths.get(fullFilePath)
     val sourceFileContent = IOUtils.readEntireFile(filePath)
     ParserResult(filePath.getFileName.toString, fullFilePath, json, sourceFileContent)

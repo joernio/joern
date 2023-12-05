@@ -5,8 +5,10 @@ import com.typesafe.config.ConfigFactory
 import io.joern.x2cpg.utils.{Environment, ExternalCommand}
 import io.joern.x2cpg.{SourceFiles, X2CpgConfig}
 import org.slf4j.LoggerFactory
+import versionsort.VersionHelper
 
 import java.nio.file.Paths
+import java.net.URL
 import scala.util.{Failure, Success, Try}
 
 object AstGenRunner {
@@ -25,14 +27,14 @@ object AstGenRunner {
     * @param configPrefix
     *   the prefix of the executable's respective configuration path.
     */
-  case class AstGenProgramMetaData(name: String, configPrefix: String)
+  case class AstGenProgramMetaData(name: String, configPrefix: String, packagePath: URL)
 
-  private lazy val Win      = "-win.exe"
-  private lazy val WinArm   = "-win-arm.exe"
-  private lazy val Linux    = "-linux"
-  private lazy val LinuxArm = "-linux-arm"
-  private lazy val Mac      = "-macos"
-  private lazy val MacArm   = "-macos-arm"
+  private lazy val Win      = "win.exe"
+  private lazy val WinArm   = "win-arm.exe"
+  private lazy val Linux    = "linux"
+  private lazy val LinuxArm = "linux-arm"
+  private lazy val Mac      = "macos"
+  private lazy val MacArm   = "macos-arm"
 
   def executableName(implicit metaData: AstGenProgramMetaData): String = Environment.operatingSystem match {
     case Environment.OperatingSystemType.Windows =>
@@ -55,8 +57,8 @@ object AstGenRunner {
       s"${metaData.name}-$Linux"
   }
 
-  def executableDir: String = {
-    val dir        = getClass.getProtectionDomain.getCodeSource.getLocation.toString
+  def executableDir(implicit metaData: AstGenProgramMetaData): String = {
+    val dir        = metaData.packagePath.toString
     val indexOfLib = dir.lastIndexOf("lib")
     val fixedDir = if (indexOfLib != -1) {
       new java.io.File(dir.substring("file:".length, indexOfLib)).toString
@@ -110,8 +112,8 @@ trait AstGenRunnerBase(config: X2CpgConfig[_] with AstGenConfig[_]) {
   }
 
   private def skippedFiles(in: File, astGenOut: List[String]): List[String] = {
-    val skipped = astGenOut.collect {
-      case out if !out.startsWith("Converted") =>
+    val skipped = astGenOut.map(_.strip()).collect {
+      case out if out.startsWith("err:") =>
         val filename = out.substring(0, out.indexOf(" "))
         val reason   = out.substring(out.indexOf(" ") + 1)
         logger.warn(s"\t- failed to parse '$in${java.io.File.separator}$filename': '$reason'")
@@ -138,8 +140,8 @@ trait AstGenRunnerBase(config: X2CpgConfig[_] with AstGenConfig[_]) {
 
   protected def astGenCommand(implicit metaData: AstGenProgramMetaData): String = {
     val conf            = ConfigFactory.load
-    val goastGenVersion = conf.getString(s"${metaData.configPrefix}.${metaData.name}_version")
-    if (hasCompatibleAstGenVersion(goastGenVersion)) {
+    val astGenVersion = conf.getString(s"${metaData.configPrefix}.${metaData.name}_version")
+    if (hasCompatibleAstGenVersion(astGenVersion)) {
       metaData.name
     } else {
       s"$executableDir/$executableName"
