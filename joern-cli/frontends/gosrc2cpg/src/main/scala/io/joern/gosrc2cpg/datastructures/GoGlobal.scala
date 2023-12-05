@@ -23,7 +23,7 @@ object GoGlobal extends Global {
     */
   val aliasToNameSpaceMapping: ConcurrentHashMap[String, String] = new ConcurrentHashMap()
 
-  val lambdaSignatureToLambdaTypeMap: ConcurrentHashMap[String, String] = new ConcurrentHashMap()
+  val lambdaSignatureToLambdaTypeMap: ConcurrentHashMap[String, Set[(String, String)]] = new ConcurrentHashMap()
 
   // Mapping method fullname to its return type and signature
   val methodFullNameReturnTypeMap: ConcurrentHashMap[String, (String, String)] = new ConcurrentHashMap()
@@ -59,8 +59,19 @@ object GoGlobal extends Global {
     methodFullNameReturnTypeMap.putIfAbsent(methodFullName, (returnType, signature))
   }
 
-  def recordLambdaSigntureToLambdaType(signature: String, lambdaType: String): Unit = {
-    lambdaSignatureToLambdaTypeMap.putIfAbsent(signature, lambdaType)
+  def recordLambdaSigntureToLambdaType(
+    signature: String,
+    lambdaStructTypeFullName: String,
+    returnTypeFullname: String
+  ): Unit = {
+    synchronized {
+      Option(lambdaSignatureToLambdaTypeMap.get(signature)) match {
+        case Some(existingList) =>
+          val t = (lambdaStructTypeFullName, returnTypeFullname)
+          lambdaSignatureToLambdaTypeMap.put(signature, existingList + t)
+        case None => lambdaSignatureToLambdaTypeMap.put(signature, Set((lambdaStructTypeFullName, returnTypeFullname)))
+      }
+    }
   }
 
   def typesSeen(): List[String] = {

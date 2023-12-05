@@ -1510,6 +1510,34 @@ class AstCreationPassTests extends AbstractPassTest {
       }
     }
 
+    "be correct for array init with method refs" in AstFixture("""
+        |static void methodA() { return; };
+        |static int methodB() { return 0; };
+        |static const struct foo bar = {
+        | .a = methodA,
+        | .b = methodB,
+        |};""".stripMargin) { cpg =>
+      val List(methodA, methodB) = cpg.method.nameNot("<global>").l
+      inside(cpg.call.nameExact(Operators.arrayInitializer).assignment.l) { case List(callA: Call, callB: Call) =>
+        val argsAIdent = callA.argument(1).asInstanceOf[Identifier]
+        val argARef    = callA.argument(2).asInstanceOf[MethodRef]
+        argsAIdent.order shouldBe 1
+        argsAIdent.name shouldBe "a"
+        argsAIdent.code shouldBe "a"
+        argARef.order shouldBe 2
+        argARef.methodFullName shouldBe methodA.fullName
+        argARef.typeFullName shouldBe methodA.methodReturn.typeFullName
+        val argsBIdent = callB.argument(1).asInstanceOf[Identifier]
+        val argBRef    = callB.argument(2).asInstanceOf[MethodRef]
+        argsBIdent.order shouldBe 1
+        argsBIdent.code shouldBe "b"
+        argsBIdent.name shouldBe "b"
+        argBRef.order shouldBe 2
+        argBRef.methodFullName shouldBe methodB.fullName
+        argBRef.typeFullName shouldBe methodB.methodReturn.typeFullName
+      }
+    }
+
     "be correct for locals for array init" in AstFixture("""
         |bool x[2] = { TRUE, FALSE };
         |""".stripMargin) { cpg =>

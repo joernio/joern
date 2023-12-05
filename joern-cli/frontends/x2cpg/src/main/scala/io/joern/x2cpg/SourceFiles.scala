@@ -81,7 +81,7 @@ object SourceFiles {
     ignoredDefaultRegex: Option[Seq[Regex]] = None,
     ignoredFilesRegex: Option[Regex] = None,
     ignoredFilesPath: Option[Seq[String]] = None
-  ): List[String] = {
+  )(implicit visitOptions: VisitOptions = VisitOptions.follow): List[String] = {
     filterFiles(
       determine(Set(inputPath), sourceFileExtensions),
       inputPath,
@@ -93,7 +93,9 @@ object SourceFiles {
 
   /** For a given array of input paths, determine all source files by inspecting filename extensions.
     */
-  def determine(inputPaths: Set[String], sourceFileExtensions: Set[String]): List[String] = {
+  def determine(inputPaths: Set[String], sourceFileExtensions: Set[String])(implicit
+    visitOptions: VisitOptions
+  ): List[String] = {
     def hasSourceFileExtension(file: File): Boolean =
       file.extension.exists(sourceFileExtensions.contains)
 
@@ -104,7 +106,7 @@ object SourceFiles {
 
     val matchingFiles = files.filter(hasSourceFileExtension).map(_.toString)
     val matchingFilesFromDirs = dirs
-      .flatMap(_.listRecursively(VisitOptions.follow))
+      .flatMap(_.listRecursively)
       .filter(hasSourceFileExtension)
       .map(_.pathAsString)
 

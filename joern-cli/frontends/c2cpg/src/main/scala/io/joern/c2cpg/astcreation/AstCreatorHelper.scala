@@ -28,10 +28,6 @@ import scala.collection.mutable
 
 object AstCreatorHelper {
 
-  // maximum length of code fields in number of characters
-  private val MaxCodeLength: Int = 1000
-  private val MinCodeLength: Int = 50
-
   implicit class OptionSafeAst(val ast: Ast) extends AnyVal {
     def withArgEdge(src: NewNode, dst: Option[NewNode]): Ast = dst match {
       case Some(value) => ast.withArgEdge(src, value)

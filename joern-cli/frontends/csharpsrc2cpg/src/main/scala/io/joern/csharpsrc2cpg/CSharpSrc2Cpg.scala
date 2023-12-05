@@ -1,16 +1,27 @@
 package io.joern.csharpsrc2cpg
 
+import better.files.File
+import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.CpgPassBase
+import io.joern.x2cpg.utils.Report
+import io.joern.csharpsrc2cpg.utils.AstGenRunner
 
 import scala.util.Try
 
 class CSharpSrc2Cpg extends X2CpgFrontend[Config] {
-  override def createCpg(config: Config): Try[Cpg] = Try(
-    throw new NotImplementedError("CSharp2Cpg has not been implemented yet!")
-  )
+  private val report: Report = new Report()
+
+  override def createCpg(config: Config): Try[Cpg] = {
+    withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
+      File.usingTemporaryDirectory("csharpsrc2cpgOut") { tmpDir =>
+        report.print()
+        val astGenResult = new AstGenRunner(config).execute(tmpDir)
+      }
+    }
+  }
 
 }
 

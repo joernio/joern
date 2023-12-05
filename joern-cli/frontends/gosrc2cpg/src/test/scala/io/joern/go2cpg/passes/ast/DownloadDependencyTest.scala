@@ -117,4 +117,48 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
       e.typeFullName shouldBe "github.com/rs/zerolog/log.Warn.<ReturnType>.<unknown>"
     }
   }
+
+  // Note: methodFullName of call node is not resolving as per DownloadDependency so ignoring
+  // the below unit tests, which tries to download the dependencies and resolve it.
+  "dependency resolution having type struct" ignore {
+    val config = Config().withFetchDependencies(true)
+    val cpg = code(
+      """
+        |module joern.io/sample
+        |go 1.18
+        |
+        |require (
+        | github.com/redis/go-redis/v9 v9.2.1
+        |)
+        |""".stripMargin,
+      "go.mod"
+    ).moreCode("""
+          |package main
+          |import "github.com/redis/go-redis/v9"
+          |
+          |type Client struct {
+          |	rdb redis.UniversalClient
+          |}
+          |
+          |func (c *Client) setValue() {
+          | key := "key"
+          | value := "value"
+          | err := c.rdb.Set(key, value).Err()
+          |}
+          |""".stripMargin)
+      .withConfig(config)
+
+    "Test basic ast structure" in {
+      val List(typeDeclNode) = cpg.typeDecl.nameExact("Client").l
+      typeDeclNode.fullName shouldBe "main.Client"
+      typeDeclNode.member.size shouldBe 1
+      typeDeclNode.member.head.typeFullName shouldBe "github.com/redis/go-redis/v9.redis.UnversalClient.<ReturnType>.<unknown>"
+    }
+
+    "Test call node" in {
+      val List(callNode) = cpg.call.name("Set").l
+      callNode.typeFullName shouldBe "github.com/redis/go-redis/v9.redis.UnversalClient.Set.<ReturnType>.<unknown>"
+      callNode.methodFullName shouldBe "github.com/redis/go-redis/v9.redis.UnversalClient.Set"
+    }
+  }
 }

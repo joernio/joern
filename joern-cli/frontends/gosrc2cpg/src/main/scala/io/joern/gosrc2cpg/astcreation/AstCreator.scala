@@ -6,8 +6,9 @@ import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.datastructures.Scope
 import io.joern.x2cpg.datastructures.Stack.*
+import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, AstNodeBuilder as X2CpgAstNodeBuilder}
-import io.shiftleft.codepropertygraph.generated.NodeTypes
+import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
@@ -74,7 +75,13 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult, go
       .toList
     methodAstParentStack.pop()
     scope.popScope()
-    methodAst(fakeGlobalMethodForFile, Seq.empty, blockAst(blockNode_, declsAsts), methodReturn)
+    methodAst(
+      fakeGlobalMethodForFile,
+      Seq.empty,
+      blockAst(blockNode_, declsAsts),
+      methodReturn,
+      newModifierNode(ModifierTypes.MODULE) :: Nil
+    )
   }
 
   protected def astForNode(nodeInfo: ParserNodeInfo, globalStatements: Boolean = false): Seq[Ast] = {
