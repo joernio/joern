@@ -40,7 +40,7 @@ object AccessPathUsage {
           val path         = AccessPathHandling.memberAccessToPath(memberAccess, tail)
           (base, path)
         case _ =>
-          logger.error(s"Missing handling for node type ${node.getClass}.")
+          logger.warn(s"Missing handling for node type ${node.getClass}.")
           (TrackedUnknown, Nil)
       }
     }

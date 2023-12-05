@@ -695,6 +695,7 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
       sink.reachableBy(identifierSource).size shouldBe 1
     }
   }
+
   "Field access on TemplatedDom directly" should {
     val cpg = code("""
                      |import { useRouter } from "next/router";
