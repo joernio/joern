@@ -29,6 +29,6 @@ object DotNetJsonAst {
 object ParserKeys {
 
   val FileName = "FileName"
-  val AstRoot = "AstRoot"
+  val AstRoot  = "AstRoot"
 
 }

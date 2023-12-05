@@ -7,8 +7,10 @@ import io.joern.x2cpg.{SourceFiles, X2CpgConfig}
 import org.slf4j.LoggerFactory
 import versionsort.VersionHelper
 
-import java.nio.file.Paths
 import java.net.URL
+import java.nio.file.Paths
+import scala.collection.mutable
+import scala.collection.mutable.HashMap
 import scala.util.{Failure, Success, Try}
 
 object AstGenRunner {
@@ -111,20 +113,6 @@ trait AstGenRunnerBase(config: X2CpgConfig[_] with AstGenConfig[_]) {
     }
   }
 
-  private def skippedFiles(in: File, astGenOut: List[String]): List[String] = {
-    val skipped = astGenOut.map(_.strip()).collect {
-      case out if out.startsWith("err:") =>
-        val filename = out.substring(0, out.indexOf(" "))
-        val reason   = out.substring(out.indexOf(" ") + 1)
-        logger.warn(s"\t- failed to parse '$in${java.io.File.separator}$filename': '$reason'")
-        Option(filename)
-      case out =>
-        logger.debug(s"\t+ $out")
-        None
-    }
-    skipped.flatten
-  }
-
   private def filterFiles(files: List[String], out: File): List[String] = files.filter(fileFilter(_, out))
 
   protected def fileFilter(file: String, out: File): Boolean = {
@@ -134,12 +122,14 @@ trait AstGenRunnerBase(config: X2CpgConfig[_] with AstGenConfig[_]) {
     }
   }
 
+  protected def skippedFiles(in: File, astGenOut: List[String]): List[String]
+
   protected def runAstGenNative(in: String, out: File, exclude: String)(implicit
     metaData: AstGenProgramMetaData
   ): Try[Seq[String]]
 
   protected def astGenCommand(implicit metaData: AstGenProgramMetaData): String = {
-    val conf            = ConfigFactory.load
+    val conf          = ConfigFactory.load
     val astGenVersion = conf.getString(s"${metaData.configPrefix}.${metaData.name}_version")
     if (hasCompatibleAstGenVersion(astGenVersion)) {
       metaData.name
@@ -151,7 +141,7 @@ trait AstGenRunnerBase(config: X2CpgConfig[_] with AstGenConfig[_]) {
   def execute(out: File): AstGenRunnerResult = {
     implicit val metaData: AstGenProgramMetaData = config.astGenMetaData
     val in                                       = File(config.inputPath)
-    logger.info(s"Running ${metaData.name} in '${config.inputPath}' ...")
+    logger.info(s"Running ${metaData.name} on '${config.inputPath}'")
     runAstGenNative(config.inputPath, out, config.ignoredFilesRegex.toString()) match {
       case Success(result) =>
         val srcFiles = SourceFiles.determine(

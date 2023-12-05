@@ -8,10 +8,7 @@ trait AstGenConfig[R <: X2CpgConfig[R]] { this: R =>
   protected val astGenProgramName: String
   protected val astGenConfigPrefix: String
 
-  def astGenMetaData: AstGenProgramMetaData = AstGenProgramMetaData(
-    astGenProgramName,
-    astGenConfigPrefix,
-    getClass.getProtectionDomain.getCodeSource.getLocation
-  )
+  def astGenMetaData: AstGenProgramMetaData =
+    AstGenProgramMetaData(astGenProgramName, astGenConfigPrefix, getClass.getProtectionDomain.getCodeSource.getLocation)
 
 }
