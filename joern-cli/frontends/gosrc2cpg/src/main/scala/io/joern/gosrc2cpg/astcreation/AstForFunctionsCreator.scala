@@ -126,6 +126,17 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         val typeInfo                                           = createParserNodeInfo(x(ParserKeys.Type))
         val (typeFullName, typeFullNameForcode, isVariadic, _) = processTypeInfo(typeInfo, genericTypeMethodMap)
         x(ParserKeys.Names).arrOpt
+          /*
+          While generating the signature for a function structure
+                   func test(a, b int, c string) int {
+                   }
+          it works as there is no situation where parameter name will not be there.
+
+          As we re reuse the same function for generating the signature for lambda types as below
+                   type Operation func(int, int) int
+          Now in this case there is no parameter name exist, in order to handle this situation add this empty string as default value,
+          which only facilitates adding the parameter type to list.
+           */
           .getOrElse(List(""))
           .map(_ => {
             // We are returning same type from x object for each name in the names array.
