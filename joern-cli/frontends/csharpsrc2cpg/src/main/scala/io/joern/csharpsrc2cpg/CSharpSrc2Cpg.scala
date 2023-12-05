@@ -7,9 +7,17 @@ import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.CpgPassBase
 import io.joern.x2cpg.utils.Report
-import io.joern.csharpsrc2cpg.utils.AstGenRunner
+import io.joern.x2cpg.SourceFiles
+import io.joern.csharpsrc2cpg.utils.DotNetAstGenRunner
+import io.joern.csharpsrc2cpg.parser.DotNetJsonParser
+import io.joern.csharpsrc2cpg.passes.AstCreationPass
+import io.joern.csharpsrc2cpg.astcreation.AstCreator
 
+import java.nio.file.Paths
 import scala.util.Try
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 
 class CSharpSrc2Cpg extends X2CpgFrontend[Config] {
   private val report: Report = new Report()
@@ -17,10 +25,30 @@ class CSharpSrc2Cpg extends X2CpgFrontend[Config] {
   override def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       File.usingTemporaryDirectory("csharpsrc2cpgOut") { tmpDir =>
+        val astGenResult = new DotNetAstGenRunner(config).execute(tmpDir)
+        val astCreators  = processAstGenRunnerResults(astGenResult.parsedFiles, config)
+        new AstCreationPass(cpg, astCreators, report).createAndApply()
         report.print()
-        val astGenResult = new AstGenRunner(config).execute(tmpDir)
       }
     }
+  }
+
+  /** Parses the generated AST Gen files in parallel and produces AstCreators from each.
+    */
+  private def processAstGenRunnerResults(astFiles: List[String], config: Config): Seq[AstCreator] = {
+    Await.result(
+      Future.sequence(
+        astFiles
+          .map(file =>
+            Future {
+              val parserResult    = DotNetJsonParser.readFile(Paths.get(file))
+              val relPathFileName = SourceFiles.toRelativePath(parserResult.fullPath, config.inputPath)
+              new AstCreator(relPathFileName, parserResult)(config.schemaValidation)
+            }
+          )
+      ),
+      Duration.Inf
+    )
   }
 
 }

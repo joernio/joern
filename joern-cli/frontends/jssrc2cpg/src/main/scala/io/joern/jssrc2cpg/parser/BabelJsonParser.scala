@@ -1,10 +1,10 @@
 package io.joern.jssrc2cpg.parser
 
+import io.joern.x2cpg.astgen.BaseParserResult
 import io.shiftleft.utils.IOUtils
 import ujson.Value.Value
 
-import java.nio.file.Path
-import java.nio.file.Paths
+import java.nio.file.{Path, Paths}
 
 object BabelJsonParser {
 
@@ -14,7 +14,7 @@ object BabelJsonParser {
     json: Value,
     fileContent: String,
     typeMap: Map[Int, String]
-  )
+  ) extends BaseParserResult
 
   def readFile(rootPath: Path, file: Path): ParseResult = {
     val typeMapPath = Paths.get(file.toString.replace(".json", ".typemap"))

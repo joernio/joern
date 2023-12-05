@@ -3,6 +3,11 @@ name := "x2cpg"
 dependsOn(Projects.semanticcpg)
 
 libraryDependencies ++= Seq(
+  /* Start: AST Gen Dependencies */
+  "com.lihaoyi"         %% "upickle"     % Versions.upickle,
+  "com.typesafe"         % "config"      % Versions.typeSafeConfig,
+  "com.michaelpollmeier" % "versionsort" % Versions.versionSort,
+  /* End: AST Gen Dependencies */
   "org.gradle"     % "gradle-tooling-api" % Versions.gradleTooling % Optional,
   "org.scalatest" %% "scalatest"          % Versions.scalatest     % Test
 )
