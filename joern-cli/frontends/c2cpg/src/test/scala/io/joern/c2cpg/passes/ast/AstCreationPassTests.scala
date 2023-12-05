@@ -571,7 +571,7 @@ class AstCreationPassTests extends AbstractPassTest {
           }
           controlStruct.whenTrue.assignment.code.l shouldBe List("x += 1")
           controlStruct.lineNumber shouldBe Some(3)
-          controlStruct.columnNumber shouldBe Some(2)
+          controlStruct.columnNumber shouldBe Some(3)
       }
     }
 
