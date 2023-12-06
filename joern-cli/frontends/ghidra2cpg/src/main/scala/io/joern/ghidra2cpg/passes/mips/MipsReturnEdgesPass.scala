@@ -17,7 +17,10 @@ class MipsReturnEdgesPass(cpg: Cpg) extends CpgPass(cpg) {
       //        the first .cfgNext is skipping a _nop instruction after the call
       val to = from.cfgNext.cfgNext.isCall.argument.code("v(0|1)").headOption
       if (to.nonEmpty) {
-        diffGraph.addEdge(from, to.get, EdgeTypes.REACHING_DEF, PropertyNames.VARIABLE, from.code)
+        // in flatgraph an edge may have zero or one properties and they're not named...
+        // in this case we know that we're dealing with ReachingDef edges which has the `variable` property
+        val variableProperty = from.code
+        diffGraph.addEdge(from, to.get, EdgeTypes.REACHING_DEF, variableProperty)
       }
     }
   }

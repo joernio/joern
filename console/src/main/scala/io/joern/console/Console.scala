@@ -362,7 +362,7 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
     if (CpgLoader.isLegacyCpg(cpgFile)) {
       report("You have provided a legacy proto CPG. Attempting conversion.")
       try {
-        CpgConverter.convertProtoCpgToOverflowDb(cpgFile.path.toString, cpgDestinationPath.toString)
+        CpgConverter.convertProtoCpgToFlatgraph(cpgFile.path.toString, cpgDestinationPath.toString)
       } catch {
         case exc: Exception =>
           report("Error converting legacy CPG: " + exc.getMessage)

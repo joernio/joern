@@ -64,7 +64,7 @@ class CpgGeneratorFactory(config: ConsoleConfig) {
         val srcFilename = outFile.path.toAbsolutePath.toString
         val dstFilename = parentPath.resolve("cpg.bin").toAbsolutePath.toString
         // MemoryHelper.hintForInsufficientMemory(srcFilename).map(report)
-        convertProtoCpgToOverflowDb(srcFilename, dstFilename)
+        convertProtoCpgToFlatgraph(srcFilename, dstFilename)
       } else {
         report("moving cpg.bin.zip to cpg.bin because it is already a database file")
         val srcPath = parentPath.resolve("cpg.bin.zip")

@@ -10,9 +10,8 @@ import io.joern.ghidra2cpg.processors.MipsProcessor
 import io.joern.ghidra2cpg.utils.Utils._
 import io.joern.ghidra2cpg.Types
 import io.joern.ghidra2cpg.utils.Decompiler
-import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{CfgNodeNew, NewBlock}
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, nodes}
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, nodes}
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters._
@@ -258,7 +257,7 @@ class MipsFunctionPass(
   }
 
   override def runOnPart(diffGraphBuilder: DiffGraphBuilder, function: Function): Unit = {
-    val localDiffGraph = new DiffGraphBuilder
+    val localDiffGraph = Cpg.newDiffGraphBuilder
     // we need it just once with default settings
     val blockNode: NewBlock = nodes.NewBlock().code("").order(0)
     val methodNode = createMethodNode(decompiler, function, filename, checkIfExternal(currentProgram, function.getName))

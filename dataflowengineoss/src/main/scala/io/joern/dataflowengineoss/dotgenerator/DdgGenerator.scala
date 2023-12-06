@@ -92,7 +92,7 @@ class DdgGenerator {
         // note: this looks strange, but let me explain...
         // in overflowdb, edges were allowed multiple properties and this used to be `x.property(Properties.VARIABLE)`
         // in flatgraph an edge may have zero or one properties and they're not named...
-        // in this case we know that we're dealing with ReachingDef edges which have the `variable` property
+        // in this case we know that we're dealing with ReachingDef edges which has the `variable` property
         val variablePropertyMaybe = x.property match {
           case null => null
           case variableProperty: String => variableProperty
