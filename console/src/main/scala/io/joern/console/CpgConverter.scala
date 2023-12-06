@@ -1,6 +1,6 @@
 package io.joern.console
 
-import io.shiftleft.codepropertygraph.cpgloading.{CpgLoader, CpgLoaderConfig}
+import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 
 object CpgConverter {
 

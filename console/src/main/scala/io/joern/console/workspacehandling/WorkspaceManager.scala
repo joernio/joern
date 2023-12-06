@@ -4,7 +4,7 @@ import better.files.Dsl.*
 import better.files.*
 import io.joern.console.Reporting
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.cpgloading.{CpgLoader, CpgLoaderConfig}
+import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
 import org.json4s.DefaultFormats
 import org.json4s.native.Serialization.write as jsonWrite
 

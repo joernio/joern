@@ -18,7 +18,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeRef
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import org.slf4j.{Logger, LoggerFactory}
-import overflowdb.BatchedUpdate.DiffGraphBuilder
+import flatgraph.DiffGraphBuilder
 
 import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
@@ -111,10 +111,10 @@ class AstCreator(
     case null                               => notHandledYet(node)
   }
 
-  protected def line(node: SwiftNode): Option[Integer]      = node.startLine.map(Integer.valueOf)
-  protected def column(node: SwiftNode): Option[Integer]    = node.startColumn.map(Integer.valueOf)
-  protected def lineEnd(node: SwiftNode): Option[Integer]   = node.endLine.map(Integer.valueOf)
-  protected def columnEnd(node: SwiftNode): Option[Integer] = node.endColumn.map(Integer.valueOf)
+  protected def line(node: SwiftNode): Option[Int]      = node.startLine
+  protected def column(node: SwiftNode): Option[Int]    = node.startColumn
+  protected def lineEnd(node: SwiftNode): Option[Int]   = node.endLine
+  protected def columnEnd(node: SwiftNode): Option[Int] = node.endColumn
   protected def code(node: SwiftNode): String = {
     val startIndex = node.startOffset.getOrElse(0)
     val endIndex   = Math.min(node.endOffset.getOrElse(0), parserResult.fileContent.length)
