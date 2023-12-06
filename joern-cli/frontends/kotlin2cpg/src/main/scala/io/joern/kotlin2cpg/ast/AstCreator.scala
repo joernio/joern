@@ -6,7 +6,6 @@ import io.joern.kotlin2cpg.ast.Nodes.{namespaceBlockNode, operatorCallNode}
 import io.joern.kotlin2cpg.types.{TypeConstants, TypeInfoProvider, TypeRenderer}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.*
-import io.shiftleft.passes.IntervalKeyPool
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, Defines, ValidationMode}
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.datastructures.Stack.*
@@ -19,6 +18,7 @@ import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.lexer.{KtToken, KtTokens}
 import org.slf4j.{Logger, LoggerFactory}
 import flatgraph.DiffGraphBuilder
+import io.joern.x2cpg.utils.IntervalKeyPool
 
 import scala.annotation.tailrec
 import scala.collection.mutable
@@ -123,7 +123,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   }
 
   protected def getName(node: NewImport): String = {
-    val isWildcard = node.isWildcard.getOrElse(false: java.lang.Boolean)
+    val isWildcard = node.isWildcard.getOrElse(false)
     if (isWildcard) Constants.wildcardImportName
     else node.importedEntity.getOrElse("")
   }
