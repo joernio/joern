@@ -65,8 +65,7 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
   }
 
   /** Extract all class files found, place them in their package layout and load them into soot.
-   *
-   * @param input
+    * @param input
     *   The file/directory to traverse for class files.
     * @param tmpDir
     *   The directory to place the class files in their package layout

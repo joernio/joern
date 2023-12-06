@@ -16,10 +16,10 @@ import scala.util.{Failure, Success, Try}
 
 class JarUnpackingTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
-  var recurseCpgs: Map[String, Cpg] = _
+  var recurseCpgs: Map[String, Cpg]   = _
   var noRecurseCpgs: Map[String, Cpg] = _
   var depthsCpgs: Map[String, Cpg]    = _
-  var slippyCpg: Cpg              = _
+  var slippyCpg: Cpg                  = _
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
@@ -77,10 +77,7 @@ class JarUnpackingTests extends AnyWordSpec with Matchers with BeforeAndAfterAll
 
       if (name == "NestedHelloWorld.jar")
         cpg.typeDecl.fullNameExact("pac.Bar").l shouldBe Nil
-        cpg.method.filterNot(_.isExternal).fullName.toSet shouldBe Set(
-          "Foo.<init>:void()",
-          "Foo.add:int(int,int)"
-        )
+        cpg.method.filterNot(_.isExternal).fullName.toSet shouldBe Set("Foo.<init>:void()", "Foo.add:int(int,int)")
       else
         val List(bar) = cpg.typeDecl.fullNameExact("pac.Bar").l
         bar.name shouldBe "Bar"
@@ -100,10 +97,7 @@ class JarUnpackingTests extends AnyWordSpec with Matchers with BeforeAndAfterAll
 
       if (name == "NestedHelloWorld.jar")
         cpg.typeDecl.fullNameExact("pac.Bar").l shouldBe Nil
-        cpg.method.filterNot(_.isExternal).fullName.toSet shouldBe Set(
-          "Foo.<init>:void()",
-          "Foo.add:int(int,int)"
-        )
+        cpg.method.filterNot(_.isExternal).fullName.toSet shouldBe Set("Foo.<init>:void()", "Foo.add:int(int,int)")
       else
         val List(bar) = cpg.typeDecl.fullNameExact("pac.Bar").l
         bar.name shouldBe "Bar"

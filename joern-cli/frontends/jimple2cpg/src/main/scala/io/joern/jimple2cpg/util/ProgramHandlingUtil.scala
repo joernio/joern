@@ -42,8 +42,8 @@ object ProgramHandlingUtil {
     * @param src
     *   The file/directory to traverse
     * @param emitOrUnpack
-    *   A function that takes a file and either emits a value or returns more files to traverse.
-    *   The key of Right was used to identify whether the file was unfold from an archive
+    *   A function that takes a file and either emits a value or returns more files to traverse. The key of Right was
+    *   used to identify whether the file was unfold from an archive
     * @param maxDepth
     *   The max recursion depth of unpacking an archive (e.g. jars inside jars)
     * @tparam A
@@ -51,22 +51,26 @@ object ProgramHandlingUtil {
     * @return
     *   The emitted values
     */
-  private def unfoldArchives[A](src: File, emitOrUnpack: File => Either[A, Map[Boolean, List[File]]], maxDepth: Int): IterableOnce[A] = {
+  private def unfoldArchives[A](
+    src: File,
+    emitOrUnpack: File => Either[A, Map[Boolean, List[File]]],
+    maxDepth: Int
+  ): IterableOnce[A] = {
     if (maxDepth < -1)
       logger.warn("Maximum recursion depth reached.")
       Seq()
     else
       emitOrUnpack(src) match {
-        case Left(a)             => Seq(a)
-        case Right(disposeFiles) => disposeFiles.flatMap(
-          x => x._2.flatMap(
-            f =>
+        case Left(a) => Seq(a)
+        case Right(disposeFiles) =>
+          disposeFiles.flatMap(x =>
+            x._2.flatMap(f =>
               if (x._1)
                 unfoldArchives(f, emitOrUnpack, maxDepth - 1)
               else
                 unfoldArchives(f, emitOrUnpack, maxDepth)
+            )
           )
-        )
       }
   }
 
@@ -81,9 +85,9 @@ object ProgramHandlingUtil {
     * @param isClass
     *   Whether an entry is a class file
     * @param recurse
-    *    Whether to unpack recursively
+    *   Whether to unpack recursively
     * @param depths
-    *    Maximum depths of recurse
+    *   Maximum depths of recurse
     * @return
     *   The list of class files found, which may either be in [[src]] or in an extracted archive under [[tmpDir]]
     */
@@ -204,7 +208,7 @@ object ProgramHandlingUtil {
     * @param recurse
     *   Whether to unpack recursively
     * @param depths
-    *    Maximum depths of recurse
+    *   Maximum depths of recurse
     * @return
     *   The copied class files in destDir
     */
