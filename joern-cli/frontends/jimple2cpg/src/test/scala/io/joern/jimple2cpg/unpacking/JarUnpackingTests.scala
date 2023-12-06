@@ -24,7 +24,7 @@ class JarUnpackingTests extends AnyWordSpec with Matchers with BeforeAndAfterAll
   override protected def beforeAll(): Unit = {
     super.beforeAll()
     recurseCpgs = List("HelloWorld.jar", "NestedHelloWorld.jar", "helloworld")
-      .map(k => (k, getUnpackingCpg(k, true, 1)))
+      .map(k => (k, getUnpackingCpg(k, true)))
       .toMap
     noRecurseCpgs = List("HelloWorld.jar", "NestedHelloWorld.jar", "helloworld")
       .map(k => (k, getUnpackingCpg(k, false)))
