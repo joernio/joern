@@ -56,13 +56,11 @@ object SwiftSrc2Cpg {
   def postProcessingPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] = {
     val typeRecoveryConfig =
       config.fold(XTypeRecoveryConfig())(c => XTypeRecoveryConfig(c.typePropagationIterations, !c.disableDummyTypes))
-    List(
-      new SwiftInheritanceNamePass(cpg),
-      new ConstClosurePass(cpg),
-      new SwiftTypeRecoveryPass(cpg, typeRecoveryConfig),
-      new SwiftTypeHintCallLinker(cpg),
-      new NaiveCallLinker(cpg)
-    )
+    List(new SwiftInheritanceNamePass(cpg), new ConstClosurePass(cpg)) ++
+      new SwiftTypeRecoveryPassGenerator(cpg, typeRecoveryConfig).generate() ++ List(
+        new SwiftTypeHintCallLinker(cpg),
+        new NaiveCallLinker(cpg)
+      )
   }
 
 }

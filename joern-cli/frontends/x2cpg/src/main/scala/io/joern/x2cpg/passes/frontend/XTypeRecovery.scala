@@ -518,6 +518,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     */
   protected final def isField(i: Identifier): Boolean =
     isFieldCache.getOrElseUpdate(i, isFieldUncached(i))
+
   protected def isFieldUncached(i: Identifier): Boolean =
     i.method.typeDecl.member.nameExact(i.name).nonEmpty
 
