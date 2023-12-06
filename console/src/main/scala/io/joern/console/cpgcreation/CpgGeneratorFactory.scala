@@ -59,7 +59,7 @@ class CpgGeneratorFactory(config: ConsoleConfig) {
       generator.generate(inputPath, outputPath).map(File(_))
     outputFileOpt.map { outFile =>
       val parentPath = outFile.parent.path.toAbsolutePath
-      if (isZipFile(outFile)) {
+      if (CpgLoader.isProtoFormat(outFile.path)) {
         report("Creating database from bin.zip")
         val srcFilename = outFile.path.toAbsolutePath.toString
         val dstFilename = parentPath.resolve("cpg.bin").toAbsolutePath.toString
@@ -83,13 +83,6 @@ class CpgGeneratorFactory(config: ConsoleConfig) {
   def convertProtoCpgToFlatgraph(srcFilename: String, dstFilename: String): Unit = {
     CpgConverter.convertProtoCpgToFlatgraph(srcFilename, dstFilename)
     File(srcFilename).delete()
-  }
-
-  def isZipFile(file: File): Boolean = {
-    val bytes = file.bytes
-    Try {
-      bytes.next() == 'P' && bytes.next() == 'K'
-    }.getOrElse(false)
   }
 
   private def report(str: String): Unit = System.err.println(str)

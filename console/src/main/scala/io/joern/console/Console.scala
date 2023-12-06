@@ -359,7 +359,7 @@ class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.cur
 
     val cpgDestinationPath = cpgDestinationPathOpt.get
 
-    if (CpgLoader.isLegacyCpg(cpgFile)) {
+    if (CpgLoader.isProtoFormat(cpgFile.path)) {
       report("You have provided a legacy proto CPG. Attempting conversion.")
       try {
         CpgConverter.convertProtoCpgToFlatgraph(cpgFile.path.toString, cpgDestinationPath.toString)

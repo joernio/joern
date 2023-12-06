@@ -1,15 +1,14 @@
 package io.joern.console
 
-import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
+import io.shiftleft.codepropertygraph.cpgloading.{CpgLoader, ProtoCpgLoader}
+
+import java.nio.file.Paths
 
 object CpgConverter {
 
   def convertProtoCpgToFlatgraph(srcFilename: String, dstFilename: String): Unit = {
-    // TODO reimplement - in cpg build first
-    //    val odbConfig = Config.withDefaults.withStorageLocation(dstFilename)
-    //    val config    = CpgLoaderConfig.withDefaults.doNotCreateIndexesOnLoad.withOverflowConfig(odbConfig)
-    //    CpgLoader.load(srcFilename).close
-    ???
+    val cpg = ProtoCpgLoader.loadFromProtoZip(srcFilename, Option(Paths.get(dstFilename)))
+    cpg.close()
   }
 
   @deprecated("method got renamed to `convertProtoCpgToFlatgraph, please use that instead", "joern v3")
