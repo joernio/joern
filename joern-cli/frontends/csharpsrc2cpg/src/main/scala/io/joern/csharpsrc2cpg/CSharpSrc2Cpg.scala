@@ -48,6 +48,14 @@ object CSharpSrc2Cpg {
             Future {
               val parserResult     = DotNetJsonParser.readFile(Paths.get(file))
               val relativeFileName = SourceFiles.toRelativePath(parserResult.fullPath, config.inputPath)
+              println(s"""
+                   |DEBUG
+                   |
+                   |  - ${parserResult.fullPath}
+                   |  - ${config.inputPath}
+                   |  - $relativeFileName
+                   |
+                   |""".stripMargin)
               new AstCreator(relativeFileName, parserResult)(config.schemaValidation)
             }
           )
