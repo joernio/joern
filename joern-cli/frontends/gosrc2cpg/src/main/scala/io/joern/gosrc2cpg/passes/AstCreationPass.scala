@@ -3,7 +3,7 @@ package io.joern.gosrc2cpg.passes
 import io.joern.gosrc2cpg.Config
 import io.joern.gosrc2cpg.astcreation.AstCreator
 import io.joern.gosrc2cpg.parser.GoAstJsonParser
-import io.joern.gosrc2cpg.parser.GoAstJsonParser.ParserResult
+import io.joern.x2cpg.astgen.ParserResult
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.utils.{Report, TimeUtils}
 import io.shiftleft.codepropertygraph.Cpg

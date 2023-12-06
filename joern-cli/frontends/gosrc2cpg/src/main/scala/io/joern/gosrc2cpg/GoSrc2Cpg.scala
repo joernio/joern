@@ -5,6 +5,7 @@ import io.joern.gosrc2cpg.model.GoModHelper
 import io.joern.gosrc2cpg.parser.GoAstJsonParser
 import io.joern.gosrc2cpg.passes.{AstCreationPass, DownloadDependenciesPass, MethodAndTypeCacheBuilderPass}
 import io.joern.gosrc2cpg.utils.AstGenRunner
+import io.joern.gosrc2cpg.utils.AstGenRunner.GoAstGenRunnerResult
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.passes.frontend.MetaDataPass
@@ -22,7 +23,7 @@ class GoSrc2Cpg extends X2CpgFrontend[Config] {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       File.usingTemporaryDirectory("gosrc2cpgOut") { tmpDir =>
         new MetaDataPass(cpg, Languages.GOLANG, config.inputPath).createAndApply()
-        val astGenResult = new AstGenRunner(config).execute(tmpDir)
+        val astGenResult = new AstGenRunner(config).execute(tmpDir).asInstanceOf[GoAstGenRunnerResult]
         val goMod = new GoModHelper(
           Some(config),
           astGenResult.parsedModFile.flatMap(modFile => GoAstJsonParser.readModFile(Paths.get(modFile)).map(x => x))

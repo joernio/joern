@@ -12,6 +12,8 @@ object Versions {
   val requests      = "0.8.0"
   val upickle       = "3.1.3"
   val scalaReplPP   = "0.1.76"
+  val typeSafeConfig = "1.4.2"
+  val versionSort = "1.0.11"
 
   private def parseVersion(key: String): String = {
     val versionRegexp = s""".*val $key[ ]+=[ ]?"(.*?)"""".r
