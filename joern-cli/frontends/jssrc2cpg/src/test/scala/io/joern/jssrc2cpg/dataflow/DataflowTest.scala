@@ -695,4 +695,17 @@ class DataflowTest extends DataFlowCodeToCpgSuite {
       sink.reachableBy(identifierSource).size shouldBe 1
     }
   }
+
+  "Field access on TemplatedDom directly" should {
+    val cpg = code("""
+                     |import { useRouter } from "next/router";
+                     |
+                     |const tabComponentType = (<Tab title={"typeComponent"} />).type;
+                     |
+        |""".stripMargin)
+    "Not throw error and get handled it gracefully" in {
+      val List(x) = cpg.identifier("tabComponentType").l
+      x.lineNumber shouldBe Some(4)
+    }
+  }
 }
