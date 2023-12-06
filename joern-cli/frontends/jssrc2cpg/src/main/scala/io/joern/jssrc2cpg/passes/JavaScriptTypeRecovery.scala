@@ -10,22 +10,22 @@ import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
-class JavaScriptTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
-    extends XTypeRecoveryPass[File](cpg, config) {
-  override protected def generateRecoveryPass(state: XTypeRecoveryState): XTypeRecovery[File] =
-    new JavaScriptTypeRecovery(cpg, state)
+class JavaScriptTypeRecoveryPassGenerator(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
+    extends XTypeRecoveryPassGenerator[File](cpg, config) {
+  override protected def generateRecoveryPass(state: XTypeRecoveryState, iteration: Int): XTypeRecovery[File] =
+    new JavaScriptTypeRecovery(cpg, state, iteration)
 }
 
-private class JavaScriptTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTypeRecovery[File](cpg, state) {
+private class JavaScriptTypeRecovery(cpg: Cpg, state: XTypeRecoveryState, iteration: Int)
+    extends XTypeRecovery[File](cpg, state, iteration) {
 
-  override def compilationUnit: Iterator[File] = cpg.file.iterator
+  override def compilationUnits: Iterator[File] = cpg.file.iterator
 
   override def generateRecoveryForCompilationUnitTask(
     unit: File,
     builder: DiffGraphBuilder
   ): RecoverForXCompilationUnit[File] = {
-    val newConfig = state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
-    new RecoverForJavaScriptFile(cpg, unit, builder, state.copy(config = newConfig))
+    new RecoverForJavaScriptFile(cpg, unit, builder, state)
   }
 
 }
@@ -102,8 +102,8 @@ private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBui
     .name
     .toSet
 
-  override protected def isField(i: Identifier): Boolean =
-    state.isFieldCache.getOrElseUpdate(i.id(), exportedIdentifiers.contains(i.name) || super.isField(i))
+  override protected def isFieldUncached(i: Identifier): Boolean =
+    exportedIdentifiers.contains(i.name) || super.isFieldUncached(i)
 
   override protected def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
     val constructorPaths = if (c.methodFullName.endsWith(".alloc")) {

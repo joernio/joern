@@ -13,23 +13,26 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 import scala.annotation.tailrec
 import scala.collection.mutable
 
-class PhpTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig(iterations = 3))
-    extends XTypeRecoveryPass[NamespaceBlock](cpg, config) {
+class PhpTypeRecoveryPassGenerator(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig(iterations = 3))
+    extends XTypeRecoveryPassGenerator[NamespaceBlock](cpg, config) {
 
-  override protected def generateRecoveryPass(state: XTypeRecoveryState): XTypeRecovery[NamespaceBlock] =
-    new PhpTypeRecovery(cpg, state)
+  override protected def generateRecoveryPass(
+    state: XTypeRecoveryState,
+    iteration: Int
+  ): XTypeRecovery[NamespaceBlock] =
+    new PhpTypeRecovery(cpg, state, iteration)
 }
 
-private class PhpTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTypeRecovery[NamespaceBlock](cpg, state) {
+private class PhpTypeRecovery(cpg: Cpg, state: XTypeRecoveryState, iteration: Int)
+    extends XTypeRecovery[NamespaceBlock](cpg, state, iteration) {
 
-  override def compilationUnit: Iterator[NamespaceBlock] = cpg.file.namespaceBlock.iterator
+  override def compilationUnits: Iterator[NamespaceBlock] = cpg.file.namespaceBlock.iterator
 
   override def generateRecoveryForCompilationUnitTask(
     unit: NamespaceBlock,
     builder: DiffGraphBuilder
   ): RecoverForXCompilationUnit[NamespaceBlock] = {
-    val newConfig = state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
-    new RecoverForPhpFile(cpg, unit, builder, state.copy(config = newConfig))
+    new RecoverForPhpFile(cpg, unit, builder, state)
   }
 }
 

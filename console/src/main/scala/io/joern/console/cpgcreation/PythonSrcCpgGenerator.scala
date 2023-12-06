@@ -34,7 +34,7 @@ case class PythonSrcCpgGenerator(config: FrontendConfig, rootPath: Path) extends
     val typeRecoveryConfig = pyConfig match
       case Some(config) => XTypeRecoveryConfig(config.typePropagationIterations, !config.disableDummyTypes)
       case None         => XTypeRecoveryConfig()
-    new PythonTypeRecoveryPass(cpg, typeRecoveryConfig).createAndApply()
+    new PythonTypeRecoveryPassGenerator(cpg, typeRecoveryConfig).generate().foreach(_.createAndApply())
     new PythonTypeHintCallLinker(cpg).createAndApply()
     new NaiveCallLinker(cpg).createAndApply()
 

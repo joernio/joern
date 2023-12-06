@@ -60,14 +60,10 @@ object JsSrc2Cpg {
     val typeRecoveryConfig = config
       .map(c => XTypeRecoveryConfig(c.typePropagationIterations, !c.disableDummyTypes))
       .getOrElse(XTypeRecoveryConfig())
-    List(
-      new JavaScriptInheritanceNamePass(cpg),
-      new ConstClosurePass(cpg),
-      new JavaScriptImportResolverPass(cpg),
-      new JavaScriptTypeRecoveryPass(cpg, typeRecoveryConfig),
-      new JavaScriptTypeHintCallLinker(cpg),
-      new NaiveCallLinker(cpg)
-    )
+    List(new JavaScriptInheritanceNamePass(cpg), new ConstClosurePass(cpg), new JavaScriptImportResolverPass(cpg))
+      ++
+        new JavaScriptTypeRecoveryPassGenerator(cpg, typeRecoveryConfig).generate() ++
+        List(new JavaScriptTypeHintCallLinker(cpg), new NaiveCallLinker(cpg))
   }
 
 }

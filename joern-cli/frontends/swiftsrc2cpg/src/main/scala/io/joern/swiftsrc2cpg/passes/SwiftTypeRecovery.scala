@@ -10,22 +10,22 @@ import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
-class SwiftTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
-    extends XTypeRecoveryPass[File](cpg, config) {
-  override protected def generateRecoveryPass(state: XTypeRecoveryState): XTypeRecovery[File] =
-    new SwiftTypeRecovery(cpg, state)
+class SwiftTypeRecoveryPassGenerator(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
+    extends XTypeRecoveryPassGenerator[File](cpg, config) {
+  override protected def generateRecoveryPass(state: XTypeRecoveryState, iteration: Int): XTypeRecovery[File] =
+    new SwiftTypeRecovery(cpg, state, iteration)
 }
 
-private class SwiftTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTypeRecovery[File](cpg, state) {
+private class SwiftTypeRecovery(cpg: Cpg, state: XTypeRecoveryState, iteration: Int)
+    extends XTypeRecovery[File](cpg, state, iteration) {
 
-  override def compilationUnit: Iterator[File] = cpg.file.iterator
+  override def compilationUnits: Iterator[File] = cpg.file.iterator
 
   override def generateRecoveryForCompilationUnitTask(
     unit: File,
     builder: DiffGraphBuilder
   ): RecoverForXCompilationUnit[File] = {
-    val newConfig = state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
-    new RecoverForSwiftFile(cpg, unit, builder, state.copy(config = newConfig))
+    new RecoverForSwiftFile(cpg, unit, builder, state)
   }
 
 }
@@ -101,8 +101,8 @@ private class RecoverForSwiftFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder,
     .name
     .toSet
 
-  override protected def isField(i: Identifier): Boolean =
-    state.isFieldCache.getOrElseUpdate(i.id(), exportedIdentifiers.contains(i.name) || super.isField(i))
+  override protected def isFieldUncached(i: Identifier): Boolean =
+    exportedIdentifiers.contains(i.name) || super.isFieldUncached(i)
 
   override protected def visitIdentifierAssignedToConstructor(i: Identifier, c: Call): Set[String] = {
     val constructorPaths = if (c.methodFullName.endsWith(".alloc")) {

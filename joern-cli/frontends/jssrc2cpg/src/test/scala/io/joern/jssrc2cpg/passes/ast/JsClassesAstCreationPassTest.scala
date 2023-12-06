@@ -2,11 +2,9 @@ package io.joern.jssrc2cpg.passes.ast
 
 import io.joern.jssrc2cpg.passes.AbstractPassTest
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.Identifier
-import io.shiftleft.codepropertygraph.generated.nodes.MethodRef
-import io.shiftleft.codepropertygraph.generated.ModifierTypes
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, MethodRef}
+import io.shiftleft.semanticcpg.language.*
 
 class JsClassesAstCreationPassTest extends AbstractPassTest {
 
@@ -28,9 +26,9 @@ class JsClassesAstCreationPassTest extends AbstractPassTest {
         |function sink(par1) {}
         |""".stripMargin) { cpg =>
       val List(x1, x2) = cpg.local("x").l
-      x1._blockViaAstIn should not be empty
+      x1.parentBlock should not be empty
       x1.referencingIdentifiers.name.l shouldBe List("x")
-      x2._blockViaAstIn should not be empty
+      x2.parentBlock should not be empty
       x2.referencingIdentifiers.name.l shouldBe List("x")
     }
 

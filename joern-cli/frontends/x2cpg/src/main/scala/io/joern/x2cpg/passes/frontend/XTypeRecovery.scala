@@ -4,7 +4,7 @@ import io.joern.x2cpg.{Defines, X2CpgConfig}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, Operators, PropertyNames}
-import io.shiftleft.passes.CpgPass
+import io.shiftleft.passes.{CpgPass, CpgPassBase, ForkJoinParallelCpgPass}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.importresolver.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
@@ -24,7 +24,7 @@ import scala.util.matching.Regex
 /** @param iterations
   *   the number of iterations to run.
   * @param enabledDummyTypes
-  *   whether to enable placeholder dummy values for partially resolved types.
+  *   whether to enable placeholder dummy values for partially resolved types during the final iteration.
   */
 case class XTypeRecoveryConfig(iterations: Int = 2, enabledDummyTypes: Boolean = true)
 
@@ -32,69 +32,17 @@ case class XTypeRecoveryConfig(iterations: Int = 2, enabledDummyTypes: Boolean =
   *   the user defined config.
   * @param currentIteration
   *   the current iteration.
-  * @param isFieldCache
-  *   a cache for answering if a node represents a field or member.
-  * @param changesWereMade
-  *   a flag to indicate that changes were made in the last iteration.
-  * @param stopEarly
-  *   indicates that we may stop type propagation earlier than the specified number of iterations.
   */
-case class XTypeRecoveryState(
-  config: XTypeRecoveryConfig = XTypeRecoveryConfig(),
-  currentIteration: Int = 0,
-  isFieldCache: TrieMap[Long, Boolean] = TrieMap.empty[Long, Boolean],
-  changesWereMade: AtomicBoolean = new AtomicBoolean(false),
-  stopEarly: AtomicBoolean
-) {
-  lazy val isFinalIteration: Boolean = currentIteration == config.iterations - 1
+class XTypeRecoveryState(val config: XTypeRecoveryConfig = XTypeRecoveryConfig(), var currentIteration: Int = 0) {
+  def isFinalIteration: Boolean = currentIteration == config.iterations - 1
 
-  lazy val isFirstIteration: Boolean = currentIteration == 0
+  def enableDummyTypesForThisIteration: Boolean = isFinalIteration && config.enabledDummyTypes
 
-  def clear(): Unit = isFieldCache.clear()
-
+  def isFirstIteration: Boolean = currentIteration == 0
 }
 
-/** In order to propagate types across compilation units, but avoid the poor scalability of a fixed-point algorithm, the
-  * number of iterations can be configured using the iterations parameter. Note that iterations < 2 will not provide any
-  * interprocedural type recovery capabilities.
-  * @param cpg
-  *   the CPG to recovery types for.
-  *
-  * @tparam CompilationUnitType
-  *   the AstNode type used to represent a compilation unit of the language.
-  */
-abstract class XTypeRecoveryPass[CompilationUnitType <: AstNode](
-  cpg: Cpg,
-  config: XTypeRecoveryConfig = XTypeRecoveryConfig()
-) extends CpgPass(cpg) {
-
-  override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit =
-    if (config.iterations > 0) {
-      val stopEarly = new AtomicBoolean(false)
-      val state     = XTypeRecoveryState(config, stopEarly = stopEarly)
-      try {
-        Iterator.from(0).takeWhile(_ < config.iterations).foreach { i =>
-          val newState = state.copy(currentIteration = i)
-          generateRecoveryPass(newState).createAndApply()
-        }
-        // If dummy values are enabled and we are stopping early, we need one more round to propagate these dummy values
-        if (stopEarly.get() && config.enabledDummyTypes) {
-          generateRecoveryPass(state.copy(currentIteration = config.iterations - 1)).createAndApply()
-        }
-      } finally {
-        state.clear()
-      }
-    }
-
-  protected def generateRecoveryPass(state: XTypeRecoveryState): XTypeRecovery[CompilationUnitType]
-
-  /** A hook for the end of the type recovery and propagation.
-    */
-  protected def postTypeRecoveryAndPropagation(builder: DiffGraphBuilder): Unit = {
-    linkMembersToTheirRefs(builder)
-  }
-
-  private def linkMembersToTheirRefs(builder: DiffGraphBuilder): Unit = {
+object XTypeRecoveryPassGenerator {
+  private def linkMembersToTheirRefs(cpg: Cpg, builder: DiffGraphBuilder): Unit = {
     import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromIteratorExt
     import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
 
@@ -124,6 +72,43 @@ abstract class XTypeRecoveryPass[CompilationUnitType <: AstNode](
           .foreach(builder.addEdge(fieldAccess, _, EdgeTypes.REF))
       }
   }
+
+}
+
+/** In order to propagate types across compilation units, but avoid the poor scalability of a fixed-point algorithm, the
+  * number of iterations can be configured using the iterations parameter. Note that iterations < 2 will not provide any
+  * interprocedural type recovery capabilities.
+  * @param cpg
+  *   the CPG to recovery types for.
+  *
+  * @tparam CompilationUnitType
+  *   the AstNode type used to represent a compilation unit of the language.
+  */
+abstract class XTypeRecoveryPassGenerator[CompilationUnitType <: AstNode](
+  cpg: Cpg,
+  config: XTypeRecoveryConfig = XTypeRecoveryConfig()
+) {
+
+  def generate(): List[CpgPassBase] = {
+    val state = new XTypeRecoveryState(config)
+    val res   = mutable.ArrayBuffer[CpgPassBase]()
+    for (i <- Range(0, config.iterations)) {
+      res.append(generateRecoveryPass(state, i))
+    }
+    if (postTypeRecoveryAndPropagation)
+      res.append(
+        new CpgPass(cpg):
+          override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+            XTypeRecoveryPassGenerator.linkMembersToTheirRefs(cpg, builder)
+          }
+      )
+    res.toList
+  }
+
+  /** A hook for the end of the type recovery and propagation.
+    */
+  protected def postTypeRecoveryAndPropagation: Boolean = false
+  protected def generateRecoveryPass(state: XTypeRecoveryState, iteration: Int): XTypeRecovery[CompilationUnitType]
 
 }
 
@@ -166,21 +151,25 @@ trait TypeRecoveryParserConfig[R <: X2CpgConfig[R]] { this: R =>
   * @tparam CompilationUnitType
   *   the AstNode type used to represent a compilation unit of the language.
   */
-abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, state: XTypeRecoveryState) extends CpgPass(cpg) {
+abstract class XTypeRecovery[CompilationUnitType <: AstNode](cpg: Cpg, state: XTypeRecoveryState, iteration: Int)
+    extends ForkJoinParallelCpgPass[CompilationUnitType](cpg) {
 
-  override def run(builder: DiffGraphBuilder): Unit = {
-    val changesWereMade = compilationUnit
-      .map(unit => generateRecoveryForCompilationUnitTask(unit, builder).fork())
-      .map(_.get)
-      .reduceOption((a, b) => a || b)
-      .getOrElse(false)
-    if (!changesWereMade) state.stopEarly.set(true)
+  // fixme: neable or disable?
+  override def isParallel: Boolean = true
+  override def init(): Unit = {
+    super.init()
+    state.currentIteration = iteration
   }
+
+  override def generateParts(): Array[AnyRef] = compilationUnits.toArray[AnyRef]
+
+  override def runOnPart(builder: DiffGraphBuilder, part: CompilationUnitType): Unit =
+    generateRecoveryForCompilationUnitTask(part, builder).run()
 
   /** @return
     *   the compilation units as per how the language is compiled. e.g. file.
     */
-  def compilationUnit: Iterator[CompilationUnitType]
+  def compilationUnits: Iterator[CompilationUnitType]
 
   /** A factory method to generate a [[RecoverForXCompilationUnit]] task with the given parameters.
     *
@@ -281,7 +270,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   cu: CompilationUnitType,
   builder: DiffGraphBuilder,
   state: XTypeRecoveryState
-) extends RecursiveTask[Boolean] {
+) extends Runnable {
 
   import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
   import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromIteratorExt
@@ -290,7 +279,11 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   /** Stores type information for local structures that live within this compilation unit, e.g. local variables.
     */
-  protected val symbolTable = new SymbolTable[LocalKey](SBKey.fromNodeToLocalKey)
+  protected val symbolTable = new SymbolTable[LocalKey](fromNodeToLocalKey)
+
+  protected val isFieldCache = mutable.HashMap[Identifier, Boolean]()
+
+  protected def fromNodeToLocalKey(node: AstNode): Option[LocalKey] = SBKey.fromNodeToLocalKey(node)
 
   /** The root of the target codebase.
     */
@@ -350,7 +343,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     case x         => x.ast.isCall.referencedImports
   }
 
-  override def compute(): Boolean = try {
+  override def run(): Unit = {
     // Set known aliases that point to imports for local and external methods/modules
     importNodes.foreach(visitImport)
     // Look at symbols with existing type info
@@ -365,10 +358,6 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     setTypeInformation()
     // Entrypoint for any final changes
     postSetTypeInformation()
-    // Return number of changes
-    state.changesWereMade.get()
-  } finally {
-    symbolTable.clear()
   }
 
   private def debugLocation(n: AstNode): String = {
@@ -527,8 +516,11 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     *
     * This has found to be an expensive operation accessed often so we have memoized this step.
     */
-  protected def isField(i: Identifier): Boolean =
-    state.isFieldCache.getOrElseUpdate(i.id(), i.method.typeDecl.member.nameExact(i.name).nonEmpty)
+  protected final def isField(i: Identifier): Boolean =
+    isFieldCache.getOrElseUpdate(i, isFieldUncached(i))
+
+  protected def isFieldUncached(i: Identifier): Boolean =
+    i.method.typeDecl.member.nameExact(i.name).nonEmpty
 
   /** Associates the types with the identifier. This may sometimes be an identifier that should be considered a field
     * which this method uses [[isField]] to determine.
@@ -970,7 +962,7 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
           setTypeInformationForRecCall(x, x.inCall.headOption, x.inCall.argument.l)
         case x: Call if symbolTable.contains(x) =>
           val typs =
-            if (state.config.enabledDummyTypes) symbolTable.get(x).toSeq
+            if (state.enableDummyTypesForThisIteration) symbolTable.get(x).toSeq
             else symbolTable.get(x).filterNot(XTypeRecovery.isDummyType).toSeq
           storeCallTypeInfo(x, typs)
         case x: Identifier if symbolTable.contains(CallAlias(x.name)) && x.inCall.nonEmpty =>
@@ -1088,7 +1080,6 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
             }
             .filterNot(_.astChildren.isMethodRef.exists(_.methodFullName == mRef.methodFullName))
             .foreach { inCall =>
-              state.changesWereMade.compareAndSet(false, true)
               integrateMethodRef(funcPtr, m, mRef, inCall)
             }
         }
@@ -1127,7 +1118,8 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   }
 
   protected def persistType(x: StoredNode, types: Set[String]): Unit = {
-    val filteredTypes = if (state.config.enabledDummyTypes) types else types.filterNot(XTypeRecovery.isDummyType)
+    val filteredTypes =
+      if (state.enableDummyTypesForThisIteration) types else types.filterNot(XTypeRecovery.isDummyType)
     if (filteredTypes.nonEmpty) {
       storeNodeTypeInfo(x, filteredTypes.toSeq)
       x match {
@@ -1196,7 +1188,6 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
         case c: Call if !c.name.startsWith("<operator>") => storeCallTypeInfo(c, types)
         case _: Call                                     =>
         case n =>
-          state.changesWereMade.compareAndSet(false, true)
           setTypes(n, types)
       }
     }
@@ -1204,7 +1195,6 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
 
   protected def storeCallTypeInfo(c: Call, types: Seq[String]): Unit =
     if (types.nonEmpty) {
-      state.changesWereMade.compareAndSet(false, true)
       builder.setNodeProperty(
         c,
         PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME,
@@ -1221,7 +1211,6 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     */
   protected def storeDefaultTypeInfo(n: StoredNode, types: Seq[String]): Unit =
     if (types.toSet != n.getKnownTypes) {
-      state.changesWereMade.compareAndSet(false, true)
       setTypes(n, (n.property(PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, Seq.empty) ++ types).distinct)
     }
 
@@ -1235,7 +1224,10 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
   /** Allows one to modify the types assigned to locals.
     */
   protected def storeLocalTypeInfo(l: Local, types: Seq[String]): Unit = {
-    storeDefaultTypeInfo(l, if (state.config.enabledDummyTypes) types else types.filterNot(XTypeRecovery.isDummyType))
+    storeDefaultTypeInfo(
+      l,
+      if (state.enableDummyTypesForThisIteration) types else types.filterNot(XTypeRecovery.isDummyType)
+    )
   }
 
   /** Allows an implementation to perform an operation once type persistence is complete.
