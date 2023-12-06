@@ -23,7 +23,7 @@ class Workspace[ProjectType <: Project](var projects: ListBuffer[ProjectType]) {
       "empty"
     } else {
       // TODO get help back
-      ???
+      ""
 //      """
 //        |Overview of all projects present in your workspace. You can use `open` and `close`
 //        |to load and unload projects respectively. `cpgs` allows you to query all projects

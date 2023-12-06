@@ -74,17 +74,19 @@ object Run {
       .mkString("\n")
 
     val toStringCode =
-      s"""
-         |  import overflowdb.traversal.help.Table
-         |  override def toString() : String = {
-         |    val columnNames = List("name", "description")
-         |    val rows =
-         |      ${layerCreatorTypeNames.map { case (varName, typeName) =>
-          s"""List("$varName",$typeName.description.trim)"""
-        }}
-         |    "\\n" + Table(columnNames, rows).render
-         |  }
-         |""".stripMargin
+      // TODO reimplement
+      ""
+//      s"""
+//         |  import overflowdb.traversal.help.Table
+//         |  override def toString() : String = {
+//         |    val columnNames = List("name", "description")
+//         |    val rows =
+//         |      ${layerCreatorTypeNames.map { case (varName, typeName) =>
+//          s"""List("$varName",$typeName.description.trim)"""
+//        }}
+//         |    "\\n" + Table(columnNames, rows).render
+//         |  }
+//         |""".stripMargin
 
     optsCode +
       s"""

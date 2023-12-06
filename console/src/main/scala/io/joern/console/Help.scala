@@ -60,7 +60,7 @@ object Help {
 
   def codeForHelpCommand(clazz: Class[_]): String = {
     // TODO get help back
-    ???
+    ""
 //    val membersCode = DocFinder
 //      .findDocumentedMethodsOf(clazz)
 //      .map { case StepDoc(_, funcName, doc) =>
