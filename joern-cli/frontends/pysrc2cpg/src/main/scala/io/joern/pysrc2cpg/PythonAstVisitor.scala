@@ -1418,7 +1418,7 @@ class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode
     */
   // TODO test
   def convert(dict: ast.Dict): NewNode = {
-    val MAX_KV_PAIRS = 1000
+    val MAX_KV_PAIRS    = 1000
     val tmpVariableName = getUnusedName()
     val dictOperatorCall =
       createLiteralOperatorCall("{", "}", "<operator>.dictLiteral", lineAndColOf(dict))
@@ -1426,7 +1426,10 @@ class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode
       createAssignmentToIdentifier(tmpVariableName, dictOperatorCall, lineAndColOf(dict))
 
     val dictElementAssignNodes = if (dict.keys.size > MAX_KV_PAIRS) {
-       Seq(nodeBuilder.callNode("<too-many-key-value-pairs>", Constants.ANY, DispatchTypes.STATIC_DISPATCH, lineAndColOf(dict)))
+      Seq(
+        nodeBuilder
+          .callNode("<too-many-key-value-pairs>", Constants.ANY, DispatchTypes.STATIC_DISPATCH, lineAndColOf(dict))
+      )
     } else {
       dict.keys.zip(dict.values).map { case (key, value) =>
         key match {
