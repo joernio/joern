@@ -116,7 +116,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     // TODO: handle defaultValue
     val name = code(node.firstName)
     val tpe  = code(node.`type`)
-    registerType(tpe, tpe)
+    registerType(tpe)
     val parameterNode =
       parameterInNode(
         node,

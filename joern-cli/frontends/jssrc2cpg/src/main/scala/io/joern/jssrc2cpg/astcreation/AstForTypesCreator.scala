@@ -22,7 +22,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     } else {
       typeFor(createBabelNodeInfo(alias.json))
     }
-    registerType(aliasName, aliasFullName)
+    registerType(aliasFullName)
 
     val astParentType     = methodAstParentStack.head.label
     val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
@@ -43,7 +43,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         astParentFullName,
         alias = Option(aliasFullName)
       )
-      registerType(typeName, typeFullName)
+      registerType(typeFullName)
       diffGraph.addEdge(methodAstParentStack.head, typeDeclNode_, EdgeTypes.AST)
     } else {
       seenAliasTypes.find(t => t.name == name).foreach(_.aliasTypeFullName(aliasFullName))
@@ -217,7 +217,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
   protected def astForEnum(tsEnum: BabelNodeInfo): Ast = {
     val (typeName, typeFullName) = calcTypeNameAndFullName(tsEnum)
-    registerType(typeName, typeFullName)
+    registerType(typeFullName)
 
     val astParentType     = methodAstParentStack.head.label
     val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
@@ -299,7 +299,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
   protected def astForClass(clazz: BabelNodeInfo, shouldCreateAssignmentCall: Boolean = false): Ast = {
     val (typeName, typeFullName) = calcTypeNameAndFullName(clazz)
-    registerType(typeName, typeFullName)
+    registerType(typeFullName)
 
     val astParentType     = methodAstParentStack.head.label
     val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
@@ -452,7 +452,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
   protected def astForInterface(tsInterface: BabelNodeInfo): Ast = {
     val (typeName, typeFullName) = calcTypeNameAndFullName(tsInterface)
-    registerType(typeName, typeFullName)
+    registerType(typeFullName)
 
     val astParentType     = methodAstParentStack.head.label
     val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString

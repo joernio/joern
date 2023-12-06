@@ -15,10 +15,14 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
   * Alternatively, set `getTypesFromCpg = true`. If this is set, the `registeredTypes` argument will be ignored.
   * Instead, type nodes will be created for every unique `TYPE_FULL_NAME` value in the CPG.
   */
-class TypeNodePass private (registeredTypes: List[String], cpg: Cpg, keyPool: Option[KeyPool], getTypesFromCpg: Boolean)
-    extends CpgPass(cpg, "types", keyPool) {
+class TypeNodePass protected (
+  registeredTypes: List[String],
+  cpg: Cpg,
+  keyPool: Option[KeyPool],
+  getTypesFromCpg: Boolean
+) extends CpgPass(cpg, "types", keyPool) {
 
-  private def getTypeDeclTypes(): mutable.Set[String] = {
+  protected def typeDeclTypes: mutable.Set[String] = {
     val typeDeclTypes = mutable.Set[String]()
     cpg.typeDecl.foreach { typeDecl =>
       typeDeclTypes += typeDecl.fullName
@@ -27,7 +31,7 @@ class TypeNodePass private (registeredTypes: List[String], cpg: Cpg, keyPool: Op
     typeDeclTypes
   }
 
-  def getTypeFullNamesFromCpg(): Set[String] = {
+  protected def typeFullNamesFromCpg: Set[String] = {
     cpg.all
       .map(_.property(PropertyNames.TYPE_FULL_NAME))
       .filter(_ != null)
@@ -38,20 +42,14 @@ class TypeNodePass private (registeredTypes: List[String], cpg: Cpg, keyPool: Op
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     val typeFullNameValues =
       if (getTypesFromCpg)
-        getTypeFullNamesFromCpg()
+        typeFullNamesFromCpg
       else
         registeredTypes.toSet
 
-    val usedTypesSet = getTypeDeclTypes() ++ typeFullNameValues
+    val usedTypesSet = typeDeclTypes ++ typeFullNameValues
     usedTypesSet.remove("<empty>")
-    val usedTypes = usedTypesSet.filterInPlace(!_.endsWith(NamespaceTraversal.globalNamespaceName)).toArray.sorted
-
-    diffGraph.addNode(
-      NewType()
-        .name("ANY")
-        .fullName("ANY")
-        .typeDeclFullName("ANY")
-    )
+    val usedTypes =
+      (usedTypesSet.filterInPlace(!_.endsWith(NamespaceTraversal.globalNamespaceName)).toArray :+ "ANY").toSet.sorted
 
     usedTypes.foreach { typeName =>
       val shortName = fullToShortName(typeName)
@@ -81,8 +79,11 @@ object TypeNodePass {
 
   def fullToShortName(typeName: String): String = {
     typeName match {
-      case lambdaTypeRegex(methodName) => methodName
-      case _                           => typeName.split('.').lastOption.getOrElse(typeName)
+      case lambdaTypeRegex(methodName)                                   => methodName
+      case name if name.endsWith(":program")                             => ":program" // for JavaScript only atm.
+      case name if name.endsWith(NamespaceTraversal.globalNamespaceName) => NamespaceTraversal.globalNamespaceName
+      case name if name.contains(":") => name.split(':').lastOption.getOrElse(typeName)
+      case _                          => typeName.split('.').lastOption.getOrElse(typeName)
     }
   }
 }

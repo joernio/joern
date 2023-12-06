@@ -3,6 +3,7 @@ package io.joern.jssrc2cpg.passes
 import better.files.File
 import io.joern.jssrc2cpg.utils.AstGenRunner
 import io.joern.jssrc2cpg.Config
+import io.joern.jssrc2cpg.datastructures.JsGlobal
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
 import io.shiftleft.codepropertygraph.Cpg
@@ -25,6 +26,7 @@ abstract class AbstractPassTest extends AnyWordSpec with Matchers with Inside {
         val config       = Config(tsTypes = tsTypes).withInputPath(dir.toString).withOutputPath(dir.toString)
         val astGenResult = new AstGenRunner(config).execute(dir)
         new AstCreationPass(cpg, astGenResult, config).createAndApply()
+        JavaScriptTypeNodePass.withRegisteredTypes(JsGlobal.typesSeen(), cpg).createAndApply()
         f(cpg)
         file.delete()
       }
@@ -41,8 +43,7 @@ abstract class AbstractPassTest extends AnyWordSpec with Matchers with Inside {
         val astGenResult    = new AstGenRunner(config).execute(dir)
         val astCreationPass = new AstCreationPass(cpg, astGenResult, config)
         astCreationPass.createAndApply()
-        new TypeNodePass(astCreationPass.allUsedTypes(), cpg).createAndApply()
-        new BuiltinTypesPass(cpg).createAndApply()
+        JavaScriptTypeNodePass.withRegisteredTypes(JsGlobal.typesSeen(), cpg).createAndApply()
         f(cpg)
         file.delete()
       }
@@ -61,8 +62,7 @@ abstract class AbstractPassTest extends AnyWordSpec with Matchers with Inside {
         val astGenResult    = new AstGenRunner(config).execute(dir)
         val astCreationPass = new AstCreationPass(cpg, astGenResult, config)
         astCreationPass.createAndApply()
-        new TypeNodePass(astCreationPass.allUsedTypes(), cpg).createAndApply()
-        new BuiltinTypesPass(cpg).createAndApply()
+        JavaScriptTypeNodePass.withRegisteredTypes(JsGlobal.typesSeen(), cpg).createAndApply()
         f(cpg)
         file1.delete()
         file2.delete()

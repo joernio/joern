@@ -12,8 +12,6 @@ import io.shiftleft.utils.IOUtils
 import org.slf4j.{Logger, LoggerFactory}
 
 import java.nio.file.Paths
-import java.util.concurrent.ConcurrentHashMap
-import scala.jdk.CollectionConverters.EnumerationHasAsScala
 import scala.util.{Failure, Success, Try}
 
 class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: Config, report: Report = new Report())(
@@ -22,12 +20,7 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[AstCreationPass])
 
-  private val usedTypes: ConcurrentHashMap[(String, String), Boolean] = new ConcurrentHashMap()
-
   override def generateParts(): Array[(String, String)] = astGenRunnerResult.parsedFiles.toArray
-
-  def allUsedTypes(): List[(String, String)] =
-    usedTypes.keys().asScala.filterNot { case (typeName, _) => typeName == Defines.Any }.toList
 
   override def finish(): Unit = {
     astGenRunnerResult.skippedFiles.foreach { skippedFile =>
@@ -45,7 +38,7 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
       val fileLOC     = IOUtils.readLinesInFile(Paths.get(parseResult.fullPath)).size
       report.addReportInfo(parseResult.filename, fileLOC, parsed = true)
       Try {
-        val localDiff = new AstCreator(config, parseResult, usedTypes).createAst()
+        val localDiff = new AstCreator(config, parseResult).createAst()
         diffGraph.absorb(localDiff)
       } match {
         case Failure(exception) =>

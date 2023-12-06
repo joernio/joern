@@ -10,7 +10,7 @@ class JsMetaDataPassTest extends AbstractPassTest {
 
   "MetaDataPass" should {
     val cpg = Cpg.emptyCpg
-    new JsMetaDataPass(cpg, "somehash", "").createAndApply()
+    new JavaScriptMetaDataPass(cpg, "somehash", "").createAndApply()
 
     "create exactly 1 node" in {
       cpg.graph.V.asScala.size shouldBe 1
