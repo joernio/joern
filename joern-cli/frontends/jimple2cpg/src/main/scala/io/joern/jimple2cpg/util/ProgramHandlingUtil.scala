@@ -42,24 +42,32 @@ object ProgramHandlingUtil {
     * @param src
     *   The file/directory to traverse
     * @param emitOrUnpack
-    *   A function that takes a file and either emits a value or returns more files to traverse
+    *   A function that takes a file and either emits a value or returns more files to traverse.
+    *   The key of Right was used to identify whether the file was unfold from an archive
+    * @param maxDepth
+    *   The max recursion depth of unpacking an archive (e.g. jars inside jars)
     * @tparam A
     *   The type of emitted values
     * @return
     *   The emitted values
     */
-  private def unfoldArchives[A](src: File, emitOrUnpack: File => Either[A, Map[Boolean, List[File]]], deep: Int): IterableOnce[A] = {
-    // TODO: add recursion depth limit
-    emitOrUnpack(src) match {
-      case Left(a)             => Seq(a)
-      case Right(disposeFiles) => disposeFiles.flatMap(
-        x =>
-          if (x._1)
-            unfoldArchives(x, emitOrUnpack, deep + 1)
-          else
-            unfoldArchives(x, emitOrUnpack, deep)
-      )
-    }
+  private def unfoldArchives[A](src: File, emitOrUnpack: File => Either[A, Map[Boolean, List[File]]], maxDepth: Int): IterableOnce[A] = {
+    if (maxDepth < -1)
+      logger.warn("Maximum recursion depth reached.")
+      Seq()
+    else
+      emitOrUnpack(src) match {
+        case Left(a)             => Seq(a)
+        case Right(disposeFiles) => disposeFiles.flatMap(
+          x => x._2.flatMap(
+            f =>
+              if (x._1)
+                unfoldArchives(f, emitOrUnpack, maxDepth - 1)
+              else
+                unfoldArchives(f, emitOrUnpack, maxDepth)
+          )
+        )
+      }
   }
 
   /** Find <pre>.class</pre> files, including those inside archives.
@@ -72,6 +80,10 @@ object ProgramHandlingUtil {
     *   Whether an entry is an archive to extract
     * @param isClass
     *   Whether an entry is a class file
+    * @param recurse
+    *    Whether to unpack recursively
+    * @param depths
+    *    Maximum depths of recurse
     * @return
     *   The list of class files found, which may either be in [[src]] or in an extracted archive under [[tmpDir]]
     */
@@ -80,27 +92,22 @@ object ProgramHandlingUtil {
     tmpDir: File,
     isArchive: Entry => Boolean,
     isClass: Entry => Boolean,
-    recurse: Boolean
+    recurse: Boolean,
+    depths: Int
   ): IterableOnce[ClassFile] = {
 
     // filter archive file unless recurse was enabled
     def shouldExtract(e: Entry) = !e.isZipSlip && e.maybeRegularFile() && ((isArchive(e) && recurse) || isClass(e))
     val subOfSrc                = src.listRecursively.filterNot(_.isDirectory).toList
-    var cnt = 0
-    var par = false
     unfoldArchives(
       src,
       {
         case f if isClass(Entry(f)) =>
-          par = false
           Left(ClassFile(f))
         case f if f.isDirectory() =>
           val files = f.listRecursively.filterNot(_.isDirectory).toList
-          par = false
-          Right(files)
-        case f
-            if isArchive(Entry(f)) && (f == src
-              || (src.isDirectory() && subOfSrc.contains(f)) || recurse) =>
+          Right(Map(false -> files))
+        case f if isArchive(Entry(f)) && (f == src || (src.isDirectory() && subOfSrc.contains(f)) || recurse) =>
           val xTmp = File.newTemporaryDirectory("extract-archive-", parent = Some(tmpDir))
           val unzipDirs = Try(f.unzipTo(xTmp, e => shouldExtract(Entry(e)))) match {
             case Success(dir) => List(dir)
@@ -108,14 +115,12 @@ object ProgramHandlingUtil {
               logger.warn(s"Failed to extract archive", e)
               List.empty
           }
-          par = true
-          Right(unzipDirs)
+          // This can always be ture, since the archive file was filter by shouldExtract if not enable recurse options.
+          Right(Map(true -> unzipDirs))
         case _ =>
-          par = false
-          Right(List.empty)
+          Right(Map(false -> List.empty))
       },
-      0,
-      par
+      depths
     )
   }
 
@@ -198,6 +203,8 @@ object ProgramHandlingUtil {
     *   Whether an entry is a class file
     * @param recurse
     *   Whether to unpack recursively
+    * @param depths
+    *    Maximum depths of recurse
     * @return
     *   The copied class files in destDir
     */
@@ -206,12 +213,13 @@ object ProgramHandlingUtil {
     destDir: File,
     isClass: Entry => Boolean,
     isArchive: Entry => Boolean,
-    recurse: Boolean
+    recurse: Boolean,
+    depths: Int
   ): List[ClassFile] =
     File
       .temporaryDirectory("extract-classes-")
       .apply(tmpDir =>
-        extractClassesToTmp(src, tmpDir, isArchive, isClass, recurse: Boolean).iterator
+        extractClassesToTmp(src, tmpDir, isArchive, isClass, recurse: Boolean, depths: Int).iterator
           .flatMap(_.copyToPackageLayoutIn(destDir))
           .toList
       )

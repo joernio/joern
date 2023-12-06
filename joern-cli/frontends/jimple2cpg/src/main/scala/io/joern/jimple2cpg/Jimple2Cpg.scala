@@ -46,33 +46,39 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
   /** Load all class files from archives or directories recursively
     * @param recurse
     *   Whether to unpack recursively
+    * @param depths
+    *   Maximum depths of recurse
     * @return
     *   The list of extracted class files whose package path could be extracted, placed on that package path relative to
     *   [[tmpDir]]
     */
-  private def loadClassFiles(src: File, tmpDir: File, recurse: Boolean): List[ClassFile] = {
+  private def loadClassFiles(src: File, tmpDir: File, recurse: Boolean, depths: Int): List[ClassFile] = {
     val archiveFileExtensions = Set(".jar", ".war", ".zip")
     extractClassesInPackageLayout(
       src,
       tmpDir,
       isClass = e => e.extension.contains(".class"),
       isArchive = e => e.extension.exists(archiveFileExtensions.contains),
-      recurse
+      recurse,
+      depths
     )
   }
 
   /** Extract all class files found, place them in their package layout and load them into soot.
-    * @param input
+   *
+   * @param input
     *   The file/directory to traverse for class files.
     * @param tmpDir
     *   The directory to place the class files in their package layout
     * @param recurse
     *   Whether to unpack recursively
+    * @param depths
+    *   Maximum depths of recurse
     */
-  private def sootLoad(input: File, tmpDir: File, recurse: Boolean): List[ClassFile] = {
+  private def sootLoad(input: File, tmpDir: File, recurse: Boolean, depths: Int): List[ClassFile] = {
     Options.v().set_soot_classpath(tmpDir.canonicalPath)
     Options.v().set_prepend_classpath(true)
-    val classFiles               = loadClassFiles(input, tmpDir, recurse)
+    val classFiles               = loadClassFiles(input, tmpDir, recurse, depths)
     val fullyQualifiedClassNames = classFiles.flatMap(_.fullyQualifiedClassName)
     logger.info(s"Loading ${classFiles.size} program files")
     logger.debug(s"Source files are: ${classFiles.map(_.file.canonicalPath)}")
@@ -101,7 +107,7 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
           astCreator.global
         }
       case _ =>
-        val classFiles = sootLoad(input, tmpDir, config.recurse)
+        val classFiles = sootLoad(input, tmpDir, config.recurse, config.depths)
         { () =>
           val astCreator = AstCreationPass(classFiles, cpg, config)
           astCreator.createAndApply()
