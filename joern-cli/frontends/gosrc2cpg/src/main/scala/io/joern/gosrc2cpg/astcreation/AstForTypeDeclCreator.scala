@@ -81,6 +81,7 @@ trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { thi
     )
     (identifierAsts, fieldTypeFullName)
   }
+
   protected def astForFieldAccess(info: ParserNodeInfo): Seq[Ast] = {
     val (identifierAsts, fieldTypeFullName) = processReceiver(info)
     val fieldIdentifier                     = info.json(ParserKeys.Sel)(ParserKeys.Name).str

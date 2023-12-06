@@ -1607,8 +1607,12 @@ class MethodTests extends GoCodeToCpgSuite {
     }
 
     "Check fieldAccess node for global variable access" in {
-      val List(x) = cpg.call(Operators.fieldAccess).l
-      x.typeFullName shouldBe "string"
+      val List(a, b, c) = cpg.call(Operators.fieldAccess).l
+      a.typeFullName shouldBe "string"
+      b.typeFullName shouldBe "main.Name"
+      b.code shouldBe "person"
+      c.typeFullName shouldBe "string"
+      c.code shouldBe "personName"
     }
   }
 

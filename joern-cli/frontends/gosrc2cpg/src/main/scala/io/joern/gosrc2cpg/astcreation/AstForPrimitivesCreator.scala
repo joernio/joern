@@ -83,7 +83,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     }
   }
 
-  private def astForPackageGlobalFieldAccess(
+  protected def astForPackageGlobalFieldAccess(
     fieldTypeFullName: String,
     identifierName: String,
     ident: ParserNodeInfo

@@ -76,7 +76,8 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
           .flatMap { parserNode =>
             val localParserNode = createParserNodeInfo(parserNode)
             if globalStatements then {
-              astForGlobalVarAndConstants(typeFullName.getOrElse(Defines.anyTypeName), localParserNode)
+              if !recordVar then
+                astForGlobalVarAndConstants(typeFullName.getOrElse(Defines.anyTypeName), localParserNode)
               Seq.empty
             } else {
               Seq(astForLocalNode(localParserNode, typeFullName, recordVar)) ++: astForNode(localParserNode)
@@ -96,7 +97,7 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
   ): (Ast, Ast) = {
     val rhsAst          = astForBooleanLiteral(rhsParserNode)
     val rhsTypeFullName = typeFullName.getOrElse(getTypeFullNameFromAstNode(rhsAst))
-    if (globalStatements) {
+    if (globalStatements && !recordVar) {
       astForGlobalVarAndConstants(rhsTypeFullName, lhsParserNode, Some(rhsAst))
       (Ast(), Ast())
     } else {
@@ -128,6 +129,24 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
         .astParentFullName(fullyQualifiedPackage)
     )
     Ast.storeInDiffGraph(memberAst, diffGraph)
+    rhsAst match
+      case Some(rhsSeqAst) =>
+        // Only in case rhs ast is present then the respective variable or constant will be added as part
+        // of package level initializer/constructor statement
+        val lhsAst    = astForPackageGlobalFieldAccess(typeFullName, name, lhsParserNode)
+        val arguments = Seq(lhsAst) ++: rhsSeqAst
+        val cNode = callNode(
+          lhsParserNode,
+          lhsParserNode.code,
+          Operators.assignment,
+          Operators.assignment,
+          DispatchTypes.STATIC_DISPATCH,
+          None,
+          Some(typeFullName)
+        )
+        GoGlobal.recordPkgLevelVarAndConstantAst(fullyQualifiedPackage, callAst(cNode, arguments), relPathFileName)
+      case _ =>
+
   }
 
   protected def astForLocalNode(
