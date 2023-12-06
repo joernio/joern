@@ -1,19 +1,19 @@
 package io.joern.gosrc2cpg.parser
 
+import io.circe.parser.*
+import io.joern.gosrc2cpg.model.CirceEnDe.decoderModMetadata
 import io.joern.gosrc2cpg.model.GoMod
+import io.joern.x2cpg.astgen.ParserResult
 import io.shiftleft.utils.IOUtils
+import org.slf4j.LoggerFactory
 import ujson.Value.Value
 
 import java.nio.file.{Path, Paths}
-import io.circe.parser._
-import io.joern.gosrc2cpg.model.CirceEnDe.decoderModMetadata
-import org.slf4j.LoggerFactory
-
 import scala.util.Try
 
 object GoAstJsonParser {
+
   private val logger = LoggerFactory.getLogger(getClass)
-  case class ParserResult(filename: String, fullPath: String, json: Value, fileContent: String)
 
   def readFile(file: Path): ParserResult = {
     val jsonContent       = IOUtils.readLinesInFile(file).mkString

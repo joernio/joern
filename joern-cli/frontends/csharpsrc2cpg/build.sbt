@@ -21,10 +21,7 @@ astGenVersion := appProperties.value.getString("csharpsrc2cpg.dotnetastgen_versi
 
 libraryDependencies ++= Seq(
   "io.shiftleft"              %% "codepropertygraph" % Versions.cpg,
-  "com.lihaoyi"               %% "upickle"           % Versions.upickle,
   "com.fasterxml.jackson.core" % "jackson-databind"  % "2.15.2",
-  "com.typesafe"               % "config"            % "1.4.2",
-  "com.michaelpollmeier"       % "versionsort"       % "1.0.11",
   "org.scalatest"             %% "scalatest"         % Versions.scalatest % Test
 )
 

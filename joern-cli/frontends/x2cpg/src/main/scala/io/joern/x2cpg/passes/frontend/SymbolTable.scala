@@ -6,6 +6,7 @@ import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.MapView
 import scala.collection.concurrent.TrieMap
+import scala.collection.mutable
 
 /** Represents an identifier of some AST node at a specific scope.
   */
@@ -67,7 +68,7 @@ case class CallAlias(override val identifier: String, receiverName: Option[Strin
   */
 class SymbolTable[K <: SBKey](val keyFromNode: AstNode => Option[K]) {
 
-  private val table = TrieMap.empty[K, Set[String]]
+  private val table = mutable.HashMap.empty[K, Set[String]]
 
   /** The set limit is to bound the set of possible types, since by using dummy types we could have an unbounded number
     * of permutations of various access paths
@@ -150,8 +151,5 @@ class SymbolTable[K <: SBKey](val keyFromNode: AstNode => Option[K]) {
     case None      => Set.empty
   }
 
-  def view: MapView[K, Set[String]] = table.view
-
-  def clear(): Unit = table.clear()
-
+  def itemsCopy: mutable.ArrayBuffer[(K, Set[String])] = mutable.ArrayBuffer.from(table.iterator)
 }

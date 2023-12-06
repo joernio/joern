@@ -5,7 +5,7 @@ import io.joern.javasrc2cpg.passes.{
   AstCreationPass,
   ConfigFileCreationPass,
   JavaTypeHintCallLinker,
-  JavaTypeRecoveryPass,
+  JavaTypeRecoveryPassGenerator,
   TypeInferencePass
 }
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
@@ -56,10 +56,9 @@ object JavaSrc2Cpg {
   def apply(): JavaSrc2Cpg = new JavaSrc2Cpg()
 
   def typeRecoveryPasses(cpg: Cpg, config: Option[Config] = None): List[CpgPassBase] = {
-    List(
-      new JavaTypeRecoveryPass(cpg, XTypeRecoveryConfig(enabledDummyTypes = !config.exists(_.disableDummyTypes))),
-      new JavaTypeHintCallLinker(cpg)
-    )
+    new JavaTypeRecoveryPassGenerator(cpg, XTypeRecoveryConfig(enabledDummyTypes = !config.exists(_.disableDummyTypes)))
+      .generate() ++
+      List(new JavaTypeHintCallLinker(cpg))
   }
 
   def showEnv(): Unit = {

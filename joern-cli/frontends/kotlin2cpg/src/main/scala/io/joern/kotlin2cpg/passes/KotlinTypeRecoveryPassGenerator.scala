@@ -9,34 +9,32 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
-class KotlinTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
-    extends XTypeRecoveryPass[File](cpg, config) {
-  override protected def generateRecoveryPass(state: XTypeRecoveryState): XTypeRecovery[File] =
-    new KotlinTypeRecovery(cpg, state)
+class KotlinTypeRecoveryPassGenerator(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
+    extends XTypeRecoveryPassGenerator[File](cpg, config) {
+  override protected def generateRecoveryPass(state: XTypeRecoveryState, iteration: Int): XTypeRecovery[File] =
+    new KotlinTypeRecovery(cpg, state, iteration)
 }
 
-private class KotlinTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTypeRecovery[File](cpg, state) {
+private class KotlinTypeRecovery(cpg: Cpg, state: XTypeRecoveryState, iteration: Int)
+    extends XTypeRecovery[File](cpg, state, iteration) {
 
-  override def compilationUnit: Iterator[File] = cpg.file.iterator
+  override def compilationUnits: Iterator[File] = cpg.file.iterator
 
   override def generateRecoveryForCompilationUnitTask(
     unit: File,
     builder: DiffGraphBuilder
   ): RecoverForXCompilationUnit[File] = {
-    val newConfig = state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
-    new RecoverForKotlinFile(cpg, unit, builder, state.copy(config = newConfig))
+    new RecoverForKotlinFile(cpg, unit, builder, state)
   }
 }
 
 private class RecoverForKotlinFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, state: XTypeRecoveryState)
     extends RecoverForXCompilationUnit[File](cpg, cu, builder, state) {
 
-  private def kotlinNodeToLocalKey(n: AstNode): Option[LocalKey] = n match {
+  override protected def fromNodeToLocalKey(n: AstNode): Option[LocalKey] = n match {
     case i: Identifier if i.name == "this" && i.code == "super" => Option(LocalVar("super"))
     case _                                                      => SBKey.fromNodeToLocalKey(n)
   }
-
-  override protected val symbolTable = new SymbolTable[LocalKey](kotlinNodeToLocalKey)
 
   override protected def importNodes: Iterator[Import] = cu.ast.isImport
   override protected def visitImport(i: Import): Unit = {
@@ -54,7 +52,7 @@ private class RecoverForKotlinFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
   override protected def isConstructor(name: String): Boolean = !name.isBlank && name.charAt(0).isUpper
 
   override protected def postVisitImports(): Unit = {
-    symbolTable.view.foreach { case (k, ts) =>
+    for ((k, ts) <- symbolTable.itemsCopy) {
       val tss = ts.filterNot(_.startsWith(Defines.UnresolvedNamespace))
       if (tss.isEmpty)
         symbolTable.remove(k)
@@ -71,7 +69,6 @@ private class RecoverForKotlinFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
 
   override protected def storeCallTypeInfo(c: Call, types: Seq[String]): Unit =
     if (types.nonEmpty) {
-      state.changesWereMade.compareAndSet(false, true)
       val signedTypes = types.map {
         case t if t.endsWith(c.signature) => t
         case t                            => s"$t:${c.signature}"

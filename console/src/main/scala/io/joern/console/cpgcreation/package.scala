@@ -34,6 +34,7 @@ package object cpgcreation {
       case Languages.GHIDRA    => Some(GhidraCpgGenerator(conf, rootPath))
       case Languages.KOTLIN    => Some(KotlinCpgGenerator(conf, rootPath))
       case Languages.RUBYSRC   => Some(RubyCpgGenerator(conf, rootPath))
+      case Languages.SWIFTSRC  => Some(SwiftSrcCpgGenerator(conf, rootPath))
       case _                   => None
     }
   }
@@ -102,6 +103,7 @@ package object cpgcreation {
       case f if f.endsWith(".php")   => Some(Languages.PHP)
       case f if f.endsWith(".py")    => Some(Languages.PYTHONSRC)
       case f if f.endsWith(".rb")    => Some(Languages.RUBYSRC)
+      case f if f.endsWith(".swift") => Some(Languages.SWIFTSRC)
       case f if isLlvmFile(f)        => Some(Languages.LLVM)
       case f if isCFile(f)           => Some(Languages.NEWC)
       case _                         => None

@@ -1,15 +1,15 @@
 package io.joern.gosrc2cpg.astcreation
 
 import io.joern.gosrc2cpg.model.GoModHelper
-import io.joern.gosrc2cpg.parser.GoAstJsonParser.ParserResult
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
+import io.joern.x2cpg.astgen.{AstGenNodeBuilder, ParserResult}
 import io.joern.x2cpg.datastructures.Scope
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, AstNodeBuilder as X2CpgAstNodeBuilder}
-import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
+import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import ujson.Value
@@ -29,7 +29,7 @@ class AstCreator(val relPathFileName: String, val parserResult: ParserResult, go
     with AstForMethodCallExpressionCreator
     with CacheBuilder
     with AstForLambdaCreator
-    with X2CpgAstNodeBuilder[ParserNodeInfo, AstCreator] {
+    with AstGenNodeBuilder[AstCreator] {
 
   protected val logger: Logger                                       = LoggerFactory.getLogger(classOf[AstCreator])
   protected val methodAstParentStack: Stack[NewNode]                 = new Stack()

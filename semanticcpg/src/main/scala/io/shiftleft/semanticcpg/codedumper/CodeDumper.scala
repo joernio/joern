@@ -16,7 +16,15 @@ object CodeDumper {
   def arrow(locationFullName: Option[String] = None): CharSequence = s"/* <=== ${locationFullName.getOrElse("")} */ "
 
   private val supportedLanguages =
-    Set(Languages.C, Languages.NEWC, Languages.GHIDRA, Languages.JAVA, Languages.JAVASRC, Languages.JSSRC)
+    Set(
+      Languages.C,
+      Languages.NEWC,
+      Languages.GHIDRA,
+      Languages.JAVA,
+      Languages.JAVASRC,
+      Languages.JSSRC,
+      Languages.SWIFTSRC
+    )
 
   private def toAbsolutePath(path: String, rootPath: String): String = {
     val absolutePath = Paths.get(path) match {

@@ -1418,31 +1418,39 @@ class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode
     */
   // TODO test
   def convert(dict: ast.Dict): NewNode = {
+    val MAX_KV_PAIRS    = 1000
     val tmpVariableName = getUnusedName()
     val dictOperatorCall =
       createLiteralOperatorCall("{", "}", "<operator>.dictLiteral", lineAndColOf(dict))
     val dictVariableAssigNode =
       createAssignmentToIdentifier(tmpVariableName, dictOperatorCall, lineAndColOf(dict))
 
-    val dictElementAssignNodes = dict.keys.zip(dict.values).map { case (key, value) =>
-      key match {
-        case Some(key) =>
-          val indexAccessNode = createIndexAccess(
-            createIdentifierNode(tmpVariableName, Load, lineAndColOf(dict)),
-            convert(key),
-            lineAndColOf(dict)
-          )
+    val dictElementAssignNodes = if (dict.keys.size > MAX_KV_PAIRS) {
+      Seq(
+        nodeBuilder
+          .callNode("<too-many-key-value-pairs>", Constants.ANY, DispatchTypes.STATIC_DISPATCH, lineAndColOf(dict))
+      )
+    } else {
+      dict.keys.zip(dict.values).map { case (key, value) =>
+        key match {
+          case Some(key) =>
+            val indexAccessNode = createIndexAccess(
+              createIdentifierNode(tmpVariableName, Load, lineAndColOf(dict)),
+              convert(key),
+              lineAndColOf(dict)
+            )
 
-          createAssignment(indexAccessNode, convert(value), lineAndColOf(dict))
-        case None =>
-          createXDotYCall(
-            () => createIdentifierNode(tmpVariableName, Load, lineAndColOf(dict)),
-            "update",
-            xMayHaveSideEffects = false,
-            lineAndColOf(dict),
-            convert(value) :: Nil,
-            Nil
-          )
+            createAssignment(indexAccessNode, convert(value), lineAndColOf(dict))
+          case None =>
+            createXDotYCall(
+              () => createIdentifierNode(tmpVariableName, Load, lineAndColOf(dict)),
+              "update",
+              xMayHaveSideEffects = false,
+              lineAndColOf(dict),
+              convert(value) :: Nil,
+              Nil
+            )
+        }
       }
     }
 

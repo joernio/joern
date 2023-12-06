@@ -10,11 +10,8 @@ dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->t
 libraryDependencies ++= Seq(
   "io.shiftleft"              %% "codepropertygraph" % Versions.cpg,
   "org.scalatest"             %% "scalatest"         % Versions.scalatest % Test,
-  "com.lihaoyi"               %% "upickle"           % Versions.upickle,
   "com.lihaoyi"               %% "os-lib"            % "0.9.1",
   "com.fasterxml.jackson.core" % "jackson-databind"  % "2.15.2",
-  "com.typesafe"               % "config"            % "1.4.2",
-  "com.michaelpollmeier"       % "versionsort"       % "1.0.11",
   "io.circe"                  %% "circe-core"        % Versions.circe,
   "io.circe"                  %% "circe-generic"     % Versions.circe,
   "io.circe"                  %% "circe-parser"      % Versions.circe
@@ -81,7 +78,7 @@ goAstGenBinaryNames := {
 
 lazy val goAstGenDlTask = taskKey[Unit](s"Download goastgen binaries")
 goAstGenDlTask := {
-  val goAstGenDir = baseDirectory.value / "bin" / "goastgen"
+  val goAstGenDir = baseDirectory.value / "bin" / "astgen"
   goAstGenDir.mkdirs()
 
   goAstGenBinaryNames.value.foreach { fileName =>
@@ -93,7 +90,7 @@ goAstGenDlTask := {
     }
   }
 
-  val distDir = (Universal / stagingDirectory).value / "bin" / "goastgen"
+  val distDir = (Universal / stagingDirectory).value / "bin" / "astgen"
   distDir.mkdirs()
   IO.copyDirectory(goAstGenDir, distDir)
 
@@ -116,6 +113,6 @@ stage := Def
 // Sadly, we can't define the bin/ folders globally,
 // as .value can only be used within a task or setting macro
 cleanFiles ++= Seq(
-  baseDirectory.value / "bin" / "goastgen",
-  (Universal / stagingDirectory).value / "bin" / "goastgen"
+  baseDirectory.value / "bin" / "astgen",
+  (Universal / stagingDirectory).value / "bin" / "astgen"
 ) ++ goAstGenBinaryNames.value.map(fileName => SimpleCache.encodeFile(s"${goAstGenDlUrl.value}$fileName"))

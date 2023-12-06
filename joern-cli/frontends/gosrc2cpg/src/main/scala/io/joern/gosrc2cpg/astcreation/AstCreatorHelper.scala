@@ -256,13 +256,4 @@ trait AstCreatorHelper { this: AstCreator =>
   protected def fixQualifiedName(name: String): String =
     name.stripPrefix(Defines.qualifiedNameSeparator).replace(Defines.qualifiedNameSeparator, ".")
 
-  override protected def line(node: ParserNodeInfo): Option[Integer] = node.lineNumber
-
-  override protected def column(node: ParserNodeInfo): Option[Integer] = node.columnNumber
-
-  override protected def lineEnd(node: ParserNodeInfo): Option[Integer] = node.lineNumberEnd
-
-  override protected def columnEnd(node: ParserNodeInfo): Option[Integer] = node.columnNumberEnd
-
-  override protected def code(node: ParserNodeInfo): String = node.code
 }

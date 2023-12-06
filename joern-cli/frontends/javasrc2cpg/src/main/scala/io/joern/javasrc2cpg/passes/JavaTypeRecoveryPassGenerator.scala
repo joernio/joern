@@ -8,41 +8,39 @@ import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
-class JavaTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
-    extends XTypeRecoveryPass[Method](cpg, config) {
-  override protected def generateRecoveryPass(state: XTypeRecoveryState): XTypeRecovery[Method] =
-    new JavaTypeRecovery(cpg, state)
+class JavaTypeRecoveryPassGenerator(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
+    extends XTypeRecoveryPassGenerator[Method](cpg, config) {
+  override protected def generateRecoveryPass(state: XTypeRecoveryState, iteration: Int): XTypeRecovery[Method] =
+    new JavaTypeRecovery(cpg, state, iteration)
 }
 
-private class JavaTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTypeRecovery[Method](cpg, state) {
+private class JavaTypeRecovery(cpg: Cpg, state: XTypeRecoveryState, iteration: Int)
+    extends XTypeRecovery[Method](cpg, state, iteration: Int) {
 
-  override def compilationUnit: Iterator[Method] = cpg.method.isExternal(false).iterator
+  override def compilationUnits: Iterator[Method] = cpg.method.isExternal(false).iterator
 
   override def generateRecoveryForCompilationUnitTask(
     unit: Method,
     builder: DiffGraphBuilder
   ): RecoverForXCompilationUnit[Method] = {
-    val newConfig = state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
-    new RecoverForJavaFile(cpg, unit, builder, state.copy(config = newConfig))
+    new RecoverForJavaFile(cpg, unit, builder, state)
   }
 }
 
 private class RecoverForJavaFile(cpg: Cpg, cu: Method, builder: DiffGraphBuilder, state: XTypeRecoveryState)
     extends RecoverForXCompilationUnit[Method](cpg, cu, builder, state) {
 
-  private def javaNodeToLocalKey(n: AstNode): Option[LocalKey] = n match {
+  override protected def fromNodeToLocalKey(n: AstNode): Option[LocalKey] = n match {
     case i: Identifier if i.name == "this" && i.code == "super" => Option(LocalVar("super"))
     case _                                                      => SBKey.fromNodeToLocalKey(n)
   }
-
-  override protected val symbolTable = new SymbolTable[LocalKey](javaNodeToLocalKey)
 
   override protected def isConstructor(c: Call): Boolean = isConstructor(c.name)
 
   override protected def isConstructor(name: String): Boolean = !name.isBlank && name.charAt(0).isUpper
 
   override protected def postVisitImports(): Unit = {
-    symbolTable.view.foreach { case (k, ts) =>
+    for ((k, ts) <- symbolTable.itemsCopy) {
       val tss = ts.filterNot(_.startsWith(Defines.UnresolvedNamespace))
       if (tss.isEmpty)
         symbolTable.remove(k)
@@ -59,7 +57,6 @@ private class RecoverForJavaFile(cpg: Cpg, cu: Method, builder: DiffGraphBuilder
 
   override protected def storeCallTypeInfo(c: Call, types: Seq[String]): Unit =
     if (types.nonEmpty) {
-      state.changesWereMade.compareAndSet(false, true)
       val signedTypes = types.map {
         case t if t.endsWith(c.signature) => t
         case t                            => s"$t:${c.signature}"

@@ -14,7 +14,7 @@ import io.joern.kotlin2cpg.passes.{
   ConfigPass,
   DependenciesFromMavenCoordinatesPass,
   KotlinTypeHintCallLinker,
-  KotlinTypeRecoveryPass
+  KotlinTypeRecoveryPassGenerator
 }
 import io.joern.kotlin2cpg.compiler.{CompilerAPI, ErrorLoggingMessageCollector}
 import io.joern.kotlin2cpg.types.{ContentSourcesPicker, DefaultTypeInfoProvider}
@@ -37,7 +37,7 @@ object Kotlin2Cpg {
   type InputProvider = () => InputPair
 
   def postProcessingPass(cpg: Cpg): Unit = {
-    new KotlinTypeRecoveryPass(cpg).createAndApply()
+    new KotlinTypeRecoveryPassGenerator(cpg).generate().map { _.createAndApply() }
     new KotlinTypeHintCallLinker(cpg).createAndApply()
   }
 }

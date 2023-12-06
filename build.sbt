@@ -2,7 +2,7 @@ name                     := "joern"
 ThisBuild / organization := "io.joern"
 ThisBuild / scalaVersion := "3.3.1"
 
-val cpgVersion = "1.4.30"
+val cpgVersion = "1.4.32"
 
 lazy val joerncli          = Projects.joerncli
 lazy val querydb           = Projects.querydb
@@ -22,6 +22,7 @@ lazy val jimple2cpg        = Projects.jimple2cpg
 lazy val kotlin2cpg        = Projects.kotlin2cpg
 lazy val rubysrc2cpg       = Projects.rubysrc2cpg
 lazy val gosrc2cpg         = Projects.gosrc2cpg
+lazy val swiftsrc2cpg      = Projects.swiftsrc2cpg
 lazy val csharpsrc2cpg     = Projects.csharpsrc2cpg
 
 lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
@@ -42,6 +43,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   kotlin2cpg,
   rubysrc2cpg,
   gosrc2cpg,
+  swiftsrc2cpg,
   csharpsrc2cpg
 )
 

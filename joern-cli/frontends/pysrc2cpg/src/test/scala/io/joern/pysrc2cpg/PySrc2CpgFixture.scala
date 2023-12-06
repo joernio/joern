@@ -39,7 +39,7 @@ class PySrcTestCpg extends TestCpg with PythonFrontend {
     new PythonImportResolverPass(this).createAndApply()
     new PythonInheritanceNamePass(this).createAndApply()
     new DynamicTypeHintFullNamePass(this).createAndApply()
-    new PythonTypeRecoveryPass(this).createAndApply()
+    new PythonTypeRecoveryPassGenerator(this).generate().foreach(_.createAndApply())
     new PythonTypeHintCallLinker(this).createAndApply()
     new NaiveCallLinker(this).createAndApply()
 

@@ -1,12 +1,17 @@
 package io.joern.gosrc2cpg
 
-import io.joern.gosrc2cpg.Frontend._
+import io.joern.gosrc2cpg.Frontend.*
+import io.joern.x2cpg.astgen.AstGenConfig
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
 import scopt.OParser
 
 import java.nio.file.Paths
 
-final case class Config(fetchDependencies: Boolean = false) extends X2CpgConfig[Config] {
+final case class Config(fetchDependencies: Boolean = false) extends X2CpgConfig[Config] with AstGenConfig[Config] {
+
+  override val astGenProgramName: String  = "goastgen"
+  override val astGenConfigPrefix: String = "gosrc2cpg"
+
   def withFetchDependencies(value: Boolean): Config = {
     copy(fetchDependencies = value).withInheritedFields(this)
   }

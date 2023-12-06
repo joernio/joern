@@ -10,23 +10,23 @@ import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
-class PythonTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
-    extends XTypeRecoveryPass[File](cpg, config) {
+class PythonTypeRecoveryPassGenerator(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
+    extends XTypeRecoveryPassGenerator[File](cpg, config) {
 
-  override protected def generateRecoveryPass(state: XTypeRecoveryState): XTypeRecovery[File] =
-    new PythonTypeRecovery(cpg, state)
+  override protected def generateRecoveryPass(state: XTypeRecoveryState, iteration: Int): XTypeRecovery[File] =
+    new PythonTypeRecovery(cpg, state, iteration)
 }
 
-private class PythonTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTypeRecovery[File](cpg, state) {
+private class PythonTypeRecovery(cpg: Cpg, state: XTypeRecoveryState, iteration: Int)
+    extends XTypeRecovery[File](cpg, state, iteration) {
 
-  override def compilationUnit: Iterator[File] = cpg.file.iterator
+  override def compilationUnits: Iterator[File] = cpg.file.iterator
 
   override def generateRecoveryForCompilationUnitTask(
     unit: File,
     builder: DiffGraphBuilder
   ): RecoverForXCompilationUnit[File] = {
-    val newConfig = state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
-    new RecoverForPythonFile(cpg, unit, builder, state.copy(config = newConfig))
+    new RecoverForPythonFile(cpg, unit, builder, state)
   }
 
 }
@@ -39,13 +39,11 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
   /** Replaces the `this` prefix with the Pythonic `self` prefix for instance methods of functions local to this
     * compilation unit.
     */
-  private def fromNodeToLocalPythonKey(node: AstNode): Option[LocalKey] =
+  override protected def fromNodeToLocalKey(node: AstNode): Option[LocalKey] =
     node match {
       case n: Method => Option(CallAlias(n.name, Option("self")))
       case _         => SBKey.fromNodeToLocalKey(node)
     }
-
-  override val symbolTable: SymbolTable[LocalKey] = new SymbolTable[LocalKey](fromNodeToLocalPythonKey)
 
   override def visitImport(i: Import): Unit = {
     if (i.importedAs.isDefined && i.importedEntity.isDefined) {
@@ -97,8 +95,8 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
 
   /** If the parent method is module then it can be used as a field.
     */
-  override def isField(i: Identifier): Boolean =
-    state.isFieldCache.getOrElseUpdate(i.id(), i.method.name.matches("(<module>|__init__)") || super.isField(i))
+  override def isFieldUncached(i: Identifier): Boolean =
+    i.method.name.matches("(<module>|__init__)") || super.isFieldUncached(i)
 
   override def visitIdentifierAssignedToOperator(i: Identifier, c: Call, operation: String): Set[String] = {
     operation match {
@@ -192,7 +190,6 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
         val existingTypes = (identifierTypes ++ otherTypes).distinct
         val resolvedTypes = identifierTypes.map(LocalVar.apply).flatMap(symbolTable.get)
         if (existingTypes != resolvedTypes && resolvedTypes.nonEmpty) {
-          state.changesWereMade.compareAndExchange(false, true)
           builder.setNodeProperty(t, PropertyNames.INHERITS_FROM_TYPE_FULL_NAME, resolvedTypes)
         }
       }

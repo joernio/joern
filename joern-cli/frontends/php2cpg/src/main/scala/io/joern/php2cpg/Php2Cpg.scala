@@ -8,7 +8,7 @@ import io.joern.php2cpg.passes.{
   ClosureRefPass,
   LocalCreationPass,
   PhpSetKnownTypesPass,
-  PhpTypeRecoveryPass
+  PhpTypeRecoveryPassGenerator
 }
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
@@ -84,6 +84,6 @@ object Php2Cpg {
     val typeRecoveryConfig = config
       .map(c => XTypeRecoveryConfig(c.typePropagationIterations, !c.disableDummyTypes))
       .getOrElse(XTypeRecoveryConfig(iterations = 3))
-    List(new PhpSetKnownTypesPass(cpg), new PhpTypeRecoveryPass(cpg, typeRecoveryConfig))
+    List(new PhpSetKnownTypesPass(cpg)) ++ new PhpTypeRecoveryPassGenerator(cpg, typeRecoveryConfig).generate()
   }
 }
