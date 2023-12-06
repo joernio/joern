@@ -2,6 +2,8 @@ package io.joern.x2cpg.astgen
 
 import better.files.File
 import com.typesafe.config.ConfigFactory
+import io.joern.x2cpg.utils.Environment.ArchitectureType.ArchitectureType
+import io.joern.x2cpg.utils.Environment.OperatingSystemType.OperatingSystemType
 import io.joern.x2cpg.utils.{Environment, ExternalCommand}
 import io.joern.x2cpg.{SourceFiles, X2CpgConfig}
 import org.slf4j.LoggerFactory
@@ -17,47 +19,34 @@ object AstGenRunner {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
+  trait AstGenRunnerResult {
+    def parsedFiles: List[String]
+    def skippedFiles: List[String]
+  }
+
   /** @param parsedFiles
     *   the files parsed by the runner.
     * @param skippedFiles
     *   the files skipped by the runner.
     */
-  case class AstGenRunnerResult(parsedFiles: List[String] = List.empty, skippedFiles: List[String] = List.empty)
+  case class DefaultAstGenRunnerResult(parsedFiles: List[String] = List.empty, skippedFiles: List[String] = List.empty)
+      extends AstGenRunnerResult
 
   /** @param name
     *   the name of the AST gen executable, e.g., goastgen, dotnetastgen, swiftastgen, etc.
     * @param configPrefix
     *   the prefix of the executable's respective configuration path.
+    * @param multiArchitectureBuilds
+    *   whether there is a binary for specific architectures or not.
+    * @param packagePath
+    *   the code path for the frontend.
     */
-  case class AstGenProgramMetaData(name: String, configPrefix: String, packagePath: URL)
-
-  private lazy val Win      = "win.exe"
-  private lazy val WinArm   = "win-arm.exe"
-  private lazy val Linux    = "linux"
-  private lazy val LinuxArm = "linux-arm"
-  private lazy val Mac      = "macos"
-  private lazy val MacArm   = "macos-arm"
-
-  def executableName(implicit metaData: AstGenProgramMetaData): String = Environment.operatingSystem match {
-    case Environment.OperatingSystemType.Windows =>
-      Environment.architecture match {
-        case Environment.ArchitectureType.X86 => s"${metaData.name}-$Win"
-        case Environment.ArchitectureType.ARM => s"${metaData.name}-$WinArm"
-      }
-    case Environment.OperatingSystemType.Linux =>
-      Environment.architecture match {
-        case Environment.ArchitectureType.X86 => s"${metaData.name}-$Linux"
-        case Environment.ArchitectureType.ARM => s"${metaData.name}-$LinuxArm"
-      }
-    case Environment.OperatingSystemType.Mac =>
-      Environment.architecture match {
-        case Environment.ArchitectureType.X86 => s"${metaData.name}-$Mac"
-        case Environment.ArchitectureType.ARM => s"${metaData.name}-$MacArm"
-      }
-    case Environment.OperatingSystemType.Unknown =>
-      logger.warn("Could not detect OS version! Defaulting to 'Linux'.")
-      s"${metaData.name}-$Linux"
-  }
+  case class AstGenProgramMetaData(
+    name: String,
+    configPrefix: String,
+    multiArchitectureBuilds: Boolean,
+    packagePath: URL
+  )
 
   def executableDir(implicit metaData: AstGenProgramMetaData): String = {
     val dir        = metaData.packagePath.toString
@@ -99,6 +88,55 @@ trait AstGenRunnerBase(config: X2CpgConfig[_] with AstGenConfig[_]) {
 
   import io.joern.x2cpg.astgen.AstGenRunner.*
 
+  // Suffixes for the binary based on OS & architecture
+  protected val WinX86   = "win.exe"
+  protected val WinArm   = "win-arm.exe"
+  protected val LinuxX86 = "linux"
+  protected val LinuxArm = "linux-arm"
+  protected val MacX86   = "macos"
+  protected val MacArm   = "macos-arm"
+
+  /** All the supported combinations of architectures.
+    */
+  protected val SupportedBinaries: Set[(OperatingSystemType, ArchitectureType)] = Set(
+    Environment.OperatingSystemType.Windows -> Environment.ArchitectureType.X86,
+    Environment.OperatingSystemType.Windows -> Environment.ArchitectureType.ARM,
+    Environment.OperatingSystemType.Linux   -> Environment.ArchitectureType.X86,
+    Environment.OperatingSystemType.Linux   -> Environment.ArchitectureType.ARM,
+    Environment.OperatingSystemType.Mac     -> Environment.ArchitectureType.X86,
+    Environment.OperatingSystemType.Mac     -> Environment.ArchitectureType.ARM
+  )
+
+  /** Determines the name of the executable to run, based on the host system. Usually, AST GEN binaries support three
+    * operating systems, and two architectures. Some binaries are multiplatform, in which case the suffix for x86 is
+    * used for both architectures.
+    */
+  protected def executableName(implicit metaData: AstGenProgramMetaData): String = {
+    if (!SupportedBinaries.contains(Environment.operatingSystem -> Environment.architecture)) {
+      throw new UnsupportedOperationException(s"No compatible binary of ${metaData.name} for your operating system!")
+    } else {
+      Environment.operatingSystem match {
+        case Environment.OperatingSystemType.Windows => executableName(WinX86, WinArm)
+        case Environment.OperatingSystemType.Linux   => executableName(LinuxX86, LinuxArm)
+        case Environment.OperatingSystemType.Mac     => executableName(MacX86, MacArm)
+        case Environment.OperatingSystemType.Unknown =>
+          logger.warn("Could not detect OS version! Defaulting to 'Linux'.")
+          executableName(LinuxX86, LinuxArm)
+      }
+    }
+  }
+
+  private def executableName(x86Suffix: String, armSuffix: String)(implicit metaData: AstGenProgramMetaData): String = {
+    if (metaData.multiArchitectureBuilds) {
+      s"${metaData.name}-$x86Suffix"
+    } else {
+      Environment.architecture match {
+        case Environment.ArchitectureType.X86 => s"${metaData.name}-$x86Suffix"
+        case Environment.ArchitectureType.ARM => s"${metaData.name}-$armSuffix"
+      }
+    }
+  }
+
   protected def isIgnoredByUserConfig(filePath: String): Boolean = {
     lazy val isInIgnoredFiles = config.ignoredFiles.exists {
       case ignorePath if File(ignorePath).isDirectory => filePath.startsWith(ignorePath)
@@ -113,7 +151,7 @@ trait AstGenRunnerBase(config: X2CpgConfig[_] with AstGenConfig[_]) {
     }
   }
 
-  private def filterFiles(files: List[String], out: File): List[String] = files.filter(fileFilter(_, out))
+  protected def filterFiles(files: List[String], out: File): List[String] = files.filter(fileFilter(_, out))
 
   protected def fileFilter(file: String, out: File): Boolean = {
     file.stripSuffix(".json").replace(out.pathAsString, config.inputPath) match {
@@ -152,10 +190,10 @@ trait AstGenRunnerBase(config: X2CpgConfig[_] with AstGenConfig[_]) {
         )
         val parsed  = filterFiles(srcFiles, out)
         val skipped = skippedFiles(in, result.toList)
-        AstGenRunnerResult(parsed, skipped)
+        DefaultAstGenRunnerResult(parsed, skipped)
       case Failure(f) =>
         logger.error(s"\t- running ${metaData.name} failed!", f)
-        AstGenRunnerResult()
+        DefaultAstGenRunnerResult()
     }
   }
 }

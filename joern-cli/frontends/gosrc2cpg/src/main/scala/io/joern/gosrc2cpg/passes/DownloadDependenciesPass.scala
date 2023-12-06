@@ -5,7 +5,7 @@ import io.joern.gosrc2cpg.Config
 import io.joern.gosrc2cpg.model.GoModHelper
 import io.joern.gosrc2cpg.parser.GoAstJsonParser
 import io.joern.gosrc2cpg.utils.AstGenRunner
-import io.joern.gosrc2cpg.utils.AstGenRunner.getClass
+import io.joern.gosrc2cpg.utils.AstGenRunner.{GoAstGenRunnerResult, getClass}
 import io.joern.x2cpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
@@ -47,7 +47,7 @@ class DownloadDependenciesPass(parentGoMod: GoModHelper) {
     val dependencyLocation = (Seq(gopath, "pkg", "mod") ++ dependencyStr.split("/")).mkString(JFile.separator)
     File.usingTemporaryDirectory("godep") { astLocation =>
       val config       = Config().withInputPath(dependencyLocation)
-      val astGenResult = new AstGenRunner(config).execute(astLocation)
+      val astGenResult = new AstGenRunner(config).execute(astLocation).asInstanceOf[GoAstGenRunnerResult]
       val goMod = new GoModHelper(
         Some(config),
         astGenResult.parsedModFile.flatMap(modFile => GoAstJsonParser.readModFile(Paths.get(modFile)).map(x => x))
