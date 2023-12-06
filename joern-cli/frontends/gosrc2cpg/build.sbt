@@ -78,7 +78,7 @@ goAstGenBinaryNames := {
 
 lazy val goAstGenDlTask = taskKey[Unit](s"Download goastgen binaries")
 goAstGenDlTask := {
-  val goAstGenDir = baseDirectory.value / "bin" / "goastgen"
+  val goAstGenDir = baseDirectory.value / "bin" / "astgen"
   goAstGenDir.mkdirs()
 
   goAstGenBinaryNames.value.foreach { fileName =>
@@ -90,7 +90,7 @@ goAstGenDlTask := {
     }
   }
 
-  val distDir = (Universal / stagingDirectory).value / "bin" / "goastgen"
+  val distDir = (Universal / stagingDirectory).value / "bin" / "astgen"
   distDir.mkdirs()
   IO.copyDirectory(goAstGenDir, distDir)
 
@@ -113,6 +113,6 @@ stage := Def
 // Sadly, we can't define the bin/ folders globally,
 // as .value can only be used within a task or setting macro
 cleanFiles ++= Seq(
-  baseDirectory.value / "bin" / "goastgen",
-  (Universal / stagingDirectory).value / "bin" / "goastgen"
+  baseDirectory.value / "bin" / "astgen",
+  (Universal / stagingDirectory).value / "bin" / "astgen"
 ) ++ goAstGenBinaryNames.value.map(fileName => SimpleCache.encodeFile(s"${goAstGenDlUrl.value}$fileName"))
