@@ -46,8 +46,9 @@ object CSharpSrc2Cpg {
         astFiles
           .map(file =>
             Future {
-              val parserResult     = DotNetJsonParser.readFile(Paths.get(file))
-              val relativeFileName = SourceFiles.toRelativePath(parserResult.fullPath, config.inputPath)
+              val parserResult = DotNetJsonParser.readFile(Paths.get(file))
+              val relativeFileName =
+                parserResult.fullPath.stripPrefix(config.inputPath).stripPrefix(java.io.File.separator)
               new AstCreator(relativeFileName, parserResult)(config.schemaValidation)
             }
           )
