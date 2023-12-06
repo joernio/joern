@@ -1,15 +1,16 @@
 package io.joern.joerncli
 
-import better.files.Dsl._
+import better.files.Dsl.*
 import better.files.File
 import io.joern.dataflowengineoss.DefaultSemantics
-import io.joern.dataflowengineoss.layers.dataflows._
+import io.joern.dataflowengineoss.layers.dataflows.*
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.joern.joerncli.CpgBasedTool.exitIfInvalid
-import io.joern.x2cpg.layers._
+import io.joern.x2cpg.layers.*
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.semanticcpg.language.{toAstNodeMethods, toNodeTypeStarters}
-import io.shiftleft.semanticcpg.layers._
+import io.shiftleft.semanticcpg.layers.*
 import overflowdb.formats.ExportResult
 import overflowdb.formats.dot.DotExporter
 import overflowdb.formats.graphml.GraphMLExporter
@@ -142,19 +143,23 @@ object JoernExport {
       case Representation.All =>
         exporter.runExport(cpg.graph, outDir)
       case Representation.Cpg =>
-        val windowsFilenameDeduplicationHelper = mutable.Set.empty[String]
-        splitByMethod(cpg).iterator
-          .map { case subGraph @ MethodSubGraph(methodName, methodFilename, nodes) =>
-            val relativeFilename = sanitizedFileName(
-              methodName,
-              methodFilename,
-              exporter.defaultFileExtension,
-              windowsFilenameDeduplicationHelper
-            )
-            val outFileName = outDir.resolve(relativeFilename)
-            exporter.runExport(nodes, subGraph.edges, outFileName)
-          }
-          .reduce(plus)
+        if (cpg.graph.nodeCount(NodeTypes.METHOD) > 0) {
+          val windowsFilenameDeduplicationHelper = mutable.Set.empty[String]
+          splitByMethod(cpg).iterator
+            .map { case subGraph @ MethodSubGraph(methodName, methodFilename, nodes) =>
+              val relativeFilename = sanitizedFileName(
+                methodName,
+                methodFilename,
+                exporter.defaultFileExtension,
+                windowsFilenameDeduplicationHelper
+              )
+              val outFileName = outDir.resolve(relativeFilename)
+              exporter.runExport(nodes, subGraph.edges, outFileName)
+            }
+            .reduce(plus)
+        } else {
+          emptyExportResult
+        }
       case other =>
         throw new NotImplementedError(s"repr=$repr not yet supported for this format")
     }
@@ -212,6 +217,8 @@ object JoernExport {
       additionalInfo = resultA.additionalInfo
     )
   }
+
+  private def emptyExportResult = ExportResult(0, 0, Seq.empty, Option("Empty CPG"))
 
   case class MethodSubGraph(methodName: String, methodFilename: String, nodes: Set[Node]) {
     def edges: Set[Edge] = {
