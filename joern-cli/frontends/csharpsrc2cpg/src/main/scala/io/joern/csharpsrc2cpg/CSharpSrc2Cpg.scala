@@ -8,7 +8,7 @@ import io.joern.csharpsrc2cpg.utils.DotNetAstGenRunner
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
-import io.joern.x2cpg.utils.Report
+import io.joern.x2cpg.utils.{Environment, Report}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.CpgPassBase
 
@@ -46,16 +46,20 @@ object CSharpSrc2Cpg {
         astFiles
           .map(file =>
             Future {
-              val parserResult     = DotNetJsonParser.readFile(Paths.get(file))
-              val relativeFileName = SourceFiles.toRelativePath(parserResult.fullPath, config.inputPath)
-              println(s"""
-                   |DEBUG
-                   |
-                   |  - ${parserResult.fullPath}
-                   |  - ${config.inputPath}
-                   |  - $relativeFileName
-                   |
-                   |""".stripMargin)
+              val parserResult = DotNetJsonParser.readFile(Paths.get(file))
+              val relativeFileName = if (Environment.operatingSystem == Environment.OperatingSystemType.Windows) {
+                /*
+                Addresses behaviour in Windows where a user-specific temp folder is used:
+                  parserResult.fullPath = C:\Users\runneradmin\AppData\Local\Temp\...
+                  config.inputPath = C:\Users\RUNNER~1\AppData\Local\Temp\...
+                 */
+                SourceFiles.toRelativePath(
+                  parserResult.fullPath.substring(parserResult.fullPath.indexOf("Temp")),
+                  config.inputPath.substring(config.inputPath.indexOf("Temp"))
+                )
+              } else {
+                SourceFiles.toRelativePath(parserResult.fullPath, config.inputPath)
+              }
               new AstCreator(relativeFileName, parserResult)(config.schemaValidation)
             }
           )
