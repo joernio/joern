@@ -307,11 +307,7 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
 
   private def loadCpgRaw(cpgFilename: String): Option[Cpg] = {
     Try {
-      // TODO reimplement - in cpg build first
-      ???
-//      val newCpg = CpgLoader.loadFromFlatgraph(Paths.get(cpgFilename))
-//      CpgLoader.createIndexes(newCpg)
-//      newCpg
+      CpgLoader.load(cpgFilename)
     } match {
       case Success(v) => Some(v)
       case Failure(ex) =>
