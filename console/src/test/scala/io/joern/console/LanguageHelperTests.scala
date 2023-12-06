@@ -57,6 +57,14 @@ class LanguageHelperTests extends AnyWordSpec with Matchers {
       }
     }
 
+    "guess `Swift` for a directory containing `.swift`" in {
+      File.usingTemporaryDirectory("oculartests") { tmpDir =>
+        val subdir = mkdir(tmpDir / "subdir")
+        touch(subdir / "main.swift")
+        guessLanguage(tmpDir.pathAsString) shouldBe Some(Languages.SWIFTSRC)
+      }
+    }
+
     "guess `C` for a directory containing .ll (LLVM) file" in {
       File.usingTemporaryDirectory("oculartests") { tmpDir =>
         val subdir = mkdir(tmpDir / "subdir")

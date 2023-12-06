@@ -1347,4 +1347,26 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     }
   }
 
+  "unknown imports, regardless of relative path" should {
+    val cpg = code(
+      """
+          |import boto3
+          |
+          |def get_thing(bucket: str, path: str, access_key: str, secret_key: str):
+          |    client = boto3.client('s3', aws_access_key_id = access_key, aws_secret_access_key = secret_key)
+          |    return client.get_object(Bucket=bucket, Key=path)
+          |
+          |""".stripMargin,
+      Seq("utils", "botowrapper.py").mkString(File.separator)
+    )
+
+    "be resolved with a simple pseudo-import" in {
+      cpg.call.nameExact("client").methodFullName.head shouldBe "boto3.py:<module>.client"
+    }
+
+    "propagate this value to the receiving identifier's call accordingly" in {
+      cpg.call.nameExact("get_object").methodFullName.head shouldBe "boto3.py:<module>.client.<returnValue>.get_object"
+    }
+  }
+
 }

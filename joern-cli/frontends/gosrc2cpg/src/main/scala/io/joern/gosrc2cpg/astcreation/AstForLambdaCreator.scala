@@ -2,10 +2,10 @@ package io.joern.gosrc2cpg.astcreation
 
 import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
-import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewMethodReturn, NewTypeDecl}
 import io.joern.x2cpg.datastructures.Stack.StackWrapper
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
+import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewMethodReturn}
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
 import ujson.Value
 
@@ -18,7 +18,7 @@ trait AstForLambdaCreator(implicit withSchemaValidation: ValidationMode) { this:
       .collectFirst({ case m: NewMethod if !m.fullName.endsWith(parserResult.filename) => m.fullName })
       .getOrElse(fullyQualifiedPackage)
     val fullName = s"$baseFullName.$lambdaName"
-    val (signature, methodReturn, params, genericTypeMethodMap) = generateLambdaSignature(
+    val (signature, returnTypeStr, methodReturn, params, genericTypeMethodMap) = generateLambdaSignature(
       createParserNodeInfo(funcLiteral.json(ParserKeys.Type))
     )
     val methodNode_ = methodNode(funcLiteral, lambdaName, funcLiteral.code, fullName, Some(signature), relPathFileName)
@@ -34,29 +34,39 @@ trait AstForLambdaCreator(implicit withSchemaValidation: ValidationMode) { this:
       )
     scope.popScope()
     methodAstParentStack.pop()
-    baseFullName match
-      case fullyQualifiedPackage =>
-        methodNode_.astParentType(NodeTypes.TYPE_DECL).astParentFullName(fullyQualifiedPackage)
-      case _ =>
-        methodNode_.astParentType(NodeTypes.METHOD).astParentFullName(baseFullName)
+
+    val typeDeclNode_ = typeDeclNode(funcLiteral, lambdaName, fullName, relPathFileName, lambdaName)
+    if baseFullName == fullyQualifiedPackage then
+      typeDeclNode_.astParentType(NodeTypes.TYPE_DECL).astParentFullName(fullyQualifiedPackage)
+    else typeDeclNode_.astParentType(NodeTypes.METHOD).astParentFullName(baseFullName)
+    val structTypes = Option(GoGlobal.lambdaSignatureToLambdaTypeMap.get(signature)) match {
+      case Some(types) => types.map(_._1)
+      case None        => Seq.empty
+    }
+    typeDeclNode_.inheritsFromTypeFullName(structTypes)
+    Ast.storeInDiffGraph(Ast(typeDeclNode_), diffGraph)
+    // Setting Lambda TypeDecl as its parent.
+    methodNode_.astParentType(NodeTypes.TYPE_DECL)
+    methodNode_.astParentFullName(fullName)
     Ast.storeInDiffGraph(astForMethod, diffGraph)
-    val typeFullName = GoGlobal.lambdaSignatureToLambdaTypeMap.getOrDefault(signature, fullName)
-    // TODO: Create TypeDecl for lambda function for which we didnt find the type.
-    Seq(Ast(methodRefNode(funcLiteral, funcLiteral.code, fullName, typeFullName)))
+    GoGlobal.recordFullNameToReturnType(fullName, returnTypeStr, signature)
+    Seq(Ast(methodRefNode(funcLiteral, funcLiteral.code, fullName, fullName)))
   }
 
-  private def generateLambdaSignature(
+  protected def generateLambdaSignature(
     funcType: ParserNodeInfo
-  ): (String, NewMethodReturn, Value, Map[String, List[String]]) = {
+  ): (String, String, NewMethodReturn, Value, Map[String, List[String]]) = {
     val genericTypeMethodMap: Map[String, List[String]] = Map()
+    // TODO: While handling the tuple return type we need to handle it here as well.
     val (returnTypeStr, returnTypeInfo) =
       getReturnType(funcType.json, genericTypeMethodMap).headOption
         .getOrElse((Defines.voidTypeName, funcType))
     val methodReturn = methodReturnNode(returnTypeInfo, returnTypeStr)
 
-    val params = funcType.json(ParserKeys.Params)(ParserKeys.List)
+    val params         = funcType.json(ParserKeys.Params)(ParserKeys.List)
+    val paramSignature = parameterSignature(params, genericTypeMethodMap)
     val signature =
-      s"${XDefines.ClosurePrefix}(${parameterSignature(params, genericTypeMethodMap)})$returnTypeStr"
-    (signature, methodReturn, params, genericTypeMethodMap)
+      s"${XDefines.ClosurePrefix}($paramSignature)$returnTypeStr"
+    (signature, returnTypeStr, methodReturn, params, genericTypeMethodMap)
   }
 }

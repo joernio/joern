@@ -5,8 +5,7 @@ import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
 import ujson.Value
 
 import scala.collection.mutable
@@ -127,7 +126,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         val typeInfo                                           = createParserNodeInfo(x(ParserKeys.Type))
         val (typeFullName, typeFullNameForcode, isVariadic, _) = processTypeInfo(typeInfo, genericTypeMethodMap)
         x(ParserKeys.Names).arrOpt
-          .getOrElse(List())
+          .getOrElse(List(""))
           .map(_ => {
             // We are returning same type from x object for each name in the names array.
             typeFullName

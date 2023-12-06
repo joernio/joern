@@ -28,10 +28,6 @@ import scala.collection.mutable
 
 object AstCreatorHelper {
 
-  // maximum length of code fields in number of characters
-  private val MaxCodeLength: Int = 1000
-  private val MinCodeLength: Int = 50
-
   implicit class OptionSafeAst(val ast: Ast) extends AnyVal {
     def withArgEdge(src: NewNode, dst: Option[NewNode]): Ast = dst match {
       case Some(value) => ast.withArgEdge(src, value)
@@ -42,7 +38,7 @@ object AstCreatorHelper {
 
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  import io.joern.c2cpg.astcreation.AstCreatorHelper._
+  import io.joern.c2cpg.astcreation.AstCreatorHelper.*
 
   private var usedVariablePostfix: Int = 0
 
@@ -340,12 +336,12 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         s"${fullName(f.getParent)}.${shortName(f)}"
       case e: IASTElaboratedTypeSpecifier =>
         s"${fullName(e.getParent)}.${ASTStringUtil.getSimpleName(e.getName)}"
-      case d: IASTIdExpression              => ASTStringUtil.getSimpleName(d.getName)
-      case _: IASTTranslationUnit           => ""
-      case u: IASTUnaryExpression           => code(u.getOperand)
-      case other if other.getParent != null => fullName(other.getParent)
-      case other if other != null           => notHandledYet(other); ""
-      case null                             => ""
+      case d: IASTIdExpression                               => ASTStringUtil.getSimpleName(d.getName)
+      case _: IASTTranslationUnit                            => ""
+      case u: IASTUnaryExpression                            => code(u.getOperand)
+      case other if other != null && other.getParent != null => fullName(other.getParent)
+      case other if other != null                            => notHandledYet(other); ""
+      case null                                              => ""
     }
     fixQualifiedName(qualifiedName).stripPrefix(".")
   }

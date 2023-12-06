@@ -48,6 +48,16 @@ object AntlrContextHelpers {
     def isInterpolated: Boolean = interpolations.nonEmpty
   }
 
+  sealed implicit class QuotedExpandedStringLiteralContextHelper(ctx: QuotedExpandedStringLiteralContext) {
+    def interpolations: List[ParserRuleContext] = ctx
+      .quotedExpandedLiteralStringContent()
+      .asScala
+      .filter(ctx => Option(ctx.compoundStatement()).isDefined)
+      .map(ctx => ctx.compoundStatement())
+      .toList
+    def isInterpolated: Boolean = interpolations.nonEmpty
+  }
+
   sealed implicit class DoubleQuotedStringExpressionContextHelper(ctx: DoubleQuotedStringExpressionContext) {
     def interpolations: List[ParserRuleContext] = ctx.doubleQuotedString().interpolations ++ ctx
       .singleOrDoubleQuotedString()

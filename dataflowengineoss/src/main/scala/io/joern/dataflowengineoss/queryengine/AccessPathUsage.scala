@@ -39,6 +39,9 @@ object AccessPathUsage {
           val (base, tail) = toTrackedBaseAndAccessPathInternal(argOne.get)
           val path         = AccessPathHandling.memberAccessToPath(memberAccess, tail)
           (base, path)
+        case _ =>
+          logger.warn(s"Missing handling for node type ${node.getClass}.")
+          (TrackedUnknown, Nil)
       }
     }
   }
