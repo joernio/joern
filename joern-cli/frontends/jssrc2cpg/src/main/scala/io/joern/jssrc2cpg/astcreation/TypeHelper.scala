@@ -123,7 +123,7 @@ trait TypeHelper { this: AstCreator =>
       case Some(key) => typeForTypeAnnotation(createBabelNodeInfo(node.json(key)))
       case None      => typeFromTypeMap(node)
     }
-    registerType(tpe, tpe)
+    registerType(tpe)
     tpe
   }
 

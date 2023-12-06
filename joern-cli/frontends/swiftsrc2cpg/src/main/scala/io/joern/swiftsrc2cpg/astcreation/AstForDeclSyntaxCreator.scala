@@ -72,7 +72,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       }
 
     val returnType = node.signature.returnClause.map(c => code(c.`type`)).getOrElse(Defines.Any)
-    registerType(returnType, returnType)
+    registerType(returnType)
 
     val signature = s"$returnType $methodFullName ${code(node.signature.parameterClause)}"
 

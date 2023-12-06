@@ -12,7 +12,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 
 import scala.collection.mutable
-import scala.jdk.CollectionConverters.EnumerationHasAsScala
 
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -28,13 +27,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     Ast(unknownNode(node, code(node)))
   }
 
-  protected def registerType(typeName: String, typeFullName: String): Unit = {
-    if (usedTypes.containsKey((typeName, typeName)) && typeName != typeFullName) {
-      usedTypes.put((typeName, typeFullName), true)
-      usedTypes.remove((typeName, typeName))
-    } else if (!usedTypes.keys().asScala.exists { case (tpn, _) => tpn == typeName }) {
-      usedTypes.putIfAbsent((typeName, typeFullName), true)
-    }
+  protected def registerType(typeFullName: String): Unit = {
+    SwiftGlobal.usedTypes.putIfAbsent((typeFullName), true)
   }
 
   protected def generateUnusedVariableName(

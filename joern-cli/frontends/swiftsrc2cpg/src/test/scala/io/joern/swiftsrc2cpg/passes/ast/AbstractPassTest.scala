@@ -3,7 +3,9 @@ package io.joern.swiftsrc2cpg.passes.ast
 import better.files.File
 import io.joern.swiftsrc2cpg.utils.AstGenRunner
 import io.joern.swiftsrc2cpg.Config
+import io.joern.swiftsrc2cpg.datastructures.SwiftGlobal
 import io.joern.swiftsrc2cpg.passes.AstCreationPass
+import io.joern.swiftsrc2cpg.passes.SwiftTypeNodePass
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
 import io.shiftleft.codepropertygraph.Cpg
@@ -26,6 +28,7 @@ abstract class AbstractPassTest extends AnyWordSpec with Matchers with Inside {
         val config       = Config().withInputPath(dir.toString).withOutputPath(dir.toString)
         val astGenResult = new AstGenRunner(config).execute(dir)
         new AstCreationPass(cpg, astGenResult, config).createAndApply()
+        SwiftTypeNodePass.withRegisteredTypes(SwiftGlobal.typesSeen(), cpg).createAndApply()
         f(cpg)
         file.delete()
       }

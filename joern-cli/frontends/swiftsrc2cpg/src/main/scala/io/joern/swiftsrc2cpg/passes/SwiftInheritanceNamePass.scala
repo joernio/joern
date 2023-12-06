@@ -2,6 +2,7 @@ package io.joern.swiftsrc2cpg.passes
 
 import io.joern.x2cpg.passes.frontend.XInheritanceFullNamePass
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 
 /** Using some basic heuristics, will try to resolve type full names from types found within the CPG. Requires
   * ImportPass as a pre-requisite.
@@ -9,7 +10,7 @@ import io.shiftleft.codepropertygraph.Cpg
 class SwiftInheritanceNamePass(cpg: Cpg) extends XInheritanceFullNamePass(cpg) {
 
   override val pathSep: Char      = ':'
-  override val moduleName: String = "<global>"
+  override val moduleName: String = NamespaceTraversal.globalNamespaceName
   override val fileExt: String    = ".swift"
 
 }

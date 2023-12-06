@@ -265,7 +265,7 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     methodFullName: String,
     filename: String
   ): Ast = {
-    registerType(methodName, methodFullName)
+    registerType(methodFullName)
 
     val astParentType     = parentNode.label
     val astParentFullName = parentNode.properties("FULL_NAME").toString

@@ -103,12 +103,26 @@ class TSTypesTest extends AbstractPassTest {
     p2.typeFullName shouldBe Defines.String
     val List(barRet) = cpg.method("bar").methodReturn.l
     barRet.typeFullName shouldBe "Foo"
-    cpg.typ.name.sorted.l shouldBe (List(
+    cpg.typ.name.sorted.l shouldBe List(
       ":program",
       io.joern.x2cpg.Defines.ConstructorMethodName,
+      "ANY",
       "Foo",
+      "Foo",
+      "Number",
+      "String",
       "bar"
-    ) ++ Defines.JsTypes).sorted
+    ).sorted
+    cpg.typ.fullName.sorted.l shouldBe List(
+      "ANY",
+      "Foo",
+      "__ecma.Number",
+      "__ecma.String",
+      "code.ts::program",
+      "code.ts::program:Foo",
+      "code.ts::program:Foo:<init>",
+      "code.ts::program:bar"
+    ).sorted
   }
 
   "have correct types for variables" in TsAstFixture(
@@ -248,7 +262,7 @@ class TSTypesTest extends AbstractPassTest {
     tsTypes = true
   ) { cpg =>
     cpg.typeDecl("string").l shouldBe empty
-    cpg.typeDecl(Defines.String).size shouldBe 1
+    cpg.typ.fullName(Defines.String).size shouldBe 1
     inside(cpg.typeDecl("Alias").l) { case List(alias) =>
       alias.fullName shouldBe "code.ts::program:Alias"
       alias.code shouldBe "type Alias = string"

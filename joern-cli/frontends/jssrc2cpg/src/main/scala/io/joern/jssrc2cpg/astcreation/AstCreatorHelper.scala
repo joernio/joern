@@ -11,7 +11,6 @@ import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies
 import ujson.Value
 
 import scala.collection.{SortedMap, mutable}
-import scala.jdk.CollectionConverters.EnumerationHasAsScala
 import scala.util.{Success, Try}
 
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -38,13 +37,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     Ast(unknownNode(node, node.code))
   }
 
-  protected def registerType(typeName: String, typeFullName: String): Unit = {
-    if (usedTypes.containsKey((typeName, typeName)) && typeName != typeFullName) {
-      usedTypes.put((typeName, typeFullName), true)
-      usedTypes.remove((typeName, typeName))
-    } else if (!usedTypes.keys().asScala.exists { case (tpn, _) => tpn == typeName }) {
-      usedTypes.putIfAbsent((typeName, typeFullName), true)
-    }
+  protected def registerType(typeFullName: String): Unit = {
+    JsGlobal.usedTypes.putIfAbsent(typeFullName, true)
   }
 
   private def nodeType(node: Value): BabelNode = fromString(node("type").str)

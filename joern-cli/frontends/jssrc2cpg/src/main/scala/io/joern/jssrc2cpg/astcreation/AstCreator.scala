@@ -20,14 +20,9 @@ import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import ujson.Value
 
-import java.util.concurrent.ConcurrentHashMap
 import scala.collection.mutable
 
-class AstCreator(
-  val config: Config,
-  val parserResult: ParseResult,
-  val usedTypes: ConcurrentHashMap[(String, String), Boolean]
-)(implicit withSchemaValidation: ValidationMode)
+class AstCreator(val config: Config, val parserResult: ParseResult)(implicit withSchemaValidation: ValidationMode)
     extends AstCreatorBase(parserResult.filename)
     with AstForExpressionsCreator
     with AstForPrimitivesCreator

@@ -220,7 +220,7 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     methodName: String,
     methodFullName: String
   ): Ast = {
-    registerType(methodName, methodFullName)
+    registerType(methodFullName)
 
     val parentNode        = methodAstParentStack.head
     val astParentType     = parentNode.label
