@@ -5,7 +5,7 @@ ThisBuild / scalaVersion := "3.3.1"
 val cpgVersion = "1.4.32+26-a3caf42a"
 
 // TODO uncomment
-// lazy val joerncli          = Projects.joerncli
+lazy val joerncli          = Projects.joerncli
 // lazy val querydb           = Projects.querydb
 lazy val console           = Projects.console
 lazy val dataflowengineoss = Projects.dataflowengineoss
@@ -28,7 +28,7 @@ lazy val csharpsrc2cpg     = Projects.csharpsrc2cpg
 
 // TODO uncomment
 lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
-//   joerncli,
+  joerncli,
 //   querydb,
   console,
   dataflowengineoss,
