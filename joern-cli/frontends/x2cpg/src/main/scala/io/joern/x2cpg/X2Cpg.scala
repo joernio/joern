@@ -136,8 +136,7 @@ trait X2CpgFrontend[T <: X2CpgConfig[_]] {
     withErrorsToConsole(config) { _ =>
       createCpg(config) match {
         case Success(cpg) =>
-          // TODO discuss with Bernhard, implement AutoClosable etc.
-//          cpg.close()
+          cpg.close() // persists to disk
           Success(cpg)
         case Failure(exception) =>
           Failure(exception)
