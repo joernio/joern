@@ -11,7 +11,8 @@ final case class Config(
   dynamicDirs: Seq[String] = Seq.empty,
   dynamicPkgs: Seq[String] = Seq.empty,
   fullResolver: Boolean = false,
-  recurse: Boolean = false
+  recurse: Boolean = false,
+  deep: Int = 1
 ) extends X2CpgConfig[Config] {
   def withAndroid(android: String): Config = {
     copy(android = Some(android)).withInheritedFields(this)
@@ -25,11 +26,12 @@ final case class Config(
   def withFullResolver(value: Boolean): Config = {
     copy(fullResolver = value).withInheritedFields(this)
   }
-
   def withRecurse(value: Boolean): Config = {
-    copy(recurse = value)
+    copy(recurse = value).withInheritedFields(this)
   }
-
+  def withDeep(value: Int): Config = {
+    copy(deep = value).withInheritedFields(this)
+  }
 }
 
 private object Frontend {
@@ -50,6 +52,9 @@ private object Frontend {
       opt[Unit]("recurse")
         .text("recursively unpack jars")
         .action((_, config) => config.withRecurse(true)),
+      opt[Int]("deep")
+        .text("maximum depth of recursion")
+        .action((deep, config) => config.withDeep(deep)),
       opt[Seq[String]]("dynamic-dirs")
         .valueName("<dir1>,<dir2>,...")
         .text(

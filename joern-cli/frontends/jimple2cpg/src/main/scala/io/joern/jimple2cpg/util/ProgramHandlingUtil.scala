@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory
 
 import java.io.InputStream
 import java.util.zip.ZipEntry
-import scala.util.{Failure, Left, Success, Try}
+import scala.util.{Failure, Left, Success, Try, boundary}
 
 /** Responsible for handling JAR unpacking and handling the temporary build directory.
   */
@@ -48,11 +48,17 @@ object ProgramHandlingUtil {
     * @return
     *   The emitted values
     */
-  private def unfoldArchives[A](src: File, emitOrUnpack: File => Either[A, List[File]]): IterableOnce[A] = {
+  private def unfoldArchives[A](src: File, emitOrUnpack: File => Either[A, Map[Boolean, List[File]]], deep: Int): IterableOnce[A] = {
     // TODO: add recursion depth limit
     emitOrUnpack(src) match {
       case Left(a)             => Seq(a)
-      case Right(disposeFiles) => disposeFiles.flatMap(x => unfoldArchives(x, emitOrUnpack))
+      case Right(disposeFiles) => disposeFiles.flatMap(
+        x =>
+          if (x._1)
+            unfoldArchives(x, emitOrUnpack, deep + 1)
+          else
+            unfoldArchives(x, emitOrUnpack, deep)
+      )
     }
   }
 
@@ -77,16 +83,24 @@ object ProgramHandlingUtil {
     recurse: Boolean
   ): IterableOnce[ClassFile] = {
 
-    def shouldExtract(e: Entry) = !e.isZipSlip && e.maybeRegularFile() && (isArchive(e) || isClass(e))
+    // filter archive file unless recurse was enabled
+    def shouldExtract(e: Entry) = !e.isZipSlip && e.maybeRegularFile() && ((isArchive(e) && recurse) || isClass(e))
+    val subOfSrc                = src.listRecursively.filterNot(_.isDirectory).toList
+    var cnt = 0
+    var par = false
     unfoldArchives(
       src,
       {
         case f if isClass(Entry(f)) =>
+          par = false
           Left(ClassFile(f))
         case f if f.isDirectory() =>
           val files = f.listRecursively.filterNot(_.isDirectory).toList
+          par = false
           Right(files)
-        case f if isArchive(Entry(f)) && (recurse || f == src) =>
+        case f
+            if isArchive(Entry(f)) && (f == src
+              || (src.isDirectory() && subOfSrc.contains(f)) || recurse) =>
           val xTmp = File.newTemporaryDirectory("extract-archive-", parent = Some(tmpDir))
           val unzipDirs = Try(f.unzipTo(xTmp, e => shouldExtract(Entry(e)))) match {
             case Success(dir) => List(dir)
@@ -94,10 +108,14 @@ object ProgramHandlingUtil {
               logger.warn(s"Failed to extract archive", e)
               List.empty
           }
+          par = true
           Right(unzipDirs)
         case _ =>
+          par = false
           Right(List.empty)
-      }
+      },
+      0,
+      par
     )
   }
 
