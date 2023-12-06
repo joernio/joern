@@ -13,10 +13,10 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 class SwiftTypeRecoveryPass(cpg: Cpg, config: XTypeRecoveryConfig = XTypeRecoveryConfig())
     extends XTypeRecoveryPass[File](cpg, config) {
   override protected def generateRecoveryPass(state: XTypeRecoveryState): XTypeRecovery[File] =
-    new JavaScriptTypeRecovery(cpg, state)
+    new SwiftTypeRecovery(cpg, state)
 }
 
-private class JavaScriptTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTypeRecovery[File](cpg, state) {
+private class SwiftTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extends XTypeRecovery[File](cpg, state) {
 
   override def compilationUnit: Iterator[File] = cpg.file.iterator
 
@@ -25,12 +25,12 @@ private class JavaScriptTypeRecovery(cpg: Cpg, state: XTypeRecoveryState) extend
     builder: DiffGraphBuilder
   ): RecoverForXCompilationUnit[File] = {
     val newConfig = state.config.copy(enabledDummyTypes = state.isFinalIteration && state.config.enabledDummyTypes)
-    new RecoverForJavaScriptFile(cpg, unit, builder, state.copy(config = newConfig))
+    new RecoverForSwiftFile(cpg, unit, builder, state.copy(config = newConfig))
   }
 
 }
 
-private class RecoverForJavaScriptFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, state: XTypeRecoveryState)
+private class RecoverForSwiftFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder, state: XTypeRecoveryState)
     extends RecoverForXCompilationUnit[File](cpg, cu, builder, state) {
 
   import io.joern.x2cpg.passes.frontend.XTypeRecovery.AllNodeTypesFromNodeExt
