@@ -26,7 +26,12 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
     astGenRunnerResult.skippedFiles.foreach { skippedFile =>
       val (rootPath, fileName) = skippedFile
       val filePath             = Paths.get(rootPath, fileName)
-      val fileLOC              = IOUtils.readLinesInFile(filePath).size
+      val fileLOC = Try(IOUtils.readLinesInFile(filePath)) match {
+        case Success(filecontent) => filecontent.size
+        case Failure(exception) =>
+          logger.warn(s"Failed to read file: '${filePath}'", exception)
+          0
+      }
       report.addReportInfo(fileName, fileLOC)
     }
   }
