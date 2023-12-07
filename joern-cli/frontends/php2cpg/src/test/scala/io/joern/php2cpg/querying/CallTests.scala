@@ -156,4 +156,15 @@ class CallTests extends PhpCode2CpgFixture {
       }
     }
   }
+
+  "the code field of Call with array unpack should be correct" in {
+    val cpg = code("""
+        |<?php
+        |function test(...$param) { echo $param; }
+        |$args = [1, 2, 3];
+        |test(...$args);
+        |""".stripMargin)
+    val call = cpg.call("test").head
+    call.code shouldBe "test(...$args)"
+  }
 }
