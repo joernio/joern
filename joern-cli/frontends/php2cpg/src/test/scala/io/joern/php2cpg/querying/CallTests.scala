@@ -158,8 +158,7 @@ class CallTests extends PhpCode2CpgFixture {
   }
 
   "the code field of Call with array unpack should be correct" in {
-    val cpg = code(
-      """
+    val cpg = code("""
         |<?php
         |function test(...$param) { echo $param; }
         |$args = [1, 2, 3];

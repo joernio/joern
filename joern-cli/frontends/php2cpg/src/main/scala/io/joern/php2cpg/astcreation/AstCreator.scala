@@ -940,8 +940,11 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
         })
 
     val argsCode = arguments
-      .zip(call.args.map(_.asInstanceOf[PhpArg]))
-      .map((arg, rawArg) => (if (rawArg.unpack) "..." else "") + arg.rootCodeOrEmpty)
+      .zip(call.args.collect { case x: PhpArg => x.unpack })
+      .map {
+        case (arg, true)  => s"...${arg.rootCodeOrEmpty}"
+        case (arg, false) => arg.rootCodeOrEmpty
+      }
       .mkString(",")
 
     val codePrefix =
