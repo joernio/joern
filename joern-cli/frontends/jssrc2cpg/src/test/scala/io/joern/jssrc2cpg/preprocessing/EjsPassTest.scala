@@ -70,6 +70,17 @@ class EjsPassTest extends AbstractPassTest {
           "user.name"
         )
     }
+
+    "invalid EJS file test" in AstFixture(
+      """
+        |<body>
+        |<h1>Welcome <%@#$= user.name %></h1>
+        |</body>
+        |""".stripMargin,
+      "index.js.ejs"
+    ) { cpg =>
+      cpg.file.l.size shouldBe 0
+    }
   }
 
 }
