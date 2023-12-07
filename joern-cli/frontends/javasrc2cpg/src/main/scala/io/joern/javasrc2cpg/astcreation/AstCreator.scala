@@ -164,9 +164,7 @@ class AstCreator(
         .importedAs(name)
         .importedEntity(typeFullName)
 
-      if (importStmt.isStatic) {
-        // TODO: Deal with this case
-      } else {
+      if (!importStmt.isStatic) {
         scope.addTopLevelType(name, typeFullName)
       }
       importNode

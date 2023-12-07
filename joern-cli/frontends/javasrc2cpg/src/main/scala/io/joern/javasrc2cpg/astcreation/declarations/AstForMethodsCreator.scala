@@ -61,7 +61,6 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       ExpectedType(returnTypeFullName, expectedReturnType),
       methodDeclaration.isStatic()
     )
-    // TODO: Is this correct?
     typeParameters.foreach { typeParameter => scope.addTopLevelType(typeParameter.name, typeParameter.typeFullName) }
 
     val parameterAsts  = astsForParameterList(methodDeclaration.getParameters)

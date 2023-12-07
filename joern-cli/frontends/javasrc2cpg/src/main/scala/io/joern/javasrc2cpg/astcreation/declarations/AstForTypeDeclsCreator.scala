@@ -415,8 +415,6 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
 
             val capturedThisIdentifier =
               Option
-                // TODO: This is broken. Only add this to scope when in a non-static context and use the existence
-                //  of capturedThis to decide if this needs to be added.
                 .when(usedCaptures.exists(_.name == NameConstants.OuterClass))(capturedThis.map { thisNode =>
                   val identifier = NewIdentifier()
                     .name(thisNode.name)
