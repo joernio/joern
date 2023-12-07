@@ -939,7 +939,10 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
             ???
         })
 
-    val argsCode = arguments.map(_.rootCodeOrEmpty).mkString(",")
+    val argsCode = arguments
+      .zip(call.args.map(_.asInstanceOf[PhpArg]))
+      .map((arg, rawArg) => (if (rawArg.unpack) "..." else "") + arg.rootCodeOrEmpty)
+      .mkString(",")
 
     val codePrefix =
       if (!call.isStatic && targetAst.isDefined)
