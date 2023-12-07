@@ -24,7 +24,7 @@ import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newOperatorCallNode}
 import io.joern.x2cpg.{Ast, Defines}
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewIdentifier}
+import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewBlock, NewCall, NewIdentifier}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
 
 import scala.jdk.CollectionConverters.*
@@ -77,8 +77,11 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
     val receiverType = scopeAsts.rootType.filter(_ != TypeConstants.Any).orElse(receiverTypeOption)
 
     val argumentsCode = getArgumentCodeString(call.getArguments)
-    val codePrefix    = codePrefixForMethodCall(call)
-    val callCode      = s"$codePrefix${call.getNameAsString}($argumentsCode)"
+    val codePrefix = scopeAsts.headOption
+      .flatMap(_.root)
+      .collect { case call: NewCall => s"${call.code}." }
+      .getOrElse(codePrefixForMethodCall(call))
+    val callCode = s"$codePrefix${call.getNameAsString}($argumentsCode)"
 
     val callName       = call.getNameAsString
     val namespace      = receiverType.filter(_ != TypeConstants.Any).getOrElse(Defines.UnresolvedNamespace)
@@ -412,6 +415,7 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
   }
 
   private def codePrefixForMethodCall(call: MethodCallExpr): String = {
+
     tryWithSafeStackOverflow(call.resolve()) match {
       case Success(resolvedCall) =>
         call.getScope.toScala
