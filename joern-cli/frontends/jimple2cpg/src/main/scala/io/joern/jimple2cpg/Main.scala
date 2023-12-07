@@ -54,7 +54,8 @@ private object Frontend {
         .action((_, config) => config.withRecurse(true)),
       opt[Int]("depths")
         .text("maximum depth of recursively unpack jars, default value 1")
-        .action((depths, config) => config.withDepths(depths)),
+        .action((depths, config) => config.withDepths(depths))
+        .validate(x => if (x > 0) success else failure("depths must be greater than 0")),
       opt[Seq[String]]("dynamic-dirs")
         .valueName("<dir1>,<dir2>,...")
         .text(
