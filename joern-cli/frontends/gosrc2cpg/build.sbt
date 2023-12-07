@@ -11,7 +11,7 @@ libraryDependencies ++= Seq(
   "io.shiftleft"              %% "codepropertygraph" % Versions.cpg,
   "org.scalatest"             %% "scalatest"         % Versions.scalatest % Test,
   "com.lihaoyi"               %% "os-lib"            % "0.9.1",
-  "com.fasterxml.jackson.core" % "jackson-databind"  % "2.15.2",
+  "com.fasterxml.jackson.core" % "jackson-databind"  % "2.15.3",
   "io.circe"                  %% "circe-core"        % Versions.circe,
   "io.circe"                  %% "circe-generic"     % Versions.circe,
   "io.circe"                  %% "circe-parser"      % Versions.circe
