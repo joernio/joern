@@ -4,9 +4,9 @@ import io.joern.jssrc2cpg.datastructures.{BlockScope, MethodScope, ScopeType}
 import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.jssrc2cpg.passes.Defines
-import io.joern.x2cpg.{Ast, ValidationMode, AstNodeBuilder}
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.utils.NodeBuilders.{newDependencyNode}
+import io.joern.x2cpg.utils.NodeBuilders.newDependencyNode
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewImport}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes}
 import ujson.Value
@@ -39,11 +39,16 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       case ClassExpression if hasName(obj.json)     => Seq(obj.json("id")("name").str)
       case VariableDeclarator if hasName(obj.json) =>
         createBabelNodeInfo(obj.json("id")).node match {
-          case ArrayPattern => obj.json("id")("elements").arr.toSeq.map(createBabelNodeInfo).map(_.code)
-          case _            => Seq(obj.json("id")("name").str)
+          case ArrayPattern =>
+            obj.json("id")("elements").arr.toSeq.map(createBabelNodeInfo).map(_.code)
+          case ObjectPattern =>
+            obj.json("id")("properties").arr.toSeq.flatMap(p => codeForBabelNodeInfo(createBabelNodeInfo(p)))
+          case _ =>
+            Seq(obj.json("id")("name").str)
         }
       case VariableDeclarator => Seq(code(obj.json("id")))
       case MemberExpression   => Seq(code(obj.json("property")))
+      case ObjectProperty     => Seq(code(obj.json("key")))
       case ObjectExpression =>
         obj.json("properties").arr.toSeq.flatMap(d => codeForBabelNodeInfo(createBabelNodeInfo(d)))
       case VariableDeclaration =>
