@@ -39,6 +39,8 @@ class TypeNodePass protected (
       .toSet
   }
 
+  protected def fullToShortName(typeName: String): String = TypeNodePass.fullToShortName(typeName)
+
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     val typeFullNameValues =
       if (getTypesFromCpg)
@@ -79,11 +81,8 @@ object TypeNodePass {
 
   def fullToShortName(typeName: String): String = {
     typeName match {
-      case lambdaTypeRegex(methodName)                                   => methodName
-      case name if name.endsWith(":program")                             => ":program" // for JavaScript only atm.
-      case name if name.endsWith(NamespaceTraversal.globalNamespaceName) => NamespaceTraversal.globalNamespaceName
-      case name if name.contains(":") => name.split(':').lastOption.getOrElse(typeName)
-      case _                          => typeName.split('.').lastOption.getOrElse(typeName)
+      case lambdaTypeRegex(methodName) => methodName
+      case _                           => typeName.split('.').lastOption.getOrElse(typeName)
     }
   }
 }

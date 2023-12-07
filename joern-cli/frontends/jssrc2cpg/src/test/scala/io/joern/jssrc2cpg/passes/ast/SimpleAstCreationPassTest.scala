@@ -404,7 +404,8 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
     "have correct structure for 1 object with object function" in AstFixture("""
        |var x = {
        | key1: value(),
-       | foo() {}
+       | foo() {},
+       | 'bladad'() {}
        |}
        |""".stripMargin) { cpg =>
       val List(methodBlock) = cpg.method.nameExact(":program").astChildren.isBlock.l

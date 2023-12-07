@@ -156,7 +156,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   private def calcMethodName(func: BabelNodeInfo): String = func.node match {
-    case TSCallSignatureDeclaration      => nextClosureName()
+    case ObjectMethod if isMethodOrGetSet(func) && code(func.json("key")).startsWith("'") => nextClosureName()
+    case TSCallSignatureDeclaration                                                       => nextClosureName()
     case TSConstructSignatureDeclaration => io.joern.x2cpg.Defines.ConstructorMethodName
     case _ if isMethodOrGetSet(func) =>
       if (hasKey(func.json("key"), "name")) func.json("key")("name").str
