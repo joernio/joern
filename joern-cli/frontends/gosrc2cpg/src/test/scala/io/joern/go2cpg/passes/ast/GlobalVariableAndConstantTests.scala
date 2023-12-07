@@ -1,7 +1,6 @@
 package io.joern.go2cpg.passes.ast
 
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
-import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
 
@@ -38,21 +37,8 @@ class GlobalVariableAndConstantTests extends GoCodeToCpgSuite {
     }
 
     "Be correct for Field Access CALL Node for Global variable access" in {
-      val List(a, b, c) = cpg.call(Operators.fieldAccess).l
-      a.lineNumber shouldBe Some(10)
-      b.lineNumber shouldBe Some(4)
-      c.lineNumber shouldBe Some(7)
-    }
-
-    "Create Constructor method for Package level global variable initialisation" in {
-      val List(x) = cpg.method(s".*${Defines.StaticInitMethodName}").l
-      x.fullName shouldBe s"main${Defines.StaticInitMethodName}"
-    }
-
-    "Be correct for Literal nodes " in {
-      val List(a, b) = cpg.literal.l
-      a.code shouldBe "\"Test\""
-      b.code shouldBe "100"
+      val List(x) = cpg.call(Operators.fieldAccess).l
+      x.typeFullName shouldBe "string"
     }
   }
 
@@ -85,9 +71,8 @@ class GlobalVariableAndConstantTests extends GoCodeToCpgSuite {
     )
 
     "Be correct for Field Access CALL Node for Global variable access" in {
-      val List(x, y) = cpg.call(Operators.fieldAccess).l
-      x.code shouldBe "lib1.SchemeHTTP"
-      y.code shouldBe "SchemeHTTP"
+      val List(x) = cpg.call(Operators.fieldAccess).l
+      x.typeFullName shouldBe "string"
     }
 
     "Check methodfullname of variable imported from other package " in {
@@ -125,9 +110,8 @@ class GlobalVariableAndConstantTests extends GoCodeToCpgSuite {
     )
 
     "Be correct for Field Access CALL Node for Global variable access" in {
-      val List(x, y) = cpg.call(Operators.fieldAccess).l
-      x.code shouldBe "lib1.SchemeHTTP"
-      y.code shouldBe "SchemeHTTP"
+      val List(x) = cpg.call(Operators.fieldAccess).l
+      x.typeFullName shouldBe "string"
     }
 
     "Check methodfullname of variable imported from other package " in {
@@ -164,9 +148,8 @@ class GlobalVariableAndConstantTests extends GoCodeToCpgSuite {
     )
 
     "Be correct for Field Access CALL Node for Global variable access" in {
-      val List(x, y) = cpg.call(Operators.fieldAccess).l
-      x.code shouldBe "lib1.SchemeHTTP"
-      y.code shouldBe "SchemeHTTP"
+      val List(x) = cpg.call(Operators.fieldAccess).l
+      x.typeFullName shouldBe "string"
     }
 
     "Check methodfullname of constant imported from other package " in {
@@ -206,10 +189,9 @@ class GlobalVariableAndConstantTests extends GoCodeToCpgSuite {
     )
 
     "Be correct for Field Access CALL Node for Global variable access" in {
-      val List(a, b, c) = cpg.call(Operators.fieldAccess).l
+      val List(a, b) = cpg.call(Operators.fieldAccess).l
       a.typeFullName shouldBe "string"
       b.typeFullName shouldBe "joern.io/sample/lib2.SchemeHTTP.<FieldAccess>.<unknown>"
-      c.code shouldBe "SchemeHTTP"
     }
 
     "Check methodfullname of constant imported from other package " in {

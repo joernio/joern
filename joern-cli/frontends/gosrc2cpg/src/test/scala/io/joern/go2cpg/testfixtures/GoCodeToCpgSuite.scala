@@ -54,7 +54,5 @@ class GoCodeToCpgSuite(fileSuffix: String = ".go", withOssDataflow: Boolean = fa
     GoGlobal.methodFullNameReturnTypeMap.clear()
     GoGlobal.aliasToNameSpaceMapping.clear()
     GoGlobal.structTypeMemberTypeMapping.clear()
-    GoGlobal.lambdaSignatureToLambdaTypeMap.clear()
-    GoGlobal.pkgLevelVarAndConstantAstMap.clear()
   }
 }
