@@ -2,7 +2,7 @@ package io.joern.gosrc2cpg.datastructures
 
 import io.joern.gosrc2cpg.astcreation.Defines
 import io.joern.x2cpg.datastructures.Global
-
+import io.joern.x2cpg.Ast
 import java.util.concurrent.ConcurrentHashMap
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
 
@@ -24,6 +24,8 @@ object GoGlobal extends Global {
   val aliasToNameSpaceMapping: ConcurrentHashMap[String, String] = new ConcurrentHashMap()
 
   val lambdaSignatureToLambdaTypeMap: ConcurrentHashMap[String, Set[(String, String)]] = new ConcurrentHashMap()
+
+  val pkgLevelVarAndConstantAstMap: ConcurrentHashMap[String, Set[(Ast, String)]] = new ConcurrentHashMap()
 
   // Mapping method fullname to its return type and signature
   val methodFullNameReturnTypeMap: ConcurrentHashMap[String, (String, String)] = new ConcurrentHashMap()
@@ -57,6 +59,17 @@ object GoGlobal extends Global {
 
   def recordFullNameToReturnType(methodFullName: String, returnType: String, signature: String): Unit = {
     methodFullNameReturnTypeMap.putIfAbsent(methodFullName, (returnType, signature))
+  }
+
+  def recordPkgLevelVarAndConstantAst(pkg: String, ast: Ast, filePath: String): Unit = {
+    synchronized {
+      Option(pkgLevelVarAndConstantAstMap.get(pkg)) match {
+        case Some(existingList) =>
+          val t = (ast, filePath)
+          pkgLevelVarAndConstantAstMap.put(pkg, existingList + t)
+        case None => pkgLevelVarAndConstantAstMap.put(pkg, Set((ast, filePath)))
+      }
+    }
   }
 
   def recordLambdaSigntureToLambdaType(

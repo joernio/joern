@@ -1,9 +1,15 @@
 package io.joern.gosrc2cpg
 
 import better.files.File
+import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.model.GoModHelper
 import io.joern.gosrc2cpg.parser.GoAstJsonParser
-import io.joern.gosrc2cpg.passes.{AstCreationPass, DownloadDependenciesPass, MethodAndTypeCacheBuilderPass}
+import io.joern.gosrc2cpg.passes.{
+  AstCreationPass,
+  DownloadDependenciesPass,
+  MethodAndTypeCacheBuilderPass,
+  PackageCtorCreationPass
+}
 import io.joern.gosrc2cpg.utils.AstGenRunner
 import io.joern.gosrc2cpg.utils.AstGenRunner.GoAstGenRunnerResult
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
@@ -32,7 +38,8 @@ class GoSrc2Cpg extends X2CpgFrontend[Config] {
         val astCreators =
           new MethodAndTypeCacheBuilderPass(Some(cpg), astGenResult.parsedFiles, config, goMod).process()
         new AstCreationPass(cpg, astCreators, config, report).createAndApply()
-//        TypeNodePass.withRegisteredTypes(GoGlobal.typesSeen(), cpg).createAndApply()
+        if GoGlobal.pkgLevelVarAndConstantAstMap.size() > 0 then
+          new PackageCtorCreationPass(cpg, config).createAndApply()
         report.print()
       }
     }
