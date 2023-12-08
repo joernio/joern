@@ -68,6 +68,11 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
         |}
         |""".stripMargin)
 
+    "create the correct type node for the lambda" in {
+      cpg.typ.name(".*lambda.*").name.l shouldBe List("<lambda>0")
+      cpg.typ.name(".*lambda.*").fullName.l shouldBe List("Foo.<lambda>0:java.lang.String(java.lang.String)")
+    }
+
     "create a method node for the lambda" in {
       cpg.typeDecl.name("Foo").method.name(".*lambda.*").isLambda.l match {
         case List(lambdaMethod) =>
