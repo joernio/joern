@@ -16,7 +16,11 @@ import com.github.javaparser.ast.expr.{
 import com.github.javaparser.ast.nodeTypes.{NodeWithName, NodeWithSimpleName}
 import com.github.javaparser.ast.{CompilationUnit, Node, PackageDeclaration}
 import com.github.javaparser.resolution.UnsolvedSymbolException
-import com.github.javaparser.resolution.declarations.{ResolvedMethodLikeDeclaration, ResolvedReferenceTypeDeclaration}
+import com.github.javaparser.resolution.declarations.{
+  ResolvedMethodDeclaration,
+  ResolvedMethodLikeDeclaration,
+  ResolvedReferenceTypeDeclaration
+}
 import com.github.javaparser.resolution.types.ResolvedType
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
 import com.github.javaparser.symbolsolver.JavaSymbolSolver
@@ -29,7 +33,17 @@ import io.joern.javasrc2cpg.scope.Scope.*
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.BindingTable.createBindingTable
-import io.joern.javasrc2cpg.util.{BindingTable, BindingTableAdapterForJavaparser, NameConstants}
+import io.joern.javasrc2cpg.util.MultiBindingTableAdapterForJavaparser.{
+  InnerClassDeclaration,
+  JavaparserBindingDeclType,
+  RegularClassDeclaration
+}
+import io.joern.javasrc2cpg.util.{
+  BindingTable,
+  BindingTableAdapterForJavaparser,
+  MultiBindingTableAdapterForJavaparser,
+  NameConstants
+}
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.utils.OffsetUtils
 import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode}
@@ -102,7 +116,7 @@ class AstCreator(
 
   /** Copy nodes/edges of given `AST` into the diff graph
     */
-  private def storeInDiffGraph(ast: Ast): Unit = {
+  def storeInDiffGraph(ast: Ast): Unit = {
     Ast.storeInDiffGraph(ast, diffGraph)
   }
 
@@ -150,10 +164,8 @@ class AstCreator(
         .importedAs(name)
         .importedEntity(typeFullName)
 
-      if (importStmt.isStatic()) {
-        scope.addStaticImport(importNode)
-      } else {
-        scope.addType(name, typeFullName)
+      if (!importStmt.isStatic) {
+        scope.addTopLevelType(name, typeFullName)
       }
       importNode
     }
@@ -185,19 +197,18 @@ class AstCreator(
       val importNodes = addImportsToScope(compilationUnit).map(Ast(_))
 
       val typeDeclAsts = compilationUnit.getTypes.asScala.map { typ =>
-        astForTypeDecl(typ, astParentType = NodeTypes.NAMESPACE_BLOCK, astParentFullName = namespaceBlock.fullName)
+        astForTypeDeclaration(typ)
       }
 
       // TODO: Add ASTs
-      scope.popScope()
+      scope.popNamespaceScope()
       Ast(namespaceBlock).withChildren(typeDeclAsts).withChildren(importNodes)
     } catch {
       case t: UnsolvedSymbolException =>
         logger.error(s"Unsolved symbol exception caught in $filename")
         Ast()
       case t: Throwable =>
-        logger.error(s"Parsing file $filename failed with $t")
-        logger.error(s"Caused by ${t.getCause}")
+        logger.error(s"Parsing file $filename failed", t)
         Ast()
     }
   }
@@ -230,20 +241,36 @@ class AstCreator(
     }
   }
 
-  def getBindingTable(typeDecl: ResolvedReferenceTypeDeclaration): BindingTable = {
-    val fullName = typeInfoCalc.fullName(typeDecl).getOrElse {
+  private def fullNameForBindingTable(typeDecl: ResolvedReferenceTypeDeclaration): String = {
+    typeInfoCalc.fullNameWithoutRegistering(typeDecl).getOrElse {
       val qualifiedName = typeDecl.getQualifiedName
       logger.warn(s"Could not get full name for resolved type decl $qualifiedName. THIS SHOULD NOT HAPPEN!")
       qualifiedName
     }
+  }
+
+  def getMultiBindingTable(typeDecl: JavaparserBindingDeclType): BindingTable = {
+    val fullName = typeDecl match {
+      case RegularClassDeclaration(resolvedRefType, _) => fullNameForBindingTable(resolvedRefType)
+
+      case innerClassDeclaration: InnerClassDeclaration => innerClassDeclaration.fullName
+    }
     bindingTableCache.getOrElseUpdate(
       fullName,
-      createBindingTable(fullName, typeDecl, getBindingTable, new BindingTableAdapterForJavaparser(methodSignature))
+      createBindingTable(
+        fullName,
+        typeDecl,
+        getMultiBindingTable,
+        new MultiBindingTableAdapterForJavaparser(methodSignature)
+      )
     )
   }
 
-  def expressionReturnTypeFullName(expr: Expression): Option[String] = {
+  def getBindingTable(typeDecl: ResolvedReferenceTypeDeclaration): BindingTable = {
+    getMultiBindingTable(RegularClassDeclaration(typeDecl, ResolvedTypeParametersMap.empty()))
+  }
 
+  def expressionReturnTypeFullName(expr: Expression): Option[String] = {
     val resolvedTypeOption = tryWithSafeStackOverflow(expr.calculateResolvedType()) match {
       case Failure(ex) =>
         ex match {
@@ -261,7 +288,7 @@ class AstCreator(
             }
           case _ => None
         }
-      case Success(resolvedType) => typeInfoCalc.fullName(resolvedType)
+      case Success(resolvedType) => typeInfoCalc.fullNameWithoutRegistering(resolvedType)
     }
     resolvedTypeOption.orElse(exprNameFromStack(expr))
   }

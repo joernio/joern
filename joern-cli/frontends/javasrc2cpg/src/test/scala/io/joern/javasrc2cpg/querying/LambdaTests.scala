@@ -713,4 +713,28 @@ class LambdaTests extends JavaSrcCode2CpgFixture {
     }
 
   }
+
+  "object creation expressions in lambdas" should {
+    val cpg = code("""
+        |import java.util.ArrayList;
+        |
+        |public class Foo {
+        |  public Integer method(ArrayList<Integer> list, Integer aaa) {
+        |    ArrayList<Integer> mappedList = list.stream().map(integer -> {
+        |      ArrayList<Integer> nestedList = new ArrayList<>();
+        |    });
+        |
+        |    return 0;
+        |  }
+        |}
+        |""".stripMargin)
+
+    "not create identifiers without parents" in {
+      cpg.identifier.name("nestedList").astParent.nonEmpty shouldBe true
+    }
+
+    "have init args created correctly" in {
+      cpg.call.nameExact("<init>").count(_.argument.isEmpty) shouldBe 0
+    }
+  }
 }

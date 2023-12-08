@@ -71,7 +71,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
       .collect { case identifier: NewIdentifier => identifier }
       .find { identifier => identifier.name == NameConstants.This || identifier.name == NameConstants.Super }
       .map { _ =>
-        val typeFullName = scope.enclosingTypeDeclFullName
+        val typeFullName = scope.enclosingTypeDecl.fullName
         Ast(thisNodeForMethod(typeFullName, line(expr)))
       }
       .toList
@@ -133,7 +133,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
     parameters: Seq[Ast],
     returnType: Option[String]
   ): NewMethod = {
-    val enclosingTypeName = scope.enclosingTypeDeclFullName.getOrElse(Defines.UnresolvedNamespace)
+    val enclosingTypeName = scope.enclosingTypeDecl.fullName.getOrElse(Defines.UnresolvedNamespace)
     val signature         = lambdaMethodSignature(returnType, parameters)
     val lambdaFullName    = composeMethodFullName(enclosingTypeName, lambdaName, signature)
 
@@ -207,9 +207,9 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
     }
   }
 
-  // TODO: All of this will be thrown out, probably
   def astForLambdaExpr(expr: LambdaExpr, expectedType: ExpectedType): Ast = {
-    scope.pushMethodScope(NewMethod(), expectedType)
+    // TODO: lambda method scope can be static if no non-static captures are used
+    scope.pushMethodScope(NewMethod(), expectedType, isStatic = false)
 
     val lambdaMethodName = nextClosureName()
 
@@ -238,7 +238,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
     val lambdaTypeDeclNode = createAndPushLambdaTypeDecl(lambdaMethodNode, implementedInfo)
     BindingTable.createBindingNodes(diffGraph, lambdaTypeDeclNode, bindingTable)
 
-    scope.popScope()
+    scope.popMethodScope()
     Ast(methodRef)
   }
 
@@ -268,7 +268,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
 
         val scopeVariable = variables.head
         val capturedLocal = newLocalNode(scopeVariable.name, scopeVariable.typeFullName, Option(closureBindingId))
-        scope.addLocal(capturedLocal)
+        scope.enclosingBlock.foreach(_.addLocal(capturedLocal))
 
         ClosureBindingEntry(scopeVariable, closureBindingNode) -> capturedLocal
       }
@@ -287,7 +287,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
       case block: BlockStmt =>
         scope.pushBlockScope()
         val stmts = block.getStatements.asScala.flatMap(astsForStatement).toSeq
-        scope.popScope()
+        scope.popBlockScope()
         stmts
       case stmt if returnType.contains(TypeConstants.Void) => astsForStatement(stmt)
       case stmt =>
@@ -383,7 +383,7 @@ private[expressions] trait AstForLambdasCreator { this: AstCreator =>
       }
 
     parameterNodes.foreach { paramNode =>
-      scope.addParameter(paramNode)
+      scope.enclosingMethod.get.addParameter(paramNode)
     }
 
     parameterNodes.map(Ast(_))

@@ -100,17 +100,17 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
 
   "foreach loops over arrays imported through static imports" should {
     val cpg = code("""
-		|import static Bar.STATIC_ARR;
-		|public class Foo {
-		|  public static void sink(String s) {}
-		|
-		|  public static void foo() {
-		|    for (String s : STATIC_ARR) {
-		|      sink(s);
-		|    }
-		|  }
-		|}
-		|""".stripMargin)
+        |import static Bar.STATIC_ARR;
+        |public class Foo {
+        |  public static void sink(String s) {}
+        |
+        |  public static void foo() {
+        |    for (String s : STATIC_ARR) {
+        |      sink(s);
+        |    }
+        |  }
+        |}
+        |""".stripMargin)
       .moreCode(
         """
         |public class Bar {
@@ -120,11 +120,22 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
         fileName = "Bar.java"
       )
 
-    "create the correct number of STATIC_ARR identifiers" in {
-      // One in definition in class Bar
-      // One in fieldAccess STATIC_ARR.length
-      // One in indexAccess STATIC_ARR[tmpIdx]
-      cpg.identifier.name("STATIC_ARR").size shouldBe 3
+    "have the correct assignment target in the clinit block of the defining class" in {
+      inside(cpg.typeDecl.name("Bar").method.nameExact("<clinit>").body.astChildren.l) { case List(assignment: Call) =>
+        assignment.name shouldBe Operators.assignment
+
+        inside(assignment.argument.l) { case List(fieldAccess: Call, _: Call) =>
+          fieldAccess.name shouldBe Operators.fieldAccess
+          fieldAccess.typeFullName shouldBe "java.lang.String[]"
+
+          inside(fieldAccess.argument.l) { case List(barIdentifier: Identifier, staticArr: FieldIdentifier) =>
+            barIdentifier.name shouldBe "Bar"
+            barIdentifier.typeFullName shouldBe "Bar"
+
+            staticArr.canonicalName shouldBe "STATIC_ARR"
+          }
+        }
+      }
     }
 
     "not create REF edges from the STATIC_ARR identifiers to the import identifier used only during AST generation" in {

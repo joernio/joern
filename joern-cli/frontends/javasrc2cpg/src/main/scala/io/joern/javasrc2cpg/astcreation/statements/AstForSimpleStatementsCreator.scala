@@ -29,6 +29,7 @@ import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Dispatch
 
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
+import io.joern.javasrc2cpg.scope.JavaScopeElement.PartialInit
 
 trait AstForSimpleStatementsCreator { this: AstCreator =>
   def astForBlockStatement(stmt: BlockStmt, codeStr: String = "<empty>", prefixAsts: Seq[Ast] = Seq.empty): Ast = {
@@ -41,20 +42,21 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
 
     val stmtAsts = stmt.getStatements.asScala.flatMap(astsForStatement)
 
-    scope.popScope()
+    scope.popBlockScope()
     Ast(block)
       .withChildren(prefixAsts)
       .withChildren(stmtAsts)
   }
 
   private[statements] def astForExplicitConstructorInvocation(stmt: ExplicitConstructorInvocationStmt): Ast = {
+    // TODO Handle super
     val maybeResolved = tryWithSafeStackOverflow(stmt.resolve())
     val args          = argAstsForCall(stmt, maybeResolved, stmt.getArguments)
     val argTypes      = argumentTypesForMethodLike(maybeResolved)
 
     val typeFullName = maybeResolved.toOption
       .map(_.declaringType())
-      .flatMap(typeInfoCalc.fullName)
+      .flatMap(typ => scope.lookupType(typ.getName()).orElse(typeInfoCalc.fullName(typ)))
 
     val callRoot = initNode(
       typeFullName.orElse(Some(TypeConstants.Any)),
@@ -71,7 +73,15 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
     }
     val thisAst = Ast(thisNode)
 
-    callAst(callRoot, args, Some(thisAst))
+    val initAst = Ast(callRoot)
+
+    // callAst(callRoot, args, Some(thisAst))
+    scope.enclosingTypeDecl.foreach(
+      _.registerInitToComplete(
+        PartialInit(typeFullName.getOrElse(TypeConstants.Any), initAst, thisAst, args.toList, None)
+      )
+    )
+    initAst
   }
 
   private[statements] def astForAssertStatement(stmt: AssertStmt): Ast = {

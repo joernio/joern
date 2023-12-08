@@ -6,11 +6,16 @@ import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParame
 import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserAnnotationDeclaration
 import com.github.javaparser.symbolsolver.javassistmodel.JavassistAnnotationDeclaration
 import com.github.javaparser.symbolsolver.reflectionmodel.ReflectionAnnotationDeclaration
+import io.joern.javasrc2cpg.util.MultiBindingTableAdapterForJavaparser.{
+  InnerClassDeclaration,
+  JavaparserBindingDeclType,
+  RegularClassDeclaration
+}
 import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, getAllParents, safeGetAncestors}
 import io.shiftleft.codepropertygraph.generated.nodes.NewBinding
 
 import scala.jdk.OptionConverters.RichOptional
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 object Shared {
   def getDeclaredMethods(typeDecl: ResolvedReferenceTypeDeclaration): Iterable[ResolvedMethodDeclaration] = {
@@ -24,6 +29,131 @@ object Shared {
       case _ => typeDecl.getDeclaredMethods.asScala
     }
   }
+}
+
+class MultiBindingTableAdapterForJavaparser(
+  methodSignatureImpl: (ResolvedMethodDeclaration, ResolvedTypeParametersMap) => String
+) extends BindingTableAdapter[
+      JavaparserBindingDeclType,
+      JavaparserBindingDeclType,
+      ResolvedMethodDeclaration,
+      ResolvedTypeParametersMap
+    ] {
+  private val regularBindingTableAdapter = new BindingTableAdapterForJavaparser(methodSignatureImpl)
+  override def directParents(typeDecl: JavaparserBindingDeclType): collection.Seq[JavaparserBindingDeclType] = {
+    typeDecl match {
+      case RegularClassDeclaration(resolvedDeclaration, _) =>
+        regularBindingTableAdapter
+          .directParents(resolvedDeclaration)
+          .map(RegularClassDeclaration(_, ResolvedTypeParametersMap.empty()))
+
+      case InnerClassDeclaration(fullName, directParents, methodDeclarations, typeParametersMap) => directParents
+    }
+  }
+
+  override def allParentsWithTypeMap(
+    typeDecl: JavaparserBindingDeclType
+  ): collection.Seq[(JavaparserBindingDeclType, ResolvedTypeParametersMap)] = {
+    typeDecl match {
+      case RegularClassDeclaration(resolvedDeclaration, _) =>
+        regularBindingTableAdapter.allParentsWithTypeMap(resolvedDeclaration).map {
+          case (resolvedDecl, typeParametersMap) =>
+            (RegularClassDeclaration(resolvedDecl, typeParametersMap), typeParametersMap)
+        }
+
+      case InnerClassDeclaration(_, directParents, _, _) =>
+        directParents.flatMap {
+          case RegularClassDeclaration(resolvedDeclaration, _) if resolvedDeclaration.isJavaLangObject => Nil
+
+          case regularClassDeclaration: RegularClassDeclaration =>
+            (regularClassDeclaration, regularClassDeclaration.typeParametersMap) :: Nil
+
+          case innerClassDeclaration: InnerClassDeclaration =>
+            val thisParent              = (innerClassDeclaration, innerClassDeclaration.typeParametersMap)
+            val grandParentsWithTypeMap = innerClassDeclaration.directParents.flatMap(allParentsWithTypeMap(_).toList)
+            thisParent :: grandParentsWithTypeMap
+
+        }
+    }
+  }
+
+  override def directBindingTableEntries(
+    typeDeclFullName: String,
+    typeDecl: JavaparserBindingDeclType
+  ): collection.Seq[BindingTableEntry] = {
+    typeDecl match {
+      case RegularClassDeclaration(resolvedDeclaration, _) =>
+        regularBindingTableAdapter.directBindingTableEntries(typeDeclFullName, resolvedDeclaration)
+
+      case InnerClassDeclaration(_, _, methodDeclarations, _) =>
+        methodDeclarations
+          .filter(method => !method.isStatic)
+          .map { methodDecl =>
+            val signature = getMethodSignature(methodDecl, ResolvedTypeParametersMap.empty())
+            BindingTableEntry.apply(
+              methodDecl.getName,
+              signature,
+              composeMethodFullName(typeDeclFullName, methodDecl.getName, signature)
+            )
+          }
+          .toBuffer
+    }
+  }
+
+  override def getDeclaredMethods(
+    typeDecl: JavaparserBindingDeclType
+  ): Iterable[(String, ResolvedMethodDeclaration)] = {
+    typeDecl match {
+      case RegularClassDeclaration(resolvedDeclaration, _) =>
+        regularBindingTableAdapter.getDeclaredMethods(resolvedDeclaration)
+
+      case InnerClassDeclaration(_, _, methodDeclarations, _) =>
+        methodDeclarations.map(resolvedMethod => (resolvedMethod.getName, resolvedMethod))
+    }
+  }
+
+  override def getMethodSignature(methodDecl: ResolvedMethodDeclaration, typeMap: ResolvedTypeParametersMap): String = {
+    methodSignatureImpl(methodDecl, typeMap)
+  }
+
+  override def getMethodSignatureForEmptyTypeMap(methodDecl: ResolvedMethodDeclaration): String = {
+    methodSignatureImpl(methodDecl, ResolvedTypeParametersMap.empty())
+  }
+
+  override def typeDeclEquals(
+    astTypeDecl: JavaparserBindingDeclType,
+    inputTypeDecl: JavaparserBindingDeclType
+  ): Boolean = {
+    (astTypeDecl, inputTypeDecl) match {
+      case (RegularClassDeclaration(resolvedAstDecl, _), RegularClassDeclaration(resolvedInputDecl, _)) =>
+        regularBindingTableAdapter.typeDeclEquals(resolvedAstDecl, resolvedInputDecl)
+
+      case (innerAstDecl: InnerClassDeclaration, innerInputDecl: InnerClassDeclaration) =>
+        innerAstDecl.fullName == innerInputDecl.fullName
+
+      case _ =>
+        // TODO: Does it ever make sense to compare different types of classes? I suspect any "valid" case to do so
+        //  would be a bug.
+        false
+    }
+  }
+}
+
+object MultiBindingTableAdapterForJavaparser {
+  sealed trait JavaparserBindingDeclType
+
+  case class InnerClassDeclaration(
+    fullName: String,
+    directParents: List[JavaparserBindingDeclType],
+    methodDeclarations: List[ResolvedMethodDeclaration],
+    typeParametersMap: ResolvedTypeParametersMap
+  ) extends JavaparserBindingDeclType
+
+  case class RegularClassDeclaration(
+    resolvedDeclaration: ResolvedReferenceTypeDeclaration,
+    typeParametersMap: ResolvedTypeParametersMap
+  ) extends JavaparserBindingDeclType
+
 }
 
 class BindingTableAdapterForJavaparser(

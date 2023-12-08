@@ -35,7 +35,10 @@ class EagerSourceTypeSolver(
               case Some(fullyQualifiedName) => fullyQualifiedName
               case None =>
                 val name = typeDeclaration.getNameAsString
-                logger.error(s"Could not find fully qualified name for typeDecl $name")
+                // Local classes aren't expected to have a fully qualified name
+                if (typeDeclaration.isTopLevelType() || typeDeclaration.isNestedType()) {
+                  logger.warn(s"Could not find fully qualified name for typeDecl $name")
+                }
                 name
             }
             TypeSizeReducer.simplifyType(typeDeclaration)

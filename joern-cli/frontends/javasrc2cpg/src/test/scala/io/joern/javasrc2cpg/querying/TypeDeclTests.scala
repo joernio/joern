@@ -164,7 +164,8 @@ class TypeDeclTests extends JavaSrcCode2CpgFixture {
       ModifierTypes.PUBLIC
     )
 
-    constructor.parameter.size shouldBe 1
+    constructor.parameter.size shouldBe 2
+    constructor.parameter.name.toList shouldBe List("this", "outerClass")
     val thisParam = constructor.parameter.head
     thisParam.name shouldBe "this"
     thisParam.typeFullName shouldBe typeFullName

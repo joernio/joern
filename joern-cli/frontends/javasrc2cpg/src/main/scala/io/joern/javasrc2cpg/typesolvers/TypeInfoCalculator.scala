@@ -39,6 +39,10 @@ class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
     nameOrFullName(typ, typeParamValues, fullyQualified = true).map(registerType)
   }
 
+  def fullNameWithoutRegistering(typ: ResolvedType): Option[String] = {
+    nameOrFullName(typ, emptyTypeParamValues, fullyQualified = true)
+  }
+
   private def typesSubstituted(
     trySubstitutedType: Try[ResolvedType],
     typeParamDecl: ResolvedTypeParameterDeclaration
@@ -162,6 +166,10 @@ class TypeInfoCalculator(global: Global, symbolResolver: SymbolResolver) {
 
   def fullName(decl: ResolvedDeclaration): Option[String] = {
     nameOrFullName(decl, fullyQualified = true).map(registerType)
+  }
+
+  def fullNameWithoutRegistering(decl: ResolvedDeclaration): Option[String] = {
+    nameOrFullName(decl, fullyQualified = true)
   }
 
   private def nameOrFullName(decl: ResolvedDeclaration, fullyQualified: Boolean): Option[String] = {

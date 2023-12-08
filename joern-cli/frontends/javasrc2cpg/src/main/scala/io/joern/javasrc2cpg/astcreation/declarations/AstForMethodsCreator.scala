@@ -1,7 +1,15 @@
 package io.joern.javasrc2cpg.astcreation.declarations
 
+import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import com.github.javaparser.ast.NodeList
-import com.github.javaparser.ast.body.{CallableDeclaration, ConstructorDeclaration, MethodDeclaration, Parameter}
+import com.github.javaparser.ast.body.{
+  CallableDeclaration,
+  ConstructorDeclaration,
+  FieldDeclaration,
+  MethodDeclaration,
+  Parameter,
+  VariableDeclarator
+}
 import com.github.javaparser.ast.stmt.{BlockStmt, ExplicitConstructorInvocationStmt}
 import com.github.javaparser.resolution.declarations.{ResolvedMethodDeclaration, ResolvedMethodLikeDeclaration}
 import com.github.javaparser.resolution.types.ResolvedType
@@ -21,10 +29,18 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewModifier
 }
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, ModifierTypes}
+import io.joern.javasrc2cpg.scope.JavaScopeElement.fullName
 
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
 import scala.util.Try
+import io.shiftleft.codepropertygraph.generated.nodes.AstNodeNew
+import io.shiftleft.codepropertygraph.generated.nodes.NewCall
+import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import com.github.javaparser.ast.Node
+import io.joern.javasrc2cpg.astcreation.declarations.AstForMethodsCreator.PartialConstructorDeclaration
 
 private[declarations] trait AstForMethodsCreator { this: AstCreator =>
   def astForMethod(methodDeclaration: MethodDeclaration): Ast = {
@@ -40,13 +56,17 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       .orElse(scope.lookupType(simpleMethodReturnType))
       .orElse(typeParameters.find(_.name == simpleMethodReturnType).map(_.typeFullName))
 
-    scope.pushMethodScope(methodNode, ExpectedType(returnTypeFullName, expectedReturnType))
-    typeParameters.foreach { typeParameter => scope.addType(typeParameter.name, typeParameter.typeFullName) }
+    scope.pushMethodScope(
+      methodNode,
+      ExpectedType(returnTypeFullName, expectedReturnType),
+      methodDeclaration.isStatic()
+    )
+    typeParameters.foreach { typeParameter => scope.addTopLevelType(typeParameter.name, typeParameter.typeFullName) }
 
     val parameterAsts  = astsForParameterList(methodDeclaration.getParameters)
     val parameterTypes = argumentTypesForMethodLike(maybeResolved)
     val signature      = composeSignature(returnTypeFullName, parameterTypes, parameterAsts.size)
-    val namespaceName  = scope.enclosingTypeDeclFullName.getOrElse(Defines.UnresolvedNamespace)
+    val namespaceName  = scope.enclosingTypeDecl.fullName.getOrElse(Defines.UnresolvedNamespace)
     val methodFullName = composeMethodFullName(namespaceName, methodDeclaration.getNameAsString, signature)
 
     methodNode
@@ -54,13 +74,13 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       .signature(signature)
 
     val thisNode = Option.when(!methodDeclaration.isStatic) {
-      val typeFullName = scope.enclosingTypeDeclFullName
+      val typeFullName = scope.enclosingTypeDecl.fullName
       thisNodeForMethod(typeFullName, line(methodDeclaration))
     }
     val thisAst = thisNode.map(Ast(_)).toList
 
     thisNode.foreach { node =>
-      scope.addParameter(node)
+      scope.enclosingMethod.get.addParameter(node)
     }
 
     val bodyAst = methodDeclaration.getBody.toScala.map(astForBlockStatement(_)).getOrElse(Ast(NewBlock()))
@@ -75,7 +95,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
 
     val modifiers = modifiersForMethod(methodDeclaration)
 
-    scope.popScope()
+    scope.popMethodScope()
 
     methodAstWithAnnotations(methodNode, thisAst ++ parameterAsts, bodyAst, methodReturn, modifiers, annotationAsts)
   }
@@ -95,7 +115,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
   }
 
   private def modifiersForMethod(methodDeclaration: CallableDeclaration[_]): List[NewModifier] = {
-    val isInterfaceMethod = scope.enclosingTypeDecl.exists(_.code.contains("interface "))
+    val isInterfaceMethod = scope.enclosingTypeDecl.isInterface
 
     val abstractModifier = abstractModifierForCallable(methodDeclaration, isInterfaceMethod)
 
@@ -134,14 +154,25 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
   def clinitAstFromStaticInits(staticInits: Seq[Ast]): Option[Ast] = {
     Option.when(staticInits.nonEmpty) {
       val signature         = composeMethodLikeSignature(TypeConstants.Void, Nil)
-      val enclosingDeclName = scope.enclosingTypeDeclFullName.getOrElse(Defines.UnresolvedNamespace)
+      val enclosingDeclName = scope.enclosingTypeDecl.fullName.getOrElse(Defines.UnresolvedNamespace)
       val fullName          = composeMethodFullName(enclosingDeclName, Defines.StaticInitMethodName, signature)
       staticInitMethodAst(staticInits.toList, fullName, Some(signature), TypeConstants.Void)
     }
   }
 
-  def astForDefaultConstructor(): Ast = {
-    val typeFullName = scope.enclosingTypeDeclFullName
+  private def astsForFieldInitializers(fieldDeclarations: List[FieldDeclaration]): List[Ast] = {
+    fieldDeclarations.flatMap { fieldDeclaration =>
+      fieldDeclaration.getVariables.asScala.filter(_.getInitializer.isPresent).toList.flatMap { variableDeclaration =>
+        scope.pushFieldDeclScope(fieldDeclaration.isStatic, variableDeclaration.getNameAsString)
+        val assignmentAsts = assignmentsForVarDecl(variableDeclaration :: Nil)
+        scope.popFieldDeclScope()
+        assignmentAsts
+      }
+    }
+  }
+
+  def astForDefaultConstructor(originNode: Node, instanceFieldDeclarations: List[FieldDeclaration]): Ast = {
+    val typeFullName = scope.enclosingTypeDecl.fullName
     val signature    = s"${TypeConstants.Void}()"
     val fullName = composeMethodFullName(
       typeFullName.getOrElse(Defines.UnresolvedNamespace),
@@ -155,14 +186,31 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       .filename(filename)
       .isExternal(false)
 
-    val thisAst = Ast(thisNodeForMethod(typeFullName, lineNumber = None))
-    val bodyAst = Ast(NewBlock()).withChildren(scope.memberInitializers)
+    scope.pushMethodScope(constructorNode, ExpectedType.Void, isStatic = false)
+
+    val thisNode = thisNodeForMethod(typeFullName, lineNumber = None)
+    scope.enclosingMethod.foreach(_.addParameter(thisNode))
+    val bodyStatementAsts = astsForFieldInitializers(instanceFieldDeclarations)
 
     val returnNode = newMethodReturnNode(TypeConstants.Void, line = None, column = None)
 
     val modifiers = List(newModifierNode(ModifierTypes.CONSTRUCTOR), newModifierNode(ModifierTypes.PUBLIC))
+    val partialConstructor =
+      PartialConstructorDeclaration(
+        originNode,
+        constructorNode,
+        thisNode,
+        explicitParameterAsts = Nil,
+        bodyStatementAsts = bodyStatementAsts,
+        methodReturn = returnNode,
+        annotationAsts = Nil,
+        modifiers = modifiers,
+        startsWithThisCall = false
+      )
 
-    methodAstWithAnnotations(constructorNode, Seq(thisAst), bodyAst, returnNode, modifiers)
+    val constructorAst = completePartialConstructor(partialConstructor)
+    scope.popMethodScope()
+    constructorAst
   }
 
   private def astForParameter(parameter: Parameter, childNum: Int): Ast = {
@@ -189,7 +237,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     val annotationAsts = parameter.getAnnotations.asScala.map(astForAnnotationExpr)
     val ast            = Ast(parameterNode)
 
-    scope.addParameter(parameterNode)
+    scope.enclosingMethod.get.addParameter(parameterNode)
 
     ast.withChildren(annotationAsts)
   }
@@ -240,59 +288,159 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     }
   }
 
-  def astForConstructor(constructorDeclaration: ConstructorDeclaration): Ast = {
-    val constructorNode = createPartialMethod(constructorDeclaration)
-      .name(io.joern.x2cpg.Defines.ConstructorMethodName)
+  private def partialConstructorAsts(
+    constructorDeclarations: List[ConstructorDeclaration],
+    instanceFieldDeclarations: List[FieldDeclaration]
+  ): List[PartialConstructorDeclaration] = {
+    constructorDeclarations.map { constructorDeclaration =>
+      val constructorNode = createPartialMethod(constructorDeclaration)
+        .name(io.joern.x2cpg.Defines.ConstructorMethodName)
 
-    scope.pushMethodScope(constructorNode, ExpectedType.Void)
-    val maybeResolved = tryWithSafeStackOverflow(constructorDeclaration.resolve())
+      scope.pushMethodScope(constructorNode, ExpectedType.Void, isStatic = false)
+      val maybeResolved = tryWithSafeStackOverflow(constructorDeclaration.resolve())
 
-    val parameterAsts = astsForParameterList(constructorDeclaration.getParameters).toList
-    val paramTypes    = argumentTypesForMethodLike(maybeResolved)
-    val signature     = composeSignature(Some(TypeConstants.Void), paramTypes, parameterAsts.size)
-    val typeFullName  = scope.enclosingTypeDeclFullName
-    val fullName =
-      composeMethodFullName(
-        typeFullName.getOrElse(Defines.UnresolvedNamespace),
-        Defines.ConstructorMethodName,
-        signature
-      )
+      val parameterAsts = astsForParameterList(constructorDeclaration.getParameters).toList
+      val paramTypes    = argumentTypesForMethodLike(maybeResolved)
+      val signature     = composeSignature(Some(TypeConstants.Void), paramTypes, parameterAsts.size)
+      val typeFullName  = scope.enclosingTypeDecl.fullName
+      val fullName =
+        composeMethodFullName(
+          typeFullName.getOrElse(Defines.UnresolvedNamespace),
+          Defines.ConstructorMethodName,
+          signature
+        )
 
-    constructorNode
-      .fullName(fullName)
-      .signature(signature)
+      constructorNode
+        .fullName(fullName)
+        .signature(signature)
 
-    parameterAsts.foreach { ast =>
-      ast.root match {
-        case Some(parameter: NewMethodParameterIn) => scope.addParameter(parameter)
-        case _                                     => // This should never happen
+      parameterAsts.foreach { ast =>
+        ast.root match {
+          case Some(parameter: NewMethodParameterIn) => scope.enclosingMethod.get.addParameter(parameter)
+          case _                                     => // This should never happen
+        }
       }
+
+      val thisNode = thisNodeForMethod(typeFullName, line(constructorDeclaration))
+      scope.enclosingMethod.get.addParameter(thisNode)
+
+      scope.pushBlockScope()
+      val bodyStatements = constructorDeclaration.getBody.getStatements.asScala.toList
+      val bodyContainsThis = bodyStatements.headOption
+        .collect { case consInvocation: ExplicitConstructorInvocationStmt => consInvocation.isThis }
+        .getOrElse(false)
+      val fieldAssignments =
+        if (bodyContainsThis)
+          Nil
+        else
+          astsForFieldInitializers(instanceFieldDeclarations)
+
+      // The this(...) call must always be the first statement in the body, but adding the fieldAssignments
+      // before the body asts here is safe, since the list will be empty if the body does start with this()
+      val bodyAsts = fieldAssignments ++ bodyStatements.flatMap(astsForStatement)
+      scope.popBlockScope()
+      val methodReturn = constructorReturnNode(constructorDeclaration)
+
+      val annotationAsts = constructorDeclaration.getAnnotations.asScala.map(astForAnnotationExpr).toList
+
+      val modifiers =
+        NewModifier().modifierType(ModifierTypes.CONSTRUCTOR) :: modifiersForMethod(constructorDeclaration).filterNot(
+          _.modifierType == ModifierTypes.VIRTUAL
+        )
+
+      scope.popMethodScope()
+      PartialConstructorDeclaration(
+        constructorDeclaration,
+        constructorNode,
+        thisNode,
+        parameterAsts,
+        bodyAsts.toList,
+        methodReturn,
+        annotationAsts,
+        modifiers,
+        bodyContainsThis
+      )
+    }
+  }
+
+  private def assignmentForCapture(
+    originNode: Node,
+    parameter: NewMethodParameterIn,
+    thisParam: NewMethodParameterIn
+  ): Ast = {
+    val assignment =
+      newOperatorCallNode(
+        Operators.assignment,
+        s"this.${parameter.name} = ${parameter.name}",
+        Some(parameter.typeFullName),
+        parameter.lineNumber,
+        parameter.columnNumber
+      )
+    val fieldAccess = newOperatorCallNode(
+      Operators.fieldAccess,
+      s"this.${parameter.name}",
+      Some(thisParam.typeFullName),
+      parameter.lineNumber,
+      parameter.columnNumber
+    )
+
+    val fieldAccessTarget =
+      identifierNode(originNode, "this", "this", thisParam.typeFullName, List(thisParam.typeFullName))
+    val fieldIdentifier = fieldIdentifierNode(originNode, parameter.name, parameter.name)
+
+    val sourceIdentifier =
+      identifierNode(originNode, parameter.name, parameter.name, parameter.typeFullName)
+
+    diffGraph.addEdge(fieldAccessTarget, thisParam, EdgeTypes.REF)
+    diffGraph.addEdge(sourceIdentifier, parameter, EdgeTypes.REF)
+
+    val fieldAccessAst = callAst(fieldAccess, List(fieldAccessTarget, fieldIdentifier).map(Ast(_)))
+
+    callAst(assignment, List(fieldAccessAst, Ast(sourceIdentifier)))
+
+  }
+
+  private def completePartialConstructor(partialConstructor: PartialConstructorDeclaration): Ast = {
+    val paramsForCaptures = scope.enclosingTypeDecl.getUsedCaptures().zipWithIndex.map { case (variable, index) =>
+      parameterInNode(
+        partialConstructor.originNode,
+        variable.name,
+        variable.name,
+        partialConstructor.explicitParameterAsts.length + 1 + index,
+        isVariadic = false,
+        EvaluationStrategies.BY_VALUE,
+        variable.typeFullName
+      )
     }
 
-    val thisNode = thisNodeForMethod(typeFullName, line(constructorDeclaration))
-    scope.addParameter(thisNode)
-    val thisAst = Ast(thisNode)
+    val thisNode = partialConstructor.thisNode
+    val assignmentsForCaptures =
+      if (partialConstructor.startsWithThisCall)
+        Nil
+      else
+        paramsForCaptures.map(assignmentForCapture(partialConstructor.originNode, _, partialConstructor.thisNode))
 
-    val bodyAst      = astForConstructorBody(Some(constructorDeclaration.getBody))
-    val methodReturn = constructorReturnNode(constructorDeclaration)
-
-    val annotationAsts = constructorDeclaration.getAnnotations.asScala.map(astForAnnotationExpr).toList
-
-    val modifiers =
-      NewModifier().modifierType(ModifierTypes.CONSTRUCTOR) :: modifiersForMethod(constructorDeclaration).filterNot(
-        _.modifierType == ModifierTypes.VIRTUAL
-      )
-
-    scope.popScope()
+    val bodyAst =
+      astForConstructorBody(partialConstructor.originNode, partialConstructor.bodyStatementAsts, assignmentsForCaptures)
 
     methodAstWithAnnotations(
-      constructorNode,
-      thisAst :: parameterAsts,
+      partialConstructor.constructorNode,
+      Ast(partialConstructor.thisNode) :: (partialConstructor.explicitParameterAsts ++ paramsForCaptures.map(Ast(_))),
       bodyAst,
-      methodReturn,
-      modifiers,
-      annotationAsts
+      partialConstructor.methodReturn,
+      partialConstructor.modifiers,
+      partialConstructor.annotationAsts
     )
+  }
+
+  def astsForConstructors(
+    constructorDeclarations: List[ConstructorDeclaration],
+    instanceFieldDeclarations: List[FieldDeclaration]
+  ): Map[Node, Ast] = {
+    val partialConstructors = partialConstructorAsts(constructorDeclarations, instanceFieldDeclarations)
+    partialConstructors.map { partialConstructor =>
+      partialConstructor.originNode -> completePartialConstructor(partialConstructor)
+    }.toMap
   }
 
   private def constructorReturnNode(constructorDeclaration: ConstructorDeclaration): NewMethodReturn = {
@@ -301,24 +449,22 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     newMethodReturnNode(TypeConstants.Void, None, line, column)
   }
 
-  private def astForConstructorBody(body: Option[BlockStmt]): Ast = {
-    val containsThisInvocation =
-      body
-        .flatMap(_.getStatements.asScala.headOption)
-        .collect { case e: ExplicitConstructorInvocationStmt => e }
-        .exists(_.isThis)
+  private def astForConstructorBody(originNode: Node, bodyStmts: List[Ast], captureInitializers: List[Ast]): Ast = {
+    val hasThisCall = bodyStmts.headOption
+      .flatMap(_.root)
+      .collect { case thisCall: NewCall => thisCall.name == "<init>" }
+      .getOrElse(false)
 
-    val memberInitializers =
-      if (containsThisInvocation)
-        Seq.empty
-      else
-        scope.memberInitializers
+    val statementsInOrder = bodyStmts match {
+      case Nil => captureInitializers
 
-    body match {
-      case Some(b) => astForBlockStatement(b, prefixAsts = memberInitializers)
+      case head :: tail if hasThisCall =>
+        head :: (captureInitializers ++ tail)
 
-      case None => Ast(NewBlock()).withChildren(memberInitializers)
+      case bodyStmts => captureInitializers ++ bodyStmts
     }
+
+    Ast(blockNode(originNode)).withChildren(statementsInOrder)
   }
 
   /** Constructor and Method declarations share a lot of fields, so this method adds the fields they have in common.
@@ -342,4 +488,18 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       line = lineNumber
     )
   }
+}
+
+object AstForMethodsCreator {
+  private case class PartialConstructorDeclaration(
+    originNode: Node,
+    constructorNode: NewMethod,
+    thisNode: NewMethodParameterIn,
+    explicitParameterAsts: List[Ast],
+    bodyStatementAsts: List[Ast],
+    methodReturn: NewMethodReturn,
+    annotationAsts: List[Ast],
+    modifiers: List[NewModifier],
+    startsWithThisCall: Boolean
+  )
 }

@@ -6,7 +6,7 @@ import com.github.javaparser.ast.expr.{AssignExpr, VariableDeclarationExpr}
 import com.github.javaparser.resolution.types.ResolvedType
 import io.joern.javasrc2cpg.astcreation.expressions.AstForCallExpressionsCreator.PartialConstructor
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
-import io.joern.javasrc2cpg.scope.Scope.ScopeMember
+import io.joern.javasrc2cpg.scope.Scope.{ScopeMember, ScopeParameter, ScopeStaticImport, SimpleVariable}
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.NameConstants
 import io.joern.x2cpg.passes.frontend.TypeNodePass
@@ -20,6 +20,7 @@ import org.slf4j.LoggerFactory
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
 import scala.util.Try
+import io.joern.javasrc2cpg.scope.JavaScopeElement.PartialInit
 
 trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
   private val logger = LoggerFactory.getLogger(this.getClass())
@@ -93,11 +94,11 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
     val localAsts = locals.map { Ast(_) }
 
     locals.foreach { local =>
-      scope.addLocal(local)
+      scope.enclosingBlock.get.addLocal(local)
     }
 
     val assignments =
-      assignmentsForVarDecl(varDecl.getVariables.asScala, line(varDecl), column(varDecl))
+      assignmentsForVarDecl(varDecl.getVariables.asScala)
 
     localAsts ++ assignments
   }
@@ -106,9 +107,11 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
     varDecl.getVariables.asScala.map { variable =>
       val name = variable.getName.toString
       val typeFullName =
-        tryWithSafeStackOverflow(typeInfoCalc.fullName(variable.getType)).toOption.flatten
-          .orElse(scope.lookupType(variable.getTypeAsString))
-          .getOrElse(TypeConstants.Any)
+        tryWithSafeStackOverflow(
+          scope
+            .lookupType(variable.getTypeAsString)
+            .orElse(typeInfoCalc.fullName(variable.getType))
+        ).toOption.flatten.getOrElse(TypeConstants.Any)
       val code = s"${variable.getType} $name"
       NewLocal()
         .name(name)
@@ -119,26 +122,19 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
     }.toList
   }
 
-  def assignmentsForVarDecl(
-    variables: Iterable[VariableDeclarator],
-    lineNumber: Option[Integer],
-    columnNumber: Option[Integer]
-  ): Seq[Ast] = {
+  def assignmentsForVarDecl(variables: Iterable[VariableDeclarator]): Seq[Ast] = {
     val variablesWithInitializers =
       variables.filter(_.getInitializer.toScala.isDefined)
     val assignments = variablesWithInitializers.flatMap { variable =>
-      val name                    = variable.getName.toString
-      val initializer             = variable.getInitializer.toScala.get // Won't crash because of filter
-      val initializerTypeFullName = variable.getInitializer.toScala.flatMap(expressionReturnTypeFullName)
-      val javaParserVarType       = variable.getTypeAsString
-      val variableTypeFullName =
-        tryWithSafeStackOverflow(typeInfoCalc.fullName(variable.getType)).toOption.flatten
+      val name              = variable.getName.toString
+      val initializer       = variable.getInitializer.toScala.get // Won't crash because of filter
+      val javaParserVarType = variable.getTypeAsString
+      val typeFullName =
+        scope
+          .lookupType(javaParserVarType, includeWildcards = false)
+          .orElse(tryWithSafeStackOverflow(typeInfoCalc.fullName(variable.getType)).toOption.flatten)
           // TODO: Surely the variable being declared can't already be in scope?
           .orElse(scope.lookupVariable(name).typeFullName)
-          .orElse(scope.lookupType(javaParserVarType))
-
-      val typeFullName =
-        variableTypeFullName.orElse(initializerTypeFullName)
 
       // Need the actual resolvedType here for when the RHS is a lambda expression.
       val resolvedExpectedType =
@@ -150,22 +146,39 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
         .getOrElse(s"${Defines.UnresolvedNamespace}.${variable.getTypeAsString}")
       val code = s"$typeName $name = ${initializerAsts.rootCodeOrEmpty}"
 
-      val callNode = newOperatorCallNode(Operators.assignment, code, typeFullName, lineNumber, columnNumber)
+      val callNode = newOperatorCallNode(Operators.assignment, code, typeFullName, line(variable), column(variable))
 
       val targetAst = scope.lookupVariable(name).getVariable() match {
-        // TODO: This definitely feels like a bug. Why is the found member not being used for anything?
-        case Some(ScopeMember(_, false)) =>
-          val thisType = scope.enclosingTypeDeclFullName
-          fieldAccessAst(NameConstants.This, thisType, name, typeFullName, line(variable), column(variable))
+        case Some(member: ScopeMember) =>
+          val baseName =
+            if (member.isStatic)
+              scope.enclosingTypeDecl.name.getOrElse(NameConstants.Unknown)
+            else
+              NameConstants.This
+
+          val thisType = scope.enclosingTypeDecl.fullName.getOrElse(TypeConstants.Any)
+          fieldAccessAst(
+            baseName,
+            scope.enclosingTypeDecl.fullName,
+            name,
+            Some(member.typeFullName),
+            line(variable),
+            column(variable)
+          )
+
+        case Some(staticImport: ScopeStaticImport) =>
+          val targetName = staticImport.typeFullName.stripSuffix(s".${staticImport.name}")
+          val fieldName  = staticImport.name
+          fieldAccessAst(targetName, Some(targetName), fieldName, typeFullName, line(variable), column(variable))
 
         case maybeCorrespNode =>
           val identifier = identifierNode(variable, name, name, typeFullName.getOrElse(TypeConstants.Any))
           Ast(identifier).withRefEdges(identifier, maybeCorrespNode.map(_.node).toList)
       }
 
-      // Since all partial constructors will be dealt with here, don't pass them up.
       val declAst = callAst(callNode, Seq(targetAst) ++ initializerAsts)
 
+      // Since all partial constructors will be dealt with here, don't pass them up.
       val constructorAsts = partialConstructorQueue.map(completeInitForConstructor(_, copyAstForVarDeclInit(targetAst)))
       partialConstructorQueue.clear()
 
@@ -188,7 +201,19 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
       case _ => // Nothing to do in this case
     }
 
-    callAst(initNode, args.toList, Some(targetAst))
+    val initAst = Ast(initNode)
+
+    val capturedThis = scope.lookupVariable(NameConstants.This) match {
+      case SimpleVariable(param: ScopeParameter) => Some(param.node)
+      case _                                     => None
+    }
+
+    for {
+      enclosingDecl <- scope.enclosingTypeDecl;
+      typeFullName  <- partialConstructor.typeFullName
+    } enclosingDecl.registerInitToComplete(PartialInit(typeFullName, initAst, targetAst, args.toList, capturedThis))
+
+    initAst
   }
 
   private def copyAstForVarDeclInit(targetAst: Ast): Ast = {
