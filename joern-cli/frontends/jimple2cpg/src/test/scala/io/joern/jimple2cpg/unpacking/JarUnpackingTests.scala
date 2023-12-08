@@ -16,21 +16,29 @@ import scala.util.{Failure, Success, Try}
 
 class JarUnpackingTests extends AnyWordSpec with Matchers with BeforeAndAfterAll {
 
-  var validCpgs: Map[String, Cpg] = _
-  var slippyCpg: Cpg              = _
+  var recurseCpgs: Map[String, Cpg]   = _
+  var noRecurseCpgs: Map[String, Cpg] = _
+  var depthsCpgs: Map[String, Cpg]    = _
+  var slippyCpg: Cpg                  = _
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
-    validCpgs = List("HelloWorld.jar", "NestedHelloWorld.jar", "helloworld")
-      .map(k => (k, getUnpackingCpg(k)))
+    recurseCpgs = List("HelloWorld.jar", "NestedHelloWorld.jar", "helloworld")
+      .map(k => (k, getUnpackingCpg(k, true)))
+      .toMap
+    noRecurseCpgs = List("HelloWorld.jar", "NestedHelloWorld.jar", "helloworld")
+      .map(k => (k, getUnpackingCpg(k, false)))
+      .toMap
+    depthsCpgs = List("HelloWorld.jar", "NestedHelloWorld.jar", "helloworld")
+      .map(k => (k, getUnpackingCpg(k, false, depths = 2)))
       .toMap
     slippyCpg = getUnpackingCpg("slippy.zip")
   }
 
-  private def getUnpackingCpg(path: String): Cpg =
+  private def getUnpackingCpg(path: String, recurse: Boolean = true, depths: Int = 1): Cpg =
     Try(getClass.getResource(s"/unpacking/${path}").toURI) match {
       case Success(x) =>
-        implicit val config: Config = Config().withRecurse(true)
+        implicit val config: Config = Config().withRecurse(recurse)
         new Jimple2Cpg().createCpg(Paths.get(x).toString).get
       case Failure(x: Throwable) =>
         fail("Unable to obtain test resources.", x)
@@ -46,7 +54,7 @@ class JarUnpackingTests extends AnyWordSpec with Matchers with BeforeAndAfterAll
   }
 
   "should reflect the correct package order" in {
-    for ((name, cpg) <- validCpgs) {
+    for ((name, cpg) <- recurseCpgs) {
       val List(foo) = cpg.typeDecl.fullNameExact("Foo").l
       foo.name shouldBe "Foo"
 
@@ -59,6 +67,46 @@ class JarUnpackingTests extends AnyWordSpec with Matchers with BeforeAndAfterAll
         "pac.Bar.sub:int(int,int)",
         "pac.Bar.<init>:void()"
       )
+    }
+  }
+
+  "Bar should not contain in no recurse case" in {
+    for ((name, cpg) <- noRecurseCpgs) {
+      val List(foo) = cpg.typeDecl.fullNameExact("Foo").l
+      foo.name shouldBe "Foo"
+
+      if (name == "NestedHelloWorld.jar")
+        cpg.typeDecl.fullNameExact("pac.Bar").l shouldBe Nil
+        cpg.method.filterNot(_.isExternal).fullName.toSet shouldBe Set("Foo.<init>:void()", "Foo.add:int(int,int)")
+      else
+        val List(bar) = cpg.typeDecl.fullNameExact("pac.Bar").l
+        bar.name shouldBe "Bar"
+        cpg.method.filterNot(_.isExternal).fullName.toSet shouldBe Set(
+          "Foo.<init>:void()",
+          "Foo.add:int(int,int)",
+          "pac.Bar.sub:int(int,int)",
+          "pac.Bar.<init>:void()"
+        )
+    }
+  }
+
+  "Single using depth should not unpack recursively" in {
+    for ((name, cpg) <- depthsCpgs) {
+      val List(foo) = cpg.typeDecl.fullNameExact("Foo").l
+      foo.name shouldBe "Foo"
+
+      if (name == "NestedHelloWorld.jar")
+        cpg.typeDecl.fullNameExact("pac.Bar").l shouldBe Nil
+        cpg.method.filterNot(_.isExternal).fullName.toSet shouldBe Set("Foo.<init>:void()", "Foo.add:int(int,int)")
+      else
+        val List(bar) = cpg.typeDecl.fullNameExact("pac.Bar").l
+        bar.name shouldBe "Bar"
+        cpg.method.filterNot(_.isExternal).fullName.toSet shouldBe Set(
+          "Foo.<init>:void()",
+          "Foo.add:int(int,int)",
+          "pac.Bar.sub:int(int,int)",
+          "pac.Bar.<init>:void()"
+        )
     }
   }
 
