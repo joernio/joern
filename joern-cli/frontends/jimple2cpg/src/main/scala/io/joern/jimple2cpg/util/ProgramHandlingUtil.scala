@@ -86,8 +86,8 @@ object ProgramHandlingUtil {
     *   Whether an entry is a class file
     * @param recurse
     *   Whether to unpack recursively
-    * @param depths
-    *   Maximum depths of recurse
+    * @param depth
+    *   Maximum depth of recursion
     * @return
     *   The list of class files found, which may either be in [[src]] or in an extracted archive under [[tmpDir]]
     */
@@ -97,7 +97,7 @@ object ProgramHandlingUtil {
     isArchive: Entry => Boolean,
     isClass: Entry => Boolean,
     recurse: Boolean,
-    depths: Int
+    depth: Int
   ): IterableOnce[ClassFile] = {
 
     // filter archive file unless recurse was enabled
@@ -119,12 +119,12 @@ object ProgramHandlingUtil {
               logger.warn(s"Failed to extract archive", e)
               List.empty
           }
-          // This can always be ture, since the archive file was filter by shouldExtract if not enable recurse options.
+          // This can always be true, since the archive file was filtered by shouldExtract if recurse options not enabled.
           Right(Map(true -> unzipDirs))
         case _ =>
           Right(Map(false -> List.empty))
       },
-      depths
+      depth
     )
   }
 
@@ -207,8 +207,8 @@ object ProgramHandlingUtil {
     *   Whether an entry is a class file
     * @param recurse
     *   Whether to unpack recursively
-    * @param depths
-    *   Maximum depths of recurse
+    * @param depth
+    *   Maximum depth of recursion
     * @return
     *   The copied class files in destDir
     */
@@ -218,12 +218,12 @@ object ProgramHandlingUtil {
     isClass: Entry => Boolean,
     isArchive: Entry => Boolean,
     recurse: Boolean,
-    depths: Int
+    depth: Int
   ): List[ClassFile] =
     File
       .temporaryDirectory("extract-classes-")
       .apply(tmpDir =>
-        extractClassesToTmp(src, tmpDir, isArchive, isClass, recurse: Boolean, depths: Int).iterator
+        extractClassesToTmp(src, tmpDir, isArchive, isClass, recurse: Boolean, depth: Int).iterator
           .flatMap(_.copyToPackageLayoutIn(destDir))
           .toList
       )
