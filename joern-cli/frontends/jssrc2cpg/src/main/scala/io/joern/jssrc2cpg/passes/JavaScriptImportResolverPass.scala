@@ -1,11 +1,11 @@
 package io.joern.jssrc2cpg.passes
 
 import io.joern.x2cpg.Defines as XDefines
-import io.shiftleft.semanticcpg.language.importresolver.*
 import io.joern.x2cpg.passes.frontend.XImportResolverPass
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Method, MethodRef}
 import io.shiftleft.semanticcpg.language.*
+import io.shiftleft.semanticcpg.language.importresolver.*
 
 import java.io.File as JFile
 import java.util.regex.{Matcher, Pattern}
@@ -35,10 +35,12 @@ class JavaScriptImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
     // TODO: At times there is an operation inside of a require, e.g. path.resolve(__dirname + "/../config/env/all.js")
     //  this tries to recover the string but does not perform string constant propagation
     val entity = if (matcher.find()) matcher.group(1) else rawEntity
-    val resolvedPath = better.files
-      .File(currentFile.stripSuffix(currentFile.split(sep).last), entity.split(pathSep).head)
-      .pathAsString
-      .stripPrefix(root)
+    val resolvedPath = Try(
+      better.files
+        .File(currentFile.stripSuffix(currentFile.split(sep).last), entity.split(pathSep).head)
+        .pathAsString
+        .stripPrefix(root)
+    ).getOrElse(entity)
 
     val isImportingModule = !entity.contains(pathSep)
 
