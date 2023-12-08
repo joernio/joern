@@ -65,12 +65,6 @@ class TypeNodePass protected (
 }
 
 object TypeNodePass {
-  // Lambda typeDecl type names fit the structure
-  // `a.b.c.d.ClassName.lambda$method$name:returnType(paramTypes)`
-  // so this regex works by greedily matching the package and class names
-  // at the start and cutting off the matched group before the signature.
-  private val lambdaTypeRegex = raw".*\.(.*):.*\(.*\)".r
-
   def withTypesFromCpg(cpg: Cpg, keyPool: Option[KeyPool] = None): TypeNodePass = {
     new TypeNodePass(Nil, cpg, keyPool, getTypesFromCpg = true)
   }
@@ -80,9 +74,6 @@ object TypeNodePass {
   }
 
   def fullToShortName(typeName: String): String = {
-    typeName match {
-      case lambdaTypeRegex(methodName) => methodName
-      case _                           => typeName.split('.').lastOption.getOrElse(typeName)
-    }
+    typeName.takeWhile(_ != ':').split('.').lastOption.getOrElse(typeName)
   }
 }
