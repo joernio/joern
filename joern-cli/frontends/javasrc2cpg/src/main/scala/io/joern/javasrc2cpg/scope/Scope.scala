@@ -281,8 +281,9 @@ class Scope {
         }
         enclosingDeclPrefix.map(prefix => s"$prefix.${fieldDeclScope.name}")
 
-      case _: BlockScope => scopeFullName(dropScopeCount = 1)
+      case _: BlockScope => scopeFullName(dropScopeCount = dropScopeCount + 1)
 
+      case _ => None
     }
   }
 }
