@@ -29,7 +29,7 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
       val fileLOC = Try(IOUtils.readLinesInFile(filePath)) match {
         case Success(filecontent) => filecontent.size
         case Failure(exception) =>
-          logger.warn(s"Failed to read file: '${filePath}'", exception)
+          logger.warn(s"Failed to read file: '$filePath'", exception)
           0
       }
       report.addReportInfo(fileName, fileLOC)

@@ -47,9 +47,26 @@ class ProjectParseTest extends JsSrc2CpgSuite with BeforeAndAfterAll {
     dir
   }
 
+  private val projectWithStrangeFilenames: File = {
+    val dir = File.newTemporaryDirectory("jssrc2cpgTestsFilenames")
+    List("good_%component-name%_.js", "good_%component-name%_Foo.js").foreach { testFile =>
+      val file = dir / testFile
+      file.createIfNotExists(createParents = true)
+      file.write(s"""console.log("${file.canonicalPath}");""")
+    }
+    List("broken_%component-name%_.js", "broken_%component-name%_Foo.js").foreach { testFile =>
+      val file = dir / testFile
+      file.createIfNotExists(createParents = true)
+      file.write(s"""const x = new <%ComponentName%>Foo();""")
+    }
+    dir
+  }
+
   override def afterAll(): Unit = {
     projectWithSubfolders.delete(swallowIOExceptions = true)
     projectWithBrokenFile.delete(swallowIOExceptions = true)
+    projectWithUtf8.delete(swallowIOExceptions = true)
+    projectWithStrangeFilenames.delete(swallowIOExceptions = true)
   }
 
   private object ProjectParseTestsFixture {
@@ -81,6 +98,10 @@ class ProjectParseTest extends JsSrc2CpgSuite with BeforeAndAfterAll {
 
     "handle utf8 correctly" in ProjectParseTestsFixture(projectWithUtf8) { cpg =>
       cpg.fieldAccess.argument(2).code.l shouldBe List("error")
+    }
+
+    "handle strange filenames correctly" in ProjectParseTestsFixture(projectWithStrangeFilenames) { cpg =>
+      cpg.file.name.l shouldBe List("good_%component-name%_.js", "good_%component-name%_Foo.js")
     }
 
   }
