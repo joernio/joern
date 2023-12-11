@@ -96,7 +96,7 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
         // This assumption will be invalid when another package is imported with alias "."
         val methodFullName = s"$fullyQualifiedPackage.$methodName"
         val (returnTypeFullNameCache, signatureCache) =
-          GoGlobal.methodFullNameReturnTypeMap
+          goGlobal.methodFullNameReturnTypeMap
             .getOrDefault(methodFullName, (Defines.anyTypeName, s"$methodFullName()"))
         val (signature, fullName, returnTypeFullName) =
           Defines.builtinFunctions.getOrElse(methodName, (signatureCache, methodFullName, returnTypeFullNameCache))
@@ -104,7 +104,7 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
         val (postLambdaFullname, postLambdaSignature, postLambdaReturnTypeFullName) = lambdaOption match
           case Some((_, lambdaTypeFullName)) =>
             val (lambdaReturnTypeFullNameCache, lambdaSignatureCache) =
-              GoGlobal.methodFullNameReturnTypeMap
+              goGlobal.methodFullNameReturnTypeMap
                 .getOrDefault(lambdaTypeFullName, (returnTypeFullName, signature))
             if (lambdaSignatureCache == signature) then
               // This means we didn't find the lambda signature in methodFullNameReturnTypeMap cache.
@@ -126,7 +126,7 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
                 val callMethodFullName =
                   resolveAliasToFullName(alias, methodName)
                 val (returnTypeFullNameCache, signatureCache) =
-                  GoGlobal.methodFullNameReturnTypeMap
+                  goGlobal.methodFullNameReturnTypeMap
                     .getOrDefault(
                       callMethodFullName,
                       (s"$callMethodFullName.${Defines.ReturnType}.${XDefines.Unknown}", s"$callMethodFullName()")
@@ -152,7 +152,7 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
         .stripPrefix("*")
     val callMethodFullName = s"$receiverTypeFullName.$methodName"
     val (returnTypeFullNameCache, signatureCache) =
-      GoGlobal.methodFullNameReturnTypeMap
+      goGlobal.methodFullNameReturnTypeMap
         .getOrDefault(
           callMethodFullName,
           (s"$receiverTypeFullName.$methodName.${Defines.ReturnType}.${XDefines.Unknown}", s"$callMethodFullName()")

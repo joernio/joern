@@ -50,11 +50,4 @@ class GoCodeToCpgSuite(fileSuffix: String = ".go", withOssDataflow: Boolean = fa
   implicit val resolver: ICallResolver           = NoResolve
   implicit lazy val engineContext: EngineContext = EngineContext()
 
-  override def beforeEach(): Unit = {
-    GoGlobal.methodFullNameReturnTypeMap.clear()
-    GoGlobal.aliasToNameSpaceMapping.clear()
-    GoGlobal.structTypeMemberTypeMapping.clear()
-    GoGlobal.lambdaSignatureToLambdaTypeMap.clear()
-    GoGlobal.pkgLevelVarAndConstantAstMap.clear()
-  }
 }

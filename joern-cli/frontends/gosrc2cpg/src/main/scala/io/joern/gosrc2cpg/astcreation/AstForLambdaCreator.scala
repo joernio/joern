@@ -39,7 +39,7 @@ trait AstForLambdaCreator(implicit withSchemaValidation: ValidationMode) { this:
     if baseFullName == fullyQualifiedPackage then
       typeDeclNode_.astParentType(NodeTypes.TYPE_DECL).astParentFullName(fullyQualifiedPackage)
     else typeDeclNode_.astParentType(NodeTypes.METHOD).astParentFullName(baseFullName)
-    val structTypes = Option(GoGlobal.lambdaSignatureToLambdaTypeMap.get(signature)) match {
+    val structTypes = Option(goGlobal.lambdaSignatureToLambdaTypeMap.get(signature)) match {
       case Some(types) => types.map(_._1)
       case None        => Seq.empty
     }
@@ -49,7 +49,7 @@ trait AstForLambdaCreator(implicit withSchemaValidation: ValidationMode) { this:
     methodNode_.astParentType(NodeTypes.TYPE_DECL)
     methodNode_.astParentFullName(fullName)
     Ast.storeInDiffGraph(astForMethod, diffGraph)
-    GoGlobal.recordFullNameToReturnType(fullName, returnTypeStr, signature)
+    goGlobal.recordFullNameToReturnType(fullName, returnTypeStr, signature)
     Seq(Ast(methodRefNode(funcLiteral, funcLiteral.code, fullName, fullName)))
   }
 

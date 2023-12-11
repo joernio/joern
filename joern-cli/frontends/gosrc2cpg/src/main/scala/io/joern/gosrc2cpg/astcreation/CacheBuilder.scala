@@ -21,7 +21,7 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
 
       cpgOpt.map { _ =>
         // We don't want to process this part when third party dependencies are being processed.
-        val result = GoGlobal.recordAliasToNamespaceMapping(declaredPackageName, fullyQualifiedPackage)
+        val result = goGlobal.recordAliasToNamespaceMapping(declaredPackageName, fullyQualifiedPackage)
         if (result == null) {
           // if result is null that means item got added first time otherwise it has been already added to global map
           val rootNode = createParserNodeInfo(parserResult.json)
@@ -163,7 +163,7 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
     val params = funcDeclVal(ParserKeys.Type)(ParserKeys.Params)(ParserKeys.List)
     val signature =
       s"$methodFullname(${parameterSignature(params, genericTypeMethodMap)})$returnTypeStr"
-    GoGlobal.recordFullNameToReturnType(methodFullname, returnTypeStr, signature)
+    goGlobal.recordFullNameToReturnType(methodFullname, returnTypeStr, signature)
     (name, methodFullname, signature, params, receiverInfo, genericTypeMethodMap)
   }
 }

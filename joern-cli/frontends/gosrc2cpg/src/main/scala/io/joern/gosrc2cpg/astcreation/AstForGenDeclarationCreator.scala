@@ -144,7 +144,7 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
           None,
           Some(typeFullName)
         )
-        GoGlobal.recordPkgLevelVarAndConstantAst(fullyQualifiedPackage, callAst(cNode, arguments), relPathFileName)
+        goGlobal.recordPkgLevelVarAndConstantAst(fullyQualifiedPackage, callAst(cNode, arguments), relPathFileName)
       case _ =>
 
   }
@@ -160,7 +160,7 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
       val node            = localNode(localParserNode, name, localParserNode.code, typeFullNameStr)
 
       if recordVar then
-        GoGlobal.recordStructTypeMemberType(s"$fullyQualifiedPackage${Defines.dot}$name", typeFullNameStr)
+        goGlobal.recordStructTypeMemberType(s"$fullyQualifiedPackage${Defines.dot}$name", typeFullNameStr)
       else scope.addToScope(name, (node, typeFullNameStr))
       Ast(node)
     } else {

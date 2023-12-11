@@ -2,6 +2,7 @@ package io.joern.gosrc2cpg.passes
 
 import better.files.File
 import io.joern.gosrc2cpg.Config
+import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.model.GoModHelper
 import io.joern.gosrc2cpg.parser.GoAstJsonParser
 import io.joern.gosrc2cpg.utils.AstGenRunner
@@ -13,7 +14,7 @@ import java.io.File as JFile
 import java.nio.file.Paths
 import scala.util.{Failure, Success, Try}
 
-class DownloadDependenciesPass(parentGoMod: GoModHelper) {
+class DownloadDependenciesPass(parentGoMod: GoModHelper, goGlobal: GoGlobal) {
   private val logger = LoggerFactory.getLogger(getClass)
   def process(): Unit = {
     File.usingTemporaryDirectory("go-temp-download") { tmpDir =>
@@ -52,7 +53,7 @@ class DownloadDependenciesPass(parentGoMod: GoModHelper) {
         Some(config),
         astGenResult.parsedModFile.flatMap(modFile => GoAstJsonParser.readModFile(Paths.get(modFile)).map(x => x))
       )
-      new MethodAndTypeCacheBuilderPass(None, astGenResult.parsedFiles, config, goMod).process()
+      new MethodAndTypeCacheBuilderPass(None, astGenResult.parsedFiles, config, goMod, goGlobal).process()
     }
   }
 }

@@ -1,5 +1,6 @@
 package io.joern.gosrc2cpg.astcreation
 
+import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.model.GoModHelper
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
@@ -16,9 +17,13 @@ import ujson.Value
 
 import scala.collection.mutable
 
-class AstCreator(val relPathFileName: String, val parserResult: ParserResult, goMod: GoModHelper)(implicit
-  withSchemaValidation: ValidationMode
-) extends AstCreatorBase(relPathFileName)
+class AstCreator(
+  val relPathFileName: String,
+  val parserResult: ParserResult,
+  val goMod: GoModHelper,
+  val goGlobal: GoGlobal
+)(implicit withSchemaValidation: ValidationMode)
+    extends AstCreatorBase(relPathFileName)
     with AstCreatorHelper
     with AstForGenDeclarationCreator
     with AstForExpressionCreator

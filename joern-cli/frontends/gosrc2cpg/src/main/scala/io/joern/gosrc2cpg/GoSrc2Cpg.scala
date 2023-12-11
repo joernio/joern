@@ -28,18 +28,19 @@ class GoSrc2Cpg extends X2CpgFrontend[Config] {
   def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       File.usingTemporaryDirectory("gosrc2cpgOut") { tmpDir =>
+        val goGlobal = GoGlobal()
         new MetaDataPass(cpg, Languages.GOLANG, config.inputPath).createAndApply()
         val astGenResult = new AstGenRunner(config).execute(tmpDir).asInstanceOf[GoAstGenRunnerResult]
         val goMod = new GoModHelper(
           Some(config),
           astGenResult.parsedModFile.flatMap(modFile => GoAstJsonParser.readModFile(Paths.get(modFile)).map(x => x))
         )
-        if config.fetchDependencies then new DownloadDependenciesPass(goMod).process()
+        if config.fetchDependencies then new DownloadDependenciesPass(goMod, goGlobal).process()
         val astCreators =
-          new MethodAndTypeCacheBuilderPass(Some(cpg), astGenResult.parsedFiles, config, goMod).process()
-        new AstCreationPass(cpg, astCreators, config, report).createAndApply()
-        if GoGlobal.pkgLevelVarAndConstantAstMap.size() > 0 then
-          new PackageCtorCreationPass(cpg, config).createAndApply()
+          new MethodAndTypeCacheBuilderPass(Some(cpg), astGenResult.parsedFiles, config, goMod, goGlobal).process()
+        new AstCreationPass(cpg, astCreators, report).createAndApply()
+        if goGlobal.pkgLevelVarAndConstantAstMap.size() > 0 then
+          new PackageCtorCreationPass(cpg, config, goGlobal).createAndApply()
         report.print()
       }
     }
