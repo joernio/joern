@@ -1,12 +1,10 @@
 package io.joern.gosrc2cpg.datastructures
 
-import io.joern.gosrc2cpg.astcreation.Defines
-import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.Ast
-import java.util.concurrent.ConcurrentHashMap
-import scala.jdk.CollectionConverters.EnumerationHasAsScala
 
-object GoGlobal extends Global {
+import java.util.concurrent.ConcurrentHashMap
+
+class GoGlobal {
 
   /** This map will only contain the mapping for those packages whose package name is different from the enclosing
     * folder name
@@ -86,11 +84,4 @@ object GoGlobal extends Global {
       }
     }
   }
-
-  def typesSeen(): List[String] = {
-    val types = usedTypes.keys().asScala.filterNot(_ == Defines.anyTypeName).toList
-    usedTypes.clear()
-    types
-  }
-
 }

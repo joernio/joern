@@ -226,7 +226,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val code    = s"for ${initParserNode.code};${condParserNode.code};${iterParserNode.code}"
     val forNode = controlStructureNode(forStmt, ControlStructureTypes.FOR, code)
 
-    val initAstBlock = blockNode(forStmt, Defines.empty, registerType(Defines.voidTypeName))
+    val initAstBlock = blockNode(forStmt, Defines.empty, Defines.voidTypeName)
     scope.pushNewScope(initAstBlock)
     val initAst = blockAst(initAstBlock, astsForStatement(initParserNode, 1).toList)
     scope.popScope()

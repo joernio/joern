@@ -132,7 +132,7 @@ trait AstCreatorHelper { this: AstCreator =>
   }
 
   protected def resolveAliasToFullName(alias: String, typeOrMethodName: String): String = {
-    s"${aliasToNameSpaceMapping.getOrElse(alias, GoGlobal.aliasToNameSpaceMapping.getOrDefault(alias, s"${XDefines.Unknown}.<$alias>"))}.$typeOrMethodName"
+    s"${aliasToNameSpaceMapping.getOrElse(alias, goGlobal.aliasToNameSpaceMapping.getOrDefault(alias, s"${XDefines.Unknown}.<$alias>"))}.$typeOrMethodName"
   }
   protected def generateTypeFullName(
     typeName: Option[String] = None,
@@ -245,12 +245,6 @@ trait AstCreatorHelper { this: AstCreator =>
         val (fullName, typeNameForcode, evaluationStrategy) = internalStarExpHandler(nodeInfo, genericTypeMethodMap)
         (fullName, typeNameForcode, false, evaluationStrategy)
     }
-  }
-
-  protected def registerType(typeName: String): String = {
-    val fixedTypeName = fixQualifiedName(StringUtils.normalizeSpace(typeName))
-    GoGlobal.usedTypes.putIfAbsent(fixedTypeName, true)
-    fixedTypeName
   }
 
   protected def fixQualifiedName(name: String): String =
