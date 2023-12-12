@@ -35,7 +35,9 @@ class GoSrc2Cpg extends X2CpgFrontend[Config] {
           Some(config),
           astGenResult.parsedModFile.flatMap(modFile => GoAstJsonParser.readModFile(Paths.get(modFile)).map(x => x))
         )
-        if config.fetchDependencies then new DownloadDependenciesPass(goMod, goGlobal).process()
+        if (config.fetchDependencies) {
+          new DownloadDependenciesPass(goMod, goGlobal).process()
+        }
         val astCreators =
           new MethodAndTypeCacheBuilderPass(Some(cpg), astGenResult.parsedFiles, config, goMod, goGlobal).process()
         new AstCreationPass(cpg, astCreators, report).createAndApply()
