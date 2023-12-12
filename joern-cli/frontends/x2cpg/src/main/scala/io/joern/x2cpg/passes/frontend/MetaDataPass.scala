@@ -9,11 +9,11 @@ import io.shiftleft.semanticcpg.language.types.structure.{FileTraversal, Namespa
 /** A pass that creates a MetaData node, specifying that this is a CPG for language, and a NamespaceBlock for anything
   * that cannot be assigned to any other namespace.
   */
-class MetaDataPass(cpg: Cpg, language: String, root: String) extends CpgPass(cpg) {
+class MetaDataPass(cpg: Cpg, language: String, root: String, hash: Option[String] = None) extends CpgPass(cpg) {
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     def addMetaDataNode(diffGraph: DiffGraphBuilder): Unit = {
       val absolutePathToRoot = File(root).path.toAbsolutePath.toString
-      val metaNode           = NewMetaData().language(language).root(absolutePathToRoot).version("0.1")
+      val metaNode           = NewMetaData().language(language).root(absolutePathToRoot).version("0.1").hash(hash)
       diffGraph.addNode(metaNode)
     }
 
