@@ -5,6 +5,7 @@ import io.joern.x2cpg.Defines
 import io.shiftleft.semanticcpg.language.*
 
 import java.io.File
+import scala.collection.immutable.List
 
 class AnonymousFuncTests extends GoCodeToCpgSuite {
 
@@ -69,7 +70,6 @@ class AnonymousFuncTests extends GoCodeToCpgSuite {
   }
 
   "Simple Lambda expression defined in package" should {
-    // TODO: some of tests are ignore, which will require Struct Type constructor handling for the Package initialisation
     val cpg = code("""
         |package main
         |
@@ -87,33 +87,34 @@ class AnonymousFuncTests extends GoCodeToCpgSuite {
         |	fmt.Println("Result:", result) // Output: 8
         |}
         |""".stripMargin)
-    "have proper methodRef node created along with its properties" ignore {
+
+    "have proper methodRef node created along with its properties" in {
       cpg.methodRef.l.size shouldBe 1
       val List(mr) = cpg.methodRef.l
       mr.methodFullName shouldBe s"main.${Defines.ClosurePrefix}0"
       mr.typeFullName shouldBe s"main.${Defines.ClosurePrefix}0"
     }
 
-    "have proper Method node created along with its properties" ignore {
+    "have proper Method node created along with its properties" in {
       cpg.method.isLambda.l.size shouldBe 1
       val List(m) = cpg.method.isLambda.l
       m.fullName shouldBe s"main.${Defines.ClosurePrefix}0"
       m.signature shouldBe s"${Defines.ClosurePrefix}(int, int)int"
     }
 
-    "able to traverse to referenced Method node" ignore {
+    "able to traverse to referenced Method node" in {
       cpg.methodRef.referencedMethod.fullName.l shouldBe List(s"main.${Defines.ClosurePrefix}0")
     }
 
-    "reflects into lhs side TypeFullName" ignore {
-      cpg.local("add").typeFullName.l shouldBe List(s"main.${Defines.ClosurePrefix}0")
+    "reflects into lhs side TypeFullName" in {
+      cpg.member("add").typeFullName.l shouldBe List(s"main.${Defines.ClosurePrefix}0")
     }
 
-    "have call node created for lambda invocation" ignore {
+    "have call node created for lambda invocation" in {
       cpg.call("add").methodFullName.l shouldBe List(s"main.${Defines.ClosurePrefix}0")
     }
 
-    "able to traverse from call node to callee" ignore {
+    "able to traverse from call node to callee" in {
       cpg.call("add").callee.fullName.l shouldBe List(s"main.${Defines.ClosurePrefix}0")
     }
 
@@ -123,6 +124,76 @@ class AnonymousFuncTests extends GoCodeToCpgSuite {
 
     "traversal from TypeDecl to lambda method" in {
       cpg.typeDecl(s"${Defines.ClosurePrefix}0").method.fullName.l shouldBe List(s"main.${Defines.ClosurePrefix}0")
+    }
+  }
+
+  "Simple Lambda expression defined in package in different file" should {
+    val cpg = code(
+      """
+        |module joern.io/sample
+        |go 1.18
+        |""".stripMargin,
+      "go.mod"
+    ).moreCode(
+      """
+        |package lib
+        |// Define a lambda function and assign it to a variable
+        |var Add = func(a, b int) int {
+        |   return a + b
+        |}
+        |
+        |""".stripMargin,
+      Seq("lib", "lib.go").mkString(File.separator)
+    ).moreCode("""
+        |package main
+        |import "joern.io/sample/lib"
+        |func main() {
+        |	// Call the lambda function
+        |	result := lib.Add(3, 5)
+        |	fmt.Println("Result:", result) // Output: 8
+        |}
+        |""".stripMargin)
+
+    "have proper methodRef node created along with its properties" in {
+      cpg.methodRef.l.size shouldBe 1
+      val List(mr) = cpg.methodRef.l
+      mr.methodFullName shouldBe s"joern.io/sample/lib.${Defines.ClosurePrefix}0"
+      mr.typeFullName shouldBe s"joern.io/sample/lib.${Defines.ClosurePrefix}0"
+    }
+
+    "have proper Method node created along with its properties" in {
+      cpg.method.isLambda.l.size shouldBe 1
+      val List(m) = cpg.method.isLambda.l
+      m.fullName shouldBe s"joern.io/sample/lib.${Defines.ClosurePrefix}0"
+      m.signature shouldBe s"${Defines.ClosurePrefix}(int, int)int"
+    }
+
+    "able to traverse to referenced Method node" in {
+      cpg.methodRef.referencedMethod.fullName.l shouldBe List(s"joern.io/sample/lib.${Defines.ClosurePrefix}0")
+    }
+
+    "reflects into lhs side TypeFullName" in {
+      cpg.member("Add").typeFullName.l shouldBe List(s"joern.io/sample/lib.${Defines.ClosurePrefix}0")
+    }
+
+    "have call node created for lambda invocation" in {
+      cpg.call("Add").methodFullName.l shouldBe List(s"joern.io/sample/lib.${Defines.ClosurePrefix}0")
+    }
+
+    "able to traverse from call node to callee" in {
+      cpg.call("Add").callee.fullName.l shouldBe List(s"joern.io/sample/lib.${Defines.ClosurePrefix}0")
+    }
+
+    "have TypeDecl created for respective lambda" in {
+      cpg.typeDecl(s"${Defines.ClosurePrefix}0").fullName.l shouldBe List(
+        s"joern.io/sample/lib.${Defines.ClosurePrefix}0"
+      )
+    }
+
+    "traversal from TypeDecl to lambda method" in {
+      cpg.typeDecl(s"${Defines.ClosurePrefix}0").method.fullName.l shouldBe List(
+        s"joern.io/sample/lib.${Defines.ClosurePrefix}0"
+      )
     }
   }
 

@@ -1,6 +1,5 @@
 package io.joern.gosrc2cpg.astcreation
 
-import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg
@@ -22,10 +21,10 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
           .map(createParserNodeInfo)
           .flatMap { genDeclNode =>
             genDeclNode.node match
-              case ImportSpec => astForImport(genDeclNode)
-              case TypeSpec   => astForTypeSpec(genDeclNode)
-              case ValueSpec  => astForValueSpec(genDeclNode, globalStatements = globalStatements)
-              case _          => Seq[Ast]()
+              case ImportSpec                     => astForImport(genDeclNode)
+              case TypeSpec                       => astForTypeSpec(genDeclNode)
+              case ValueSpec if !globalStatements => astForValueSpec(genDeclNode, globalStatements = globalStatements)
+              case _                              => Seq[Ast]()
           }
           .toSeq
       case _ =>
@@ -41,11 +40,7 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
     Seq(Ast(newImportNode(s"import $importedAsReplacement$importedEntity", importedEntity, importedAs, basicLit)))
   }
 
-  protected def astForValueSpec(
-    valueSpec: ParserNodeInfo,
-    recordVar: Boolean = false,
-    globalStatements: Boolean = false
-  ): Seq[Ast] = {
+  protected def astForValueSpec(valueSpec: ParserNodeInfo, globalStatements: Boolean = false): Seq[Ast] = {
     val typeFullName = Try(valueSpec.json(ParserKeys.Type)) match
       case Success(typeJson) =>
         val (typeFullName, _, _, _) = processTypeInfo(createParserNodeInfo(typeJson))
@@ -58,14 +53,7 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
           (valueSpec.json(ParserKeys.Names).arr.toList zip valueSpec.json(ParserKeys.Values).arr.toList)
             .map { case (lhs, rhs) => (createParserNodeInfo(lhs), createParserNodeInfo(rhs)) }
             .map { case (lhsParserNode, rhsParserNode) =>
-              astForAssignmentCallNode(
-                lhsParserNode,
-                rhsParserNode,
-                typeFullName,
-                valueSpec.code,
-                recordVar,
-                globalStatements
-              )
+              astForAssignmentCallNode(lhsParserNode, rhsParserNode, typeFullName, valueSpec.code, globalStatements)
             }
             .unzip
         if globalStatements then Seq.empty else localAsts ++: assCallAsts
@@ -76,11 +64,14 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
           .flatMap { parserNode =>
             val localParserNode = createParserNodeInfo(parserNode)
             if globalStatements then {
-              if !recordVar then
-                astForGlobalVarAndConstants(typeFullName.getOrElse(Defines.anyTypeName), localParserNode)
+              goGlobal.recordStructTypeMemberType(
+                s"$fullyQualifiedPackage${Defines.dot}${localParserNode.json(ParserKeys.Name).str}",
+                typeFullName.getOrElse(Defines.anyTypeName)
+              )
+              astForGlobalVarAndConstants(typeFullName.getOrElse(Defines.anyTypeName), localParserNode)
               Seq.empty
             } else {
-              Seq(astForLocalNode(localParserNode, typeFullName, recordVar)) ++: astForNode(localParserNode)
+              Seq(astForLocalNode(localParserNode, typeFullName)) ++: astForNode(localParserNode)
             }
           }
           .toSeq
@@ -92,16 +83,19 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
     rhsParserNode: ParserNodeInfo,
     typeFullName: Option[String],
     code: String,
-    recordVar: Boolean = false,
     globalStatements: Boolean = false
   ): (Ast, Ast) = {
     val rhsAst          = astForBooleanLiteral(rhsParserNode)
     val rhsTypeFullName = typeFullName.getOrElse(getTypeFullNameFromAstNode(rhsAst))
-    if (globalStatements && !recordVar) {
+    if (globalStatements) {
+      goGlobal.recordStructTypeMemberType(
+        s"$fullyQualifiedPackage${Defines.dot}${lhsParserNode.json(ParserKeys.Name).str}",
+        rhsTypeFullName
+      )
       astForGlobalVarAndConstants(rhsTypeFullName, lhsParserNode, Some(rhsAst))
       (Ast(), Ast())
     } else {
-      val localAst  = astForLocalNode(lhsParserNode, Some(rhsTypeFullName), recordVar)
+      val localAst  = astForLocalNode(lhsParserNode, Some(rhsTypeFullName))
       val lhsAst    = astForNode(lhsParserNode)
       val arguments = lhsAst ++: rhsAst
       val cNode = callNode(
@@ -149,19 +143,12 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
 
   }
 
-  protected def astForLocalNode(
-    localParserNode: ParserNodeInfo,
-    typeFullName: Option[String],
-    recordVar: Boolean = false
-  ): Ast = {
+  private def astForLocalNode(localParserNode: ParserNodeInfo, typeFullName: Option[String]): Ast = {
     val name = localParserNode.json(ParserKeys.Name).str
     if name != "_" then {
       val typeFullNameStr = typeFullName.getOrElse(Defines.anyTypeName)
       val node            = localNode(localParserNode, name, localParserNode.code, typeFullNameStr)
-
-      if recordVar then
-        goGlobal.recordStructTypeMemberType(s"$fullyQualifiedPackage${Defines.dot}$name", typeFullNameStr)
-      else scope.addToScope(name, (node, typeFullNameStr))
+      scope.addToScope(name, (node, typeFullNameStr))
       Ast(node)
     } else {
       Ast()

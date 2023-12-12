@@ -1,6 +1,5 @@
 package io.joern.gosrc2cpg.astcreation
 
-import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
@@ -100,16 +99,21 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
             .getOrDefault(methodFullName, (Defines.anyTypeName, s"$methodFullName()"))
         val (signature, fullName, returnTypeFullName) =
           Defines.builtinFunctions.getOrElse(methodName, (signatureCache, methodFullName, returnTypeFullNameCache))
-        val lambdaOption = scope.lookupVariable(methodName)
-        val (postLambdaFullname, postLambdaSignature, postLambdaReturnTypeFullName) = lambdaOption match
-          case Some((_, lambdaTypeFullName)) =>
-            val (lambdaReturnTypeFullNameCache, lambdaSignatureCache) =
+        val probableLambdaTypeFullName = scope.lookupVariable(methodName) match
+          case Some((_, lambdaTypeFullName)) => Some(lambdaTypeFullName)
+          case _ =>
+            Option(goGlobal.structTypeMemberTypeMapping.get(methodFullName)) match
+              case Some(globalLambdaTypeFullName) => Some(globalLambdaTypeFullName)
+              case _                              => None
+        val (postLambdaFullname, postLambdaSignature, postLambdaReturnTypeFullName) = probableLambdaTypeFullName match
+          case Some(lambdaTypeFullName) =>
+            Option(
               goGlobal.methodFullNameReturnTypeMap
-                .getOrDefault(lambdaTypeFullName, (returnTypeFullName, signature))
-            if (lambdaSignatureCache == signature) then
-              // This means we didn't find the lambda signature in methodFullNameReturnTypeMap cache.
-              (fullName, lambdaSignatureCache, lambdaReturnTypeFullNameCache)
-            else (lambdaTypeFullName, lambdaSignatureCache, lambdaReturnTypeFullNameCache)
+                .get(lambdaTypeFullName)
+            ) match
+              case Some((lambdaReturnTypeFullNameCache, lambdaSignatureCache)) =>
+                (lambdaTypeFullName, lambdaSignatureCache, lambdaReturnTypeFullNameCache)
+              case _ => (fullName, signature, returnTypeFullName)
           case _ =>
             (fullName, signature, returnTypeFullName)
         (methodName, postLambdaSignature, postLambdaFullname, postLambdaReturnTypeFullName, Seq.empty)
@@ -125,14 +129,16 @@ trait AstForMethodCallExpressionCreator(implicit withSchemaValidation: Validatio
                 val alias = xnode.json(ParserKeys.Name).str
                 val callMethodFullName =
                   resolveAliasToFullName(alias, methodName)
-                val (returnTypeFullNameCache, signatureCache) =
+                val lambdaFullName =
+                  goGlobal.structTypeMemberTypeMapping.getOrDefault(callMethodFullName, callMethodFullName)
+                val (returnTypeFullNameCache, signatureCache) = Option(
                   goGlobal.methodFullNameReturnTypeMap
-                    .getOrDefault(
-                      callMethodFullName,
-                      (s"$callMethodFullName.${Defines.ReturnType}.${XDefines.Unknown}", s"$callMethodFullName()")
-                    )
+                    .get(lambdaFullName)
+                ) match
+                  case Some((returnTypeFullName, signature)) => (returnTypeFullName, signature)
+                  case _ => (s"$callMethodFullName.${Defines.ReturnType}.${XDefines.Unknown}", s"$callMethodFullName()")
 
-                (methodName, signatureCache, callMethodFullName, returnTypeFullNameCache, Seq.empty)
+                (methodName, signatureCache, lambdaFullName, returnTypeFullNameCache, Seq.empty)
           case _ =>
             // This will take care of chained method calls. It will call `astForCallExpression` in recursive way,
             // and the call node is used as receiver to this current call node.

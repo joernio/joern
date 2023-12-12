@@ -39,28 +39,6 @@ class VariableReferencingTests extends GoCodeToCpgSuite {
     }
   }
 
-  "global variable reference" should {
-    val cpg = code("""package main
-        |var x = 1
-        |func main(){
-        | y := x
-        |}
-        |""".stripMargin)
-
-    "check Global Member node" in {
-      val List(x) = cpg.typeDecl("main").l
-      val List(a) = x.member.l
-      a.name shouldBe "x"
-      a.typeFullName shouldBe "int"
-    }
-
-    "test local variable exists" in {
-      val List(localNode) = cpg.local.l
-      localNode.name shouldBe "y"
-      localNode.typeFullName shouldBe "int"
-    }
-  }
-
   "Empty variable declaration" should {
     val cpg = code("""
         |package main
