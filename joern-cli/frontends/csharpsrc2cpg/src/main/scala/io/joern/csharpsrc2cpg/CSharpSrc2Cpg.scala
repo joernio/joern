@@ -6,10 +6,12 @@ import io.joern.csharpsrc2cpg.parser.DotNetJsonParser
 import io.joern.csharpsrc2cpg.passes.AstCreationPass
 import io.joern.csharpsrc2cpg.utils.DotNetAstGenRunner
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
-import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
-import io.joern.x2cpg.utils.{Environment, Report}
+import io.joern.x2cpg.passes.frontend.MetaDataPass
+import io.joern.x2cpg.utils.{Environment, HashUtil, Report}
+import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.Cpg
+import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.passes.CpgPassBase
 
 import java.nio.file.Paths
@@ -26,6 +28,10 @@ class CSharpSrc2Cpg extends X2CpgFrontend[Config] {
       File.usingTemporaryDirectory("csharpsrc2cpgOut") { tmpDir =>
         val astGenResult = new DotNetAstGenRunner(config).execute(tmpDir)
         val astCreators  = CSharpSrc2Cpg.processAstGenRunnerResults(astGenResult.parsedFiles, config)
+
+        val hash = HashUtil.sha256(astCreators.map(_.parserResult).map(x => Paths.get(x.fullPath)))
+        // TODO: Add CSHARPSRC to codepropertygraph
+        new MetaDataPass(cpg, "CSHARPSRC", config.inputPath, Option(hash)).createAndApply()
         new AstCreationPass(cpg, astCreators, report).createAndApply()
         report.print()
       }

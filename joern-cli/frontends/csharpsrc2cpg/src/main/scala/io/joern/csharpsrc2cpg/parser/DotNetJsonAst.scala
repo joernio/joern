@@ -22,13 +22,43 @@ object DotNetJsonAst {
     override def toString: String = this.getClass.getSimpleName.stripSuffix("$")
   }
 
+  sealed trait BaseExpr extends DotNetParserNode
+
   object NotHandledType extends DotNetParserNode
+
+  object CompilationUnit extends BaseExpr
+
+  object NamespaceDeclaration extends BaseExpr
+
+  sealed trait DeclarationExpr extends BaseExpr
+
+  object ClassDeclaration extends DeclarationExpr
+
+  object UsingDirective extends DeclarationExpr
+
+  sealed trait IdentifierNode extends BaseExpr
+
+  object IdentifierName extends IdentifierNode
+
+  object QualifiedName extends IdentifierNode
 
 }
 
 object ParserKeys {
 
-  val FileName = "FileName"
-  val AstRoot  = "AstRoot"
-
+  val FileName    = "FileName"
+  val AstRoot     = "AstRoot"
+  val MetaData    = "MetaData"
+  val Kind        = "Kind"
+  val LineStart   = "LineStart"
+  val LineEnd     = "LineEnd"
+  val ColumnStart = "ColumnStart"
+  val ColumnEnd   = "ColumnEnd"
+  val Usings      = "Usings"
+  val Members     = "Members"
+  val Name        = "Name"
+  val Value       = "Value"
+  val Identifier  = "Identifier"
+  val Right       = "Right"
+  val Left        = "Left"
 }
