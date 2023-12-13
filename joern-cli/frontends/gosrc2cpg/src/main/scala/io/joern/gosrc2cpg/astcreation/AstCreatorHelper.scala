@@ -74,7 +74,7 @@ trait AstCreatorHelper { this: AstCreator =>
     // If the first letter of the node (function, typeDecl, etc) is uppercase, then it is exported.
     // Else, it is un-exported
     // The scope of the node is the package it is defined in.
-    if (name(0).isUpper) {
+    if (name.headOption.exists(_.isUpper)) {
       newModifierNode(ModifierTypes.PUBLIC)
     } else {
       newModifierNode(ModifierTypes.PRIVATE)

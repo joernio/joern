@@ -6,6 +6,8 @@ import java.util.concurrent.ConcurrentHashMap
 
 class GoGlobal {
 
+  var processingDependencies = false
+
   /** This map will only contain the mapping for those packages whose package name is different from the enclosing
     * folder name
     *
