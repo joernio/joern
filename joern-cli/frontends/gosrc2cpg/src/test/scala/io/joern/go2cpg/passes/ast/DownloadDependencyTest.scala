@@ -8,7 +8,7 @@ import io.shiftleft.semanticcpg.language.*
 class DownloadDependencyTest extends GoCodeToCpgSuite {
   // NOTE: With respect to conversation on this PR - https://github.com/joernio/joern/pull/3753
   // ignoring the below uni tests, which tries to download the dependencies.
-  "Simple use case of third-party dependency download" ignore {
+  "Simple use case of third-party dependency download" should {
     val config = Config().withFetchDependencies(true)
     val cpg = code(
       """
@@ -34,7 +34,7 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
     }
   }
 
-  // NOTE: This test is ignored because of high memory usage on windows
+  // TODO: These tests were working, something has broken. Will fix it in next PR.
   "Download dependency example with different package and namespace name" ignore {
     val config = Config().withFetchDependencies(true)
     val cpg = code(
@@ -51,6 +51,7 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
           |import "github.com/aerospike/aerospike-client-go/v6"
           |func main()  {
           |  client, err := aerospike.NewClient("localhost", 3000)
+          |  var test = aerospike.UserAdmin
           |}
           |""".stripMargin)
       .withConfig(config)
@@ -58,6 +59,11 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
     "Check CALL Node" in {
       val List(x) = cpg.call("NewClient").l
       x.typeFullName shouldBe "*github.com/aerospike/aerospike-client-go/v6.Client"
+    }
+
+    "Check if we are able to identify the type of constants accessible out side dependencies code" in {
+      val List(t) = cpg.local("test").l
+      t.typeFullName shouldBe "string"
     }
   }
 

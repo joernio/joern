@@ -1,7 +1,6 @@
 package io.joern.gosrc2cpg.astcreation
 
-import io.joern.gosrc2cpg.datastructures.GoGlobal
-import io.joern.gosrc2cpg.parser.ParserAst.{FuncType, GenDecl, InterfaceType, StructType, ValueSpec}
+import io.joern.gosrc2cpg.parser.ParserAst.*
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.gosrc2cpg.utils.UtilityConstants.fileSeparateorPattern
 import io.joern.x2cpg.{Ast, ValidationMode}
@@ -120,19 +119,25 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
   }
 
   protected def processTypeSepc(typeSepc: Value): (String, String, Seq[Ast]) = {
-    val name     = typeSepc(ParserKeys.Name)(ParserKeys.Name).str
-    val fullName = fullyQualifiedPackage + Defines.dot + name
-    val typeNode = createParserNodeInfo(typeSepc(ParserKeys.Type))
-    val ast = typeNode.node match {
-      // As of don't see any use case where InterfaceType needs to be handled.
-      case InterfaceType => Seq.empty
-      // astForStructType() function will record the member types
-      case StructType => astForStructType(typeNode, fullName)
-      // Process lambda function types to record lambda function signature mapped to TypeFullName
-      case FuncType => processFuncType(typeNode, fullName)
-      case _        => Seq.empty
-    }
-    (name, fullName, ast)
+    val name = typeSepc(ParserKeys.Name)(ParserKeys.Name).str
+    if (checkForDependencyFlags(name)) {
+      // Ignoring recording the Type details when we are processing dependencies code with Type name starting with lower case letter
+      // As the Types starting with lower case letters will only be accessible within that package. Which means
+      // these Types are not going to get referred from main source code.
+      val fullName = fullyQualifiedPackage + Defines.dot + name
+      val typeNode = createParserNodeInfo(typeSepc(ParserKeys.Type))
+      val ast = typeNode.node match {
+        // As of don't see any use case where InterfaceType needs to be handled.
+        case InterfaceType => Seq.empty
+        // astForStructType() function will record the member types
+        case StructType => astForStructType(typeNode, fullName)
+        // Process lambda function types to record lambda function signature mapped to TypeFullName
+        case FuncType => processFuncType(typeNode, fullName)
+        case _        => Seq.empty
+      }
+      (name, fullName, ast)
+    } else
+      ("", "", Seq.empty)
   }
 
   protected def processImports(importDecl: Value): (String, String) = {
@@ -145,25 +150,38 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
     (importedEntity, importedAs)
   }
 
-  protected def processFuncDecl(
-    funcDeclVal: Value
-  ): (String, String, String, Value, Option[(String, String, String, ParserNodeInfo)], Map[String, List[String]]) = {
-    val name         = funcDeclVal(ParserKeys.Name).obj(ParserKeys.Name).str
-    val receiverInfo = getReceiverInfo(Try(funcDeclVal(ParserKeys.Recv)))
-    val methodFullname = receiverInfo match
-      case Some(_, typeFullName, _, _) =>
-        s"$typeFullName.$name"
-      case _ =>
-        s"$fullyQualifiedPackage.$name"
-    // TODO: handle multiple return type or tuple (int, int)
-    val genericTypeMethodMap = processTypeParams(funcDeclVal(ParserKeys.Type))
-    val (returnTypeStr, _) =
-      getReturnType(funcDeclVal(ParserKeys.Type), genericTypeMethodMap).headOption
-        .getOrElse(("", null))
-    val params = funcDeclVal(ParserKeys.Type)(ParserKeys.Params)(ParserKeys.List)
-    val signature =
-      s"$methodFullname(${parameterSignature(params, genericTypeMethodMap)})$returnTypeStr"
-    goGlobal.recordFullNameToReturnType(methodFullname, returnTypeStr, signature)
-    (name, methodFullname, signature, params, receiverInfo, genericTypeMethodMap)
+  protected def processFuncDecl(funcDeclVal: Value): MethodMetadata = {
+    val name = funcDeclVal(ParserKeys.Name).obj(ParserKeys.Name).str
+    if (checkForDependencyFlags(name)) {
+      // Ignoring recording the method details when we are processing dependencies code with functions name starting with lower case letter
+      // As the functions starting with lower case letters will only be accessible within that package. Which means
+      // these methods / functions are not going to get referred from main source code.
+      val receiverInfo = getReceiverInfo(Try(funcDeclVal(ParserKeys.Recv)))
+      val methodFullname = receiverInfo match
+        case Some(_, typeFullName, _, _) =>
+          s"$typeFullName.$name"
+        case _ =>
+          s"$fullyQualifiedPackage.$name"
+      // TODO: handle multiple return type or tuple (int, int)
+      val genericTypeMethodMap = processTypeParams(funcDeclVal(ParserKeys.Type))
+      val (returnTypeStr, _) =
+        getReturnType(funcDeclVal(ParserKeys.Type), genericTypeMethodMap).headOption
+          .getOrElse(("", null))
+      val params = funcDeclVal(ParserKeys.Type)(ParserKeys.Params)(ParserKeys.List)
+      val signature =
+        s"$methodFullname(${parameterSignature(params, genericTypeMethodMap)})$returnTypeStr"
+      goGlobal.recordFullNameToReturnType(methodFullname, returnTypeStr, signature)
+      MethodMetadata(name, methodFullname, signature, params, receiverInfo, genericTypeMethodMap)
+    } else
+      MethodMetadata()
   }
 }
+
+case class MethodMetadata(
+  name: String = "",
+  methodFullname: String = "",
+  signature: String = "",
+  params: Value = Value("{}"),
+  receiverInfo: Option[(String, String, String, ParserNodeInfo)] = None,
+  genericTypeMethodMap: Map[String, List[String]] = Map()
+)

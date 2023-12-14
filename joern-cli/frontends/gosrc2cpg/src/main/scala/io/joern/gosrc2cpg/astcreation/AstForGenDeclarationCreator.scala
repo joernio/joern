@@ -64,11 +64,16 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
           .flatMap { parserNode =>
             val localParserNode = createParserNodeInfo(parserNode)
             if globalStatements then {
-              goGlobal.recordStructTypeMemberType(
-                s"$fullyQualifiedPackage${Defines.dot}${localParserNode.json(ParserKeys.Name).str}",
-                typeFullName.getOrElse(Defines.anyTypeName)
-              )
-              astForGlobalVarAndConstants(typeFullName.getOrElse(Defines.anyTypeName), localParserNode)
+              val variableName = localParserNode.json(ParserKeys.Name).str
+              if (checkForDependencyFlags(variableName)) {
+                // While processing the dependencies code ignoring package level global variables starting with lower case letter
+                // as these variables are only accessible within package. So those will not be referred from main source code.
+                goGlobal.recordStructTypeMemberType(
+                  s"$fullyQualifiedPackage${Defines.dot}$variableName",
+                  typeFullName.getOrElse(Defines.anyTypeName)
+                )
+                astForGlobalVarAndConstants(typeFullName.getOrElse(Defines.anyTypeName), localParserNode)
+              }
               Seq.empty
             } else {
               Seq(astForLocalNode(localParserNode, typeFullName)) ++: astForNode(localParserNode)
@@ -88,11 +93,11 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
     val rhsAst          = astForBooleanLiteral(rhsParserNode)
     val rhsTypeFullName = typeFullName.getOrElse(getTypeFullNameFromAstNode(rhsAst))
     if (globalStatements) {
-      goGlobal.recordStructTypeMemberType(
-        s"$fullyQualifiedPackage${Defines.dot}${lhsParserNode.json(ParserKeys.Name).str}",
-        rhsTypeFullName
-      )
-      astForGlobalVarAndConstants(rhsTypeFullName, lhsParserNode, Some(rhsAst))
+      val variableName = lhsParserNode.json(ParserKeys.Name).str
+      if (checkForDependencyFlags(variableName)) {
+        goGlobal.recordStructTypeMemberType(s"$fullyQualifiedPackage${Defines.dot}$variableName", rhsTypeFullName)
+        astForGlobalVarAndConstants(rhsTypeFullName, lhsParserNode, Some(rhsAst))
+      }
       (Ast(), Ast())
     } else {
       val localAst  = astForLocalNode(lhsParserNode, Some(rhsTypeFullName))
@@ -124,7 +129,8 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
     )
     Ast.storeInDiffGraph(memberAst, diffGraph)
     rhsAst match
-      case Some(rhsSeqAst) =>
+      case Some(rhsSeqAst) if !goGlobal.processingDependencies =>
+        // Add this AST to be processed in PackageCtorCreationPass only for main source code. Ignore it while processing dependency code.
         // Only in case rhs ast is present then the respective variable or constant will be added as part
         // of package level initializer/constructor statement
         val lhsAst    = astForPackageGlobalFieldAccess(typeFullName, name, lhsParserNode)
@@ -153,5 +159,15 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
     } else {
       Ast()
     }
+  }
+
+  /** While processing the dependencies code ignoring package level global variables, constants, types, and functions
+    * starting with lower case letter as those are only accessible within package. So those will not be referred from
+    * main source code.
+    * @param name
+    * @return
+    */
+  protected def checkForDependencyFlags(name: String): Boolean = {
+    !goGlobal.processingDependencies || goGlobal.processingDependencies && name.headOption.exists(_.isUpper)
   }
 }

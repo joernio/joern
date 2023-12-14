@@ -15,26 +15,33 @@ import scala.util.{Failure, Success, Try}
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   def astForFuncDecl(funcDecl: ParserNodeInfo): Seq[Ast] = {
-    val (name, methodFullname, signature, params, receiverInfo, genericTypeMethodMap) = processFuncDecl(funcDecl.json)
+    val methodMetadata = processFuncDecl(funcDecl.json)
     // TODO: handle multiple return type or tuple (int, int)
     val (returnTypeStr, returnTypeInfo) =
-      getReturnType(funcDecl.json(ParserKeys.Type), genericTypeMethodMap).headOption
+      getReturnType(funcDecl.json(ParserKeys.Type), methodMetadata.genericTypeMethodMap).headOption
         .getOrElse((Defines.voidTypeName, funcDecl))
     val methodReturn = methodReturnNode(returnTypeInfo, returnTypeStr)
-    val methodNode_  = methodNode(funcDecl, name, funcDecl.code, methodFullname, Some(signature), relPathFileName)
+    val methodNode_ = methodNode(
+      funcDecl,
+      methodMetadata.name,
+      funcDecl.code,
+      methodMetadata.methodFullname,
+      Some(methodMetadata.signature),
+      relPathFileName
+    )
     methodAstParentStack.push(methodNode_)
     scope.pushNewScope(methodNode_)
-    val receiverNode = astForReceiver(receiverInfo)
+    val receiverNode = astForReceiver(methodMetadata.receiverInfo)
     val astForMethod =
       methodAst(
         methodNode_,
-        receiverNode ++ astForMethodParameter(params, genericTypeMethodMap),
+        receiverNode ++ astForMethodParameter(methodMetadata.params, methodMetadata.genericTypeMethodMap),
         astForMethodBody(funcDecl.json(ParserKeys.Body)),
         methodReturn
       )
     scope.popScope()
     methodAstParentStack.pop()
-    receiverInfo match
+    methodMetadata.receiverInfo match
       case Some(_, typeFullName, _, _) =>
         // if method is related to Struct then fill astParentFullName and astParentType
         methodNode_.astParentType(NodeTypes.TYPE_DECL).astParentFullName(typeFullName)

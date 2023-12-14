@@ -1,6 +1,5 @@
 package io.joern.gosrc2cpg.astcreation
 
-import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.parser.{ParserKeys, ParserNodeInfo}
 import io.joern.x2cpg.datastructures.Stack.StackWrapper
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
@@ -34,21 +33,23 @@ trait AstForLambdaCreator(implicit withSchemaValidation: ValidationMode) { this:
       )
     scope.popScope()
     methodAstParentStack.pop()
-
-    val typeDeclNode_ = typeDeclNode(funcLiteral, lambdaName, fullName, relPathFileName, lambdaName)
-    if baseFullName == fullyQualifiedPackage then
-      typeDeclNode_.astParentType(NodeTypes.TYPE_DECL).astParentFullName(fullyQualifiedPackage)
-    else typeDeclNode_.astParentType(NodeTypes.METHOD).astParentFullName(baseFullName)
-    val structTypes = Option(goGlobal.lambdaSignatureToLambdaTypeMap.get(signature)) match {
-      case Some(types) => types.map(_._1)
-      case None        => Seq.empty
+    if (!goGlobal.processingDependencies) {
+      // Create these lambda AST nodes only for main source code and ignore it while processing dependencies code.
+      val typeDeclNode_ = typeDeclNode(funcLiteral, lambdaName, fullName, relPathFileName, lambdaName)
+      if baseFullName == fullyQualifiedPackage then
+        typeDeclNode_.astParentType(NodeTypes.TYPE_DECL).astParentFullName(fullyQualifiedPackage)
+      else typeDeclNode_.astParentType(NodeTypes.METHOD).astParentFullName(baseFullName)
+      val structTypes = Option(goGlobal.lambdaSignatureToLambdaTypeMap.get(signature)) match {
+        case Some(types) => types.map(_._1)
+        case None        => Seq.empty
+      }
+      typeDeclNode_.inheritsFromTypeFullName(structTypes)
+      Ast.storeInDiffGraph(Ast(typeDeclNode_), diffGraph)
+      // Setting Lambda TypeDecl as its parent.
+      methodNode_.astParentType(NodeTypes.TYPE_DECL)
+      methodNode_.astParentFullName(fullName)
+      Ast.storeInDiffGraph(astForMethod, diffGraph)
     }
-    typeDeclNode_.inheritsFromTypeFullName(structTypes)
-    Ast.storeInDiffGraph(Ast(typeDeclNode_), diffGraph)
-    // Setting Lambda TypeDecl as its parent.
-    methodNode_.astParentType(NodeTypes.TYPE_DECL)
-    methodNode_.astParentFullName(fullName)
-    Ast.storeInDiffGraph(astForMethod, diffGraph)
     goGlobal.recordFullNameToReturnType(fullName, returnTypeStr, signature)
     Seq(Ast(methodRefNode(funcLiteral, funcLiteral.code, fullName, fullName)))
   }
