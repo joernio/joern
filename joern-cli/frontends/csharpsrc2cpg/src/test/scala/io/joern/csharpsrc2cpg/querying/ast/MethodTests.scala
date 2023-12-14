@@ -11,8 +11,12 @@ class MethodTests extends CSharpCode2CpgFixture {
 
     "generate a method node with type decl parent" in {
       val x = cpg.method.nameExact("Main").head
+      x.fullName should startWith("HelloWorld.Program.Main:void")
+      // TODO: Extract types from parameters and these should work
 //      x.fullName shouldBe "HelloWorld.Program.Main:void(string[])"
+//      x.signature shouldBe "void(string[])"
       x.filename shouldBe "Program.cs"
+
       x.typeDecl match
         case Some(typeDecl) => typeDecl.name shouldBe "Program"
         case None           => fail("No TYPE_DECL parent found!")
