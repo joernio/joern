@@ -23,8 +23,9 @@ import ujson.Value
 
 import scala.collection.mutable
 
-class AstCreator(val config: Config, val global: Global, val parserResult: ParseResult)(implicit withSchemaValidation: ValidationMode)
-    extends AstCreatorBase(parserResult.filename)
+class AstCreator(val config: Config, val global: Global, val parserResult: ParseResult)(implicit
+  withSchemaValidation: ValidationMode
+) extends AstCreatorBase(parserResult.filename)
     with AstForExpressionsCreator
     with AstForPrimitivesCreator
     with AstForTypesCreator
