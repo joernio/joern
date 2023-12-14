@@ -1,6 +1,5 @@
 package io.joern.c2cpg
 
-import io.joern.c2cpg.datastructures.CGlobal
 import io.joern.c2cpg.passes.{AstCreationPass, PreprocessorPass, TypeDeclNodePass}
 import io.joern.c2cpg.utils.Report
 import io.shiftleft.codepropertygraph.Cpg
@@ -20,8 +19,9 @@ class C2Cpg extends X2CpgFrontend[Config] {
   def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       new MetaDataPass(cpg, Languages.NEWC, config.inputPath).createAndApply()
-      new AstCreationPass(cpg, config, report).createAndApply()
-      TypeNodePass.withRegisteredTypes(CGlobal.typesSeen(), cpg).createAndApply()
+      val astCreationPass = new AstCreationPass(cpg, config, report)
+      astCreationPass.createAndApply()
+      TypeNodePass.withRegisteredTypes(astCreationPass.typesSeen(), cpg).createAndApply()
       new TypeDeclNodePass(cpg)(config.schemaValidation).createAndApply()
       report.print()
     }

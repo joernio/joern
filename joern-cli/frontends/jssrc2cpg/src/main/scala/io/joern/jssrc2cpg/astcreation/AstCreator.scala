@@ -9,6 +9,7 @@ import io.joern.jssrc2cpg.passes.Defines
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders.{newMethodReturnNode, newModifierNode}
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, AstNodeBuilder as X2CpgAstNodeBuilder}
+import io.joern.x2cpg.datastructures.Global
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, ModifierTypes, NodeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 import io.shiftleft.codepropertygraph.generated.nodes.NewFile
@@ -22,8 +23,9 @@ import ujson.Value
 
 import scala.collection.mutable
 
-class AstCreator(val config: Config, val parserResult: ParseResult)(implicit withSchemaValidation: ValidationMode)
-    extends AstCreatorBase(parserResult.filename)
+class AstCreator(val config: Config, val global: Global, val parserResult: ParseResult)(implicit
+  withSchemaValidation: ValidationMode
+) extends AstCreatorBase(parserResult.filename)
     with AstForExpressionsCreator
     with AstForPrimitivesCreator
     with AstForTypesCreator

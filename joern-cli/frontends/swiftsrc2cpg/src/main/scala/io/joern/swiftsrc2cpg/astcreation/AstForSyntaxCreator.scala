@@ -20,7 +20,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForAttributeSyntax(node: AttributeSyntax): Ast = {
     val argumentAsts = node.arguments match {
       case Some(argument) =>
-        val argumentAst    = astForNode(argument)
+        val argumentAst    = astForNodeWithFunctionReference(argument)
         val parameter      = NewAnnotationParameter().code("argument")
         val assign         = NewAnnotationParameterAssign().code(code(argument))
         val assignChildren = List(Ast(parameter), argumentAst)
@@ -165,7 +165,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     // And a TypeRef is returned afterwards.
     node.label match {
       case Some(_) => notHandledYet(node)
-      case None    => astForNode(node.expression)
+      case None    => astForNodeWithFunctionReference(node.expression)
     }
   }
 

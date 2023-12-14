@@ -38,7 +38,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   protected def registerType(typeFullName: String): Unit = {
-    JsGlobal.usedTypes.putIfAbsent(typeFullName, true)
+    global.usedTypes.putIfAbsent(typeFullName, true)
   }
 
   private def nodeType(node: Value): BabelNode = fromString(node("type").str)

@@ -2,7 +2,6 @@ package io.joern.swiftsrc2cpg
 
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.swiftsrc2cpg.datastructures.SwiftGlobal
 import io.joern.swiftsrc2cpg.passes.*
 import io.joern.swiftsrc2cpg.utils.AstGenRunner
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
@@ -29,7 +28,7 @@ class SwiftSrc2Cpg extends X2CpgFrontend[Config] {
         val astCreationPass = new AstCreationPass(cpg, astGenResult, config, report)(config.schemaValidation)
         astCreationPass.createAndApply()
 
-        SwiftTypeNodePass.withRegisteredTypes(SwiftGlobal.typesSeen(), cpg).createAndApply()
+        SwiftTypeNodePass.withRegisteredTypes(astCreationPass.typesSeen(), cpg).createAndApply()
         new SwiftMetaDataPass(cpg, hash, config.inputPath).createAndApply()
         new BuiltinTypesPass(cpg).createAndApply()
         new DependenciesPass(cpg, config).createAndApply()
