@@ -3,6 +3,7 @@ package io.joern.swiftsrc2cpg.astcreation
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
+import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
 
@@ -40,8 +41,20 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForForceUnwrapExprSyntax(node: ForceUnwrapExprSyntax): Ast                     = notHandledYet(node)
   private def astForFunctionCallExprSyntax(node: FunctionCallExprSyntax): Ast                   = notHandledYet(node)
   private def astForGenericSpecializationExprSyntax(node: GenericSpecializationExprSyntax): Ast = notHandledYet(node)
-  private def astForIfExprSyntax(node: IfExprSyntax): Ast                                       = notHandledYet(node)
-  private def astForInOutExprSyntax(node: InOutExprSyntax): Ast                                 = notHandledYet(node)
+
+  private def astForIfExprSyntax(node: IfExprSyntax): Ast = {
+    val code         = this.code(node)
+    val ifNode       = controlStructureNode(node, ControlStructureTypes.IF, code)
+    val conditionAst = astForNode(node.conditions)
+    val thenAst      = astForNode(node.body)
+    val elseAst = node.elseBody match {
+      case Some(value) => astForNode(value)
+      case None        => Ast()
+    }
+    controlStructureAst(ifNode, Some(conditionAst), Seq(thenAst, elseAst))
+  }
+
+  private def astForInOutExprSyntax(node: InOutExprSyntax): Ast = notHandledYet(node)
   private def astForInfixOperatorExprSyntax(node: InfixOperatorExprSyntax): Ast = {
     val op = code(node.operator) match {
       case "="    => Operators.assignment
@@ -105,8 +118,20 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForSubscriptCallExprSyntax(node: SubscriptCallExprSyntax): Ast             = notHandledYet(node)
   private def astForSuperExprSyntax(node: SuperExprSyntax): Ast                             = notHandledYet(node)
   private def astForSwitchExprSyntax(node: SwitchExprSyntax): Ast                           = notHandledYet(node)
-  private def astForTernaryExprSyntax(node: TernaryExprSyntax): Ast                         = notHandledYet(node)
-  private def astForTryExprSyntax(node: TryExprSyntax): Ast                                 = notHandledYet(node)
+
+  private def astForTernaryExprSyntax(node: TernaryExprSyntax): Ast = {
+    val name = Operators.conditional
+    val call = callNode(node, code(node), name, name, DispatchTypes.STATIC_DISPATCH)
+
+    val condAst = astForNodeWithFunctionReference(node.condition)
+    val posAst  = astForNodeWithFunctionReference(node.thenExpression)
+    val negAst  = astForNodeWithFunctionReference(node.elseExpression)
+
+    val children = List(condAst, posAst, negAst)
+    callAst(call, children)
+  }
+
+  private def astForTryExprSyntax(node: TryExprSyntax): Ast = notHandledYet(node)
 
   private def astForTupleExprSyntax(node: TupleExprSyntax): Ast = {
     astForNode(node.elements)

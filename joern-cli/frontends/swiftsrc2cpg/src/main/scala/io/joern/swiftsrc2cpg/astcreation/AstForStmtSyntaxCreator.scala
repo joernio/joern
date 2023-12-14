@@ -1,5 +1,6 @@
 package io.joern.swiftsrc2cpg.astcreation
 
+import io.joern.swiftsrc2cpg.astcreation.AstCreatorHelper.OptionSafeAst
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
@@ -24,20 +25,31 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val code = this.code(node)
     // In Swift, a repeat-while loop is semantically the same as a C do-while loop
     val doNode       = controlStructureNode(node, ControlStructureTypes.DO, code)
-    val conditionAst = astForNode(node.condition)
+    val conditionAst = astForNodeWithFunctionReference(node.condition)
     val bodyAst      = astForNode(node.body)
     setOrderExplicitly(conditionAst, 1)
     setOrderExplicitly(bodyAst, 2)
     controlStructureAst(doNode, Some(conditionAst), Seq(bodyAst), placeConditionLast = true)
   }
 
-  private def astForReturnStmtSyntax(node: ReturnStmtSyntax): Ast = notHandledYet(node)
-  private def astForThenStmtSyntax(node: ThenStmtSyntax): Ast     = notHandledYet(node)
-  private def astForThrowStmtSyntax(node: ThrowStmtSyntax): Ast   = notHandledYet(node)
+  private def astForReturnStmtSyntax(node: ReturnStmtSyntax): Ast = {
+    val cpgReturn = returnNode(node, code(node))
+    node.expression match {
+      case Some(value) =>
+        val expr = astForNodeWithFunctionReference(value)
+        Ast(cpgReturn).withChild(expr).withArgEdge(cpgReturn, expr.root)
+      case None =>
+        Ast(cpgReturn)
+    }
+
+  }
+
+  private def astForThenStmtSyntax(node: ThenStmtSyntax): Ast   = notHandledYet(node)
+  private def astForThrowStmtSyntax(node: ThrowStmtSyntax): Ast = notHandledYet(node)
 
   private def astForWhileStmtSyntax(node: WhileStmtSyntax): Ast = {
     val code         = this.code(node)
-    val conditionAst = astForNode(node.conditions)
+    val conditionAst = astForNodeWithFunctionReference(node.conditions)
     val bodyAst      = astForNode(node.body)
     setOrderExplicitly(conditionAst, 1)
     setOrderExplicitly(bodyAst, 2)

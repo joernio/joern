@@ -7,9 +7,37 @@ import io.shiftleft.semanticcpg.language._
 class ExpressionTests extends AbstractPassTest {
 
   "ExpressionTests" should {
-    "testTernary" ignore AstFixture("a ? b : c") { cpg => ??? }
+    "testTernary" in AstFixture("a ? b : c") { cpg =>
+      inside(cpg.method.name("<global>").ast.isCall.l) { case List(call: Call) =>
+        call.code shouldBe "a ? b : c"
+        call.name shouldBe Operators.conditional
+        inside(call.argument.l) { case List(cond, trueCase, falseCase) =>
+          cond.code shouldBe "a"
+          trueCase.code shouldBe "b"
+          falseCase.code shouldBe "c"
+        }
+        call.lineNumber shouldBe Some(1)
+        call.columnNumber shouldBe Some(1)
+      }
+    }
 
-    "testSequence1" ignore AstFixture("a ? b : c ? d : e") { cpg => ??? }
+    "testSequence1" in AstFixture("a ? b : c ? d : e") { cpg =>
+      inside(cpg.method.name("<global>").ast.isCall.l) { case List(call: Call, nestedCall: Call) =>
+        call.code shouldBe "a ? b : c ? d : e"
+        call.name shouldBe Operators.conditional
+        inside(call.argument.l) { case List(cond, trueCase, falseCase: Call) =>
+          cond.code shouldBe "a"
+          trueCase.code shouldBe "b"
+          falseCase.code shouldBe "c ? d : e"
+          falseCase shouldBe nestedCall
+          inside(falseCase.argument.l) { case List(cond, trueCase, falseCase) =>
+            cond.code shouldBe "c"
+            trueCase.code shouldBe "d"
+            falseCase.code shouldBe "e"
+          }
+        }
+      }
+    }
 
     "testSequence2" ignore AstFixture("A as? B + C -> D is E as! F ? G = 42 : H") { cpg => ??? }
 
@@ -125,11 +153,24 @@ class ExpressionTests extends AbstractPassTest {
       ???
     }
 
-    "testIfExprInReturn" ignore AstFixture("""
+    "testIfExprInReturn" in AstFixture("""
       |func foo() {
       |  return if .random() { 0 } else { 1 }
       |}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin) { cpg =>
+      inside(cpg.method.name("foo").ast.isReturn.astChildren.isControlStructure.l) {
+        case List(controlStruct: ControlStructure) =>
+          controlStruct.code should startWith("if .random() {")
+          controlStruct.controlStructureType shouldBe ControlStructureTypes.IF
+          inside(controlStruct.condition.l) { case List(cndNode) =>
+            cndNode.code shouldBe ".random()"
+          }
+          controlStruct.whenTrue.code.l shouldBe List("0")
+          controlStruct.whenFalse.code.l shouldBe List("1")
+          controlStruct.lineNumber shouldBe Some(3)
+          controlStruct.columnNumber shouldBe Some(10)
+      }
+    }
 
     "testSwitchExprInReturn" ignore AstFixture("""
       |func foo() {

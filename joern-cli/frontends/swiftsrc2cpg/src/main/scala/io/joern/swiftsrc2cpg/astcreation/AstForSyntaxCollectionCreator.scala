@@ -12,7 +12,7 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
   private def astForListSyntaxChildren(node: SwiftNode, children: Seq[SwiftNode]): Ast = {
     children.toList match {
       case Nil         => Ast()
-      case head :: Nil => astForNode(head)
+      case head :: Nil => astForNodeWithFunctionReference(head)
       case elements =>
         val blockNode_ = blockNode(node, "<empty>", Defines.Any)
         scope.pushNewBlockScope(blockNode_)
