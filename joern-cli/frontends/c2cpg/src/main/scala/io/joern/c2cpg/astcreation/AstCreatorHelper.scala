@@ -1,6 +1,5 @@
 package io.joern.c2cpg.astcreation
 
-import io.joern.c2cpg.datastructures.CGlobal
 import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewNode}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.joern.x2cpg.{Ast, SourceFiles, ValidationMode}
@@ -123,7 +122,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   protected def registerType(typeName: String): String = {
     val fixedTypeName = fixQualifiedName(StringUtils.normalizeSpace(typeName))
-    CGlobal.usedTypes.putIfAbsent(fixedTypeName, true)
+    global.usedTypes.putIfAbsent(fixedTypeName, true)
     fixedTypeName
   }
 

@@ -39,7 +39,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   protected def registerType(typeFullName: String): Unit = {
-    SwiftGlobal.usedTypes.putIfAbsent(typeFullName, true)
+    global.usedTypes.putIfAbsent(typeFullName, true)
   }
 
   protected def generateUnusedVariableName(

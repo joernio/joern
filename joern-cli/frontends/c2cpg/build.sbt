@@ -32,8 +32,7 @@ dependencyOverrides ++= Seq(
 Compile / doc / scalacOptions ++= Seq("-doc-title", "semanticcpg apidocs", "-doc-version", version.value)
 
 compile / javacOptions ++= Seq("-Xlint:all", "-Xlint:-cast", "-g")
-Test / fork := false
-Global / concurrentRestrictions += Tags.limit(Tags.Test, 1)
+Test / fork := true
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
