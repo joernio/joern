@@ -2,7 +2,6 @@ package io.joern.swiftsrc2cpg.astcreation
 
 import io.joern.swiftsrc2cpg.datastructures.MethodScope
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
-import io.joern.swiftsrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
@@ -57,7 +56,11 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     astForNode(node.statements)
   }
   private def astForCompositionTypeElementSyntax(node: CompositionTypeElementSyntax): Ast = notHandledYet(node)
-  private def astForConditionElementSyntax(node: ConditionElementSyntax): Ast             = notHandledYet(node)
+
+  private def astForConditionElementSyntax(node: ConditionElementSyntax): Ast = {
+    astForNode(node.condition)
+  }
+
   private def astForConformanceRequirementSyntax(node: ConformanceRequirementSyntax): Ast = notHandledYet(node)
   private def astForConventionAttributeArgumentsSyntax(node: ConventionAttributeArgumentsSyntax): Ast = notHandledYet(
     node
@@ -155,7 +158,17 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForKeyPathOptionalComponentSyntax(node: KeyPathOptionalComponentSyntax): Ast   = notHandledYet(node)
   private def astForKeyPathPropertyComponentSyntax(node: KeyPathPropertyComponentSyntax): Ast   = notHandledYet(node)
   private def astForKeyPathSubscriptComponentSyntax(node: KeyPathSubscriptComponentSyntax): Ast = notHandledYet(node)
-  private def astForLabeledExprSyntax(node: LabeledExprSyntax): Ast                             = notHandledYet(node)
+
+  private def astForLabeledExprSyntax(node: LabeledExprSyntax): Ast = {
+    // TODO: handle Labels:
+    // We most likely have to create anonymous types with members incl. a proper initialization.
+    // And a TypeRef is returned afterwards.
+    node.label match {
+      case Some(_) => notHandledYet(node)
+      case None    => astForNode(node.expression)
+    }
+  }
+
   private def astForLabeledSpecializeArgumentSyntax(node: LabeledSpecializeArgumentSyntax): Ast = notHandledYet(node)
   private def astForLayoutRequirementSyntax(node: LayoutRequirementSyntax): Ast                 = notHandledYet(node)
   private def astForMatchingPatternConditionSyntax(node: MatchingPatternConditionSyntax): Ast   = notHandledYet(node)

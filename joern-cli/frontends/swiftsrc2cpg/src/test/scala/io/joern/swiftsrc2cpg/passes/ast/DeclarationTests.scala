@@ -341,6 +341,24 @@ class DeclarationTests extends AbstractPassTest {
 
     "testArrayDeclaration" ignore AstFixture("let foo: [Int] = []") { cpg => ??? }
 
+    "testSetDeclaration" ignore AstFixture("var studentID : Set<Int> = [112, 114, 115, 116, 118]") { cpg => ??? }
+
+    "testDictionaryDeclaration" ignore AstFixture("var numbers = [1: \"One\", 2: \"Two\", 3: \"Three\"]") { cpg => ??? }
+
+    "testAddDictionaryElements" ignore AstFixture("""
+        |var capitalCity = ["Nepal": "Kathmandu", "England": "London"]
+        |capitalCity["Japan"] = "Tokyo"
+        |print(capitalCity["Japan"])
+        |""".stripMargin) { cpg => ??? }
+
+    "testTupleDeclaration" ignore AstFixture("var product = (\"MacBook\", 1099.99)") { cpg => ??? }
+
+    "testTupleAccess" ignore AstFixture("""
+        |var product = ("MacBook", 1099.99)
+        |print("Name:", product.0)
+        |print("Price:", product.1)
+        |""".stripMargin) { cpg => ??? }
+
     "testInitAccessorsWithDefaultValues" ignore AstFixture("""
       |struct Test {
       |  var pair: (Int, Int) = (42, 0) {

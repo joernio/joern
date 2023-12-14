@@ -9,13 +9,17 @@ import io.shiftleft.codepropertygraph.generated.Operators
 trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
-  private def astForArrayExprSyntax(node: ArrayExprSyntax): Ast                       = notHandledYet(node)
-  private def astForArrowExprSyntax(node: ArrowExprSyntax): Ast                       = notHandledYet(node)
-  private def astForAsExprSyntax(node: AsExprSyntax): Ast                             = notHandledYet(node)
-  private def astForAssignmentExprSyntax(node: AssignmentExprSyntax): Ast             = notHandledYet(node)
-  private def astForAwaitExprSyntax(node: AwaitExprSyntax): Ast                       = notHandledYet(node)
-  private def astForBinaryOperatorExprSyntax(node: BinaryOperatorExprSyntax): Ast     = notHandledYet(node)
-  private def astForBooleanLiteralExprSyntax(node: BooleanLiteralExprSyntax): Ast     = notHandledYet(node)
+  private def astForArrayExprSyntax(node: ArrayExprSyntax): Ast                   = notHandledYet(node)
+  private def astForArrowExprSyntax(node: ArrowExprSyntax): Ast                   = notHandledYet(node)
+  private def astForAsExprSyntax(node: AsExprSyntax): Ast                         = notHandledYet(node)
+  private def astForAssignmentExprSyntax(node: AssignmentExprSyntax): Ast         = notHandledYet(node)
+  private def astForAwaitExprSyntax(node: AwaitExprSyntax): Ast                   = notHandledYet(node)
+  private def astForBinaryOperatorExprSyntax(node: BinaryOperatorExprSyntax): Ast = notHandledYet(node)
+
+  private def astForBooleanLiteralExprSyntax(node: BooleanLiteralExprSyntax): Ast = {
+    astForNode(node.literal)
+  }
+
   private def astForBorrowExprSyntax(node: BorrowExprSyntax): Ast                     = notHandledYet(node)
   private def astForCanImportExprSyntax(node: CanImportExprSyntax): Ast               = notHandledYet(node)
   private def astForCanImportVersionInfoSyntax(node: CanImportVersionInfoSyntax): Ast = notHandledYet(node)
@@ -23,8 +27,6 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForConsumeExprSyntax(node: ConsumeExprSyntax): Ast                   = notHandledYet(node)
   private def astForCopyExprSyntax(node: CopyExprSyntax): Ast                         = notHandledYet(node)
   private def astForDeclReferenceExprSyntax(node: DeclReferenceExprSyntax): Ast = {
-    // TODO: proper handling
-    notHandledYet(node)
     val name      = code(node)
     val identNode = identifierNode(node, name)
     scope.addVariableReference(name, identNode)
@@ -58,6 +60,15 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case ">>="  => Operators.assignmentArithmeticShiftRight
       case ">>>=" => Operators.assignmentLogicalShiftRight
       case "??="  => Operators.notNullAssert
+      case "<="   => Operators.lessEqualsThan
+      case ">="   => Operators.greaterEqualsThan
+      case "<"    => Operators.lessThan
+      case ">"    => Operators.greaterThan
+      case "=="   => Operators.equals
+      case "+"    => Operators.plus
+      case "-"    => Operators.minus
+      case "/"    => Operators.division
+      case "*"    => Operators.multiplication
       case other =>
         logger.warn(s"Unknown assignment operator: '$other'")
         Operators.assignment
@@ -96,11 +107,15 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForSwitchExprSyntax(node: SwitchExprSyntax): Ast                           = notHandledYet(node)
   private def astForTernaryExprSyntax(node: TernaryExprSyntax): Ast                         = notHandledYet(node)
   private def astForTryExprSyntax(node: TryExprSyntax): Ast                                 = notHandledYet(node)
-  private def astForTupleExprSyntax(node: TupleExprSyntax): Ast                             = notHandledYet(node)
-  private def astForTypeExprSyntax(node: TypeExprSyntax): Ast                               = notHandledYet(node)
-  private def astForUnresolvedAsExprSyntax(node: UnresolvedAsExprSyntax): Ast               = notHandledYet(node)
-  private def astForUnresolvedIsExprSyntax(node: UnresolvedIsExprSyntax): Ast               = notHandledYet(node)
-  private def astForUnresolvedTernaryExprSyntax(node: UnresolvedTernaryExprSyntax): Ast     = notHandledYet(node)
+
+  private def astForTupleExprSyntax(node: TupleExprSyntax): Ast = {
+    astForNode(node.elements)
+  }
+
+  private def astForTypeExprSyntax(node: TypeExprSyntax): Ast                           = notHandledYet(node)
+  private def astForUnresolvedAsExprSyntax(node: UnresolvedAsExprSyntax): Ast           = notHandledYet(node)
+  private def astForUnresolvedIsExprSyntax(node: UnresolvedIsExprSyntax): Ast           = notHandledYet(node)
+  private def astForUnresolvedTernaryExprSyntax(node: UnresolvedTernaryExprSyntax): Ast = notHandledYet(node)
 
   protected def astForExprSyntax(exprSyntax: ExprSyntax): Ast = exprSyntax match {
     case node: ArrayExprSyntax                 => astForArrayExprSyntax(node)
