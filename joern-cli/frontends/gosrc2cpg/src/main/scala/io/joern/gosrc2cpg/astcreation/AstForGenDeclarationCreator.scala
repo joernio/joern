@@ -65,11 +65,7 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
             val localParserNode = createParserNodeInfo(parserNode)
             if globalStatements then {
               val variableName = localParserNode.json(ParserKeys.Name).str
-              if (
-                !goGlobal.processingDependencies || goGlobal.processingDependencies && variableName.headOption.exists(
-                  _.isUpper
-                )
-              ) {
+              if (checkForDependencyFlags(variableName)) {
                 // While processing the dependencies code ignoring package level global variables starting with lower case letter
                 // as these variables are only accessible within package. So those will not be referred from main source code.
                 goGlobal.recordStructTypeMemberType(
@@ -98,11 +94,7 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
     val rhsTypeFullName = typeFullName.getOrElse(getTypeFullNameFromAstNode(rhsAst))
     if (globalStatements) {
       val variableName = lhsParserNode.json(ParserKeys.Name).str
-      if (
-        !goGlobal.processingDependencies || goGlobal.processingDependencies && variableName.headOption.exists(_.isUpper)
-      ) {
-        // While processing the dependencies code ignoring package level global variables starting with lower case letter
-        // as these variables are only accessible within package. So those will not be referred from main source code.
+      if (checkForDependencyFlags(variableName)) {
         goGlobal.recordStructTypeMemberType(s"$fullyQualifiedPackage${Defines.dot}$variableName", rhsTypeFullName)
         astForGlobalVarAndConstants(rhsTypeFullName, lhsParserNode, Some(rhsAst))
       }
@@ -167,5 +159,15 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
     } else {
       Ast()
     }
+  }
+
+  /** While processing the dependencies code ignoring package level global variables, constants, types, and functions
+    * starting with lower case letter as those are only accessible within package. So those will not be referred from
+    * main source code.
+    * @param name
+    * @return
+    */
+  protected def checkForDependencyFlags(name: String): Boolean = {
+    !goGlobal.processingDependencies || goGlobal.processingDependencies && name.headOption.exists(_.isUpper)
   }
 }

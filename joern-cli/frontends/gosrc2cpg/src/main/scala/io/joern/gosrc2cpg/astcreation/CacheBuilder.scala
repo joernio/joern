@@ -120,7 +120,7 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
 
   protected def processTypeSepc(typeSepc: Value): (String, String, Seq[Ast]) = {
     val name = typeSepc(ParserKeys.Name)(ParserKeys.Name).str
-    if (!goGlobal.processingDependencies || goGlobal.processingDependencies && name.headOption.exists(_.isUpper)) {
+    if (checkForDependencyFlags(name)) {
       // Ignoring recording the Type details when we are processing dependencies code with Type name starting with lower case letter
       // As the Types starting with lower case letters will only be accessible within that package. Which means
       // these Types are not going to get referred from main source code.
@@ -150,11 +150,9 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
     (importedEntity, importedAs)
   }
 
-  protected def processFuncDecl(
-    funcDeclVal: Value
-  ): (String, String, String, Value, Option[(String, String, String, ParserNodeInfo)], Map[String, List[String]]) = {
+  protected def processFuncDecl(funcDeclVal: Value): MethodMetadata = {
     val name = funcDeclVal(ParserKeys.Name).obj(ParserKeys.Name).str
-    if (!goGlobal.processingDependencies || goGlobal.processingDependencies && name.headOption.exists(_.isUpper)) {
+    if (checkForDependencyFlags(name)) {
       // Ignoring recording the method details when we are processing dependencies code with functions name starting with lower case letter
       // As the functions starting with lower case letters will only be accessible within that package. Which means
       // these methods / functions are not going to get referred from main source code.
@@ -173,8 +171,17 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
       val signature =
         s"$methodFullname(${parameterSignature(params, genericTypeMethodMap)})$returnTypeStr"
       goGlobal.recordFullNameToReturnType(methodFullname, returnTypeStr, signature)
-      (name, methodFullname, signature, params, receiverInfo, genericTypeMethodMap)
+      MethodMetadata(name, methodFullname, signature, params, receiverInfo, genericTypeMethodMap)
     } else
-      ("", "", "", Value("{}"), None, Map())
+      MethodMetadata()
   }
 }
+
+case class MethodMetadata(
+  name: String = "",
+  methodFullname: String = "",
+  signature: String = "",
+  params: Value = Value("{}"),
+  receiverInfo: Option[(String, String, String, ParserNodeInfo)] = None,
+  genericTypeMethodMap: Map[String, List[String]] = Map()
+)
