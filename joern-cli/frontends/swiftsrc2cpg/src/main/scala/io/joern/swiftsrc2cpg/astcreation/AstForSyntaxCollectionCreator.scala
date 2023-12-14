@@ -9,6 +9,23 @@ import io.joern.x2cpg.datastructures.Stack.*
 trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
+  private def astForListSyntaxChildren(node: SwiftNode, children: Seq[SwiftNode]): Ast = {
+    children.toList match {
+      case Nil         => Ast()
+      case head :: Nil => astForNode(head)
+      case elements =>
+        val blockNode_ = blockNode(node, "<empty>", Defines.Any)
+        scope.pushNewBlockScope(blockNode_)
+        localAstParentStack.push(blockNode_)
+        val childrenAsts = elements.map(astForNode)
+        setArgumentIndices(childrenAsts)
+        localAstParentStack.pop()
+        scope.popScope()
+        blockAst(blockNode_, childrenAsts)
+
+    }
+  }
+
   private def astForAccessorDeclListSyntax(node: AccessorDeclListSyntax): Ast                 = notHandledYet(node)
   private def astForArrayElementListSyntax(node: ArrayElementListSyntax): Ast                 = notHandledYet(node)
   private def astForAttributeListSyntax(node: AttributeListSyntax): Ast                       = notHandledYet(node)
@@ -20,37 +37,15 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
   private def astForClosureShorthandParameterListSyntax(node: ClosureShorthandParameterListSyntax): Ast = notHandledYet(
     node
   )
+
   private def astForCodeBlockItemListSyntax(node: CodeBlockItemListSyntax): Ast = {
-    node.children.toList match {
-      case head :: Nil => astForNode(head)
-      case elements =>
-        val blockNode_ = blockNode(node, "<empty>", Defines.Any)
-        scope.pushNewBlockScope(blockNode_)
-        localAstParentStack.push(blockNode_)
-        val childrenAsts = elements.map(astForNode)
-        setArgumentIndices(childrenAsts)
-        localAstParentStack.pop()
-        scope.popScope()
-        blockAst(blockNode_, childrenAsts)
-      case Nil => Ast()
-    }
+    astForListSyntaxChildren(node, node.children)
   }
+
   private def astForCompositionTypeElementListSyntax(node: CompositionTypeElementListSyntax): Ast = notHandledYet(node)
 
   private def astForConditionElementListSyntax(node: ConditionElementListSyntax): Ast = {
-    node.children.toList match {
-      case head :: Nil => astForNode(head)
-      case elements =>
-        val blockNode_ = blockNode(node, "<empty>", Defines.Any)
-        scope.pushNewBlockScope(blockNode_)
-        localAstParentStack.push(blockNode_)
-        val childrenAsts = elements.map(astForNode)
-        setArgumentIndices(childrenAsts)
-        localAstParentStack.pop()
-        scope.popScope()
-        blockAst(blockNode_, childrenAsts)
-      case Nil => Ast()
-    }
+    astForListSyntaxChildren(node, node.children)
   }
 
   private def astForDeclModifierListSyntax(node: DeclModifierListSyntax): Ast           = notHandledYet(node)
@@ -78,19 +73,7 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
   private def astForKeyPathComponentListSyntax(node: KeyPathComponentListSyntax): Ast       = notHandledYet(node)
 
   private def astForLabeledExprListSyntax(node: LabeledExprListSyntax): Ast = {
-    node.children.toList match {
-      case head :: Nil => astForNode(head)
-      case elements =>
-        val blockNode_ = blockNode(node, "<empty>", Defines.Any)
-        scope.pushNewBlockScope(blockNode_)
-        localAstParentStack.push(blockNode_)
-        val childrenAsts = elements.map(astForNode)
-        setArgumentIndices(childrenAsts)
-        localAstParentStack.pop()
-        scope.popScope()
-        blockAst(blockNode_, childrenAsts)
-      case Nil => Ast()
-    }
+    astForListSyntaxChildren(node, node.children)
   }
 
   private def astForMemberBlockItemListSyntax(node: MemberBlockItemListSyntax): Ast = notHandledYet(node)
