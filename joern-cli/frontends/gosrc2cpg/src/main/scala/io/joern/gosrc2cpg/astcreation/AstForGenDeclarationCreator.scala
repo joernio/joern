@@ -76,8 +76,8 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
                   s"$fullyQualifiedPackage${Defines.dot}$variableName",
                   typeFullName.getOrElse(Defines.anyTypeName)
                 )
+                astForGlobalVarAndConstants(typeFullName.getOrElse(Defines.anyTypeName), localParserNode)
               }
-              astForGlobalVarAndConstants(typeFullName.getOrElse(Defines.anyTypeName), localParserNode)
               Seq.empty
             } else {
               Seq(astForLocalNode(localParserNode, typeFullName)) ++: astForNode(localParserNode)
@@ -104,8 +104,8 @@ trait AstForGenDeclarationCreator(implicit withSchemaValidation: ValidationMode)
         // While processing the dependencies code ignoring package level global variables starting with lower case letter
         // as these variables are only accessible within package. So those will not be referred from main source code.
         goGlobal.recordStructTypeMemberType(s"$fullyQualifiedPackage${Defines.dot}$variableName", rhsTypeFullName)
+        astForGlobalVarAndConstants(rhsTypeFullName, lhsParserNode, Some(rhsAst))
       }
-      astForGlobalVarAndConstants(rhsTypeFullName, lhsParserNode, Some(rhsAst))
       (Ast(), Ast())
     } else {
       val localAst  = astForLocalNode(lhsParserNode, Some(rhsTypeFullName))
