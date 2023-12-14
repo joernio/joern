@@ -70,11 +70,19 @@ class AstCreator(val config: Config, val parserResult: ParseResult)(implicit wit
       methodNode(ast, name, name, fullName, None, path, Option(NodeTypes.TYPE_DECL), Option(fullName))
     methodAstParentStack.push(fakeGlobalMethod)
     scope.pushNewMethodScope(fullName, name, fakeGlobalMethod, None)
+
+    val blockNode_ = blockNode(ast, "<empty>", Defines.Any)
+    scope.pushNewBlockScope(blockNode_)
+    localAstParentStack.push(blockNode_)
     val sourceFileAst = astForNode(ast)
-    val methodReturn  = newMethodReturnNode(Defines.Any, None, line(ast), column(ast))
+    localAstParentStack.pop()
+    scope.popScope()
+    val blockAst_ = blockAst(blockNode_, List(sourceFileAst))
+
+    val methodReturn = newMethodReturnNode(Defines.Any, None, line(ast), column(ast))
     val modifiers = Seq(newModifierNode(ModifierTypes.VIRTUAL).order(0), newModifierNode(ModifierTypes.MODULE).order(1))
     Ast(fakeGlobalTypeDecl).withChild(
-      methodAst(fakeGlobalMethod, Seq.empty, sourceFileAst, methodReturn, modifiers = modifiers)
+      methodAst(fakeGlobalMethod, Seq.empty, blockAst_, methodReturn, modifiers = modifiers)
     )
   }
 

@@ -21,21 +21,42 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
     node
   )
   private def astForCodeBlockItemListSyntax(node: CodeBlockItemListSyntax): Ast = {
-    val blockNode_ = blockNode(node, "<empty>", Defines.Any)
-    scope.pushNewBlockScope(blockNode_)
-    localAstParentStack.push(blockNode_)
-    val childrenAsts = node.children.map(astForNode)
-    setArgumentIndices(childrenAsts)
-    localAstParentStack.pop()
-    scope.popScope()
-    blockAst(blockNode_, childrenAsts.toList)
+    node.children.toList match {
+      case head :: Nil => astForNode(head)
+      case elements =>
+        val blockNode_ = blockNode(node, "<empty>", Defines.Any)
+        scope.pushNewBlockScope(blockNode_)
+        localAstParentStack.push(blockNode_)
+        val childrenAsts = elements.map(astForNode)
+        setArgumentIndices(childrenAsts)
+        localAstParentStack.pop()
+        scope.popScope()
+        blockAst(blockNode_, childrenAsts)
+      case Nil => Ast()
+    }
   }
   private def astForCompositionTypeElementListSyntax(node: CompositionTypeElementListSyntax): Ast = notHandledYet(node)
-  private def astForConditionElementListSyntax(node: ConditionElementListSyntax): Ast             = notHandledYet(node)
-  private def astForDeclModifierListSyntax(node: DeclModifierListSyntax): Ast                     = notHandledYet(node)
-  private def astForDeclNameArgumentListSyntax(node: DeclNameArgumentListSyntax): Ast             = notHandledYet(node)
-  private def astForDesignatedTypeListSyntax(node: DesignatedTypeListSyntax): Ast                 = notHandledYet(node)
-  private def astForDictionaryElementListSyntax(node: DictionaryElementListSyntax): Ast           = notHandledYet(node)
+
+  private def astForConditionElementListSyntax(node: ConditionElementListSyntax): Ast = {
+    node.children.toList match {
+      case head :: Nil => astForNode(head)
+      case elements =>
+        val blockNode_ = blockNode(node, "<empty>", Defines.Any)
+        scope.pushNewBlockScope(blockNode_)
+        localAstParentStack.push(blockNode_)
+        val childrenAsts = elements.map(astForNode)
+        setArgumentIndices(childrenAsts)
+        localAstParentStack.pop()
+        scope.popScope()
+        blockAst(blockNode_, childrenAsts)
+      case Nil => Ast()
+    }
+  }
+
+  private def astForDeclModifierListSyntax(node: DeclModifierListSyntax): Ast           = notHandledYet(node)
+  private def astForDeclNameArgumentListSyntax(node: DeclNameArgumentListSyntax): Ast   = notHandledYet(node)
+  private def astForDesignatedTypeListSyntax(node: DesignatedTypeListSyntax): Ast       = notHandledYet(node)
+  private def astForDictionaryElementListSyntax(node: DictionaryElementListSyntax): Ast = notHandledYet(node)
   private def astForDifferentiabilityArgumentListSyntax(node: DifferentiabilityArgumentListSyntax): Ast = notHandledYet(
     node
   )
@@ -55,8 +76,24 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
   private def astForImportPathComponentListSyntax(node: ImportPathComponentListSyntax): Ast = notHandledYet(node)
   private def astForInheritedTypeListSyntax(node: InheritedTypeListSyntax): Ast             = notHandledYet(node)
   private def astForKeyPathComponentListSyntax(node: KeyPathComponentListSyntax): Ast       = notHandledYet(node)
-  private def astForLabeledExprListSyntax(node: LabeledExprListSyntax): Ast                 = notHandledYet(node)
-  private def astForMemberBlockItemListSyntax(node: MemberBlockItemListSyntax): Ast         = notHandledYet(node)
+
+  private def astForLabeledExprListSyntax(node: LabeledExprListSyntax): Ast = {
+    node.children.toList match {
+      case head :: Nil => astForNode(head)
+      case elements =>
+        val blockNode_ = blockNode(node, "<empty>", Defines.Any)
+        scope.pushNewBlockScope(blockNode_)
+        localAstParentStack.push(blockNode_)
+        val childrenAsts = elements.map(astForNode)
+        setArgumentIndices(childrenAsts)
+        localAstParentStack.pop()
+        scope.popScope()
+        blockAst(blockNode_, childrenAsts)
+      case Nil => Ast()
+    }
+  }
+
+  private def astForMemberBlockItemListSyntax(node: MemberBlockItemListSyntax): Ast = notHandledYet(node)
   private def astForMultipleTrailingClosureElementListSyntax(node: MultipleTrailingClosureElementListSyntax): Ast =
     notHandledYet(node)
   private def astForObjCSelectorPieceListSyntax(node: ObjCSelectorPieceListSyntax): Ast     = notHandledYet(node)

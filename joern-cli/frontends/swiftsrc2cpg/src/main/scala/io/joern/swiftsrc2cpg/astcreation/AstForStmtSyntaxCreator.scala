@@ -3,6 +3,7 @@ package io.joern.swiftsrc2cpg.astcreation
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
+import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 
 trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
@@ -18,12 +19,32 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForGuardStmtSyntax(node: GuardStmtSyntax): Ast             = notHandledYet(node)
   private def astForLabeledStmtSyntax(node: LabeledStmtSyntax): Ast         = notHandledYet(node)
   private def astForMissingStmtSyntax(node: MissingStmtSyntax): Ast         = notHandledYet(node)
-  private def astForRepeatStmtSyntax(node: RepeatStmtSyntax): Ast           = notHandledYet(node)
-  private def astForReturnStmtSyntax(node: ReturnStmtSyntax): Ast           = notHandledYet(node)
-  private def astForThenStmtSyntax(node: ThenStmtSyntax): Ast               = notHandledYet(node)
-  private def astForThrowStmtSyntax(node: ThrowStmtSyntax): Ast             = notHandledYet(node)
-  private def astForWhileStmtSyntax(node: WhileStmtSyntax): Ast             = notHandledYet(node)
-  private def astForYieldStmtSyntax(node: YieldStmtSyntax): Ast             = notHandledYet(node)
+
+  private def astForRepeatStmtSyntax(node: RepeatStmtSyntax): Ast = {
+    val code = this.code(node)
+    // In Swift, a repeat-while loop is semantically the same as a C do-while loop
+    val doNode       = controlStructureNode(node, ControlStructureTypes.DO, code)
+    val conditionAst = astForNode(node.condition)
+    val bodyAst      = astForNode(node.body)
+    setOrderExplicitly(conditionAst, 1)
+    setOrderExplicitly(bodyAst, 2)
+    controlStructureAst(doNode, Some(conditionAst), Seq(bodyAst), placeConditionLast = true)
+  }
+
+  private def astForReturnStmtSyntax(node: ReturnStmtSyntax): Ast = notHandledYet(node)
+  private def astForThenStmtSyntax(node: ThenStmtSyntax): Ast     = notHandledYet(node)
+  private def astForThrowStmtSyntax(node: ThrowStmtSyntax): Ast   = notHandledYet(node)
+
+  private def astForWhileStmtSyntax(node: WhileStmtSyntax): Ast = {
+    val code         = this.code(node)
+    val conditionAst = astForNode(node.conditions)
+    val bodyAst      = astForNode(node.body)
+    setOrderExplicitly(conditionAst, 1)
+    setOrderExplicitly(bodyAst, 2)
+    whileAst(Some(conditionAst), Seq(bodyAst), code = Some(code), lineNumber = line(node), columnNumber = column(node))
+  }
+
+  private def astForYieldStmtSyntax(node: YieldStmtSyntax): Ast = notHandledYet(node)
 
   protected def astForStmtSyntax(stmtSyntax: StmtSyntax): Ast = stmtSyntax match {
     case node: BreakStmtSyntax       => astForBreakStmtSyntax(node)
