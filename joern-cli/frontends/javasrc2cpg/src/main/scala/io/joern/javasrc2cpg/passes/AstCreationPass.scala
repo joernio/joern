@@ -119,7 +119,9 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
         jdkPath
     }
 
-    combinedTypeSolver.addNonCachingTypeSolver(JdkJarTypeSolver.fromJdkPath(jdkPath))
+    combinedTypeSolver.addNonCachingTypeSolver(
+      JdkJarTypeSolver.fromJdkPath(jdkPath, useCache = config.cacheJdkTypeSolver)
+    )
 
     val relativeSourceFilenames =
       sourceFilenames.map(filename => Path.of(config.inputPath).relativize(Path.of(filename)).toString)

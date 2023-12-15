@@ -16,14 +16,9 @@ import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try, Using}
 
-class JdkJarTypeSolver extends TypeSolver {
-
-  private val logger = LoggerFactory.getLogger(this.getClass())
+class JdkJarTypeSolver(classPool: NonCachingClassPool, knownPackagePrefixes: Set[String]) extends TypeSolver {
 
   private var parent: Option[TypeSolver] = None
-  private val classPool                  = new NonCachingClassPool()
-
-  private val knownPackagePrefixes: mutable.Set[String] = mutable.Set.empty
 
   private type RefType = ResolvedReferenceTypeDeclaration
 
@@ -76,6 +71,17 @@ class JdkJarTypeSolver extends TypeSolver {
   private def refTypeToSymbolReference(refType: RefType): SymbolReference[RefType] = {
     SymbolReference.solved[RefType, RefType](refType)
   }
+}
+
+class JdkJarTypeSolverBuilder {
+
+  private val logger                                    = LoggerFactory.getLogger(this.getClass)
+  private val classPool                                 = new NonCachingClassPool()
+  private val knownPackagePrefixes: mutable.Set[String] = mutable.Set.empty
+
+  def build: JdkJarTypeSolver = {
+    new JdkJarTypeSolver(classPool, knownPackagePrefixes.toSet)
+  }
 
   private def addPathToClassPool(archivePath: String): Try[ClassPath] = {
     if (archivePath.isJarPath) {
@@ -88,12 +94,12 @@ class JdkJarTypeSolver extends TypeSolver {
     }
   }
 
-  def withJars(archivePaths: Seq[String]): JdkJarTypeSolver = {
+  def withJars(archivePaths: Seq[String]): JdkJarTypeSolverBuilder = {
     addArchives(archivePaths)
     this
   }
 
-  def addArchives(archivePaths: Seq[String]): Unit = {
+  private def addArchives(archivePaths: Seq[String]): Unit = {
     archivePaths.foreach { archivePath =>
       addPathToClassPool(archivePath) match {
         case Success(_) => registerPackagesForJar(archivePath)
@@ -124,24 +130,34 @@ class JdkJarTypeSolver extends TypeSolver {
 }
 
 object JdkJarTypeSolver {
-  val ClassExtension: String  = ".class"
-  val JmodClassPrefix: String = "classes/"
-  val JarExtension: String    = ".jar"
-  val JmodExtension: String   = ".jmod"
+  val ClassExtension: String                                      = ".class"
+  val JmodClassPrefix: String                                     = "classes/"
+  val JarExtension: String                                        = ".jar"
+  val JmodExtension: String                                       = ".jmod"
+  private val cache: mutable.Map[String, JdkJarTypeSolverBuilder] = mutable.Map.empty
 
   extension (path: String) {
     def isJarPath: Boolean  = path.endsWith(JarExtension)
     def isJmodPath: Boolean = path.endsWith(JmodExtension)
   }
 
-  def fromJdkPath(jdkPath: String): JdkJarTypeSolver = {
+  private def determineJarPaths(jdkPath: String): List[String] = {
     // not following symlinks, because some setups might have a loop, e.g. AWS's Corretto
     // see https://github.com/joernio/joern/pull/3871
     val jarPaths = SourceFiles.determine(jdkPath, Set(JarExtension, JmodExtension))(VisitOptions.default)
     if (jarPaths.isEmpty) {
       throw new IllegalArgumentException(s"No .jar or .jmod files found at JDK path ${jdkPath}")
     }
-    new JdkJarTypeSolver().withJars(jarPaths)
+    jarPaths
+  }
+
+  def fromJdkPath(jdkPath: String, useCache: Boolean = false): JdkJarTypeSolver = {
+    def createBuilder = new JdkJarTypeSolverBuilder().withJars(determineJarPaths(jdkPath))
+    if (useCache) {
+      cache.getOrElseUpdate(jdkPath, createBuilder).build
+    } else {
+      createBuilder.build
+    }
   }
 
   /** Convert JavaParser class name foo.bar.qux.Baz to package prefix foo.bar Only use first 2 parts since this is
