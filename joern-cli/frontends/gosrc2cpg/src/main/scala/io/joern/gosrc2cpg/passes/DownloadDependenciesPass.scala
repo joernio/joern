@@ -14,7 +14,7 @@ import java.io.File as JFile
 import java.nio.file.Paths
 import scala.util.{Failure, Success, Try}
 
-class DownloadDependenciesPass(parentGoMod: GoModHelper, goGlobal: GoGlobal) {
+class DownloadDependenciesPass(parentGoMod: GoModHelper, goGlobal: GoGlobal, config: Config) {
   private val logger = LoggerFactory.getLogger(getClass)
   def process(): Unit = {
     File.usingTemporaryDirectory("go-temp-download") { tmpDir =>
@@ -28,16 +28,18 @@ class DownloadDependenciesPass(parentGoMod: GoModHelper, goGlobal: GoGlobal) {
       .map(mod => {
         ExternalCommand.run("go mod init joern.io/temp", prjDir) match
           case Success(_) =>
-            mod.dependencies.foreach(dependency => {
-              val dependencyStr = s"${dependency.module}@${dependency.version}"
-              val cmd           = s"go get $dependencyStr"
-              ExternalCommand.run(cmd, prjDir) match
-                case Success(_) =>
-                  print(". ")
-                  processDependency(dependencyStr)
-                case Failure(f) =>
-                  logger.error(s"\t- command '${cmd}' failed", f)
-            })
+            mod.dependencies
+              .filter(dep => config.includeIndirectDependencies || !dep.indirect)
+              .foreach(dependency => {
+                val dependencyStr = s"${dependency.module}@${dependency.version}"
+                val cmd           = s"go get $dependencyStr"
+                ExternalCommand.run(cmd, prjDir) match
+                  case Success(_) =>
+                    print(". ")
+                    processDependency(dependencyStr)
+                  case Failure(f) =>
+                    logger.error(s"\t- command '${cmd}' failed", f)
+              })
           case Failure(f) =>
             logger.error("\t- command 'go mod init joern.io/temp' failed", f)
       })

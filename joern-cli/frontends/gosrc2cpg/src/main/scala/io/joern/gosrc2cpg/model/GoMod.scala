@@ -54,6 +54,7 @@ case class GoModModule(
 case class GoModDependency(
   module: String,
   version: String,
+  indirect: Boolean,
   lineNo: Option[Int] = None,
   colNo: Option[Int] = None,
   endLineNo: Option[Int] = None,
@@ -83,6 +84,7 @@ object CirceEnDe {
     override def apply(c: HCursor): Result[GoModDependency] = {
       val module    = c.downField("Module").as[String]
       val version   = c.downField("Version").as[String]
+      val indirect  = c.downField("Indirect").as[Boolean]
       val lineNo    = c.downField("node_line_no").as[Int]
       val endLineNo = c.downField("node_line_no_end").as[Int]
       val colNo     = c.downField("node_col_no").as[Int]
@@ -91,6 +93,7 @@ object CirceEnDe {
         GoModDependency(
           module = module.getOrElse(""),
           version = version.getOrElse(""),
+          indirect = indirect.getOrElse(false),
           lineNo = lineNo.toOption,
           colNo = colNo.toOption,
           endLineNo = endLineNo.toOption,
