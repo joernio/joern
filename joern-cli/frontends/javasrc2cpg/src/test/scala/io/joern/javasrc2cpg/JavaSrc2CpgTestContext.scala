@@ -17,6 +17,7 @@ class JavaSrc2CpgTestContext {
       val config = Config(inferenceJarPaths = inferenceJarPaths)
         .withInputPath(writeCodeToFile(code, "javasrc2cpgTest", ".java").getAbsolutePath)
         .withOutputPath("")
+        .withCacheJdkTypeSolver(true)
       val cpg = javaSrc2Cpg.createCpgWithOverlays(config)
       if (runDataflow) {
         val context = new LayerCreatorContext(cpg.get)
