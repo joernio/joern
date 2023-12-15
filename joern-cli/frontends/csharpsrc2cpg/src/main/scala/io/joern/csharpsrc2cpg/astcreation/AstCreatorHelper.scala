@@ -1,8 +1,9 @@
 package io.joern.csharpsrc2cpg.astcreation
 
-import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.DotNetParserNode
+import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetJsonAst, DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.{Ast, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewNamespaceBlock, NewTypeDecl}
 import ujson.Value
 
 import scala.util.Try
@@ -58,5 +59,35 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   private def nodeType(node: Value): DotNetParserNode =
     DotNetJsonAst.fromString(node(ParserKeys.Kind).str, this.relativeFileName)
+
+  protected def astFullName(node: DotNetNodeInfo): String = {
+    methodAstParentStack.headOption match
+      case Some(head: NewNamespaceBlock) => s"${head.fullName}.${nameFromNode(node)}"
+      case Some(head: NewMethod)         => s"${head.fullName}.${nameFromNode(node)}"
+      case Some(head: NewTypeDecl)       => s"${head.fullName}.${nameFromNode(node)}"
+      case _                             => nameFromNode(node)
+  }
+
+  protected def nameFromNode(identifierNode: DotNetNodeInfo): String = {
+    identifierNode.node match
+      case IdentifierName | Parameter => nameFromIdentifier(identifierNode)
+      case QualifiedName              => nameFromQualifiedName(identifierNode)
+      case _: DeclarationExpr         => nameFromDeclaration(identifierNode)
+      case _                          => "<empty>"
+  }
+
+  protected def nameFromIdentifier(identifier: DotNetNodeInfo): String = {
+    identifier.json(ParserKeys.Identifier).obj(ParserKeys.Value).str
+  }
+
+  protected def nameFromDeclaration(node: DotNetNodeInfo): String = {
+    node.json(ParserKeys.Identifier).obj(ParserKeys.Value).str
+  }
+
+  protected def nameFromQualifiedName(qualifiedName: DotNetNodeInfo): String = {
+    val rhs = nameFromNode(createDotNetNodeInfo(qualifiedName.json(ParserKeys.Right)))
+    val lhs = nameFromNode(createDotNetNodeInfo(qualifiedName.json(ParserKeys.Left)))
+    s"$lhs.$rhs"
+  }
 
 }

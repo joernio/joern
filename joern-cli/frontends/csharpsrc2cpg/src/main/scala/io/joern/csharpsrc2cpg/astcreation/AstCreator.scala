@@ -1,6 +1,6 @@
 package io.joern.csharpsrc2cpg.astcreation
 
-import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.NamespaceDeclaration
+import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.astgen.{AstGenNodeBuilder, ParserResult}
 import io.joern.x2cpg.datastructures.Stack.Stack
@@ -52,6 +52,10 @@ class AstCreator(val relativeFileName: String, val parserResult: ParserResult)(i
   protected def astForNode(nodeInfo: DotNetNodeInfo): Ast = {
     nodeInfo.node match {
       case NamespaceDeclaration => astForNamespaceDeclaration(nodeInfo)
+      case ClassDeclaration     => astForClassDeclaration(nodeInfo)
+      case MethodDeclaration    => astForMethodDeclaration(nodeInfo)
+      case UsingDirective       => notHandledYet(nodeInfo)
+      case Block                => notHandledYet(nodeInfo)
       case _                    => notHandledYet(nodeInfo)
     }
   }
