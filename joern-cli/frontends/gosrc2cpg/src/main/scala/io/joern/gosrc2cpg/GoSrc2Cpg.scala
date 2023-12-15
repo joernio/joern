@@ -37,7 +37,7 @@ class GoSrc2Cpg extends X2CpgFrontend[Config] {
         )
         if (config.fetchDependencies) {
           goGlobal.processingDependencies = true
-          new DownloadDependenciesPass(goMod, goGlobal).process()
+          new DownloadDependenciesPass(goMod, goGlobal, config).process()
           goGlobal.processingDependencies = false
         }
         val astCreators =
