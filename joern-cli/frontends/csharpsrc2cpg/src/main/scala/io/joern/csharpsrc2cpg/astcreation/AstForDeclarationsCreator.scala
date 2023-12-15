@@ -97,7 +97,9 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     */
   private def astForModifiers(declaration: DotNetNodeInfo): Seq[Ast] = {
     val allModifiers = declaration.json(ParserKeys.Modifiers).arr.flatMap(astForModifier).toList
-    val accessModifiers = allModifiers intersect List(
+    val accessModifiers = allModifiers
+      .flatMap(_.nodes)
+      .collect { case x: NewModifier => x.modifierType } intersect List(
       ModifierTypes.PUBLIC,
       ModifierTypes.PRIVATE,
       ModifierTypes.INTERNAL,
