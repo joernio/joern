@@ -91,14 +91,18 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
     notHandledYet(node)
   private def astForSpecializeAttributeArgumentListSyntax(node: SpecializeAttributeArgumentListSyntax): Ast =
     notHandledYet(node)
-  private def astForStringLiteralSegmentListSyntax(node: StringLiteralSegmentListSyntax): Ast = notHandledYet(node)
-  private def astForSwitchCaseItemListSyntax(node: SwitchCaseItemListSyntax): Ast             = notHandledYet(node)
-  private def astForSwitchCaseListSyntax(node: SwitchCaseListSyntax): Ast                     = notHandledYet(node)
-  private def astForTuplePatternElementListSyntax(node: TuplePatternElementListSyntax): Ast   = notHandledYet(node)
-  private def astForTupleTypeElementListSyntax(node: TupleTypeElementListSyntax): Ast         = notHandledYet(node)
-  private def astForUnexpectedNodesSyntax(node: UnexpectedNodesSyntax): Ast                   = notHandledYet(node)
-  private def astForVersionComponentListSyntax(node: VersionComponentListSyntax): Ast         = notHandledYet(node)
-  private def astForYieldedExpressionListSyntax(node: YieldedExpressionListSyntax): Ast       = notHandledYet(node)
+
+  private def astForStringLiteralSegmentListSyntax(node: StringLiteralSegmentListSyntax): Ast = {
+    astForListSyntaxChildren(node, node.children)
+  }
+
+  private def astForSwitchCaseItemListSyntax(node: SwitchCaseItemListSyntax): Ast           = notHandledYet(node)
+  private def astForSwitchCaseListSyntax(node: SwitchCaseListSyntax): Ast                   = notHandledYet(node)
+  private def astForTuplePatternElementListSyntax(node: TuplePatternElementListSyntax): Ast = notHandledYet(node)
+  private def astForTupleTypeElementListSyntax(node: TupleTypeElementListSyntax): Ast       = notHandledYet(node)
+  private def astForUnexpectedNodesSyntax(node: UnexpectedNodesSyntax): Ast                 = notHandledYet(node)
+  private def astForVersionComponentListSyntax(node: VersionComponentListSyntax): Ast       = notHandledYet(node)
+  private def astForYieldedExpressionListSyntax(node: YieldedExpressionListSyntax): Ast     = notHandledYet(node)
 
   protected def astForSyntaxCollection(syntaxCollection: SyntaxCollection): Ast = syntaxCollection match {
     case node: AccessorDeclListSyntax                   => astForAccessorDeclListSyntax(node)

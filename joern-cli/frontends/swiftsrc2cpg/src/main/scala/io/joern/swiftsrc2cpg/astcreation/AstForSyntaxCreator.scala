@@ -2,6 +2,7 @@ package io.joern.swiftsrc2cpg.astcreation
 
 import io.joern.swiftsrc2cpg.datastructures.MethodScope
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
+import io.joern.swiftsrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
@@ -15,7 +16,10 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForAccessorBlockSyntax(node: AccessorBlockSyntax): Ast                       = notHandledYet(node)
   private def astForAccessorEffectSpecifiersSyntax(node: AccessorEffectSpecifiersSyntax): Ast = notHandledYet(node)
   private def astForAccessorParametersSyntax(node: AccessorParametersSyntax): Ast             = notHandledYet(node)
-  private def astForArrayElementSyntax(node: ArrayElementSyntax): Ast                         = notHandledYet(node)
+
+  private def astForArrayElementSyntax(node: ArrayElementSyntax): Ast = {
+    astForNodeWithFunctionReference(node.expression)
+  }
 
   private def astForAttributeSyntax(node: AttributeSyntax): Ast = {
     val argumentAsts = node.arguments match {
@@ -160,12 +164,13 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForKeyPathSubscriptComponentSyntax(node: KeyPathSubscriptComponentSyntax): Ast = notHandledYet(node)
 
   private def astForLabeledExprSyntax(node: LabeledExprSyntax): Ast = {
-    // TODO: handle Labels:
-    // We most likely have to create anonymous types with members incl. a proper initialization.
-    // And a TypeRef is returned afterwards.
+    // TODO: check if handling Labels like that fits the Swift semantics:
     node.label match {
-      case Some(_) => notHandledYet(node)
-      case None    => astForNodeWithFunctionReference(node.expression)
+      case Some(label) =>
+        val dstAst = astForNode(label)
+        val srcAst = astForNodeWithFunctionReference(node.expression)
+        createAssignmentCallAst(dstAst, srcAst, code(node), line(node), column(node))
+      case None => astForNodeWithFunctionReference(node.expression)
     }
   }
 
@@ -210,7 +215,11 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     notHandledYet(node)
   private def astForSpecializeTargetFunctionArgumentSyntax(node: SpecializeTargetFunctionArgumentSyntax): Ast =
     notHandledYet(node)
-  private def astForStringSegmentSyntax(node: StringSegmentSyntax): Ast                 = notHandledYet(node)
+
+  private def astForStringSegmentSyntax(node: StringSegmentSyntax): Ast = {
+    Ast(literalNode(node, code(node), Option(Defines.String)))
+  }
+
   private def astForSwitchCaseItemSyntax(node: SwitchCaseItemSyntax): Ast               = notHandledYet(node)
   private def astForSwitchCaseLabelSyntax(node: SwitchCaseLabelSyntax): Ast             = notHandledYet(node)
   private def astForSwitchCaseSyntax(node: SwitchCaseSyntax): Ast                       = notHandledYet(node)
