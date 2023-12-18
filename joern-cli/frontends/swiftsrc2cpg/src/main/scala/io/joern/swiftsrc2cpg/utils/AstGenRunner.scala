@@ -93,7 +93,7 @@ class AstGenRunner(config: Config) {
 
   import io.joern.swiftsrc2cpg.utils.AstGenRunner._
 
-  private def skippedFiles(in: File, astGenOut: List[String]): List[String] = {
+  private def skippedFiles(astGenOut: List[String]): List[String] = {
     val skipped = astGenOut.collect {
       case out if !out.startsWith("Generated") =>
         val filename = out.substring(out.indexOf(": `") + 3, out.indexOf("swift`") + 5)
@@ -139,7 +139,7 @@ class AstGenRunner(config: Config) {
     runAstGenNative(in, out) match {
       case Success(result) =>
         val parsed  = filterFiles(SourceFiles.determine(out.toString(), Set(".json")), out)
-        val skipped = skippedFiles(in, result.toList)
+        val skipped = skippedFiles(result.toList)
         AstGenRunnerResult(parsed.map((in.toString(), _)), skipped.map((in.toString(), _)))
       case Failure(f) =>
         logger.error("\t- running SwiftAstGen failed!", f)

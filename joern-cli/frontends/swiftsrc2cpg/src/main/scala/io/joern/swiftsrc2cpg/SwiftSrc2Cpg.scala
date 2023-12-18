@@ -31,7 +31,7 @@ class SwiftSrc2Cpg extends X2CpgFrontend[Config] {
         SwiftTypeNodePass.withRegisteredTypes(astCreationPass.typesSeen(), cpg).createAndApply()
         new SwiftMetaDataPass(cpg, hash, config.inputPath).createAndApply()
         new BuiltinTypesPass(cpg).createAndApply()
-        new DependenciesPass(cpg, config).createAndApply()
+        new DependenciesPass(cpg).createAndApply()
         new ImportsPass(cpg).createAndApply()
 
         report.print()
