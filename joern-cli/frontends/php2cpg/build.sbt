@@ -17,7 +17,7 @@ libraryDependencies ++= Seq(
   "com.lihaoyi"   %% "ujson"             % Versions.upickle,
   "io.shiftleft"  %% "codepropertygraph" % Versions.cpg,
   "org.scalatest" %% "scalatest"         % Versions.scalatest % Test,
-  "io.circe"      %% "circe-core"        % "0.15.0-M1"
+  "io.circe"      %% "circe-core"        % Versions.circe
 )
 
 lazy val phpParseInstallTask = taskKey[Unit]("Install PHP-Parse using PHP Composer")
