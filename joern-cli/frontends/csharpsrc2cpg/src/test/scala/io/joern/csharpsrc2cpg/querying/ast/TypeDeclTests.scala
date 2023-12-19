@@ -11,6 +11,7 @@ class TypeDeclTests extends CSharpCode2CpgFixture {
 
     "generate a type declaration with the correct properties" in {
       val x = cpg.typeDecl.nameExact("Container").head
+      x.code shouldBe "public class Container"
       x.fullName shouldBe "Container"
       x.filename shouldBe "Container.cs"
       x.aliasTypeFullName shouldBe None
@@ -35,6 +36,7 @@ class TypeDeclTests extends CSharpCode2CpgFixture {
 
     "generate a type declaration with the correct properties" in {
       val x = cpg.typeDecl.nameExact("SampleClass").head
+      x.code shouldBe "private class SampleClass"
       x.fullName shouldBe "SampleNamespace.SampleClass"
       x.filename shouldBe "SampleClass.cs"
       x.aliasTypeFullName shouldBe None

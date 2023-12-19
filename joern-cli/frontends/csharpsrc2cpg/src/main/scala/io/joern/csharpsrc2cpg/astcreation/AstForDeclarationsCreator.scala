@@ -5,7 +5,7 @@ import io.joern.x2cpg.datastructures.Stack.StackWrapper
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.{ModifierTypes, NodeTypes, PropertyNames, nodes}
 import io.shiftleft.proto.cpg.Cpg.EvaluationStrategies
 
 import scala.util.Try
@@ -18,7 +18,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val name     = fullName.split('.').filterNot(_.isBlank).lastOption.getOrElse(fullName)
     val namespaceBlock = NewNamespaceBlock()
       .name(name)
-      .code(code(nameNode))
+      .code(code(namespace))
       .lineNumber(line(nameNode))
       .columnNumber(columnEnd(nameNode))
       .filename(relativeFileName)
@@ -60,7 +60,10 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val fullName    = s"${astFullName(methodDecl)}:$signature"
     val methodNode_ = methodNode(methodDecl, name, code(methodDecl), fullName, Option(signature), relativeFileName)
     val modifiers   = astForModifiers(methodDecl).flatMap(_.nodes).collect { case x: NewModifier => x }
-    methodAst(methodNode_, params, body, methodReturn, modifiers)
+    val thisNode =
+      if (!modifiers.exists(_.modifierType == ModifierTypes.STATIC)) astForThisNode(methodDecl)
+      else Ast()
+    methodAst(methodNode_, thisNode +: params, body, methodReturn, modifiers)
   }
 
   private def methodSignature(methodReturn: NewMethodReturn, params: Seq[NewMethodParameterIn]): String = {
@@ -70,9 +73,20 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForParameter(paramNode: DotNetNodeInfo, idx: Int): Ast = {
     val name               = nameFromNode(paramNode)
     val isVariadic         = false                                // TODO
-    val typeFullName       = Option("ANY")                        // TODO
+    val typeNode           = createDotNetNodeInfo(paramNode.json(ParserKeys.Type))
+    val typeFullName       = typeNode.code
     val evaluationStrategy = EvaluationStrategies.BY_SHARING.name // TODO
-    val param = parameterInNode(paramNode, name, code(paramNode), idx, isVariadic, evaluationStrategy, typeFullName)
+    val param =
+      parameterInNode(paramNode, name, code(paramNode), idx + 1, isVariadic, evaluationStrategy, Option(typeFullName))
+    Ast(param)
+  }
+
+  private def astForThisNode(methodDecl: DotNetNodeInfo): Ast = {
+    val name = "this"
+    val typeFullName =
+      methodAstParentStack.headOption.map(_.properties.getOrElse(PropertyNames.FULL_NAME, "ANY").toString)
+    val param =
+      parameterInNode(methodDecl, name, name, 0, false, EvaluationStrategies.BY_SHARING.name, typeFullName)
     Ast(param)
   }
 
@@ -87,6 +101,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       methodReturn,
       Try(methodReturn.json(ParserKeys.Value).str)
         .orElse(Try(methodReturn.json(ParserKeys.Keyword).obj(ParserKeys.Value).str))
+        .orElse(Try(methodReturn.code))
         .getOrElse("ANY")
     )
   }
@@ -96,8 +111,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     *   https://learn.microsoft.com/en-us/dotnet/csharp/programming-guide/classes-and-structs/access-modifiers
     */
   private def astForModifiers(declaration: DotNetNodeInfo): Seq[Ast] = {
-    val allModifiers = declaration.json(ParserKeys.Modifiers).arr.flatMap(astForModifier).toList
-    val accessModifiers = allModifiers
+    val explicitModifiers = declaration.json(ParserKeys.Modifiers).arr.flatMap(astForModifier).toList
+    val accessModifiers = explicitModifiers
       .flatMap(_.nodes)
       .collect { case x: NewModifier => x.modifierType } intersect List(
       ModifierTypes.PUBLIC,
@@ -105,7 +120,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       ModifierTypes.INTERNAL,
       ModifierTypes.PROTECTED
     )
-    accessModifiers match
+    val implicitAccessModifier = accessModifiers match
       // Internal is default for top-level definitions
       case Nil
           if methodAstParentStack.isEmpty || !methodAstParentStack
@@ -113,12 +128,14 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
             .map(_.label())
             .distinct
             .contains(NodeTypes.METHOD) =>
-        Ast(newModifierNode(ModifierTypes.INTERNAL)) :: allModifiers
+        Ast(newModifierNode(ModifierTypes.INTERNAL))
       // Private is default for nested definitions
       case Nil
           if methodAstParentStack.headOption.exists(x => x.isInstanceOf[NewMethod] || x.isInstanceOf[NewTypeDecl]) =>
-        Ast(newModifierNode(ModifierTypes.PRIVATE)) :: allModifiers
-      case _ => allModifiers
+        Ast(newModifierNode(ModifierTypes.PRIVATE))
+      case _ => Ast()
+
+    implicitAccessModifier :: explicitModifiers
   }
 
   private def astForModifier(modifier: ujson.Value): Option[Ast] = {
@@ -129,6 +146,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         case "internal" => newModifierNode(ModifierTypes.INTERNAL)
         case "static"   => newModifierNode(ModifierTypes.STATIC)
         case "readonly" => newModifierNode(ModifierTypes.READONLY)
+        case "virtual"  => newModifierNode(ModifierTypes.VIRTUAL)
         case x =>
           logger.warn(s"Unhandled modifier name '$x'")
           null
