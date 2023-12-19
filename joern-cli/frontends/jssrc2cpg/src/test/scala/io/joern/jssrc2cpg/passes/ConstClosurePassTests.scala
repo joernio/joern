@@ -5,12 +5,63 @@ import io.shiftleft.semanticcpg.language._
 
 class ConstClosurePassTests extends DataFlowCodeToCpgSuite {
 
-  "should return method `foo` via `cpg.method`" in {
-    val cpg = code("const foo = (x,y) => { return x + y; }")
+  "object properties assigned to closures" should {
+    val cpg = code("""
+        |var myObject = {
+        |  prop1: "a",
+        |  prop2: "b",
+        |
+        |  // Function 1
+        |  sayHello: function () {
+        |    console.log("sayHello");
+        |  },
+        |
+        |  // Function 2
+        |  sayWorld: function () {
+        |    console.log("sayWorld");
+        |  },
+        |
+        |  // Function 3
+        |  sayHelloWorld: function () {
+        |    console.log("sayHelloWorld");
+        |  }
+        |};
+        |myObject.sayHello()
+        |myObject.sayWorld()
+        |myObject.sayHelloWorld()
+        |""".stripMargin)
 
-    val List(m) = cpg.method.name("foo").l
-    m.name shouldBe "foo"
-    m.fullName.endsWith("program:foo") shouldBe true
+    "should return the methods via `cpg.method`" in {
+      val List(sayHello) = cpg.method.name("sayHello").l
+      sayHello.fullName.endsWith("program:sayHello") shouldBe true
+      val List(sayHelloCall) = cpg.call("sayHello").l
+      sayHelloCall.methodFullName.endsWith("program:sayHello") shouldBe true
+
+      val List(sayWorld) = cpg.method.name("sayWorld").l
+      sayWorld.fullName.endsWith("program:sayWorld") shouldBe true
+      val List(sayWorldCall) = cpg.call("sayWorld").l
+      sayWorldCall.methodFullName.endsWith("program:sayWorld") shouldBe true
+
+      val List(sayHelloWorld) = cpg.method.name("sayHelloWorld").l
+      sayHelloWorld.fullName.endsWith("program:sayHelloWorld") shouldBe true
+      val List(sayHelloWorldCall) = cpg.call("sayHelloWorld").l
+      sayHelloWorldCall.methodFullName.endsWith("program:sayHelloWorld") shouldBe true
+    }
+  }
+
+  "should return method `foo` via `cpg.method`" in {
+    val cpg = code("""
+        |const foo = (x,y) => { return x + y; }
+        |const bar = (x,y) => { return x - y; }
+        |""".stripMargin)
+
+    val List(foo) = cpg.method.name("foo").l
+    foo.name shouldBe "foo"
+    foo.fullName.endsWith("program:foo") shouldBe true
+
+    val List(bar) = cpg.method.name("bar").l
+    bar.name shouldBe "bar"
+    bar.fullName.endsWith("program:bar") shouldBe true
   }
 
   "should return method `export.foo` via `cpg.method`" in {

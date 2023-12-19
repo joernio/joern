@@ -16,9 +16,21 @@ class ConstClosurePass(cpg: Cpg) extends CpgPass(cpg) {
 
   override def run(diffGraph: DiffGraphBuilder): Unit = {
     handleConstClosures(diffGraph)
+    handleConstClosuresDefinedInObjectExpr(diffGraph)
     handleClosuresDefinedAtExport(diffGraph)
     handleClosuresAssignedToMutableVar(diffGraph)
   }
+
+  private def handleConstClosuresDefinedInObjectExpr(diffGraph: DiffGraphBuilder): Unit =
+    for {
+      assignment      <- cpg.assignment.filter(_.code.startsWith("_tmp_"))
+      name            <- assignment.start.target.fieldAccess.argument(2).isFieldIdentifier.canonicalName
+      methodRef       <- assignment.start.source.isMethodRef
+      method          <- methodRef.referencedMethod
+      enclosingMethod <- assignment.start.method.fullName
+    } {
+      updateClosures(diffGraph, method, methodRef, enclosingMethod, name)
+    }
 
   private def handleConstClosures(diffGraph: DiffGraphBuilder): Unit =
     for {
@@ -47,7 +59,7 @@ class ConstClosurePass(cpg: Cpg) extends CpgPass(cpg) {
     for {
       assignment      <- cpg.assignment
       name            <- assignment.start.code("^(var|let) .*").target.isIdentifier.name
-      methodRef       <- assignment.start.source.ast.isMethodRef
+      methodRef       <- assignment.start.source.filterNot(_.isBlock).ast.isMethodRef
       method          <- methodRef.referencedMethod
       enclosingMethod <- assignment.start.method.fullName
     } {
