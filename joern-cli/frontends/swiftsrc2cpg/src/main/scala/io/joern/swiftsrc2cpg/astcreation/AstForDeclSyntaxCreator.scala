@@ -11,6 +11,7 @@ import io.joern.x2cpg.datastructures.Stack.*
 import io.shiftleft.codepropertygraph.generated.nodes.NewModifier
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
+import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
 
 trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
@@ -179,7 +180,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           notHandledYet(wildcard)
           generateUnusedVariableName(usedVariableNames, "wildcard")
       }
-      val typeFullName = binding.typeAnnotation.map(code).getOrElse(Defines.Any)
+      val typeFullName = binding.typeAnnotation.map(t => code(t.`type`)).getOrElse(Defines.Any)
       val nLocalNode   = localNode(binding, name, name, typeFullName).order(0)
       scope.addVariable(name, nLocalNode, scopeType)
       diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
@@ -189,6 +190,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         Ast()
       } else {
         val patternAst = astForNode(binding.pattern)
+        patternAst.root.collect { case i: NewIdentifier => i }.foreach(_.typeFullName(typeFullName))
         modifiers.foreach { mod =>
           patternAst.root.foreach { r => diffGraph.addEdge(r, mod, EdgeTypes.AST) }
         }
