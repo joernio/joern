@@ -7,6 +7,9 @@ import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import org.antlr.v4.runtime.tree.{ErrorNode, ParseTree, TerminalNode}
 
 import scala.jdk.CollectionConverters.*
+import io.joern.rubysrc2cpg.parser.RubyParser.RescueClauseContext
+import io.joern.rubysrc2cpg.parser.RubyParser.EnsureClauseContext
+import io.joern.rubysrc2cpg.parser.RubyParser.ExceptionClassListContext
 
 /** Converts an ANTLR Ruby Parse Tree into the intermediate Ruby AST.
   */
@@ -540,8 +543,30 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     if (ctx.rescueClause().isEmpty && Option(ctx.elseClause()).isEmpty && Option(ctx.ensureClause()).isEmpty) {
       visit(ctx.compoundStatement())
     } else {
-      Unknown()(ctx.toTextSpan)
+      RescueExpression(
+        visit(ctx.compoundStatement()),
+        Option(ctx.rescueClause.asScala).fold(List())(_.map(visit).toList),
+        Option(ctx.elseClause).map(visit),
+        Option(ctx.ensureClause).map(visit)
+      )(ctx.toTextSpan)
     }
+  }
+
+  override def visitExceptionClassList(ctx: ExceptionClassListContext): RubyNode = {
+    // Requires implementing multiple rhs with splatting
+    Unknown()(ctx.toTextSpan)
+  }
+
+  override def visitRescueClause(ctx: RescueClauseContext): RubyNode = {
+    RescueClause(
+      Option(ctx.exceptionClassList).map(visit),
+      Option(ctx.exceptionVariableAssignment).map(visit),
+      visit(ctx.thenClause)
+    )(ctx.toTextSpan)
+  }
+
+  override def visitEnsureClause(ctx: EnsureClauseContext): RubyNode = {
+    EnsureClause(visit(ctx.compoundStatement()))(ctx.toTextSpan)
   }
 
   override def visitAssociationKey(ctx: RubyParser.AssociationKeyContext): RubyNode = {

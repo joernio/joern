@@ -22,6 +22,12 @@ object RubyIntermediateAst {
     def text: String = span.text
   }
 
+  implicit class RubyNodeHelper(node: RubyNode) {
+    def asStatementList = node match
+      case stmtList: StatementList => stmtList
+      case _                       => StatementList(List(node))(node.span)
+  }
+
   final case class Unknown()(span: TextSpan) extends RubyNode(span)
 
   final case class StatementList(statements: List[RubyNode])(span: TextSpan) extends RubyNode(span) {
@@ -69,6 +75,23 @@ object RubyIntermediateAst {
   final case class AttributeAssignment(target: RubyNode, op: String, attributeName: String, rhs: RubyNode)(
     span: TextSpan
   ) extends RubyNode(span)
+
+  final case class RescueExpression(
+    body: RubyNode,
+    rescueClauses: List[RubyNode],
+    elseClause: Option[RubyNode],
+    ensureClause: Option[RubyNode]
+  )(span: TextSpan)
+      extends RubyNode(span)
+
+  final case class RescueClause(
+    exceptionClassList: Option[RubyNode],
+    assignment: Option[RubyNode],
+    thenClause: RubyNode
+  )(span: TextSpan)
+      extends RubyNode(span)
+
+  final case class EnsureClause(thenClause: RubyNode)(span: TextSpan) extends RubyNode(span)
 
   final case class WhileExpression(condition: RubyNode, body: RubyNode)(span: TextSpan) extends RubyNode(span)
 
