@@ -30,8 +30,7 @@ class CSharpSrc2Cpg extends X2CpgFrontend[Config] {
         val astCreators  = CSharpSrc2Cpg.processAstGenRunnerResults(astGenResult.parsedFiles, config)
 
         val hash = HashUtil.sha256(astCreators.map(_.parserResult).map(x => Paths.get(x.fullPath)))
-        // TODO: Add CSHARPSRC to codepropertygraph
-        new MetaDataPass(cpg, "CSHARPSRC", config.inputPath, Option(hash)).createAndApply()
+        new MetaDataPass(cpg, Languages.CSHARPSRC, config.inputPath, Option(hash)).createAndApply()
         new AstCreationPass(cpg, astCreators, report).createAndApply()
         report.print()
       }

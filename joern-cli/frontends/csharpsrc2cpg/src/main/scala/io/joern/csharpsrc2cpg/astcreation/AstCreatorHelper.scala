@@ -6,44 +6,19 @@ import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewNamespaceBlock, NewTypeDecl}
 import ujson.Value
 
-import scala.util.Try
-
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
-
-  protected val systemLineSep: String = System.getProperty("line.separator")
 
   protected def createDotNetNodeInfo(json: Value): DotNetNodeInfo = {
     val metaData = json(ParserKeys.MetaData)
-    val ln       = jsonLine(metaData)
-    val cn       = jsonColumn(metaData)
-    val lnEnd    = jsonLineEnd(metaData)
-    val cnEnd    = jsonColumnEnd(metaData)
-    val c        = jsonCode(metaData)
-    val node     = nodeType(metaData)
+    val ln       = metaData(ParserKeys.LineStart).numOpt.map(_.toInt.asInstanceOf[Integer])
+    val cn       = metaData(ParserKeys.ColumnStart).numOpt.map(_.toInt.asInstanceOf[Integer])
+    val lnEnd    = metaData(ParserKeys.LineEnd).numOpt.map(_.toInt.asInstanceOf[Integer])
+    val cnEnd    = metaData(ParserKeys.ColumnEnd).numOpt.map(_.toInt.asInstanceOf[Integer])
+    val c =
+      metaData(ParserKeys.Code).strOpt.map(x => x.takeWhile(x => x != '\n' && x != '{')).getOrElse("<empty>").strip()
+    val node = nodeType(metaData)
     DotNetNodeInfo(node, json, c, ln, cn, lnEnd, cnEnd)
   }
-
-  private def jsonCode(json: Value): String = Try {
-    val ln         = json(ParserKeys.LineStart).num.toInt
-    val lnEnd      = json(ParserKeys.LineEnd).num.toInt
-    lazy val cn    = json(ParserKeys.ColumnStart).num.toInt
-    lazy val cnEnd = json(ParserKeys.ColumnEnd).num.toInt
-    val resultList = this.parserResult.fileContent.linesIterator.zipWithIndex
-      .filter(x => x._2 >= ln && x._2 <= lnEnd)
-      .map(_._1)
-      .toList
-    resultList match
-      case head :: Nil => head.substring(cn, cnEnd)
-      case xs          => xs.mkString(systemLineSep)
-  }.getOrElse("<empty>")
-
-  private def jsonLine(json: Value): Option[Integer] = json(ParserKeys.LineStart).numOpt.map(_.toInt)
-
-  private def jsonLineEnd(json: Value): Option[Integer] = json(ParserKeys.LineEnd).numOpt.map(_.toInt)
-
-  private def jsonColumn(json: Value): Option[Integer] = json(ParserKeys.ColumnStart).numOpt.map(_.toInt)
-
-  private def jsonColumnEnd(json: Value): Option[Integer] = json(ParserKeys.ColumnEnd).numOpt.map(_.toInt)
 
   protected def notHandledYet(node: DotNetNodeInfo): Ast = {
     val text =

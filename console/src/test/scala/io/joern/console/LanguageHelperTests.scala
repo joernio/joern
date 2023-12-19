@@ -18,7 +18,7 @@ class LanguageHelperTests extends AnyWordSpec with Matchers {
     }
 
     "guess `C#` for .csproj" in {
-      guessLanguage("foo.csproj") shouldBe Some(Languages.CSHARP)
+      guessLanguage("foo.csproj") shouldBe Some(Languages.CSHARPSRC)
     }
 
     "guess `Go` for a .go file" in {
