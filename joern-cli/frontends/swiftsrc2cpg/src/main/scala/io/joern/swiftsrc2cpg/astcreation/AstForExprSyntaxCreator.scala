@@ -21,7 +21,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val MAX_INITIALIZERS = 1000
     val clauses          = elements.slice(0, MAX_INITIALIZERS)
 
-    val args = clauses.map(x => astForNode(x))
+    val args = clauses.map(x => astForNodeWithFunctionReference(x))
 
     val ast = callAst(initCallNode, args)
     if (elements.length > MAX_INITIALIZERS) {
@@ -203,7 +203,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         Operators.assignment
     }
 
-    val lhsAst    = astForNode(node.leftOperand)
+    val lhsAst    = astForNodeWithFunctionReference(node.leftOperand)
     val rhsAst    = astForNodeWithFunctionReference(node.rightOperand)
     val callNode_ = callNode(node, code(node), op, DispatchTypes.STATIC_DISPATCH)
     val argAsts   = List(lhsAst, rhsAst)
