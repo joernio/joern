@@ -11,7 +11,7 @@ class NamespaceTests extends CSharpCode2CpgFixture {
 
     "create a namespace block node" in {
       val helloWorld = cpg.namespaceBlock.nameExact("HelloWorld").head
-      helloWorld.code shouldBe "HelloWorld"
+      helloWorld.code shouldBe "namespace HelloWorld"
       helloWorld.filename shouldBe "Program.cs"
       helloWorld.lineNumber shouldBe Some(2)
       helloWorld.columnNumber shouldBe Some(20)
@@ -26,7 +26,7 @@ class NamespaceTests extends CSharpCode2CpgFixture {
 
     "create a namespace block node" in {
       val helloWorld = cpg.namespaceBlock.nameExact("World").head
-      helloWorld.code shouldBe "Hello.World"
+      helloWorld.code shouldBe "namespace Hello.World"
       helloWorld.filename shouldBe "Program.cs"
       helloWorld.fullName shouldBe "Hello.World"
     }
