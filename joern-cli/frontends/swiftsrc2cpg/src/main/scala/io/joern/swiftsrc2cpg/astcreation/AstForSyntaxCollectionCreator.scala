@@ -48,10 +48,14 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
     astForListSyntaxChildren(node, node.children)
   }
 
-  private def astForDeclModifierListSyntax(node: DeclModifierListSyntax): Ast           = notHandledYet(node)
-  private def astForDeclNameArgumentListSyntax(node: DeclNameArgumentListSyntax): Ast   = notHandledYet(node)
-  private def astForDesignatedTypeListSyntax(node: DesignatedTypeListSyntax): Ast       = notHandledYet(node)
-  private def astForDictionaryElementListSyntax(node: DictionaryElementListSyntax): Ast = notHandledYet(node)
+  private def astForDeclModifierListSyntax(node: DeclModifierListSyntax): Ast         = notHandledYet(node)
+  private def astForDeclNameArgumentListSyntax(node: DeclNameArgumentListSyntax): Ast = notHandledYet(node)
+  private def astForDesignatedTypeListSyntax(node: DesignatedTypeListSyntax): Ast     = notHandledYet(node)
+
+  private def astForDictionaryElementListSyntax(node: DictionaryElementListSyntax): Ast = {
+    astForListSyntaxChildren(node, node.children)
+  }
+
   private def astForDifferentiabilityArgumentListSyntax(node: DifferentiabilityArgumentListSyntax): Ast = notHandledYet(
     node
   )

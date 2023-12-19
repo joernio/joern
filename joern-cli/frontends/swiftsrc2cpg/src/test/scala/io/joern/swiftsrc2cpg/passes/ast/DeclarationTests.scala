@@ -339,11 +339,54 @@ class DeclarationTests extends AbstractPassTest {
       |enum Whatever: Int, ~ Hashable, Equatable {}
       |""".stripMargin) { cpg => ??? }
 
-    "testArrayDeclaration" ignore AstFixture("let foo: [Int] = []") { cpg => ??? }
+    "testArrayDeclaration" in AstFixture("let foo: [Int] = []") { cpg =>
+      val List(method)      = cpg.method.nameExact("<global>").l
+      val List(methodBlock) = method.astChildren.isBlock.l
 
-    "testSetDeclaration" ignore AstFixture("var studentID : Set<Int> = [112, 114, 115, 116, 118]") { cpg => ??? }
+      val List(assignment) = methodBlock.astChildren.isCall.l
+      assignment.name shouldBe Operators.assignment
 
-    "testDictionaryDeclaration" ignore AstFixture("var numbers = [1: \"One\", 2: \"Two\", 3: \"Three\"]") { cpg => ??? }
+      val List(arrayCall) = assignment.astChildren.isCall.l
+      arrayCall.name shouldBe Operators.arrayInitializer
+      arrayCall.code shouldBe "[]"
+      arrayCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+      val List(fooIdent) = assignment.astChildren.isIdentifier.l
+      fooIdent.name shouldBe "foo"
+      fooIdent.typeFullName shouldBe "[Int]"
+    }
+
+    "testSetDeclaration" in AstFixture("var foo: Set<Int> = [1, 2, 3]") { cpg =>
+      val List(method)      = cpg.method.nameExact("<global>").l
+      val List(methodBlock) = method.astChildren.isBlock.l
+
+      val List(assignment) = methodBlock.astChildren.isCall.l
+      assignment.name shouldBe Operators.assignment
+
+      val List(arrayCall) = assignment.astChildren.isCall.l
+      arrayCall.name shouldBe Operators.arrayInitializer
+      arrayCall.code shouldBe "[1, 2, 3]"
+      arrayCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      arrayCall.argument.isLiteral.code.l shouldBe List("1", "2", "3")
+
+      val List(fooIdent) = assignment.astChildren.isIdentifier.l
+      fooIdent.name shouldBe "foo"
+      fooIdent.typeFullName shouldBe "Set<Int>"
+    }
+
+    "testDictionaryDeclaration" in AstFixture("var numbers = [1: \"One\", 2: \"Two\", 3: \"Three\"]") { cpg =>
+      val List(method)      = cpg.method.nameExact("<global>").l
+      val List(methodBlock) = method.astChildren.isBlock.l
+
+      val List(assignment) = methodBlock.astChildren.isCall.l
+      assignment.name shouldBe Operators.assignment
+
+      val List(arrayCall) = assignment.astChildren.isCall.l
+      arrayCall.name shouldBe Operators.arrayInitializer
+      arrayCall.code shouldBe "[1: \"One\", 2: \"Two\", 3: \"Three\"]"
+      arrayCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      arrayCall.argument.isCall.code.l shouldBe List("1: \"One\",", "2: \"Two\",", "3: \"Three\"")
+    }
 
     "testAddDictionaryElements" ignore AstFixture("""
         |var capitalCity = ["Nepal": "Kathmandu", "England": "London"]
@@ -351,7 +394,19 @@ class DeclarationTests extends AbstractPassTest {
         |print(capitalCity["Japan"])
         |""".stripMargin) { cpg => ??? }
 
-    "testTupleDeclaration" ignore AstFixture("var product = (\"MacBook\", 1099.99)") { cpg => ??? }
+    "testTupleDeclaration" in AstFixture("var product = (\"MacBook\", 1099.99)") { cpg =>
+      val List(method)      = cpg.method.nameExact("<global>").l
+      val List(methodBlock) = method.astChildren.isBlock.l
+
+      val List(assignment) = methodBlock.astChildren.isCall.l
+      assignment.name shouldBe Operators.assignment
+
+      val List(arrayCall) = assignment.astChildren.isCall.l
+      arrayCall.name shouldBe Operators.arrayInitializer
+      arrayCall.code shouldBe "(\"MacBook\", 1099.99)"
+      arrayCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      arrayCall.argument.isLiteral.code.l shouldBe List("MacBook", "1099.99")
+    }
 
     "testTupleAccess" ignore AstFixture("""
         |var product = ("MacBook", 1099.99)

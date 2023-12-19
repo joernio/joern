@@ -94,8 +94,15 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForDerivativeAttributeArgumentsSyntax(node: DerivativeAttributeArgumentsSyntax): Ast = notHandledYet(
     node
   )
-  private def astForDesignatedTypeSyntax(node: DesignatedTypeSyntax): Ast                         = notHandledYet(node)
-  private def astForDictionaryElementSyntax(node: DictionaryElementSyntax): Ast                   = notHandledYet(node)
+  private def astForDesignatedTypeSyntax(node: DesignatedTypeSyntax): Ast = notHandledYet(node)
+
+  private def astForDictionaryElementSyntax(node: DictionaryElementSyntax): Ast = {
+    // TODO: check if handling Labels like that fits the Swift semantics:
+    val dstAst = astForNode(node.key)
+    val srcAst = astForNodeWithFunctionReference(node.value)
+    createAssignmentCallAst(dstAst, srcAst, code(node), line(node), column(node))
+  }
+
   private def astForDifferentiabilityArgumentSyntax(node: DifferentiabilityArgumentSyntax): Ast   = notHandledYet(node)
   private def astForDifferentiabilityArgumentsSyntax(node: DifferentiabilityArgumentsSyntax): Ast = notHandledYet(node)
   private def astForDifferentiabilityWithRespectToArgumentSyntax(

@@ -4,6 +4,7 @@ import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.swiftsrc2cpg.passes.Defines
 import io.joern.swiftsrc2cpg.passes.GlobalBuiltins
 import io.joern.x2cpg.Ast
+import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.ValidationMode
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
@@ -13,24 +14,27 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
-  private def astForArrayExprSyntax(node: ArrayExprSyntax): Ast = {
+  private def astForListLikeExpr(node: SwiftNode, elements: Seq[SwiftNode]): Ast = {
     val op           = Operators.arrayInitializer
     val initCallNode = callNode(node, code(node), op, op, DispatchTypes.STATIC_DISPATCH)
 
     val MAX_INITIALIZERS = 1000
-    val children         = node.elements.children
-    val clauses          = children.slice(0, MAX_INITIALIZERS)
+    val clauses          = elements.slice(0, MAX_INITIALIZERS)
 
     val args = clauses.map(x => astForNode(x))
 
     val ast = callAst(initCallNode, args)
-    if (children.length > MAX_INITIALIZERS) {
+    if (elements.length > MAX_INITIALIZERS) {
       val placeholder =
         literalNode(node, "<too-many-initializers>", Defines.Any).argumentIndex(MAX_INITIALIZERS)
       ast.withChild(Ast(placeholder)).withArgEdge(initCallNode, placeholder)
     } else {
       ast
     }
+  }
+
+  private def astForArrayExprSyntax(node: ArrayExprSyntax): Ast = {
+    astForListLikeExpr(node, node.elements.children)
   }
 
   private def astForArrowExprSyntax(node: ArrowExprSyntax): Ast                   = notHandledYet(node)
@@ -55,12 +59,22 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     scope.addVariableReference(name, identNode)
     Ast(identNode)
   }
-  private def astForDictionaryExprSyntax(node: DictionaryExprSyntax): Ast               = notHandledYet(node)
+  private def astForDictionaryExprSyntax(node: DictionaryExprSyntax): Ast = {
+    node.content match {
+      case _: SwiftToken                  => astForListLikeExpr(node, Seq.empty)
+      case d: DictionaryElementListSyntax => astForListLikeExpr(node, d.children)
+    }
+  }
+
   private def astForDiscardAssignmentExprSyntax(node: DiscardAssignmentExprSyntax): Ast = notHandledYet(node)
   private def astForDoExprSyntax(node: DoExprSyntax): Ast                               = notHandledYet(node)
   private def astForEditorPlaceholderExprSyntax(node: EditorPlaceholderExprSyntax): Ast = notHandledYet(node)
-  private def astForFloatLiteralExprSyntax(node: FloatLiteralExprSyntax): Ast           = notHandledYet(node)
-  private def astForForceUnwrapExprSyntax(node: ForceUnwrapExprSyntax): Ast             = notHandledYet(node)
+
+  private def astForFloatLiteralExprSyntax(node: FloatLiteralExprSyntax): Ast = {
+    astForNode(node.literal)
+  }
+
+  private def astForForceUnwrapExprSyntax(node: ForceUnwrapExprSyntax): Ast = notHandledYet(node)
 
   private def createBuiltinStaticCall(callExpr: FunctionCallExprSyntax, callee: ExprSyntax, fullName: String): Ast = {
     val callName = callee match {
@@ -260,7 +274,11 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForTryExprSyntax(node: TryExprSyntax): Ast = notHandledYet(node)
 
   private def astForTupleExprSyntax(node: TupleExprSyntax): Ast = {
-    astForNode(node.elements)
+    node.elements.children.toList match {
+      case Nil         => astForListLikeExpr(node, Seq.empty)
+      case head :: Nil => astForNodeWithFunctionReference(head)
+      case other       => astForListLikeExpr(node, other)
+    }
   }
 
   private def astForTypeExprSyntax(node: TypeExprSyntax): Ast                           = notHandledYet(node)
