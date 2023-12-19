@@ -132,7 +132,7 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
       ).moreCode(
         """
           |module.exports = {
-          |  sayhi: function() { // this will be called <lambda>0
+          |  sayhi: function() {
           |    console.log("Hello World, love BAR");
           |  }
           |}
@@ -141,7 +141,7 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
       ).moreCode(
         """
           |module.exports = {
-          |  sayhi: function() { // this will be called <lambda>0
+          |  sayhi: function() {
           |    console.log("Howdy World, love BAZ");
           |  }
           |}
