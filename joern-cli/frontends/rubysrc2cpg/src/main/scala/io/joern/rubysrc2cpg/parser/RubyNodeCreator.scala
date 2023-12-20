@@ -10,12 +10,14 @@ import scala.jdk.CollectionConverters.*
 import io.joern.rubysrc2cpg.parser.RubyParser.RescueClauseContext
 import io.joern.rubysrc2cpg.parser.RubyParser.EnsureClauseContext
 import io.joern.rubysrc2cpg.parser.RubyParser.ExceptionClassListContext
+import org.antlr.v4.runtime.tree.RuleNode
 
 /** Converts an ANTLR Ruby Parse Tree into the intermediate Ruby AST.
   */
 class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
 
   override def defaultResult(): RubyNode = Unknown()(TextSpan(None, None, None, None, ""))
+  override protected def shouldVisitNextChild(node: RuleNode, currentResult: RubyNode): Boolean = currentResult.isInstanceOf[Unknown]
 
   override def visit(tree: ParseTree): RubyNode = {
     Option(tree).map(super.visit).getOrElse(defaultResult())
@@ -540,14 +542,19 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitBodyStatement(ctx: RubyParser.BodyStatementContext): RubyNode = {
-    if (ctx.rescueClause().isEmpty && Option(ctx.elseClause()).isEmpty && Option(ctx.ensureClause()).isEmpty) {
+    val body = visit(ctx.compoundStatement())
+    val rescueClauses = Option(ctx.rescueClause.asScala).fold(List())(_.map(visit).toList)
+    val elseClause = Option(ctx.elseClause).map(visit)
+    val ensureClause = Option(ctx.ensureClause).map(visit)
+
+    if (rescueClauses.isEmpty && elseClause.isEmpty && ensureClause.isEmpty) {
       visit(ctx.compoundStatement())
     } else {
       RescueExpression(
-        visit(ctx.compoundStatement()),
-        Option(ctx.rescueClause.asScala).fold(List())(_.map(visit).toList),
-        Option(ctx.elseClause).map(visit),
-        Option(ctx.ensureClause).map(visit)
+        body,
+        rescueClauses,
+        elseClause,
+        ensureClause
       )(ctx.toTextSpan)
     }
   }
@@ -558,10 +565,13 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitRescueClause(ctx: RescueClauseContext): RubyNode = {
+    val exceptionClassList = Option(ctx.exceptionClassList).map(visit)
+    val elseClause = Option(ctx.exceptionVariableAssignment).map(visit)
+    val thenClause = visit(ctx.thenClause)
     RescueClause(
-      Option(ctx.exceptionClassList).map(visit),
-      Option(ctx.exceptionVariableAssignment).map(visit),
-      visit(ctx.thenClause)
+      exceptionClassList,
+      elseClause,
+      thenClause
     )(ctx.toTextSpan)
   }
 

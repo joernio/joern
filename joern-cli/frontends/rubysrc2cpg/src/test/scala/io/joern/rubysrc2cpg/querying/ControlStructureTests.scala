@@ -1,7 +1,5 @@
-package io.joern.rubysrc2cpg.querying
-
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes,Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.semanticcpg.language.*
 
@@ -254,4 +252,37 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     putsHi.lineNumber shouldBe Some(2)
   }
 
+  "`begin ... rescue ... end is represented by a `TRY` CONTROL_STRUCTURE node" in {
+    val cpg = code("""
+        |begin 
+        |  1 
+        |rescue 
+        |  2 
+        |rescue
+        |  3
+        |else
+        |  4
+        |ensure
+        |  5
+        |end
+        |""".stripMargin)
+
+    val List(rescueNode) = cpg.tryBlock.l
+    rescueNode.controlStructureType shouldBe ControlStructureTypes.TRY
+    val List(body, rescueBody1, rescueBody2, elseBody, ensureBody) = rescueNode.astChildren.l
+    body.ast.isLiteral.code.l shouldBe List("1")
+    body.order shouldBe 1
+
+    rescueBody1.ast.isLiteral.code.l shouldBe List("2")
+    rescueBody1.order shouldBe 2
+
+    rescueBody2.ast.isLiteral.code.l shouldBe List("3")
+    rescueBody2.order shouldBe 2
+
+    elseBody.ast.isLiteral.code.l shouldBe List("4")
+    elseBody.order shouldBe 2
+
+    ensureBody.ast.isLiteral.code.l shouldBe List("5")
+    ensureBody.order shouldBe 3
+  }
 }

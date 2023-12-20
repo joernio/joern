@@ -55,11 +55,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     builder(node, conditionAst, thenAst, elseAsts)
   }
 
-  private def astForThenClause(node: RubyNode): Ast = {
-    node match
-      case stmtList: StatementList => astForStatementList(stmtList)
-      case _                       => astForStatementList(StatementList(List(node))(node.span))
-  }
+  private def astForThenClause(node: RubyNode): Ast = astForStatementList(node.asStatementList)
 
   private def astsForElseClauses(
     elsIfClauses: List[RubyNode],
