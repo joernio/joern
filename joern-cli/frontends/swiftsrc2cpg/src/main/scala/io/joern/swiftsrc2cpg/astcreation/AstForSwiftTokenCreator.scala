@@ -31,7 +31,7 @@ trait AstForSwiftTokenCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private def astForInfixQuestionMarkToken(node: infixQuestionMark): Ast = Ast()
 
-  private def astForIntegerLiteralToken(node: integerLiteral): Ast = {
+  protected def astForIntegerLiteralToken(node: integerLiteral): Ast = {
     Ast(literalNode(node, code(node), Option(Defines.Int)))
   }
 

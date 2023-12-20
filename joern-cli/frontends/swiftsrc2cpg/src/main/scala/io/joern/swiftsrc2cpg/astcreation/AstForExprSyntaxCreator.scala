@@ -234,8 +234,16 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case Some(otherBase) =>
         astForNodeWithFunctionReference(otherBase)
     }
-    val memberNode = createFieldIdentifierNode(code(member), line(member), column(member))
-    createFieldAccessCallAst(baseAst, memberNode, line(node), column(node))
+
+    member.baseName match {
+      case l @ integerLiteral(_) =>
+        val memberNode = astForIntegerLiteralToken(l)
+        createIndexAccessCallAst(baseAst, memberNode, line(node), column(node))
+      case other =>
+        val memberNode = createFieldIdentifierNode(code(other), line(other), column(other))
+        createFieldAccessCallAst(baseAst, memberNode, line(node), column(node))
+    }
+
   }
 
   private def astForMissingExprSyntax(node: MissingExprSyntax): Ast                         = notHandledYet(node)
@@ -255,9 +263,15 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     astForNode(node.segments)
   }
 
-  private def astForSubscriptCallExprSyntax(node: SubscriptCallExprSyntax): Ast = notHandledYet(node)
-  private def astForSuperExprSyntax(node: SuperExprSyntax): Ast                 = notHandledYet(node)
-  private def astForSwitchExprSyntax(node: SwitchExprSyntax): Ast               = notHandledYet(node)
+  private def astForSubscriptCallExprSyntax(node: SubscriptCallExprSyntax): Ast = {
+    val baseAst           = astForNodeWithFunctionReference(node.calledExpression)
+    val memberAst         = astForNode(node.arguments)
+    val additionalArgsAst = astForNode(node.additionalTrailingClosures)
+    createIndexAccessCallAst(baseAst, memberAst, line(node), column(node), additionalArgsAst)
+  }
+
+  private def astForSuperExprSyntax(node: SuperExprSyntax): Ast   = notHandledYet(node)
+  private def astForSwitchExprSyntax(node: SwitchExprSyntax): Ast = notHandledYet(node)
 
   private def astForTernaryExprSyntax(node: TernaryExprSyntax): Ast = {
     val name = Operators.conditional

@@ -41,7 +41,8 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     baseAst: Ast,
     partAst: Ast,
     line: Option[Integer],
-    column: Option[Integer]
+    column: Option[Integer],
+    additionalArgsAst: Ast = Ast()
   ): Ast = {
     val callNode = createCallNode(
       s"${codeOf(baseAst.nodes.head)}[${codeOf(partAst.nodes.head)}]",
@@ -50,7 +51,7 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
       line,
       column
     )
-    val arguments = List(baseAst, partAst)
+    val arguments = List(baseAst, partAst, additionalArgsAst)
     callAst(callNode, arguments)
   }
 
