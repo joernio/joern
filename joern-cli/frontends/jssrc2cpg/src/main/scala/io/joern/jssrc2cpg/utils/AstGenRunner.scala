@@ -154,17 +154,17 @@ class AstGenRunner(config: Config) {
 
   private val executableArgs = if (!config.tsTypes) " --no-tsTypes" else ""
 
-  private def skippedFiles(in: File, astGenOut: List[String]): List[String] = {
+  private def skippedFiles(astGenOut: List[String]): List[String] = {
     val skipped = astGenOut.collect {
       case out if out.startsWith("Parsing") =>
         val filename = out.substring(out.indexOf(" ") + 1, out.indexOf(":") - 1)
         val reason   = out.substring(out.indexOf(":") + 2)
-        logger.warn(s"\t- failed to parse '${in / filename}': '$reason'")
+        logger.warn(s"\t- failed to parse '$filename': '$reason'")
         Option(filename)
       case out if !out.startsWith("Converted") && !out.startsWith("Retrieving") =>
         val filename = out.substring(0, out.indexOf(" "))
         val reason   = out.substring(out.indexOf(" ") + 1)
-        logger.warn(s"\t- failed to parse '${in / filename}': '$reason'")
+        logger.warn(s"\t- failed to parse '$filename': '$reason'")
         Option(filename)
       case out =>
         logger.debug(s"\t+ $out")
@@ -320,7 +320,7 @@ class AstGenRunner(config: Config) {
     runAstGenNative(in, out) match {
       case Success(result) =>
         val parsed  = filterFiles(SourceFiles.determine(out.toString(), Set(".json")), out)
-        val skipped = skippedFiles(in, result.toList)
+        val skipped = skippedFiles(result.toList)
         AstGenRunnerResult(parsed.map((in.toString(), _)), skipped.map((in.toString(), _)))
       case Failure(f) =>
         logger.error("\t- running astgen failed!", f)
