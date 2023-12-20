@@ -81,8 +81,11 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
   }
 
   private def astForMemberBlockItemListSyntax(node: MemberBlockItemListSyntax): Ast = notHandledYet(node)
-  private def astForMultipleTrailingClosureElementListSyntax(node: MultipleTrailingClosureElementListSyntax): Ast =
-    notHandledYet(node)
+
+  private def astForMultipleTrailingClosureElementListSyntax(node: MultipleTrailingClosureElementListSyntax): Ast = {
+    astForListSyntaxChildren(node, node.children)
+  }
+
   private def astForObjCSelectorPieceListSyntax(node: ObjCSelectorPieceListSyntax): Ast     = notHandledYet(node)
   private def astForPatternBindingListSyntax(node: PatternBindingListSyntax): Ast           = notHandledYet(node)
   private def astForPlatformVersionItemListSyntax(node: PlatformVersionItemListSyntax): Ast = notHandledYet(node)

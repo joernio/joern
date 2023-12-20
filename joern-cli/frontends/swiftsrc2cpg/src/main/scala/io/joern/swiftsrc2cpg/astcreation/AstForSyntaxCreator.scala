@@ -224,7 +224,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     notHandledYet(node)
 
   private def astForStringSegmentSyntax(node: StringSegmentSyntax): Ast = {
-    Ast(literalNode(node, code(node), Option(Defines.String)))
+    Ast(literalNode(node, s"\"${code(node)}\"", Option(Defines.String)))
   }
 
   private def astForSwitchCaseItemSyntax(node: SwitchCaseItemSyntax): Ast               = notHandledYet(node)

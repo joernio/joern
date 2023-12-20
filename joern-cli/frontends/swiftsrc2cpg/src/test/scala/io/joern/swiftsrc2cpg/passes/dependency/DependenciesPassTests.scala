@@ -43,11 +43,11 @@ class DependenciesPassTests extends SwiftSrc2CpgSuite {
         depB.dependencyGroupId shouldBe None
 
         depC.name shouldBe "https://github.com/DepC"
-        depC.version shouldBe """"1.2.3"..<"1.2.6""""
+        depC.version shouldBe "1.2.3..<1.2.6"
         depC.dependencyGroupId shouldBe None
 
         depD.name shouldBe "https://github.com/DepD"
-        depD.version shouldBe """"1.2.3"..."1.2.6""""
+        depD.version shouldBe "1.2.3...1.2.6"
         depD.dependencyGroupId shouldBe None
 
         depE.name shouldBe "https://github.com/DepE"
