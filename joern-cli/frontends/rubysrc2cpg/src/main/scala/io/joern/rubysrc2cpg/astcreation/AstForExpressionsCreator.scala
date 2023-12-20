@@ -35,10 +35,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     Ast(literalNode(node, code(node), node.typeFullName))
   }
 
-  
   // Helper for nil literals to put in empty clauses
   protected def astForNilLiteral: Ast = Ast(NewLiteral().code("nil").typeFullName(getBuiltInType(Defines.NilClass)))
-  protected def astForNilBlock: Ast = blockAst(NewBlock(), List(astForNilLiteral))
+  protected def astForNilBlock: Ast   = blockAst(NewBlock(), List(astForNilLiteral))
 
   protected def astForDynamicLiteral(node: DynamicLiteral): Ast = {
     val fmtValueAsts = node.expressions.map {
@@ -252,18 +251,18 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val tryAst = astForStatementList(node.body.asStatementList)
     val rescueAsts = node.rescueClauses
       .map {
-        case x: RescueClause => 
+        case x: RescueClause =>
           // TODO: add exception assignment
           astForStatementList(x.thenClause.asStatementList)
         case x => astForUnknown(x)
       }
-    val elseAst = node.elseClause.map { 
+    val elseAst = node.elseClause.map {
       case x: ElseClause => astForStatementList(x.thenClause.asStatementList)
-      case x => astForUnknown(x)
+      case x             => astForUnknown(x)
     }
     val ensureAst = node.ensureClause.map {
       case x: EnsureClause => astForStatementList(x.thenClause.asStatementList)
-      case x => astForUnknown(x)
+      case x               => astForUnknown(x)
     }
     tryCatchAst(
       NewControlStructure()

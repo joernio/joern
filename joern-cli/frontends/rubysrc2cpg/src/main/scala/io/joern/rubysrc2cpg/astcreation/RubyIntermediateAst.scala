@@ -76,13 +76,20 @@ object RubyIntermediateAst {
     span: TextSpan
   ) extends RubyNode(span)
 
-  final case class RescueExpression( body: RubyNode, rescueClauses: List[RubyNode], elseClause: Option[RubyNode], ensureClause: Option[RubyNode])(
-    span: TextSpan
-  ) extends RubyNode(span)
+  final case class RescueExpression(
+    body: RubyNode,
+    rescueClauses: List[RubyNode],
+    elseClause: Option[RubyNode],
+    ensureClause: Option[RubyNode]
+  )(span: TextSpan)
+      extends RubyNode(span)
 
-  final case class RescueClause( exceptionClassList: Option[RubyNode], assignment: Option[RubyNode], thenClause: RubyNode)(
-    span: TextSpan
-  ) extends RubyNode(span)
+  final case class RescueClause(
+    exceptionClassList: Option[RubyNode],
+    assignment: Option[RubyNode],
+    thenClause: RubyNode
+  )(span: TextSpan)
+      extends RubyNode(span)
 
   final case class EnsureClause(thenClause: RubyNode)(span: TextSpan) extends RubyNode(span)
 

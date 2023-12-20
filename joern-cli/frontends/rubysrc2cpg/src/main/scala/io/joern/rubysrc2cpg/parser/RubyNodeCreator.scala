@@ -17,7 +17,8 @@ import org.antlr.v4.runtime.tree.RuleNode
 class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
 
   override def defaultResult(): RubyNode = Unknown()(TextSpan(None, None, None, None, ""))
-  override protected def shouldVisitNextChild(node: RuleNode, currentResult: RubyNode): Boolean = currentResult.isInstanceOf[Unknown]
+  override protected def shouldVisitNextChild(node: RuleNode, currentResult: RubyNode): Boolean =
+    currentResult.isInstanceOf[Unknown]
 
   override def visit(tree: ParseTree): RubyNode = {
     Option(tree).map(super.visit).getOrElse(defaultResult())
@@ -542,20 +543,15 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitBodyStatement(ctx: RubyParser.BodyStatementContext): RubyNode = {
-    val body = visit(ctx.compoundStatement())
+    val body          = visit(ctx.compoundStatement())
     val rescueClauses = Option(ctx.rescueClause.asScala).fold(List())(_.map(visit).toList)
-    val elseClause = Option(ctx.elseClause).map(visit)
-    val ensureClause = Option(ctx.ensureClause).map(visit)
+    val elseClause    = Option(ctx.elseClause).map(visit)
+    val ensureClause  = Option(ctx.ensureClause).map(visit)
 
     if (rescueClauses.isEmpty && elseClause.isEmpty && ensureClause.isEmpty) {
       visit(ctx.compoundStatement())
     } else {
-      RescueExpression(
-        body,
-        rescueClauses,
-        elseClause,
-        ensureClause
-      )(ctx.toTextSpan)
+      RescueExpression(body, rescueClauses, elseClause, ensureClause)(ctx.toTextSpan)
     }
   }
 
@@ -566,13 +562,9 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
 
   override def visitRescueClause(ctx: RescueClauseContext): RubyNode = {
     val exceptionClassList = Option(ctx.exceptionClassList).map(visit)
-    val elseClause = Option(ctx.exceptionVariableAssignment).map(visit)
-    val thenClause = visit(ctx.thenClause)
-    RescueClause(
-      exceptionClassList,
-      elseClause,
-      thenClause
-    )(ctx.toTextSpan)
+    val elseClause         = Option(ctx.exceptionVariableAssignment).map(visit)
+    val thenClause         = visit(ctx.thenClause)
+    RescueClause(exceptionClassList, elseClause, thenClause)(ctx.toTextSpan)
   }
 
   override def visitEnsureClause(ctx: EnsureClauseContext): RubyNode = {
