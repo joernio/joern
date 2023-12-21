@@ -36,6 +36,20 @@ object DotNetJsonAst {
 
   object MethodDeclaration extends DeclarationExpr
 
+  object FieldDeclaration extends DeclarationExpr
+
+  object VariableDeclaration extends DeclarationExpr
+
+  object VariableDeclarator extends DeclarationExpr
+
+  sealed trait ClauseExpr extends BaseExpr
+
+  object EqualsValueClause extends ClauseExpr
+
+  sealed trait LiteralExpr extends BaseExpr
+
+  object NumericLiteralExpression extends LiteralExpr
+
   object UsingDirective extends BaseExpr
 
   object Parameter extends BaseExpr
@@ -65,9 +79,11 @@ object ParserKeys {
   val Code          = "Code"
   val ColumnStart   = "ColumnStart"
   val ColumnEnd     = "ColumnEnd"
+  val Declaration   = "Declaration"
   val ElementType   = "ElementType"
   val FileName      = "FileName"
   val Identifier    = "Identifier"
+  val Initializer   = "Initializer"
   val MetaData      = "MetaData"
   val Keyword       = "Keyword"
   val Kind          = "Kind"
@@ -84,5 +100,6 @@ object ParserKeys {
   val Type          = "Type"
   val Usings        = "Usings"
   val Value         = "Value"
+  val Variables     = "Variables"
 
 }

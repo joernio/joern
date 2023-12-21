@@ -18,6 +18,7 @@ class AstCreator(val relativeFileName: String, val parserResult: ParserResult)(i
 ) extends AstCreatorBase(relativeFileName)
     with AstCreatorHelper
     with AstForDeclarationsCreator
+    with AstForExpressionsCreator
     with AstGenNodeBuilder[AstCreator] {
 
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
@@ -42,18 +43,21 @@ class AstCreator(val relativeFileName: String, val parserResult: ParserResult)(i
     memberAsts
   }
 
-  protected def astForMembers(members: Seq[DotNetNodeInfo]): Seq[Ast] = members.map(astForNode)
+  protected def astForMembers(members: Seq[DotNetNodeInfo]): Seq[Ast] = members.flatMap(astForNode)
 
-  protected def astForNode(json: Value): Ast = {
+  protected def astForNode(json: Value): Seq[Ast] = {
     val nodeInfo = createDotNetNodeInfo(json)
     astForNode(nodeInfo)
   }
 
-  protected def astForNode(nodeInfo: DotNetNodeInfo): Ast = {
+  protected def astForNode(nodeInfo: DotNetNodeInfo): Seq[Ast] = {
     nodeInfo.node match {
       case NamespaceDeclaration => astForNamespaceDeclaration(nodeInfo)
       case ClassDeclaration     => astForClassDeclaration(nodeInfo)
       case MethodDeclaration    => astForMethodDeclaration(nodeInfo)
+      case FieldDeclaration     => astForFieldDeclaration(nodeInfo)
+      case VariableDeclaration  => astForVariableDeclaration(nodeInfo)
+      case EqualsValueClause    => astForEqualsValueClause(nodeInfo)
       case UsingDirective       => notHandledYet(nodeInfo)
       case Block                => notHandledYet(nodeInfo)
       case _                    => notHandledYet(nodeInfo)

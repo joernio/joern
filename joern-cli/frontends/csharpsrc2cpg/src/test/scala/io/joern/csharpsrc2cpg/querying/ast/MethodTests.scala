@@ -12,8 +12,8 @@ class MethodTests extends CSharpCode2CpgFixture {
     "generate a method node with type decl parent" in {
       val x = cpg.method.nameExact("Main").head
       x.fullName should startWith("HelloWorld.Program.Main:void")
-      x.fullName shouldBe "HelloWorld.Program.Main:void(string[])"
-      x.signature shouldBe "void(string[])"
+      x.fullName shouldBe "HelloWorld.Program.Main:void(System.String[])"
+      x.signature shouldBe "void(System.String[])"
       x.filename shouldBe "Program.cs"
       x.code shouldBe "static void Main(string[] args)"
 
