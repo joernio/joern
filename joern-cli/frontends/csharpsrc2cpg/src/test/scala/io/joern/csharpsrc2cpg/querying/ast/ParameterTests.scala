@@ -51,7 +51,7 @@ class ParameterTests extends CSharpCode2CpgFixture {
       thisNode.isVariadic shouldBe false
 
       a.name shouldBe "a"
-      a.typeFullName shouldBe "string"
+      a.typeFullName shouldBe "System.String"
       a.code shouldBe "string a"
       a.index shouldBe 1
       a.isVariadic shouldBe false

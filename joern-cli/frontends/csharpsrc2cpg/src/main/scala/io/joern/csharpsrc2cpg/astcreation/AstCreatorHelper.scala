@@ -1,5 +1,6 @@
 package io.joern.csharpsrc2cpg.astcreation
 
+import io.joern.csharpsrc2cpg.astcreation
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetJsonAst, DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.{Ast, ValidationMode}
@@ -20,7 +21,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     DotNetNodeInfo(node, json, c, ln, cn, lnEnd, cnEnd)
   }
 
-  protected def notHandledYet(node: DotNetNodeInfo): Ast = {
+  protected def notHandledYet(node: DotNetNodeInfo): Seq[Ast] = {
     val text =
       s"""Node type '${node.node}' not handled yet!
          |  Code: '${node.code}'
@@ -29,7 +30,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
          |  Column: ${node.columnNumber.getOrElse(-1)}
          |  """.stripMargin
     logger.info(text)
-    Ast(unknownNode(node, node.code))
+    Seq(Ast(unknownNode(node, node.code)))
   }
 
   private def nodeType(node: Value): DotNetParserNode =
@@ -65,4 +66,83 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     s"$lhs.$rhs"
   }
 
+  // TODO: Use type map to try resolve full name
+  protected def nodeTypeFullName(node: DotNetNodeInfo): String = {
+    node.node match
+      case NumericLiteralExpression if node.code.matches("^\\d+$") => // e.g. 200
+        BuiltinTypes.Int
+      case NumericLiteralExpression if node.code.matches("^\\d+\\.?\\d*[d|D]?$") => // e.g 2.1 or 2d
+        BuiltinTypes.Double
+      case NumericLiteralExpression if node.code.matches("^\\d+\\.?\\d*[f|F]?$") => // e.g. 2f or 2.1F
+        BuiltinTypes.Float
+      case NumericLiteralExpression if node.code.matches("^\\d+\\.?\\d*[m|M]?$") => // e.g. 2m or 2.1M
+        BuiltinTypes.Decimal
+      case _ =>
+        val typeNode     = createDotNetNodeInfo(node.json(ParserKeys.Type))
+        val isArrayType  = typeNode.code.endsWith("[]")
+        val rawType      = typeNode.code.stripSuffix("[]")
+        val resolvedType = BuiltinTypes.DotNetTypeMap.getOrElse(rawType, rawType)
+
+        if (isArrayType) s"$resolvedType[]"
+        else resolvedType
+  }
+
+}
+
+/** Contains all the C# builtin types, as well as `null` and `void`.
+  *
+  * @see
+  *   <a href="https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/built-in-types">Built-in
+  *   types (C# reference)</a>
+  */
+object BuiltinTypes {
+
+  // Primitives
+  val Bool    = "bool"
+  val Byte    = "byte"
+  val SByte   = "sbyte"
+  val Char    = "char"
+  val Decimal = "decimal"
+  val Double  = "double"
+  val Float   = "float"
+  val Int     = "int"
+  val UInt    = "uint"
+  val NInt    = "nint"
+  val NUInt   = "nuint"
+  val Long    = "long"
+  val ULong   = "ulong"
+  val Short   = "short"
+  val UShort  = "ushort"
+
+  // Reference types
+  val Object  = "object"
+  val String  = "string"
+  val Dynamic = "dynamic"
+
+  // Other
+  val Null = "null"
+  val Void = "void"
+
+  val DotNetTypeMap = Map(
+    Bool    -> "System.Boolean",
+    Byte    -> "System.Byte",
+    SByte   -> "System.SByte",
+    Char    -> "System.Char",
+    Decimal -> "System.Decimal",
+    Double  -> "System.Double",
+    Float   -> "System.Single",
+    Int     -> "System.Int32",
+    UInt    -> "System.UInt32",
+    NInt    -> "System.IntPtr",
+    NUInt   -> "System.UIntPtr",
+    Long    -> "System.Int64",
+    ULong   -> "System.UInt64",
+    Short   -> "System.Int16",
+    UShort  -> "System.UInt16",
+    Object  -> "System.Object",
+    String  -> "System.String",
+    Dynamic -> "System.Object",
+    Null    -> Null,
+    Void    -> Void
+  )
 }
