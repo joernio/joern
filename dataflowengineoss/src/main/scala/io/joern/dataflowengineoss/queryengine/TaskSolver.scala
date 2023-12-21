@@ -5,6 +5,7 @@ import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language.{toCfgNodeMethods, toExpressionMethods, _}
 
+import java.security.MessageDigest
 import java.util.concurrent.Callable
 import scala.collection.mutable
 
@@ -49,6 +50,7 @@ class TaskSolver(task: ReachableByTask, context: EngineContext, sources: Set[Cfg
       val parentTask = r.taskStack(i)
       val pathToSink = r.path.slice(0, r.path.map(_.node).indexOf(parentTask.sink))
       val newPath    = pathToSink :+ PathElement(parentTask.sink, parentTask.callSiteStack)
+
       (parentTask, TableEntry(path = newPath))
     }.toList
   }
