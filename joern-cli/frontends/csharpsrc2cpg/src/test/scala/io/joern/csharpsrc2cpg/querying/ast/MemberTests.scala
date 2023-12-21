@@ -35,12 +35,6 @@ class MemberTests extends CSharpCode2CpgFixture {
       maxSpeed.modifier.modifierType.l shouldBe ModifierTypes.INTERNAL :: ModifierTypes.STATIC :: Nil
     }
 
-    "generate members for methods" ignore {
-      val x = cpg.typeDecl.nameExact("Car").head
-
-      val fullThrottle = x.member.nameExact("fullThrottle").head
-      fullThrottle.typeFullName shouldBe "Car.fullThrottle"
-    }
   }
 
 }
