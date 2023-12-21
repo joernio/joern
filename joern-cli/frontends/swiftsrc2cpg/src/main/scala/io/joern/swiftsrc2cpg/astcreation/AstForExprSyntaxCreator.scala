@@ -1,21 +1,52 @@
 package io.joern.swiftsrc2cpg.astcreation
 
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
+import io.joern.swiftsrc2cpg.passes.Defines
+import io.joern.swiftsrc2cpg.passes.GlobalBuiltins
 import io.joern.x2cpg.Ast
+import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.ValidationMode
+import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 
 trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
-  private def astForArrayExprSyntax(node: ArrayExprSyntax): Ast                       = notHandledYet(node)
-  private def astForArrowExprSyntax(node: ArrowExprSyntax): Ast                       = notHandledYet(node)
-  private def astForAsExprSyntax(node: AsExprSyntax): Ast                             = notHandledYet(node)
-  private def astForAssignmentExprSyntax(node: AssignmentExprSyntax): Ast             = notHandledYet(node)
-  private def astForAwaitExprSyntax(node: AwaitExprSyntax): Ast                       = notHandledYet(node)
-  private def astForBinaryOperatorExprSyntax(node: BinaryOperatorExprSyntax): Ast     = notHandledYet(node)
-  private def astForBooleanLiteralExprSyntax(node: BooleanLiteralExprSyntax): Ast     = notHandledYet(node)
+  private def astForListLikeExpr(node: SwiftNode, elements: Seq[SwiftNode]): Ast = {
+    val op           = Operators.arrayInitializer
+    val initCallNode = callNode(node, code(node), op, op, DispatchTypes.STATIC_DISPATCH)
+
+    val MAX_INITIALIZERS = 1000
+    val clauses          = elements.slice(0, MAX_INITIALIZERS)
+
+    val args = clauses.map(x => astForNodeWithFunctionReference(x))
+
+    val ast = callAst(initCallNode, args)
+    if (elements.length > MAX_INITIALIZERS) {
+      val placeholder =
+        literalNode(node, "<too-many-initializers>", Defines.Any).argumentIndex(MAX_INITIALIZERS)
+      ast.withChild(Ast(placeholder)).withArgEdge(initCallNode, placeholder)
+    } else {
+      ast
+    }
+  }
+
+  private def astForArrayExprSyntax(node: ArrayExprSyntax): Ast = {
+    astForListLikeExpr(node, node.elements.children)
+  }
+
+  private def astForArrowExprSyntax(node: ArrowExprSyntax): Ast                   = notHandledYet(node)
+  private def astForAsExprSyntax(node: AsExprSyntax): Ast                         = notHandledYet(node)
+  private def astForAssignmentExprSyntax(node: AssignmentExprSyntax): Ast         = notHandledYet(node)
+  private def astForAwaitExprSyntax(node: AwaitExprSyntax): Ast                   = notHandledYet(node)
+  private def astForBinaryOperatorExprSyntax(node: BinaryOperatorExprSyntax): Ast = notHandledYet(node)
+
+  private def astForBooleanLiteralExprSyntax(node: BooleanLiteralExprSyntax): Ast = {
+    astForNode(node.literal)
+  }
+
   private def astForBorrowExprSyntax(node: BorrowExprSyntax): Ast                     = notHandledYet(node)
   private def astForCanImportExprSyntax(node: CanImportExprSyntax): Ast               = notHandledYet(node)
   private def astForCanImportVersionInfoSyntax(node: CanImportVersionInfoSyntax): Ast = notHandledYet(node)
@@ -23,47 +54,156 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForConsumeExprSyntax(node: ConsumeExprSyntax): Ast                   = notHandledYet(node)
   private def astForCopyExprSyntax(node: CopyExprSyntax): Ast                         = notHandledYet(node)
   private def astForDeclReferenceExprSyntax(node: DeclReferenceExprSyntax): Ast = {
-    // TODO: proper handling
-    notHandledYet(node)
     val name      = code(node)
     val identNode = identifierNode(node, name)
     scope.addVariableReference(name, identNode)
     Ast(identNode)
   }
-  private def astForDictionaryExprSyntax(node: DictionaryExprSyntax): Ast                       = notHandledYet(node)
-  private def astForDiscardAssignmentExprSyntax(node: DiscardAssignmentExprSyntax): Ast         = notHandledYet(node)
-  private def astForDoExprSyntax(node: DoExprSyntax): Ast                                       = notHandledYet(node)
-  private def astForEditorPlaceholderExprSyntax(node: EditorPlaceholderExprSyntax): Ast         = notHandledYet(node)
-  private def astForFloatLiteralExprSyntax(node: FloatLiteralExprSyntax): Ast                   = notHandledYet(node)
-  private def astForForceUnwrapExprSyntax(node: ForceUnwrapExprSyntax): Ast                     = notHandledYet(node)
-  private def astForFunctionCallExprSyntax(node: FunctionCallExprSyntax): Ast                   = notHandledYet(node)
+  private def astForDictionaryExprSyntax(node: DictionaryExprSyntax): Ast = {
+    node.content match {
+      case _: SwiftToken                  => astForListLikeExpr(node, Seq.empty)
+      case d: DictionaryElementListSyntax => astForListLikeExpr(node, d.children)
+    }
+  }
+
+  private def astForDiscardAssignmentExprSyntax(node: DiscardAssignmentExprSyntax): Ast = notHandledYet(node)
+  private def astForDoExprSyntax(node: DoExprSyntax): Ast                               = notHandledYet(node)
+  private def astForEditorPlaceholderExprSyntax(node: EditorPlaceholderExprSyntax): Ast = notHandledYet(node)
+
+  private def astForFloatLiteralExprSyntax(node: FloatLiteralExprSyntax): Ast = {
+    astForNode(node.literal)
+  }
+
+  private def astForForceUnwrapExprSyntax(node: ForceUnwrapExprSyntax): Ast = notHandledYet(node)
+
+  private def createBuiltinStaticCall(callExpr: FunctionCallExprSyntax, callee: ExprSyntax, fullName: String): Ast = {
+    val callName = callee match {
+      case m: MemberAccessExprSyntax => code(m.declName)
+      case _                         => code(callee)
+    }
+    val callNode =
+      createStaticCallNode(code(callExpr), callName, fullName, line(callee), column(callee))
+    val argAsts = callExpr.arguments.children.map(astForNode)
+    callAst(callNode, argAsts)
+  }
+
+  private def handleCallNodeArgs(
+    callExpr: FunctionCallExprSyntax,
+    receiverAst: Ast,
+    baseNode: NewNode,
+    callName: String
+  ): Ast = {
+    val args      = callExpr.arguments.children.map(astForNode)
+    val callNode_ = callNode(callExpr, code(callExpr), callName, DispatchTypes.DYNAMIC_DISPATCH)
+    // If the callee is a function itself, e.g. closure, then resolve this locally, if possible
+    if (callExpr.calledExpression.isInstanceOf[ClosureExprSyntax]) {
+      functionNodeToNameAndFullName.get(callExpr.calledExpression).foreach { case (name, fullName) =>
+        callNode_.name(name).methodFullName(fullName)
+      }
+    }
+    callAst(callNode_, args, receiver = Option(receiverAst), base = Option(Ast(baseNode)))
+  }
+
+  private def astForFunctionCallExprSyntax(node: FunctionCallExprSyntax): Ast = {
+    val callee     = node.calledExpression
+    val calleeCode = code(callee)
+    if (GlobalBuiltins.builtins.contains(calleeCode)) {
+      createBuiltinStaticCall(node, callee, calleeCode)
+    } else {
+      val (receiverAst, baseNode, callName) = callee match {
+        case m: MemberAccessExprSyntax =>
+          val base   = m.base
+          val member = m.declName
+          base match {
+            case None =>
+              // referencing implicit this
+              val receiverAst = astForNodeWithFunctionReference(callee)
+              val baseNode    = identifierNode(m, "this")
+              scope.addVariableReference("this", baseNode)
+              (receiverAst, baseNode, code(member))
+            case Some(d: DeclReferenceExprSyntax) if code(d) == "this" || code(d) == "self" =>
+              val receiverAst = astForNodeWithFunctionReference(callee)
+              val baseNode    = identifierNode(d, code(d))
+              scope.addVariableReference(code(d), baseNode)
+              (receiverAst, baseNode, code(member))
+            case Some(d: DeclReferenceExprSyntax) =>
+              val receiverAst = astForNodeWithFunctionReference(callee)
+              val baseNode    = identifierNode(d, code(d))
+              scope.addVariableReference(code(d), baseNode)
+              (receiverAst, baseNode, code(member))
+            case Some(otherBase) =>
+              val tmpVarName  = generateUnusedVariableName(usedVariableNames, "_tmp")
+              val baseTmpNode = identifierNode(otherBase, tmpVarName)
+              scope.addVariableReference(tmpVarName, baseTmpNode)
+              val baseAst   = astForNodeWithFunctionReference(otherBase)
+              val codeField = s"(${codeOf(baseTmpNode)} = ${code(otherBase)})"
+              val tmpAssignmentAst =
+                createAssignmentCallAst(Ast(baseTmpNode), baseAst, codeField, line(otherBase), column(otherBase))
+              val memberNode = createFieldIdentifierNode(code(member), line(member), column(member))
+              val fieldAccessAst =
+                createFieldAccessCallAst(tmpAssignmentAst, memberNode, line(callee), column(callee))
+              val thisTmpNode = identifierNode(callee, tmpVarName)
+              (fieldAccessAst, thisTmpNode, code(member))
+          }
+        case _ =>
+          val receiverAst = astForNodeWithFunctionReference(callee)
+          val thisNode    = identifierNode(callee, "this").dynamicTypeHintFullName(typeHintForThisExpression())
+          scope.addVariableReference(thisNode.name, thisNode)
+          (receiverAst, thisNode, calleeCode)
+      }
+      handleCallNodeArgs(node, receiverAst, baseNode, callName)
+    }
+  }
+
   private def astForGenericSpecializationExprSyntax(node: GenericSpecializationExprSyntax): Ast = notHandledYet(node)
-  private def astForIfExprSyntax(node: IfExprSyntax): Ast                                       = notHandledYet(node)
-  private def astForInOutExprSyntax(node: InOutExprSyntax): Ast                                 = notHandledYet(node)
+
+  private def astForIfExprSyntax(node: IfExprSyntax): Ast = {
+    val code         = this.code(node)
+    val ifNode       = controlStructureNode(node, ControlStructureTypes.IF, code)
+    val conditionAst = astForNode(node.conditions)
+    val thenAst      = astForNode(node.body)
+    val elseAst = node.elseBody match {
+      case Some(value) => astForNode(value)
+      case None        => Ast()
+    }
+    controlStructureAst(ifNode, Some(conditionAst), Seq(thenAst, elseAst))
+  }
+
+  private def astForInOutExprSyntax(node: InOutExprSyntax): Ast = notHandledYet(node)
   private def astForInfixOperatorExprSyntax(node: InfixOperatorExprSyntax): Ast = {
     val op = code(node.operator) match {
-      case "="    => Operators.assignment
-      case "+="   => Operators.assignmentPlus
-      case "-="   => Operators.assignmentMinus
-      case "*="   => Operators.assignmentMultiplication
-      case "/="   => Operators.assignmentDivision
-      case "%="   => Operators.assignmentModulo
-      case "**="  => Operators.assignmentExponentiation
-      case "&="   => Operators.assignmentAnd
-      case "&&="  => Operators.assignmentAnd
-      case "|="   => Operators.assignmentOr
-      case "||="  => Operators.assignmentOr
-      case "^="   => Operators.assignmentXor
-      case "<<="  => Operators.assignmentShiftLeft
-      case ">>="  => Operators.assignmentArithmeticShiftRight
-      case ">>>=" => Operators.assignmentLogicalShiftRight
-      case "??="  => Operators.notNullAssert
+      case "="                   => Operators.assignment
+      case "+="                  => Operators.assignmentPlus
+      case "-="                  => Operators.assignmentMinus
+      case "*="                  => Operators.assignmentMultiplication
+      case "/="                  => Operators.assignmentDivision
+      case "%="                  => Operators.assignmentModulo
+      case "**="                 => Operators.assignmentExponentiation
+      case "&="                  => Operators.assignmentAnd
+      case "&&="                 => Operators.assignmentAnd
+      case "|="                  => Operators.assignmentOr
+      case "||="                 => Operators.assignmentOr
+      case "^="                  => Operators.assignmentXor
+      case "<<="                 => Operators.assignmentShiftLeft
+      case ">>="                 => Operators.assignmentArithmeticShiftRight
+      case ">>>="                => Operators.assignmentLogicalShiftRight
+      case "??="                 => Operators.notNullAssert
+      case "<="                  => Operators.lessEqualsThan
+      case ">="                  => Operators.greaterEqualsThan
+      case "<"                   => Operators.lessThan
+      case ">"                   => Operators.greaterThan
+      case "=="                  => Operators.equals
+      case "+"                   => Operators.plus
+      case "-"                   => Operators.minus
+      case "/"                   => Operators.division
+      case "*"                   => Operators.multiplication
+      case "..<" | ">.." | "..." => Operators.range
       case other =>
         logger.warn(s"Unknown assignment operator: '$other'")
         Operators.assignment
     }
 
-    val lhsAst    = astForNode(node.leftOperand)
+    val lhsAst    = astForNodeWithFunctionReference(node.leftOperand)
     val rhsAst    = astForNodeWithFunctionReference(node.rightOperand)
     val callNode_ = callNode(node, code(node), op, DispatchTypes.STATIC_DISPATCH)
     val argAsts   = List(lhsAst, rhsAst)
@@ -74,10 +214,38 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     astForNode(node.literal)
   }
 
-  private def astForIsExprSyntax(node: IsExprSyntax): Ast                                   = notHandledYet(node)
-  private def astForKeyPathExprSyntax(node: KeyPathExprSyntax): Ast                         = notHandledYet(node)
-  private def astForMacroExpansionExprSyntax(node: MacroExpansionExprSyntax): Ast           = notHandledYet(node)
-  private def astForMemberAccessExprSyntax(node: MemberAccessExprSyntax): Ast               = notHandledYet(node)
+  private def astForIsExprSyntax(node: IsExprSyntax): Ast                         = notHandledYet(node)
+  private def astForKeyPathExprSyntax(node: KeyPathExprSyntax): Ast               = notHandledYet(node)
+  private def astForMacroExpansionExprSyntax(node: MacroExpansionExprSyntax): Ast = notHandledYet(node)
+
+  private def astForMemberAccessExprSyntax(node: MemberAccessExprSyntax): Ast = {
+    val base   = node.base
+    val member = node.declName
+    val baseAst = base match {
+      case None =>
+        // referencing implicit this
+        val baseNode = identifierNode(node, "this")
+        scope.addVariableReference("this", baseNode)
+        Ast(baseNode)
+      case Some(d: DeclReferenceExprSyntax) if code(d) == "this" || code(d) == "self" =>
+        val baseNode = identifierNode(d, code(d))
+        scope.addVariableReference(code(d), baseNode)
+        Ast(baseNode)
+      case Some(otherBase) =>
+        astForNodeWithFunctionReference(otherBase)
+    }
+
+    member.baseName match {
+      case l @ integerLiteral(_) =>
+        val memberNode = astForIntegerLiteralToken(l)
+        createIndexAccessCallAst(baseAst, memberNode, line(node), column(node))
+      case other =>
+        val memberNode = createFieldIdentifierNode(code(other), line(other), column(other))
+        createFieldAccessCallAst(baseAst, memberNode, line(node), column(node))
+    }
+
+  }
+
   private def astForMissingExprSyntax(node: MissingExprSyntax): Ast                         = notHandledYet(node)
   private def astForNilLiteralExprSyntax(node: NilLiteralExprSyntax): Ast                   = notHandledYet(node)
   private def astForOptionalChainingExprSyntax(node: OptionalChainingExprSyntax): Ast       = notHandledYet(node)
@@ -90,17 +258,47 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForRegexLiteralExprSyntax(node: RegexLiteralExprSyntax): Ast               = notHandledYet(node)
   private def astForSequenceExprSyntax(node: SequenceExprSyntax): Ast                       = notHandledYet(node)
   private def astForSimpleStringLiteralExprSyntax(node: SimpleStringLiteralExprSyntax): Ast = notHandledYet(node)
-  private def astForStringLiteralExprSyntax(node: StringLiteralExprSyntax): Ast             = notHandledYet(node)
-  private def astForSubscriptCallExprSyntax(node: SubscriptCallExprSyntax): Ast             = notHandledYet(node)
-  private def astForSuperExprSyntax(node: SuperExprSyntax): Ast                             = notHandledYet(node)
-  private def astForSwitchExprSyntax(node: SwitchExprSyntax): Ast                           = notHandledYet(node)
-  private def astForTernaryExprSyntax(node: TernaryExprSyntax): Ast                         = notHandledYet(node)
-  private def astForTryExprSyntax(node: TryExprSyntax): Ast                                 = notHandledYet(node)
-  private def astForTupleExprSyntax(node: TupleExprSyntax): Ast                             = notHandledYet(node)
-  private def astForTypeExprSyntax(node: TypeExprSyntax): Ast                               = notHandledYet(node)
-  private def astForUnresolvedAsExprSyntax(node: UnresolvedAsExprSyntax): Ast               = notHandledYet(node)
-  private def astForUnresolvedIsExprSyntax(node: UnresolvedIsExprSyntax): Ast               = notHandledYet(node)
-  private def astForUnresolvedTernaryExprSyntax(node: UnresolvedTernaryExprSyntax): Ast     = notHandledYet(node)
+
+  private def astForStringLiteralExprSyntax(node: StringLiteralExprSyntax): Ast = {
+    astForNode(node.segments)
+  }
+
+  private def astForSubscriptCallExprSyntax(node: SubscriptCallExprSyntax): Ast = {
+    val baseAst           = astForNodeWithFunctionReference(node.calledExpression)
+    val memberAst         = astForNode(node.arguments)
+    val additionalArgsAst = astForNode(node.additionalTrailingClosures)
+    createIndexAccessCallAst(baseAst, memberAst, line(node), column(node), additionalArgsAst)
+  }
+
+  private def astForSuperExprSyntax(node: SuperExprSyntax): Ast   = notHandledYet(node)
+  private def astForSwitchExprSyntax(node: SwitchExprSyntax): Ast = notHandledYet(node)
+
+  private def astForTernaryExprSyntax(node: TernaryExprSyntax): Ast = {
+    val name = Operators.conditional
+    val call = callNode(node, code(node), name, name, DispatchTypes.STATIC_DISPATCH)
+
+    val condAst = astForNodeWithFunctionReference(node.condition)
+    val posAst  = astForNodeWithFunctionReference(node.thenExpression)
+    val negAst  = astForNodeWithFunctionReference(node.elseExpression)
+
+    val children = List(condAst, posAst, negAst)
+    callAst(call, children)
+  }
+
+  private def astForTryExprSyntax(node: TryExprSyntax): Ast = notHandledYet(node)
+
+  private def astForTupleExprSyntax(node: TupleExprSyntax): Ast = {
+    node.elements.children.toList match {
+      case Nil         => astForListLikeExpr(node, Seq.empty)
+      case head :: Nil => astForNodeWithFunctionReference(head)
+      case other       => astForListLikeExpr(node, other)
+    }
+  }
+
+  private def astForTypeExprSyntax(node: TypeExprSyntax): Ast                           = notHandledYet(node)
+  private def astForUnresolvedAsExprSyntax(node: UnresolvedAsExprSyntax): Ast           = notHandledYet(node)
+  private def astForUnresolvedIsExprSyntax(node: UnresolvedIsExprSyntax): Ast           = notHandledYet(node)
+  private def astForUnresolvedTernaryExprSyntax(node: UnresolvedTernaryExprSyntax): Ast = notHandledYet(node)
 
   protected def astForExprSyntax(exprSyntax: ExprSyntax): Ast = exprSyntax match {
     case node: ArrayExprSyntax                 => astForArrayExprSyntax(node)

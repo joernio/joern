@@ -8,6 +8,7 @@ import io.joern.swiftsrc2cpg.passes.Defines
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, AstNodeBuilder as X2CpgAstNodeBuilder}
+import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.shiftleft.codepropertygraph.generated.NodeTypes
@@ -22,8 +23,9 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.mutable
 
-class AstCreator(val config: Config, val parserResult: ParseResult)(implicit withSchemaValidation: ValidationMode)
-    extends AstCreatorBase(parserResult.filename)
+class AstCreator(val config: Config, val global: Global, val parserResult: ParseResult)(implicit
+  withSchemaValidation: ValidationMode
+) extends AstCreatorBase(parserResult.filename)
     with AstForSwiftTokenCreator
     with AstForSyntaxCreator
     with AstForExprSyntaxCreator
@@ -70,11 +72,19 @@ class AstCreator(val config: Config, val parserResult: ParseResult)(implicit wit
       methodNode(ast, name, name, fullName, None, path, Option(NodeTypes.TYPE_DECL), Option(fullName))
     methodAstParentStack.push(fakeGlobalMethod)
     scope.pushNewMethodScope(fullName, name, fakeGlobalMethod, None)
+
+    val blockNode_ = blockNode(ast, "<empty>", Defines.Any)
+    scope.pushNewBlockScope(blockNode_)
+    localAstParentStack.push(blockNode_)
     val sourceFileAst = astForNode(ast)
-    val methodReturn  = newMethodReturnNode(Defines.Any, None, line(ast), column(ast))
+    localAstParentStack.pop()
+    scope.popScope()
+    val blockAst_ = blockAst(blockNode_, List(sourceFileAst))
+
+    val methodReturn = newMethodReturnNode(Defines.Any, None, line(ast), column(ast))
     val modifiers = Seq(newModifierNode(ModifierTypes.VIRTUAL).order(0), newModifierNode(ModifierTypes.MODULE).order(1))
     Ast(fakeGlobalTypeDecl).withChild(
-      methodAst(fakeGlobalMethod, Seq.empty, sourceFileAst, methodReturn, modifiers = modifiers)
+      methodAst(fakeGlobalMethod, Seq.empty, blockAst_, methodReturn, modifiers = modifiers)
     )
   }
 

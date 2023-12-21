@@ -4,6 +4,7 @@ import io.joern.c2cpg.Config
 import io.joern.x2cpg.datastructures.Scope
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, AstNodeBuilder as X2CpgAstNodeBuilder}
+import io.joern.x2cpg.datastructures.Global
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
@@ -18,6 +19,7 @@ import scala.collection.mutable
   */
 class AstCreator(
   val filename: String,
+  val global: Global,
   val config: Config,
   val cdtAst: IASTTranslationUnit,
   val file2OffsetTable: ConcurrentHashMap[String, Array[Int]]

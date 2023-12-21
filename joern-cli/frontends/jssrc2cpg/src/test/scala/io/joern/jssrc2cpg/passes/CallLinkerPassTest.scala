@@ -71,10 +71,10 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
       ).moreCode(
         """
           |module.exports = {
-          |  sayhi: function() { // this will be called <lambda>0
+          |  sayhi: function() {
           |    console.log("Hello World!");
           |  },
-          |  saybye: function() { // this will be called <lambda>1
+          |  saybye: function() {
           |    console.log("Good-bye!");
           |  }
           |}
@@ -83,7 +83,7 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
       ).moreCode(
         """
           |module.exports = {
-          |  sayhowdy: function() { // this will be called <lambda>0
+          |  sayhowdy: function() {
           |    console.log("Howdy World!");
           |  }
           |}
@@ -91,28 +91,28 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
         "baz.js"
       )
 
-      inside(cpg.method.fullNameExact("bar.js::program:<lambda>0").l) { case List(m) =>
-        m.name shouldBe "<lambda>0"
-        m.fullName shouldBe "bar.js::program:<lambda>0"
+      inside(cpg.method.fullNameExact("bar.js::program:sayhi").l) { case List(m) =>
+        m.name shouldBe "sayhi"
+        m.fullName shouldBe "bar.js::program:sayhi"
       }
 
-      inside(cpg.method.fullNameExact("bar.js::program:<lambda>0").callIn(NoResolve).l) { case List(call) =>
+      inside(cpg.method.fullNameExact("bar.js::program:sayhi").callIn(NoResolve).l) { case List(call) =>
         call.code shouldBe "bar.sayhi()"
-        call.methodFullName shouldBe "bar.js::program:<lambda>0"
+        call.methodFullName shouldBe "bar.js::program:sayhi"
         inside(call.expressionDown.isIdentifier.l) { case List(receiver: Identifier) =>
           receiver.name shouldBe "bar"
           receiver.typeFullName shouldBe "bar.js::program"
         }
       }
 
-      inside(cpg.method.fullNameExact("baz.js::program:<lambda>0").l) { case List(m) =>
-        m.name shouldBe "<lambda>0"
-        m.fullName shouldBe "baz.js::program:<lambda>0"
+      inside(cpg.method.fullNameExact("baz.js::program:sayhowdy").l) { case List(m) =>
+        m.name shouldBe "sayhowdy"
+        m.fullName shouldBe "baz.js::program:sayhowdy"
       }
 
-      inside(cpg.method.fullNameExact("baz.js::program:<lambda>0").callIn(NoResolve).l) { case List(call) =>
+      inside(cpg.method.fullNameExact("baz.js::program:sayhowdy").callIn(NoResolve).l) { case List(call) =>
         call.code shouldBe "baz.sayhowdy()"
-        call.methodFullName shouldBe "baz.js::program:<lambda>0"
+        call.methodFullName shouldBe "baz.js::program:sayhowdy"
         inside(call.expressionDown.isIdentifier.l) { case List(receiver: Identifier) =>
           receiver.name shouldBe "baz"
           receiver.typeFullName shouldBe "baz.js::program"
@@ -132,7 +132,7 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
       ).moreCode(
         """
           |module.exports = {
-          |  sayhi: function() { // this will be called <lambda>0
+          |  sayhi: function() {
           |    console.log("Hello World, love BAR");
           |  }
           |}
@@ -141,7 +141,7 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
       ).moreCode(
         """
           |module.exports = {
-          |  sayhi: function() { // this will be called <lambda>0
+          |  sayhi: function() {
           |    console.log("Howdy World, love BAZ");
           |  }
           |}
@@ -151,16 +151,16 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
 
       // Because of flow-insensitivity, it could point to either "sayhi"
       inside(cpg.call("sayhi").callee(NoResolve).l) { case List(m1, m2) =>
-        m1.fullName shouldBe "bar.js::program:<lambda>0"
-        m2.fullName shouldBe "baz.js::program:<lambda>0"
+        m1.fullName shouldBe "bar.js::program:sayhi"
+        m2.fullName shouldBe "baz.js::program:sayhi"
       }
 
-      inside(cpg.method.fullNameExact("bar.js::program:<lambda>0").l) { case List(m) =>
-        m.name shouldBe "<lambda>0"
-        m.fullName shouldBe "bar.js::program:<lambda>0"
+      inside(cpg.method.fullNameExact("bar.js::program:sayhi").l) { case List(m) =>
+        m.name shouldBe "sayhi"
+        m.fullName shouldBe "bar.js::program:sayhi"
       }
 
-      inside(cpg.method.fullNameExact("bar.js::program:<lambda>0").callIn(NoResolve).l) { case List(call) =>
+      inside(cpg.method.fullNameExact("bar.js::program:sayhi").callIn(NoResolve).l) { case List(call) =>
         call.code shouldBe "barOrBaz.sayhi()"
         call.methodFullName shouldBe "<unknownFullName>"
         inside(call.expressionDown.isIdentifier.l) { case List(receiver: Identifier) =>
@@ -169,12 +169,12 @@ class CallLinkerPassTest extends DataFlowCodeToCpgSuite {
         }
       }
 
-      inside(cpg.method.fullNameExact("baz.js::program:<lambda>0").l) { case List(m) =>
-        m.name shouldBe "<lambda>0"
-        m.fullName shouldBe "baz.js::program:<lambda>0"
+      inside(cpg.method.fullNameExact("baz.js::program:sayhi").l) { case List(m) =>
+        m.name shouldBe "sayhi"
+        m.fullName shouldBe "baz.js::program:sayhi"
       }
 
-      inside(cpg.method.fullNameExact("baz.js::program:<lambda>0").callIn(NoResolve).l) { case List(call) =>
+      inside(cpg.method.fullNameExact("baz.js::program:sayhi").callIn(NoResolve).l) { case List(call) =>
         call.code shouldBe "barOrBaz.sayhi()"
         call.methodFullName shouldBe "<unknownFullName>"
         inside(call.expressionDown.isIdentifier.l) { case List(receiver: Identifier) =>

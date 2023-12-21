@@ -22,7 +22,7 @@ trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { thi
 
   protected def processFuncType(typeNode: ParserNodeInfo, typeDeclFullName: String): Seq[Ast] = {
     val (signature, returnTypeFullName, _, _, _) = generateLambdaSignature(typeNode)
-    GoGlobal.recordLambdaSigntureToLambdaType(signature, typeDeclFullName, returnTypeFullName)
+    goGlobal.recordLambdaSigntureToLambdaType(signature, typeDeclFullName, returnTypeFullName)
     Seq.empty
   }
 
@@ -39,7 +39,7 @@ trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { thi
               .map(fieldInfo => {
                 val fieldNodeInfo = createParserNodeInfo(fieldInfo)
                 val fieldName     = fieldNodeInfo.json(ParserKeys.Name).str
-                GoGlobal.recordStructTypeMemberType(typeDeclFullName + Defines.dot + fieldName, typeFullName)
+                goGlobal.recordStructTypeMemberType(typeDeclFullName + Defines.dot + fieldName, typeFullName)
                 Ast(memberNode(typeInfo, fieldName, fieldNodeInfo.code, typeFullName))
               })
           })
@@ -62,7 +62,7 @@ trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { thi
             val receiverFullName = resolveAliasToFullName(alias, fieldIdentifier)
             (
               astForNode(xnode),
-              GoGlobal.structTypeMemberTypeMapping.getOrDefault(
+              goGlobal.structTypeMemberTypeMapping.getOrDefault(
                 receiverFullName,
                 s"$receiverFullName${Defines.dot}${Defines.FieldAccess}${Defines.dot}${XDefines.Unknown}"
               )
@@ -75,7 +75,7 @@ trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { thi
   private def receiverAstAndFullName(xnode: ParserNodeInfo, fieldIdentifier: String): (Seq[Ast], String) = {
     val identifierAsts       = astForNode(xnode)
     val receiverTypeFullName = getTypeFullNameFromAstNode(identifierAsts)
-    val fieldTypeFullName = GoGlobal.structTypeMemberTypeMapping.getOrDefault(
+    val fieldTypeFullName = goGlobal.structTypeMemberTypeMapping.getOrDefault(
       s"$receiverTypeFullName${Defines.dot}$fieldIdentifier",
       s"$receiverTypeFullName${Defines.dot}$fieldIdentifier${Defines.dot}${Defines.FieldAccess}${Defines.dot}${XDefines.Unknown}"
     )

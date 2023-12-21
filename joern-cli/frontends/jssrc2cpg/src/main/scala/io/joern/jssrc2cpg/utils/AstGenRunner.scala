@@ -22,6 +22,8 @@ object AstGenRunner {
 
   private val LineLengthThreshold: Int = 10000
 
+  private val NODE_OPTIONS: Map[String, String] = Map("NODE_OPTIONS" -> "--max-old-space-size=8192")
+
   private val TypeDefinitionFileExtensions = List(".t.ts", ".d.ts")
 
   private val MinifiedPathRegex: Regex = ".*([.-]min\\..*js|bundle\\.js)".r
@@ -152,17 +154,17 @@ class AstGenRunner(config: Config) {
 
   private val executableArgs = if (!config.tsTypes) " --no-tsTypes" else ""
 
-  private def skippedFiles(in: File, astGenOut: List[String]): List[String] = {
+  private def skippedFiles(astGenOut: List[String]): List[String] = {
     val skipped = astGenOut.collect {
       case out if out.startsWith("Parsing") =>
         val filename = out.substring(out.indexOf(" ") + 1, out.indexOf(":") - 1)
         val reason   = out.substring(out.indexOf(":") + 2)
-        logger.warn(s"\t- failed to parse '${in / filename}': '$reason'")
+        logger.warn(s"\t- failed to parse '$filename': '$reason'")
         Option(filename)
       case out if !out.startsWith("Converted") && !out.startsWith("Retrieving") =>
         val filename = out.substring(0, out.indexOf(" "))
         val reason   = out.substring(out.indexOf(" ") + 1)
-        logger.warn(s"\t- failed to parse '${in / filename}': '$reason'")
+        logger.warn(s"\t- failed to parse '$filename': '$reason'")
         Option(filename)
       case out =>
         logger.debug(s"\t+ $out")
@@ -271,7 +273,8 @@ class AstGenRunner(config: Config) {
       }
     }
 
-    val result = ExternalCommand.run(s"$astGenCommand$executableArgs -t ts -o $out", out.toString())
+    val result =
+      ExternalCommand.run(s"$astGenCommand$executableArgs -t ts -o $out", out.toString(), extraEnv = NODE_OPTIONS)
 
     val jsons = SourceFiles.determine(out.toString(), Set(".json"))
     jsons.foreach { jsonPath =>
@@ -298,12 +301,12 @@ class AstGenRunner(config: Config) {
   private def vueFiles(in: File, out: File): Try[Seq[String]] = {
     val files = SourceFiles.determine(in.pathAsString, Set(".vue"))
     if (files.nonEmpty)
-      ExternalCommand.run(s"$astGenCommand$executableArgs -t vue -o $out", in.toString())
+      ExternalCommand.run(s"$astGenCommand$executableArgs -t vue -o $out", in.toString(), extraEnv = NODE_OPTIONS)
     else Success(Seq.empty)
   }
 
   private def jsFiles(in: File, out: File): Try[Seq[String]] =
-    ExternalCommand.run(s"$astGenCommand$executableArgs -t ts -o $out", in.toString())
+    ExternalCommand.run(s"$astGenCommand$executableArgs -t ts -o $out", in.toString(), extraEnv = NODE_OPTIONS)
 
   private def runAstGenNative(in: File, out: File): Try[Seq[String]] = for {
     ejsResult <- ejsFiles(in, out)
@@ -317,7 +320,7 @@ class AstGenRunner(config: Config) {
     runAstGenNative(in, out) match {
       case Success(result) =>
         val parsed  = filterFiles(SourceFiles.determine(out.toString(), Set(".json")), out)
-        val skipped = skippedFiles(in, result.toList)
+        val skipped = skippedFiles(result.toList)
         AstGenRunnerResult(parsed.map((in.toString(), _)), skipped.map((in.toString(), _)))
       case Failure(f) =>
         logger.error("\t- running astgen failed!", f)

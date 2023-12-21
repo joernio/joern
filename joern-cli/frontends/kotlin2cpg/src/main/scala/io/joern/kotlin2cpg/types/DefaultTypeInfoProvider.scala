@@ -443,7 +443,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
 
   def typeFullName(expr: KtAnnotationEntry, defaultValue: String): String = {
     Option(bindingsForEntity(bindingContext, expr))
-      .map(_ => bindingContext.get(BindingContext.ANNOTATION, expr))
+      .flatMap(_ => Option(bindingContext.get(BindingContext.ANNOTATION, expr)))
       .map { desc => TypeRenderer.render(desc.getType) }
       .getOrElse(defaultValue)
   }
@@ -748,10 +748,8 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
       parameterType(parameter, explicitTypeFullName)
     }
     val paramListSignature = s"(${paramTypeNames.mkString(",")})"
-    val methodName = Option(fnDesc)
-      .map { desc =>
-        s"${TypeRenderer.renderFqNameForDesc(desc.get)}${TypeConstants.initPrefix}"
-      }
+    val methodName = fnDesc
+      .map(desc => s"${TypeRenderer.renderFqNameForDesc(desc)}${TypeConstants.initPrefix}")
       .getOrElse(s"${Defines.UnresolvedNamespace}.${TypeConstants.initPrefix}")
     val signature = s"${TypeConstants.void}$paramListSignature"
     val fullname  = s"$methodName:$signature"

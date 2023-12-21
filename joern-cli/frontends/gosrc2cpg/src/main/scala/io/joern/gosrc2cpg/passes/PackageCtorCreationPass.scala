@@ -9,13 +9,13 @@ import io.shiftleft.passes.ConcurrentWriterCpgPass
 
 import scala.jdk.CollectionConverters.*
 
-class PackageCtorCreationPass(cpg: Cpg, config: Config)
+class PackageCtorCreationPass(cpg: Cpg, config: Config, goGlobal: GoGlobal)
     extends ConcurrentWriterCpgPass[(String, Set[(Ast, String)])](cpg) {
   override def generateParts(): Array[(String, Set[(Ast, String)])] =
-    GoGlobal.pkgLevelVarAndConstantAstMap
+    goGlobal.pkgLevelVarAndConstantAstMap
       .keys()
       .asScala
-      .map(key => (key, GoGlobal.pkgLevelVarAndConstantAstMap.get(key)))
+      .map(key => (key, goGlobal.pkgLevelVarAndConstantAstMap.get(key)))
       .toArray
 
   override def runOnPart(diffGraph: DiffGraphBuilder, part: (String, Set[(Ast, String)])): Unit = {

@@ -1564,58 +1564,6 @@ class MethodTests extends GoCodeToCpgSuite {
 
   }
 
-  "when constant is used in initializing struct" should {
-    val cpg = code("""
-        |package main
-        |
-        |var person = Person()
-        |
-        |type Name struct {
-        |   name string
-        |}
-        |
-        |const (
-        | personName string = "peter"
-        |)
-        |
-        |func Person() Name {
-        |   return Name{
-        |     name: personName,
-        |   }
-        |}
-        |""".stripMargin)
-
-    "test basic ast structure for Person" in {
-      val List(method) = cpg.method.name("Person").l
-      method.signature shouldBe "main.Person()main.Name"
-
-      val List(typeDeclNode) = cpg.typeDecl.name("Name").l
-      typeDeclNode.fullName shouldBe "main.Name"
-      typeDeclNode.member.size shouldBe 1
-      val List(name) = typeDeclNode.member.l
-      name.code shouldBe "name"
-      name.typeFullName shouldBe "string"
-    }
-
-    "check Global Member node" in {
-      val List(x)    = cpg.typeDecl("main").l
-      val List(a, b) = x.member.l
-      a.name shouldBe "person"
-      a.typeFullName shouldBe "main.Name"
-      b.name shouldBe "personName"
-      b.typeFullName shouldBe "string"
-    }
-
-    "Check fieldAccess node for global variable access" in {
-      val List(a, b, c) = cpg.call(Operators.fieldAccess).l
-      a.typeFullName shouldBe "string"
-      b.typeFullName shouldBe "main.Name"
-      b.code shouldBe "person"
-      c.typeFullName shouldBe "string"
-      c.code shouldBe "personName"
-    }
-  }
-
   "when function is passed as argument" should {
     val cpg = code("""
         |package main

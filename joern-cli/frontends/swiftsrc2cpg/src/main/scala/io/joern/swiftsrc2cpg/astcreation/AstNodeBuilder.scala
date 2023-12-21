@@ -5,11 +5,9 @@ import io.joern.swiftsrc2cpg.passes.Defines
 import io.joern.x2cpg
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
-import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
-import org.apache.commons.lang.StringUtils
 
 trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -43,7 +41,8 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     baseAst: Ast,
     partAst: Ast,
     line: Option[Integer],
-    column: Option[Integer]
+    column: Option[Integer],
+    additionalArgsAst: Ast = Ast()
   ): Ast = {
     val callNode = createCallNode(
       s"${codeOf(baseAst.nodes.head)}[${codeOf(partAst.nodes.head)}]",
@@ -52,7 +51,7 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
       line,
       column
     )
-    val arguments = List(baseAst, partAst)
+    val arguments = List(baseAst, partAst, additionalArgsAst)
     callAst(callNode, arguments)
   }
 
@@ -87,19 +86,6 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
       column
     )
     val arguments = List(baseAst, Ast(partNode))
-    callAst(callNode, arguments)
-  }
-
-  protected def createTernaryCallAst(
-    testAst: Ast,
-    trueAst: Ast,
-    falseAst: Ast,
-    line: Option[Integer],
-    column: Option[Integer]
-  ): Ast = {
-    val code      = s"${codeOf(testAst.nodes.head)} ? ${codeOf(trueAst.nodes.head)} : ${codeOf(falseAst.nodes.head)}"
-    val callNode  = createCallNode(code, Operators.conditional, DispatchTypes.STATIC_DISPATCH, line, column)
-    val arguments = List(testAst, trueAst, falseAst)
     callAst(callNode, arguments)
   }
 
@@ -146,13 +132,6 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
       case _                                                 => Defines.Any
     }
     literalNode(node, code, typeFullName, dynamicTypeOption.toList)
-  }
-
-  protected def createEqualsCallAst(dest: Ast, source: Ast, line: Option[Integer], column: Option[Integer]): Ast = {
-    val code      = s"${codeOf(dest.nodes.head)} === ${codeOf(source.nodes.head)}"
-    val callNode  = createCallNode(code, Operators.equals, DispatchTypes.STATIC_DISPATCH, line, column)
-    val arguments = List(dest, source)
-    callAst(callNode, arguments)
   }
 
   protected def createAssignmentCallAst(

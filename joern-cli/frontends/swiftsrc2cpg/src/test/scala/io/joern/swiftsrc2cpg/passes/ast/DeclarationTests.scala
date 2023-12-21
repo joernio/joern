@@ -339,7 +339,106 @@ class DeclarationTests extends AbstractPassTest {
       |enum Whatever: Int, ~ Hashable, Equatable {}
       |""".stripMargin) { cpg => ??? }
 
-    "testArrayDeclaration" ignore AstFixture("let foo: [Int] = []") { cpg => ??? }
+    "testArrayDeclaration" in AstFixture("let foo: [Int] = []") { cpg =>
+      val List(method)      = cpg.method.nameExact("<global>").l
+      val List(methodBlock) = method.astChildren.isBlock.l
+
+      val List(assignment) = methodBlock.astChildren.isCall.l
+      assignment.name shouldBe Operators.assignment
+
+      val List(arrayCall) = assignment.astChildren.isCall.l
+      arrayCall.name shouldBe Operators.arrayInitializer
+      arrayCall.code shouldBe "[]"
+      arrayCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+
+      val List(fooIdent) = assignment.astChildren.isIdentifier.l
+      fooIdent.name shouldBe "foo"
+      fooIdent.typeFullName shouldBe "[Int]"
+    }
+
+    "testSetDeclaration" in AstFixture("var foo: Set<Int> = [1, 2, 3]") { cpg =>
+      val List(method)      = cpg.method.nameExact("<global>").l
+      val List(methodBlock) = method.astChildren.isBlock.l
+
+      val List(assignment) = methodBlock.astChildren.isCall.l
+      assignment.name shouldBe Operators.assignment
+
+      val List(arrayCall) = assignment.astChildren.isCall.l
+      arrayCall.name shouldBe Operators.arrayInitializer
+      arrayCall.code shouldBe "[1, 2, 3]"
+      arrayCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      arrayCall.argument.isLiteral.code.l shouldBe List("1", "2", "3")
+
+      val List(fooIdent) = assignment.astChildren.isIdentifier.l
+      fooIdent.name shouldBe "foo"
+      fooIdent.typeFullName shouldBe "Set<Int>"
+    }
+
+    "testDictionaryDeclaration" in AstFixture("var numbers = [1: \"One\", 2: \"Two\", 3: \"Three\"]") { cpg =>
+      val List(method)      = cpg.method.nameExact("<global>").l
+      val List(methodBlock) = method.astChildren.isBlock.l
+
+      val List(assignment) = methodBlock.astChildren.isCall.l
+      assignment.name shouldBe Operators.assignment
+
+      val List(arrayCall) = assignment.astChildren.isCall.l
+      arrayCall.name shouldBe Operators.arrayInitializer
+      arrayCall.code shouldBe "[1: \"One\", 2: \"Two\", 3: \"Three\"]"
+      arrayCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      arrayCall.argument.isCall.code.l shouldBe List("1: \"One\",", "2: \"Two\",", "3: \"Three\"")
+    }
+
+    "testAddDictionaryElements" in AstFixture("""
+        |var elements = ["A": "1", "B": "2"]
+        |elements["A"] = "3"
+        |print(elements["A"])
+        |""".stripMargin) { cpg =>
+      val List(elementsAccess1, elementsAccess2) = cpg.call(Operators.indexAccess).l
+      elementsAccess1.code shouldBe "elements[\"A\"]"
+      val List(arg11) = elementsAccess1.argument(1).start.isIdentifier.l
+      arg11.name shouldBe "elements"
+      val List(arg12) = elementsAccess1.argument(2).start.isLiteral.l
+      arg12.code shouldBe "\"A\""
+
+      elementsAccess2.code shouldBe "elements[\"A\"]"
+      val List(arg21) = elementsAccess2.argument(1).start.isIdentifier.l
+      arg21.name shouldBe "elements"
+      val List(arg22) = elementsAccess2.argument(2).start.isLiteral.l
+      arg22.code shouldBe "\"A\""
+    }
+
+    "testTupleDeclaration" in AstFixture("var product = (\"MacBook\", 1099.99)") { cpg =>
+      val List(method)      = cpg.method.nameExact("<global>").l
+      val List(methodBlock) = method.astChildren.isBlock.l
+
+      val List(assignment) = methodBlock.astChildren.isCall.l
+      assignment.name shouldBe Operators.assignment
+
+      val List(arrayCall) = assignment.astChildren.isCall.l
+      arrayCall.name shouldBe Operators.arrayInitializer
+      arrayCall.code shouldBe "(\"MacBook\", 1099.99)"
+      arrayCall.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+      arrayCall.argument.isLiteral.code.l shouldBe List("\"MacBook\"", "1099.99")
+    }
+
+    "testTupleAccess" in AstFixture("""
+        |var product = ("MacBook", 1099.99)
+        |print("Name:", product.0)
+        |print("Price:", product.1)
+        |""".stripMargin) { cpg =>
+      val List(elementsAccess1, elementsAccess2) = cpg.call(Operators.indexAccess).l
+      elementsAccess1.code shouldBe "product[0]"
+      val List(arg11) = elementsAccess1.argument(1).start.isIdentifier.l
+      arg11.name shouldBe "product"
+      val List(arg12) = elementsAccess1.argument(2).start.isLiteral.l
+      arg12.code shouldBe "0"
+
+      elementsAccess2.code shouldBe "product[1]"
+      val List(arg21) = elementsAccess2.argument(1).start.isIdentifier.l
+      arg21.name shouldBe "product"
+      val List(arg22) = elementsAccess2.argument(2).start.isLiteral.l
+      arg22.code shouldBe "1"
+    }
 
     "testInitAccessorsWithDefaultValues" ignore AstFixture("""
       |struct Test {

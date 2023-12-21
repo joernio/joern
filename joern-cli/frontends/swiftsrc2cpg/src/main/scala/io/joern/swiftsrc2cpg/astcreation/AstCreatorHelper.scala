@@ -13,6 +13,17 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 
 import scala.collection.mutable
 
+object AstCreatorHelper {
+
+  implicit class OptionSafeAst(val ast: Ast) extends AnyVal {
+    def withArgEdge(src: NewNode, dst: Option[NewNode]): Ast = dst match {
+      case Some(value) => ast.withArgEdge(src, value)
+      case None        => ast
+    }
+  }
+
+}
+
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def notHandledYet(node: SwiftNode): Ast = {
@@ -28,7 +39,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   protected def registerType(typeFullName: String): Unit = {
-    SwiftGlobal.usedTypes.putIfAbsent((typeFullName), true)
+    global.usedTypes.putIfAbsent(typeFullName, true)
   }
 
   protected def generateUnusedVariableName(

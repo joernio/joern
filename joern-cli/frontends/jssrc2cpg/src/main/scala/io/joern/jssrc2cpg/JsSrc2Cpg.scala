@@ -3,7 +3,6 @@ package io.joern.jssrc2cpg
 import better.files.File
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.jssrc2cpg.JsSrc2Cpg.postProcessingPasses
-import io.joern.jssrc2cpg.datastructures.JsGlobal
 import io.joern.jssrc2cpg.passes.*
 import io.joern.jssrc2cpg.utils.AstGenRunner
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
@@ -30,7 +29,7 @@ class JsSrc2Cpg extends X2CpgFrontend[Config] {
         val astCreationPass = new AstCreationPass(cpg, astGenResult, config, report)(config.schemaValidation)
         astCreationPass.createAndApply()
 
-        JavaScriptTypeNodePass.withRegisteredTypes(JsGlobal.typesSeen(), cpg).createAndApply()
+        JavaScriptTypeNodePass.withRegisteredTypes(astCreationPass.typesSeen(), cpg).createAndApply()
         new JavaScriptMetaDataPass(cpg, hash, config.inputPath).createAndApply()
         new DependenciesPass(cpg, config).createAndApply()
         new ConfigPass(cpg, config, report).createAndApply()

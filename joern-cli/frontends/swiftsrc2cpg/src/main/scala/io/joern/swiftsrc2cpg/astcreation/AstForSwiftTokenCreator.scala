@@ -31,11 +31,17 @@ trait AstForSwiftTokenCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private def astForInfixQuestionMarkToken(node: infixQuestionMark): Ast = Ast()
 
-  private def astForIntegerLiteralToken(node: integerLiteral): Ast = {
+  protected def astForIntegerLiteralToken(node: integerLiteral): Ast = {
     Ast(literalNode(node, code(node), Option(Defines.Int)))
   }
 
-  private def astForKeywordToken(node: keyword): Ast                                 = Ast()
+  private def astForKeywordToken(node: keyword): Ast = {
+    val code = this.code(node)
+    code match
+      case "true" | "false" => Ast(literalNode(node, code, Option(Defines.Bool)))
+      case _                => notHandledYet(node)
+  }
+
   private def astForLeftAngleToken(node: leftAngle): Ast                             = Ast()
   private def astForLeftBraceToken(node: leftBrace): Ast                             = Ast()
   private def astForLeftParenToken(node: leftParen): Ast                             = Ast()

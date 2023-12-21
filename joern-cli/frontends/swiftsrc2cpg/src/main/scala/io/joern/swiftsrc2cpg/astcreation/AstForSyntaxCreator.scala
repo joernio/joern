@@ -16,12 +16,15 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForAccessorBlockSyntax(node: AccessorBlockSyntax): Ast                       = notHandledYet(node)
   private def astForAccessorEffectSpecifiersSyntax(node: AccessorEffectSpecifiersSyntax): Ast = notHandledYet(node)
   private def astForAccessorParametersSyntax(node: AccessorParametersSyntax): Ast             = notHandledYet(node)
-  private def astForArrayElementSyntax(node: ArrayElementSyntax): Ast                         = notHandledYet(node)
+
+  private def astForArrayElementSyntax(node: ArrayElementSyntax): Ast = {
+    astForNodeWithFunctionReference(node.expression)
+  }
 
   private def astForAttributeSyntax(node: AttributeSyntax): Ast = {
     val argumentAsts = node.arguments match {
       case Some(argument) =>
-        val argumentAst    = astForNode(argument)
+        val argumentAst    = astForNodeWithFunctionReference(argument)
         val parameter      = NewAnnotationParameter().code("argument")
         val assign         = NewAnnotationParameterAssign().code(code(argument))
         val assignChildren = List(Ast(parameter), argumentAst)
@@ -57,7 +60,11 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     astForNode(node.statements)
   }
   private def astForCompositionTypeElementSyntax(node: CompositionTypeElementSyntax): Ast = notHandledYet(node)
-  private def astForConditionElementSyntax(node: ConditionElementSyntax): Ast             = notHandledYet(node)
+
+  private def astForConditionElementSyntax(node: ConditionElementSyntax): Ast = {
+    astForNode(node.condition)
+  }
+
   private def astForConformanceRequirementSyntax(node: ConformanceRequirementSyntax): Ast = notHandledYet(node)
   private def astForConventionAttributeArgumentsSyntax(node: ConventionAttributeArgumentsSyntax): Ast = notHandledYet(
     node
@@ -87,8 +94,15 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForDerivativeAttributeArgumentsSyntax(node: DerivativeAttributeArgumentsSyntax): Ast = notHandledYet(
     node
   )
-  private def astForDesignatedTypeSyntax(node: DesignatedTypeSyntax): Ast                         = notHandledYet(node)
-  private def astForDictionaryElementSyntax(node: DictionaryElementSyntax): Ast                   = notHandledYet(node)
+  private def astForDesignatedTypeSyntax(node: DesignatedTypeSyntax): Ast = notHandledYet(node)
+
+  private def astForDictionaryElementSyntax(node: DictionaryElementSyntax): Ast = {
+    // TODO: check if handling Labels like that fits the Swift semantics:
+    val dstAst = astForNode(node.key)
+    val srcAst = astForNodeWithFunctionReference(node.value)
+    createAssignmentCallAst(dstAst, srcAst, code(node), line(node), column(node))
+  }
+
   private def astForDifferentiabilityArgumentSyntax(node: DifferentiabilityArgumentSyntax): Ast   = notHandledYet(node)
   private def astForDifferentiabilityArgumentsSyntax(node: DifferentiabilityArgumentsSyntax): Ast = notHandledYet(node)
   private def astForDifferentiabilityWithRespectToArgumentSyntax(
@@ -155,7 +169,18 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForKeyPathOptionalComponentSyntax(node: KeyPathOptionalComponentSyntax): Ast   = notHandledYet(node)
   private def astForKeyPathPropertyComponentSyntax(node: KeyPathPropertyComponentSyntax): Ast   = notHandledYet(node)
   private def astForKeyPathSubscriptComponentSyntax(node: KeyPathSubscriptComponentSyntax): Ast = notHandledYet(node)
-  private def astForLabeledExprSyntax(node: LabeledExprSyntax): Ast                             = notHandledYet(node)
+
+  private def astForLabeledExprSyntax(node: LabeledExprSyntax): Ast = {
+    // TODO: check if handling Labels like that fits the Swift semantics:
+    node.label match {
+      case Some(label) =>
+        val dstAst = astForNode(label)
+        val srcAst = astForNodeWithFunctionReference(node.expression)
+        createAssignmentCallAst(dstAst, srcAst, code(node), line(node), column(node))
+      case None => astForNodeWithFunctionReference(node.expression)
+    }
+  }
+
   private def astForLabeledSpecializeArgumentSyntax(node: LabeledSpecializeArgumentSyntax): Ast = notHandledYet(node)
   private def astForLayoutRequirementSyntax(node: LayoutRequirementSyntax): Ast                 = notHandledYet(node)
   private def astForMatchingPatternConditionSyntax(node: MatchingPatternConditionSyntax): Ast   = notHandledYet(node)
@@ -197,7 +222,11 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     notHandledYet(node)
   private def astForSpecializeTargetFunctionArgumentSyntax(node: SpecializeTargetFunctionArgumentSyntax): Ast =
     notHandledYet(node)
-  private def astForStringSegmentSyntax(node: StringSegmentSyntax): Ast                 = notHandledYet(node)
+
+  private def astForStringSegmentSyntax(node: StringSegmentSyntax): Ast = {
+    Ast(literalNode(node, s"\"${code(node)}\"", Option(Defines.String)))
+  }
+
   private def astForSwitchCaseItemSyntax(node: SwitchCaseItemSyntax): Ast               = notHandledYet(node)
   private def astForSwitchCaseLabelSyntax(node: SwitchCaseLabelSyntax): Ast             = notHandledYet(node)
   private def astForSwitchCaseSyntax(node: SwitchCaseSyntax): Ast                       = notHandledYet(node)

@@ -2,6 +2,7 @@ package io.joern.gosrc2cpg.passes
 
 import io.joern.gosrc2cpg.Config
 import io.joern.gosrc2cpg.astcreation.AstCreator
+import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.joern.gosrc2cpg.parser.GoAstJsonParser
 import io.joern.x2cpg.astgen.ParserResult
 import io.joern.x2cpg.SourceFiles
@@ -14,7 +15,7 @@ import org.slf4j.{Logger, LoggerFactory}
 import java.nio.file.Paths
 import scala.util.{Failure, Success, Try}
 
-class AstCreationPass(cpg: Cpg, astCreators: Seq[AstCreator], config: Config, report: Report)
+class AstCreationPass(cpg: Cpg, astCreators: Seq[AstCreator], report: Report)
     extends ConcurrentWriterCpgPass[AstCreator](cpg) {
   private val logger: Logger                      = LoggerFactory.getLogger(classOf[AstCreationPass])
   override def generateParts(): Array[AstCreator] = astCreators.toArray

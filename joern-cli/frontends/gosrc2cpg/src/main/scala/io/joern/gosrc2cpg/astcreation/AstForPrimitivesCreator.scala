@@ -72,7 +72,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
           Ast(node).withRefEdge(node, variable)
         case _ =>
           // If its not local node then check if its global member variable of package TypeDecl
-          Option(GoGlobal.structTypeMemberTypeMapping.get(s"$fullyQualifiedPackage${Defines.dot}$identifierName")) match
+          Option(goGlobal.structTypeMemberTypeMapping.get(s"$fullyQualifiedPackage${Defines.dot}$identifierName")) match
             case Some(fieldTypeFullName) => astForPackageGlobalFieldAccess(fieldTypeFullName, identifierName, ident)
             case _                       =>
               // TODO: something is wrong here. Refer to SwitchTests -> "be correct for switch case 4"

@@ -15,29 +15,12 @@ class ProjectParseTests extends CSharpCode2CpgFixture with BeforeAndAfterAll {
 
   private val sep = java.io.File.separator
 
-  private def boilerplate(contents: String): String =
-    s"""
-      |using System;
-      |
-      |namespace HelloWorld
-      |{
-      |  class Program
-      |  {
-      |    static void Main(string[] args)
-      |    {
-      |      $contents
-      |    }
-      |  }
-      |
-      |}
-      |""".stripMargin
-
   private val projectWithSubfolders: File = {
     val dir = File.newTemporaryDirectory("csharpsrc2cpgTestsSubfolders")
     List(s"sub${sep}c.cs", s"sub${sep}d.cs", "a.cs", "b.cs").foreach { testFile =>
       val file = dir / testFile
       file.createIfNotExists(createParents = true)
-      file.write(boilerplate("Console.WriteLine(\"Hello, world!\");"))
+      file.write(basicBoilerplate())
     }
     dir
   }
@@ -46,10 +29,10 @@ class ProjectParseTests extends CSharpCode2CpgFixture with BeforeAndAfterAll {
     val dir      = File.newTemporaryDirectory("csharpsrc2cpgTestsBroken")
     val goodFile = dir / "good.cs"
     goodFile.createIfNotExists(createParents = true)
-    goodFile.write(boilerplate("Console.WriteLine(\"Good\");"))
+    goodFile.write(basicBoilerplate("Console.WriteLine(\"Good\");"))
     val brokenFile = dir / "broken.cs"
     brokenFile.createIfNotExists(createParents = true)
-    brokenFile.write(boilerplate("Console.WriteLi\"Broken\""))
+    brokenFile.write(basicBoilerplate("Console.WriteLi\"Broken\""))
     dir
   }
 
@@ -57,7 +40,7 @@ class ProjectParseTests extends CSharpCode2CpgFixture with BeforeAndAfterAll {
     val dir  = File.newTemporaryDirectory("csharpsrc2cpgTestsUtf8")
     val file = dir / "utf8.cs"
     file.createIfNotExists(createParents = true)
-    file.write(boilerplate("// 😼"))
+    file.write(basicBoilerplate("// 😼"))
     dir
   }
 
