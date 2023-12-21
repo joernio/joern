@@ -254,23 +254,24 @@ class ControlStructureTests extends RubyCode2CpgFixture {
 
   "`begin ... rescue ... end is represented by a `TRY` CONTROL_STRUCTURE node" in {
     val cpg = code("""
-        |begin
-        | 1
-        |rescue
-        | 2
-        |end
         |def test1
         |  begin 
+        |    puts
         |    1 
         |  rescue E1 => e
+        |    puts
         |    2 
         |  rescue E2
+        |    puts
         |    3
         |  rescue
+        |    puts
         |    4
         |  else
+        |    puts
         |    5
         |  ensure
+        |    puts
         |    6
         |  end
         |end
