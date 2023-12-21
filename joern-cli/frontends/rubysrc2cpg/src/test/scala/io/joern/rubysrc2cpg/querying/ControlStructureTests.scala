@@ -254,35 +254,71 @@ class ControlStructureTests extends RubyCode2CpgFixture {
 
   "`begin ... rescue ... end is represented by a `TRY` CONTROL_STRUCTURE node" in {
     val cpg = code("""
-        |begin 
-        |  1 
-        |rescue 
-        |  2 
+        |begin
+        | 1
         |rescue
-        |  3
-        |else
-        |  4
-        |ensure
-        |  5
+        | 2
+        |end
+        |def test1
+        |  begin 
+        |    1 
+        |  rescue E1 => e
+        |    2 
+        |  rescue E2
+        |    3
+        |  rescue
+        |    4
+        |  else
+        |    5
+        |  ensure
+        |    6
+        |  end
+        |end
+        |
+        |def test2
+        |  begin
+        |   1   
+        |  ensure
+        |   2
+        |  end
         |end
         |""".stripMargin)
 
-    val List(rescueNode) = cpg.tryBlock.l
-    rescueNode.controlStructureType shouldBe ControlStructureTypes.TRY
-    val List(body, rescueBody1, rescueBody2, elseBody, ensureBody) = rescueNode.astChildren.l
-    body.ast.isLiteral.code.l shouldBe List("1")
-    body.order shouldBe 1
+    {
+      val List(rescueNode) = cpg.method("test1").tryBlock.l
+      rescueNode.controlStructureType shouldBe ControlStructureTypes.TRY
+      val List(body, rescueBody1, rescueBody2, rescueBody3, elseBody, ensureBody) = rescueNode.astChildren.l
+      body.ast.isLiteral.code.l shouldBe List("1")
+      body.order shouldBe 1
 
-    rescueBody1.ast.isLiteral.code.l shouldBe List("2")
-    rescueBody1.order shouldBe 2
+      rescueBody1.ast.isLiteral.code.l shouldBe List("2")
+      rescueBody1.order shouldBe 2
 
-    rescueBody2.ast.isLiteral.code.l shouldBe List("3")
-    rescueBody2.order shouldBe 2
+      rescueBody2.ast.isLiteral.code.l shouldBe List("3")
+      rescueBody2.order shouldBe 2
 
-    elseBody.ast.isLiteral.code.l shouldBe List("4")
-    elseBody.order shouldBe 2
+      rescueBody3.ast.isLiteral.code.l shouldBe List("4")
+      rescueBody3.order shouldBe 2
 
-    ensureBody.ast.isLiteral.code.l shouldBe List("5")
-    ensureBody.order shouldBe 3
+      elseBody.ast.isLiteral.code.l shouldBe List("5")
+      elseBody.order shouldBe 2
+
+      ensureBody.ast.isLiteral.code.l shouldBe List("6")
+      ensureBody.order shouldBe 3
+    }
+
+    {
+      val List(rescueNode) = cpg.method("test2").tryBlock.l
+      rescueNode.controlStructureType shouldBe ControlStructureTypes.TRY
+      val List(body, ensureBody) = rescueNode.astChildren.l
+      val xs = rescueNode.astChildren.order(2).l
+      xs.p.foreach(println)
+
+      body.ast.isLiteral.code.l shouldBe List("1")
+      body.order shouldBe 1
+
+      ensureBody.ast.isLiteral.code.l shouldBe List("2")
+      ensureBody.order shouldBe 3
+    }
   }
 }
