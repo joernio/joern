@@ -55,11 +55,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     builder(node, conditionAst, thenAst, elseAsts)
   }
 
-  private def astForThenClause(node: RubyNode): Ast = {
-    node match
-      case stmtList: StatementList => astForStatementList(stmtList)
-      case _                       => astForStatementList(StatementList(List(node))(node.span))
-  }
+  private def astForThenClause(node: RubyNode): Ast = astForStatementList(node.asStatementList)
 
   private def astsForElseClauses(
     elsIfClauses: List[RubyNode],
@@ -190,7 +186,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   private def astsForImplicitReturnStatement(node: RubyNode): List[Ast] = {
     node match
       case _: (ArrayLiteral | HashLiteral | StaticLiteral | BinaryExpression | UnaryExpression | SimpleIdentifier |
-            IfExpression | SimpleCall) =>
+            IfExpression | RescueExpression | SimpleCall) =>
         astForReturnStatement(ReturnExpression(List(node))(node.span)) :: Nil
       case node: SingleAssignment =>
         astForSingleAssignment(node) :: List(astForReturnStatement(ReturnExpression(List(node.lhs))(node.span)))
@@ -204,8 +200,10 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case node: MethodDeclaration =>
         List(astForMethodDeclaration(node), astForReturnMethodDeclarationSymbolName(node))
       case node =>
-        logger.warn(s"Implicit return here not supported yet: ${node.text} (${node.getClass.getSimpleName}), skipping")
-        List()
+        logger.warn(
+          s"Implicit return here not supported yet: ${node.text} (${node.getClass.getSimpleName}), only generating statement"
+        )
+        astsForStatement(node).toList
   }
 
   private def astForReturnFieldAccess(node: MemberAccess): Ast = {

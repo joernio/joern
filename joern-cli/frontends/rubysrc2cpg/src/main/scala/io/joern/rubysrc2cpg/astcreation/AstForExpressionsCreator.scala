@@ -4,8 +4,9 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.{RubyOperators, getBuiltInType}
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewLiteral}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewLiteral, NewControlStructure}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, ControlStructureTypes}
+import io.shiftleft.semanticcpg.language.NodeOrdering.nodeList
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -27,11 +28,16 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: HashLiteral           => astForHashLiteral(node)
     case node: Association           => astForAssociation(node)
     case node: IfExpression          => astForIfExpression(node)
+    case node: RescueExpression      => astForRescueExpression(node)
     case _                           => astForUnknown(node)
 
   protected def astForStaticLiteral(node: StaticLiteral): Ast = {
     Ast(literalNode(node, code(node), node.typeFullName))
   }
+
+  // Helper for nil literals to put in empty clauses
+  protected def astForNilLiteral: Ast = Ast(NewLiteral().code("nil").typeFullName(getBuiltInType(Defines.NilClass)))
+  protected def astForNilBlock: Ast   = blockAst(NewBlock(), List(astForNilLiteral))
 
   protected def astForDynamicLiteral(node: DynamicLiteral): Ast = {
     val fmtValueAsts = node.expressions.map {
@@ -230,8 +236,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       // We want to make sure there's always an «else» clause in a ternary operator.
       // The default value is a `nil` literal.
       val elseAsts_ = if (elseAsts.isEmpty) {
-        val nilLiteral = Ast(NewLiteral().code("nil").typeFullName(getBuiltInType(Defines.NilClass)))
-        List(blockAst(NewBlock(), List(nilLiteral)))
+        List(astForNilBlock)
       } else {
         elseAsts
       }
@@ -240,6 +245,33 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       callAst(call, conditionAst :: thenAst :: elseAsts_)
     }
     foldIfExpression(builder)(node)
+  }
+
+  protected def astForRescueExpression(node: RescueExpression): Ast = {
+    val tryAst = astForStatementList(node.body.asStatementList)
+    val rescueAsts = node.rescueClauses
+      .map {
+        case x: RescueClause =>
+          // TODO: add exception assignment
+          astForStatementList(x.thenClause.asStatementList)
+        case x => astForUnknown(x)
+      }
+    val elseAst = node.elseClause.map {
+      case x: ElseClause => astForStatementList(x.thenClause.asStatementList)
+      case x             => astForUnknown(x)
+    }
+    val ensureAst = node.ensureClause.map {
+      case x: EnsureClause => astForStatementList(x.thenClause.asStatementList)
+      case x               => astForUnknown(x)
+    }
+    tryCatchAst(
+      NewControlStructure()
+        .controlStructureType(ControlStructureTypes.TRY)
+        .code(code(node)),
+      tryAst,
+      rescueAsts ++ elseAst.toSeq,
+      ensureAst
+    )
   }
 
   protected def astForUnknown(node: RubyNode): Ast = {

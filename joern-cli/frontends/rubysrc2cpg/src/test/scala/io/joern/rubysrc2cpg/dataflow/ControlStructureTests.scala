@@ -128,4 +128,21 @@ class ControlStructureTests extends RubyCode2CpgFixture(withPostProcessing = tru
     flows.map(flowToResultPairs).toSet shouldBe
       Set(List(("x = 1", 2), ("x", 2), ("x * 2", 4), ("x = x * 2", 4), ("puts x", 6)))
   }
+
+  "flow through a `begin-rescue-end` expression" ignore {
+    val cpg = code("""
+        |x = 1
+        |y = begin
+        | x
+        |rescue
+        | x
+        |end
+        |puts y
+        |""".stripMargin)
+    val source = cpg.literal("1")
+    val sink   = cpg.method.name("puts").callIn.argument
+    val flows  = sink.reachableByFlows(source)
+    flows.map(flowToResultPairs).toSet should not be empty
+  }
+
 }
