@@ -1,5 +1,5 @@
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes,Operators}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.semanticcpg.language.*
 
@@ -275,7 +275,33 @@ class ControlStructureTests extends RubyCode2CpgFixture {
         |    6
         |  end
         |end
-        |
+        |""".stripMargin)
+
+    val List(rescueNode) = cpg.method("test1").tryBlock.l
+    rescueNode.controlStructureType shouldBe ControlStructureTypes.TRY
+    val List(body, rescueBody1, rescueBody2, rescueBody3, elseBody, ensureBody) = rescueNode.astChildren.l
+    body.ast.isLiteral.code.l shouldBe List("1")
+    body.order shouldBe 1
+
+    rescueBody1.ast.isLiteral.code.l shouldBe List("2")
+    rescueBody1.order shouldBe 2
+
+    rescueBody2.ast.isLiteral.code.l shouldBe List("3")
+    rescueBody2.order shouldBe 2
+
+    rescueBody3.ast.isLiteral.code.l shouldBe List("4")
+    rescueBody3.order shouldBe 2
+
+    elseBody.ast.isLiteral.code.l shouldBe List("5")
+    elseBody.order shouldBe 2
+
+    ensureBody.ast.isLiteral.code.l shouldBe List("6")
+    ensureBody.order shouldBe 3
+
+  }
+
+  "`begin ... ensure ... end is represented by a `TRY` CONTROL_STRUCTURE node" in {
+    val cpg = code("""
         |def test2
         |  begin
         |   1   
@@ -284,42 +310,16 @@ class ControlStructureTests extends RubyCode2CpgFixture {
         |  end
         |end
         |""".stripMargin)
+    val List(rescueNode) = cpg.method("test2").tryBlock.l
+    rescueNode.controlStructureType shouldBe ControlStructureTypes.TRY
+    val List(body, ensureBody) = rescueNode.astChildren.l
+    val xs                     = rescueNode.astChildren.order(2).l
+    xs.p.foreach(println)
 
-    {
-      val List(rescueNode) = cpg.method("test1").tryBlock.l
-      rescueNode.controlStructureType shouldBe ControlStructureTypes.TRY
-      val List(body, rescueBody1, rescueBody2, rescueBody3, elseBody, ensureBody) = rescueNode.astChildren.l
-      body.ast.isLiteral.code.l shouldBe List("1")
-      body.order shouldBe 1
+    body.ast.isLiteral.code.l shouldBe List("1")
+    body.order shouldBe 1
 
-      rescueBody1.ast.isLiteral.code.l shouldBe List("2")
-      rescueBody1.order shouldBe 2
-
-      rescueBody2.ast.isLiteral.code.l shouldBe List("3")
-      rescueBody2.order shouldBe 2
-
-      rescueBody3.ast.isLiteral.code.l shouldBe List("4")
-      rescueBody3.order shouldBe 2
-
-      elseBody.ast.isLiteral.code.l shouldBe List("5")
-      elseBody.order shouldBe 2
-
-      ensureBody.ast.isLiteral.code.l shouldBe List("6")
-      ensureBody.order shouldBe 3
-    }
-
-    {
-      val List(rescueNode) = cpg.method("test2").tryBlock.l
-      rescueNode.controlStructureType shouldBe ControlStructureTypes.TRY
-      val List(body, ensureBody) = rescueNode.astChildren.l
-      val xs = rescueNode.astChildren.order(2).l
-      xs.p.foreach(println)
-
-      body.ast.isLiteral.code.l shouldBe List("1")
-      body.order shouldBe 1
-
-      ensureBody.ast.isLiteral.code.l shouldBe List("2")
-      ensureBody.order shouldBe 3
-    }
+    ensureBody.ast.isLiteral.code.l shouldBe List("2")
+    ensureBody.order shouldBe 3
   }
 }
