@@ -13,7 +13,7 @@ class ParameterTests extends CSharpCode2CpgFixture {
       val x          = cpg.method.nameExact("Main").head
       val List(args) = x.parameter.l: @unchecked
       args.name shouldBe "args"
-      args.typeFullName shouldBe "string[]"
+      args.typeFullName shouldBe "System.String[]"
       args.code shouldBe "string[] args"
       args.index shouldBe 1
       args.isVariadic shouldBe false
@@ -57,7 +57,7 @@ class ParameterTests extends CSharpCode2CpgFixture {
       a.isVariadic shouldBe false
 
       b.name shouldBe "b"
-      b.typeFullName shouldBe "int"
+      b.typeFullName shouldBe "System.Int32"
       b.code shouldBe "int b"
       b.index shouldBe 2
       b.isVariadic shouldBe false
