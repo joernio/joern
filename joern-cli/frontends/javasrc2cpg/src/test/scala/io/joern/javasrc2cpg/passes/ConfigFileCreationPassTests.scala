@@ -36,7 +36,9 @@ class ConfigFileCreationPassTests extends JavaSrcCode2CpgFixture {
       Paths.get(absoluteConfigDir, "struts.xml").toString,
       Paths.get(absoluteConfigDir, "web.xml").toString,
       Paths.get(absoluteConfigDir, "build.gradle").toString,
-      Paths.get(absoluteConfigDir, "build.gradle.kts").toString
+      Paths.get(absoluteConfigDir, "build.gradle.kts").toString,
+      Paths.get(absoluteConfigDir, "basic.yaml").toString,
+      Paths.get(absoluteConfigDir, "basic.yml").toString
     )
   }
 
