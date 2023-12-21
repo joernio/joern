@@ -200,7 +200,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case node: MethodDeclaration =>
         List(astForMethodDeclaration(node), astForReturnMethodDeclarationSymbolName(node))
       case node =>
-        logger.warn(s"Implicit return here not supported yet: ${node.text} (${node.getClass.getSimpleName}), only generating statement")
+        logger.warn(
+          s"Implicit return here not supported yet: ${node.text} (${node.getClass.getSimpleName}), only generating statement"
+        )
         astsForStatement(node).toList
   }
 
