@@ -12,8 +12,7 @@ import scala.util.Try
   */
 object ConcurrentTaskExecutionUtil {
 
-  private val MAX_QUEUE_SIZE_DEFAULT        = 2 + 4 * Runtime.getRuntime.availableProcessors()
-  private implicit val ec: ExecutionContext = ExecutionContextProvider.getExecutionContext
+  private val MAX_QUEUE_SIZE_DEFAULT = 2 + 4 * Runtime.getRuntime.availableProcessors()
 
   /** Uses the parallel queue strategy from [[io.shiftleft.passes.ConcurrentWriterCpgPass]] to offer a generic means of
     * executing an iterator of tasks that share an output type in parallel.
@@ -29,7 +28,9 @@ object ConcurrentTaskExecutionUtil {
     * @see
     *   [[io.shiftleft.passes.ConcurrentWriterCpgPass]]
     */
-  def runInParallel[V](tasks: Iterator[() => V], maxQueueSize: Int = MAX_QUEUE_SIZE_DEFAULT): List[Try[V]] = {
+  def runInParallel[V](tasks: Iterator[() => V], maxQueueSize: Int = MAX_QUEUE_SIZE_DEFAULT)(implicit
+    ec: ExecutionContext = ExecutionContextProvider.getExecutionContext
+  ): List[Try[V]] = {
     val completionQueue = mutable.ArrayDeque.empty[Future[V]]
     val results         = mutable.ArrayBuffer.empty[Try[V]]
 
