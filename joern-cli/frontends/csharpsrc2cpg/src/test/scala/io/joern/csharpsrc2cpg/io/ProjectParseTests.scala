@@ -4,12 +4,12 @@ import better.files.File
 import io.joern.csharpsrc2cpg.passes.AstCreationPass
 import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
 import io.joern.csharpsrc2cpg.utils.DotNetAstGenRunner
-import io.joern.csharpsrc2cpg.{CSharpSrc2Cpg, Config}
+import io.joern.csharpsrc2cpg.{CSharpSrc2Cpg, Config, TypeMap}
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
 import io.joern.x2cpg.utils.Report
 import io.shiftleft.codepropertygraph.Cpg
-import org.scalatest.BeforeAndAfterAll
 import io.shiftleft.semanticcpg.language.*
+import org.scalatest.BeforeAndAfterAll
 
 class ProjectParseTests extends CSharpCode2CpgFixture with BeforeAndAfterAll {
 
@@ -56,7 +56,8 @@ class ProjectParseTests extends CSharpCode2CpgFixture with BeforeAndAfterAll {
         val cpg          = newEmptyCpg()
         val config       = Config().withInputPath(projectDir.toString).withOutputPath(tmpDir.toString)
         val astGenResult = new DotNetAstGenRunner(config).execute(tmpDir)
-        val astCreators  = CSharpSrc2Cpg.processAstGenRunnerResults(astGenResult.parsedFiles, config)
+        val typeMap      = new TypeMap(astGenResult)
+        val astCreators  = CSharpSrc2Cpg.processAstGenRunnerResults(astGenResult.parsedFiles, config, typeMap)
         new AstCreationPass(cpg, astCreators, new Report()).createAndApply()
         f(cpg)
       }
