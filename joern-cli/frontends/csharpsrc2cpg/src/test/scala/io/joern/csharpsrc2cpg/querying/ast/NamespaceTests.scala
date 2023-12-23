@@ -14,7 +14,7 @@ class NamespaceTests extends CSharpCode2CpgFixture {
       helloWorld.code shouldBe "namespace HelloWorld"
       helloWorld.filename shouldBe "Program.cs"
       helloWorld.lineNumber shouldBe Some(2)
-      helloWorld.columnNumber shouldBe Some(20)
+      helloWorld.columnNumber shouldBe Some(1)
       helloWorld.fullName shouldBe "HelloWorld"
     }
 

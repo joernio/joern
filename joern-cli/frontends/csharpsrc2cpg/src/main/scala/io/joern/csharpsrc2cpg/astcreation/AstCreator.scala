@@ -1,5 +1,6 @@
 package io.joern.csharpsrc2cpg.astcreation
 
+import io.joern.csharpsrc2cpg.TypeMap
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.astgen.{AstGenNodeBuilder, ParserResult}
@@ -13,7 +14,7 @@ import ujson.Value
 import java.math.BigInteger
 import java.security.MessageDigest
 
-class AstCreator(val relativeFileName: String, val parserResult: ParserResult)(implicit
+class AstCreator(val relativeFileName: String, val parserResult: ParserResult, val typeMap: TypeMap)(implicit
   withSchemaValidation: ValidationMode
 ) extends AstCreatorBase(relativeFileName)
     with AstCreatorHelper

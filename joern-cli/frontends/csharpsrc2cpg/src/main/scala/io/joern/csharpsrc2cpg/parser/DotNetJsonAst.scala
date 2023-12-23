@@ -7,13 +7,15 @@ object DotNetJsonAst {
   private val logger                     = LoggerFactory.getLogger(getClass)
   private val QualifiedClassName: String = DotNetJsonAst.getClass.getName
 
-  def fromString(nodeName: String, fileName: String): DotNetParserNode = {
+  def fromString(nodeName: String, fileName: Option[String] = None): DotNetParserNode = {
     try {
       val clazz = Class.forName(s"$QualifiedClassName${nodeName.stripPrefix("ast.")}$$")
       clazz.getField("MODULE$").get(clazz).asInstanceOf[DotNetParserNode]
     } catch {
       case _: Throwable =>
-        logger.warn(s"`$nodeName` AST type is not handled. We found this inside '$fileName'")
+        logger.warn(
+          s"`$nodeName` AST type is not handled.${fileName.map(x => s" We found this inside '$x'").getOrElse("")}"
+        )
         NotHandledType
     }
   }

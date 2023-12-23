@@ -13,14 +13,13 @@ import scala.util.Try
 trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def astForNamespaceDeclaration(namespace: DotNetNodeInfo): Seq[Ast] = {
-    val nameNode = createDotNetNodeInfo(namespace.json(ParserKeys.Name))
-    val fullName = astFullName(nameNode)
+    val fullName = astFullName(namespace)
     val name     = fullName.split('.').filterNot(_.isBlank).lastOption.getOrElse(fullName)
     val namespaceBlock = NewNamespaceBlock()
       .name(name)
       .code(code(namespace))
-      .lineNumber(line(nameNode))
-      .columnNumber(columnEnd(nameNode))
+      .lineNumber(line(namespace))
+      .columnNumber(columnEnd(namespace))
       .filename(relativeFileName)
       .fullName(fullName)
     methodAstParentStack.push(namespaceBlock)
@@ -30,7 +29,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   protected def astForClassDeclaration(classDecl: DotNetNodeInfo): Seq[Ast] = {
-    val name     = nameFromIdentifier(classDecl)
+    val name     = nameFromNode(classDecl)
     val fullName = astFullName(classDecl)
     val typeDecl = typeDeclNode(classDecl, name, fullName, relativeFileName, code(classDecl))
     methodAstParentStack.push(typeDecl)
@@ -86,7 +85,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   protected def astForMethodDeclaration(methodDecl: DotNetNodeInfo): Seq[Ast] = {
-    val name = nameFromIdentifier(methodDecl)
+    val name = nameFromNode(methodDecl)
     val params = methodDecl
       .json(ParserKeys.ParameterList)
       .obj(ParserKeys.Parameters)
