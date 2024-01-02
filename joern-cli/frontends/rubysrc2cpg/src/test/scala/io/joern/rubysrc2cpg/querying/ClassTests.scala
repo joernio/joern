@@ -18,7 +18,7 @@ class ClassTests extends RubyCode2CpgFixture {
     classC.lineNumber shouldBe Some(2)
     classC.baseType.l shouldBe List()
     classC.member.l shouldBe List()
-    classC.method.l shouldBe List()
+    classC.method.name.l shouldBe List("<init>")
   }
 
   "`class C < D` is represented by a TYPE_DECL node inheriting from `D`" in {
@@ -34,7 +34,7 @@ class ClassTests extends RubyCode2CpgFixture {
     classC.fullName shouldBe "Test0.rb:<global>::program.C"
     classC.lineNumber shouldBe Some(2)
     classC.member.l shouldBe List()
-    classC.method.l shouldBe List()
+    classC.method.name.l shouldBe List("<init>")
 
     val List(typeD) = classC.baseType.l
     typeD.name shouldBe "D"
