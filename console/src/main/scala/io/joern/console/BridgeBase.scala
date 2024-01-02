@@ -9,6 +9,7 @@ import java.io.{InputStream, PrintStream, File as JFile}
 import java.net.URLClassLoader
 import java.nio.file.{Files, Path, Paths}
 import java.util.stream.Collectors
+import org.apache.commons.lang3.StringEscapeUtils
 import scala.util.{Failure, Success, Try}
 
 case class Config(
@@ -328,7 +329,8 @@ trait PluginHandling { this: BridgeBase =>
   private def loadOrCreateCpg(config: Config, productName: String): String = {
 
     val bundleName = config.pluginToRun.get
-    val src        = better.files.File(config.src.get).path.toAbsolutePath.toString
+    val srcRaw     = better.files.File(config.src.get).path.toAbsolutePath.toString
+    val src        = StringEscapeUtils.escapeJava(srcRaw)
     val language   = languageFromConfig(config, src)
 
     val storeCode = if (config.store) { "save" }
