@@ -14,8 +14,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val isInTypeDecl = getEnclosingAstType == "TYPE_DECL"
     val methodName = node.methodName match {
       case "initialize" if isInTypeDecl =>
-        hasInitializeStack.pop()
-        hasInitializeStack.push(true)
+        setNoDefaultConstructorForEnclosingTypeDecl
         "<init>"
       case name => name
     }
