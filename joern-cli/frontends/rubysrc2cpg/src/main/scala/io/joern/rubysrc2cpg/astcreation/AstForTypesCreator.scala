@@ -32,7 +32,11 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         None
   }
 
-  private def astForSimpleNamedClassDeclaration(node: ClassDeclaration, nameIdentifier: SimpleIdentifier, defaultCtor: Boolean): Ast = {
+  private def astForSimpleNamedClassDeclaration(
+    node: ClassDeclaration,
+    nameIdentifier: SimpleIdentifier,
+    defaultCtor: Boolean
+  ): Ast = {
     val className    = nameIdentifier.text
     val inheritsFrom = node.baseClass.flatMap(getBaseClassName).toList
     val typeDecl = typeDeclNode(
@@ -57,7 +61,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         val initBody   = StatementList(List())(bodyStart)
         val methodDecl = astForMethodDeclaration(MethodDeclaration("<init>", List(), initBody)(bodyStart))
         methodDecl :: bodyAsts
-      case bodyAsts  => bodyAsts
+      case bodyAsts => bodyAsts
     }
     shouldGenerateDefaultConstructorStack.pop()
     scope.popScope()

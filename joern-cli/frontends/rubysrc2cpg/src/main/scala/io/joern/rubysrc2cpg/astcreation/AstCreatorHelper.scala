@@ -22,7 +22,7 @@ trait AstCreatorHelper { this: AstCreator =>
    * TODO: this seems too specific to add another stack, perhaps there is a better way in checking the class body. There are some possible
    * nesting edge cases which this handles better unless you recursively traverse the result of astsFor* on the class body. How common it would be in actual Ruby code is uncertain */
   protected val shouldGenerateDefaultConstructorStack: Stack[Boolean] = new Stack()
-  protected def setNoDefaultConstructorForEnclosingTypeDecl : Unit = {
+  protected def setNoDefaultConstructorForEnclosingTypeDecl: Unit = {
     shouldGenerateDefaultConstructorStack.pop()
     shouldGenerateDefaultConstructorStack.push(false)
   }
