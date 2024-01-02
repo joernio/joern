@@ -48,10 +48,18 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     )
     methodAstParentStack.push(typeDecl)
     scope.pushNewScope(typeDecl)
-    // TODO: ctor
+    hasInitializeStack.push(false)
     val classBody =
       node.body.asInstanceOf[StatementList] // for now (bodyStatement is a superset of stmtList)
-    val classBodyAsts = classBody.statements.flatMap(astsForStatement)
+    val classBodyAsts = classBody.statements.flatMap(astsForStatement) match {
+      case bodyAsts if hasInitializeStack.head => bodyAsts
+      case bodyAsts =>
+        val bodyStart  = classBody.span.spanStart
+        val initBody   = StatementList(List())(bodyStart)
+        val methodDecl = astForMethodDeclaration(MethodDeclaration("<init>", List(), initBody)(bodyStart))
+        methodDecl :: bodyAsts
+    }
+    hasInitializeStack.pop()
     scope.popScope()
     methodAstParentStack.pop()
     Ast(typeDecl).withChildren(classBodyAsts)

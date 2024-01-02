@@ -9,11 +9,21 @@ import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def astForMethodDeclaration(node: MethodDeclaration): Ast = {
+
+    // Special case constructor methods
+    val isInTypeDecl = getEnclosingAstType == "TYPE_DECL"
+    val methodName = node.methodName match {
+      case "initialize" if isInTypeDecl =>
+        hasInitializeStack.pop()
+        hasInitializeStack.push(true)
+        "<init>"
+      case name => name
+    }
     // TODO: body could be a try
     val method = methodNode(
       node = node,
-      name = node.methodName,
-      fullName = computeMethodFullName(node.methodName),
+      name = methodName,
+      fullName = computeMethodFullName(methodName),
       code = code(node),
       signature = None,
       fileName = relativeFileName
