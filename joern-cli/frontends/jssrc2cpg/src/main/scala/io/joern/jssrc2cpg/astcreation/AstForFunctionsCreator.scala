@@ -5,7 +5,7 @@ import io.joern.jssrc2cpg.parser.BabelAst.*
 import io.joern.jssrc2cpg.parser.BabelNodeInfo
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders.{newBindingNode, newModifierNode}
-import io.joern.x2cpg.{Ast, AstNodeBuilder, ValidationMode}
+import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier as _, *}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, EvaluationStrategies, ModifierTypes}
@@ -338,7 +338,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       )
 
     val mAst = if (methodBlockContent.isEmpty) {
-      methodStubAst(methodNode_, thisNode +: paramNodes, methodReturnNode, modifiers)
+      methodStubAst(methodNode_, (thisNode +: paramNodes).map(Ast(_)), methodReturnNode, modifiers)
     } else {
       setArgumentIndices(methodBlockContent)
       val bodyAst = blockAst(NewBlock(), methodBlockContent)

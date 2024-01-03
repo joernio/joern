@@ -81,12 +81,12 @@ abstract class AstCreatorBase(filename: String)(implicit withSchemaValidation: V
     */
   def methodStubAst(
     method: NewMethod,
-    parameters: Seq[NewMethodParameterIn],
+    parameters: Seq[Ast],
     methodReturn: NewMethodReturn,
     modifiers: Seq[NewModifier] = Nil
   ): Ast =
     Ast(method)
-      .withChildren(parameters.map(Ast(_)))
+      .withChildren(parameters)
       .withChild(Ast(NewBlock()))
       .withChildren(modifiers.map(Ast(_)))
       .withChild(Ast(methodReturn))

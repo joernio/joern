@@ -13,7 +13,10 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewAnnotationParameterAssi
 
 trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  private def astForAccessorBlockSyntax(node: AccessorBlockSyntax): Ast                       = notHandledYet(node)
+  private def astForAccessorBlockSyntax(node: AccessorBlockSyntax): Ast = {
+    astForNode(node.accessors)
+  }
+
   private def astForAccessorEffectSpecifiersSyntax(node: AccessorEffectSpecifiersSyntax): Ast = notHandledYet(node)
   private def astForAccessorParametersSyntax(node: AccessorParametersSyntax): Ast             = notHandledYet(node)
 
