@@ -71,32 +71,30 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def isStaticMember(node: DeclSyntax): Boolean = node match {
-    case d: AccessorDeclSyntax          => d.modifier.map(code).exists(_.contains("static "))
-    case d: ActorDeclSyntax             => code(d.modifiers).contains("static ")
-    case d: AssociatedTypeDeclSyntax    => code(d.modifiers).contains("static ")
-    case d: ClassDeclSyntax             => code(d.modifiers).contains("static ")
-    case d: DeinitializerDeclSyntax     => code(d.modifiers).contains("static ")
-    case d: EditorPlaceholderDeclSyntax => code(d.modifiers).contains("static ")
-    case d: EnumCaseDeclSyntax          => code(d.modifiers).contains("static ")
-    case d: EnumDeclSyntax              => code(d.modifiers).contains("static ")
-    case d: ExtensionDeclSyntax         => code(d.modifiers).contains("static ")
-    case d: FunctionDeclSyntax          => code(d.modifiers).contains("static ")
+    case d: AccessorDeclSyntax          => d.modifier.map(code).exists(_.contains("static"))
+    case d: ActorDeclSyntax             => d.modifiers.children.map(c => code(c.name)).contains("static")
+    case d: AssociatedTypeDeclSyntax    => d.modifiers.children.map(c => code(c.name)).contains("static")
+    case d: ClassDeclSyntax             => d.modifiers.children.map(c => code(c.name)).contains("static")
+    case d: DeinitializerDeclSyntax     => d.modifiers.children.map(c => code(c.name)).contains("static")
+    case d: EditorPlaceholderDeclSyntax => d.modifiers.children.map(c => code(c.name)).contains("static")
+    case d: EnumCaseDeclSyntax          => d.modifiers.children.map(c => code(c.name)).contains("static")
+    case d: EnumDeclSyntax              => d.modifiers.children.map(c => code(c.name)).contains("static")
+    case d: ExtensionDeclSyntax         => d.modifiers.children.map(c => code(c.name)).contains("static")
+    case d: FunctionDeclSyntax          => d.modifiers.children.map(c => code(c.name)).contains("static")
     case _: IfConfigDeclSyntax          => false
-    case d: ImportDeclSyntax            => code(d.modifiers).contains("static ")
-    case d: InitializerDeclSyntax       => code(d.modifiers).contains("static ")
-    case d: MacroDeclSyntax             => code(d.modifiers).contains("static ")
-    case d: MacroExpansionDeclSyntax    => code(d.modifiers).contains("static ")
-    case d: MissingDeclSyntax           => code(d.modifiers).contains("static ")
+    case d: ImportDeclSyntax            => d.modifiers.children.map(c => code(c.name)).contains("static")
+    case d: InitializerDeclSyntax       => d.modifiers.children.map(c => code(c.name)).contains("static")
+    case d: MacroDeclSyntax             => d.modifiers.children.map(c => code(c.name)).contains("static")
+    case d: MacroExpansionDeclSyntax    => d.modifiers.children.map(c => code(c.name)).contains("static")
+    case d: MissingDeclSyntax           => d.modifiers.children.map(c => code(c.name)).contains("static")
     case _: OperatorDeclSyntax          => false
     case _: PoundSourceLocationSyntax   => false
-    case d: PrecedenceGroupDeclSyntax   => code(d.modifiers).contains("static ")
-    case d: ProtocolDeclSyntax          => code(d.modifiers).contains("static ")
-    case d: StructDeclSyntax            => code(d.modifiers).contains("static ")
-    case d: SubscriptDeclSyntax         => code(d.modifiers).contains("static ")
-    case d: TypeAliasDeclSyntax         => code(d.modifiers).contains("static ")
-    case d: VariableDeclSyntax =>
-      val x = code(d)
-      d.modifiers.children.map(c => code(c.name)).contains("static")
+    case d: PrecedenceGroupDeclSyntax   => d.modifiers.children.map(c => code(c.name)).contains("static")
+    case d: ProtocolDeclSyntax          => d.modifiers.children.map(c => code(c.name)).contains("static")
+    case d: StructDeclSyntax            => d.modifiers.children.map(c => code(c.name)).contains("static")
+    case d: SubscriptDeclSyntax         => d.modifiers.children.map(c => code(c.name)).contains("static")
+    case d: TypeAliasDeclSyntax         => d.modifiers.children.map(c => code(c.name)).contains("static")
+    case d: VariableDeclSyntax          => d.modifiers.children.map(c => code(c.name)).contains("static")
   }
 
   private def createFakeConstructor(node: ClassDeclSyntax, methodBlockContent: List[Ast] = List.empty): AstAndMethod = {
