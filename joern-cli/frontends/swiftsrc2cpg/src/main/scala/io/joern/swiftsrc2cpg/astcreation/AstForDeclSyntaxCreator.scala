@@ -95,15 +95,23 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     case d: VariableDeclSyntax          => d.modifiers.children.map(c => code(c.name)).contains("static")
   }
 
-  private def createFakeConstructor(node: ClassDeclSyntax, methodBlockContent: List[Ast] = List.empty): AstAndMethod = {
-    val (methodName, methodFullName) = calcTypeNameAndFullName("init")
-    val methodNode_                  = methodNode(node, methodName, "init", methodFullName, None, parserResult.filename)
+  private def createFakeConstructor(
+    node: ClassDeclSyntax | ExtensionDeclSyntax,
+    methodBlockContent: List[Ast] = List.empty
+  ): AstAndMethod = {
+    val constructorName              = io.joern.x2cpg.Defines.ConstructorMethodName
+    val (methodName, methodFullName) = calcTypeNameAndFullName(constructorName)
+    val methodNode_ = methodNode(node, methodName, constructorName, methodFullName, None, parserResult.filename)
 
     val modifiers = Seq(NewModifier().modifierType(ModifierTypes.CONSTRUCTOR))
 
     methodAstParentStack.push(methodNode_)
 
-    val returnType = calcTypeNameAndFullName(code(node.name))._2
+    val name = node match {
+      case c: ClassDeclSyntax     => code(c.name)
+      case e: ExtensionDeclSyntax => code(e.extendedType)
+    }
+    val returnType = calcTypeNameAndFullName(name)._2
     val methodReturnNode =
       newMethodReturnNode(returnType, dynamicTypeHintFullName = None, line = line(node), column = column(node))
 
@@ -162,32 +170,26 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def findDeclConstructor(decl: ClassDeclSyntax | ExtensionDeclSyntax): Option[DeclSyntax] =
     declMembers(decl).find(isConstructor)
 
-  private def createClassConstructor(node: ClassDeclSyntax, constructorContent: List[Ast]): AstAndMethod =
-    findDeclConstructor(node) match {
-      case Some(constructor: InitializerDeclSyntax) =>
-        val result = astForFunctionLike(constructor, methodBlockContent = constructorContent)
-        diffGraph.addEdge(result.method, NewModifier().modifierType(ModifierTypes.CONSTRUCTOR), EdgeTypes.AST)
-        result
-      case _ =>
-        createFakeConstructor(node, methodBlockContent = constructorContent)
-    }
-
-  private def createExtensionConstructor(
-    node: ExtensionDeclSyntax,
+  private def createDeclConstructor(
+    node: ClassDeclSyntax | ExtensionDeclSyntax,
     constructorContent: List[Ast],
     constructorBlock: Ast = Ast()
-  ): Unit =
+  ): Option[AstAndMethod] =
     findDeclConstructor(node) match {
       case Some(constructor: InitializerDeclSyntax) =>
         val result = astForFunctionLike(constructor, methodBlockContent = constructorContent)
         diffGraph.addEdge(result.method, NewModifier().modifierType(ModifierTypes.CONSTRUCTOR), EdgeTypes.AST)
-      case _ =>
+        Some(result)
+      case _ if constructorBlock.root.isDefined =>
         constructorBlock.root.foreach { r =>
           constructorContent.foreach { c =>
             Ast.storeInDiffGraph(c, diffGraph)
             c.root.foreach(diffGraph.addEdge(r, _, EdgeTypes.AST))
           }
         }
+        None
+      case _ =>
+        Some(createFakeConstructor(node, methodBlockContent = constructorContent))
     }
 
   private def isClassMethodOrUninitializedMember(node: DeclSyntax): Boolean =
@@ -203,104 +205,9 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     // - handle genericWhereClause
     val attributes = node.attributes.children.map(astForNode)
     val modifiers  = modifiersForDecl(node)
-    val inheritsFrom = node.inheritanceClause match {
-      case Some(value) => value.inheritedTypes.children.map(c => code(c.`type`))
-      case None        => Seq.empty
-    }
+    val inherits   = inheritsFrom(node)
 
     val (typeName, typeFullName) = calcTypeNameAndFullName(code(node.name))
-    registerType(typeFullName)
-
-    val astParentType     = methodAstParentStack.head.label
-    val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
-
-    val typeDeclNode_ = typeDeclNode(
-      node,
-      typeName,
-      typeFullName,
-      parserResult.filename,
-      s"class $typeName",
-      astParentType,
-      astParentFullName,
-      inherits = inheritsFrom
-    )
-    seenAliasTypes.add(typeDeclNode_)
-
-    attributes.foreach { ast =>
-      Ast.storeInDiffGraph(ast, diffGraph)
-      ast.root.foreach(r => diffGraph.addEdge(typeDeclNode_, r, EdgeTypes.AST))
-    }
-
-    modifiers.foreach { mod =>
-      diffGraph.addEdge(typeDeclNode_, mod, EdgeTypes.AST)
-    }
-
-    diffGraph.addEdge(methodAstParentStack.head, typeDeclNode_, EdgeTypes.AST)
-
-    val typeRefNode_ = typeRefNode(node, s"class $typeName", typeFullName)
-
-    methodAstParentStack.push(typeDeclNode_)
-    dynamicInstanceTypeStack.push(typeFullName)
-    typeRefIdStack.push(typeRefNode_)
-
-    scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode_, None)
-
-    val allClassMembers = declMembers(node, withConstructor = false).toList
-
-    // adding all other members and retrieving their initialization calls
-    val memberInitCalls = allClassMembers
-      .filter(m => !isStaticMember(m) && isInitializedMember(m))
-      .map(m => astForClassMember(m, typeDeclNode_))
-
-    val constructor = createClassConstructor(node, memberInitCalls)
-
-    // adding all class methods / functions and uninitialized, non-static members
-    allClassMembers
-      .filter(member => isClassMethodOrUninitializedMember(member) && !isStaticMember(member))
-      .foreach(m => astForClassMember(m, typeDeclNode_))
-
-    // adding all static members and retrieving their initialization calls
-    val staticMemberInitCalls =
-      allClassMembers.filter(isStaticMember).map(m => astForClassMember(m, typeDeclNode_))
-
-    methodAstParentStack.pop()
-    dynamicInstanceTypeStack.pop()
-    typeRefIdStack.pop()
-    scope.popScope()
-
-    if (staticMemberInitCalls.nonEmpty) {
-      val init = staticInitMethodAstAndBlock(
-        staticMemberInitCalls,
-        s"$typeFullName:${io.joern.x2cpg.Defines.StaticInitMethodName}",
-        None,
-        Defines.Any
-      )
-      Ast.storeInDiffGraph(init.ast, diffGraph)
-      diffGraph.addEdge(typeDeclNode_, init.method, EdgeTypes.AST)
-      global.seenTypeDecls.put(typeDeclNode_, global.ConstructorBlocks(constructor.methodBlock, init.methodBlock))
-    } else {
-      global.seenTypeDecls.put(typeDeclNode_, global.ConstructorBlocks(constructor.methodBlock, Ast()))
-    }
-    Ast(typeRefNode_)
-  }
-
-  private def astForDeinitializerDeclSyntax(node: DeinitializerDeclSyntax): Ast         = notHandledYet(node)
-  private def astForEditorPlaceholderDeclSyntax(node: EditorPlaceholderDeclSyntax): Ast = notHandledYet(node)
-  private def astForEnumCaseDeclSyntax(node: EnumCaseDeclSyntax): Ast                   = notHandledYet(node)
-  private def astForEnumDeclSyntax(node: EnumDeclSyntax): Ast                           = notHandledYet(node)
-
-  private def astForExtensionDeclSyntax(node: ExtensionDeclSyntax): Ast = {
-    // TODO:
-    // - handle genericParameterClause
-    // - handle genericWhereClause
-    val attributes = node.attributes.children.map(astForNode)
-    val modifiers  = modifiersForDecl(node)
-    val inheritsFrom = node.inheritanceClause match {
-      case Some(value) => value.inheritedTypes.children.map(c => code(c.`type`))
-      case None        => Seq.empty
-    }
-
-    val (typeName, typeFullName) = calcTypeNameAndFullName(code(node.extendedType))
     val existingTypeDecl         = global.seenTypeDecls.keys().asScala.find(_.name == typeName)
 
     if (existingTypeDecl.isEmpty) {
@@ -317,7 +224,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         s"class $typeName",
         astParentType,
         astParentFullName,
-        inherits = inheritsFrom
+        inherits = inherits
       )
       seenAliasTypes.add(typeDeclNode_)
 
@@ -347,7 +254,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         .filter(m => !isStaticMember(m) && isInitializedMember(m))
         .map(m => astForClassMember(m, typeDeclNode_))
 
-      createExtensionConstructor(node, memberInitCalls)
+      val constructor = createDeclConstructor(node, memberInitCalls)
 
       // adding all class methods / functions and uninitialized, non-static members
       allClassMembers
@@ -372,6 +279,16 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         )
         Ast.storeInDiffGraph(init.ast, diffGraph)
         diffGraph.addEdge(typeDeclNode_, init.method, EdgeTypes.AST)
+        if (constructor.isDefined) {
+          global.seenTypeDecls.put(
+            typeDeclNode_,
+            global.ConstructorBlocks(constructor.get.methodBlock, init.methodBlock)
+          )
+        }
+      } else {
+        if (constructor.isDefined) {
+          global.seenTypeDecls.put(typeDeclNode_, global.ConstructorBlocks(constructor.get.methodBlock, Ast()))
+        }
       }
       Ast(typeRefNode_)
     } else {
@@ -379,7 +296,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       val constructorBlock       = global.seenTypeDecls.get(typeDeclNode_).constructorBlock
       val staticConstructorBlock = global.seenTypeDecls.get(typeDeclNode_).staticConstructorBlock
 
-      typeDeclNode_.inheritsFromTypeFullName(typeDeclNode_.inheritsFromTypeFullName ++ inheritsFrom)
+      addInheritsFrom(typeDeclNode_, inherits)
       methodAstParentStack.push(typeDeclNode_)
       dynamicInstanceTypeStack.push(typeFullName)
 
@@ -392,7 +309,180 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         .filter(m => !isStaticMember(m) && isInitializedMember(m))
         .map(m => astForClassMember(m, typeDeclNode_))
 
-      createExtensionConstructor(node, memberInitCalls, constructorBlock)
+      createDeclConstructor(node, memberInitCalls, constructorBlock)
+
+      // adding all class methods / functions and uninitialized, non-static members
+      allClassMembers
+        .filter(member => isClassMethodOrUninitializedMember(member) && !isStaticMember(member))
+        .foreach(m => astForClassMember(m, typeDeclNode_))
+
+      // adding all static members and retrieving their initialization calls
+      val staticMemberInitCalls =
+        allClassMembers.filter(isStaticMember).map(m => astForClassMember(m, typeDeclNode_))
+
+      methodAstParentStack.pop()
+      dynamicInstanceTypeStack.pop()
+      scope.popScope()
+
+      if (staticMemberInitCalls.nonEmpty) {
+        if (staticConstructorBlock.nodes.isEmpty) {
+          val init = staticInitMethodAstAndBlock(
+            staticMemberInitCalls,
+            s"$typeFullName:${io.joern.x2cpg.Defines.StaticInitMethodName}",
+            None,
+            Defines.Any
+          )
+          Ast.storeInDiffGraph(init.ast, diffGraph)
+          diffGraph.addEdge(typeDeclNode_, init.method, EdgeTypes.AST)
+        } else {
+          val block = staticConstructorBlock.root.get
+          staticMemberInitCalls.foreach { s =>
+            Ast.storeInDiffGraph(s, diffGraph)
+            s.root.foreach(diffGraph.addEdge(block, _, EdgeTypes.AST))
+          }
+        }
+      }
+
+      Ast()
+    }
+  }
+
+  private def astForDeinitializerDeclSyntax(node: DeinitializerDeclSyntax): Ast         = notHandledYet(node)
+  private def astForEditorPlaceholderDeclSyntax(node: EditorPlaceholderDeclSyntax): Ast = notHandledYet(node)
+  private def astForEnumCaseDeclSyntax(node: EnumCaseDeclSyntax): Ast                   = notHandledYet(node)
+  private def astForEnumDeclSyntax(node: EnumDeclSyntax): Ast                           = notHandledYet(node)
+
+  private def inheritsFrom(node: ClassDeclSyntax | ExtensionDeclSyntax): Seq[String] = {
+    val clause = node match {
+      case c: ClassDeclSyntax     => c.inheritanceClause
+      case e: ExtensionDeclSyntax => e.inheritanceClause
+    }
+    val inheritsFrom = clause match {
+      case Some(value) => value.inheritedTypes.children.map(c => code(c.`type`))
+      case None        => Seq.empty
+    }
+    inheritsFrom.distinct.sorted
+  }
+
+  private def addInheritsFrom(typeDecl: NewTypeDecl, inherits: Seq[String]): Unit = {
+    typeDecl.inheritsFromTypeFullName((typeDecl.inheritsFromTypeFullName ++ inherits).distinct.sorted)
+  }
+
+  private def astForExtensionDeclSyntax(node: ExtensionDeclSyntax): Ast = {
+    // TODO:
+    // - handle genericParameterClause
+    // - handle genericWhereClause
+    val attributes = node.attributes.children.map(astForNode)
+    val modifiers  = modifiersForDecl(node)
+    val inherits   = inheritsFrom(node)
+
+    val (typeName, typeFullName) = calcTypeNameAndFullName(code(node.extendedType))
+    val existingTypeDecl         = global.seenTypeDecls.keys().asScala.find(_.name == typeName)
+
+    if (existingTypeDecl.isEmpty) {
+      registerType(typeFullName)
+
+      val astParentType     = methodAstParentStack.head.label
+      val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
+
+      val typeDeclNode_ = typeDeclNode(
+        node,
+        typeName,
+        typeFullName,
+        parserResult.filename,
+        s"class $typeName",
+        astParentType,
+        astParentFullName,
+        inherits = inherits
+      )
+      seenAliasTypes.add(typeDeclNode_)
+
+      attributes.foreach { ast =>
+        Ast.storeInDiffGraph(ast, diffGraph)
+        ast.root.foreach(r => diffGraph.addEdge(typeDeclNode_, r, EdgeTypes.AST))
+      }
+
+      modifiers.foreach { mod =>
+        diffGraph.addEdge(typeDeclNode_, mod, EdgeTypes.AST)
+      }
+
+      diffGraph.addEdge(methodAstParentStack.head, typeDeclNode_, EdgeTypes.AST)
+
+      val typeRefNode_ = typeRefNode(node, s"class $typeName", typeFullName)
+
+      methodAstParentStack.push(typeDeclNode_)
+      dynamicInstanceTypeStack.push(typeFullName)
+      typeRefIdStack.push(typeRefNode_)
+
+      scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode_, None)
+
+      val allClassMembers = declMembers(node, withConstructor = false).toList
+
+      // adding all other members and retrieving their initialization calls
+      val memberInitCalls = allClassMembers
+        .filter(m => !isStaticMember(m) && isInitializedMember(m))
+        .map(m => astForClassMember(m, typeDeclNode_))
+
+      val constructor = createDeclConstructor(node, memberInitCalls)
+
+      // adding all class methods / functions and uninitialized, non-static members
+      allClassMembers
+        .filter(member => isClassMethodOrUninitializedMember(member) && !isStaticMember(member))
+        .foreach(m => astForClassMember(m, typeDeclNode_))
+
+      // adding all static members and retrieving their initialization calls
+      val staticMemberInitCalls =
+        allClassMembers.filter(isStaticMember).map(m => astForClassMember(m, typeDeclNode_))
+
+      methodAstParentStack.pop()
+      dynamicInstanceTypeStack.pop()
+      typeRefIdStack.pop()
+      scope.popScope()
+
+      if (staticMemberInitCalls.nonEmpty) {
+        val init = staticInitMethodAstAndBlock(
+          staticMemberInitCalls,
+          s"$typeFullName:${io.joern.x2cpg.Defines.StaticInitMethodName}",
+          None,
+          Defines.Any
+        )
+        Ast.storeInDiffGraph(init.ast, diffGraph)
+        diffGraph.addEdge(typeDeclNode_, init.method, EdgeTypes.AST)
+        if (constructor.isDefined) {
+          global.seenTypeDecls.put(
+            typeDeclNode_,
+            global.ConstructorBlocks(constructor.get.methodBlock, init.methodBlock)
+          )
+        } else {
+          global.seenTypeDecls.put(typeDeclNode_, global.ConstructorBlocks(Ast(), init.methodBlock))
+        }
+      } else {
+        if (constructor.isDefined) {
+          global.seenTypeDecls.put(typeDeclNode_, global.ConstructorBlocks(constructor.get.methodBlock, Ast()))
+        } else {
+          global.seenTypeDecls.put(typeDeclNode_, global.ConstructorBlocks(Ast(), Ast()))
+        }
+      }
+      Ast(typeRefNode_)
+    } else {
+      val typeDeclNode_          = existingTypeDecl.get
+      val constructorBlock       = global.seenTypeDecls.get(typeDeclNode_).constructorBlock
+      val staticConstructorBlock = global.seenTypeDecls.get(typeDeclNode_).staticConstructorBlock
+
+      addInheritsFrom(typeDeclNode_, inherits)
+      methodAstParentStack.push(typeDeclNode_)
+      dynamicInstanceTypeStack.push(typeFullName)
+
+      scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode_, None)
+
+      val allClassMembers = declMembers(node, withConstructor = false).toList
+
+      // adding all other members and retrieving their initialization calls
+      val memberInitCalls = allClassMembers
+        .filter(m => !isStaticMember(m) && isInitializedMember(m))
+        .map(m => astForClassMember(m, typeDeclNode_))
+
+      createDeclConstructor(node, memberInitCalls, constructorBlock)
 
       // adding all class methods / functions and uninitialized, non-static members
       allClassMembers
