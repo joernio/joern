@@ -30,17 +30,15 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     case _                        => false
   }
 
-  private def classMembers(clazz: ClassDeclSyntax, withConstructor: Boolean = true): Seq[DeclSyntax] = {
-    val allMembers = clazz.memberBlock.members.children.map(_.decl)
-    if (withConstructor) {
-      allMembers
-    } else {
-      allMembers.filterNot(isConstructor)
+  private def declMembers(
+    decl: ClassDeclSyntax | ExtensionDeclSyntax,
+    withConstructor: Boolean = true
+  ): Seq[DeclSyntax] = {
+    val memberBlock = decl match {
+      case c: ClassDeclSyntax     => c.memberBlock
+      case e: ExtensionDeclSyntax => e.memberBlock
     }
-  }
-
-  private def extensionMembers(ext: ExtensionDeclSyntax, withConstructor: Boolean = true): Seq[DeclSyntax] = {
-    val allMembers = ext.memberBlock.members.children.map(_.decl)
+    val allMembers = memberBlock.members.children.map(_.decl)
     if (withConstructor) {
       allMembers
     } else {
@@ -53,7 +51,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     case _                     => false
   }
 
-  private def typeFor(node: DeclSyntax): String = node match {
+  private def typeNameForDeclSyntax(node: DeclSyntax): String = node match {
     case d: ActorDeclSyntax          => code(d.name)
     case d: AssociatedTypeDeclSyntax => code(d.name)
     case d: ClassDeclSyntax          => code(d.name)
@@ -129,7 +127,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForClassMember(classElement: DeclSyntax, typeDeclNode: NewTypeDecl): Ast = {
-    val typeFullName = typeFor(classElement)
+    val typeFullName = typeNameForDeclSyntax(classElement)
     classElement match {
       case d: (AccessorDeclSyntax | InitializerDeclSyntax | DeinitializerDeclSyntax | FunctionDeclSyntax) =>
         val function    = astForFunctionLike(d).method
@@ -161,16 +159,13 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  private def findClassConstructor(clazz: ClassDeclSyntax): Option[DeclSyntax] =
-    classMembers(clazz).find(isConstructor)
-
-  private def findExtensionConstructor(ext: ExtensionDeclSyntax): Option[DeclSyntax] =
-    extensionMembers(ext).find(isConstructor)
+  private def findDeclConstructor(decl: ClassDeclSyntax | ExtensionDeclSyntax): Option[DeclSyntax] =
+    declMembers(decl).find(isConstructor)
 
   private def createClassConstructor(node: ClassDeclSyntax, constructorContent: List[Ast]): AstAndMethod =
-    findClassConstructor(node) match {
-      case Some(classConstructor: InitializerDeclSyntax) =>
-        val result = astForFunctionLike(classConstructor, methodBlockContent = constructorContent)
+    findDeclConstructor(node) match {
+      case Some(constructor: InitializerDeclSyntax) =>
+        val result = astForFunctionLike(constructor, methodBlockContent = constructorContent)
         diffGraph.addEdge(result.method, NewModifier().modifierType(ModifierTypes.CONSTRUCTOR), EdgeTypes.AST)
         result
       case _ =>
@@ -182,9 +177,9 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     constructorContent: List[Ast],
     constructorBlock: Ast = Ast()
   ): Unit =
-    findExtensionConstructor(node) match {
-      case Some(classConstructor: InitializerDeclSyntax) =>
-        val result = astForFunctionLike(classConstructor, methodBlockContent = constructorContent)
+    findDeclConstructor(node) match {
+      case Some(constructor: InitializerDeclSyntax) =>
+        val result = astForFunctionLike(constructor, methodBlockContent = constructorContent)
         diffGraph.addEdge(result.method, NewModifier().modifierType(ModifierTypes.CONSTRUCTOR), EdgeTypes.AST)
       case _ =>
         constructorBlock.root.foreach { r =>
@@ -207,7 +202,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     // - handle genericParameterClause
     // - handle genericWhereClause
     val attributes = node.attributes.children.map(astForNode)
-    val modifiers  = modifiersForClassDecl(node)
+    val modifiers  = modifiersForDecl(node)
     val inheritsFrom = node.inheritanceClause match {
       case Some(value) => value.inheritedTypes.children.map(c => code(c.`type`))
       case None        => Seq.empty
@@ -250,7 +245,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode_, None)
 
-    val allClassMembers = classMembers(node, withConstructor = false).toList
+    val allClassMembers = declMembers(node, withConstructor = false).toList
 
     // adding all other members and retrieving their initialization calls
     val memberInitCalls = allClassMembers
@@ -299,7 +294,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     // - handle genericParameterClause
     // - handle genericWhereClause
     val attributes = node.attributes.children.map(astForNode)
-    val modifiers  = modifiersForExtensionDecl(node)
+    val modifiers  = modifiersForDecl(node)
     val inheritsFrom = node.inheritanceClause match {
       case Some(value) => value.inheritedTypes.children.map(c => code(c.`type`))
       case None        => Seq.empty
@@ -345,7 +340,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
       scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode_, None)
 
-      val allClassMembers = extensionMembers(node, withConstructor = false).toList
+      val allClassMembers = declMembers(node, withConstructor = false).toList
 
       // adding all other members and retrieving their initialization calls
       val memberInitCalls = allClassMembers
@@ -390,7 +385,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
       scope.pushNewMethodScope(typeFullName, typeName, typeDeclNode_, None)
 
-      val allClassMembers = extensionMembers(node, withConstructor = false).toList
+      val allClassMembers = declMembers(node, withConstructor = false).toList
 
       // adding all other members and retrieving their initialization calls
       val memberInitCalls = allClassMembers
@@ -435,20 +430,12 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  private def modifiersForClassDecl(node: ClassDeclSyntax): Seq[NewModifier] = {
-    val modifiers = node.modifiers.children.flatMap(c => astForNode(c).root.map(_.asInstanceOf[NewModifier]))
-    val allModifier = if (modifiers.isEmpty) {
-      Seq(NewModifier().modifierType(ModifierTypes.PRIVATE))
-    } else {
-      modifiers
+  private def modifiersForDecl(node: ClassDeclSyntax | ExtensionDeclSyntax): Seq[NewModifier] = {
+    val modifierList = node match {
+      case c: ClassDeclSyntax     => c.modifiers.children
+      case e: ExtensionDeclSyntax => e.modifiers.children
     }
-    allModifier.zipWithIndex.map { case (m, index) =>
-      m.order(index)
-    }
-  }
-
-  private def modifiersForExtensionDecl(node: ExtensionDeclSyntax): Seq[NewModifier] = {
-    val modifiers = node.modifiers.children.flatMap(c => astForNode(c).root.map(_.asInstanceOf[NewModifier]))
+    val modifiers = modifierList.flatMap(c => astForNode(c).root.map(_.asInstanceOf[NewModifier]))
     val allModifier = if (modifiers.isEmpty) {
       Seq(NewModifier().modifierType(ModifierTypes.PRIVATE))
     } else {
