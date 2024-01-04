@@ -1,7 +1,11 @@
 package io.joern.swiftsrc2cpg.astcreation
 
 import io.joern.swiftsrc2cpg.datastructures.*
+import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.AccessorDeclSyntax
+import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.ClosureExprSyntax
+import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.DeinitializerDeclSyntax
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.FunctionDeclSyntax
+import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.InitializerDeclSyntax
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.SwiftNode
 import io.joern.swiftsrc2cpg.passes.Defines
 import io.joern.x2cpg.{Ast, ValidationMode}
@@ -59,9 +63,26 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       .collect { case methodScopeElement: MethodScopeElement => methodScopeElement.name }
       .mkString(":")
 
-  private def calcMethodName(func: FunctionDeclSyntax): String = code(func.name)
+  private def calcMethodName(func: SwiftNode): String = func match {
+    case f: FunctionDeclSyntax      => code(f.name)
+    case a: AccessorDeclSyntax      => code(a.accessorSpecifier)
+    case d: DeinitializerDeclSyntax => code(d.deinitKeyword)
+    case i: InitializerDeclSyntax   => code(i.initKeyword)
+    case _                          => nextClosureName()
+  }
 
-  protected def calcMethodNameAndFullName(func: FunctionDeclSyntax): (String, String) = {
+  protected def calcTypeNameAndFullName(name: String): (String, String) = {
+    val fullNamePrefix   = s"${parserResult.filename}:${computeScopePath(scope.getScopeHead)}:"
+    val intendedFullName = s"$fullNamePrefix$name"
+    val postfix          = typeFullNameToPostfix.getOrElse(intendedFullName, 0)
+    val resultingFullName =
+      if (postfix == 0) intendedFullName
+      else s"$intendedFullName$postfix"
+    typeFullNameToPostfix.put(intendedFullName, postfix + 1)
+    (name, resultingFullName)
+  }
+
+  protected def calcMethodNameAndFullName(func: SwiftNode): (String, String) = {
     // functionNode.getName is not necessarily unique and thus the full name calculated based on the scope
     // is not necessarily unique. Specifically we have this problem with lambda functions which are defined
     // in the same scope.

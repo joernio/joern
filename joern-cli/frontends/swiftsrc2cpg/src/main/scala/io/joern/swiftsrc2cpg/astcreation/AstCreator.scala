@@ -2,6 +2,7 @@ package io.joern.swiftsrc2cpg.astcreation
 
 import io.joern.swiftsrc2cpg.Config
 import io.joern.swiftsrc2cpg.datastructures.Scope
+import io.joern.swiftsrc2cpg.datastructures.SwiftGlobal
 import io.joern.swiftsrc2cpg.parser.SwiftJsonParser.ParseResult
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.swiftsrc2cpg.passes.Defines
@@ -23,7 +24,7 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.mutable
 
-class AstCreator(val config: Config, val global: Global, val parserResult: ParseResult)(implicit
+class AstCreator(val config: Config, val global: SwiftGlobal, val parserResult: ParseResult)(implicit
   withSchemaValidation: ValidationMode
 ) extends AstCreatorBase(parserResult.filename)
     with AstForSwiftTokenCreator
@@ -91,7 +92,7 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
   protected def astForNodeWithFunctionReferenceAndCall(node: SwiftNode): Ast = {
     node match {
       case func: FunctionDeclSyntax =>
-        astForFunctionLike(func, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true)
+        astForFunctionLike(func, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true).ast
       case _ => astForNode(node)
     }
   }
@@ -99,7 +100,7 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
   protected def astForNodeWithFunctionReference(node: SwiftNode): Ast = {
     node match {
       case func: FunctionDeclSyntax =>
-        astForFunctionLike(func, shouldCreateFunctionReference = true)
+        astForFunctionLike(func, shouldCreateFunctionReference = true).ast
       case _ => astForNode(node)
     }
   }

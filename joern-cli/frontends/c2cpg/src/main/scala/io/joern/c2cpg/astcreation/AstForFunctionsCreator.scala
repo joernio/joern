@@ -1,10 +1,8 @@
 package io.joern.c2cpg.astcreation
 
-import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
-import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, ModifierTypes}
 import org.apache.commons.lang.StringUtils
@@ -153,7 +151,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
       scope.popScope()
 
-      val stubAst = methodStubAst(methodNode_, parameterNodes, newMethodReturnNode(funcDecl, registerType(returnType)))
+      val stubAst =
+        methodStubAst(methodNode_, parameterNodes.map(Ast(_)), newMethodReturnNode(funcDecl, registerType(returnType)))
       val typeDeclAst = createFunctionTypeAndTypeDecl(funcDecl, methodNode_, name, fullname, signature)
       stubAst.merge(typeDeclAst)
     } else {
