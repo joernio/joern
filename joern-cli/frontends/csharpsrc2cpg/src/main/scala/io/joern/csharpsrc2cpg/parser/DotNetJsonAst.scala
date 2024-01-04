@@ -1,5 +1,6 @@
 package io.joern.csharpsrc2cpg.parser
 
+import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.BaseExpr
 import org.slf4j.LoggerFactory
 
 object DotNetJsonAst {
@@ -26,7 +27,8 @@ object DotNetJsonAst {
 
   sealed trait BaseExpr extends DotNetParserNode
 
-  object NotHandledType extends DotNetParserNode
+  object ExpressionStatement extends BaseExpr
+  object NotHandledType      extends DotNetParserNode
 
   object CompilationUnit extends BaseExpr
 
@@ -70,6 +72,45 @@ object DotNetJsonAst {
 
   object QualifiedName extends IdentifierNode
 
+  sealed trait UnaryExpr         extends BaseExpr
+  object PostIncrementExpression extends UnaryExpr
+  object PostDecrementExpression extends UnaryExpr
+  object PreIncrementExpression  extends UnaryExpr
+  object PreDecrementExpression  extends UnaryExpr
+  object UnaryPlusExpression     extends UnaryExpr
+  object UnaryMinusExpression    extends UnaryExpr
+  object BitwiseNotExpression    extends UnaryExpr
+  object LogicalNotExpression    extends UnaryExpr
+  object AddressOfExpression     extends UnaryExpr
+
+  sealed trait BinaryExpr                extends BaseExpr
+  object AddExpression                   extends BinaryExpr
+  object SubtractExpression              extends BinaryExpr
+  object MultiplyExpression              extends BinaryExpr
+  object DivideExpression                extends BinaryExpr
+  object ModuloExpression                extends BinaryExpr
+  object EqualsExpression                extends BinaryExpr
+  object NotEqualsExpression             extends BinaryExpr
+  object LogicalAndExpression            extends BinaryExpr
+  object LogicalOrExpression             extends BinaryExpr
+  object AddAssignmentExpression         extends BinaryExpr
+  object SubtractAssignmentExpression    extends BinaryExpr
+  object MultiplyAssignmentExpression    extends BinaryExpr
+  object DivideAssignmentExpression      extends BinaryExpr
+  object ModuloAssignmentExpression      extends BinaryExpr
+  object AndAssignmentExpression         extends BinaryExpr
+  object OrAssignmentExpression          extends BinaryExpr
+  object ExclusiveOrAssignmentExpression extends BinaryExpr
+  object RightShiftAssignmentExpression  extends BinaryExpr
+  object LeftShiftAssignmentExpression   extends BinaryExpr
+
+  object GreaterThanExpression        extends BinaryExpr
+  object LessThanExpression           extends BinaryExpr
+  object GreaterThanOrEqualExpression extends BinaryExpr
+  object LessThanOrEqualExpression    extends BinaryExpr
+  object BitwiseAndExpression         extends BinaryExpr
+  object BitwiseOrExpression          extends BinaryExpr
+  object ExclusiveOrExpression        extends BinaryExpr
 }
 
 /** The JSON key values, in alphabetical order.
@@ -103,5 +144,9 @@ object ParserKeys {
   val Usings        = "Usings"
   val Value         = "Value"
   val Variables     = "Variables"
+  val Statements    = "Statements"
+  val Expression    = "Expression"
+  val OperatorToken = "OperatorToken"
+  val Operand       = "Operand"
 
 }

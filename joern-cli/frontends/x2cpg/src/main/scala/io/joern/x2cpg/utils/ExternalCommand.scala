@@ -10,7 +10,7 @@ object ExternalCommand {
 
   private val IS_WIN: Boolean = scala.util.Properties.isWin
 
-  private val shellPrefix: Seq[String] = if (IS_WIN) "cmd" :: "/c" :: Nil else "sh" :: "-c" :: Nil
+  private val shellPrefix: Seq[String] = if (IS_WIN) "cmd" :: "/c" :: Nil else "bash" :: "-c" :: Nil
 
   def run(
     command: String,

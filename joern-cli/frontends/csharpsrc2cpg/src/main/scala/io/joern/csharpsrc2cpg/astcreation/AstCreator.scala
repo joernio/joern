@@ -61,6 +61,7 @@ class AstCreator(val relativeFileName: String, val parserResult: ParserResult, v
       case EqualsValueClause    => astForEqualsValueClause(nodeInfo)
       case UsingDirective       => notHandledYet(nodeInfo)
       case Block                => notHandledYet(nodeInfo)
+      case ExpressionStatement  => astForExpression(nodeInfo)
       case _                    => notHandledYet(nodeInfo)
     }
   }

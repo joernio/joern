@@ -131,8 +131,10 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForMethodBody(body: DotNetNodeInfo): Ast = {
-    val block      = blockNode(body)
-    val statements = List.empty // TODO
+    val block = blockNode(body)
+    methodAstParentStack.push(block)
+    val statements = body.json(ParserKeys.Statements).arr.flatMap(astForNode).toList
+    methodAstParentStack.pop()
     blockAst(block, statements)
   }
 
