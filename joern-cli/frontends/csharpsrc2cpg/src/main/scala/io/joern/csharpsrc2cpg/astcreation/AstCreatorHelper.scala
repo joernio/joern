@@ -45,6 +45,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         BuiltinTypes.Float
       case NumericLiteralExpression if node.code.matches("^\\d+\\.?\\d*[m|M]?$") => // e.g. 2m or 2.1M
         BuiltinTypes.Decimal
+      case StringLiteralExpression if node.code.matches("^\"\\w+\"$") => BuiltinTypes.String
       case _ =>
         val typeNode     = createDotNetNodeInfo(node.json(ParserKeys.Type))
         val isArrayType  = typeNode.code.endsWith("[]")

@@ -17,6 +17,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case _             => notHandledYet(expressionNode)
   }
 
+  protected def astForLiteralExpression(_literalNode: DotNetNodeInfo): Ast = {
+    Ast(literalNode(_literalNode, code(_literalNode), nodeTypeFullName(_literalNode)))
+  }
   private def astForUnaryExpression(unaryExpr: DotNetNodeInfo): Seq[Ast] = {
     val operatorToken = unaryExpr.json(ParserKeys.OperatorToken)(ParserKeys.Value).toString.replaceAll("\"", "")
     val operatorName = operatorToken match
@@ -73,7 +76,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForEqualsValueClause(clause: DotNetNodeInfo): Seq[Ast] = {
     val rhsNode = createDotNetNodeInfo(clause.json(ParserKeys.Value))
     rhsNode.node match
-      case _: LiteralExpr => Seq(Ast(literalNode(rhsNode, code(rhsNode), nodeTypeFullName(rhsNode))))
+      case _: LiteralExpr => Seq(astForLiteralExpression(rhsNode))
       case _              => notHandledYet(rhsNode)
   }
 
