@@ -21,7 +21,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     Ast(literalNode(_literalNode, code(_literalNode), nodeTypeFullName(_literalNode)))
   }
   private def astForUnaryExpression(unaryExpr: DotNetNodeInfo): Seq[Ast] = {
-    val operatorToken = unaryExpr.json(ParserKeys.OperatorToken)(ParserKeys.Value).toString.replaceAll("\"", "")
+    val operatorToken = unaryExpr.json(ParserKeys.OperatorToken)(ParserKeys.Value).str
     val operatorName = operatorToken match
       case "+" => Operators.plus
       case "-" => Operators.minus
@@ -35,10 +35,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case "!" => Operators.logicalNot
       case "&" => Operators.addressOf
 
-    Seq(callAst(createCallNodeForOperator(unaryExpr, operatorName, typeFullName = Some("")))) // TODO: typeFullName
+    val argsAst = astForNode(unaryExpr.json(ParserKeys.Operand))
+    Seq(
+      callAst(createCallNodeForOperator(unaryExpr, operatorName, typeFullName = Some("")), argsAst)
+    ) // TODO: typeFullName
   }
   private def astForBinaryExpression(binaryExpr: DotNetNodeInfo): Seq[Ast] = {
-    val operatorToken = binaryExpr.json(ParserKeys.OperatorToken)(ParserKeys.Value).toString.replaceAll("\"", "")
+    val operatorToken = binaryExpr.json(ParserKeys.OperatorToken)(ParserKeys.Value).str
     val operatorName = operatorToken match
       case "+"   => Operators.addition
       case "-"   => Operators.subtraction

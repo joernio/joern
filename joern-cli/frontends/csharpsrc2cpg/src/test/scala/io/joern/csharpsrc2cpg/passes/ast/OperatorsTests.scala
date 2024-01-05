@@ -40,6 +40,9 @@ class OperatorsTests extends CSharpCode2CpgFixture {
       )
       operatorCalls.code.l shouldBe List("i++", "i--", "++i", "--i", "!i", "~i", "+5", "-5", "&i")
       // TODO: Tests for operands
+      inside(operatorCalls.nameExact(Operators.postDecrement).astChildren.l) { case List(ident: Identifier) =>
+        ident.code shouldBe "i"
+      }
     }
   }
 
@@ -79,7 +82,10 @@ class OperatorsTests extends CSharpCode2CpgFixture {
     )
     operatorCalls.code.l shouldBe List("a+b", "a-b", "a/b", "a%b", "a==b", "a!=b", "a&&b", "a||b", "a&b", "a|b", "a^b")
 
-    // TODO: Tests for operands
+    inside(operatorCalls.nameExact(Operators.addition).astChildren.l) { case List(lhs: Identifier, rhs: Identifier) =>
+      lhs.code shouldBe "a"
+      rhs.code shouldBe "b"
+    }
   }
 
   "be created for shorthand assignment operators" in {
@@ -116,7 +122,11 @@ class OperatorsTests extends CSharpCode2CpgFixture {
     )
     operatorCalls.code.l shouldBe List("a+=b", "a-=b", "a*=b", "a/=b", "a%=b", "a&=b", "a|=b", "a^=b", "a>>=b", "a<<=b")
 
-    // TODO: Tests for operands
+    inside(operatorCalls.nameExact(Operators.assignmentPlus).astChildren.l) {
+      case List(lhs: Identifier, rhs: Identifier) =>
+        lhs.code shouldBe "a"
+        rhs.code shouldBe "b"
+    }
   }
 
   "be created for comparison operators" in {
@@ -143,6 +153,10 @@ class OperatorsTests extends CSharpCode2CpgFixture {
     )
     operatorCalls.code.l shouldBe List("a > b", "a < b", "a == b", "a >= b", "a <= b")
 
-    // TODO: Tests for operands
+    inside(operatorCalls.nameExact(Operators.greaterThan).astChildren.l) {
+      case List(lhs: Identifier, rhs: Identifier) =>
+        lhs.code shouldBe "a"
+        rhs.code shouldBe "b"
+    }
   }
 }
