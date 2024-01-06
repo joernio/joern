@@ -110,7 +110,6 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       .zipWithIndex
       .map(astForParameter)
       .toSeq
-    val body         = astForMethodBody(createDotNetNodeInfo(methodDecl.json(ParserKeys.Body)))
     val methodReturn = nodeToMethodReturn(createDotNetNodeInfo(methodDecl.json(ParserKeys.ReturnType)))
     val signature =
       methodSignature(methodReturn, params.flatMap(_.nodes.collectFirst { case x: NewMethodParameterIn => x }))
@@ -118,6 +117,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val methodNode_ = methodNode(methodDecl, name, code(methodDecl), fullName, Option(signature), relativeFileName)
     methodAstParentStack.push(methodNode_)
     scope.pushNewScope(methodNode_)
+    val body      = astForMethodBody(createDotNetNodeInfo(methodDecl.json(ParserKeys.Body)))
     val modifiers = astForModifiers(methodDecl).flatMap(_.nodes).collect { case x: NewModifier => x }
     val thisNode =
       if (!modifiers.exists(_.modifierType == ModifierTypes.STATIC)) astForThisNode(methodDecl)
