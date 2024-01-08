@@ -66,13 +66,12 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       .arr
       .map(createDotNetNodeInfo)
       .flatMap { nodeInfo =>
-        val (callAst: Ast, localAst: Ast) = astForVariableDeclarator(nodeInfo, typeFullName)
-        List(callAst, localAst)
+        astForVariableDeclarator(nodeInfo, typeFullName)
       }
       .toSeq
   }
 
-  protected def astForVariableDeclarator(varDecl: DotNetNodeInfo, typeFullName: String): (Ast, Ast) = {
+  protected def astForVariableDeclarator(varDecl: DotNetNodeInfo, typeFullName: String): List[Ast] = {
     val name          = nameFromNode(varDecl)
     val identifierAst = astForIdentifier(varDecl, typeFullName)
     val _localNode    = localNode(varDecl, name, name, typeFullName)
@@ -90,13 +89,13 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val initializerJson = varDecl.json(ParserKeys.Initializer)
     if (initializerJson.isNull) {
       // Implicitly assigned to `null`
-      (
+      List(
         callAst(assignmentNode, Seq(identifierAst, Ast(literalNode(varDecl, BuiltinTypes.Null, BuiltinTypes.Null)))),
         localNodeAst
       )
     } else {
       val rhs = astForNode(createDotNetNodeInfo(initializerJson))
-      (callAst(assignmentNode, identifierAst +: rhs), localNodeAst)
+      List(callAst(assignmentNode, identifierAst +: rhs), localNodeAst)
     }
   }
 

@@ -9,7 +9,6 @@ import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   def astForExpression(expr: DotNetNodeInfo): Seq[Ast] = {
-    // TODO: Handle identifiers in operators
     val expressionNode = createDotNetNodeInfo(expr.json(ParserKeys.Expression))
     expressionNode.node match
       case _: UnaryExpr  => astForUnaryExpression(expressionNode)
@@ -35,9 +34,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case "!" => Operators.logicalNot
       case "&" => Operators.addressOf
 
-    val argsAst = astForNode(unaryExpr.json(ParserKeys.Operand))
+    val args    = createDotNetNodeInfo(unaryExpr.json(ParserKeys.Operand))
+    val argsAst = astForNode(args)
     Seq(
-      callAst(createCallNodeForOperator(unaryExpr, operatorName, typeFullName = Some("")), argsAst)
+      callAst(createCallNodeForOperator(unaryExpr, operatorName, typeFullName = Some(nodeTypeFullName(args))), argsAst)
     ) // TODO: typeFullName
   }
   private def astForBinaryExpression(binaryExpr: DotNetNodeInfo): Seq[Ast] = {
@@ -72,7 +72,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     val args = astForNode(binaryExpr.json(ParserKeys.Left)) ++: astForNode(binaryExpr.json(ParserKeys.Right))
     val cNode =
-      createCallNodeForOperator(binaryExpr, operatorName, typeFullName = Some("")) // TODO: Resolve typeFullName
+      createCallNodeForOperator(
+        binaryExpr,
+        operatorName,
+        typeFullName = Some(getTypeFullNameFromAstNode(args))
+      ) // TODO: Resolve typeFullName
     Seq(callAst(cNode, args))
   }
 
@@ -81,16 +85,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     rhsNode.node match
       case _: LiteralExpr => Seq(astForLiteralExpression(rhsNode))
       case _              => notHandledYet(rhsNode)
-  }
-
-  private def createCallNodeForOperator(
-    node: DotNetNodeInfo,
-    operatorMethod: String,
-    DispatchType: String = DispatchTypes.STATIC_DISPATCH,
-    signature: Option[String] = None,
-    typeFullName: Option[String] = None
-  ): NewCall = {
-    callNode(node, node.code, operatorMethod, operatorMethod, DispatchType, signature, typeFullName)
   }
 
 }

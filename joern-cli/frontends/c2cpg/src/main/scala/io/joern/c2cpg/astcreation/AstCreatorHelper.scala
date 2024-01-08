@@ -545,5 +545,4 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     }
     if (tpe.isEmpty) Defines.anyTypeName else tpe
   }
-
 }

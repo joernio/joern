@@ -44,25 +44,9 @@ class AstCreator(val relativeFileName: String, val parserResult: ParserResult, v
   }
 
   private def astForCompilationUnit(cu: DotNetNodeInfo): Seq[Ast] = {
-    val imports  = cu.json(ParserKeys.Usings).arr.map(createDotNetNodeInfo).toSeq // TODO: Handle imports
-    val name     = s"${parserResult.filename}"                                    // TODO: Find fullyQualifiedPackage
-    val fullName = s"$relativeFileName:$name"
-    val fakeGlobalMethodForFile =
-      methodNode(
-        cu,
-        name,
-        name,
-        fullName,
-        None,
-        relativeFileName,
-        Option(NodeTypes.TYPE_DECL),
-        Some("") // TODO: Find fullyQualifiedPackage and assign to astParent
-      )
-//    methodAstParentStack.push(fakeGlobalMethodForFile) // TODO: Confirm if this has to be included in the methodAstParentStack as this affects fullName creation for structs
-    scope.pushNewScope(fakeGlobalMethodForFile)
+    val imports    = cu.json(ParserKeys.Usings).arr.map(createDotNetNodeInfo).toSeq // TODO: Handle imports
+    val name       = s"${parserResult.filename}"                                    // TODO: Find fullyQualifiedPackage
     val memberAsts = astForMembers(cu.json(ParserKeys.Members).arr.map(createDotNetNodeInfo).toSeq)
-//    methodAstParentStack.pop()
-    scope.popScope()
     memberAsts
   }
 

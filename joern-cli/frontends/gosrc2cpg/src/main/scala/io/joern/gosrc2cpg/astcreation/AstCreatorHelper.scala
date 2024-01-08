@@ -249,5 +249,4 @@ trait AstCreatorHelper { this: AstCreator =>
 
   protected def fixQualifiedName(name: String): String =
     name.stripPrefix(Defines.qualifiedNameSeparator).replace(Defines.qualifiedNameSeparator, ".")
-
 }
