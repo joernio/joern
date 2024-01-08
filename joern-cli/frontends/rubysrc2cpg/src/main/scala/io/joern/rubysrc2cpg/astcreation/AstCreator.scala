@@ -22,6 +22,7 @@ class AstCreator(protected val filename: String, parser: ResourceManagedParser, 
     with AstForExpressionsCreator
     with AstForFunctionsCreator
     with AstForTypesCreator
+    with FreshVariableCreator
     with AstNodeBuilder[RubyNode, AstCreator] {
 
   protected val logger: Logger = LoggerFactory.getLogger(getClass)

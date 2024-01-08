@@ -7,9 +7,6 @@ import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import org.antlr.v4.runtime.tree.{ErrorNode, ParseTree, TerminalNode}
 
 import scala.jdk.CollectionConverters.*
-import io.joern.rubysrc2cpg.parser.RubyParser.RescueClauseContext
-import io.joern.rubysrc2cpg.parser.RubyParser.EnsureClauseContext
-import io.joern.rubysrc2cpg.parser.RubyParser.ExceptionClassListContext
 import org.antlr.v4.runtime.tree.RuleNode
 
 /** Converts an ANTLR Ruby Parse Tree into the intermediate Ruby AST.
@@ -555,20 +552,43 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     }
   }
 
-  override def visitExceptionClassList(ctx: ExceptionClassListContext): RubyNode = {
+  override def visitExceptionClassList(ctx: RubyParser.ExceptionClassListContext): RubyNode = {
     // Requires implementing multiple rhs with splatting
     Unknown()(ctx.toTextSpan)
   }
 
-  override def visitRescueClause(ctx: RescueClauseContext): RubyNode = {
+  override def visitRescueClause(ctx: RubyParser.RescueClauseContext): RubyNode = {
     val exceptionClassList = Option(ctx.exceptionClassList).map(visit)
     val elseClause         = Option(ctx.exceptionVariableAssignment).map(visit)
     val thenClause         = visit(ctx.thenClause)
     RescueClause(exceptionClassList, elseClause, thenClause)(ctx.toTextSpan)
   }
 
-  override def visitEnsureClause(ctx: EnsureClauseContext): RubyNode = {
+  override def visitEnsureClause(ctx: RubyParser.EnsureClauseContext): RubyNode = {
     EnsureClause(visit(ctx.compoundStatement()))(ctx.toTextSpan)
+  }
+
+  override def visitCaseWithExpression(ctx: RubyParser.CaseWithExpressionContext): RubyNode = {
+    val expression = Option(ctx.commandOrPrimaryValue()).map(visit)
+    val whenClauses = Option(ctx.whenClause().asScala).fold(List())(_.map(visit).toList)
+    val elseClause = Option(ctx.elseClause()).map(visit)
+    CaseExpression(expression, whenClauses, elseClause)(ctx.toTextSpan)
+  }
+
+  override def visitCaseWithoutExpression(ctx: RubyParser.CaseWithoutExpressionContext): RubyNode = {
+    val expression = None
+    val whenClauses = Option(ctx.whenClause().asScala).fold(List())(_.map(visit).toList)
+    val elseClause = Option(ctx.elseClause()).map(visit)
+    CaseExpression(expression, whenClauses, elseClause)(ctx.toTextSpan)
+  }
+
+  override def visitWhenClause(ctx: RubyParser.WhenClauseContext): RubyNode = {
+    val matchArgs = Option(ctx.whenArgument()).iterator.flatMap(arg => 
+        Option(arg.operatorExpressionList()).iterator.flatMap(_.operatorExpression().asScala).map(visit) ++ 
+        Option(arg.splattingArgument()).map(visit).iterator
+    ).toList
+    val thenClause = Option(ctx.thenClause()).map(visit)
+    WhenClause(matchArgs, thenClause)(ctx.toTextSpan)
   }
 
   override def visitAssociationKey(ctx: RubyParser.AssociationKeyContext): RubyNode = {

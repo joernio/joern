@@ -9,7 +9,7 @@ object RubyIntermediateAst {
     columnEnd: Option[Integer],
     text: String
   ) {
-    def spanStart: TextSpan = TextSpan(line, column, line, column, "")
+    def spanStart(newText: String = ""): TextSpan = TextSpan(line, column, line, column, newText)
   }
 
   sealed class RubyNode(val span: TextSpan) {
@@ -118,6 +118,15 @@ object RubyIntermediateAst {
   final case class ConditionalExpression(condition: RubyNode, trueBranch: RubyNode, falseBranch: RubyNode)(
     span: TextSpan
   ) extends RubyNode(span)
+
+  final case class CaseExpression(expression: Option[RubyNode], whenClauses: List[RubyNode], elseClause: Option[RubyNode])(
+    span: TextSpan
+  ) extends RubyNode(span)
+
+  final case class WhenClause(matchExpressions: List[RubyNode], thenClause: Option[RubyNode])(
+    span: TextSpan
+  ) extends RubyNode(span)
+
 
   final case class ReturnExpression(expressions: List[RubyNode])(span: TextSpan) extends RubyNode(span)
 
