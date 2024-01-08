@@ -4,17 +4,21 @@ import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
-class ExtensionTests extends AbstractPassTest {
+class EnumerationExtensionTests extends AbstractPassTest {
 
-  "ExtensionTests" should {
+  "EnumerationExtensionTests" should {
 
-    "test Class and Extension defined afterwards" in AstFixture("""
-        |public class A {}
-        |private class B {
+    "test Enumeration and Extension defined afterwards" in AstFixture("""
+        |public enum A {}
+        |private enum B {
         |  var b = 0.0
         |}
         |
-        |class Foo: Bar { // implicitly internal
+        |enum Foo: Bar { // implicitly internal (private)
+        |  case tuple(Int, Int, Int, Int)
+        |  case c1 = 1, c2, c3
+        |  indirect case c4(Foo)
+        |
         |  public var a = A()
         |  private var b = false
         |  var c = 0.0
@@ -70,6 +74,10 @@ class ExtensionTests extends AbstractPassTest {
         "a",
         "b",
         "c",
+        "c1",
+        "c2",
+        "c3",
+        "c4",
         "d",
         "e",
         "f",
@@ -80,7 +88,8 @@ class ExtensionTests extends AbstractPassTest {
         "someFunc",
         "someMethod",
         "someOtherFunc",
-        "square"
+        "square",
+        "tuple"
       )
       typeDeclFoo.inheritsFromTypeFullName.l shouldBe List("AnotherProtocol", "Bar", "SomeProtocol")
       typeDeclFoo.modifier.modifierType.l shouldBe List(ModifierTypes.PRIVATE)
@@ -88,6 +97,7 @@ class ExtensionTests extends AbstractPassTest {
       val List(fooConstructor) = typeDeclFoo.method.isConstructor.l
       fooConstructor.fullName shouldBe "code.swift:<global>:Foo:init"
       fooConstructor.block.astChildren.assignment.code.l.sorted shouldBe List(
+        "c1 = 1",
         "var a = A()",
         "var b = false",
         "var c = 0.0",
@@ -100,9 +110,9 @@ class ExtensionTests extends AbstractPassTest {
       fooStaticInit.block.astChildren.assignment.code.l.sorted shouldBe List("var e = 1", "var f = true", "var j = 2")
     }
 
-    "test Class and Extension defined beforehand" in AstFixture("""
-        |public class A {}
-        |private class B {
+    "test Structure and Extension defined beforehand" in AstFixture("""
+        |public enum A {}
+        |private enum B {
         |  var b = 0.0
         |}
         |
@@ -113,7 +123,11 @@ class ExtensionTests extends AbstractPassTest {
         |  func someOtherFunc() {}
         |}
         |
-        |class Foo: Bar { // implicitly internal
+        |enum Foo: Bar { // implicitly internal (private)
+        |  case tuple(Int, Int, Int, Int)
+        |  case c1 = 1, c2, c3
+        |  indirect case c4(Foo)
+        |  
         |  public var a = A()
         |  private var b = false
         |  var c = 0.0
@@ -161,6 +175,10 @@ class ExtensionTests extends AbstractPassTest {
         "a",
         "b",
         "c",
+        "c1",
+        "c2",
+        "c3",
+        "c4",
         "d",
         "e",
         "f",
@@ -171,7 +189,8 @@ class ExtensionTests extends AbstractPassTest {
         "someFunc",
         "someMethod",
         "someOtherFunc",
-        "square"
+        "square",
+        "tuple"
       )
       typeDeclFoo.inheritsFromTypeFullName.l shouldBe List("AnotherProtocol", "Bar", "SomeProtocol")
       typeDeclFoo.modifier.modifierType.l shouldBe List(ModifierTypes.PRIVATE)
@@ -184,10 +203,11 @@ class ExtensionTests extends AbstractPassTest {
       val List(fooConstructor) = typeDeclFoo.method.isConstructor.nameExact("init").l
       fooConstructor.fullName shouldBe "code.swift:<global>:Foo:init"
       fooConstructor.block.astChildren.assignment.code.l.sorted shouldBe List(
+        "c1 = 1",
         "var a = A()",
         "var b = false",
         "var c = 0.0",
-        "var g: Double { return self * 1_000.0 }" // lowered as assignment
+        "var g: Double { return self * 1_000.0 }"
       )
 
       val List(fooStaticInit) = typeDeclFoo.method.nameExact(io.joern.x2cpg.Defines.StaticInitMethodName).l

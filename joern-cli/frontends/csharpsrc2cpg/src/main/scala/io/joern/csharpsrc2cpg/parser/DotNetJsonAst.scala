@@ -153,5 +153,4 @@ object ParserKeys {
   val OperatorToken = "OperatorToken"
   val Operand       = "Operand"
   val Statement     = "Statement"
-
 }

@@ -39,7 +39,6 @@ class OperatorsTests extends CSharpCode2CpgFixture {
         "<operator>.addressOf"
       )
       operatorCalls.code.l shouldBe List("i++", "i--", "++i", "--i", "!i", "~i", "+5", "-5", "&i")
-      // TODO: Tests for operands
       inside(operatorCalls.nameExact(Operators.postDecrement).astChildren.l) { case List(ident: Identifier) =>
         ident.code shouldBe "i"
       }
