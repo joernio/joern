@@ -5,7 +5,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 
 trait FreshVariableCreator { this: AstCreator =>
   // This is in a single-threaded context.
-  var tmpCounter: Int = 0
+  var tmpCounter: Int                      = 0
   private def tmpTemplate(id: Int): String = s"<tmp-${id}>"
   protected def freshName: String = {
     val name = tmpTemplate(tmpCounter)

@@ -569,24 +569,26 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitCaseWithExpression(ctx: RubyParser.CaseWithExpressionContext): RubyNode = {
-    val expression = Option(ctx.commandOrPrimaryValue()).map(visit)
+    val expression  = Option(ctx.commandOrPrimaryValue()).map(visit)
     val whenClauses = Option(ctx.whenClause().asScala).fold(List())(_.map(visit).toList)
-    val elseClause = Option(ctx.elseClause()).map(visit)
+    val elseClause  = Option(ctx.elseClause()).map(visit)
     CaseExpression(expression, whenClauses, elseClause)(ctx.toTextSpan)
   }
 
   override def visitCaseWithoutExpression(ctx: RubyParser.CaseWithoutExpressionContext): RubyNode = {
-    val expression = None
+    val expression  = None
     val whenClauses = Option(ctx.whenClause().asScala).fold(List())(_.map(visit).toList)
-    val elseClause = Option(ctx.elseClause()).map(visit)
+    val elseClause  = Option(ctx.elseClause()).map(visit)
     CaseExpression(expression, whenClauses, elseClause)(ctx.toTextSpan)
   }
 
   override def visitWhenClause(ctx: RubyParser.WhenClauseContext): RubyNode = {
-    val matchArgs = Option(ctx.whenArgument()).iterator.flatMap(arg => 
-        Option(arg.operatorExpressionList()).iterator.flatMap(_.operatorExpression().asScala).map(visit) ++ 
-        Option(arg.splattingArgument()).map(visit).iterator
-    ).toList
+    val matchArgs = Option(ctx.whenArgument()).iterator
+      .flatMap(arg =>
+        Option(arg.operatorExpressionList()).iterator.flatMap(_.operatorExpression().asScala).map(visit) ++
+          Option(arg.splattingArgument()).map(visit).iterator
+      )
+      .toList
     val thenClause = Option(ctx.thenClause()).map(visit)
     WhenClause(matchArgs, thenClause)(ctx.toTextSpan)
   }

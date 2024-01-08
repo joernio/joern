@@ -119,14 +119,15 @@ object RubyIntermediateAst {
     span: TextSpan
   ) extends RubyNode(span)
 
-  final case class CaseExpression(expression: Option[RubyNode], whenClauses: List[RubyNode], elseClause: Option[RubyNode])(
-    span: TextSpan
-  ) extends RubyNode(span)
+  final case class CaseExpression(
+    expression: Option[RubyNode],
+    whenClauses: List[RubyNode],
+    elseClause: Option[RubyNode]
+  )(span: TextSpan)
+      extends RubyNode(span)
 
-  final case class WhenClause(matchExpressions: List[RubyNode], thenClause: Option[RubyNode])(
-    span: TextSpan
-  ) extends RubyNode(span)
-
+  final case class WhenClause(matchExpressions: List[RubyNode], thenClause: Option[RubyNode])(span: TextSpan)
+      extends RubyNode(span)
 
   final case class ReturnExpression(expressions: List[RubyNode])(span: TextSpan) extends RubyNode(span)
 
