@@ -1,5 +1,6 @@
 package io.joern.swiftsrc2cpg.astcreation
 
+import io.joern.swiftsrc2cpg.datastructures.BlockScope
 import io.joern.swiftsrc2cpg.datastructures.MethodScope
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.swiftsrc2cpg.passes.Defines
@@ -10,6 +11,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewModifier
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewAnnotationParameter
 import io.shiftleft.codepropertygraph.generated.nodes.NewAnnotationParameterAssign
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
+import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
 
 trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -196,7 +199,51 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForOpaqueReturnTypeOfAttributeArgumentsSyntax(node: OpaqueReturnTypeOfAttributeArgumentsSyntax): Ast =
     notHandledYet(node)
   private def astForOperatorPrecedenceAndTypesSyntax(node: OperatorPrecedenceAndTypesSyntax): Ast = notHandledYet(node)
-  private def astForOptionalBindingConditionSyntax(node: OptionalBindingConditionSyntax): Ast     = notHandledYet(node)
+
+  private def astForOptionalBindingConditionSyntax(node: OptionalBindingConditionSyntax): Ast = {
+    val kind = code(node.bindingSpecifier)
+    val scopeType = if (kind == "let") {
+      BlockScope
+    } else {
+      MethodScope
+    }
+
+    val name = node.pattern match {
+      case expr: ExpressionPatternSyntax =>
+        notHandledYet(expr)
+        code(expr)
+      case ident: IdentifierPatternSyntax =>
+        code(ident.identifier)
+      case isType: IsTypePatternSyntax =>
+        notHandledYet(isType)
+        code(isType)
+      case missing: MissingPatternSyntax =>
+        code(missing.placeholder)
+      case tuple: TuplePatternSyntax =>
+        notHandledYet(tuple)
+        code(tuple)
+      case valueBinding: ValueBindingPatternSyntax =>
+        notHandledYet(valueBinding)
+        code(valueBinding)
+      case wildcard: WildcardPatternSyntax =>
+        notHandledYet(wildcard)
+        generateUnusedVariableName(usedVariableNames, "wildcard")
+    }
+    val typeFullName = node.typeAnnotation.map(t => code(t.`type`)).getOrElse(Defines.Any)
+    val nLocalNode   = localNode(node, name, name, typeFullName).order(0)
+    scope.addVariable(name, nLocalNode, scopeType)
+    diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
+
+    val initAst = node.initializer.map(astForNode)
+    if (initAst.isEmpty) {
+      Ast()
+    } else {
+      val patternAst = astForNode(node.pattern)
+      patternAst.root.collect { case i: NewIdentifier => i }.foreach(_.typeFullName(typeFullName))
+      createAssignmentCallAst(patternAst, initAst.head, code(node), line = line(node), column = column(node))
+    }
+  }
+
   private def astForOriginallyDefinedInAttributeArgumentsSyntax(
     node: OriginallyDefinedInAttributeArgumentsSyntax
   ): Ast = notHandledYet(node)

@@ -728,9 +728,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
             val retCode = code(head)
             List(returnAst(returnNode(head, retCode), List(astForNodeWithFunctionReference(head.item))))
           case children =>
-            val childrenAsts = children.map(astForNode)
-            setArgumentIndices(childrenAsts)
-            childrenAsts
+            astsForBlockElements(children)
         }
       case None =>
         List.empty[Ast]
