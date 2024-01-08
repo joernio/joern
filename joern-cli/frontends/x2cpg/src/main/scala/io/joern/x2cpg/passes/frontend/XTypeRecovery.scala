@@ -19,6 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import scala.annotation.tailrec
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
+import scala.util.{Failure, Success, Try}
 import scala.util.matching.Regex
 
 /** @param iterations
@@ -532,7 +533,11 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
     */
   protected def getFieldParents(fa: FieldAccess): Set[String] = {
     val fieldName = getFieldName(fa).split(pathSep).last
-    cpg.member.nameExact(fieldName).typeDecl.fullName.filterNot(_.contains("ANY")).toSet
+    Try(cpg.member.nameExact(fieldName).typeDecl.fullName.filterNot(_.contains("ANY")).toSet) match
+      case Failure(exception) =>
+        logger.warn("Unable to obtain name of member's parent type declaration", exception)
+        Set.empty
+      case Success(typeDeclNames) => typeDeclNames
   }
 
   /** Associates the types with the identifier. This may sometimes be an identifier that should be considered a field
