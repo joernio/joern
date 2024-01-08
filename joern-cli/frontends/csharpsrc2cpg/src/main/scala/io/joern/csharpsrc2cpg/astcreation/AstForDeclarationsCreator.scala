@@ -23,8 +23,10 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       .filename(relativeFileName)
       .fullName(fullName)
     methodAstParentStack.push(namespaceBlock)
+    scope.pushNewScope(namespaceBlock)
     val memberAsts = namespace.json(ParserKeys.Members).arr.flatMap(astForNode).toSeq
     methodAstParentStack.pop()
+    scope.popScope()
     Seq(Ast(namespaceBlock).withChildren(memberAsts))
   }
 
@@ -33,9 +35,11 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val fullName = astFullName(classDecl)
     val typeDecl = typeDeclNode(classDecl, name, fullName, relativeFileName, code(classDecl))
     methodAstParentStack.push(typeDecl)
+    scope.pushNewScope(typeDecl)
     val modifiers = astForModifiers(classDecl)
     val members   = astForMembers(classDecl.json(ParserKeys.Members).arr.map(createDotNetNodeInfo).toSeq)
     methodAstParentStack.pop()
+    scope.popScope()
     val typeDeclAst = Ast(typeDecl)
       .withChildren(modifiers)
       .withChildren(members)
@@ -52,19 +56,25 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     memberNodes.map(Ast(_).withChildren(astForModifiers(fieldDecl)))
   }
 
+  protected def astForLocalDeclarationStatement(localDecl: DotNetNodeInfo): Seq[Ast] = {
+    astForVariableDeclaration(createDotNetNodeInfo(localDecl.json(ParserKeys.Declaration)))
+  }
   protected def astForVariableDeclaration(varDecl: DotNetNodeInfo): Seq[Ast] = {
     val typeFullName = nodeTypeFullName(varDecl)
     varDecl
       .json(ParserKeys.Variables)
       .arr
       .map(createDotNetNodeInfo)
-      .map(astForVariableDeclarator(_, typeFullName))
+      .flatMap { astForVariableDeclarator(_, typeFullName) }
       .toSeq
   }
 
-  protected def astForVariableDeclarator(varDecl: DotNetNodeInfo, typeFullName: String): Ast = {
+  protected def astForVariableDeclarator(varDecl: DotNetNodeInfo, typeFullName: String): List[Ast] = {
     val name          = nameFromNode(varDecl)
-    val identifierAst = Ast(identifierNode(varDecl, name, name, typeFullName))
+    val identifierAst = astForIdentifier(varDecl, typeFullName)
+    val _localNode    = localNode(varDecl, name, name, typeFullName)
+    val localNodeAst  = Ast(_localNode)
+    scope.addToScope(name, (_localNode, typeFullName))
     val assignmentNode = callNode(
       varDecl,
       code(varDecl),
@@ -77,10 +87,13 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val initializerJson = varDecl.json(ParserKeys.Initializer)
     if (initializerJson.isNull) {
       // Implicitly assigned to `null`
-      callAst(assignmentNode, Seq(identifierAst, Ast(literalNode(varDecl, BuiltinTypes.Null, BuiltinTypes.Null))))
+      List(
+        callAst(assignmentNode, Seq(identifierAst, Ast(literalNode(varDecl, BuiltinTypes.Null, BuiltinTypes.Null)))),
+        localNodeAst
+      )
     } else {
       val rhs = astForNode(createDotNetNodeInfo(initializerJson))
-      callAst(assignmentNode, identifierAst +: rhs)
+      List(callAst(assignmentNode, identifierAst +: rhs), localNodeAst)
     }
   }
 
@@ -94,13 +107,15 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       .zipWithIndex
       .map(astForParameter)
       .toSeq
-    val body         = astForMethodBody(createDotNetNodeInfo(methodDecl.json(ParserKeys.Body)))
     val methodReturn = nodeToMethodReturn(createDotNetNodeInfo(methodDecl.json(ParserKeys.ReturnType)))
     val signature =
       methodSignature(methodReturn, params.flatMap(_.nodes.collectFirst { case x: NewMethodParameterIn => x }))
     val fullName    = s"${astFullName(methodDecl)}:$signature"
     val methodNode_ = methodNode(methodDecl, name, code(methodDecl), fullName, Option(signature), relativeFileName)
-    val modifiers   = astForModifiers(methodDecl).flatMap(_.nodes).collect { case x: NewModifier => x }
+    methodAstParentStack.push(methodNode_)
+    scope.pushNewScope(methodNode_)
+    val body      = astForMethodBody(createDotNetNodeInfo(methodDecl.json(ParserKeys.Body)))
+    val modifiers = astForModifiers(methodDecl).flatMap(_.nodes).collect { case x: NewModifier => x }
     val thisNode =
       if (!modifiers.exists(_.modifierType == ModifierTypes.STATIC)) astForThisNode(methodDecl)
       else Ast()
@@ -131,10 +146,10 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForMethodBody(body: DotNetNodeInfo): Ast = {
-    val block = blockNode(body)
-    methodAstParentStack.push(block)
+    val block      = blockNode(body)
     val statements = body.json(ParserKeys.Statements).arr.flatMap(astForNode).toList
     methodAstParentStack.pop()
+    scope.popScope()
     blockAst(block, statements)
   }
 

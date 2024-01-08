@@ -26,10 +26,11 @@ class CSharpCode2CpgFixture(withPostProcessing: Boolean = false, withDataFlow: B
   protected def basicBoilerplate(
     contents: String = "Console.WriteLine(\"Hello, world!\");",
     namespace: String = "HelloWorld",
-    className: String = "Program"
+    className: String = "Program",
+    globalDeclarations: String = ""
   ): String =
     s"""using System;
-       |
+       |$globalDeclarations
        |namespace $namespace
        |{
        |  class $className

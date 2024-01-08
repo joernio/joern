@@ -9,7 +9,6 @@ import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   def astForExpression(expr: DotNetNodeInfo): Seq[Ast] = {
-    // TODO: Handle identifiers in operators
     val expressionNode = createDotNetNodeInfo(expr.json(ParserKeys.Expression))
     expressionNode.node match
       case _: UnaryExpr  => astForUnaryExpression(expressionNode)
@@ -17,8 +16,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case _             => notHandledYet(expressionNode)
   }
 
+  protected def astForLiteralExpression(_literalNode: DotNetNodeInfo): Ast = {
+    Ast(literalNode(_literalNode, code(_literalNode), nodeTypeFullName(_literalNode)))
+  }
   private def astForUnaryExpression(unaryExpr: DotNetNodeInfo): Seq[Ast] = {
-    val operatorToken = unaryExpr.json(ParserKeys.OperatorToken)(ParserKeys.Value).toString.replaceAll("\"", "")
+    val operatorToken = unaryExpr.json(ParserKeys.OperatorToken)(ParserKeys.Value).str
     val operatorName = operatorToken match
       case "+" => Operators.plus
       case "-" => Operators.minus
@@ -32,10 +34,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case "!" => Operators.logicalNot
       case "&" => Operators.addressOf
 
-    Seq(callAst(createCallNodeForOperator(unaryExpr, operatorName, typeFullName = Some("")))) // TODO: typeFullName
+    val args    = createDotNetNodeInfo(unaryExpr.json(ParserKeys.Operand))
+    val argsAst = astForNode(args)
+    Seq(
+      callAst(createCallNodeForOperator(unaryExpr, operatorName, typeFullName = Some(nodeTypeFullName(args))), argsAst)
+    ) // TODO: typeFullName
   }
   private def astForBinaryExpression(binaryExpr: DotNetNodeInfo): Seq[Ast] = {
-    val operatorToken = binaryExpr.json(ParserKeys.OperatorToken)(ParserKeys.Value).toString.replaceAll("\"", "")
+    val operatorToken = binaryExpr.json(ParserKeys.OperatorToken)(ParserKeys.Value).str
     val operatorName = operatorToken match
       case "+"   => Operators.addition
       case "-"   => Operators.subtraction
@@ -66,25 +72,15 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     val args = astForNode(binaryExpr.json(ParserKeys.Left)) ++: astForNode(binaryExpr.json(ParserKeys.Right))
     val cNode =
-      createCallNodeForOperator(binaryExpr, operatorName, typeFullName = Some("")) // TODO: Resolve typeFullName
+      createCallNodeForOperator(binaryExpr, operatorName, typeFullName = Some(getTypeFullNameFromAstNode(args)))
     Seq(callAst(cNode, args))
   }
 
   protected def astForEqualsValueClause(clause: DotNetNodeInfo): Seq[Ast] = {
     val rhsNode = createDotNetNodeInfo(clause.json(ParserKeys.Value))
     rhsNode.node match
-      case _: LiteralExpr => Seq(Ast(literalNode(rhsNode, code(rhsNode), nodeTypeFullName(rhsNode))))
+      case _: LiteralExpr => Seq(astForLiteralExpression(rhsNode))
       case _              => notHandledYet(rhsNode)
-  }
-
-  private def createCallNodeForOperator(
-    node: DotNetNodeInfo,
-    operatorMethod: String,
-    DispatchType: String = DispatchTypes.STATIC_DISPATCH,
-    signature: Option[String] = None,
-    typeFullName: Option[String] = None
-  ): NewCall = {
-    callNode(node, node.code, operatorMethod, operatorMethod, DispatchType, signature, typeFullName)
   }
 
 }

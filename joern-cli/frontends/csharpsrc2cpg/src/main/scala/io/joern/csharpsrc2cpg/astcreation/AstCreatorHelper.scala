@@ -3,14 +3,26 @@ package io.joern.csharpsrc2cpg.astcreation
 import io.joern.csharpsrc2cpg.astcreation
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetJsonAst, DotNetNodeInfo, ParserKeys}
-import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewNamespaceBlock, NewTypeDecl}
+import io.joern.x2cpg.{Ast, Defines, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewMethod, NewNamespaceBlock, NewTypeDecl}
 import ujson.Value
 
+import scala.util.{Failure, Success, Try}
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def createDotNetNodeInfo(json: Value): DotNetNodeInfo =
     AstCreatorHelper.createDotNetNodeInfo(json, Option(this.relativeFileName))
+
+  def createCallNodeForOperator(
+    node: DotNetNodeInfo,
+    operatorMethod: String,
+    DispatchType: String = DispatchTypes.STATIC_DISPATCH,
+    signature: Option[String] = None,
+    typeFullName: Option[String] = None
+  ): NewCall = {
+    callNode(node, node.code, operatorMethod, operatorMethod, DispatchType, signature, typeFullName)
+  }
 
   protected def notHandledYet(node: DotNetNodeInfo): Seq[Ast] = {
     val text =
@@ -32,6 +44,13 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case _                             => nameFromNode(node)
   }
 
+  protected def getTypeFullNameFromAstNode(ast: Seq[Ast]): String = {
+    ast.headOption
+      .flatMap(_.root)
+      .map(_.properties.get(PropertyNames.TYPE_FULL_NAME).get.toString)
+      .getOrElse("ANY")
+  }
+
   protected def nameFromNode(identifierNode: DotNetNodeInfo): String = AstCreatorHelper.nameFromNode(identifierNode)
 
   // TODO: Use type map to try resolve full name
@@ -45,14 +64,20 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         BuiltinTypes.Float
       case NumericLiteralExpression if node.code.matches("^\\d+\\.?\\d*[m|M]?$") => // e.g. 2m or 2.1M
         BuiltinTypes.Decimal
+      case StringLiteralExpression if node.code.matches("^\"\\w+\"$") => BuiltinTypes.String
       case _ =>
-        val typeNode     = createDotNetNodeInfo(node.json(ParserKeys.Type))
-        val isArrayType  = typeNode.code.endsWith("[]")
-        val rawType      = typeNode.code.stripSuffix("[]")
-        val resolvedType = BuiltinTypes.DotNetTypeMap.getOrElse(rawType, rawType)
+        Try(createDotNetNodeInfo(node.json(ParserKeys.Type))) match
+          case Success(typeNode) =>
+            val isArrayType  = typeNode.code.endsWith("[]")
+            val rawType      = typeNode.code.stripSuffix("[]")
+            val resolvedType = BuiltinTypes.DotNetTypeMap.getOrElse(rawType, rawType)
 
-        if (isArrayType) s"$resolvedType[]"
-        else resolvedType
+            if (isArrayType) s"$resolvedType[]"
+            else resolvedType
+          case Failure(e) => {
+            logger.debug(e.getMessage)
+            "ANY"
+          }
   }
 
 }

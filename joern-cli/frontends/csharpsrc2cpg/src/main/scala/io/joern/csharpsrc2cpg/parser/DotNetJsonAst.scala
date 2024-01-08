@@ -26,7 +26,9 @@ object DotNetJsonAst {
   }
 
   sealed trait BaseExpr extends DotNetParserNode
+  sealed trait BaseStmt extends DotNetParserNode
 
+  object GlobalStatement     extends BaseStmt
   object ExpressionStatement extends BaseExpr
   object NotHandledType      extends DotNetParserNode
 
@@ -42,7 +44,8 @@ object DotNetJsonAst {
 
   object FieldDeclaration extends DeclarationExpr
 
-  object VariableDeclaration extends DeclarationExpr
+  object VariableDeclaration       extends DeclarationExpr
+  object LocalDeclarationStatement extends DeclarationExpr
 
   object VariableDeclarator extends DeclarationExpr
 
@@ -53,6 +56,7 @@ object DotNetJsonAst {
   sealed trait LiteralExpr extends BaseExpr
 
   object NumericLiteralExpression extends LiteralExpr
+  object StringLiteralExpression  extends LiteralExpr
 
   object UsingDirective extends BaseExpr
 
@@ -148,5 +152,5 @@ object ParserKeys {
   val Expression    = "Expression"
   val OperatorToken = "OperatorToken"
   val Operand       = "Operand"
-
+  val Statement     = "Statement"
 }
