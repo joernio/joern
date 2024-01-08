@@ -17,7 +17,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case _             => notHandledYet(expressionNode)
   }
 
-
   protected def astForLiteralExpression(_literalNode: DotNetNodeInfo): Ast = {
     Ast(literalNode(_literalNode, code(_literalNode), nodeTypeFullName(_literalNode)))
   }
