@@ -2,9 +2,10 @@ package io.joern.swiftsrc2cpg.astcreation
 
 import io.joern.swiftsrc2cpg.datastructures.*
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.AccessorDeclSyntax
-import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.ClosureExprSyntax
+import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.CodeBlockItemSyntax
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.DeinitializerDeclSyntax
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.FunctionDeclSyntax
+import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.GuardStmtSyntax
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.InitializerDeclSyntax
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.SwiftNode
 import io.joern.swiftsrc2cpg.passes.Defines
@@ -14,6 +15,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies}
 import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
+import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 
 import scala.collection.mutable
 
@@ -40,6 +42,33 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
          |  """.stripMargin
     logger.info(text)
     Ast(unknownNode(node, code(node)))
+  }
+
+  protected def astsForBlockElements(elements: List[SwiftNode]): List[Ast] = {
+    val indexOfGuardStmt = elements.indexWhere(n =>
+      n.isInstanceOf[CodeBlockItemSyntax] && n.asInstanceOf[CodeBlockItemSyntax].item.isInstanceOf[GuardStmtSyntax]
+    )
+    if (indexOfGuardStmt < 0) {
+      val childrenAsts = elements.map(astForNode)
+      setArgumentIndices(childrenAsts)
+      childrenAsts
+    } else {
+      val elementsBeforeGuard = elements.slice(0, indexOfGuardStmt)
+      val guardStmt = elements(indexOfGuardStmt).asInstanceOf[CodeBlockItemSyntax].item.asInstanceOf[GuardStmtSyntax]
+      val elementsAfterGuard = elements.slice(indexOfGuardStmt + 1, elements.size)
+
+      val code         = this.code(guardStmt)
+      val ifNode       = controlStructureNode(guardStmt, ControlStructureTypes.IF, code)
+      val conditionAst = astForNode(guardStmt.conditions)
+      val thenAsts     = elementsAfterGuard.map(astForNode)
+      thenAsts.foreach(setOrderExplicitly(_, 2))
+      val elseAst = astForNode(guardStmt.body)
+      setOrderExplicitly(elseAst, 3)
+      val ifAst         = controlStructureAst(ifNode, Some(conditionAst), thenAsts :+ elseAst)
+      val resultingAsts = elementsBeforeGuard.map(astForNode) :+ ifAst
+      setArgumentIndices(resultingAsts)
+      resultingAsts
+    }
   }
 
   protected def registerType(typeFullName: String): Unit = {
