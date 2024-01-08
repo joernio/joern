@@ -60,11 +60,22 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       val code         = this.code(guardStmt)
       val ifNode       = controlStructureNode(guardStmt, ControlStructureTypes.IF, code)
       val conditionAst = astForNode(guardStmt.conditions)
-      val thenAsts     = astsForBlockElements(elementsAfterGuard)
-      thenAsts.foreach(setOrderExplicitly(_, 2))
+
+      val thenAst = astsForBlockElements(elementsAfterGuard) match {
+        case elem :: rest if rest.isEmpty =>
+          setOrderExplicitly(elem, 2)
+          elem
+        case head :: rest =>
+          val block         = blockNode(elementsAfterGuard.head).order(2)
+          val blockChildren = head +: rest
+          setArgumentIndices(blockChildren)
+          blockAst(block, blockChildren)
+        case Nil => Ast()
+      }
       val elseAst = astForNode(guardStmt.body)
       setOrderExplicitly(elseAst, 3)
-      val ifAst         = controlStructureAst(ifNode, Some(conditionAst), thenAsts :+ elseAst)
+
+      val ifAst         = controlStructureAst(ifNode, Some(conditionAst), Seq(thenAst, elseAst))
       val resultingAsts = astsForBlockElements(elementsBeforeGuard) :+ ifAst
       setArgumentIndices(resultingAsts)
       resultingAsts

@@ -11,11 +11,20 @@ class GuardTests extends AbstractPassTest {
 
   "GuardTests" should {
 
-    "testGuard1" ignore AstFixture("""
+    "testGuard1" in AstFixture("""
         |func noConditionNoElse() {
         |  guard {} else {}
         |}
-        |""".stripMargin) { cpg => }
+        |""".stripMargin) { cpg =>
+      val List(methodBlock) = cpg.method.nameExact("noConditionNoElse").block.l
+      val List(guardIf)     = methodBlock.astChildren.isControlStructure.l
+      guardIf.argumentIndex shouldBe 1
+      guardIf.code shouldBe "guard {} else {}"
+      guardIf.controlStructureType shouldBe ControlStructureTypes.IF
+      guardIf.condition.code.l shouldBe List("{}")
+      guardIf.whenTrue.code.l shouldBe empty
+      methodBlock.astChildren.isControlStructure.whenFalse.astChildren.code.l shouldBe empty
+    }
 
     "testGuard2" in AstFixture("""
         |var i = 2
@@ -34,7 +43,7 @@ class GuardTests extends AbstractPassTest {
       guardIf.code should startWith("guard i % 2 == 0")
       guardIf.controlStructureType shouldBe ControlStructureTypes.IF
       guardIf.condition.code.l shouldBe List("i % 2 == 0")
-      guardIf.whenTrue.code.l shouldBe List("print(i)", "i = i + 1")
+      guardIf.whenTrue.astChildren.code.l shouldBe List("print(i)", "i = i + 1")
       whileBlock.astChildren.isControlStructure.whenFalse.astChildren.code.l shouldBe List("i = i + 1", "continue")
     }
 
@@ -145,8 +154,8 @@ class GuardTests extends AbstractPassTest {
       guardIfA.controlStructureType shouldBe ControlStructureTypes.IF
       guardIfA.condition.code.l shouldBe List("a")
       guardIfA.whenFalse.astChildren.code.l shouldBe List("print(\"else a\")", "return")
-      guardIfA.whenTrue.isCall.code.l shouldBe List("print(\"a\")")
-      val List(guardIfB) = guardIfA.whenTrue.isControlStructure.l
+      guardIfA.whenTrue.astChildren.isCall.code.l shouldBe List("print(\"a\")")
+      val List(guardIfB) = guardIfA.whenTrue.astChildren.isControlStructure.l
       guardIfB.code should startWith("guard b else")
       guardIfB.controlStructureType shouldBe ControlStructureTypes.IF
       guardIfB.condition.code.l shouldBe List("b")
@@ -187,7 +196,7 @@ class GuardTests extends AbstractPassTest {
       guardIfB.code should startWith("guard b else")
       guardIfB.controlStructureType shouldBe ControlStructureTypes.IF
       guardIfB.condition.code.l shouldBe List("b")
-      guardIfB.whenTrue.code.l shouldBe List("print(\"b\")", "return")
+      guardIfB.whenTrue.astChildren.code.l shouldBe List("print(\"b\")", "return")
       guardIfB.whenFalse.astChildren.code.l shouldBe List("print(\"else b\")", "return")
     }
 
