@@ -65,9 +65,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       .json(ParserKeys.Variables)
       .arr
       .map(createDotNetNodeInfo)
-      .flatMap { nodeInfo =>
-        astForVariableDeclarator(nodeInfo, typeFullName)
-      }
+      .flatMap { astForVariableDeclarator(_, typeFullName) }
       .toSeq
   }
 

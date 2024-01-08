@@ -72,11 +72,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     val args = astForNode(binaryExpr.json(ParserKeys.Left)) ++: astForNode(binaryExpr.json(ParserKeys.Right))
     val cNode =
-      createCallNodeForOperator(
-        binaryExpr,
-        operatorName,
-        typeFullName = Some(getTypeFullNameFromAstNode(args))
-      ) // TODO: Resolve typeFullName
+      createCallNodeForOperator(binaryExpr, operatorName, typeFullName = Some(getTypeFullNameFromAstNode(args)))
     Seq(callAst(cNode, args))
   }
 
