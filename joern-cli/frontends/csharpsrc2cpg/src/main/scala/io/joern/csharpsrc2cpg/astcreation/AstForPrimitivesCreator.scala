@@ -18,7 +18,6 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) {
           Ast(node).withRefEdge(node, variable)
         }
         case _ =>
-          // TODO: Create ref edges to global identifiers
           Ast(identifierNode(ident, identifierName, ident.code, typeFullName))
     } else {
       Ast()
