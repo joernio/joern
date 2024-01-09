@@ -1,7 +1,7 @@
 package io.joern.dataflowengineoss.slicing
 
 import io.joern.dataflowengineoss.language.*
-import io.joern.x2cpg.utils.ConcurrentTaskExecutionUtil
+import io.joern.x2cpg.utils.ConcurrentTaskUtil
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -27,8 +27,8 @@ object DataFlowSlicing {
       .map(c => () => new TrackDataFlowTask(config, c).call())
       .iterator
 
-    ConcurrentTaskExecutionUtil
-      .runInParallel(tasks)(ExecutionContext.fromExecutor(poolFromConfig(config)))
+    ConcurrentTaskUtil
+      .runUsingThreadPool(tasks, config.parallelism.getOrElse(Runtime.getRuntime.availableProcessors()))
       .flatMap {
         case Success(slice) => slice
         case Failure(e) =>
