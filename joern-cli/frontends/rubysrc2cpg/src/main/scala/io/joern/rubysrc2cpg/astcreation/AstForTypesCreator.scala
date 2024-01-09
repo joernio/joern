@@ -13,12 +13,12 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   protected def astForModuleDeclaration(node: ModuleDeclaration): Ast = {
     // TODO: Might be wrong here (hence this placeholder), but I'm assuming modules ~= abstract classes.
     val classDecl = ClassDeclaration(node.moduleName, None, node.body)(node.span)
-    astForClassDeclaration(classDecl)
+    astForClassDeclaration(classDecl, defaultCtor = false)
   }
 
-  protected def astForClassDeclaration(node: ClassDeclaration): Ast = {
+  protected def astForClassDeclaration(node: ClassDeclaration, defaultCtor: Boolean = true): Ast = {
     node.className match
-      case name: SimpleIdentifier => astForSimpleNamedClassDeclaration(node, name)
+      case name: SimpleIdentifier => astForSimpleNamedClassDeclaration(node, name, defaultCtor)
       case name =>
         logger.warn(s"Qualified class names are not supported yet: ${name.text} ($relativeFileName), skipping")
         astForUnknown(node)
@@ -32,7 +32,11 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         None
   }
 
-  private def astForSimpleNamedClassDeclaration(node: ClassDeclaration, nameIdentifier: SimpleIdentifier): Ast = {
+  private def astForSimpleNamedClassDeclaration(
+    node: ClassDeclaration,
+    nameIdentifier: SimpleIdentifier,
+    defaultCtor: Boolean
+  ): Ast = {
     val className    = nameIdentifier.text
     val inheritsFrom = node.baseClass.flatMap(getBaseClassName).toList
     val typeDecl = typeDeclNode(
@@ -48,10 +52,18 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     )
     methodAstParentStack.push(typeDecl)
     scope.pushNewScope(typeDecl)
-    // TODO: ctor
+    shouldGenerateDefaultConstructorStack.push(defaultCtor)
     val classBody =
       node.body.asInstanceOf[StatementList] // for now (bodyStatement is a superset of stmtList)
-    val classBodyAsts = classBody.statements.flatMap(astsForStatement)
+    val classBodyAsts = classBody.statements.flatMap(astsForStatement) match {
+      case bodyAsts if shouldGenerateDefaultConstructorStack.head =>
+        val bodyStart  = classBody.span.spanStart
+        val initBody   = StatementList(List())(bodyStart)
+        val methodDecl = astForMethodDeclaration(MethodDeclaration("<init>", List(), initBody)(bodyStart))
+        methodDecl :: bodyAsts
+      case bodyAsts => bodyAsts
+    }
+    shouldGenerateDefaultConstructorStack.pop()
     scope.popScope()
     methodAstParentStack.pop()
     Ast(typeDecl).withChildren(classBodyAsts)

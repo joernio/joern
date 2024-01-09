@@ -270,7 +270,10 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     createIndexAccessCallAst(baseAst, memberAst, line(node), column(node), additionalArgsAst)
   }
 
-  private def astForSuperExprSyntax(node: SuperExprSyntax): Ast   = notHandledYet(node)
+  private def astForSuperExprSyntax(node: SuperExprSyntax): Ast = {
+    Ast(identifierNode(node, "super"))
+  }
+
   private def astForSwitchExprSyntax(node: SwitchExprSyntax): Ast = notHandledYet(node)
 
   private def astForTernaryExprSyntax(node: TernaryExprSyntax): Ast = {

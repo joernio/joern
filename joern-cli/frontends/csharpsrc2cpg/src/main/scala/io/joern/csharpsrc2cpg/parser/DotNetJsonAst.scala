@@ -1,5 +1,6 @@
 package io.joern.csharpsrc2cpg.parser
 
+import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.BaseExpr
 import org.slf4j.LoggerFactory
 
 object DotNetJsonAst {
@@ -7,13 +8,15 @@ object DotNetJsonAst {
   private val logger                     = LoggerFactory.getLogger(getClass)
   private val QualifiedClassName: String = DotNetJsonAst.getClass.getName
 
-  def fromString(nodeName: String, fileName: String): DotNetParserNode = {
+  def fromString(nodeName: String, fileName: Option[String] = None): DotNetParserNode = {
     try {
       val clazz = Class.forName(s"$QualifiedClassName${nodeName.stripPrefix("ast.")}$$")
       clazz.getField("MODULE$").get(clazz).asInstanceOf[DotNetParserNode]
     } catch {
       case _: Throwable =>
-        logger.warn(s"`$nodeName` AST type is not handled. We found this inside '$fileName'")
+        logger.warn(
+          s"`$nodeName` AST type is not handled.${fileName.map(x => s" We found this inside '$x'").getOrElse("")}"
+        )
         NotHandledType
     }
   }
@@ -23,8 +26,11 @@ object DotNetJsonAst {
   }
 
   sealed trait BaseExpr extends DotNetParserNode
+  sealed trait BaseStmt extends DotNetParserNode
 
-  object NotHandledType extends DotNetParserNode
+  object GlobalStatement     extends BaseStmt
+  object ExpressionStatement extends BaseExpr
+  object NotHandledType      extends DotNetParserNode
 
   object CompilationUnit extends BaseExpr
 
@@ -38,7 +44,8 @@ object DotNetJsonAst {
 
   object FieldDeclaration extends DeclarationExpr
 
-  object VariableDeclaration extends DeclarationExpr
+  object VariableDeclaration       extends DeclarationExpr
+  object LocalDeclarationStatement extends DeclarationExpr
 
   object VariableDeclarator extends DeclarationExpr
 
@@ -49,6 +56,7 @@ object DotNetJsonAst {
   sealed trait LiteralExpr extends BaseExpr
 
   object NumericLiteralExpression extends LiteralExpr
+  object StringLiteralExpression  extends LiteralExpr
 
   object UsingDirective extends BaseExpr
 
@@ -68,6 +76,45 @@ object DotNetJsonAst {
 
   object QualifiedName extends IdentifierNode
 
+  sealed trait UnaryExpr         extends BaseExpr
+  object PostIncrementExpression extends UnaryExpr
+  object PostDecrementExpression extends UnaryExpr
+  object PreIncrementExpression  extends UnaryExpr
+  object PreDecrementExpression  extends UnaryExpr
+  object UnaryPlusExpression     extends UnaryExpr
+  object UnaryMinusExpression    extends UnaryExpr
+  object BitwiseNotExpression    extends UnaryExpr
+  object LogicalNotExpression    extends UnaryExpr
+  object AddressOfExpression     extends UnaryExpr
+
+  sealed trait BinaryExpr                extends BaseExpr
+  object AddExpression                   extends BinaryExpr
+  object SubtractExpression              extends BinaryExpr
+  object MultiplyExpression              extends BinaryExpr
+  object DivideExpression                extends BinaryExpr
+  object ModuloExpression                extends BinaryExpr
+  object EqualsExpression                extends BinaryExpr
+  object NotEqualsExpression             extends BinaryExpr
+  object LogicalAndExpression            extends BinaryExpr
+  object LogicalOrExpression             extends BinaryExpr
+  object AddAssignmentExpression         extends BinaryExpr
+  object SubtractAssignmentExpression    extends BinaryExpr
+  object MultiplyAssignmentExpression    extends BinaryExpr
+  object DivideAssignmentExpression      extends BinaryExpr
+  object ModuloAssignmentExpression      extends BinaryExpr
+  object AndAssignmentExpression         extends BinaryExpr
+  object OrAssignmentExpression          extends BinaryExpr
+  object ExclusiveOrAssignmentExpression extends BinaryExpr
+  object RightShiftAssignmentExpression  extends BinaryExpr
+  object LeftShiftAssignmentExpression   extends BinaryExpr
+
+  object GreaterThanExpression        extends BinaryExpr
+  object LessThanExpression           extends BinaryExpr
+  object GreaterThanOrEqualExpression extends BinaryExpr
+  object LessThanOrEqualExpression    extends BinaryExpr
+  object BitwiseAndExpression         extends BinaryExpr
+  object BitwiseOrExpression          extends BinaryExpr
+  object ExclusiveOrExpression        extends BinaryExpr
 }
 
 /** The JSON key values, in alphabetical order.
@@ -101,5 +148,9 @@ object ParserKeys {
   val Usings        = "Usings"
   val Value         = "Value"
   val Variables     = "Variables"
-
+  val Statements    = "Statements"
+  val Expression    = "Expression"
+  val OperatorToken = "OperatorToken"
+  val Operand       = "Operand"
+  val Statement     = "Statement"
 }

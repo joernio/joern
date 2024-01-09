@@ -9,8 +9,14 @@ import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
-  private def astForBreakStmtSyntax(node: BreakStmtSyntax): Ast             = notHandledYet(node)
-  private def astForContinueStmtSyntax(node: ContinueStmtSyntax): Ast       = notHandledYet(node)
+  private def astForBreakStmtSyntax(node: BreakStmtSyntax): Ast = {
+    Ast(controlStructureNode(node, ControlStructureTypes.BREAK, code(node)))
+  }
+
+  private def astForContinueStmtSyntax(node: ContinueStmtSyntax): Ast = {
+    Ast(controlStructureNode(node, ControlStructureTypes.CONTINUE, code(node)))
+  }
+
   private def astForDeferStmtSyntax(node: DeferStmtSyntax): Ast             = notHandledYet(node)
   private def astForDiscardStmtSyntax(node: DiscardStmtSyntax): Ast         = notHandledYet(node)
   private def astForDoStmtSyntax(node: DoStmtSyntax): Ast                   = notHandledYet(node)

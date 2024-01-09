@@ -3,22 +3,25 @@ package io.joern.csharpsrc2cpg.astcreation
 import io.joern.csharpsrc2cpg.astcreation
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetJsonAst, DotNetNodeInfo, ParserKeys}
-import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewNamespaceBlock, NewTypeDecl}
+import io.joern.x2cpg.{Ast, Defines, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewMethod, NewNamespaceBlock, NewTypeDecl}
 import ujson.Value
 
+import scala.util.{Failure, Success, Try}
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  protected def createDotNetNodeInfo(json: Value): DotNetNodeInfo = {
-    val metaData = json(ParserKeys.MetaData)
-    val ln       = metaData(ParserKeys.LineStart).numOpt.map(_.toInt.asInstanceOf[Integer])
-    val cn       = metaData(ParserKeys.ColumnStart).numOpt.map(_.toInt.asInstanceOf[Integer])
-    val lnEnd    = metaData(ParserKeys.LineEnd).numOpt.map(_.toInt.asInstanceOf[Integer])
-    val cnEnd    = metaData(ParserKeys.ColumnEnd).numOpt.map(_.toInt.asInstanceOf[Integer])
-    val c =
-      metaData(ParserKeys.Code).strOpt.map(x => x.takeWhile(x => x != '\n' && x != '{')).getOrElse("<empty>").strip()
-    val node = nodeType(metaData)
-    DotNetNodeInfo(node, json, c, ln, cn, lnEnd, cnEnd)
+  protected def createDotNetNodeInfo(json: Value): DotNetNodeInfo =
+    AstCreatorHelper.createDotNetNodeInfo(json, Option(this.relativeFileName))
+
+  def createCallNodeForOperator(
+    node: DotNetNodeInfo,
+    operatorMethod: String,
+    DispatchType: String = DispatchTypes.STATIC_DISPATCH,
+    signature: Option[String] = None,
+    typeFullName: Option[String] = None
+  ): NewCall = {
+    callNode(node, node.code, operatorMethod, operatorMethod, DispatchType, signature, typeFullName)
   }
 
   protected def notHandledYet(node: DotNetNodeInfo): Seq[Ast] = {
@@ -33,9 +36,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     Seq(Ast(unknownNode(node, node.code)))
   }
 
-  private def nodeType(node: Value): DotNetParserNode =
-    DotNetJsonAst.fromString(node(ParserKeys.Kind).str, this.relativeFileName)
-
   protected def astFullName(node: DotNetNodeInfo): String = {
     methodAstParentStack.headOption match
       case Some(head: NewNamespaceBlock) => s"${head.fullName}.${nameFromNode(node)}"
@@ -44,27 +44,14 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case _                             => nameFromNode(node)
   }
 
-  protected def nameFromNode(identifierNode: DotNetNodeInfo): String = {
-    identifierNode.node match
-      case IdentifierName | Parameter => nameFromIdentifier(identifierNode)
-      case QualifiedName              => nameFromQualifiedName(identifierNode)
-      case _: DeclarationExpr         => nameFromDeclaration(identifierNode)
-      case _                          => "<empty>"
+  protected def getTypeFullNameFromAstNode(ast: Seq[Ast]): String = {
+    ast.headOption
+      .flatMap(_.root)
+      .map(_.properties.get(PropertyNames.TYPE_FULL_NAME).get.toString)
+      .getOrElse("ANY")
   }
 
-  protected def nameFromIdentifier(identifier: DotNetNodeInfo): String = {
-    identifier.json(ParserKeys.Identifier).obj(ParserKeys.Value).str
-  }
-
-  protected def nameFromDeclaration(node: DotNetNodeInfo): String = {
-    node.json(ParserKeys.Identifier).obj(ParserKeys.Value).str
-  }
-
-  protected def nameFromQualifiedName(qualifiedName: DotNetNodeInfo): String = {
-    val rhs = nameFromNode(createDotNetNodeInfo(qualifiedName.json(ParserKeys.Right)))
-    val lhs = nameFromNode(createDotNetNodeInfo(qualifiedName.json(ParserKeys.Left)))
-    s"$lhs.$rhs"
-  }
+  protected def nameFromNode(identifierNode: DotNetNodeInfo): String = AstCreatorHelper.nameFromNode(identifierNode)
 
   // TODO: Use type map to try resolve full name
   protected def nodeTypeFullName(node: DotNetNodeInfo): String = {
@@ -77,16 +64,71 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         BuiltinTypes.Float
       case NumericLiteralExpression if node.code.matches("^\\d+\\.?\\d*[m|M]?$") => // e.g. 2m or 2.1M
         BuiltinTypes.Decimal
+      case StringLiteralExpression if node.code.matches("^\"\\w+\"$") => BuiltinTypes.String
       case _ =>
-        val typeNode     = createDotNetNodeInfo(node.json(ParserKeys.Type))
-        val isArrayType  = typeNode.code.endsWith("[]")
-        val rawType      = typeNode.code.stripSuffix("[]")
-        val resolvedType = BuiltinTypes.DotNetTypeMap.getOrElse(rawType, rawType)
+        Try(createDotNetNodeInfo(node.json(ParserKeys.Type))) match
+          case Success(typeNode) =>
+            val isArrayType  = typeNode.code.endsWith("[]")
+            val rawType      = typeNode.code.stripSuffix("[]")
+            val resolvedType = BuiltinTypes.DotNetTypeMap.getOrElse(rawType, rawType)
 
-        if (isArrayType) s"$resolvedType[]"
-        else resolvedType
+            if (isArrayType) s"$resolvedType[]"
+            else resolvedType
+          case Failure(e) => {
+            logger.debug(e.getMessage)
+            "ANY"
+          }
   }
 
+}
+
+object AstCreatorHelper {
+
+  /** Creates a info node for the given JSON node.
+    * @param json
+    *   the json node to convert.
+    * @param relativeFileName
+    *   optional file name for debugging purposes.
+    * @return
+    *   the node info.
+    */
+  def createDotNetNodeInfo(json: Value, relativeFileName: Option[String] = None): DotNetNodeInfo = {
+    val metaData = json(ParserKeys.MetaData)
+    val ln       = metaData(ParserKeys.LineStart).numOpt.map(_.toInt.asInstanceOf[Integer])
+    val cn       = metaData(ParserKeys.ColumnStart).numOpt.map(_.toInt.asInstanceOf[Integer])
+    val lnEnd    = metaData(ParserKeys.LineEnd).numOpt.map(_.toInt.asInstanceOf[Integer])
+    val cnEnd    = metaData(ParserKeys.ColumnEnd).numOpt.map(_.toInt.asInstanceOf[Integer])
+    val c =
+      metaData(ParserKeys.Code).strOpt.map(x => x.takeWhile(x => x != '\n' && x != '{')).getOrElse("<empty>").strip()
+    val node = nodeType(metaData, relativeFileName)
+    DotNetNodeInfo(node, json, c, ln, cn, lnEnd, cnEnd)
+  }
+
+  private def nodeType(node: Value, relativeFileName: Option[String] = None): DotNetParserNode =
+    DotNetJsonAst.fromString(node(ParserKeys.Kind).str, relativeFileName)
+
+  def nameFromNode(node: DotNetNodeInfo): String = {
+    node.node match
+      case NamespaceDeclaration                            => nameFromNamespaceDeclaration(node)
+      case IdentifierName | Parameter | _: DeclarationExpr => nameFromIdentifier(node)
+      case QualifiedName                                   => nameFromQualifiedName(node)
+      case _                                               => "<empty>"
+  }
+
+  private def nameFromNamespaceDeclaration(namespace: DotNetNodeInfo): String = {
+    val nameNode = createDotNetNodeInfo(namespace.json(ParserKeys.Name))
+    nameFromNode(nameNode)
+  }
+
+  private def nameFromIdentifier(identifier: DotNetNodeInfo): String = {
+    identifier.json(ParserKeys.Identifier).obj(ParserKeys.Value).str
+  }
+
+  private def nameFromQualifiedName(qualifiedName: DotNetNodeInfo): String = {
+    val rhs = nameFromNode(createDotNetNodeInfo(qualifiedName.json(ParserKeys.Right)))
+    val lhs = nameFromNode(createDotNetNodeInfo(qualifiedName.json(ParserKeys.Left)))
+    s"$lhs.$rhs"
+  }
 }
 
 /** Contains all the C# builtin types, as well as `null` and `void`.

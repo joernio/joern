@@ -17,18 +17,26 @@ class IdentifierToCallPass(cpg: Cpg) extends ConcurrentWriterCpgPass[Method](cpg
 
   override def generateParts(): Array[Method] = cpg.method.toArray
 
-  override def runOnPart(diffGraph: DiffGraphBuilder, part: Method): Unit =
-    part.local.referencingIdentifiers
+  override def runOnPart(diffGraph: DiffGraphBuilder, part: Method): Unit = {
+    val identifiersToRemove = part.local
       .filter(sharesNameWithMethod)
-      .whereNot(isTargetOfAssignment)
-      .refsTo
-      .collectAll[Local]
-      .foreach(node => convertToCall(diffGraph, node))
+      .where(local =>
+        local.referencingIdentifiers
+          .whereNot(isTargetOfAssignment)
+      )
+      .flatMap(local => convertToCall(diffGraph, local))
+      .toSet
+
+    identifiersToRemove.foreach { identifier =>
+      // Remove identifiers
+      diffGraph.removeNode(identifier)
+    }
+  }
 
   /** @return
     *   true if the call shares a name with a defined method, false if otherwise.
     */
-  private def sharesNameWithMethod(node: Identifier): Boolean =
+  private def sharesNameWithMethod(node: Local): Boolean =
     methodNameSet.contains(node.name)
 
   /** Determines if the identifier is the LHS of an assignment.
@@ -39,30 +47,31 @@ class IdentifierToCallPass(cpg: Cpg) extends ConcurrentWriterCpgPass[Method](cpg
 
   /** Removes the local node and replaces all if its referencing identifiers with call nodes.
     */
-  private def convertToCall(diffGraph: DiffGraphBuilder, node: Local): Unit = {
-    node.referencingIdentifiers.foreach { i =>
+  private def convertToCall(diffGraph: DiffGraphBuilder, local: Local): Set[Identifier] = {
+
+    local.referencingIdentifiers.foreach { identifier =>
       // Create call with not much type info - this will be handled in type propagation
-      val call = NewCall()
-        .name(i.name)
-        .code(i.code)
+      val newCall = NewCall()
+        .name(identifier.name)
+        .code(identifier.code)
         .typeFullName(Defines.Any)
         .dispatchType(DispatchTypes.DYNAMIC_DISPATCH)
         .methodFullName(XDefines.DynamicCallUnknownFullName)
-        .argumentName(i.argumentName)
-        .argumentIndex(i.argumentIndex)
-        .lineNumber(i.lineNumber)
-        .columnNumber(i.columnNumber)
-        .order(i.order)
+        .argumentName(identifier.argumentName)
+        .argumentIndex(identifier.argumentIndex)
+        .lineNumber(identifier.lineNumber)
+        .columnNumber(identifier.columnNumber)
+        .order(identifier.order)
       // Persist node in-place
-      diffGraph.addNode(call)
-      i.outE.filterNot(_.label == EdgeTypes.REF).foreach(e => diffGraph.addEdge(call, e.inNode, e.label))
-      i.inE.foreach(e => diffGraph.addEdge(e.outNode, call, e.label))
-      // Remove identifiers
-      i.outE(EdgeTypes.REF).foreach(diffGraph.removeEdge)
-      diffGraph.removeNode(i)
+      diffGraph.addNode(newCall)
+      identifier.outE.filterNot(_.label == EdgeTypes.REF).foreach(e => diffGraph.addEdge(newCall, e.inNode, e.label))
+      identifier.inE.foreach(e => diffGraph.addEdge(e.outNode, newCall, e.label))
     }
+
     // Finally, remove local
-    diffGraph.removeNode(node)
+    diffGraph.removeNode(local)
+
+    local.referencingIdentifiers.toSet
   }
 
 }

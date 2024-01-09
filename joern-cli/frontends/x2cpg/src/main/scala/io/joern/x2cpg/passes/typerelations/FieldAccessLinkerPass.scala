@@ -3,7 +3,7 @@ package io.joern.x2cpg.passes.typerelations
 import io.joern.x2cpg.passes.frontend.Dereference
 import io.joern.x2cpg.utils.LinkingUtil
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Member, StoredNode}
-import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes, NodeTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.passes.CpgPass
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
@@ -33,7 +33,7 @@ class FieldAccessLinkerPass(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {
   }
 
   private def dstMemberFullNames(call: Call): Seq[String] = {
-    if (MemberAccess.isFieldAccess(call.name)) {
+    if (MemberAccess.isFieldAccess(call.name) && name != Operators.indexAccess) {
       val fieldAccess = call.asInstanceOf[OpNodes.FieldAccess]
       fieldAccess.argumentOption(1) match
         case Some(baseNode) =>

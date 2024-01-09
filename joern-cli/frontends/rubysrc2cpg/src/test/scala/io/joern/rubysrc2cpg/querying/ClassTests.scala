@@ -18,7 +18,7 @@ class ClassTests extends RubyCode2CpgFixture {
     classC.lineNumber shouldBe Some(2)
     classC.baseType.l shouldBe List()
     classC.member.l shouldBe List()
-    classC.method.l shouldBe List()
+    classC.method.name.l shouldBe List("<init>")
   }
 
   "`class C < D` is represented by a TYPE_DECL node inheriting from `D`" in {
@@ -34,7 +34,7 @@ class ClassTests extends RubyCode2CpgFixture {
     classC.fullName shouldBe "Test0.rb:<global>::program.C"
     classC.lineNumber shouldBe Some(2)
     classC.member.l shouldBe List()
-    classC.method.l shouldBe List()
+    classC.method.name.l shouldBe List("<init>")
 
     val List(typeD) = classC.baseType.l
     typeD.name shouldBe "D"
@@ -169,6 +169,56 @@ class ClassTests extends RubyCode2CpgFixture {
     val List(methodF) = classC.method.name("f").l
 
     methodF.fullName shouldBe "Test0.rb:<global>::program.C:f"
+  }
+
+  "`def initialize() ... end` directly inside a class has method name `<init>`" in {
+    val cpg = code("""
+                     |class C
+                     | def initialize()
+                     | end
+                     |end
+                     |""".stripMargin)
+
+    val List(classC)     = cpg.typeDecl.name("C").l
+    val List(methodInit) = classC.method.name("<init>").l
+
+    methodInit.fullName shouldBe "Test0.rb:<global>::program.C:<init>"
+  }
+
+  "`class C end` has default constructor" in {
+    val cpg = code("""
+                     |class C
+                     |end
+                     |""".stripMargin)
+
+    val List(classC)     = cpg.typeDecl.name("C").l
+    val List(methodInit) = classC.method.name("<init>").l
+
+    methodInit.fullName shouldBe "Test0.rb:<global>::program.C:<init>"
+  }
+
+  "`def initialize() ... end` not directly under class has method name `initialize`" in {
+    val cpg = code("""
+                     |def initialize()
+                     |  1
+                     |end
+                     |
+                     |class C
+                     | def f()
+                     |   2
+                     | end
+                     |end
+                     |
+                     |class D
+                     | def f()
+                     |   def initialize()
+                     |     3
+                     |   end
+                     | end
+                     |end
+                     |""".stripMargin)
+
+    cpg.method.name("<init>").literal.code.l should be(empty)
   }
 
 }

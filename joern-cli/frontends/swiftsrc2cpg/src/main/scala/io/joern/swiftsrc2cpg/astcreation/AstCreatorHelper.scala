@@ -1,7 +1,12 @@
 package io.joern.swiftsrc2cpg.astcreation
 
 import io.joern.swiftsrc2cpg.datastructures.*
+import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.AccessorDeclSyntax
+import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.CodeBlockItemSyntax
+import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.DeinitializerDeclSyntax
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.FunctionDeclSyntax
+import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.GuardStmtSyntax
+import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.InitializerDeclSyntax
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.SwiftNode
 import io.joern.swiftsrc2cpg.passes.Defines
 import io.joern.x2cpg.{Ast, ValidationMode}
@@ -10,6 +15,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies}
 import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
+import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 
 import scala.collection.mutable
 
@@ -38,6 +44,33 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     Ast(unknownNode(node, code(node)))
   }
 
+  protected def astsForBlockElements(elements: List[SwiftNode]): List[Ast] = {
+    val indexOfGuardStmt = elements.indexWhere(n =>
+      n.isInstanceOf[CodeBlockItemSyntax] && n.asInstanceOf[CodeBlockItemSyntax].item.isInstanceOf[GuardStmtSyntax]
+    )
+    if (indexOfGuardStmt < 0) {
+      val childrenAsts = elements.map(astForNode)
+      setArgumentIndices(childrenAsts)
+      childrenAsts
+    } else {
+      val elementsBeforeGuard = elements.slice(0, indexOfGuardStmt)
+      val guardStmt = elements(indexOfGuardStmt).asInstanceOf[CodeBlockItemSyntax].item.asInstanceOf[GuardStmtSyntax]
+      val elementsAfterGuard = elements.slice(indexOfGuardStmt + 1, elements.size)
+
+      val code         = this.code(guardStmt)
+      val ifNode       = controlStructureNode(guardStmt, ControlStructureTypes.IF, code)
+      val conditionAst = astForNode(guardStmt.conditions)
+      val thenAsts     = elementsAfterGuard.map(astForNode)
+      thenAsts.foreach(setOrderExplicitly(_, 2))
+      val elseAst = astForNode(guardStmt.body)
+      setOrderExplicitly(elseAst, 3)
+      val ifAst         = controlStructureAst(ifNode, Some(conditionAst), thenAsts :+ elseAst)
+      val resultingAsts = elementsBeforeGuard.map(astForNode) :+ ifAst
+      setArgumentIndices(resultingAsts)
+      resultingAsts
+    }
+  }
+
   protected def registerType(typeFullName: String): Unit = {
     global.usedTypes.putIfAbsent(typeFullName, true)
   }
@@ -59,9 +92,26 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       .collect { case methodScopeElement: MethodScopeElement => methodScopeElement.name }
       .mkString(":")
 
-  private def calcMethodName(func: FunctionDeclSyntax): String = code(func.name)
+  private def calcMethodName(func: SwiftNode): String = func match {
+    case f: FunctionDeclSyntax      => code(f.name)
+    case a: AccessorDeclSyntax      => code(a.accessorSpecifier)
+    case d: DeinitializerDeclSyntax => code(d.deinitKeyword)
+    case i: InitializerDeclSyntax   => code(i.initKeyword)
+    case _                          => nextClosureName()
+  }
 
-  protected def calcMethodNameAndFullName(func: FunctionDeclSyntax): (String, String) = {
+  protected def calcTypeNameAndFullName(name: String): (String, String) = {
+    val fullNamePrefix   = s"${parserResult.filename}:${computeScopePath(scope.getScopeHead)}:"
+    val intendedFullName = s"$fullNamePrefix$name"
+    val postfix          = typeFullNameToPostfix.getOrElse(intendedFullName, 0)
+    val resultingFullName =
+      if (postfix == 0) intendedFullName
+      else s"$intendedFullName$postfix"
+    typeFullNameToPostfix.put(intendedFullName, postfix + 1)
+    (name, resultingFullName)
+  }
+
+  protected def calcMethodNameAndFullName(func: SwiftNode): (String, String) = {
     // functionNode.getName is not necessarily unique and thus the full name calculated based on the scope
     // is not necessarily unique. Specifically we have this problem with lambda functions which are defined
     // in the same scope.

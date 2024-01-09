@@ -8,7 +8,9 @@ object RubyIntermediateAst {
     lineEnd: Option[Integer],
     columnEnd: Option[Integer],
     text: String
-  )
+  ) {
+    def spanStart: TextSpan = TextSpan(line, column, line, column, "")
+  }
 
   sealed class RubyNode(val span: TextSpan) {
     def line: Option[Integer] = span.line

@@ -1,29 +1,35 @@
 package io.joern.csharpsrc2cpg.astcreation
 
+import io.joern.csharpsrc2cpg.TypeMap
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.astgen.{AstGenNodeBuilder, ParserResult}
+import io.joern.x2cpg.datastructures.Scope
 import io.joern.x2cpg.datastructures.Stack.Stack
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewNode}
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import ujson.Value
-
+import io.joern.x2cpg.datastructures.Stack.StackWrapper
 import java.math.BigInteger
 import java.security.MessageDigest
 
-class AstCreator(val relativeFileName: String, val parserResult: ParserResult)(implicit
+class AstCreator(val relativeFileName: String, val parserResult: ParserResult, val typeMap: TypeMap)(implicit
   withSchemaValidation: ValidationMode
 ) extends AstCreatorBase(relativeFileName)
     with AstCreatorHelper
     with AstForDeclarationsCreator
+    with AstForPrimitivesCreator
     with AstForExpressionsCreator
+    with AstForStatementsCreator
     with AstGenNodeBuilder[AstCreator] {
 
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
 
-  protected val methodAstParentStack = new Stack[NewNode]()
+  protected val methodAstParentStack                             = new Stack[NewNode]()
+  protected val scope: Scope[String, (NewNode, String), NewNode] = new Scope()
 
   override def createAst(): DiffGraphBuilder = {
     val hash = String.format(
@@ -39,6 +45,7 @@ class AstCreator(val relativeFileName: String, val parserResult: ParserResult)(i
 
   private def astForCompilationUnit(cu: DotNetNodeInfo): Seq[Ast] = {
     val imports    = cu.json(ParserKeys.Usings).arr.map(createDotNetNodeInfo).toSeq // TODO: Handle imports
+    val name       = s"${parserResult.filename}"                                    // TODO: Find fullyQualifiedPackage
     val memberAsts = astForMembers(cu.json(ParserKeys.Members).arr.map(createDotNetNodeInfo).toSeq)
     memberAsts
   }
@@ -52,15 +59,20 @@ class AstCreator(val relativeFileName: String, val parserResult: ParserResult)(i
 
   protected def astForNode(nodeInfo: DotNetNodeInfo): Seq[Ast] = {
     nodeInfo.node match {
-      case NamespaceDeclaration => astForNamespaceDeclaration(nodeInfo)
-      case ClassDeclaration     => astForClassDeclaration(nodeInfo)
-      case MethodDeclaration    => astForMethodDeclaration(nodeInfo)
-      case FieldDeclaration     => astForFieldDeclaration(nodeInfo)
-      case VariableDeclaration  => astForVariableDeclaration(nodeInfo)
-      case EqualsValueClause    => astForEqualsValueClause(nodeInfo)
-      case UsingDirective       => notHandledYet(nodeInfo)
-      case Block                => notHandledYet(nodeInfo)
-      case _                    => notHandledYet(nodeInfo)
+      case NamespaceDeclaration      => astForNamespaceDeclaration(nodeInfo)
+      case ClassDeclaration          => astForClassDeclaration(nodeInfo)
+      case MethodDeclaration         => astForMethodDeclaration(nodeInfo)
+      case FieldDeclaration          => astForFieldDeclaration(nodeInfo)
+      case VariableDeclaration       => astForVariableDeclaration(nodeInfo)
+      case EqualsValueClause         => astForEqualsValueClause(nodeInfo)
+      case UsingDirective            => notHandledYet(nodeInfo)
+      case Block                     => notHandledYet(nodeInfo)
+      case ExpressionStatement       => astForExpression(nodeInfo)
+      case IdentifierName            => Seq(astForIdentifier(nodeInfo))
+      case LocalDeclarationStatement => astForLocalDeclarationStatement(nodeInfo)
+      case GlobalStatement           => astForGlobalStatement(nodeInfo)
+      case _: LiteralExpr            => Seq(astForLiteralExpression(nodeInfo))
+      case _                         => notHandledYet(nodeInfo)
     }
   }
 
