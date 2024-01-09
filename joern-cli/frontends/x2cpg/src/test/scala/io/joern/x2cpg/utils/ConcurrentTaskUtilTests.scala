@@ -1,0 +1,64 @@
+package io.joern.x2cpg.utils
+
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
+import scala.util.Success
+
+class ConcurrentTaskUtilTests extends AnyWordSpec with Matchers {
+
+  "compared to serial execution, concurrent execution" should {
+
+    "perform better against a large number of 'expensive' operations using a spliterator" in {
+      def problem = Iterator.fill(500)(() => Thread.sleep(10))
+
+      val parStart = System.nanoTime()
+      ConcurrentTaskUtil.runUsingSpliterator(problem)
+      val parTotal = System.nanoTime() - parStart
+
+      val serStart = System.nanoTime()
+      problem.foreach(x => x())
+      val serTotal = System.nanoTime() - serStart
+
+      parTotal should be < serTotal
+    }
+
+    "perform better against a large number of 'cheap' operations using a thread pool" in {
+      def problem = Iterator.fill(500)(() => Thread.sleep(1))
+
+      val parStart = System.nanoTime()
+      ConcurrentTaskUtil.runUsingThreadPool(problem)
+      val parTotal = System.nanoTime() - parStart
+
+      val serStart = System.nanoTime()
+      problem.foreach(x => x())
+      val serTotal = System.nanoTime() - serStart
+
+      parTotal should be < serTotal
+    }
+  }
+
+  "a large number of operations should not perform faster in a thread pool when compared to a spliterator" in {
+    def problem = Iterator.fill(1000)(() => Thread.sleep(1))
+
+    val threadPoolStart = System.nanoTime()
+    ConcurrentTaskUtil.runUsingThreadPool(problem)
+    val threadPoolTotal = System.nanoTime() - threadPoolStart
+
+    val spliteratorStart = System.nanoTime()
+    ConcurrentTaskUtil.runUsingSpliterator(problem)
+    val spliteratorTotal = System.nanoTime() - spliteratorStart
+
+    threadPoolTotal should be > spliteratorTotal
+  }
+
+  "provide the means to let the caller handle unsuccessful operations without propagating an exception" in {
+    val problem = Iterator(() => "Success!", () => "Success!", () => throw new RuntimeException("Failure!"))
+    val result  = ConcurrentTaskUtil.runUsingThreadPool(problem)
+    result.count {
+      case Success(_) => true
+      case _          => false
+    } shouldBe 2
+  }
+
+}
