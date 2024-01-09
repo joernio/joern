@@ -11,11 +11,20 @@ class GuardTests extends AbstractPassTest {
 
   "GuardTests" should {
 
-    "testGuard1" ignore AstFixture("""
+    "testGuard1" in AstFixture("""
         |func noConditionNoElse() {
         |  guard {} else {}
         |}
-        |""".stripMargin) { cpg => }
+        |""".stripMargin) { cpg =>
+      val List(methodBlock) = cpg.method.nameExact("noConditionNoElse").block.l
+      val List(guardIf)     = methodBlock.astChildren.isControlStructure.l
+      guardIf.argumentIndex shouldBe 1
+      guardIf.code shouldBe "guard {} else {}"
+      guardIf.controlStructureType shouldBe ControlStructureTypes.IF
+      guardIf.condition.code.l shouldBe List("{}")
+      guardIf.whenTrue.code.l shouldBe empty
+      methodBlock.astChildren.isControlStructure.whenFalse.astChildren.code.l shouldBe empty
+    }
 
     "testGuard2" in AstFixture("""
         |var i = 2
@@ -34,7 +43,7 @@ class GuardTests extends AbstractPassTest {
       guardIf.code should startWith("guard i % 2 == 0")
       guardIf.controlStructureType shouldBe ControlStructureTypes.IF
       guardIf.condition.code.l shouldBe List("i % 2 == 0")
-      guardIf.whenTrue.code.l shouldBe List("print(i)", "i = i + 1")
+      guardIf.whenTrue.astChildren.code.l shouldBe List("print(i)", "i = i + 1")
       whileBlock.astChildren.isControlStructure.whenFalse.astChildren.code.l shouldBe List("i = i + 1", "continue")
     }
 
@@ -115,6 +124,80 @@ class GuardTests extends AbstractPassTest {
         "print(\"Age is undefined\")",
         "return"
       )
+    }
+
+    "testGuard6" in AstFixture("""
+        |func multipleLinear() {
+        |  var a = true
+        |  var b = true
+        |  guard a else {
+        |    print("else a")
+        |    return
+        |  }
+        |  print("a")
+        |  guard b else {
+        |    print("else b")
+        |    return
+        |  }
+        |  print("b")
+        |}
+        |""".stripMargin) { cpg =>
+      val List(methodBlock)  = cpg.method.nameExact("multipleLinear").block.l
+      val List(callA, callB) = methodBlock.astChildren.isCall.l
+      callA.argumentIndex shouldBe 1
+      callA.code shouldBe "var a = true"
+      callB.argumentIndex shouldBe 2
+      callB.code shouldBe "var b = true"
+      val List(guardIfA) = methodBlock.astChildren.isControlStructure.l
+      guardIfA.argumentIndex shouldBe 3
+      guardIfA.code should startWith("guard a else")
+      guardIfA.controlStructureType shouldBe ControlStructureTypes.IF
+      guardIfA.condition.code.l shouldBe List("a")
+      guardIfA.whenFalse.astChildren.code.l shouldBe List("print(\"else a\")", "return")
+      guardIfA.whenTrue.astChildren.isCall.code.l shouldBe List("print(\"a\")")
+      val List(guardIfB) = guardIfA.whenTrue.astChildren.isControlStructure.l
+      guardIfB.code should startWith("guard b else")
+      guardIfB.controlStructureType shouldBe ControlStructureTypes.IF
+      guardIfB.condition.code.l shouldBe List("b")
+      guardIfB.whenTrue.code.l shouldBe List("print(\"b\")")
+      guardIfB.whenFalse.astChildren.code.l shouldBe List("print(\"else b\")", "return")
+    }
+
+    "testGuard7" in AstFixture("""
+        |func multipleNested() {
+        |  var a = true
+        |  var b = true
+        |  guard a else {
+        |    print("else a")
+        |    guard b else {
+        |      print("else b")
+        |      return
+        |    }
+        |    print("b")
+        |    return
+        |  }
+        |  print("a")
+        |}
+        |""".stripMargin) { cpg =>
+      val List(methodBlock)  = cpg.method.nameExact("multipleNested").block.l
+      val List(callA, callB) = methodBlock.astChildren.isCall.l
+      callA.argumentIndex shouldBe 1
+      callA.code shouldBe "var a = true"
+      callB.argumentIndex shouldBe 2
+      callB.code shouldBe "var b = true"
+      val List(guardIfA) = methodBlock.astChildren.isControlStructure.l
+      guardIfA.argumentIndex shouldBe 3
+      guardIfA.code should startWith("guard a else")
+      guardIfA.controlStructureType shouldBe ControlStructureTypes.IF
+      guardIfA.condition.code.l shouldBe List("a")
+      guardIfA.whenFalse.astChildren.isCall.code.l shouldBe List("print(\"else a\")")
+      guardIfA.whenTrue.isCall.code.l shouldBe List("print(\"a\")")
+      val List(guardIfB) = guardIfA.whenFalse.astChildren.isControlStructure.l
+      guardIfB.code should startWith("guard b else")
+      guardIfB.controlStructureType shouldBe ControlStructureTypes.IF
+      guardIfB.condition.code.l shouldBe List("b")
+      guardIfB.whenTrue.astChildren.code.l shouldBe List("print(\"b\")", "return")
+      guardIfB.whenFalse.astChildren.code.l shouldBe List("print(\"else b\")", "return")
     }
 
   }

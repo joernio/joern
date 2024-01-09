@@ -170,6 +170,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForInOutExprSyntax(node: InOutExprSyntax): Ast = notHandledYet(node)
+
   private def astForInfixOperatorExprSyntax(node: InfixOperatorExprSyntax): Ast = {
     val op = code(node.operator) match {
       case "="                   => Operators.assignment
@@ -198,6 +199,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case "/"                   => Operators.division
       case "*"                   => Operators.multiplication
       case "..<" | ">.." | "..." => Operators.range
+      case "%"                   => Operators.modulo
       case other =>
         logger.warn(s"Unknown assignment operator: '$other'")
         Operators.assignment
