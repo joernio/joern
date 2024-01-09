@@ -1,5 +1,6 @@
 package io.joern.x2cpg.utils
 
+import org.scalatest.Assertions
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
@@ -7,9 +8,13 @@ import scala.util.Success
 
 class ConcurrentTaskUtilTests extends AnyWordSpec with Matchers {
 
+  private def assumeMultipleProcessors =
+    assume(Runtime.getRuntime.availableProcessors() > 1, "!!! Number of available processors not larger than 1 !!!")
+
   "compared to serial execution, concurrent execution" should {
 
     "perform better against a large number of 'expensive' operations using a spliterator" in {
+      assumeMultipleProcessors
       def problem = Iterator.fill(500)(() => Thread.sleep(10))
 
       val parStart = System.nanoTime()
@@ -24,6 +29,7 @@ class ConcurrentTaskUtilTests extends AnyWordSpec with Matchers {
     }
 
     "perform better against a large number of 'cheap' operations using a thread pool" in {
+      assumeMultipleProcessors
       def problem = Iterator.fill(500)(() => Thread.sleep(1))
 
       val parStart = System.nanoTime()
