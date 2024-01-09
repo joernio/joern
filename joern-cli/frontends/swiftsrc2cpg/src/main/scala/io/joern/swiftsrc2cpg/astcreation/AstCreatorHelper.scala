@@ -62,15 +62,14 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       val conditionAst = astForNode(guardStmt.conditions)
 
       val thenAst = astsForBlockElements(elementsAfterGuard) match {
-        case elem :: Nil =>
-          setOrderExplicitly(elem, 2)
-          elem
-        case head :: rest =>
-          val block         = blockNode(elementsAfterGuard.head).order(2)
-          val blockChildren = head +: rest
+        case Nil => Ast()
+        case blockElement :: Nil =>
+          setOrderExplicitly(blockElement, 2)
+          blockElement
+        case blockChildren =>
+          val block = blockNode(elementsAfterGuard.head).order(2)
           setArgumentIndices(blockChildren)
           blockAst(block, blockChildren)
-        case Nil => Ast()
       }
       val elseAst = astForNode(guardStmt.body)
       setOrderExplicitly(elseAst, 3)
