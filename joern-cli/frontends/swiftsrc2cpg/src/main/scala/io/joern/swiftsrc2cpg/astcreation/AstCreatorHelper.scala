@@ -62,7 +62,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       val conditionAst = astForNode(guardStmt.conditions)
 
       val thenAst = astsForBlockElements(elementsAfterGuard) match {
-        case elem :: rest if rest.isEmpty =>
+        case elem :: Nil =>
           setOrderExplicitly(elem, 2)
           elem
         case head :: rest =>
