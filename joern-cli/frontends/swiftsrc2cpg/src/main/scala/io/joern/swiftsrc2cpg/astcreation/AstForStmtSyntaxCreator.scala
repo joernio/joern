@@ -17,15 +17,22 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     Ast(controlStructureNode(node, ControlStructureTypes.CONTINUE, code(node)))
   }
 
-  private def astForDeferStmtSyntax(node: DeferStmtSyntax): Ast             = notHandledYet(node)
-  private def astForDiscardStmtSyntax(node: DiscardStmtSyntax): Ast         = notHandledYet(node)
-  private def astForDoStmtSyntax(node: DoStmtSyntax): Ast                   = notHandledYet(node)
-  private def astForExpressionStmtSyntax(node: ExpressionStmtSyntax): Ast   = notHandledYet(node)
-  private def astForFallThroughStmtSyntax(node: FallThroughStmtSyntax): Ast = notHandledYet(node)
-  private def astForForStmtSyntax(node: ForStmtSyntax): Ast                 = notHandledYet(node)
-  private def astForGuardStmtSyntax(node: GuardStmtSyntax): Ast             = notHandledYet(node)
-  private def astForLabeledStmtSyntax(node: LabeledStmtSyntax): Ast         = notHandledYet(node)
-  private def astForMissingStmtSyntax(node: MissingStmtSyntax): Ast         = notHandledYet(node)
+  private def astForDeferStmtSyntax(node: DeferStmtSyntax): Ast     = notHandledYet(node)
+  private def astForDiscardStmtSyntax(node: DiscardStmtSyntax): Ast = notHandledYet(node)
+  private def astForDoStmtSyntax(node: DoStmtSyntax): Ast           = notHandledYet(node)
+
+  private def astForExpressionStmtSyntax(node: ExpressionStmtSyntax): Ast = {
+    astForNodeWithFunctionReference(node.expression)
+  }
+
+  private def astForFallThroughStmtSyntax(node: FallThroughStmtSyntax): Ast = {
+    Ast(controlStructureNode(node, ControlStructureTypes.CONTINUE, code(node)))
+  }
+
+  private def astForForStmtSyntax(node: ForStmtSyntax): Ast         = notHandledYet(node)
+  private def astForGuardStmtSyntax(node: GuardStmtSyntax): Ast     = notHandledYet(node)
+  private def astForLabeledStmtSyntax(node: LabeledStmtSyntax): Ast = notHandledYet(node)
+  private def astForMissingStmtSyntax(node: MissingStmtSyntax): Ast = notHandledYet(node)
 
   private def astForRepeatStmtSyntax(node: RepeatStmtSyntax): Ast = {
     val code = this.code(node)
