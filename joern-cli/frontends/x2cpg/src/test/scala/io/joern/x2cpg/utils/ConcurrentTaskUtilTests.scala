@@ -30,7 +30,7 @@ class ConcurrentTaskUtilTests extends AnyWordSpec with Matchers {
 
     "perform better against a large number of 'cheap' operations using a thread pool" in {
       assumeMultipleProcessors
-      def problem = Iterator.fill(500)(() => Thread.sleep(1))
+      def problem = Iterator.fill(1000)(() => Thread.sleep(1))
 
       val parStart = System.nanoTime()
       ConcurrentTaskUtil.runUsingThreadPool(problem)
