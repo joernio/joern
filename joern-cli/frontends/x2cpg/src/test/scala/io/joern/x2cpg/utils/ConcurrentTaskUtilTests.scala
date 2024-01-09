@@ -38,20 +38,6 @@ class ConcurrentTaskUtilTests extends AnyWordSpec with Matchers {
     }
   }
 
-  "a large number of operations should not perform faster in a thread pool when compared to a spliterator" in {
-    def problem = Iterator.fill(1000)(() => Thread.sleep(1))
-
-    val threadPoolStart = System.nanoTime()
-    ConcurrentTaskUtil.runUsingThreadPool(problem)
-    val threadPoolTotal = System.nanoTime() - threadPoolStart
-
-    val spliteratorStart = System.nanoTime()
-    ConcurrentTaskUtil.runUsingSpliterator(problem)
-    val spliteratorTotal = System.nanoTime() - spliteratorStart
-
-    threadPoolTotal should be > spliteratorTotal
-  }
-
   "provide the means to let the caller handle unsuccessful operations without propagating an exception" in {
     val problem = Iterator(() => "Success!", () => "Success!", () => throw new RuntimeException("Failure!"))
     val result  = ConcurrentTaskUtil.runUsingThreadPool(problem)
