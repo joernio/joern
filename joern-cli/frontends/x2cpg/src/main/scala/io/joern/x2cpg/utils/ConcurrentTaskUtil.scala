@@ -19,7 +19,7 @@ object ConcurrentTaskUtil {
     * @param tasks
     *   the tasks to parallelize.
     * @param maxPoolSize
-    *   the max number of tasks to queue for parallel execution.
+    *   the max pool size to allow for active threads.
     * @tparam V
     *   the output type of each task.
     * @return
