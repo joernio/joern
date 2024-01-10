@@ -27,7 +27,7 @@ abstract class TestCpg extends Cpg() with LanguageFrontend {
 
   protected def applyPasses(): Unit
 
-  private def applyPostProcessingPassesIfEnabled(): Unit = if (!_withPostProcessing) {
+  private def applyPostProcessingPassesIfEnabled(): Unit = if (_withPostProcessing) {
     applyPostProcessingPasses()
   }
 
