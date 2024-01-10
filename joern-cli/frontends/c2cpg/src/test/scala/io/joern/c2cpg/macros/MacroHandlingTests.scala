@@ -253,6 +253,37 @@ class MacroHandlingTests extends CCodeToCpgSuite {
       andCall2Arg2.name shouldBe "x"
     }
   }
+
+  "MacroHandlingTests9" should {
+    val cpg = code(
+      """
+        |// _Generic is a macro from C11 currently un-parsable by the used CDT parser version
+        |#define type_num(X) _Generic((X), \
+        |  long double: 1, \
+        |  default: 0, \
+        |  float: 2 \
+        | )
+        |
+        |int test_generic(void) {
+        |  float x = 8.0;
+        |  const float y = 3.375;
+        |  int z = type_num(x);
+        |  return z;
+        |}""".stripMargin,
+      "file.cpp"
+    )
+
+    "should recover from un-parsable macros" in {
+      val List(localZ) = cpg.local.nameExact("z").l
+      localZ.code shouldBe "int z"
+      localZ.typeFullName shouldBe "int"
+      val List(zAssignmentCall) = cpg.call.codeExact("z = type_num(x)").l
+      zAssignmentCall.argument(1).code shouldBe "z"
+      val typeNumCall = zAssignmentCall.argument(2).asInstanceOf[Call]
+      typeNumCall.code shouldBe "type_num(x)"
+      typeNumCall.name shouldBe "type_num"
+    }
+  }
 }
 
 class CfgMacroTests extends DataFlowCodeToCpgSuite {
