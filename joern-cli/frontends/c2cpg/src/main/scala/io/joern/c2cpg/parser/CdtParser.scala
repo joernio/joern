@@ -13,7 +13,10 @@ import org.eclipse.cdt.internal.core.dom.parser.cpp.semantics.CPPVisitor
 import org.slf4j.LoggerFactory
 
 import java.nio.file.{NoSuchFileException, Path}
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 object CdtParser {
 
@@ -65,6 +68,18 @@ class CdtParser(config: Config) extends ParseProblemsLogger with PreprocessorSta
     new ScannerInfo(definedSymbols, (includePaths ++ additionalIncludes).map(_.toString).toArray)
   }
 
+  private def parseInternal(code: String, inFile: File): IASTTranslationUnit = {
+    val fileContent         = FileContent.create(inFile.toString, true, code.toCharArray)
+    val fileContentProvider = new CustomFileContentProvider(headerFileFinder)
+    val lang                = createParseLanguage(inFile.path)
+    val scannerInfo         = createScannerInfo(inFile.path)
+    val translationUnit     = lang.getASTTranslationUnit(fileContent, scannerInfo, fileContentProvider, null, opts, log)
+    val problems            = CPPVisitor.getProblems(translationUnit)
+    if (parserConfig.logProblems) logProblems(problems.toList)
+    if (parserConfig.logPreprocessor) logPreprocessorStatements(translationUnit)
+    translationUnit
+  }
+
   private def parseInternal(file: Path): ParseResult = {
     val realPath = File(file)
     if (realPath.isRegularFile) { // handling potentially broken symlinks
@@ -100,6 +115,16 @@ class CdtParser(config: Config) extends ParseProblemsLogger with PreprocessorSta
 
   def preprocessorStatements(file: Path): Iterable[IASTPreprocessorStatement] = {
     parse(file).map(t => preprocessorStatements(t)).getOrElse(Iterable.empty)
+  }
+
+  def parse(code: String, inFile: Path): Option[IASTTranslationUnit] = {
+    Try(parseInternal(code, inFile)) match {
+      case Failure(exception) =>
+        logger.warn(s"Failed to parse '$code' in file '$inFile': ${extractParseException(exception)}")
+        None
+      case Success(translationUnit) =>
+        Some(translationUnit)
+    }
   }
 
   def parse(file: Path): Option[IASTTranslationUnit] = {

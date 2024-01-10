@@ -1,5 +1,6 @@
 package io.joern.c2cpg.astcreation
 
+import io.joern.c2cpg.parser.CdtParser
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
@@ -10,6 +11,8 @@ import org.eclipse.cdt.internal.core.dom.parser.c.CASTIfStatement
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTIfStatement
 import org.eclipse.cdt.internal.core.dom.parser.cpp.CPPASTNamespaceAlias
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
+
+import java.nio.file.Paths
 
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -148,10 +151,23 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case caseStmt: IASTCaseStatement            => astsForCaseStatement(caseStmt)
       case decl: IASTDeclarationStatement         => astsForDeclarationStatement(decl)
       case label: IASTLabelStatement              => astsForLabelStatement(label)
+      case problem: IASTProblemStatement          => astsForProblemStatement(problem)
       case _: IASTNullStatement                   => Seq.empty
       case _                                      => Seq(astForNode(statement))
     }
     r.map(x => asChildOfMacroCall(statement, x))
+  }
+
+  private def astsForProblemStatement(statement: IASTProblemStatement): Seq[Ast] = {
+    // We only handle un-parsable macros here for now
+    val isFromMacroExpansion = statement.getProblem.getNodeLocations.exists(_.isInstanceOf[IASTMacroExpansionLocation])
+    if (isFromMacroExpansion) {
+      new CdtParser(config).parse(statement.getRawSignature, Paths.get(statement.getContainingFilename)) match
+        case Some(node) => node.getDeclarations.toIndexedSeq.flatMap(astsForDeclaration)
+        case None       => Seq.empty
+    } else {
+      Seq.empty
+    }
   }
 
   private def astForConditionExpression(expr: IASTExpression, explicitArgumentIndex: Option[Int] = None): Ast = {
