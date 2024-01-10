@@ -1,6 +1,7 @@
 package io.joern.jimple2cpg.testfixtures
 
-import better.files.File as BFile
+import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
+import io.joern.dataflowengineoss.testfixtures.{SemanticCpgTestFixture, SemanticTestCpg}
 import io.joern.jimple2cpg.{Config, Jimple2Cpg}
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, LanguageFrontend, TestCpg}
@@ -22,16 +23,15 @@ trait Jimple2CpgFrontend extends LanguageFrontend {
   }
 }
 
-class JimpleCode2CpgFixture() extends Code2CpgFixture(() => new JimpleTestCpg()) {}
+class JimpleCode2CpgFixture(withOssDataflow: Boolean = false, extraFlows: List[FlowSemantic] = List.empty)
+    extends Code2CpgFixture(() => new JimpleTestCpg().withOssDataflow(withOssDataflow).withExtraFlows(extraFlows))
+    with SemanticCpgTestFixture(extraFlows) {}
 
-class JimpleTestCpg() extends TestCpg with Jimple2CpgFrontend {
+class JimpleTestCpg extends TestCpg with Jimple2CpgFrontend with SemanticTestCpg {
 
   override protected def codeDirPreProcessing(rootFile: Path, codeFiles: List[Path]): Unit =
     JimpleCodeToCpgFixture.compileJava(rootFile, codeFiles.map(_.toFile))
 
-  override protected def applyPasses(): Unit = {
-    X2Cpg.applyDefaultOverlays(this)
-  }
 }
 
 object JimpleCodeToCpgFixture {

@@ -3,7 +3,7 @@ name := "kotlin2cpg"
 val kotlinVersion = "1.9.10"
 
 dependsOn(
-  Projects.dataflowengineoss,
+  Projects.dataflowengineoss % "compile->compile;test->test",
   Projects.x2cpg       % "compile->compile;test->test",
   Projects.javasrc2cpg % "compile->compile;test->test"
 )

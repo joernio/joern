@@ -10,7 +10,7 @@ val versionedParserBinName = s"php-parser-$phpParserVersion.phar"
 val phpParserDlUrl =
   s"https://github.com/joernio/PHP-Parser/releases/download/v$phpParserVersion/$upstreamParserBinName"
 
-dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test")
+dependsOn(Projects.dataflowengineoss % "compile->compile;test->test", Projects.x2cpg % "compile->compile;test->test")
 
 libraryDependencies ++= Seq(
   "com.lihaoyi"   %% "upickle"           % Versions.upickle,
