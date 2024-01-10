@@ -1,21 +1,24 @@
 package io.joern.dataflowengineoss.slicing
 
+import io.joern.x2cpg.utils.ConcurrentTaskUtil
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
 import io.shiftleft.semanticcpg.language.*
+import org.slf4j.LoggerFactory
 
 import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.regex.Pattern
 import scala.collection.concurrent.TrieMap
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 /** A utility for slicing based off of usage references for identifiers and parameters. This is mainly tested around
   * JavaScript CPGs.
   */
 object UsageSlicing {
 
+  private val logger                 = LoggerFactory.getLogger(getClass)
   private val resolver               = NoResolve
   private val constructorTypeMatcher = Pattern.compile(".*new (\\w+)\\(.*")
   private val excludeOperatorCalls   = new AtomicBoolean(false)
@@ -38,30 +41,30 @@ object UsageSlicing {
 
     def typeMap = TrieMap.from(cpg.typeDecl.map(f => (f.name, f.fullName)).toMap)
 
-    val exec = poolFromConfig(config)
-    try {
-      val slices       = usageSlices(exec, cpg, declarations, typeMap)
-      val userDefTypes = userDefinedTypes(cpg)
-      ProgramUsageSlice(slices, userDefTypes)
-    } finally {
-      exec.shutdown()
-    }
+    val slices       = usageSlices(cpg, declarations, typeMap)
+    val userDefTypes = userDefinedTypes(cpg)
+    ProgramUsageSlice(slices, userDefTypes)
   }
 
   import io.shiftleft.semanticcpg.codedumper.CodeDumper.dump
 
-  private def usageSlices(
-    exec: ExecutorService,
-    cpg: Cpg,
-    declarations: List[Declaration],
-    typeMap: TrieMap[String, String]
-  )(implicit config: UsagesConfig): List[MethodUsageSlice] = {
+  private def usageSlices(cpg: Cpg, declarations: List[Declaration], typeMap: TrieMap[String, String])(implicit
+    config: UsagesConfig
+  ): List[MethodUsageSlice] = {
     val language = cpg.metaData.language.headOption
     val root     = cpg.metaData.root.headOption
-    declarations
+    val tasks = declarations
       .filter(a => atLeastNCalls(a, config.minNumCalls) && !a.name.startsWith("_tmp_"))
-      .map(a => exec.submit(new TrackUsageTask(cpg, a, typeMap)))
-      .flatMap(_.get)
+      .map(a => () => new TrackUsageTask(cpg, a, typeMap).call())
+      .iterator
+    ConcurrentTaskUtil
+      .runUsingThreadPool(tasks, config.parallelism.getOrElse(Runtime.getRuntime.availableProcessors()))
+      .flatMap {
+        case Success(slice) => slice
+        case Failure(e) =>
+          logger.warn("Exception encountered during slicing task", e)
+          None
+      }
       .groupBy { case (scope, _) => scope }
       .view
       .sortBy(_._1.fullName)

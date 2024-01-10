@@ -91,11 +91,6 @@ package object slicing {
     excludeMethodSource: Boolean = false
   ) extends BaseConfig[UsagesConfig]
 
-  def poolFromConfig(config: BaseConfig[_]): ExecutorService = config.parallelism match
-    case Some(parallelism) if parallelism == 1 => Executors.newSingleThreadExecutor()
-    case Some(parallelism) if parallelism > 1  => Executors.newWorkStealingPool(parallelism)
-    case _                                     => Executors.newWorkStealingPool()
-
   /** Adds extensions to modify a call traversal based on config options.
     */
   implicit class CallFilterExt(trav: Iterator[Call]) {

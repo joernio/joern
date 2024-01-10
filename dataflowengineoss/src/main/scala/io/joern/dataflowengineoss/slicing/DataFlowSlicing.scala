@@ -1,27 +1,40 @@
 package io.joern.dataflowengineoss.slicing
 
 import io.joern.dataflowengineoss.language.*
+import io.joern.x2cpg.utils.ConcurrentTaskUtil
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
+import org.slf4j.LoggerFactory
 
-import java.util.concurrent.{Callable, Executors}
+import java.util.concurrent.Callable
+import scala.concurrent.ExecutionContext
+import scala.util.{Failure, Success}
 
 object DataFlowSlicing {
 
   implicit val resolver: ICallResolver = NoResolve
+  private val logger                   = LoggerFactory.getLogger(getClass)
 
   def calculateDataFlowSlice(cpg: Cpg, config: DataFlowConfig): Option[DataFlowSlice] = {
     implicit val implicitConfig: DataFlowConfig = config
 
-    val exec = poolFromConfig(config)
-    (config.fileFilter match {
+    val tasks = (config.fileFilter match {
       case Some(fileName) => cpg.file.nameExact(fileName).method.call
       case None           => cpg.call
     }).method.withMethodNameFilter.withMethodParameterFilter.withMethodAnnotationFilter.call.withExternalCalleeFilter
-      .map(c => exec.submit(new TrackDataFlowTask(config, c)))
-      .flatMap(_.get())
+      .map(c => () => new TrackDataFlowTask(config, c).call())
+      .iterator
+
+    ConcurrentTaskUtil
+      .runUsingThreadPool(tasks, config.parallelism.getOrElse(Runtime.getRuntime.availableProcessors()))
+      .flatMap {
+        case Success(slice) => slice
+        case Failure(e) =>
+          logger.warn("Exception encountered during slicing task", e)
+          None
+      }
       .reduceOption { (a, b) => DataFlowSlice(a.nodes ++ b.nodes, a.edges ++ b.edges) }
   }
 
