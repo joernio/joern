@@ -277,10 +277,12 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     Ast(literalNode(node, s"\"${code(node)}\"", Option(Defines.String)))
   }
 
-  private def astForSwitchCaseItemSyntax(node: SwitchCaseItemSyntax): Ast               = notHandledYet(node)
-  private def astForSwitchCaseLabelSyntax(node: SwitchCaseLabelSyntax): Ast             = notHandledYet(node)
-  private def astForSwitchCaseSyntax(node: SwitchCaseSyntax): Ast                       = notHandledYet(node)
-  private def astForSwitchDefaultLabelSyntax(node: SwitchDefaultLabelSyntax): Ast       = notHandledYet(node)
+  private def astForSwitchCaseItemSyntax(node: SwitchCaseItemSyntax): Ast   = notHandledYet(node)
+  private def astForSwitchCaseLabelSyntax(node: SwitchCaseLabelSyntax): Ast = notHandledYet(node)
+  private def astForSwitchCaseSyntax(node: SwitchCaseSyntax): Ast           = notHandledYet(node)
+
+  private def astForSwitchDefaultLabelSyntax(node: SwitchDefaultLabelSyntax): Ast = Ast()
+
   private def astForThrownTypeClauseSyntax(node: ThrownTypeClauseSyntax): Ast           = notHandledYet(node)
   private def astForTuplePatternElementSyntax(node: TuplePatternElementSyntax): Ast     = notHandledYet(node)
   private def astForTupleTypeElementSyntax(node: TupleTypeElementSyntax): Ast           = notHandledYet(node)
@@ -292,9 +294,13 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   ): Ast = notHandledYet(node)
   private def astForUnderscorePrivateAttributeArgumentsSyntax(node: UnderscorePrivateAttributeArgumentsSyntax): Ast =
     notHandledYet(node)
-  private def astForVersionComponentSyntax(node: VersionComponentSyntax): Ast                 = notHandledYet(node)
-  private def astForVersionTupleSyntax(node: VersionTupleSyntax): Ast                         = notHandledYet(node)
-  private def astForWhereClauseSyntax(node: WhereClauseSyntax): Ast                           = notHandledYet(node)
+  private def astForVersionComponentSyntax(node: VersionComponentSyntax): Ast = notHandledYet(node)
+  private def astForVersionTupleSyntax(node: VersionTupleSyntax): Ast         = notHandledYet(node)
+
+  private def astForWhereClauseSyntax(node: WhereClauseSyntax): Ast = {
+    astForNodeWithFunctionReference(node.condition)
+  }
+
   private def astForYieldedExpressionSyntax(node: YieldedExpressionSyntax): Ast               = notHandledYet(node)
   private def astForYieldedExpressionsClauseSyntax(node: YieldedExpressionsClauseSyntax): Ast = notHandledYet(node)
 

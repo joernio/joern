@@ -22,6 +22,24 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     case _                      => ""
   }
 
+  protected def createJumpTarget(switchCase: SwitchCaseSyntax | IfConfigDeclSyntax): NewJumpTarget = {
+    val (switchName, switchCode) = switchCase match {
+      case s: SwitchCaseSyntax =>
+        val c = code(s.label)
+        (c.stripSuffix(":"), c)
+      case i: IfConfigDeclSyntax =>
+        notHandledYet(i)
+        val c = code(i.clauses.children.head)
+        (c.stripSuffix(":"), c)
+    }
+    NewJumpTarget()
+      .parserTypeName(switchCase.toString)
+      .name(switchName)
+      .code(switchCode)
+      .lineNumber(line(switchCase))
+      .columnNumber(column(switchCase))
+  }
+
   protected def createIndexAccessCallAst(
     baseNode: NewNode,
     partNode: NewNode,

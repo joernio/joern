@@ -66,7 +66,13 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  private def astForDiscardAssignmentExprSyntax(node: DiscardAssignmentExprSyntax): Ast = notHandledYet(node)
+  private def astForDiscardAssignmentExprSyntax(node: DiscardAssignmentExprSyntax): Ast = {
+    val name   = generateUnusedVariableName(usedVariableNames, "wildcard")
+    val idNode = identifierNode(node, name)
+    scope.addVariableReference(name, idNode)
+    Ast(idNode)
+  }
+
   private def astForDoExprSyntax(node: DoExprSyntax): Ast                               = notHandledYet(node)
   private def astForEditorPlaceholderExprSyntax(node: EditorPlaceholderExprSyntax): Ast = notHandledYet(node)
 
@@ -200,6 +206,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case "*"                   => Operators.multiplication
       case "..<" | ">.." | "..." => Operators.range
       case "%"                   => Operators.modulo
+      case "!"                   => Operators.logicalNot
       case other =>
         logger.warn(s"Unknown assignment operator: '$other'")
         Operators.assignment
@@ -276,7 +283,81 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     Ast(identifierNode(node, "super"))
   }
 
-  private def astForSwitchExprSyntax(node: SwitchExprSyntax): Ast = notHandledYet(node)
+  private def astsForSwitchCase(switchCase: SwitchCaseSyntax | IfConfigDeclSyntax): List[Ast] = {
+    val labelAst = Ast(createJumpTarget(switchCase))
+    val (testAsts, consequentAsts) = switchCase match {
+      case s: SwitchCaseSyntax =>
+        val (tAsts, flowAst) = s.label match {
+          case i: SwitchCaseLabelSyntax =>
+            val children         = i.caseItems.children
+            val childrenTestAsts = children.map(c => astForNodeWithFunctionReference(c.pattern))
+            val childrenFlowAsts = children.collect {
+              case child if child.whereClause.isDefined =>
+                val whereClause = child.whereClause.get
+                val ifNode =
+                  controlStructureNode(whereClause.condition, ControlStructureTypes.IF, code(whereClause.condition))
+                val whereAst = astForNodeWithFunctionReference(whereClause)
+                val whereClauseCallNode = callNode(
+                  whereClause.condition,
+                  s"!(${code(whereClause.condition)})",
+                  Operators.logicalNot,
+                  DispatchTypes.STATIC_DISPATCH
+                )
+                val argAsts = List(whereAst)
+                val testAst = callAst(whereClauseCallNode, argAsts)
+                val consequentAst =
+                  Ast(controlStructureNode(whereClause.condition, ControlStructureTypes.CONTINUE, "continue"))
+                setOrderExplicitly(testAst, 1)
+                setOrderExplicitly(consequentAst, 2)
+                Ast(ifNode)
+                  .withChild(testAst)
+                  .withConditionEdge(ifNode, testAst.nodes.head)
+                  .withChild(consequentAst)
+            }
+            (childrenTestAsts, childrenFlowAsts)
+          case other => (List(astForNode(other)), List.empty)
+        }
+        val needsSyntheticBreak = !s.statements.children.lastOption.exists(_.item.isInstanceOf[FallThroughStmtSyntax])
+        val cAsts = if (needsSyntheticBreak) {
+          flowAst :+ astForNode(s.statements) :+ Ast(controlStructureNode(s, ControlStructureTypes.BREAK, "break"))
+        } else {
+          flowAst :+ astForNode(s.statements)
+        }
+        setArgumentIndices(cAsts)
+        (tAsts.toList, cAsts.toList)
+      case i: IfConfigDeclSyntax =>
+        val children            = i.clauses.children
+        val childrenTestAsts    = children.flatMap(c => c.condition.map(astForNode)).toList
+        val childrenElementAsts = children.flatMap(c => c.elements.map(astForNode)).toList
+        (childrenTestAsts, childrenElementAsts)
+    }
+    labelAst +: (testAsts ++ consequentAsts)
+  }
+
+  private def astForSwitchExprSyntax(node: SwitchExprSyntax): Ast = {
+    val switchNode = controlStructureNode(node, ControlStructureTypes.SWITCH, code(node))
+
+    // The semantics of switch statement children is partially defined by their order value.
+    // The blockAst must have order == 2. Only to avoid collision we set switchExpressionAst to 1
+    // because the semantics of it is already indicated via the condition edge.
+    val switchExpressionAst = astForNodeWithFunctionReference(node.subject)
+    setOrderExplicitly(switchExpressionAst, 1)
+
+    val blockNode_ = blockNode(node).order(2)
+    scope.pushNewBlockScope(blockNode_)
+    localAstParentStack.push(blockNode_)
+
+    val casesAsts = node.cases.children.flatMap(astsForSwitchCase)
+    setArgumentIndices(casesAsts.toList)
+
+    scope.popScope()
+    localAstParentStack.pop()
+
+    Ast(switchNode)
+      .withChild(switchExpressionAst)
+      .withConditionEdge(switchNode, switchExpressionAst.nodes.head)
+      .withChild(blockAst(blockNode_, casesAsts.toList))
+  }
 
   private def astForTernaryExprSyntax(node: TernaryExprSyntax): Ast = {
     val name = Operators.conditional
