@@ -135,4 +135,46 @@ class MethodParameterTests2 extends JavaSrcCode2CpgFixture {
       }
     }
   }
+
+  "imported method parameter's external, non-generic type" should {
+    val cpg = code("""
+        |import foo.bar.Baz;
+        |class Main {
+        | void run(Baz p1) {}
+        |}
+        |""".stripMargin)
+
+    "have correct type for parameter p1" in {
+      val List(param) = cpg.method.name("run").parameter.name("p1").l
+      param.typeFullName shouldBe "foo.bar.Baz"
+    }
+  }
+
+  "imported method parameter's internal, generic type" should {
+    val cpg = code("""
+        |import java.util.*;
+        |class Main {
+        | void run(List<String> p1) {}
+        |}
+        |""".stripMargin)
+
+    "have correct type for parameter p1" in {
+      val List(param) = cpg.method.name("run").parameter.name("p1").l
+      param.typeFullName shouldBe "java.util.List"
+    }
+  }
+
+  "imported method parameter's external, generic type" should {
+    val cpg = code("""
+        |import foo.bar.Baz;
+        |class Main {
+        |  void run(Baz<String> p1) {}
+        |}
+        |""".stripMargin)
+
+    "have correct type for parameter p1" in {
+      val List(param) = cpg.method.name("run").parameter.name("p1").l
+      param.typeFullName shouldBe "foo.bar.Baz"
+    }
+  }
 }

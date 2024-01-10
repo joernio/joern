@@ -219,6 +219,12 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       typeInfoCalc
         .fullName(parameter.getType)
         .orElse(scope.lookupType(parameter.getTypeAsString))
+        // In a scenario where we have an import of an external type e.g. `import foo.bar.Baz` and
+        // this parameter's type is e.g. `Baz<String>`, the lookup will fail. However, if we lookup
+        // for `Baz` instead (i.e. without type arguments), then the lookup will succeed.
+        .orElse(
+          Try(parameter.getType.asClassOrInterfaceType).toOption.flatMap(t => scope.lookupType(t.getNameAsString))
+        )
         .map(_ ++ maybeArraySuffix)
         .getOrElse(s"${Defines.UnresolvedNamespace}.${parameter.getTypeAsString}")
     val evalStrat =
