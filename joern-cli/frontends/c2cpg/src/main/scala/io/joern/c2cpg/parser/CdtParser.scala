@@ -117,12 +117,14 @@ class CdtParser(config: Config) extends ParseProblemsLogger with PreprocessorSta
     parse(file).map(t => preprocessorStatements(t)).getOrElse(Iterable.empty)
   }
 
-  def parse(code: String, inFile: Path): Option[IASTTranslationUnit] = Try(parseInternal(code, inFile)) match {
-    case Failure(exception) =>
-      logger.warn(s"Failed to parse '$code' in file '$inFile': ${extractParseException(exception)}")
-      None
-    case Success(translationUnit) =>
-      Some(translationUnit)
+  def parse(code: String, inFile: Path): Option[IASTTranslationUnit] = {
+    Try(parseInternal(code, inFile)) match {
+      case Failure(exception) =>
+        logger.warn(s"Failed to parse '$code' in file '$inFile': ${extractParseException(exception)}")
+        None
+      case Success(translationUnit) =>
+        Some(translationUnit)
+    }
   }
 
   def parse(file: Path): Option[IASTTranslationUnit] = {
