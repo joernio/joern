@@ -24,7 +24,12 @@ trait C2CpgFrontend extends LanguageFrontend {
   }
 }
 
-class DefaultTestCpgWithC(val fileSuffix: String) extends DefaultTestCpg with C2CpgFrontend with SemanticTestCpg
+class DefaultTestCpgWithC(val fileSuffix: String) extends DefaultTestCpg with C2CpgFrontend with SemanticTestCpg {
+  override protected def applyPasses(): Unit = {
+    super.applyPasses()
+    applyOssDataFlow()
+  }
+}
 
 class CCodeToCpgSuite(
   fileSuffix: String = FileDefaults.C_EXT,

@@ -24,7 +24,14 @@ trait SwiftSrc2CpgFrontend extends LanguageFrontend {
 class DefaultTestCpgWithSwiftSrc(val fileSuffix: String)
     extends DefaultTestCpg
     with SwiftSrc2CpgFrontend
-    with SemanticTestCpg {}
+    with SemanticTestCpg {
+
+  override protected def applyPasses(): Unit = {
+    super.applyPasses()
+    applyOssDataFlow()
+  }
+
+}
 
 class SwiftSrc2CpgSuite(
   fileSuffix: String = ".swift",

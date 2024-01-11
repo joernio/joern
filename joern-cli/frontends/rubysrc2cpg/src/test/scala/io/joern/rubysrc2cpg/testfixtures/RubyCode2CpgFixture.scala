@@ -34,6 +34,11 @@ class DefaultTestCpgWithRuby(packageTable: Option[PackageTable], useDeprecatedFr
     with RubyFrontend(useDeprecatedFrontend)
     with SemanticTestCpg {
 
+  override protected def applyPasses(): Unit = {
+    super.applyPasses()
+    applyOssDataFlow()
+  }
+
   override protected def applyPostProcessingPasses(): Unit = {
     packageTable match {
       case Some(table) =>

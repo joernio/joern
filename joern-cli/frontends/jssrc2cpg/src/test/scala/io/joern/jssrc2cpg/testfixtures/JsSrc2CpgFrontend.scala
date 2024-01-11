@@ -28,6 +28,11 @@ class DefaultTestCpgWithJsSrc(val fileSuffix: String)
     with JsSrc2CpgFrontend
     with SemanticTestCpg {
 
+  override protected def applyPasses(): Unit = {
+    super.applyPasses()
+    applyOssDataFlow()
+  }
+
   override protected def applyPostProcessingPasses(): Unit =
     JsSrc2Cpg.postProcessingPasses(this).foreach(_.createAndApply())
 

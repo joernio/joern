@@ -1,13 +1,17 @@
 package io.joern.pysrc2cpg
 
-import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
+import io.joern.dataflowengineoss.DefaultSemantics
+import io.joern.dataflowengineoss.layers.dataflows.*
+import io.joern.dataflowengineoss.queryengine.EngineContext
+import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
 import io.joern.dataflowengineoss.testfixtures.{SemanticCpgTestFixture, SemanticTestCpg}
 import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
-import io.joern.x2cpg.testfixtures.{Code2CpgFixture, LanguageFrontend, TestCpg}
+import io.joern.x2cpg.testfixtures.{Code2CpgFixture, DefaultTestCpg, LanguageFrontend, TestCpg}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
+import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 trait PythonFrontend extends LanguageFrontend {
   override val fileSuffix: String = ".py"
@@ -17,7 +21,7 @@ trait PythonFrontend extends LanguageFrontend {
   }
 }
 
-class PySrcTestCpg extends TestCpg with PythonFrontend with SemanticTestCpg {
+class PySrcTestCpg extends DefaultTestCpg with PythonFrontend with SemanticTestCpg {
 
   override def applyPostProcessingPasses(): Unit = {
     new ImportsPass(this).createAndApply()
@@ -31,6 +35,7 @@ class PySrcTestCpg extends TestCpg with PythonFrontend with SemanticTestCpg {
     // Some of passes above create new methods, so, we
     // need to run the ASTLinkerPass one more time
     new AstLinkerPass(this).createAndApply()
+    super.applyPostProcessingPasses()
   }
 
 }

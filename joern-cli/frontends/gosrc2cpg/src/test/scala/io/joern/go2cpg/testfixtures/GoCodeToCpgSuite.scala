@@ -23,7 +23,12 @@ trait Go2CpgFrontend extends LanguageFrontend {
   }
 }
 
-class DefaultTestCpgWithGo(val fileSuffix: String) extends DefaultTestCpg with Go2CpgFrontend with SemanticTestCpg
+class DefaultTestCpgWithGo(val fileSuffix: String) extends DefaultTestCpg with Go2CpgFrontend with SemanticTestCpg {
+  override protected def applyPasses(): Unit = {
+    super.applyPasses()
+    applyOssDataFlow()
+  }
+}
 
 class GoCodeToCpgSuite(
   fileSuffix: String = ".go",

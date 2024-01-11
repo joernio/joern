@@ -4,7 +4,6 @@ import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
 import io.joern.dataflowengineoss.semanticsloader.{FlowSemantic, Semantics}
-import io.joern.x2cpg.X2Cpg
 import io.joern.x2cpg.testfixtures.TestCpg
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
@@ -12,9 +11,9 @@ import io.shiftleft.semanticcpg.layers.LayerCreatorContext
   */
 trait SemanticTestCpg { this: TestCpg =>
 
-  private var _withOssDataflow                = false
-  private var _extraFlows                     = List.empty[FlowSemantic]
-  private implicit var context: EngineContext = EngineContext()
+  private var _withOssDataflow                  = false
+  protected var _extraFlows                     = List.empty[FlowSemantic]
+  protected implicit var context: EngineContext = EngineContext()
 
   /** Allows one to enable data-flow analysis capabilities to the TestCpg.
     */
@@ -30,8 +29,10 @@ trait SemanticTestCpg { this: TestCpg =>
     this
   }
 
-  override def applyPasses(): Unit = {
-    X2Cpg.applyDefaultOverlays(this)
+  /** Some frontends require OSS data-flow to execute after post-processing, so we choose to expose this method without
+    * defining where it's executed.
+    */
+  def applyOssDataFlow(): Unit = {
     if (_withOssDataflow) {
       val context = new LayerCreatorContext(this)
       val options = new OssDataFlowOptions(extraFlows = _extraFlows)

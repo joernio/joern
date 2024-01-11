@@ -27,10 +27,6 @@ abstract class TestCpg extends Cpg() with LanguageFrontend {
 
   protected def applyPasses(): Unit
 
-  private def applyPostProcessingPassesIfEnabled(): Unit = if (_withPostProcessing) {
-    applyPostProcessingPasses()
-  }
-
   protected def applyPostProcessingPasses(): Unit = {}
 
   def moreCode(code: String): this.type = {
@@ -90,7 +86,7 @@ abstract class TestCpg extends Cpg() with LanguageFrontend {
       try {
         _graph = Option(execute(codeDir.toFile).graph)
         applyPasses()
-        applyPostProcessingPassesIfEnabled()
+        if (_withPostProcessing) applyPostProcessingPasses()
       } finally {
         deleteDir(codeDir)
       }
