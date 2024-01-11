@@ -111,17 +111,22 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           // There may be a splat as the last match expression, which is currently parsed as unknown
           // A single match expression is compared using `.===` to case target expression if it is present
           // otherwise it is treated as a conditional.
-          val conditions = whenClause.matchExpressions.map {
-            case u: Unknown => u
-            case mExpr      => expr.map(e => MemberCall(e, ".", "===", List(mExpr))(mExpr.span)).getOrElse(mExpr)
-          }
-          // There is always at least one match expression
+          val conditions = whenClause.matchExpressions.map { mExpr =>
+            expr.map(e => MemberCall(mExpr, ".", "===", List(e))(mExpr.span)).getOrElse(mExpr)
+          } ++ (whenClause.matchSplatExpression.iterator.flatMap {
+            case u: Unknown => List(u)
+            case e =>
+              logger.warn("Splatting not implemented for `when` in ruby `case`")
+              List(Unknown()(e.span))
+          })
+          // There is always at least one match expression or a splat
+          // a splat will become an unknown in condition at the end
           val condition = conditions.init.foldRight(conditions.last) { (cond, condAcc) =>
             BinaryExpression(cond, "||", condAcc)(whenClause.span)
           }
           val conditional = IfExpression(
             condition,
-            whenClause.thenClause.map(_.asStatementList).getOrElse(StatementList(List())(whenClause.span)),
+            whenClause.thenClause.asStatementList,
             List(),
             restClause.map { els => ElseClause(els.asStatementList)(els.span) }
           )(node.span)
@@ -133,7 +138,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       .map { e =>
         val tmp = SimpleIdentifier(None)(e.span.spanStart(freshName))
         StatementList(
-          List(SingleAssignment(e, "=", tmp)(e.span)) ++
+          List(SingleAssignment(tmp, "=", e)(e.span)) ++
             goCase(Some(tmp))
         )(node.span)
       }

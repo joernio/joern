@@ -28,6 +28,7 @@ object RubyIntermediateAst {
     def asStatementList = node match
       case stmtList: StatementList => stmtList
       case _                       => StatementList(List(node))(node.span)
+
   }
 
   final case class Unknown()(span: TextSpan) extends RubyNode(span)
@@ -126,7 +127,11 @@ object RubyIntermediateAst {
   )(span: TextSpan)
       extends RubyNode(span)
 
-  final case class WhenClause(matchExpressions: List[RubyNode], thenClause: Option[RubyNode])(span: TextSpan)
+  final case class WhenClause(
+    matchExpressions: List[RubyNode],
+    matchSplatExpression: Option[RubyNode],
+    thenClause: RubyNode
+  )(span: TextSpan)
       extends RubyNode(span)
 
   final case class ReturnExpression(expressions: List[RubyNode])(span: TextSpan) extends RubyNode(span)

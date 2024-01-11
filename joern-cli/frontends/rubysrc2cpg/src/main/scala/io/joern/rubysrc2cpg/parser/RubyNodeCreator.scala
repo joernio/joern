@@ -8,6 +8,7 @@ import org.antlr.v4.runtime.tree.{ErrorNode, ParseTree, TerminalNode}
 
 import scala.jdk.CollectionConverters.*
 import org.antlr.v4.runtime.tree.RuleNode
+import io.joern.rubysrc2cpg.parser.RubyParser.SplattingArgumentContext
 
 /** Converts an ANTLR Ruby Parse Tree into the intermediate Ruby AST.
   */
@@ -583,15 +584,15 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitWhenClause(ctx: RubyParser.WhenClauseContext): RubyNode = {
-    val matchArgs = Option(ctx.whenArgument()).iterator
-      .flatMap(arg =>
-        Option(arg.operatorExpressionList()).iterator.flatMap(_.operatorExpression().asScala).map(visit) ++
-          Option(arg.splattingArgument()).map(visit).iterator
-      )
-      .toList
-    val thenClause = Option(ctx.thenClause()).map(visit)
-    WhenClause(matchArgs, thenClause)(ctx.toTextSpan)
+    val whenArgs = ctx.whenArgument()
+    val matchArgs =
+      Option(whenArgs.operatorExpressionList()).iterator.flatMap(_.operatorExpression().asScala).map(visit).toList
+    val matchSplatArg = Option(whenArgs.splattingArgument()).map(visit)
+    val thenClause    = visit(ctx.thenClause())
+    WhenClause(matchArgs, matchSplatArg, thenClause)(ctx.toTextSpan)
   }
+
+  override def visitSplattingArgument(ctx: SplattingArgumentContext): RubyNode = Unknown()(ctx.toTextSpan)
 
   override def visitAssociationKey(ctx: RubyParser.AssociationKeyContext): RubyNode = {
     if (Option(ctx.operatorExpression()).isDefined) {
