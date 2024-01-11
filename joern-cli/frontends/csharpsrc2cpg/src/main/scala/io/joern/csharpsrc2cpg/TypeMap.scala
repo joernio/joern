@@ -1,5 +1,7 @@
 package io.joern.csharpsrc2cpg
 
+import com.typesafe.config.impl.*
+import com.typesafe.config.{Config, ConfigFactory}
 import io.joern.csharpsrc2cpg.astcreation.AstCreatorHelper
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.{
   ClassDeclaration,
@@ -10,32 +12,67 @@ import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.{
 import io.joern.csharpsrc2cpg.parser.{DotNetJsonAst, DotNetJsonParser, DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.astgen.AstGenRunner.AstGenRunnerResult
 import io.joern.x2cpg.datastructures.Stack.Stack
+import io.joern.x2cpg.utils.ConcurrentTaskUtil
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
+import io.shiftleft.semanticcpg.language.*
+import org.slf4j.LoggerFactory
+import upickle.default.*
 
+import java.io.InputStream
 import java.nio.file.Paths
 import scala.collection.mutable
+import scala.jdk.CollectionConverters.*
+import scala.util.{Failure, Success, Try}
 
-class TypeMap(astGenResult: AstGenRunnerResult) {
+type NamespaceToTypeMap = Map[String, Set[CSharpType]]
 
-  private val namespaceToType: Map[String, Set[CSharpType]] = astGenResult.parsedFiles
-    .map { file =>
+/** A mapping of type stubs of known types within the scope of the analysis.
+  *
+  * @param astGenResult
+  *   the parsed application code.
+  * @param initialMappings
+  *   any additional mappings to add to the scope.
+  * @see
+  *   [[io.joern.csharpsrc2cpg.TypeMap.jsonToInitialMapping]] for generating initial mappings.
+  */
+class TypeMap(astGenResult: AstGenRunnerResult, initialMappings: List[NamespaceToTypeMap] = List.empty) {
+
+  private val logger = LoggerFactory.getLogger(getClass)
+
+  private def builtinTypes: NamespaceToTypeMap =
+    jsonToInitialMapping(getClass.getResourceAsStream("/builtin_types.json")) match
+      case Failure(exception) => logger.warn("Unable to parse JSON type entry from builtin types", exception); Map.empty
+      case Success(mapping)   => mapping
+
+  /** Converts a JSON type mapping to a NamespaceToTypeMap entry.
+    * @param jsonInputStream
+    *   a JSON file as an input stream.
+    * @return
+    *   the resulting type map in a Try
+    */
+  def jsonToInitialMapping(jsonInputStream: InputStream): Try[NamespaceToTypeMap] =
+    Try(read[NamespaceToTypeMap](ujson.Readable.fromByteArray(jsonInputStream.readAllBytes())))
+
+  private val namespaceToType: NamespaceToTypeMap = {
+    def typeMapTasks = astGenResult.parsedFiles.map { file =>
       val parserResult    = DotNetJsonParser.readFile(Paths.get(file))
       val compilationUnit = AstCreatorHelper.createDotNetNodeInfo(parserResult.json(ParserKeys.AstRoot))
       () => parseCompilationUnit(compilationUnit)
-    }
-    .map(task => task()) // TODO: To be parallelized with https://github.com/joernio/joern/pull/4009
-    .foldLeft(Map.empty[String, Set[CSharpType]])((a, b) => {
+    }.iterator
+    val typeMaps = ConcurrentTaskUtil.runUsingSpliterator(typeMapTasks).flatMap(_.toOption)
+    (builtinTypes +: typeMaps ++: initialMappings).foldLeft(Map.empty[String, Set[CSharpType]])((a, b) => {
       val accumulator = mutable.HashMap.from(a)
       val allKeys     = accumulator.keySet ++ b.keySet
 
       allKeys.foreach(k =>
         accumulator.updateWith(k) {
-          case Some(existing) => b.get(k).map(x => x ++ existing)
-          case None           => b.get(k)
+          case Some(existing) => Option(a.getOrElse(k, Set.empty) ++ b.getOrElse(k, Set.empty) ++ existing)
+          case None           => Option(a.getOrElse(k, Set.empty) ++ b.getOrElse(k, Set.empty))
         }
       )
       accumulator.toMap
     })
+  }
 
   /** For the given namespace, returns the declared classes.
     */
@@ -86,7 +123,7 @@ class TypeMap(astGenResult: AstGenRunnerResult) {
           case _                 => List.empty
       }
       .toList
-    CSharpType(className, members)
+    CSharpType(className, members.collectAll[CSharpMethod].l, members.collectAll[CSharpField].l)
   }
 
   private def parseMethodDeclaration(methodDecl: DotNetNodeInfo): List[CSharpMethod] = {
@@ -106,12 +143,8 @@ class TypeMap(astGenResult: AstGenRunnerResult) {
 
 }
 
-sealed trait CSharpMember {
-  def name: String
-}
+case class CSharpField(name: String) derives ReadWriter
 
-case class CSharpField(name: String) extends CSharpMember
+case class CSharpMethod(name: String) derives ReadWriter
 
-case class CSharpMethod(name: String) extends CSharpMember
-
-case class CSharpType(name: String, members: List[CSharpMember]) extends CSharpMember
+case class CSharpType(name: String, methods: List[CSharpMethod], fields: List[CSharpField]) derives ReadWriter

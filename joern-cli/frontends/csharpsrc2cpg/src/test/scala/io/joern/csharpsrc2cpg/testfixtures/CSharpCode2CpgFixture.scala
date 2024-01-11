@@ -4,16 +4,18 @@ import io.joern.csharpsrc2cpg.{CSharpSrc2Cpg, Config}
 import io.joern.dataflowengineoss.language.Path
 import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.joern.x2cpg.{ValidationMode, X2Cpg}
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, DefaultTestCpg, LanguageFrontend}
+import io.joern.x2cpg.{ValidationMode, X2Cpg}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
+import org.scalatest.Inside
 
 import java.io.File
 
 class CSharpCode2CpgFixture(withPostProcessing: Boolean = false, withDataFlow: Boolean = false)
-    extends Code2CpgFixture(() => new DefaultTestCpgWithCSharp(withPostProcessing, withDataFlow)) {
+    extends Code2CpgFixture(() => new DefaultTestCpgWithCSharp(withPostProcessing, withDataFlow))
+    with Inside {
 
   implicit val resolver: ICallResolver           = NoResolve
   implicit lazy val engineContext: EngineContext = EngineContext()
