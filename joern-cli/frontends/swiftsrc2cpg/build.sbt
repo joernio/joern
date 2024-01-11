@@ -4,7 +4,7 @@ import com.typesafe.config.{Config, ConfigFactory}
 
 name := "swiftsrc2cpg"
 
-dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test")
+dependsOn(Projects.dataflowengineoss % "compile->compile;test->test", Projects.x2cpg % "compile->compile;test->test")
 
 lazy val appProperties = settingKey[Config]("App Properties")
 appProperties := {

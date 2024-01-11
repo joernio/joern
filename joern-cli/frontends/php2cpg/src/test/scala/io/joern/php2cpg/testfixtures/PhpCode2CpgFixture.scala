@@ -1,19 +1,13 @@
 package io.joern.php2cpg.testfixtures
 
-import io.joern.dataflowengineoss.queryengine.EngineContext
+import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
+import io.joern.dataflowengineoss.testfixtures.{SemanticCpgTestFixture, SemanticTestCpg}
 import io.joern.php2cpg.{Config, Php2Cpg}
-import io.joern.x2cpg.testfixtures.{Code2CpgFixture, DefaultTestCpg, LanguageFrontend}
-import io.joern.x2cpg.passes.frontend.XTypeRecoveryConfig
+import io.joern.x2cpg.testfixtures.{Code2CpgFixture, LanguageFrontend, DefaultTestCpg}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 
 import java.io.File
-import io.joern.x2cpg.testfixtures.TestCpg
-import io.joern.x2cpg.X2Cpg
-import io.shiftleft.semanticcpg.layers.LayerCreatorContext
-import io.joern.dataflowengineoss.layers.dataflows.OssDataFlowOptions
-import io.joern.dataflowengineoss.layers.dataflows.OssDataFlow
-import io.joern.php2cpg.passes.PhpSetKnownTypesPass
 
 trait PhpFrontend extends LanguageFrontend {
   override val fileSuffix: String = ".php"
@@ -24,21 +18,28 @@ trait PhpFrontend extends LanguageFrontend {
   }
 }
 
-class PhpTestCpg(runOssDataflow: Boolean) extends TestCpg with PhpFrontend {
+class PhpTestCpg extends DefaultTestCpg with PhpFrontend with SemanticTestCpg {
 
   override protected def applyPasses(): Unit = {
-    X2Cpg.applyDefaultOverlays(this)
-    if (runOssDataflow) {
-      val context = new LayerCreatorContext(this)
-      val options = new OssDataFlowOptions()
-      new OssDataFlow(options).run(context)
-    }
-    Php2Cpg.postProcessingPasses(this).foreach(_.createAndApply())
+    super.applyPasses()
+    applyOssDataFlow()
   }
+
+  override protected def applyPostProcessingPasses(): Unit =
+    Php2Cpg.postProcessingPasses(this).foreach(_.createAndApply())
+
 }
 
-class PhpCode2CpgFixture(runOssDataflow: Boolean = false)
-    extends Code2CpgFixture(() => new PhpTestCpg(runOssDataflow)) {
-  implicit val resolver: ICallResolver           = NoResolve
-  implicit lazy val engineContext: EngineContext = EngineContext()
+class PhpCode2CpgFixture(
+  runOssDataflow: Boolean = false,
+  extraFlows: List[FlowSemantic] = List.empty,
+  withPostProcessing: Boolean = true
+) extends Code2CpgFixture(() =>
+      new PhpTestCpg()
+        .withOssDataflow(runOssDataflow)
+        .withExtraFlows(extraFlows)
+        .withPostProcessingPasses(withPostProcessing)
+    )
+    with SemanticCpgTestFixture(extraFlows) {
+  implicit val resolver: ICallResolver = NoResolve
 }

@@ -37,7 +37,7 @@ object Kotlin2Cpg {
   type InputProvider = () => InputPair
 
   def postProcessingPass(cpg: Cpg): Unit = {
-    new KotlinTypeRecoveryPassGenerator(cpg).generate().map { _.createAndApply() }
+    new KotlinTypeRecoveryPassGenerator(cpg).generate().foreach(_.createAndApply())
     new KotlinTypeHintCallLinker(cpg).createAndApply()
   }
 }
