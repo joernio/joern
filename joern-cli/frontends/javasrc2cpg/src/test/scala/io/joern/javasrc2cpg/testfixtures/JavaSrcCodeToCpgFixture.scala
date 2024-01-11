@@ -29,11 +29,9 @@ class JavaSrcTestCpg(enableTypeRecovery: Boolean = false)
 
   override protected def applyPasses(): Unit = {
     super.applyPasses()
+    if (enableTypeRecovery) JavaSrc2Cpg.typeRecoveryPasses(this).foreach(_.createAndApply())
     applyOssDataFlow()
   }
-
-  override def applyPostProcessingPasses(): Unit =
-    if (enableTypeRecovery) JavaSrc2Cpg.typeRecoveryPasses(this).foreach(_.createAndApply())
 
 }
 

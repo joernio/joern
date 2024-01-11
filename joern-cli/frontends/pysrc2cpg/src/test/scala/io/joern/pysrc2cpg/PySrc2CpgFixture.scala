@@ -23,6 +23,11 @@ trait PythonFrontend extends LanguageFrontend {
 
 class PySrcTestCpg extends DefaultTestCpg with PythonFrontend with SemanticTestCpg {
 
+  override protected def applyPasses(): Unit = {
+    super.applyPasses()
+    applyOssDataFlow()
+  }
+
   override def applyPostProcessingPasses(): Unit = {
     new ImportsPass(this).createAndApply()
     new PythonImportResolverPass(this).createAndApply()
