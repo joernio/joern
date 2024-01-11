@@ -62,7 +62,10 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         BuiltinTypes.Float
       case NumericLiteralExpression if node.code.matches("^\\d+\\.?\\d*[m|M]?$") => // e.g. 2m or 2.1M
         BuiltinTypes.Decimal
-      case StringLiteralExpression if node.code.matches("^\"\\w+\"$") => BuiltinTypes.String
+      case StringLiteralExpression => BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)
+      case IdentifierName          =>
+        // TODO: Look at scope object for possible types
+        "ANY"
       case _ =>
         Try(createDotNetNodeInfo(node.json(ParserKeys.Type))) match
           case Success(typeNode) =>

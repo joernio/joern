@@ -22,15 +22,20 @@ class CSharpScope extends Scope[String, DeclarationNew, ScopeType] {
   }
 
   /** @return
-    *   the type of the surrounding scope.
-    */
-  def surroundingScopeType: Option[ScopeType] = stack.collectFirst { x => x.scopeNode }
-
-  /** @return
     *   true if the scope is currently on the top-level, false if the scope is within some nested scope.
     */
-  def isTopLevel = stack
+  def isTopLevel: Boolean = stack
     .filterNot(x => x.scopeNode.isInstanceOf[NamespaceScope])
     .exists(x => x.scopeNode.isInstanceOf[MethodScope] || x.scopeNode.isInstanceOf[TypeScope])
+
+  def tryResolveTypeReference(typeName: String): Option[String] = {
+    // TODO: Look for a type with a matching name in scope
+    None
+  }
+
+  def tryResolveMethodInvocation(typeFullName: String, callName: String): Option[String] = {
+    // TODO: Use type map to resolve method full name
+    None
+  }
 
 }

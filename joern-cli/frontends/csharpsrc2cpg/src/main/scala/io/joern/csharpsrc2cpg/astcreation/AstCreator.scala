@@ -71,7 +71,7 @@ class AstCreator(val relativeFileName: String, val parserResult: ParserResult, v
       case IdentifierName            => Seq(astForIdentifier(nodeInfo))
       case LocalDeclarationStatement => astForLocalDeclarationStatement(nodeInfo)
       case GlobalStatement           => astForGlobalStatement(nodeInfo)
-      case _: LiteralExpr            => Seq(astForLiteralExpression(nodeInfo))
+      case _: LiteralExpr            => astForLiteralExpression(nodeInfo)
       case _                         => notHandledYet(nodeInfo)
     }
   }
