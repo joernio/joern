@@ -277,11 +277,18 @@ class MacroHandlingTests extends CCodeToCpgSuite {
       val List(localZ) = cpg.local.nameExact("z").l
       localZ.code shouldBe "int z"
       localZ.typeFullName shouldBe "int"
+      localZ.lineNumber shouldBe Some(12)
+      localZ.columnNumber shouldBe Some(7)
       val List(zAssignmentCall) = cpg.call.codeExact("z = type_num(x)").l
-      zAssignmentCall.argument(1).code shouldBe "z"
+      val zIdentifier           = zAssignmentCall.argument(1).asInstanceOf[Identifier]
+      zIdentifier.code shouldBe "z"
+      zIdentifier.lineNumber shouldBe Some(12)
+      zIdentifier.columnNumber shouldBe Some(7)
       val typeNumCall = zAssignmentCall.argument(2).asInstanceOf[Call]
       typeNumCall.code shouldBe "type_num(x)"
       typeNumCall.name shouldBe "type_num"
+      typeNumCall.lineNumber shouldBe Some(12)
+      typeNumCall.columnNumber shouldBe Some(11)
     }
   }
 }

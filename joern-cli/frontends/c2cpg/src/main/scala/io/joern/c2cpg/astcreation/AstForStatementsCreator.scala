@@ -3,6 +3,7 @@ package io.joern.c2cpg.astcreation
 import io.joern.c2cpg.parser.CdtParser
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.joern.x2cpg.{Ast, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.nodes.AstNodeNew
 import io.shiftleft.codepropertygraph.generated.nodes.ExpressionNew
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.cpp.*
@@ -159,15 +160,25 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astsForProblemStatement(statement: IASTProblemStatement): Seq[Ast] = {
+    val lineNumber   = line(statement)
+    val columnNumber = column(statement)
     // We only handle un-parsable macros here for now
     val isFromMacroExpansion = statement.getProblem.getNodeLocations.exists(_.isInstanceOf[IASTMacroExpansionLocation])
-    if (isFromMacroExpansion) {
+    val asts = if (isFromMacroExpansion) {
       new CdtParser(config).parse(statement.getRawSignature, Paths.get(statement.getContainingFilename)) match
         case Some(node) => node.getDeclarations.toIndexedSeq.flatMap(astsForDeclaration)
         case None       => Seq.empty
     } else {
       Seq.empty
     }
+    // Restore the line/column numbers relative to the statements position
+    asts.flatMap(_.nodes).foreach {
+      case astNodeNew: AstNodeNew =>
+        astNodeNew.lineNumber = (lineNumber ++ astNodeNew.lineNumber).reduceOption { case (a, b) => a + (b - 1) }
+        astNodeNew.columnNumber = (columnNumber ++ astNodeNew.columnNumber).reduceOption(_ + _)
+      case _ => // do nothing
+    }
+    asts
   }
 
   private def astForConditionExpression(expr: IASTExpression, explicitArgumentIndex: Option[Int] = None): Ast = {
