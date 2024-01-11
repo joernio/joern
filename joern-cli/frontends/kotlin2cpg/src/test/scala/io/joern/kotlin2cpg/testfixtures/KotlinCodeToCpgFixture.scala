@@ -8,7 +8,7 @@ import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
 import io.joern.dataflowengineoss.testfixtures.{SemanticCpgTestFixture, SemanticTestCpg}
 import io.joern.kotlin2cpg.{Config, Kotlin2Cpg}
 import io.joern.x2cpg.X2Cpg
-import io.joern.x2cpg.testfixtures.{Code2CpgFixture, LanguageFrontend, TestCpg}
+import io.joern.x2cpg.testfixtures.{Code2CpgFixture, DefaultTestCpg, LanguageFrontend, TestCpg}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import io.shiftleft.utils.ProjectRoot
@@ -33,9 +33,14 @@ trait KotlinFrontend extends LanguageFrontend {
 }
 
 class KotlinTestCpg(override protected val withTestResourcePaths: Boolean)
-    extends TestCpg
+    extends DefaultTestCpg
     with KotlinFrontend
     with SemanticTestCpg {
+
+  override protected def applyPasses(): Unit = {
+    super.applyPasses()
+    applyOssDataFlow()
+  }
 
   override protected def applyPostProcessingPasses(): Unit = Kotlin2Cpg.postProcessingPass(this)
 

@@ -3,7 +3,7 @@ package io.joern.php2cpg.testfixtures
 import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
 import io.joern.dataflowengineoss.testfixtures.{SemanticCpgTestFixture, SemanticTestCpg}
 import io.joern.php2cpg.{Config, Php2Cpg}
-import io.joern.x2cpg.testfixtures.{Code2CpgFixture, LanguageFrontend, TestCpg}
+import io.joern.x2cpg.testfixtures.{Code2CpgFixture, LanguageFrontend, DefaultTestCpg}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 
@@ -18,7 +18,12 @@ trait PhpFrontend extends LanguageFrontend {
   }
 }
 
-class PhpTestCpg extends TestCpg with PhpFrontend with SemanticTestCpg {
+class PhpTestCpg extends DefaultTestCpg with PhpFrontend with SemanticTestCpg {
+
+  override protected def applyPasses(): Unit = {
+    super.applyPasses()
+    applyOssDataFlow()
+  }
 
   override protected def applyPostProcessingPasses(): Unit =
     Php2Cpg.postProcessingPasses(this).foreach(_.createAndApply())
