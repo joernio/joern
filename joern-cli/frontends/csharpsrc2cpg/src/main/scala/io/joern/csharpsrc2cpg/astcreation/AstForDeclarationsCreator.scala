@@ -1,5 +1,6 @@
 package io.joern.csharpsrc2cpg.astcreation
 
+import io.joern.csharpsrc2cpg.datastructures.{BlockScope, MethodScope, NamespaceScope, TypeScope}
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.datastructures.Stack.StackWrapper
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
@@ -22,10 +23,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       .columnNumber(columnEnd(namespace))
       .filename(relativeFileName)
       .fullName(fullName)
-    methodAstParentStack.push(namespaceBlock)
-    scope.pushNewScope(namespaceBlock)
+    scope.pushNewScope(NamespaceScope(fullName))
     val memberAsts = namespace.json(ParserKeys.Members).arr.flatMap(astForNode).toSeq
-    methodAstParentStack.pop()
     scope.popScope()
     Seq(Ast(namespaceBlock).withChildren(memberAsts))
   }
@@ -34,11 +33,9 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val name     = nameFromNode(classDecl)
     val fullName = astFullName(classDecl)
     val typeDecl = typeDeclNode(classDecl, name, fullName, relativeFileName, code(classDecl))
-    methodAstParentStack.push(typeDecl)
-    scope.pushNewScope(typeDecl)
+    scope.pushNewScope(TypeScope(fullName))
     val modifiers = astForModifiers(classDecl)
     val members   = astForMembers(classDecl.json(ParserKeys.Members).arr.map(createDotNetNodeInfo).toSeq)
-    methodAstParentStack.pop()
     scope.popScope()
     val typeDeclAst = Ast(typeDecl)
       .withChildren(modifiers)
@@ -74,7 +71,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val identifierAst = astForIdentifier(varDecl, typeFullName)
     val _localNode    = localNode(varDecl, name, name, typeFullName)
     val localNodeAst  = Ast(_localNode)
-    scope.addToScope(name, (_localNode, typeFullName))
+    scope.addToScope(name, _localNode)
     val assignmentNode = callNode(
       varDecl,
       code(varDecl),
@@ -112,9 +109,9 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       methodSignature(methodReturn, params.flatMap(_.nodes.collectFirst { case x: NewMethodParameterIn => x }))
     val fullName    = s"${astFullName(methodDecl)}:$signature"
     val methodNode_ = methodNode(methodDecl, name, code(methodDecl), fullName, Option(signature), relativeFileName)
-    methodAstParentStack.push(methodNode_)
-    scope.pushNewScope(methodNode_)
-    val body      = astForMethodBody(createDotNetNodeInfo(methodDecl.json(ParserKeys.Body)))
+    scope.pushNewScope(MethodScope(fullName))
+    val body = astForMethodBody(createDotNetNodeInfo(methodDecl.json(ParserKeys.Body)))
+    scope.popScope()
     val modifiers = astForModifiers(methodDecl).flatMap(_.nodes).collect { case x: NewModifier => x }
     val thisNode =
       if (!modifiers.exists(_.modifierType == ModifierTypes.STATIC)) astForThisNode(methodDecl)
@@ -137,20 +134,19 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForThisNode(methodDecl: DotNetNodeInfo): Ast = {
-    val name = "this"
-    val typeFullName =
-      methodAstParentStack.headOption.map(_.properties.getOrElse(PropertyNames.FULL_NAME, "ANY").toString)
-    val param =
-      parameterInNode(methodDecl, name, name, 0, false, EvaluationStrategies.BY_SHARING.name, typeFullName)
+    val name         = "this"
+    val typeFullName = scope.surroundingTypeDeclFullName.getOrElse("ANY")
+    val param = parameterInNode(methodDecl, name, name, 0, false, EvaluationStrategies.BY_SHARING.name, typeFullName)
     Ast(param)
   }
 
   private def astForMethodBody(body: DotNetNodeInfo): Ast = {
-    val block      = blockNode(body)
+    val block = blockNode(body)
+    scope.pushNewScope(BlockScope)
     val statements = body.json(ParserKeys.Statements).arr.flatMap(astForNode).toList
-    methodAstParentStack.pop()
+    val _blockAst  = blockAst(block, statements)
     scope.popScope()
-    blockAst(block, statements)
+    _blockAst
   }
 
   private def nodeToMethodReturn(methodReturn: DotNetNodeInfo): NewMethodReturn = {
@@ -179,18 +175,10 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     )
     val implicitAccessModifier = accessModifiers match
       // Internal is default for top-level definitions
-      case Nil
-          if methodAstParentStack.isEmpty || !methodAstParentStack
-            .take(2)
-            .map(_.label())
-            .distinct
-            .contains(NodeTypes.METHOD) =>
-        Ast(newModifierNode(ModifierTypes.INTERNAL))
+      case Nil if scope.isTopLevel => Ast(newModifierNode(ModifierTypes.INTERNAL))
       // Private is default for nested definitions
-      case Nil
-          if methodAstParentStack.headOption.exists(x => x.isInstanceOf[NewMethod] || x.isInstanceOf[NewTypeDecl]) =>
-        Ast(newModifierNode(ModifierTypes.PRIVATE))
-      case _ => Ast()
+      case Nil => Ast(newModifierNode(ModifierTypes.PRIVATE))
+      case _   => Ast()
 
     implicitAccessModifier :: explicitModifiers
   }

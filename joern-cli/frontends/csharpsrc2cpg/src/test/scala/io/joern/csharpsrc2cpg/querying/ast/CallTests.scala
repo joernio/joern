@@ -10,10 +10,10 @@ class CallTests extends CSharpCode2CpgFixture {
     val cpg = code(basicBoilerplate())
 
     "create a call node with arguments" in {
-      inside(cpg.call.nameExact("WriteLine").head) {
-        case writeLine =>
+      inside(cpg.call.nameExact("WriteLine").headOption) {
+        case Some(writeLine) =>
           writeLine.name shouldBe "WriteLine"
-        case _ => fail("Node not found!")
+        case None => fail("Node not found!")
       }
     }
 

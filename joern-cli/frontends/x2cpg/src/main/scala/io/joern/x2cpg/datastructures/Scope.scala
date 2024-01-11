@@ -42,4 +42,6 @@ class Scope[I, V, S] {
     }
   }
 
+  def size: Int = stack.size
+
 }
