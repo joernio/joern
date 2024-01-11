@@ -14,10 +14,10 @@ import scala.collection.mutable
 // The trait LanguageFrontend is mixed in and not property/field of this class in order
 // to allow the configuration of language frontend specific properties on the CPG object.
 abstract class TestCpg extends Cpg() with LanguageFrontend {
-  private var _graph              = Option.empty[Graph]
-  private val codeFileNamePairs   = mutable.ArrayBuffer.empty[(String, Path)]
-  private var fileNameCounter     = 0
-  private var _withPostProcessing = false
+  private var _graph                = Option.empty[Graph]
+  private val codeFileNamePairs     = mutable.ArrayBuffer.empty[(String, Path)]
+  private var fileNameCounter       = 0
+  protected var _withPostProcessing = false
 
   @nowarn
   protected def codeFilePreProcessing(codeFile: Path): Unit = {}

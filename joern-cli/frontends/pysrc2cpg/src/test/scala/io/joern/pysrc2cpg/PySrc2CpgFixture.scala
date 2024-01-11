@@ -25,7 +25,7 @@ class PySrcTestCpg extends DefaultTestCpg with PythonFrontend with SemanticTestC
 
   override protected def applyPasses(): Unit = {
     super.applyPasses()
-    applyOssDataFlow()
+    if (!_withPostProcessing) applyOssDataFlow()
   }
 
   override def applyPostProcessingPasses(): Unit = {
@@ -40,7 +40,7 @@ class PySrcTestCpg extends DefaultTestCpg with PythonFrontend with SemanticTestC
     // Some of passes above create new methods, so, we
     // need to run the ASTLinkerPass one more time
     new AstLinkerPass(this).createAndApply()
-    super.applyPostProcessingPasses()
+    applyOssDataFlow()
   }
 
 }

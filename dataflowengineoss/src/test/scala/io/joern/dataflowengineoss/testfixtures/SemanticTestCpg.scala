@@ -11,7 +11,7 @@ import io.shiftleft.semanticcpg.layers.LayerCreatorContext
   */
 trait SemanticTestCpg { this: TestCpg =>
 
-  private var _withOssDataflow                  = false
+  protected var _withOssDataflow                = false
   protected var _extraFlows                     = List.empty[FlowSemantic]
   protected implicit var context: EngineContext = EngineContext()
 
