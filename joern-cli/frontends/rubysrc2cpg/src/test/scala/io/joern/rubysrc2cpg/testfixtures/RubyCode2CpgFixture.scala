@@ -1,15 +1,15 @@
 package io.joern.rubysrc2cpg.testfixtures
 
 import io.joern.dataflowengineoss.language.Path
-import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.dataflowengineoss.queryengine.EngineContext
+import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
+import io.joern.dataflowengineoss.testfixtures.{SemanticCpgTestFixture, SemanticTestCpg}
 import io.joern.rubysrc2cpg.deprecated.utils.PackageTable
 import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg}
 import io.joern.x2cpg.testfixtures.*
 import io.joern.x2cpg.{ValidationMode, X2Cpg}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
-import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import org.scalatest.Tag
 
 import java.io.File
@@ -29,31 +29,23 @@ trait RubyFrontend(useDeprecatedFrontend: Boolean) extends LanguageFrontend {
 
 }
 
-class DefaultTestCpgWithRuby(
-  withPostProcessing: Boolean,
-  withDataFlow: Boolean,
-  packageTable: Option[PackageTable],
-  useDeprecatedFrontend: Boolean
-) extends DefaultTestCpg
-    with RubyFrontend(useDeprecatedFrontend) {
+class DefaultTestCpgWithRuby(packageTable: Option[PackageTable], useDeprecatedFrontend: Boolean)
+    extends DefaultTestCpg
+    with RubyFrontend(useDeprecatedFrontend)
+    with SemanticTestCpg {
 
-  override def applyPasses(): Unit = {
-    X2Cpg.applyDefaultOverlays(this)
+  override protected def applyPasses(): Unit = {
+    super.applyPasses()
+    applyOssDataFlow()
+  }
 
-    if (withPostProcessing) {
-      packageTable match {
-        case Some(table) =>
-          RubySrc2Cpg.packageTableInfo.set(table)
-        case None =>
-      }
-      RubySrc2Cpg.postProcessingPasses(this, config).foreach(_.createAndApply())
+  override protected def applyPostProcessingPasses(): Unit = {
+    packageTable match {
+      case Some(table) =>
+        RubySrc2Cpg.packageTableInfo.set(table)
+      case None =>
     }
-
-    if (withDataFlow) {
-      val context = new LayerCreatorContext(this)
-      val options = new OssDataFlowOptions()
-      new OssDataFlow(options).run(context)
-    }
+    RubySrc2Cpg.postProcessingPasses(this, config).foreach(_.createAndApply())
   }
 
 }
@@ -61,14 +53,18 @@ class DefaultTestCpgWithRuby(
 class RubyCode2CpgFixture(
   withPostProcessing: Boolean = false,
   withDataFlow: Boolean = false,
+  extraFlows: List[FlowSemantic] = List.empty,
   packageTable: Option[PackageTable] = None,
   useDeprecatedFrontend: Boolean = false
 ) extends Code2CpgFixture(() =>
-      new DefaultTestCpgWithRuby(withPostProcessing, withDataFlow, packageTable, useDeprecatedFrontend)
-    ) {
+      new DefaultTestCpgWithRuby(packageTable, useDeprecatedFrontend)
+        .withOssDataflow(withDataFlow)
+        .withExtraFlows(extraFlows)
+        .withPostProcessingPasses(withPostProcessing)
+    )
+    with SemanticCpgTestFixture(extraFlows) {
 
-  implicit val resolver: ICallResolver           = NoResolve
-  implicit lazy val engineContext: EngineContext = EngineContext()
+  implicit val resolver: ICallResolver = NoResolve
 
   protected def flowToResultPairs(path: Path): List[(String, Integer)] =
     path.resultPairs().collect { case (firstElement: String, secondElement: Option[Integer]) =>

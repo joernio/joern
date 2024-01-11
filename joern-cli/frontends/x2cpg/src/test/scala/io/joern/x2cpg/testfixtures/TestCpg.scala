@@ -14,9 +14,10 @@ import scala.collection.mutable
 // The trait LanguageFrontend is mixed in and not property/field of this class in order
 // to allow the configuration of language frontend specific properties on the CPG object.
 abstract class TestCpg extends Cpg() with LanguageFrontend {
-  private var _graph            = Option.empty[Graph]
-  private val codeFileNamePairs = mutable.ArrayBuffer.empty[(String, Path)]
-  private var fileNameCounter   = 0
+  private var _graph                = Option.empty[Graph]
+  private val codeFileNamePairs     = mutable.ArrayBuffer.empty[(String, Path)]
+  private var fileNameCounter       = 0
+  protected var _withPostProcessing = false
 
   @nowarn
   protected def codeFilePreProcessing(codeFile: Path): Unit = {}
@@ -25,6 +26,8 @@ abstract class TestCpg extends Cpg() with LanguageFrontend {
   protected def codeDirPreProcessing(rootFile: Path, codeFiles: List[Path]): Unit = {}
 
   protected def applyPasses(): Unit
+
+  protected def applyPostProcessingPasses(): Unit = {}
 
   def moreCode(code: String): this.type = {
     moreCode(code, s"Test$fileNameCounter$fileSuffix")
@@ -40,6 +43,11 @@ abstract class TestCpg extends Cpg() with LanguageFrontend {
 
   def withConfig(config: X2CpgConfig[_]): this.type = {
     setConfig(config)
+    this
+  }
+
+  def withPostProcessingPasses(value: Boolean = true): this.type = {
+    _withPostProcessing = value
     this
   }
 
@@ -78,6 +86,7 @@ abstract class TestCpg extends Cpg() with LanguageFrontend {
       try {
         _graph = Option(execute(codeDir.toFile).graph)
         applyPasses()
+        if (_withPostProcessing) applyPostProcessingPasses()
       } finally {
         deleteDir(codeDir)
       }

@@ -2,21 +2,28 @@ package io.joern.csharpsrc2cpg.testfixtures
 
 import io.joern.csharpsrc2cpg.{CSharpSrc2Cpg, Config}
 import io.joern.dataflowengineoss.language.Path
-import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
-import io.joern.dataflowengineoss.queryengine.EngineContext
-import io.joern.x2cpg.{ValidationMode, X2Cpg}
+import io.joern.dataflowengineoss.semanticsloader.FlowSemantic
+import io.joern.dataflowengineoss.testfixtures.{SemanticCpgTestFixture, SemanticTestCpg}
 import io.joern.x2cpg.testfixtures.{Code2CpgFixture, DefaultTestCpg, LanguageFrontend}
+import io.joern.x2cpg.{ValidationMode, X2Cpg}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
-import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 
 import java.io.File
 
-class CSharpCode2CpgFixture(withPostProcessing: Boolean = false, withDataFlow: Boolean = false)
-    extends Code2CpgFixture(() => new DefaultTestCpgWithCSharp(withPostProcessing, withDataFlow)) {
+class CSharpCode2CpgFixture(
+  withPostProcessing: Boolean = false,
+  withDataFlow: Boolean = false,
+  extraFlows: List[FlowSemantic] = List.empty
+) extends Code2CpgFixture(() =>
+      new DefaultTestCpgWithCSharp()
+        .withOssDataflow(withDataFlow)
+        .withExtraFlows(extraFlows)
+        .withPostProcessingPasses(withPostProcessing)
+    )
+    with SemanticCpgTestFixture(extraFlows) {
 
-  implicit val resolver: ICallResolver           = NoResolve
-  implicit lazy val engineContext: EngineContext = EngineContext()
+  implicit val resolver: ICallResolver = NoResolve
 
   protected def flowToResultPairs(path: Path): List[(String, Integer)] =
     path.resultPairs().collect { case (firstElement: String, secondElement: Option[Integer]) =>
@@ -45,22 +52,11 @@ class CSharpCode2CpgFixture(withPostProcessing: Boolean = false, withDataFlow: B
        |""".stripMargin
 }
 
-class DefaultTestCpgWithCSharp(withPostProcessing: Boolean, withDataFlow: Boolean)
-    extends DefaultTestCpg
-    with CSharpFrontend {
+class DefaultTestCpgWithCSharp extends DefaultTestCpg with CSharpFrontend with SemanticTestCpg {
 
-  override def applyPasses(): Unit = {
-    X2Cpg.applyDefaultOverlays(this)
-
-    if (withPostProcessing) {
-      CSharpSrc2Cpg.postProcessingPasses(this, config).foreach(_.createAndApply())
-    }
-
-    if (withDataFlow) {
-      val context = new LayerCreatorContext(this)
-      val options = new OssDataFlowOptions()
-      new OssDataFlow(options).run(context)
-    }
+  override def applyPostProcessingPasses(): Unit = {
+    CSharpSrc2Cpg.postProcessingPasses(this, config).foreach(_.createAndApply())
+    super.applyPostProcessingPasses()
   }
 
 }
