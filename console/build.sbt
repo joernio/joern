@@ -8,7 +8,7 @@ val CirceVersion          = "0.14.6"
 val ZeroturnaroundVersion = "1.15"
 val OsLibVersion          = "0.9.1"
 val PprintVersion         = "0.7.3"
-val CommonsLangVersion    = "3.12.0"
+val CommonsLangVersion    = "3.14.0"
 
 dependsOn(
   Projects.semanticcpg,
