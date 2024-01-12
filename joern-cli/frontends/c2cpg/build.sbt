@@ -47,12 +47,18 @@ Compile / doc / scalacOptions ++= Seq("-doc-title", "semanticcpg apidocs", "-doc
 compile / javacOptions ++= Seq("-Xlint:all", "-Xlint:-cast", "-g")
 Test / fork := true
 
+
+
 lazy val signingFiles   = List("META-INF/ECLIPSE_.RSA", "META-INF/ECLIPSE_.SF")
 lazy val cdtCoreDepName = "org.eclipse.cdt.core"
 
+/* Dirty hack: we access cdt-internal types which are package-private. In order to do so, 
+ * `MacroArgumentExtractor` from this repo is in the `org.eclipse.cdt.internal.core.parser.scanner` package.
+ * The cdt jar is signed to ensure that doesn't happen, but because we're stubborn and yolo we simply remove the signing files. 
+ */
 lazy val removeSigningInfo = taskKey[Unit](s"Remove signing info from jar file")
 removeSigningInfo := {
-  (Test / managedClasspath).value.find(v => v.data.name.contains(cdtCoreDepName)) match {
+  (Test / managedClasspath).value.find(_.data.name.contains(cdtCoreDepName)) match {
     case Some(path) =>
       val jarPath    = path.data.absolutePath
       val inputFile  = new File(jarPath)
