@@ -1,11 +1,18 @@
 name := "c2cpg"
 
-dependsOn(Projects.semanticcpg, Projects.dataflowengineoss % "compile->compile;test->test", Projects.x2cpg % "compile->compile;test->test")
+dependsOn(
+  Projects.semanticcpg,
+  Projects.dataflowengineoss % "compile->compile;test->test",
+  Projects.x2cpg             % "compile->compile;test->test"
+)
 
 libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
-  "com.diffplug.spotless"   % "spotless-eclipse-cdt"       % "10.5.0",
-  "org.scalatest"          %% "scalatest"                  % Versions.scalatest % Test
+  "org.eclipse.platform"    % "org.eclipse.core.resources" % "3.20.0",
+  "org.eclipse.platform"    % "org.eclipse.text"           % "3.13.100",
+  "org.eclipse.platform"    % "org.eclipse.cdt.core"       % "8.4.0.202401051815"
+    from "https://ci.eclipse.org/cdt/job/cdt/job/main/lastSuccessfulBuild/artifact/releng/org.eclipse.cdt.repo/target/repository/plugins/org.eclipse.cdt.core_8.4.0.202401051815.jar",
+  "org.scalatest" %% "scalatest" % Versions.scalatest % Test
 )
 
 dependencyOverrides ++= Seq(
