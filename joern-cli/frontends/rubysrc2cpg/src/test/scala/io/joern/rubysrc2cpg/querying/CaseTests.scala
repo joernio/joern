@@ -3,6 +3,7 @@ package io.joern.rubysrc2cpg.querying
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.Operators
 
 class CaseTests extends RubyCode2CpgFixture {
   "`case x ... end` should be represented with if-else chain and multiple match expressions should be or-ed together" in {
