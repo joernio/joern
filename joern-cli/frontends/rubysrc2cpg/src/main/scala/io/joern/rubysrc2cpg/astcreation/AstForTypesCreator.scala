@@ -57,7 +57,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       node.body.asInstanceOf[StatementList] // for now (bodyStatement is a superset of stmtList)
     val classBodyAsts = classBody.statements.flatMap(astsForStatement) match {
       case bodyAsts if shouldGenerateDefaultConstructorStack.head =>
-        val bodyStart  = classBody.span.spanStart
+        val bodyStart  = classBody.span.spanStart()
         val initBody   = StatementList(List())(bodyStart)
         val methodDecl = astForMethodDeclaration(MethodDeclaration("<init>", List(), initBody)(bodyStart))
         methodDecl :: bodyAsts
