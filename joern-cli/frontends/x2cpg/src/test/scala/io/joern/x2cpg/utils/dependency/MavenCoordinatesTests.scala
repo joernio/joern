@@ -26,7 +26,7 @@ class MavenCoordinatesTests extends AnyWordSpec with Matchers {
       "org.apache.logging.log4j:log4j-api:2.15.0",
       "org.apache.logging.log4j:log4j-to-slf4j:2.19.0",
       "org.slf4j:jul-to-slf4j:2.0.7",
-      "org.slf4j:slf4j-api:2.0.7",
+      "org.slf4j:slf4j-api:2.0.11",
       "org.springframework.boot:spring-boot-starter-logging:3.0.5"
     )
   }
