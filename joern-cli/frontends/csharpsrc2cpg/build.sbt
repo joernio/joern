@@ -37,9 +37,8 @@ lazy val AstgenWinArm   = "dotnetastgen-win-arm.exe"
 lazy val AstgenLinux    = "dotnetastgen-linux"
 lazy val AstgenLinuxArm = "dotnetastgen-linux-arm"
 lazy val AstgenMac      = "dotnetastgen-macos"
-lazy val AstgenMacArm   = "dotnetastgen-macos-arm"
 
-lazy val AllPlatforms = Seq(AstgenWin, AstgenWinArm, AstgenLinux, AstgenLinuxArm, AstgenMac, AstgenMacArm)
+lazy val AllPlatforms = Seq(AstgenWin, AstgenWinArm, AstgenLinux, AstgenLinuxArm, AstgenMac)
 
 lazy val astGenDlUrl = settingKey[String]("astgen download url")
 astGenDlUrl := s"https://github.com/joernio/DotNetAstGen/releases/download/v${astGenVersion.value}/"
@@ -72,11 +71,7 @@ astGenBinaryNames := {
           case Environment.ArchitectureType.ARM => Seq(AstgenLinuxArm)
         }
         Seq(AstgenLinux)
-      case Environment.OperatingSystemType.Mac =>
-        Environment.architecture match {
-          case Environment.ArchitectureType.X86 => Seq(AstgenMac)
-          case Environment.ArchitectureType.ARM => Seq(AstgenMacArm)
-        }
+      case Environment.OperatingSystemType.Mac => Seq(AstgenMac)
       case Environment.OperatingSystemType.Unknown =>
         AllPlatforms
     }
@@ -91,13 +86,9 @@ astGenDlTask := {
   astGenBinaryNames.value.foreach { fileName =>
     val dest = astGenDir / fileName
     if (!dest.exists) {
-      val url            = s"${astGenDlUrl.value}${fileName.stripSuffix(".exe")}.zip"
-      val downloadedFile = files.File(SimpleCache.downloadMaybe(url).toPath)
-      files.File.temporaryDirectory("joern-").apply { unzipTarget =>
-        downloadedFile.unzipTo(unzipTarget)
-        unzipTarget.list.filter(_.name == fileName).foreach(exec => IO.copyFile(exec.toJava, dest))
-      }
-      downloadedFile.delete(swallowIOExceptions = true)
+      val url            = s"${astGenDlUrl.value}$fileName"
+      val downloadedFile = SimpleCache.downloadMaybe(url)
+      IO.copyFile(downloadedFile, dest)
     }
   }
 

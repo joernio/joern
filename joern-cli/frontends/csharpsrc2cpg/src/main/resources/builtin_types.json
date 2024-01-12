@@ -1,0 +1,30 @@
+{
+  "System": [
+    {
+      "name": "Console",
+      "methods": [
+        {
+          "name": "Write"
+        },
+        {
+          "name": "WriteLine"
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "System.Buffers": [
+    {
+      "name": "ArrayBufferWriter",
+      "methods": [
+        {
+          "name": "Advance"
+        },
+        {
+          "name": "Clear"
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

@@ -44,7 +44,8 @@ object DotNetJsonAst {
 
   object FieldDeclaration extends DeclarationExpr
 
-  object VariableDeclaration       extends DeclarationExpr
+  object VariableDeclaration extends DeclarationExpr
+
   object LocalDeclarationStatement extends DeclarationExpr
 
   object VariableDeclarator extends DeclarationExpr
@@ -115,6 +116,16 @@ object DotNetJsonAst {
   object BitwiseAndExpression         extends BinaryExpr
   object BitwiseOrExpression          extends BinaryExpr
   object ExclusiveOrExpression        extends BinaryExpr
+
+  object InvocationExpression extends BaseExpr
+
+  object Argument extends BaseExpr
+
+  object ArgumentList extends BaseExpr
+
+  trait MemberAccessExpr extends BaseExpr
+
+  object SimpleMemberAccessExpression extends MemberAccessExpr
 }
 
 /** The JSON key values, in alphabetical order.
@@ -122,35 +133,38 @@ object DotNetJsonAst {
 object ParserKeys {
 
   val AstRoot       = "AstRoot"
+  val Arguments     = "Arguments"
+  val ArgumentList  = "ArgumentList"
   val Body          = "Body"
   val Code          = "Code"
   val ColumnStart   = "ColumnStart"
   val ColumnEnd     = "ColumnEnd"
   val Declaration   = "Declaration"
   val ElementType   = "ElementType"
+  val Expression    = "Expression"
   val FileName      = "FileName"
   val Identifier    = "Identifier"
   val Initializer   = "Initializer"
-  val MetaData      = "MetaData"
   val Keyword       = "Keyword"
   val Kind          = "Kind"
   val Left          = "Left"
   val LineStart     = "LineStart"
   val LineEnd       = "LineEnd"
+  val MetaData      = "MetaData"
   val Members       = "Members"
   val Modifiers     = "Modifiers"
   val Name          = "Name"
+  val Operand       = "Operand"
+  val OperatorToken = "OperatorToken"
   val Parameters    = "Parameters"
   val ParameterList = "ParameterList"
+  val Statement     = "Statement"
+  val Statements    = "Statements"
   val ReturnType    = "ReturnType"
   val Right         = "Right"
   val Type          = "Type"
   val Usings        = "Usings"
   val Value         = "Value"
   val Variables     = "Variables"
-  val Statements    = "Statements"
-  val Expression    = "Expression"
-  val OperatorToken = "OperatorToken"
-  val Operand       = "Operand"
-  val Statement     = "Statement"
+
 }

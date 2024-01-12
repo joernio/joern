@@ -1,18 +1,19 @@
 package io.joern.csharpsrc2cpg.astcreation
 
 import io.joern.csharpsrc2cpg.TypeMap
+import io.joern.csharpsrc2cpg.datastructures.CSharpScope
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.astgen.{AstGenNodeBuilder, ParserResult}
 import io.joern.x2cpg.datastructures.Scope
-import io.joern.x2cpg.datastructures.Stack.Stack
+import io.joern.x2cpg.datastructures.Stack.{Stack, StackWrapper}
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewNode}
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import ujson.Value
-import io.joern.x2cpg.datastructures.Stack.StackWrapper
+
 import java.math.BigInteger
 import java.security.MessageDigest
 
@@ -28,8 +29,7 @@ class AstCreator(val relativeFileName: String, val parserResult: ParserResult, v
 
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
 
-  protected val methodAstParentStack                             = new Stack[NewNode]()
-  protected val scope: Scope[String, (NewNode, String), NewNode] = new Scope()
+  protected val scope: CSharpScope = new CSharpScope()
 
   override def createAst(): DiffGraphBuilder = {
     val hash = String.format(
@@ -71,7 +71,7 @@ class AstCreator(val relativeFileName: String, val parserResult: ParserResult, v
       case IdentifierName            => Seq(astForIdentifier(nodeInfo))
       case LocalDeclarationStatement => astForLocalDeclarationStatement(nodeInfo)
       case GlobalStatement           => astForGlobalStatement(nodeInfo)
-      case _: LiteralExpr            => Seq(astForLiteralExpression(nodeInfo))
+      case _: LiteralExpr            => astForLiteralExpression(nodeInfo)
       case _                         => notHandledYet(nodeInfo)
     }
   }

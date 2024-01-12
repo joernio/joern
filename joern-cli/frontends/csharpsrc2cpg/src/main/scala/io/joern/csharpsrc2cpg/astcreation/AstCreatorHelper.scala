@@ -4,8 +4,8 @@ import io.joern.csharpsrc2cpg.astcreation
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetJsonAst, DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewMethod, NewNamespaceBlock, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, PropertyNames}
 import ujson.Value
 
 import scala.util.{Failure, Success, Try}
@@ -37,17 +37,15 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   protected def astFullName(node: DotNetNodeInfo): String = {
-    methodAstParentStack.headOption match
-      case Some(head: NewNamespaceBlock) => s"${head.fullName}.${nameFromNode(node)}"
-      case Some(head: NewMethod)         => s"${head.fullName}.${nameFromNode(node)}"
-      case Some(head: NewTypeDecl)       => s"${head.fullName}.${nameFromNode(node)}"
-      case _                             => nameFromNode(node)
+    scope.surroundingScopeFullName match
+      case Some(fullName) => s"$fullName.${nameFromNode(node)}"
+      case _              => nameFromNode(node)
   }
 
   protected def getTypeFullNameFromAstNode(ast: Seq[Ast]): String = {
     ast.headOption
       .flatMap(_.root)
-      .map(_.properties.get(PropertyNames.TYPE_FULL_NAME).get.toString)
+      .map(_.properties.getOrElse(PropertyNames.TYPE_FULL_NAME, "ANY").toString)
       .getOrElse("ANY")
   }
 
@@ -64,7 +62,10 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         BuiltinTypes.Float
       case NumericLiteralExpression if node.code.matches("^\\d+\\.?\\d*[m|M]?$") => // e.g. 2m or 2.1M
         BuiltinTypes.Decimal
-      case StringLiteralExpression if node.code.matches("^\"\\w+\"$") => BuiltinTypes.String
+      case StringLiteralExpression => BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)
+      case IdentifierName          =>
+        // TODO: Look at scope object for possible types
+        "ANY"
       case _ =>
         Try(createDotNetNodeInfo(node.json(ParserKeys.Type))) match
           case Success(typeNode) =>
