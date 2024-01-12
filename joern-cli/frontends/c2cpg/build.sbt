@@ -1,3 +1,9 @@
+import java.io.FileInputStream
+import java.io.FileOutputStream
+import java.util.jar.JarEntry
+import java.util.jar.JarInputStream
+import java.util.jar.JarOutputStream
+
 name := "c2cpg"
 
 dependsOn(
@@ -40,6 +46,44 @@ Compile / doc / scalacOptions ++= Seq("-doc-title", "semanticcpg apidocs", "-doc
 
 compile / javacOptions ++= Seq("-Xlint:all", "-Xlint:-cast", "-g")
 Test / fork := true
+
+lazy val signingFiles   = List("META-INF/ECLIPSE_.RSA", "META-INF/ECLIPSE_.SF")
+lazy val cdtCoreDepName = "org.eclipse.cdt.core"
+
+lazy val removeSigningInfo = taskKey[Unit](s"Remove signing info from jar file")
+removeSigningInfo := {
+  (Test / managedClasspath).value.find(v => v.data.name.contains(cdtCoreDepName)) match {
+    case Some(path) =>
+      val jarPath    = path.data.absolutePath
+      val inputFile  = new File(jarPath)
+      val outputFile = new File(jarPath + ".custom.jar")
+
+      try {
+        val jarInputStream  = new JarInputStream(new FileInputStream(inputFile))
+        val jarOutputStream = new JarOutputStream(new FileOutputStream(outputFile))
+
+        Iterator.continually(jarInputStream.getNextJarEntry).takeWhile(_ != null).foreach { entry =>
+          val entryName = entry.getName
+          if (!signingFiles.contains(entryName)) {
+            jarOutputStream.putNextEntry(new JarEntry(entryName))
+            Iterator.continually(jarInputStream.read()).takeWhile(_ != -1).foreach(jarOutputStream.write)
+          }
+          jarOutputStream.closeEntry()
+        }
+
+        jarInputStream.close()
+        jarOutputStream.close()
+
+        IO.delete(inputFile)
+        IO.move(outputFile, inputFile)
+      } catch {
+        case e: Exception => println(s"Error removing signing info from '$jarPath': ${e.getMessage}")
+      }
+    case None => // do nothing
+  }
+}
+
+Compile / compile := ((Compile / compile) dependsOn removeSigningInfo).value
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
