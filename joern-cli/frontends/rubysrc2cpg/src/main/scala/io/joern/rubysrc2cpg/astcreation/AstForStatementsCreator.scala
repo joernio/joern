@@ -109,7 +109,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         (whenClause: WhenClause, restClause: Option[RubyNode]) =>
           // We translate multiple match expressions into an or expression.
           // There may be a splat as the last match expression, which is currently parsed as unknown
-          // A single match expression is compared using `.===` to case target expression if it is present
+          // A single match expression is compared using `.===` to the case target expression if it is present
           // otherwise it is treated as a conditional.
           val conditions = whenClause.matchExpressions.map { mExpr =>
             expr.map(e => MemberCall(mExpr, ".", "===", List(e))(mExpr.span)).getOrElse(mExpr)
