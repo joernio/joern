@@ -40,6 +40,7 @@ import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import com.github.javaparser.ast.Node
+import com.github.javaparser.symbolsolver.javaparsermodel.declarations.JavaParserParameterDeclaration
 import io.joern.javasrc2cpg.astcreation.declarations.AstForMethodsCreator.PartialConstructorDeclaration
 
 private[declarations] trait AstForMethodsCreator { this: AstCreator =>
@@ -54,6 +55,9 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     val returnTypeFullName = expectedReturnType
       .flatMap(typeInfoCalc.fullName)
       .orElse(scope.lookupType(simpleMethodReturnType))
+      .orElse(
+        Try(methodDeclaration.getType.asClassOrInterfaceType).toOption.flatMap(t => scope.lookupType(t.getNameAsString))
+      )
       .orElse(typeParameters.find(_.name == simpleMethodReturnType).map(_.typeFullName))
 
     scope.pushMethodScope(
@@ -260,6 +264,14 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
         .map { param =>
           Try(param.getType).toOption
             .flatMap(paramType => typeInfoCalc.fullName(paramType, typeParamValues))
+            // In a scenario where we have an import of an external type e.g. `import foo.bar.Baz` and
+            // this parameter's type is e.g. `Baz<String>`, the lookup will fail. However, if we lookup
+            // for `Baz` instead (i.e. without type arguments), then the lookup will succeed.
+            .orElse(
+              Try(
+                param.asInstanceOf[JavaParserParameterDeclaration].getWrappedNode.getType.asClassOrInterfaceType
+              ).toOption.flatMap(t => scope.lookupType(t.getNameAsString))
+            )
         }
 
     toOptionList(parameterTypes)
