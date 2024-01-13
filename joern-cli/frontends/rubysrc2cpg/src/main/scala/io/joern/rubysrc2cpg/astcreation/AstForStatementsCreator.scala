@@ -14,6 +14,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     case node: UntilExpression            => astForUntilStatement(node) :: Nil
     case node: IfExpression               => astForIfStatement(node) :: Nil
     case node: UnlessExpression           => astForUnlessStatement(node) :: Nil
+    case node: CaseExpression             => astsForCaseExpression(node)
     case node: StatementList              => astForStatementList(node) :: Nil
     case node: SimpleCallWithBlock        => astForSimpleCallWithBlock(node) :: Nil
     case node: MemberCallWithBlock        => astForMemberCallWithBlock(node) :: Nil
@@ -98,6 +99,51 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val elseAsts = node.falseBranch.map(astForElseClause).toList
     val ifNode   = controlStructureNode(node, ControlStructureTypes.IF, code(node))
     controlStructureAst(ifNode, Some(notConditionAst), thenAst :: elseAsts)
+  }
+
+  protected def astsForCaseExpression(node: CaseExpression): Seq[Ast] = {
+    def goCase(expr: Option[SimpleIdentifier]): List[RubyNode] = {
+      val elseThenClause: Option[RubyNode] = node.elseClause.map(_.asInstanceOf[ElseClause].thenClause)
+      val whenClauses                      = node.whenClauses.map(_.asInstanceOf[WhenClause])
+      val ifElseChain = whenClauses.foldRight[Option[RubyNode]](elseThenClause) {
+        (whenClause: WhenClause, restClause: Option[RubyNode]) =>
+          // We translate multiple match expressions into an or expression.
+          // There may be a splat as the last match expression, which is currently parsed as unknown
+          // A single match expression is compared using `.===` to the case target expression if it is present
+          // otherwise it is treated as a conditional.
+          val conditions = whenClause.matchExpressions.map { mExpr =>
+            expr.map(e => MemberCall(mExpr, ".", "===", List(e))(mExpr.span)).getOrElse(mExpr)
+          } ++ (whenClause.matchSplatExpression.iterator.flatMap {
+            case u: Unknown => List(u)
+            case e =>
+              logger.warn("Splatting not implemented for `when` in ruby `case`")
+              List(Unknown()(e.span))
+          })
+          // There is always at least one match expression or a splat
+          // a splat will become an unknown in condition at the end
+          val condition = conditions.init.foldRight(conditions.last) { (cond, condAcc) =>
+            BinaryExpression(cond, "||", condAcc)(whenClause.span)
+          }
+          val conditional = IfExpression(
+            condition,
+            whenClause.thenClause.asStatementList,
+            List(),
+            restClause.map { els => ElseClause(els.asStatementList)(els.span) }
+          )(node.span)
+          Some(conditional)
+      }
+      ifElseChain.iterator.toList
+    }
+    def generatedNode: StatementList = node.expression
+      .map { e =>
+        val tmp = SimpleIdentifier(None)(e.span.spanStart(freshName))
+        StatementList(
+          List(SingleAssignment(tmp, "=", e)(e.span)) ++
+            goCase(Some(tmp))
+        )(node.span)
+      }
+      .getOrElse(StatementList(goCase(None))(node.span))
+    astsForStatement(generatedNode)
   }
 
   protected def astForStatementList(node: StatementList): Ast = {

@@ -7,6 +7,8 @@ import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewLiteral, NewControlStructure}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, ControlStructureTypes}
 import io.shiftleft.semanticcpg.language.NodeOrdering.nodeList
+import scala.collection.mutable
+import io.joern.rubysrc2cpg.parser.RubyParser
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
