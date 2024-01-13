@@ -103,3 +103,75 @@ class MethodTests3 extends JavaSrcCode2CpgFixture {
     cpg.method("virtualMethod").isVirtual.fullName.head shouldBe "Foo.virtualMethod:void(java.lang.Integer)"
   }
 }
+
+class MethodTests4 extends JavaSrcCode2CpgFixture {
+
+  "List<String> in the method return type" should {
+    val cpg = code("""
+        |import java.util.*;
+        |class Foo {
+        | List<String> run() {
+        |   return null;
+        | }
+        |}
+        |""".stripMargin)
+
+    "have correct signature and full name" in {
+      val List(method) = cpg.method("run").l
+      method.signature shouldBe "java.util.List()"
+      method.fullName shouldBe "Foo.run:java.util.List()"
+    }
+  }
+
+  "Baz<String> in the method return type" should {
+    val cpg = code("""
+        |import foo.bar.Baz;
+        |class Foo {
+        | Baz<String> run() {
+        |   return null;
+        | }
+        |}
+        |""".stripMargin)
+
+    "have correct signature and full name" in {
+      val List(method) = cpg.method("run").l
+      method.signature shouldBe "foo.bar.Baz()"
+      method.fullName shouldBe "Foo.run:foo.bar.Baz()"
+    }
+  }
+
+  "Identity method for Baz<String>" should {
+    val cpg = code("""
+        |import foo.bar.Baz;
+        |class Foo {
+        | Baz<String> run(Baz<String> x) {
+        |   return x;
+        | }
+        |}
+        |""".stripMargin)
+
+    "have correct signature and full name" in {
+      val List(method) = cpg.method("run").l
+      method.signature shouldBe "foo.bar.Baz(foo.bar.Baz)"
+      method.fullName shouldBe "Foo.run:foo.bar.Baz(foo.bar.Baz)"
+    }
+  }
+
+  "Generic identity method for Baz<T>" should {
+    val cpg = code("""
+        |import foo.bar.Baz;
+        |class Foo {
+        | <T> Baz<T> run(Baz<T> x) {
+        |   return x;
+        | }
+        |}
+        |""".stripMargin)
+
+    "have correct signature and full name" in {
+      val List(method) = cpg.method("run").l
+      method.signature shouldBe "foo.bar.Baz(foo.bar.Baz)"
+      method.fullName shouldBe "Foo.run:foo.bar.Baz(foo.bar.Baz)"
+    }
+  }
+
+}
