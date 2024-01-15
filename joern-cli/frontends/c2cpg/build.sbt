@@ -59,7 +59,7 @@ lazy val signingFiles = List("META-INF/ECLIPSE_.RSA", "META-INF/ECLIPSE_.SF")
  */
 lazy val removeSigningInfo = taskKey[Unit](s"Remove signing info from jar file")
 removeSigningInfo := {
-  if (!(baseDirectory.value / "lib" / s"$cdtCoreDepName.jar").exists)
+  if (!(unmanagedBase.value / s"$cdtCoreDepName.jar").exists)
     (Compile / managedClasspath).value.find(_.data.name.contains(cdtCoreDepName)) match {
       case Some(path) =>
         val jarPath    = path.data.absolutePath
@@ -82,7 +82,7 @@ removeSigningInfo := {
           jarInputStream.close()
           jarOutputStream.close()
 
-          val lib = baseDirectory.value / "lib"
+          val lib = unmanagedBase.value
           if (!lib.exists) IO.createDirectory(lib)
           IO.move(outputFile, lib / outputFile.name)
         } catch {
