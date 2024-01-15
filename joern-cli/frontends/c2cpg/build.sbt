@@ -57,9 +57,10 @@ lazy val signingFiles = List("META-INF/ECLIPSE_.RSA", "META-INF/ECLIPSE_.SF")
  * `MacroArgumentExtractor` from this repo is in the `org.eclipse.cdt.internal.core.parser.scanner` package.
  * The cdt jar is signed to ensure that doesn't happen, but because we're stubborn and yolo we simply remove the signing files.
  */
-lazy val removeSigningInfo = taskKey[Unit](s"Remove signing info from jar file")
+lazy val removeSigningInfo = taskKey[Unit]("Remove signing info from eclise cdt jar file")
 removeSigningInfo := {
-  if (!(unmanagedBase.value / s"$cdtCoreDepName.jar").exists)
+  if (!(unmanagedBase.value / s"$cdtCoreDepName.jar").exists) {
+    val log = streams.value.log
     (Compile / managedClasspath).value.find(_.data.name.contains(cdtCoreDepName)) match {
       case Some(path) =>
         val jarPath    = path.data.absolutePath
@@ -85,19 +86,16 @@ removeSigningInfo := {
           val lib = unmanagedBase.value
           if (!lib.exists) IO.createDirectory(lib)
           IO.move(outputFile, lib / outputFile.name)
+          log.info("Removed signing info from eclise cdt jar file")
         } catch {
           case e: Exception => println(s"Error removing signing info from '$jarPath': ${e.getMessage}")
         }
       case None => // do nothing
     }
+  }
 }
 
-lazy val removeSigningInfoStartup: State => State = { s: State => "removeSigningInfo" :: s }
-
-Global / onLoad := {
-  val old = (Global / onLoad).value
-  removeSigningInfoStartup compose old
-}
+Compile/compile := (Compile/compile).dependsOn(removeSigningInfo).value
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
