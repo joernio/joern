@@ -12,13 +12,17 @@ dependsOn(
   Projects.x2cpg             % "compile->compile;test->test"
 )
 
+lazy val cdtCoreDepVersion = "8.4.0.202401051815"
+lazy val cdtCoreDepName    = s"org.eclipse.cdt.core_$cdtCoreDepVersion"
+lazy val cdtCodeDepUrl =
+  s"https://ci.eclipse.org/cdt/job/cdt/job/main/347/artifact/releng/org.eclipse.cdt.repo/target/repository/plugins/$cdtCoreDepName.jar"
+
 libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
   "org.eclipse.platform"    % "org.eclipse.core.resources" % "3.20.0",
   "org.eclipse.platform"    % "org.eclipse.text"           % "3.13.100",
-  "org.eclipse.platform"    % "org.eclipse.cdt.core"       % "8.4.0.202401051815"
-    from "https://ci.eclipse.org/cdt/job/cdt/job/main/lastSuccessfulBuild/artifact/releng/org.eclipse.cdt.repo/target/repository/plugins/org.eclipse.cdt.core_8.4.0.202401051815.jar",
-  "org.scalatest" %% "scalatest" % Versions.scalatest % Test
+  "org.eclipse.platform"    % "org.eclipse.cdt.core"       % cdtCoreDepVersion from cdtCodeDepUrl,
+  "org.scalatest"          %% "scalatest"                  % Versions.scalatest % Test
 )
 
 dependencyOverrides ++= Seq(
@@ -47,8 +51,7 @@ Compile / doc / scalacOptions ++= Seq("-doc-title", "semanticcpg apidocs", "-doc
 compile / javacOptions ++= Seq("-Xlint:all", "-Xlint:-cast", "-g")
 Test / fork := true
 
-lazy val signingFiles   = List("META-INF/ECLIPSE_.RSA", "META-INF/ECLIPSE_.SF")
-lazy val cdtCoreDepName = "org.eclipse.cdt.core"
+lazy val signingFiles = List("META-INF/ECLIPSE_.RSA", "META-INF/ECLIPSE_.SF")
 
 /* Dirty hack: we access cdt-internal types which are package-private. In order to do so,
  * `MacroArgumentExtractor` from this repo is in the `org.eclipse.cdt.internal.core.parser.scanner` package.
@@ -56,38 +59,45 @@ lazy val cdtCoreDepName = "org.eclipse.cdt.core"
  */
 lazy val removeSigningInfo = taskKey[Unit](s"Remove signing info from jar file")
 removeSigningInfo := {
-  (Test / managedClasspath).value.find(_.data.name.contains(cdtCoreDepName)) match {
-    case Some(path) =>
-      val jarPath    = path.data.absolutePath
-      val inputFile  = new File(jarPath)
-      val outputFile = new File(jarPath + ".custom.jar")
+  if (!(baseDirectory.value / "lib" / s"$cdtCoreDepName.jar").exists)
+    (Compile / managedClasspath).value.find(_.data.name.contains(cdtCoreDepName)) match {
+      case Some(path) =>
+        val jarPath    = path.data.absolutePath
+        val inputFile  = new File(jarPath)
+        val outputFile = new File(jarPath + ".custom.jar")
 
-      try {
-        val jarInputStream  = new JarInputStream(new FileInputStream(inputFile))
-        val jarOutputStream = new JarOutputStream(new FileOutputStream(outputFile))
+        try {
+          val jarInputStream  = new JarInputStream(new FileInputStream(inputFile))
+          val jarOutputStream = new JarOutputStream(new FileOutputStream(outputFile))
 
-        Iterator.continually(jarInputStream.getNextJarEntry).takeWhile(_ != null).foreach { entry =>
-          val entryName = entry.getName
-          if (!signingFiles.contains(entryName)) {
-            jarOutputStream.putNextEntry(new JarEntry(entryName))
-            Iterator.continually(jarInputStream.read()).takeWhile(_ != -1).foreach(jarOutputStream.write)
+          Iterator.continually(jarInputStream.getNextJarEntry).takeWhile(_ != null).foreach { entry =>
+            val entryName = entry.getName
+            if (!signingFiles.contains(entryName)) {
+              jarOutputStream.putNextEntry(new JarEntry(entryName))
+              Iterator.continually(jarInputStream.read()).takeWhile(_ != -1).foreach(jarOutputStream.write)
+            }
+            jarOutputStream.closeEntry()
           }
-          jarOutputStream.closeEntry()
+
+          jarInputStream.close()
+          jarOutputStream.close()
+
+          val lib = baseDirectory.value / "lib"
+          if (!lib.exists) IO.createDirectory(lib)
+          IO.move(outputFile, lib / outputFile.name)
+        } catch {
+          case e: Exception => println(s"Error removing signing info from '$jarPath': ${e.getMessage}")
         }
-
-        jarInputStream.close()
-        jarOutputStream.close()
-
-        IO.delete(inputFile)
-        IO.move(outputFile, inputFile)
-      } catch {
-        case e: Exception => println(s"Error removing signing info from '$jarPath': ${e.getMessage}")
-      }
-    case None => // do nothing
-  }
+      case None => // do nothing
+    }
 }
 
-Compile / compile := ((Compile / compile) dependsOn removeSigningInfo).value
+lazy val removeSigningInfoStartup: State => State = { s: State => "removeSigningInfo" :: s }
+
+Global / onLoad := {
+  val old = (Global / onLoad).value
+  removeSigningInfoStartup compose old
+}
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
