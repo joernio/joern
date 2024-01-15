@@ -1,24 +1,22 @@
 package io.joern.jimple2cpg.astcreation.declarations
 
-import io.joern.jimple2cpg.astcreation.{AstCreator}
+import io.joern.jimple2cpg.astcreation.AstCreator
 import io.joern.x2cpg.utils.NodeBuilders
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.slf4j.LoggerFactory
-import soot.jimple.*
-import soot.jimple.internal.JimpleLocal
-import soot.tagkit.*
-import soot.toolkits.graph.BriefUnitGraph
-import soot.{SootMethod, Local as SootLocal, Unit as SUnit, *}
-
+import sootup.java.core.{JavaSootClass, JavaSootMethod}
+import sootup.core.jimple.basic.Local as JimpleLocal
 import scala.collection.immutable.HashSet
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.{Failure, Success, Try}
-
-import cats.syntax.all.*;
+import cats.syntax.all.*
+import scala.jdk.OptionConverters.*
+import scala.jdk.CollectionConverters.*
 import scala.collection.mutable.ArrayBuffer
+import sootup.core.model.Body
 import io.joern.jimple2cpg.astcreation.statements.BodyControlInfo
 
 trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -28,11 +26,11 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
   // There are many, but the popular ones should do https://en.wikipedia.org/wiki/List_of_JVM_languages
   private val JVM_LANGS = HashSet("scala", "clojure", "groovy", "kotlin", "jython", "jruby")
 
-  protected def astForMethod(methodDeclaration: SootMethod, typeDecl: RefType): Ast = {
+  protected def astForMethod(methodDeclaration: JavaSootMethod, typeDecl: JavaSootClass): Ast = {
     val bodyStatementsInfo = BodyControlInfo()
     val methodNode         = createMethodNode(methodDeclaration, typeDecl)
     try {
-      if (!methodDeclaration.isConcrete) {
+      if (!methodDeclaration.isConcrete || !methodDeclaration.hasBody) {
         // Soot is not able to parse origin parameter names of abstract methods
         // https://github.com/soot-oss/soot/issues/1517
         val locals = methodDeclaration.getParameterTypes.asScala.zipWithIndex
@@ -53,15 +51,12 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
         )
       } else {
         // Map params to their annotations
-        val mTags = methodDeclaration.getTags.asScala
+        val mTags = methodDeclaration.getAnnotations(Option(view).toJava).asScala
         val paramAnnos =
           mTags.collect { case x: VisibilityParameterAnnotationTag => x }.flatMap(_.getVisibilityAnnotations.asScala)
         val paramNames           = mTags.collect { case x: ParamNamesTag => x }.flatMap(_.getNames.asScala)
         val parameterAnnotations = paramNames.zip(paramAnnos).filter(_._2 != null).toMap
-        val methodBody = Try(methodDeclaration.getActiveBody) match {
-          case Failure(_)    => methodDeclaration.retrieveActiveBody()
-          case Success(body) => body
-        }
+        val methodBody = methodDeclaration.getBody
         val parameterAsts =
           Seq(createThisNode(methodDeclaration, NewMethodParameterIn())) ++
             methodBody.getParameterLocals.asScala.zipWithIndex.map { case (param, index) =>
@@ -228,8 +223,8 @@ trait AstForMethodsCreator(implicit withSchemaValidation: ValidationMode) { this
 
     stack.push(Ast(blockNode(body)).withChildren(locals))
 
-    val trapStack = new mutable.Stack[soot.Trap];
-    body.getUnits.asScala.filterNot(isIgnoredUnit).foreach { statement =>
+    val trapStack = new mutable.Stack[soot.Trap]
+    body.getStmts.asScala.filterNot(isIgnoredUnit).foreach { statement =>
       // Remove traps that ended on the previous unit
       (1 to popTraps.getOrElse(statement, 0)).foreach(_ => trapStack.pop)
 

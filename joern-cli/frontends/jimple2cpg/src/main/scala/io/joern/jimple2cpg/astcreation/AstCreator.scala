@@ -12,9 +12,14 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.objectweb.asm.Type
 import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
-import soot.jimple.*
-import soot.tagkit.*
-import soot.{Unit as SUnit, Local as _, *}
+import sootup.core.jimple.basic.Value
+import sootup.core.jimple.common.expr.Expr
+import sootup.core.jimple.common.ref.JCaughtExceptionRef
+import sootup.core.jimple.common.stmt.{JIdentityStmt, JNopStmt, Stmt}
+import sootup.core.types.{ClassType, NullType, PrimitiveType, ReferenceType, VoidType, Type as SootType}
+import sootup.java.core.JavaSootClass
+import sootup.java.core.jimple.basic.JavaLocal
+import sootup.java.core.views.JavaView
 
 import scala.collection.immutable.Seq
 import scala.collection.mutable
@@ -22,13 +27,17 @@ import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.Try
 
-class AstCreator(protected val filename: String, protected val cls: SootClass, global: Global)(implicit
-  withSchemaValidation: ValidationMode
-) extends AstCreatorBase(filename)
+class AstCreator(
+  protected val filename: String,
+  protected val cls: JavaSootClass,
+  protected val view: JavaView,
+  global: Global
+)(implicit withSchemaValidation: ValidationMode)
+    extends AstCreatorBase(filename)
     with AstForDeclarationsCreator
     with AstForStatementsCreator
     with AstForExpressionsCreator
-    with AstNodeBuilder[Host, AstCreator] {
+    with AstNodeBuilder[Object, AstCreator] {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
@@ -39,6 +48,10 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
     global.usedTypes.put(typeName, true)
     typeName
   }
+
+  /** A wrapper for registerType that handles Soot's Type object.
+    */
+  protected def registerType(typ: SootType): String = typ.toString
 
   /** Entry point of AST creation. Translates a compilation unit created by JavaParser into a DiffGraph containing the
     * corresponding CPG AST.
@@ -51,11 +64,11 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
 
   /** Translate compilation unit into AST
     */
-  private def astForCompilationUnit(cls: SootClass): Ast = {
-    val ast = astForPackageDeclaration(cls.getPackageName)
+  private def astForCompilationUnit(cls: JavaSootClass): Ast = {
+    val ast = astForPackageDeclaration(cls.getType.getPackageName.getPackageName)
     val namespaceBlockFullName =
       ast.root.collect { case x: NewNamespaceBlock => x.fullName }.getOrElse("none")
-    ast.withChild(astForTypeDecl(cls.getType, namespaceBlockFullName))
+    ast.withChild(astForTypeDecl(cls, namespaceBlockFullName))
   }
 
   /** Translate package declaration into AST consisting of a corresponding namespace block.
@@ -69,27 +82,26 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
     Ast(namespaceBlock.filename(absolutePath))
   }
 
-  protected def getEvaluationStrategy(typ: soot.Type): String =
+  protected def getEvaluationStrategy(typ: SootType): String =
     typ match {
-      case _: PrimType => EvaluationStrategies.BY_VALUE
-      case _: VoidType => EvaluationStrategies.BY_VALUE
-      case _: NullType => EvaluationStrategies.BY_VALUE
-      case _           => EvaluationStrategies.BY_SHARING
+      case _: PrimitiveType => EvaluationStrategies.BY_VALUE
+      case _: VoidType      => EvaluationStrategies.BY_VALUE
+      case _: NullType      => EvaluationStrategies.BY_VALUE
+      case _                => EvaluationStrategies.BY_SHARING
     }
 
-  protected def isIgnoredUnit(unit: SUnit): Boolean = {
+  protected def isIgnoredUnit(unit: Stmt): Boolean = {
     unit match {
-      case x: IdentityStmt if x.getRightOp.isInstanceOf[CaughtExceptionRef] => false
-      case _: IdentityStmt                                                  => true
-      case _: NopStmt                                                       => true
-      case _                                                                => false
+      case x: JIdentityStmt[_] => !x.getRightOp.isInstanceOf[JCaughtExceptionRef]
+      case _: JNopStmt      => true
+      case _                => false
     }
   }
 
-  protected def astsForValue(value: soot.Value, parentUnit: SUnit): Seq[Ast] = {
+  protected def astsForValue(value: Value, parentUnit: SUnit): Seq[Ast] = {
     value match {
       case x: Expr               => astsForExpression(x, parentUnit)
-      case x: soot.Local         => Seq(astForLocal(x, parentUnit))
+      case x: JavaLocal          => Seq(astForLocal(x, parentUnit))
       case x: CaughtExceptionRef => Seq(astForCaughtExceptionRef(x, parentUnit))
       case x: Constant           => Seq(astForConstantExpr(x))
       case x: FieldRef           => Seq(astForFieldRef(x, parentUnit))
@@ -255,23 +267,35 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
     }
   }
 
-  override def line(node: Host): Option[Integer] = {
-    if (node == null) None
-    else if (node.getJavaSourceStartLineNumber == -1) None
-    else Option(node.getJavaSourceStartLineNumber)
+  override def line(node: Object): Option[Integer] = {
+    import io.joern.jimple2cpg.datastructures.{PositionalElement, SootObjectToPositionalElement}
+    node match
+      case null => None
+      case x    => x.toPositional.getFirstLine.filterNot(_ == -1)
   }
 
-  override def column(node: Host): Option[Integer] = {
-    if (node == null) None
-    else if (node.getJavaSourceStartColumnNumber == -1) None
-    else Option(node.getJavaSourceStartColumnNumber)
+  override def column(node: Object): Option[Integer] = {
+    import io.joern.jimple2cpg.datastructures.{PositionalElement, SootObjectToPositionalElement}
+    node match
+      case null => None
+      case x    => x.toPositional.getFirstCol.filterNot(_ == -1)
   }
 
-  override def columnEnd(node: Host): Option[Integer] = None
+  override def columnEnd(node: Object): Option[Integer] = {
+    import io.joern.jimple2cpg.datastructures.{PositionalElement, SootObjectToPositionalElement}
+    node match
+      case null => None
+      case x    => x.toPositional.getLastCol.filterNot(_ == -1)
+  }
 
-  override def lineEnd(node: Host): Option[Integer] = None
+  override def lineEnd(node: Object): Option[Integer] = {
+    import io.joern.jimple2cpg.datastructures.{PositionalElement, SootObjectToPositionalElement}
+    node match
+      case null => None
+      case x    => x.toPositional.getLastLine.filterNot(_ == -1)
+  }
 
-  override def code(node: Host): String = node.toString
+  override def code(node: Object): String = node.toString
 
   /** Tracks AST scope.
     */

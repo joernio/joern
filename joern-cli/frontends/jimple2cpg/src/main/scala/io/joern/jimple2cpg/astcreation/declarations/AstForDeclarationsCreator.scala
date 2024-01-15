@@ -7,6 +7,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, PropertyNames}
 import soot.{SootClass, SootMethod}
 import soot.tagkit.*
+import sootup.java.core.AnnotationUsage
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -52,7 +53,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode)
       .toSeq
   }
 
-  protected def astsForAnnotations(annotationTag: AnnotationTag, host: AbstractHost): Ast = {
+  protected def astsForAnnotations(annotationTag: AnnotationUsage, host: Object): Ast = {
     val typeFullName = registerType(annotationTag.getType.parseAsJavaType)
     val name         = typeFullName.split('.').last
     val elementNodes = annotationTag.getElems.asScala.map(astForAnnotationElement(_, host)).toSeq
@@ -62,7 +63,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode)
     annotationAst(annotation, elementNodes)
   }
 
-  private def astForAnnotationElement(annoElement: AnnotationElem, parent: AbstractHost): Ast = {
+  private def astForAnnotationElement(annoElement: AnnotationElem, parent: Object): Ast = {
     def getLiteralElementNameAndCode(annoElement: AnnotationElem): (String, String) = annoElement match {
       case x: AnnotationClassElem =>
         val desc = registerType(x.getDesc.parseAsJavaType)
