@@ -10,6 +10,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.proto.cpg.Cpg.EvaluationStrategies
 
 import scala.util.Try
+import io.joern.csharpsrc2cpg.CSharpOperators as CSharpOperators
+import io.joern.x2cpg.Defines
 
 trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -135,7 +137,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
   private def astForThisNode(methodDecl: DotNetNodeInfo): Ast = {
     val name         = "this"
-    val typeFullName = scope.surroundingTypeDeclFullName.getOrElse("ANY")
+    val typeFullName = scope.surroundingTypeDeclFullName.getOrElse(Defines.Any)
     val param = parameterInNode(methodDecl, name, name, 0, false, EvaluationStrategies.BY_SHARING.name, typeFullName)
     Ast(param)
   }
@@ -155,7 +157,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       Try(methodReturn.json(ParserKeys.Value).str)
         .orElse(Try(methodReturn.json(ParserKeys.Keyword).obj(ParserKeys.Value).str))
         .orElse(Try(methodReturn.code))
-        .getOrElse("ANY")
+        .getOrElse(Defines.Any)
     )
   }
 

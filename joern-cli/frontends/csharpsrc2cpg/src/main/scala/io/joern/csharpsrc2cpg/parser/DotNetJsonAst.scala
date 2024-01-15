@@ -29,8 +29,9 @@ object DotNetJsonAst {
   sealed trait BaseStmt extends DotNetParserNode
 
   object GlobalStatement     extends BaseStmt
-  object ExpressionStatement extends BaseExpr
-  object NotHandledType      extends DotNetParserNode
+  object ExpressionStatement extends BaseStmt
+
+  object NotHandledType extends DotNetParserNode
 
   object CompilationUnit extends BaseExpr
 
@@ -126,6 +127,11 @@ object DotNetJsonAst {
   trait MemberAccessExpr extends BaseExpr
 
   object SimpleMemberAccessExpression extends MemberAccessExpr
+
+  object ThrowStatement extends BaseStmt
+
+  object ObjectCreationExpression extends BaseExpr
+
 }
 
 /** The JSON key values, in alphabetical order.
