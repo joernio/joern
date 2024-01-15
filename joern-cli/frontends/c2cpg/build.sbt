@@ -60,13 +60,17 @@ lazy val signingFiles = List("META-INF/ECLIPSE_.RSA", "META-INF/ECLIPSE_.SF")
  */
 lazy val removeSigningInfo = taskKey[Unit]("Remove signing info from Eclipse CDT jar file")
 removeSigningInfo := {
-  if (!(unmanagedBase.value / s"$cdtCoreDepNameAndVersion.jar").exists) {
-    val log = streams.value.log
-    (Compile / managedClasspath).value.find(_.data.name.contains(cdtCoreDepName)) match {
+  import java.nio.file.Files
+  val log = streams.value.log
+  val managedClasspathValue = (Compile / managedClasspath).value
+  val lib = unmanagedBase.value
+  if (!lib.exists) IO.createDirectory(lib)
+  val outputFile = lib / s"$cdtCoreDepNameAndVersion.custom.jar"
+  if (!outputFile.exists) {
+    managedClasspathValue.find(_.data.name.contains(cdtCoreDepName)) match {
       case Some(path) =>
         val jarPath    = path.data.absolutePath
         val inputFile  = new File(jarPath)
-        val outputFile = new File(jarPath + ".custom.jar")
 
         try {
           val jarInputStream  = new JarInputStream(new FileInputStream(inputFile))
@@ -84,12 +88,9 @@ removeSigningInfo := {
           jarInputStream.close()
           jarOutputStream.close()
 
-          val lib = unmanagedBase.value
-          if (!lib.exists) IO.createDirectory(lib)
-          IO.move(outputFile, lib / outputFile.name)
           log.info("Removed signing info from Eclipse CDT jar file")
 
-          // and cleanup other versions of the Eclipse CDT jar file, if any
+          // cleanup other versions of the Eclipse CDT jar file, if any
           lib.listFiles.foreach { file =>
             if (!file.name.contains(cdtCoreDepNameAndVersion) && file.name.contains(cdtCoreDepName)) {
               file.delete()
@@ -98,7 +99,7 @@ removeSigningInfo := {
         } catch {
           case e: Exception => log.error(s"Error removing signing info from '$jarPath': ${e.getMessage}")
         }
-      case None => // do nothing
+      case _ => // do nothing
     }
   }
 }
