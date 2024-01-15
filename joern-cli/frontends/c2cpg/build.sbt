@@ -12,16 +12,17 @@ dependsOn(
   Projects.x2cpg             % "compile->compile;test->test"
 )
 
-lazy val cdtCoreDepVersion = "8.4.0.202401051815"
-lazy val cdtCoreDepName    = s"org.eclipse.cdt.core_$cdtCoreDepVersion"
+lazy val cdtCoreDepVersion        = "8.4.0.202401051815"
+lazy val cdtCoreDepName           = s"org.eclipse.cdt.core"
+lazy val cdtCoreDepNameAndVersion = s"org.eclipse.cdt.core_$cdtCoreDepVersion"
 lazy val cdtCodeDepUrl =
-  s"https://ci.eclipse.org/cdt/job/cdt/job/main/347/artifact/releng/org.eclipse.cdt.repo/target/repository/plugins/$cdtCoreDepName.jar"
+  s"https://ci.eclipse.org/cdt/job/cdt/job/main/347/artifact/releng/org.eclipse.cdt.repo/target/repository/plugins/$cdtCoreDepNameAndVersion.jar"
 
 libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
   "org.eclipse.platform"    % "org.eclipse.core.resources" % "3.20.0",
   "org.eclipse.platform"    % "org.eclipse.text"           % "3.13.100",
-  "org.eclipse.platform"    % "org.eclipse.cdt.core"       % cdtCoreDepVersion % Provided from cdtCodeDepUrl,
+  "org.eclipse.platform"    % "org.eclipse.cdt.core"       % cdtCoreDepVersion  % Provided from cdtCodeDepUrl,
   "org.scalatest"          %% "scalatest"                  % Versions.scalatest % Test
 )
 
@@ -57,9 +58,9 @@ lazy val signingFiles = List("META-INF/ECLIPSE_.RSA", "META-INF/ECLIPSE_.SF")
  * `MacroArgumentExtractor` from this repo is in the `org.eclipse.cdt.internal.core.parser.scanner` package.
  * The cdt jar is signed to ensure that doesn't happen, but because we're stubborn and yolo we simply remove the signing files.
  */
-lazy val removeSigningInfo = taskKey[Unit]("Remove signing info from eclise cdt jar file")
+lazy val removeSigningInfo = taskKey[Unit]("Remove signing info from Eclipse CDT jar file")
 removeSigningInfo := {
-  if (!(unmanagedBase.value / s"$cdtCoreDepName.jar").exists) {
+  if (!(unmanagedBase.value / s"$cdtCoreDepNameAndVersion.jar").exists) {
     val log = streams.value.log
     (Compile / managedClasspath).value.find(_.data.name.contains(cdtCoreDepName)) match {
       case Some(path) =>
@@ -86,24 +87,27 @@ removeSigningInfo := {
           val lib = unmanagedBase.value
           if (!lib.exists) IO.createDirectory(lib)
           IO.move(outputFile, lib / outputFile.name)
-          log.info("Removed signing info from eclise cdt jar file")
+          log.info("Removed signing info from Eclipse CDT jar file")
+
+          // and cleanup other versions of the Eclipse CDT jar file, if any
+          lib.listFiles.foreach { file =>
+            if (!file.name.contains(cdtCoreDepNameAndVersion) && file.name.contains(cdtCoreDepName)) {
+              file.delete()
+            }
+          }
         } catch {
-          case e: Exception => println(s"Error removing signing info from '$jarPath': ${e.getMessage}")
+          case e: Exception => log.error(s"Error removing signing info from '$jarPath': ${e.getMessage}")
         }
       case None => // do nothing
     }
   }
 }
 
-lazy val removeSigningInfoStartup: State => State = { s: State =>
-  "removeSigningInfo" :: s
-}
+lazy val removeSigningInfoStartup: State => State = { s: State => "removeSigningInfo" :: s }
 Global / onLoad := {
   val old = (Global / onLoad).value
   removeSigningInfoStartup compose old
 }
-// removeSigningInfo := removeSigningInfo.triggeredBy(Global/onLoad).value
-// Compile/compile := (Compile/compile).dependsOn(removeSigningInfo).value
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
