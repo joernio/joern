@@ -12,7 +12,9 @@ class MethodCpgTests extends AnyFreeSpec with Matchers {
       """
         |def method():
         |   pass
-        |""".stripMargin, "a/b.py")
+        |""".stripMargin,
+      "a/b.py"
+    )
 
     "test method full name" in {
       val method = cpg.method.name("method").head

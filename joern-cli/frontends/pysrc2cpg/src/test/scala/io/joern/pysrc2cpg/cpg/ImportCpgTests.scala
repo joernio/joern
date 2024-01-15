@@ -9,7 +9,7 @@ import org.scalatest.matchers.should.Matchers
 class ImportCpgTests extends AnyFreeSpec with Matchers {
 
   "test plain import statement" in {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""import a""".stripMargin)
+    lazy val cpg   = Py2CpgTestContext.buildCpg("""import a""".stripMargin)
     val assignment = cpg.call.code(".*=.*import.*").l
 
     val lhsIdentifier = assignment.argument(1).isIdentifier.head
@@ -23,7 +23,7 @@ class ImportCpgTests extends AnyFreeSpec with Matchers {
   }
 
   "test plain import statement with hierarchical name" in {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""import a.b""".stripMargin)
+    lazy val cpg   = Py2CpgTestContext.buildCpg("""import a.b""".stripMargin)
     val assignment = cpg.call.code(".*=.*import.*").l
 
     val lhsIdentifier = assignment.argument(1).isIdentifier.head
@@ -37,7 +37,7 @@ class ImportCpgTests extends AnyFreeSpec with Matchers {
   }
 
   "test 'from ... import' statement with hierarchical name" in {
-    lazy val cpg = Py2CpgTestContext.buildCpg("""from a.b import c""".stripMargin)
+    lazy val cpg   = Py2CpgTestContext.buildCpg("""from a.b import c""".stripMargin)
     val assignment = cpg.call.code(".*=.*import.*").l
 
     val lhsIdentifier = assignment.argument(1).isIdentifier.head
