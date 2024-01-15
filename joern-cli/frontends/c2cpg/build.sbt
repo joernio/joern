@@ -95,7 +95,15 @@ removeSigningInfo := {
   }
 }
 
-Compile/compile := (Compile/compile).dependsOn(removeSigningInfo).value
+lazy val removeSigningInfoStartup: State => State = { s: State =>
+  "removeSigningInfo" :: s
+}
+Global / onLoad := {
+  val old = (Global / onLoad).value
+  removeSigningInfoStartup compose old
+}
+// removeSigningInfo := removeSigningInfo.triggeredBy(Global/onLoad).value
+// Compile/compile := (Compile/compile).dependsOn(removeSigningInfo).value
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
