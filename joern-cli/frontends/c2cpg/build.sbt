@@ -21,7 +21,7 @@ libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
   "org.eclipse.platform"    % "org.eclipse.core.resources" % "3.20.0",
   "org.eclipse.platform"    % "org.eclipse.text"           % "3.13.100",
-  "org.eclipse.platform"    % "org.eclipse.cdt.core"       % cdtCoreDepVersion from cdtCodeDepUrl,
+  "org.eclipse.platform"    % "org.eclipse.cdt.core"       % cdtCoreDepVersion % Provided from cdtCodeDepUrl,
   "org.scalatest"          %% "scalatest"                  % Versions.scalatest % Test
 )
 
