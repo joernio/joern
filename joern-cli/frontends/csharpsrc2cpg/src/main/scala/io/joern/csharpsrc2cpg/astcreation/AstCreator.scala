@@ -22,6 +22,7 @@ class AstCreator(val relativeFileName: String, val parserResult: ParserResult, v
     with AstForPrimitivesCreator
     with AstForExpressionsCreator
     with AstForStatementsCreator
+    with AstForControlStructuresCreator
     with AstGenNodeBuilder[AstCreator] {
 
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
@@ -64,10 +65,13 @@ class AstCreator(val relativeFileName: String, val parserResult: ParserResult, v
       case VariableDeclaration       => astForVariableDeclaration(nodeInfo)
       case EqualsValueClause         => astForEqualsValueClause(nodeInfo)
       case UsingDirective            => notHandledYet(nodeInfo)
-      case Block                     => notHandledYet(nodeInfo)
+      case Block                     => Seq(astForBlock(nodeInfo))
       case IdentifierName            => Seq(astForIdentifier(nodeInfo))
       case LocalDeclarationStatement => astForLocalDeclarationStatement(nodeInfo)
       case ObjectCreationExpression  => astForObjectCreationExpression(nodeInfo)
+      case FinallyClause             => astForFinallyClause(nodeInfo)
+      case CatchClause               => astForCatchClause(nodeInfo)
+      case CatchDeclaration          => astForCatchDeclaration(nodeInfo)
       case _: LiteralExpr            => astForLiteralExpression(nodeInfo)
       case _                         => notHandledYet(nodeInfo)
     }

@@ -112,7 +112,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val fullName    = s"${astFullName(methodDecl)}:$signature"
     val methodNode_ = methodNode(methodDecl, name, code(methodDecl), fullName, Option(signature), relativeFileName)
     scope.pushNewScope(MethodScope(fullName))
-    val body = astForMethodBody(createDotNetNodeInfo(methodDecl.json(ParserKeys.Body)))
+    val body = astForBlock(createDotNetNodeInfo(methodDecl.json(ParserKeys.Body)))
     scope.popScope()
     val modifiers = astForModifiers(methodDecl).flatMap(_.nodes).collect { case x: NewModifier => x }
     val thisNode =
@@ -142,11 +142,16 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     Ast(param)
   }
 
-  private def astForMethodBody(body: DotNetNodeInfo): Ast = {
+  protected def astForBlock(
+    body: DotNetNodeInfo,
+    code: Option[String] = None,
+    prefixAsts: List[Ast] = List.empty
+  ): Ast = {
     val block = blockNode(body)
+    code.foreach(block.code(_))
     scope.pushNewScope(BlockScope)
     val statements = body.json(ParserKeys.Statements).arr.flatMap(astForNode).toList
-    val _blockAst  = blockAst(block, statements)
+    val _blockAst  = blockAst(block, prefixAsts ++ statements)
     scope.popScope()
     _blockAst
   }

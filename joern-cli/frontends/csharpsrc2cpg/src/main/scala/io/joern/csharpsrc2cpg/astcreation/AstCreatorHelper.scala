@@ -1,21 +1,14 @@
 package io.joern.csharpsrc2cpg.astcreation
 
-import io.joern.csharpsrc2cpg.{Constants, astcreation}
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetJsonAst, DotNetNodeInfo, ParserKeys}
+import io.joern.csharpsrc2cpg.{Constants, astcreation}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  NewCall,
-  NewIdentifier,
-  NewMethod,
-  NewNamespaceBlock,
-  NewTypeDecl
-}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewIdentifier}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, PropertyNames}
 import ujson.Value
 
 import scala.util.{Failure, Success, Try}
-import io.joern.x2cpg.Defines
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def createDotNetNodeInfo(json: Value): DotNetNodeInfo =
@@ -75,8 +68,9 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         BuiltinTypes.Float
       case NumericLiteralExpression if node.code.matches("^\\d+\\.?\\d*[m|M]?$") => // e.g. 2m or 2.1M
         BuiltinTypes.Decimal
-      case StringLiteralExpression => BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)
-      case IdentifierName          =>
+      case StringLiteralExpression                        => BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)
+      case TrueLiteralExpression | FalseLiteralExpression => BuiltinTypes.DotNetTypeMap(BuiltinTypes.Bool)
+      case IdentifierName                                 =>
         // TODO: Look at scope object for possible types
         Defines.Any
       case _ =>

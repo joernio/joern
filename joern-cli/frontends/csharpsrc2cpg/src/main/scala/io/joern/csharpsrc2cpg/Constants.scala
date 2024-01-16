@@ -5,5 +5,6 @@ object Constants {
 }
 
 object CSharpOperators {
-  val throws: String = "<operators>.throw"
+  val throws: String  = "<operators>.throw"
+  val unknown: String = "<operators>.unknown"
 }

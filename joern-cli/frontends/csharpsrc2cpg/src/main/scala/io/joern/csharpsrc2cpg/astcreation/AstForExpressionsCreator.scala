@@ -1,5 +1,6 @@
 package io.joern.csharpsrc2cpg.astcreation
 
+import io.joern.csharpsrc2cpg.CSharpOperators
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
@@ -54,6 +55,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case "!="  => Operators.notEquals
       case "&&"  => Operators.logicalAnd
       case "||"  => Operators.logicalOr
+      case "="   => Operators.assignment
       case "+="  => Operators.assignmentPlus
       case "-="  => Operators.assignmentMinus
       case "*="  => Operators.assignmentMultiplication
@@ -71,6 +73,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case "|"   => Operators.or
       case "&"   => Operators.and
       case "^"   => Operators.xor
+      case x =>
+        logger.warn(s"Unhandled operator '$x' for ${code(binaryExpr)}")
+        CSharpOperators.unknown
 
     val args = astForNode(binaryExpr.json(ParserKeys.Left)) ++: astForNode(binaryExpr.json(ParserKeys.Right))
     val cNode =
