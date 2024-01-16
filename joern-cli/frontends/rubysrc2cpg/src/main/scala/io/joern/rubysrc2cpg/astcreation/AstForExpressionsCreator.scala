@@ -4,11 +4,8 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.{RubyOperators, getBuiltInType}
 import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewLiteral, NewControlStructure}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, ControlStructureTypes}
-import io.shiftleft.semanticcpg.language.NodeOrdering.nodeList
-import scala.collection.mutable
-import io.joern.rubysrc2cpg.parser.RubyParser
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -117,7 +114,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForMemberCall(node: MemberCall): Ast = {
     val fullName        = node.methodName // TODO
     val fieldAccessAst  = astForFieldAccess(MemberAccess(node.target, node.op, node.methodName)(node.span))
-    val argumentAsts    = node.arguments.map(astForExpression)
+    val argumentAsts    = node.arguments.map(astForMethodCallArgument)
     val fieldAccessCall = callNode(node, code(node), node.methodName, fullName, DispatchTypes.STATIC_DISPATCH)
     callAst(fieldAccessCall, argumentAsts, Some(fieldAccessAst))
   }
@@ -287,7 +284,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val receiverAst    = astForFieldAccess(memberAccess)
     val methodName     = memberAccess.methodName
     val methodFullName = methodName // TODO
-    val argumentAsts   = node.arguments.map(astForExpression)
+    val argumentAsts   = node.arguments.map(astForMethodCallArgument)
     val call           = callNode(node, code(node), methodName, methodFullName, DispatchTypes.STATIC_DISPATCH)
     callAst(call, argumentAsts, None, Some(receiverAst))
   }
@@ -295,9 +292,28 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   private def astForMethodCallWithoutBlock(node: SimpleCall, methodIdentifier: SimpleIdentifier): Ast = {
     val methodName     = methodIdentifier.text
     val methodFullName = methodName // TODO
-    val argumentAst    = node.arguments.map(astForExpression)
+    val argumentAst    = node.arguments.map(astForMethodCallArgument)
     val call           = callNode(node, code(node), methodName, methodFullName, DispatchTypes.STATIC_DISPATCH)
     callAst(call, argumentAst, None, None)
+  }
+
+  private def astForMethodCallArgument(node: RubyNode): Ast = {
+    node match
+      // Associations in method calls are keyword arguments
+      case assoc: Association => astForKeywordArgument(assoc)
+      case _                  => astForExpression(node)
+  }
+
+  private def astForKeywordArgument(assoc: Association): Ast = {
+    val value = astForExpression(assoc.value)
+    astForExpression(assoc.key).root match
+      case Some(keyNode: NewCall) =>
+        value.root.collectFirst { case x: ExpressionNew =>
+          x.argumentName_=(Option(keyNode.name))
+          x.argumentIndex_=(-1)
+        }
+        value
+      case _ => astForExpression(assoc)
   }
 
   protected def astForFieldAccess(node: MemberAccess): Ast = {

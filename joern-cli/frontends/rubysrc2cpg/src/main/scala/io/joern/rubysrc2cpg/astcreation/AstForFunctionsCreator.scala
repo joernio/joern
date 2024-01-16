@@ -51,11 +51,13 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   // TODO: remaining cases
   protected def astForParameter(node: RubyNode, index: Int): Ast = {
     node match
-      case node: MandatoryParameter =>
+      case node: (MandatoryParameter | OptionalParameter) =>
+        val _code = code(node)
+        val name  = "^(\\w)+".r.findFirstMatchIn(_code).map(_.toString()).getOrElse(_code)
         val parameterIn = parameterInNode(
           node = node,
-          name = code(node),
-          code = code(node),
+          name = name,
+          code = _code,
           index = index,
           isVariadic = false,
           evaluationStrategy = EvaluationStrategies.BY_REFERENCE,
