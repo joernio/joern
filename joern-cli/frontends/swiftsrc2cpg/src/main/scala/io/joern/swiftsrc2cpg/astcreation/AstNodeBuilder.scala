@@ -203,8 +203,8 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     signature: Option[String],
     returnType: String,
     fileName: Option[String] = None,
-    lineNumber: Option[Integer] = None,
-    columnNumber: Option[Integer] = None
+    lineNumber: Option[Int] = None,
+    columnNumber: Option[Int] = None
   ): AstAndMethod = {
     val methodNode = NewMethod()
       .name(io.joern.x2cpg.Defines.StaticInitMethodName)

@@ -9,12 +9,12 @@ trait AstGenNodeBuilder[NodeProcessor] extends AstNodeBuilder[BaseNodeInfo[_], N
 
   override def code(node: BaseNodeInfo[_]): String = node.code
 
-  override def line(node: BaseNodeInfo[_]): Option[Integer] = node.lineNumber
+  override def line(node: BaseNodeInfo[_]): Option[Int] = node.lineNumber
 
-  override def lineEnd(node: BaseNodeInfo[_]): Option[Integer] = node.lineNumberEnd
+  override def lineEnd(node: BaseNodeInfo[_]): Option[Int] = node.lineNumberEnd
 
-  override def column(node: BaseNodeInfo[_]): Option[Integer] = node.columnNumber
+  override def column(node: BaseNodeInfo[_]): Option[Int] = node.columnNumber
 
-  override def columnEnd(node: BaseNodeInfo[_]): Option[Integer] = node.columnNumberEnd
+  override def columnEnd(node: BaseNodeInfo[_]): Option[Int] = node.columnNumberEnd
 
 }

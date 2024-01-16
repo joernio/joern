@@ -238,7 +238,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       registerType(typeFullName)
 
       val astParentType     = methodAstParentStack.head.label
-      val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
+      val astParentFullName = methodAstParentStack.head.propertiesMap.get("FULL_NAME").toString
 
       val typeDeclNode_ = typeDeclNode(
         node,
@@ -453,7 +453,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       registerType(typeFullName)
 
       val astParentType     = methodAstParentStack.head.label
-      val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
+      val astParentFullName = methodAstParentStack.head.propertiesMap.get("FULL_NAME").toString
 
       val typeDeclNode_ = typeDeclNode(
         node,
@@ -688,7 +688,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         val returnType = Defines.Any
         (s"$returnType $methodFullName ${a.parameters.map(code).getOrElse("()")}", returnType)
       case i: InitializerDeclSyntax =>
-        val returnType = methodAstParentStack.head.properties("FULL_NAME").toString
+        val returnType = methodAstParentStack.head.propertiesMap.get("FULL_NAME").toString
         (s"$returnType $methodFullName ${i.signature.parameterClause.parameters.children.map(code)}", returnType)
       case _: DeinitializerDeclSyntax =>
         val returnType = Defines.Any

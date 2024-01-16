@@ -89,7 +89,7 @@ abstract class XTypeRecoveryPassGenerator[CompilationUnitType <: AstNode](
   config: XTypeRecoveryConfig = XTypeRecoveryConfig()
 ) {
 
-  def generate(): List[] = {
+  def generate(): List[CpgPassBase] = {
     val state = new XTypeRecoveryState(config)
     val res   = mutable.ArrayBuffer[CpgPassBase]()
     for (i <- Range(0, config.iterations)) {
@@ -98,7 +98,7 @@ abstract class XTypeRecoveryPassGenerator[CompilationUnitType <: AstNode](
     if (postTypeRecoveryAndPropagation)
       res.append(
         new CpgPass(cpg):
-          override def run(builder: BatchedUpdate.DiffGraphBuilder): Unit = {
+          override def run(builder: DiffGraphBuilder): Unit = {
             XTypeRecoveryPassGenerator.linkMembersToTheirRefs(cpg, builder)
           }
       )

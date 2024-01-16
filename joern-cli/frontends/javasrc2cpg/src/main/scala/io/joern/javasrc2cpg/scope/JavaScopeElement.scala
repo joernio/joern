@@ -11,7 +11,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewMethodParameterIn
 import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
 import io.shiftleft.codepropertygraph.generated.nodes.NewMember
 import io.joern.javasrc2cpg.util.{BindingTable, BindingTableEntry, NameConstants}
-import io.shiftleft.passes.IntervalKeyPool
+import io.joern.x2cpg.utils.IntervalKeyPool
 import io.joern.x2cpg.Ast
 
 trait JavaScopeElement {

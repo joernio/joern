@@ -24,13 +24,12 @@ import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newOperatorCallNode}
 import io.joern.x2cpg.{Ast, Defines}
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
-import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewBlock, NewCall, NewIdentifier}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewBlock, NewCall, NewIdentifier}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
 
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
 import scala.util.{Success, Try}
-import javassist.compiler.ast.CallExpr
 import io.joern.javasrc2cpg.scope.Scope.ScopeInnerType
 import io.joern.javasrc2cpg.scope.Scope.SimpleVariable
 import io.joern.javasrc2cpg.scope.Scope.ScopeParameter
@@ -278,8 +277,8 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
     argumentTypes: Option[List[String]],
     argsSize: Int,
     code: String,
-    lineNumber: Option[Integer] = None,
-    columnNumber: Option[Integer] = None
+    lineNumber: Option[Int] = None,
+    columnNumber: Option[Int] = None
   ): NewCall = {
     val initSignature = argumentTypes match {
       case Some(tpe)          => composeMethodLikeSignature(TypeConstants.Void, tpe)
@@ -300,8 +299,8 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
   }
 
   private def blockAstForConstructorInvocation(
-    lineNumber: Option[Integer],
-    columnNumber: Option[Integer],
+    lineNumber: Option[Int],
+    columnNumber: Option[Int],
     allocNode: NewCall,
     initNode: NewCall,
     args: Seq[Ast],
@@ -323,11 +322,11 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
 
     val assignmentAst = callAst(assignmentNode, List(identifierAst, allocAst))
 
-    val identifierWithDefaultOrder = identifier.copy.order(PropertyDefaults.Order)
-    val identifierForInit          = identifierWithDefaultOrder.copy
-    val initCopyWithDefaultOrder   = initNode.copy.order(PropertyDefaults.Order)
+    val identifierWithDefaultOrder = identifier.copy().order(PropertyDefaults.Order)
+    val identifierForInit          = identifierWithDefaultOrder.copy()
+    val initCopyWithDefaultOrder   = initNode.copy().order(PropertyDefaults.Order)
 
-    val returnAst = Ast(identifierWithDefaultOrder.copy)
+    val returnAst = Ast(identifierWithDefaultOrder.copy())
 
     val capturedThis = scope.lookupVariable(NameConstants.This) match {
       case SimpleVariable(param: ScopeParameter) => Some(param.node)
