@@ -637,7 +637,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "be sufficient to resolve method full names at calls" in {
       val List(call) = cpg.call("query").l
-      call.methodFullName shouldBe "sqlalchemy.py:<module>.Session.query"
+      call.methodFullName shouldBe Seq("sqlalchemy", "orm.py:<module>.Session.query").mkString(File.separator)
     }
 
   }
@@ -721,15 +721,15 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "with the correct identifier and call types" in {
       val Some(postCallReceiver) = cpg.identifier("db").headOption: @unchecked
-      postCallReceiver.typeFullName shouldBe "sqlalchemy.py:<module>.Session"
+      postCallReceiver.typeFullName shouldBe Seq("sqlalchemy", "orm.py:<module>.Session").mkString(File.separator)
       val Some(postCall) = cpg.call("query").headOption: @unchecked
-      postCall.methodFullName shouldBe "sqlalchemy.py:<module>.Session.query"
+      postCall.methodFullName shouldBe Seq("sqlalchemy", "orm.py:<module>.Session.query").mkString(File.separator)
     }
 
     "reflect these types as under the type full name" in {
       val List(p1, p2) = cpg.method("get_user_by_email").parameter.l
       p1.typeFullName shouldBe "__builtin.str"
-      p2.typeFullName shouldBe "sqlalchemy.py:<module>.Session"
+      p2.typeFullName shouldBe Seq("sqlalchemy", "orm.py:<module>.Session").mkString(File.separator)
     }
   }
 

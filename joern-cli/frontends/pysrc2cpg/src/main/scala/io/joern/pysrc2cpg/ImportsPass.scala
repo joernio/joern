@@ -16,7 +16,7 @@ class ImportsPass(cpg: Cpg) extends XImportsPass(cpg) {
     call.argument.code.l match {
       case List("", what)       => what.split('.')(0)
       case List(where, what)    => s"$where.$what"
-      case List("", what, _)    => what.split('.')(0)
+      case List("", what, _)    => what
       case List(where, what, _) => s"$where.$what"
       case _                    => ""
     }
