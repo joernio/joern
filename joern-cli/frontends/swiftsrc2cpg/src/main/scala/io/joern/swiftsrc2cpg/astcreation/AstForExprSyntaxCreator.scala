@@ -385,7 +385,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForTryExprSyntax(node: TryExprSyntax): Ast = {
     val tryNode = controlStructureNode(node, ControlStructureTypes.TRY, code(node))
     val bodyAst = astForNode(node.expression)
-    // The semantics of try statement children is defined by there order value.
+    // The semantics of try statement children is defined by their order value.
     // Thus we set the here explicitly and do not rely on the usual consecutive
     // ordering.
     setOrderExplicitly(bodyAst, 1)

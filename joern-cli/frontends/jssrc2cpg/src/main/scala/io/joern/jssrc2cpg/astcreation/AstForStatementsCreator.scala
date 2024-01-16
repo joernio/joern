@@ -101,7 +101,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         astForNodeWithFunctionReference(Obj(finalizer))
       }
       .getOrElse(Ast())
-    // The semantics of try statement children is defined by there order value.
+    // The semantics of try statement children is defined by their order value.
     // Thus we set the here explicitly and do not rely on the usual consecutive
     // ordering.
     setOrderExplicitly(bodyAst, 1)
@@ -119,7 +119,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         astForNodeWithFunctionReference(Obj(alternate))
       }
       .getOrElse(Ast())
-    // The semantics of if statement children is partially defined by there order value.
+    // The semantics of if statement children is partially defined by their order value.
     // The consequentAst must have order == 2 and alternateAst must have order == 3.
     // Only to avoid collision we set testAst to 1
     // because the semantics of it is already indicated via the condition edge.
@@ -137,7 +137,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val whileNode = createControlStructureNode(doWhileStmt, ControlStructureTypes.DO)
     val testAst   = astForNodeWithFunctionReference(doWhileStmt.json("test"))
     val bodyAst   = astForNodeWithFunctionReference(doWhileStmt.json("body"))
-    // The semantics of do-while statement children is partially defined by there order value.
+    // The semantics of do-while statement children is partially defined by their order value.
     // The bodyAst must have order == 1. Only to avoid collision we set testAst to 2
     // because the semantics of it is already indicated via the condition edge.
     setOrderExplicitly(bodyAst, 1)
@@ -149,7 +149,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val whileNode = createControlStructureNode(whileStmt, ControlStructureTypes.WHILE)
     val testAst   = astForNodeWithFunctionReference(whileStmt.json("test"))
     val bodyAst   = astForNodeWithFunctionReference(whileStmt.json("body"))
-    // The semantics of while statement children is partially defined by there order value.
+    // The semantics of while statement children is partially defined by their order value.
     // The bodyAst must have order == 2. Only to avoid collision we set testAst to 1
     // because the semantics of it is already indicated via the condition edge.
     setOrderExplicitly(testAst, 1)
@@ -176,7 +176,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       .getOrElse(Ast())
     val bodyAst = astForNodeWithFunctionReference(forStmt.json("body"))
 
-    // The semantics of for statement children is defined by there order value.
+    // The semantics of for statement children is defined by their order value.
     // Thus we set the here explicitly and do not rely on the usual consecutive
     // ordering.
     setOrderExplicitly(initAst, 1)
@@ -263,7 +263,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   protected def astForSwitchStatement(switchStmt: BabelNodeInfo): Ast = {
     val switchNode = createControlStructureNode(switchStmt, ControlStructureTypes.SWITCH)
 
-    // The semantics of switch statement children is partially defined by there order value.
+    // The semantics of switch statement children is partially defined by their order value.
     // The blockAst must have order == 2. Only to avoid collision we set switchExpressionAst to 1
     // because the semantics of it is already indicated via the condition edge.
     val switchExpressionAst = astForNodeWithFunctionReference(switchStmt.json("discriminant"))
