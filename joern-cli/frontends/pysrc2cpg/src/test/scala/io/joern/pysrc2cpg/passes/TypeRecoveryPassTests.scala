@@ -399,15 +399,15 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     "resolve correct imports via tag nodes" in {
       val List(error: UnknownImport, request: UnknownImport) =
         cpg.call.where(_.referencedImports).tag._toEvaluatedImport.toList: @unchecked
-      error.path shouldBe "urllib.py:<module>.error"
-      request.path shouldBe "urllib.py:<module>.request"
+      error.path shouldBe "urllib.py:<module>"
+      request.path shouldBe "urllib.py:<module>"
     }
 
     "reasonably determine the constructor type" in {
       val Some(tmp0) = cpg.identifier("tmp0").headOption: @unchecked
-      tmp0.typeFullName shouldBe "urllib.py:<module>.request"
+      tmp0.typeFullName shouldBe "urllib.py:<module>.<member>(request)"
       val Some(requestCall) = cpg.call("Request").headOption: @unchecked
-      requestCall.methodFullName shouldBe "urllib.py:<module>.request.Request.__init__"
+      requestCall.methodFullName shouldBe "urllib.py:<module>.<member>(request).Request.__init__"
     }
   }
 
@@ -637,7 +637,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "be sufficient to resolve method full names at calls" in {
       val List(call) = cpg.call("query").l
-      call.methodFullName shouldBe Seq("sqlalchemy", "orm.py:<module>.Session.query").mkString(File.separator)
+      call.methodFullName shouldBe "sqlalchemy.py:<module>.Session.query"
     }
 
   }
@@ -721,15 +721,15 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
 
     "with the correct identifier and call types" in {
       val Some(postCallReceiver) = cpg.identifier("db").headOption: @unchecked
-      postCallReceiver.typeFullName shouldBe Seq("sqlalchemy", "orm.py:<module>.Session").mkString(File.separator)
+      postCallReceiver.typeFullName shouldBe "sqlalchemy.py:<module>.Session"
       val Some(postCall) = cpg.call("query").headOption: @unchecked
-      postCall.methodFullName shouldBe Seq("sqlalchemy", "orm.py:<module>.Session.query").mkString(File.separator)
+      postCall.methodFullName shouldBe "sqlalchemy.py:<module>.Session.query"
     }
 
     "reflect these types as under the type full name" in {
       val List(p1, p2) = cpg.method("get_user_by_email").parameter.l
       p1.typeFullName shouldBe "__builtin.str"
-      p2.typeFullName shouldBe Seq("sqlalchemy", "orm.py:<module>.Session").mkString(File.separator)
+      p2.typeFullName shouldBe "sqlalchemy.py:<module>.Session"
     }
   }
 
