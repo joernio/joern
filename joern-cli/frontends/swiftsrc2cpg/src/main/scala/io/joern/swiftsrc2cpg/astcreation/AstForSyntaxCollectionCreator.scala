@@ -9,7 +9,7 @@ import io.joern.x2cpg.datastructures.Stack.*
 trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
-  private def astForListSyntaxChildren(node: SwiftNode, children: Seq[SwiftNode]): Ast = {
+  protected def astForListSyntaxChildren(node: SwiftNode, children: Seq[SwiftNode]): Ast = {
     children.toList match {
       case Nil         => Ast()
       case head :: Nil => astForNodeWithFunctionReference(head)
@@ -29,10 +29,17 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
   private def astForArrayElementListSyntax(node: ArrayElementListSyntax): Ast                 = notHandledYet(node)
   private def astForAttributeListSyntax(node: AttributeListSyntax): Ast                       = notHandledYet(node)
   private def astForAvailabilityArgumentListSyntax(node: AvailabilityArgumentListSyntax): Ast = notHandledYet(node)
-  private def astForCatchClauseListSyntax(node: CatchClauseListSyntax): Ast                   = notHandledYet(node)
-  private def astForCatchItemListSyntax(node: CatchItemListSyntax): Ast                       = notHandledYet(node)
-  private def astForClosureCaptureListSyntax(node: ClosureCaptureListSyntax): Ast             = notHandledYet(node)
-  private def astForClosureParameterListSyntax(node: ClosureParameterListSyntax): Ast         = notHandledYet(node)
+
+  private def astForCatchClauseListSyntax(node: CatchClauseListSyntax): Ast = {
+    astForListSyntaxChildren(node, node.children)
+  }
+
+  private def astForCatchItemListSyntax(node: CatchItemListSyntax): Ast = {
+    astForListSyntaxChildren(node, node.children)
+  }
+
+  private def astForClosureCaptureListSyntax(node: ClosureCaptureListSyntax): Ast     = notHandledYet(node)
+  private def astForClosureParameterListSyntax(node: ClosureParameterListSyntax): Ast = notHandledYet(node)
   private def astForClosureShorthandParameterListSyntax(node: ClosureShorthandParameterListSyntax): Ast = notHandledYet(
     node
   )
