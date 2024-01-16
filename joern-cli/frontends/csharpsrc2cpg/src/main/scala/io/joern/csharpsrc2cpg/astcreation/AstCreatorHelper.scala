@@ -1,10 +1,10 @@
 package io.joern.csharpsrc2cpg.astcreation
 
-import io.joern.csharpsrc2cpg.astcreation
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetJsonAst, DotNetNodeInfo, ParserKeys}
+import io.joern.csharpsrc2cpg.{Constants, astcreation}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewMethod, NewNamespaceBlock, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewIdentifier}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, PropertyNames}
 import ujson.Value
 
@@ -17,11 +17,10 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   def createCallNodeForOperator(
     node: DotNetNodeInfo,
     operatorMethod: String,
-    DispatchType: String = DispatchTypes.STATIC_DISPATCH,
     signature: Option[String] = None,
     typeFullName: Option[String] = None
   ): NewCall = {
-    callNode(node, node.code, operatorMethod, operatorMethod, DispatchType, signature, typeFullName)
+    callNode(node, node.code, operatorMethod, operatorMethod, DispatchTypes.STATIC_DISPATCH, signature, typeFullName)
   }
 
   protected def notHandledYet(node: DotNetNodeInfo): Seq[Ast] = {
@@ -45,8 +44,15 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def getTypeFullNameFromAstNode(ast: Seq[Ast]): String = {
     ast.headOption
       .flatMap(_.root)
-      .map(_.properties.getOrElse(PropertyNames.TYPE_FULL_NAME, "ANY").toString)
-      .getOrElse("ANY")
+      .map(_.properties.getOrElse(PropertyNames.TYPE_FULL_NAME, Defines.Any).toString)
+      .getOrElse(Defines.Any)
+  }
+
+  protected def thisNode: NewIdentifier = {
+    NewIdentifier()
+      .code(Constants.This)
+      .name(Constants.This)
+      .typeFullName(scope.surroundingTypeDeclFullName.getOrElse(Defines.Any))
   }
 
   protected def nameFromNode(identifierNode: DotNetNodeInfo): String = AstCreatorHelper.nameFromNode(identifierNode)
@@ -62,10 +68,11 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         BuiltinTypes.Float
       case NumericLiteralExpression if node.code.matches("^\\d+\\.?\\d*[m|M]?$") => // e.g. 2m or 2.1M
         BuiltinTypes.Decimal
-      case StringLiteralExpression => BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)
-      case IdentifierName          =>
+      case StringLiteralExpression                        => BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)
+      case TrueLiteralExpression | FalseLiteralExpression => BuiltinTypes.DotNetTypeMap(BuiltinTypes.Bool)
+      case IdentifierName                                 =>
         // TODO: Look at scope object for possible types
-        "ANY"
+        Defines.Any
       case _ =>
         Try(createDotNetNodeInfo(node.json(ParserKeys.Type))) match
           case Success(typeNode) =>
@@ -77,7 +84,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
             else resolvedType
           case Failure(e) => {
             logger.debug(e.getMessage)
-            "ANY"
+            Defines.Any
           }
   }
 

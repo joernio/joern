@@ -1,6 +1,11 @@
 package io.joern.x2cpg
 
 object Defines {
+
+  // Represents an unresolved type, or indicates that one cannot guarantee a single type
+  // for the given node.
+  val Any = "ANY"
+
   // The following two defines should be used for type and method full names to
   // indicate unresolved static type information. Using them enables
   // the closed source backend to apply policies in a less strict fashion.

@@ -9,6 +9,7 @@ import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.{
   LiteralExpr,
   UnaryExpr
 }
+import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.{ExpressionStatement, GlobalStatement, ThrowStatement, TryStatement}
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
@@ -17,14 +18,9 @@ import io.shiftleft.codepropertygraph.generated.nodes.ControlStructure
 import scala.util.{Failure, Success, Try}
 
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+  
   def astForStatement(statement: ujson.Value): Seq[Ast] = {
     astForStatement(createDotNetNodeInfo(statement))
-  }
-  def astForStatement(statement: DotNetNodeInfo): Seq[Ast] = {
-    statement.node match
-      case IfStatement     => astForIfStatement(statement)
-      case GlobalStatement => astForGlobalStatement(statement)
-      case _               => notHandledYet(statement)
   }
 
   private def astForElseStatement(elseParserNode: DotNetNodeInfo): Ast = {
@@ -39,6 +35,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case None => Ast()
 
   }
+  
   private def astForIfStatement(ifStmt: DotNetNodeInfo): Seq[Ast] = {
     val conditionNode = createDotNetNodeInfo(ifStmt.json(ParserKeys.Condition))
     val conditionAst  = astForConditionExpression(conditionNode)
@@ -64,7 +61,17 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case _            => notHandledYet(conditionNode).headOption.getOrElse(Ast())
   }
 
-  private def astForGlobalStatement(globalStatement: DotNetNodeInfo): Seq[Ast] = {
+  protected def astForStatement(nodeInfo: DotNetNodeInfo): Seq[Ast] = {
+    nodeInfo.node match
+      case ExpressionStatement => astForExpression(nodeInfo)
+      case GlobalStatement     => astForGlobalStatement(nodeInfo)
+      case ThrowStatement      => astForThrowStatement(nodeInfo)
+      case TryStatement        => astForTryStatement(nodeInfo)
+      case _                   => notHandledYet(nodeInfo)
+  }
+
+  protected def astForGlobalStatement(globalStatement: DotNetNodeInfo): Seq[Ast] = {
     astForNode(globalStatement.json(ParserKeys.Statement))
   }
+
 }

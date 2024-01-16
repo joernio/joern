@@ -13,13 +13,28 @@ class StatementTests extends AbstractPassTest {
       |if let self = self {}
       |""".stripMargin) { cpg => ??? }
 
-    "testDo" ignore AstFixture("do {}") { cpg => ??? }
-
-    "testDoCatch" ignore AstFixture("""
-      |do {} catch {}
-      |do {}
+    "testDoCatch" in AstFixture("""
+      |do {
+      |  try foo()
+      |} catch {
+      |  bar()
+      |}
+      |do { try foo() }
       |catch where (error as NSError) == NSError() {}
-      |""".stripMargin) { cpg => ??? }
+      |""".stripMargin) { cpg =>
+      val List(doStructure1, doStructure2) =
+        cpg.controlStructure.controlStructureType(ControlStructureTypes.TRY).code("do \\{.*").l
+
+      val List(tryBlock1) = doStructure1.astChildren.order(1).l
+      tryBlock1.astChildren.isCall.codeExact("foo()").size shouldBe 1
+      val List(catchBlock1) = doStructure1.astChildren.order(2).l
+      catchBlock1.astChildren.isCall.codeExact("bar()").size shouldBe 1
+
+      val List(tryBlock2) = doStructure2.astChildren.order(1).l
+      tryBlock2.astChildren.isCall.codeExact("foo()").size shouldBe 1
+      val List(catchBlock2) = doStructure2.astChildren.order(2).l
+      catchBlock2.astChildren.isCall.code.l shouldBe List("(error as NSError) == NSError()")
+    }
 
     "testReturn" ignore AstFixture("""
       |return actor

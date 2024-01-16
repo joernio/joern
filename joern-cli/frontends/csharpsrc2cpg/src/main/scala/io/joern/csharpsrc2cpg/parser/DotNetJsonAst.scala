@@ -1,6 +1,5 @@
 package io.joern.csharpsrc2cpg.parser
 
-import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.BaseExpr
 import org.slf4j.LoggerFactory
 
 object DotNetJsonAst {
@@ -29,8 +28,9 @@ object DotNetJsonAst {
   sealed trait BaseStmt extends DotNetParserNode
 
   object GlobalStatement     extends BaseStmt
-  object ExpressionStatement extends BaseExpr
-  object NotHandledType      extends DotNetParserNode
+  object ExpressionStatement extends BaseStmt
+
+  object NotHandledType extends DotNetParserNode
 
   object CompilationUnit extends BaseExpr
 
@@ -58,6 +58,8 @@ object DotNetJsonAst {
 
   object NumericLiteralExpression extends LiteralExpr
   object StringLiteralExpression  extends LiteralExpr
+  object TrueLiteralExpression    extends LiteralExpr
+  object FalseLiteralExpression   extends LiteralExpr
 
   object UsingDirective extends BaseExpr
 
@@ -108,6 +110,7 @@ object DotNetJsonAst {
   object ExclusiveOrAssignmentExpression extends BinaryExpr
   object RightShiftAssignmentExpression  extends BinaryExpr
   object LeftShiftAssignmentExpression   extends BinaryExpr
+  object SimpleAssignmentExpression      extends BinaryExpr
 
   object GreaterThanExpression        extends BinaryExpr
   object LessThanExpression           extends BinaryExpr
@@ -127,11 +130,25 @@ object DotNetJsonAst {
 
   object SimpleMemberAccessExpression extends MemberAccessExpr
 
+
   object IfStatement extends BaseStmt
 
   object ElseClause extends ClauseExpr
 
   object TrueLiteralExpression extends LiteralExpr
+  
+  object ThrowStatement extends BaseStmt
+
+  object ObjectCreationExpression extends BaseExpr
+
+  object TryStatement extends BaseStmt
+
+  object CatchDeclaration extends DeclarationExpr
+
+  object CatchClause extends ClauseExpr
+
+  object FinallyClause extends ClauseExpr
+
 }
 
 /** The JSON key values, in alphabetical order.
@@ -142,12 +159,17 @@ object ParserKeys {
   val Arguments     = "Arguments"
   val ArgumentList  = "ArgumentList"
   val Body          = "Body"
+  val Block         = "Block"
+  val Catches       = "Catches"
   val Code          = "Code"
   val ColumnStart   = "ColumnStart"
   val ColumnEnd     = "ColumnEnd"
+  val Condition     = "Condition"
   val Declaration   = "Declaration"
   val ElementType   = "ElementType"
+  val Else          = "Else"
   val Expression    = "Expression"
+  val Finally       = "Finally"
   val FileName      = "FileName"
   val Identifier    = "Identifier"
   val Initializer   = "Initializer"
@@ -172,6 +194,4 @@ object ParserKeys {
   val Usings        = "Usings"
   val Value         = "Value"
   val Variables     = "Variables"
-  val Condition     = "Condition"
-  val Else          = "Else"
 }
