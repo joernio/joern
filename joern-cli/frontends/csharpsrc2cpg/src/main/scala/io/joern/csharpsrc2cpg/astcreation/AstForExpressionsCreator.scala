@@ -22,7 +22,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     Seq(Ast(literalNode(_literalNode, code(_literalNode), nodeTypeFullName(_literalNode))))
   }
 
-  private def astForUnaryExpression(unaryExpr: DotNetNodeInfo): Seq[Ast] = {
+  protected def astForUnaryExpression(unaryExpr: DotNetNodeInfo): Seq[Ast] = {
     val operatorToken = unaryExpr.json(ParserKeys.OperatorToken)(ParserKeys.Value).str
     val operatorName = operatorToken match
       case "+" => Operators.plus
@@ -41,9 +41,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val argsAst = astForNode(args)
     Seq(
       callAst(createCallNodeForOperator(unaryExpr, operatorName, typeFullName = Some(nodeTypeFullName(args))), argsAst)
-    ) // TODO: typeFullName
+    )
   }
-  private def astForBinaryExpression(binaryExpr: DotNetNodeInfo): Seq[Ast] = {
+
+  protected def astForBinaryExpression(binaryExpr: DotNetNodeInfo): Seq[Ast] = {
     val operatorToken = binaryExpr.json(ParserKeys.OperatorToken)(ParserKeys.Value).str
     val operatorName = operatorToken match
       case "+"   => Operators.addition

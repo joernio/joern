@@ -126,6 +126,12 @@ object DotNetJsonAst {
   trait MemberAccessExpr extends BaseExpr
 
   object SimpleMemberAccessExpression extends MemberAccessExpr
+
+  object IfStatement extends BaseStmt
+
+  object ElseClause extends ClauseExpr
+
+  object TrueLiteralExpression extends LiteralExpr
 }
 
 /** The JSON key values, in alphabetical order.
@@ -166,5 +172,6 @@ object ParserKeys {
   val Usings        = "Usings"
   val Value         = "Value"
   val Variables     = "Variables"
-
+  val Condition     = "Condition"
+  val Else          = "Else"
 }

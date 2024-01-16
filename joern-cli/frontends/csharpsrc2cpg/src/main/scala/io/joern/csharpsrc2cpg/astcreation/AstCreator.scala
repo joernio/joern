@@ -1,7 +1,7 @@
 package io.joern.csharpsrc2cpg.astcreation
 
 import io.joern.csharpsrc2cpg.TypeMap
-import io.joern.csharpsrc2cpg.datastructures.CSharpScope
+import io.joern.csharpsrc2cpg.datastructures.{BlockScope, CSharpScope}
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.astgen.{AstGenNodeBuilder, ParserResult}
@@ -50,14 +50,33 @@ class AstCreator(val relativeFileName: String, val parserResult: ParserResult, v
     memberAsts
   }
 
-  protected def astForMembers(members: Seq[DotNetNodeInfo]): Seq[Ast] = members.flatMap(astForNode)
-
+  protected def astForMembers(members: Seq[DotNetNodeInfo]): Seq[Ast] = members.flatMap(member => astForNode(member))
   protected def astForNode(json: Value): Seq[Ast] = {
     val nodeInfo = createDotNetNodeInfo(json)
     astForNode(nodeInfo)
   }
 
-  protected def astForNode(nodeInfo: DotNetNodeInfo): Seq[Ast] = {
+  protected def astForBlock(block: DotNetNodeInfo, order: Int = -1): Ast = {
+    val newBlockNode = blockNode(block).order(order).argumentIndex(order)
+    scope.pushNewScope(BlockScope)
+    var currOrder = 1
+    val childAsts = block
+      .json(ParserKeys.Statements)
+      .arrOpt
+      .getOrElse(List())
+      .arr
+      .flatMap { parserJsonValue =>
+        val parserNode = createDotNetNodeInfo(parserJsonValue)
+        val r          = astForNode(parserNode, currOrder)
+        currOrder = currOrder + r.length
+        r
+      }
+      .toList
+    scope.popScope()
+    blockAst(newBlockNode, childAsts)
+  }
+
+  protected def astForNode(nodeInfo: DotNetNodeInfo, argIndex: Int = -1): Seq[Ast] = {
     nodeInfo.node match {
       case NamespaceDeclaration      => astForNamespaceDeclaration(nodeInfo)
       case ClassDeclaration          => astForClassDeclaration(nodeInfo)
@@ -66,11 +85,11 @@ class AstCreator(val relativeFileName: String, val parserResult: ParserResult, v
       case VariableDeclaration       => astForVariableDeclaration(nodeInfo)
       case EqualsValueClause         => astForEqualsValueClause(nodeInfo)
       case UsingDirective            => notHandledYet(nodeInfo)
-      case Block                     => notHandledYet(nodeInfo)
+      case Block                     => Seq(astForBlock(nodeInfo, argIndex))
       case ExpressionStatement       => astForExpression(nodeInfo)
       case IdentifierName            => Seq(astForIdentifier(nodeInfo))
       case LocalDeclarationStatement => astForLocalDeclarationStatement(nodeInfo)
-      case GlobalStatement           => astForGlobalStatement(nodeInfo)
+      case _: BaseStmt               => astForStatement(nodeInfo)
       case _: LiteralExpr            => astForLiteralExpression(nodeInfo)
       case _                         => notHandledYet(nodeInfo)
     }
