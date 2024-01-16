@@ -688,6 +688,9 @@ class ParserTests extends AnyFreeSpec with Matchers {
     testT("f\"\"\"a\"\"\"")
     testT("f'''{a}'''")
     testT("f'''a'''")
+
+    testT("""f"{"x"}"""")
+    testT("""f"{f"{f"{x}"}"}"""")
   }
 
   "format string tests with context" in {
