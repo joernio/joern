@@ -28,14 +28,14 @@ class AstCreator(
   filename: String,
   global: Global, // TODO: This needs to register types
   parser: ResourceManagedParser,
-  packageContext: PackageContext,
+  protected val packageContext: PackageContext,
   projectRoot: Option[String] = None
 )(implicit withSchemaValidation: ValidationMode)
     extends AstCreatorBase(filename)
     with AstNodeBuilder[ParserRuleContext, AstCreator]
     with AstForPrimitivesCreator
     with AstForStatementsCreator(filename)
-    with AstForFunctionsCreator(packageContext)
+    with AstForFunctionsCreator
     with AstForExpressionsCreator
     with AstForDeclarationsCreator
     with AstForTypesCreator

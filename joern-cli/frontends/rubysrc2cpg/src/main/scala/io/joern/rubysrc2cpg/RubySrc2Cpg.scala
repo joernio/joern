@@ -93,11 +93,7 @@ object RubySrc2Cpg {
 
   def postProcessingPasses(cpg: Cpg, config: Config): List[CpgPassBase] = {
     if (config.useDeprecatedFrontend) {
-      List(
-        // TODO commented below two passes, as waiting on Dependency download PR to get merged
-        new deprecated.passes.IdentifierToCallPass(cpg),
-        new deprecated.passes.RubyImportResolverPass(cpg, packageTableInfo)
-      )
+      List(new deprecated.passes.RubyImportResolverPass(cpg, packageTableInfo))
         ++ new deprecated.passes.RubyTypeRecoveryPassGenerator(cpg).generate() ++ List(
           new deprecated.passes.RubyTypeHintCallLinker(cpg),
           new NaiveCallLinker(cpg),
