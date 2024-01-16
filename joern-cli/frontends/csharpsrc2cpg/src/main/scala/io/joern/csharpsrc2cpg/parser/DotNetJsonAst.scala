@@ -138,9 +138,9 @@ object DotNetJsonAst {
 
   object CatchDeclaration extends DeclarationExpr
 
-  object CatchClause extends BaseExpr
+  object CatchClause extends ClauseExpr
 
-  object FinallyClause extends BaseExpr
+  object FinallyClause extends ClauseExpr
 
 }
 
