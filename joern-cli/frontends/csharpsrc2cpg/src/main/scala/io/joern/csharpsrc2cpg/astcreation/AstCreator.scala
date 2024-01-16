@@ -48,33 +48,14 @@ class AstCreator(val relativeFileName: String, val parserResult: ParserResult, v
     memberAsts
   }
 
-  protected def astForMembers(members: Seq[DotNetNodeInfo]): Seq[Ast] = members.flatMap(member => astForNode(member))
+  protected def astForMembers(members: Seq[DotNetNodeInfo]): Seq[Ast] = members.flatMap(astForNode)
+
   protected def astForNode(json: Value): Seq[Ast] = {
     val nodeInfo = createDotNetNodeInfo(json)
     astForNode(nodeInfo)
   }
 
-  protected def astForBlock(block: DotNetNodeInfo, order: Int = -1): Ast = {
-    val newBlockNode = blockNode(block).order(order).argumentIndex(order)
-    scope.pushNewScope(BlockScope)
-    var currOrder = 1
-    val childAsts = block
-      .json(ParserKeys.Statements)
-      .arrOpt
-      .getOrElse(List())
-      .arr
-      .flatMap { parserJsonValue =>
-        val parserNode = createDotNetNodeInfo(parserJsonValue)
-        val r          = astForNode(parserNode, currOrder)
-        currOrder = currOrder + r.length
-        r
-      }
-      .toList
-    scope.popScope()
-    blockAst(newBlockNode, childAsts)
-  }
-
-  protected def astForNode(nodeInfo: DotNetNodeInfo, argIndex: Int = -1): Seq[Ast] = {
+  protected def astForNode(nodeInfo: DotNetNodeInfo): Seq[Ast] = {
     nodeInfo.node match {
       case _: BaseStmt               => astForStatement(nodeInfo)
       case NamespaceDeclaration      => astForNamespaceDeclaration(nodeInfo)

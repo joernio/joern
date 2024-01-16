@@ -130,13 +130,10 @@ object DotNetJsonAst {
 
   object SimpleMemberAccessExpression extends MemberAccessExpr
 
-
   object IfStatement extends BaseStmt
 
   object ElseClause extends ClauseExpr
 
-  object TrueLiteralExpression extends LiteralExpr
-  
   object ThrowStatement extends BaseStmt
 
   object ObjectCreationExpression extends BaseExpr
