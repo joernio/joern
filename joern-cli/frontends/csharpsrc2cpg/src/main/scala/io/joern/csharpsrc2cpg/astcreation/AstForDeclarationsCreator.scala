@@ -10,6 +10,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.proto.cpg.Cpg.EvaluationStrategies
 
 import scala.util.Try
+import io.joern.csharpsrc2cpg.CSharpOperators as CSharpOperators
+import io.joern.x2cpg.Defines
 
 trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -110,7 +112,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val fullName    = s"${astFullName(methodDecl)}:$signature"
     val methodNode_ = methodNode(methodDecl, name, code(methodDecl), fullName, Option(signature), relativeFileName)
     scope.pushNewScope(MethodScope(fullName))
-    val body = astForMethodBody(createDotNetNodeInfo(methodDecl.json(ParserKeys.Body)))
+    val body = astForBlock(createDotNetNodeInfo(methodDecl.json(ParserKeys.Body)))
     scope.popScope()
     val modifiers = astForModifiers(methodDecl).flatMap(_.nodes).collect { case x: NewModifier => x }
     val thisNode =
@@ -135,16 +137,21 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
   private def astForThisNode(methodDecl: DotNetNodeInfo): Ast = {
     val name         = "this"
-    val typeFullName = scope.surroundingTypeDeclFullName.getOrElse("ANY")
+    val typeFullName = scope.surroundingTypeDeclFullName.getOrElse(Defines.Any)
     val param = parameterInNode(methodDecl, name, name, 0, false, EvaluationStrategies.BY_SHARING.name, typeFullName)
     Ast(param)
   }
 
-  private def astForMethodBody(body: DotNetNodeInfo): Ast = {
+  protected def astForBlock(
+    body: DotNetNodeInfo,
+    code: Option[String] = None,
+    prefixAsts: List[Ast] = List.empty
+  ): Ast = {
     val block = blockNode(body)
+    code.foreach(block.code(_))
     scope.pushNewScope(BlockScope)
     val statements = body.json(ParserKeys.Statements).arr.flatMap(astForNode).toList
-    val _blockAst  = blockAst(block, statements)
+    val _blockAst  = blockAst(block, prefixAsts ++ statements)
     scope.popScope()
     _blockAst
   }
@@ -155,7 +162,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       Try(methodReturn.json(ParserKeys.Value).str)
         .orElse(Try(methodReturn.json(ParserKeys.Keyword).obj(ParserKeys.Value).str))
         .orElse(Try(methodReturn.code))
-        .getOrElse("ANY")
+        .getOrElse(Defines.Any)
     )
   }
 

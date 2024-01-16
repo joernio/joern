@@ -5,11 +5,8 @@ import io.joern.csharpsrc2cpg.datastructures.CSharpScope
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.astgen.{AstGenNodeBuilder, ParserResult}
-import io.joern.x2cpg.datastructures.Scope
-import io.joern.x2cpg.datastructures.Stack.{Stack, StackWrapper}
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.NodeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewNode}
+import io.shiftleft.codepropertygraph.generated.nodes.NewFile
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import ujson.Value
@@ -25,6 +22,7 @@ class AstCreator(val relativeFileName: String, val parserResult: ParserResult, v
     with AstForPrimitivesCreator
     with AstForExpressionsCreator
     with AstForStatementsCreator
+    with AstForControlStructuresCreator
     with AstGenNodeBuilder[AstCreator] {
 
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
@@ -59,6 +57,7 @@ class AstCreator(val relativeFileName: String, val parserResult: ParserResult, v
 
   protected def astForNode(nodeInfo: DotNetNodeInfo): Seq[Ast] = {
     nodeInfo.node match {
+      case _: BaseStmt               => astForStatement(nodeInfo)
       case NamespaceDeclaration      => astForNamespaceDeclaration(nodeInfo)
       case ClassDeclaration          => astForClassDeclaration(nodeInfo)
       case MethodDeclaration         => astForMethodDeclaration(nodeInfo)
@@ -66,11 +65,13 @@ class AstCreator(val relativeFileName: String, val parserResult: ParserResult, v
       case VariableDeclaration       => astForVariableDeclaration(nodeInfo)
       case EqualsValueClause         => astForEqualsValueClause(nodeInfo)
       case UsingDirective            => notHandledYet(nodeInfo)
-      case Block                     => notHandledYet(nodeInfo)
-      case ExpressionStatement       => astForExpression(nodeInfo)
+      case Block                     => Seq(astForBlock(nodeInfo))
       case IdentifierName            => Seq(astForIdentifier(nodeInfo))
       case LocalDeclarationStatement => astForLocalDeclarationStatement(nodeInfo)
-      case GlobalStatement           => astForGlobalStatement(nodeInfo)
+      case ObjectCreationExpression  => astForObjectCreationExpression(nodeInfo)
+      case FinallyClause             => astForFinallyClause(nodeInfo)
+      case CatchClause               => astForCatchClause(nodeInfo)
+      case CatchDeclaration          => astForCatchDeclaration(nodeInfo)
       case _: LiteralExpr            => astForLiteralExpression(nodeInfo)
       case _                         => notHandledYet(nodeInfo)
     }

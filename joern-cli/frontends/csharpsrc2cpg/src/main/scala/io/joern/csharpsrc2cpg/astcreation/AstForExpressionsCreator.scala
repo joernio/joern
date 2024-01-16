@@ -1,11 +1,11 @@
 package io.joern.csharpsrc2cpg.astcreation
 
+import io.joern.csharpsrc2cpg.CSharpOperators
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewMethodParameterIn}
+import io.shiftleft.codepropertygraph.generated.nodes.NewMethodParameterIn
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
-
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   def astForExpression(expr: DotNetNodeInfo): Seq[Ast] = {
@@ -55,6 +55,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case "!="  => Operators.notEquals
       case "&&"  => Operators.logicalAnd
       case "||"  => Operators.logicalOr
+      case "="   => Operators.assignment
       case "+="  => Operators.assignmentPlus
       case "-="  => Operators.assignmentMinus
       case "*="  => Operators.assignmentMultiplication
@@ -72,6 +73,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case "|"   => Operators.or
       case "&"   => Operators.and
       case "^"   => Operators.xor
+      case x =>
+        logger.warn(s"Unhandled operator '$x' for ${code(binaryExpr)}")
+        CSharpOperators.unknown
 
     val args = astForNode(binaryExpr.json(ParserKeys.Left)) ++: astForNode(binaryExpr.json(ParserKeys.Right))
     val cNode =
@@ -90,10 +94,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val dispatchType = DispatchTypes.STATIC_DISPATCH // TODO
     val typeFullName = None                          // TODO
     val arguments    = astForArgumentList(createDotNetNodeInfo(invocationExpr.json(ParserKeys.ArgumentList)))
-    val signature = Option(
-      s"${typeFullName
-          .getOrElse("ANY")}:(${arguments.flatMap(_.root).collect { case x: NewMethodParameterIn => x.typeFullName }.mkString(",")})"
-    )
+    val argString =
+      s"${arguments.flatMap(_.root).collect { case x: NewMethodParameterIn => x.typeFullName }.mkString(",")}"
+    val signature = Option(s"${typeFullName.getOrElse(Defines.Any)}:($argString)")
 
     val expression = createDotNetNodeInfo(invocationExpr.json(ParserKeys.Expression))
     val name       = nameFromNode(createDotNetNodeInfo(expression.json(ParserKeys.Name)))
@@ -119,6 +122,27 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       receiver
     )
     Seq(_callAst)
+  }
+
+  def astForObjectCreationExpression(objectCreation: DotNetNodeInfo): Seq[Ast] = {
+    val dispatchType = DispatchTypes.STATIC_DISPATCH
+    val typeFullName = nodeTypeFullName(objectCreation)
+    val arguments    = astForArgumentList(createDotNetNodeInfo(objectCreation.json(ParserKeys.ArgumentList)))
+    // TODO: Handle signature
+    val signature      = None
+    val name           = Defines.ConstructorMethodName
+    val methodFullName = s"$typeFullName.$name"
+    val _callNode = callNode(
+      objectCreation,
+      code(objectCreation),
+      name,
+      methodFullName,
+      dispatchType,
+      signature,
+      Option(typeFullName)
+    )
+
+    Seq(callAst(_callNode, arguments, Option(Ast(thisNode))))
   }
 
   private def astForArgumentList(argumentList: DotNetNodeInfo): Seq[Ast] = {
