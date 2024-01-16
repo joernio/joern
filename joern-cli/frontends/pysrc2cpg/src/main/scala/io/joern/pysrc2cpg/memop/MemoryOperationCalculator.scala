@@ -12,7 +12,11 @@ import io.joern.pythonparser.ast.{
   MatchSequence,
   MatchSingleton,
   MatchStar,
-  MatchValue
+  MatchValue,
+  ParamSpec,
+  TypeAlias,
+  TypeVar,
+  TypeVarTuple
 }
 import io.joern.pythonparser.{AstVisitor, ast}
 
@@ -96,6 +100,8 @@ class MemoryOperationCalculator extends AstVisitor[Unit] {
     accept(assign.value)
     pop()
   }
+
+  override def visit(typeAlias: TypeAlias): Unit = {}
 
   override def visit(annAssign: ast.AnnAssign): Unit = {
     push(Store)
@@ -538,4 +544,10 @@ class MemoryOperationCalculator extends AstVisitor[Unit] {
   }
 
   override def visit(typeIgnore: ast.TypeIgnore): Unit = {}
+
+  override def visit(typeVar: TypeVar): Unit = {}
+
+  override def visit(paramSpec: ParamSpec): Unit = {}
+
+  override def visit(typeVarTuple: TypeVarTuple): Unit = {}
 }
