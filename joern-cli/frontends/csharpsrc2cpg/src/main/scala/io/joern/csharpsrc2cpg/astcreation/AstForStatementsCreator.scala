@@ -35,7 +35,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         val blockAst: Ast = astForBlock(createDotNetNodeInfo(elseParserNode.json(ParserKeys.Statement)))
         Ast(elseNode).withChild(blockAst)
       case Some(elseStmt) =>
-        astForNode(createDotNetNodeInfo(elseParserNode.json(ParserKeys.Statement))).headOption.getOrElse(Ast())
+        astForIfStatement(createDotNetNodeInfo(elseParserNode.json(ParserKeys.Statement))).headOption.getOrElse(Ast())
       case None => Ast()
 
   }
