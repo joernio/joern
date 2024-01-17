@@ -89,7 +89,8 @@ class PythonImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
       resolvedImports.foreach(x => evaluatedImportToTag(x, importCall, diffGraph))
     } else {
       // Here we use heuristics to guess the correct paths, and make the types look friendly for querying
-      createPseudoImports(importedEntity, importedAs).map(x => evaluatedImportToTag(x, importCall, diffGraph)).l
+      createPseudoImports(importedEntity, importedAs)
+        .foreach(x => evaluatedImportToTag(x, importCall, diffGraph))
     }
   }
 
