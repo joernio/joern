@@ -67,10 +67,6 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
         val importAssignLhsIdentifierNode =
           createIdentifierNode(nameParts(0), Store, lineAndCol)
 
-        // To enable compatibility with the downstream import resolver, we set the full path to the
-        // `name` property of the identifier
-        importAssignLhsIdentifierNode.name(importedAsIdentifierName)
-
         val arguments = Seq(
           nodeBuilder.stringLiteralNode(from, lineAndCol),
           nodeBuilder.stringLiteralNode(alias.name, lineAndCol)
