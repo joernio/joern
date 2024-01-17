@@ -14,7 +14,7 @@ class ImportsPass(cpg: Cpg) extends XImportsPass(cpg) {
 
   override def importedEntityFromCall(call: Call): String = {
     call.argument.code.l match {
-      case List("", what)       => what
+      case List("", what)       => what.split('.')(0)
       case List(where, what)    => s"$where.$what"
       case List("", what, _)    => what
       case List(where, what, _) => s"$where.$what"

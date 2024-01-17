@@ -399,15 +399,15 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
     "resolve correct imports via tag nodes" in {
       val List(error: UnknownImport, request: UnknownImport) =
         cpg.call.where(_.referencedImports).tag._toEvaluatedImport.toList: @unchecked
-      error.path shouldBe "urllib.py:<module>.error"
-      request.path shouldBe "urllib.py:<module>.request"
+      error.path shouldBe "urllib.py:<module>"
+      request.path shouldBe "urllib.py:<module>"
     }
 
     "reasonably determine the constructor type" in {
       val Some(tmp0) = cpg.identifier("tmp0").headOption: @unchecked
-      tmp0.typeFullName shouldBe "urllib.py:<module>.request"
+      tmp0.typeFullName shouldBe "urllib.py:<module>.<member>(request)"
       val Some(requestCall) = cpg.call("Request").headOption: @unchecked
-      requestCall.methodFullName shouldBe "urllib.py:<module>.request.Request.__init__"
+      requestCall.methodFullName shouldBe "urllib.py:<module>.<member>(request).Request.__init__"
     }
   }
 

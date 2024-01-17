@@ -61,8 +61,11 @@ trait PythonAstVisitorHelpers { this: PythonAstVisitor =>
     val importAssignNodes =
       names.map { alias =>
         val importedAsIdentifierName = alias.asName.getOrElse(alias.name)
+
+        val nameParts = importedAsIdentifierName.split('.')
+
         val importAssignLhsIdentifierNode =
-          createIdentifierNode(importedAsIdentifierName, Store, lineAndCol)
+          createIdentifierNode(nameParts(0), Store, lineAndCol)
 
         val arguments = Seq(
           nodeBuilder.stringLiteralNode(from, lineAndCol),
