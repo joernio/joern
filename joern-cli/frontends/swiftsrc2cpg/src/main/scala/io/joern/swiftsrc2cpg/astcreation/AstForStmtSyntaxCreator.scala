@@ -4,20 +4,53 @@ import io.joern.swiftsrc2cpg.astcreation.AstCreatorHelper.OptionSafeAst
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
+import io.joern.x2cpg.datastructures.Stack.*
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
+import io.shiftleft.codepropertygraph.generated.nodes.NewJumpLabel
 
 trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
   private def astForBreakStmtSyntax(node: BreakStmtSyntax): Ast = {
-    Ast(controlStructureNode(node, ControlStructureTypes.BREAK, code(node)))
+    val labelAst = node.label
+      .map(l =>
+        val labelCode = code(l)
+        Ast(
+          NewJumpLabel()
+            .parserTypeName(node.toString)
+            .name(labelCode)
+            .code(labelCode)
+            .lineNumber(line(node))
+            .columnNumber(column(node))
+            .order(1)
+        )
+      )
+      .getOrElse(Ast())
+    Ast(controlStructureNode(node, ControlStructureTypes.BREAK, code(node))).withChild(labelAst)
   }
 
   private def astForContinueStmtSyntax(node: ContinueStmtSyntax): Ast = {
-    Ast(controlStructureNode(node, ControlStructureTypes.CONTINUE, code(node)))
+    val labelAst = node.label
+      .map(l =>
+        val labelCode = code(l)
+        Ast(
+          NewJumpLabel()
+            .parserTypeName(node.toString)
+            .name(labelCode)
+            .code(labelCode)
+            .lineNumber(line(node))
+            .columnNumber(column(node))
+            .order(1)
+        )
+      )
+      .getOrElse(Ast())
+    Ast(controlStructureNode(node, ControlStructureTypes.CONTINUE, code(node))).withChild(labelAst)
   }
 
-  private def astForDeferStmtSyntax(node: DeferStmtSyntax): Ast     = notHandledYet(node)
+  private def astForDeferStmtSyntax(node: DeferStmtSyntax): Ast = {
+    astForNode(node.body)
+  }
+
   private def astForDiscardStmtSyntax(node: DiscardStmtSyntax): Ast = notHandledYet(node)
 
   private def astForDoStmtSyntax(node: DoStmtSyntax): Ast = {
@@ -40,9 +73,24 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     Ast(controlStructureNode(node, ControlStructureTypes.CONTINUE, code(node)))
   }
 
-  private def astForForStmtSyntax(node: ForStmtSyntax): Ast         = notHandledYet(node)
-  private def astForGuardStmtSyntax(node: GuardStmtSyntax): Ast     = notHandledYet(node)
-  private def astForLabeledStmtSyntax(node: LabeledStmtSyntax): Ast = notHandledYet(node)
+  private def astForForStmtSyntax(node: ForStmtSyntax): Ast     = notHandledYet(node)
+  private def astForGuardStmtSyntax(node: GuardStmtSyntax): Ast = notHandledYet(node)
+
+  private def astForLabeledStmtSyntax(node: LabeledStmtSyntax): Ast = {
+    val labeledNode = jumpTargetNode(node, code(node.label), code(node))
+
+    val blockNode_ = blockNode(node)
+    scope.pushNewBlockScope(blockNode_)
+    localAstParentStack.push(blockNode_)
+    val bodyAst = astForNodeWithFunctionReference(node.statement)
+    scope.popScope()
+    localAstParentStack.pop()
+
+    val labelAsts = List(Ast(labeledNode), bodyAst)
+    setArgumentIndices(labelAsts)
+    blockAst(blockNode_, labelAsts)
+  }
+
   private def astForMissingStmtSyntax(node: MissingStmtSyntax): Ast = notHandledYet(node)
 
   private def astForRepeatStmtSyntax(node: RepeatStmtSyntax): Ast = {
