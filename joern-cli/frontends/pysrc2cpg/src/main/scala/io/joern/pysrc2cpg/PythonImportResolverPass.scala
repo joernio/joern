@@ -53,13 +53,19 @@ class PythonImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
   override protected def optionalResolveImport(
     fileName: String,
     importCall: Call,
-    importedEntity: String,
-    importedAs: String,
+    _importedEntity: String,
+    _importedAs: String,
     diffGraph: DiffGraphBuilder
   ): Unit = {
     val currDir = File(codeRootDir) / fileName match
       case x if x.isDirectory => x
       case x                  => x.parent
+
+    val importedEntity = importCall.argument.code.l match
+      case List("", what) => what
+      case _              => _importedEntity
+
+    val importedAs = importCall.inAssignment.target.isIdentifier.name.headOption.getOrElse(_importedAs)
 
     val importedEntityAsFullyQualifiedImport =
       // If the path/entity uses Python's `from .import x` syntax, we will need to remove these
@@ -83,8 +89,7 @@ class PythonImportResolverPass(cpg: Cpg) extends XImportResolverPass(cpg) {
       resolvedImports.foreach(x => evaluatedImportToTag(x, importCall, diffGraph))
     } else {
       // Here we use heuristics to guess the correct paths, and make the types look friendly for querying
-      createPseudoImports(importedEntity, importedAs)
-        .foreach(x => evaluatedImportToTag(x, importCall, diffGraph))
+      createPseudoImports(importedEntity, importedAs).map(x => evaluatedImportToTag(x, importCall, diffGraph)).l
     }
   }
 

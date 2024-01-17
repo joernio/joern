@@ -46,9 +46,9 @@ private class RecoverForPythonFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder
     }
 
   override def visitImport(i: Import): Unit = {
-    if (i.importedAs.isDefined && i.importedEntity.isDefined) {
+    i.importedAs.foreach { importedAs =>
+      val entityName = i.isCallForImportIn.inAssignment.target.isIdentifier.name.headOption.getOrElse(importedAs)
 
-      val entityName = i.importedAs.get
       i.call.tag.flatMap(EvaluatedImport.tagToEvaluatedImport).foreach {
         case ResolvedMethod(fullName, alias, receiver, _) => symbolTable.put(CallAlias(alias, receiver), fullName)
         case ResolvedTypeDecl(fullName, _)                => symbolTable.put(LocalVar(entityName), fullName)
