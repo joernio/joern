@@ -1,7 +1,7 @@
 package io.joern.csharpsrc2cpg.astcreation
 
 import io.joern.csharpsrc2cpg.TypeMap
-import io.joern.csharpsrc2cpg.datastructures.CSharpScope
+import io.joern.csharpsrc2cpg.datastructures.{BlockScope, CSharpScope}
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.astgen.{AstGenNodeBuilder, ParserResult}
