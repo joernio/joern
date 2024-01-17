@@ -9,7 +9,6 @@ import io.joern.swiftsrc2cpg.passes.Defines
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, AstNodeBuilder as X2CpgAstNodeBuilder}
-import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.shiftleft.codepropertygraph.generated.NodeTypes
