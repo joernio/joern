@@ -151,6 +151,8 @@ class ParserTests extends AnyFreeSpec with Matchers {
 
       testT("async def func():\n\tpass")
       testT("@x\nasync def func():\n\tpass")
+
+      testT("def func[T]():\n\tpass")
     }
 
     "if statement tests" in {
@@ -169,6 +171,7 @@ class ParserTests extends AnyFreeSpec with Matchers {
       testT("class x(y, z = a):\n\tpass")
       testT("@x\nclass y():\n\tpass")
       testT("@x\n@y\nclass z():\n\tpass")
+      testT("class x[A]():\n\tpass")
     }
 
     "try statement tests" in {
@@ -685,6 +688,9 @@ class ParserTests extends AnyFreeSpec with Matchers {
     testT("f\"\"\"a\"\"\"")
     testT("f'''{a}'''")
     testT("f'''a'''")
+
+    testT("""f"{"x"}"""")
+    testT("""f"{f"{f"{x}"}"}"""")
   }
 
   "format string tests with context" in {
@@ -1093,6 +1099,22 @@ class ParserTests extends AnyFreeSpec with Matchers {
   "test non keyword 'match' usages" in {
     testT("match[1] = 0")
     testT("match * 2")
+  }
+
+  "test type keyword" in {
+    testT("type x = a")
+    testT("type x[T] = a")
+    testT("type x[A, B] = a")
+    testT("type x[A, B, ] = a", "type x[A, B] = a")
+    testT("type x[*A] = a")
+    testT("type x[*A, *B] = a")
+    testT("type x[A, *B] = a")
+    testT("type x[**A] = a")
+    testT("type x[A, **B] = a")
+  }
+
+  "test non keyword 'type' usages" in {
+    testT("x = type")
   }
 
   "non-latin identifier name tests" in {

@@ -1311,6 +1311,10 @@ ArrayList<istmt> simpleStatement(): {
         Match matchStmt = matchStmt(name);
         stmts.add(matchStmt);
         return stmts;
+      } else if (name.id().equals("type")) {
+        TypeAlias typeAlias = typeAlias(name);
+        stmts.add(typeAlias);
+        return stmts;
       }
     } catch (ParseException printException) {
       // If something goes wrong trying to parse as python2 or match
@@ -1405,10 +1409,10 @@ iexpr starNamedExpression(): {
 }
 
 // "match" is a so called "soft" keyword introduced in Python 3.10.
-// Only in the specific pattern match statment constellation it is
+// Only in the specific pattern match statement constellation it is
 // considered a keyword and otherwise it is a regular NAME token
 // which means we cannot have something like a MATCH token.
-Match matchStmt(Name matchName): {
+Match matchStmt(Name matchKeyword): {
   ArrayList<iexpr> expressions = new ArrayList<>();
   iexpr subjectExpr;
   boolean isTuple = false;
@@ -1441,7 +1445,7 @@ Match matchStmt(Name matchName): {
   )+
   (<DEDENT> | <EOF>)
   {
-    return new Match(subjectExpr, cases, attributes(matchName, token));
+    return new Match(subjectExpr, cases, attributes(matchKeyword, token));
   }
 }
 
@@ -1825,6 +1829,56 @@ istmt smallStatement(): {
   }
 }
 
+// "type" is a so called "soft" keyword introduced in Python 3.12.
+// Only in the specific type alias statement constellation it is
+// considered a keyword and otherwise it is a regular NAME token
+// which means we cannot have something like a TYPE token.
+TypeAlias typeAlias(Name typeKeyword): {
+  Name name;
+  ArrayList<itypeParam> typeParams = new ArrayList<>();
+  iexpr value;
+} {
+    <NAME> { name = new Name(token.image, attributes(token, token)); }
+    (typeParams(typeParams))?
+    <ASSIGN> value = expression()
+    {
+      return new TypeAlias(name, typeParams, value, attributes(typeKeyword, token));
+    }
+}
+
+void typeParams(ArrayList<itypeParam> typeParams): {
+  itypeParam typeParam;
+} {
+  <SQUARE_OPEN>
+  typeParam = typeParam() { typeParams.add(typeParam); }
+  (LOOKAHEAD(2)
+    <COMMA> typeParam = typeParam() { typeParams.add(typeParam); }
+  )*
+  (<COMMA>)?
+  <SQUARE_CLOSE>
+}
+
+itypeParam typeParam(): {
+  Token startToken;
+  iexpr bound = null;
+  itypeParam typeParam;
+} {
+  (
+    (<NAME> { startToken = token; }
+     (<COLON> bound = expression())? { typeParam = new TypeVar(startToken.image, bound, attributes(startToken, token)); }
+    )
+  | (<STAR> { startToken = token; }
+     <NAME> { typeParam = new TypeVarTuple(token.image, attributes(startToken, token));}
+    )
+  | (<DOUBLE_STAR> { startToken = token; }
+     <NAME> { typeParam = new ParamSpec(token.image, attributes(startToken, token));}
+    )
+  )
+  {
+    return typeParam;
+  }
+}
+
 // We are little bit less restrictive than the python 3.9 grammar because
 // we allow logical expressions in star expressions to be returned.
 // E.g. "return * x and y" the python 3.9 grammar would require parenthesis:
@@ -2087,9 +2141,11 @@ istmt functionDef(ArrayList<iexpr> decorators, boolean isAsync, Token asyncToken
   Arguments parameters;
   iexpr returnExpr = null;
   ArrayList<istmt> blockStmts;
+  ArrayList<itypeParam> typeParams = new ArrayList<>();
 } {
   <DEF> { if (!isAsync) {startToken = token;} }
   <NAME> { name = token.image; }
+  (typeParams(typeParams))?
   <PAREN_OPEN>
   parameters = parameters()
   <PAREN_CLOSE>
@@ -2099,10 +2155,10 @@ istmt functionDef(ArrayList<iexpr> decorators, boolean isAsync, Token asyncToken
   {
     if (isAsync) {
       return new AsyncFunctionDef(name, parameters, blockStmts, decorators,
-        returnExpr, null, attributes(startToken, token));
+        returnExpr, null, typeParams, attributes(startToken, token));
     } else {
       return new FunctionDef(name, parameters, blockStmts, decorators,
-        returnExpr, null, attributes(startToken, token));
+        returnExpr, null, typeParams, attributes(startToken, token));
     }
   }
 }
@@ -2493,13 +2549,16 @@ ClassDef classDef(ArrayList<iexpr> decorators): {
   String name;
   ArrayList<iexpr> bases = new ArrayList<iexpr>();
   ArrayList<Keyword> keywords = new ArrayList<Keyword>();
+  ArrayList<itypeParam> typeParams = new ArrayList<>();
   ArrayList<istmt> blockStmts;
 } {
-  <CLASS> { startToken = token; } <NAME> { name = token.image; }
+  <CLASS> { startToken = token; }
+  <NAME> { name = token.image; }
+  (typeParams(typeParams))?
   (<PAREN_OPEN> arguments(bases, keywords) <PAREN_CLOSE>)?
   <COLON>
   blockStmts = block()
-  { return new ClassDef(name, bases, keywords, blockStmts, decorators,
+  { return new ClassDef(name, bases, keywords, blockStmts, decorators, typeParams,
      attributes(startToken, token)); }
 }
 

@@ -15,6 +15,7 @@ trait AstVisitor[T] {
   def visit(ret: Return): T
   def visit(delete: Delete): T
   def visit(assign: Assign): T
+  def visit(typeAlias: TypeAlias): T
   def visit(annAssign: AnnAssign): T
   def visit(augAssign: AugAssign): T
   def visit(forStmt: For): T
@@ -148,4 +149,10 @@ trait AstVisitor[T] {
   def visit(matchOr: MatchOr): T
 
   def visit(typeIgnore: TypeIgnore): T
+
+  def visit(typeVar: TypeVar): T
+
+  def visit(paramSpec: ParamSpec): T
+
+  def visit(typeVarTyple: TypeVarTuple): T
 }
