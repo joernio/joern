@@ -2,7 +2,7 @@ package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.nodes.Call
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Literal}
 import io.shiftleft.semanticcpg.language.*
 
 class CallTests extends RubyCode2CpgFixture {
@@ -60,5 +60,30 @@ class CallTests extends RubyCode2CpgFixture {
     val List(one) = call.argument.l
     one.code shouldBe "1"
     one.lineNumber shouldBe Some(2)
+  }
+
+  "a method and call referencing to a keyword argument" should {
+
+    val cpg = code("""
+        |def foo(a, bar: "default")
+        |  puts(bar)
+        |end
+        |
+        |foo("hello", bar: "baz")
+        |""".stripMargin)
+
+    "contain they keyword in the argumentName property" in {
+      inside(cpg.call.nameExact("foo").argument.l) {
+        case (hello: Literal) :: (baz: Literal) :: Nil =>
+          hello.code shouldBe "\"hello\""
+          hello.argumentIndex shouldBe 1
+          hello.argumentName shouldBe None
+
+          baz.code shouldBe "\"baz\""
+          baz.argumentIndex shouldBe 2
+          baz.argumentName shouldBe Option("bar")
+        case _ => fail("Invalid call arguments!")
+      }
+    }
   }
 }
