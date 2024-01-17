@@ -27,7 +27,7 @@ trait AstCreatorHelper { this: AstCreator =>
     shouldGenerateDefaultConstructorStack.push(false)
   }
 
-  protected def getEnclosingAstType: String     = methodAstParentStack.head.label()
+  protected def getEnclosingAstType: String     = methodAstParentStack.head.label
   protected def getEnclosingAstFullName: String = methodAstParentStack.head.propertiesMap.get(PropertyNames.FULL_NAME).toString
   protected def computeClassFullName(name: String): String  = s"$getEnclosingAstFullName.$name"
   protected def computeMethodFullName(name: String): String = s"$getEnclosingAstFullName:$name"
