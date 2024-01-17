@@ -27,8 +27,15 @@ class ConditionalTests extends CSharpCode2CpgFixture {
           }
           ifNode.whenTrue.assignment.code.l shouldBe List("a++")
 
-        case _ => fail("No `if` node found.")
+          inside(ifNode.astChildren.isBlock.l) {
+            case blockNode :: Nil =>
+              val List(incCall) = blockNode.ast.isCall.l
+              incCall.code shouldBe "a++"
+              incCall.astParent shouldBe blockNode
+            case _ => fail("Incorrect body for `if` statement")
+          }
 
+        case _ => fail("No `if` node found.")
       }
     }
 
@@ -55,14 +62,21 @@ class ConditionalTests extends CSharpCode2CpgFixture {
             cndNode.code shouldBe "a == 1"
           }
 
-          inside(ifNode.astChildren.isBlock.l) { case blockNode =>
-            val List(incCall) = blockNode.ast.isCall.l
-            incCall.code shouldBe "a++"
+          inside(ifNode.astChildren.isBlock.l) {
+            case blockNode :: Nil =>
+              val List(incCall) = blockNode.ast.isCall.l
+              incCall.code shouldBe "a++"
+              incCall.astParent shouldBe blockNode
+            case _ => fail("Incorect body for `if` statement")
           }
 
-          inside(elseNode.astChildren.isBlock.l) { case blockNode =>
-            val List(decCall) = blockNode.ast.isCall.l
-            decCall.code shouldBe "a--"
+          inside(elseNode.astChildren.isBlock.l) {
+            case blockNode :: Nil =>
+              val List(decCall) = blockNode.ast.isCall.l
+              decCall.code shouldBe "a--"
+              decCall.astParent shouldBe blockNode
+            case _ => fail("Incorect body for `else` statement")
+
           }
 
           ifNode.whenTrue.assignment.code.l shouldBe List("a++")
@@ -84,29 +98,51 @@ class ConditionalTests extends CSharpCode2CpgFixture {
           |}
           |""".stripMargin))
 
-      cpg.method("Main").controlStructure.size shouldBe 3
-      cpg.method("Main").ifBlock.size shouldBe 2
-      cpg.method("Main").elseBlock.size shouldBe 1
-
-      inside(cpg.method("Main").controlStructure.controlStructureTypeExact(ControlStructureTypes.IF).l(1)) {
-        case elseIfNode =>
-          elseIfNode.code shouldBe "if (a > 5)"
-
-          elseIfNode.controlStructureType shouldBe ControlStructureTypes.IF
-
-          inside(elseIfNode.condition.l) { case List(cndNode) =>
-            cndNode.code shouldBe "a > 5"
+      inside(cpg.method("Main").controlStructure.sortBy(_.lineNumber).l) {
+        case ifNode :: elseIfNode :: elseNode :: Nil =>
+          ifNode.code shouldBe "if (a < 5)"
+          ifNode.controlStructureType shouldBe ControlStructureTypes.IF
+          inside(ifNode.condition.l) {
+            case List(cndNode) =>
+              cndNode.code shouldBe "a < 5"
+            case _ => fail("Unexpected condition for `if` statement")
           }
-        case _ => fail("No `else if` node found.")
+          inside(ifNode.astChildren.isBlock.l) {
+            case blockNode :: Nil =>
+              val List(incCall) = blockNode.ast.isCall.l
+              incCall.code shouldBe "a++"
+              incCall.astParent shouldBe blockNode
+            case _ => fail("Unexpected body contents for `if` statement")
+          }
+
+          elseIfNode.code shouldBe "if (a > 5)"
+          elseIfNode.controlStructureType shouldBe ControlStructureTypes.IF
+          inside(elseIfNode.condition.l) {
+            case List(cndNode) =>
+              cndNode.code shouldBe "a > 5"
+            case _ => fail("Unexpected condition for `else if` statement")
+          }
+          inside(elseIfNode.astChildren.isBlock.l) {
+            case blockNode :: Nil =>
+              val List(decCall) = blockNode.ast.isCall.l
+              decCall.code shouldBe "a--"
+              decCall.astParent shouldBe blockNode
+            case _ => fail("Unexpected body contents for `else if` statement")
+          }
+
+          elseNode.code shouldBe "else"
+          elseNode.controlStructureType shouldBe ControlStructureTypes.ELSE
+          inside(elseNode.astChildren.isBlock.l) {
+            case blockNode :: Nil =>
+              val List(plusEqualsCall) = blockNode.ast.isCall.l
+              plusEqualsCall.code shouldBe "a += 2"
+              plusEqualsCall.astParent shouldBe blockNode
+            case _ => fail("Unexpected body contents for `else` statement")
+
+          }
+
+        case _ => fail("Incorrect number of control structures in the method.")
       }
-
-      val ifNode     = cpg.controlStructure.controlStructureTypeExact(ControlStructureTypes.IF).head
-      val elseIfNode = cpg.controlStructure.controlStructureTypeExact(ControlStructureTypes.IF).last
-      val elseNode   = cpg.controlStructure.controlStructureTypeExact(ControlStructureTypes.ELSE).head
-
-      cpg.call.codeExact("a++").astParent.l shouldBe ifNode.astChildren.isBlock.l
-      cpg.call.codeExact("a--").astParent.l shouldBe elseIfNode.astChildren.isBlock.l
-      cpg.call.codeExact("a += 2").astParent.l shouldBe elseNode.astChildren.isBlock.l
     }
   }
 

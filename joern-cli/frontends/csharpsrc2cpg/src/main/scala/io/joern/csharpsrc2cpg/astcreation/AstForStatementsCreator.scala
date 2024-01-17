@@ -34,7 +34,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private def astForIfStatement(ifStmt: DotNetNodeInfo): Seq[Ast] = {
     val conditionNode = createDotNetNodeInfo(ifStmt.json(ParserKeys.Condition))
-    val conditionAst  = astForConditionExpression(conditionNode)
+    val conditionAst  = astForNode(conditionNode).headOption.getOrElse(Ast())
 
     val thenNode     = createDotNetNodeInfo(ifStmt.json(ParserKeys.Statement))
     val thenAst: Ast = Option(astForBlock(createDotNetNodeInfo(ifStmt.json(ParserKeys.Statement)))).getOrElse(Ast())
@@ -68,16 +68,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         astForNode(createDotNetNodeInfo(elseParserNode.json(ParserKeys.Statement))).headOption.getOrElse(Ast())
       case None => Ast()
 
-  }
-
-  private def astForConditionExpression(conditionNode: DotNetNodeInfo): Ast = {
-    conditionNode.node match
-      case _: BinaryExpr =>
-        astForBinaryExpression(conditionNode).headOption.getOrElse(Ast())
-      case _: LiteralExpr =>
-        astForLiteralExpression(conditionNode).headOption.getOrElse(Ast())
-      case _: UnaryExpr => astForUnaryExpression(conditionNode).headOption.getOrElse(Ast())
-      case _            => notHandledYet(conditionNode).headOption.getOrElse(Ast())
   }
 
   protected def astForGlobalStatement(globalStatement: DotNetNodeInfo): Seq[Ast] = {
