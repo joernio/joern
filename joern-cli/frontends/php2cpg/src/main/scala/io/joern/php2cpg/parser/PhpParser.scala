@@ -3,7 +3,7 @@ package io.joern.php2cpg.parser
 import better.files.File
 import io.joern.php2cpg.Config
 import io.joern.php2cpg.parser.Domain.PhpFile
-import io.joern.php2cpg.utils.ExternalCommand
+import io.joern.x2cpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths

@@ -23,14 +23,9 @@ trait ExternalCommand {
     }
   }
 
-  def run(
-    command: String,
-    cwd: String,
-    separateStdErr: Boolean = false,
-    extraEnv: Map[String, String] = Map.empty
-  ): Try[Seq[String]] = {
+  def run(command: String, cwd: String, extraEnv: Map[String, String] = Map.empty): Try[Seq[String]] = {
     val stdOutOutput  = new ConcurrentLinkedQueue[String]
-    val stdErrOutput  = if (separateStdErr) new ConcurrentLinkedQueue[String] else stdOutOutput
+    val stdErrOutput  = new ConcurrentLinkedQueue[String]
     val processLogger = ProcessLogger(stdOutOutput.add, stdErrOutput.add)
     val process = shellPrefix match {
       case Nil => Process(command, new java.io.File(cwd), extraEnv.toList: _*)
