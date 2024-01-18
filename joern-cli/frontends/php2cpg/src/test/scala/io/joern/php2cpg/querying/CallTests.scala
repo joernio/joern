@@ -136,7 +136,7 @@ class CallTests extends PhpCode2CpgFixture {
 
   "method calls with complex names should be correct" in {
     val cpg = code("""<?php
-        |$$f->{$foo}($x)
+        |$$f->{$foo}($x);
         |""".stripMargin)
 
     inside(cpg.call.filter(_.name != Operators.fieldAccess).l) { case List(fooCall) =>

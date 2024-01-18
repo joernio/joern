@@ -17,7 +17,7 @@ class OperatorTests extends PhpCode2CpgFixture {
   "assignment operators" should {
     "have the correct arguments set" in {
       val cpg = code("""<?php
-        |$a = 2
+        |$a = 2;
         |""".stripMargin)
 
       val assignment = inside(cpg.call.l) {
@@ -70,7 +70,7 @@ class OperatorTests extends PhpCode2CpgFixture {
   "unary operators" should {
     "have the correct arguments set" in {
       val cpg = code("""<?php
-        |+$a
+        |+$a;
         |""".stripMargin)
 
       val addition = inside(cpg.call.l) {
@@ -113,7 +113,7 @@ class OperatorTests extends PhpCode2CpgFixture {
   "binary operators" should {
     "have the correct arguments set" in {
       val cpg = code("""<?php
-        |$a + 2
+        |$a + 2;
         |""".stripMargin)
 
       val addition = inside(cpg.call.l) {
@@ -186,7 +186,7 @@ class OperatorTests extends PhpCode2CpgFixture {
   "cast operations" should {
     "have the correct arguments set" in {
       val cpg = code("""<?php
-        |(int) $a
+        |(int) $a;
         |""".stripMargin)
 
       val cast = inside(cpg.call.nameExact(Operators.cast).l) { case List(cast) =>
@@ -236,7 +236,7 @@ class OperatorTests extends PhpCode2CpgFixture {
   "isset calls" should {
     "handle a single argument" in {
       val cpg = code("""<?php
-        |isset($a)
+        |isset($a);
         |""".stripMargin)
 
       val call = inside(cpg.call.nameExact("isset").l) { case List(call) =>
@@ -257,7 +257,7 @@ class OperatorTests extends PhpCode2CpgFixture {
 
     "handle multiple arguments" in {
       val cpg = code("""<?php
-        |isset($a, $b, $c)
+        |isset($a, $b, $c);
         |""".stripMargin)
 
       val call = inside(cpg.call.nameExact("isset").l) { case List(call) =>
@@ -307,7 +307,7 @@ class OperatorTests extends PhpCode2CpgFixture {
   "ternary operators" should {
     "be created correctly for general cond ? then : else style operators" in {
       val cpg = code("""<?php
-        |$a ? $b : $c
+        |$a ? $b : $c;
         |""".stripMargin)
 
       val call = inside(cpg.call.nameExact(Operators.conditional).l) { case List(conditionalOp) =>
@@ -335,7 +335,7 @@ class OperatorTests extends PhpCode2CpgFixture {
 
     "be created correctly for the shorthand elvis operator" in {
       val cpg = code("""<?php
-        |$a ?: $b
+        |$a ?: $b;
         |""".stripMargin)
 
       val call = inside(cpg.call.nameExact(PhpOperators.elvisOp).l) { case List(elvisOp) => elvisOp }
@@ -357,7 +357,7 @@ class OperatorTests extends PhpCode2CpgFixture {
 
   "the clone operator should be represented with the correct call node" in {
     val cpg = code("""<?php
-      |clone $x
+      |clone $x;
       |""".stripMargin)
 
     inside(cpg.call.l) { case List(cloneCall) =>
@@ -376,7 +376,7 @@ class OperatorTests extends PhpCode2CpgFixture {
 
   "the empty call should be represented with the correct call node" in {
     val cpg = code("""<?php
-      |empty($x)
+      |empty($x);
       |""".stripMargin)
 
     inside(cpg.call.l) { case List(emptyCall) =>
@@ -395,7 +395,7 @@ class OperatorTests extends PhpCode2CpgFixture {
 
   "the eval call should be represented with the correct call node" in {
     val cpg = code("""<?php
-      |eval($x)
+      |eval($x);
       |""".stripMargin)
 
     inside(cpg.call.l) { case List(evalCall) =>
@@ -479,7 +479,7 @@ class OperatorTests extends PhpCode2CpgFixture {
 
   "instanceof with a simple class name should work" in {
     val cpg = code("""<?php
-      |$foo instanceof Foo
+      |$foo instanceof Foo;
       |""".stripMargin)
 
     inside(cpg.call.l) { case List(instanceOfCall) =>
@@ -627,7 +627,7 @@ class OperatorTests extends PhpCode2CpgFixture {
 
   "declare calls with an empty statement list should have the correct block structure" in {
     val cpg = code("""<?php
-        |declare(ticks=1) {}
+        |declare(ticks=1) {};
         |""".stripMargin)
 
     val declareBlock = inside(cpg.method.nameExact(NamespaceTraversal.globalNamespaceName).l) {
@@ -664,7 +664,7 @@ class OperatorTests extends PhpCode2CpgFixture {
 
   "shell_exec calls should be handled" in {
     val cpg = code("""<?php
-      |`ls -la`
+      |`ls -la`;
       |""".stripMargin)
 
     inside(cpg.call.name("shell_exec").l) { case List(shellCall) =>
@@ -681,7 +681,7 @@ class OperatorTests extends PhpCode2CpgFixture {
 
   "unset calls should be handled" in {
     val cpg = code("""<?php
-      |unset($a, $b)
+      |unset($a, $b);
       |""".stripMargin)
 
     inside(cpg.call.l) { case List(unsetCall) =>
@@ -705,7 +705,7 @@ class OperatorTests extends PhpCode2CpgFixture {
 
   "global calls should handle simple and non-simple args" in {
     val cpg = code("""<?php
-      |global $a, $$b
+      |global $a, $$b;
       |""".stripMargin)
 
     inside(cpg.call.l) { case List(globalCall) =>
@@ -723,7 +723,7 @@ class OperatorTests extends PhpCode2CpgFixture {
 
   "calls to builtins defined in resources/builtin_functions.txt should be handled correctly" in {
     val cpg = code("""<?php
-      |abs($a)
+      |abs($a);
       |""".stripMargin)
 
     inside(cpg.call.l) { case List(absCall) =>

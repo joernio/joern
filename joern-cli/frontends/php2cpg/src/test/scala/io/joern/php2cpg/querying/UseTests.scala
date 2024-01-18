@@ -71,7 +71,7 @@ class UseTests extends PhpCode2CpgFixture {
 
   "group uses should have the correct names for all elements in the group" in {
     val cpg = code("""<?php
-      |use A\{B\C, D}
+      |use A\{B\C, D};
       |""".stripMargin)
 
     inside(cpg.imports.l.sortBy(_.code)) { case List(aImport, bImport) =>
