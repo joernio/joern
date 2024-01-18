@@ -30,7 +30,7 @@ object IncludeAutoDiscovery {
 
   private def checkForGcc(): Boolean = {
     logger.debug("Checking gcc ...")
-    ExternalCommand.run(GCC_VERSION_COMMAND) match {
+    ExternalCommand.run(GCC_VERSION_COMMAND, ".") match {
       case Success(result) =>
         logger.debug(s"GCC is available: ${result.mkString(System.lineSeparator())}")
         true
@@ -57,7 +57,7 @@ object IncludeAutoDiscovery {
     output.slice(startIndex, endIndex).map(p => Paths.get(p.trim).toRealPath()).toSet
   }
 
-  private def discoverPaths(command: String): Set[Path] = ExternalCommand.run(command) match {
+  private def discoverPaths(command: String): Set[Path] = ExternalCommand.run(command, ".") match {
     case Success(output) => extractPaths(output)
     case Failure(exception) =>
       logger.warn(s"Unable to discover system include paths. Running '$command' failed.", exception)

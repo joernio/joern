@@ -1,17 +1,17 @@
 package io.joern.php2cpg.querying
 
 import io.joern.php2cpg.astcreation.AstCreator.NameConstants
-import io.joern.php2cpg.parser.Domain.PhpOperators
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier}
 import io.shiftleft.semanticcpg.language._
-import io.shiftleft.codepropertygraph.generated.nodes.Block
 
 class CallTests extends PhpCode2CpgFixture {
   "halt_compiler calls should be created correctly" in {
-    val cpg = code("<?php\n__halt_compiler();")
+    val cpg = code("""<?php
+        |__halt_compiler();
+        |""".stripMargin)
 
     inside(cpg.call.l) { case List(haltCompiler) =>
       haltCompiler.name shouldBe NameConstants.HaltCompiler
@@ -32,7 +32,9 @@ class CallTests extends PhpCode2CpgFixture {
   }
 
   "function calls with simple names should be correct" in {
-    val cpg = code("<?php\nfoo($x);")
+    val cpg = code("""<?php
+        |foo($x);
+        |""".stripMargin)
 
     inside(cpg.call.l) { case List(fooCall) =>
       fooCall.name shouldBe "foo"
@@ -51,7 +53,9 @@ class CallTests extends PhpCode2CpgFixture {
   }
 
   "static method calls with simple names" should {
-    val cpg = code("<?php\nFoo::foo($x);")
+    val cpg = code("""<?php
+        |Foo::foo($x);
+        |""".stripMargin)
 
     "have the correct method node defined" in {
       inside(cpg.call.l) { case List(fooCall) =>
@@ -109,7 +113,9 @@ class CallTests extends PhpCode2CpgFixture {
   }
 
   "method calls with simple names should be correct" in {
-    val cpg = code("<?php\n$f->foo($x);")
+    val cpg = code("""<?php
+        |$f->foo($x);
+        |""".stripMargin)
 
     inside(cpg.call.l) { case List(fooCall) =>
       fooCall.name shouldBe "foo"
@@ -129,7 +135,9 @@ class CallTests extends PhpCode2CpgFixture {
   }
 
   "method calls with complex names should be correct" in {
-    val cpg = code("<?php\n$$f->{$foo}($x)")
+    val cpg = code("""<?php
+        |$$f->{$foo}($x);
+        |""".stripMargin)
 
     inside(cpg.call.filter(_.name != Operators.fieldAccess).l) { case List(fooCall) =>
       fooCall.name shouldBe "$foo"

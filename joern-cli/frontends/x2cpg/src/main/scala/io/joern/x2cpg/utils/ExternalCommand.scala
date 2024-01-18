@@ -1,54 +1,39 @@
 package io.joern.x2cpg.utils
 
 import java.util.concurrent.ConcurrentLinkedQueue
-import org.apache.commons.lang.StringUtils
 import scala.sys.process.{Process, ProcessLogger}
 import scala.util.{Failure, Success, Try}
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
-object ExternalCommand {
+trait ExternalCommand {
 
-  private val IS_WIN: Boolean = scala.util.Properties.isWin
+  protected val IsWin: Boolean = scala.util.Properties.isWin
 
-  private val shellPrefix: Seq[String] = if (IS_WIN) "cmd" :: "/c" :: Nil else "sh" :: "-c" :: Nil
+  // do not prepend any shell layer by default
+  // individual frontends may override this
+  protected val shellPrefix: Seq[String] = Nil
 
-  def run(
-    command: String,
-    cwd: String,
-    separateStdErr: Boolean = false,
-    extraEnv: Map[String, String] = Map.empty
-  ): Try[Seq[String]] = {
-    val stdOutOutput  = new ConcurrentLinkedQueue[String]
-    val stdErrOutput  = if (separateStdErr) new ConcurrentLinkedQueue[String] else stdOutOutput
-    val processLogger = ProcessLogger(stdOutOutput.add, stdErrOutput.add)
-
-    Process(shellPrefix :+ command, new java.io.File(cwd), extraEnv.toList: _*).!(processLogger) match {
-      case 0 =>
-        Success(stdOutOutput.asScala.toSeq)
+  protected def handleRunResult(result: Try[Int], stdOut: Seq[String], stdErr: Seq[String]): Try[Seq[String]] = {
+    result match {
+      case Success(0) =>
+        Success(stdOut)
       case _ =>
-        Failure(new RuntimeException(stdErrOutput.asScala.mkString(System.lineSeparator())))
-    }
-  }
-
-  private val COMMAND_AND: String = " && "
-
-  def toOSCommand(command: String): String = if (IS_WIN) command + ".cmd" else command
-
-  def runMultiple(command: String, inDir: String = ".", extraEnv: Map[String, String] = Map.empty): Try[String] = {
-    val dir           = new java.io.File(inDir)
-    val stdOutOutput  = new ConcurrentLinkedQueue[String]
-    val stdErrOutput  = new ConcurrentLinkedQueue[String]
-    val processLogger = ProcessLogger(stdOutOutput.add, stdErrOutput.add)
-    val commands      = command.split(COMMAND_AND).toSeq
-    commands.map { cmd =>
-      val cmdWithQuotesAroundDir = StringUtils.replace(cmd, inDir, s"'$inDir'")
-      Try(Process(cmdWithQuotesAroundDir, dir, extraEnv.toList: _*).!(processLogger)).getOrElse(1)
-    }.sum match {
-      case 0 =>
-        Success(stdOutOutput.asScala.mkString(System.lineSeparator()))
-      case _ =>
-        val allOutput = stdOutOutput.asScala ++ stdErrOutput.asScala
+        val allOutput = stdOut ++ stdErr
         Failure(new RuntimeException(allOutput.mkString(System.lineSeparator())))
     }
   }
+
+  def run(command: String, cwd: String, extraEnv: Map[String, String] = Map.empty): Try[Seq[String]] = {
+    val stdOutOutput  = new ConcurrentLinkedQueue[String]
+    val stdErrOutput  = new ConcurrentLinkedQueue[String]
+    val processLogger = ProcessLogger(stdOutOutput.add, stdErrOutput.add)
+    val process = shellPrefix match {
+      case Nil => Process(command, new java.io.File(cwd), extraEnv.toList: _*)
+      case _   => Process(shellPrefix :+ command, new java.io.File(cwd), extraEnv.toList: _*)
+    }
+    handleRunResult(Try(process.!(processLogger)), stdOutOutput.asScala.toSeq, stdErrOutput.asScala.toSeq)
+  }
+
 }
+
+object ExternalCommand extends ExternalCommand

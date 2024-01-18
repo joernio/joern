@@ -3,7 +3,6 @@ package io.joern.php2cpg.querying
 import io.joern.php2cpg.astcreation.AstCreator.TypeConstants
 import io.joern.php2cpg.parser.Domain.PhpOperators
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
-import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{
   Block,
@@ -24,15 +23,15 @@ class ControlStructureTests extends PhpCode2CpgFixture {
   "switch statements" should {
     "work without a default case" in {
       val cpg = code("""<?php
-			 |switch ($cond) {
-			 |  case 0:
-			 |    $b;
-			 |    break;
-			 |  case 1:
-			 |    $c;
-			 |    break;
-			 |}
-			 |""".stripMargin)
+       |switch ($cond) {
+       |  case 0:
+       |    $b;
+       |    break;
+       |  case 1:
+       |    $c;
+       |    break;
+       |};
+       |""".stripMargin)
 
       inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.SWITCH).l) { case List(switchStmt) =>
         switchStmt.code shouldBe "switch ($cond)"
@@ -82,14 +81,14 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
     "work with a default case" in {
       val cpg = code("""<?php
-                      |switch ($cond) {
-                      |  case 0:
-                      |    $b;
-                      |    break;
-                      |  default:
-                      |    $c;
-                      |}
-                      |""".stripMargin)
+        |switch ($cond) {
+        |  case 0:
+        |    $b;
+        |    break;
+        |  default:
+        |    $c;
+        |};
+        |""".stripMargin)
 
       inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.SWITCH).l) { case List(switchStmt) =>
         switchStmt.code shouldBe "switch ($cond)"
@@ -135,7 +134,9 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
   "if statements" should {
     "work without a body, an elseif or an else" in {
-      val cpg = code("<?php\nif ($a) {}")
+      val cpg = code("""<?php
+        |if ($a) {};
+        |""".stripMargin)
 
       val ifAst = inside(cpg.controlStructure.l) { case List(ast) =>
         ast.controlStructureType shouldBe ControlStructureTypes.IF
@@ -158,7 +159,9 @@ class ControlStructureTests extends PhpCode2CpgFixture {
     }
 
     "work with just a then body" in {
-      val cpg = code("<?php\nif ($a) { $b; }")
+      val cpg = code("""<?php
+        |if ($a) { $b; };
+        |""".stripMargin)
 
       val ifAst = inside(cpg.controlStructure.l) { case List(ast) =>
         ast.controlStructureType shouldBe ControlStructureTypes.IF
@@ -186,7 +189,9 @@ class ControlStructureTests extends PhpCode2CpgFixture {
     }
 
     "work with else" in {
-      val cpg = code("<?php\nif ($a) { $b; } else { $c; }")
+      val cpg = code("""<?php
+        |if ($a) { $b; } else { $c; };
+        |""".stripMargin)
 
       val ifAst = inside(cpg.controlStructure.l) { case List(ast) =>
         ast.controlStructureType shouldBe ControlStructureTypes.IF
@@ -222,16 +227,16 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
     "work with elseif chains" in {
       val cpg = code("""<?php
-                      |if ($cond1) {
-                      |  $body1;
-                      |} elseif ($cond2) {
-                      |  $body2;
-                      |} elseif ($cond3) {
-                      |  $body3;
-                      |} else {
-                      |  $body4;
-                      |}
-                      |""".stripMargin)
+        |if ($cond1) {
+        |  $body1;
+        |} elseif ($cond2) {
+        |  $body2;
+        |} elseif ($cond3) {
+        |  $body3;
+        |} else {
+        |  $body4;
+        |};
+        |""".stripMargin)
 
       val ifAst = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).head
 
@@ -301,16 +306,16 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
     "work with else...if chains" in {
       val cpg = code("""<?php
-                      |if ($cond1) {
-                      |  $body1;
-                      |} else if ($cond2) {
-                      |  $body2;
-                      |} else if ($cond3) {
-                      |  $body3;
-                      |} else {
-                      |  $body4;
-                      |}
-                      |""".stripMargin)
+        |if ($cond1) {
+        |  $body1;
+        |} else if ($cond2) {
+        |  $body2;
+        |} else if ($cond3) {
+        |  $body3;
+        |} else {
+        |  $body4;
+        |};
+        |""".stripMargin)
 
       val ifAst = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).head
 
@@ -359,16 +364,16 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
     "work with elseif chains with colon syntax" in {
       val cpg = code("""<?php
-                      |if ($cond1):
-                      |  $body1;
-                      |elseif ($cond2):
-                      |  $body2;
-                      |elseif ($cond3):
-                      |  $body3;
-                      |else:
-                      |  $body4;
-                      |endif;
-                      |""".stripMargin)
+        |if ($cond1):
+        |  $body1;
+        |elseif ($cond2):
+        |  $body2;
+        |elseif ($cond3):
+        |  $body3;
+        |else:
+        |  $body4;
+        |endif;
+        |""".stripMargin)
 
       val ifAst = cpg.controlStructure.controlStructureType(ControlStructureTypes.IF).head
 
@@ -418,7 +423,9 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
   "break statements" should {
     "support the default depth 1 break" in {
-      val cpg = code("<?php\nbreak;")
+      val cpg = code("""<?php
+        |break;
+        |""".stripMargin)
 
       inside(cpg.controlStructure.l) { case List(breakStmt) =>
         breakStmt.controlStructureType shouldBe ControlStructureTypes.BREAK
@@ -427,7 +434,9 @@ class ControlStructureTests extends PhpCode2CpgFixture {
     }
 
     "support arbitrary depth breaks" in {
-      val cpg = code("<?php\nbreak(5);")
+      val cpg = code("""<?php
+        |break(5);
+        |""".stripMargin)
 
       inside(cpg.controlStructure.l) { case List(breakStmt) =>
         breakStmt.controlStructureType shouldBe ControlStructureTypes.BREAK
@@ -442,7 +451,9 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
   "continue statements" should {
     "support the default depth 1 continue" in {
-      val cpg = code("<?php\ncontinue;")
+      val cpg = code("""<?php
+        |continue;
+        |""".stripMargin)
       inside(cpg.controlStructure.l) { case List(continueStmt) =>
         continueStmt.controlStructureType shouldBe ControlStructureTypes.CONTINUE
         continueStmt.astChildren.isEmpty shouldBe true
@@ -451,7 +462,9 @@ class ControlStructureTests extends PhpCode2CpgFixture {
     }
 
     "support arbitrary depth continues" in {
-      val cpg = code("<?php\ncontinue(5);")
+      val cpg = code("""<?php
+        |continue(5);
+        |""".stripMargin)
 
       inside(cpg.controlStructure.l) { case List(continueStmt) =>
         continueStmt.controlStructureType shouldBe ControlStructureTypes.CONTINUE
@@ -466,7 +479,9 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
   "while statements" should {
     "work with an empty body" in {
-      val cpg = code("<?php\nwhile($a);")
+      val cpg = code("""<?php
+        |while($a);
+        |""".stripMargin)
       val whileAst = inside(cpg.controlStructure.l) {
         case List(whileAst) if whileAst.controlStructureType == ControlStructureTypes.WHILE => whileAst
       }
@@ -486,10 +501,11 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
     "work with a non-empty body" in {
       val cpg = code("""<?php
-				 |while ($a) {
-				 |  $b;
-				 |  $c;
-				 |}""".stripMargin)
+       |while ($a) {
+       |  $b;
+       |  $c;
+       |};
+       |""".stripMargin)
 
       val whileAst = inside(cpg.controlStructure.l) {
         case List(whileAst) if whileAst.controlStructureType == ControlStructureTypes.WHILE => whileAst
@@ -522,7 +538,9 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
   "do statements" should {
     "work with an empty body" in {
-      val cpg = code("<?php\ndo {} while ($a);")
+      val cpg = code("""<?php
+        |do {} while ($a);
+        |""".stripMargin)
       val doASt = inside(cpg.controlStructure.l) {
         case List(doAst) if doAst.controlStructureType == ControlStructureTypes.DO => doAst
       }
@@ -542,10 +560,10 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
     "work with a non-empty body" in {
       val cpg = code("""<?php
-				 |do {
-				 |  $b;
-				 |  $c;
-				 |} while ($a);""".stripMargin)
+       |do {
+       |  $b;
+       |  $c;
+       |} while ($a);""".stripMargin)
 
       val doAst = inside(cpg.controlStructure.l) {
         case List(doAst) if doAst.controlStructureType == ControlStructureTypes.DO => doAst
@@ -578,10 +596,10 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
   "for statements with the usual format" should {
     val cpg = code("""<?php
-        |for ($i = 0; $i < 42; $i++) {
-        |  echo $i;
-        |}
-        |""".stripMargin)
+      |for ($i = 0; $i < 42; $i++) {
+      |  echo $i;
+      |};
+      |""".stripMargin)
 
     "add a local for the initializer to the enclosing method" in {
       inside(cpg.local.l) { case List(iLocal) =>
@@ -632,7 +650,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
     val cpg = code("""<?php
         |for ($i = 0, $j = 100; $i < 42, $j > 42; $i++, $j--) {
         |  echo $i;
-        |}
+        |};
         |""".stripMargin)
 
     "add a local for the initializer to the enclosing method" in {
@@ -706,7 +724,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         |  $body3;
         |} finally {
         |  $body4;
-        |}
+        |};
         |""".stripMargin)
 
     "create the try block correctly" in {
@@ -744,7 +762,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         |  $body1;
         |} finally {
         |  $body4;
-        |}
+        |};
         |""".stripMargin)
 
     "create the try block correctly" in {
@@ -777,7 +795,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         |  $body2;
         |} catch (B $b) {
         |  $body3;
-        |}
+        |};
         |""".stripMargin)
 
     "create the try block correctly" in {
@@ -806,7 +824,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
     val cpg = code("""<?php
         |try {
         |  throw $x;
-        |} catch (A $a) {}
+        |} catch (A $a) {};
         |""".stripMargin)
 
     inside(cpg.controlStructure.controlStructureType(ControlStructureTypes.THROW).l) { case List(throwExpr) =>
@@ -849,11 +867,11 @@ class ControlStructureTests extends PhpCode2CpgFixture {
   "match expressions" should {
     "work without a default case" in {
       val cpg = code("""<?php
-			 |match ($condition) {
-			 |  $a => "A",
-			 |  $b, $c => "NOT A",
-			 |}
-			 |""".stripMargin)
+         |match ($condition) {
+         |  $a => "A",
+         |  $b, $c => "NOT A",
+         |};
+         |""".stripMargin)
 
       inside(cpg.controlStructure.l) { case List(matchStructure) =>
         matchStructure.controlStructureType shouldBe ControlStructureTypes.MATCH
@@ -895,12 +913,12 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
   "work with a default case" in {
     val cpg = code("""<?php
-                    |match ($condition) {
-                    |  $a => "A",
-                    |  $b, $c => "NOT A",
-										|  default => "DEFAULT",
-                    |}
-                    |""".stripMargin)
+      |match ($condition) {
+      |  $a => "A",
+      |  $b, $c => "NOT A",
+      |  default => "DEFAULT",
+      |};
+      |""".stripMargin)
 
     inside(cpg.controlStructure.l) { case List(matchStructure) =>
       matchStructure.controlStructureType shouldBe ControlStructureTypes.MATCH
@@ -949,10 +967,10 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
   "yield from should be represented as a yield with the correct code field" in {
     val cpg = code("""<?php
-		 |function foo($xs) {
-		 |  yield from $xs;
-		 |}
-		 |""".stripMargin)
+     |function foo($xs) {
+     |  yield from $xs;
+     |}
+     |""".stripMargin)
 
     inside(cpg.controlStructure.l) { case List(yieldStructure) =>
       yieldStructure.controlStructureType shouldBe ControlStructureTypes.YIELD
@@ -970,10 +988,10 @@ class ControlStructureTests extends PhpCode2CpgFixture {
   "yield expressions" should {
     "be created when they have no value" in {
       val cpg = code("""<?php
-			 |function foo() {
-			 |  yield;
-			 |}
-			 |""".stripMargin)
+       |function foo() {
+       |  yield;
+       |}
+       |""".stripMargin)
 
       inside(cpg.controlStructure.l) { case List(yieldStructure) =>
         yieldStructure.controlStructureType shouldBe ControlStructureTypes.YIELD
@@ -986,10 +1004,10 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
     "be created when they have values without keys" in {
       val cpg = code("""<?php
-                      |function foo() {
-                      |  yield 1;
-                      |}
-                      |""".stripMargin)
+        |function foo() {
+        |  yield 1;
+        |}
+        |""".stripMargin)
 
       inside(cpg.controlStructure.l) { case List(yieldStructure) =>
         yieldStructure.controlStructureType shouldBe ControlStructureTypes.YIELD
@@ -1005,10 +1023,10 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
     "be created when they have values with keys" in {
       val cpg = code("""<?php
-                      |function foo($x) {
-                      |  yield 1 => $x;
-                      |}
-                      |""".stripMargin)
+        |function foo($x) {
+        |  yield 1 => $x;
+        |}
+        |""".stripMargin)
 
       inside(cpg.controlStructure.l) { case List(yieldStructure) =>
         yieldStructure.controlStructureType shouldBe ControlStructureTypes.YIELD
@@ -1028,8 +1046,9 @@ class ControlStructureTests extends PhpCode2CpgFixture {
   }
 
   "foreach statements should not create parentless identifiers" in {
-    val cpg = code("""<?php foreach($GLOBALS as $x) {}""")
-
+    val cpg = code("""<?php
+        |foreach($GLOBALS as $x) {};
+        |""".stripMargin)
     cpg.all.collectAll[Identifier].filter(node => Try(node.astParent).isFailure).toList shouldBe Nil
   }
 
@@ -1046,7 +1065,6 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       case List(iterLocal: Local, valLocal: Local, foreachStruct: ControlStructure) =>
         iterLocal.name shouldBe "iter_tmp0"
         valLocal.name shouldBe "val"
-
         foreachStruct
     }
 
@@ -1115,12 +1133,12 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
   "foreach statements with assignments by ref should be represented as a for" in {
     val cpg = code("""<?php
-                    |function foo($arr) {
-                    |  foreach ($arr as &$val) {
-                    |    echo $val;
-                    |  }
-                    |}
-                    |""".stripMargin)
+      |function foo($arr) {
+      |  foreach ($arr as &$val) {
+      |    echo $val;
+      |  }
+      |}
+      |""".stripMargin)
 
     val foreachStruct = inside(cpg.method.name("foo").body.astChildren.l) {
       case List(iterLocal: Local, valLocal: Local, foreachStruct: ControlStructure) =>
@@ -1172,12 +1190,12 @@ class ControlStructureTests extends PhpCode2CpgFixture {
 
   "foreach statements with key-val should be represented as a for" in {
     val cpg = code("""<?php
-                    |function foo($arr) {
-                    |  foreach ($arr as $key => $val) {
-                    |    echo $val;
-                    |  }
-                    |}
-                    |""".stripMargin)
+      |function foo($arr) {
+      |  foreach ($arr as $key => $val) {
+      |    echo $val;
+      |  }
+      |}
+      |""".stripMargin)
 
     val foreachStruct = inside(cpg.method.name("foo").body.astChildren.l) {
       case List(iterLocal: Local, keyLocal: Local, valLocal: Local, foreachStruct: ControlStructure) =>
