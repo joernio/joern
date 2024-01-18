@@ -365,7 +365,7 @@ class PhpTypeRecoveryPassTests extends PhpCode2CpgFixture() {
         | $a = new ClassA();
         | return $a->foo();
         |}
-      """.stripMargin).cpg
+        |""".stripMargin).cpg
 
     "be properly resolved when called with $this" in {
       val List(fooCall) = cpg.method("bar").ast.isCall.take(1).l

@@ -1,6 +1,5 @@
 package io.joern.php2cpg.querying
 
-import io.joern.php2cpg.parser.Domain.PhpOperators
 import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal, Local}
@@ -8,7 +7,9 @@ import io.shiftleft.semanticcpg.language._
 
 class ArrayTests extends PhpCode2CpgFixture {
   "array accesses with variable keys should be represented as index accesses" in {
-    val cpg = code("<?php\n$array[$key]")
+    val cpg = code("""<?php
+        |$array[$key];
+        |""".stripMargin)
 
     inside(cpg.call.l) { case List(indexAccess) =>
       indexAccess.name shouldBe Operators.indexAccess
@@ -28,7 +29,9 @@ class ArrayTests extends PhpCode2CpgFixture {
   }
 
   "array accesses with literal keys should be represented as index accesses" in {
-    val cpg = code("<?php\n$array[0]")
+    val cpg = code("""<?php
+        |$array[0];
+        |""".stripMargin)
 
     inside(cpg.call.l) { case List(indexAccess) =>
       indexAccess.name shouldBe Operators.indexAccess
@@ -67,7 +70,7 @@ class ArrayTests extends PhpCode2CpgFixture {
         |array(
         |  "A" => 1,
         |  "B" => 2
-        |)
+        |);
         |""".stripMargin)
 
     inside(cpg.method.internal.body.astChildren.l) { case List(tmpLocal: Local, arrayBlock: Block) =>
@@ -93,7 +96,7 @@ class ArrayTests extends PhpCode2CpgFixture {
         |array(
         |  "A",
         |  "B"
-        |)
+        |);
         |""".stripMargin)
 
     inside(cpg.method.internal.body.astChildren.l) { case List(tmpLocal: Local, arrayBlock: Block) =>
@@ -118,7 +121,7 @@ class ArrayTests extends PhpCode2CpgFixture {
     val cpg = code("""<?php
         |array(
         |  "2" => "A"
-        |)
+        |);
         |""".stripMargin)
 
     inside(cpg.method.internal.body.astChildren.l) { case List(tmpLocal: Local, arrayBlock: Block) =>
@@ -152,7 +155,7 @@ class ArrayTests extends PhpCode2CpgFixture {
         |  "10" => "F",
         |  "G",
         |  8 => "H",
-        |)
+        |);
         |""".stripMargin)
 
     inside(cpg.method.internal.body.astChildren.l) { case List(tmpLocal: Local, arrayBlock: Block) =>
