@@ -10,17 +10,17 @@ import io.joern.php2cpg.passes.{
   PhpSetKnownTypesPass,
   PhpTypeRecoveryPassGenerator
 }
+import io.joern.php2cpg.utils.ExternalCommand
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass, XTypeRecoveryConfig}
-import io.joern.x2cpg.utils.ExternalCommand
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.CpgPassBase
 import io.shiftleft.codepropertygraph.generated.Languages
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
-import scala.util.{Failure, Try, Success}
+import scala.util.{Failure, Success, Try}
 import scala.util.matching.Regex
 
 class Php2Cpg extends X2CpgFrontend[Config] {

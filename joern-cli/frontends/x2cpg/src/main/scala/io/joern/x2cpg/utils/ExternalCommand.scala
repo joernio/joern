@@ -5,7 +5,23 @@ import scala.sys.process.{Process, ProcessLogger}
 import scala.util.{Failure, Success, Try}
 import scala.jdk.CollectionConverters._
 
-object ExternalCommand {
+trait ExternalCommand {
+
+  protected val IsWin: Boolean = scala.util.Properties.isWin
+
+  // do not prepend any shell layer by default
+  // individual frontends may override this
+  protected val shellPrefix: Seq[String] = Nil
+
+  protected def handleRunResult(result: Try[Int], stdOut: Seq[String], stdErr: Seq[String]): Try[Seq[String]] = {
+    result match {
+      case Success(0) =>
+        Success(stdOut)
+      case _ =>
+        val allOutput = stdOut ++ stdErr
+        Failure(new RuntimeException(allOutput.mkString(System.lineSeparator())))
+    }
+  }
 
   def run(
     command: String,
@@ -16,13 +32,13 @@ object ExternalCommand {
     val stdOutOutput  = new ConcurrentLinkedQueue[String]
     val stdErrOutput  = if (separateStdErr) new ConcurrentLinkedQueue[String] else stdOutOutput
     val processLogger = ProcessLogger(stdOutOutput.add, stdErrOutput.add)
-    Try(Process(command, new java.io.File(cwd), extraEnv.toList: _*).!(processLogger)) match {
-      case Success(0) =>
-        Success(stdOutOutput.asScala.toSeq)
-      case _ =>
-        val allOutput = stdOutOutput.asScala ++ stdErrOutput.asScala
-        Failure(new RuntimeException(allOutput.mkString(System.lineSeparator())))
-    }
+    handleRunResult(
+      Try(Process(shellPrefix :+ command, new java.io.File(cwd), extraEnv.toList: _*).!(processLogger)),
+      stdOutOutput.asScala.toSeq,
+      stdErrOutput.asScala.toSeq
+    )
   }
 
 }
+
+object ExternalCommand extends ExternalCommand
