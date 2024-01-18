@@ -103,18 +103,3 @@ jobs:
           asset_path: /tmp/querydb.json
           asset_name: querydb.json
           asset_content_type: application/json
-      # Update files for post-release commit
-      - name: Get current date
-        id: date
-        run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
-      - name: Update date & version of CITATION.cff
-        run: ./updateCitation.sh ${{ env.LATEST_TAG }} ${{ steps.date.outputs.date }}
-      - name: Commit changes for post-release commit
-        uses: test-room-7/action-update-file@v1
-        with:
-          file-path: |
-            ./CITATION.cff
-          commit-msg: |
-            [${{ env.LATEST_TAG }}] Post Release Changes
-            * Updated `version` and `date-released` in CITATION.cff
-          github-token: ${{ secrets.GITHUB_TOKEN }}
