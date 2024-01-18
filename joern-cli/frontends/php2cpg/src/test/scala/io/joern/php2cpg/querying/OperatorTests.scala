@@ -56,7 +56,7 @@ class OperatorTests extends PhpCode2CpgFixture {
       testData.foreach { case (testCode, expectedType) =>
         val cpg = code(
           s"""<?php
-           |$testCode
+           |$testCode;
            |""".stripMargin,
           fileName = s"Test${filenameKeyPool.next}.php"
         )
@@ -99,7 +99,7 @@ class OperatorTests extends PhpCode2CpgFixture {
       testData.foreach { case (testCode, expectedType) =>
         val cpg = code(
           s"""<?php
-           |$testCode
+           |$testCode;
            |""".stripMargin,
           fileName = s"Test${filenameKeyPool.next}.php"
         )
@@ -172,7 +172,7 @@ class OperatorTests extends PhpCode2CpgFixture {
       testData.foreach { case (testCode, expectedType) =>
         val cpg = code(
           s"""<?php
-             |$testCode
+             |$testCode;
              |""".stripMargin,
           fileName = s"Test${filenameKeyPool.next}.php"
         )
@@ -220,7 +220,7 @@ class OperatorTests extends PhpCode2CpgFixture {
       testData.foreach { case (testCode, expectedType) =>
         val cpg = code(
           s"""<?php
-             |$testCode
+             |$testCode;
              |""".stripMargin,
           fileName = s"Test${filenameKeyPool.next}.php"
         )
