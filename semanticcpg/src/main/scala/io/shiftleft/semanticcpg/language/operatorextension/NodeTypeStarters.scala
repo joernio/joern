@@ -1,14 +1,13 @@
 package io.shiftleft.semanticcpg.language.operatorextension
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.CpgNodeStarters
 import io.shiftleft.semanticcpg.language.*
 // TODO bring back: import overflowdb.traversal.help.{Doc, TraversalSource}
 
 /** Steps that allow traversing from `cpg` to operators.
   */
 // TODO bring back:  @TraversalSource
-class NodeTypeStarters(cpg: Cpg) extends CpgNodeStarters(cpg) {
+class NodeTypeStarters(cpg: Cpg) {
 
   // TODO bring back: @Doc(info = "All assignments, including shorthand assignments that perform arithmetic (e.g., '+=')")
   def assignment: Iterator[OpNodes.Assignment] =
@@ -31,6 +30,6 @@ class NodeTypeStarters(cpg: Cpg) extends CpgNodeStarters(cpg) {
       .cast[OpNodes.FieldAccess]
 
   private def callsWithNameIn(set: Set[String]) =
-    call.filter(x => set.contains(x.name))
+    cpg.call.filter(x => set.contains(x.name))
 
 }

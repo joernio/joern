@@ -11,140 +11,73 @@ import io.shiftleft.semanticcpg.language.*
  * - `cpg.method.name`
  */
  // TODO bring back: @help.TraversalSource
-class NodeTypeStarters(cpg: Cpg) extends CpgNodeStarters(cpg) {
+class NodeTypeStarters(cpg: Cpg) {
 
 // TODO ensure scaladoc and @doc annotation are also generated
   /** Traverse to all arguments passed to methods */
   // @Doc(info = "All arguments (actual parameters)")
   def argument: Iterator[Expression] =
-    call.argument
+    cpg.call.argument
 
   /** Shorthand for `cpg.argument.code(code)` */
   def argument(code: String): Iterator[Expression] =
-    argument.code(code)
+    cpg.argument.code(code)
 
   // @Doc(info = "All breaks (`ControlStructure` nodes)")
   def break: Iterator[ControlStructure] =
-    controlStructure.isBreak
-
-  /** Shorthand for `cpg.call.name(name)` */
-  def call(name: String): Iterator[Call] =
-    call.name(name)
-
-  /** Shorthand for `cpg.comment.code(code)` */
-  def comment(code: String): Iterator[Comment] =
-    comment.code(code)
-
-  /** Shorthand for `cpg.dependency.name(name)`
-    */
-  def dependency(name: String): Iterator[Dependency] =
-    dependency.name(name)
+    cpg.controlStructure.isBreak
 
   // @Doc(info = "All continues (`ControlStructure` nodes)")
   def continue: Iterator[ControlStructure] =
-    controlStructure.isContinue
+    cpg.controlStructure.isContinue
 
   // @Doc(info = "All do blocks (`ControlStructure` nodes)")
   def doBlock: Iterator[ControlStructure] =
-    controlStructure.isDo
+    cpg.controlStructure.isDo
 
   // @Doc(info = "All else blocks (`ControlStructure` nodes)")
   def elseBlock: Iterator[ControlStructure] =
-    controlStructure.isElse
+    cpg.controlStructure.isElse
 
   // @Doc(info = "All throws (`ControlStructure` nodes)")
   def throws: Iterator[ControlStructure] =
-    controlStructure.isThrow
-
-  /** Shorthand for `cpg.file.name(name)`
-    */
-  def file(name: String): Iterator[File] =
-    file.name(name)
+    cpg.controlStructure.isThrow
 
   // @Doc(info = "All for blocks (`ControlStructure` nodes)")
   def forBlock: Iterator[ControlStructure] =
-    controlStructure.isFor
+    cpg.controlStructure.isFor
 
   // @Doc(info = "All gotos (`ControlStructure` nodes)")
   def goto: Iterator[ControlStructure] =
-    controlStructure.isGoto
-
-  /** Shorthand for `cpg.identifier.name(name)`
-    */
-  def identifier(name: String): Iterator[Identifier] =
-    identifier.name(name)
+    cpg.controlStructure.isGoto
 
   // @Doc(info = "All if blocks (`ControlStructure` nodes)")
   def ifBlock: Iterator[ControlStructure] =
-    controlStructure.isIf
-
-  /** Shorthand for `cpg.local.name`
-    */
-  def local(name: String): Iterator[Local] =
-    local.name(name)
-
-  /** Shorthand for `cpg.literal.code(code)`
-    */
-  def literal(code: String): Iterator[Literal] =
-    literal.code(code)
-
-  /** Shorthand for `cpg.method.name(name)` */
-  // @Doc(info = "All methods with a name that matches the given pattern")
-  def method(namePattern: String): Iterator[Method] =
-    method.name(namePattern)
-
-  /** Shorthand for `cpg.member.name(name)` */
-  def member(name: String): Iterator[Member] =
-    member.name(name)
+    cpg.controlStructure.isIf
 
   /** Shorthand for `cpg.methodRef.filter(_.referencedMethod.name(name))` */
-  def methodRef(name: String): Iterator[MethodRef] =
-    methodRef.where(_.referencedMethod.name(name))
-
-  /** Shorthand for `cpg.namespace.name(name)` */
-  def namespace(name: String): Iterator[Namespace] =
-    namespace.name(name)
-
-  /** Shorthand for `cpg.namespaceBlock.name(name)` */
-  def namespaceBlock(name: String): Iterator[NamespaceBlock] =
-    namespaceBlock.name(name)
+  def methodRef(name: String): Iterator[MethodRef] = {
+    // This case is special since it's not using a property filter, but a traversal. Therefor we can't (like e.g. 
+    // for `call.name`) just define `name` as the primary key for `MethodRef`, and since the implicit resolver doesn't
+    // disambiguate between `.methodRef` and `.methodRef(String)`, we cannot use implicits here...
+    new CpgNodeStarters(cpg).methodRef.where(_.referencedMethod.name(name))
+  }
 
   /** Traverse to all input parameters */
   // @Doc(info = "All parameters")
   def parameter: Iterator[MethodParameterIn] =
-    methodParameterIn
-
-  /** Shorthand for `cpg.parameter.name(name)` */
-  def parameter(name: String): Iterator[MethodParameterIn] =
-    parameter.name(name)
-
-  /** Shorthand for `returns.code(code)` */
-  def ret(code: String): Iterator[Return] =
-    ret.code(code)
+    cpg.methodParameterIn
 
   // @Doc(info = "All switch blocks (`ControlStructure` nodes)")
   def switchBlock: Iterator[ControlStructure] =
-    controlStructure.isSwitch
+    cpg.controlStructure.isSwitch
 
   // @Doc(info = "All try blocks (`ControlStructure` nodes)")
   def tryBlock: Iterator[ControlStructure] =
-    controlStructure.isTry
-
-  /** Shorthand for `cpg.typ.name(name)` */
-  // @Doc(info = "All used types with given name")
-  def typ(name: String): Iterator[Type] =
-    typ.name(name)
-
-  /** Shorthand for cpg.typeDecl.name(name) */
-  def typeDecl(name: String): Iterator[TypeDecl] =
-    typeDecl.name(name)
-
-  // @Doc(info = "All tags with given name")
-  def tag(name: String): Iterator[Tag] =
-    tag.name(name)
+    cpg.controlStructure.isTry
 
   // @Doc(info = "All while blocks (`ControlStructure` nodes)")
   def whileBlock: Iterator[ControlStructure] =
-    controlStructure.isWhile
+    cpg.controlStructure.isWhile
 
 }

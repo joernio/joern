@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg
 
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.CpgNodeStarters
+import io.shiftleft.codepropertygraph.generated
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.bindingextension.{
   MethodTraversal as BindingMethodTraversal,
@@ -21,8 +21,7 @@ import io.shiftleft.semanticcpg.language.types.structure.*
   * Implicit conversions to specific steps, based on the node at hand. Automatically in scope when using anything in the
   * `steps` package, e.g. `Steps`
   */
-package object language
-    extends io.shiftleft.codepropertygraph.generated.Language
+package object language extends generated.Language
     with operatorextension.Implicits
     with modulevariable.Implicits
     with importresolver.Implicits
@@ -183,6 +182,7 @@ package object language
   implicit def toNewNodeTrav[NodeType <: NewNode](trav: Iterator[NodeType]): NewNodeSteps[NodeType] =
     new NewNodeSteps[NodeType](trav)
 
+  implicit def toGeneratedNodeStarters(cpg: Cpg): generated.CpgNodeStarters = new generated.CpgNodeStarters(cpg)
   implicit def toNodeTypeStarters(cpg: Cpg): NodeTypeStarters    = new NodeTypeStarters(cpg)
   implicit def toTagTraversal(trav: Iterator[Tag]): TagTraversal = new TagTraversal(trav)
 
