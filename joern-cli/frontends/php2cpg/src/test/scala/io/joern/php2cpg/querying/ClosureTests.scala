@@ -45,11 +45,11 @@ class ClosureTests extends PhpCode2CpgFixture {
   "long-form closures with uses " should {
     val cpg = code(
       """<?php
-                    |$use1 = "FOO";
-                    |$x = function($value) use($use1, &$use2) {
-                    |  echo $value;
-                    |};
-                    |""".stripMargin,
+        |$use1 = "FOO";
+        |$x = function($value) use($use1, &$use2) {
+        |  echo $value;
+        |};
+        |""".stripMargin,
       fileName = "foo.php"
     )
 
@@ -107,8 +107,8 @@ class ClosureTests extends PhpCode2CpgFixture {
   "arrow functions should be represented as closures with return statements" should {
     val cpg = code(
       """<?php
-     |$x = fn ($value) => $value + 1;
-     |""".stripMargin,
+       |$x = fn ($value) => $value + 1;
+       |""".stripMargin,
       fileName = "foo.php"
     )
 

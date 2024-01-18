@@ -8,7 +8,9 @@ import io.shiftleft.semanticcpg.language._
 
 class ArrayTests extends PhpCode2CpgFixture {
   "array accesses with variable keys should be represented as index accesses" in {
-    val cpg = code("<?php\n$array[$key]")
+    val cpg = code("""<?php
+        |$array[$key]
+        |""".stripMargin)
 
     inside(cpg.call.l) { case List(indexAccess) =>
       indexAccess.name shouldBe Operators.indexAccess
@@ -28,7 +30,9 @@ class ArrayTests extends PhpCode2CpgFixture {
   }
 
   "array accesses with literal keys should be represented as index accesses" in {
-    val cpg = code("<?php\n$array[0]")
+    val cpg = code("""<?php
+        |$array[0]
+        |""".stripMargin)
 
     inside(cpg.call.l) { case List(indexAccess) =>
       indexAccess.name shouldBe Operators.indexAccess

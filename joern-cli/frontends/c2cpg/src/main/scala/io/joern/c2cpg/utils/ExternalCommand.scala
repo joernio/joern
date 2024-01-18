@@ -17,6 +17,8 @@ object ExternalCommand {
         Success(stdOutOutput.asScala.toSeq)
       case Success(1)
           if IS_WIN && command != IncludeAutoDiscovery.GCC_VERSION_COMMAND && IncludeAutoDiscovery.gccAvailable() =>
+        // the command to query the system header file locations within a Windows
+        // environment always returns Success(1) for whatever reason...
         Success(stdOutOutput.asScala.toSeq)
       case _ =>
         Failure(new RuntimeException(stdOutOutput.asScala.mkString(System.lineSeparator())))

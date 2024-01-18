@@ -128,7 +128,9 @@ class MemberTests extends PhpCode2CpgFixture {
   }
 
   "class const accesses should be created with the correct field access" in {
-    val cpg = code("<?php\nFoo::X;")
+    val cpg = code("""<?php
+      |Foo::X;
+      |""".stripMargin)
 
     inside(cpg.call.nameExact(Operators.fieldAccess).l) { case List(fieldAccess) =>
       fieldAccess.code shouldBe "Foo::X"

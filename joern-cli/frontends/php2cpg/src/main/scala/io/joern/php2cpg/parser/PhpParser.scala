@@ -26,22 +26,21 @@ class PhpParser private (phpParserPath: String, phpIniPath: String) {
     val command        = phpParseCommand(inputFilePath)
     ExternalCommand.run(command, inputDirectory) match {
       case Success(output) =>
-        processParserOutput(output.mkString(System.lineSeparator()), inputFilePath)
+        processParserOutput(output, inputFilePath)
       case Failure(exception) =>
         logger.error(s"Failure running php-parser with $command", exception.getMessage)
         None
     }
   }
 
-  private def processParserOutput(output: String, filename: String): Option[PhpFile] = {
-    val maybeJson = linesToJsonValue(output.split(System.lineSeparator()).toIndexedSeq, filename)
-
+  private def processParserOutput(output: Seq[String], filename: String): Option[PhpFile] = {
+    val maybeJson = linesToJsonValue(output, filename)
     maybeJson.flatMap(jsonValueToPhpFile(_, filename))
   }
 
   private def linesToJsonValue(lines: Seq[String], filename: String): Option[ujson.Value] = {
     if (lines.exists(_.startsWith("["))) {
-      val jsonString = lines.dropWhile(_.charAt(0) != '[').mkString("\n")
+      val jsonString = lines.dropWhile(_.charAt(0) != '[').mkString
       Try(Option(ujson.read(jsonString))) match {
         case Success(Some(value)) => Some(value)
         case Success(None) =>

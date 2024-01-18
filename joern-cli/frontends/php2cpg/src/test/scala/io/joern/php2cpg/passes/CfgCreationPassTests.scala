@@ -13,7 +13,11 @@ class PhpCfgTestCpg extends CfgTestCpg with PhpFrontend
 // only appear in PHP.
 class CfgCreationPassTests extends CfgTestFixture(() => new PhpCfgTestCpg) {
   override def code(code: String): PhpCfgTestCpg = {
-    super.code(s"<?php\nfunction func() {$code}")
+    super.code(s"""<?php
+         |function func() {
+         |  $code
+         |}
+         |""".stripMargin)
   }
 
   "Cfg for nested while loop" should {

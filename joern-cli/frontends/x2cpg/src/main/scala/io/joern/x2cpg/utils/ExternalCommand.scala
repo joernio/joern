@@ -17,8 +17,11 @@ object ExternalCommand {
     val stdErrOutput  = if (separateStdErr) new ConcurrentLinkedQueue[String] else stdOutOutput
     val processLogger = ProcessLogger(stdOutOutput.add, stdErrOutput.add)
     Try(Process(command, new java.io.File(cwd), extraEnv.toList: _*).!(processLogger)) match {
-      case Success(0) => Success(stdOutOutput.asScala.toSeq)
-      case _          => Failure(new RuntimeException(stdErrOutput.asScala.mkString(System.lineSeparator())))
+      case Success(0) =>
+        Success(stdOutOutput.asScala.toSeq)
+      case _ =>
+        val allOutput = stdOutOutput.asScala ++ stdErrOutput.asScala
+        Failure(new RuntimeException(allOutput.mkString(System.lineSeparator())))
     }
   }
 
