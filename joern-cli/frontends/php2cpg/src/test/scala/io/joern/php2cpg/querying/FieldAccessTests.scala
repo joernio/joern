@@ -9,7 +9,7 @@ class FieldAccessTests extends PhpCode2CpgFixture {
 
   "simple property fetches should be represented as normal field accesses" in {
     val cpg = code("""<?php
-      |$obj->field
+      |$obj->field;
       |""".stripMargin)
 
     inside(cpg.call.l) { case List(fieldAccess) =>
@@ -32,7 +32,7 @@ class FieldAccessTests extends PhpCode2CpgFixture {
 
   "property fetches with expr args should be represented as an arbitrary field access" in {
     val cpg = code("""<?php
-      |$$obj->$field
+      |$$obj->$field;
       |""".stripMargin)
 
     inside(cpg.call.l) { case List(fieldAccess) =>
@@ -55,7 +55,7 @@ class FieldAccessTests extends PhpCode2CpgFixture {
 
   "nullsafe property fetches should be represented as normal field accesses with the correct code" in {
     val cpg = code("""<?php
-      |$obj?->field
+      |$obj?->field;
       |""".stripMargin)
 
     inside(cpg.call.l) { case List(fieldAccess) =>
@@ -78,7 +78,7 @@ class FieldAccessTests extends PhpCode2CpgFixture {
 
   "static property fetches should be represented as normal field accesses with the correct code" in {
     val cpg = code("""<?php
-      |className::$field
+      |className::$field;
       |""".stripMargin)
 
     inside(cpg.call.l) { case List(fieldAccess) =>

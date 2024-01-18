@@ -15,7 +15,7 @@ class CfgCreationPassTests extends CfgTestFixture(() => new PhpCfgTestCpg) {
   override def code(code: String): PhpCfgTestCpg = {
     super.code(s"""<?php
          |function func() {
-         |  $code
+         |  $code;
          |}
          |""".stripMargin)
   }
@@ -73,7 +73,7 @@ class CfgCreationPassTests extends CfgTestFixture(() => new PhpCfgTestCpg) {
           |  do {
           |    break 1;
           |  } while ($j < 1);
-          |} while ($i < 1);
+          |} while ($i < 1)
           |""".stripMargin)
       succOf("break(1)") shouldBe expected(("$i", AlwaysEdge))
     }
@@ -84,7 +84,7 @@ class CfgCreationPassTests extends CfgTestFixture(() => new PhpCfgTestCpg) {
           |  do {
           |    break 2;
           |  } while ($j < 1);
-          |} while ($i < 1);
+          |} while ($i < 1)
           |""".stripMargin)
       succOf("break(2)") shouldBe expected(("RET", AlwaysEdge))
     }
@@ -95,7 +95,7 @@ class CfgCreationPassTests extends CfgTestFixture(() => new PhpCfgTestCpg) {
           |  do {
           |    continue 1;
           |  } while ($j < 1);
-          |} while ($i < 1);
+          |} while ($i < 1)
           |""".stripMargin)
       succOf("continue(1)") shouldBe expected(("$j", AlwaysEdge))
     }
@@ -106,7 +106,7 @@ class CfgCreationPassTests extends CfgTestFixture(() => new PhpCfgTestCpg) {
           |  do {
           |    continue 2;
           |  } while ($j < 1);
-          |} while ($i < 1);
+          |} while ($i < 1)
           |""".stripMargin)
       succOf("continue(2)") shouldBe expected(("$i", AlwaysEdge))
     }
