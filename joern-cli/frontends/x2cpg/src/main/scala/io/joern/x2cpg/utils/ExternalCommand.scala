@@ -3,7 +3,7 @@ package io.joern.x2cpg.utils
 import java.util.concurrent.ConcurrentLinkedQueue
 import scala.sys.process.{Process, ProcessLogger}
 import scala.util.{Failure, Success, Try}
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 trait ExternalCommand {
 
@@ -32,11 +32,11 @@ trait ExternalCommand {
     val stdOutOutput  = new ConcurrentLinkedQueue[String]
     val stdErrOutput  = if (separateStdErr) new ConcurrentLinkedQueue[String] else stdOutOutput
     val processLogger = ProcessLogger(stdOutOutput.add, stdErrOutput.add)
-    handleRunResult(
-      Try(Process(shellPrefix :+ command, new java.io.File(cwd), extraEnv.toList: _*).!(processLogger)),
-      stdOutOutput.asScala.toSeq,
-      stdErrOutput.asScala.toSeq
-    )
+    val process = shellPrefix match {
+      case Nil => Process(command, new java.io.File(cwd), extraEnv.toList: _*)
+      case _   => Process(shellPrefix :+ command, new java.io.File(cwd), extraEnv.toList: _*)
+    }
+    handleRunResult(Try(process.!(processLogger)), stdOutOutput.asScala.toSeq, stdErrOutput.asScala.toSeq)
   }
 
 }
