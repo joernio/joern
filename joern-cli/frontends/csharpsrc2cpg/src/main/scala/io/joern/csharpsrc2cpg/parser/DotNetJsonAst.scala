@@ -146,6 +146,8 @@ object DotNetJsonAst {
 
   object FinallyClause extends ClauseExpr
 
+  object ForEachStatement extends BaseStmt
+
 }
 
 /** The JSON key values, in alphabetical order.

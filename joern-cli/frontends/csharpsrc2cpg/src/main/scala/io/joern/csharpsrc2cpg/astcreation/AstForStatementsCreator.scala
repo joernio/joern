@@ -4,13 +4,15 @@ import io.circe.Json
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.{
   BinaryExpr,
   Block,
+  ExpressionStatement,
+  ForEachStatement,
   GlobalStatement,
   IfStatement,
   LiteralExpr,
+  ThrowStatement,
+  TryStatement,
   UnaryExpr
 }
-import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.{ExpressionStatement, GlobalStatement, ThrowStatement, TryStatement}
-import io.circe.Json
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.{
   BinaryExpr,
   Block,
@@ -54,7 +56,27 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case IfStatement         => astForIfStatement(nodeInfo)
       case ThrowStatement      => astForThrowStatement(nodeInfo)
       case TryStatement        => astForTryStatement(nodeInfo)
+      case ForEachStatement    => astForForEachStatement(nodeInfo)
       case _                   => notHandledYet(nodeInfo)
+  }
+
+  private def astForForEachStatement(forEachStmt: DotNetNodeInfo): Seq[Ast] = {
+    val forEachNode     = controlStructureNode(forEachStmt, ControlStructureTypes.FOR, forEachStmt.code)
+    val iterableAst     = astForNode(forEachStmt.json(ParserKeys.Expression))
+    val forEachBlockAst = astForBlock(createDotNetNodeInfo(forEachStmt.json(ParserKeys.Statement)))
+
+    val identifierValue = forEachStmt.json(ParserKeys.Identifier)(ParserKeys.Value).str
+    val _identifierNode =
+      identifierNode(
+        node = createDotNetNodeInfo(forEachStmt.json(ParserKeys.Type)),
+        name = identifierValue,
+        code = identifierValue,
+        typeFullName = nodeTypeFullName(createDotNetNodeInfo(forEachStmt.json(ParserKeys.Type)))
+      )
+
+    val iteratorVarAst = Ast(_identifierNode)
+
+    Seq(Ast(forEachNode).withChild(iteratorVarAst).withChildren(iterableAst).withChild(forEachBlockAst))
   }
 
   private def astForElseStatement(elseParserNode: DotNetNodeInfo): Ast = {
