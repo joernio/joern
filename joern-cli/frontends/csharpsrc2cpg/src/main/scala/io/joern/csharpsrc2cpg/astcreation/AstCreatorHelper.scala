@@ -14,6 +14,12 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def createDotNetNodeInfo(json: Value): DotNetNodeInfo =
     AstCreatorHelper.createDotNetNodeInfo(json, Option(this.relativeFileName))
 
+  protected def nullSafeCreateParserNodeInfo(json: Option[Value]): DotNetNodeInfo = {
+    json match
+      case Some(value) if !value.isNull => createDotNetNodeInfo(value)
+      case _                            => DotNetNodeInfo(DotNetJsonAst.Unknown, ujson.Null, "", None, None, None, None)
+  }
+
   def createCallNodeForOperator(
     node: DotNetNodeInfo,
     operatorMethod: String,
