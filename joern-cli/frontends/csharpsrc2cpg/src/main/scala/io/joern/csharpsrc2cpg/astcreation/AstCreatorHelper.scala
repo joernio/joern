@@ -74,9 +74,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         // TODO: Look at scope object for possible types
         Defines.Any
       case PredefinedType =>
-        node.code match
-          case "int" => BuiltinTypes.DotNetTypeMap(BuiltinTypes.Int)
-          case _     => Defines.Any
+        BuiltinTypes.DotNetTypeMap.getOrElse(node.code, Defines.Any)
       case _ =>
         Try(createDotNetNodeInfo(node.json(ParserKeys.Type))) match
           case Success(typeNode) =>
