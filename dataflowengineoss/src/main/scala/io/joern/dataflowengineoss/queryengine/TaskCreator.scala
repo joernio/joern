@@ -99,14 +99,8 @@ class TaskCreator(context: EngineContext) {
     * If not, then caching these lookups or keeping a map of all method names to their references may make sense.
     */
 
-  private def paramToMethodRefCallReceivers(param: MethodParameterIn): List[Expression] = {
-    val cpg = new Cpg(param.graph)
-    val x = cpg.methodRef
-    
-    
-//    new Cpg(param.graph).methodRef.methodFullNameExact(param.method.fullName).inCall.argument(0).l
-    ???
-  }
+  private def paramToMethodRefCallReceivers(param: MethodParameterIn): List[Expression] =
+    new Cpg(param.graph).methodRef.methodFullNameExact(param.method.fullName).inCall.argument(0).l
 
   /** Create new tasks from all results that end in an output argument, including return arguments. In this case, we
     * want to traverse to corresponding method output parameters and method return nodes respectively.

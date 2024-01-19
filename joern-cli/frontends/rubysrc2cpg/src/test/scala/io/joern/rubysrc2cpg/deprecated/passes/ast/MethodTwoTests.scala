@@ -57,8 +57,8 @@ class MethodTwoTests extends RubyCode2CpgFixture(useDeprecatedFrontend = true) {
 
     // TODO: Need to be fixed
     "test function method ref" ignore {
-      cpg.methodRef("foo").referencedMethod.fullName.l should not be empty
-      cpg.methodRef("foo").referencedMethod.fullName.head shouldBe
+      cpg.methodRefWithName("foo").referencedMethod.fullName.l should not be empty
+      cpg.methodRefWithName("foo").referencedMethod.fullName.head shouldBe
         "Test0.rb::program:foo"
     }
 
