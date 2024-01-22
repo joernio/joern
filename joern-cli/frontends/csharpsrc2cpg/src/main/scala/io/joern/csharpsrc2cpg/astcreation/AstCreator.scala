@@ -73,6 +73,7 @@ class AstCreator(val relativeFileName: String, val parserResult: ParserResult, v
       case CatchClause               => astForCatchClause(nodeInfo)
       case CatchDeclaration          => astForCatchDeclaration(nodeInfo)
       case _: LiteralExpr            => astForLiteralExpression(nodeInfo)
+      case _: BaseExpr               => astForExpression(nodeInfo)
       case _                         => notHandledYet(nodeInfo)
     }
   }

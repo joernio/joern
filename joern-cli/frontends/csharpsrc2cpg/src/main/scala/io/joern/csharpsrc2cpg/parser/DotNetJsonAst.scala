@@ -148,6 +148,14 @@ object DotNetJsonAst {
 
   object ForEachStatement extends BaseStmt
 
+  object ForStatement extends BaseStmt
+
+  object DoStatement extends BaseStmt
+
+  object WhileStatement extends BaseStmt
+
+  object Unknown extends DotNetParserNode
+
 }
 
 /** The JSON key values, in alphabetical order.
@@ -171,6 +179,7 @@ object ParserKeys {
   val Finally       = "Finally"
   val FileName      = "FileName"
   val Identifier    = "Identifier"
+  val Incrementors  = "Incrementors"
   val Initializer   = "Initializer"
   val Keyword       = "Keyword"
   val Kind          = "Kind"
