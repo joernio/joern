@@ -4,7 +4,14 @@ import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetJsonAst, DotNetNodeInfo, ParserKeys}
 import io.joern.csharpsrc2cpg.{Constants, astcreation}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewIdentifier}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  DeclarationNew,
+  NewCall,
+  NewIdentifier,
+  NewLocal,
+  NewMethodParameterIn,
+  NewNode
+}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, PropertyNames}
 import ujson.Value
 
@@ -65,6 +72,17 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   protected def nameFromNode(identifierNode: DotNetNodeInfo): String = AstCreatorHelper.nameFromNode(identifierNode)
+
+  protected def identifierFromDecl(decl: DeclarationNew, dotNetNode: Option[DotNetNodeInfo] = None): NewIdentifier = {
+    decl match
+      case x: NewLocal =>
+        identifierNode(dotNetNode.orNull, x.name, x.code, x.typeFullName, x.dynamicTypeHintFullName)
+      case x: NewMethodParameterIn =>
+        identifierNode(dotNetNode.orNull, x.name, x.code, x.typeFullName, x.dynamicTypeHintFullName)
+      case x =>
+        logger.warn(s"Unhandled declaration type '${x.label()}' for ${x.name}")
+        identifierNode(dotNetNode.orNull, x.name, x.name, Defines.Any)
+  }
 
   // TODO: Use type map to try resolve full name
   protected def nodeTypeFullName(node: DotNetNodeInfo): String = {
