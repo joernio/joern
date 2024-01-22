@@ -19,7 +19,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case _: BinaryExpr        => astForBinaryExpression(expr)
       case _: LiteralExpr       => astForLiteralExpression(expr)
       case InvocationExpression => astForInvocationExpression(expr)
-      case _: IdentifierNode    => astForIdentifier(expressionNode) :: Nil
+      case _: IdentifierNode    => astForIdentifier(expr) :: Nil
       case _                    => notHandledYet(expr)
   }
 
