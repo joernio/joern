@@ -8,15 +8,19 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewMethodParameterIn
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  def astForExpression(expr: DotNetNodeInfo): Seq[Ast] = {
+  def astForExpressionStatement(expr: DotNetNodeInfo): Seq[Ast] = {
     val expressionNode = createDotNetNodeInfo(expr.json(ParserKeys.Expression))
-    expressionNode.node match
-      case _: UnaryExpr         => astForUnaryExpression(expressionNode)
-      case _: BinaryExpr        => astForBinaryExpression(expressionNode)
-      case _: LiteralExpr       => astForLiteralExpression(expressionNode)
-      case InvocationExpression => astForInvocationExpression(expressionNode)
+    astForExpression(expressionNode)
+  }
+
+  def astForExpression(expr: DotNetNodeInfo): Seq[Ast] = {
+    expr.node match
+      case _: UnaryExpr         => astForUnaryExpression(expr)
+      case _: BinaryExpr        => astForBinaryExpression(expr)
+      case _: LiteralExpr       => astForLiteralExpression(expr)
+      case InvocationExpression => astForInvocationExpression(expr)
       case _: IdentifierNode    => astForIdentifier(expressionNode) :: Nil
-      case _                    => notHandledYet(expressionNode)
+      case _                    => notHandledYet(expr)
   }
 
   protected def astForLiteralExpression(_literalNode: DotNetNodeInfo): Seq[Ast] = {
@@ -152,7 +156,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .json(ParserKeys.Arguments)
       .arr
       .map(createDotNetNodeInfo)
-      .flatMap(astForExpression)
+      .flatMap(astForExpressionStatement)
       .toSeq
   }
 
