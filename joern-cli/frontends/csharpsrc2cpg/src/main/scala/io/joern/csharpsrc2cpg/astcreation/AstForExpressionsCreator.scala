@@ -1,7 +1,7 @@
 package io.joern.csharpsrc2cpg.astcreation
 
 import io.joern.csharpsrc2cpg.CSharpOperators
-import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
+import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.{IdentifierNode, *}
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethodParameterIn
@@ -15,6 +15,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case _: BinaryExpr        => astForBinaryExpression(expressionNode)
       case _: LiteralExpr       => astForLiteralExpression(expressionNode)
       case InvocationExpression => astForInvocationExpression(expressionNode)
+      case _: IdentifierNode    => astForIdentifier(expressionNode) :: Nil
       case _                    => notHandledYet(expressionNode)
   }
 
