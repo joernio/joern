@@ -14,7 +14,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
       val variableOption = scope.lookupVariable(identifierName)
       variableOption match
         case Some(variable) =>
-          val node = identifierFromDecl(variable)
+          val node = identifierFromDecl(variable, Option(ident))
           Ast(node).withRefEdge(node, variable)
         case _ =>
           Ast(identifierNode(ident, identifierName, ident.code, typeFullName))
