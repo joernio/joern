@@ -1312,6 +1312,7 @@ class TypeRecoveryPassTests extends PySrc2CpgFixture(withOssDataflow = false) {
           |    return fake_users_db
           |
           |@admin_router.get("/admin")
+          |async def read_admin():
           |    return fake_admins_db
           |
           |""".stripMargin,
