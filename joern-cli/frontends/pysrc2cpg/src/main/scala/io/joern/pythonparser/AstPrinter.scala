@@ -15,6 +15,14 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
     indentStr + printStr.replaceAll(ls, ls + indentStr)
   }
 
+  private def printTypeParams(typeParams: CollType[itypeParam]): String = {
+    if (typeParams.nonEmpty) {
+      "[" + typeParams.map(print).mkString(", ") + "]"
+    } else {
+      ""
+    }
+  }
+
   override def visit(ast: iast): String = ???
 
   override def visit(mod: imod): String = ???
@@ -27,7 +35,7 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
 
   override def visit(functionDef: FunctionDef): String = {
     functionDef.decorator_list.map(d => "@" + print(d) + ls).mkString("") +
-      "def " + functionDef.name + "(" + print(functionDef.args) + ")" +
+      "def " + functionDef.name + printTypeParams(functionDef.type_params) + "(" + print(functionDef.args) + ")" +
       functionDef.returns.map(r => " -> " + print(r)).getOrElse("") +
       ":" + functionDef.body.map(printIndented).mkString(ls, ls, "")
 
@@ -35,7 +43,7 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
 
   override def visit(functionDef: AsyncFunctionDef): String = {
     functionDef.decorator_list.map(d => "@" + print(d) + ls).mkString("") +
-      "async def " + functionDef.name + "(" + print(functionDef.args) + ")" +
+      "async def " + functionDef.name + printTypeParams(functionDef.type_params) + "(" + print(functionDef.args) + ")" +
       functionDef.returns.map(r => " -> " + print(r)).getOrElse("") +
       ":" + functionDef.body.map(printIndented).mkString(ls, ls, "")
 
@@ -45,7 +53,7 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
     val optionArgEndComma = if (classDef.bases.nonEmpty && classDef.keywords.nonEmpty) ", " else ""
 
     classDef.decorator_list.map(d => "@" + print(d) + ls).mkString("") +
-      "class " + classDef.name +
+      "class " + classDef.name + printTypeParams(classDef.type_params) +
       "(" +
       classDef.bases.map(print).mkString(", ") +
       optionArgEndComma +
@@ -64,6 +72,10 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
 
   override def visit(assign: Assign): String = {
     assign.targets.map(print).mkString("", " = ", " = ") + print(assign.value)
+  }
+
+  override def visit(typeAlias: TypeAlias): String = {
+    "type " + print(typeAlias.name) + printTypeParams(typeAlias.type_params) + " = " + print(typeAlias.value)
   }
 
   override def visit(annAssign: AnnAssign): String = {
@@ -753,5 +765,17 @@ class AstPrinter(indentStr: String) extends AstVisitor[String] {
 
   override def visit(typeIgnore: TypeIgnore): String = {
     typeIgnore.tag
+  }
+
+  override def visit(typeVar: TypeVar): String = {
+    typeVar.name + typeVar.bound.map(b => ": " + print(b)).getOrElse("")
+  }
+
+  override def visit(paramSpec: ParamSpec): String = {
+    "**" + paramSpec.name
+  }
+
+  override def visit(typeVarTuple: TypeVarTuple): String = {
+    "*" + typeVarTuple.name
   }
 }

@@ -3,6 +3,7 @@ package io.joern.swiftsrc2cpg.astcreation
 import io.joern.swiftsrc2cpg.datastructures.*
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.AccessorDeclSyntax
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.CodeBlockItemSyntax
+import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.DeferStmtSyntax
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.DeinitializerDeclSyntax
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.FunctionDeclSyntax
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.GuardStmtSyntax
@@ -45,23 +46,28 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   protected def astsForBlockElements(elements: List[SwiftNode]): List[Ast] = {
-    val indexOfGuardStmt = elements.indexWhere(n =>
+    val (deferElements: List[SwiftNode], otherElements: List[SwiftNode]) = elements.partition(n =>
+      n.isInstanceOf[CodeBlockItemSyntax] && n.asInstanceOf[CodeBlockItemSyntax].item.isInstanceOf[DeferStmtSyntax]
+    )
+    val deferElementsAstsOrdered = deferElements.reverse.map(astForNode)
+    val indexOfGuardStmt = otherElements.indexWhere(n =>
       n.isInstanceOf[CodeBlockItemSyntax] && n.asInstanceOf[CodeBlockItemSyntax].item.isInstanceOf[GuardStmtSyntax]
     )
     if (indexOfGuardStmt < 0) {
-      val childrenAsts = elements.map(astForNode)
+      val childrenAsts = otherElements.map(astForNode) ++ deferElementsAstsOrdered
       setArgumentIndices(childrenAsts)
       childrenAsts
     } else {
-      val elementsBeforeGuard = elements.slice(0, indexOfGuardStmt)
-      val guardStmt = elements(indexOfGuardStmt).asInstanceOf[CodeBlockItemSyntax].item.asInstanceOf[GuardStmtSyntax]
-      val elementsAfterGuard = elements.slice(indexOfGuardStmt + 1, elements.size)
+      val elementsBeforeGuard = otherElements.slice(0, indexOfGuardStmt)
+      val guardStmt =
+        otherElements(indexOfGuardStmt).asInstanceOf[CodeBlockItemSyntax].item.asInstanceOf[GuardStmtSyntax]
+      val elementsAfterGuard = otherElements.slice(indexOfGuardStmt + 1, otherElements.size)
 
       val code         = this.code(guardStmt)
       val ifNode       = controlStructureNode(guardStmt, ControlStructureTypes.IF, code)
       val conditionAst = astForNode(guardStmt.conditions)
 
-      val thenAst = astsForBlockElements(elementsAfterGuard) match {
+      val thenAst = astsForBlockElements(elementsAfterGuard) ++ deferElementsAstsOrdered match {
         case Nil => Ast()
         case blockElement :: Nil =>
           setOrderExplicitly(blockElement, 2)

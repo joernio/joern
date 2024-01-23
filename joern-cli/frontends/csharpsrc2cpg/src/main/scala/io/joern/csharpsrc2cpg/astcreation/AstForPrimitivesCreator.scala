@@ -13,8 +13,8 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     if identifierName != "_" then {
       val variableOption = scope.lookupVariable(identifierName)
       variableOption match
-        case Some(variable: NewLocal) =>
-          val node = identifierNode(ident, identifierName, ident.code, variable.typeFullName)
+        case Some(variable) =>
+          val node = identifierFromDecl(variable, Option(ident))
           Ast(node).withRefEdge(node, variable)
         case _ =>
           Ast(identifierNode(ident, identifierName, ident.code, typeFullName))

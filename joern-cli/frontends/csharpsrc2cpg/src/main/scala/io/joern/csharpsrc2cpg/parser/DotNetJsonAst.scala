@@ -130,6 +130,10 @@ object DotNetJsonAst {
 
   object SimpleMemberAccessExpression extends MemberAccessExpr
 
+  object IfStatement extends BaseStmt
+
+  object ElseClause extends ClauseExpr
+
   object ThrowStatement extends BaseStmt
 
   object ObjectCreationExpression extends BaseExpr
@@ -141,6 +145,16 @@ object DotNetJsonAst {
   object CatchClause extends ClauseExpr
 
   object FinallyClause extends ClauseExpr
+
+  object ForEachStatement extends BaseStmt
+
+  object ForStatement extends BaseStmt
+
+  object DoStatement extends BaseStmt
+
+  object WhileStatement extends BaseStmt
+
+  object Unknown extends DotNetParserNode
 
 }
 
@@ -157,12 +171,15 @@ object ParserKeys {
   val Code          = "Code"
   val ColumnStart   = "ColumnStart"
   val ColumnEnd     = "ColumnEnd"
+  val Condition     = "Condition"
   val Declaration   = "Declaration"
   val ElementType   = "ElementType"
+  val Else          = "Else"
   val Expression    = "Expression"
   val Finally       = "Finally"
   val FileName      = "FileName"
   val Identifier    = "Identifier"
+  val Incrementors  = "Incrementors"
   val Initializer   = "Initializer"
   val Keyword       = "Keyword"
   val Kind          = "Kind"
@@ -185,5 +202,4 @@ object ParserKeys {
   val Usings        = "Usings"
   val Value         = "Value"
   val Variables     = "Variables"
-
 }

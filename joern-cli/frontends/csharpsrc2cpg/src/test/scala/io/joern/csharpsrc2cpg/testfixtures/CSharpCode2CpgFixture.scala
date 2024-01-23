@@ -57,6 +57,11 @@ class CSharpCode2CpgFixture(
 
 class DefaultTestCpgWithCSharp extends DefaultTestCpg with CSharpFrontend with SemanticTestCpg {
 
+  override def applyPasses(): Unit = {
+    super.applyPasses()
+    applyOssDataFlow()
+  }
+
   override def applyPostProcessingPasses(): Unit = {
     CSharpSrc2Cpg.postProcessingPasses(this, config).foreach(_.createAndApply())
     super.applyPostProcessingPasses()

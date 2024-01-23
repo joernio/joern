@@ -1,16 +1,20 @@
-package org.eclipse.cdt.internal.core.parser.scanner
+package io.joern.c2cpg.astcreation
 
-import org.eclipse.cdt.core.dom.ast.{
-  IASTFileLocation,
-  IASTName,
-  IASTPreprocessorElifStatement,
-  IASTPreprocessorIfStatement,
-  IASTPreprocessorMacroExpansion,
-  IASTTranslationUnit
-}
+import org.eclipse.cdt.core.dom.ast.IASTFileLocation
+import org.eclipse.cdt.core.dom.ast.IASTName
+import org.eclipse.cdt.core.dom.ast.IASTPreprocessorElifStatement
+import org.eclipse.cdt.core.dom.ast.IASTPreprocessorIfStatement
+import org.eclipse.cdt.core.dom.ast.IASTPreprocessorMacroExpansion
+import org.eclipse.cdt.core.dom.ast.IASTTranslationUnit
 import org.eclipse.cdt.core.parser.IToken
 import org.eclipse.cdt.core.parser.util.CharArrayMap
+import org.eclipse.cdt.internal.core.parser.scanner.ILexerLog
+import org.eclipse.cdt.internal.core.parser.scanner.ILocationResolver
 import org.eclipse.cdt.internal.core.parser.scanner.Lexer.LexerOptions
+import org.eclipse.cdt.internal.core.parser.scanner.MacroExpander
+import org.eclipse.cdt.internal.core.parser.scanner.MacroExpansionTracker
+import org.eclipse.cdt.internal.core.parser.scanner.PreprocessorMacro
+import org.eclipse.cdt.internal.core.parser.scanner.TokenList
 
 import scala.annotation.nowarn
 import scala.collection.mutable
@@ -25,8 +29,6 @@ import scala.collection.mutable
   * `setExpandedMacroArgument`, we can intercept arguments and store them in a list for later retrieval. We wrap this
   * rather complicated way of accessing the macro arguments in the single public method `getArguments` of the
   * `MacroArgumentExtractor`.
-  *
-  * This class must be in this package in order to have access to `PreprocessorMacro`.
   */
 class MacroArgumentExtractor(tu: IASTTranslationUnit, loc: IASTFileLocation) {
 

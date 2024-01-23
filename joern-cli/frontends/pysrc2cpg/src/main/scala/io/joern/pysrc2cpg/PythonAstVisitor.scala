@@ -184,6 +184,7 @@ class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode
       case node: ast.Return           => convert(node)
       case node: ast.Delete           => convert(node)
       case node: ast.Assign           => convert(node)
+      case node: ast.TypeAlias        => unhandled(node)
       case node: ast.AnnAssign        => convert(node)
       case node: ast.AugAssign        => convert(node)
       case node: ast.For              => convert(node)

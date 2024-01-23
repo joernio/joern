@@ -37,8 +37,19 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     astForListLikeExpr(node, node.elements.children)
   }
 
-  private def astForArrowExprSyntax(node: ArrowExprSyntax): Ast                   = notHandledYet(node)
-  private def astForAsExprSyntax(node: AsExprSyntax): Ast                         = notHandledYet(node)
+  private def astForArrowExprSyntax(node: ArrowExprSyntax): Ast = notHandledYet(node)
+
+  private def astForAsExprSyntax(node: AsExprSyntax): Ast = {
+    val op        = Operators.cast
+    val typ       = code(node.`type`)
+    val lhsNode   = node.`type`
+    val lhsAst    = Ast(literalNode(lhsNode, code(lhsNode), None).dynamicTypeHintFullName(Seq(typ)))
+    val rhsAst    = astForNodeWithFunctionReference(node.expression)
+    val callNode_ = callNode(node, code(node), op, DispatchTypes.STATIC_DISPATCH).dynamicTypeHintFullName(Seq(typ))
+    val argAsts   = List(lhsAst, rhsAst)
+    callAst(callNode_, argAsts)
+  }
+
   private def astForAssignmentExprSyntax(node: AssignmentExprSyntax): Ast         = notHandledYet(node)
   private def astForAwaitExprSyntax(node: AwaitExprSyntax): Ast                   = notHandledYet(node)
   private def astForBinaryOperatorExprSyntax(node: BinaryOperatorExprSyntax): Ast = notHandledYet(node)
@@ -371,7 +382,15 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     callAst(call, children)
   }
 
-  private def astForTryExprSyntax(node: TryExprSyntax): Ast = notHandledYet(node)
+  private def astForTryExprSyntax(node: TryExprSyntax): Ast = {
+    val tryNode = controlStructureNode(node, ControlStructureTypes.TRY, code(node))
+    val bodyAst = astForNode(node.expression)
+    // The semantics of try statement children is defined by their order value.
+    // Thus we set the here explicitly and do not rely on the usual consecutive
+    // ordering.
+    setOrderExplicitly(bodyAst, 1)
+    Ast(tryNode).withChild(bodyAst)
+  }
 
   private def astForTupleExprSyntax(node: TupleExprSyntax): Ast = {
     node.elements.children.toList match {

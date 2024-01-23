@@ -34,7 +34,7 @@ class AstCreationPass(config: Config, cpg: Cpg, parser: PhpParser)(implicit with
     } else {
       File(config.inputPath).relativize(File(filename)).toString
     }
-    parser.parseFile(filename, config.phpIni) match {
+    parser.parseFile(filename) match {
       case Some(parseResult) =>
         diffGraph.absorb(new AstCreator(relativeFilename, parseResult)(config.schemaValidation).createAst())
 

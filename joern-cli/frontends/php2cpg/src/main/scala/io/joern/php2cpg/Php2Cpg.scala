@@ -20,21 +20,23 @@ import io.shiftleft.codepropertygraph.generated.Languages
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
-import scala.util.{Failure, Try, Success}
+import scala.util.{Failure, Success, Try}
 import scala.util.matching.Regex
 
 class Php2Cpg extends X2CpgFrontend[Config] {
+
   private val logger = LoggerFactory.getLogger(this.getClass)
 
+  // PHP 7.1.0 and above is required by Composer, which is used by PHP Parser
+  private val PhpVersionRegex = new Regex("^PHP ([78]\\.[1-9]\\.[0-9]|[9-9]\\d\\.\\d\\.\\d)")
+
   private def isPhpVersionSupported: Boolean = {
-    // PHP 7.1.0 and above is required by Composer, which is used by PHP Parser
-    val phpVersionRegex = new Regex("^PHP ([78]\\.[1-9]\\.[0-9]|[9-9]\\d\\.\\d\\.\\d)")
-    val result          = ExternalCommand.run("php --version", ".")
+    val result = ExternalCommand.run("php --version", ".")
     result match {
       case Success(listString) =>
         val phpVersionStr = listString.headOption.getOrElse("")
         logger.info(s"Checking PHP installation: $phpVersionStr")
-        val matchResult = phpVersionRegex.findFirstIn(phpVersionStr)
+        val matchResult = PhpVersionRegex.findFirstIn(phpVersionStr)
         matchResult.isDefined
       case Failure(exception) =>
         logger.error(s"Failed to run php --version: ${exception.getMessage}")

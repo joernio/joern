@@ -50,8 +50,15 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   )
   private def astForBackDeployedAttributeArgumentsSyntax(node: BackDeployedAttributeArgumentsSyntax): Ast =
     notHandledYet(node)
-  private def astForCatchClauseSyntax(node: CatchClauseSyntax): Ast                             = notHandledYet(node)
-  private def astForCatchItemSyntax(node: CatchItemSyntax): Ast                                 = notHandledYet(node)
+
+  private def astForCatchClauseSyntax(node: CatchClauseSyntax): Ast = {
+    astForListSyntaxChildren(node, List(node.catchItems, node.body))
+  }
+
+  private def astForCatchItemSyntax(node: CatchItemSyntax): Ast = {
+    astForListSyntaxChildren(node, node.pattern.toList ++ node.whereClause.toList)
+  }
+
   private def astForClosureCaptureClauseSyntax(node: ClosureCaptureClauseSyntax): Ast           = notHandledYet(node)
   private def astForClosureCaptureSpecifierSyntax(node: ClosureCaptureSpecifierSyntax): Ast     = notHandledYet(node)
   private def astForClosureCaptureSyntax(node: ClosureCaptureSyntax): Ast                       = notHandledYet(node)

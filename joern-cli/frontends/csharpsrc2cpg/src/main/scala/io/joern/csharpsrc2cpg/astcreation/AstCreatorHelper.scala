@@ -4,7 +4,14 @@ import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetJsonAst, DotNetNodeInfo, ParserKeys}
 import io.joern.csharpsrc2cpg.{Constants, astcreation}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewIdentifier}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  DeclarationNew,
+  NewCall,
+  NewIdentifier,
+  NewLocal,
+  NewMethodParameterIn,
+  NewNode
+}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, PropertyNames}
 import ujson.Value
 
@@ -13,6 +20,15 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   protected def createDotNetNodeInfo(json: Value): DotNetNodeInfo =
     AstCreatorHelper.createDotNetNodeInfo(json, Option(this.relativeFileName))
+
+  protected def nullSafeCreateParserNodeInfo(json: Option[Value]): DotNetNodeInfo = {
+    json match
+      case Some(value) if !value.isNull => createDotNetNodeInfo(value)
+      case _ => {
+        logger.warn("Key not found in json. Defaulting to a null node.")
+        DotNetNodeInfo(DotNetJsonAst.Unknown, ujson.Null, "", None, None, None, None)
+      }
+  }
 
   def createCallNodeForOperator(
     node: DotNetNodeInfo,
@@ -57,6 +73,17 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   protected def nameFromNode(identifierNode: DotNetNodeInfo): String = AstCreatorHelper.nameFromNode(identifierNode)
 
+  protected def identifierFromDecl(decl: DeclarationNew, dotNetNode: Option[DotNetNodeInfo] = None): NewIdentifier = {
+    decl match
+      case x: NewLocal =>
+        identifierNode(dotNetNode.orNull, x.name, x.code, x.typeFullName, x.dynamicTypeHintFullName)
+      case x: NewMethodParameterIn =>
+        identifierNode(dotNetNode.orNull, x.name, x.code, x.typeFullName, x.dynamicTypeHintFullName)
+      case x =>
+        logger.warn(s"Unhandled declaration type '${x.label()}' for ${x.name}")
+        identifierNode(dotNetNode.orNull, x.name, x.name, Defines.Any)
+  }
+
   // TODO: Use type map to try resolve full name
   protected def nodeTypeFullName(node: DotNetNodeInfo): String = {
     node.node match
@@ -73,6 +100,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case IdentifierName                                 =>
         // TODO: Look at scope object for possible types
         Defines.Any
+      case PredefinedType =>
+        BuiltinTypes.DotNetTypeMap.getOrElse(node.code, Defines.Any)
       case _ =>
         Try(createDotNetNodeInfo(node.json(ParserKeys.Type))) match
           case Success(typeNode) =>

@@ -1,28 +1,33 @@
 package io.joern.csharpsrc2cpg.astcreation
 
 import io.joern.csharpsrc2cpg.CSharpOperators
-import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
+import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.{IdentifierNode, *}
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethodParameterIn
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  def astForExpression(expr: DotNetNodeInfo): Seq[Ast] = {
+  def astForExpressionStatement(expr: DotNetNodeInfo): Seq[Ast] = {
     val expressionNode = createDotNetNodeInfo(expr.json(ParserKeys.Expression))
-    expressionNode.node match
-      case _: UnaryExpr         => astForUnaryExpression(expressionNode)
-      case _: BinaryExpr        => astForBinaryExpression(expressionNode)
-      case _: LiteralExpr       => astForLiteralExpression(expressionNode)
-      case InvocationExpression => astForInvocationExpression(expressionNode)
-      case _                    => notHandledYet(expressionNode)
+    astForExpression(expressionNode)
+  }
+
+  def astForExpression(expr: DotNetNodeInfo): Seq[Ast] = {
+    expr.node match
+      case _: UnaryExpr         => astForUnaryExpression(expr)
+      case _: BinaryExpr        => astForBinaryExpression(expr)
+      case _: LiteralExpr       => astForLiteralExpression(expr)
+      case InvocationExpression => astForInvocationExpression(expr)
+      case _: IdentifierNode    => astForIdentifier(expr) :: Nil
+      case _                    => notHandledYet(expr)
   }
 
   protected def astForLiteralExpression(_literalNode: DotNetNodeInfo): Seq[Ast] = {
     Seq(Ast(literalNode(_literalNode, code(_literalNode), nodeTypeFullName(_literalNode))))
   }
 
-  private def astForUnaryExpression(unaryExpr: DotNetNodeInfo): Seq[Ast] = {
+  protected def astForUnaryExpression(unaryExpr: DotNetNodeInfo): Seq[Ast] = {
     val operatorToken = unaryExpr.json(ParserKeys.OperatorToken)(ParserKeys.Value).str
     val operatorName = operatorToken match
       case "+" => Operators.plus
@@ -41,9 +46,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val argsAst = astForNode(args)
     Seq(
       callAst(createCallNodeForOperator(unaryExpr, operatorName, typeFullName = Some(nodeTypeFullName(args))), argsAst)
-    ) // TODO: typeFullName
+    )
   }
-  private def astForBinaryExpression(binaryExpr: DotNetNodeInfo): Seq[Ast] = {
+
+  protected def astForBinaryExpression(binaryExpr: DotNetNodeInfo): Seq[Ast] = {
     val operatorToken = binaryExpr.json(ParserKeys.OperatorToken)(ParserKeys.Value).str
     val operatorName = operatorToken match
       case "+"   => Operators.addition
@@ -150,7 +156,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .json(ParserKeys.Arguments)
       .arr
       .map(createDotNetNodeInfo)
-      .flatMap(astForExpression)
+      .flatMap(astForExpressionStatement)
       .toSeq
   }
 
