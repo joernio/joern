@@ -11,7 +11,7 @@ import overflowdb.traversal.jIteratortoTraversal
 import overflowdb.traversal.toNodeTraversal
 
 class NewCallTests extends JavaSrcCode2CpgFixture {
-
+  
   "calls to imported nested classes should be resolved" in {
     lazy val cpg = code("""
       |import foo.Foo.Bar;

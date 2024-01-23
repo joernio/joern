@@ -7,6 +7,130 @@ import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 
 class NewConstructorInvocationTests extends JavaSrcCode2CpgFixture {
+  // TODO: chained constructor invocations on object instances
+  "chained constructor invocations" should {
+    "have the correct methodFullName for explicit resolved invocations" in {
+      val cpg = code("""
+          |package foo;
+          |
+          |class Foo {
+          |  class Bar {}
+          |
+          |  public static void main(String[] args) {
+          |    Bar b = new Foo().new Bar();
+          |  }
+          |}
+          |""".stripMargin)
+
+      cpg.call.nameExact("<init>").methodFullName.toSet shouldBe Set(
+        "foo.Foo.<init>:void()",
+        "foo.Foo$Bar.<init>:void()"
+      )
+    }
+
+    "have the correct methodFullName for constructors on a resolved returned object" in {
+      val cpg = code("""
+          |package foo;
+          |
+          |class Foo {
+          |  class Bar {}
+          |
+          |  static Foo getFoo() {
+          |    return new Foo();
+          |  }
+          |
+          |  public static void main(String[] args) {
+          |    Bar b = getFoo().new Bar();
+          |  }
+          |}
+          |""".stripMargin)
+
+      cpg.call.nameExact("<init>").methodFullName.toSet shouldBe Set(
+        "foo.Foo.<init>:void()",
+        "foo.Foo$Bar.<init>:void()"
+      )
+    }
+
+    "have the correct methodFullName for explicit invocations resolved through imports" in {
+      val cpg = code("""
+          |package test;
+          |
+          |import foo.Foo;
+          |
+          |class Test {
+          |  public static void main(String[] args) {
+          |    Bar b = new Foo().new Bar();
+          |  }
+          |}
+          |""".stripMargin)
+      cpg.call.nameExact("<init>").methodFullName.toSet shouldBe Set(
+        "foo.Foo.<init>:void()",
+        "foo.Foo$Bar.<init>:void()"
+      )
+    }
+
+    "have the correct methodFullName for constructors on a returned object resolved through imports" in {
+      val cpg = code("""
+          |package foo;
+          |
+          |import foo.Foo;
+          |
+          |class Test {
+          |  static Foo getFoo() {
+          |    return new Foo();
+          |  }
+          |
+          |  public static void main(String[] args) {
+          |    Bar b = getFoo().new Bar();
+          |  }
+          |}
+          |
+          |""".stripMargin)
+      cpg.call.nameExact("<init>").methodFullName.toSet shouldBe Set(
+        "foo.Foo.<init>:void()",
+        "foo.Foo$Bar.<init>:void()"
+      )
+    }
+
+    "have the correct methodFullName for explicit unresolved invocations" in {
+      val cpg = code("""
+          |package test;
+          |
+          |class Test {
+          |  public static void main(String[] args) {
+          |    Bar b = new Foo().new Bar();
+          |  }
+          |}
+          |
+          |""".stripMargin)
+      cpg.call.nameExact("<init>").methodFullName.toSet shouldBe Set(
+        "<unresolvedNamespace>.Foo.<init>:void()",
+        "<unresolvedNamespace>.Foo$Bar.<init>:void()"
+      )
+    }
+
+    "have the correct methodFullName for constructors on a unresolved returned object" in {
+      val cpg = code("""
+          |package foo;
+          |
+          |class Test {
+          |  static Test getFoo() {
+          |    return new Foo();
+          |  }
+          |
+          |  public static void main(String[] args) {
+          |    Bar b = getFoo().new Bar();
+          |  }
+          |}
+          |
+          |""".stripMargin)
+      cpg.call.nameExact("<init>").methodFullName.toSet shouldBe Set(
+        "<unresolvedNamespace>.Foo.<init>:void()",
+        "<unresolvedNamespace>.Foo$Bar.<init>:void()"
+      )
+    }
+  }
+
   "constructor init method call" should {
     lazy val cpg = code("""
         |class Foo {
