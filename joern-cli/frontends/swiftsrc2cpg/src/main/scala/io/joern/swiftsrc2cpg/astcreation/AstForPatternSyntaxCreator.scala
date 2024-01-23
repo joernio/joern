@@ -12,7 +12,7 @@ trait AstForPatternSyntaxCreator(implicit withSchemaValidation: ValidationMode) 
   this: AstCreator =>
 
   private def astForExpressionPatternSyntax(node: ExpressionPatternSyntax): Ast = {
-    astForNode(node.expression)
+    astForNodeWithFunctionReference(node.expression)
   }
 
   private def astForIdentifierPatternSyntax(node: IdentifierPatternSyntax): Ast = {
