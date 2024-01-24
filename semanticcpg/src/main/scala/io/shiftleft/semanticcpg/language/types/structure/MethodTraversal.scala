@@ -171,4 +171,9 @@ class MethodTraversal(val traversal: Iterator[Method]) extends AnyVal {
 
   def numberOfLines: Iterator[Int] = traversal.map(_.numberOfLines)
 
+  @Doc(info = "File content section belonging to method definition")
+  def content: Iterator[String] = {
+    traversal.flatMap(_.content)
+  }
+
 }
