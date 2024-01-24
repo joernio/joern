@@ -44,15 +44,14 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def pathSep                            = "."
 
   protected def handleNewVariableOccurrence(node: RubyNode): Ast = {
-    val name = code(node)
+    val name       = code(node)
+    val identifier = identifierNode(node, name, name, Defines.Any)
     scope.lookupVariable(name) match
       case None =>
-        val local      = localNode(node, name, name, Defines.Any)
-        val identifier = identifierNode(node, name, name, Defines.Any)
+        val local = localNode(node, name, name, Defines.Any)
         scope.addToScope(name, local)
-        Ast(identifierNode(node, name, name, Defines.Any)).withRefEdge(identifier, local)
+        Ast(identifier).withRefEdge(identifier, local)
       case Some(local) =>
-        val identifier = identifierNode(node, name, name, Defines.Any)
         Ast(identifier).withRefEdge(identifier, local)
   }
 
