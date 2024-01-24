@@ -79,6 +79,18 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     UnlessExpression(condition, thenBody, elseBody)(ctx.toTextSpan)
   }
 
+  override def visitForExpression(ctx: RubyParser.ForExpressionContext): RubyNode = {
+    val forVariable      = visit(ctx.forVariable())
+    val iterableVariable = visit(ctx.commandOrPrimaryValue())
+    val doBlock          = visit(ctx.doClause())
+    ForExpression(forVariable, iterableVariable, doBlock)(ctx.toTextSpan)
+  }
+
+  override def visitForVariable(ctx: RubyParser.ForVariableContext): RubyNode = {
+    if (ctx.leftHandSide() != null) visit(ctx.leftHandSide())
+    else visit(ctx.multipleLeftHandSide())
+  }
+
   override def visitModifierStatement(ctx: RubyParser.ModifierStatementContext): RubyNode = {
     ctx.statementModifier().getText match
       case "if" =>

@@ -116,6 +116,9 @@ object RubyIntermediateAst {
     span: TextSpan
   ) extends RubyNode(span)
 
+  final case class ForExpression(forVariable: RubyNode, iterableVariable: RubyNode, doBlock: RubyNode)(span: TextSpan)
+      extends RubyNode(span)
+
   final case class ConditionalExpression(condition: RubyNode, trueBranch: RubyNode, falseBranch: RubyNode)(
     span: TextSpan
   ) extends RubyNode(span)

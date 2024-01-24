@@ -1,12 +1,13 @@
 package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.astcreation.GlobalTypes.{builtinFunctions, builtinPrefix}
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.RubyNode
+import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.joern.x2cpg.datastructures.Scope
 import io.joern.x2cpg.datastructures.Stack.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
 
-trait AstCreatorHelper { this: AstCreator =>
+trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   /* Used to track variable names and their LOCAL nodes.
    * TODO: Perhaps move this feature into a new Pass?
@@ -41,6 +42,18 @@ trait AstCreatorHelper { this: AstCreator =>
   protected def isBuiltin(x: String): Boolean      = builtinFunctions.contains(x)
   protected def prefixAsBuiltin(x: String): String = s"$builtinPrefix$pathSep$x"
   protected def pathSep                            = "."
+
+  protected def handleNewVariableOccurrence(node: RubyNode): Ast = {
+    val name       = code(node)
+    val identifier = identifierNode(node, name, name, Defines.Any)
+    scope.lookupVariable(name) match
+      case None =>
+        val local = localNode(node, name, name, Defines.Any)
+        scope.addToScope(name, local)
+        Ast(identifier).withRefEdge(identifier, local)
+      case Some(local) =>
+        Ast(identifier).withRefEdge(identifier, local)
+  }
 
   protected val UnaryOperatorNames: Map[String, String] = Map(
     "!"   -> Operators.logicalNot,
