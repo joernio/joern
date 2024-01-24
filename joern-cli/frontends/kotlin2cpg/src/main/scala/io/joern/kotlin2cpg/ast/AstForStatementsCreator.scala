@@ -280,7 +280,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
   ): Ast = {
     val conditionAst = astsForExpression(expr.getCondition, None).headOption
     val thenAsts     = astsForExpression(expr.getThen, None)
-    val elseAsts     = astsForExpression(expr.getElse, None)
+    val elseAsts     = Option(expr.getElse).toSeq.flatMap(astsForExpression(_, None))
 
     val node = controlStructureNode(expr, ControlStructureTypes.IF, expr.getText)
     controlStructureAst(node, conditionAst, List(thenAsts ++ elseAsts).flatten)
@@ -295,7 +295,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val conditionAsts = astsForExpression(expr.getCondition, None)
     val thenAsts      = astsForExpression(expr.getThen, None)
-    val elseAsts      = astsForExpression(expr.getElse, None)
+    val elseAsts      = Option(expr.getElse).toSeq.flatMap(astsForExpression(_, None))
 
     val allAsts = (conditionAsts ++ thenAsts ++ elseAsts).toList
     if (allAsts.nonEmpty) {
