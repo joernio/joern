@@ -13,14 +13,22 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     if identifierName != "_" then {
       val variableOption = scope.lookupVariable(identifierName)
       variableOption match
-        case Some(variable: NewLocal) =>
-          val node = identifierNode(ident, identifierName, ident.code, variable.typeFullName)
+        case Some(variable) =>
+          val node = identifierFromDecl(variable, Option(ident))
           Ast(node).withRefEdge(node, variable)
         case _ =>
           Ast(identifierNode(ident, identifierName, ident.code, typeFullName))
     } else {
       Ast()
     }
+  }
+
+  protected def astForUsing(usingNode: DotNetNodeInfo): Ast = {
+    val namespace  = nameFromNode(usingNode)
+    val alias      = namespace.split('.').last
+    val importNode = newImportNode(code(usingNode), namespace, alias, usingNode)
+    scope.addImport(namespace)
+    Ast(importNode)
   }
 
 }

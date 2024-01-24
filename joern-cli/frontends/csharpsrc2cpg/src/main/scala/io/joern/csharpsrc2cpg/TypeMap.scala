@@ -78,6 +78,11 @@ class TypeMap(astGenResult: AstGenRunnerResult, initialMappings: List[NamespaceT
     */
   def classesIn(namespace: String): Set[CSharpType] = namespaceToType.getOrElse(namespace, Set.empty)
 
+  /** For a class, will search for the associated namespace.
+    */
+  def namespaceFor(clazz: CSharpType): Option[String] =
+    namespaceToType.find { case (_, v) => v.contains(clazz) }.map(_._1)
+
   /** Parses a compilation unit and returns a mapping from all the contained namespaces and the immediate children
     * types.
     */

@@ -4,22 +4,17 @@ import io.circe.Json
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.{
   BinaryExpr,
   Block,
+  DoStatement,
   ExpressionStatement,
   ForEachStatement,
+  ForStatement,
   GlobalStatement,
   IfStatement,
   LiteralExpr,
   ThrowStatement,
   TryStatement,
-  UnaryExpr
-}
-import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.{
-  BinaryExpr,
-  Block,
-  GlobalStatement,
-  IfStatement,
-  LiteralExpr,
-  UnaryExpr
+  UnaryExpr,
+  WhileStatement
 }
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.{Ast, ValidationMode}
@@ -51,13 +46,68 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   protected def astForStatement(nodeInfo: DotNetNodeInfo): Seq[Ast] = {
     nodeInfo.node match
-      case ExpressionStatement => astForExpression(nodeInfo)
+      case ExpressionStatement => astForExpressionStatement(nodeInfo)
       case GlobalStatement     => astForGlobalStatement(nodeInfo)
       case IfStatement         => astForIfStatement(nodeInfo)
       case ThrowStatement      => astForThrowStatement(nodeInfo)
       case TryStatement        => astForTryStatement(nodeInfo)
       case ForEachStatement    => astForForEachStatement(nodeInfo)
+      case ForStatement        => astForForStatement(nodeInfo)
+      case DoStatement         => astForDoStatement(nodeInfo)
+      case WhileStatement      => astForWhileStatement(nodeInfo)
       case _                   => notHandledYet(nodeInfo)
+  }
+
+  private def astForWhileStatement(whileStmt: DotNetNodeInfo): Seq[Ast] = {
+    val whileBlock    = createDotNetNodeInfo(whileStmt.json(ParserKeys.Statement))
+    val whileBlockAst = astForBlock(whileBlock)
+
+    val condition    = createDotNetNodeInfo(whileStmt.json(ParserKeys.Condition))
+    val conditionAst = astForNode(condition)
+
+    val code = s"while (${condition.code})"
+
+    val whileNode = controlStructureNode(whileStmt, ControlStructureTypes.WHILE, code)
+
+    Seq(Ast(whileNode).withChild(whileBlockAst).withChildren(conditionAst))
+  }
+
+  private def astForDoStatement(doStmt: DotNetNodeInfo): Seq[Ast] = {
+    val doBlock    = createDotNetNodeInfo(doStmt.json(ParserKeys.Statement))
+    val doBlockAst = astForBlock(doBlock)
+
+    val condition    = createDotNetNodeInfo(doStmt.json(ParserKeys.Condition))
+    val conditionAst = astForNode(condition)
+
+    val code        = s"do {...} while (${condition.code})"
+    val doBlockNode = controlStructureNode(doStmt, ControlStructureTypes.DO, code)
+
+    Seq(Ast(doBlockNode).withChild(doBlockAst).withChildren(conditionAst))
+  }
+
+  private def astForForStatement(forStmt: DotNetNodeInfo): Seq[Ast] = {
+    val initNode        = nullSafeCreateParserNodeInfo(forStmt.json.obj.get(ParserKeys.Declaration))
+    val conditionNode   = nullSafeCreateParserNodeInfo(forStmt.json.obj.get(ParserKeys.Condition))
+    val incrementorNode = nullSafeCreateParserNodeInfo(forStmt.json(ParserKeys.Incrementors).arr.headOption)
+
+    val forBodyAst = astForBlock(createDotNetNodeInfo(forStmt.json(ParserKeys.Statement)))
+
+    val code = s"for (${initNode.code};${conditionNode.code};${incrementorNode.code})"
+    val forNode =
+      controlStructureNode(forStmt, ControlStructureTypes.FOR, code);
+
+    val initNodeAst    = astForNode(initNode)
+    val conditionAst   = astForNode(conditionNode)
+    val incrementorAst = astForNode(incrementorNode)
+
+    val _forAst = Ast(forNode)
+      .withChildren(initNodeAst)
+      .withChildren(conditionAst)
+      .withChildren(incrementorAst)
+      .withChild(forBodyAst)
+      .withConditionEdges(forNode, conditionAst.flatMap(_.root).toList)
+
+    Seq(_forAst)
   }
 
   private def astForForEachStatement(forEachStmt: DotNetNodeInfo): Seq[Ast] = {
