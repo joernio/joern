@@ -190,13 +190,13 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
     val allocNode = newOperatorCallNode(
       Operators.alloc,
       expr.toString,
-      typeFullName.orElse(Some(TypeConstants.Any)),
+      typeFullName,
       line(expr),
       column(expr)
     )
 
     val initCall = initNode(
-      typeFullName.orElse(Some(TypeConstants.Any)),
+      typeFullName,
       argumentTypes,
       argumentAsts.size,
       expr.toString,

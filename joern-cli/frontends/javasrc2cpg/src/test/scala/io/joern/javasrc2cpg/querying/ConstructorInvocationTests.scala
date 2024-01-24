@@ -7,7 +7,6 @@ import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 
 class NewConstructorInvocationTests extends JavaSrcCode2CpgFixture {
-  // TODO: chained constructor invocations on object instances
   "chained constructor invocations" should {
     "have the correct methodFullName for explicit resolved invocations" in {
       val cpg = code("""
@@ -22,7 +21,7 @@ class NewConstructorInvocationTests extends JavaSrcCode2CpgFixture {
           |}
           |""".stripMargin)
 
-      cpg.call.nameExact("<init>").methodFullName.toSet shouldBe Set(
+      cpg.call.nameExact("<init>").methodFullName.toList.sortBy(_.length) shouldBe List(
         "foo.Foo.<init>:void()",
         "foo.Foo$Bar.<init>:void()"
       )
@@ -45,7 +44,27 @@ class NewConstructorInvocationTests extends JavaSrcCode2CpgFixture {
           |}
           |""".stripMargin)
 
-      cpg.call.nameExact("<init>").methodFullName.toSet shouldBe Set(
+      cpg.call.nameExact("<init>").methodFullName.toList.sortBy(_.length) shouldBe List(
+        "foo.Foo.<init>:void()",
+        "foo.Foo$Bar.<init>:void()"
+      )
+    }
+
+    "have the correct methodFullName for constructors on a resolved object" in {
+      val cpg = code("""
+          |package foo;
+          |
+          |class Foo {
+          |  class Bar {}
+          |
+          |  public static void main(String[] args) {
+          |    Foo f = new Foo();
+          |    Bar b = f.new Bar();
+          |  }
+          |}
+          |""".stripMargin)
+
+      cpg.call.nameExact("<init>").methodFullName.toList.sortBy(_.length) shouldBe List(
         "foo.Foo.<init>:void()",
         "foo.Foo$Bar.<init>:void()"
       )
@@ -63,7 +82,7 @@ class NewConstructorInvocationTests extends JavaSrcCode2CpgFixture {
           |  }
           |}
           |""".stripMargin)
-      cpg.call.nameExact("<init>").methodFullName.toSet shouldBe Set(
+      cpg.call.nameExact("<init>").methodFullName.toList.sortBy(_.length) shouldBe List(
         "foo.Foo.<init>:void()",
         "foo.Foo$Bar.<init>:void()"
       )
@@ -71,7 +90,7 @@ class NewConstructorInvocationTests extends JavaSrcCode2CpgFixture {
 
     "have the correct methodFullName for constructors on a returned object resolved through imports" in {
       val cpg = code("""
-          |package foo;
+          |package test;
           |
           |import foo.Foo;
           |
@@ -86,7 +105,27 @@ class NewConstructorInvocationTests extends JavaSrcCode2CpgFixture {
           |}
           |
           |""".stripMargin)
-      cpg.call.nameExact("<init>").methodFullName.toSet shouldBe Set(
+      cpg.call.nameExact("<init>").methodFullName.toList.sortBy(_.length) shouldBe List(
+        "foo.Foo.<init>:void()",
+        "foo.Foo$Bar.<init>:void()"
+      )
+    }
+
+    "have the correct methodFullName for constructors on an object resolved through imports" in {
+      val cpg = code("""
+          |package test;
+          |
+          |import foo.Foo;
+          |
+          |class Test {
+          |  public static void main(String[] args) {
+          |    Foo f = new Foo();
+          |    Bar b = f.new Bar();
+          |  }
+          |}
+          |""".stripMargin)
+
+      cpg.call.nameExact("<init>").methodFullName.toList.sortBy(_.length) shouldBe List(
         "foo.Foo.<init>:void()",
         "foo.Foo$Bar.<init>:void()"
       )
@@ -103,7 +142,7 @@ class NewConstructorInvocationTests extends JavaSrcCode2CpgFixture {
           |}
           |
           |""".stripMargin)
-      cpg.call.nameExact("<init>").methodFullName.toSet shouldBe Set(
+      cpg.call.nameExact("<init>").methodFullName.toList.sortBy(_.length) shouldBe List(
         "<unresolvedNamespace>.Foo.<init>:void()",
         "<unresolvedNamespace>.Foo$Bar.<init>:void()"
       )
@@ -111,10 +150,10 @@ class NewConstructorInvocationTests extends JavaSrcCode2CpgFixture {
 
     "have the correct methodFullName for constructors on a unresolved returned object" in {
       val cpg = code("""
-          |package foo;
+          |package test;
           |
           |class Test {
-          |  static Test getFoo() {
+          |  static Foo getFoo() {
           |    return new Foo();
           |  }
           |
@@ -124,7 +163,23 @@ class NewConstructorInvocationTests extends JavaSrcCode2CpgFixture {
           |}
           |
           |""".stripMargin)
-      cpg.call.nameExact("<init>").methodFullName.toSet shouldBe Set(
+      cpg.call.nameExact("<init>").methodFullName.toList.sortBy(_.length) shouldBe List(
+        "<unresolvedNamespace>.Foo.<init>:void()",
+        "<unresolvedNamespace>.Foo$Bar.<init>:void()"
+      )
+    }
+
+    "have the correct methodFullName for constructors on an unresolved object" in {
+      val cpg = code("""
+          |class Test {
+          |  public static void main(String[] args) {
+          |    Foo f = new Foo();
+          |    Bar b = f.new Bar();
+          |  }
+          |}
+          |""".stripMargin)
+
+      cpg.call.nameExact("<init>").methodFullName.toList.sortBy(_.length) shouldBe List(
         "<unresolvedNamespace>.Foo.<init>:void()",
         "<unresolvedNamespace>.Foo$Bar.<init>:void()"
       )
