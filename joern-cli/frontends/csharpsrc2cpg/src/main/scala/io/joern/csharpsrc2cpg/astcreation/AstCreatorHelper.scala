@@ -4,14 +4,7 @@ import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetJsonAst, DotNetNodeInfo, ParserKeys}
 import io.joern.csharpsrc2cpg.{Constants, astcreation}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  DeclarationNew,
-  NewCall,
-  NewIdentifier,
-  NewLocal,
-  NewMethodParameterIn,
-  NewNode
-}
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, PropertyNames}
 import ujson.Value
 
@@ -86,6 +79,19 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   // TODO: Use type map to try resolve full name
   protected def nodeTypeFullName(node: DotNetNodeInfo): String = {
+
+    def typeFromTypeString(typeString: String): String = {
+      val isArrayType = typeString.endsWith("[]")
+      val rawType     = typeString.stripSuffix("[]")
+      val resolvedType = scope
+        .tryResolveTypeReference(rawType)
+        .orElse(BuiltinTypes.DotNetTypeMap.get(rawType))
+        .getOrElse(rawType)
+
+      if (isArrayType) s"$resolvedType[]"
+      else resolvedType
+    }
+
     node.node match
       case NumericLiteralExpression if node.code.matches("^\\d+$") => // e.g. 200
         BuiltinTypes.Int
@@ -97,24 +103,16 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         BuiltinTypes.Decimal
       case StringLiteralExpression                        => BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)
       case TrueLiteralExpression | FalseLiteralExpression => BuiltinTypes.DotNetTypeMap(BuiltinTypes.Bool)
-      case IdentifierName                                 =>
-        // TODO: Look at scope object for possible types
-        Defines.Any
+      case IdentifierName                                 => typeFromTypeString(nameFromNode(node))
       case PredefinedType =>
         BuiltinTypes.DotNetTypeMap.getOrElse(node.code, Defines.Any)
       case _ =>
         Try(createDotNetNodeInfo(node.json(ParserKeys.Type))) match
           case Success(typeNode) =>
-            val isArrayType  = typeNode.code.endsWith("[]")
-            val rawType      = typeNode.code.stripSuffix("[]")
-            val resolvedType = BuiltinTypes.DotNetTypeMap.getOrElse(rawType, rawType)
-
-            if (isArrayType) s"$resolvedType[]"
-            else resolvedType
-          case Failure(e) => {
+            typeFromTypeString(typeNode.code)
+          case Failure(e) =>
             logger.debug(e.getMessage)
             Defines.Any
-          }
   }
 
 }
@@ -146,7 +144,7 @@ object AstCreatorHelper {
 
   def nameFromNode(node: DotNetNodeInfo): String = {
     node.node match
-      case NamespaceDeclaration                            => nameFromNamespaceDeclaration(node)
+      case NamespaceDeclaration | UsingDirective           => nameFromNamespaceDeclaration(node)
       case IdentifierName | Parameter | _: DeclarationExpr => nameFromIdentifier(node)
       case QualifiedName                                   => nameFromQualifiedName(node)
       case _                                               => "<empty>"

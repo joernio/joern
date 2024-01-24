@@ -27,7 +27,7 @@ class AstCreator(val relativeFileName: String, val parserResult: ParserResult, v
 
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
 
-  protected val scope: CSharpScope = new CSharpScope()
+  protected val scope: CSharpScope = new CSharpScope(typeMap)
 
   override def createAst(): DiffGraphBuilder = {
     val hash = String.format(
@@ -42,10 +42,10 @@ class AstCreator(val relativeFileName: String, val parserResult: ParserResult, v
   }
 
   private def astForCompilationUnit(cu: DotNetNodeInfo): Seq[Ast] = {
-    val imports    = cu.json(ParserKeys.Usings).arr.map(createDotNetNodeInfo).toSeq // TODO: Handle imports
-    val name       = s"${parserResult.filename}"                                    // TODO: Find fullyQualifiedPackage
+    val imports    = cu.json(ParserKeys.Usings).arr.flatMap(astForNode).toSeq
+    val name       = s"${parserResult.filename}" // TODO: Find fullyQualifiedPackage
     val memberAsts = astForMembers(cu.json(ParserKeys.Members).arr.map(createDotNetNodeInfo).toSeq)
-    memberAsts
+    imports ++ memberAsts
   }
 
   protected def astForMembers(members: Seq[DotNetNodeInfo]): Seq[Ast] = members.flatMap(astForNode)
@@ -64,7 +64,7 @@ class AstCreator(val relativeFileName: String, val parserResult: ParserResult, v
       case FieldDeclaration          => astForFieldDeclaration(nodeInfo)
       case VariableDeclaration       => astForVariableDeclaration(nodeInfo)
       case EqualsValueClause         => astForEqualsValueClause(nodeInfo)
-      case UsingDirective            => notHandledYet(nodeInfo)
+      case UsingDirective            => astForUsing(nodeInfo) :: Nil
       case Block                     => Seq(astForBlock(nodeInfo))
       case IdentifierName            => Seq(astForIdentifier(nodeInfo))
       case LocalDeclarationStatement => astForLocalDeclarationStatement(nodeInfo)

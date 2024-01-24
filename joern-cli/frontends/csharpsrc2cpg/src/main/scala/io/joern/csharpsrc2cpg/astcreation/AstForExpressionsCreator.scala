@@ -98,7 +98,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   private def astForInvocationExpression(invocationExpr: DotNetNodeInfo): Seq[Ast] = {
     val dispatchType = DispatchTypes.STATIC_DISPATCH // TODO
-    val typeFullName = None                          // TODO
+    val typeFullName = None                          // TODO: Return type of the call
     val arguments    = astForArgumentList(createDotNetNodeInfo(invocationExpr.json(ParserKeys.ArgumentList)))
     val argString =
       s"${arguments.flatMap(_.root).collect { case x: NewMethodParameterIn => x.typeFullName }.mkString(",")}"
