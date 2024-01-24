@@ -11,8 +11,16 @@ class MethodTests extends AnyWordSpec with Matchers {
 
   val cpg = MockCpg()
     .withNamespace("namespace")
+    .withFile("someFile", Some("aaaCONTENTbbb"))
     .withTypeDecl("TypeDecl", inNamespace = Some("namespace"))
-    .withMethod("foo", inTypeDecl = Some("TypeDecl"), external = false)
+    .withMethod(
+      "foo",
+      inTypeDecl = Some("TypeDecl"),
+      external = false,
+      fileName = "someFile",
+      offset = Some(3),
+      offsetEnd = Some(10)
+    )
     .withMethod("bar", inTypeDecl = Some("TypeDecl"), external = true)
     .withCallInMethod("foo", "call")
     .withCallInMethod("foo", "call2")
@@ -144,6 +152,11 @@ class MethodTests extends AnyWordSpec with Matchers {
       val internalMethod: List[Method] =
         cpg.method.name("foo").hasModifier("modifiertype").toList
       internalMethod.size shouldBe 1
+    }
+
+    "get content" in {
+      cpg.method.name("foo").content.head shouldBe "CONTENT"
+      cpg.method.name("bar").content.headOption shouldBe empty
     }
   }
 

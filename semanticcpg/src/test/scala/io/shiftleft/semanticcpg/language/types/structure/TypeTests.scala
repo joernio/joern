@@ -1,8 +1,8 @@
 package io.shiftleft.semanticcpg.language.types.structure
 
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.testing.MockCpg
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -163,5 +163,23 @@ class TypeTests extends AnyWordSpec with Matchers {
       queryResult.map(_.name).toSet shouldBe Set("Derived", "Base")
     }
 
+  }
+
+  "Class content test" should {
+    val cpg = MockCpg()
+      .withNamespace("namespace")
+      .withFile("someFile", Some("aaaCONTENTbbb"))
+      .withTypeDecl(
+        "foo",
+        inNamespace = Some("namespace"),
+        inFile = Some("someFile"),
+        offset = Some(3),
+        offsetEnd = Some(10)
+      )
+      .cpg
+
+    "have correct content for class" in {
+      cpg.typeDecl.name("foo").content.head shouldBe "CONTENT"
+    }
   }
 }

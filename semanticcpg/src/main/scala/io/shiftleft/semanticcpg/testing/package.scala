@@ -27,9 +27,11 @@ package object testing {
       }
     }
 
-    def withFile(filename: String): MockCpg =
+    def withFile(filename: String, content: Option[String] = None): MockCpg =
       withCustom { (graph, _) =>
-        graph.addNode(NewFile().name(filename))
+        val newFile = NewFile().name(filename)
+        content.foreach(newFile.content(_))
+        graph.addNode(newFile)
       }
 
     def withNamespace(name: String, inFile: Option[String] = None): MockCpg =
@@ -51,7 +53,9 @@ package object testing {
       name: String,
       isExternal: Boolean = false,
       inNamespace: Option[String] = None,
-      inFile: Option[String] = None
+      inFile: Option[String] = None,
+      offset: Option[Int] = None,
+      offsetEnd: Option[Int] = None
     ): MockCpg =
       withCustom { (graph, _) =>
         {
@@ -60,6 +64,9 @@ package object testing {
             .name(name)
             .fullName(name)
             .isExternal(isExternal)
+
+          offset.foreach(typeDeclNode.offset(_))
+          offsetEnd.foreach(typeDeclNode.offsetEnd(_))
 
           val member   = NewMember().name("amember")
           val modifier = NewModifier().modifierType(ModifierTypes.STATIC)
@@ -87,7 +94,9 @@ package object testing {
       name: String,
       external: Boolean = false,
       inTypeDecl: Option[String] = None,
-      fileName: String = ""
+      fileName: String = "",
+      offset: Option[Int] = None,
+      offsetEnd: Option[Int] = None
     ): MockCpg =
       withCustom { (graph, _) =>
         val retParam  = NewMethodReturn().typeFullName("int").order(10)
@@ -96,6 +105,8 @@ package object testing {
         val paramOut  = NewMethodParameterOut().name("param1").order(1)
         val method =
           NewMethod().isExternal(external).name(name).fullName(name).signature("asignature").filename(fileName)
+        offset.foreach(method.offset(_))
+        offsetEnd.foreach(method.offsetEnd(_))
         val block    = NewBlock().typeFullName("int")
         val modifier = NewModifier().modifierType("modifiertype")
 
@@ -117,6 +128,11 @@ package object testing {
         if (inTypeDecl.isDefined) {
           val typeDeclNode = cpg.typeDecl.name(inTypeDecl.get).head
           graph.addEdge(typeDeclNode, method, EdgeTypes.AST)
+        }
+
+        if (fileName != "") {
+          val file = cpg.file.nameExact(fileName).head
+          graph.addEdge(method, file, EdgeTypes.SOURCE_FILE)
         }
       }
 
