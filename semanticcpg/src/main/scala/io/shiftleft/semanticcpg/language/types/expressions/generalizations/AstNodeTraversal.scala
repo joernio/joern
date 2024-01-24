@@ -1,15 +1,15 @@
 package io.shiftleft.semanticcpg.language.types.expressions.generalizations
 
+import flatgraph.help.{Doc, Traversal}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
-import flatgraph.help.{Doc, Traversal}
 
 @Traversal(elementType = classOf[AstNode])
 class AstNodeTraversal[A <: AstNode](val traversal: Iterator[A]) extends AnyVal {
 
   /** Nodes of the AST rooted in this node, including the node itself.
     */
-  // TODO bring back @Doc(info = "All nodes of the abstract syntax tree")
+  @Doc(info = "All nodes of the abstract syntax tree")
   def ast: Iterator[AstNode] =
     traversal.repeat(_._astOut)(_.emit).cast[AstNode]
 

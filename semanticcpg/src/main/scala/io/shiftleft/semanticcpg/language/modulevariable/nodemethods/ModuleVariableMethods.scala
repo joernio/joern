@@ -6,23 +6,18 @@ import io.shiftleft.semanticcpg.language.modulevariable.OpNodes
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes as OpExtNodes
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.importresolver.{ResolvedMember, ResolvedTypeDecl}
-// TODO bring back help/doc
-//import overflowdb.traversal.help.Doc
 
 class ModuleVariableMethods(node: OpNodes.ModuleVariable) extends AnyVal {
 
-  // TODO bring back help/doc
-//  @Doc(info = "References of this module variable across the codebase, as either identifiers or field identifiers")
+  /** References of this module variable across the codebase, as either identifiers or field identifiers */
   def references: Iterator[Identifier | FieldIdentifier] = node.start.references
 
-  // TODO bring back help/doc
-//  @Doc(info = "The module members being referenced in the respective module type declaration")
+  /** The module members being referenced in the respective module type declaration */
   def referencingMembers: Iterator[Member] = {
     Cpg(node.graph).typeDecl.fullNameExact(node.method.fullName.toSeq*).member.nameExact(node.name)
   }
 
-  // TODO bring back help/doc
-//  @Doc(info = "Returns the assignments where the module variable is the target (LHS)")
+  /** Returns the assignments where the module variable is the target (LHS) */
   def definitions: Iterator[OpExtNodes.Assignment] = node.start.definitions
 
 }

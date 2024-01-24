@@ -1,38 +1,35 @@
 package io.joern.console
 
 import org.apache.commons.lang.WordUtils
-// TODO get help back
-//import overflowdb.traversal.help.DocFinder._
-//import overflowdb.traversal.help.{Table, DocFinder}
+import flatgraph.help.DocFinder.*
+import flatgraph.help.{Table, DocFinder}
 
 object Help {
 
   private val width = 80
 
   def overview(clazz: Class[_]): String = {
-//    val columnNames = List("command", "description", "example")
-//    val rows = DocFinder
-//      .findDocumentedMethodsOf(clazz)
-//      .map { case StepDoc(_, funcName, doc) =>
-//        List(funcName, doc.info, doc.example)
-//      }
-//      .toList ++ List(runRow)
-//
-//    val header = formatNoQuotes("""
-//      |
-//      |Welcome to the interactive help system. Below you find
-//      |a table of all available top-level commands. To get
-//      |more detailed help on a specific command, just type
-//      |
-//      |`help.<command>`.
-//      |
-//      |Try `help.importCode` to begin with.
-//      |
-//      |
-//      |""".stripMargin)
-//    header + "\n" + Table(columnNames, rows.sortBy(_.head)).render
-    // TODO get help back
-    ???
+   val columnNames = List("command", "description", "example")
+   val rows = DocFinder
+     .findDocumentedMethodsOf(clazz)
+     .map { case StepDoc(_, funcName, doc) =>
+       List(funcName, doc.info, doc.example)
+     }
+     .toList ++ List(runRow)
+
+   val header = formatNoQuotes("""
+     |
+     |Welcome to the interactive help system. Below you find
+     |a table of all available top-level commands. To get
+     |more detailed help on a specific command, just type
+     |
+     |`help.<command>`.
+     |
+     |Try `help.importCode` to begin with.
+     |
+     |
+     |""".stripMargin)
+   header + "\n" + Table(columnNames, rows.sortBy(_.head)).render
   }
 
   def format(text: String): String = {
@@ -59,26 +56,24 @@ object Help {
         |""".stripMargin)
 
   def codeForHelpCommand(clazz: Class[_]): String = {
-    // TODO get help back
-    ""
-//    val membersCode = DocFinder
-//      .findDocumentedMethodsOf(clazz)
-//      .map { case StepDoc(_, funcName, doc) =>
-//        s"    val $funcName: String = ${Help.format(doc.longInfo)}"
-//      }
-//      .mkString("\n")
-//
-//    val overview = Help.overview(clazz)
-//    s"""
-//       | class Helper() {
-//       |   def run: String = Help.runLongHelp
-//       |   override def toString: String = \"\"\"$overview\"\"\"
-//       |
-//       |  $membersCode
-//       | }
-//       |
-//       | val help = new Helper
-//       |""".stripMargin
+   val membersCode = DocFinder
+     .findDocumentedMethodsOf(clazz)
+     .map { case StepDoc(_, funcName, doc) =>
+       s"    val $funcName: String = ${Help.format(doc.longInfo)}"
+     }
+     .mkString("\n")
+
+   val overview = Help.overview(clazz)
+   s"""
+      | class Helper() {
+      |   def run: String = Help.runLongHelp
+      |   override def toString: String = \"\"\"$overview\"\"\"
+      |
+      |  $membersCode
+      | }
+      |
+      | val help = new Helper
+      |""".stripMargin
   }
 
 }
