@@ -3,12 +3,11 @@ package io.shiftleft.semanticcpg.language.types.structure
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
-// TODO bring back: import overflowdb.traversal.help
-// TODO bring back: import overflowdb.traversal.help.Doc
+import flatgraph.help.{Doc, Traversal}
 
 /** A method, function, or procedure
   */
-// TODO bring back: @help.Traversal(elementType = classOf[Method])
+@Traversal(elementType = classOf[Method])
 class MethodTraversal(val traversal: Iterator[Method]) extends AnyVal {
 
   /** Traverse to annotations of method
@@ -150,7 +149,7 @@ class MethodTraversal(val traversal: Iterator[Method]) extends AnyVal {
     traversal.block
 
   /** Traverse to namespace */
-  // TODO bring back: @Doc(info = "Namespace this method is declared in")
+  @Doc(info = "Namespace this method is declared in")
   def namespace: Iterator[Namespace] = {
     traversal.namespaceBlock.namespace
   }

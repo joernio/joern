@@ -162,46 +162,32 @@ class StepsTest extends AnyWordSpec with Matchers {
      stream2 shouldBe values
    }
 
-// TODO MP get back .help step
-//   ".help step" should {
-//     "show domain overview" in {
-//       val domainStartersHelp = Cpg.emptyCpg.help
-//       domainStartersHelp should include(".comment")
-//       domainStartersHelp should include("All comments in source-based CPGs")
-//       domainStartersHelp should include(".arithmetic")
-//       domainStartersHelp should include("All arithmetic operations")
-//     }
-//
-//     "provide node-specific overview" in {
-//       val methodStepsHelp = Cpg.emptyCpg.method.help
-//       methodStepsHelp should include("Available steps for Method")
-//       methodStepsHelp should include(".namespace")
-//       methodStepsHelp should include(".depth") // from AstNode
-//
-//       val methodStepsHelpVerbose = Cpg.emptyCpg.method.helpVerbose
-//       methodStepsHelpVerbose should include("traversal name")
-//       methodStepsHelpVerbose should include("io.shiftleft.semanticcpg.language.types.structure.Method")
-//
-//       val assignmentStepsHelp = Cpg.emptyCpg.assignment.help
-//       assignmentStepsHelp should include("Left-hand sides of assignments") // from AssignmentTraversal
-//     }
-//
-//     "provides generic help" when {
-//       "using verbose mode" when {
-//         "traversing nodes" in {
-//           val methodTraversal = Iterator.empty[Method]
-//           methodTraversal.helpVerbose should include(".l")
-//           methodTraversal.helpVerbose should include(".label")
-//         }
-//
-//         "traversing non-nodes" in {
-//           val stringTraversal = Iterator.empty[String]
-//           stringTraversal.helpVerbose should include(".l")
-//           stringTraversal.helpVerbose should not include ".label"
-//         }
-//       }
-//     }
-//   }
+   ".help step" should {
+     // n.b. codepropertygraph already covers quite a few in it's own StepsTest.scala
+
+     "show domain overview" in {
+       val domainStartersHelp = Cpg.emptyCpg.help
+
+       domainStartersHelp should include(".arithmetic")
+       domainStartersHelp should include("All arithmetic operations")
+     }
+
+     "provide node-specific overview" in {
+       val methodStepsHelp = Cpg.emptyCpg.method.help
+       methodStepsHelp should include("Available steps for `Method`")
+       methodStepsHelp should include(".namespace") // from MethodTraversal
+       methodStepsHelp should include(".depth") // from AstNodeTraversal
+
+       val methodStepsHelpVerbose = Cpg.emptyCpg.method.helpVerbose
+       methodStepsHelpVerbose should include("implemented in")
+       methodStepsHelpVerbose should include("io.shiftleft.semanticcpg.language.types.structure.MethodTraversal")
+       methodStepsHelpVerbose should include("io.shiftleft.semanticcpg.language.types.expressions.generalizations.AstNodeTraversal")
+
+       val assignmentStepsHelp = Cpg.emptyCpg.assignment.help
+       assignmentStepsHelp should include("Left-hand sides of assignments") // from AssignmentTraversal
+     }
+
+   }
 
    "provides extension steps for Traversals and Nodes" in {
      /* n.b. interestingly, intellij puts some red squiggles on `Traversal.file` etc. if one imports

@@ -1,5 +1,6 @@
 package io.shiftleft.semanticcpg
 
+import flatgraph.help.DocSearchPackages
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -258,6 +259,9 @@ package object language extends generated.Language
 }
 
 trait LowPrioImplicits {
+  given DocSearchPackages = Cpg.defaultDocSearchPackage
+    .withAdditionalPackage("io.joern")
+    .withAdditionalPackage("io.shiftleft")
 
   implicit def singleToAstNodeDot[A <: AstNode](a: A): AstNodeDot[A] =
     new AstNodeDot(Iterator.single(a))

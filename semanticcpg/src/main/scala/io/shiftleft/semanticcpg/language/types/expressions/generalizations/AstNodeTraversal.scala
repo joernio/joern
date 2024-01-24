@@ -2,11 +2,9 @@ package io.shiftleft.semanticcpg.language.types.expressions.generalizations
 
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
-// TODO bring back @Help
-//import overflowdb.traversal.help
-//import overflowdb.traversal.help.Doc
+import flatgraph.help.{Doc, Traversal}
 
-// TODO bring back @Help @help.Traversal(elementType = classOf[AstNode])
+@Traversal(elementType = classOf[AstNode])
 class AstNodeTraversal[A <: AstNode](val traversal: Iterator[A]) extends AnyVal {
 
   /** Nodes of the AST rooted in this node, including the node itself.
@@ -24,7 +22,7 @@ class AstNodeTraversal[A <: AstNode](val traversal: Iterator[A]) extends AnyVal 
   def containsCallTo(regex: String): Iterator[A] =
     traversal.filter(_.ast.isCall.name(regex).nonEmpty)
 
-  // TODO bring back @Doc(info = "Depth of the abstract syntax tree")
+  @Doc(info = "Depth of the abstract syntax tree")
   def depth: Iterator[Int] =
     traversal.map(_.depth)
 
