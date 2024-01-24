@@ -75,10 +75,6 @@ object JavaScopeElement {
 
   class NamespaceScope(val namespace: NewNamespaceBlock) extends JavaScopeElement with TypeDeclContainer {
     val isStatic = false
-
-    def addStaticImport(staticImport: NewImport): Unit = {
-      addVariableToScope(ScopeStaticImport(staticImport))
-    }
   }
 
   class BlockScope extends JavaScopeElement {
@@ -101,7 +97,7 @@ object JavaScopeElement {
 
   /** Used for assignments where the LHS is a variable and not a complex expression.
    */
-  class SimpleAssignmentScope(val assignedVariable: NewVariableNode) extends JavaScopeElement {
+  class AssignmentScope(val targetAst: Ast) extends JavaScopeElement {
     override val isStatic = false
   }
 

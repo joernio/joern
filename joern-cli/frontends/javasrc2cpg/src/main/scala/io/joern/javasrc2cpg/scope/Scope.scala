@@ -39,8 +39,8 @@ class Scope {
     scopeStack = new FieldDeclScope(isStatic, name) :: scopeStack
   }
 
-  def pushAssignmentScope(variable: NewVariableNode): Unit = {
-    scopeStack = new SimpleAssignmentScope(variable) :: scopeStack
+  def pushAssignmentScope(targetAst: Ast): Unit = {
+    scopeStack = new AssignmentScope(targetAst) :: scopeStack
   }
 
   def pushTypeDeclScope(typeDecl: NewTypeDecl, isStatic: Boolean, methodNames: Set[String] = Set.empty): Unit = {
@@ -78,7 +78,7 @@ class Scope {
 
   def popNamespaceScope(): NamespaceScope = popScope[NamespaceScope]()
 
-  def popAssignmentScope(): SimpleAssignmentScope = popScope[SimpleAssignmentScope]()
+  def popAssignmentScope(): AssignmentScope = popScope[AssignmentScope]()
 
   private def popScope[ScopeType <: JavaScopeElement](): ScopeType = {
     val scope = scopeStack.head
@@ -287,8 +287,21 @@ class Scope {
 }
 
 object Scope {
-  type NewScopeNode    = NewBlock | NewMethod | NewTypeDecl | NewNamespaceBlock
   type NewVariableNode = NewLocal | NewMethodParameterIn | NewMember
+  def newVariableNodeName(variableNode: NewVariableNode): String = {
+    variableNode match {
+      case node: NewLocal => node.name
+      case node: NewMethodParameterIn => node.name
+      case node: NewMember => node.name
+    }
+  }
+  def newVariableNodeTypeFullName(variableNode: NewVariableNode): String = {
+    variableNode match {
+      case node: NewLocal => node.typeFullName
+      case node: NewMethodParameterIn => node.typeFullName
+      case node: NewMember => node.typeFullName
+    }
+  }
 
   sealed trait ScopeType {
     def typeFullName: String
@@ -320,21 +333,12 @@ object Scope {
 
   sealed trait ScopeVariable {
     def node: NewVariableNode
-    def typeFullName: String
-    def name: String
+    def typeFullName: String = newVariableNodeTypeFullName(node)
+    def name: String = newVariableNodeName(node)
   }
-  final case class ScopeLocal(override val node: NewLocal) extends ScopeVariable {
-    val typeFullName: String = node.typeFullName
-    val name: String         = node.name
-  }
-  final case class ScopeParameter(override val node: NewMethodParameterIn) extends ScopeVariable {
-    val typeFullName: String = node.typeFullName
-    val name: String         = node.name
-  }
-  final case class ScopeMember(override val node: NewMember, isStatic: Boolean) extends ScopeVariable {
-    val typeFullName: String = node.typeFullName
-    val name: String         = node.name
-  }
+  final case class ScopeLocal(override val node: NewLocal) extends ScopeVariable
+  final case class ScopeParameter(override val node: NewMethodParameterIn) extends ScopeVariable
+  final case class ScopeMember(override val node: NewMember, isStatic: Boolean) extends ScopeVariable
 
   sealed trait VariableLookupResult {
     def typeFullName: Option[String]          = None

@@ -166,9 +166,9 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
 
   private def astsForFieldInitializers(fieldDeclarations: List[FieldDeclaration]): List[Ast] = {
     fieldDeclarations.flatMap { fieldDeclaration =>
-      fieldDeclaration.getVariables.asScala.filter(_.getInitializer.isPresent).toList.flatMap { variableDeclaration =>
-        scope.pushFieldDeclScope(fieldDeclaration.isStatic, variableDeclaration.getNameAsString)
-        val assignmentAsts = assignmentsForVarDecl(variableDeclaration :: Nil)
+      fieldDeclaration.getVariables.asScala.filter(_.getInitializer.isPresent).toList.flatMap { variableDeclarator =>
+        scope.pushFieldDeclScope(fieldDeclaration.isStatic, variableDeclarator.getNameAsString)
+        val assignmentAsts = astsForVariableDeclarator(variableDeclarator)
         scope.popFieldDeclScope()
         assignmentAsts
       }

@@ -14,7 +14,6 @@ import io.joern.javasrc2cpg.scope.Scope.{
   NotInScope,
   ScopeMember,
   ScopeParameter,
-  ScopeStaticImport,
   ScopeVariable,
   SimpleVariable
 }
@@ -50,11 +49,6 @@ trait AstForNameExpressionsCreator { this: AstCreator =>
           line(nameExpr),
           column(nameExpr)
         )
-
-      case SimpleVariable(variable: ScopeStaticImport) =>
-        val targetName   = variable.typeFullName.stripSuffix(s".${variable.name}")
-        val typeFullName = expressionReturnTypeFullName(nameExpr).map(typeInfoCalc.registerType)
-        fieldAccessAst(targetName, Some(targetName), variable.name, typeFullName, line(nameExpr), column(nameExpr))
 
       case SimpleVariable(variable) =>
         val identifier = identifierNode(nameExpr, name, name, typeFullName.getOrElse(TypeConstants.Any))
