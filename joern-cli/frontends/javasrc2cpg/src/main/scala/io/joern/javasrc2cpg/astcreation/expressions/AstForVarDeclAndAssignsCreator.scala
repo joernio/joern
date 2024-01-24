@@ -2,11 +2,11 @@ package io.joern.javasrc2cpg.astcreation.expressions
 
 import com.github.javaparser.ast.body.VariableDeclarator
 import com.github.javaparser.ast.expr.AssignExpr.Operator
-import com.github.javaparser.ast.expr.{AssignExpr, VariableDeclarationExpr}
+import com.github.javaparser.ast.expr.{AssignExpr, Expression, ObjectCreationExpr, VariableDeclarationExpr}
 import com.github.javaparser.resolution.types.ResolvedType
 import io.joern.javasrc2cpg.astcreation.expressions.AstForCallExpressionsCreator.PartialConstructor
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
-import io.joern.javasrc2cpg.scope.Scope.{ScopeMember, ScopeParameter, ScopeStaticImport, SimpleVariable}
+import io.joern.javasrc2cpg.scope.Scope.{NewVariableNode, ScopeMember, ScopeParameter, ScopeStaticImport, SimpleVariable}
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.NameConstants
 import io.joern.x2cpg.passes.frontend.TypeNodePass
@@ -87,6 +87,54 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
           Seq(callAst(callNode, targetAst ++ Seq(valueAst)))
       }
     }
+  }
+
+  private[expressions] def astsForVariableDeclaration(variableDeclaration: VariableDeclarationExpr): Seq[Ast] = {
+    val variablesWithAssignments = variableDeclaration.getVariables.asScala.map { variableDeclarator =>
+      val localNode = localForVariableDeclarator(variableDeclarator)
+
+      val assignmentAst: Option[Ast] = ???
+
+      (Ast(localNode), assignmentAst)
+    }.toList
+
+    variablesWithAssignments.map(_._1) ++ variablesWithAssignments.flatMap(_._2)
+  }
+
+  private def localForVariableDeclarator(variable: VariableDeclarator): NewLocal = {
+    val name = variable.getNameAsString
+
+    val typeFullName = tryWithSafeStackOverflow {
+      scope.lookupType(variable.getTypeAsString).orElse(typeInfoCalc.fullName(variable.getType))
+    }.toOption.flatten
+
+    val code = s"${variable.getType} $name"
+
+    localNode(variable, name, code, typeFullName.getOrElse(TypeConstants.Any))
+  }
+
+  private def astForVariableAssignment(
+    targetNode: NewVariableNode,
+    initializer: Expression,
+    expectedInitializerType: ExpectedType,
+    assignmentOperator: String
+  ): Ast = {
+    scope.pushAssignmentScope(targetNode)
+    val initializerAsts = astsForExpression(initializer, expectedInitializerType)
+    scope.popAssignmentScope()
+
+    val assignmentCode = s"${targetNode.code} = ${initializerAsts.headOption.flatMap(_.rootCode).getOrElse("")}"
+    val assignmentType = initializerAsts.headOption.flatMap(_.rootType)
+    val assignmentCallNode = newOperatorCallNode(Operators.assignment, assignmentCode, assignmentType, targetNode.lineNumber, targetNode.columnNumber)
+
+    initializer match {
+      case _: ObjectCreationExpr if initializerAsts.length == 2 =>
+        // In this case the initializerAsts will be the inlined <alloc> and <init> calls respectively.
+
+
+    }
+
+    ???
   }
 
   private[expressions] def astsForVariableDecl(varDecl: VariableDeclarationExpr): Seq[Ast] = {

@@ -39,6 +39,10 @@ class Scope {
     scopeStack = new FieldDeclScope(isStatic, name) :: scopeStack
   }
 
+  def pushAssignmentScope(variable: NewVariableNode): Unit = {
+    scopeStack = new SimpleAssignmentScope(variable) :: scopeStack
+  }
+
   def pushTypeDeclScope(typeDecl: NewTypeDecl, isStatic: Boolean, methodNames: Set[String] = Set.empty): Unit = {
     val captures = getCapturesForNewScope(isStatic)
     val outerClassType = scopeStack.takeUntil(_.isInstanceOf[TypeDeclScope]) match {
@@ -73,6 +77,8 @@ class Scope {
   def popTypeDeclScope(): TypeDeclScope = popScope[TypeDeclScope]()
 
   def popNamespaceScope(): NamespaceScope = popScope[NamespaceScope]()
+
+  def popAssignmentScope(): SimpleAssignmentScope = popScope[SimpleAssignmentScope]()
 
   private def popScope[ScopeType <: JavaScopeElement](): ScopeType = {
     val scope = scopeStack.head

@@ -99,6 +99,12 @@ object JavaScopeElement {
 
   class FieldDeclScope(override val isStatic: Boolean, val name: String) extends JavaScopeElement
 
+  /** Used for assignments where the LHS is a variable and not a complex expression.
+   */
+  class SimpleAssignmentScope(val assignedVariable: NewVariableNode) extends JavaScopeElement {
+    override val isStatic = false
+  }
+
   class TypeDeclScope(
     val typeDecl: NewTypeDecl,
     override val isStatic: Boolean,
