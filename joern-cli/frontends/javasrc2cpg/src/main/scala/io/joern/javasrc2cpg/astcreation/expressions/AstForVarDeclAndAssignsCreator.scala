@@ -6,7 +6,7 @@ import com.github.javaparser.ast.expr.{AssignExpr, Expression, ObjectCreationExp
 import com.github.javaparser.resolution.types.ResolvedType
 import io.joern.javasrc2cpg.astcreation.expressions.AstForCallExpressionsCreator.PartialConstructor
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
-import io.joern.javasrc2cpg.scope.Scope.{NewVariableNode, ScopeMember, ScopeParameter, ScopeStaticImport, SimpleVariable}
+import io.joern.javasrc2cpg.scope.Scope.{NewVariableNode, ScopeMember, ScopeParameter, SimpleVariable}
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.NameConstants
 import io.joern.x2cpg.passes.frontend.TypeNodePass
@@ -213,11 +213,6 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
             line(variable),
             column(variable)
           )
-
-        case Some(staticImport: ScopeStaticImport) =>
-          val targetName = staticImport.typeFullName.stripSuffix(s".${staticImport.name}")
-          val fieldName  = staticImport.name
-          fieldAccessAst(targetName, Some(targetName), fieldName, typeFullName, line(variable), column(variable))
 
         case maybeCorrespNode =>
           val identifier = identifierNode(variable, name, name, typeFullName.getOrElse(TypeConstants.Any))

@@ -120,8 +120,7 @@ class Scope {
       .collectFirst {
         case result: SimpleVariable   => result
         case result: CapturedVariable => result
-      }
-      .getOrElse(lookupStaticImportVariable(name))
+      }.getOrElse(NotInScope)
   }
 
   def lookupMethodName(name: String): List[NewTypeDecl] = {
@@ -129,13 +128,6 @@ class Scope {
       .collect { case typeDeclScope: TypeDeclScope => typeDeclScope }
       .takeUntil(_.declaredMethodNames.contains(name))
       .map(_.typeDecl)
-  }
-
-  private def lookupStaticImportVariable(name: String): VariableLookupResult = {
-    scopeStack.lastOption.map(_.lookupVariable(name)) match {
-      case Some(SimpleVariable(staticImport: ScopeStaticImport)) => SimpleVariable(staticImport)
-      case _                                                     => NotInScope
-    }
   }
 
   def lookupType(simpleName: String, includeWildcards: Boolean = true): Option[String] = {
@@ -296,7 +288,7 @@ class Scope {
 
 object Scope {
   type NewScopeNode    = NewBlock | NewMethod | NewTypeDecl | NewNamespaceBlock
-  type NewVariableNode = NewLocal | NewMethodParameterIn | NewMember | NewImport
+  type NewVariableNode = NewLocal | NewMethodParameterIn | NewMember
 
   sealed trait ScopeType {
     def typeFullName: String
@@ -344,11 +336,6 @@ object Scope {
     val name: String         = node.name
   }
 
-  final case class ScopeStaticImport(override val node: NewImport) extends ScopeVariable {
-    val typeFullName: String = node.importedEntity.get
-    val name: String         = node.importedAs.get
-  }
-
   sealed trait VariableLookupResult {
     def typeFullName: Option[String]          = None
     def variableNode: Option[NewVariableNode] = None
@@ -370,10 +357,6 @@ object Scope {
       val nodeTypeInfo = variable match {
         case ScopeMember(memberNode, isStatic) =>
           NodeTypeInfo(memberNode, memberNode.name, Some(memberNode.typeFullName), true, isStatic)
-
-        case staticImport: ScopeStaticImport =>
-          // TODO: IsField may or may not be true. Is it safe to assume it is?
-          NodeTypeInfo(staticImport.node, staticImport.name, Some(staticImport.typeFullName), true, true)
 
         case variable => NodeTypeInfo(variable.node, variable.name, Some(variable.typeFullName), false, false)
       }
