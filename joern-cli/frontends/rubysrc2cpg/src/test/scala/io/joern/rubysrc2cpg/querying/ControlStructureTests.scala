@@ -1,6 +1,8 @@
+package io.joern.rubysrc2cpg.querying
+
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.Call
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier}
 import io.shiftleft.semanticcpg.language.*
 
 class ControlStructureTests extends RubyCode2CpgFixture {
@@ -313,13 +315,71 @@ class ControlStructureTests extends RubyCode2CpgFixture {
     val List(rescueNode) = cpg.method("test2").tryBlock.l
     rescueNode.controlStructureType shouldBe ControlStructureTypes.TRY
     val List(body, ensureBody) = rescueNode.astChildren.l
-    val xs                     = rescueNode.astChildren.order(2).l
-    xs.p.foreach(println)
 
     body.ast.isLiteral.code.l shouldBe List("1")
     body.order shouldBe 1
 
     ensureBody.ast.isLiteral.code.l shouldBe List("2")
     ensureBody.order shouldBe 3
+  }
+
+  "`for .. in` control structure" should {
+    val cpg = code("""
+        |def foo1
+        | x = [1, 2, 3]
+        | for i in x do
+        |   puts x - i
+        | end
+        |end
+        |
+        |def foo2
+        | x = 3
+        | for i in 1..x do
+        |   puts x + i
+        | end
+        |end
+        |""".stripMargin)
+
+    "create a FOR control structure node with body with an array iterable" in {
+      inside(cpg.method("foo1").controlStructure.l) {
+        case forEachNode :: Nil =>
+          forEachNode.controlStructureType shouldBe ControlStructureTypes.FOR
+
+          inside(forEachNode.astChildren.l) {
+            case (iteratorNode: Identifier) :: (iterableNode: Identifier) :: (doBody: Block) :: Nil =>
+              iteratorNode.code shouldBe "i"
+              iterableNode.code shouldBe "x"
+              doBody.astChildren.isCall.code.headOption shouldBe Option("puts x - i")
+            case _ => fail("No node for iterable found in `for-in` statement")
+          }
+
+          inside(forEachNode.astChildren.isBlock.l) {
+            case blockNode :: Nil =>
+              val List(puts) = blockNode._callViaAstOut.nameExact("puts").l
+              puts.astParent shouldBe blockNode
+            case _ => fail("Correct blockNode as child not found for `for-in` statement")
+          }
+
+        case _ => fail("No control structure node found for `for-in`.")
+      }
+    }
+
+    "create a FOR control structure node with body with a 'range' iterable" in {
+      inside(cpg.method("foo2").controlStructure.l) {
+        case forEachNode :: Nil =>
+          forEachNode.controlStructureType shouldBe ControlStructureTypes.FOR
+
+          inside(forEachNode.astChildren.l) {
+            case (iteratorNode: Identifier) :: (iterableNode: Call) :: (doBody: Block) :: Nil =>
+              iteratorNode.code shouldBe "i"
+              iterableNode.code shouldBe "1..x"
+              iterableNode.name shouldBe Operators.range
+              doBody.astChildren.isCall.code.headOption shouldBe Option("puts x + i")
+            case _ => fail("Invalid `for-in` children nodes")
+          }
+
+        case _ => fail("No control structure node found for `for-in`.")
+      }
+    }
   }
 }
