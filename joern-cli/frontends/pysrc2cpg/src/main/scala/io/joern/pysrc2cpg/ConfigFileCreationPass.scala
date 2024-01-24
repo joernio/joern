@@ -14,6 +14,10 @@ class ConfigFileCreationPass(cpg: Cpg, requirementsTxt: String = "requirement.tx
     extensionFilter(".ini"),
     // YAML files
     extensionFilter(".yaml"),
+    // HTML files
+    extensionFilter(".html"),
+    // HTM files
+    extensionFilter(".htm"),
     // Requirements.txt
     pathEndFilter(requirementsTxt)
   )
