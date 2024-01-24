@@ -259,9 +259,10 @@ package object language extends generated.Language
 }
 
 trait LowPrioImplicits {
-  given DocSearchPackages = Cpg.defaultDocSearchPackage
-    .withAdditionalPackage("io.joern")
-    .withAdditionalPackage("io.shiftleft")
+  implicit val docSearchPackages: DocSearchPackages =
+    Cpg.defaultDocSearchPackage
+      .withAdditionalPackage("io.joern")
+      .withAdditionalPackage("io.shiftleft")
 
   implicit def singleToAstNodeDot[A <: AstNode](a: A): AstNodeDot[A] =
     new AstNodeDot(Iterator.single(a))
