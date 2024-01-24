@@ -40,7 +40,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
          |  Line: ${node.lineNumber.getOrElse(-1)}
          |  Column: ${node.columnNumber.getOrElse(-1)}
          |  """.stripMargin
-    logger.info(text)
+    logger.warn(text)
     Seq(Ast(unknownNode(node, node.code)))
   }
 

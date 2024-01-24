@@ -34,7 +34,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val conditionAst  = astForNode(conditionNode).headOption.getOrElse(Ast())
 
     val thenNode     = createDotNetNodeInfo(ifStmt.json(ParserKeys.Statement))
-    val thenAst: Ast = Option(astForBlock(createDotNetNodeInfo(ifStmt.json(ParserKeys.Statement)))).getOrElse(Ast())
+    val thenAst: Ast = astForBlock(thenNode)
     val ifNode =
       controlStructureNode(ifStmt, ControlStructureTypes.IF, s"if (${conditionNode.code})")
     val elseAst = ifStmt.json(ParserKeys.Else) match
