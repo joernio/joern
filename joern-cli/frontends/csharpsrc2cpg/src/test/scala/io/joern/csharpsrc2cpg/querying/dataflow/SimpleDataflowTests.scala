@@ -15,10 +15,9 @@ class SimpleDataflowTests extends CSharpCode2CpgFixture(withDataFlow = true) {
         |""".stripMargin))
 
     "still propagate to the sink" in {
-      cpg.method("Main").dotAst.foreach(println)
       val src  = cpg.assignment.target.isIdentifier.nameExact("i").l
       val sink = cpg.call.nameExact("WriteLine").l
-      sink.reachableBy(src).p.foreach(println)
+      sink.reachableBy(src).size shouldBe 1
     }
 
   }
