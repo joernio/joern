@@ -25,10 +25,16 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
     }
   }
 
-  private def astForAccessorDeclListSyntax(node: AccessorDeclListSyntax): Ast                 = notHandledYet(node)
-  private def astForArrayElementListSyntax(node: ArrayElementListSyntax): Ast                 = notHandledYet(node)
-  private def astForAttributeListSyntax(node: AttributeListSyntax): Ast                       = notHandledYet(node)
-  private def astForAvailabilityArgumentListSyntax(node: AvailabilityArgumentListSyntax): Ast = notHandledYet(node)
+  private def astForAccessorDeclListSyntax(node: AccessorDeclListSyntax): Ast = {
+    astForListSyntaxChildren(node, node.children)
+  }
+
+  private def astForArrayElementListSyntax(node: ArrayElementListSyntax): Ast = notHandledYet(node)
+  private def astForAttributeListSyntax(node: AttributeListSyntax): Ast       = notHandledYet(node)
+
+  private def astForAvailabilityArgumentListSyntax(node: AvailabilityArgumentListSyntax): Ast = {
+    astForListSyntaxChildren(node, node.children)
+  }
 
   private def astForCatchClauseListSyntax(node: CatchClauseListSyntax): Ast = {
     astForListSyntaxChildren(node, node.children)

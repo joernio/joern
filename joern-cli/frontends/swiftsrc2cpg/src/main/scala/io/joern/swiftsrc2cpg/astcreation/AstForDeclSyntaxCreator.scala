@@ -16,12 +16,18 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 
+import scala.collection.immutable.AbstractSeq
+import scala.collection.immutable.LinearSeq
 import scala.jdk.CollectionConverters.*
+import scala.xml.NodeSeq
 
 trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
-  private def astForAccessorDeclSyntax(node: AccessorDeclSyntax): Ast             = notHandledYet(node)
+  private def astForAccessorDeclSyntax(node: AccessorDeclSyntax): Ast = {
+    astForFunctionLike(node).ast
+  }
+
   private def astForActorDeclSyntax(node: ActorDeclSyntax): Ast                   = notHandledYet(node)
   private def astForAssociatedTypeDeclSyntax(node: AssociatedTypeDeclSyntax): Ast = notHandledYet(node)
 
@@ -769,8 +775,26 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     astForFunctionLike(node).ast
   }
 
-  private def astForIfConfigDeclSyntax(node: IfConfigDeclSyntax): Ast               = notHandledYet(node)
-  private def astForImportDeclSyntax(node: ImportDeclSyntax): Ast                   = notHandledYet(node)
+  private def astForIfConfigDeclSyntax(node: IfConfigDeclSyntax): Ast = notHandledYet(node)
+
+  private def astForImportDeclSyntax(node: ImportDeclSyntax): Ast = {
+    val importPath = node.path.children.map(c => code(c.name))
+    val (name, groupName) = importPath match {
+      case Nil         => (None, None)
+      case elem :: Nil => (Some(elem), Some(elem))
+      case _           => (importPath.lastOption, Some(importPath.slice(0, importPath.size - 1).mkString(".")))
+    }
+    if (name.isEmpty && groupName.isEmpty) {
+      Ast()
+    } else {
+      val _dependencyNode = newDependencyNode(name.get, groupName.get, "import")
+      val importNode      = newImportNode(code(node), groupName.get, name.get, node)
+      diffGraph.addNode(_dependencyNode)
+      diffGraph.addEdge(importNode, _dependencyNode, EdgeTypes.IMPORTS)
+      Ast(importNode)
+    }
+  }
+
   private def astForInitializerDeclSyntax(node: InitializerDeclSyntax): Ast         = notHandledYet(node)
   private def astForMacroDeclSyntax(node: MacroDeclSyntax): Ast                     = notHandledYet(node)
   private def astForMacroExpansionDeclSyntax(node: MacroExpansionDeclSyntax): Ast   = notHandledYet(node)

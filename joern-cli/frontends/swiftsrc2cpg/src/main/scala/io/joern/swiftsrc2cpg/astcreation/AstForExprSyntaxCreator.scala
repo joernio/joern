@@ -50,8 +50,14 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     callAst(callNode_, argAsts)
   }
 
-  private def astForAssignmentExprSyntax(node: AssignmentExprSyntax): Ast         = notHandledYet(node)
-  private def astForAwaitExprSyntax(node: AwaitExprSyntax): Ast                   = notHandledYet(node)
+  private def astForAssignmentExprSyntax(node: AssignmentExprSyntax): Ast = notHandledYet(node)
+
+  private def astForAwaitExprSyntax(node: AwaitExprSyntax): Ast = {
+    val callNode_ = callNode(node, code(node), "<operator>.await", DispatchTypes.STATIC_DISPATCH)
+    val argAsts   = List(astForNodeWithFunctionReference(node.expression))
+    callAst(callNode_, argAsts)
+  }
+
   private def astForBinaryOperatorExprSyntax(node: BinaryOperatorExprSyntax): Ast = notHandledYet(node)
 
   private def astForBooleanLiteralExprSyntax(node: BooleanLiteralExprSyntax): Ast = {
@@ -234,7 +240,14 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     astForNode(node.literal)
   }
 
-  private def astForIsExprSyntax(node: IsExprSyntax): Ast                         = notHandledYet(node)
+  private def astForIsExprSyntax(node: IsExprSyntax): Ast = {
+    val lhsAst    = astForNodeWithFunctionReference(node.expression)
+    val rhsAst    = astForNode(node.`type`)
+    val callNode_ = callNode(node, code(node), Operators.instanceOf, DispatchTypes.STATIC_DISPATCH)
+    val argAsts   = List(lhsAst, rhsAst)
+    callAst(callNode_, argAsts)
+  }
+
   private def astForKeyPathExprSyntax(node: KeyPathExprSyntax): Ast               = notHandledYet(node)
   private def astForMacroExpansionExprSyntax(node: MacroExpansionExprSyntax): Ast = notHandledYet(node)
 
@@ -266,8 +279,12 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
   }
 
-  private def astForMissingExprSyntax(node: MissingExprSyntax): Ast                         = notHandledYet(node)
-  private def astForNilLiteralExprSyntax(node: NilLiteralExprSyntax): Ast                   = notHandledYet(node)
+  private def astForMissingExprSyntax(node: MissingExprSyntax): Ast = notHandledYet(node)
+
+  private def astForNilLiteralExprSyntax(node: NilLiteralExprSyntax): Ast = {
+    Ast(literalNode(node, code(node), Option(Defines.Nil)))
+  }
+
   private def astForOptionalChainingExprSyntax(node: OptionalChainingExprSyntax): Ast       = notHandledYet(node)
   private def astForPackElementExprSyntax(node: PackElementExprSyntax): Ast                 = notHandledYet(node)
   private def astForPackExpansionExprSyntax(node: PackExpansionExprSyntax): Ast             = notHandledYet(node)

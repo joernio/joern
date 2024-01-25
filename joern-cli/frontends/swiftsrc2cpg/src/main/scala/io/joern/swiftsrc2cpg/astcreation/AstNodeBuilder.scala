@@ -187,8 +187,8 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
 
   protected def identifierNode(node: SwiftNode, name: String): NewIdentifier = {
     val dynamicInstanceTypeOption = name match {
-      case "this" | "self" => typeHintForThisExpression().headOption
-      case _               => None
+      case "this" | "self" | "Self" => typeHintForThisExpression().headOption
+      case _                        => None
     }
     identifierNode(node, name, name, Defines.Any, dynamicInstanceTypeOption.toList)
   }

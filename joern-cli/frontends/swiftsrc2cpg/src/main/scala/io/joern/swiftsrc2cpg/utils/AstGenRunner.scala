@@ -3,7 +3,7 @@ package io.joern.swiftsrc2cpg.utils
 import better.files.File
 import io.joern.swiftsrc2cpg.Config
 import io.joern.x2cpg.SourceFiles
-import io.joern.x2cpg.utils.{Environment, ExternalCommand}
+import io.joern.x2cpg.utils.Environment
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
