@@ -1,6 +1,8 @@
 package io.joern.rubysrc2cpg
 
 import better.files.File
+import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser
+import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.*
 import io.joern.rubysrc2cpg.passes.{AstCreationPass, ConfigFileCreationPass}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.passes.base.AstLinkerPass
@@ -11,11 +13,16 @@ import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.passes.CpgPassBase
+import io.shiftleft.semanticcpg.language.*
+import org.antlr.v4.runtime.ParserRuleContext
+import org.antlr.v4.runtime.misc.Interval
 import org.slf4j.LoggerFactory
 
+import java.io.File as JFile
 import java.nio.file.{Files, Paths}
+import scala.collection.mutable
+import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try, Using}
-
 class RubySrc2Cpg extends X2CpgFrontend[Config] {
 
   private val logger                                = LoggerFactory.getLogger(this.getClass)
@@ -77,6 +84,8 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
           .iterator
         ConcurrentTaskUtil.runUsingThreadPool(tasks).flatMap(_.toOption)
       }
+
+      new ParseInternalStructures(parsedFiles, cpg.metaData.root.headOption).populatePackageTable()
       val astCreationPass =
         new deprecated.passes.AstCreationPass(cpg, parsedFiles, RubySrc2Cpg.packageTableInfo, config)
       astCreationPass.createAndApply()
@@ -121,5 +130,115 @@ object RubySrc2Cpg {
       List()
     }
   }
+
+}
+
+class ParseInternalStructures(
+  parsedFiles: List[(String, DeprecatedRubyParser.ProgramContext)],
+  projectRoot: Option[String] = None
+) {
+
+  private val logger                            = LoggerFactory.getLogger(getClass)
+  private val classStack: mutable.Stack[String] = mutable.Stack[String]()
+
+  def populatePackageTable(): Unit = {
+    val tasks = parsedFiles.map { case (fileName, programCtx) =>
+      () => {
+        val relativeFilename: String =
+          projectRoot.map(fileName.stripPrefix).map(_.stripPrefix(JFile.separator)).getOrElse(fileName)
+        parseForStructures(relativeFilename, programCtx)
+      }
+    }.iterator
+    ConcurrentTaskUtil.runUsingThreadPool(tasks).foreach {
+      case Failure(exception) =>
+        logger.warn("Exception encountered while scanning for internal structures", exception)
+      case _ => // do nothing
+    }
+  }
+
+  private def parseForStructures(relativeFilename: String, programCtx: ProgramContext): Unit = {
+    val name     = ":program"
+    val fullName = s"$relativeFilename:$name"
+    classStack.push(fullName)
+    if (
+      programCtx.compoundStatement() != null &&
+      programCtx.compoundStatement().statements() != null
+    ) {
+      programCtx.compoundStatement().statements().statement().asScala.foreach(parseStatement)
+    }
+  }
+
+  private def parseStatement(ctx: StatementContext): Unit = ctx match {
+    case ctx: ExpressionOrCommandStatementContext => parseExpressionOrCommand(ctx.expressionOrCommand())
+    case _                                        =>
+  }
+
+  private def parseExpressionOrCommand(ctx: ExpressionOrCommandContext): Unit = ctx match {
+    case ctx: ExpressionExpressionOrCommandContext => parseExpressionContext(ctx.expression())
+    case _                                         =>
+  }
+
+  private def parsePrimaryContext(ctx: PrimaryContext): Unit = ctx match {
+    case ctx: MethodDefinitionPrimaryContext => parseMethodDefinitionContext(ctx.methodDefinition())
+    case _                                   =>
+  }
+
+  private def parseExpressionContext(ctx: ExpressionContext): Unit = ctx match {
+    case ctx: PrimaryExpressionContext => parsePrimaryContext(ctx.primary())
+    case _                             =>
+  }
+
+  private def parseMethodDefinitionContext(ctx: MethodDefinitionContext): Unit = {
+    val maybeMethodName = Option(ctx.methodNamePart()) match
+      case Some(ctxMethodNamePart) =>
+        readMethodNamePart(ctxMethodNamePart)
+      case None =>
+        readMethodIdentifier(ctx.methodIdentifier())
+
+    maybeMethodName.foreach { methodName =>
+      val methodFullName = classStack.reverse :+ methodName mkString "."
+      // TODO: Insert this into the package table
+      RubySrc2Cpg.packageTableInfo.addPackageMethod()
+    }
+  }
+
+  private def readMethodNamePart(ctx: MethodNamePartContext): Option[String] = {
+    ctx match
+      case context: SimpleMethodNamePartContext =>
+        Option(context.definedMethodName().methodName()) match
+          case Some(methodNameCtx) => Try(methodNameCtx.methodIdentifier().getText).toOption
+          case None                => None
+      case context: SingletonMethodNamePartContext =>
+        Option(context.definedMethodName().methodName()) match
+          case Some(methodNameCtx) => Try(methodNameCtx.methodIdentifier().getText).toOption
+          case None                => None
+      case _ => None
+  }
+
+  private def readMethodIdentifier(ctx: MethodIdentifierContext): Option[String] = {
+    if (ctx.methodOnlyIdentifier() != null) {
+      readMethodOnlyIdentifier(ctx.methodOnlyIdentifier())
+    } else if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null) {
+      Option(ctx.LOCAL_VARIABLE_IDENTIFIER().getSymbol.getText)
+    } else {
+      None
+    }
+  }
+
+  private def readMethodOnlyIdentifier(ctx: MethodOnlyIdentifierContext): Option[String] = {
+    if (ctx.LOCAL_VARIABLE_IDENTIFIER() != null || ctx.CONSTANT_IDENTIFIER() != null) {
+      text(ctx)
+    } else {
+      None
+    }
+  }
+
+  private def text(ctx: ParserRuleContext): Option[String] = Try {
+    val a     = ctx.getStart.getStartIndex
+    val b     = ctx.getStop.getStopIndex
+    val intv  = new Interval(a, b)
+    val input = ctx.getStart.getInputStream
+    input.getText(intv)
+  }.toOption
 
 }
