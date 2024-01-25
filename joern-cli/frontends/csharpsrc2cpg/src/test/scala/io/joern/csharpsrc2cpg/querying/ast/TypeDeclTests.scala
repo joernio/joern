@@ -49,4 +49,24 @@ class TypeDeclTests extends CSharpCode2CpgFixture {
     }
   }
 
+  "a basic struct declaration" should {
+    val cpg = code("""
+        |public struct Coords
+        |{
+        |    public double y;
+        |}
+        |""".stripMargin)
+
+    "generate a type declaration with correct properties" in {
+      val x = cpg.typeDecl.nameExact("Coords").head
+      x.fullName shouldBe "Coords"
+    }
+
+    "generate a type declaration with correct modifiers and members" in {
+      val x = cpg.typeDecl.nameExact("Coords").head
+      x.modifier.modifierType.head shouldBe ModifierTypes.PUBLIC
+      x.member.name.head shouldBe "y"
+    }
+  }
+
 }

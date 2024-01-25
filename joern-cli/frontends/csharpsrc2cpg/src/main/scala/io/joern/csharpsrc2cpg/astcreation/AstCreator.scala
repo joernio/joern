@@ -60,6 +60,7 @@ class AstCreator(val relativeFileName: String, val parserResult: ParserResult, v
       case _: BaseStmt               => astForStatement(nodeInfo)
       case NamespaceDeclaration      => astForNamespaceDeclaration(nodeInfo)
       case ClassDeclaration          => astForClassDeclaration(nodeInfo)
+      case StructDeclaration         => astForClassDeclaration(nodeInfo)
       case MethodDeclaration         => astForMethodDeclaration(nodeInfo)
       case FieldDeclaration          => astForFieldDeclaration(nodeInfo)
       case VariableDeclaration       => astForVariableDeclaration(nodeInfo)

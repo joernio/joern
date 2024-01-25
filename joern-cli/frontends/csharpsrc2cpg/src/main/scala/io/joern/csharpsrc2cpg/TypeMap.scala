@@ -7,7 +7,8 @@ import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.{
   ClassDeclaration,
   FieldDeclaration,
   MethodDeclaration,
-  NamespaceDeclaration
+  NamespaceDeclaration,
+  StructDeclaration
 }
 import io.joern.csharpsrc2cpg.parser.{DotNetJsonAst, DotNetJsonParser, DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.astgen.AstGenRunner.AstGenRunnerResult
@@ -107,8 +108,9 @@ class TypeMap(astGenResult: AstGenRunnerResult, initialMappings: List[NamespaceT
       .map(AstCreatorHelper.createDotNetNodeInfo(_))
       .filter { x =>
         x.node match
-          case ClassDeclaration => true
-          case _                => false
+          case ClassDeclaration  => true
+          case StructDeclaration => true
+          case _                 => false
       }
       .map(parseClassDeclaration)
       .toSet
