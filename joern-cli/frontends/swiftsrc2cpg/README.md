@@ -31,10 +31,18 @@ swift build
 
 ## Running
 
-To produce a code property graph  issue the command:
+To produce a code property graph issue the command:
 ```shell script
 ./swiftsrc2cpg.sh <path/to/sourceCodeDirectory> --output <path/to/outputCpg>
 `````
+
+Additional options are available:
+```shell script
+./swiftsrc2cpg.sh <path/to/sourceCodeDirectory> \
+                --output <path/to/outputCpg> \
+                --define DEF
+                --define DEF_VAL=2
+```
 
 Run the following to see a complete list of available options:
 ```shell script
