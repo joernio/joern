@@ -16,10 +16,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 
-import scala.collection.immutable.AbstractSeq
-import scala.collection.immutable.LinearSeq
 import scala.jdk.CollectionConverters.*
-import scala.xml.NodeSeq
 
 trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
@@ -775,7 +772,36 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     astForFunctionLike(node).ast
   }
 
-  private def astForIfConfigDeclSyntax(node: IfConfigDeclSyntax): Ast = notHandledYet(node)
+  private def ifConfigDeclConditionIsSatisfied(node: IfConfigClauseSyntax): Boolean = {
+    node.condition.isEmpty
+    || definedSymbols.get(code(node.condition.get)).exists(_.toLowerCase == "true")
+    || definedSymbols.get(code(node.condition.get)).contains("1")
+  }
+
+  private def astForIfConfigDeclSyntax(node: IfConfigDeclSyntax): Ast = {
+    val children              = node.clauses.children
+    val ifIfConfigClauses     = children.filter(c => code(c.poundKeyword) == "#if")
+    val elseIfIfConfigClauses = children.filter(c => code(c.poundKeyword) == "#elseif")
+    val elseIfConfigClauses   = children.filter(c => code(c.poundKeyword) == "#else")
+    ifIfConfigClauses match {
+      case Nil => notHandledYet(node)
+      case ifIfConfigClause :: Nil if ifConfigDeclConditionIsSatisfied(ifIfConfigClause) =>
+        ifIfConfigClause.elements.map(astForNode).getOrElse(Ast())
+      case _ :: Nil =>
+        val firstElseIfSatisfied = elseIfIfConfigClauses.find(ifConfigDeclConditionIsSatisfied)
+        firstElseIfSatisfied match {
+          case Some(elseIfIfConfigClause) =>
+            elseIfIfConfigClause.elements.map(astForNode).getOrElse(Ast())
+          case None =>
+            elseIfConfigClauses match {
+              case Nil                       => Ast()
+              case elseIfConfigClause :: Nil => elseIfConfigClause.elements.map(astForNode).getOrElse(Ast())
+              case _                         => notHandledYet(node)
+            }
+        }
+      case _ => notHandledYet(node)
+    }
+  }
 
   private def astForImportDeclSyntax(node: ImportDeclSyntax): Ast = {
     val importPath = node.path.children.map(c => code(c.name))

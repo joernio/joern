@@ -1,57 +1,58 @@
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
 import io.shiftleft.semanticcpg.language._
 
 class DirectiveTests extends AbstractPassTest {
 
+  private val IfConfigExpressionCode = """
+   |foo()
+   |#if CONFIG1
+   |config1()
+   |#if CONFIG2
+   |config2()
+   |#if CONFIG3
+   |  #if INNER1
+   |  inner1()
+   |  #endif
+   |#elseif CONFIG4
+   |  config4()
+   |#else
+   |  elseConfig4()
+   |#endif
+   |bar()
+   |#endif
+   |#endif""".stripMargin
+
   "DirectiveTests" should {
 
-    "testSwitchIfConfig" ignore AstFixture("""
-      |switch x {
-      |  case 1: fallthrough
-      |  #if FOO
-      |  case 2: fallthrough
-      |  case 3: print(3)
-      |  case 4: print(4)
-      |  #endif
-      |  case 5: fallthrough
-      |  case 6: print(6)
-      |  #if BAR
-      |  #if BAZ
-      |  case 7: print(7)
-      |  case 8: fallthrough
-      |  #endif
-      |  case 9: fallthrough
-      |  #endif
-      |  case 10: print(10)
-      |}
-      |""".stripMargin) { cpg => ??? }
+    "testConfigExpression1 (no defines given)" in AstFixture(IfConfigExpressionCode) { cpg =>
+      cpg.call.code.l shouldBe List("foo()")
+    }
 
-    "testPostfixIfConfigExpression" ignore AstFixture("""
-      |foo
-      |  .bar()
-      |  .baz()
-      |  #if CONFIG1
-      |  .quux
-      |  .garp
-      |  #if CONFIG2
-      |  .quux
-      |  #if CONFIG3
-      |    #if INNER1
-      |     .quux
-      |     .garp
-      |    #endif
-      |  #elseif CONFIG3
-      |  .quux
-      |  .garp
-      |  #else
-      |  .gorp
-      |  #endif
-      |  .garp
-      |  #endif
-      |  #endif""".stripMargin) { cpg => ??? }
+    "testConfigExpression2 (one define given)" in AstFixture(IfConfigExpressionCode, defines = Set("CONFIG1")) { cpg =>
+      cpg.call.code.l shouldBe List("foo()", "config1()")
+    }
+
+    "testConfigExpression3 (multiple defines given)" in AstFixture(
+      IfConfigExpressionCode,
+      defines = Set("CONFIG1", "CONFIG2")
+    ) { cpg =>
+      cpg.call.code.l shouldBe List("foo()", "config1()", "config2()", "elseConfig4()", "bar()")
+    }
+
+    "testConfigExpression4 (all non-conflicting defines given)" in AstFixture(
+      IfConfigExpressionCode,
+      defines = Set("CONFIG1", "CONFIG2", "CONFIG3", "INNER1")
+    ) { cpg =>
+      cpg.call.code.l shouldBe List("foo()", "config1()", "config2()", "inner1()", "bar()")
+    }
+
+    "testConfigExpression5 (all non-conflicting defines given for elseif)" in AstFixture(
+      IfConfigExpressionCode,
+      defines = Set("CONFIG1", "CONFIG2", "CONFIG4")
+    ) { cpg =>
+      cpg.call.code.l shouldBe List("foo()", "config1()", "config2()", "config4()", "bar()")
+    }
 
     "testSourceLocation1" ignore AstFixture("#sourceLocation()") { cpg => ??? }
 
