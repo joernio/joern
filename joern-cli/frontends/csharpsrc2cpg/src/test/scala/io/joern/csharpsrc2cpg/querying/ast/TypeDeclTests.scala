@@ -58,15 +58,25 @@ class TypeDeclTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "generate a type declaration with correct properties" in {
-      val x = cpg.typeDecl.nameExact("Coords").head
-      x.fullName shouldBe "Coords"
+      inside(cpg.typeDecl.nameExact("Coords").headOption) {
+        case Some(struct) => struct.fullName shouldBe "Coords"
+        case None         => fail("Unable to find `Coords` type decl node")
+
+      }
     }
 
-    "generate a type declaration with correct modifiers and members" in {
-      val x = cpg.typeDecl.nameExact("Coords").head
-      x.modifier.modifierType.head shouldBe ModifierTypes.PUBLIC
-      x.member.name.head shouldBe "y"
+    "generate a type declaration with correct modifiers" in {
+      inside(cpg.typeDecl.nameExact("Coords").headOption) {
+        case Some(struct) => struct.modifier.modifierType.head shouldBe ModifierTypes.PUBLIC
+        case None         => fail("Unable to find modifier for `Coords` type decl node")
+      }
+    }
+
+    "generate a type declaration with correct member" in {
+      inside(cpg.typeDecl.nameExact("Coords").headOption) {
+        case Some(struct) => struct.member.name.head shouldBe "y"
+        case None         => fail("Unable to find member for `Coords` type decl node")
+      }
     }
   }
-
 }
