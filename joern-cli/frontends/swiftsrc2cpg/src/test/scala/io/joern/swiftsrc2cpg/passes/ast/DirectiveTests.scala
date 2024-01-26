@@ -54,6 +54,42 @@ class DirectiveTests extends AbstractPassTest {
       cpg.call.code.l shouldBe List("foo()", "config1()", "config2()", "config4()", "bar()")
     }
 
+    "testConfigExpression6 (call behind define)" in AstFixture(
+      """
+        |foo
+        |#if CONFIG1
+        |.bar()
+        |#else
+        |.baz()
+        |#endif
+        |""".stripMargin,
+      defines = Set("CONFIG1")
+    ) { cpg =>
+      cpg.call.code.l shouldBe List("foo.bar()", "foo.bar")
+    }
+
+    "testConfigExpression7 (call behind define with trailing call)" in AstFixture(
+      """
+        |foo
+        |#if CONFIG1
+        |.bar()
+        |#else
+        |.baz()
+        |#endif
+        |.oneMore(x: 1)
+        |""".stripMargin,
+      defines = Set("CONFIG1")
+    ) { cpg =>
+      cpg.call.code.l shouldBe List(
+        "(_tmp_0 = foo.bar()).oneMore(x: 1)",
+        "(_tmp_0 = foo.bar()).oneMore",
+        "(_tmp_0 = foo.bar())",
+        "foo.bar()",
+        "foo.bar",
+        "x: 1"
+      )
+    }
+
     "testSourceLocation1" ignore AstFixture("#sourceLocation()") { cpg => ??? }
 
     "testSourceLocation2" ignore AstFixture("""#sourceLocation(file: "foo", line: 42)""") { cpg => ??? }
