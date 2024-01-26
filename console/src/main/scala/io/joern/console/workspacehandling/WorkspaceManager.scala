@@ -2,6 +2,7 @@ package io.joern.console.workspacehandling
 
 import better.files.Dsl._
 import better.files._
+import io.joern.console
 import io.joern.console.Reporting
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.cpgloading.{CpgLoader, CpgLoaderConfig}
@@ -106,11 +107,11 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
 
   private def deleteWorkspace(): Unit = {
     if (dirPath == null || dirPath.toString == "") {
-      throw new RuntimeException("dirPath is not set")
+      throw console.Error("dirPath is not set")
     }
     val dirFile = better.files.File(dirPath.toAbsolutePath.toString)
     if (!dirFile.exists) {
-      throw new RuntimeException(s"Directory ${dirFile.toString} does not exist")
+      throw console.Error(s"Directory ${dirFile.toString} does not exist")
     }
 
     dirFile.delete()
@@ -168,7 +169,7 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
   private def projectDir(inputPath: String): Path = {
     val filename = File(inputPath).path.getFileName
     if (filename == null) {
-      throw new RuntimeException("invalid input path: " + inputPath)
+      throw RuntimeException("invalid input path: " + inputPath)
     }
     dirPath
       .resolve(URLEncoder.encode(filename.toString, DefaultCharset.toString))
@@ -208,17 +209,12 @@ class WorkspaceManager[ProjectType <: Project](path: String, loader: WorkspaceLo
   /** Obtain the cpg that was last loaded. Throws a runtime exception if no CPG has been loaded.
     */
   def cpg: Cpg = {
-    val project = workspace.projects.lastOption
-    project match {
-      case Some(p) =>
-        p.cpg match {
-          case Some(value) => value
-          case None =>
-            throw new RuntimeException(
-              s"No CPG loaded for project ${p.name} - try e.g. `help|importCode|importCpg|open`"
-            )
-        }
-      case None => throw new RuntimeException("No projects loaded")
+    workspace.projects.lastOption match {
+      case Some(project) =>
+        project.cpg.getOrElse(
+          throw console.Error(s"No CPG loaded for project ${project.name} - try e.g. `help|importCode|importCpg|open`")
+        )
+      case None => throw console.Error("No projects loaded")
     }
   }
 
