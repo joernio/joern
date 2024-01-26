@@ -312,11 +312,6 @@ class AstCreator(
     case _                       => None
   }
 
-  def argumentTypesForMethodLike(maybeResolvedMethodLike: Try[ResolvedMethodLikeDeclaration]): Option[List[String]] = {
-    maybeResolvedMethodLike.toOption
-      .flatMap(calcParameterTypes(_, ResolvedTypeParametersMap.empty()))
-  }
-
   def unknownAst(node: Node): Ast = Ast(unknownNode(node, node.toString))
 
 }

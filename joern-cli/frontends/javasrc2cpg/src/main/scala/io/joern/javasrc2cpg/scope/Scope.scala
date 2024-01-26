@@ -2,7 +2,7 @@ package io.joern.javasrc2cpg.scope
 
 import io.joern.javasrc2cpg.astcreation.ExpectedType
 import io.joern.javasrc2cpg.scope.Scope.*
-import io.joern.javasrc2cpg.scope.JavaScopeElement.*
+import io.joern.javasrc2cpg.scope.JavaScopeElement.{AssignmentScope, *}
 import io.joern.javasrc2cpg.util.MultiBindingTableAdapterForJavaparser.JavaparserBindingDeclType
 import io.joern.javasrc2cpg.util.NameConstants
 import io.joern.x2cpg.Ast
@@ -120,7 +120,8 @@ class Scope {
       .collectFirst {
         case result: SimpleVariable   => result
         case result: CapturedVariable => result
-      }.getOrElse(NotInScope)
+      }
+      .getOrElse(NotInScope)
   }
 
   def lookupMethodName(name: String): List[NewTypeDecl] = {
@@ -209,6 +210,10 @@ class Scope {
 
   def enclosingBlock: Option[BlockScope] = scopeStack.collectFirst { case scope: BlockScope => scope }
 
+  def enclosingAssignmentTarget: Option[Ast] = scopeStack.headOption.collect { case AssignmentScope(targetAst) =>
+    targetAst
+  }
+
   def enclosingMethodReturnType: Option[ExpectedType] = scopeStack.collectFirst { case methodScope: MethodScope =>
     methodScope.returnType
   }
@@ -290,16 +295,16 @@ object Scope {
   type NewVariableNode = NewLocal | NewMethodParameterIn | NewMember
   def newVariableNodeName(variableNode: NewVariableNode): String = {
     variableNode match {
-      case node: NewLocal => node.name
+      case node: NewLocal             => node.name
       case node: NewMethodParameterIn => node.name
-      case node: NewMember => node.name
+      case node: NewMember            => node.name
     }
   }
   def newVariableNodeTypeFullName(variableNode: NewVariableNode): String = {
     variableNode match {
-      case node: NewLocal => node.typeFullName
+      case node: NewLocal             => node.typeFullName
       case node: NewMethodParameterIn => node.typeFullName
-      case node: NewMember => node.typeFullName
+      case node: NewMember            => node.typeFullName
     }
   }
 
@@ -334,10 +339,10 @@ object Scope {
   sealed trait ScopeVariable {
     def node: NewVariableNode
     def typeFullName: String = newVariableNodeTypeFullName(node)
-    def name: String = newVariableNodeName(node)
+    def name: String         = newVariableNodeName(node)
   }
-  final case class ScopeLocal(override val node: NewLocal) extends ScopeVariable
-  final case class ScopeParameter(override val node: NewMethodParameterIn) extends ScopeVariable
+  final case class ScopeLocal(override val node: NewLocal)                      extends ScopeVariable
+  final case class ScopeParameter(override val node: NewMethodParameterIn)      extends ScopeVariable
   final case class ScopeMember(override val node: NewMember, isStatic: Boolean) extends ScopeVariable
 
   sealed trait VariableLookupResult {

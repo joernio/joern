@@ -52,7 +52,7 @@ trait AstForSimpleStatementsCreator { this: AstCreator =>
     // TODO Handle super
     val maybeResolved = tryWithSafeStackOverflow(stmt.resolve())
     val args          = argAstsForCall(stmt, maybeResolved, stmt.getArguments)
-    val argTypes      = argumentTypesForMethodLike(maybeResolved)
+    val argTypes      = maybeResolved.toOption.flatMap(getParameterTypes(_))
 
     val typeFullName = maybeResolved.toOption
       .map(_.declaringType())

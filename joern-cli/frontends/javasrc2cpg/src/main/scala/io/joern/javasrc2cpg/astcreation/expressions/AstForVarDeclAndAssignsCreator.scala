@@ -7,7 +7,13 @@ import com.github.javaparser.ast.expr.{AssignExpr, Expression, ObjectCreationExp
 import com.github.javaparser.resolution.types.ResolvedType
 import io.joern.javasrc2cpg.astcreation.expressions.AstForCallExpressionsCreator.PartialConstructor
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
-import io.joern.javasrc2cpg.scope.Scope.{NewVariableNode, ScopeMember, ScopeParameter, SimpleVariable, newVariableNodeTypeFullName}
+import io.joern.javasrc2cpg.scope.Scope.{
+  NewVariableNode,
+  ScopeMember,
+  ScopeParameter,
+  SimpleVariable,
+  newVariableNodeTypeFullName
+}
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.NameConstants
 import io.joern.x2cpg.passes.frontend.TypeNodePass
@@ -58,26 +64,29 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
 
     variablesWithAssignments.map(_.head) ++ variablesWithAssignments.flatMap(_.drop(1))
   }
-  
+
   def astsForVariableDeclarator(variableDeclarator: VariableDeclarator): List[Ast] = {
     val localNode = localForVariableDeclarator(variableDeclarator)
 
-    val identifierForAssignment = identifierNode(variableDeclarator, localNode.name, localNode.code, localNode.typeFullName)
+    val identifierForAssignment =
+      identifierNode(variableDeclarator, localNode.name, localNode.code, localNode.typeFullName)
 
     // Need the actual resolvedType here for when the RHS is a lambda expression.
     val resolvedExpectedType =
       tryWithSafeStackOverflow(symbolSolver.toResolvedType(variableDeclarator.getType, classOf[ResolvedType])).toOption
 
-    val assignmentAsts: List[Ast] = variableDeclarator.getInitializer.toScala.map { initializer =>
-      astsForAssignment(
-        variableDeclarator,
-        Ast(identifierForAssignment),
-        initializer,
-        resolvedExpectedType,
-        Operators.assignment,
-        "="
-      ).toList
-    }.getOrElse(Nil)
+    val assignmentAsts: List[Ast] = variableDeclarator.getInitializer.toScala
+      .map { initializer =>
+        astsForAssignment(
+          variableDeclarator,
+          Ast(identifierForAssignment),
+          initializer,
+          resolvedExpectedType,
+          Operators.assignment,
+          "="
+        ).toList
+      }
+      .getOrElse(Nil)
 
     Ast(localNode) :: assignmentAsts
   }
@@ -104,17 +113,25 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
   ): Seq[Ast] = {
 
     scope.pushAssignmentScope(targetAst)
-    val initializerAsts = astsForExpression(initializer, ExpectedType(targetAst.rootType, expectedInitializerType)).toList
+    val initializerAsts =
+      astsForExpression(initializer, ExpectedType(targetAst.rootType, expectedInitializerType)).toList
     scope.popAssignmentScope()
 
-    val assignmentCode = s"${targetAst.rootCodeOrEmpty} $assignmentOperatorCode ${initializerAsts.headOption.flatMap(_.rootCode).getOrElse("")}"
+    val assignmentCode =
+      s"${targetAst.rootCodeOrEmpty} $assignmentOperatorCode ${initializerAsts.headOption.flatMap(_.rootCode).getOrElse("")}"
     val assignmentType =
       targetAst.rootType
         .orElse(initializerAsts.headOption.flatMap(_.rootType))
         .orElse(expectedInitializerType.map(_.toString))
         .getOrElse(TypeConstants.Any)
 
-    val assignmentCallNode = newOperatorCallNode(assignmentOperatorName, assignmentCode, Some(assignmentType), line(assignmentNode), column(assignmentNode))
+    val assignmentCallNode = newOperatorCallNode(
+      assignmentOperatorName,
+      assignmentCode,
+      Some(assignmentType),
+      line(assignmentNode),
+      column(assignmentNode)
+    )
 
     val assignmentArgs = targetAst :: initializerAsts.headOption.toList
 

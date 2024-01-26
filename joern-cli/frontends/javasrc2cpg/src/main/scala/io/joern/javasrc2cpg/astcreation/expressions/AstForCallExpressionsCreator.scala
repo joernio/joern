@@ -13,7 +13,11 @@ import com.github.javaparser.ast.expr.{
   ThisExpr
 }
 import com.github.javaparser.ast.{Node, NodeList}
-import com.github.javaparser.resolution.declarations.{ResolvedMethodDeclaration, ResolvedMethodLikeDeclaration}
+import com.github.javaparser.resolution.declarations.{
+  ResolvedConstructorDeclaration,
+  ResolvedMethodDeclaration,
+  ResolvedMethodLikeDeclaration
+}
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
 import io.joern.javasrc2cpg.astcreation.expressions.AstForCallExpressionsCreator.PartialConstructor
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
@@ -51,7 +55,7 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
     val expressionTypeFullName =
       expressionReturnTypeFullName(call).orElse(expectedReturnType.fullName).map(typeInfoCalc.registerType)
 
-    val argumentTypes = argumentTypesForMethodLike(maybeResolvedCall)
+    val argumentTypes = maybeResolvedCall.toOption.flatMap(getParameterTypes(_))
     val returnType = maybeResolvedCall
       .map { resolvedCall =>
         typeInfoCalc.fullName(resolvedCall.getReturnType, ResolvedTypeParametersMap.empty())
@@ -132,8 +136,104 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
     }
   }
 
-  private[expressions] def newAstForObjectCreationExpr(expr: ObjectCreationExpr, expectedType: ExpectedType): Ast = {
-    sss
+  private[expressions] def newAstsForObjectCreationExpr(
+    expr: ObjectCreationExpr,
+    expectedType: ExpectedType
+  ): Seq[Ast] = {
+    val anonymousClassBody = expr.getAnonymousClassBody.toScala.map(_.asScala.toList)
+
+    // For anonymous classes, the baseTypeFullName is the typeFullName for the type that is being extended.
+    // For any other types it will be equal to the typeFullName for the type being instantiated.
+    val baseTypeFullName = getConstructorInvocationBaseType(expr, expectedType)
+    val typeFullName = if (anonymousClassBody.isEmpty) {
+      baseTypeFullName
+    } else {
+      baseTypeFullName.map { baseTypeFullName =>
+        val anonymousNameIndex = scope.getNextAnonymousClassIndex()
+        s"$baseTypeFullName$$$anonymousNameIndex"
+      }
+    }
+
+    val resolvedConstructor = tryWithSafeStackOverflow(expr.resolve())
+    val argumentAsts        = argAstsForCall(expr, resolvedConstructor, expr.getArguments).toList
+
+    astsForConstructorInvocation(expr, resolvedConstructor.toOption, typeFullName, argumentAsts)
+  }
+
+  private def astsForConstructorInvocation(
+    originNode: Node,
+    resolvedConstructor: Option[ResolvedConstructorDeclaration],
+    typeFullName: Option[String],
+    argumentAsts: List[Ast]
+  ): Seq[Ast] = {
+    val constructorParameterTypes = resolvedConstructor.flatMap(getParameterTypes(_))
+
+    val allocNode = newOperatorCallNode(
+      Operators.alloc,
+      originNode.toString,
+      typeFullName.orElse(Some(TypeConstants.Any)),
+      line(originNode),
+      column(originNode)
+    )
+
+    val initCall = initNode(
+      typeFullName.orElse(Some(TypeConstants.Any)),
+      constructorParameterTypes,
+      argumentAsts.size,
+      originNode.toString,
+      line(originNode)
+    )
+
+    val (isIdentifierAssign, initReceiver: NewIdentifier) = scope.enclosingAssignmentTarget
+      .flatMap(_.root)
+      .collect { case identifier: NewIdentifier =>
+        (true, identifier.copy.lineNumber(line(originNode)).columnNumber(column(originNode)))
+      }
+      .getOrElse {
+        val tempIdentifierName = s"$$obj$tempConstCount"
+        tempConstCount += 1
+        val tempIdentifier =
+          identifierNode(originNode, tempIdentifierName, tempIdentifierName, typeFullName.getOrElse(TypeConstants.Any))
+        (false, tempIdentifier)
+      }
+
+    // TODO: This doesn't account for chained constructors.
+    // e.g. in the Bar.init invocation `new Foo().new Bar()`, this should be the foo instance
+    val capturedOuterClass = scope.lookupVariable(NameConstants.This) match {
+      case SimpleVariable(param: ScopeParameter) => Some(param.node)
+      case _                                     => None
+    }
+
+    val initAst = Ast(initCall)
+
+    scope.enclosingTypeDecl.foreach(
+      _.registerInitToComplete(
+        PartialInit(allocNode.typeFullName, initAst, Ast(initReceiver), argumentAsts, capturedOuterClass)
+      )
+    )
+
+    if (isIdentifierAssign) {
+      List(Ast(allocNode), initAst)
+    } else {
+      val assignmentCode = s"${initReceiver.code} = ${allocNode.code}"
+      val assignmentNode = newOperatorCallNode(Operators.assignment, assignmentCode, Some(allocNode.typeFullName))
+      val assignmentAst  = callAst(assignmentNode, List(initReceiver.copy, allocNode).map(Ast(_)))
+      // TODO Ref edges for identifiers
+      val blockAst = Ast(blockNode(originNode))
+        .withChild(assignmentAst)
+        .withChild(initAst)
+        .withChild(Ast(initReceiver.copy))
+      blockAst :: Nil
+    }
+  }
+
+  private def getConstructorInvocationBaseType(expr: ObjectCreationExpr, expectedType: ExpectedType): Option[String] = {
+    // TODO: Check if this is a chained constructor invocation first
+    scope
+      .lookupScopeType(expr.getTypeAsString)
+      .map(_.typeFullName)
+      .orElse(tryWithSafeStackOverflow(typeInfoCalc.fullName(expr.getType)).toOption.flatten)
+      .orElse(expectedType.fullName)
   }
 
   /** The below representation for constructor invocations and object creations was chosen for the sake of consistency
@@ -189,7 +289,7 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
       scope.addLocalDecl(anonymousClassDecl)
     }
 
-    val argumentTypes = argumentTypesForMethodLike(maybeResolvedExpr)
+    val argumentTypes = maybeResolvedExpr.toOption.flatMap(getParameterTypes(_))
 
     val allocNode = newOperatorCallNode(
       Operators.alloc,

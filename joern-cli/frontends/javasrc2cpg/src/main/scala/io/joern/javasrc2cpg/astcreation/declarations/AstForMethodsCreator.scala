@@ -68,7 +68,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     typeParameters.foreach { typeParameter => scope.addTopLevelType(typeParameter.name, typeParameter.typeFullName) }
 
     val parameterAsts  = astsForParameterList(methodDeclaration.getParameters)
-    val parameterTypes = argumentTypesForMethodLike(maybeResolved)
+    val parameterTypes = maybeResolved.toOption.flatMap(getParameterTypes(_))
     val signature      = composeSignature(returnTypeFullName, parameterTypes, parameterAsts.size)
     val namespaceName  = scope.enclosingTypeDecl.fullName.getOrElse(Defines.UnresolvedNamespace)
     val methodFullName = composeMethodFullName(namespaceName, methodDeclaration.getNameAsString, signature)
@@ -252,9 +252,9 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
     ast.withChildren(annotationAsts)
   }
 
-  def calcParameterTypes(
+  def getParameterTypes(
     methodLike: ResolvedMethodLikeDeclaration,
-    typeParamValues: ResolvedTypeParametersMap
+    typeParamValues: ResolvedTypeParametersMap = ResolvedTypeParametersMap.empty()
   ): Option[List[String]] = {
     val parameterTypes =
       Range(0, methodLike.getNumberOfParams)
@@ -292,7 +292,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
   }
 
   def methodSignature(method: ResolvedMethodDeclaration, typeParamValues: ResolvedTypeParametersMap): String = {
-    val maybeParameterTypes = calcParameterTypes(method, typeParamValues)
+    val maybeParameterTypes = getParameterTypes(method, typeParamValues)
 
     val maybeReturnType =
       Try(method.getReturnType).toOption
@@ -318,7 +318,7 @@ private[declarations] trait AstForMethodsCreator { this: AstCreator =>
       val maybeResolved = tryWithSafeStackOverflow(constructorDeclaration.resolve())
 
       val parameterAsts = astsForParameterList(constructorDeclaration.getParameters).toList
-      val paramTypes    = argumentTypesForMethodLike(maybeResolved)
+      val paramTypes    = maybeResolved.toOption.flatMap(getParameterTypes(_))
       val signature     = composeSignature(Some(TypeConstants.Void), paramTypes, parameterAsts.size)
       val typeFullName  = scope.enclosingTypeDecl.fullName
       val fullName =
