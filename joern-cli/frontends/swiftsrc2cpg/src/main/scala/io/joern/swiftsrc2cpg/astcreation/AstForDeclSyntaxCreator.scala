@@ -772,7 +772,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     astForFunctionLike(node).ast
   }
 
-  private def ifConfigDeclConditionIsSatisfied(node: IfConfigClauseSyntax): Boolean = {
+  protected def ifConfigDeclConditionIsSatisfied(node: IfConfigClauseSyntax): Boolean = {
     node.condition.isEmpty
     || definedSymbols.get(code(node.condition.get)).exists(_.toLowerCase == "true")
     || definedSymbols.get(code(node.condition.get)).contains("1")

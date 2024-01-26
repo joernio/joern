@@ -116,8 +116,20 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     baseNode: NewNode,
     callName: String
   ): Ast = {
-    val args      = callExpr.arguments.children.map(astForNode)
-    val callNode_ = callNode(callExpr, code(callExpr), callName, DispatchTypes.DYNAMIC_DISPATCH)
+    val args         = callExpr.arguments.children.map(astForNode)
+    val callExprCode = code(callExpr)
+    val callCode = callExprCode match {
+      case c if c.startsWith(".") && codeOf(baseNode) != "this" => s"${codeOf(baseNode)}$callExprCode"
+      case c if c.contains("#if ") =>
+        val recCode = codeOf(receiverAst.nodes.head)
+        if (recCode.endsWith(callName)) {
+          s"${codeOf(receiverAst.nodes.head)}(${code(callExpr.arguments)})"
+        } else {
+          s"${codeOf(receiverAst.nodes.head)}$callName(${code(callExpr.arguments)})"
+        }
+      case _ => callExprCode
+    }
+    val callNode_ = callNode(callExpr, callCode, callName, DispatchTypes.DYNAMIC_DISPATCH)
     // If the callee is a function itself, e.g. closure, then resolve this locally, if possible
     if (callExpr.calledExpression.isInstanceOf[ClosureExprSyntax]) {
       functionNodeToNameAndFullName.get(callExpr.calledExpression).foreach { case (name, fullName) =>
@@ -159,7 +171,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
               val baseTmpNode = identifierNode(otherBase, tmpVarName)
               scope.addVariableReference(tmpVarName, baseTmpNode)
               val baseAst   = astForNodeWithFunctionReference(otherBase)
-              val codeField = s"(${codeOf(baseTmpNode)} = ${code(otherBase)})"
+              val codeField = s"(${codeOf(baseTmpNode)} = ${codeOf(baseAst.nodes.head)})"
               val tmpAssignmentAst =
                 createAssignmentCallAst(Ast(baseTmpNode), baseAst, codeField, line(otherBase), column(otherBase))
               val memberNode = createFieldIdentifierNode(code(member), line(member), column(member))
@@ -285,11 +297,53 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     Ast(literalNode(node, code(node), Option(Defines.Nil)))
   }
 
-  private def astForOptionalChainingExprSyntax(node: OptionalChainingExprSyntax): Ast       = notHandledYet(node)
-  private def astForPackElementExprSyntax(node: PackElementExprSyntax): Ast                 = notHandledYet(node)
-  private def astForPackExpansionExprSyntax(node: PackExpansionExprSyntax): Ast             = notHandledYet(node)
-  private def astForPatternExprSyntax(node: PatternExprSyntax): Ast                         = notHandledYet(node)
-  private def astForPostfixIfConfigExprSyntax(node: PostfixIfConfigExprSyntax): Ast         = notHandledYet(node)
+  private def astForOptionalChainingExprSyntax(node: OptionalChainingExprSyntax): Ast = notHandledYet(node)
+  private def astForPackElementExprSyntax(node: PackElementExprSyntax): Ast           = notHandledYet(node)
+  private def astForPackExpansionExprSyntax(node: PackExpansionExprSyntax): Ast       = notHandledYet(node)
+  private def astForPatternExprSyntax(node: PatternExprSyntax): Ast                   = notHandledYet(node)
+
+  private def astForPostfixIfConfigExprSyntax(node: PostfixIfConfigExprSyntax): Ast = {
+    val children              = node.config.clauses.children
+    val ifIfConfigClauses     = children.filter(c => code(c.poundKeyword) == "#if")
+    val elseIfIfConfigClauses = children.filter(c => code(c.poundKeyword) == "#elseif")
+    val elseIfConfigClauses   = children.filter(c => code(c.poundKeyword) == "#else")
+
+    node.base match {
+      case Some(base) =>
+        val maybeFunctionCallExpr = ifIfConfigClauses match {
+          case Nil => None
+          case ifIfConfigClause :: Nil if ifConfigDeclConditionIsSatisfied(ifIfConfigClause) =>
+            ifIfConfigClause.elements
+          case _ :: Nil =>
+            val firstElseIfSatisfied = elseIfIfConfigClauses.find(ifConfigDeclConditionIsSatisfied)
+            firstElseIfSatisfied match {
+              case Some(elseIfIfConfigClause) =>
+                elseIfIfConfigClause.elements
+              case None =>
+                elseIfConfigClauses match {
+                  case Nil                       => None
+                  case elseIfConfigClause :: Nil => elseIfConfigClause.elements
+                  case _                         => None
+                }
+            }
+          case _ => None
+        }
+        maybeFunctionCallExpr match {
+          case Some(functionCallExpr: FunctionCallExprSyntax) =>
+            functionCallExpr.calledExpression match
+              case MemberAccessExprSyntax(json) =>
+                val memberChildren = json("children").arr
+                memberChildren.addOne(base.json)
+                astForNode(functionCallExpr)
+              case _ =>
+                notHandledYet(node)
+          case _ => notHandledYet(node)
+        }
+      case None => astForNode(node.config)
+    }
+
+  }
+
   private def astForPostfixOperatorExprSyntax(node: PostfixOperatorExprSyntax): Ast         = notHandledYet(node)
   private def astForPrefixOperatorExprSyntax(node: PrefixOperatorExprSyntax): Ast           = notHandledYet(node)
   private def astForRegexLiteralExprSyntax(node: RegexLiteralExprSyntax): Ast               = notHandledYet(node)
