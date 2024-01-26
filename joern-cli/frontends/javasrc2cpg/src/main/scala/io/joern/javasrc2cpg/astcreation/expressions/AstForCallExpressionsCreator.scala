@@ -132,6 +132,10 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
     }
   }
 
+  private[expressions] def newAstForObjectCreationExpr(expr: ObjectCreationExpr, expectedType: ExpectedType): Ast = {
+    sss
+  }
+
   /** The below representation for constructor invocations and object creations was chosen for the sake of consistency
     * with the Java frontend. It follows the bytecode approach of splitting a constructor call into separate `alloc` and
     * `init` calls.
