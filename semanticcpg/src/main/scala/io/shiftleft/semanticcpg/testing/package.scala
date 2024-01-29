@@ -131,7 +131,10 @@ package object testing {
         }
 
         if (fileName != "") {
-          val file = cpg.file.nameExact(fileName).head
+          val file = cpg.file
+            .nameExact(fileName)
+            .headOption
+            .getOrElse(throw new RuntimeException(s"file with name='$fileName' not found"))
           graph.addEdge(method, file, EdgeTypes.SOURCE_FILE)
         }
       }
