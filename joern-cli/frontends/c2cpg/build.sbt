@@ -12,16 +12,16 @@ dependsOn(
   Projects.x2cpg             % "compile->compile;test->test"
 )
 
-lazy val cdtCoreDepVersion        = "8.4.0.202401242025"
-lazy val cdtCoreDepNameAndVersion = s"org.eclipse.cdt.core_$cdtCoreDepVersion"
-lazy val cdtCodeDepUrl =
-  s"https://ci.eclipse.org/cdt/job/cdt/job/main/353/artifact/releng/org.eclipse.cdt.repo/target/repository/plugins/$cdtCoreDepNameAndVersion.jar"
+// download cdt from the official eclipse download section: https://download.eclipse.org/tools/cdt/releases/11.4/cdt-11.4.0/plugins/
+lazy val cdtCoreVersion = "8.3.100.202309251502"
+lazy val eclipseDlMirror = "https://ftp.fau.de/eclipse" // alternative: "https://eclipse.mirror.garr.it"
+lazy val cdtCoreUrl     = s"$eclipseDlMirror/tools/cdt/releases/11.4/cdt-11.4.0/plugins/org.eclipse.cdt.core_$cdtCoreVersion.jar"
 
 libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
   "org.eclipse.platform"    % "org.eclipse.core.resources" % "3.20.0",
   "org.eclipse.platform"    % "org.eclipse.text"           % "3.13.100",
-  "org.eclipse.platform"    % "org.eclipse.cdt.core"       % cdtCoreDepVersion from cdtCodeDepUrl,
+  "org.eclipse.platform"    % "org.eclipse.cdt.core"       % cdtCoreVersion from cdtCoreUrl,
   "org.scalatest"          %% "scalatest"                  % Versions.scalatest % Test
 )
 
