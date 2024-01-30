@@ -12,10 +12,10 @@ dependsOn(
   Projects.x2cpg             % "compile->compile;test->test"
 )
 
-lazy val cdtCoreDepVersion        = "8.4.0.202401182322"
+lazy val cdtCoreDepVersion        = "8.4.0.202401242025"
 lazy val cdtCoreDepNameAndVersion = s"org.eclipse.cdt.core_$cdtCoreDepVersion"
 lazy val cdtCodeDepUrl =
-  s"https://ci.eclipse.org/cdt/job/cdt/job/main/348/artifact/releng/org.eclipse.cdt.repo/target/repository/plugins/$cdtCoreDepNameAndVersion.jar"
+  s"https://ci.eclipse.org/cdt/job/cdt/job/main/353/artifact/releng/org.eclipse.cdt.repo/target/repository/plugins/$cdtCoreDepNameAndVersion.jar"
 
 libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
