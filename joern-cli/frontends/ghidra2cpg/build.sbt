@@ -3,8 +3,7 @@ name := "ghidra2cpg"
 dependsOn(Projects.dataflowengineoss, Projects.x2cpg % "compile->compile;test->test")
 
 libraryDependencies ++= Seq(
-  // ghidra is a fat jar, containing loads of libraries - better make non-transitive by default
-  "io.joern"          % "ghidra"                   % "11.0_PUBLIC_20231222" % Provided,
+  "io.joern"          % "ghidra"                   % "11.0_PUBLIC_20231222+1",
   "com.github.scopt" %% "scopt"                    % "4.1.0",
   "commons-io"        % "commons-io"               % "2.13.0",
   "io.shiftleft"     %% "codepropertygraph"        % Versions.cpg,
