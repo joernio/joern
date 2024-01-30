@@ -1,6 +1,7 @@
 package io.joern.php2cpg.passes
 
 import better.files.File
+import io.joern.x2cpg.X2CpgConfig
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.codepropertygraph.generated.nodes._
@@ -10,9 +11,11 @@ import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate
+import scopt.OParser
 
 import scala.io.Source
 import java.io.{File => JFile}
+import java.nio.file.Paths
 
 // Corresponds to a parsed row in the known functions file
 case class KnownFunction(
@@ -23,17 +26,20 @@ case class KnownFunction(
   pTypes: Seq[Seq[String]] = Seq.empty
 )
 
+case class PhpSetKnownTypesConfig(knownTypesFilePath: Option[String] = None)
+
 /** Sets the return and parameter types for builtin functions with known function signatures.
   *
   * TODO: Need to handle variadic arguments.
   */
-class PhpSetKnownTypesPass(cpg: Cpg, knownTypesFile: Option[JFile] = None)
+class PhpSetKnownTypesPass(cpg: Cpg, config: PhpSetKnownTypesConfig = PhpSetKnownTypesConfig())
     extends ForkJoinParallelCpgPass[KnownFunction](cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
   override def generateParts(): Array[KnownFunction] = {
     /* parse file and return each row as a KnownFunction object */
+    val knownTypesFile = config.knownTypesFilePath
     val source = knownTypesFile match {
       case Some(file) => Source.fromFile(file)
       case _          => Source.fromResource("known_function_signatures.txt")
@@ -73,4 +79,28 @@ class PhpSetKnownTypesPass(cpg: Cpg, knownTypesFile: Option[JFile] = None)
   protected def setTypes(builder: overflowdb.BatchedUpdate.DiffGraphBuilder, n: StoredNode, types: Seq[String]): Unit =
     if (types.size == 1) builder.setNodeProperty(n, PropertyNames.TYPE_FULL_NAME, types.head)
     else builder.setNodeProperty(n, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, types)
+}
+
+trait PhpSetKnownTypesParserConfig[R <: X2CpgConfig[R]] { this: R =>
+
+  var knownTypesFilePath: String = ""
+
+  def withKnownTypesFilePath(knownTypesFilePath: String): R = {
+    this.knownTypesFilePath = Paths.get(knownTypesFilePath).toAbsolutePath.normalize().toString
+    this.asInstanceOf[R]
+  }
+}
+
+object PhpSetKnownTypes {
+
+  def parserOptions[R <: X2CpgConfig[R] with PhpSetKnownTypesParserConfig[R]]: OParser[_, R] = {
+    val builder = OParser.builder[R]
+    import builder.*
+    OParser.sequence(
+      opt[String]("known-types-file")
+        .hidden()
+        .action((path, c) => c.withKnownTypesFilePath(path))
+        .text("path to file with type signatures for known functions")
+    )
+  }
 }
