@@ -5,7 +5,7 @@ enablePlugins(JavaAppPackaging)
 val ScoptVersion          = "4.1.0"
 val CaskVersion           = "0.9.1"
 val CirceVersion          = "0.14.6"
-val ZeroturnaroundVersion = "1.15"
+val ZeroturnaroundVersion = "1.17"
 val OsLibVersion          = "0.9.1"
 val PprintVersion         = "0.7.3"
 val CommonsLangVersion    = "3.12.0"
