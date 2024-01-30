@@ -47,4 +47,37 @@ class MethodsAndCallDataflowsTests extends CSharpCode2CpgFixture(withDataFlow = 
 
   }
 
+  "method and call dataflows across files" should {
+    val cpg = code(
+      """
+        |public class Foo {
+        | public int bar(int pBar) {
+        |   Baz b = new Baz();
+        |   int res = b.qux(1, "hello");
+        |   return res;
+        | }
+        |}
+        |""".stripMargin,
+      "Foo.cs"
+    ).moreCode("""
+        |public class Baz {
+        | public int qux(int pQux, string ppQux) {
+        |   return pQux;
+        | }
+        |}
+        |""".stripMargin)
+
+    "find a path from 1 to res" in {
+      val src  = cpg.literal.codeExact("1").l
+      val sink = cpg.identifier.nameExact("res").lineNumber(4).l
+      sink.reachableBy(src).size shouldBe 1
+    }
+
+    "not find a path from \"hello\" to res" ignore {
+      val src  = cpg.literal.codeExact("\"hello\"").l
+      val sink = cpg.identifier.nameExact("res").lineNumber(4).l
+      sink.reachableBy(src).size shouldBe 0
+    }
+  }
+
 }
