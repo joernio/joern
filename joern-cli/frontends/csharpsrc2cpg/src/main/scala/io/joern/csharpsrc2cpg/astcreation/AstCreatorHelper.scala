@@ -147,7 +147,8 @@ object AstCreatorHelper {
       case NamespaceDeclaration | UsingDirective           => nameFromNamespaceDeclaration(node)
       case IdentifierName | Parameter | _: DeclarationExpr => nameFromIdentifier(node)
       case QualifiedName                                   => nameFromQualifiedName(node)
-      case _                                               => "<empty>"
+      case SimpleMemberAccessExpression => nameFromIdentifier(createDotNetNodeInfo(node.json(ParserKeys.Name)))
+      case _                            => "<empty>"
   }
 
   private def nameFromNamespaceDeclaration(namespace: DotNetNodeInfo): String = {
