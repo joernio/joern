@@ -83,10 +83,10 @@ class PhpSetKnownTypesPass(cpg: Cpg, config: PhpSetKnownTypesConfig = PhpSetKnow
 
 trait PhpSetKnownTypesParserConfig[R <: X2CpgConfig[R]] { this: R =>
 
-  var knownTypesFilePath: String = ""
+  var knownTypesFilePath: Option[String] = None
 
   def withKnownTypesFilePath(knownTypesFilePath: String): R = {
-    this.knownTypesFilePath = Paths.get(knownTypesFilePath).toAbsolutePath.normalize().toString
+    this.knownTypesFilePath = Some(Paths.get(knownTypesFilePath).toAbsolutePath.normalize().toString)
     this.asInstanceOf[R]
   }
 }

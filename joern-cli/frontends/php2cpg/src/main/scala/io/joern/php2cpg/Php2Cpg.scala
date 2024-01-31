@@ -86,7 +86,7 @@ object Php2Cpg {
       .map(c => XTypeRecoveryConfig(c.typePropagationIterations, !c.disableDummyTypes))
       .getOrElse(XTypeRecoveryConfig(iterations = 3))
     val setKnownTypesConfig = config
-      .map(c => PhpSetKnownTypesConfig(Some(c.knownTypesFilePath)))
+      .map(c => PhpSetKnownTypesConfig(c.knownTypesFilePath))
       .getOrElse(PhpSetKnownTypesConfig())
     List(new PhpSetKnownTypesPass(cpg, setKnownTypesConfig)) ++ new PhpTypeRecoveryPassGenerator(cpg, typeRecoveryConfig).generate()
   }
