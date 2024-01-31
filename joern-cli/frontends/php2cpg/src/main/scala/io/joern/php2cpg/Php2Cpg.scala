@@ -90,6 +90,9 @@ object Php2Cpg {
     val setKnownTypesConfig = config
       .map(c => PhpSetKnownTypesConfig(c.knownTypesFilePath))
       .getOrElse(PhpSetKnownTypesConfig())
-    List(new PhpSetKnownTypesPass(cpg, setKnownTypesConfig)) ++ new PhpTypeRecoveryPassGenerator(cpg, typeRecoveryConfig).generate()
+    List(new PhpSetKnownTypesPass(cpg, setKnownTypesConfig)) ++ new PhpTypeRecoveryPassGenerator(
+      cpg,
+      typeRecoveryConfig
+    ).generate()
   }
 }
