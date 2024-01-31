@@ -7,7 +7,8 @@ import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.{
   ClassDeclaration,
   FieldDeclaration,
   MethodDeclaration,
-  NamespaceDeclaration
+  NamespaceDeclaration,
+  StructDeclaration
 }
 import io.joern.csharpsrc2cpg.parser.{DotNetJsonAst, DotNetJsonParser, DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.astgen.AstGenRunner.AstGenRunnerResult
@@ -78,6 +79,11 @@ class TypeMap(astGenResult: AstGenRunnerResult, initialMappings: List[NamespaceT
     */
   def classesIn(namespace: String): Set[CSharpType] = namespaceToType.getOrElse(namespace, Set.empty)
 
+  /** For a class, will search for the associated namespace.
+    */
+  def namespaceFor(clazz: CSharpType): Option[String] =
+    namespaceToType.find { case (_, v) => v.contains(clazz) }.map(_._1)
+
   /** Parses a compilation unit and returns a mapping from all the contained namespaces and the immediate children
     * types.
     */
@@ -102,8 +108,9 @@ class TypeMap(astGenResult: AstGenRunnerResult, initialMappings: List[NamespaceT
       .map(AstCreatorHelper.createDotNetNodeInfo(_))
       .filter { x =>
         x.node match
-          case ClassDeclaration => true
-          case _                => false
+          case ClassDeclaration  => true
+          case StructDeclaration => true
+          case _                 => false
       }
       .map(parseClassDeclaration)
       .toSet

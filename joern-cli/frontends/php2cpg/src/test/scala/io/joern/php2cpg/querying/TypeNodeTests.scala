@@ -24,7 +24,9 @@ class TypeNodeTests extends PhpCode2CpgFixture {
   }
 
   "known types without explicit typeDecls" should {
-    val cpg = code("""<?php\n$x = 3;""")
+    val cpg = code("""<?php
+        |$x = 3;
+        |""".stripMargin)
 
     "have corresponding type nodes created" in {
       println(cpg.literal.toList)

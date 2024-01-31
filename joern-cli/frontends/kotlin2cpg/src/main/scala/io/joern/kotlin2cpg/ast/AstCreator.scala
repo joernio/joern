@@ -51,6 +51,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   protected val relativizedPath: String = fileWithMeta.relativizedPath
 
   protected val scope: Scope[String, DeclarationNew, NewNode] = new Scope()
+  protected val debugScope                                    = mutable.Stack.empty[KtDeclaration]
 
   def createAst(): DiffGraphBuilder = {
     implicit val typeInfoProvider: TypeInfoProvider = xTypeInfoProvider
@@ -172,6 +173,21 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
     }
   }
 
+  private def logDebugWithTestAndStackTrace(message: String): Unit = {
+    val declString = debugScope.headOption.map(_.getText).getOrElse("Declaration scope empty")
+    logger.debug(message + "\nIn declaration:\n" + declString + "\nStack trace to from declaration:" + getStackTrace)
+  }
+
+  private def getStackTrace: String = {
+    val stackTrace = Thread.currentThread().getStackTrace
+    var endIndex   = stackTrace.indexWhere(_.toString.contains("astsForDeclaration"))
+    if (endIndex == -1) {
+      endIndex = stackTrace.length
+    }
+    val partialStackTrace = stackTrace.slice(2, endIndex + 1)
+    partialStackTrace.mkString("\n\t", "\n\t", "")
+  }
+
   @tailrec
   final def astsForExpression(
     expr: KtExpression,
@@ -245,7 +261,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
         )
         Seq(astForUnknown(typedExpr, argIdxMaybe, argNameMaybe, annotations))
       case null =>
-        logger.trace("Received null expression! Skipping...")
+        logDebugWithTestAndStackTrace("Received null expression! Skipping...")
         Seq()
       // TODO: handle `KtCallableReferenceExpression` like `this::baseTerrain`
       case unknownExpr =>
@@ -313,21 +329,25 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   }
 
   def astsForDeclaration(decl: KtDeclaration)(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
-    decl match {
-      case c: KtClass             => astsForClassOrObject(c)
-      case o: KtObjectDeclaration => astsForClassOrObject(o)
-      case n: KtNamedFunction =>
-        val isExtensionFn = typeInfoProvider.isExtensionFn(n)
-        astsForMethod(n, isExtensionFn)
-      case t: KtTypeAlias            => Seq(astForTypeAlias(t))
-      case s: KtSecondaryConstructor => Seq(astForUnknown(s, None, None))
-      case p: KtProperty             => astsForProperty(p)
-      case unhandled =>
-        logger.error(
-          s"Unknown declaration type encountered with text `${unhandled.getText}` and class `${unhandled.getClass}`!"
-        )
-        Seq()
-    }
+    debugScope.push(decl)
+    val result =
+      decl match {
+        case c: KtClass             => astsForClassOrObject(c)
+        case o: KtObjectDeclaration => astsForClassOrObject(o)
+        case n: KtNamedFunction =>
+          val isExtensionFn = typeInfoProvider.isExtensionFn(n)
+          astsForMethod(n, isExtensionFn)
+        case t: KtTypeAlias            => Seq(astForTypeAlias(t))
+        case s: KtSecondaryConstructor => Seq(astForUnknown(s, None, None))
+        case p: KtProperty             => astsForProperty(p)
+        case unhandled =>
+          logger.error(
+            s"Unknown declaration type encountered with text `${unhandled.getText}` and class `${unhandled.getClass}`!"
+          )
+          Seq()
+      }
+    debugScope.pop()
+    result
   }
 
   def astForUnknown(

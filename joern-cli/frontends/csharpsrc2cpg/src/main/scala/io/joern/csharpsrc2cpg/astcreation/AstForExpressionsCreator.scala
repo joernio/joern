@@ -1,21 +1,26 @@
 package io.joern.csharpsrc2cpg.astcreation
 
 import io.joern.csharpsrc2cpg.CSharpOperators
-import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
+import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.{IdentifierNode, *}
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethodParameterIn
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  def astForExpression(expr: DotNetNodeInfo): Seq[Ast] = {
+  def astForExpressionStatement(expr: DotNetNodeInfo): Seq[Ast] = {
     val expressionNode = createDotNetNodeInfo(expr.json(ParserKeys.Expression))
-    expressionNode.node match
-      case _: UnaryExpr         => astForUnaryExpression(expressionNode)
-      case _: BinaryExpr        => astForBinaryExpression(expressionNode)
-      case _: LiteralExpr       => astForLiteralExpression(expressionNode)
-      case InvocationExpression => astForInvocationExpression(expressionNode)
-      case _                    => notHandledYet(expressionNode)
+    astForExpression(expressionNode)
+  }
+
+  def astForExpression(expr: DotNetNodeInfo): Seq[Ast] = {
+    expr.node match
+      case _: UnaryExpr         => astForUnaryExpression(expr)
+      case _: BinaryExpr        => astForBinaryExpression(expr)
+      case _: LiteralExpr       => astForLiteralExpression(expr)
+      case InvocationExpression => astForInvocationExpression(expr)
+      case _: IdentifierNode    => astForIdentifier(expr) :: Nil
+      case _                    => notHandledYet(expr)
   }
 
   protected def astForLiteralExpression(_literalNode: DotNetNodeInfo): Seq[Ast] = {
@@ -84,16 +89,16 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     Seq(callAst(cNode, args))
   }
 
+  /** Handles the `= ...` part of the equals value clause, thus this only contains an RHS.
+    */
   protected def astForEqualsValueClause(clause: DotNetNodeInfo): Seq[Ast] = {
     val rhsNode = createDotNetNodeInfo(clause.json(ParserKeys.Value))
-    rhsNode.node match
-      case _: LiteralExpr => astForLiteralExpression(rhsNode)
-      case _              => notHandledYet(rhsNode)
+    astForNode(rhsNode)
   }
 
   private def astForInvocationExpression(invocationExpr: DotNetNodeInfo): Seq[Ast] = {
     val dispatchType = DispatchTypes.STATIC_DISPATCH // TODO
-    val typeFullName = None                          // TODO
+    val typeFullName = None                          // TODO: Return type of the call
     val arguments    = astForArgumentList(createDotNetNodeInfo(invocationExpr.json(ParserKeys.ArgumentList)))
     val argString =
       s"${arguments.flatMap(_.root).collect { case x: NewMethodParameterIn => x.typeFullName }.mkString(",")}"
@@ -151,7 +156,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .json(ParserKeys.Arguments)
       .arr
       .map(createDotNetNodeInfo)
-      .flatMap(astForExpression)
+      .flatMap(astForExpressionStatement)
       .toSeq
   }
 

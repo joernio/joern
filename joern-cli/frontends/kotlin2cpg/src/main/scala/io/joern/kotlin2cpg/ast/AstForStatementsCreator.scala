@@ -4,7 +4,7 @@ import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.ast.Nodes.operatorCallNode
 import io.joern.kotlin2cpg.types.{TypeConstants, TypeInfoProvider}
 import io.joern.x2cpg.{Ast, AstNodeBuilder, ValidationMode}
-import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode}
+import io.joern.x2cpg.utils.NodeBuilders.newIdentifierNode
 import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 import org.jetbrains.kotlin.psi.{
@@ -22,12 +22,14 @@ import org.jetbrains.kotlin.psi.{
   KtProperty,
   KtPsiUtil,
   KtTryExpression,
+  KtWhenConditionWithExpression,
   KtWhenEntry,
   KtWhenExpression,
   KtWhileExpression
 }
 
 import scala.jdk.CollectionConverters.*
+import scala.collection.mutable
 import io.shiftleft.semanticcpg.language.*
 
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
@@ -280,7 +282,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
   ): Ast = {
     val conditionAst = astsForExpression(expr.getCondition, None).headOption
     val thenAsts     = astsForExpression(expr.getThen, None)
-    val elseAsts     = astsForExpression(expr.getElse, None)
+    val elseAsts     = Option(expr.getElse).toSeq.flatMap(astsForExpression(_, None))
 
     val node = controlStructureNode(expr, ControlStructureTypes.IF, expr.getText)
     controlStructureAst(node, conditionAst, List(thenAsts ++ elseAsts).flatten)
@@ -295,7 +297,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val conditionAsts = astsForExpression(expr.getCondition, None)
     val thenAsts      = astsForExpression(expr.getThen, None)
-    val elseAsts      = astsForExpression(expr.getElse, None)
+    val elseAsts      = Option(expr.getElse).toSeq.flatMap(astsForExpression(_, None))
 
     val allAsts = (conditionAsts ++ thenAsts ++ elseAsts).toList
     if (allAsts.nonEmpty) {
@@ -339,6 +341,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
   def astForWhenAsStatement(expr: KtWhenExpression, argIdx: Option[Int])(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
+    assert(expr.getSubjectExpression != null)
+
     val astForSubject = astsForExpression(expr.getSubjectExpression, Some(1)).headOption.getOrElse(Ast())
     val finalAstForSubject = expr.getSubjectExpression match {
       case p: KtProperty =>
@@ -370,6 +374,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
   def astForWhenAsExpression(expr: KtWhenExpression, argIdx: Option[Int], argNameMaybe: Option[String])(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
+    assert(expr.getSubjectExpression != null)
+
     val callNode =
       withArgumentIndex(operatorCallNode("<operator>.when", "<operator>.when", None), argIdx)
         .argumentName(argNameMaybe)
@@ -393,6 +399,39 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     callAst(callNode, List(subjectBlockAst) ++ argAsts)
   }
 
+  private def astForNoArgWhen(expr: KtWhenExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
+    assert(expr.getSubjectExpression == null)
+
+    val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
+    var elseAst: Ast = null
+
+    // In reverse order than expr.getEntries since that is the order
+    // we need for nested Operators.conditional construction.
+    expr.getEntries.asScala.reverse.foreach { entry =>
+      entry.getConditions.headOption match {
+        // The other KtWhenCondition implementations are not generated
+        // we have smoke tests for those.
+        case Some(cond: KtWhenConditionWithExpression) =>
+          val condAst = astsForExpression(cond.getExpression, None).head
+
+          val entryExpr    = entry.getExpression
+          val entryExprAst = astsForExpression(entryExpr, None).head
+
+          val callNode =
+            operatorCallNode(Operators.conditional, Operators.conditional, Some(typeFullName), line(cond), column(cond))
+
+          val newElseAst = callAst(callNode, Seq(condAst, entryExprAst, elseAst))
+          elseAst = newElseAst
+        case None =>
+          // This is the 'else' branch of 'when'.
+          // No argument 'when' always have an 'else branch which comes last
+          // and thus first in reverse order.
+          elseAst = astsForExpression(entry.getExpression, None).head
+      }
+    }
+    elseAst
+  }
+
   def astForWhen(
     expr: KtWhenExpression,
     argIdx: Option[Int],
@@ -400,9 +439,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     annotations: Seq[KtAnnotationEntry] = Seq()
   )(implicit typeInfoProvider: TypeInfoProvider): Ast = {
     val outAst =
-      typeInfoProvider.usedAsExpression(expr) match {
-        case Some(true) => astForWhenAsExpression(expr, argIdx, argNameMaybe)
-        case _          => astForWhenAsStatement(expr, argIdx)
+      if (expr.getSubjectExpression != null) {
+        typeInfoProvider.usedAsExpression(expr) match {
+          case Some(true) => astForWhenAsExpression(expr, argIdx, argNameMaybe)
+          case _          => astForWhenAsStatement(expr, argIdx)
+        }
+      } else {
+        astForNoArgWhen(expr)
       }
     outAst.withChildren(annotations.map(astForAnnotationEntry))
   }

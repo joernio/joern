@@ -135,12 +135,12 @@ class CfgTests extends PhpCode2CpgFixture {
 
   "the CFG for while constructs" should {
     val cpg = code("""<?php
-		 |function foo($x) {
+     |function foo($x) {
      |  while($x < 10) {
      |    sink();
      |  }
-		 |}
-		 |""".stripMargin)
+     |}
+     |""".stripMargin)
 
     "find that the sink is control dependent on the condition" in {
       inside(cpg.call("sink").controlledBy.isCall.l) { case List(condition) =>
@@ -156,18 +156,18 @@ class CfgTests extends PhpCode2CpgFixture {
   "the CFG for switch constructs" should {
     val cpg = code("""<?php
 		 |function foo($x) {
-     |  switch ($x < 10) {
-     |    case 0:
-     |      sink1();
-     |    case 1:
-     |      sink2();
-     |      break;
-     |    case 3:
-     |    case 4:
-     |      sink3();
-     |    default:
-     |      sink4();
-     |  }
+         |  switch ($x < 10) {
+         |    case 0:
+         |      sink1();
+         |    case 1:
+         |      sink2();
+         |      break;
+         |    case 3:
+         |    case 4:
+         |      sink3();
+         |    default:
+         |      sink4();
+         |  }
 		 |}
 		 |""".stripMargin)
 

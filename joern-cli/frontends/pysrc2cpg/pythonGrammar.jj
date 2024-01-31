@@ -34,9 +34,11 @@ public class PythonParser {
   }
 
   ErrorStatement recoverAndCreateErrorStmt(Token lastCorrectToken, Exception exception) {
+    Token prevToken = token;
     try {
       getNextToken();
       while (token.kind != SEMICOLON && token.kind != NEWLINE && token.kind != EOF) {
+        prevToken = token;
         getNextToken();
       }
     } catch (Exception e) {
@@ -48,7 +50,7 @@ public class PythonParser {
     }
 
     Token errorStartToken = lastCorrectToken.next;
-    ErrorStatement errorStmt = new ErrorStatement(exception, attributes(errorStartToken, token));
+    ErrorStatement errorStmt = new ErrorStatement(exception, attributes(errorStartToken, prevToken));
     errors.add(errorStmt);
     return errorStmt;
   }

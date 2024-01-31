@@ -1,0 +1,8 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below. Reminder to update the `version` and `date-released` as needed."
+title: "Joern: The Bug Hunter's Workbench"
+authors:
+  - given-names: joern.io
+url: "https://github.com/joernio/joern"
+version: 2.0
+date-released: 2024-01-18

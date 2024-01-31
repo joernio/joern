@@ -12,17 +12,17 @@ dependsOn(
   Projects.x2cpg             % "compile->compile;test->test"
 )
 
-lazy val cdtCoreDepVersion        = "8.4.0.202401051815"
-lazy val cdtCoreDepName           = s"org.eclipse.cdt.core"
-lazy val cdtCoreDepNameAndVersion = s"org.eclipse.cdt.core_$cdtCoreDepVersion"
-lazy val cdtCodeDepUrl =
-  s"https://ci.eclipse.org/cdt/job/cdt/job/main/347/artifact/releng/org.eclipse.cdt.repo/target/repository/plugins/$cdtCoreDepNameAndVersion.jar"
+// download cdt from the official eclipse download section: https://download.eclipse.org/tools/cdt/releases/11.4/cdt-11.4.0/plugins/
+// TODO: as soon as 8.4.x is released we should upgrade, since we can then drop our custom jar fiddling below, i.e. `signingFiles`, `removeSigningInfo`, `removeSigningInfoStartup` and `cdtCoreNameAndVersion`
+lazy val cdtCoreVersion = "8.3.100.202309251502"
+lazy val eclipseDlMirror = "https://ftp.fau.de/eclipse" // alternative: "https://eclipse.mirror.garr.it"
+lazy val cdtCoreUrl = s"$eclipseDlMirror/tools/cdt/releases/11.4/cdt-11.4.0/plugins/org.eclipse.cdt.core_$cdtCoreVersion.jar"
 
 libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
   "org.eclipse.platform"    % "org.eclipse.core.resources" % "3.20.0",
   "org.eclipse.platform"    % "org.eclipse.text"           % "3.13.100",
-  "org.eclipse.platform"    % "org.eclipse.cdt.core"       % cdtCoreDepVersion  % Provided from cdtCodeDepUrl,
+  "org.eclipse.platform"    % "org.eclipse.cdt.core"       % cdtCoreVersion from cdtCoreUrl,
   "org.scalatest"          %% "scalatest"                  % Versions.scalatest % Test
 )
 
@@ -57,7 +57,12 @@ lazy val signingFiles = List("META-INF/ECLIPSE_.RSA", "META-INF/ECLIPSE_.SF")
 /* Dirty hack: we access cdt-internal types which are package-private. In order to do so,
  * `MacroArgumentExtractor` from this repo is in the `org.eclipse.cdt.internal.core.parser.scanner` package.
  * The cdt jar is signed to ensure that doesn't happen, but because we're stubborn and yolo we simply remove the signing files.
+ * TODO upgrade to 8.4.x and remove this
  */
+
+lazy val cdtCoreName           = s"org.eclipse.cdt.core"
+lazy val cdtCoreNameAndVersion = s"${cdtCoreName}_$cdtCoreVersion"
+
 lazy val removeSigningInfo = taskKey[Unit]("Remove signing info from Eclipse CDT jar file")
 removeSigningInfo := {
   import java.nio.file.Files
@@ -65,9 +70,9 @@ removeSigningInfo := {
   val managedClasspathValue = (Compile / managedClasspath).value
   val lib = unmanagedBase.value
   if (!lib.exists) IO.createDirectory(lib)
-  val outputFile = lib / s"$cdtCoreDepNameAndVersion.custom.jar"
+  val outputFile = lib / s"$cdtCoreNameAndVersion.custom.jar"
   if (!outputFile.exists) {
-    managedClasspathValue.find(_.data.name.contains(cdtCoreDepName)) match {
+    managedClasspathValue.find(_.data.name.contains(cdtCoreName)) match {
       case Some(path) =>
         val jarPath    = path.data.absolutePath
         val inputFile  = new File(jarPath)
@@ -92,7 +97,7 @@ removeSigningInfo := {
 
           // cleanup other versions of the Eclipse CDT jar file, if any
           lib.listFiles.foreach { file =>
-            if (!file.name.contains(cdtCoreDepNameAndVersion) && file.name.contains(cdtCoreDepName)) {
+            if (!file.name.contains(cdtCoreNameAndVersion) && file.name.contains(cdtCoreName)) {
               file.delete()
             }
           }

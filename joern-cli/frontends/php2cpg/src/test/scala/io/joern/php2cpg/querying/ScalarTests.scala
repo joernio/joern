@@ -6,7 +6,9 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Literal}
 
 class ScalarTests extends PhpCode2CpgFixture {
   "int scalars should be represented correctly" in {
-    val cpg = code("<?php\n2;")
+    val cpg = code("""<?php
+      |2;
+      |""".stripMargin)
 
     inside(cpg.literal.l) { case List(intLiteral) =>
       intLiteral.code shouldBe "2"
@@ -16,7 +18,9 @@ class ScalarTests extends PhpCode2CpgFixture {
   }
 
   "float scalars should be represented correctly" in {
-    val cpg = code("<?php\n2.1;")
+    val cpg = code("""<?php
+      |2.1;
+      |""".stripMargin)
 
     inside(cpg.literal.l) { case List(floatLiteral) =>
       floatLiteral.code shouldBe "2.1"
@@ -26,7 +30,9 @@ class ScalarTests extends PhpCode2CpgFixture {
   }
 
   "string scalars should be represented correctly" in {
-    val cpg = code("<?php\n\"hello\";")
+    val cpg = code("""<?php
+      |"hello";
+      |""".stripMargin)
 
     inside(cpg.literal.l) { case List(stringLiteral) =>
       stringLiteral.code shouldBe "\"hello\""
@@ -36,7 +42,9 @@ class ScalarTests extends PhpCode2CpgFixture {
   }
 
   "encapsed string scalars should be represented correctly" in {
-    val cpg = code("<?php\n\"hello${x}$y world\";")
+    val cpg = code("""<?php
+      |"hello${x}$y world";
+      |""".stripMargin)
 
     inside(cpg.call.l) { case List(encapsed) =>
       encapsed.name shouldBe "encaps"
@@ -63,7 +71,9 @@ class ScalarTests extends PhpCode2CpgFixture {
   }
 
   "booleans should be represented as literals" in {
-    val cpg = code("<?php\ntrue; false;")
+    val cpg = code("""<?php
+      |true; false;
+      |""".stripMargin)
 
     inside(cpg.literal.l) { case List(trueBool, falseBool) =>
       trueBool.code shouldBe "true"
@@ -76,7 +86,9 @@ class ScalarTests extends PhpCode2CpgFixture {
     }
   }
   "null should be represented as a literal" in {
-    val cpg = code("<?php\nNULL;")
+    val cpg = code("""<?php
+      |NULL;
+      |""".stripMargin)
 
     inside(cpg.literal.l) { case List(nullLiteral) =>
       nullLiteral.code shouldBe "NULL"

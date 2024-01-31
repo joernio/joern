@@ -68,6 +68,9 @@ jobs:
         run: sbt scalafmtCheck Test/scalafmtCheck
       - run: echo "Previous step failed because code is not formatted. Run 'sbt scalafmt Test/scalafmt'"
         if: ${{ failure() }}
+      - name: Validate CITATION.cff
+        uses: dieghernan/cff-validator@v3
+
   test-scripts:
     runs-on: ubuntu-latest
     steps:

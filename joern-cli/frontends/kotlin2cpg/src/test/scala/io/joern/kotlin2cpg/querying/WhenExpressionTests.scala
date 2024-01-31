@@ -1,9 +1,9 @@
 package io.joern.kotlin2cpg.querying
 
 import io.joern.kotlin2cpg.testfixtures.KotlinCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{Block, Identifier, Literal}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, NodeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal}
+import io.shiftleft.semanticcpg.language.*
 
 class WhenExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with simple `when`-expression" should {
@@ -23,7 +23,7 @@ class WhenExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = false)
         |}
         | """.stripMargin)
 
-    "should contain a call node with the correct props and children set" in {
+    "contain a call node with the correct props and children set" in {
       val List(c) = cpg.call("<operator>.when").l
       c.argumentIndex shouldBe 2
       c.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
@@ -46,4 +46,79 @@ class WhenExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = false)
       arg4First1.code shouldBe "456"
     }
   }
+
+  "CPG for code with if-else chain like `when`-expression" should {
+    val cpg = code("""
+        |package mypkg
+        |
+        |fun myfun() {
+        |  val x =  true
+        |  val y = false
+        |  when {
+        |      x -> 1
+        |      y -> 2
+        |      else -> 3
+        |  }
+        |}
+        | """.stripMargin)
+
+    "contain a call node with the correct props and children set" in {
+      val List(outerConditional)                      = cpg.call(Operators.conditional).argumentIndex(-1).l
+      val List(cond1, code1, nestedConditional: Call) = outerConditional.argument.l
+
+      cond1.label shouldBe NodeTypes.IDENTIFIER
+      cond1.code shouldBe "x"
+      cond1.argumentIndex shouldBe 1
+
+      code1.label shouldBe NodeTypes.LITERAL
+      code1.code shouldBe "1"
+      code1.argumentIndex shouldBe 2
+
+      nestedConditional.argumentIndex shouldBe 3
+      val List(cond2, code2, elseExpr) = nestedConditional.argument.l
+
+      cond2.label shouldBe NodeTypes.IDENTIFIER
+      cond2.code shouldBe "y"
+      cond2.argumentIndex shouldBe 1
+
+      code2.label shouldBe NodeTypes.LITERAL
+      code2.code shouldBe "2"
+      code2.argumentIndex shouldBe 2
+
+      elseExpr.label shouldBe NodeTypes.LITERAL
+      elseExpr.code shouldBe "3"
+      elseExpr.argumentIndex shouldBe 3
+    }
+  }
+
+  "smoke test for 'is'-pattern in 'when' statement" in {
+    val cpg = code("""
+        |package mypkg
+        |
+        |fun myfun() {
+        |  when {
+        |      "abc" is String -> 1
+        |      else -> 2
+        |  }
+        |}
+        | """.stripMargin)
+    // Trigger actual cpg creation.
+    cpg.graph
+  }
+
+  "smoke test for 'in'-pattern in 'when' statement" in {
+    val cpg = code("""
+        |package mypkg
+        |
+        |fun myfun() {
+        |  when {
+        |      "abc" in listOf<String>() -> 1
+        |      else -> 2
+        |  }
+        |}
+        | """.stripMargin)
+    // Trigger actual cpg creation.
+    cpg.graph
+  }
+
 }

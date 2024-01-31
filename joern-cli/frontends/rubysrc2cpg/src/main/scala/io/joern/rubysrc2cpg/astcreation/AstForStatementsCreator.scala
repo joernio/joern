@@ -14,6 +14,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     case node: UntilExpression            => astForUntilStatement(node) :: Nil
     case node: IfExpression               => astForIfStatement(node) :: Nil
     case node: UnlessExpression           => astForUnlessStatement(node) :: Nil
+    case node: ForExpression              => astForForExpression(node) :: Nil
     case node: CaseExpression             => astsForCaseExpression(node)
     case node: StatementList              => astForStatementList(node) :: Nil
     case node: SimpleCallWithBlock        => astForSimpleCallWithBlock(node) :: Nil
@@ -99,6 +100,14 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val elseAsts = node.falseBranch.map(astForElseClause).toList
     val ifNode   = controlStructureNode(node, ControlStructureTypes.IF, code(node))
     controlStructureAst(ifNode, Some(notConditionAst), thenAst :: elseAsts)
+  }
+
+  private def astForForExpression(node: ForExpression): Ast = {
+    val forEachNode  = controlStructureNode(node, ControlStructureTypes.FOR, code(node))
+    val doBodyAst    = astsForStatement(node.doBlock)
+    val iteratorNode = astForExpression(node.forVariable)
+    val iterableNode = astForExpression(node.iterableVariable)
+    Ast(forEachNode).withChild(iteratorNode).withChild(iterableNode).withChildren(doBodyAst)
   }
 
   protected def astsForCaseExpression(node: CaseExpression): Seq[Ast] = {

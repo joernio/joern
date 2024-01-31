@@ -4,26 +4,29 @@ import io.circe.Json
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.{
   BinaryExpr,
   Block,
+  CasePatternSwitchLabel,
+  CaseSwitchLabel,
+  DefaultSwitchLabel,
+  DoStatement,
+  ExpressionStatement,
+  ForEachStatement,
+  ForStatement,
   GlobalStatement,
   IfStatement,
   LiteralExpr,
-  UnaryExpr
-}
-import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.{ExpressionStatement, GlobalStatement, ThrowStatement, TryStatement}
-import io.circe.Json
-import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.{
-  BinaryExpr,
-  Block,
-  GlobalStatement,
-  IfStatement,
-  LiteralExpr,
-  UnaryExpr
+  SwitchStatement,
+  ThrowStatement,
+  TryStatement,
+  UnaryExpr,
+  WhileStatement
 }
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.nodes.ControlStructure
 
+import scala.::
+import scala.collection.mutable.ArrayBuffer
 import scala.util.{Failure, Success, Try}
 
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -37,7 +40,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val conditionAst  = astForNode(conditionNode).headOption.getOrElse(Ast())
 
     val thenNode     = createDotNetNodeInfo(ifStmt.json(ParserKeys.Statement))
-    val thenAst: Ast = Option(astForBlock(createDotNetNodeInfo(ifStmt.json(ParserKeys.Statement)))).getOrElse(Ast())
+    val thenAst: Ast = astForBlock(thenNode)
     val ifNode =
       controlStructureNode(ifStmt, ControlStructureTypes.IF, s"if (${conditionNode.code})")
     val elseAst = ifStmt.json(ParserKeys.Else) match
@@ -49,12 +52,123 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   protected def astForStatement(nodeInfo: DotNetNodeInfo): Seq[Ast] = {
     nodeInfo.node match
-      case ExpressionStatement => astForExpression(nodeInfo)
+      case ExpressionStatement => astForExpressionStatement(nodeInfo)
       case GlobalStatement     => astForGlobalStatement(nodeInfo)
       case IfStatement         => astForIfStatement(nodeInfo)
       case ThrowStatement      => astForThrowStatement(nodeInfo)
       case TryStatement        => astForTryStatement(nodeInfo)
+      case ForEachStatement    => astForForEachStatement(nodeInfo)
+      case ForStatement        => astForForStatement(nodeInfo)
+      case DoStatement         => astForDoStatement(nodeInfo)
+      case WhileStatement      => astForWhileStatement(nodeInfo)
+      case SwitchStatement     => astForSwitchStatement(nodeInfo)
       case _                   => notHandledYet(nodeInfo)
+  }
+
+  private def astForSwitchLabel(labelNode: DotNetNodeInfo): Seq[Ast] = {
+    val caseNode = jumpTargetNode(labelNode, "case", labelNode.code)
+    labelNode.node match
+      case CasePatternSwitchLabel =>
+        val patternNode = createDotNetNodeInfo(labelNode.json(ParserKeys.Pattern)(ParserKeys.Expression))
+        Ast(caseNode) +: astForNode(patternNode)
+      case CaseSwitchLabel =>
+        val valueNode = createDotNetNodeInfo(labelNode.json(ParserKeys.Value))
+        Ast(caseNode) +: astForNode(valueNode)
+      case DefaultSwitchLabel => Seq(Ast(caseNode))
+      case _                  => Seq(Ast())
+  }
+
+  private def astForSwitchStatement(switchStmt: DotNetNodeInfo): Seq[Ast] = {
+    val comparatorNode    = createDotNetNodeInfo(switchStmt.json(ParserKeys.Expression))
+    val comparatorNodeAst = astForExpression(comparatorNode).headOption
+
+    val switchBodyAsts: Seq[Ast] = switchStmt
+      .json(ParserKeys.Sections)
+      .arr
+      .flatMap(section =>
+        val sectionNode = section match
+          case value: ujson.Obj   => createDotNetNodeInfo(value)
+          case value: ujson.Value => nullSafeCreateParserNodeInfo(Option(value))
+
+        val labelNodes = sectionNode.json(ParserKeys.Labels).arr
+        labelNodes.flatMap(labelNode => astForSwitchLabel(createDotNetNodeInfo(labelNode))) :+ astForBlock(sectionNode)
+      )
+      .toSeq
+
+    val switchNode = controlStructureNode(switchStmt, ControlStructureTypes.SWITCH, s"switch (${comparatorNode.code})");
+
+    Seq(controlStructureAst(switchNode, comparatorNodeAst, switchBodyAsts))
+  }
+
+  private def astForWhileStatement(whileStmt: DotNetNodeInfo): Seq[Ast] = {
+    val whileBlock    = createDotNetNodeInfo(whileStmt.json(ParserKeys.Statement))
+    val whileBlockAst = astForBlock(whileBlock)
+
+    val condition    = createDotNetNodeInfo(whileStmt.json(ParserKeys.Condition))
+    val conditionAst = astForNode(condition)
+
+    val code = s"while (${condition.code})"
+
+    val whileNode = controlStructureNode(whileStmt, ControlStructureTypes.WHILE, code)
+
+    Seq(Ast(whileNode).withChild(whileBlockAst).withChildren(conditionAst))
+  }
+
+  private def astForDoStatement(doStmt: DotNetNodeInfo): Seq[Ast] = {
+    val doBlock    = createDotNetNodeInfo(doStmt.json(ParserKeys.Statement))
+    val doBlockAst = astForBlock(doBlock)
+
+    val condition    = createDotNetNodeInfo(doStmt.json(ParserKeys.Condition))
+    val conditionAst = astForNode(condition)
+
+    val code        = s"do {...} while (${condition.code})"
+    val doBlockNode = controlStructureNode(doStmt, ControlStructureTypes.DO, code)
+
+    Seq(Ast(doBlockNode).withChild(doBlockAst).withChildren(conditionAst))
+  }
+
+  private def astForForStatement(forStmt: DotNetNodeInfo): Seq[Ast] = {
+    val initNode        = nullSafeCreateParserNodeInfo(forStmt.json.obj.get(ParserKeys.Declaration))
+    val conditionNode   = nullSafeCreateParserNodeInfo(forStmt.json.obj.get(ParserKeys.Condition))
+    val incrementorNode = nullSafeCreateParserNodeInfo(forStmt.json(ParserKeys.Incrementors).arr.headOption)
+
+    val forBodyAst = astForBlock(createDotNetNodeInfo(forStmt.json(ParserKeys.Statement)))
+
+    val code = s"for (${initNode.code};${conditionNode.code};${incrementorNode.code})"
+    val forNode =
+      controlStructureNode(forStmt, ControlStructureTypes.FOR, code);
+
+    val initNodeAst    = astForNode(initNode)
+    val conditionAst   = astForNode(conditionNode)
+    val incrementorAst = astForNode(incrementorNode)
+
+    val _forAst = Ast(forNode)
+      .withChildren(initNodeAst)
+      .withChildren(conditionAst)
+      .withChildren(incrementorAst)
+      .withChild(forBodyAst)
+      .withConditionEdges(forNode, conditionAst.flatMap(_.root).toList)
+
+    Seq(_forAst)
+  }
+
+  private def astForForEachStatement(forEachStmt: DotNetNodeInfo): Seq[Ast] = {
+    val forEachNode     = controlStructureNode(forEachStmt, ControlStructureTypes.FOR, forEachStmt.code)
+    val iterableAst     = astForNode(forEachStmt.json(ParserKeys.Expression))
+    val forEachBlockAst = astForBlock(createDotNetNodeInfo(forEachStmt.json(ParserKeys.Statement)))
+
+    val identifierValue = forEachStmt.json(ParserKeys.Identifier)(ParserKeys.Value).str
+    val _identifierNode =
+      identifierNode(
+        node = createDotNetNodeInfo(forEachStmt.json(ParserKeys.Type)),
+        name = identifierValue,
+        code = identifierValue,
+        typeFullName = nodeTypeFullName(createDotNetNodeInfo(forEachStmt.json(ParserKeys.Type)))
+      )
+
+    val iteratorVarAst = Ast(_identifierNode)
+
+    Seq(Ast(forEachNode).withChild(iteratorVarAst).withChildren(iterableAst).withChild(forEachBlockAst))
   }
 
   private def astForElseStatement(elseParserNode: DotNetNodeInfo): Ast = {

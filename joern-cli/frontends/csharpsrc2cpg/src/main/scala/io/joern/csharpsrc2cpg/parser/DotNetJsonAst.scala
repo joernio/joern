@@ -27,6 +27,10 @@ object DotNetJsonAst {
   sealed trait BaseExpr extends DotNetParserNode
   sealed trait BaseStmt extends DotNetParserNode
 
+  sealed trait BasePattern extends DotNetParserNode
+
+  sealed trait BaseLabel extends DotNetParserNode
+
   object GlobalStatement     extends BaseStmt
   object ExpressionStatement extends BaseStmt
 
@@ -39,6 +43,8 @@ object DotNetJsonAst {
   sealed trait DeclarationExpr extends BaseExpr
 
   object ClassDeclaration extends DeclarationExpr
+
+  object StructDeclaration extends DeclarationExpr
 
   object MethodDeclaration extends DeclarationExpr
 
@@ -146,6 +152,30 @@ object DotNetJsonAst {
 
   object FinallyClause extends ClauseExpr
 
+  object ForEachStatement extends BaseStmt
+
+  object ForStatement extends BaseStmt
+
+  object DoStatement extends BaseStmt
+
+  object WhileStatement extends BaseStmt
+
+  object SwitchStatement extends BaseStmt
+
+  object SwitchSection extends BaseExpr
+
+  object RelationalPattern extends BasePattern
+
+  object ConstantPattern extends BasePattern
+
+  object CaseSwitchLabel extends BaseLabel
+
+  object CasePatternSwitchLabel extends BaseLabel
+
+  object DefaultSwitchLabel extends BaseLabel
+
+  object Unknown extends DotNetParserNode
+
 }
 
 /** The JSON key values, in alphabetical order.
@@ -169,9 +199,11 @@ object ParserKeys {
   val Finally       = "Finally"
   val FileName      = "FileName"
   val Identifier    = "Identifier"
+  val Incrementors  = "Incrementors"
   val Initializer   = "Initializer"
   val Keyword       = "Keyword"
   val Kind          = "Kind"
+  val Labels        = "Labels"
   val Left          = "Left"
   val LineStart     = "LineStart"
   val LineEnd       = "LineEnd"
@@ -183,6 +215,8 @@ object ParserKeys {
   val OperatorToken = "OperatorToken"
   val Parameters    = "Parameters"
   val ParameterList = "ParameterList"
+  val Pattern       = "Pattern"
+  val Sections      = "Sections"
   val Statement     = "Statement"
   val Statements    = "Statements"
   val ReturnType    = "ReturnType"
