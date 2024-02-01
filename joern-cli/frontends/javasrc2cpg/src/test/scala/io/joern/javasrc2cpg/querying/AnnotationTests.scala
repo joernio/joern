@@ -7,15 +7,15 @@ import io.shiftleft.semanticcpg.language._
 class AnnotationTests extends JavaSrcCode2CpgFixture {
   "normal value annotations" should {
     lazy val cpg = code("""
-                          |import some.NormalAnnotation;
-                          |public class SomeClass {
-                          |
-                          |  @NormalAnnotation(value = "classAnnotation")
-                          |  void function() {
-                          |
-                          |  }
-                          |}
-                          |""".stripMargin)
+        |import some.NormalAnnotation;
+        |public class SomeClass {
+        |
+        |  @NormalAnnotation(value = "classAnnotation")
+        |  void function() {
+        |
+        |  }
+        |}
+        |""".stripMargin)
 
     "test annotation node properties" in {
       val annotationNode = cpg.method.name("function").annotation.head
