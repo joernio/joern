@@ -29,6 +29,7 @@ class JumpStatementsTests extends CSharpCode2CpgFixture {
               .isBlock
               .l
               .head
+        case _ => fail("No break statement found.")
       }
     }
 
@@ -58,6 +59,7 @@ class JumpStatementsTests extends CSharpCode2CpgFixture {
               .isBlock
               .l
               .head
+        case _ => fail("No continue statement found.")
       }
     }
 
@@ -89,6 +91,7 @@ class JumpStatementsTests extends CSharpCode2CpgFixture {
               .isBlock
               .l
               .head
+        case _ => fail("No goto statement found.")
       }
     }
   }

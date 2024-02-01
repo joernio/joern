@@ -198,16 +198,16 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case BreakStatement    => Seq(Ast(controlStructureNode(jumpStmt, ControlStructureTypes.BREAK, jumpStmt.code)))
       case ContinueStatement => Seq(Ast(controlStructureNode(jumpStmt, ControlStructureTypes.CONTINUE, jumpStmt.code)))
       case GotoStatement     => astForGotoStatement(jumpStmt)
-      case _                 => Seq(Ast())
+      case _                 => Seq.empty
   }
 
   private def astForGotoStatement(gotoStmt: DotNetNodeInfo): Seq[Ast] = {
-    val idenitifierAst = Option(gotoStmt.json(ParserKeys.Expression)) match
+    val identifierAst = Option(gotoStmt.json(ParserKeys.Expression)) match
       case Some(value: ujson.Obj) => astForNode(createDotNetNodeInfo(value))
-      case _                      => Seq(Ast())
+      case _                      => Seq.empty
 
     val gotoAst = Ast(controlStructureNode(gotoStmt, ControlStructureTypes.GOTO, gotoStmt.code))
 
-    idenitifierAst :+ gotoAst
+    identifierAst :+ gotoAst
   }
 }
