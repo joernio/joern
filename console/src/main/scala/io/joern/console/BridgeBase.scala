@@ -44,8 +44,6 @@ case class Config(
   */
 trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandling with ServerHandling {
 
-  def slProduct: SLProduct
-
   protected def parseConfig(args: Array[String]): Config = {
     val parser = new scopt.OptionParser[Config](slProduct.name) {
       override def errorOnUnknownArgument = false
