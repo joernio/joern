@@ -13,7 +13,7 @@
       </license>
     </licenses>
 
-    <name>ghidra</name>
+    <name>cdt</name>
     <scm>
         <url>https://github.com/eclipse-cdt/cdt</url>
         <connection>scm:git@github.com:eclipse-cdt/cdt.git</connection>
@@ -21,7 +21,7 @@
     <developers>
         <developer>
             <id>max-leuthaeuser</id>
-            <name>Niko Schmidt</name>
+            <name>Max Leuthaeuser</name>
             <url>https://github.com/max-leuthaeuser</url>
             <email>max@qwiet.ai</email>
         </developer>
