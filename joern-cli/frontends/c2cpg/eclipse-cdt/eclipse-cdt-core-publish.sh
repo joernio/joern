@@ -53,6 +53,5 @@ rm $LOCAL_JAR pom.xml empty.jar *.asc
 
 echo "artifacts are now published to sonatype staging. next step: log into https://s01.oss.sonatype.org -> staging repositories -> select the right one -> close -> release"
 echo "you can monitor the maven sync status on https://s01.oss.sonatype.org/content/groups/public/io/joern/eclipse-cdt-core/ and https://repo1.maven.org/maven2/io/joern/eclipse-cdt-core/"
-echo "once it's synchronised to maven central (repo1), update the ghidra version in 'joern/joern-cli/frontends/ghidra2cpg/build.sbt'"
-echo "don't forget to commit and push the local changes in this repo to https://github.com/joernio/ghidra"
+echo "once it's synchronised to maven central (repo1), update the cdt-core version in 'joern/joern-cli/frontends/c2cpg/build.sbt'"
 

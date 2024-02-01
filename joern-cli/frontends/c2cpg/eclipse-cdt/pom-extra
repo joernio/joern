@@ -1,22 +1,29 @@
-    <url>https://github.com/ShiftLeftSecurity/ghidra/</url>
+    <url>https://github.com/eclipse-cdt/cdt/</url>
     <licenses>
-        <license>
-            <name>Apache-2.0</name>
-            <url>http://www.apache.org/licenses/LICENSE-2.0</url>
-            <distribution>repo</distribution>
-        </license>
+      <license>
+        <name>Eclipse Public License 2.0</name>
+        <comments>
+        This program and the accompanying materials are made
+        available under the terms of the Eclipse Public License 2.0
+        which accompanies this distribution, and is available at
+        https://www.eclipse.org/legal/epl-2.0/
+
+        SPDX-License-Identifier: EPL-2.0
+        </comments>
+      </license>
     </licenses>
+
     <name>ghidra</name>
     <scm>
-        <url>https://github.com/ShiftLeftSecurity/ghidra</url>
-        <connection>scm:git@github.com:ShiftLeftSecurity/ghidra.git</connection>
+        <url>https://github.com/eclipse-cdt/cdt</url>
+        <connection>scm:git@github.com:eclipse-cdt/cdt.git</connection>
     </scm>
     <developers>
         <developer>
-            <id>itsacoderepo</id>
+            <id>max-leuthaeuser</id>
             <name>Niko Schmidt</name>
-            <url>https://github.com/itsacoderepo</url>
-            <email>niko@shiftleft.io</email>
+            <url>https://github.com/max-leuthaeuser</url>
+            <email>max@qwiet.ai</email>
         </developer>
     </developers>
 </project>
