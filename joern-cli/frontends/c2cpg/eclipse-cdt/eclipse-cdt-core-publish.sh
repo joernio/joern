@@ -18,7 +18,7 @@ set -o pipefail
 
 # adapt for every release
 JAR_URL='https://ci.eclipse.org/cdt/job/cdt/job/main/353/artifact/releng/org.eclipse.cdt.repo/target/repository/plugins/org.eclipse.cdt.core_8.4.0.202401242025.jar'
-CUSTOM_RELEASE_VERSION='8.4.0.202401242025_1'
+CUSTOM_RELEASE_VERSION='8.4.0.202401242025'
 
 # adapt when releasing from a different machine: the server id from your local ~/.m2/settings.xml
 REPO_ID=sonatype-nexus-staging-joern
@@ -29,9 +29,6 @@ REPO_ID=sonatype-nexus-staging-joern
 LOCAL_JAR="org.eclipse.cdt.core-$CUSTOM_RELEASE_VERSION.jar"
 echo "downloading jar from $JAR_URL to $LOCAL_JAR"
 wget $JAR_URL -O $LOCAL_JAR
-
-# remove eclipse signing info
-zip -d $LOCAL_JAR 'META-INF/ECLIPSE_*'
 
 # install into local maven repo, mostly to generate a pom
 mvn install:install-file -DgroupId=io.joern -DartifactId=eclipse-cdt-core -Dpackaging=jar -Dversion=$CUSTOM_RELEASE_VERSION -Dfile=$LOCAL_JAR -DgeneratePom=true
