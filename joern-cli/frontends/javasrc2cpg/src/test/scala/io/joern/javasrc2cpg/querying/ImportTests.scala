@@ -27,9 +27,11 @@ class ImportTests extends JavaSrcCode2CpgFixture {
       val List(thirdParty, asterix) = cpg.imports.l
       thirdParty.importedAs shouldBe Some("ThirdParty")
       thirdParty.importedEntity shouldBe Some("org.codeminers.thirdparty.ThirdParty")
+      thirdParty.code shouldBe "import org.codeminers.thirdparty.ThirdParty"
 
       asterix.importedAs shouldBe Some("*")
       asterix.importedEntity shouldBe Some("org.codeminers.thirdparty.util")
+      asterix.code shouldBe "import org.codeminers.thirdparty.util.*"
     }
   }
 
