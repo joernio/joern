@@ -1,17 +1,16 @@
 package io.joern.csharpsrc2cpg.astcreation
 
+import io.joern.csharpsrc2cpg.CSharpOperators
 import io.joern.csharpsrc2cpg.datastructures.{BlockScope, MethodScope, NamespaceScope, TypeScope}
+import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.FieldDeclaration
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
-import io.joern.x2cpg.datastructures.Stack.StackWrapper
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
-import io.joern.x2cpg.{Ast, ValidationMode}
+import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.proto.cpg.Cpg.EvaluationStrategies
 
 import scala.util.Try
-import io.joern.csharpsrc2cpg.CSharpOperators as CSharpOperators
-import io.joern.x2cpg.Defines
 
 trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -37,7 +36,18 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val typeDecl = typeDeclNode(classDecl, name, fullName, relativeFileName, code(classDecl))
     scope.pushNewScope(TypeScope(fullName))
     val modifiers = astForModifiers(classDecl)
-    val members   = astForMembers(classDecl.json(ParserKeys.Members).arr.map(createDotNetNodeInfo).toSeq)
+    val (fieldMembers, otherMembers) = classDecl.json(ParserKeys.Members).arr.map(createDotNetNodeInfo).partition { x =>
+      x.node match
+        case FieldDeclaration => true
+        case _                => false
+    }
+    val fieldMemberNodes = fieldMembers.flatMap(astForFieldDeclaration)
+    if (fieldMembers.nonEmpty) {
+      scope.pushNewScope(MethodScope(s"$fullName.${Defines.StaticInitMethodName}"))
+      // TODO Create method for <clinit>
+      scope.popScope()
+    }
+    val members = fieldMemberNodes.toSeq ++ astForMembers(otherMembers.toSeq)
     scope.popScope()
     val typeDeclAst = Ast(typeDecl)
       .withChildren(modifiers)
