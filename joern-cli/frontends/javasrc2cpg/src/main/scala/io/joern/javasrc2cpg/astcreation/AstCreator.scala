@@ -14,7 +14,7 @@ import com.github.javaparser.ast.expr.{
   TextBlockLiteralExpr
 }
 import com.github.javaparser.ast.nodeTypes.{NodeWithName, NodeWithSimpleName}
-import com.github.javaparser.ast.{CompilationUnit, Node, PackageDeclaration}
+import com.github.javaparser.ast.{CompilationUnit, ImportDeclaration, Node, PackageDeclaration}
 import com.github.javaparser.resolution.UnsolvedSymbolException
 import com.github.javaparser.resolution.declarations.{
   ResolvedMethodDeclaration,
@@ -153,6 +153,10 @@ class AstCreator(
       .flatten
   }
 
+  private def getImportCode(importDeclaration: ImportDeclaration): String = {
+    importDeclaration.toString.trim.stripSuffix(";")
+  }
+
   // TODO: Handle static imports correctly.
   private def addImportsToScope(compilationUnit: CompilationUnit): Seq[NewImport] = {
     val (asteriskImports, specificImports) = compilationUnit.getImports.asScala.toList.partition(_.isAsterisk)
@@ -163,6 +167,7 @@ class AstCreator(
       val importNode = NewImport()
         .importedAs(name)
         .importedEntity(typeFullName)
+        .code(getImportCode(importStmt))
 
       if (!importStmt.isStatic) {
         scope.addTopLevelType(name, typeFullName)
@@ -178,6 +183,7 @@ class AstCreator(
           .importedAs(name)
           .importedEntity(typeFullName)
           .isWildcard(true)
+          .code(getImportCode(imp))
         scope.addWildcardImport(typeFullName)
         Seq(importNode)
       case _ => // Only try to guess a wildcard import if exactly one is defined
