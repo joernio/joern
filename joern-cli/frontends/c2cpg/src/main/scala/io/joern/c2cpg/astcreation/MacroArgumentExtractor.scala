@@ -1,4 +1,5 @@
-package org.eclipse.cdt.internal.core.parser.scanner
+package io.joern.c2cpg.astcreation
+
 
 import org.eclipse.cdt.core.dom.ast.{
   IASTFileLocation,
@@ -11,6 +12,7 @@ import org.eclipse.cdt.core.dom.ast.{
 import org.eclipse.cdt.core.parser.IToken
 import org.eclipse.cdt.core.parser.util.CharArrayMap
 import org.eclipse.cdt.internal.core.parser.scanner.Lexer.LexerOptions
+import org.eclipse.cdt.internal.core.parser.scanner.*
 
 import scala.annotation.nowarn
 import scala.collection.mutable
