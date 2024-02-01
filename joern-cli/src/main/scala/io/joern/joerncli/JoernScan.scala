@@ -2,7 +2,7 @@ package io.joern.joerncli
 
 import better.files.*
 import io.joern.console.scan.{ScanPass, outputFindings}
-import io.joern.console.{BridgeBase, DefaultArgumentProvider, JoernProduct, Query, QueryDatabase}
+import io.joern.console.{BridgeBase, DefaultArgumentProvider, Query, QueryDatabase}
 import io.joern.dataflowengineoss.queryengine.{EngineConfig, EngineContext}
 import io.joern.dataflowengineoss.semanticsloader.Semantics
 import io.joern.joerncli.JoernScan.getQueriesFromQueryDb
@@ -39,7 +39,7 @@ case class JoernScanConfig(
 )
 
 object JoernScan extends BridgeBase {
-  override val slProduct = JoernProduct
+  override val applicationName = "joern"
 
   val implementationVersion = getClass.getPackage.getImplementationVersion
 
