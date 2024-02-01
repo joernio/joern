@@ -16,8 +16,7 @@ object ExternalCommand extends io.joern.x2cpg.utils.ExternalCommand {
         // environment always returns Success(1) for whatever reason...
         Success(stdOut)
       case _ =>
-        val allOutput = stdOut ++ stdErr
-        Failure(new RuntimeException(allOutput.mkString(System.lineSeparator())))
+        Failure(new RuntimeException(stdOut.mkString(System.lineSeparator())))
     }
   }
 

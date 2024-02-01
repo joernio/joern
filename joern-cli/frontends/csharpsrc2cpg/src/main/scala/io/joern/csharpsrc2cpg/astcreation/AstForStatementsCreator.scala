@@ -4,15 +4,19 @@ import io.circe.Json
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.{
   BinaryExpr,
   Block,
+  BreakStatement,
   CasePatternSwitchLabel,
   CaseSwitchLabel,
+  ContinueStatement,
   DefaultSwitchLabel,
   DoStatement,
   ExpressionStatement,
   ForEachStatement,
   ForStatement,
   GlobalStatement,
+  GotoStatement,
   IfStatement,
+  JumpStatement,
   LiteralExpr,
   SwitchStatement,
   ThrowStatement,
@@ -62,6 +66,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case DoStatement         => astForDoStatement(nodeInfo)
       case WhileStatement      => astForWhileStatement(nodeInfo)
       case SwitchStatement     => astForSwitchStatement(nodeInfo)
+      case _: JumpStatement    => astForJumpStatement(nodeInfo)
       case _                   => notHandledYet(nodeInfo)
   }
 
@@ -188,4 +193,21 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     astForNode(globalStatement.json(ParserKeys.Statement))
   }
 
+  private def astForJumpStatement(jumpStmt: DotNetNodeInfo): Seq[Ast] = {
+    jumpStmt.node match
+      case BreakStatement    => Seq(Ast(controlStructureNode(jumpStmt, ControlStructureTypes.BREAK, jumpStmt.code)))
+      case ContinueStatement => Seq(Ast(controlStructureNode(jumpStmt, ControlStructureTypes.CONTINUE, jumpStmt.code)))
+      case GotoStatement     => astForGotoStatement(jumpStmt)
+      case _                 => Seq.empty
+  }
+
+  private def astForGotoStatement(gotoStmt: DotNetNodeInfo): Seq[Ast] = {
+    val identifierAst = Option(gotoStmt.json(ParserKeys.Expression)) match
+      case Some(value: ujson.Obj) => astForNode(createDotNetNodeInfo(value))
+      case _                      => Seq.empty
+
+    val gotoAst = Ast(controlStructureNode(gotoStmt, ControlStructureTypes.GOTO, gotoStmt.code))
+
+    identifierAst :+ gotoAst
+  }
 }
