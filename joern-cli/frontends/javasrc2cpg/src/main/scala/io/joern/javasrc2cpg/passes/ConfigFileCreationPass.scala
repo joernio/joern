@@ -36,7 +36,11 @@ class ConfigFileCreationPass(cpg: Cpg) extends XConfigFileCreationPass(cpg) {
     pathEndFilter("AndroidManifest.xml"),
     // SPRING
     extensionFilter(".yaml"),
-    extensionFilter(".yml")
+    extensionFilter(".yml"),
+    // JPA
+    pathEndFilter("persistence.xml"),
+    // HIBERNATE
+    pathEndFilter("cfg.xml")
   )
 
   private def mybatisFilter(file: File): Boolean = {

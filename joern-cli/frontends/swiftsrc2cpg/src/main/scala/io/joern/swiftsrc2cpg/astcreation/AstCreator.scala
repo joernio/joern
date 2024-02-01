@@ -52,6 +52,15 @@ class AstCreator(val config: Config, val global: SwiftGlobal, val parserResult: 
   protected val seenAliasTypes                = mutable.HashSet.empty[NewTypeDecl]
   protected val functionFullNames             = mutable.HashSet.empty[String]
 
+  protected lazy val definedSymbols: Map[String, String] = {
+    config.defines.map {
+      case define if define.contains("=") =>
+        val s = define.split("=")
+        s.head -> s(1)
+      case define => define -> "true"
+    }.toMap
+  }
+
   override def createAst(): DiffGraphBuilder = {
     val fileNode       = NewFile().name(parserResult.filename).order(1)
     val namespaceBlock = globalNamespaceBlock()

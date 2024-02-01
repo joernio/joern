@@ -23,4 +23,12 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     }
   }
 
+  protected def astForUsing(usingNode: DotNetNodeInfo): Ast = {
+    val namespace  = nameFromNode(usingNode)
+    val alias      = namespace.split('.').last
+    val importNode = newImportNode(code(usingNode), namespace, alias, usingNode)
+    scope.addImport(namespace)
+    Ast(importNode)
+  }
+
 }

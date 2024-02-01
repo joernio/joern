@@ -6,9 +6,11 @@ import io.joern.pythonparser.ast
 import io.joern.x2cpg.{AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.{NewNode, NewTypeDecl}
+import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.mutable
+import PythonAstVisitor.logger
 
 object MethodParameters {
   def empty(): MethodParameters = {
@@ -1273,6 +1275,10 @@ class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode
   def convert(raise: ast.RaiseP2): NewNode = ???
 
   def convert(errorStatement: ast.ErrorStatement): NewNode = {
+    val code   = nodeToCode.getCode(errorStatement)
+    val line   = errorStatement.attributeProvider.lineno
+    val column = errorStatement.attributeProvider.col_offset
+    logger.warn(s"Could not parse file $relFileName at line $line column $column. Invalid code: $code")
     nodeBuilder.unknownNode(errorStatement.toString, errorStatement.getClass.getName, lineAndColOf(errorStatement))
   }
 
@@ -2036,6 +2042,8 @@ class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode
 }
 
 object PythonAstVisitor {
+  private val logger = LoggerFactory.getLogger(getClass)
+
   val builtinPrefix   = "__builtin."
   val typingPrefix    = "typing."
   val metaClassSuffix = "<meta>"

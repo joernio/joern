@@ -340,7 +340,12 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   def astForReturnExpression(expr: KtReturnExpression)(implicit typeInfoProvider: TypeInfoProvider): Ast = {
-    val children = astsForExpression(expr.getReturnedExpression, None)
-    returnAst(returnNode(expr, expr.getText), children.toList)
+    val returnedExpr =
+      if (expr.getReturnedExpression != null) {
+        astsForExpression(expr.getReturnedExpression, None)
+      } else {
+        Nil
+      }
+    returnAst(returnNode(expr, expr.getText), returnedExpr)
   }
 }

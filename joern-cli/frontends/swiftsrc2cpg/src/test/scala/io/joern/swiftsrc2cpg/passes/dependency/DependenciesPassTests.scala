@@ -33,7 +33,11 @@ class DependenciesPassTests extends SwiftSrc2CpgSuite {
   "DependenciesPass" should {
 
     "generate dependency nodes correctly" in {
-      inside(cpg.dependency.l) { case List(depA, depB, depC, depD, depE, depF, depG, depH) =>
+      inside(cpg.dependency.l) { case List(debPackageDesc, depA, depB, depC, depD, depE, depF, depG, depH) =>
+        debPackageDesc.name shouldBe "PackageDescription"
+        debPackageDesc.version shouldBe "import"
+        debPackageDesc.dependencyGroupId shouldBe Some("PackageDescription")
+
         depA.name shouldBe "DepA"
         depA.version shouldBe "<empty>"
         depA.dependencyGroupId shouldBe Some("PathA")

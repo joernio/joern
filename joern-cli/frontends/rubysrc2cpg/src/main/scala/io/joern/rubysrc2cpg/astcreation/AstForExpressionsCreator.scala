@@ -28,6 +28,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: Association           => astForAssociation(node)
     case node: IfExpression          => astForIfExpression(node)
     case node: RescueExpression      => astForRescueExpression(node)
+    case node: MandatoryParameter    => astForMandatoryParameter(node)
     case _                           => astForUnknown(node)
 
   protected def astForStaticLiteral(node: StaticLiteral): Ast = {
@@ -158,10 +159,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   protected def astForSimpleIdentifier(node: SimpleIdentifier): Ast = {
     val name = code(node)
+    // TODO: This treats identifiers as parenthesis-less calls by default, we would benefit from a pre-pass to validate
+    //  all defined method name in the application to check against
     scope.lookupVariable(name) match
       case None    => astForSimpleCall(SimpleCall(node, List())(node.span))
-      case Some(_) => Ast(identifierNode(node, name, name, node.typeFullName.getOrElse(Defines.Any)))
+      case Some(_) => handleNewVariableOccurrence(node)
   }
+
+  protected def astForMandatoryParameter(node: RubyNode): Ast = handleNewVariableOccurrence(node)
 
   protected def astForSimpleCall(node: SimpleCall): Ast = {
     node.target match

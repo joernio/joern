@@ -21,7 +21,10 @@ import scala.jdk.CollectionConverters.*
 trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
-  private def astForAccessorDeclSyntax(node: AccessorDeclSyntax): Ast             = notHandledYet(node)
+  private def astForAccessorDeclSyntax(node: AccessorDeclSyntax): Ast = {
+    astForFunctionLike(node).ast
+  }
+
   private def astForActorDeclSyntax(node: ActorDeclSyntax): Ast                   = notHandledYet(node)
   private def astForAssociatedTypeDeclSyntax(node: AssociatedTypeDeclSyntax): Ast = notHandledYet(node)
 
@@ -769,8 +772,55 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     astForFunctionLike(node).ast
   }
 
-  private def astForIfConfigDeclSyntax(node: IfConfigDeclSyntax): Ast               = notHandledYet(node)
-  private def astForImportDeclSyntax(node: ImportDeclSyntax): Ast                   = notHandledYet(node)
+  protected def ifConfigDeclConditionIsSatisfied(node: IfConfigClauseSyntax): Boolean = {
+    node.condition.isEmpty
+    || definedSymbols.get(code(node.condition.get)).exists(_.toLowerCase == "true")
+    || definedSymbols.get(code(node.condition.get)).contains("1")
+  }
+
+  private def astForIfConfigDeclSyntax(node: IfConfigDeclSyntax): Ast = {
+    val children              = node.clauses.children
+    val ifIfConfigClauses     = children.filter(c => code(c.poundKeyword) == "#if")
+    val elseIfIfConfigClauses = children.filter(c => code(c.poundKeyword) == "#elseif")
+    val elseIfConfigClauses   = children.filter(c => code(c.poundKeyword) == "#else")
+    ifIfConfigClauses match {
+      case Nil => notHandledYet(node)
+      case ifIfConfigClause :: Nil if ifConfigDeclConditionIsSatisfied(ifIfConfigClause) =>
+        ifIfConfigClause.elements.map(astForNode).getOrElse(Ast())
+      case _ :: Nil =>
+        val firstElseIfSatisfied = elseIfIfConfigClauses.find(ifConfigDeclConditionIsSatisfied)
+        firstElseIfSatisfied match {
+          case Some(elseIfIfConfigClause) =>
+            elseIfIfConfigClause.elements.map(astForNode).getOrElse(Ast())
+          case None =>
+            elseIfConfigClauses match {
+              case Nil                       => Ast()
+              case elseIfConfigClause :: Nil => elseIfConfigClause.elements.map(astForNode).getOrElse(Ast())
+              case _                         => notHandledYet(node)
+            }
+        }
+      case _ => notHandledYet(node)
+    }
+  }
+
+  private def astForImportDeclSyntax(node: ImportDeclSyntax): Ast = {
+    val importPath = node.path.children.map(c => code(c.name))
+    val (name, groupName) = importPath match {
+      case Nil         => (None, None)
+      case elem :: Nil => (Some(elem), Some(elem))
+      case _           => (importPath.lastOption, Some(importPath.slice(0, importPath.size - 1).mkString(".")))
+    }
+    if (name.isEmpty && groupName.isEmpty) {
+      Ast()
+    } else {
+      val _dependencyNode = newDependencyNode(name.get, groupName.get, "import")
+      val importNode      = newImportNode(code(node), groupName.get, name.get, node)
+      diffGraph.addNode(_dependencyNode)
+      diffGraph.addEdge(importNode, _dependencyNode, EdgeTypes.IMPORTS)
+      Ast(importNode)
+    }
+  }
+
   private def astForInitializerDeclSyntax(node: InitializerDeclSyntax): Ast         = notHandledYet(node)
   private def astForMacroDeclSyntax(node: MacroDeclSyntax): Ast                     = notHandledYet(node)
   private def astForMacroExpansionDeclSyntax(node: MacroExpansionDeclSyntax): Ast   = notHandledYet(node)

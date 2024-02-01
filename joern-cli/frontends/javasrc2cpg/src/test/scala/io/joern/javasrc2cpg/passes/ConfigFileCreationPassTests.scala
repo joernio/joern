@@ -38,7 +38,9 @@ class ConfigFileCreationPassTests extends JavaSrcCode2CpgFixture {
       Paths.get(absoluteConfigDir, "build.gradle").toString,
       Paths.get(absoluteConfigDir, "build.gradle.kts").toString,
       Paths.get(absoluteConfigDir, "basic.yaml").toString,
-      Paths.get(absoluteConfigDir, "basic.yml").toString
+      Paths.get(absoluteConfigDir, "basic.yml").toString,
+      Paths.get(absoluteConfigDir, "hibernate.cfg.xml").toString,
+      Paths.get(absoluteConfigDir, "persistence.xml").toString
     )
   }
 

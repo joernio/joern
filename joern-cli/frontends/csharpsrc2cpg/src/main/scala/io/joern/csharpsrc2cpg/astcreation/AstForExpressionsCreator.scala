@@ -89,16 +89,16 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     Seq(callAst(cNode, args))
   }
 
+  /** Handles the `= ...` part of the equals value clause, thus this only contains an RHS.
+    */
   protected def astForEqualsValueClause(clause: DotNetNodeInfo): Seq[Ast] = {
     val rhsNode = createDotNetNodeInfo(clause.json(ParserKeys.Value))
-    rhsNode.node match
-      case _: LiteralExpr => astForLiteralExpression(rhsNode)
-      case _              => notHandledYet(rhsNode)
+    astForNode(rhsNode)
   }
 
   private def astForInvocationExpression(invocationExpr: DotNetNodeInfo): Seq[Ast] = {
     val dispatchType = DispatchTypes.STATIC_DISPATCH // TODO
-    val typeFullName = None                          // TODO
+    val typeFullName = None                          // TODO: Return type of the call
     val arguments    = astForArgumentList(createDotNetNodeInfo(invocationExpr.json(ParserKeys.ArgumentList)))
     val argString =
       s"${arguments.flatMap(_.root).collect { case x: NewMethodParameterIn => x.typeFullName }.mkString(",")}"

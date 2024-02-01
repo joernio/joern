@@ -1,9 +1,14 @@
 package io.joern.csharpsrc2cpg.datastructures
 
+import io.joern.csharpsrc2cpg.{CSharpType, TypeMap}
 import io.joern.x2cpg.datastructures.{Scope, ScopeElement}
-import io.shiftleft.codepropertygraph.generated.nodes.{DeclarationNew, NewLocal, NewMethodParameterIn, NewNode}
+import io.shiftleft.codepropertygraph.generated.nodes.DeclarationNew
 
-class CSharpScope extends Scope[String, DeclarationNew, ScopeType] {
+import scala.collection.mutable
+
+class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeType] {
+
+  private val typesInScope = mutable.Set.empty[CSharpType]
 
   /** @return
     *   the surrounding type declaration if one exists.
@@ -29,13 +34,41 @@ class CSharpScope extends Scope[String, DeclarationNew, ScopeType] {
     .exists(x => x.scopeNode.isInstanceOf[MethodScope] || x.scopeNode.isInstanceOf[TypeScope])
 
   def tryResolveTypeReference(typeName: String): Option[String] = {
-    // TODO: Look for a type with a matching name in scope
-    None
+    typesInScope.find(_.name.endsWith(typeName)).flatMap(typeMap.namespaceFor).map(n => s"$n.$typeName")
   }
 
   def tryResolveMethodInvocation(typeFullName: String, callName: String): Option[String] = {
-    // TODO: Use type map to resolve method full name
-    None
+    typesInScope.find(_.name.endsWith(typeFullName)).flatMap { t =>
+      t.methods.find(_.name == callName).map { m => s"${t.name}.${m.name}" }
+    }
+  }
+
+  /** Appends known types imported from a `using` statement into the scope.
+    * @param namespace
+    *   the fully qualified imported namespace.
+    */
+  def addImport(namespace: String): Unit = {
+    val knownTypesFromNamespace = typeMap.classesIn(namespace)
+    typesInScope.addAll(knownTypesFromNamespace)
+  }
+
+  /** Pops the scope, adding types from the scope if necessary.
+    */
+  override def pushNewScope(scopeNode: ScopeType): Unit = {
+    scopeNode match
+      case NamespaceScope(fullName) => typesInScope.addAll(typeMap.classesIn(fullName))
+      case _                        =>
+    super.pushNewScope(scopeNode)
+  }
+
+  /** Pops the scope, removing types from the scope if necessary.
+    */
+  override def popScope(): Option[ScopeType] = {
+    super.popScope() match
+      case Some(NamespaceScope(fullName)) =>
+        typeMap.classesIn(fullName).foreach(typesInScope.remove)
+        Some(NamespaceScope(fullName))
+      case x => x
   }
 
 }

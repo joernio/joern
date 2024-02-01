@@ -10,6 +10,7 @@ object Defines {
   val Float: String           = "Float"
   val Double: String          = "Double"
   val Bool: String            = "Bool"
+  val Nil: String             = "Nil"
   val GlobalNamespace: String = NamespaceTraversal.globalNamespaceName
 
   val SwiftTypes: List[String] =

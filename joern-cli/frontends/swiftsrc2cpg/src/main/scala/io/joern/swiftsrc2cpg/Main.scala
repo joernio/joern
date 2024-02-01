@@ -8,7 +8,13 @@ import scopt.OParser
 
 import java.nio.file.Paths
 
-final case class Config() extends X2CpgConfig[Config] with TypeRecoveryParserConfig[Config]
+final case class Config(defines: Set[String] = Set.empty)
+    extends X2CpgConfig[Config]
+    with TypeRecoveryParserConfig[Config] {
+  def withDefines(defines: Set[String]): Config = {
+    this.copy(defines = defines).withInheritedFields(this)
+  }
+}
 
 object Frontend {
   implicit val defaultConfig: Config = Config()
@@ -16,7 +22,14 @@ object Frontend {
   val cmdLineParser: OParser[Unit, Config] = {
     val builder = OParser.builder[Config]
     import builder.*
-    OParser.sequence(programName("swiftsrc2cpg"), XTypeRecovery.parserOptions)
+    OParser.sequence(
+      programName("swiftsrc2cpg"),
+      XTypeRecovery.parserOptions,
+      opt[String]("define")
+        .unbounded()
+        .text("define a name")
+        .action((d, c) => c.withDefines(c.defines + d))
+    )
   }
 
 }
