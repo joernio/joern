@@ -105,7 +105,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val signature = Option(s"${typeFullName.getOrElse(Defines.Any)}:($argString)")
 
     val expression = createDotNetNodeInfo(invocationExpr.json(ParserKeys.Expression))
-    val name       = nameFromNode(createDotNetNodeInfo(expression.json(ParserKeys.Name)))
+    val name       = nameFromNode(expression)
 
     val (receiver, baseTypeFullName) = expression.node match
       case SimpleMemberAccessExpression =>
