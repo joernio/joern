@@ -1,6 +1,5 @@
 package io.joern.c2cpg.astcreation
 
-
 import org.eclipse.cdt.core.dom.ast.{
   IASTFileLocation,
   IASTName,
