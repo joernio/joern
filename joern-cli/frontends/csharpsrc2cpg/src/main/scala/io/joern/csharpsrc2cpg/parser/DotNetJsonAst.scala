@@ -31,7 +31,10 @@ object DotNetJsonAst {
 
   sealed trait BaseLabel extends DotNetParserNode
 
-  object GlobalStatement     extends BaseStmt
+  sealed trait JumpStatement extends BaseStmt
+
+  object GlobalStatement extends BaseStmt
+
   object ExpressionStatement extends BaseStmt
 
   object NotHandledType extends DotNetParserNode
@@ -173,6 +176,12 @@ object DotNetJsonAst {
   object CasePatternSwitchLabel extends BaseLabel
 
   object DefaultSwitchLabel extends BaseLabel
+
+  object BreakStatement extends JumpStatement
+
+  object ContinueStatement extends JumpStatement
+
+  object GotoStatement extends JumpStatement
 
   object Unknown extends DotNetParserNode
 
