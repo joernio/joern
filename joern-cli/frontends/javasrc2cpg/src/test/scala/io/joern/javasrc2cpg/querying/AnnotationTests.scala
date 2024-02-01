@@ -1,8 +1,8 @@
 package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.{Annotation, AnnotationLiteral, ArrayInitializer}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.{Annotation, AnnotationLiteral, ArrayInitializer, CfgNode}
+import io.shiftleft.semanticcpg.language.*
 
 class AnnotationTests extends JavaSrcCode2CpgFixture {
   "normal value annotations" should {
@@ -18,7 +18,7 @@ class AnnotationTests extends JavaSrcCode2CpgFixture {
         |""".stripMargin)
 
     "test annotation node properties" in {
-      val annotationNode = cpg.method.name("function").annotation.head
+      val annotationNode = cpg.method.name("function").ast.collectAll[CfgNode]
       annotationNode.code shouldBe "@NormalAnnotation(value = \"classAnnotation\")"
       annotationNode.name shouldBe "NormalAnnotation"
       annotationNode.fullName shouldBe "some.NormalAnnotation"

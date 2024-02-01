@@ -41,27 +41,20 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   protected def prefixAsBuiltin(x: String): String = s"$builtinPrefix$pathSep$x"
 
-  protected def methodsWithName(name: String): Option[mutable.HashSet[MethodTableModel]] = {
-    packageContext.packageTable.methodTableMap.get(name)
+  protected def methodsWithName(name: String): List[String] = {
+    packageContext.packageTable.getMethodFullNameUsingName(methodName = name)
   }
 
   private def methodTableToCallNode(
-    methodTableModel: MethodTableModel,
+    methodFullName: String,
     name: String,
     code: String,
     typeFullName: String,
     dynamicTypeHints: Seq[String] = Seq(),
     ctx: Option[ParserRuleContext] = None
   ): NewCall = {
-    callNode(
-      ctx.orNull,
-      code,
-      name,
-      methodTableModel.methodName,
-      DispatchTypes.DYNAMIC_DISPATCH,
-      None,
-      Option(typeFullName)
-    ).dynamicTypeHintFullName(dynamicTypeHints)
+    callNode(ctx.orNull, code, name, methodFullName, DispatchTypes.DYNAMIC_DISPATCH, None, Option(typeFullName))
+      .dynamicTypeHintFullName(dynamicTypeHints)
   }
 
   protected def createIdentifierWithScope(
@@ -72,8 +65,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     dynamicTypeHints: Seq[String] = Seq()
   ): NewNode = {
     methodsWithName(name) match
-      case Some(methodTables) if name != "this" =>
-        methodTableToCallNode(methodTables.head, name, code, typeFullName, dynamicTypeHints, Option(ctx))
+      case method :: _ if name != "this" =>
+        methodTableToCallNode(method, name, code, typeFullName, dynamicTypeHints, Option(ctx))
       case _ =>
         val newNode = identifierNode(ctx, name, code, typeFullName, dynamicTypeHints)
         scope.addToScope(name, newNode)
@@ -89,9 +82,9 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     columnNumber: Option[Integer]
   ): NewNode = {
     methodsWithName(name) match
-      case Some(methodTables) if name != "this" =>
-        methodTableToCallNode(methodTables.head, name, code, typeFullName, dynamicTypeHints, None)
-      case None =>
+      case method :: _ if name != "this" =>
+        methodTableToCallNode(method, name, code, typeFullName, dynamicTypeHints, None)
+      case _ =>
         val newNode = NewIdentifier()
           .name(name)
           .code(code)
