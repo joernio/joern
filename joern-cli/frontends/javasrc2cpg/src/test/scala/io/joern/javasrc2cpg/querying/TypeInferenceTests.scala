@@ -175,6 +175,7 @@ class NewTypeInferenceTests extends JavaSrcCode2CpgFixture {
           |}
           |""".stripMargin)
 
+      val callNames = cpg.call.name.l
       cpg.call.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).methodFullName.l match {
         case List(fullName) =>
           fullName shouldBe s"a.Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void()"

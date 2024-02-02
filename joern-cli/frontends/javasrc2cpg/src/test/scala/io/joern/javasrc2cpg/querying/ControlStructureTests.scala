@@ -121,7 +121,7 @@ class NewControlStructureTests extends JavaSrcCode2CpgFixture {
       )
 
     "have the correct assignment target in the clinit block of the defining class" in {
-      inside(cpg.typeDecl.name("Bar").method.nameExact("<clinit>").body.astChildren.l) { case List(assignment: Call) =>
+     inside(cpg.typeDecl.name("Bar").method.nameExact("<clinit>").body.astChildren.l) { case List(assignment: Call) =>
         assignment.name shouldBe Operators.assignment
 
         inside(assignment.argument.l) { case List(fieldAccess: Call, _: Call) =>

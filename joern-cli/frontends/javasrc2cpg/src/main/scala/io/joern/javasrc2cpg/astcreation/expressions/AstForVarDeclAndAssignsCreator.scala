@@ -56,20 +56,30 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
       logger.warn(s"Too many LHS ASTs for expression ${expr.toString}")
     }
 
-    astsForAssignment(expr, targetAst.head, expr.getValue, maybeResolvedType, operatorName, operatorSymbol)
+    astsForAssignment(
+      expr,
+      targetAst.head,
+      targetAst.head.rootCodeOrEmpty,
+      expr.getValue,
+      maybeResolvedType,
+      operatorName,
+      operatorSymbol
+    )
   }
 
   private[expressions] def astsForVariableDeclaration(variableDeclaration: VariableDeclarationExpr): Seq[Ast] = {
-    val variablesWithAssignments = variableDeclaration.getVariables.asScala.map(astsForVariableDeclarator).toList
+    val variablesWithAssignments =
+      variableDeclaration.getVariables.asScala.map(astsForVariableDeclarator(_, Some(variableDeclaration))).toList
 
     variablesWithAssignments.map(_.head) ++ variablesWithAssignments.flatMap(_.drop(1))
   }
 
-  def astsForVariableDeclarator(variableDeclarator: VariableDeclarator): List[Ast] = {
-    val localNode = localForVariableDeclarator(variableDeclarator)
+  def astsForVariableDeclarator(variableDeclarator: VariableDeclarator, originNode: Option[Node] = None): List[Ast] = {
+    val localNode = localForVariableDeclarator(variableDeclarator, originNode)
+    scope.enclosingBlock.foreach(_.addLocal(localNode))
 
     val identifierForAssignment =
-      identifierNode(variableDeclarator, localNode.name, localNode.code, localNode.typeFullName)
+      identifierNode(variableDeclarator, localNode.name, localNode.name, localNode.typeFullName)
 
     // Need the actual resolvedType here for when the RHS is a lambda expression.
     val resolvedExpectedType =
@@ -80,6 +90,7 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
         astsForAssignment(
           variableDeclarator,
           Ast(identifierForAssignment),
+          localNode.code,
           initializer,
           resolvedExpectedType,
           Operators.assignment,
@@ -91,7 +102,7 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
     Ast(localNode) :: assignmentAsts
   }
 
-  private def localForVariableDeclarator(variable: VariableDeclarator): NewLocal = {
+  private def localForVariableDeclarator(variable: VariableDeclarator, originNode: Option[Node]): NewLocal = {
     val name = variable.getNameAsString
 
     val typeFullName = tryWithSafeStackOverflow {
@@ -100,12 +111,13 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
 
     val code = s"${variable.getType} $name"
 
-    localNode(variable, name, code, typeFullName.getOrElse(TypeConstants.Any))
+    localNode(originNode.getOrElse(variable), name, code, typeFullName.getOrElse(TypeConstants.Any))
   }
 
   private def astsForAssignment(
     assignmentNode: Node,
     targetAst: Ast,
+    targetCode: String,
     initializer: Expression,
     expectedInitializerType: Option[ResolvedType],
     assignmentOperatorName: String,
@@ -118,7 +130,7 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
     scope.popAssignmentScope()
 
     val assignmentCode =
-      s"${targetAst.rootCodeOrEmpty} $assignmentOperatorCode ${initializerAsts.headOption.flatMap(_.rootCode).getOrElse("")}"
+      s"$targetCode $assignmentOperatorCode ${initializerAsts.headOption.flatMap(_.rootCode).getOrElse("")}"
     val assignmentType =
       targetAst.rootType
         .orElse(initializerAsts.headOption.flatMap(_.rootType))

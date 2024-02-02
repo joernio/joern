@@ -148,10 +148,17 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
     val typeFullName = if (anonymousClassBody.isEmpty) {
       baseTypeFullName
     } else {
-      baseTypeFullName.map { baseTypeFullName =>
-        val anonymousNameIndex = scope.getNextAnonymousClassIndex()
-        s"$baseTypeFullName$$$anonymousNameIndex"
-      }
+      val anonymousNameIndex = scope.getNextAnonymousClassIndex()
+      for {
+        baseTypeFullName   <- baseTypeFullName.flatMap(_.split('.').lastOption)
+        enclosingScopeName <- scope.scopeFullName()
+      } yield s"$enclosingScopeName.$baseTypeFullName$$$anonymousNameIndex"
+    }
+
+    anonymousClassBody.foreach { bodyStmts =>
+      val typeName           = typeFullName.map(_.takeWhile(_ != ':').split('.').last).getOrElse(NameConstants.Unknown)
+      val anonymousClassDecl = astForAnonymousClassDecl(expr, bodyStmts, typeName, typeFullName, baseTypeFullName)
+      scope.addLocalDecl(anonymousClassDecl)
     }
 
     val resolvedConstructor = tryWithSafeStackOverflow(expr.resolve())
@@ -184,10 +191,17 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
       line(originNode)
     )
 
+    val isDirectSource = originNode.getParentNode.toScala.exists {
+      case _: AssignExpr         => true
+      case _: VariableDeclarator => true
+      case _                     => false
+    }
+
     val (isIdentifierAssign, initReceiver: NewIdentifier) = scope.enclosingAssignmentTarget
       .flatMap(_.root)
-      .collect { case identifier: NewIdentifier =>
-        (true, identifier.copy.lineNumber(line(originNode)).columnNumber(column(originNode)))
+      .collect {
+        case identifier: NewIdentifier if isDirectSource =>
+          (true, identifier.copy.lineNumber(line(originNode)).columnNumber(column(originNode)))
       }
       .getOrElse {
         val tempIdentifierName = s"$$obj$tempConstCount"

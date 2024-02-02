@@ -26,6 +26,7 @@ class NewMemberTests extends JavaSrcCode2CpgFixture {
     }
 
     "contain a class declaration for the anonymous class" in {
+      val typeDecls = cpg.typeDecl.map(typeDecl => (typeDecl.name, typeDecl)).l
       inside(cpg.typeDecl.nameExact("Foo$0").l) { case List(anonDecl) =>
         anonDecl.fullName shouldBe "Foo.x.Foo$0"
         anonDecl.method.name.toSet shouldBe Set("<init>", "foo")
