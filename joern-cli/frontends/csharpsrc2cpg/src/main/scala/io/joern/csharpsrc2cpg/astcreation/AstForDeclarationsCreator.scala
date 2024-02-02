@@ -47,7 +47,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
           case FieldDeclaration => true
           case _                => false
       }
-      
+
     val members = astForMembers(fields) ++ astForMembers(nonFields)
 
     scope.popScope()
