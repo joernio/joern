@@ -37,7 +37,18 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val typeDecl = typeDeclNode(classDecl, name, fullName, relativeFileName, code(classDecl))
     scope.pushNewScope(TypeScope(fullName))
     val modifiers = astForModifiers(classDecl)
-    val members   = astForMembers(classDecl.json(ParserKeys.Members).arr.map(createDotNetNodeInfo).toSeq)
+    val (fields, nonFields) = classDecl
+      .json(ParserKeys.Members)
+      .arr
+      .map(createDotNetNodeInfo)
+      .toSeq
+      .partition { x =>
+        x.node match
+          case FieldDeclaration => true
+          case _                => false
+      }
+      
+    val members = astForMembers(fields) ++ astForMembers(nonFields)
 
     scope.popScope()
     val typeDeclAst = Ast(typeDecl)
