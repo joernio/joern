@@ -51,32 +51,23 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val fullName = astFullName(recordDecl)
     val typeDecl = typeDeclNode(recordDecl, name, fullName, relativeFileName, code(recordDecl))
     scope.pushNewScope(TypeScope(fullName))
-    val modifiers         = astForModifiers(recordDecl)
-    val paramList         = recordDecl.json(ParserKeys.ParameterList)
-    var membersFromParams = Seq[Ast]()
+    val modifiers = astForModifiers(recordDecl)
 
     // Covers the case where record type can be declared as `record Person(string Name);`
     // Here, Person should be a TypeDecl and Name should be a member instead of a parameter
-    if (!paramList.isNull) {
-      membersFromParams = paramList(ParserKeys.Parameters).arr
-        .map(p => {
-          val metaData     = p(ParserKeys.MetaData)
-          val name         = p(ParserKeys.Identifier)(ParserKeys.Value).strOpt.getOrElse("<empty>")
-          val typeFullName = p(ParserKeys.Type)(ParserKeys.Keyword)(ParserKeys.Value).strOpt.getOrElse("<empty>")
-          val code         = metaData(ParserKeys.Code).strOpt.getOrElse("<empty>")
-          val line         = metaData(ParserKeys.LineStart).numOpt.map(_.toInt.asInstanceOf[Integer])
-          val col          = metaData(ParserKeys.ColumnStart).numOpt.map(_.toInt.asInstanceOf[Integer])
-          Ast(
-            NewMember()
-              .code(code)
-              .name(name)
-              .typeFullName(typeFullName)
-              .lineNumber(line)
-              .columnNumber(col)
-          )
-        })
+    val membersFromParams = Try {
+      recordDecl
+        .json(ParserKeys.ParameterList)(ParserKeys.Parameters)
+        .arr
+        .map(createDotNetNodeInfo)
         .toSeq
-    }
+    }.toOption
+      .getOrElse(Seq.empty)
+      .map { paramNode =>
+        val name         = nameFromNode(paramNode)
+        val typeFullName = nodeTypeFullName(paramNode)
+        Ast(memberNode(paramNode, name, paramNode.code, typeFullName))
+      }
 
     val members =
       astForMembers(recordDecl.json(ParserKeys.Members).arr.map(createDotNetNodeInfo).toSeq) ++ membersFromParams
