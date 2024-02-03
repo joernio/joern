@@ -10,6 +10,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.proto.cpg.Cpg.EvaluationStrategies
 
 import scala.util.Try
+import scala.collection.mutable.ArrayBuffer
 import io.joern.csharpsrc2cpg.CSharpOperators as CSharpOperators
 import io.joern.x2cpg.Defines
 
@@ -38,6 +39,38 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     scope.pushNewScope(TypeScope(fullName))
     val modifiers = astForModifiers(classDecl)
     val members   = astForMembers(classDecl.json(ParserKeys.Members).arr.map(createDotNetNodeInfo).toSeq)
+    scope.popScope()
+    val typeDeclAst = Ast(typeDecl)
+      .withChildren(modifiers)
+      .withChildren(members)
+    Seq(typeDeclAst)
+  }
+
+  protected def astForRecordDeclaration(recordDecl: DotNetNodeInfo): Seq[Ast] = {
+    val name     = nameFromNode(recordDecl)
+    val fullName = astFullName(recordDecl)
+    val typeDecl = typeDeclNode(recordDecl, name, fullName, relativeFileName, code(recordDecl))
+    scope.pushNewScope(TypeScope(fullName))
+    val modifiers = astForModifiers(recordDecl)
+
+    // Covers the case where record type can be declared as `record Person(string Name);`
+    // Here, Person should be a TypeDecl and Name should be a member instead of a parameter
+    val membersFromParams = Try {
+      recordDecl
+        .json(ParserKeys.ParameterList)(ParserKeys.Parameters)
+        .arr
+        .map(createDotNetNodeInfo)
+        .toSeq
+    }.toOption
+      .getOrElse(Seq.empty)
+      .map { paramNode =>
+        val name         = nameFromNode(paramNode)
+        val typeFullName = nodeTypeFullName(paramNode)
+        Ast(memberNode(paramNode, name, paramNode.code, typeFullName))
+      }
+
+    val members =
+      astForMembers(recordDecl.json(ParserKeys.Members).arr.map(createDotNetNodeInfo).toSeq) ++ membersFromParams
     scope.popScope()
     val typeDeclAst = Ast(typeDecl)
       .withChildren(modifiers)
