@@ -79,4 +79,40 @@ class TypeDeclTests extends CSharpCode2CpgFixture {
       }
     }
   }
+
+  "basic records declaration" should {
+    val cpg = code("""
+        |private record Person(string Name, string Mood);
+        |
+        |public record Car
+        |{
+        |    public string Model;
+        |    public string Year;
+        |};
+        |""".stripMargin)
+
+    "generate a type declaration with properties for first declaration style" in {
+      inside(cpg.typeDecl.nameExact("Person").headOption) {
+        case Some(rec) =>
+          rec.fullName shouldBe "Person"
+          rec.member.name.head shouldBe "Name"
+          rec.member.name.last shouldBe "Mood"
+          rec.modifier.modifierType.head shouldBe ModifierTypes.PRIVATE
+        case None => fail("Unable to find `Person` type decl node with correct properties")
+
+      }
+    }
+
+    "generate a type declaration with properties for second declaration style" in {
+      inside(cpg.typeDecl.nameExact("Car").headOption) {
+        case Some(rec) =>
+          rec.fullName shouldBe "Car"
+          rec.member.name.head shouldBe "Model"
+          rec.member.name.last shouldBe "Year"
+          rec.modifier.modifierType.head shouldBe ModifierTypes.PUBLIC
+        case None => fail("Unable to find `Car` type decl node with correct properties")
+
+      }
+    }
+  }
 }

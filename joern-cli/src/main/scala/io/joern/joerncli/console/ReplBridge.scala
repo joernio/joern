@@ -1,12 +1,11 @@
 package io.joern.joerncli.console
 
-import io.joern.console.{BridgeBase, JoernProduct}
-
+import io.joern.console.BridgeBase
 import java.io.PrintStream
 
 object ReplBridge extends BridgeBase {
 
-  override val slProduct = JoernProduct
+  override val applicationName = "joern"
 
   def main(args: Array[String]): Unit = {
     run(parseConfig(args))

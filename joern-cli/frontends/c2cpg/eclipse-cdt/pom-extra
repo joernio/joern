@@ -1,0 +1,29 @@
+    <url>https://github.com/eclipse-cdt/cdt/</url>
+    <licenses>
+      <license>
+        <name>Eclipse Public License 2.0</name>
+        <comments>
+        This program and the accompanying materials are made
+        available under the terms of the Eclipse Public License 2.0
+        which accompanies this distribution, and is available at
+        https://www.eclipse.org/legal/epl-2.0/
+
+        SPDX-License-Identifier: EPL-2.0
+        </comments>
+      </license>
+    </licenses>
+
+    <name>cdt</name>
+    <scm>
+        <url>https://github.com/eclipse-cdt/cdt</url>
+        <connection>scm:git@github.com:eclipse-cdt/cdt.git</connection>
+    </scm>
+    <developers>
+        <developer>
+            <id>max-leuthaeuser</id>
+            <name>Max Leuthaeuser</name>
+            <url>https://github.com/max-leuthaeuser</url>
+            <email>max@qwiet.ai</email>
+        </developer>
+    </developers>
+</project>

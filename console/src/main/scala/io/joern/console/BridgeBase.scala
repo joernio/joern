@@ -44,10 +44,10 @@ case class Config(
   */
 trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandling with ServerHandling {
 
-  def slProduct: SLProduct
+  def applicationName: String
 
   protected def parseConfig(args: Array[String]): Config = {
-    val parser = new scopt.OptionParser[Config](slProduct.name) {
+    val parser = new scopt.OptionParser[Config](applicationName) {
       override def errorOnUnknownArgument = false
 
       note("Script execution")
@@ -200,7 +200,7 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
       GlobalReporting.enable()
       startHttpServer(config)
     } else if (config.pluginToRun.isDefined) {
-      runPlugin(config, slProduct.name)
+      runPlugin(config)
     } else {
       startInteractiveShell(config)
     }
@@ -300,7 +300,7 @@ trait PluginHandling { this: BridgeBase =>
     new PluginManager(InstallConfig().rootPath).listPlugins().foreach(println)
     println("Available layer creators")
     println()
-    withTemporaryScript(codeToListPlugins(), slProduct.name) { file =>
+    withTemporaryScript(codeToListPlugins()) { file =>
       runScript(config.copy(scriptFile = Some(file.path))).get
     }
   }
@@ -313,13 +313,13 @@ trait PluginHandling { this: BridgeBase =>
   }
 
   /** Run plugin by generating a temporary script based on the given config and execute the script */
-  protected def runPlugin(config: Config, productName: String): Unit = {
+  protected def runPlugin(config: Config): Unit = {
     if (config.src.isEmpty) {
       println("You must supply a source directory with the --src flag")
       return
     }
-    val code = loadOrCreateCpg(config, productName)
-    withTemporaryScript(code, productName) { file =>
+    val code = loadOrCreateCpg(config, applicationName)
+    withTemporaryScript(code) { file =>
       runScript(config.copy(scriptFile = Some(file.path))).get
     }
   }
@@ -383,8 +383,8 @@ trait PluginHandling { this: BridgeBase =>
     }
   }
 
-  private def withTemporaryScript(code: String, prefix: String)(f: File => Unit): Unit = {
-    File.usingTemporaryDirectory(prefix + "-bundle") { dir =>
+  private def withTemporaryScript(code: String)(f: File => Unit): Unit = {
+    File.usingTemporaryDirectory(applicationName + "-bundle") { dir =>
       val file = dir / "script.sc"
       file.write(code)
       f(file)
