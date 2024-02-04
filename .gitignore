@@ -5,7 +5,6 @@
 project/project
 project/target
 target
-.idea/
 tests/smoke-test-repos
 tests/**/node_modules
 tests/**/package-lock.json
@@ -19,9 +18,7 @@ cfg-for-funcs.json
 pdg-for-funcs.json
 joern-cli/workspace
 /workspace
-.bloop
 null
-/.bsp
 /gnupg-*
 /joern-cli/${sys:LOG_DIR}/
 .local
@@ -37,7 +34,6 @@ null
 /foo.c
 /woo.c
 /cpg_*.bin.zip
-.DS_Store
 **/goastgen-windows.exe
 **/goastgen-linux
 **/goastgen-linux-arm64
@@ -65,3 +61,13 @@ flake.lock
 **/.metals
 **/metals.sbt
 *.semanticdb
+
+##############
+# IDE/OS     #
+##############
+
+.vscode
+.idea/
+.bloop
+**/.DS_Store
+**/.bsp
