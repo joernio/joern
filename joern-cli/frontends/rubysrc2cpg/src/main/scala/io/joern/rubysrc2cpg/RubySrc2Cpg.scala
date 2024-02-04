@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory
 import java.nio.file.{Files, Paths}
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try, Using}
+
 class RubySrc2Cpg extends X2CpgFrontend[Config] {
 
   private val logger                                = LoggerFactory.getLogger(this.getClass)
@@ -45,7 +46,7 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
     }
   }
 
-  private def deprecatedCreateCpgAction(cpg: Cpg, config: Config): Unit = {
+  private def deprecatedCreateCpgAction(cpg: Cpg, config: Config): Unit = try {
     Using.resource(new deprecated.astcreation.ResourceManagedParser(config.antlrCacheMemLimit)) { parser =>
       if (config.enableDependencyDownload && !scala.util.Properties.isWin) {
         val tempDir = File.newTemporaryDirectory()
@@ -87,6 +88,8 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
         new deprecated.passes.AstCreationPass(cpg, parsedFiles, RubySrc2Cpg.packageTableInfo, config)
       astCreationPass.createAndApply()
     }
+  } finally {
+    RubySrc2Cpg.packageTableInfo.clear()
   }
 
   private def downloadDependency(inputPath: String, tempPath: String): Unit = {
@@ -110,6 +113,7 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
 
 object RubySrc2Cpg {
 
+  // TODO: Global mutable state is bad and should be avoided in the next iteration of the Ruby frontend
   val packageTableInfo = new deprecated.utils.PackageTable()
 
   def postProcessingPasses(cpg: Cpg, config: Config): List[CpgPassBase] = {
