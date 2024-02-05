@@ -169,7 +169,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         .headOption match
         case Some(localVar) =>
           val name = localVar.getSymbol.getText
-          val node = createIdentifierWithScope(ctx, name, name, Defines.Any, List(Defines.Any))
+          val node = createIdentifierWithScope(ctx, name, name, Defines.Any, List(Defines.Any), true)
           val yAst = Ast(node)
 
           val callNode = createOpCall(localVar, Operators.fieldAccess, code(ctx))
@@ -179,7 +179,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case ctx: ScopedConstantAccessSingleLeftHandSideContext =>
       val localVar  = ctx.CONSTANT_IDENTIFIER
       val varSymbol = localVar.getSymbol
-      val node = createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any))
+      val node =
+        createIdentifierWithScope(ctx, varSymbol.getText, varSymbol.getText, Defines.Any, List(Defines.Any), true)
       Seq(Ast(node))
     case _ =>
       logger.error(s"astForSingleLeftHandSideContext() $relativeFilename, ${text(ctx)} All contexts mismatched.")
@@ -468,7 +469,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       val thisNode = createThisIdentifier(ctx)
       astForFieldAccess(ctx, thisNode)
     } else if (definitelyIdentifier || scope.lookupVariable(variableName).isDefined) {
-      val node = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List())
+      val node = createIdentifierWithScope(ctx, variableName, variableName, Defines.Any, List(), definitelyIdentifier)
       Ast(node)
     } else if (methodNameToMethod.contains(variableName)) {
       astForCallNode(ctx, variableName)

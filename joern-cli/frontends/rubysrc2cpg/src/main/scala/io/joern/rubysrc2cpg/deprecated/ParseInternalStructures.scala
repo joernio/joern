@@ -19,14 +19,14 @@ class ParseInternalStructures(
   projectRoot: Option[String] = None
 ) {
 
-  private val logger                            = LoggerFactory.getLogger(getClass)
-  private val classStack: mutable.Stack[String] = mutable.Stack[String]()
+  private val logger = LoggerFactory.getLogger(getClass)
 
   def populatePackageTable(): Unit = {
     val tasks = parsedFiles.map { case (fileName, programCtx) =>
       () => {
         val relativeFilename: String =
           projectRoot.map(fileName.stripPrefix).map(_.stripPrefix(JFile.separator)).getOrElse(fileName)
+        implicit val classStack: mutable.Stack[String] = mutable.Stack[String]()
         parseForStructures(relativeFilename, programCtx)
       }
     }.iterator
@@ -37,7 +37,9 @@ class ParseInternalStructures(
     }
   }
 
-  private def parseForStructures(relativeFilename: String, programCtx: ProgramContext): Unit = {
+  private def parseForStructures(relativeFilename: String, programCtx: ProgramContext)(implicit
+    classStack: mutable.Stack[String]
+  ): Unit = {
     val name     = ":program"
     val fullName = s"$relativeFilename:$name"
     classStack.push(fullName)
@@ -47,29 +49,35 @@ class ParseInternalStructures(
     ) {
       programCtx.compoundStatement().statements().statement().asScala.foreach(parseStatement)
     }
+    classStack.pop()
   }
 
-  private def parseStatement(ctx: StatementContext): Unit = ctx match {
+  private def parseStatement(ctx: StatementContext)(implicit classStack: mutable.Stack[String]): Unit = ctx match {
     case ctx: ExpressionOrCommandStatementContext => parseExpressionOrCommand(ctx.expressionOrCommand())
     case _                                        =>
   }
 
-  private def parseExpressionOrCommand(ctx: ExpressionOrCommandContext): Unit = ctx match {
+  private def parseExpressionOrCommand(
+    ctx: ExpressionOrCommandContext
+  )(implicit classStack: mutable.Stack[String]): Unit = ctx match {
     case ctx: ExpressionExpressionOrCommandContext => parseExpressionContext(ctx.expression())
     case _                                         =>
   }
 
-  private def parsePrimaryContext(ctx: PrimaryContext): Unit = ctx match {
+  private def parseExpressionContext(ctx: ExpressionContext)(implicit classStack: mutable.Stack[String]): Unit =
+    ctx match {
+      case ctx: PrimaryExpressionContext => parsePrimaryContext(ctx.primary())
+      case _                             =>
+    }
+
+  private def parsePrimaryContext(ctx: PrimaryContext)(implicit classStack: mutable.Stack[String]): Unit = ctx match {
     case ctx: MethodDefinitionPrimaryContext => parseMethodDefinitionContext(ctx.methodDefinition())
     case _                                   =>
   }
 
-  private def parseExpressionContext(ctx: ExpressionContext): Unit = ctx match {
-    case ctx: PrimaryExpressionContext => parsePrimaryContext(ctx.primary())
-    case _                             =>
-  }
-
-  private def parseMethodDefinitionContext(ctx: MethodDefinitionContext): Unit = {
+  private def parseMethodDefinitionContext(
+    ctx: MethodDefinitionContext
+  )(implicit classStack: mutable.Stack[String]): Unit = {
     val maybeMethodName = Option(ctx.methodNamePart()) match
       case Some(ctxMethodNamePart) =>
         readMethodNamePart(ctxMethodNamePart)

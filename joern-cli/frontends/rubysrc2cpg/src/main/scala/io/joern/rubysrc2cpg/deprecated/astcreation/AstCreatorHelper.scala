@@ -57,15 +57,28 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       .dynamicTypeHintFullName(dynamicTypeHints)
   }
 
+  /** Checks that the name is not `this` and that the method has been referred to more than just an initial assignment
+    * to METHOD_REF.
+    *
+    * @param name
+    *   the identifier name.
+    * @return
+    *   true if this appears to be more like a method call than an identifier.
+    */
+  private def isMethodCall(name: String): Boolean = {
+    name != "this" && scope.numVariableReferences(name) == 0
+  }
+
   protected def createIdentifierWithScope(
     ctx: ParserRuleContext,
     name: String,
     code: String,
     typeFullName: String,
-    dynamicTypeHints: Seq[String] = Seq()
+    dynamicTypeHints: Seq[String] = Seq(),
+    definitelyIdentifier: Boolean = false
   ): NewNode = {
     methodsWithName(name) match
-      case method :: _ if name != "this" =>
+      case method :: _ if !definitelyIdentifier && isMethodCall(name) =>
         methodTableToCallNode(method, name, code, typeFullName, dynamicTypeHints, Option(ctx))
       case _ =>
         val newNode = identifierNode(ctx, name, code, typeFullName, dynamicTypeHints)
@@ -79,10 +92,11 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     typeFullName: String,
     dynamicTypeHints: Seq[String],
     lineNumber: Option[Integer],
-    columnNumber: Option[Integer]
+    columnNumber: Option[Integer],
+    definitelyIdentifier: Boolean
   ): NewNode = {
     methodsWithName(name) match
-      case method :: _ if name != "this" =>
+      case method :: _ if !definitelyIdentifier && isMethodCall(name) =>
         methodTableToCallNode(method, name, code, typeFullName, dynamicTypeHints, None)
       case _ =>
         val newNode = NewIdentifier()
@@ -151,7 +165,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     typeFullName: String = RubyDefines.Any,
     dynamicTypeHints: List[String] = List.empty
   ): NewIdentifier =
-    createIdentifierWithScope(ctx, "this", "this", typeFullName, dynamicTypeHints).asInstanceOf[NewIdentifier]
+    createIdentifierWithScope(ctx, "this", "this", typeFullName, dynamicTypeHints, true).asInstanceOf[NewIdentifier]
 
   protected def newFieldIdentifier(ctx: ParserRuleContext): NewFieldIdentifier = {
     val c    = code(ctx)

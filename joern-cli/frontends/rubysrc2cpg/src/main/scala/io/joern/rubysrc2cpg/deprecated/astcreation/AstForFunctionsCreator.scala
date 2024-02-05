@@ -320,7 +320,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
     val callArgs = astMethodParam
       .flatMap(_.root)
       .collect { case x: NewMethodParameterIn => x }
-      .map(param => Ast(createIdentifierWithScope(ctx, param.name, param.code, Defines.Any, Seq())))
+      .map(param => Ast(createIdentifierWithScope(ctx, param.name, param.code, Defines.Any, Seq(), true)))
 
     val procCallNode =
       callNode(
