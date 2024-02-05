@@ -31,7 +31,7 @@ case class KnownFunction(
   *
   * TODO: Need to handle variadic arguments.
   */
-class PhpTypeStubsParserPassGenerator(cpg: Cpg, config: XTypeStubsParserConfig = XTypeStubsParserConfig())
+class PhpTypeStubsParserPass(cpg: Cpg, config: XTypeStubsParserConfig = XTypeStubsParserConfig())
     extends ForkJoinParallelCpgPass[KnownFunction](cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
