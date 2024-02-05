@@ -354,7 +354,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           val stringWriter = new StringWriter()
           val printWriter  = new PrintWriter(stringWriter)
           exception.printStackTrace(printWriter)
-          logger.warn(s"Caugth exception while processing decl:\n$declText\n${stringWriter.toString}")
+          logger.warn(s"Caught exception while processing decl:\n$declText\n${stringWriter.toString}")
           Seq()
       }
     debugScope.pop()
