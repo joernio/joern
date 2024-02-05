@@ -26,16 +26,15 @@ import scala.util.{Failure, Success}
 
 class AstCreator(
   filename: String,
-  global: Global, // TODO: This needs to register types
-  parser: ResourceManagedParser,
-  packageContext: PackageContext,
+  programCtx: DeprecatedRubyParser.ProgramContext,
+  protected val packageContext: PackageContext,
   projectRoot: Option[String] = None
 )(implicit withSchemaValidation: ValidationMode)
     extends AstCreatorBase(filename)
     with AstNodeBuilder[ParserRuleContext, AstCreator]
     with AstForPrimitivesCreator
     with AstForStatementsCreator(filename)
-    with AstForFunctionsCreator(packageContext)
+    with AstForFunctionsCreator
     with AstForExpressionsCreator
     with AstForDeclarationsCreator
     with AstForTypesCreator
@@ -75,15 +74,7 @@ class AstCreator(
   // Hashmap to store used variable names, to avoid duplicates in case of un-named variables
   protected val usedVariableNames = mutable.HashMap.empty[String, Int]
 
-  override def createAst(): BatchedUpdate.DiffGraphBuilder = {
-    parser.parse(filename) match {
-      case Success(programCtx) =>
-        createAstForProgramCtx(programCtx)
-      case Failure(exc) =>
-        logger.warn(s"Could not parse file: $filename, skipping", exc)
-        diffGraph
-    }
-  }
+  override def createAst(): BatchedUpdate.DiffGraphBuilder = createAstForProgramCtx(programCtx)
 
   private def createAstForProgramCtx(programCtx: DeprecatedRubyParser.ProgramContext) = {
     val name     = ":program"

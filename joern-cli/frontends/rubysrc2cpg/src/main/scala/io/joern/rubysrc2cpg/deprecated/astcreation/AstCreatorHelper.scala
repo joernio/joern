@@ -2,6 +2,7 @@ package io.joern.rubysrc2cpg.deprecated.astcreation
 
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.*
 import io.joern.rubysrc2cpg.deprecated.passes.Defines as RubyDefines
+import io.joern.rubysrc2cpg.deprecated.utils.MethodTableModel
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, nodes}
@@ -10,42 +11,79 @@ import org.antlr.v4.runtime.tree.TerminalNode
 import org.antlr.v4.runtime.{ParserRuleContext, Token}
 
 import scala.collection.mutable
+import scala.util.Try
+
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   import io.joern.rubysrc2cpg.deprecated.astcreation.GlobalTypes.*
 
-  protected def line(ctx: ParserRuleContext): Option[Integer] = Option(ctx.getStart.getLine)
+  protected def line(ctx: ParserRuleContext): Option[Integer] = Try[Integer](ctx.getStart.getLine).toOption
 
-  protected def column(ctx: ParserRuleContext): Option[Integer] = Option(ctx.getStart.getCharPositionInLine)
+  protected def column(ctx: ParserRuleContext): Option[Integer] =
+    Try[Integer](ctx.getStart.getCharPositionInLine).toOption
 
-  protected def lineEnd(ctx: ParserRuleContext): Option[Integer] = Option(ctx.getStop.getLine)
+  protected def lineEnd(ctx: ParserRuleContext): Option[Integer] = Try[Integer](ctx.getStop.getLine).toOption
 
-  protected def columnEnd(ctx: ParserRuleContext): Option[Integer] = Option(ctx.getStop.getCharPositionInLine)
+  protected def columnEnd(ctx: ParserRuleContext): Option[Integer] =
+    Try[Integer](ctx.getStop.getCharPositionInLine).toOption
 
   override def code(node: ParserRuleContext): String = shortenCode(text(node))
 
-  protected def text(ctx: ParserRuleContext): String = {
+  protected def text(ctx: ParserRuleContext): String = Try {
     val a     = ctx.getStart.getStartIndex
     val b     = ctx.getStop.getStopIndex
     val intv  = new Interval(a, b)
     val input = ctx.getStart.getInputStream
     input.getText(intv)
-  }
+  }.getOrElse("<empty>")
 
   protected def isBuiltin(x: String): Boolean = builtinFunctions.contains(x)
 
   protected def prefixAsBuiltin(x: String): String = s"$builtinPrefix$pathSep$x"
+
+  protected def methodsWithName(name: String): List[String] = {
+    packageContext.packageTable.getMethodFullNameUsingName(methodName = name)
+  }
+
+  private def methodTableToCallNode(
+    methodFullName: String,
+    name: String,
+    code: String,
+    typeFullName: String,
+    dynamicTypeHints: Seq[String] = Seq(),
+    ctx: Option[ParserRuleContext] = None
+  ): NewCall = {
+    callNode(ctx.orNull, code, name, methodFullName, DispatchTypes.DYNAMIC_DISPATCH, None, Option(typeFullName))
+      .dynamicTypeHintFullName(dynamicTypeHints)
+  }
+
+  /** Checks that the name is not `this` and that the method has been referred to more than just an initial assignment
+    * to METHOD_REF.
+    *
+    * @param name
+    *   the identifier name.
+    * @return
+    *   true if this appears to be more like a method call than an identifier.
+    */
+  private def isMethodCall(name: String): Boolean = {
+    name != "this" && scope.numVariableReferences(name) == 0
+  }
 
   protected def createIdentifierWithScope(
     ctx: ParserRuleContext,
     name: String,
     code: String,
     typeFullName: String,
-    dynamicTypeHints: Seq[String] = Seq()
-  ): NewIdentifier = {
-    val newNode = identifierNode(ctx, name, code, typeFullName, dynamicTypeHints)
-    scope.addToScope(name, newNode)
-    newNode
+    dynamicTypeHints: Seq[String] = Seq(),
+    definitelyIdentifier: Boolean = false
+  ): NewNode = {
+    methodsWithName(name) match
+      case method :: _ if !definitelyIdentifier && isMethodCall(name) =>
+        methodTableToCallNode(method, name, code, typeFullName, dynamicTypeHints, Option(ctx))
+      case _ =>
+        val newNode = identifierNode(ctx, name, code, typeFullName, dynamicTypeHints)
+        scope.addToScope(name, newNode)
+        newNode
   }
 
   protected def createIdentifierWithScope(
@@ -54,17 +92,22 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     typeFullName: String,
     dynamicTypeHints: Seq[String],
     lineNumber: Option[Integer],
-    columnNumber: Option[Integer]
-  ): NewIdentifier = {
-    val newNode = NewIdentifier()
-      .name(name)
-      .code(code)
-      .typeFullName(typeFullName)
-      .dynamicTypeHintFullName(dynamicTypeHints)
-      .lineNumber(lineNumber)
-      .columnNumber(columnNumber)
-    scope.addToScope(name, newNode)
-    newNode
+    columnNumber: Option[Integer],
+    definitelyIdentifier: Boolean
+  ): NewNode = {
+    methodsWithName(name) match
+      case method :: _ if !definitelyIdentifier && isMethodCall(name) =>
+        methodTableToCallNode(method, name, code, typeFullName, dynamicTypeHints, None)
+      case _ =>
+        val newNode = NewIdentifier()
+          .name(name)
+          .code(code)
+          .typeFullName(typeFullName)
+          .dynamicTypeHintFullName(dynamicTypeHints)
+          .lineNumber(lineNumber)
+          .columnNumber(columnNumber)
+        scope.addToScope(name, newNode)
+        newNode
   }
 
   protected def createOpCall(
@@ -122,7 +165,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     typeFullName: String = RubyDefines.Any,
     dynamicTypeHints: List[String] = List.empty
   ): NewIdentifier =
-    createIdentifierWithScope(ctx, "this", "this", typeFullName, dynamicTypeHints)
+    createIdentifierWithScope(ctx, "this", "this", typeFullName, dynamicTypeHints, true).asInstanceOf[NewIdentifier]
 
   protected def newFieldIdentifier(ctx: ParserRuleContext): NewFieldIdentifier = {
     val c    = code(ctx)

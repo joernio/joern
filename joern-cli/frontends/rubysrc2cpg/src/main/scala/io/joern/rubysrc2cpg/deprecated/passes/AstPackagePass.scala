@@ -7,32 +7,37 @@ import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Global
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
+import org.slf4j.LoggerFactory
 
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 class AstPackagePass(
   cpg: Cpg,
   tempExtDir: String,
-  global: Global,
   parser: ResourceManagedParser,
   packageTable: PackageTable,
   inputPath: String
 )(implicit withSchemaValidation: ValidationMode)
     extends ConcurrentWriterCpgPass[String](cpg) {
 
+  private val logger = LoggerFactory.getLogger(getClass)
+
   override def generateParts(): Array[String] =
     getRubyDependenciesFile(inputPath) ++ getRubyDependenciesFile(tempExtDir)
 
   override def runOnPart(diffGraph: DiffGraphBuilder, filePath: String): Unit = {
-    Try(
-      new AstCreator(
-        filePath,
-        global,
-        parser,
-        PackageContext(resolveModuleNameFromPath(filePath), packageTable),
-        Option(inputPath)
-      ).createAst()
-    )
+    parser.parse(filePath) match
+      case Failure(exception) => logger.warn(s"Could not parse file: $filePath, skipping", exception);
+      case Success(programCtx) =>
+        Try(
+          new AstCreator(
+            filePath,
+            programCtx,
+            PackageContext(resolveModuleNameFromPath(filePath), packageTable),
+            Option(inputPath)
+          ).createAst()
+        )
+
   }
 
   private def getRubyDependenciesFile(inputPath: String): Array[String] = {

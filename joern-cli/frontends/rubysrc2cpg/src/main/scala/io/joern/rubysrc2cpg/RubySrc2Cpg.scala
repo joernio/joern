@@ -1,26 +1,29 @@
 package io.joern.rubysrc2cpg
 
 import better.files.File
+import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser
+import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.*
 import io.joern.rubysrc2cpg.passes.{AstCreationPass, ConfigFileCreationPass}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
-import io.joern.x2cpg.X2CpgFrontend
-import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass}
-import io.joern.x2cpg.utils.ExternalCommand
+import io.joern.x2cpg.utils.{ConcurrentTaskUtil, ExternalCommand}
+import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.passes.CpgPassBase
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 
 import java.nio.file.{Files, Paths}
+import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try, Using}
 
 class RubySrc2Cpg extends X2CpgFrontend[Config] {
 
-  val global         = new Global()
-  private val logger = LoggerFactory.getLogger(this.getClass)
+  private val logger                                = LoggerFactory.getLogger(this.getClass)
+  private val RubySourceFileExtensions: Set[String] = Set(".rb")
 
   override def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
@@ -43,7 +46,7 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
     }
   }
 
-  private def deprecatedCreateCpgAction(cpg: Cpg, config: Config): Unit = {
+  private def deprecatedCreateCpgAction(cpg: Cpg, config: Config): Unit = try {
     Using.resource(new deprecated.astcreation.ResourceManagedParser(config.antlrCacheMemLimit)) { parser =>
       if (config.enableDependencyDownload && !scala.util.Properties.isWin) {
         val tempDir = File.newTemporaryDirectory()
@@ -52,7 +55,6 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
           new deprecated.passes.AstPackagePass(
             cpg,
             tempDir.toString(),
-            global,
             parser,
             RubySrc2Cpg.packageTableInfo,
             config.inputPath
@@ -61,11 +63,33 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
           tempDir.delete()
         }
       }
+      val parsedFiles = {
+        val tasks = SourceFiles
+          .determine(
+            config.inputPath,
+            RubySourceFileExtensions,
+            ignoredFilesRegex = Option(config.ignoredFilesRegex),
+            ignoredFilesPath = Option(config.ignoredFiles)
+          )
+          .map(x =>
+            () =>
+              parser.parse(x) match
+                case Failure(exception) =>
+                  logger.warn(s"Could not parse file: $x, skipping", exception); throw exception
+                case Success(ast) => x -> ast
+          )
+          .iterator
+        ConcurrentTaskUtil.runUsingThreadPool(tasks).flatMap(_.toOption)
+      }
+
+      new io.joern.rubysrc2cpg.deprecated.ParseInternalStructures(parsedFiles, cpg.metaData.root.headOption)
+        .populatePackageTable()
       val astCreationPass =
-        new deprecated.passes.AstCreationPass(cpg, global, parser, RubySrc2Cpg.packageTableInfo, config)
+        new deprecated.passes.AstCreationPass(cpg, parsedFiles, RubySrc2Cpg.packageTableInfo, config)
       astCreationPass.createAndApply()
-      TypeNodePass.withRegisteredTypes(astCreationPass.allUsedTypes(), cpg).createAndApply()
     }
+  } finally {
+    RubySrc2Cpg.packageTableInfo.clear()
   }
 
   private def downloadDependency(inputPath: String, tempPath: String): Unit = {
@@ -89,15 +113,12 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
 
 object RubySrc2Cpg {
 
+  // TODO: Global mutable state is bad and should be avoided in the next iteration of the Ruby frontend
   val packageTableInfo = new deprecated.utils.PackageTable()
 
   def postProcessingPasses(cpg: Cpg, config: Config): List[CpgPassBase] = {
     if (config.useDeprecatedFrontend) {
-      List(
-        // TODO commented below two passes, as waiting on Dependency download PR to get merged
-        new deprecated.passes.IdentifierToCallPass(cpg),
-        new deprecated.passes.RubyImportResolverPass(cpg, packageTableInfo)
-      )
+      List(new deprecated.passes.RubyImportResolverPass(cpg, packageTableInfo))
         ++ new deprecated.passes.RubyTypeRecoveryPassGenerator(cpg).generate() ++ List(
           new deprecated.passes.RubyTypeHintCallLinker(cpg),
           new NaiveCallLinker(cpg),
