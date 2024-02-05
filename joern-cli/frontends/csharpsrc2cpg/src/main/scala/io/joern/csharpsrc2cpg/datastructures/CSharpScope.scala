@@ -13,8 +13,9 @@ class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeT
   /** @return
     *   the surrounding type declaration if one exists.
     */
-  def surroundingTypeDeclFullName: Option[String] = stack.collectFirst { case ScopeElement(TypeScope(fullName), _) =>
-    fullName
+  def surroundingTypeDeclFullName: Option[String] = stack.collectFirst {
+    case ScopeElement(typeLike: TypeLikeScope, _) =>
+      typeLike.fullName
   }
 
   /** @return
@@ -23,7 +24,7 @@ class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeT
   def surroundingScopeFullName: Option[String] = stack.collectFirst {
     case ScopeElement(NamespaceScope(fullName), _) => fullName
     case ScopeElement(MethodScope(fullName), _)    => fullName
-    case ScopeElement(TypeScope(fullName), _)      => fullName
+    case ScopeElement(typeLike: TypeLikeScope, _)  => typeLike.fullName
   }
 
   /** @return
@@ -31,7 +32,7 @@ class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeT
     */
   def isTopLevel: Boolean = stack
     .filterNot(x => x.scopeNode.isInstanceOf[NamespaceScope])
-    .exists(x => x.scopeNode.isInstanceOf[MethodScope] || x.scopeNode.isInstanceOf[TypeScope])
+    .exists(x => x.scopeNode.isInstanceOf[MethodScope] || x.scopeNode.isInstanceOf[TypeLikeScope])
 
   def tryResolveTypeReference(typeName: String): Option[String] = {
     typesInScope.find(_.name.endsWith(typeName)).flatMap(typeMap.namespaceFor).map(n => s"$n.$typeName")
