@@ -166,22 +166,22 @@ class TypeDeclTests extends CSharpCode2CpgFixture {
   "enum types cast as an integer type" should {
 
     val cpg = code("""
-                    |enum ErrorCode : ushort
-                    |{
-                    |    None = 0,
-                    |    Unknown = 1,
-                    |    ConnectionLost = 100,
-                    |    OutlierReading = 200
-                    |}
-                    |
-                    |""".stripMargin)
+        |enum ErrorCode : ushort
+        |{
+        |    None = 0,
+        |    Unknown = 1,
+        |    ConnectionLost = 100,
+        |    OutlierReading = 200
+        |}
+        |
+        |""".stripMargin)
 
     "generate a type declaration enum members" in {
       inside(cpg.typeDecl.nameExact("ErrorCode").headOption) {
         case Some(errCode) =>
           errCode.fullName shouldBe "ErrorCode"
           inside(errCode.member.l) {
-            case xs if xs.isEmpty => fail("No enum members found!")
+            case Nil => fail("No enum members found!")
             case none :: unknown :: connectionLost :: outlierReading :: Nil =>
               none.name shouldBe "None"
               none.code shouldBe "None = 0"
