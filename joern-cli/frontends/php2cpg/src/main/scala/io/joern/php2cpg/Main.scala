@@ -5,9 +5,9 @@ import io.joern.x2cpg.passes.frontend.{
   TypeRecoveryParserConfig,
   XTypeRecovery,
   TypeStubsParserConfig,
+  XTypeStubsParser,
   XTypeStubsParserConfig
 }
-import io.joern.php2cpg.passes.PhpSetKnownTypes
 import io.joern.php2cpg.Frontend._
 import scopt.OParser
 
@@ -42,7 +42,7 @@ object Frontend {
         .action((x, c) => c.withPhpParserBin(x))
         .text("path to php-parser.phar binary. Defaults to php-parser shipped with Joern."),
       XTypeRecovery.parserOptions,
-      PhpSetKnownTypes.parserOptions
+      XTypeStubsParser.parserOptions
     )
   }
 }

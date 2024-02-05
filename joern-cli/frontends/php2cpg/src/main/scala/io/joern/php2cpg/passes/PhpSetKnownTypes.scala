@@ -79,17 +79,3 @@ class PhpSetKnownTypesPass(cpg: Cpg, config: XTypeStubsParserConfig = XTypeStubs
     if (types.size == 1) builder.setNodeProperty(n, PropertyNames.TYPE_FULL_NAME, types.head)
     else builder.setNodeProperty(n, PropertyNames.DYNAMIC_TYPE_HINT_FULL_NAME, types)
 }
-
-object PhpSetKnownTypes {
-
-  def parserOptions[R <: X2CpgConfig[R] with TypeStubsParserConfig[R]]: OParser[_, R] = {
-    val builder = OParser.builder[R]
-    import builder.*
-    OParser.sequence(
-      opt[String]("known-types-file")
-        .hidden()
-        .action((path, c) => c.withTypeStubsFilePath(path))
-        .text("path to file with type signatures for known functions")
-    )
-  }
-}

@@ -1,6 +1,7 @@
 package io.joern.x2cpg.passes.frontend
 
 import io.joern.x2cpg.X2CpgConfig
+import scopt.OParser
 
 import java.nio.file.Paths
 
@@ -16,5 +17,19 @@ trait TypeStubsParserConfig[R <: X2CpgConfig[R]] { this: R =>
   def withTypeStubsFilePath(typeStubsFilePath: String): R = {
     this.typeStubsFilePath = Some(Paths.get(typeStubsFilePath).toAbsolutePath.normalize().toString)
     this.asInstanceOf[R]
+  }
+}
+
+object XTypeStubsParser {
+
+  def parserOptions[R <: X2CpgConfig[R] with TypeStubsParserConfig[R]]: OParser[_, R] = {
+    val builder = OParser.builder[R]
+    import builder.*
+    OParser.sequence(
+      opt[String]("type-stubs-file")
+        .hidden()
+        .action((path, c) => c.withTypeStubsFilePath(path))
+        .text("path to file with type signature stubs for known functions")
+    )
   }
 }
