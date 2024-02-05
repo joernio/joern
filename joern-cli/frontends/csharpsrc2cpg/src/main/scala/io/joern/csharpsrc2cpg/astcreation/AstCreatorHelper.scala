@@ -1,5 +1,6 @@
 package io.joern.csharpsrc2cpg.astcreation
 
+import io.joern.csharpsrc2cpg.astcreation.AstCreatorHelper.nameFromIdentifier
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetJsonAst, DotNetNodeInfo, ParserKeys}
 import io.joern.csharpsrc2cpg.{Constants, astcreation}
@@ -21,6 +22,10 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         logger.warn("Key not found in json. Defaulting to a null node.")
         DotNetNodeInfo(DotNetJsonAst.Unknown, ujson.Null, "", None, None, None, None)
       }
+  }
+
+  private def resolveAliasToFullName(alias: String): String = {
+    s"${aliasToNameSpaceMapping.getOrElse(alias, alias)}"
   }
 
   def createCallNodeForOperator(
@@ -79,7 +84,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   // TODO: Use type map to try resolve full name
   protected def nodeTypeFullName(node: DotNetNodeInfo): String = {
-
     def typeFromTypeString(typeString: String): String = {
       val isArrayType = typeString.endsWith("[]")
       val rawType     = typeString.stripSuffix("[]")
@@ -104,6 +108,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case StringLiteralExpression                        => BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)
       case TrueLiteralExpression | FalseLiteralExpression => BuiltinTypes.DotNetTypeMap(BuiltinTypes.Bool)
       case IdentifierName                                 => typeFromTypeString(nameFromNode(node))
+      case ObjectCreationExpression =>
+        resolveAliasToFullName(nameFromIdentifier(createDotNetNodeInfo(node.json(ParserKeys.Type))))
       case PredefinedType =>
         BuiltinTypes.DotNetTypeMap.getOrElse(node.code, Defines.Any)
       case _ =>

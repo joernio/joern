@@ -1,7 +1,7 @@
 package io.joern.csharpsrc2cpg.astcreation
 
 import io.joern.csharpsrc2cpg.TypeMap
-import io.joern.csharpsrc2cpg.datastructures.{BlockScope, CSharpScope}
+import io.joern.csharpsrc2cpg.datastructures.{BlockScope, CSharpGlobal, CSharpScope}
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.astgen.{AstGenNodeBuilder, ParserResult}
@@ -13,10 +13,15 @@ import ujson.Value
 
 import java.math.BigInteger
 import java.security.MessageDigest
+import scala.collection.mutable
 
-class AstCreator(val relativeFileName: String, val parserResult: ParserResult, val typeMap: TypeMap)(implicit
-  withSchemaValidation: ValidationMode
-) extends AstCreatorBase(relativeFileName)
+class AstCreator(
+  val relativeFileName: String,
+  val parserResult: ParserResult,
+  val typeMap: TypeMap,
+  val csharpGlobal: CSharpGlobal
+)(implicit withSchemaValidation: ValidationMode)
+    extends AstCreatorBase(relativeFileName)
     with AstCreatorHelper
     with AstForDeclarationsCreator
     with AstForPrimitivesCreator
@@ -27,7 +32,8 @@ class AstCreator(val relativeFileName: String, val parserResult: ParserResult, v
 
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
 
-  protected val scope: CSharpScope = new CSharpScope(typeMap)
+  protected val scope: CSharpScope                                   = new CSharpScope(typeMap)
+  protected val aliasToNameSpaceMapping: mutable.Map[String, String] = mutable.Map.empty
 
   override def createAst(): DiffGraphBuilder = {
     val hash = String.format(
