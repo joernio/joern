@@ -28,7 +28,10 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     val alias      = namespace.split('.').last
     val importNode = newImportNode(code(usingNode), namespace, alias, usingNode)
     scope.addImport(namespace)
-    aliasToNameSpaceMapping.put(alias, namespace) // TODO: Build a cache pass to process all alias to namespace mappings, also cover more cases
+    aliasToNameSpaceMapping.put(
+      alias,
+      namespace
+    ) // TODO: Build a cache pass to process all alias to namespace mappings, also cover more cases
     Ast(importNode)
   }
 
