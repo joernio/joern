@@ -1,8 +1,8 @@
 package io.joern.php2cpg
 
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
-import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery}
-import io.joern.php2cpg.passes.{PhpSetKnownTypes, PhpSetKnownTypesParserConfig}
+import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery, TypeStubsParserConfig, XTypeStubsParserConfig}
+import io.joern.php2cpg.passes.PhpSetKnownTypes
 import io.joern.php2cpg.Frontend._
 import scopt.OParser
 
@@ -11,7 +11,7 @@ import scopt.OParser
 final case class Config(phpIni: Option[String] = None, phpParserBin: Option[String] = None)
     extends X2CpgConfig[Config]
     with TypeRecoveryParserConfig[Config]
-    with PhpSetKnownTypesParserConfig[Config] {
+    with TypeStubsParserConfig[Config] {
   def withPhpIni(phpIni: String): Config = {
     copy(phpIni = Some(phpIni)).withInheritedFields(this)
   }
