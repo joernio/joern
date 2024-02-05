@@ -7,7 +7,7 @@ import io.joern.php2cpg.passes.{
   AstParentInfoPass,
   ClosureRefPass,
   LocalCreationPass,
-  PhpSetKnownTypesPass,
+  PhpTypeStubsParserPassGenerator,
   PhpTypeRecoveryPassGenerator
 }
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
@@ -89,7 +89,7 @@ object Php2Cpg {
     val setKnownTypesConfig = config
       .map(c => XTypeStubsParserConfig(c.typeStubsFilePath))
       .getOrElse(XTypeStubsParserConfig())
-    List(new PhpSetKnownTypesPass(cpg, setKnownTypesConfig)) ++ new PhpTypeRecoveryPassGenerator(
+    List(new PhpTypeStubsParserPassGenerator(cpg, setKnownTypesConfig)) ++ new PhpTypeRecoveryPassGenerator(
       cpg,
       typeRecoveryConfig
     ).generate()

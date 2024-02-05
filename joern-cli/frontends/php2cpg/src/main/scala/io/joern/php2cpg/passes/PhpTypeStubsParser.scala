@@ -31,15 +31,15 @@ case class KnownFunction(
   *
   * TODO: Need to handle variadic arguments.
   */
-class PhpSetKnownTypesPass(cpg: Cpg, config: XTypeStubsParserConfig = XTypeStubsParserConfig())
+class PhpTypeStubsParserPassGenerator(cpg: Cpg, config: XTypeStubsParserConfig = XTypeStubsParserConfig())
     extends ForkJoinParallelCpgPass[KnownFunction](cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
   override def generateParts(): Array[KnownFunction] = {
     /* parse file and return each row as a KnownFunction object */
-    val knownTypesFile = config.typeStubsFilePath
-    val source = knownTypesFile match {
+    val typeStubsFile = config.typeStubsFilePath
+    val source = typeStubsFile match {
       case Some(file) => Source.fromFile(file)
       case _          => Source.fromResource("known_function_signatures.txt")
     }
