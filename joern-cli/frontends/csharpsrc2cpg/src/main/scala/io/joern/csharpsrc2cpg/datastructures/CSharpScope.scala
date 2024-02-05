@@ -71,4 +71,14 @@ class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeT
       case x => x
   }
 
+  /** Returns the top of the scope, without removing it from the stack.
+    */
+  def peekScope(): Option[ScopeType] = {
+    super.popScope() match
+      case None => None
+      case Some(top) =>
+        super.pushNewScope(top)
+        Option(top)
+  }
+
 }
