@@ -61,7 +61,7 @@ trait AstForExpressionsCreator
       case x: SuperExpr               => Seq(astForSuperExpr(x, expectedType))
       case x: ThisExpr                => Seq(astForThisExpr(x, expectedType))
       case x: UnaryExpr               => Seq(astForUnaryExpr(x, expectedType))
-      case x: VariableDeclarationExpr => astsForVariableDecl(x)
+      case x: VariableDeclarationExpr => astsForVariableDeclarationExpr(x)
       case x                          => Seq(unknownAst(x))
     }
   }

@@ -42,6 +42,7 @@ class BooleanOperationsTests extends JavaSrcCode2CpgFixture {
   "should contain call nodes with <operation>.assignment for all variables" in {
     val assignments = cpg.assignment.map(x => (x.target.code, x.typeFullName)).l
     assignments.size shouldBe vars.size
+    assignments.toSet shouldBe (vars.toSet)
     vars.foreach(x => {
       withClue(s"Assignment to `${x._1}`:") {
         assignments contains x shouldBe true

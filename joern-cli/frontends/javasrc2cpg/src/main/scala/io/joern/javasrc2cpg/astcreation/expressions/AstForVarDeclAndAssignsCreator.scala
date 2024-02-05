@@ -1,8 +1,9 @@
 package io.joern.javasrc2cpg.astcreation.expressions
 
+import com.github.javaparser.ast.Node
 import com.github.javaparser.ast.body.VariableDeclarator
 import com.github.javaparser.ast.expr.AssignExpr.Operator
-import com.github.javaparser.ast.expr.{AssignExpr, VariableDeclarationExpr}
+import com.github.javaparser.ast.expr.{AssignExpr, Expression, VariableDeclarationExpr}
 import com.github.javaparser.resolution.types.ResolvedType
 import io.joern.javasrc2cpg.astcreation.expressions.AstForCallExpressionsCreator.PartialConstructor
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
@@ -14,7 +15,7 @@ import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.joern.x2cpg.utils.NodeBuilders.newOperatorCallNode
 import io.joern.x2cpg.{Ast, Defines}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewFieldIdentifier, NewIdentifier, NewLocal}
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.*
@@ -241,5 +242,83 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
       case None =>
         Ast()
     }
+  }
+
+  private[expressions] def astsForVariableDeclarationExpr(
+    variableDeclarationExpr: VariableDeclarationExpr
+  ): Seq[Ast] = {
+    val variableDeclaratorAsts = variableDeclarationExpr.getVariables.asScala
+      .map(astsForVariableDeclarator(_, Some(variableDeclarationExpr)))
+      .toList
+    variableDeclaratorAsts.flatMap(_.headOption) ++ variableDeclaratorAsts.flatMap(_.drop(1))
+  }
+
+  private def astsForVariableDeclarator(
+    variableDeclarator: VariableDeclarator,
+    originNode: Option[Node] = None
+  ): Seq[Ast] = {
+    val typeFullName = tryWithSafeStackOverflow(
+      scope
+        .lookupType(variableDeclarator.getTypeAsString, includeWildcards = false)
+        .orElse(typeInfoCalc.fullName(variableDeclarator.getType))
+    ).toOption.flatten
+
+    val localCode = s"${variableDeclarator.getTypeAsString} ${variableDeclarator.getNameAsString}"
+    val local =
+      localNode(
+        originNode.getOrElse(variableDeclarator),
+        variableDeclarator.getNameAsString,
+        localCode,
+        typeFullName.getOrElse(TypeConstants.Any)
+      )
+
+    scope.enclosingBlock.foreach(_.addLocal(local))
+
+    val assignmentAsts = variableDeclarator.getInitializer.toScala.toList.flatMap { initializer =>
+      val assignmentTarget    = identifierNode(variableDeclarator, local.name, local.name, local.typeFullName)
+      val assignmentTargetAst = Ast(assignmentTarget).withRefEdge(assignmentTarget, local)
+
+      val expectedType =
+        tryWithSafeStackOverflow(
+          symbolSolver.toResolvedType(variableDeclarator.getType, classOf[ResolvedType])
+        ).toOption
+
+      astsForAssignment(
+        variableDeclarator,
+        assignmentTargetAst,
+        initializer,
+        Operators.assignment,
+        "=",
+        ExpectedType(typeFullName, expectedType),
+        Some(variableDeclarator.getTypeAsString)
+      )
+    }
+
+    Ast(local) :: assignmentAsts
+  }
+
+  private def astsForAssignment(
+    node: Node,
+    target: Ast,
+    initializer: Expression,
+    operatorName: String,
+    symbol: String,
+    expectedType: ExpectedType,
+    varDeclType: Option[String]
+  ): List[Ast] = {
+    val codeTypePrefix = varDeclType.map(_ + " ").getOrElse("")
+    val code           = s"$codeTypePrefix${target.rootCodeOrEmpty} $symbol ${initializer.toString}"
+    val assignmentNode = callNode(node, code, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH)
+
+    assignmentNode.typeFullName = target.rootType.getOrElse(TypeConstants.Any)
+
+    val initializerAsts = astsForExpression(initializer, expectedType)
+
+    val constructorAsts = partialConstructorQueue.map(completeInitForConstructor(_, copyAstForVarDeclInit(target)))
+    partialConstructorQueue.clear()
+
+    val assignmentAst = callAst(assignmentNode, target :: initializerAsts.toList)
+
+    assignmentAst :: constructorAsts.toList
   }
 }
