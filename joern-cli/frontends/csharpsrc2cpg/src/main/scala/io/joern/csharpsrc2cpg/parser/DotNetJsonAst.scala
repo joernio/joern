@@ -51,6 +51,10 @@ object DotNetJsonAst {
 
   object RecordDeclaration extends DeclarationExpr
 
+  object EnumDeclaration extends DeclarationExpr
+
+  object EnumMemberDeclaration extends DeclarationExpr
+
   object MethodDeclaration extends DeclarationExpr
 
   object FieldDeclaration extends DeclarationExpr

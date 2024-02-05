@@ -78,6 +78,31 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     Seq(typeDeclAst)
   }
 
+  protected def astForEnumDeclaration(enumDecl: DotNetNodeInfo): Seq[Ast] = {
+    val name     = nameFromNode(enumDecl)
+    val fullName = astFullName(enumDecl)
+    val typeDecl = typeDeclNode(enumDecl, name, fullName, relativeFileName, code(enumDecl))
+    scope.pushNewScope(TypeScope(fullName))
+    val modifiers = astForModifiers(enumDecl)
+
+    val members = astForMembers(enumDecl.json(ParserKeys.Members).arr.map(createDotNetNodeInfo).toSeq)
+    scope.popScope()
+    val typeDeclAst = Ast(typeDecl)
+      .withChildren(modifiers)
+      .withChildren(members)
+    Seq(typeDeclAst)
+  }
+
+  protected def astForEnumMemberDeclaration(enumMemberDecl: DotNetNodeInfo): Seq[Ast] = {
+    val name         = nameFromNode(enumMemberDecl)
+    val typeFullName = scope.surroundingTypeDeclFullName.getOrElse(Defines.Any)
+    val member       = memberNode(enumMemberDecl, name, code(enumMemberDecl), typeFullName)
+    val modifiers    = astForModifiers(enumMemberDecl)
+
+    val memberAst = Ast(member).withChildren(modifiers)
+    Seq(memberAst)
+  }
+
   protected def astForFieldDeclaration(fieldDecl: DotNetNodeInfo): Seq[Ast] = {
     val declarationNode = createDotNetNodeInfo(fieldDecl.json(ParserKeys.Declaration))
     val declAsts        = astForVariableDeclaration(declarationNode)

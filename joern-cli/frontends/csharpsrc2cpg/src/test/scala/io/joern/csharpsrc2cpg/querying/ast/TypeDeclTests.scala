@@ -115,4 +115,49 @@ class TypeDeclTests extends CSharpCode2CpgFixture {
       }
     }
   }
+
+  "basic enum types" should {
+
+    val cpg = code(
+      """
+                    |enum Season
+                    |{
+                    |    Spring,
+                    |    Summer,
+                    |    Autumn,
+                    |    Winter
+                    |}
+                    |""".stripMargin,
+      "Season.cs"
+    )
+
+    "generate a type declaration enum members" in {
+      inside(cpg.typeDecl.nameExact("Season").headOption) {
+        case Some(rec) =>
+          rec.fullName shouldBe "Season"
+          inside(rec.member.l) {
+            case xs if xs.isEmpty => fail("No enum members found!")
+            case spring :: summer :: autumn :: winter :: Nil =>
+              spring.name shouldBe "Spring"
+              spring.code shouldBe "Spring"
+              spring.typeFullName shouldBe "Season"
+
+              summer.name shouldBe "Summer"
+              summer.code shouldBe "Summer"
+              summer.typeFullName shouldBe "Season"
+
+              autumn.name shouldBe "Autumn"
+              autumn.code shouldBe "Autumn"
+              autumn.typeFullName shouldBe "Season"
+
+              winter.name shouldBe "Winter"
+              winter.code shouldBe "Winter"
+              winter.typeFullName shouldBe "Season"
+            case _ => fail("Unexpected number of enum members!")
+          }
+        case None => fail("Unable to find `Season` type decl node")
+      }
+    }
+  }
+
 }
