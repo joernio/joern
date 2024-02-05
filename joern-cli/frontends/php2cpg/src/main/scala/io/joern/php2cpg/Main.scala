@@ -1,7 +1,12 @@
 package io.joern.php2cpg
 
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
-import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery, TypeStubsParserConfig, XTypeStubsParserConfig}
+import io.joern.x2cpg.passes.frontend.{
+  TypeRecoveryParserConfig,
+  XTypeRecovery,
+  TypeStubsParserConfig,
+  XTypeStubsParserConfig
+}
 import io.joern.php2cpg.passes.PhpSetKnownTypes
 import io.joern.php2cpg.Frontend._
 import scopt.OParser
