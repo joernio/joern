@@ -122,7 +122,8 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     baseNode: NewNode,
     callName: String
   ): Ast = {
-    val args         = callExpr.arguments.children.map(astForNode) ++ callExpr.trailingClosure.toList.map(astForNode)
+    val args = callExpr.arguments.children.map(astForNode) ++ callExpr.trailingClosure.toList.map(astForNode)
+
     val callExprCode = code(callExpr)
     val callCode = callExprCode match {
       case c if c.startsWith(".") && codeOf(baseNode) != "this" => s"${codeOf(baseNode)}$callExprCode"
@@ -225,6 +226,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case "&&="                 => Operators.assignmentAnd
       case "|="                  => Operators.assignmentOr
       case "||="                 => Operators.assignmentOr
+      case "||"                  => Operators.or
       case "^="                  => Operators.assignmentXor
       case "<<="                 => Operators.assignmentShiftLeft
       case ">>="                 => Operators.assignmentArithmeticShiftRight
@@ -242,9 +244,10 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case "..<" | ">.." | "..." => Operators.range
       case "%"                   => Operators.modulo
       case "!"                   => Operators.logicalNot
-      case other =>
-        logger.warn(s"Unknown assignment operator: '$other'")
-        Operators.assignment
+      case "!="                  => Operators.notEquals
+      case _ =>
+        notHandledYet(node)
+        "<operator>.unknown"
     }
 
     val lhsAst    = astForNodeWithFunctionReference(node.leftOperand)
@@ -350,7 +353,19 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
   }
 
-  private def astForPostfixOperatorExprSyntax(node: PostfixOperatorExprSyntax): Ast         = notHandledYet(node)
+  private def astForPostfixOperatorExprSyntax(node: PostfixOperatorExprSyntax): Ast = {
+    val operatorMethod = code(node.operator) match {
+      case "++" => Operators.postIncrement
+      case "--" => Operators.postDecrement
+      case _ =>
+        notHandledYet(node)
+        "<operator>.unknown"
+    }
+    val unaryCall     = callNode(node, code(node), operatorMethod, operatorMethod, DispatchTypes.STATIC_DISPATCH)
+    val expressionAst = astForNodeWithFunctionReference(node.expression)
+    callAst(unaryCall, List(expressionAst))
+  }
+
   private def astForPrefixOperatorExprSyntax(node: PrefixOperatorExprSyntax): Ast           = notHandledYet(node)
   private def astForRegexLiteralExprSyntax(node: RegexLiteralExprSyntax): Ast               = notHandledYet(node)
   private def astForSequenceExprSyntax(node: SequenceExprSyntax): Ast                       = notHandledYet(node)
