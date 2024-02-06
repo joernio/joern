@@ -7,12 +7,12 @@ import io.joern.php2cpg.passes.{
   AstParentInfoPass,
   ClosureRefPass,
   LocalCreationPass,
-  PhpSetKnownTypesPass,
+  PhpTypeStubsParserPass,
   PhpTypeRecoveryPassGenerator
 }
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
-import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass, XTypeRecoveryConfig}
+import io.joern.x2cpg.passes.frontend.{MetaDataPass, TypeNodePass, XTypeRecoveryConfig, XTypeStubsParserConfig}
 import io.joern.x2cpg.utils.ExternalCommand
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.CpgPassBase
@@ -86,6 +86,12 @@ object Php2Cpg {
     val typeRecoveryConfig = config
       .map(c => XTypeRecoveryConfig(c.typePropagationIterations, !c.disableDummyTypes))
       .getOrElse(XTypeRecoveryConfig(iterations = 3))
-    List(new PhpSetKnownTypesPass(cpg)) ++ new PhpTypeRecoveryPassGenerator(cpg, typeRecoveryConfig).generate()
+    val setKnownTypesConfig = config
+      .map(c => XTypeStubsParserConfig(c.typeStubsFilePath))
+      .getOrElse(XTypeStubsParserConfig())
+    List(new PhpTypeStubsParserPass(cpg, setKnownTypesConfig)) ++ new PhpTypeRecoveryPassGenerator(
+      cpg,
+      typeRecoveryConfig
+    ).generate()
   }
 }

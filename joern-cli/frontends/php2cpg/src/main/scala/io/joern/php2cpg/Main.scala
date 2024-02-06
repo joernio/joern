@@ -1,7 +1,13 @@
 package io.joern.php2cpg
 
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
-import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery}
+import io.joern.x2cpg.passes.frontend.{
+  TypeRecoveryParserConfig,
+  XTypeRecovery,
+  TypeStubsParserConfig,
+  XTypeStubsParser,
+  XTypeStubsParserConfig
+}
 import io.joern.php2cpg.Frontend._
 import scopt.OParser
 
@@ -9,7 +15,8 @@ import scopt.OParser
   */
 final case class Config(phpIni: Option[String] = None, phpParserBin: Option[String] = None)
     extends X2CpgConfig[Config]
-    with TypeRecoveryParserConfig[Config] {
+    with TypeRecoveryParserConfig[Config]
+    with TypeStubsParserConfig[Config] {
   def withPhpIni(phpIni: String): Config = {
     copy(phpIni = Some(phpIni)).withInheritedFields(this)
   }
@@ -34,7 +41,8 @@ object Frontend {
       opt[String]("php-parser-bin")
         .action((x, c) => c.withPhpParserBin(x))
         .text("path to php-parser.phar binary. Defaults to php-parser shipped with Joern."),
-      XTypeRecovery.parserOptions
+      XTypeRecovery.parserOptions,
+      XTypeStubsParser.parserOptions
     )
   }
 }

@@ -1,6 +1,8 @@
 package io.joern.php2cpg.passes
 
 import better.files.File
+import io.joern.x2cpg.X2CpgConfig
+import io.joern.x2cpg.passes.frontend.{XTypeStubsParserConfig, TypeStubsParserConfig}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.codepropertygraph.generated.nodes._
@@ -10,9 +12,11 @@ import io.shiftleft.semanticcpg.language._
 import io.shiftleft.semanticcpg.language.operatorextension.OpNodes
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate
+import scopt.OParser
 
 import scala.io.Source
 import java.io.{File => JFile}
+import java.nio.file.Paths
 
 // Corresponds to a parsed row in the known functions file
 case class KnownFunction(
@@ -27,14 +31,15 @@ case class KnownFunction(
   *
   * TODO: Need to handle variadic arguments.
   */
-class PhpSetKnownTypesPass(cpg: Cpg, knownTypesFile: Option[JFile] = None)
+class PhpTypeStubsParserPass(cpg: Cpg, config: XTypeStubsParserConfig = XTypeStubsParserConfig())
     extends ForkJoinParallelCpgPass[KnownFunction](cpg) {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
   override def generateParts(): Array[KnownFunction] = {
     /* parse file and return each row as a KnownFunction object */
-    val source = knownTypesFile match {
+    val typeStubsFile = config.typeStubsFilePath
+    val source = typeStubsFile match {
       case Some(file) => Source.fromFile(file)
       case _          => Source.fromResource("known_function_signatures.txt")
     }
