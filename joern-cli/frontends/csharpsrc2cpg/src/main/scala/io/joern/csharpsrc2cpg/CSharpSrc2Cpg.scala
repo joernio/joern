@@ -28,7 +28,7 @@ class CSharpSrc2Cpg extends X2CpgFrontend[Config] {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       File.usingTemporaryDirectory("csharpsrc2cpgOut") { tmpDir =>
         val astGenResult = new DotNetAstGenRunner(config).execute(tmpDir)
-        val typeMap      = new CSharpTypeMap(astGenResult)
+        val typeMap      = new TypeMap(astGenResult)
         val astCreators  = CSharpSrc2Cpg.processAstGenRunnerResults(astGenResult.parsedFiles, config, typeMap)
 
         val hash = HashUtil.sha256(astCreators.map(_.parserResult).map(x => Paths.get(x.fullPath)))
@@ -47,7 +47,7 @@ object CSharpSrc2Cpg {
 
   /** Parses the generated AST Gen files in parallel and produces AstCreators from each.
     */
-  def processAstGenRunnerResults(astFiles: List[String], config: Config, typeMap: CSharpTypeMap): Seq[AstCreator] = {
+  def processAstGenRunnerResults(astFiles: List[String], config: Config, typeMap: TypeMap): Seq[AstCreator] = {
     Await.result(
       Future.sequence(
         astFiles
