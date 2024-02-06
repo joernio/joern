@@ -59,13 +59,50 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     astForListSyntaxChildren(node, node.pattern.toList ++ node.whereClause.toList)
   }
 
-  private def astForClosureCaptureClauseSyntax(node: ClosureCaptureClauseSyntax): Ast           = notHandledYet(node)
-  private def astForClosureCaptureSpecifierSyntax(node: ClosureCaptureSpecifierSyntax): Ast     = notHandledYet(node)
-  private def astForClosureCaptureSyntax(node: ClosureCaptureSyntax): Ast                       = notHandledYet(node)
-  private def astForClosureParameterClauseSyntax(node: ClosureParameterClauseSyntax): Ast       = notHandledYet(node)
-  private def astForClosureParameterSyntax(node: ClosureParameterSyntax): Ast                   = notHandledYet(node)
-  private def astForClosureShorthandParameterSyntax(node: ClosureShorthandParameterSyntax): Ast = notHandledYet(node)
-  private def astForClosureSignatureSyntax(node: ClosureSignatureSyntax): Ast                   = notHandledYet(node)
+  private def astForClosureCaptureClauseSyntax(node: ClosureCaptureClauseSyntax): Ast       = notHandledYet(node)
+  private def astForClosureCaptureSpecifierSyntax(node: ClosureCaptureSpecifierSyntax): Ast = notHandledYet(node)
+  private def astForClosureCaptureSyntax(node: ClosureCaptureSyntax): Ast                   = notHandledYet(node)
+  private def astForClosureParameterClauseSyntax(node: ClosureParameterClauseSyntax): Ast   = notHandledYet(node)
+
+  private def astForClosureParameterSyntax(node: ClosureParameterSyntax): Ast = {
+    val name = node.secondName.map(code).getOrElse(code(node.firstName))
+    val tpe  = node.`type`.map(code).getOrElse(Defines.Any)
+    registerType(tpe)
+    val parameterNode =
+      parameterInNode(
+        node,
+        name,
+        code(node).stripSuffix(","),
+        // TODO: check if we start with index 0 or 1
+        node.json("index").num.toInt,
+        false,
+        EvaluationStrategies.BY_VALUE,
+        Option(tpe)
+      )
+    scope.addVariable(name, parameterNode, MethodScope)
+    Ast(parameterNode)
+  }
+
+  private def astForClosureShorthandParameterSyntax(node: ClosureShorthandParameterSyntax): Ast = {
+    val name = code(node.name)
+    val tpe  = Defines.Any
+    registerType(tpe)
+    val parameterNode =
+      parameterInNode(
+        node,
+        name,
+        code(node).stripSuffix(","),
+        // TODO: check if we start with index 0 or 1
+        node.json("index").num.toInt,
+        false,
+        EvaluationStrategies.BY_VALUE,
+        Option(tpe)
+      )
+    scope.addVariable(name, parameterNode, MethodScope)
+    Ast(parameterNode)
+  }
+
+  private def astForClosureSignatureSyntax(node: ClosureSignatureSyntax): Ast = notHandledYet(node)
   private def astForCodeBlockItemSyntax(node: CodeBlockItemSyntax): Ast = {
     astForNodeWithFunctionReferenceAndCall(node.item)
   }
@@ -138,17 +175,16 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForFunctionParameterSyntax(node: FunctionParameterSyntax): Ast = {
     // TODO: handle attributes
     // TODO: handle modifiers
-    // TODO: handle secondName
     // TODO: handle ellipsis
     // TODO: handle defaultValue
-    val name = code(node.firstName)
+    val name = node.secondName.map(code).getOrElse(code(node.firstName))
     val tpe  = code(node.`type`)
     registerType(tpe)
     val parameterNode =
       parameterInNode(
         node,
         name,
-        code(node),
+        code(node).stripSuffix(","),
         // TODO: check if we start with index 0 or 1
         node.json("index").num.toInt,
         false,

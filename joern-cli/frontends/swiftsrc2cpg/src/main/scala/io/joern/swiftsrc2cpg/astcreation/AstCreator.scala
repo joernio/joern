@@ -99,7 +99,7 @@ class AstCreator(val config: Config, val global: SwiftGlobal, val parserResult: 
 
   protected def astForNodeWithFunctionReferenceAndCall(node: SwiftNode): Ast = {
     node match {
-      case func: FunctionDeclSyntax =>
+      case func @ (_: FunctionDeclSyntax | _: ClosureExprSyntax) =>
         astForFunctionLike(func, shouldCreateFunctionReference = true, shouldCreateAssignmentCall = true).ast
       case _ => astForNode(node)
     }
@@ -107,7 +107,7 @@ class AstCreator(val config: Config, val global: SwiftGlobal, val parserResult: 
 
   protected def astForNodeWithFunctionReference(node: SwiftNode): Ast = {
     node match {
-      case func: FunctionDeclSyntax =>
+      case func @ (_: FunctionDeclSyntax | _: ClosureExprSyntax) =>
         astForFunctionLike(func, shouldCreateFunctionReference = true).ast
       case _ => astForNode(node)
     }

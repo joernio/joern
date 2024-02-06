@@ -67,15 +67,21 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForBorrowExprSyntax(node: BorrowExprSyntax): Ast                     = notHandledYet(node)
   private def astForCanImportExprSyntax(node: CanImportExprSyntax): Ast               = notHandledYet(node)
   private def astForCanImportVersionInfoSyntax(node: CanImportVersionInfoSyntax): Ast = notHandledYet(node)
-  private def astForClosureExprSyntax(node: ClosureExprSyntax): Ast                   = notHandledYet(node)
-  private def astForConsumeExprSyntax(node: ConsumeExprSyntax): Ast                   = notHandledYet(node)
-  private def astForCopyExprSyntax(node: CopyExprSyntax): Ast                         = notHandledYet(node)
+
+  private def astForClosureExprSyntax(node: ClosureExprSyntax): Ast = {
+    astForNodeWithFunctionReference(node)
+  }
+
+  private def astForConsumeExprSyntax(node: ConsumeExprSyntax): Ast = notHandledYet(node)
+  private def astForCopyExprSyntax(node: CopyExprSyntax): Ast       = notHandledYet(node)
+
   private def astForDeclReferenceExprSyntax(node: DeclReferenceExprSyntax): Ast = {
     val name      = code(node)
     val identNode = identifierNode(node, name)
     scope.addVariableReference(name, identNode)
     Ast(identNode)
   }
+
   private def astForDictionaryExprSyntax(node: DictionaryExprSyntax): Ast = {
     node.content match {
       case _: SwiftToken                  => astForListLikeExpr(node, Seq.empty)
@@ -116,7 +122,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     baseNode: NewNode,
     callName: String
   ): Ast = {
-    val args         = callExpr.arguments.children.map(astForNode)
+    val args         = callExpr.arguments.children.map(astForNode) ++ callExpr.trailingClosure.toList.map(astForNode)
     val callExprCode = code(callExpr)
     val callCode = callExprCode match {
       case c if c.startsWith(".") && codeOf(baseNode) != "this" => s"${codeOf(baseNode)}$callExprCode"
@@ -355,10 +361,11 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForSubscriptCallExprSyntax(node: SubscriptCallExprSyntax): Ast = {
-    val baseAst           = astForNodeWithFunctionReference(node.calledExpression)
-    val memberAst         = astForNode(node.arguments)
-    val additionalArgsAst = astForNode(node.additionalTrailingClosures)
-    createIndexAccessCallAst(baseAst, memberAst, line(node), column(node), additionalArgsAst)
+    val baseAst   = astForNodeWithFunctionReference(node.calledExpression)
+    val memberAst = astForNode(node.arguments)
+    val additionalArgsAsts = node.trailingClosure.toList.map(astForNode) ++
+      node.additionalTrailingClosures.children.map(c => astForNode(c.closure))
+    createIndexAccessCallAst(baseAst, memberAst, line(node), column(node), additionalArgsAsts)
   }
 
   private def astForSuperExprSyntax(node: SuperExprSyntax): Ast = {
