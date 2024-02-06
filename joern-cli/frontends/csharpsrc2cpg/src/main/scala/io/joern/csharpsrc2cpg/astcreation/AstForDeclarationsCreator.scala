@@ -36,18 +36,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val typeDecl = typeDeclNode(classDecl, name, fullName, relativeFileName, code(classDecl))
     scope.pushNewScope(TypeScope(fullName))
     val modifiers = astForModifiers(classDecl)
-    val (fields, nonFields) = classDecl
-      .json(ParserKeys.Members)
-      .arr
-      .map(createDotNetNodeInfo)
-      .toSeq
-      .partition { x =>
-        x.node match
-          case FieldDeclaration => true
-          case _                => false
-      }
-
-    val members = astForMembers(fields) ++ astForMembers(nonFields)
+    val members = astForMembers(classDecl.json(ParserKeys.Members).arr.map(createDotNetNodeInfo).toSeq)
 
     // TODO: Check if any explicit constructor / static constructor decls exists,
     //  if it doesn't, need to add in default constructor and static constructor and
@@ -242,13 +231,10 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       methodSignature(methodReturn, params.flatMap(_.nodes.collectFirst { case x: NewMethodParameterIn => x }))
     val fullName    = s"${astFullName(methodDecl)}:$signature"
     val methodNode_ = methodNode(methodDecl, name, code(methodDecl), fullName, Option(signature), relativeFileName)
-    val modifiers   = astForModifiers(methodDecl).flatMap(_.nodes).collect { case x: NewModifier => x }
     scope.pushNewScope(MethodScope(fullName))
-
     val body = astForBlock(createDotNetNodeInfo(methodDecl.json(ParserKeys.Body)))
-
     scope.popScope()
-
+    val modifiers   = astForModifiers(methodDecl).flatMap(_.nodes).collect { case x: NewModifier => x }
     val thisNode =
       if (!modifiers.exists(_.modifierType == ModifierTypes.STATIC)) astForThisNode(methodDecl)
       else Ast()
