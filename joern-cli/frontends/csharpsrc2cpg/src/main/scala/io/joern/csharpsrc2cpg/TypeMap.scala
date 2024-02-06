@@ -25,6 +25,7 @@ import java.nio.file.Paths
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
+import io.joern.x2cpg.datastructures.TypeMap
 
 type NamespaceToTypeMap = Map[String, Set[CSharpType]]
 
@@ -37,7 +38,7 @@ type NamespaceToTypeMap = Map[String, Set[CSharpType]]
   * @see
   *   [[io.joern.csharpsrc2cpg.TypeMap.jsonToInitialMapping]] for generating initial mappings.
   */
-class TypeMap(astGenResult: AstGenRunnerResult, initialMappings: List[NamespaceToTypeMap] = List.empty) {
+class CSharpTypeMap(astGenResult: AstGenRunnerResult, initialMappings: List[NamespaceToTypeMap] = List.empty) extends TypeMap {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
