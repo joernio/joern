@@ -73,8 +73,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
         node,
         name,
         code(node).stripSuffix(","),
-        // TODO: check if we start with index 0 or 1
-        node.json("index").num.toInt,
+        node.json("index").num.toInt + 1,
         false,
         EvaluationStrategies.BY_VALUE,
         Option(tpe)
@@ -92,8 +91,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
         node,
         name,
         code(node).stripSuffix(","),
-        // TODO: check if we start with index 0 or 1
-        node.json("index").num.toInt,
+        node.json("index").num.toInt + 1,
         false,
         EvaluationStrategies.BY_VALUE,
         Option(tpe)
@@ -185,8 +183,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
         node,
         name,
         code(node).stripSuffix(","),
-        // TODO: check if we start with index 0 or 1
-        node.json("index").num.toInt,
+        node.json("index").num.toInt + 1,
         false,
         EvaluationStrategies.BY_VALUE,
         Option(tpe)

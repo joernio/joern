@@ -99,18 +99,17 @@ object MethodStubCreator {
 
     dstGraph.addNode(methodNode)
 
-    val firstParameterIndex = dispatchType match {
-      case DispatchTypes.DYNAMIC_DISPATCH =>
-        0
-      case _ =>
-        1
+    val firstParameterOrder = dispatchType match {
+      case DispatchTypes.DYNAMIC_DISPATCH => 0
+      case _                              => 1
     }
 
-    (firstParameterIndex to parameterCount).foreach { parameterOrder =>
+    (firstParameterOrder to parameterCount).zipWithIndex.foreach { case (parameterOrder, index) =>
       val nameAndCode = s"p$parameterOrder"
       val param = NewMethodParameterIn()
         .code(nameAndCode)
         .order(parameterOrder)
+        .index(index + 1)
         .name(nameAndCode)
         .evaluationStrategy(EvaluationStrategies.BY_VALUE)
         .typeFullName("ANY")

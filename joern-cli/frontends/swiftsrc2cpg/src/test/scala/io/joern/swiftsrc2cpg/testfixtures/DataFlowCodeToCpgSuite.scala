@@ -23,10 +23,10 @@ class DataFlowTestCpg extends TestCpg with SwiftSrc2CpgFrontend {
 
 class DataFlowCodeToCpgSuite extends Code2CpgFixture(() => new DataFlowTestCpg()) {
 
-  implicit var context: EngineContext = EngineContext()
+  protected implicit val context: EngineContext = EngineContext()
 
   protected def flowToResultPairs(path: Path): List[(String, Integer)] =
     path.resultPairs().collect { case (firstElement: String, secondElement: Option[Integer]) =>
-      (firstElement, secondElement.get)
+      (firstElement, secondElement.getOrElse(-1))
     }
 }
