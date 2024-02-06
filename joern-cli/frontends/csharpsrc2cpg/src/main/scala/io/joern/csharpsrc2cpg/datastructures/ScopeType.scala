@@ -16,6 +16,7 @@ sealed trait ScopeType
 case class NamespaceScope(fullName: String) extends ScopeType
 
 case class FieldDecl(name: String, isStatic: Boolean, isInitialized: Boolean, node: DotNetNodeInfo)
+
 /** Represents scope objects that map to a type declaration node.
   */
 sealed trait TypeLikeScope {
