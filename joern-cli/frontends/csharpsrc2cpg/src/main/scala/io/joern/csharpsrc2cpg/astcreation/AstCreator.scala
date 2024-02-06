@@ -32,8 +32,7 @@ class AstCreator(
 
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
 
-  protected val scope: CSharpScope                                   = new CSharpScope(typeMap)
-  protected val aliasToNameSpaceMapping: mutable.Map[String, String] = mutable.Map.empty
+  protected val scope: CSharpScope = new CSharpScope(typeMap)
 
   override def createAst(): DiffGraphBuilder = {
     val hash = String.format(

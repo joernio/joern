@@ -48,7 +48,11 @@ class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeT
     *   the fully qualified imported namespace.
     */
   def addImport(namespace: String): Unit = {
-    val knownTypesFromNamespace = typeMap.classesIn(namespace)
+    /* If the alias is a type, the fullyQualifiedName won't be added to the TypeMap. Assuming no nested classes, this should extract the types from the namespace.
+      E.g HelloBaz.Foo.Baz, where Baz is a type and HelloBaz.Foo is a namespace.
+     */
+    val knownTypesFromNamespace =
+      typeMap.classesIn(namespace) ++ typeMap.classesIn(namespace.split("[.]").dropRight(1).mkString("."))
     typesInScope.addAll(knownTypesFromNamespace)
   }
 

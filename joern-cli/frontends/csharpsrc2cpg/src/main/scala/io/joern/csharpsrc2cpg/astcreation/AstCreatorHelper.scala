@@ -24,10 +24,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       }
   }
 
-  private def resolveAliasToFullName(alias: String): String = {
-    s"${aliasToNameSpaceMapping.getOrElse(alias, alias)}"
-  }
-
   def createCallNodeForOperator(
     node: DotNetNodeInfo,
     operatorMethod: String,
@@ -109,7 +105,9 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case TrueLiteralExpression | FalseLiteralExpression => BuiltinTypes.DotNetTypeMap(BuiltinTypes.Bool)
       case IdentifierName                                 => typeFromTypeString(nameFromNode(node))
       case ObjectCreationExpression =>
-        resolveAliasToFullName(nameFromIdentifier(createDotNetNodeInfo(node.json(ParserKeys.Type))))
+        scope
+          .tryResolveTypeReference(nameFromIdentifier(createDotNetNodeInfo(node.json(ParserKeys.Type))))
+          .getOrElse(nameFromIdentifier(createDotNetNodeInfo(node.json(ParserKeys.Type))))
       case PredefinedType =>
         BuiltinTypes.DotNetTypeMap.getOrElse(node.code, Defines.Any)
       case _ =>

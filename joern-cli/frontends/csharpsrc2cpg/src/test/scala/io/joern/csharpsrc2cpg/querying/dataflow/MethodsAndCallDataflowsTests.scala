@@ -50,7 +50,7 @@ class MethodsAndCallDataflowsTests extends CSharpCode2CpgFixture(withDataFlow = 
   "method and call dataflows across files" should {
     val cpg = code(
       """
-        |using HelloBaz.Baz;
+        |using HelloBaz.Bazz.Baz;
         |
         |namespace HelloWorld {
         |public class Foo {
@@ -65,7 +65,7 @@ class MethodsAndCallDataflowsTests extends CSharpCode2CpgFixture(withDataFlow = 
       "Foo.cs"
     ).moreCode(
       """
-        |namespace HelloBaz {
+        |namespace HelloBaz.Bazz {
         |public class Baz {
         | public int qux(int pQux, string ppQux) {
         |   return pQux;
