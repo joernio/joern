@@ -62,6 +62,8 @@ class AstCreator(val relativeFileName: String, val parserResult: ParserResult, v
       case ClassDeclaration          => astForClassDeclaration(nodeInfo)
       case StructDeclaration         => astForClassDeclaration(nodeInfo)
       case RecordDeclaration         => astForRecordDeclaration(nodeInfo)
+      case EnumDeclaration           => astForEnumDeclaration(nodeInfo)
+      case EnumMemberDeclaration     => astForEnumMemberDeclaration(nodeInfo)
       case MethodDeclaration         => astForMethodDeclaration(nodeInfo)
       case ConstructorDeclaration    => astForConstructorDeclaration(nodeInfo)
       case FieldDeclaration          => astForFieldDeclaration(nodeInfo)

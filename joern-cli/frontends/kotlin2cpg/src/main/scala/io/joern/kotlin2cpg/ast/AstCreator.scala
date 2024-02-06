@@ -24,6 +24,7 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 import io.shiftleft.semanticcpg.language.*
 
+import java.io.{PrintWriter, StringWriter}
 import scala.jdk.CollectionConverters.*
 
 case class BindingInfo(node: NewBinding, edgeMeta: Seq[(NewNode, NewNode, String)])
@@ -175,7 +176,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
 
   private def logDebugWithTestAndStackTrace(message: String): Unit = {
     val declString = debugScope.headOption.map(_.getText).getOrElse("Declaration scope empty")
-    logger.debug(message + "\nIn declaration:\n" + declString + "\nStack trace to from declaration:" + getStackTrace)
+    logger.debug(message + "\nIn declaration:\n" + declString + "\nStack trace to declaration:" + getStackTrace)
   }
 
   private def getStackTrace: String = {
@@ -331,19 +332,29 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
   def astsForDeclaration(decl: KtDeclaration)(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
     debugScope.push(decl)
     val result =
-      decl match {
-        case c: KtClass             => astsForClassOrObject(c)
-        case o: KtObjectDeclaration => astsForClassOrObject(o)
-        case n: KtNamedFunction =>
-          val isExtensionFn = typeInfoProvider.isExtensionFn(n)
-          astsForMethod(n, isExtensionFn)
-        case t: KtTypeAlias            => Seq(astForTypeAlias(t))
-        case s: KtSecondaryConstructor => Seq(astForUnknown(s, None, None))
-        case p: KtProperty             => astsForProperty(p)
-        case unhandled =>
-          logger.error(
-            s"Unknown declaration type encountered with text `${unhandled.getText}` and class `${unhandled.getClass}`!"
-          )
+      try {
+        decl match {
+          case c: KtClass             => astsForClassOrObject(c)
+          case o: KtObjectDeclaration => astsForClassOrObject(o)
+          case n: KtNamedFunction =>
+            val isExtensionFn = typeInfoProvider.isExtensionFn(n)
+            astsForMethod(n, isExtensionFn)
+          case t: KtTypeAlias            => Seq(astForTypeAlias(t))
+          case s: KtSecondaryConstructor => Seq(astForUnknown(s, None, None))
+          case p: KtProperty             => astsForProperty(p)
+          case unhandled =>
+            logger.error(
+              s"Unknown declaration type encountered with text `${unhandled.getText}` and class `${unhandled.getClass}`!"
+            )
+            Seq()
+        }
+      } catch {
+        case exception: Exception =>
+          val declText     = decl.getText
+          val stringWriter = new StringWriter()
+          val printWriter  = new PrintWriter(stringWriter)
+          exception.printStackTrace(printWriter)
+          logger.warn(s"Caught exception while processing decl:\n$declText\n${stringWriter.toString}")
           Seq()
       }
     debugScope.pop()

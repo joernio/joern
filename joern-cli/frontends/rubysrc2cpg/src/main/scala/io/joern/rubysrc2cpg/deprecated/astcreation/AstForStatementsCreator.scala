@@ -264,7 +264,8 @@ trait AstForStatementsCreator(filename: String)(implicit withSchemaValidation: V
             Defines.Any,
             Seq.empty,
             methodNode.lineNumber,
-            methodNode.columnNumber
+            methodNode.columnNumber,
+            definitelyIdentifier = true
           )
         )
       }

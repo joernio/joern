@@ -46,6 +46,15 @@ class RubyScope extends Scope[String, NewIdentifier, NewNode] {
     case Some(top) => scopeToVarMap.buildVariableGroupings(top.scopeNode, paramNames ++ Set("this"), diffGraph)
     case None      => List.empty[DeclarationNew]
 
+    /** @param identifier
+      *   the identifier to count
+      * @return
+      *   the number of times the given identifier occurs in the immediate scope.
+      */
+  def numVariableReferences(identifier: String): Int = {
+    stack.map(_.scopeNode).flatMap(scopeToVarMap.get).flatMap(_.get(identifier)).map(_.ids.size).headOption.getOrElse(0)
+  }
+
   private implicit class IdentifierExt(node: NewIdentifier) {
 
     /** Creates a new VarGroup and corresponding NewLocal for the given identifier.

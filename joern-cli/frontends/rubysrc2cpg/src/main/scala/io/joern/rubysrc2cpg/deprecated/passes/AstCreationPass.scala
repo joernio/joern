@@ -2,6 +2,7 @@ package io.joern.rubysrc2cpg.deprecated.passes
 
 import io.joern.rubysrc2cpg.Config
 import io.joern.rubysrc2cpg.deprecated.astcreation.{AstCreator, ResourceManagedParser}
+import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser
 import io.joern.rubysrc2cpg.deprecated.utils.{PackageContext, PackageTable}
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.datastructures.Global
@@ -15,32 +16,23 @@ import scala.jdk.CollectionConverters.EnumerationHasAsScala
 
 class AstCreationPass(
   cpg: Cpg,
-  global: Global,
-  parser: ResourceManagedParser,
+  parsedFiles: List[(String, DeprecatedRubyParser.ProgramContext)],
   packageTable: PackageTable,
   config: Config
-) extends ConcurrentWriterCpgPass[String](cpg) {
+) extends ConcurrentWriterCpgPass[(String, DeprecatedRubyParser.ProgramContext)](cpg) {
 
-  private val logger                        = LoggerFactory.getLogger(this.getClass)
-  val RubySourceFileExtensions: Set[String] = Set(".rb")
+  private val logger = LoggerFactory.getLogger(this.getClass)
 
-  def allUsedTypes(): List[String] =
-    global.usedTypes.keys().asScala.toList
+  override def generateParts(): Array[(String, DeprecatedRubyParser.ProgramContext)] = parsedFiles.toArray
 
-  override def generateParts(): Array[String] =
-    SourceFiles
-      .determine(
-        config.inputPath,
-        RubySourceFileExtensions,
-        ignoredFilesRegex = Option(config.ignoredFilesRegex),
-        ignoredFilesPath = Option(config.ignoredFiles)
-      )
-      .toArray
-
-  override def runOnPart(diffGraph: DiffGraphBuilder, fileName: String): Unit = {
+  override def runOnPart(
+    diffGraph: DiffGraphBuilder,
+    fileNameAndContext: (String, DeprecatedRubyParser.ProgramContext)
+  ): Unit = {
+    val (fileName, context) = fileNameAndContext
     try {
       diffGraph.absorb(
-        new AstCreator(fileName, global, parser, PackageContext(fileName, packageTable), cpg.metaData.root.headOption)(
+        new AstCreator(fileName, context, PackageContext(fileName, packageTable), cpg.metaData.root.headOption)(
           config.schemaValidation
         ).createAst()
       )

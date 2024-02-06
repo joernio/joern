@@ -617,7 +617,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def modifiersForFunctionLike(
-    node: FunctionDeclSyntax | AccessorDeclSyntax | InitializerDeclSyntax | DeinitializerDeclSyntax
+    node: FunctionDeclSyntax | AccessorDeclSyntax | InitializerDeclSyntax | DeinitializerDeclSyntax | ClosureExprSyntax
   ): Seq[NewModifier] = {
     val virtualModifier = NewModifier().modifierType(ModifierTypes.VIRTUAL)
     val modifiers = node match {
@@ -628,6 +628,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         i.modifiers.children.flatMap(c => astForNode(c).root.map(_.asInstanceOf[NewModifier]))
       case d: DeinitializerDeclSyntax =>
         d.modifiers.children.flatMap(c => astForNode(c).root.map(_.asInstanceOf[NewModifier]))
+      case _: ClosureExprSyntax => Seq.empty
     }
     (virtualModifier +: modifiers).zipWithIndex.map { case (m, index) =>
       m.order(index)
@@ -637,7 +638,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   case class AstAndMethod(ast: Ast, method: NewMethod, methodBlock: Ast)
 
   protected def astForFunctionLike(
-    node: FunctionDeclSyntax | AccessorDeclSyntax | InitializerDeclSyntax | DeinitializerDeclSyntax,
+    node: FunctionDeclSyntax | AccessorDeclSyntax | InitializerDeclSyntax | DeinitializerDeclSyntax | ClosureExprSyntax,
     shouldCreateFunctionReference: Boolean = false,
     shouldCreateAssignmentCall: Boolean = false,
     methodBlockContent: List[Ast] = List.empty
@@ -650,6 +651,9 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case a: AccessorDeclSyntax      => a.attributes.children.map(astForNode)
       case i: InitializerDeclSyntax   => i.attributes.children.map(astForNode)
       case d: DeinitializerDeclSyntax => d.attributes.children.map(astForNode)
+      case c: ClosureExprSyntax =>
+        val x = c.signature.map(s => s.attributes.children.map(astForNode))
+        x.getOrElse(Seq.empty)
     }
 
     val modifiers                    = modifiersForFunctionLike(node)
@@ -696,6 +700,12 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case _: DeinitializerDeclSyntax =>
         val returnType = Defines.Any
         (s"$returnType $methodFullName ()", returnType)
+      case c: ClosureExprSyntax =>
+        val returnType = c.signature.flatMap(_.returnClause).map(r => code(r.`type`)).getOrElse(Defines.Any)
+        val paramClauseCode =
+          c.signature.flatMap(_.parameterClause).map(code).getOrElse("").stripPrefix("(").stripSuffix(")")
+        registerType(returnType)
+        (s"$returnType $methodFullName ($paramClauseCode)", returnType)
     }
 
     val codeString  = code(node)
@@ -714,6 +724,11 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         i.signature.parameterClause.parameters.children.map(astForNode)
       case _: DeinitializerDeclSyntax =>
         Seq.empty
+      case c: ClosureExprSyntax =>
+        c.signature.flatMap(_.parameterClause) match
+          case Some(p: ClosureShorthandParameterListSyntax) => p.children.map(astForNode)
+          case Some(p: ClosureParameterClauseSyntax)        => p.parameters.children.map(astForNode)
+          case None                                         => Seq.empty
     }
 
     val body = node match {
@@ -721,13 +736,23 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case a: AccessorDeclSyntax      => a.body
       case i: InitializerDeclSyntax   => i.body
       case d: DeinitializerDeclSyntax => d.body
+      case c: ClosureExprSyntax       => Some(c.statements)
     }
 
     val bodyStmtAsts = body match {
-      case Some(bodyNode) =>
+      case Some(bodyNode: CodeBlockSyntax) =>
         bodyNode.statements.children.toList match {
           case Nil => List.empty[Ast]
-          case head :: Nil if head.item.isInstanceOf[ArrowExprSyntax] =>
+          case head :: Nil if head.item.isInstanceOf[ClosureExprSyntax] =>
+            val retCode = code(head)
+            List(returnAst(returnNode(head, retCode), List(astForNodeWithFunctionReference(head.item))))
+          case children =>
+            astsForBlockElements(children)
+        }
+      case Some(bodyNode: CodeBlockItemListSyntax) =>
+        bodyNode.children.toList match {
+          case Nil => List.empty[Ast]
+          case head :: Nil if !head.item.isInstanceOf[ReturnStmtSyntax] =>
             val retCode = code(head)
             List(returnAst(returnNode(head, retCode), List(astForNodeWithFunctionReference(head.item))))
           case children =>

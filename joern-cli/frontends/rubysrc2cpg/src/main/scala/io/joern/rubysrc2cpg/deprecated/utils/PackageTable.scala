@@ -36,14 +36,22 @@ class PackageTable {
     )
   }
 
-  def getMethodFullNameUsingName(packageUsed: List[String], methodName: String): List[String] =
+  def getMethodFullNameUsingName(
+    packageUsed: List[String] = List(PackageTable.InternalModule),
+    methodName: String
+  ): List[String] =
     packageUsed
       .filter(methodTableMap.contains)
-      .flatMap(module =>
-        methodTableMap(module)
-          .filter(_.methodName == methodName)
-          .map(method => s"$module::program:${method.parentClassPath}$methodName")
-      )
+      .flatMap {
+        case PackageTable.InternalModule =>
+          methodTableMap(PackageTable.InternalModule)
+            .filter(_.methodName == methodName)
+            .map(method => s"${method.parentClassPath}.$methodName")
+        case module =>
+          methodTableMap(module)
+            .filter(_.methodName == methodName)
+            .map(method => s"$module::program:${method.parentClassPath}$methodName")
+      }
 
   def getPackageInfo(moduleName: String): List[MethodTableModel] = {
     methodTableMap.get(moduleName) match
@@ -73,4 +81,8 @@ class PackageTable {
     moduleMapping.clear
     typeDeclMapping.clear
   }
+}
+
+object PackageTable {
+  val InternalModule = "<internal>"
 }

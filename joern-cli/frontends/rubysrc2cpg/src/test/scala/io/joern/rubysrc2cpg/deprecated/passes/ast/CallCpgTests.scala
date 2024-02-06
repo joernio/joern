@@ -183,8 +183,12 @@ class CallCpgTests extends RubyCode2CpgFixture(withPostProcessing = true, useDep
     }
   }
 
-  "a call without parenthesis before the method definition is seen" should {
-    val cpg = code("""def event_params
+  "a call without parenthesis before the method definition is seen/resolved" should {
+    val cpg = code(
+      """
+        |require "foo.rb"
+        |
+        |def event_params
         |    @event_params ||= device_params
         |      .merge(params)
         |      .merge(encoded_partner_params)
@@ -195,8 +199,12 @@ class CallCpgTests extends RubyCode2CpgFixture(withPostProcessing = true, useDep
         |        event_token: event_token,
         |        install_source: install_source
         |      )
-        |  end
-        |
+        |end
+        |""".stripMargin,
+      "bar.rb"
+    )
+      .moreCode(
+        """
         |def device_params
         |    case platform
         |    when :android
@@ -206,16 +214,18 @@ class CallCpgTests extends RubyCode2CpgFixture(withPostProcessing = true, useDep
         |    else
         |      {}
         |    end
-        |  end
-        |""".stripMargin)
+        |end
+        |""".stripMargin,
+        "foo.rb"
+      )
 
     "have its call node correctly identified and created" in {
       val List(deviceParams) = cpg.call.nameExact("device_params").l: @unchecked
       deviceParams.name shouldBe "device_params"
       deviceParams.code shouldBe "device_params"
-      deviceParams.methodFullName shouldBe "Test0.rb::program.device_params"
+      deviceParams.methodFullName shouldBe "foo.rb::program.device_params"
       deviceParams.typeFullName shouldBe Defines.Any
-      deviceParams.lineNumber shouldBe Option(2)
+      deviceParams.lineNumber shouldBe Option(5)
       deviceParams.columnNumber shouldBe Option(22)
       deviceParams.argumentIndex shouldBe 0
     }
