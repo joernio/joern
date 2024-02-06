@@ -210,8 +210,14 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
     val blockAst =
       blockAstForConstructorInvocation(line(expr), column(expr), allocNode, initCall, argumentAsts, isInnerType)
 
+    val parentIsSimpleAssign = expr.getParentNode.toScala
+      .collect { case assignExpr: AssignExpr =>
+        assignExpr.getTarget.isInstanceOf[NameExpr]
+      }
+      .getOrElse(false)
+
     expr.getParentNode.toScala match {
-      case Some(parent) if parent.isInstanceOf[VariableDeclarator] || parent.isInstanceOf[AssignExpr] =>
+      case Some(parent) if parent.isInstanceOf[VariableDeclarator] || parentIsSimpleAssign =>
         val partialConstructor = PartialConstructor(typeFullName, initCall, argumentAsts, blockAst)
         partialConstructorQueue.append(partialConstructor)
         Ast(allocNode)

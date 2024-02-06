@@ -462,7 +462,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
     staticFields.flatMap { field =>
       field.getVariables.asScala.toList.flatMap { variable =>
         scope.pushFieldDeclScope(isStatic = true, name = variable.getNameAsString)
-        val assignment = assignmentsForVarDecl(variable :: Nil)
+        val assignment = astsForVariableDeclarator(variable, field)
         scope.popFieldDeclScope()
         assignment
       }
