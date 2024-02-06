@@ -11,6 +11,7 @@ import io.shiftleft.proto.cpg.Cpg.EvaluationStrategies
 
 import scala.util.Try
 import io.joern.csharpsrc2cpg.datastructures.FieldDecl
+import io.joern.csharpsrc2cpg.utils.Utils.{composeMethodFullName, composeMethodLikeSignature}
 
 trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -36,7 +37,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val typeDecl = typeDeclNode(classDecl, name, fullName, relativeFileName, code(classDecl))
     scope.pushNewScope(TypeScope(fullName))
     val modifiers = astForModifiers(classDecl)
-    val members = astForMembers(classDecl.json(ParserKeys.Members).arr.map(createDotNetNodeInfo).toSeq)
+    val members   = astForMembers(classDecl.json(ParserKeys.Members).arr.map(createDotNetNodeInfo).toSeq)
 
     // TODO: Check if any explicit constructor / static constructor decls exists,
     //  if it doesn't, need to add in default constructor and static constructor and
@@ -234,7 +235,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     scope.pushNewScope(MethodScope(fullName))
     val body = astForBlock(createDotNetNodeInfo(methodDecl.json(ParserKeys.Body)))
     scope.popScope()
-    val modifiers   = astForModifiers(methodDecl).flatMap(_.nodes).collect { case x: NewModifier => x }
+    val modifiers = astForModifiers(methodDecl).flatMap(_.nodes).collect { case x: NewModifier => x }
     val thisNode =
       if (!modifiers.exists(_.modifierType == ModifierTypes.STATIC)) astForThisNode(methodDecl)
       else Ast()
@@ -323,14 +324,6 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
           logger.warn(s"Unhandled modifier name '$x'")
           null
     }.map(Ast(_))
-  }
-
-  protected def composeMethodLikeSignature(returnType: String, parameterTypes: collection.Seq[String]): String = {
-    s"$returnType(${parameterTypes.mkString(",")})"
-  }
-
-  protected def composeMethodFullName(typeDeclFullName: String, name: String, signature: String): String = {
-    s"$typeDeclFullName.$name:$signature"
   }
 
   protected def astVariableDeclarationForInitializedFields(fieldDecls: Seq[FieldDecl]): Seq[Ast] = {
