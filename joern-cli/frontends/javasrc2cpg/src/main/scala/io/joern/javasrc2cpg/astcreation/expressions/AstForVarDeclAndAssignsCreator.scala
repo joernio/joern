@@ -34,7 +34,7 @@ import io.joern.javasrc2cpg.scope.JavaScopeElement.PartialInit
 trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
   private val logger = LoggerFactory.getLogger(this.getClass())
 
-  private[expressions] def astsForAssignExpr(expr: AssignExpr, expectedExprType: ExpectedType): Seq[Ast] = {
+  private[expressions] def astsForAssignExpr(expr: AssignExpr, expectedType: ExpectedType): Seq[Ast] = {
     val operatorName = expr.getOperator match {
       case Operator.ASSIGN               => Operators.assignment
       case Operator.PLUS                 => Operators.assignmentPlus
@@ -51,51 +51,24 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
     }
 
     val maybeResolvedType = Try(expr.getTarget.calculateResolvedType()).toOption
-    val expectedType = maybeResolvedType
+    val expectedInitializerType = maybeResolvedType
       .map { resolvedType =>
         ExpectedType(typeInfoCalc.fullName(resolvedType), Some(resolvedType))
       }
-      .getOrElse(expectedExprType) // resolved target type should be more accurate
-    val targetAst = astsForExpression(expr.getTarget, expectedType)
-    val argsAsts  = astsForExpression(expr.getValue, expectedType)
-    val valueType = argsAsts.headOption.flatMap(_.rootType)
+      .getOrElse(expectedType) // resolved target type should be more accurate
 
-    val typeFullName =
-      targetAst.headOption
-        .flatMap(_.rootType)
-        .orElse(valueType)
-        .orElse(expectedType.fullName)
-        .getOrElse(TypeConstants.Any)
+    // TODO What to do if target is empty?
+    val targetAst = astsForExpression(expr.getTarget, expectedInitializerType).head
 
-    val code = s"${targetAst.rootCodeOrEmpty} ${expr.getOperator.asString} ${argsAsts.rootCodeOrEmpty}"
-
-    val callNode = newOperatorCallNode(operatorName, code, Some(typeFullName), line(expr), column(expr))
-
-    if (partialConstructorQueue.isEmpty) {
-      val assignAst = callAst(callNode, targetAst ++ argsAsts)
-      Seq(assignAst)
-    } else {
-      if (partialConstructorQueue.size > 1) {
-        logger.warn("BUG: Received multiple partial constructors from assignment. Dropping all but the first.")
-      }
-      val partialConstructor = partialConstructorQueue.head
-      partialConstructorQueue.clear()
-
-      targetAst.flatMap(_.root).toList match {
-        case List(identifier: NewIdentifier) =>
-          // In this case we have a simple assign. No block needed.
-          // e.g. Foo f = new Foo();
-          val initAst = completeInitForConstructor(partialConstructor, Ast(identifier.copy))
-          Seq(callAst(callNode, targetAst ++ argsAsts), initAst)
-
-        case _ =>
-          // In this case the left hand side is more complex than an identifier, so
-          // we need to contain the constructor in a block.
-          // e.g. items[10] = new Foo();
-          val valueAst = partialConstructor.blockAst
-          Seq(callAst(callNode, targetAst ++ Seq(valueAst)))
-      }
-    }
+    astsForAssignment(
+      expr,
+      targetAst,
+      expr.getValue,
+      operatorName,
+      expr.getOperator.asString,
+      expectedInitializerType,
+      varDeclType = None
+    )
   }
 
   private[expressions] def completeInitForConstructor(partialConstructor: PartialConstructor, targetAst: Ast): Ast = {
@@ -239,7 +212,7 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
     val code           = s"$codeTypePrefix${target.rootCodeOrEmpty} $symbol ${initializer.toString}"
     val assignmentNode = callNode(node, code, operatorName, operatorName, DispatchTypes.STATIC_DISPATCH)
 
-    assignmentNode.typeFullName = target.rootType.getOrElse(TypeConstants.Any)
+    target.rootType.foreach(assignmentNode.typeFullName(_))
 
     val initializerAsts = astsForExpression(initializer, expectedType)
 
