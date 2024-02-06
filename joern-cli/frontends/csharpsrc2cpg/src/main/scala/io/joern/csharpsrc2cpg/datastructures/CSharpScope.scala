@@ -18,12 +18,22 @@ class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeT
       typeLike.fullName
   }
 
+  def getFieldsInScope: List[FieldDecl] =
+    stack.collect { case ScopeElement(TypeScope(_, fields), _) => fields }.flatten.toList
+
+  /** Works for `this`.field accesses or <currentType>.field accesses.
+    */
+  def findFieldInScope(fieldName: String): Option[FieldDecl] = {
+    getFieldsInScope.find(_.name == fieldName)
+  }
+
   /** @return
     *   the full name of the surrounding scope.
     */
   def surroundingScopeFullName: Option[String] = stack.collectFirst {
     case ScopeElement(NamespaceScope(fullName), _) => fullName
     case ScopeElement(MethodScope(fullName), _)    => fullName
+    case ScopeElement(TypeScope(fullName, _), _)   => fullName
     case ScopeElement(typeLike: TypeLikeScope, _)  => typeLike.fullName
   }
 
@@ -41,6 +51,16 @@ class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeT
   def tryResolveMethodInvocation(typeFullName: String, callName: String): Option[String] = {
     typesInScope.find(_.name.endsWith(typeFullName)).flatMap { t =>
       t.methods.find(_.name == callName).map { m => s"${t.name}.${m.name}" }
+    }
+  }
+
+  def pushField(field: FieldDecl): Unit = {
+    popScope().foreach {
+      case TypeScope(fullName, fields) =>
+        pushNewScope(TypeScope(fullName, fields :+ field))
+      case x =>
+        pushField(field)
+        pushNewScope(x)
     }
   }
 

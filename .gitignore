@@ -61,6 +61,7 @@ flake.lock
 **/.metals
 **/metals.sbt
 *.semanticdb
+.vscode/settings.json
 
 ##############
 # IDE/OS     #

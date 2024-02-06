@@ -58,6 +58,8 @@ object DotNetJsonAst {
 
   object MethodDeclaration extends DeclarationExpr
 
+  object ConstructorDeclaration extends DeclarationExpr
+
   object FieldDeclaration extends DeclarationExpr
 
   object VariableDeclaration extends DeclarationExpr

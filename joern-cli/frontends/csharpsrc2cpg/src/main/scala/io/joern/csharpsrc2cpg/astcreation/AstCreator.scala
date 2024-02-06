@@ -1,7 +1,7 @@
 package io.joern.csharpsrc2cpg.astcreation
 
 import io.joern.csharpsrc2cpg.TypeMap
-import io.joern.csharpsrc2cpg.datastructures.{BlockScope, CSharpScope}
+import io.joern.csharpsrc2cpg.datastructures.CSharpScope
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.astgen.{AstGenNodeBuilder, ParserResult}
@@ -65,6 +65,7 @@ class AstCreator(val relativeFileName: String, val parserResult: ParserResult, v
       case EnumDeclaration           => astForEnumDeclaration(nodeInfo)
       case EnumMemberDeclaration     => astForEnumMemberDeclaration(nodeInfo)
       case MethodDeclaration         => astForMethodDeclaration(nodeInfo)
+      case ConstructorDeclaration    => astForConstructorDeclaration(nodeInfo)
       case FieldDeclaration          => astForFieldDeclaration(nodeInfo)
       case VariableDeclaration       => astForVariableDeclaration(nodeInfo)
       case EqualsValueClause         => astForEqualsValueClause(nodeInfo)
