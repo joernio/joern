@@ -72,6 +72,8 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
         |}
       |""".stripMargin)
 
+    val x = cpg.call.head
+    x.method
     cpg.call.name("foo").methodFullName.toList shouldBe List("Test.foo:void(java.lang.String[])")
   }
 

@@ -75,10 +75,6 @@ object JavaScopeElement {
 
   class NamespaceScope(val namespace: NewNamespaceBlock) extends JavaScopeElement with TypeDeclContainer {
     val isStatic = false
-
-    def addStaticImport(staticImport: NewImport): Unit = {
-      addVariableToScope(ScopeStaticImport(staticImport))
-    }
   }
 
   class BlockScope extends JavaScopeElement {

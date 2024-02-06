@@ -7,14 +7,22 @@ import com.github.javaparser.ast.expr.{AssignExpr, Expression, VariableDeclarati
 import com.github.javaparser.resolution.types.ResolvedType
 import io.joern.javasrc2cpg.astcreation.expressions.AstForCallExpressionsCreator.PartialConstructor
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
-import io.joern.javasrc2cpg.scope.Scope.{ScopeMember, ScopeParameter, ScopeStaticImport, SimpleVariable}
+import io.joern.javasrc2cpg.scope.Scope.{
+  NewVariableNode,
+  ScopeLocal,
+  ScopeMember,
+  ScopeParameter,
+  ScopeVariable,
+  SimpleVariable,
+  newVariableNodeType
+}
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.NameConstants
 import io.joern.x2cpg.passes.frontend.TypeNodePass
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.joern.x2cpg.utils.NodeBuilders.newOperatorCallNode
 import io.joern.x2cpg.{Ast, Defines}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewFieldIdentifier, NewIdentifier, NewLocal}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewFieldIdentifier, NewIdentifier, NewLocal, NewMember}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
 import org.slf4j.LoggerFactory
 
@@ -90,105 +98,6 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
     }
   }
 
-  private[expressions] def astsForVariableDecl(varDecl: VariableDeclarationExpr): Seq[Ast] = {
-    val locals    = localsForVarDecl(varDecl)
-    val localAsts = locals.map { Ast(_) }
-
-    locals.foreach { local =>
-      scope.enclosingBlock.get.addLocal(local)
-    }
-
-    val assignments =
-      assignmentsForVarDecl(varDecl.getVariables.asScala)
-
-    localAsts ++ assignments
-  }
-
-  private def localsForVarDecl(varDecl: VariableDeclarationExpr): List[NewLocal] = {
-    varDecl.getVariables.asScala.map { variable =>
-      val name = variable.getName.toString
-      val typeFullName =
-        tryWithSafeStackOverflow(
-          scope
-            .lookupType(variable.getTypeAsString)
-            .orElse(typeInfoCalc.fullName(variable.getType))
-        ).toOption.flatten.getOrElse(TypeConstants.Any)
-      val code = s"${variable.getType} $name"
-      NewLocal()
-        .name(name)
-        .code(code)
-        .typeFullName(typeFullName)
-        .lineNumber(line(varDecl))
-        .columnNumber(column(varDecl))
-    }.toList
-  }
-
-  def assignmentsForVarDecl(variables: Iterable[VariableDeclarator]): Seq[Ast] = {
-    val variablesWithInitializers =
-      variables.filter(_.getInitializer.toScala.isDefined)
-    val assignments = variablesWithInitializers.flatMap { variable =>
-      val name              = variable.getName.toString
-      val initializer       = variable.getInitializer.toScala.get // Won't crash because of filter
-      val javaParserVarType = variable.getTypeAsString
-      val typeFullName =
-        scope
-          .lookupType(javaParserVarType, includeWildcards = false)
-          .orElse(tryWithSafeStackOverflow(typeInfoCalc.fullName(variable.getType)).toOption.flatten)
-          // TODO: Surely the variable being declared can't already be in scope?
-          .orElse(scope.lookupVariable(name).typeFullName)
-
-      // Need the actual resolvedType here for when the RHS is a lambda expression.
-      val resolvedExpectedType =
-        tryWithSafeStackOverflow(symbolSolver.toResolvedType(variable.getType, classOf[ResolvedType])).toOption
-      val initializerAsts = astsForExpression(initializer, ExpectedType(typeFullName, resolvedExpectedType))
-
-      val typeName = typeFullName
-        .map(TypeNodePass.fullToShortName)
-        .getOrElse(s"${Defines.UnresolvedNamespace}.${variable.getTypeAsString}")
-      val code = s"$typeName $name = ${initializerAsts.rootCodeOrEmpty}"
-
-      val callNode = newOperatorCallNode(Operators.assignment, code, typeFullName, line(variable), column(variable))
-
-      val targetAst = scope.lookupVariable(name).getVariable() match {
-        case Some(member: ScopeMember) =>
-          val baseName =
-            if (member.isStatic)
-              scope.enclosingTypeDecl.name.getOrElse(NameConstants.Unknown)
-            else
-              NameConstants.This
-
-          val thisType = scope.enclosingTypeDecl.fullName.getOrElse(TypeConstants.Any)
-          fieldAccessAst(
-            baseName,
-            scope.enclosingTypeDecl.fullName,
-            name,
-            Some(member.typeFullName),
-            line(variable),
-            column(variable)
-          )
-
-        case Some(staticImport: ScopeStaticImport) =>
-          val targetName = staticImport.typeFullName.stripSuffix(s".${staticImport.name}")
-          val fieldName  = staticImport.name
-          fieldAccessAst(targetName, Some(targetName), fieldName, typeFullName, line(variable), column(variable))
-
-        case maybeCorrespNode =>
-          val identifier = identifierNode(variable, name, name, typeFullName.getOrElse(TypeConstants.Any))
-          Ast(identifier).withRefEdges(identifier, maybeCorrespNode.map(_.node).toList)
-      }
-
-      val declAst = callAst(callNode, Seq(targetAst) ++ initializerAsts)
-
-      // Since all partial constructors will be dealt with here, don't pass them up.
-      val constructorAsts = partialConstructorQueue.map(completeInitForConstructor(_, copyAstForVarDeclInit(targetAst)))
-      partialConstructorQueue.clear()
-
-      Seq(declAst) ++ constructorAsts
-    }
-
-    assignments.toList
-  }
-
   private[expressions] def completeInitForConstructor(partialConstructor: PartialConstructor, targetAst: Ast): Ast = {
     val initNode = partialConstructor.initNode
     val args     = partialConstructor.initArgs
@@ -248,35 +157,55 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
     variableDeclarationExpr: VariableDeclarationExpr
   ): Seq[Ast] = {
     val variableDeclaratorAsts = variableDeclarationExpr.getVariables.asScala
-      .map(astsForVariableDeclarator(_, Some(variableDeclarationExpr)))
+      .map(astsForVariableDeclarator(_, variableDeclarationExpr))
       .toList
     variableDeclaratorAsts.flatMap(_.headOption) ++ variableDeclaratorAsts.flatMap(_.drop(1))
   }
 
-  private def astsForVariableDeclarator(
-    variableDeclarator: VariableDeclarator,
-    originNode: Option[Node] = None
-  ): Seq[Ast] = {
+  def astsForVariableDeclarator(variableDeclarator: VariableDeclarator, originNode: Node): Seq[Ast] = {
     val typeFullName = tryWithSafeStackOverflow(
       scope
         .lookupType(variableDeclarator.getTypeAsString, includeWildcards = false)
         .orElse(typeInfoCalc.fullName(variableDeclarator.getType))
     ).toOption.flatten
 
-    val localCode = s"${variableDeclarator.getTypeAsString} ${variableDeclarator.getNameAsString}"
-    val local =
-      localNode(
-        originNode.getOrElse(variableDeclarator),
-        variableDeclarator.getNameAsString,
-        localCode,
-        typeFullName.getOrElse(TypeConstants.Any)
-      )
+    val (correspondingNode, localAst): (NewVariableNode, Option[Ast]) =
+      scope.lookupVariable(variableDeclarator.getNameAsString).variableNode.map((_, None)).getOrElse {
+        val localCode = s"${variableDeclarator.getTypeAsString} ${variableDeclarator.getNameAsString}"
+        val local =
+          localNode(
+            originNode,
+            variableDeclarator.getNameAsString,
+            localCode,
+            typeFullName.getOrElse(TypeConstants.Any)
+          )
 
-    scope.enclosingBlock.foreach(_.addLocal(local))
+        scope.enclosingBlock.foreach(_.addLocal(local))
+
+        (local, Some(Ast(local)))
+      }
+
+    val assignmentTarget = correspondingNode match {
+      case member: NewMember =>
+        val name =
+          if (scope.isEnclosingScopeStatic)
+            scope.enclosingTypeDecl.map(_.typeDecl.name).getOrElse(NameConstants.Unknown)
+          else NameConstants.This
+        fieldAccessAst(
+          name,
+          scope.enclosingTypeDecl.fullName,
+          correspondingNode.name,
+          Some(newVariableNodeType(correspondingNode)),
+          line(originNode),
+          column(originNode)
+        )
+
+      case variable =>
+        val node = identifierNode(variableDeclarator, variable.name, variable.name, newVariableNodeType(variable))
+        Ast(node).withRefEdge(node, correspondingNode)
+    }
 
     val assignmentAsts = variableDeclarator.getInitializer.toScala.toList.flatMap { initializer =>
-      val assignmentTarget    = identifierNode(variableDeclarator, local.name, local.name, local.typeFullName)
-      val assignmentTargetAst = Ast(assignmentTarget).withRefEdge(assignmentTarget, local)
 
       val expectedType =
         tryWithSafeStackOverflow(
@@ -285,7 +214,7 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
 
       astsForAssignment(
         variableDeclarator,
-        assignmentTargetAst,
+        assignmentTarget,
         initializer,
         Operators.assignment,
         "=",
@@ -294,7 +223,7 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
       )
     }
 
-    Ast(local) :: assignmentAsts
+    localAst.toList ++ assignmentAsts
   }
 
   private def astsForAssignment(
