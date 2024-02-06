@@ -3,6 +3,9 @@ package io.joern.csharpsrc2cpg.querying.ast
 import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
+import io.joern.csharpsrc2cpg.astcreation.BuiltinTypes
+import io.joern.csharpsrc2cpg.astcreation.BuiltinTypes.DotNetTypeMap
+import io.joern.x2cpg.Defines
 
 class TypeDeclTests extends CSharpCode2CpgFixture {
 
@@ -115,4 +118,109 @@ class TypeDeclTests extends CSharpCode2CpgFixture {
       }
     }
   }
+
+  "basic enum types" should {
+
+    val cpg = code(
+      """
+        |enum Season
+        |{
+        |    Spring,
+        |    Summer,
+        |    Autumn,
+        |    Winter
+        |}
+        |""".stripMargin,
+      "Season.cs"
+    )
+
+    "generate a type declaration enum members" in {
+      inside(cpg.typeDecl.nameExact("Season").headOption) {
+        case Some(season) =>
+          season.fullName shouldBe "Season"
+          inside(season.member.l) {
+            case xs if xs.isEmpty => fail("No enum members found!")
+            case spring :: summer :: autumn :: winter :: Nil =>
+              spring.name shouldBe "Spring"
+              spring.code shouldBe "Spring"
+              spring.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.Int)
+
+              summer.name shouldBe "Summer"
+              summer.code shouldBe "Summer"
+              summer.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.Int)
+
+              autumn.name shouldBe "Autumn"
+              autumn.code shouldBe "Autumn"
+              autumn.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.Int)
+
+              winter.name shouldBe "Winter"
+              winter.code shouldBe "Winter"
+              winter.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.Int)
+            case _ => fail("Unexpected number of enum members!")
+          }
+        case None => fail("Unable to find `Season` type decl node")
+      }
+    }
+  }
+
+  "enum types cast as an integer type" should {
+
+    val cpg = code("""
+        |enum ErrorCode : ushort
+        |{
+        |    None = 0,
+        |    Unknown = 1,
+        |    ConnectionLost = 100,
+        |    OutlierReading = 200
+        |}
+        |
+        |""".stripMargin)
+
+    "generate a type declaration enum members" in {
+      inside(cpg.typeDecl.nameExact("ErrorCode").headOption) {
+        case Some(errCode) =>
+          errCode.fullName shouldBe "ErrorCode"
+          inside(errCode.member.l) {
+            case Nil => fail("No enum members found!")
+            case none :: unknown :: connectionLost :: outlierReading :: Nil =>
+              none.name shouldBe "None"
+              none.code shouldBe "None = 0"
+              none.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.UShort)
+
+              unknown.name shouldBe "Unknown"
+              unknown.code shouldBe "Unknown = 1"
+              unknown.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.UShort)
+
+              connectionLost.name shouldBe "ConnectionLost"
+              connectionLost.code shouldBe "ConnectionLost = 100"
+              connectionLost.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.UShort)
+
+              outlierReading.name shouldBe "OutlierReading"
+              outlierReading.code shouldBe "OutlierReading = 200"
+              outlierReading.typeFullName shouldBe DotNetTypeMap(BuiltinTypes.UShort)
+            case _ => fail("Unexpected number of enum members!")
+          }
+        case None => fail("Unable to find `ErrorCode` type decl node")
+      }
+    }
+
+    // TODO: Requires <clinit> issue to be done
+    "initialize the members in a <clinit> class" ignore {
+      inside(cpg.typeDecl.nameExact("ErrorCode").method.nameExact(Defines.StaticInitMethodName).l) {
+        case m :: Nil =>
+          m.fullName shouldBe s"ErrorCode.${Defines.StaticInitMethodName}"
+          inside(m.assignment.l) {
+            case none :: unknown :: connectionLost :: outlierReading :: Nil =>
+              none.code shouldBe "None = 0"
+              unknown.code shouldBe "Unknown = 1"
+              connectionLost.code shouldBe "ConnectionLost = 100"
+              outlierReading.code shouldBe "OutlierReading = 200"
+            case _ => fail("Exactly 4 assignments expected")
+          }
+        case _ => fail("`ErrorCode` has no static initializer method!")
+      }
+    }
+
+  }
+
 }

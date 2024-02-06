@@ -104,7 +104,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case StringLiteralExpression                        => BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)
       case TrueLiteralExpression | FalseLiteralExpression => BuiltinTypes.DotNetTypeMap(BuiltinTypes.Bool)
       case IdentifierName                                 => typeFromTypeString(nameFromNode(node))
-      case PredefinedType =>
+      case PredefinedType | SimpleBaseType =>
         BuiltinTypes.DotNetTypeMap.getOrElse(node.code, Defines.Any)
       case _ =>
         Try(createDotNetNodeInfo(node.json(ParserKeys.Type))) match

@@ -13,6 +13,8 @@ import scala.util.Try
 import scala.collection.mutable.ArrayBuffer
 import io.joern.csharpsrc2cpg.CSharpOperators as CSharpOperators
 import io.joern.x2cpg.Defines
+import io.joern.csharpsrc2cpg.astcreation.BuiltinTypes.DotNetTypeMap
+import io.joern.csharpsrc2cpg.datastructures.EnumScope
 
 trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -76,6 +78,43 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       .withChildren(modifiers)
       .withChildren(members)
     Seq(typeDeclAst)
+  }
+
+  protected def astForEnumDeclaration(enumDecl: DotNetNodeInfo): Seq[Ast] = {
+    val name     = nameFromNode(enumDecl)
+    val fullName = astFullName(enumDecl)
+    val aliasFor = Try(enumDecl.json(ParserKeys.BaseList)(ParserKeys.Types).arr.map(createDotNetNodeInfo).head).toOption
+      .map(nodeTypeFullName)
+      .getOrElse(DotNetTypeMap(BuiltinTypes.Int))
+
+    val typeDecl = typeDeclNode(enumDecl, name, fullName, relativeFileName, code(enumDecl))
+    scope.pushNewScope(EnumScope(fullName, aliasFor))
+    val modifiers = astForModifiers(enumDecl)
+
+    val members = astForMembers(enumDecl.json(ParserKeys.Members).arr.map(createDotNetNodeInfo).toSeq)
+    scope.popScope()
+    val typeDeclAst = Ast(typeDecl)
+      .withChildren(modifiers)
+      .withChildren(members)
+    Seq(typeDeclAst)
+  }
+
+  /** Creates enum members. These are associated with integer types, and by default, are `int` types.
+    * @see
+    *   <a href="https://learn.microsoft.com/en-us/dotnet/csharp/language-reference/builtin-types/enum">Enumeration
+    *   Types</a>
+    */
+  protected def astForEnumMemberDeclaration(enumMemberDecl: DotNetNodeInfo): Seq[Ast] = {
+    val name = nameFromNode(enumMemberDecl)
+    val typeFullName = scope
+      .peekScope()
+      .collectFirst { case EnumScope(fullName, aliasFor) => aliasFor }
+      .getOrElse(DotNetTypeMap(BuiltinTypes.Int))
+    val member    = memberNode(enumMemberDecl, name, code(enumMemberDecl), typeFullName)
+    val modifiers = astForModifiers(enumMemberDecl)
+
+    val memberAst = Ast(member).withChildren(modifiers)
+    Seq(memberAst)
   }
 
   protected def astForFieldDeclaration(fieldDecl: DotNetNodeInfo): Seq[Ast] = {

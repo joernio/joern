@@ -1,6 +1,7 @@
 package io.joern.csharpsrc2cpg.parser
 
 import org.slf4j.LoggerFactory
+import io.joern.csharpsrc2cpg.parser.ParserKeys.Type
 
 object DotNetJsonAst {
 
@@ -51,6 +52,10 @@ object DotNetJsonAst {
 
   object RecordDeclaration extends DeclarationExpr
 
+  object EnumDeclaration extends DeclarationExpr
+
+  object EnumMemberDeclaration extends DeclarationExpr
+
   object MethodDeclaration extends DeclarationExpr
 
   object FieldDeclaration extends DeclarationExpr
@@ -81,6 +86,8 @@ object DotNetJsonAst {
   object ArrayType extends TypeExpr
 
   object PredefinedType extends TypeExpr
+
+  object SimpleBaseType extends TypeExpr
 
   object Block extends BaseExpr
 
@@ -196,6 +203,7 @@ object ParserKeys {
   val AstRoot       = "AstRoot"
   val Arguments     = "Arguments"
   val ArgumentList  = "ArgumentList"
+  val BaseList      = "BaseList"
   val Body          = "Body"
   val Block         = "Block"
   val Catches       = "Catches"
@@ -233,6 +241,7 @@ object ParserKeys {
   val ReturnType    = "ReturnType"
   val Right         = "Right"
   val Type          = "Type"
+  val Types         = "Types"
   val Usings        = "Usings"
   val Value         = "Value"
   val Variables     = "Variables"
