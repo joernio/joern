@@ -16,38 +16,34 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
   private def astForBreakStmtSyntax(node: BreakStmtSyntax): Ast = {
-    val labelAst = node.label
-      .map(l =>
-        val labelCode = code(l)
-        Ast(
-          NewJumpLabel()
-            .parserTypeName(node.toString)
-            .name(labelCode)
-            .code(labelCode)
-            .lineNumber(line(node))
-            .columnNumber(column(node))
-            .order(1)
-        )
+    val labelAst = node.label.fold(Ast())(l =>
+      val labelCode = code(l)
+      Ast(
+        NewJumpLabel()
+          .parserTypeName(node.toString)
+          .name(labelCode)
+          .code(labelCode)
+          .lineNumber(line(node))
+          .columnNumber(column(node))
+          .order(1)
       )
-      .getOrElse(Ast())
+    )
     Ast(controlStructureNode(node, ControlStructureTypes.BREAK, code(node))).withChild(labelAst)
   }
 
   private def astForContinueStmtSyntax(node: ContinueStmtSyntax): Ast = {
-    val labelAst = node.label
-      .map(l =>
-        val labelCode = code(l)
-        Ast(
-          NewJumpLabel()
-            .parserTypeName(node.toString)
-            .name(labelCode)
-            .code(labelCode)
-            .lineNumber(line(node))
-            .columnNumber(column(node))
-            .order(1)
-        )
+    val labelAst = node.label.fold(Ast())(l =>
+      val labelCode = code(l)
+      Ast(
+        NewJumpLabel()
+          .parserTypeName(node.toString)
+          .name(labelCode)
+          .code(labelCode)
+          .lineNumber(line(node))
+          .columnNumber(column(node))
+          .order(1)
       )
-      .getOrElse(Ast())
+    )
     Ast(controlStructureNode(node, ControlStructureTypes.CONTINUE, code(node))).withChild(labelAst)
   }
 
@@ -79,10 +75,10 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
   private def extractLoopVariableNodeInfo(binding: ValueBindingPatternSyntax): Option[PatternSyntax] = {
     binding.pattern match {
-      case id: IdentifierPatternSyntax                        => Some(id)
-      case expr: ExpressionPatternSyntax                      => Some(expr)
-      case tuple: TuplePatternSyntax                          => Some(tuple)
-      case _: WildcardPatternSyntax | _: MissingPatternSyntax => Some(binding.pattern)
+      case id: IdentifierPatternSyntax                        => Option(id)
+      case expr: ExpressionPatternSyntax                      => Option(expr)
+      case tuple: TuplePatternSyntax                          => Option(tuple)
+      case _: WildcardPatternSyntax | _: MissingPatternSyntax => Option(binding.pattern)
       case _                                                  => None
     }
   }
@@ -564,7 +560,7 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val bodyAst      = astForNode(node.body)
     setOrderExplicitly(conditionAst, 1)
     setOrderExplicitly(bodyAst, 2)
-    controlStructureAst(doNode, Some(conditionAst), Seq(bodyAst), placeConditionLast = true)
+    controlStructureAst(doNode, Option(conditionAst), Seq(bodyAst), placeConditionLast = true)
   }
 
   private def astForReturnStmtSyntax(node: ReturnStmtSyntax): Ast = {
@@ -588,7 +584,13 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val bodyAst      = astForNode(node.body)
     setOrderExplicitly(conditionAst, 1)
     setOrderExplicitly(bodyAst, 2)
-    whileAst(Some(conditionAst), Seq(bodyAst), code = Some(code), lineNumber = line(node), columnNumber = column(node))
+    whileAst(
+      Option(conditionAst),
+      Seq(bodyAst),
+      code = Option(code),
+      lineNumber = line(node),
+      columnNumber = column(node)
+    )
   }
 
   private def astForYieldStmtSyntax(node: YieldStmtSyntax): Ast = notHandledYet(node)

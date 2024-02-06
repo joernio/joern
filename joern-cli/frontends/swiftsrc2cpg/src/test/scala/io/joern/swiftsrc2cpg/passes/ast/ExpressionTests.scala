@@ -16,8 +16,8 @@ class ExpressionTests extends AbstractPassTest {
           trueCase.code shouldBe "b"
           falseCase.code shouldBe "c"
         }
-        call.lineNumber shouldBe Some(1)
-        call.columnNumber shouldBe Some(1)
+        call.lineNumber shouldBe Option(1)
+        call.columnNumber shouldBe Option(1)
       }
     }
 
@@ -30,10 +30,10 @@ class ExpressionTests extends AbstractPassTest {
           trueCase.code shouldBe "b"
           falseCase.code shouldBe "c ? d : e"
           falseCase shouldBe nestedCall
-          inside(falseCase.argument.l) { case List(cond, trueCase, falseCase) =>
-            cond.code shouldBe "c"
-            trueCase.code shouldBe "d"
-            falseCase.code shouldBe "e"
+          inside(falseCase.argument.l) { case List(condArg, trueCaseArg, falseCaseArg) =>
+            condArg.code shouldBe "c"
+            trueCaseArg.code shouldBe "d"
+            falseCaseArg.code shouldBe "e"
           }
         }
       }
@@ -167,8 +167,8 @@ class ExpressionTests extends AbstractPassTest {
           }
           controlStruct.whenTrue.code.l shouldBe List("0")
           controlStruct.whenFalse.code.l shouldBe List("1")
-          controlStruct.lineNumber shouldBe Some(3)
-          controlStruct.columnNumber shouldBe Some(10)
+          controlStruct.lineNumber shouldBe Option(3)
+          controlStruct.columnNumber shouldBe Option(10)
       }
     }
 

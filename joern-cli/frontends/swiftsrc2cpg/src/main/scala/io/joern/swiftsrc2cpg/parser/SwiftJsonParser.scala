@@ -10,7 +10,7 @@ object SwiftJsonParser {
 
   case class ParseResult(filename: String, fullPath: String, ast: SwiftNode, fileContent: String)
 
-  def readFile(rootPath: Path, file: Path): ParseResult = {
+  def readFile(file: Path): ParseResult = {
     val jsonContent       = IOUtils.readEntireFile(file)
     val json              = ujson.read(jsonContent)
     val filename          = json("relativeFilePath").str

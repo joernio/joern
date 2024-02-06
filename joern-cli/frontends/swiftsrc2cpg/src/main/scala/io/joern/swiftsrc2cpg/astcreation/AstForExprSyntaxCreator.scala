@@ -24,7 +24,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val args = clauses.map(x => astForNodeWithFunctionReference(x))
 
     val ast = callAst(initCallNode, args)
-    if (elements.length > MAX_INITIALIZERS) {
+    if (elements.sizeIs > MAX_INITIALIZERS) {
       val placeholder =
         literalNode(node, "<too-many-initializers>", Defines.Any).argumentIndex(MAX_INITIALIZERS)
       ast.withChild(Ast(placeholder)).withArgEdge(initCallNode, placeholder)
@@ -208,7 +208,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case Some(value) => astForNode(value)
       case None        => Ast()
     }
-    controlStructureAst(ifNode, Some(conditionAst), Seq(thenAst, elseAst))
+    controlStructureAst(ifNode, Option(conditionAst), Seq(thenAst, elseAst))
   }
 
   private def astForInOutExprSyntax(node: InOutExprSyntax): Ast = notHandledYet(node)

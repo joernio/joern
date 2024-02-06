@@ -42,8 +42,8 @@ class DependenciesPass(cpg: Cpg) extends CpgPass(cpg) {
           val version = versionRange.code.replaceAll("[\"']", "")
           val dep     = NewDependency().name(name).version(version)
           diffGraph.addNode(dep)
-        case call =>
-          logger.warn(s"Unknown dependency specification: '${call.mkString(", ")}'")
+        case callArg =>
+          logger.warn(s"Unknown dependency specification: '${callArg.mkString(", ")}'")
     }
   }
 

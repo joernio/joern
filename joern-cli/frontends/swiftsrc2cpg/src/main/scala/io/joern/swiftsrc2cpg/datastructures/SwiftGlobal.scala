@@ -2,7 +2,6 @@ package io.joern.swiftsrc2cpg.datastructures
 
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 
 import java.util.concurrent.ConcurrentHashMap

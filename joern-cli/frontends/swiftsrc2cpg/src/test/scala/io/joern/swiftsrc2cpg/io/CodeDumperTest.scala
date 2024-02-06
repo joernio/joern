@@ -53,9 +53,7 @@ class CodeDumperTest extends SwiftSrc2CpgSuite {
       val code = cpg.call.name("foo").dumpRaw.mkString("\n")
       code should (
         startWith("func")
-          and include regex (".*" + "let x: Int = foo" + ".*" + Pattern.quote(
-            CodeDumper.arrow(Option("my_func")).toString
-          ) + ".*")
+          and include regex s".*let x: Int = foo.*${Pattern.quote(CodeDumper.arrow(Option("my_func")).toString)}.*"
           and endWith("}")
       )
     }

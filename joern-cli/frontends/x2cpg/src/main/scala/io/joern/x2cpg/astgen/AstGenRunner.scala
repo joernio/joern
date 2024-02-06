@@ -11,8 +11,6 @@ import versionsort.VersionHelper
 
 import java.net.URL
 import java.nio.file.Paths
-import scala.collection.mutable
-import scala.collection.mutable.HashMap
 import scala.util.{Failure, Success, Try}
 
 object AstGenRunner {

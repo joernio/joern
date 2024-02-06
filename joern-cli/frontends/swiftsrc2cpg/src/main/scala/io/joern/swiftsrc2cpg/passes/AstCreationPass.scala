@@ -6,7 +6,6 @@ import io.joern.swiftsrc2cpg.datastructures.SwiftGlobal
 import io.joern.swiftsrc2cpg.parser.SwiftJsonParser
 import io.joern.swiftsrc2cpg.utils.AstGenRunner.AstGenRunnerResult
 import io.joern.x2cpg.ValidationMode
-import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.utils.{Report, TimeUtils}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
@@ -19,7 +18,7 @@ import scala.jdk.CollectionConverters.*
 
 class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: Config, report: Report = new Report())(
   implicit withSchemaValidation: ValidationMode
-) extends ConcurrentWriterCpgPass[(String, String)](cpg) {
+) extends ConcurrentWriterCpgPass[String](cpg) {
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[AstCreationPass])
 
@@ -27,21 +26,19 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
 
   def typesSeen(): List[String] = global.usedTypes.keys().asScala.filterNot(_ == Defines.Any).toList
 
-  override def generateParts(): Array[(String, String)] = astGenRunnerResult.parsedFiles.toArray
+  override def generateParts(): Array[String] = astGenRunnerResult.parsedFiles.toArray
 
   override def finish(): Unit = {
     astGenRunnerResult.skippedFiles.foreach { skippedFile =>
-      val (_, fileName) = skippedFile
-      val filePath      = Paths.get(fileName)
-      val fileLOC       = IOUtils.readLinesInFile(filePath).size
-      report.addReportInfo(fileName, fileLOC)
+      val filePath = Paths.get(skippedFile)
+      val fileLOC  = IOUtils.readLinesInFile(filePath).size
+      report.addReportInfo(skippedFile, fileLOC)
     }
   }
 
-  override def runOnPart(diffGraph: DiffGraphBuilder, input: (String, String)): Unit = {
-    val (rootPath, jsonFilename) = input
+  override def runOnPart(diffGraph: DiffGraphBuilder, input: String): Unit = {
     val ((gotCpg, filename), duration) = TimeUtils.time {
-      val parseResult = SwiftJsonParser.readFile(Paths.get(rootPath), Paths.get(jsonFilename))
+      val parseResult = SwiftJsonParser.readFile(Paths.get(input))
       val fileLOC     = IOUtils.readLinesInFile(Paths.get(parseResult.fullPath)).size
       report.addReportInfo(parseResult.filename, fileLOC, parsed = true)
       Try {
