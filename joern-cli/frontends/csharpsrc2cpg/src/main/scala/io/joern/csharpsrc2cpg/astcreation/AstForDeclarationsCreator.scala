@@ -1,10 +1,9 @@
 package io.joern.csharpsrc2cpg.astcreation
 
-import io.joern.csharpsrc2cpg.CSharpOperators
 import io.joern.csharpsrc2cpg.datastructures.{BlockScope, MethodScope, NamespaceScope, TypeScope}
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.FieldDeclaration
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
-import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
+import io.joern.x2cpg.utils.NodeBuilders.{newMethodReturnNode, newModifierNode}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
@@ -12,9 +11,6 @@ import io.shiftleft.proto.cpg.Cpg.EvaluationStrategies
 
 import scala.util.Try
 import io.joern.csharpsrc2cpg.datastructures.FieldDecl
-import scala.collection.mutable.ArrayBuffer
-import io.joern.csharpsrc2cpg.CSharpOperators as CSharpOperators
-import io.joern.x2cpg.Defines
 
 trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -52,6 +48,10 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       }
 
     val members = astForMembers(fields) ++ astForMembers(nonFields)
+
+    // TODO: Check if any explicit constructor / static constructor decls exists,
+    //  if it doesn't, need to add in default constructor and static constructor and
+    //  pull all field initializations into them.
 
     scope.popScope()
     val typeDeclAst = Ast(typeDecl)
@@ -96,6 +96,24 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val declarationNode = createDotNetNodeInfo(fieldDecl.json(ParserKeys.Declaration))
     val declAsts        = astForVariableDeclaration(declarationNode)
 
+    val isStatic = fieldDecl
+      .json(ParserKeys.Modifiers)
+      .arr
+      .flatMap(astForModifier)
+      .flatMap(_.root)
+      .collectFirst { case x: NewModifier => x.modifierType }
+      .contains(ModifierTypes.STATIC)
+
+    declarationNode
+      .json(ParserKeys.Variables)
+      .arr
+      .map(createDotNetNodeInfo)
+      .foreach(x => {
+        val name    = nameFromNode(x)
+        val hasInit = !x.json(ParserKeys.Initializer).isNull
+        scope.pushField(FieldDecl(name, isStatic, hasInit, x))
+      })
+
     val memberNodes = declAsts
       .flatMap(_.nodes.collectFirst { case x: NewIdentifier => x })
       .map(x => memberNode(declarationNode, x.name, code(declarationNode), x.typeFullName))
@@ -116,20 +134,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       .toSeq
   }
 
-  protected def astForVariableDeclarator(decl: DotNetNodeInfo, typeFullName: String): Seq[Ast] = {
-    val varDecl = decl.node match
-      case FieldDeclaration =>
-        val name    = nameFromNode(decl)
-        val hasInit = decl.json(ParserKeys.Initializer).isNull
-        val isStatic = astForModifier(decl.json)
-          .flatMap(_.root)
-          .collectFirst { case x: NewModifier => x.modifierType }
-          .contains(ModifierTypes.STATIC)
-        val fieldDecl = createDotNetNodeInfo(decl.json(ParserKeys.Declaration))
-        scope.pushField(FieldDecl(name, isStatic, hasInit, fieldDecl))
-        fieldDecl
-      case _ => decl
-
+  protected def astForVariableDeclarator(varDecl: DotNetNodeInfo, typeFullName: String): Seq[Ast] = {
     val name          = nameFromNode(varDecl)
     val identifierAst = astForIdentifier(varDecl, typeFullName)
     val _localNode    = localNode(varDecl, name, name, typeFullName)
@@ -144,6 +149,9 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       None,
       None
     )
+
+    // TODO: Implement `fieldAccess` nodes.
+
     val initializerJson = varDecl.json(ParserKeys.Initializer)
     if (initializerJson.isNull) {
       // Implicitly assigned to `null`
@@ -155,6 +163,68 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       val rhs = astForNode(createDotNetNodeInfo(initializerJson))
       Seq(callAst(assignmentNode, identifierAst +: rhs), localNodeAst)
     }
+  }
+
+  protected def astForConstructorDeclaration(constructorDecl: DotNetNodeInfo): Seq[Ast] = {
+    val params = constructorDecl
+      .json(ParserKeys.ParameterList)
+      .obj(ParserKeys.Parameters)
+      .arr
+      .map(createDotNetNodeInfo)
+      .zipWithIndex
+      .map(astForParameter)
+      .toSeq
+    // TODO: Decide on proper return type for constructors. No `ReturnType` key in C# JSON for constructors so just
+    //  defaulted to void (same as java) for now
+    val methodReturn = newMethodReturnNode(BuiltinTypes.Void, None, None, None)
+    val signature = composeMethodLikeSignature(
+      BuiltinTypes.Void,
+      params.flatMap(_.nodes.collectFirst { case x: NewMethodParameterIn => x.typeFullName })
+    )
+    val typeDeclFullName = scope.surroundingTypeDeclFullName.getOrElse(Defines.UnresolvedNamespace);
+
+    val modifiers =
+      (astForModifiers(constructorDecl) :+ Ast(newModifierNode(ModifierTypes.CONSTRUCTOR)))
+        .flatMap(_.nodes)
+        .collect { case x: NewModifier =>
+          x
+        }
+        .filter(_.modifierType != ModifierTypes.INTERNAL)
+
+    val isStaticConstructor = modifiers.exists(_.modifierType == ModifierTypes.STATIC)
+
+    val (name, fullName) = if (isStaticConstructor) {
+      (Defines.StaticInitMethodName, composeMethodFullName(typeDeclFullName, Defines.StaticInitMethodName, signature))
+    } else {
+      (Defines.ConstructorMethodName, composeMethodFullName(typeDeclFullName, Defines.ConstructorMethodName, signature))
+    }
+
+    scope.pushNewScope(MethodScope(fullName))
+
+    // 1. Do we have fields? Then we need to initialize them explicitly
+    val (staticFields, dynamicFields) = scope.getFieldsInScope.partition(_.isStatic)
+
+    val prefixAsts = if (isStaticConstructor && staticFields.nonEmpty) {
+      // 2. If this has a static modifier, then we create a prefixAst list of the static field initializers
+      astVariableDeclarationForInitializedFields(staticFields)
+    } else if (dynamicFields.nonEmpty) {
+      // 3. If this does not have a static modifier, then we create a prefixAst list of the dynamic field initializers
+      astVariableDeclarationForInitializedFields(dynamicFields)
+    } else {
+      Seq.empty
+    }
+
+    val body = astForBlock(createDotNetNodeInfo(constructorDecl.json(ParserKeys.Body)), prefixAsts = prefixAsts.toList)
+
+    scope.popScope()
+
+    val methodNode_ =
+      methodNode(constructorDecl, name, code(constructorDecl), fullName, Option(signature), relativeFileName)
+
+    val thisNode =
+      if (!isStaticConstructor) astForThisNode(constructorDecl)
+      else Ast()
+    Seq(methodAst(methodNode_, thisNode +: params, body, methodReturn, modifiers))
   }
 
   protected def astForMethodDeclaration(methodDecl: DotNetNodeInfo): Seq[Ast] = {
@@ -175,32 +245,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val modifiers   = astForModifiers(methodDecl).flatMap(_.nodes).collect { case x: NewModifier => x }
     scope.pushNewScope(MethodScope(fullName))
 
-    // 1. Is this a constructors/static initializer method?
-    val body = if (scope.surroundingTypeDeclFullName.contains(name)) {
-      // 2. Do we have fields? Then we need to initialize them explicitly
-      val (staticFields, dynamicFields) = scope.getFieldsInScope.partition(_.isStatic)
-      // 3. If this has a static modifier, then we prepend the initializers of our static fields
-      if (modifiers.exists(_.modifierType == "STATIC") && staticFields.nonEmpty) {
-        // TODO: Filter out `decl` if there is already an explicit assignment for that variable
-        val decls = staticFields.flatMap { case FieldDecl(name, _, isInitialized, node) =>
-          astForVariableDeclarator(node, nodeTypeFullName(node))
-        }
-        astForBlock(createDotNetNodeInfo(methodDecl.json(ParserKeys.Body)), prefixAsts = decls)
-      } else if (dynamicFields.nonEmpty) {
-        // 4. If this does not have a static modifier, then we prepend the initializers of our dynamic fields
-        // TODO: Filter out `decl` if there is already an explicit assignment for that variable
-        val decls = dynamicFields.flatMap { case FieldDecl(name, _, isInitialized, node) =>
-          astForVariableDeclarator(node, nodeTypeFullName(node))
-        }
-        astForBlock(createDotNetNodeInfo(methodDecl.json(ParserKeys.Body)), prefixAsts = decls)
-      } else {
-        // If this is not a constructors/static initializer method, then build body as normal
-        astForBlock(createDotNetNodeInfo(methodDecl.json(ParserKeys.Body)))
-      }
-    } else {
-      // If this is not a constructors/static initializer method, then build body as normal
-      astForBlock(createDotNetNodeInfo(methodDecl.json(ParserKeys.Body)))
-    }
+    val body = astForBlock(createDotNetNodeInfo(methodDecl.json(ParserKeys.Body)))
 
     scope.popScope()
 
@@ -294,4 +339,17 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     }.map(Ast(_))
   }
 
+  protected def composeMethodLikeSignature(returnType: String, parameterTypes: collection.Seq[String]): String = {
+    s"$returnType(${parameterTypes.mkString(",")})"
+  }
+
+  protected def composeMethodFullName(typeDeclFullName: String, name: String, signature: String): String = {
+    s"$typeDeclFullName.$name:$signature"
+  }
+
+  protected def astVariableDeclarationForInitializedFields(fieldDecls: Seq[FieldDecl]): Seq[Ast] = {
+    fieldDecls.filter(_.isInitialized).flatMap { case FieldDecl(name, _, isInitialized, node) =>
+      astForVariableDeclarator(node, nodeTypeFullName(node))
+    }
+  }
 }

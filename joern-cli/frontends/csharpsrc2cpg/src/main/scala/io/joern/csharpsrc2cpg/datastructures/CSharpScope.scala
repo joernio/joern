@@ -54,7 +54,8 @@ class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeT
 
   def pushField(field: FieldDecl): Unit = {
     popScope().foreach {
-      case TypeScope(fullName, fields) => TypeScope(fullName, fields :+ field)
+      case TypeScope(fullName, fields) =>
+        pushNewScope(TypeScope(fullName, fields :+ field))
       case x =>
         pushField(field)
         pushNewScope(x)
