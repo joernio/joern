@@ -113,7 +113,7 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     val fullName =
       if (dispatchType == DispatchTypes.STATIC_DISPATCH) name
       else x2cpg.Defines.DynamicCallUnknownFullName
-    callNode(node, code, name, fullName, dispatchType, None, Some(Defines.Any))
+    callNode(node, code, name, fullName, dispatchType, None, Option(Defines.Any))
   }
 
   private def createCallNode(

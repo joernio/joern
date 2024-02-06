@@ -65,8 +65,8 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForClosureParameterClauseSyntax(node: ClosureParameterClauseSyntax): Ast   = notHandledYet(node)
 
   private def astForClosureParameterSyntax(node: ClosureParameterSyntax): Ast = {
-    val name = node.secondName.map(code).getOrElse(code(node.firstName))
-    val tpe  = node.`type`.map(code).getOrElse(Defines.Any)
+    val name = node.secondName.fold(code(node.firstName))(code)
+    val tpe  = node.`type`.fold(Defines.Any)(code)
     registerType(tpe)
     val parameterNode =
       parameterInNode(
@@ -124,11 +124,11 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
 
   private def astForDeclModifierSyntax(node: DeclModifierSyntax): Ast = {
     val modifierType = code(node.name) match {
-      case "final"                       => Some(ModifierTypes.FINAL)
-      case "private" | "fileprivate"     => Some(ModifierTypes.PRIVATE)
-      case "internal"                    => Some(ModifierTypes.INTERNAL)
-      case "public" | "open" | "package" => Some(ModifierTypes.PUBLIC)
-      case "static"                      => Some(ModifierTypes.STATIC)
+      case "final"                       => Option(ModifierTypes.FINAL)
+      case "private" | "fileprivate"     => Option(ModifierTypes.PRIVATE)
+      case "internal"                    => Option(ModifierTypes.INTERNAL)
+      case "public" | "open" | "package" => Option(ModifierTypes.PUBLIC)
+      case "static"                      => Option(ModifierTypes.STATIC)
       case _                             => None
     }
     modifierType.fold(Ast())(m => Ast(NewModifier().modifierType(m).order(0)))
@@ -175,7 +175,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     // TODO: handle modifiers
     // TODO: handle ellipsis
     // TODO: handle defaultValue
-    val name = node.secondName.map(code).getOrElse(code(node.firstName))
+    val name = node.secondName.fold(code(node.firstName))(code)
     val tpe  = code(node.`type`)
     registerType(tpe)
     val parameterNode =
@@ -269,7 +269,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
         notHandledYet(wildcard)
         generateUnusedVariableName(usedVariableNames, "wildcard")
     }
-    val typeFullName = node.typeAnnotation.map(t => code(t.`type`)).getOrElse(Defines.Any)
+    val typeFullName = node.typeAnnotation.fold(Defines.Any)(t => code(t.`type`))
     val nLocalNode   = localNode(node, name, name, typeFullName).order(0)
     scope.addVariable(name, nLocalNode, scopeType)
     diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)

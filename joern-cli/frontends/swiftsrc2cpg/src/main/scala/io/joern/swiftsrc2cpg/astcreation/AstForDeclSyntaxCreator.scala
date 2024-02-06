@@ -64,9 +64,9 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     case d: ClassDeclSyntax          => code(d.name)
     case d: EnumDeclSyntax           => code(d.name)
     case d: ExtensionDeclSyntax      => code(d.extendedType)
-    case d: FunctionDeclSyntax       => d.signature.returnClause.map(c => code(c.`type`)).getOrElse(Defines.Any)
-    case d: InitializerDeclSyntax    => d.signature.returnClause.map(c => code(c.`type`)).getOrElse(Defines.Any)
-    case d: MacroDeclSyntax          => d.signature.returnClause.map(c => code(c.`type`)).getOrElse(Defines.Any)
+    case d: FunctionDeclSyntax       => d.signature.returnClause.fold(Defines.Any)(c => code(c.`type`))
+    case d: InitializerDeclSyntax    => d.signature.returnClause.fold(Defines.Any)(c => code(c.`type`))
+    case d: MacroDeclSyntax          => d.signature.returnClause.fold(Defines.Any)(c => code(c.`type`))
     case d: MacroExpansionDeclSyntax => code(d.macroName)
     case d: ProtocolDeclSyntax       => code(d.name)
     case d: StructDeclSyntax         => code(d.name)
@@ -191,7 +191,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case Some(constructor: InitializerDeclSyntax) =>
         val result = astForFunctionLike(constructor, methodBlockContent = constructorContent)
         diffGraph.addEdge(result.method, NewModifier().modifierType(ModifierTypes.CONSTRUCTOR), EdgeTypes.AST)
-        Some(result)
+        Option(result)
       case _ if constructorBlock.root.isDefined =>
         constructorBlock.root.foreach { r =>
           constructorContent.foreach { c =>
@@ -201,7 +201,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         }
         None
       case _ =>
-        Some(createFakeConstructor(node, methodBlockContent = constructorContent))
+        Option(createFakeConstructor(node, methodBlockContent = constructorContent))
     }
 
   private def isClassMethodOrUninitializedMember(node: DeclSyntax): Boolean =
@@ -688,12 +688,12 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     val (signature, returnType) = node match {
       case f: FunctionDeclSyntax =>
-        val returnType = f.signature.returnClause.map(c => code(c.`type`)).getOrElse(Defines.Any)
+        val returnType = f.signature.returnClause.fold(Defines.Any)(c => code(c.`type`))
         registerType(returnType)
         (s"$returnType $methodFullName ${code(f.signature.parameterClause)}", returnType)
       case a: AccessorDeclSyntax =>
         val returnType = Defines.Any
-        (s"$returnType $methodFullName ${a.parameters.map(code).getOrElse("()")}", returnType)
+        (s"$returnType $methodFullName ${a.parameters.fold("()")(code)}", returnType)
       case i: InitializerDeclSyntax =>
         val returnType = methodAstParentStack.head.properties("FULL_NAME").toString
         (s"$returnType $methodFullName ${i.signature.parameterClause.parameters.children.map(code)}", returnType)
@@ -701,15 +701,15 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         val returnType = Defines.Any
         (s"$returnType $methodFullName ()", returnType)
       case c: ClosureExprSyntax =>
-        val returnType = c.signature.flatMap(_.returnClause).map(r => code(r.`type`)).getOrElse(Defines.Any)
+        val returnType = c.signature.flatMap(_.returnClause).fold(Defines.Any)(r => code(r.`type`))
         val paramClauseCode =
-          c.signature.flatMap(_.parameterClause).map(code).getOrElse("").stripPrefix("(").stripSuffix(")")
+          c.signature.flatMap(_.parameterClause).fold("")(code).stripPrefix("(").stripSuffix(")")
         registerType(returnType)
         (s"$returnType $methodFullName ($paramClauseCode)", returnType)
     }
 
     val codeString  = code(node)
-    val methodNode_ = methodNode(node, methodName, codeString, methodFullName, Some(signature), filename)
+    val methodNode_ = methodNode(node, methodName, codeString, methodFullName, Option(signature), filename)
     val block       = blockNode(node, "<empty>", Defines.Any)
     methodAstParentStack.push(methodNode_)
     scope.pushNewMethodScope(methodFullName, methodName, block, capturingRefNode)
@@ -736,7 +736,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case a: AccessorDeclSyntax      => a.body
       case i: InitializerDeclSyntax   => i.body
       case d: DeinitializerDeclSyntax => d.body
-      case c: ClosureExprSyntax       => Some(c.statements)
+      case c: ClosureExprSyntax       => Option(c.statements)
     }
 
     val bodyStmtAsts = body match {
@@ -811,16 +811,16 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     ifIfConfigClauses match {
       case Nil => notHandledYet(node)
       case ifIfConfigClause :: Nil if ifConfigDeclConditionIsSatisfied(ifIfConfigClause) =>
-        ifIfConfigClause.elements.map(astForNode).getOrElse(Ast())
+        ifIfConfigClause.elements.fold(Ast())(astForNode)
       case _ :: Nil =>
         val firstElseIfSatisfied = elseIfIfConfigClauses.find(ifConfigDeclConditionIsSatisfied)
         firstElseIfSatisfied match {
           case Some(elseIfIfConfigClause) =>
-            elseIfIfConfigClause.elements.map(astForNode).getOrElse(Ast())
+            elseIfIfConfigClause.elements.fold(Ast())(astForNode)
           case None =>
             elseIfConfigClauses match {
               case Nil                       => Ast()
-              case elseIfConfigClause :: Nil => elseIfConfigClause.elements.map(astForNode).getOrElse(Ast())
+              case elseIfConfigClause :: Nil => elseIfConfigClause.elements.fold(Ast())(astForNode)
               case _                         => notHandledYet(node)
             }
         }
@@ -832,8 +832,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val importPath = node.path.children.map(c => code(c.name))
     val (name, groupName) = importPath match {
       case Nil         => (None, None)
-      case elem :: Nil => (Some(elem), Some(elem))
-      case _           => (importPath.lastOption, Some(importPath.slice(0, importPath.size - 1).mkString(".")))
+      case elem :: Nil => (Option(elem), Option(elem))
+      case _           => (importPath.lastOption, Option(importPath.slice(0, importPath.size - 1).mkString(".")))
     }
     if (name.isEmpty && groupName.isEmpty) {
       Ast()
@@ -887,7 +887,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           notHandledYet(wildcard)
           generateUnusedVariableName(usedVariableNames, "wildcard")
       }
-      val typeFullName = binding.typeAnnotation.map(t => code(t.`type`)).getOrElse(Defines.Any)
+      val typeFullName = binding.typeAnnotation.fold(Defines.Any)(t => code(t.`type`))
       val nLocalNode   = localNode(binding, name, name, typeFullName).order(0)
       scope.addVariable(name, nLocalNode, scopeType)
       diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
