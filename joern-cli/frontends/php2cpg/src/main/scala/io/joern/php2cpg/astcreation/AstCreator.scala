@@ -663,29 +663,32 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
 
   private def astsForStaticStmt(stmt: PhpStaticStmt): List[Ast] = {
     stmt.vars.flatMap { staticVarDecl =>
-      val variableAst   = astForVariableExpr(staticVarDecl.variable)
-      val maybeValueAst = staticVarDecl.defaultValue.map(astForExpr)
+      staticVarDecl.variable match {
+        case PhpVariable(PhpNameExpr(name, _), _) =>
+          val maybeDefaultValueAst = staticVarDecl.defaultValue.map(astForExpr)
 
-      val code = variableAst.rootCode.getOrElse(NameConstants.Unknown)
-      val name = variableAst.root match {
-        case Some(identifier: NewIdentifier) => identifier.name
-        case _                               => code
+          val code         = s"static $name"
+          val typeFullName = maybeDefaultValueAst.flatMap(_.rootType).getOrElse(TypeConstants.Any)
+
+          val local = localNode(stmt, name, code, maybeDefaultValueAst.flatMap(_.rootType).getOrElse(TypeConstants.Any))
+          scope.addToScope(local.name, local)
+
+          val assignmentAst = maybeDefaultValueAst.map { defaultValue =>
+            val variableNode = identifierNode(stmt, name, s"$$$name", typeFullName)
+            val variableAst  = Ast(variableNode).withRefEdge(variableNode, local)
+
+            val assignCode = s"static $code = ${defaultValue.rootCodeOrEmpty}"
+            val assignNode = newOperatorCallNode(Operators.assignment, assignCode, line = line(stmt))
+
+            callAst(assignNode, variableAst :: defaultValue :: Nil)
+          }
+
+          Ast(local) :: assignmentAst.toList
+
+        case other =>
+          logger.warn(s"Unexpected static variable type ${other} in $filename")
+          Nil
       }
-
-      val local = localNode(stmt, name, s"static $code", variableAst.rootType.getOrElse(TypeConstants.Any))
-      scope.addToScope(local.name, local)
-
-      variableAst.root.collect { case identifier: NewIdentifier =>
-        diffGraph.addEdge(identifier, local, EdgeTypes.REF)
-      }
-
-      val defaultAssignAst = maybeValueAst.map { valueAst =>
-        val valueCode  = s"static $code = ${valueAst.rootCodeOrEmpty}"
-        val assignNode = newOperatorCallNode(Operators.assignment, valueCode, line = line(stmt))
-        callAst(assignNode, variableAst :: valueAst :: Nil)
-      }
-
-      Ast(local) :: defaultAssignAst.toList
     }
   }
 
@@ -1026,11 +1029,9 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
   private def astForNameExpr(expr: PhpNameExpr): Ast = {
     val identifier = identifierNode(expr, expr.name, expr.name, TypeConstants.Any)
 
-    scope.lookupVariable(identifier.name).foreach { declaringNode =>
-      diffGraph.addEdge(identifier, declaringNode, EdgeTypes.REF)
-    }
+    val declaringNode = scope.lookupVariable(identifier.name)
 
-    Ast(identifier)
+    Ast(identifier).withRefEdges(identifier, declaringNode.toList)
   }
 
   /** This is used to rewrite the short form $xs[] = <value_expr> as array_push($xs, <value_expr>) to avoid having to
