@@ -43,6 +43,20 @@ class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeT
     }
   }
 
+  def tryResolveMethodReturn(typeFullName: String, callName: String): Option[String] = {
+    typesInScope.find(_.name.endsWith(typeFullName)).flatMap { case t: CSharpType =>
+      t.methods.find(_.name.endsWith(callName)).map { m =>
+        m.returnType
+      }
+    }
+  }
+
+  def tryResolveMethodSignature(typeFullName: String, callName: String): Option[String] = {
+    typesInScope.find(_.name.endsWith(typeFullName)).flatMap { t =>
+      t.methods.find(_.name.endsWith(callName)).map { m => m.signature }
+    }
+  }
+
   /** Appends known types imported from a `using` statement into the scope.
     * @param namespace
     *   the fully qualified imported namespace.

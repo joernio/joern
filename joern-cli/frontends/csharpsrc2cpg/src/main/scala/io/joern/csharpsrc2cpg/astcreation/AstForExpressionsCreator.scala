@@ -129,14 +129,18 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case _ =>
         s"${Defines.UnresolvedNamespace}.$name"
 
-    val (returnType: String, signature: String) = csharpGlobal.methodFullNameReturnTypeMap.getOrDefault(
-      partialFullName,
-      (Defines.Any, s"${Defines.Any}:($argString)")
-    )
+    val returnType =
+      scope.tryResolveMethodReturn(baseTypeFullName.getOrElse(scope.surroundingTypeDeclFullName.getOrElse("")), name);
 
-    val typeFullName = returnType;
+    val signature =
+      scope
+        .tryResolveMethodSignature(baseTypeFullName.getOrElse(scope.surroundingTypeDeclFullName.getOrElse("")), name)
+        .getOrElse(Defines.UnresolvedSignature);
 
-    val methodFullName = s"$partialFullName:$signature"
+    val typeFullName = returnType.getOrElse(Defines.Any);
+
+    val methodFullName = s"$partialFullName:${returnType.getOrElse(Defines.Unknown)}${signatureToTypeString(signature)}"
+
     val _callAst = callAst(
       callNode(
         invocationExpr,

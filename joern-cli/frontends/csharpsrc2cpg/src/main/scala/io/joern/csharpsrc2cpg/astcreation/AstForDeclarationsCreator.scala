@@ -169,10 +169,6 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val thisNode =
       if (!modifiers.exists(_.modifierType == ModifierTypes.STATIC)) astForThisNode(methodDecl)
       else Ast()
-    csharpGlobal.methodFullNameReturnTypeMap.putIfAbsent(
-      astFullName(methodDecl),
-      (methodReturnStr, signature)
-    ) // TODO: Build a cache pass to process all method decls
     Seq(methodAst(methodNode_, thisNode +: params, body, methodReturn, modifiers))
   }
 

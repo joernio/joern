@@ -114,38 +114,54 @@ class TypeMap(astGenResult: AstGenRunnerResult, initialMappings: List[NamespaceT
           case RecordDeclaration => true
           case _                 => false
       }
-      .map(parseClassDeclaration)
+      .map(classDecl => parseClassDeclaration(classDecl, namespaceName))
       .toSet
+
     namespaceName -> classes
   }
 
-  private def parseClassDeclaration(classDecl: DotNetNodeInfo): CSharpType = {
+  private def parseClassDeclaration(classDecl: DotNetNodeInfo, namespaceName: String): CSharpType = {
     val className = AstCreatorHelper.nameFromNode(classDecl)
+    val fullName  = s"${namespaceName}.${className}"
     val members = classDecl
       .json(ParserKeys.Members)
       .arr
       .map(AstCreatorHelper.createDotNetNodeInfo(_))
       .flatMap { x =>
         x.node match
-          case MethodDeclaration => parseMethodDeclaration(x)
-          case FieldDeclaration  => parseFieldDeclaration(x)
+          case MethodDeclaration => parseMethodDeclaration(x, fullName)
+          case FieldDeclaration  => parseFieldDeclaration(x, fullName)
           case _                 => List.empty
       }
       .toList
-    CSharpType(className, members.collectAll[CSharpMethod].l, members.collectAll[CSharpField].l)
+    CSharpType(fullName, members.collectAll[CSharpMethod].l, members.collectAll[CSharpField].l)
   }
 
-  private def parseMethodDeclaration(methodDecl: DotNetNodeInfo): List[CSharpMethod] = {
-    List(CSharpMethod(AstCreatorHelper.nameFromNode(methodDecl)))
+  private def parseMethodDeclaration(methodDecl: DotNetNodeInfo, fullName: String): List[CSharpMethod] = {
+    val params = methodDecl
+      .json(ParserKeys.ParameterList)
+      .obj(ParserKeys.Parameters)
+      .arr
+
+    val methodFullName = s"${fullName}.${AstCreatorHelper.nameFromNode(methodDecl)}"
+    val methodReturn   = AstCreatorHelper.createDotNetNodeInfo(methodDecl.json(ParserKeys.ReturnType)).code
+    val paramTypes = params
+      .map { param =>
+        param(ParserKeys.Type)(ParserKeys.Keyword)(ParserKeys.Value).str
+      }
+      .mkString(",")
+
+    val signatureParams = s"(${paramTypes})"
+    List(CSharpMethod(methodFullName, methodReturn, signatureParams))
   }
 
-  private def parseFieldDeclaration(fieldDecl: DotNetNodeInfo): List[CSharpField] = {
+  private def parseFieldDeclaration(fieldDecl: DotNetNodeInfo, fullName: String): List[CSharpField] = {
     val declarationNode = AstCreatorHelper.createDotNetNodeInfo(fieldDecl.json(ParserKeys.Declaration))
     declarationNode
       .json(ParserKeys.Variables)
       .arr
       .map(AstCreatorHelper.createDotNetNodeInfo(_))
-      .map(AstCreatorHelper.nameFromNode)
+      .map(fieldDecl => s"${fullName}.${AstCreatorHelper.nameFromNode(fieldDecl)}")
       .map(CSharpField.apply)
       .toList
   }
@@ -154,6 +170,6 @@ class TypeMap(astGenResult: AstGenRunnerResult, initialMappings: List[NamespaceT
 
 case class CSharpField(name: String) derives ReadWriter
 
-case class CSharpMethod(name: String) derives ReadWriter
+case class CSharpMethod(name: String, returnType: String, signature: String) derives ReadWriter
 
 case class CSharpType(name: String, methods: List[CSharpMethod], fields: List[CSharpField]) derives ReadWriter

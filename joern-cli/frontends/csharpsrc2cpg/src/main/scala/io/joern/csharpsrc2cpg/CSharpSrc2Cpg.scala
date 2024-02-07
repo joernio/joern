@@ -2,7 +2,6 @@ package io.joern.csharpsrc2cpg
 
 import better.files.File
 import io.joern.csharpsrc2cpg.astcreation.AstCreator
-import io.joern.csharpsrc2cpg.datastructures.CSharpGlobal
 import io.joern.csharpsrc2cpg.parser.DotNetJsonParser
 import io.joern.csharpsrc2cpg.passes.AstCreationPass
 import io.joern.csharpsrc2cpg.utils.DotNetAstGenRunner
@@ -49,7 +48,6 @@ object CSharpSrc2Cpg {
   /** Parses the generated AST Gen files in parallel and produces AstCreators from each.
     */
   def processAstGenRunnerResults(astFiles: List[String], config: Config, typeMap: TypeMap): Seq[AstCreator] = {
-    val cSharpGlobal = CSharpGlobal()
     Await.result(
       Future.sequence(
         astFiles
@@ -69,7 +67,7 @@ object CSharpSrc2Cpg {
               } else {
                 SourceFiles.toRelativePath(parserResult.fullPath, config.inputPath)
               }
-              new AstCreator(relativeFileName, parserResult, typeMap, cSharpGlobal)(config.schemaValidation)
+              new AstCreator(relativeFileName, parserResult, typeMap)(config.schemaValidation)
             }
           )
       ),
