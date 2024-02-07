@@ -9,6 +9,7 @@ import io.joern.x2cpg.ValidationMode
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 
 trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
@@ -96,14 +97,19 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     Ast(idNode)
   }
 
-  private def astForDoExprSyntax(node: DoExprSyntax): Ast                               = notHandledYet(node)
-  private def astForEditorPlaceholderExprSyntax(node: EditorPlaceholderExprSyntax): Ast = notHandledYet(node)
+  private def astForDoExprSyntax(node: DoExprSyntax): Ast = notHandledYet(node)
+
+  private def astForEditorPlaceholderExprSyntax(node: EditorPlaceholderExprSyntax): Ast = {
+    Ast(literalNode(node, code(node), Option(Defines.String)))
+  }
 
   private def astForFloatLiteralExprSyntax(node: FloatLiteralExprSyntax): Ast = {
     astForNode(node.literal)
   }
 
-  private def astForForceUnwrapExprSyntax(node: ForceUnwrapExprSyntax): Ast = notHandledYet(node)
+  private def astForForceUnwrapExprSyntax(node: ForceUnwrapExprSyntax): Ast = {
+    astForNode(node.expression)
+  }
 
   private def createBuiltinStaticCall(callExpr: FunctionCallExprSyntax, callee: ExprSyntax, fullName: String): Ast = {
     val callName = callee match {
@@ -197,7 +203,9 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  private def astForGenericSpecializationExprSyntax(node: GenericSpecializationExprSyntax): Ast = notHandledYet(node)
+  private def astForGenericSpecializationExprSyntax(node: GenericSpecializationExprSyntax): Ast = {
+    astForNode(node.expression)
+  }
 
   private def astForIfExprSyntax(node: IfExprSyntax): Ast = {
     val code         = this.code(node)
@@ -211,7 +219,9 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     controlStructureAst(ifNode, Option(conditionAst), Seq(thenAst, elseAst))
   }
 
-  private def astForInOutExprSyntax(node: InOutExprSyntax): Ast = notHandledYet(node)
+  private def astForInOutExprSyntax(node: InOutExprSyntax): Ast = {
+    astForNode(node.expression)
+  }
 
   private def astForInfixOperatorExprSyntax(node: InfixOperatorExprSyntax): Ast = {
     val op = code(node.operator) match {
@@ -222,11 +232,12 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case "/="                  => Operators.assignmentDivision
       case "%="                  => Operators.assignmentModulo
       case "**="                 => Operators.assignmentExponentiation
+      case "&&"                  => Operators.logicalAnd
       case "&="                  => Operators.assignmentAnd
       case "&&="                 => Operators.assignmentAnd
       case "|="                  => Operators.assignmentOr
       case "||="                 => Operators.assignmentOr
-      case "||"                  => Operators.or
+      case "||"                  => Operators.logicalOr
       case "^="                  => Operators.assignmentXor
       case "<<="                 => Operators.assignmentShiftLeft
       case ">>="                 => Operators.assignmentArithmeticShiftRight
@@ -237,6 +248,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case "<"                   => Operators.lessThan
       case ">"                   => Operators.greaterThan
       case "=="                  => Operators.equals
+      case "==="                 => Operators.equals
       case "+"                   => Operators.plus
       case "-"                   => Operators.minus
       case "/"                   => Operators.division
@@ -245,6 +257,8 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case "%"                   => Operators.modulo
       case "!"                   => Operators.logicalNot
       case "!="                  => Operators.notEquals
+      case "^"                   => Operators.xor
+      case "??"                  => Operators.elvis
       case _ =>
         notHandledYet(node)
         "<operator>.unknown"
@@ -269,8 +283,24 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     callAst(callNode_, argAsts)
   }
 
-  private def astForKeyPathExprSyntax(node: KeyPathExprSyntax): Ast               = notHandledYet(node)
-  private def astForMacroExpansionExprSyntax(node: MacroExpansionExprSyntax): Ast = notHandledYet(node)
+  private def astForKeyPathExprSyntax(node: KeyPathExprSyntax): Ast = notHandledYet(node)
+
+  private def astForMacroExpansionExprSyntax(node: MacroExpansionExprSyntax): Ast = {
+    val name = code(node.macroName)
+    val argAsts = astForNode(node.arguments) +:
+      node.trailingClosure.toList.map(astForNodeWithFunctionReference) :+
+      astForNode(node.additionalTrailingClosures)
+    val callNode =
+      NewCall()
+        .name(name)
+        .dispatchType(DispatchTypes.INLINED)
+        .methodFullName(name)
+        .code(code(node))
+        .typeFullName(Defines.Any)
+        .lineNumber(line(node))
+        .columnNumber(column(node))
+    callAst(callNode, argAsts)
+  }
 
   private def astForMemberAccessExprSyntax(node: MemberAccessExprSyntax): Ast = {
     val base   = node.base
@@ -306,10 +336,21 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     Ast(literalNode(node, code(node), Option(Defines.Nil)))
   }
 
-  private def astForOptionalChainingExprSyntax(node: OptionalChainingExprSyntax): Ast = notHandledYet(node)
-  private def astForPackElementExprSyntax(node: PackElementExprSyntax): Ast           = notHandledYet(node)
-  private def astForPackExpansionExprSyntax(node: PackExpansionExprSyntax): Ast       = notHandledYet(node)
-  private def astForPatternExprSyntax(node: PatternExprSyntax): Ast                   = notHandledYet(node)
+  private def astForOptionalChainingExprSyntax(node: OptionalChainingExprSyntax): Ast = {
+    astForNodeWithFunctionReference(node.expression)
+  }
+
+  private def astForPackElementExprSyntax(node: PackElementExprSyntax): Ast = {
+    astForNodeWithFunctionReference(node.pack)
+  }
+
+  private def astForPackExpansionExprSyntax(node: PackExpansionExprSyntax): Ast = {
+    astForNodeWithFunctionReference(node.repetitionPattern)
+  }
+
+  private def astForPatternExprSyntax(node: PatternExprSyntax): Ast = {
+    astForNode(node.pattern)
+  }
 
   private def astForPostfixIfConfigExprSyntax(node: PostfixIfConfigExprSyntax): Ast = {
     val children              = node.config.clauses.children
@@ -366,7 +407,23 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     callAst(unaryCall, List(expressionAst))
   }
 
-  private def astForPrefixOperatorExprSyntax(node: PrefixOperatorExprSyntax): Ast           = notHandledYet(node)
+  private def astForPrefixOperatorExprSyntax(node: PrefixOperatorExprSyntax): Ast = {
+    val operatorMethod = code(node.operator) match {
+      case "-" => Operators.preDecrement
+      case "+" => Operators.preIncrement
+      case "~" => Operators.not
+      case "!" => Operators.logicalNot
+      case "<" => Operators.lessThan
+      case ">" => Operators.greaterThan
+      case _ =>
+        notHandledYet(node)
+        "<operator>.unknown"
+    }
+    val unaryCall     = callNode(node, code(node), operatorMethod, operatorMethod, DispatchTypes.STATIC_DISPATCH)
+    val expressionAst = astForNodeWithFunctionReference(node.expression)
+    callAst(unaryCall, List(expressionAst))
+  }
+
   private def astForRegexLiteralExprSyntax(node: RegexLiteralExprSyntax): Ast               = notHandledYet(node)
   private def astForSequenceExprSyntax(node: SequenceExprSyntax): Ast                       = notHandledYet(node)
   private def astForSimpleStringLiteralExprSyntax(node: SimpleStringLiteralExprSyntax): Ast = notHandledYet(node)
@@ -430,10 +487,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         setArgumentIndices(cAsts)
         (tAsts.toList, cAsts.toList)
       case i: IfConfigDeclSyntax =>
-        val children            = i.clauses.children
-        val childrenTestAsts    = children.flatMap(c => c.condition.map(astForNode)).toList
-        val childrenElementAsts = children.flatMap(c => c.elements.map(astForNode)).toList
-        (childrenTestAsts, childrenElementAsts)
+        (List.empty, List(astForIfConfigDeclSyntax(i)))
     }
     labelAst +: (testAsts ++ consequentAsts)
   }
