@@ -56,7 +56,9 @@ class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeT
 
   def tryResolveMethodReturn(typeFullName: String, callName: String): Option[String] = {
     typesInScope.find(_.name.endsWith(typeFullName)).flatMap { case t: CSharpType =>
-      t.methods.find(_.name.endsWith(callName)).map { m => m.returnType }
+      t.methods.find(_.name.endsWith(callName)).map { m =>
+        m.returnType
+      }
     }
   }
 
@@ -65,7 +67,7 @@ class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeT
       t.methods.find(_.name.endsWith(callName)).map { m => m.signature }
     }
   }
-  
+
   def pushField(field: FieldDecl): Unit = {
     popScope().foreach {
       case TypeScope(fullName, fields) =>
