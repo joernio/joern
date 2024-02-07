@@ -908,7 +908,7 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
 
     val stmtAsts = caseStmt.stmts.flatMap(astsForStmt)
 
-    Ast(jumpTarget) :: stmtAsts
+    Ast(jumpTarget) :: maybeConditionAst.toList ++ stmtAsts
   }
 
   private def codeForMethodCall(call: PhpCallExpr, targetAst: Ast, name: String): String = {
@@ -1341,22 +1341,21 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
   }
 
   private def astsForMatchArm(matchArm: PhpMatchArm): List[Ast] = {
-    // TODO Don't just throw away the condition asts here (also for switch cases)
-    val targets = matchArm.conditions.map { condition =>
+    val targetAsts = matchArm.conditions.flatMap { condition =>
       val conditionAst = astForExpr(condition)
       // In PHP cases aren't labeled with `case`, but this is used by the CFG creator to differentiate between
       // case/default labels and other labels.
-      val code = s"case ${conditionAst.rootCode.getOrElse(NameConstants.Unknown)}"
-      NewJumpTarget().name(code).code(code).lineNumber(line(condition))
+      val code          = s"case ${conditionAst.rootCode.getOrElse(NameConstants.Unknown)}"
+      val jumpTargetAst = Ast(NewJumpTarget().name(code).code(code).lineNumber(line(condition)))
+      jumpTargetAst :: conditionAst :: Nil
     }
     val defaultLabel = Option.when(matchArm.isDefault)(
-      NewJumpTarget().name(NameConstants.Default).code(NameConstants.Default).lineNumber(line(matchArm))
+      Ast(NewJumpTarget().name(NameConstants.Default).code(NameConstants.Default).lineNumber(line(matchArm)))
     )
-    val targetAsts = (targets ++ defaultLabel.toList).map(Ast(_))
 
     val bodyAst = astForExpr(matchArm.body)
 
-    targetAsts :+ bodyAst
+    targetAsts ++ defaultLabel :+ bodyAst
   }
 
   private def astForYieldExpr(expr: PhpYieldExpr): Ast = {

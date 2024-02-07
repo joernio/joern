@@ -46,15 +46,20 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         inside(switchStmt.whenTrue.astChildren.l) {
           case List(
                 case0: JumpTarget,
+                cond0: Literal,
                 bIdent: Identifier,
                 break1: ControlStructure,
                 case1: JumpTarget,
+                cond1: Literal,
                 cIdent: Identifier,
                 break2: ControlStructure
               ) =>
             case0.name shouldBe "case"
             case0.code shouldBe "case 0"
             case0.lineNumber shouldBe Some(3)
+
+            cond0.code shouldBe "0"
+            cond0.lineNumber shouldBe Some(3)
 
             bIdent.name shouldBe "b"
             bIdent.code shouldBe "$b"
@@ -67,6 +72,9 @@ class ControlStructureTests extends PhpCode2CpgFixture {
             case1.name shouldBe "case"
             case1.code shouldBe "case 1"
             case1.lineNumber shouldBe Some(6)
+
+            cond1.code shouldBe "1"
+            cond1.lineNumber shouldBe Some(6)
 
             cIdent.name shouldBe "c"
             cIdent.code shouldBe "$c"
@@ -103,6 +111,7 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         inside(switchStmt.whenTrue.astChildren.l) {
           case List(
                 case0: JumpTarget,
+                cond0: Literal,
                 bIdent: Identifier,
                 break1: ControlStructure,
                 defaultCase: JumpTarget,
@@ -111,6 +120,9 @@ class ControlStructureTests extends PhpCode2CpgFixture {
             case0.name shouldBe "case"
             case0.code shouldBe "case 0"
             case0.lineNumber shouldBe Some(3)
+
+            cond0.code shouldBe "0"
+            cond0.lineNumber shouldBe Some(3)
 
             bIdent.name shouldBe "b"
             bIdent.code shouldBe "$b"
@@ -887,13 +899,19 @@ class ControlStructureTests extends PhpCode2CpgFixture {
         inside(matchStructure.astChildren.collectAll[Block].astChildren.l) {
           case List(
                 aTarget: JumpTarget,
+                aCond: Identifier,
                 aValue: Literal,
                 bTarget: JumpTarget,
+                bCond: Identifier,
                 cTarget: JumpTarget,
+                cCond: Identifier,
                 otherValue: Literal
               ) =>
             aTarget.code shouldBe "case $a"
             aTarget.lineNumber shouldBe Some(3)
+
+            aCond.code shouldBe "$a"
+            aCond.lineNumber shouldBe Some(3)
 
             aValue.code shouldBe "\"A\""
             aValue.lineNumber shouldBe Some(3)
@@ -901,8 +919,14 @@ class ControlStructureTests extends PhpCode2CpgFixture {
             bTarget.code shouldBe "case $b"
             bTarget.lineNumber shouldBe Some(4)
 
+            bCond.code shouldBe "$b"
+            bCond.lineNumber shouldBe Some(4)
+
             cTarget.code shouldBe "case $c"
             cTarget.lineNumber shouldBe Some(4)
+
+            cCond.code shouldBe "$c"
+            cCond.lineNumber shouldBe Some(4)
 
             otherValue.code shouldBe "\"NOT A\""
             otherValue.lineNumber shouldBe Some(4)
@@ -934,9 +958,12 @@ class ControlStructureTests extends PhpCode2CpgFixture {
       inside(matchStructure.astChildren.collectAll[Block].astChildren.l) {
         case List(
               aTarget: JumpTarget,
+              aCond: Identifier,
               aValue: Literal,
               bTarget: JumpTarget,
+              bCond: Identifier,
               cTarget: JumpTarget,
+              cCond: Identifier,
               otherValue: Literal,
               defaultTarget: JumpTarget,
               defaultValue: Literal
@@ -944,14 +971,23 @@ class ControlStructureTests extends PhpCode2CpgFixture {
           aTarget.code shouldBe "case $a"
           aTarget.lineNumber shouldBe Some(3)
 
+          aCond.code shouldBe "$a"
+          aCond.lineNumber shouldBe Some(3)
+
           aValue.code shouldBe "\"A\""
           aValue.lineNumber shouldBe Some(3)
 
           bTarget.code shouldBe "case $b"
           bTarget.lineNumber shouldBe Some(4)
 
+          bCond.code shouldBe "$b"
+          bCond.lineNumber shouldBe Some(4)
+
           cTarget.code shouldBe "case $c"
           cTarget.lineNumber shouldBe Some(4)
+
+          cCond.code shouldBe "$c"
+          cCond.lineNumber shouldBe Some(4)
 
           otherValue.code shouldBe "\"NOT A\""
           otherValue.lineNumber shouldBe Some(4)
