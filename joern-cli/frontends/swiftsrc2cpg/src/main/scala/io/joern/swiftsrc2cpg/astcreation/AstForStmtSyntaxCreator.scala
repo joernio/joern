@@ -533,7 +533,15 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case _                                                  => notHandledYet(node)
   }
 
-  private def astForGuardStmtSyntax(node: GuardStmtSyntax): Ast = notHandledYet(node)
+  private def astForGuardStmtSyntax(node: GuardStmtSyntax): Ast = {
+    val code         = this.code(node)
+    val ifNode       = controlStructureNode(node, ControlStructureTypes.IF, code)
+    val conditionAst = astForNode(node.conditions)
+    val thenAst      = Ast()
+    val elseAst      = astForNode(node.body)
+    setOrderExplicitly(elseAst, 3)
+    controlStructureAst(ifNode, Option(conditionAst), Seq(thenAst, elseAst))
+  }
 
   private def astForLabeledStmtSyntax(node: LabeledStmtSyntax): Ast = {
     val labeledNode = jumpTargetNode(node, code(node.label), code(node))
@@ -572,11 +580,16 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case None =>
         Ast(cpgReturn)
     }
-
   }
 
-  private def astForThenStmtSyntax(node: ThenStmtSyntax): Ast   = notHandledYet(node)
-  private def astForThrowStmtSyntax(node: ThrowStmtSyntax): Ast = notHandledYet(node)
+  private def astForThenStmtSyntax(node: ThenStmtSyntax): Ast = notHandledYet(node)
+
+  private def astForThrowStmtSyntax(node: ThrowStmtSyntax): Ast = {
+    val op        = "<operator>.throw"
+    val callNode_ = callNode(node, code(node), op, op, DispatchTypes.STATIC_DISPATCH)
+    val exprAst   = astForNodeWithFunctionReference(node.expression)
+    callAst(callNode_, List(exprAst))
+  }
 
   private def astForWhileStmtSyntax(node: WhileStmtSyntax): Ast = {
     val code         = this.code(node)
@@ -593,7 +606,11 @@ trait AstForStmtSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     )
   }
 
-  private def astForYieldStmtSyntax(node: YieldStmtSyntax): Ast = notHandledYet(node)
+  private def astForYieldStmtSyntax(node: YieldStmtSyntax): Ast = {
+    val cpgReturn = returnNode(node, code(node))
+    val expr      = astForNodeWithFunctionReference(node.yieldedExpressions)
+    Ast(cpgReturn).withChild(expr).withArgEdge(cpgReturn, expr.root)
+  }
 
   protected def astForStmtSyntax(stmtSyntax: StmtSyntax): Ast = stmtSyntax match {
     case node: BreakStmtSyntax       => astForBreakStmtSyntax(node)
