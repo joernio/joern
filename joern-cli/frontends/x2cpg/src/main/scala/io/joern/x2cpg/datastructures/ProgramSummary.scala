@@ -209,10 +209,10 @@ class DefaultTypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](su
   /** Pops the scope, removing types from the scope if necessary.
     */
   override def popScope(): Option[TypedScopeElement] = {
-    super.popScope() match {
-      case Some(n: NamespaceLikeScope) =>
+    super.popScope().map {
+      case n: NamespaceLikeScope =>
         summary.typesUnderNamespace(n.fullName).foreach(typesInScope.remove)
-        Some(n)
+        n
       case x => x
     }
   }
