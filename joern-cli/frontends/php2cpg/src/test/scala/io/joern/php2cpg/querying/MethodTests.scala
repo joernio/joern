@@ -4,7 +4,9 @@ import io.joern.php2cpg.testfixtures.PhpCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{ModifierTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal, Local}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
+
+import scala.util.Try
 
 class MethodTests extends PhpCode2CpgFixture {
 
@@ -32,22 +34,29 @@ class MethodTests extends PhpCode2CpgFixture {
     }
   }
 
-  "static variables without default values should be represented as the correct local nodes" in {
+  "static variables without default values" should {
     val cpg = code("""<?php
         |function foo() {
         |  static $x, $y;
         |}
         |""".stripMargin)
 
-    inside(cpg.method.name("foo").body.astChildren.l) { case List(xLocal: Local, yLocal: Local) =>
-      xLocal.name shouldBe "x"
-      xLocal.code shouldBe "static $x"
-      xLocal.lineNumber shouldBe Some(3)
-
-      yLocal.name shouldBe "y"
-      yLocal.code shouldBe "static $y"
-      yLocal.lineNumber shouldBe Some(3)
+    "not leave orphan identifiers" in {
+      cpg.identifier.filter(identifier => Try(identifier.astParent.isEmpty).getOrElse(true)).toList shouldBe Nil
     }
+
+    "be represented as the correct local nodes" in {
+      inside(cpg.method.name("foo").body.astChildren.l) { case List(xLocal: Local, yLocal: Local) =>
+        xLocal.name shouldBe "x"
+        xLocal.code shouldBe "static $x"
+        xLocal.lineNumber shouldBe Some(3)
+
+        yLocal.name shouldBe "y"
+        yLocal.code shouldBe "static $y"
+        yLocal.lineNumber shouldBe Some(3)
+      }
+    }
+
   }
 
   "static variables with default values should have the correct initialisers" in {

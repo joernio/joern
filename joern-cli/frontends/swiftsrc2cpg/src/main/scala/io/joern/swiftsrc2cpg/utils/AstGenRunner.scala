@@ -15,15 +15,12 @@ object AstGenRunner {
 
   private val logger = LoggerFactory.getLogger(getClass)
 
-  case class AstGenRunnerResult(
-    parsedFiles: List[(String, String)] = List.empty,
-    skippedFiles: List[(String, String)] = List.empty
-  )
+  case class AstGenRunnerResult(parsedFiles: List[String] = List.empty, skippedFiles: List[String] = List.empty)
 
   // full path to the SwiftAstGen binary from the env var SWIFTASTGEN_BIN
   private val AstGenBin: Option[String] = scala.util.Properties.envOrNone("SWIFTASTGEN_BIN").flatMap {
-    case path if File(path).isDirectory => Some((File(path) / "SwiftAstGen").pathAsString)
-    case path if File(path).exists      => Some(File(path).pathAsString)
+    case path if File(path).isDirectory => Option((File(path) / "SwiftAstGen").pathAsString)
+    case path if File(path).exists      => Option(File(path).pathAsString)
     case _                              => None
   }
 
@@ -140,7 +137,7 @@ class AstGenRunner(config: Config) {
       case Success(result) =>
         val parsed  = filterFiles(SourceFiles.determine(out.toString(), Set(".json")), out)
         val skipped = skippedFiles(result.toList)
-        AstGenRunnerResult(parsed.map((in.toString(), _)), skipped.map((in.toString(), _)))
+        AstGenRunnerResult(parsed, skipped)
       case Failure(f) =>
         logger.error("\t- running SwiftAstGen failed!", f)
         AstGenRunnerResult()

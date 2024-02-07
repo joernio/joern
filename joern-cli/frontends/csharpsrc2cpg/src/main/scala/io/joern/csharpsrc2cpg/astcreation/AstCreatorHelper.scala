@@ -119,7 +119,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         scope
           .tryResolveTypeReference(nameFromIdentifier(createDotNetNodeInfo(node.json(ParserKeys.Type))))
           .getOrElse(nameFromIdentifier(createDotNetNodeInfo(node.json(ParserKeys.Type))))
-      case PredefinedType =>
+      case PredefinedType | SimpleBaseType =>
         BuiltinTypes.DotNetTypeMap.getOrElse(node.code, Defines.Any)
       case _ =>
         Try(createDotNetNodeInfo(node.json(ParserKeys.Type))) match

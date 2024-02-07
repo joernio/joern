@@ -21,7 +21,21 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   }
 
   private def astForAccessorEffectSpecifiersSyntax(node: AccessorEffectSpecifiersSyntax): Ast = notHandledYet(node)
-  private def astForAccessorParametersSyntax(node: AccessorParametersSyntax): Ast             = notHandledYet(node)
+
+  private def astForAccessorParametersSyntax(node: AccessorParametersSyntax): Ast = {
+    val name = code(node.name).stripSuffix(",")
+    val parameterNode =
+      parameterInNode(
+        node,
+        name,
+        code(node).stripSuffix(","),
+        node.json("index").num.toInt + 1,
+        false,
+        EvaluationStrategies.BY_VALUE
+      )
+    scope.addVariable(name, parameterNode, MethodScope)
+    Ast(parameterNode)
+  }
 
   private def astForArrayElementSyntax(node: ArrayElementSyntax): Ast = {
     astForNodeWithFunctionReference(node.expression)
@@ -43,7 +57,10 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     annotationAst(annotationNode(node, attributeCode, name, name), argumentAsts)
   }
 
-  private def astForAvailabilityArgumentSyntax(node: AvailabilityArgumentSyntax): Ast   = notHandledYet(node)
+  private def astForAvailabilityArgumentSyntax(node: AvailabilityArgumentSyntax): Ast = {
+    Ast(literalNode(node, code(node).stripSuffix(","), Option(Defines.String)))
+  }
+
   private def astForAvailabilityConditionSyntax(node: AvailabilityConditionSyntax): Ast = notHandledYet(node)
   private def astForAvailabilityLabeledArgumentSyntax(node: AvailabilityLabeledArgumentSyntax): Ast = notHandledYet(
     node
@@ -59,13 +76,48 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     astForListSyntaxChildren(node, node.pattern.toList ++ node.whereClause.toList)
   }
 
-  private def astForClosureCaptureClauseSyntax(node: ClosureCaptureClauseSyntax): Ast           = notHandledYet(node)
-  private def astForClosureCaptureSpecifierSyntax(node: ClosureCaptureSpecifierSyntax): Ast     = notHandledYet(node)
-  private def astForClosureCaptureSyntax(node: ClosureCaptureSyntax): Ast                       = notHandledYet(node)
-  private def astForClosureParameterClauseSyntax(node: ClosureParameterClauseSyntax): Ast       = notHandledYet(node)
-  private def astForClosureParameterSyntax(node: ClosureParameterSyntax): Ast                   = notHandledYet(node)
-  private def astForClosureShorthandParameterSyntax(node: ClosureShorthandParameterSyntax): Ast = notHandledYet(node)
-  private def astForClosureSignatureSyntax(node: ClosureSignatureSyntax): Ast                   = notHandledYet(node)
+  private def astForClosureCaptureClauseSyntax(node: ClosureCaptureClauseSyntax): Ast       = notHandledYet(node)
+  private def astForClosureCaptureSpecifierSyntax(node: ClosureCaptureSpecifierSyntax): Ast = notHandledYet(node)
+  private def astForClosureCaptureSyntax(node: ClosureCaptureSyntax): Ast                   = notHandledYet(node)
+  private def astForClosureParameterClauseSyntax(node: ClosureParameterClauseSyntax): Ast   = notHandledYet(node)
+
+  private def astForClosureParameterSyntax(node: ClosureParameterSyntax): Ast = {
+    val name = node.secondName.fold(code(node.firstName))(code)
+    val tpe  = node.`type`.fold(Defines.Any)(code)
+    registerType(tpe)
+    val parameterNode =
+      parameterInNode(
+        node,
+        name,
+        code(node).stripSuffix(","),
+        node.json("index").num.toInt + 1,
+        false,
+        EvaluationStrategies.BY_VALUE,
+        Option(tpe)
+      )
+    scope.addVariable(name, parameterNode, MethodScope)
+    Ast(parameterNode)
+  }
+
+  private def astForClosureShorthandParameterSyntax(node: ClosureShorthandParameterSyntax): Ast = {
+    val name = code(node.name)
+    val tpe  = Defines.Any
+    registerType(tpe)
+    val parameterNode =
+      parameterInNode(
+        node,
+        name,
+        code(node).stripSuffix(","),
+        node.json("index").num.toInt + 1,
+        false,
+        EvaluationStrategies.BY_VALUE,
+        Option(tpe)
+      )
+    scope.addVariable(name, parameterNode, MethodScope)
+    Ast(parameterNode)
+  }
+
+  private def astForClosureSignatureSyntax(node: ClosureSignatureSyntax): Ast = notHandledYet(node)
   private def astForCodeBlockItemSyntax(node: CodeBlockItemSyntax): Ast = {
     astForNodeWithFunctionReferenceAndCall(node.item)
   }
@@ -89,11 +141,11 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
 
   private def astForDeclModifierSyntax(node: DeclModifierSyntax): Ast = {
     val modifierType = code(node.name) match {
-      case "final"                       => Some(ModifierTypes.FINAL)
-      case "private" | "fileprivate"     => Some(ModifierTypes.PRIVATE)
-      case "internal"                    => Some(ModifierTypes.INTERNAL)
-      case "public" | "open" | "package" => Some(ModifierTypes.PUBLIC)
-      case "static"                      => Some(ModifierTypes.STATIC)
+      case "final"                       => Option(ModifierTypes.FINAL)
+      case "private" | "fileprivate"     => Option(ModifierTypes.PRIVATE)
+      case "internal"                    => Option(ModifierTypes.INTERNAL)
+      case "public" | "open" | "package" => Option(ModifierTypes.PUBLIC)
+      case "static"                      => Option(ModifierTypes.STATIC)
       case _                             => None
     }
     modifierType.fold(Ast())(m => Ast(NewModifier().modifierType(m).order(0)))
@@ -131,26 +183,28 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForEnumCaseParameterClauseSyntax(node: EnumCaseParameterClauseSyntax): Ast   = notHandledYet(node)
   private def astForEnumCaseParameterSyntax(node: EnumCaseParameterSyntax): Ast               = notHandledYet(node)
   private def astForExposeAttributeArgumentsSyntax(node: ExposeAttributeArgumentsSyntax): Ast = notHandledYet(node)
-  private def astForExpressionSegmentSyntax(node: ExpressionSegmentSyntax): Ast               = notHandledYet(node)
+
+  private def astForExpressionSegmentSyntax(node: ExpressionSegmentSyntax): Ast = {
+    astForNode(node.expressions)
+  }
+
   private def astForFunctionEffectSpecifiersSyntax(node: FunctionEffectSpecifiersSyntax): Ast = notHandledYet(node)
   private def astForFunctionParameterClauseSyntax(node: FunctionParameterClauseSyntax): Ast   = notHandledYet(node)
 
   private def astForFunctionParameterSyntax(node: FunctionParameterSyntax): Ast = {
     // TODO: handle attributes
     // TODO: handle modifiers
-    // TODO: handle secondName
     // TODO: handle ellipsis
     // TODO: handle defaultValue
-    val name = code(node.firstName)
+    val name = node.secondName.fold(code(node.firstName))(code)
     val tpe  = code(node.`type`)
     registerType(tpe)
     val parameterNode =
       parameterInNode(
         node,
         name,
-        code(node),
-        // TODO: check if we start with index 0 or 1
-        node.json("index").num.toInt,
+        code(node).stripSuffix(","),
+        node.json("index").num.toInt + 1,
         false,
         EvaluationStrategies.BY_VALUE,
         Option(tpe)
@@ -236,7 +290,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
         notHandledYet(wildcard)
         generateUnusedVariableName(usedVariableNames, "wildcard")
     }
-    val typeFullName = node.typeAnnotation.map(t => code(t.`type`)).getOrElse(Defines.Any)
+    val typeFullName = node.typeAnnotation.fold(Defines.Any)(t => code(t.`type`))
     val nLocalNode   = localNode(node, name, name, typeFullName).order(0)
     scope.addVariable(name, nLocalNode, scopeType)
     diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)

@@ -27,12 +27,7 @@ trait AstForTypeSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     notHandledYet(node)
 
   private def astForIdentifierTypeSyntax(node: IdentifierTypeSyntax): Ast = {
-    val name = code(node.name)
-    if (name != "Self") {
-      Ast(identifierNode(node, name, Seq(name)))
-    } else {
-      Ast(identifierNode(node, name))
-    }
+    Ast(identifierNode(node, code(node.name)))
   }
 
   private def astForImplicitlyUnwrappedOptionalTypeSyntax(node: ImplicitlyUnwrappedOptionalTypeSyntax): Ast =

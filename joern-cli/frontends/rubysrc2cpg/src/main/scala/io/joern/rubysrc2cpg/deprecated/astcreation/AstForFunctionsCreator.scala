@@ -15,7 +15,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 import scala.jdk.CollectionConverters.*
 
-trait AstForFunctionsCreator(packageContext: PackageContext)(implicit withSchemaValidation: ValidationMode) {
+trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -320,7 +320,7 @@ trait AstForFunctionsCreator(packageContext: PackageContext)(implicit withSchema
     val callArgs = astMethodParam
       .flatMap(_.root)
       .collect { case x: NewMethodParameterIn => x }
-      .map(param => Ast(createIdentifierWithScope(ctx, param.name, param.code, Defines.Any, Seq())))
+      .map(param => Ast(createIdentifierWithScope(ctx, param.name, param.code, Defines.Any, Seq(), true)))
 
     val procCallNode =
       callNode(

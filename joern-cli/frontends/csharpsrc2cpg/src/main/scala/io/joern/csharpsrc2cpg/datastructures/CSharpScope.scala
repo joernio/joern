@@ -13,8 +13,18 @@ class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeT
   /** @return
     *   the surrounding type declaration if one exists.
     */
-  def surroundingTypeDeclFullName: Option[String] = stack.collectFirst { case ScopeElement(TypeScope(fullName), _) =>
-    fullName
+  def surroundingTypeDeclFullName: Option[String] = stack.collectFirst {
+    case ScopeElement(typeLike: TypeLikeScope, _) =>
+      typeLike.fullName
+  }
+
+  def getFieldsInScope: List[FieldDecl] =
+    stack.collect { case ScopeElement(TypeScope(_, fields), _) => fields }.flatten.toList
+
+  /** Works for `this`.field accesses or <currentType>.field accesses.
+    */
+  def findFieldInScope(fieldName: String): Option[FieldDecl] = {
+    getFieldsInScope.find(_.name == fieldName)
   }
 
   /** @return
@@ -23,7 +33,8 @@ class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeT
   def surroundingScopeFullName: Option[String] = stack.collectFirst {
     case ScopeElement(NamespaceScope(fullName), _) => fullName
     case ScopeElement(MethodScope(fullName), _)    => fullName
-    case ScopeElement(TypeScope(fullName), _)      => fullName
+    case ScopeElement(TypeScope(fullName, _), _)   => fullName
+    case ScopeElement(typeLike: TypeLikeScope, _)  => typeLike.fullName
   }
 
   /** @return
@@ -31,7 +42,7 @@ class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeT
     */
   def isTopLevel: Boolean = stack
     .filterNot(x => x.scopeNode.isInstanceOf[NamespaceScope])
-    .exists(x => x.scopeNode.isInstanceOf[MethodScope] || x.scopeNode.isInstanceOf[TypeScope])
+    .exists(x => x.scopeNode.isInstanceOf[MethodScope] || x.scopeNode.isInstanceOf[TypeLikeScope])
 
   def tryResolveTypeReference(typeName: String): Option[String] = {
     typesInScope.find(_.name.endsWith(typeName)).flatMap(typeMap.namespaceFor).map(n => s"$n.$typeName")
@@ -54,6 +65,16 @@ class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeT
   def tryResolveMethodSignature(typeFullName: String, callName: String): Option[String] = {
     typesInScope.find(_.name.endsWith(typeFullName)).flatMap { t =>
       t.methods.find(_.name.endsWith(callName)).map { m => m.signature }
+    }
+  }
+  
+  def pushField(field: FieldDecl): Unit = {
+    popScope().foreach {
+      case TypeScope(fullName, fields) =>
+        pushNewScope(TypeScope(fullName, fields :+ field))
+      case x =>
+        pushField(field)
+        pushNewScope(x)
     }
   }
 
@@ -87,6 +108,16 @@ class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeT
         typeMap.classesIn(fullName).foreach(typesInScope.remove)
         Some(NamespaceScope(fullName))
       case x => x
+  }
+
+  /** Returns the top of the scope, without removing it from the stack.
+    */
+  def peekScope(): Option[ScopeType] = {
+    super.popScope() match
+      case None => None
+      case Some(top) =>
+        super.pushNewScope(top)
+        Option(top)
   }
 
 }

@@ -59,8 +59,8 @@ private class RecoverForSwiftFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder,
         builder.setNodeProperty(x, PropertyNames.TYPE_FULL_NAME, resolvedTypeHints.head)
     case x @ (_: Identifier | _: Local | _: MethodParameterIn) =>
       symbolTable.put(x, x.getKnownTypes)
-    case x: Call => symbolTable.put(x, (x.methodFullName +: x.dynamicTypeHintFullName).toSet)
-    case _       =>
+    case call: Call => symbolTable.put(call, (call.methodFullName +: call.dynamicTypeHintFullName).toSet)
+    case _          =>
   }
 
   override protected def prepopulateSymbolTable(): Unit = {
@@ -108,11 +108,13 @@ private class RecoverForSwiftFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder,
     val constructorPaths = if (c.methodFullName.endsWith(".alloc")) {
       def newChildren = c.inAssignment.astSiblings.isCall.nameExact("<operator>.new").astChildren
       val possibleImportIdentifier = newChildren.isIdentifier.headOption match {
-        case Some(i) => symbolTable.get(i)
-        case None    => Set.empty[String]
+        case Some(id) => symbolTable.get(id)
+        case None     => Set.empty[String]
       }
       lazy val possibleConstructorPointer =
-        newChildren.astChildren.isFieldIdentifier.map(f => CallAlias(f.canonicalName, Some("this"))).headOption match {
+        newChildren.astChildren.isFieldIdentifier
+          .map(f => CallAlias(f.canonicalName, Option("this")))
+          .headOption match {
           case Some(fi) => symbolTable.get(fi)
           case None     => Set.empty[String]
         }
@@ -128,10 +130,10 @@ private class RecoverForSwiftFile(cpg: Cpg, cu: File, builder: DiffGraphBuilder,
     operation match {
       case "<operator>.new" =>
         c.astChildren.l match {
-          case ::(fa: Call, ::(i: Identifier, _)) if fa.name == Operators.fieldAccess =>
+          case ::(fa: Call, ::(id: Identifier, _)) if fa.name == Operators.fieldAccess =>
             symbolTable.append(
               c,
-              visitIdentifierAssignedToFieldLoad(i, fa.asInstanceOf[FieldAccess]).map(t =>
+              visitIdentifierAssignedToFieldLoad(id, fa.asInstanceOf[FieldAccess]).map(t =>
                 s"$t$pathSep$ConstructorMethodName"
               )
             )
