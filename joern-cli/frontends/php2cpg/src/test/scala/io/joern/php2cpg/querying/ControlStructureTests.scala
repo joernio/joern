@@ -1052,6 +1052,36 @@ class ControlStructureTests extends PhpCode2CpgFixture {
     cpg.all.collectAll[Identifier].filter(node => Try(node.astParent).isFailure).toList shouldBe Nil
   }
 
+  "foreach statements referencing parameters in methods should not create parentless identifiers" in {
+    val cpg = code("""<?php
+                     |class Test {
+                     |  function test() {
+                     |    foreach($this as $x) {}
+                     |  }
+                     |}
+                     |""".stripMargin)
+    cpg.all.collectAll[Identifier].filter(node => Try(node.astParent).isFailure).toList shouldBe Nil
+  }
+
+  "foreach statements referencing regular parameters should not create parentless identifiers" in {
+    val cpg = code("""<?php
+                     |function test($values) {
+                     |  foreach($values as $x) {}
+                     |}
+                     |""".stripMargin)
+    cpg.all.collectAll[Identifier].filter(node => Try(node.astParent).isFailure).toList shouldBe Nil
+  }
+
+  "foreach statements referencing locals should not create parentless identifiers" in {
+    val cpg = code("""<?php
+                     |function test() {
+                     |  $values = 2;
+                     |  foreach($values as $x) {}
+                     |}
+                     |""".stripMargin)
+    cpg.all.collectAll[Identifier].filter(node => Try(node.astParent).isFailure).toList shouldBe Nil
+  }
+
   "foreach statements with only simple values should be represented as a for" in {
     val cpg = code("""<?php
      |function foo($arr) {
