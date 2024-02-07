@@ -25,6 +25,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     case node: FieldsDeclaration          => astsForFieldDeclarations(node)
     case node: MethodDeclaration          => astForMethodDeclaration(node) :: Nil
     case node: SingletonMethodDeclaration => astForSingletonMethodDeclaration(node) :: Nil
+    case node: MultipleAssignment         => node.assignments.map(astForExpression)
     case _                                => astForExpression(node) :: Nil
 
   private def astForWhileStatement(node: WhileExpression): Ast = {

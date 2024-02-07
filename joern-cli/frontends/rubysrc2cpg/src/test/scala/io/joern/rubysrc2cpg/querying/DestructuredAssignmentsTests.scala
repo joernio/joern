@@ -10,12 +10,10 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
   "simple destructuring of assignments" should {
 
     val cpg = code("""
-                    |
                     |a, b, c = 1, 2, 3
                     |""".stripMargin)
 
     "separate the assigments" in {
-
       inside(cpg.assignment.l) {
         case aAssignment :: bAssignment :: cAssignment :: Nil =>
           val List(a: Identifier, one: Literal) = aAssignment.argumentOut.toList: @unchecked
