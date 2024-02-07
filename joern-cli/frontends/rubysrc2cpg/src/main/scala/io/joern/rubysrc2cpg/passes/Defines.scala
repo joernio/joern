@@ -4,6 +4,7 @@ import io.joern.rubysrc2cpg.astcreation.GlobalTypes
 
 object Defines {
   val Any: String        = "ANY"
+  val Undefined: String  = "Undefined"
   val Object: String     = "Object"
   val NilClass: String   = "NilClass"
   val TrueClass: String  = "TrueClass"

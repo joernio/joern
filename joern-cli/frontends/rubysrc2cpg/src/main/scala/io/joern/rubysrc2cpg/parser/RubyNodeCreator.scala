@@ -19,7 +19,10 @@ import io.joern.rubysrc2cpg.parser.RubyParser.MultipleRightHandSideContext
   */
 class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
 
-  override def defaultResult(): RubyNode = Unknown()(TextSpan(None, None, None, None, ""))
+  private def defaultTextSpan(code: String = ""): TextSpan = TextSpan(None, None, None, None, code)
+
+  override def defaultResult(): RubyNode = Unknown()(defaultTextSpan())
+
   override protected def shouldVisitNextChild(node: RuleNode, currentResult: RubyNode): Boolean =
     currentResult.isInstanceOf[Unknown]
 
@@ -338,7 +341,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     val op = ctx.EQ().toString()
     // TODO: Handle grouping/ungrouping with splatting
     val assignments = lhsNodes
-      .zipAll(rhsNodes, defaultResult(), defaultResult())
+      .zipAll(rhsNodes, defaultResult(), Unknown()(defaultTextSpan(Defines.Undefined)))
       .map { case (lhs, rhs) => SingleAssignment(lhs, op, rhs)(ctx.toTextSpan) }
       .toList
     MultipleAssignment(assignments)(ctx.toTextSpan)

@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language.*
 
 class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
 
-  "simple destructuring of assignments" should {
+  "destructuring of a paired multi-assignment" should {
 
     val cpg = code("""
                     |a, b, c = 1, 2, 3
@@ -27,6 +27,25 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
           val List(c: Identifier, three: Literal) = cAssignment.argumentOut.toList: @unchecked
           c.name shouldBe "c"
           three.code shouldBe "3"
+        case _ => fail("Unexpected number of assignments found")
+      }
+
+    }
+
+  }
+
+  "destructuring of an unpaired multi-assignment biased to LHS" should {
+
+    val cpg = code("""
+                    |a, b, c, d = 1, 2, 3
+                    |""".stripMargin)
+
+    "separate the assigments into 3 and leave `d` undefined" in {
+      inside(cpg.assignment.l) {
+        case a :: b :: c :: Nil =>
+          a.code shouldBe "a, b, c, d = 1, 2, 3"
+          b.code shouldBe "a, b, c, d = 1, 2, 3"
+          c.code shouldBe "a, b, c, d = 1, 2, 3"
         case _ => fail("Unexpected number of assignments found")
       }
 
