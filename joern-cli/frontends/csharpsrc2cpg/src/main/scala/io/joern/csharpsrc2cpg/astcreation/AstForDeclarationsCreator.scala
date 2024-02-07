@@ -181,8 +181,6 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       None
     )
 
-    // TODO: Implement `fieldAccess` nodes.
-
     val initializerJson = varDecl.json(ParserKeys.Initializer)
     if (initializerJson.isNull) {
       // Implicitly assigned to `null`
