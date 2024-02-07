@@ -667,7 +667,7 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
         case PhpVariable(PhpNameExpr(name, _), _) =>
           val maybeDefaultValueAst = staticVarDecl.defaultValue.map(astForExpr)
 
-          val code         = s"static $name"
+          val code         = s"static $$$name"
           val typeFullName = maybeDefaultValueAst.flatMap(_.rootType).getOrElse(TypeConstants.Any)
 
           val local = localNode(stmt, name, code, maybeDefaultValueAst.flatMap(_.rootType).getOrElse(TypeConstants.Any))
@@ -677,7 +677,7 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
             val variableNode = identifierNode(stmt, name, s"$$$name", typeFullName)
             val variableAst  = Ast(variableNode).withRefEdge(variableNode, local)
 
-            val assignCode = s"static $code = ${defaultValue.rootCodeOrEmpty}"
+            val assignCode = s"$code = ${defaultValue.rootCodeOrEmpty}"
             val assignNode = newOperatorCallNode(Operators.assignment, assignCode, line = line(stmt))
 
             callAst(assignNode, variableAst :: defaultValue :: Nil)
