@@ -8,7 +8,9 @@ import org.scalatest.Inside
 
 class ProgramSummaryTests extends AnyWordSpec with Matchers with Inside {
 
-  /* // Reference for the summary
+  "a typed program summary based off of Java" should {
+
+    /* // Reference for the summary
 
     package io.joern;
 
@@ -18,17 +20,15 @@ class ProgramSummaryTests extends AnyWordSpec with Matchers with Inside {
         int bar(int x) ...
     }
 
-   */
+     */
 
-  val mockTyp = Typ(
-    "io.joern.Foo",
-    List(Method("bar", List(("x", "int"), ("y", "int")), "int"), Method("bar", List(("x", "int")), "int")),
-    List.empty
-  )
+    val mockTyp = Typ(
+      "io.joern.Foo",
+      List(Method("bar", List(("x", "int"), ("y", "int")), "int"), Method("bar", List(("x", "int")), "int")),
+      List.empty
+    )
 
-  val mockSummary = SummaryImpl(Map("io.joern" -> Set(mockTyp)))
-
-  "a typed program summary based off of Java" should {
+    val mockSummary = SummaryImpl(Map("io.joern" -> Set(mockTyp)))
 
     "provide the types within a given namespace" in {
       inside(mockSummary.typesUnderNamespace("io.joern").toList) {
@@ -46,10 +46,6 @@ class ProgramSummaryTests extends AnyWordSpec with Matchers with Inside {
         case Some(namespace) => namespace shouldBe "io.joern"
     }
 
-  }
-
-  "a typed scope" should {
-
     "not be able to resolve any types with no entries" in {
       val mockScope = DefaultTypedScope(summary = mockSummary)
       mockScope.size shouldBe 0
@@ -58,28 +54,60 @@ class ProgramSummaryTests extends AnyWordSpec with Matchers with Inside {
 
     "successfully resolve a type once the namespace scope is pushed" in {
       val mockScope = DefaultTypedScope(summary = mockSummary)
-      mockScope.pushNewScope(NamespaceTSEImpl("io.joern"))
-      mockScope.tryResolveTypeReference("Foo") match
+      mockScope.pushNewScope(NamespaceScope("io.joern"))
+      mockScope.tryResolveTypeReference("Foo") match {
         case None      => fail("Unable to resolve type!")
         case Some(typ) => typ.name shouldBe "io.joern.Foo"
+      }
     }
 
-    "unable to resolve a type once the namespace scope is popped and pushed off again" in {
+    "unable to resolve a type once the namespace scope is pushed and popped off again" in {
       val mockScope = DefaultTypedScope(summary = mockSummary)
-      mockScope.pushNewScope(NamespaceTSEImpl("io.joern"))
+      mockScope.pushNewScope(NamespaceScope("io.joern"))
       mockScope.popScope()
-      mockScope.tryResolveTypeReference("Foo") match
+      mockScope.tryResolveTypeReference("Foo") match {
         case None      => // correct behaviour
         case Some(typ) => fail("Type should no longer be on the stack!")
+      }
     }
 
   }
 
-  class SummaryImpl(initMap: Map[String, Set[Typ]]) extends ProgramSummary[Method, Field, Typ] {
+  "a typed program summary based off of Python" should {
+
+    /* # Reference for the summary
+
+     # foo.py:<module>
+
+     a = 2
+
+     */
+
+    val mockTyp = Typ("foo.py:<module>", List.empty, List(Field("a", "__builtin.int")))
+
+    val mockSummary = SummaryImpl(Map("foo.py" -> Set(mockTyp)))
+
+    "successfully resolve a module variable if its imported by a known module" in {
+      /*
+        from foo import *
+
+        println(a) # We are looking for where `a` is coming from
+       */
+      val mockScope = DefaultTypedScope(summary = mockSummary)
+      mockScope.addImportedMember("foo.py:<module>")
+      mockScope.tryResolveFieldAccess("a") match {
+        case None    => fail("Unable to resolve type!")
+        case Some(f) => f.name shouldBe "a"
+      }
+    }
+
+  }
+
+  class SummaryImpl(initMap: Map[String, Set[Typ]]) extends ProgramSummary[Typ] {
     override protected val namespaceToType = Map.from(initMap)
   }
 
-  case class NamespaceTSEImpl(fullName: String) extends NamespaceTSE
+  case class NamespaceScope(fullName: String) extends NamespaceLikeScope
 
   case class Method(name: String, parameterTypes: List[(String, String)], returnType: String) extends MethodLike
 
