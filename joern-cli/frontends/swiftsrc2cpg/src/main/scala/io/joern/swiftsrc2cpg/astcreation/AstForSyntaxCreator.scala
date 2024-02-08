@@ -21,7 +21,21 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   }
 
   private def astForAccessorEffectSpecifiersSyntax(node: AccessorEffectSpecifiersSyntax): Ast = notHandledYet(node)
-  private def astForAccessorParametersSyntax(node: AccessorParametersSyntax): Ast             = notHandledYet(node)
+
+  private def astForAccessorParametersSyntax(node: AccessorParametersSyntax): Ast = {
+    val name = code(node.name).stripSuffix(",")
+    val parameterNode =
+      parameterInNode(
+        node,
+        name,
+        code(node).stripSuffix(","),
+        node.json("index").num.toInt + 1,
+        false,
+        EvaluationStrategies.BY_VALUE
+      )
+    scope.addVariable(name, parameterNode, MethodScope)
+    Ast(parameterNode)
+  }
 
   private def astForArrayElementSyntax(node: ArrayElementSyntax): Ast = {
     astForNodeWithFunctionReference(node.expression)
@@ -43,7 +57,10 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     annotationAst(annotationNode(node, attributeCode, name, name), argumentAsts)
   }
 
-  private def astForAvailabilityArgumentSyntax(node: AvailabilityArgumentSyntax): Ast   = notHandledYet(node)
+  private def astForAvailabilityArgumentSyntax(node: AvailabilityArgumentSyntax): Ast = {
+    Ast(literalNode(node, code(node).stripSuffix(","), Option(Defines.String)))
+  }
+
   private def astForAvailabilityConditionSyntax(node: AvailabilityConditionSyntax): Ast = notHandledYet(node)
   private def astForAvailabilityLabeledArgumentSyntax(node: AvailabilityLabeledArgumentSyntax): Ast = notHandledYet(
     node
@@ -166,7 +183,11 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForEnumCaseParameterClauseSyntax(node: EnumCaseParameterClauseSyntax): Ast   = notHandledYet(node)
   private def astForEnumCaseParameterSyntax(node: EnumCaseParameterSyntax): Ast               = notHandledYet(node)
   private def astForExposeAttributeArgumentsSyntax(node: ExposeAttributeArgumentsSyntax): Ast = notHandledYet(node)
-  private def astForExpressionSegmentSyntax(node: ExpressionSegmentSyntax): Ast               = notHandledYet(node)
+
+  private def astForExpressionSegmentSyntax(node: ExpressionSegmentSyntax): Ast = {
+    astForNode(node.expressions)
+  }
+
   private def astForFunctionEffectSpecifiersSyntax(node: FunctionEffectSpecifiersSyntax): Ast = notHandledYet(node)
   private def astForFunctionParameterClauseSyntax(node: FunctionParameterClauseSyntax): Ast   = notHandledYet(node)
 

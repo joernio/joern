@@ -22,14 +22,49 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     case _                      => ""
   }
 
+  private def jumpTargetFromIfConfigClauseSyntax(node: IfConfigClauseSyntax): Seq[SwiftNode] = {
+    node.elements match {
+      case Some(value: CodeBlockItemListSyntax)   => value.children.map(_.item)
+      case Some(value: MemberBlockItemListSyntax) => value.children.map(_.decl)
+      case Some(value: SwitchCaseListSyntax)      => value.children
+      case Some(value: ExprSyntax)                => Seq(value)
+      case Some(value: AttributeListSyntax)       => value.children
+      case _                                      => Seq.empty
+    }
+  }
+
+  private def jumpTargetFromIfConfigDeclSyntax(node: IfConfigDeclSyntax): Seq[SwiftNode] = {
+    val children              = node.clauses.children
+    val ifIfConfigClauses     = children.filter(c => code(c.poundKeyword) == "#if")
+    val elseIfIfConfigClauses = children.filter(c => code(c.poundKeyword) == "#elseif")
+    val elseIfConfigClauses   = children.filter(c => code(c.poundKeyword) == "#else")
+    ifIfConfigClauses match {
+      case Nil => Seq.empty
+      case ifIfConfigClause :: Nil if ifConfigDeclConditionIsSatisfied(ifIfConfigClause) =>
+        jumpTargetFromIfConfigClauseSyntax(ifIfConfigClause)
+      case _ :: Nil =>
+        val firstElseIfSatisfied = elseIfIfConfigClauses.find(ifConfigDeclConditionIsSatisfied)
+        firstElseIfSatisfied match {
+          case Some(elseIfIfConfigClause) => jumpTargetFromIfConfigClauseSyntax(elseIfIfConfigClause)
+          case None =>
+            elseIfConfigClauses match {
+              case Nil                       => Seq.empty
+              case elseIfConfigClause :: Nil => jumpTargetFromIfConfigClauseSyntax(elseIfConfigClause)
+              case _                         => Seq.empty
+            }
+        }
+      case _ => Seq.empty
+    }
+  }
+
   protected def createJumpTarget(switchCase: SwitchCaseSyntax | IfConfigDeclSyntax): NewJumpTarget = {
     val (switchName, switchCode) = switchCase match {
       case s: SwitchCaseSyntax =>
         val c = code(s.label)
         (c.stripSuffix(":"), c)
       case i: IfConfigDeclSyntax =>
-        notHandledYet(i)
-        val c = code(i.clauses.children.head)
+        val elements = jumpTargetFromIfConfigDeclSyntax(i)
+        val c        = elements.headOption.fold(code(i.clauses.children.head))(code)
         (c.stripSuffix(":"), c)
     }
     NewJumpTarget()

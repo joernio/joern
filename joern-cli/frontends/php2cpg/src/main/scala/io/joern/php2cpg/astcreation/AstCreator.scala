@@ -542,7 +542,6 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
   }
 
   private def astForForeachStmt(stmt: PhpForeachStmt): Ast = {
-    val iteratorAst    = astForExpr(stmt.iterExpr)
     val iterIdentifier = getTmpIdentifier(stmt, maybeTypeFullName = None, prefix = "iter_")
 
     val assignItemTargetAst = stmt.keyVar match {
@@ -592,7 +591,7 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
     val bodyAst = stmtBodyBlockAst(stmt)
 
     val ampPrefix   = if (stmt.assignByRef) "&" else ""
-    val foreachCode = s"foreach (${iteratorAst.rootCodeOrEmpty} as $ampPrefix${assignItemTargetAst.rootCodeOrEmpty})"
+    val foreachCode = s"foreach (${iterValue.rootCodeOrEmpty} as $ampPrefix${assignItemTargetAst.rootCodeOrEmpty})"
     val foreachNode = controlStructureNode(stmt, ControlStructureTypes.FOR, foreachCode)
     Ast(foreachNode)
       .withChild(wrapMultipleInBlock(iteratorAssignAst :: itemInitAst :: Nil, line(stmt)))
@@ -664,29 +663,32 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
 
   private def astsForStaticStmt(stmt: PhpStaticStmt): List[Ast] = {
     stmt.vars.flatMap { staticVarDecl =>
-      val variableAst   = astForVariableExpr(staticVarDecl.variable)
-      val maybeValueAst = staticVarDecl.defaultValue.map(astForExpr)
+      staticVarDecl.variable match {
+        case PhpVariable(PhpNameExpr(name, _), _) =>
+          val maybeDefaultValueAst = staticVarDecl.defaultValue.map(astForExpr)
 
-      val code = variableAst.rootCode.getOrElse(NameConstants.Unknown)
-      val name = variableAst.root match {
-        case Some(identifier: NewIdentifier) => identifier.name
-        case _                               => code
+          val code         = s"static $$$name"
+          val typeFullName = maybeDefaultValueAst.flatMap(_.rootType).getOrElse(TypeConstants.Any)
+
+          val local = localNode(stmt, name, code, typeFullName)
+          scope.addToScope(local.name, local)
+
+          val assignmentAst = maybeDefaultValueAst.map { defaultValue =>
+            val variableNode = identifierNode(stmt, name, s"$$$name", typeFullName)
+            val variableAst  = Ast(variableNode).withRefEdge(variableNode, local)
+
+            val assignCode = s"$code = ${defaultValue.rootCodeOrEmpty}"
+            val assignNode = newOperatorCallNode(Operators.assignment, assignCode, line = line(stmt))
+
+            callAst(assignNode, variableAst :: defaultValue :: Nil)
+          }
+
+          Ast(local) :: assignmentAst.toList
+
+        case other =>
+          logger.warn(s"Unexpected static variable type ${other} in $filename")
+          Nil
       }
-
-      val local = localNode(stmt, name, s"static $code", variableAst.rootType.getOrElse(TypeConstants.Any))
-      scope.addToScope(local.name, local)
-
-      variableAst.root.collect { case identifier: NewIdentifier =>
-        diffGraph.addEdge(identifier, local, EdgeTypes.REF)
-      }
-
-      val defaultAssignAst = maybeValueAst.map { valueAst =>
-        val valueCode  = s"static $code = ${valueAst.rootCodeOrEmpty}"
-        val assignNode = newOperatorCallNode(Operators.assignment, valueCode, line = line(stmt))
-        callAst(assignNode, variableAst :: valueAst :: Nil)
-      }
-
-      Ast(local) :: defaultAssignAst.toList
     }
   }
 
@@ -906,7 +908,7 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
 
     val stmtAsts = caseStmt.stmts.flatMap(astsForStmt)
 
-    Ast(jumpTarget) :: stmtAsts
+    Ast(jumpTarget) :: maybeConditionAst.toList ++ stmtAsts
   }
 
   private def codeForMethodCall(call: PhpCallExpr, targetAst: Ast, name: String): String = {
@@ -1027,11 +1029,9 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
   private def astForNameExpr(expr: PhpNameExpr): Ast = {
     val identifier = identifierNode(expr, expr.name, expr.name, TypeConstants.Any)
 
-    scope.lookupVariable(identifier.name).foreach { declaringNode =>
-      diffGraph.addEdge(identifier, declaringNode, EdgeTypes.REF)
-    }
+    val declaringNode = scope.lookupVariable(identifier.name)
 
-    Ast(identifier)
+    Ast(identifier).withRefEdges(identifier, declaringNode.toList)
   }
 
   /** This is used to rewrite the short form $xs[] = <value_expr> as array_push($xs, <value_expr>) to avoid having to
@@ -1341,22 +1341,21 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
   }
 
   private def astsForMatchArm(matchArm: PhpMatchArm): List[Ast] = {
-    // TODO Don't just throw away the condition asts here (also for switch cases)
-    val targets = matchArm.conditions.map { condition =>
+    val targetAsts = matchArm.conditions.flatMap { condition =>
       val conditionAst = astForExpr(condition)
       // In PHP cases aren't labeled with `case`, but this is used by the CFG creator to differentiate between
       // case/default labels and other labels.
-      val code = s"case ${conditionAst.rootCode.getOrElse(NameConstants.Unknown)}"
-      NewJumpTarget().name(code).code(code).lineNumber(line(condition))
+      val code          = s"case ${conditionAst.rootCode.getOrElse(NameConstants.Unknown)}"
+      val jumpTargetAst = Ast(NewJumpTarget().name(code).code(code).lineNumber(line(condition)))
+      jumpTargetAst :: conditionAst :: Nil
     }
     val defaultLabel = Option.when(matchArm.isDefault)(
-      NewJumpTarget().name(NameConstants.Default).code(NameConstants.Default).lineNumber(line(matchArm))
+      Ast(NewJumpTarget().name(NameConstants.Default).code(NameConstants.Default).lineNumber(line(matchArm)))
     )
-    val targetAsts = (targets ++ defaultLabel.toList).map(Ast(_))
 
     val bodyAst = astForExpr(matchArm.body)
 
-    targetAsts :+ bodyAst
+    targetAsts ++ defaultLabel :+ bodyAst
   }
 
   private def astForYieldExpr(expr: PhpYieldExpr): Ast = {
@@ -1383,23 +1382,18 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
     val methodRef  = methodRefNode(closureExpr, methodName, methodName, TypeConstants.Any)
 
     val localsForUses = closureExpr.uses.flatMap { closureUse =>
-      val variableAst = astForExpr(closureUse.variable)
-      val codePref    = if (closureUse.byRef) "&" else ""
+      closureUse.variable match {
+        case PhpVariable(PhpNameExpr(name, _), _) =>
+          val typeFullName = scope
+            .lookupVariable(name)
+            .flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME).map(_.toString))
+            .getOrElse(TypeConstants.Any)
+          val byRefPrefix = if (closureUse.byRef) "&" else ""
 
-      variableAst.root match {
-        case Some(identifier: NewIdentifier) =>
-          // This is the expected case and is handled well
-          Some(localNode(closureExpr, identifier.name, codePref ++ identifier.code, TypeConstants.Any))
-        case Some(expr: ExpressionNew) =>
-          // Results here may be bad, but its' the best we're likely to do
-          Some(localNode(closureExpr, expr.code, codePref ++ expr.code, TypeConstants.Any))
-        case Some(other) =>
-          // This should never happen
-          logger.warn(s"Found ast '$other' for closure use in $filename")
-          None
-        case None =>
-          // This should never happen
-          logger.warn(s"Found empty ast for closure use in $filename")
+          Some(localNode(closureExpr, name, s"$byRefPrefix$$$name", typeFullName))
+
+        case other =>
+          logger.warn(s"Found incorrect closure use variable '$other' in $filename")
           None
       }
     }
@@ -1652,7 +1646,6 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
   }
 
   private def astForMagicClassConstant(expr: PhpClassConstFetchExpr): Ast = {
-    val classAst = astForExpr(expr.className)
     val typeFullName = expr.className match {
       case nameExpr: PhpNameExpr =>
         scope
@@ -1661,10 +1654,11 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
           .getOrElse(nameExpr.name)
 
       case expr =>
-        classAst.rootType.orElse(classAst.rootName).getOrElse(UnresolvedNamespace)
+        logger.warn(s"Unexpected expression as class name in <class>::class expression: $filename")
+        NameConstants.Unknown
     }
 
-    Ast(typeRefNode(expr, classAst.rootCodeOrEmpty, typeFullName))
+    Ast(typeRefNode(expr, s"$typeFullName::class", typeFullName))
   }
 
   private def astForClassConstFetchExpr(expr: PhpClassConstFetchExpr): Ast = {
