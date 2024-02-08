@@ -18,6 +18,7 @@ import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.{
   IfStatement,
   JumpStatement,
   LiteralExpr,
+  ReturnStatement,
   SwitchStatement,
   ThrowStatement,
   TryStatement,
@@ -198,6 +199,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case BreakStatement    => Seq(Ast(controlStructureNode(jumpStmt, ControlStructureTypes.BREAK, jumpStmt.code)))
       case ContinueStatement => Seq(Ast(controlStructureNode(jumpStmt, ControlStructureTypes.CONTINUE, jumpStmt.code)))
       case GotoStatement     => astForGotoStatement(jumpStmt)
+      case ReturnStatement   => astForReturnStatement(jumpStmt)
       case _                 => Seq.empty
   }
 
@@ -209,5 +211,14 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val gotoAst = Ast(controlStructureNode(gotoStmt, ControlStructureTypes.GOTO, gotoStmt.code))
 
     identifierAst :+ gotoAst
+  }
+
+  private def astForReturnStatement(returnStmt: DotNetNodeInfo): Seq[Ast] = {
+    val identifierAst = Option(returnStmt.json(ParserKeys.Expression)) match {
+      case Some(value: ujson.Obj) => astForNode(createDotNetNodeInfo(value))
+      case _                      => Seq.empty
+    }
+    val _returnNode = returnNode(returnStmt, returnStmt.code)
+    Seq(returnAst(_returnNode, identifierAst))
   }
 }

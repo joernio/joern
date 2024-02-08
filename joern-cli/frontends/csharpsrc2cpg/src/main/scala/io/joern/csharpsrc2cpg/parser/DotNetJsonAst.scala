@@ -196,6 +196,8 @@ object DotNetJsonAst {
 
   object GotoStatement extends JumpStatement
 
+  object ReturnStatement extends JumpStatement
+
   object Unknown extends DotNetParserNode
 
 }

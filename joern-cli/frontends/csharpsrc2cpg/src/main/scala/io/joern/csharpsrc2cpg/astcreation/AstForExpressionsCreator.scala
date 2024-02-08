@@ -98,11 +98,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   private def astForInvocationExpression(invocationExpr: DotNetNodeInfo): Seq[Ast] = {
     val dispatchType = DispatchTypes.STATIC_DISPATCH // TODO
-    val typeFullName = None                          // TODO: Return type of the call
     val arguments    = astForArgumentList(createDotNetNodeInfo(invocationExpr.json(ParserKeys.ArgumentList)))
     val argString =
       s"${arguments.flatMap(_.root).collect { case x: NewMethodParameterIn => x.typeFullName }.mkString(",")}"
-    val signature = Option(s"${typeFullName.getOrElse(Defines.Any)}:($argString)")
 
     val expression = createDotNetNodeInfo(invocationExpr.json(ParserKeys.Expression))
     val name       = nameFromNode(expression)
@@ -112,18 +110,46 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         val baseNode = createDotNetNodeInfo(
           createDotNetNodeInfo(invocationExpr.json(ParserKeys.Expression)).json(ParserKeys.Expression)
         )
+
         val baseIdentifier =
-          identifierNode(baseNode, nameFromNode(baseNode), code(baseNode), nodeTypeFullName(baseNode))
-        (Option(Ast(baseIdentifier)), Option(baseIdentifier.typeFullName))
+          astForIdentifier(baseNode)
+        val _typeFullName = getTypeFullNameFromAstNode(Seq(baseIdentifier))
+
+        if (_typeFullName.isEmpty) {
+          val _identifierNode =
+            identifierNode(baseNode, nameFromNode(baseNode), code(baseNode), nodeTypeFullName(baseNode))
+          (Option(Ast(_identifierNode)), Option(_identifierNode.typeFullName))
+        } else {
+          (Option(baseIdentifier), Option(_typeFullName))
+        }
       case _ => (None, None)
 
-    // TODO: Handle signature
-    val methodFullName = baseTypeFullName match
+    val partialFullName = baseTypeFullName match
       case Some(typeFullName) => s"$typeFullName.$name"
-      case None               => s"${Defines.UnresolvedNamespace}.$name"
+      case _ =>
+        s"${Defines.UnresolvedNamespace}.$name"
+
+    val returnType =
+      scope.tryResolveMethodReturn(baseTypeFullName.getOrElse(scope.surroundingTypeDeclFullName.getOrElse("")), name);
+
+    val signature = scope
+      .tryResolveMethodSignature(baseTypeFullName.getOrElse(scope.surroundingTypeDeclFullName.getOrElse("")), name)
+      .getOrElse(Defines.UnresolvedSignature)
+    val typeFullName = returnType.getOrElse(Defines.Any);
+
+    val methodFullName =
+      s"$partialFullName:${returnType.getOrElse(Defines.Unknown)}(${signature})"
 
     val _callAst = callAst(
-      callNode(invocationExpr, code(invocationExpr), name, methodFullName, dispatchType, signature, typeFullName),
+      callNode(
+        invocationExpr,
+        code(invocationExpr),
+        name,
+        methodFullName,
+        dispatchType,
+        Option(signature),
+        Option(typeFullName)
+      ),
       arguments,
       receiver
     )

@@ -166,32 +166,43 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   protected def astForVariableDeclarator(varDecl: DotNetNodeInfo, typeFullName: String): Seq[Ast] = {
+    // Create RHS AST first to propagate types
+    val initializerJson = varDecl.json(ParserKeys.Initializer)
+    val rhs             = if (!initializerJson.isNull) astForNode(createDotNetNodeInfo(initializerJson)) else Seq.empty
+    val rhsTypeFullName =
+      if (typeFullName == Defines.Any || typeFullName == "var") getTypeFullNameFromAstNode(rhs) else typeFullName
+
     val name          = nameFromNode(varDecl)
-    val identifierAst = astForIdentifier(varDecl, typeFullName)
-    val _localNode    = localNode(varDecl, name, name, typeFullName)
+    val identifierAst = astForIdentifier(varDecl, rhsTypeFullName)
+    val _localNode    = localNode(varDecl, name, name, rhsTypeFullName)
     val localNodeAst  = Ast(_localNode)
     scope.addToScope(name, _localNode)
-    val assignmentNode = callNode(
-      varDecl,
-      code(varDecl),
-      Operators.assignment,
-      Operators.assignment,
-      DispatchTypes.STATIC_DISPATCH,
-      None,
-      None
-    )
-
-    // TODO: Implement `fieldAccess` nodes.
-
-    val initializerJson = varDecl.json(ParserKeys.Initializer)
     if (initializerJson.isNull) {
+      val assignmentNode = callNode(
+        varDecl,
+        code(varDecl),
+        Operators.assignment,
+        Operators.assignment,
+        DispatchTypes.STATIC_DISPATCH,
+        None,
+        None
+      )
       // Implicitly assigned to `null`
       Seq(
         callAst(assignmentNode, Seq(identifierAst, Ast(literalNode(varDecl, BuiltinTypes.Null, BuiltinTypes.Null)))),
         localNodeAst
       )
     } else {
-      val rhs = astForNode(createDotNetNodeInfo(initializerJson))
+      val assignmentNode = callNode(
+        varDecl,
+        code(varDecl),
+        Operators.assignment,
+        Operators.assignment,
+        DispatchTypes.STATIC_DISPATCH,
+        None,
+        Some(rhsTypeFullName)
+      )
+
       Seq(callAst(assignmentNode, identifierAst +: rhs), localNodeAst)
     }
   }
@@ -268,7 +279,10 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       .zipWithIndex
       .map(astForParameter)
       .toSeq
-    val methodReturn = nodeToMethodReturn(createDotNetNodeInfo(methodDecl.json(ParserKeys.ReturnType)))
+
+    val methodReturnNode = createDotNetNodeInfo(methodDecl.json(ParserKeys.ReturnType))
+    val methodReturnStr  = nodeTypeFullName(methodReturnNode)
+    val methodReturn     = nodeToMethodReturn(methodReturnNode)
     val signature =
       methodSignature(methodReturn, params.flatMap(_.nodes.collectFirst { case x: NewMethodParameterIn => x }))
     val fullName    = s"${astFullName(methodDecl)}:$signature"
