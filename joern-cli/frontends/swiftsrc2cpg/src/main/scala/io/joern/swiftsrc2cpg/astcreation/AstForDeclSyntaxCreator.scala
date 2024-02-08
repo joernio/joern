@@ -41,23 +41,20 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       ActorDeclSyntax | TypeAliasDeclSyntax,
     withConstructor: Boolean = true
   ): Seq[DeclSyntax] = {
-    if (decl.isInstanceOf[TypeAliasDeclSyntax]) {
-      Seq.empty
+    val memberBlock = decl match {
+      case c: ClassDeclSyntax     => Option(c.memberBlock)
+      case e: ExtensionDeclSyntax => Option(e.memberBlock)
+      case p: ProtocolDeclSyntax  => Option(p.memberBlock)
+      case s: StructDeclSyntax    => Option(s.memberBlock)
+      case e: EnumDeclSyntax      => Option(e.memberBlock)
+      case a: ActorDeclSyntax     => Option(a.memberBlock)
+      case _: TypeAliasDeclSyntax => None
+    }
+    val allMembers = memberBlock.map(_.members.children.map(_.decl)).getOrElse(Seq.empty)
+    if (withConstructor) {
+      allMembers
     } else {
-      val memberBlock = decl match {
-        case c: ClassDeclSyntax     => c.memberBlock
-        case e: ExtensionDeclSyntax => e.memberBlock
-        case p: ProtocolDeclSyntax  => p.memberBlock
-        case s: StructDeclSyntax    => s.memberBlock
-        case e: EnumDeclSyntax      => e.memberBlock
-        case a: ActorDeclSyntax     => a.memberBlock
-      }
-      val allMembers = memberBlock.members.children.map(_.decl)
-      if (withConstructor) {
-        allMembers
-      } else {
-        allMembers.filterNot(isConstructor)
-      }
+      allMembers.filterNot(isConstructor)
     }
   }
 
