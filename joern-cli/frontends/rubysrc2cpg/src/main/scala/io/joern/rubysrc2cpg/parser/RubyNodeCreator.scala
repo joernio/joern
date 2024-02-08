@@ -326,6 +326,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   override def visitMultipleAssignmentStatement(ctx: RubyParser.MultipleAssignmentStatementContext): RubyNode = {
     val lhsNodes = Option(ctx.multipleLeftHandSide())
       .map(visit)
+      .orElse(Option(ctx.leftHandSide()).map(visit).map(node => SplattingRubyNode(node)(node.span)))
       .getOrElse(defaultResult()) match {
       case x: StatementList => x.statements
       case x                => List(x)

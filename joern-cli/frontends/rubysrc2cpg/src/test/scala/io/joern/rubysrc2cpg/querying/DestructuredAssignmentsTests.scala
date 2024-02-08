@@ -173,6 +173,32 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
 
     }
 
+    "create an array for the LHS variable implicitly slurping the RHS" in {
+      val cpg = code("""
+                |a = 1, 2, 3, 4
+                |""".stripMargin)
+
+      inside(cpg.assignment.l) {
+        case aAssignment :: Nil =>
+          aAssignment.code shouldBe "a = 1, 2, 3, 4"
+
+          val List(a: Identifier, arr: Call) = aAssignment.argumentOut.toList: @unchecked
+          a.name shouldBe "a"
+          arr.name shouldBe Operators.arrayInitializer
+          inside(arr.argumentOut.l) {
+            case (one: Literal) :: (two: Literal) :: (three: Literal) :: (four: Literal) :: Nil =>
+              one.code shouldBe "1"
+              two.code shouldBe "2"
+              three.code shouldBe "3"
+              four.code shouldBe "4"
+            case _ => fail("Unexpected number of array elements in `a`'s assignment")
+          }
+
+        case _ => fail("Unexpected number of assignments found")
+      }
+
+    }
+
   }
 
 }
