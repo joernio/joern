@@ -3,8 +3,9 @@ package io.joern.csharpsrc2cpg.astcreation
 import io.joern.csharpsrc2cpg.CSharpOperators
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.{IdentifierNode, *}
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
+import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newOperatorCallNode}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.NewMethodParameterIn
+import io.shiftleft.codepropertygraph.generated.nodes.{NewFieldIdentifier, NewMethodParameterIn}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -83,6 +84,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         logger.warn(s"Unhandled operator '$x' for ${code(binaryExpr)}")
         CSharpOperators.unknown
 
+    // TODO: Handle implicit member access e.g. b=1
     val args = astForNode(binaryExpr.json(ParserKeys.Left)) ++: astForNode(binaryExpr.json(ParserKeys.Right))
     val cNode =
       createCallNodeForOperator(binaryExpr, operatorName, typeFullName = Some(getTypeFullNameFromAstNode(args)))
@@ -154,6 +156,41 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       receiver
     )
     Seq(_callAst)
+  }
+
+  protected def astForSimpleMemberAccessExpression(accessExpr: DotNetNodeInfo): Seq[Ast] = {
+    val fieldIdentifierName = nameFromNode(accessExpr)
+
+    val fieldInScope = scope.findFieldInScope(fieldIdentifierName)
+
+    val typeFullName = fieldInScope.map(_.typeFullName).getOrElse(Defines.Any)
+    val identifierName =
+      if (fieldInScope.nonEmpty && fieldInScope.get.isStatic) scope.surroundingTypeDeclFullName.getOrElse(Defines.Any)
+      else "this"
+
+    val identifier = newIdentifierNode(identifierName, typeFullName)
+
+    val fieldIdentifier = NewFieldIdentifier()
+      .code(fieldIdentifierName)
+      .canonicalName(fieldIdentifierName)
+      .lineNumber(accessExpr.lineNumber)
+      .columnNumber(accessExpr.columnNumber)
+
+    val fieldAccessCode = s"$identifierName.$fieldIdentifierName"
+
+    val fieldAccess =
+      newOperatorCallNode(
+        Operators.fieldAccess,
+        fieldAccessCode,
+        Some(typeFullName).orElse(Some(Defines.Any)),
+        accessExpr.lineNumber,
+        accessExpr.columnNumber
+      )
+
+    val identifierAst = Ast(identifier)
+    val fieldIdentAst = Ast(fieldIdentifier)
+
+    Seq(callAst(fieldAccess, Seq(identifierAst, fieldIdentAst)))
   }
 
   def astForObjectCreationExpression(objectCreation: DotNetNodeInfo): Seq[Ast] = {

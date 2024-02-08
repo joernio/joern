@@ -152,6 +152,8 @@ object DotNetJsonAst {
 
   object SimpleMemberAccessExpression extends MemberAccessExpr
 
+  object ThisExpression extends MemberAccessExpr
+
   object IfStatement extends BaseStmt
 
   object ElseClause extends ClauseExpr

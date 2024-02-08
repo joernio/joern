@@ -124,9 +124,6 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   protected def astForFieldDeclaration(fieldDecl: DotNetNodeInfo): Seq[Ast] = {
-    val declarationNode = createDotNetNodeInfo(fieldDecl.json(ParserKeys.Declaration))
-    val declAsts        = astForVariableDeclaration(declarationNode)
-
     val isStatic = fieldDecl
       .json(ParserKeys.Modifiers)
       .arr
@@ -135,15 +132,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       .collectFirst { case x: NewModifier => x.modifierType }
       .contains(ModifierTypes.STATIC)
 
-    declarationNode
-      .json(ParserKeys.Variables)
-      .arr
-      .map(createDotNetNodeInfo)
-      .foreach(x => {
-        val name    = nameFromNode(x)
-        val hasInit = !x.json(ParserKeys.Initializer).isNull
-        scope.pushField(FieldDecl(name, isStatic, hasInit, x))
-      })
+    val declarationNode = createDotNetNodeInfo(fieldDecl.json(ParserKeys.Declaration))
+    val declAsts        = astForVariableDeclaration(declarationNode, isStatic)
 
     val memberNodes = declAsts
       .flatMap(_.nodes.collectFirst { case x: NewIdentifier => x })
@@ -153,6 +143,21 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
   protected def astForLocalDeclarationStatement(localDecl: DotNetNodeInfo): Seq[Ast] = {
     astForVariableDeclaration(createDotNetNodeInfo(localDecl.json(ParserKeys.Declaration)))
+  }
+
+  protected def astForVariableDeclaration(varDecl: DotNetNodeInfo, isStatic: Boolean): Seq[Ast] = {
+    val typeFullName = nodeTypeFullName(varDecl)
+    varDecl
+      .json(ParserKeys.Variables)
+      .arr
+      .map(createDotNetNodeInfo)
+      .flatMap(x => {
+        val name    = nameFromNode(x)
+        val hasInit = !x.json(ParserKeys.Initializer).isNull
+        scope.pushField(FieldDecl(name, typeFullName, isStatic, hasInit, x))
+        astForVariableDeclarator(x, typeFullName)
+      })
+      .toSeq
   }
 
   protected def astForVariableDeclaration(varDecl: DotNetNodeInfo): Seq[Ast] = {
@@ -387,7 +392,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   protected def astVariableDeclarationForInitializedFields(fieldDecls: Seq[FieldDecl]): Seq[Ast] = {
-    fieldDecls.filter(_.isInitialized).flatMap { case FieldDecl(name, _, isInitialized, node) =>
+    fieldDecls.filter(_.isInitialized).flatMap { case FieldDecl(name, typeFullName, _, isInitialized, node) =>
       astForVariableDeclarator(node, nodeTypeFullName(node))
     }
   }

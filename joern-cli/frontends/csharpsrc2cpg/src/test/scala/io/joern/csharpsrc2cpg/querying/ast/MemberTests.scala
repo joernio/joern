@@ -2,7 +2,8 @@ package io.joern.csharpsrc2cpg.querying.ast
 
 import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.ModifierTypes
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.semanticcpg.language.*
 
 class MemberTests extends CSharpCode2CpgFixture {
@@ -166,6 +167,76 @@ class MemberTests extends CSharpCode2CpgFixture {
             case _ => fail("Exactly 2 parameters expected for constructor")
           }
         case _ => fail("`Car` has no constructor initializer method")
+      }
+    }
+  }
+
+  "a basic class declaration with a static constructor and explicit fieldAccess" should {
+    val cpg = code(
+      """public class Car
+        |{
+        |  string color;                // field
+        |  static int maxSpeed = 200;   // field
+        |  static int nonInitMaxSpeed;  // field
+        |
+        |  static Car() { // static constructor
+        |     this.nonInitMaxSpeed = 2000;
+        |  }
+        |
+        |  public Car() {
+        |     this.color = "red";
+        |  }
+        |}
+        |""".stripMargin,
+      "Car.cs"
+    )
+
+    "generate one static constructor" in {
+      inside(cpg.typeDecl.nameExact("Car").method.nameExact(Defines.StaticInitMethodName).l) {
+        case m :: Nil =>
+          inside(m.body.astChildren.isCall.l) {
+            case staticImplicit :: staticExplicit :: Nil =>
+              staticExplicit.methodFullName shouldBe Operators.assignment
+              staticExplicit.code shouldBe "this.nonInitMaxSpeed = 2000"
+
+              inside(staticExplicit.argument.fieldAccess.l) {
+                case fieldAccess :: Nil =>
+                  fieldAccess.methodFullName shouldBe Operators.fieldAccess
+                  fieldAccess.code shouldBe "Car.nonInitMaxSpeed"
+                  fieldAccess.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+                  fieldAccess.typeFullName shouldBe "System.Int32"
+
+                case res => fail("Expected fieldAccess for explicit `this` member access")
+              }
+
+              staticImplicit.methodFullName shouldBe Operators.assignment
+              staticImplicit.code shouldBe "maxSpeed = 200"
+
+            case res => fail("Expected 2 static calls")
+          }
+        case _ => fail("`Car` has no static initializer method")
+      }
+    }
+
+    "generate one constructor with correct field access" in {
+      inside(cpg.typeDecl.nameExact("Car").method.nameExact(Defines.ConstructorMethodName).l) {
+        case m :: Nil =>
+          inside(m.body.astChildren.isCall.l) {
+            case explicitFieldAccess :: Nil =>
+              explicitFieldAccess.methodFullName shouldBe Operators.assignment
+              explicitFieldAccess.code shouldBe "this.color = \"red\""
+
+              inside(explicitFieldAccess.argument.fieldAccess.l) {
+                case fieldAccessNode :: Nil =>
+                  fieldAccessNode.methodFullName shouldBe Operators.fieldAccess
+                  fieldAccessNode.code shouldBe "this.color"
+                  fieldAccessNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+                  fieldAccessNode.typeFullName shouldBe "System.String"
+                case res => fail("Only expected one field access")
+              }
+            case res => fail("Only expected one field access in constructor")
+          }
+        case _ => fail("`Car` has no constructor")
       }
     }
   }
