@@ -403,7 +403,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
     assert(expr.getSubjectExpression == null)
 
     val typeFullName = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
-    var elseAst: Ast = null
+    var elseAst: Ast = Ast() // Initialize this as `Ast()` instead of `null`, as there is no guarantee of else block
 
     // In reverse order than expr.getEntries since that is the order
     // we need for nested Operators.conditional construction.
@@ -424,8 +424,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
           elseAst = newElseAst
         case None =>
           // This is the 'else' branch of 'when'.
-          // No argument 'when' always have an 'else branch which comes last
-          // and thus first in reverse order.
+          // and thus first in reverse order, if exists
           elseAst = astsForExpression(entry.getExpression, None).head
       }
     }
