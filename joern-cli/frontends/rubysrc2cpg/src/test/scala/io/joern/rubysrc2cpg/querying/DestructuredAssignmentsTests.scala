@@ -13,9 +13,13 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
                     |a, b, c = 1, 2, 3
                     |""".stripMargin)
 
-    "separate the assigments" in {
+    "separate the assigments into three separate assignment nodes" in {
       inside(cpg.assignment.l) {
         case aAssignment :: bAssignment :: cAssignment :: Nil =>
+          aAssignment.code shouldBe "a, b, c = 1, 2, 3"
+          bAssignment.code shouldBe "a, b, c = 1, 2, 3"
+          cAssignment.code shouldBe "a, b, c = 1, 2, 3"
+
           val List(a: Identifier, one: Literal) = aAssignment.argumentOut.toList: @unchecked
           a.name shouldBe "a"
           one.code shouldBe "1"
@@ -42,10 +46,22 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
 
     "separate the assigments into 3 and leave `d` undefined" in {
       inside(cpg.assignment.l) {
-        case a :: b :: c :: Nil =>
-          a.code shouldBe "a, b, c, d = 1, 2, 3"
-          b.code shouldBe "a, b, c, d = 1, 2, 3"
-          c.code shouldBe "a, b, c, d = 1, 2, 3"
+        case aAssignment :: bAssignment :: cAssignment :: Nil =>
+          aAssignment.code shouldBe "a, b, c, d = 1, 2, 3"
+          bAssignment.code shouldBe "a, b, c, d = 1, 2, 3"
+          cAssignment.code shouldBe "a, b, c, d = 1, 2, 3"
+
+          val List(a: Identifier, one: Literal) = aAssignment.argumentOut.toList: @unchecked
+          a.name shouldBe "a"
+          one.code shouldBe "1"
+
+          val List(b: Identifier, two: Literal) = bAssignment.argumentOut.toList: @unchecked
+          b.name shouldBe "b"
+          two.code shouldBe "2"
+
+          val List(c: Identifier, three: Literal) = cAssignment.argumentOut.toList: @unchecked
+          c.name shouldBe "c"
+          three.code shouldBe "3"
         case _ => fail("Unexpected number of assignments found")
       }
 
