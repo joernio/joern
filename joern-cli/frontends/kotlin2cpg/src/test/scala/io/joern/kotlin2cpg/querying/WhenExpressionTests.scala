@@ -91,6 +91,28 @@ class WhenExpressionTests extends KotlinCode2CpgFixture(withOssDataflow = false)
     }
   }
 
+  "CPG for code with `when` without `argument` and without `else` block" should {
+    "be able to generate cpg" in {
+      val cpg = code("""
+          |package mypkg
+          |
+          |fun main() {
+          |    val number = 5
+          |
+          |    when {
+          |        number == 1 -> println("Number is 1")
+          |        number == 2 -> println("Number is 2")
+          |        number == 3 -> println("Number is 3")
+          |    }
+          |}
+          |
+          |""".stripMargin)
+
+      cpg.identifier("number").nonEmpty shouldBe true
+      cpg.literal("\"Number is 1\"").nonEmpty shouldBe true
+    }
+  }
+
   "smoke test for 'is'-pattern in 'when' statement" in {
     val cpg = code("""
         |package mypkg
