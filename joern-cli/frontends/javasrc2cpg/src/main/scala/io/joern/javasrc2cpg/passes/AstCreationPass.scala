@@ -133,6 +133,13 @@ class AstCreationPass(config: Config, cpg: Cpg, sourcesOverride: Option[List[Str
 
     // Add solvers for inference jars
     val jarsList = config.inferenceJarPaths.flatMap(recursiveJarsFromPath).toList
+    if (config.inferenceJarPaths.isEmpty) {
+      logger.debug("No inference jar paths given")
+    } else if (jarsList.isEmpty) {
+      logger.warn(s"Could not find any inference jars at provided paths: ${config.inferenceJarPaths.mkString(",")}")
+    } else {
+      logger.debug(s"Using inference jars: ${jarsList.mkString(":")}")
+    }
     (jarsList ++ dependencies)
       .flatMap { path =>
         Try(new JarTypeSolver(path)).toOption

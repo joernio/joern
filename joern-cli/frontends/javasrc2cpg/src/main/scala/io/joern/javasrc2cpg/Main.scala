@@ -78,9 +78,9 @@ private object Frontend {
     import builder._
     OParser.sequence(
       programName("javasrc2cpg"),
-      opt[String]("inference-jar-paths")
-        .text(s"extra jars used only for type information")
-        .action((path, c) => c.withInferenceJarPaths(c.inferenceJarPaths + path)),
+      opt[Seq[String]]("inference-jar-paths")
+        .text(s"extra jars used only for type information (comma-separated list of paths)")
+        .action((paths, c) => c.withInferenceJarPaths(c.inferenceJarPaths ++ paths)),
       opt[Unit]("fetch-dependencies")
         .text("attempt to fetch dependencies jars for extra type information")
         .action((_, c) => c.withFetchDependencies(true)),
