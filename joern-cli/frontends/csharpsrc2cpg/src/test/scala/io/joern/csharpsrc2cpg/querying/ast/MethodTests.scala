@@ -38,4 +38,43 @@ class MethodTests extends CSharpCode2CpgFixture {
     }
   }
 
+  "basic method with a return statement" should {
+    val cpg = code("""
+        |using System;
+        |namespace HelloWorld
+        |{
+        |  class Program
+        |  {
+        |    static void Main(string[] args) {}
+        |    
+        |    public int getInt(int foo) {
+        |       return foo;
+        |    }
+        |  }
+        |}
+        |""".stripMargin)
+
+    "have correct method properties" in {
+      inside(cpg.method("getInt").l) {
+        case methodNode :: Nil =>
+          methodNode.name shouldBe "getInt"
+          methodNode.fullName shouldBe "HelloWorld.Program.getInt:int(System.Int32)"
+          methodNode.code should startWith("public int getInt(int foo)")
+          methodNode.signature shouldBe "int(System.Int32)"
+          methodNode.isExternal shouldBe false
+
+          methodNode.order shouldBe 3
+          methodNode.filename shouldBe "Test0.cs"
+          methodNode.lineNumber shouldBe Option(8)
+          methodNode.lineNumberEnd shouldBe Option(10)
+        case _ => fail("No method with name `getInt` found.")
+      }
+    }
+
+    "have correct return information" in {
+      val List(methodReturnNode) = cpg.method.name("getInt").methodReturn.l
+      methodReturnNode.typeFullName shouldBe "int"
+    }
+  }
+
 }

@@ -1,6 +1,8 @@
 package io.joern.csharpsrc2cpg.datastructures
 
+import io.joern.csharpsrc2cpg.astcreation.{AstCreatorHelper, BuiltinTypes}
 import io.joern.csharpsrc2cpg.{CSharpType, TypeMap}
+import io.joern.x2cpg.Defines
 import io.joern.x2cpg.datastructures.{Scope, ScopeElement}
 import io.shiftleft.codepropertygraph.generated.nodes.DeclarationNew
 
@@ -54,6 +56,30 @@ class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeT
     }
   }
 
+  def tryResolveMethodReturn(typeFullName: String, callName: String): Option[String] = {
+    typesInScope.find(_.name.endsWith(typeFullName)).flatMap { case t: CSharpType =>
+      t.methods.find(_.name.endsWith(callName)).map { m =>
+        m.returnType
+      }
+    }
+  }
+
+  def tryResolveMethodSignature(typeFullName: String, callName: String): Option[String] = {
+    typesInScope
+      .find(_.name.endsWith(typeFullName))
+      .flatMap { t =>
+        t.methods.find(_.name.endsWith(callName)).flatMap { m =>
+          Some(
+            m.parameterTypes
+              .map { (_, typ) =>
+                BuiltinTypes.DotNetTypeMap.getOrElse(typ, tryResolveTypeReference(typ).getOrElse(Defines.Any))
+              }
+              .mkString(",")
+          )
+        }
+      }
+  }
+
   def pushField(field: FieldDecl): Unit = {
     popScope().foreach {
       case TypeScope(fullName, fields) =>
@@ -69,7 +95,11 @@ class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeT
     *   the fully qualified imported namespace.
     */
   def addImport(namespace: String): Unit = {
-    val knownTypesFromNamespace = typeMap.classesIn(namespace)
+    /* If the alias is a type, the fullyQualifiedName won't be added to the TypeMap. Assuming no nested classes, this should extract the types from the namespace.
+      E.g HelloBaz.Foo.Baz, where Baz is a type and HelloBaz.Foo is a namespace.
+     */
+    val knownTypesFromNamespace =
+      typeMap.classesIn(namespace) ++ typeMap.findType(namespace).toList
     typesInScope.addAll(knownTypesFromNamespace)
   }
 
