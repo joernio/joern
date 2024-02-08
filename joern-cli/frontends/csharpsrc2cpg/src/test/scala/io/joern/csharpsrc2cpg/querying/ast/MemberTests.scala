@@ -3,9 +3,8 @@ package io.joern.csharpsrc2cpg.querying.ast
 import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
 import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, FieldIdentifier, Identifier, Local}
+import io.shiftleft.codepropertygraph.generated.nodes.Call
 import io.shiftleft.semanticcpg.language.*
-import io.shiftleft.semanticcpg.language.operatorextension.OpNodes.FieldAccess
 
 class MemberTests extends CSharpCode2CpgFixture {
 
@@ -195,9 +194,7 @@ class MemberTests extends CSharpCode2CpgFixture {
     "generate one static constructor" in {
       inside(cpg.typeDecl.nameExact("Car").method.nameExact(Defines.StaticInitMethodName).l) {
         case m :: Nil =>
-          inside(
-            cpg.typeDecl.nameExact("Car").method.nameExact(Defines.StaticInitMethodName).head.body.astChildren.isCall.l
-          ) {
+          inside(m.body.astChildren.isCall.l) {
             case staticImplicit :: staticExplicit :: Nil =>
               staticExplicit.methodFullName shouldBe Operators.assignment
               staticExplicit.code shouldBe "this.nonInitMaxSpeed = 2000"
@@ -215,7 +212,7 @@ class MemberTests extends CSharpCode2CpgFixture {
               staticImplicit.methodFullName shouldBe Operators.assignment
               staticImplicit.code shouldBe "maxSpeed = 200"
 
-            case res => println("Expected 2 static calls")
+            case res => fail("Expected 2 static calls")
           }
         case _ => fail("`Car` has no static initializer method")
       }
