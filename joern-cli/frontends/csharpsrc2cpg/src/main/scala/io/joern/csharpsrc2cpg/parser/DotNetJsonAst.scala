@@ -56,6 +56,8 @@ object DotNetJsonAst {
 
   object EnumMemberDeclaration extends DeclarationExpr
 
+  object InterfaceDeclaration extends DeclarationExpr
+
   object MethodDeclaration extends DeclarationExpr
 
   object ConstructorDeclaration extends DeclarationExpr

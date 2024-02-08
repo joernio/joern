@@ -274,7 +274,12 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val fullName    = s"${astFullName(methodDecl)}:$signature"
     val methodNode_ = methodNode(methodDecl, name, code(methodDecl), fullName, Option(signature), relativeFileName)
     scope.pushNewScope(MethodScope(fullName))
-    val body = astForBlock(createDotNetNodeInfo(methodDecl.json(ParserKeys.Body)))
+
+    // In the case of interfaces, the method body may not be present
+    val jsonBody = methodDecl.json(ParserKeys.Body)
+    val body =
+      if (!jsonBody.isNull) astForBlock(createDotNetNodeInfo(jsonBody))
+      else Ast(blockNode(methodDecl)) // Creates an empty block
     scope.popScope()
     val modifiers = astForModifiers(methodDecl).flatMap(_.nodes).collect { case x: NewModifier => x }
     val thisNode =
