@@ -136,13 +136,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val fieldIdentifierName = nameFromNode(accessExpr)
 
     val fieldInScope = scope.findFieldInScope(fieldIdentifierName)
-    val targetName =
+
+    val typeFullName = fieldInScope.map(_.typeFullName).getOrElse(Defines.Any)
+    val identifierName =
       if (fieldInScope.nonEmpty && fieldInScope.get.isStatic) scope.surroundingTypeDeclFullName.getOrElse(Defines.Any)
       else "this"
 
-    val typeFullName   = fieldInScope.map(_.typeFullName).getOrElse(Defines.Any)
-    val identifierName = targetName
-    val identifier     = newIdentifierNode(identifierName, typeFullName)
+    val identifier = newIdentifierNode(identifierName, typeFullName)
 
     val fieldIdentifier = NewFieldIdentifier()
       .code(fieldIdentifierName)
