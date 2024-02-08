@@ -38,6 +38,20 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       assignY.code shouldBe """var y: String = "2""""
     }
 
+    "have correct structure for tuple variable declarations" in AstFixture("""
+        |var (a, b): Int = foo()
+        |""".stripMargin) { cpg =>
+      val List(method)           = cpg.method.nameExact("<global>").l
+      val List(assignA, assignB) = method.assignment.l
+      assignA.code shouldBe "var a: Int = foo()"
+      assignB.code shouldBe "var b: Int = foo()"
+      val List(localA, localB) = method.block.local.l
+      localA.name shouldBe "a"
+      localA.typeFullName shouldBe "Int"
+      localB.name shouldBe "b"
+      localB.typeFullName shouldBe "Int"
+    }
+
     "have corresponding type decl with correct bindings for function" in AstFixture("func method() -> {}") { cpg =>
       val List(typeDecl) = cpg.typeDecl.nameExact("method").l
       typeDecl.fullName should endWith(".swift:<global>:method")
