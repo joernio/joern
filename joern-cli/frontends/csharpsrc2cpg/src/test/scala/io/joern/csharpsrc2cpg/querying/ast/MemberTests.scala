@@ -69,17 +69,6 @@ class MemberTests extends CSharpCode2CpgFixture {
           m.modifier.modifierType.l shouldBe ModifierTypes.STATIC :: ModifierTypes.CONSTRUCTOR :: Nil
           m.methodReturn.typeFullName shouldBe "void"
 
-          cpg.typeDecl.nameExact("Car").dotAst.l.foreach(println)
-
-          cpg.typeDecl.nameExact("Car").method.nameExact(Defines.StaticInitMethodName).head.body.astChildren.l.match {
-            case List(item1: Call, item2: Local, item3: Call) => {
-              println(item1.methodFullName)
-              println(item2.typeFullName)
-              println(item3.methodFullName)
-            }
-            case res => println("Expected 3 children")
-          }
-
           inside(m.assignment.l) {
             case maxSpeed :: nonInitMaxSpeed :: Nil =>
               maxSpeed.code shouldBe "maxSpeed = 200"
