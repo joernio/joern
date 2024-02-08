@@ -38,18 +38,19 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
   private def declMembers(
     decl: ClassDeclSyntax | ExtensionDeclSyntax | ProtocolDeclSyntax | StructDeclSyntax | EnumDeclSyntax |
-      ActorDeclSyntax,
+      ActorDeclSyntax | TypeAliasDeclSyntax,
     withConstructor: Boolean = true
   ): Seq[DeclSyntax] = {
     val memberBlock = decl match {
-      case c: ClassDeclSyntax     => c.memberBlock
-      case e: ExtensionDeclSyntax => e.memberBlock
-      case p: ProtocolDeclSyntax  => p.memberBlock
-      case s: StructDeclSyntax    => s.memberBlock
-      case e: EnumDeclSyntax      => e.memberBlock
-      case a: ActorDeclSyntax     => a.memberBlock
+      case c: ClassDeclSyntax     => Option(c.memberBlock)
+      case e: ExtensionDeclSyntax => Option(e.memberBlock)
+      case p: ProtocolDeclSyntax  => Option(p.memberBlock)
+      case s: StructDeclSyntax    => Option(s.memberBlock)
+      case e: EnumDeclSyntax      => Option(e.memberBlock)
+      case a: ActorDeclSyntax     => Option(a.memberBlock)
+      case _: TypeAliasDeclSyntax => None
     }
-    val allMembers = memberBlock.members.children.map(_.decl)
+    val allMembers = memberBlock.map(_.members.children.map(_.decl)).getOrElse(Seq.empty)
     if (withConstructor) {
       allMembers
     } else {
@@ -109,7 +110,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
   private def createFakeConstructor(
     node: ClassDeclSyntax | ExtensionDeclSyntax | ProtocolDeclSyntax | StructDeclSyntax | EnumDeclSyntax |
-      ActorDeclSyntax,
+      ActorDeclSyntax | TypeAliasDeclSyntax,
     methodBlockContent: List[Ast] = List.empty
   ): AstAndMethod = {
     val constructorName              = io.joern.x2cpg.Defines.ConstructorMethodName
@@ -221,13 +222,13 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
   private def findDeclConstructor(
     decl: ClassDeclSyntax | ExtensionDeclSyntax | ProtocolDeclSyntax | StructDeclSyntax | EnumDeclSyntax |
-      ActorDeclSyntax
+      ActorDeclSyntax | TypeAliasDeclSyntax
   ): Option[DeclSyntax] =
     declMembers(decl).find(isConstructor)
 
   private def createDeclConstructor(
     node: ClassDeclSyntax | ExtensionDeclSyntax | ProtocolDeclSyntax | StructDeclSyntax | EnumDeclSyntax |
-      ActorDeclSyntax,
+      ActorDeclSyntax | TypeAliasDeclSyntax,
     constructorContent: List[Ast],
     constructorBlock: Ast = Ast()
   ): Option[AstAndMethod] =
@@ -257,15 +258,16 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
   private def astForDeclAttributes(
     node: ClassDeclSyntax | ProtocolDeclSyntax | VariableDeclSyntax | StructDeclSyntax | EnumDeclSyntax |
-      ActorDeclSyntax
+      ActorDeclSyntax | TypeAliasDeclSyntax
   ): Seq[Ast] = {
     node match {
-      case c: ClassDeclSyntax    => c.attributes.children.map(astForNode)
-      case p: ProtocolDeclSyntax => p.attributes.children.map(astForNode)
-      case v: VariableDeclSyntax => v.attributes.children.map(astForNode)
-      case s: StructDeclSyntax   => s.attributes.children.map(astForNode)
-      case e: EnumDeclSyntax     => e.attributes.children.map(astForNode)
-      case a: ActorDeclSyntax    => a.attributes.children.map(astForNode)
+      case c: ClassDeclSyntax     => c.attributes.children.map(astForNode)
+      case p: ProtocolDeclSyntax  => p.attributes.children.map(astForNode)
+      case v: VariableDeclSyntax  => v.attributes.children.map(astForNode)
+      case s: StructDeclSyntax    => s.attributes.children.map(astForNode)
+      case e: EnumDeclSyntax      => e.attributes.children.map(astForNode)
+      case a: ActorDeclSyntax     => a.attributes.children.map(astForNode)
+      case t: TypeAliasDeclSyntax => t.attributes.children.map(astForNode)
     }
   }
 
@@ -312,7 +314,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
       diffGraph.addEdge(methodAstParentStack.head, typeDeclNode_, EdgeTypes.AST)
 
-      val typeRefNode_ = typeRefNode(node, s"class $typeName", typeFullName)
+      val typeRefNode_ = typeRefNode(node, code(node), typeFullName)
 
       methodAstParentStack.push(typeDeclNode_)
       dynamicInstanceTypeStack.push(typeFullName)
@@ -532,7 +534,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
       diffGraph.addEdge(methodAstParentStack.head, typeDeclNode_, EdgeTypes.AST)
 
-      val typeRefNode_ = typeRefNode(node, s"class $typeName", typeFullName)
+      val typeRefNode_ = typeRefNode(node, code(node), typeFullName)
 
       methodAstParentStack.push(typeDeclNode_)
       dynamicInstanceTypeStack.push(typeFullName)
@@ -646,7 +648,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
   private def modifiersForDecl(
     node: ClassDeclSyntax | ExtensionDeclSyntax | ProtocolDeclSyntax | StructDeclSyntax | EnumDeclSyntax |
-      EnumCaseDeclSyntax | ActorDeclSyntax
+      EnumCaseDeclSyntax | ActorDeclSyntax | TypeAliasDeclSyntax
   ): Seq[NewModifier] = {
     val modifierList = node match {
       case c: ClassDeclSyntax     => c.modifiers.children
@@ -656,6 +658,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case e: EnumDeclSyntax      => e.modifiers.children
       case ec: EnumCaseDeclSyntax => ec.modifiers.children
       case a: ActorDeclSyntax     => a.modifiers.children
+      case t: TypeAliasDeclSyntax => t.modifiers.children
     }
     val modifiers = modifierList.flatMap(c => astForNode(c).root.map(_.asInstanceOf[NewModifier]))
     val allModifier = if (modifiers.isEmpty) {
@@ -908,7 +911,60 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForPoundSourceLocationSyntax(node: PoundSourceLocationSyntax): Ast = notHandledYet(node)
   private def astForPrecedenceGroupDeclSyntax(node: PrecedenceGroupDeclSyntax): Ast = notHandledYet(node)
   private def astForSubscriptDeclSyntax(node: SubscriptDeclSyntax): Ast             = notHandledYet(node)
-  private def astForTypeAliasDeclSyntax(node: TypeAliasDeclSyntax): Ast             = notHandledYet(node)
+
+  private def astForTypeAliasDeclSyntax(node: TypeAliasDeclSyntax): Ast = {
+    // TODO:
+    // - handle genericParameterClause
+    // - handle genericWhereClause
+    val attributes = astForDeclAttributes(node)
+    val modifiers  = modifiersForDecl(node)
+    val aliasName  = code(node.initializer.value)
+
+    val name                     = typeNameForDeclSyntax(node)
+    val (typeName, typeFullName) = calcTypeNameAndFullName(name)
+    registerType(typeFullName)
+
+    val existingTypeDecl = global.seenTypeDecls.keys().asScala.find(_.name == typeName)
+    if (existingTypeDecl.isEmpty) {
+
+      val astParentType     = methodAstParentStack.head.label
+      val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
+
+      val typeDeclNode_ = typeDeclNode(
+        node,
+        typeName,
+        typeFullName,
+        parserResult.filename,
+        s"class $typeName",
+        astParentType,
+        astParentFullName,
+        alias = Option(aliasName)
+      )
+      seenAliasTypes.add(typeDeclNode_)
+
+      attributes.foreach { ast =>
+        Ast.storeInDiffGraph(ast, diffGraph)
+        ast.root.foreach(r => diffGraph.addEdge(typeDeclNode_, r, EdgeTypes.AST))
+      }
+
+      modifiers.foreach { mod =>
+        diffGraph.addEdge(typeDeclNode_, mod, EdgeTypes.AST)
+      }
+
+      diffGraph.addEdge(methodAstParentStack.head, typeDeclNode_, EdgeTypes.AST)
+
+      val constructor = createDeclConstructor(node, List.empty)
+      if (constructor.isDefined) {
+        global.seenTypeDecls.put(typeDeclNode_, global.ConstructorBlocks(constructor.get.methodBlock, Ast()))
+      }
+      val typeRefNode_ = typeRefNode(node, code(node), typeFullName)
+      Ast(typeRefNode_)
+    } else {
+      val typeDeclNode_ = existingTypeDecl.get
+      typeDeclNode_.aliasTypeFullName(aliasName)
+      Ast()
+    }
+  }
 
   private def astForVariableDeclSyntax(node: VariableDeclSyntax): Ast = {
     val attributeAsts = node.attributes.children.map(astForNode)
