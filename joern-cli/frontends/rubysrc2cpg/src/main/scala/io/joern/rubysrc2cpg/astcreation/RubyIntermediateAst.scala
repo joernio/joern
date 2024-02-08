@@ -75,6 +75,8 @@ object RubyIntermediateAst {
 
   final case class SingleAssignment(lhs: RubyNode, op: String, rhs: RubyNode)(span: TextSpan) extends RubyNode(span)
 
+  final case class MultipleAssignment(assignments: List[SingleAssignment])(span: TextSpan) extends RubyNode(span)
+
   final case class AttributeAssignment(target: RubyNode, op: String, attributeName: String, rhs: RubyNode)(
     span: TextSpan
   ) extends RubyNode(span)

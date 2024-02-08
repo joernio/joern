@@ -13,6 +13,7 @@ import io.shiftleft.semanticcpg.language.{ICallResolver, NoResolve}
 import org.scalatest.Tag
 
 import java.io.File
+import org.scalatest.Inside
 
 trait RubyFrontend(useDeprecatedFrontend: Boolean) extends LanguageFrontend {
   override val fileSuffix: String = ".rb"
@@ -62,6 +63,7 @@ class RubyCode2CpgFixture(
         .withExtraFlows(extraFlows)
         .withPostProcessingPasses(withPostProcessing)
     )
+    with Inside
     with SemanticCpgTestFixture(extraFlows) {
 
   implicit val resolver: ICallResolver = NoResolve

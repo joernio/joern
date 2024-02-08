@@ -9,12 +9,20 @@ import org.antlr.v4.runtime.tree.{ErrorNode, ParseTree, TerminalNode}
 import scala.jdk.CollectionConverters.*
 import org.antlr.v4.runtime.tree.RuleNode
 import io.joern.rubysrc2cpg.parser.RubyParser.SplattingArgumentContext
+import io.joern.rubysrc2cpg.parser.RubyParser.MultipleAssignmentStatementStatementContext
+import io.joern.rubysrc2cpg.parser.RubyParser.MultipleAssignmentStatementContext
+import io.joern.rubysrc2cpg.parser.RubyParser.MultipleLeftHandSideContext
+import io.joern.rubysrc2cpg.parser.RubyParser.SplattingRightHandSideContext
+import io.joern.rubysrc2cpg.parser.RubyParser.MultipleRightHandSideContext
 
 /** Converts an ANTLR Ruby Parse Tree into the intermediate Ruby AST.
   */
 class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
 
-  override def defaultResult(): RubyNode = Unknown()(TextSpan(None, None, None, None, ""))
+  private def defaultTextSpan(code: String = ""): TextSpan = TextSpan(None, None, None, None, code)
+
+  override def defaultResult(): RubyNode = Unknown()(defaultTextSpan())
+
   override protected def shouldVisitNextChild(node: RuleNode, currentResult: RubyNode): Boolean =
     currentResult.isInstanceOf[Unknown]
 
@@ -318,6 +326,32 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     val rhs = visit(ctx.rhs)
     val op  = ctx.assignmentOperator().getText
     SingleAssignment(lhs, op, rhs)(ctx.toTextSpan)
+  }
+
+  override def visitMultipleAssignmentStatement(ctx: MultipleAssignmentStatementContext): RubyNode = {
+    val lhsNodes = Option(ctx.multipleLeftHandSide())
+      .map(_.multipleLeftHandSideItem().asScala)
+      .map(_.map(visit))
+      .getOrElse(List.empty)
+      .toList
+    val rhsNodes = Option(ctx.multipleRightHandSide()).map(visit).getOrElse(defaultResult()) match {
+      case x: StatementList => x.statements
+      case x                => List(x)
+    }
+    val op = ctx.EQ().toString()
+    // TODO: Handle grouping/ungrouping with splatting
+    val assignments = lhsNodes
+      .zipAll(rhsNodes, defaultResult(), Unknown()(defaultTextSpan(Defines.Undefined)))
+      .map { case (lhs, rhs) => SingleAssignment(lhs, op, rhs)(ctx.toTextSpan) }
+      .toList
+    MultipleAssignment(assignments)(ctx.toTextSpan)
+  }
+
+  override def visitMultipleRightHandSide(ctx: MultipleRightHandSideContext): RubyNode = {
+    Option(ctx.operatorExpressionList2())
+      .map(x => StatementList(x.operatorExpression().asScala.map(visit).toList)(ctx.toTextSpan))
+      .orElse(Option(ctx.splattingRightHandSide()).map(_.splattingArgument()).map(visit))
+      .getOrElse(defaultResult())
   }
 
   override def visitAttributeAssignmentExpression(ctx: RubyParser.AttributeAssignmentExpressionContext): RubyNode = {

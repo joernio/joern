@@ -6,6 +6,7 @@ import io.joern.rubysrc2cpg.passes.Defines.{RubyOperators, getBuiltInType}
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.Unknown
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -128,26 +129,34 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   protected def astForSingleAssignment(node: SingleAssignment): Ast = {
-    getAssignmentOperatorName(node.op) match
-      case None =>
-        logger.warn(s"Unrecognized assignment operator: ${code(node)} ($relativeFileName), skipping")
-        astForUnknown(node)
-      case Some(op) =>
-        val lhsAst        = astForExpression(node.lhs)
-        val rhsAst        = astForExpression(node.rhs)
-        val call          = callNode(node, code(node), op, op, DispatchTypes.STATIC_DISPATCH)
-        val assignmentAst = callAst(call, Seq(lhsAst, rhsAst))
-        scope.lookupVariable(node.lhs.text) match
+    node.rhs match {
+      case x: Unknown if x.span.text == Defines.Undefined =>
+        // If the RHS is undefined, then this variable is not defined/placed in the variable table/registry
+        Ast()
+      case _ => {
+        getAssignmentOperatorName(node.op) match
           case None =>
-            // We are introducing a new variable. Thus, also create a LOCAL.
-            // TODO: Add the newly created LOCAL to the current METHOD.
-            val lhsNode = node.lhs
-            val local   = localNode(lhsNode, lhsNode.text, lhsNode.text, Defines.Any)
-            scope.addToScope(lhsNode.text, local)
-            assignmentAst
-          case Some(_) =>
-            // This variable is already in scope, so just emit the assignment.
-            assignmentAst
+            logger.warn(s"Unrecognized assignment operator: ${code(node)} ($relativeFileName), skipping")
+            astForUnknown(node)
+          case Some(op) =>
+            val lhsAst        = astForExpression(node.lhs)
+            val rhsAst        = astForExpression(node.rhs)
+            val call          = callNode(node, code(node), op, op, DispatchTypes.STATIC_DISPATCH)
+            val assignmentAst = callAst(call, Seq(lhsAst, rhsAst))
+            scope.lookupVariable(node.lhs.text) match
+              case None =>
+                // We are introducing a new variable. Thus, also create a LOCAL.
+                // TODO: Add the newly created LOCAL to the current METHOD.
+                val lhsNode = node.lhs
+                val local   = localNode(lhsNode, lhsNode.text, lhsNode.text, Defines.Any)
+                scope.addToScope(lhsNode.text, local)
+                assignmentAst
+              case Some(_) =>
+                // This variable is already in scope, so just emit the assignment.
+                assignmentAst
+      }
+    }
+
   }
 
   // `x.y = 1` is lowered as `x.y=(1)`, i.e. as calling `y=` on `x` with argument `1`
