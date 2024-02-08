@@ -13,7 +13,6 @@ import ujson.Value
 
 import java.math.BigInteger
 import java.security.MessageDigest
-import scala.collection.mutable
 
 class AstCreator(val relativeFileName: String, val parserResult: ParserResult, val typeMap: TypeMap)(implicit
   withSchemaValidation: ValidationMode

@@ -154,7 +154,6 @@ class TypeMap(astGenResult: AstGenRunnerResult, initialMappings: List[NamespaceT
         (name, typ)
       }
 
-    val signatureParams = s"(${paramTypes})"
     List(CSharpMethod(AstCreatorHelper.nameFromNode(methodDecl), methodReturn, paramTypes.toList))
   }
 
