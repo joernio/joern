@@ -10,17 +10,47 @@ class TypealiasTests extends AbstractPassTest {
 
   "TypealiasTests" should {
 
-    "testTypealias2a" ignore AstFixture("typealias IntPair = (Int, Int)") { cpg => ??? }
+    "testTypealias2a1" in AstFixture("""
+        |typealias IntPair = (Int, Int)
+        |extension IntPair {
+        |  var foo: String
+        |}
+        |""".stripMargin) { cpg =>
+      val List(intPair) = cpg.typeDecl.nameExact("IntPair").l
+      intPair.aliasTypeFullName shouldBe Option("(Int, Int)")
+      intPair.member.code.l shouldBe List("foo")
+    }
 
-    "testTypealias2b" ignore AstFixture("typealias IntTriple = (Int, Int, Int)") { cpg => ??? }
+    "testTypealias2a2" in AstFixture("""
+        |extension IntPair {
+        |  var foo: String
+        |}
+        |typealias IntPair = (Int, Int)
+        |""".stripMargin) { cpg =>
+      val List(intPair) = cpg.typeDecl.nameExact("IntPair").l
+      intPair.aliasTypeFullName shouldBe Option("(Int, Int)")
+      intPair.member.code.l shouldBe List("foo")
+    }
 
-    "testTypealias2d" ignore AstFixture("var fiveInts : FiveInts = ((4,2), (1,2,3))") { cpg => ??? }
+    "testTypealias2b" in AstFixture("typealias IntTriple = (Int, Int, Int)") { cpg =>
+      val List(intTriple) = cpg.typeDecl.nameExact("IntTriple").l
+      intTriple.aliasTypeFullName shouldBe Option("(Int, Int, Int)")
+    }
 
-    "testTypealias3a" ignore AstFixture("typealias Foo1 = Int") { cpg => ??? }
+    "testTypealias3a" in AstFixture("typealias Foo1 = Int") { cpg =>
+      val List(foo1) = cpg.typeDecl.nameExact("Foo1").l
+      foo1.aliasTypeFullName shouldBe Option("Int")
+    }
 
-    "testTypealias9" ignore AstFixture("typealias Recovery5 = Int, Float") { cpg => ??? }
+    "testTypealias9" in AstFixture("typealias Recovery5 = Int, Float") { cpg =>
+      val List(recovery5) = cpg.typeDecl.nameExact("Recovery5").l
+      recovery5.aliasTypeFullName shouldBe Option("Int")
+    }
 
-    "testTypealias11" ignore AstFixture("typealias `switch` = Int") { cpg => ??? }
+    "testTypealias11" in AstFixture("typealias `switch` = Int") { cpg =>
+      val List(sw) = cpg.typeDecl.nameExact("`switch`").l
+      sw.aliasTypeFullName shouldBe Option("Int")
+    }
   }
 
 }
