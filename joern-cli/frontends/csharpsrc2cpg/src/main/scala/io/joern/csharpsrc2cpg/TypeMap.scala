@@ -164,7 +164,7 @@ class TypeMap(astGenResult: AstGenRunnerResult, initialMappings: List[NamespaceT
       .json(ParserKeys.Variables)
       .arr
       .map(AstCreatorHelper.createDotNetNodeInfo(_))
-      .map(fieldDecl => s"${AstCreatorHelper.nameFromNode(fieldDecl)}")
+      .map(AstCreatorHelper.nameFromNode)
       .map(CSharpField.apply)
       .toList
   }

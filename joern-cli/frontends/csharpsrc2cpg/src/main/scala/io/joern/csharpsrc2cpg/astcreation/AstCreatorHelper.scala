@@ -105,9 +105,10 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case TrueLiteralExpression | FalseLiteralExpression => BuiltinTypes.DotNetTypeMap(BuiltinTypes.Bool)
       case IdentifierName                                 => typeFromTypeString(nameFromNode(node))
       case ObjectCreationExpression =>
+        val typeName = nameFromNode(createDotNetNodeInfo(node.json(ParserKeys.Type)))
         scope
-          .tryResolveTypeReference(nameFromIdentifier(createDotNetNodeInfo(node.json(ParserKeys.Type))))
-          .getOrElse(nameFromIdentifier(createDotNetNodeInfo(node.json(ParserKeys.Type))))
+          .tryResolveTypeReference(typeName)
+          .getOrElse(typeName)
       case PredefinedType | SimpleBaseType =>
         BuiltinTypes.DotNetTypeMap.getOrElse(node.code, Defines.Any)
       case _ =>
