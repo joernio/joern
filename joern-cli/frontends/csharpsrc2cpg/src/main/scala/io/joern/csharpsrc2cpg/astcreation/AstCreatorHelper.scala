@@ -78,17 +78,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         identifierNode(dotNetNode.orNull, x.name, x.name, Defines.Any)
   }
 
-  protected def signatureToTypeString(argTypeString: String): String = {
-    val paramTypes = argTypeString.substring(1, argTypeString.length - 1).split(",")
-    val typeString = paramTypes
-      .map { param =>
-        BuiltinTypes.DotNetTypeMap.getOrElse(param, scope.tryResolveTypeReference(param))
-      }
-      .mkString(",")
-
-    s"($typeString)"
-  }
-
   // TODO: Use type map to try resolve full name
   protected def nodeTypeFullName(node: DotNetNodeInfo): String = {
     def typeFromTypeString(typeString: String): String = {

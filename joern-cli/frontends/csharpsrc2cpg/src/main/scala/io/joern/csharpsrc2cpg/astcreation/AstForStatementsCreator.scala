@@ -214,12 +214,11 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astForReturnStatement(returnStmt: DotNetNodeInfo): Seq[Ast] = {
-    val identifierAst = Option(returnStmt.json(ParserKeys.Expression)) match
+    val identifierAst = Option(returnStmt.json(ParserKeys.Expression)) match {
       case Some(value: ujson.Obj) => astForNode(createDotNetNodeInfo(value))
       case _                      => Seq.empty
-
+    }
     val _returnNode = returnNode(returnStmt, returnStmt.code)
-
     Seq(returnAst(_returnNode, identifierAst))
   }
 }

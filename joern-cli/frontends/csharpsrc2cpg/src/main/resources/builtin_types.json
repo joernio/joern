@@ -1,17 +1,21 @@
 {
   "System": [
     {
-      "name": "Console",
+      "name": "System.Console",
       "methods": [
         {
           "name": "Write",
           "returnType": "void",
-          "signature": "(object)"
+          "parameterTypes": [
+            ["format", "object"]
+          ]
         },
         {
           "name": "WriteLine",
           "returnType": "void",
-          "signature": "(object)"
+          "parameterTypes": [
+            ["format", "object"]
+          ]
         }
       ],
       "fields": []
@@ -19,17 +23,19 @@
   ],
   "System.Buffers": [
     {
-      "name": "ArrayBufferWriter",
+      "name": "System.Buffers.ArrayBufferWriter",
       "methods": [
         {
           "name": "Advance",
           "returnType": "void",
-          "signature": "(int)"
+          "parameterTypes": [
+            ["count", "int"]
+          ]
         },
         {
           "name": "Clear",
           "returnType": "void",
-          "signature": "()"
+          "parameterTypes": []
         }
       ],
       "fields": []

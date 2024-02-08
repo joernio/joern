@@ -132,14 +132,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val returnType =
       scope.tryResolveMethodReturn(baseTypeFullName.getOrElse(scope.surroundingTypeDeclFullName.getOrElse("")), name);
 
-    val signature =
-      scope
-        .tryResolveMethodSignature(baseTypeFullName.getOrElse(scope.surroundingTypeDeclFullName.getOrElse("")), name)
-        .getOrElse(Defines.UnresolvedSignature);
-
+    val signature = scope
+      .tryResolveMethodSignature(baseTypeFullName.getOrElse(scope.surroundingTypeDeclFullName.getOrElse("")), name)
+      .getOrElse(Defines.UnresolvedSignature)
     val typeFullName = returnType.getOrElse(Defines.Any);
 
-    val methodFullName = s"$partialFullName:${returnType.getOrElse(Defines.Unknown)}${signatureToTypeString(signature)}"
+    val methodFullName =
+      s"$partialFullName:${returnType.getOrElse(Defines.Unknown)}(${signature})"
 
     val _callAst = callAst(
       callNode(

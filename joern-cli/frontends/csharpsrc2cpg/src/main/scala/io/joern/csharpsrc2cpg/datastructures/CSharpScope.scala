@@ -1,6 +1,8 @@
 package io.joern.csharpsrc2cpg.datastructures
 
+import io.joern.csharpsrc2cpg.astcreation.{AstCreatorHelper, BuiltinTypes}
 import io.joern.csharpsrc2cpg.{CSharpType, TypeMap}
+import io.joern.x2cpg.Defines
 import io.joern.x2cpg.datastructures.{Scope, ScopeElement}
 import io.shiftleft.codepropertygraph.generated.nodes.DeclarationNew
 
@@ -63,9 +65,19 @@ class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeT
   }
 
   def tryResolveMethodSignature(typeFullName: String, callName: String): Option[String] = {
-    typesInScope.find(_.name.endsWith(typeFullName)).flatMap { t =>
-      t.methods.find(_.name.endsWith(callName)).map { m => m.signature }
-    }
+    typesInScope
+      .find(_.name.endsWith(typeFullName))
+      .flatMap { t =>
+        t.methods.find(_.name.endsWith(callName)).flatMap { m =>
+          Some(
+            m.parameterTypes
+              .map { (_, typ) =>
+                BuiltinTypes.DotNetTypeMap.getOrElse(typ, tryResolveTypeReference(typ).getOrElse(Defines.Any))
+              }
+              .mkString(",")
+          )
+        }
+      }
   }
 
   def pushField(field: FieldDecl): Unit = {
@@ -87,7 +99,7 @@ class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeT
       E.g HelloBaz.Foo.Baz, where Baz is a type and HelloBaz.Foo is a namespace.
      */
     val knownTypesFromNamespace =
-      typeMap.classesIn(namespace) ++ typeMap.classesIn(namespace.split("[.]").dropRight(1).mkString("."))
+      typeMap.classesIn(namespace) ++ typeMap.findType(namespace).toList
     typesInScope.addAll(knownTypesFromNamespace)
   }
 
