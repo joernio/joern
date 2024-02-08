@@ -223,4 +223,60 @@ class TypeDeclTests extends CSharpCode2CpgFixture {
 
   }
 
+  "an interface" should {
+
+    val cpg = code("""
+        |namespace Foo {
+        |
+        | interface ISampleInterface
+        | {
+        |     void SampleMethod();
+        | }
+        |
+        | class ImplementationClass : ISampleInterface
+        | {
+        |     // Explicit interface member implementation:
+        |     void ISampleInterface.SampleMethod()
+        |     {
+        |         // Method implementation.
+        |      }
+        |
+        |      static void Main()
+        |      {
+        |          // Declare an interface instance.
+        |          ISampleInterface obj = new ImplementationClass();
+        |
+        |         // Call the member.
+        |          obj.SampleMethod();
+        |      }
+        | }
+        |
+        |}
+        |""".stripMargin)
+
+    "have a corresponding TYPE_DECL node" in {
+      inside(cpg.typeDecl.name("ISampleInterface").headOption) {
+        case Some(typeDecl) =>
+          typeDecl.fullName shouldBe "Foo.ISampleInterface"
+          typeDecl.code shouldBe "interface ISampleInterface"
+        case None => fail("No interface type declaration node found!")
+      }
+    }
+
+    "have a child method" in {
+      inside(cpg.typeDecl.name("ISampleInterface").method.l) {
+        case sampleMethod :: Nil =>
+          sampleMethod.name shouldBe "SampleMethod"
+          sampleMethod.code shouldBe "void SampleMethod();"
+        case _ => fail("No child method found for interface!")
+      }
+    }
+
+    "be inherited by the implementation class" ignore {
+      inside(cpg.typeDecl.name("ISampleInterface", "ImplementationClass").l) {
+        case interface :: implementation :: Nil => // TODO: For issue #3992
+        case _                                  => fail("Unexpected number of type declarations")
+      }
+    }
+  }
 }
