@@ -4,7 +4,7 @@ import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.utils.MemberAccess
-import org.apache.commons.lang.StringEscapeUtils
+import org.apache.commons.text.StringEscapeUtils
 
 import java.util.Optional
 import scala.collection.immutable.HashMap
@@ -50,7 +50,7 @@ object DotSerializer {
 
   private def namedGraphBegin(root: AstNode): mutable.StringBuilder = {
     val sb = new mutable.StringBuilder
-    val name = StringEscapeUtils.escapeHtml(root match {
+    val name = StringEscapeUtils.escapeHtml4(root match {
       case method: Method => method.name
       case _              => ""
     })
@@ -71,7 +71,7 @@ object DotSerializer {
 
   private def stringRepr(vertex: StoredNode): String = {
     val maybeLineNo: Optional[AnyRef] = vertex.propertyOption(PropertyNames.LINE_NUMBER)
-    StringEscapeUtils.escapeHtml(vertex match {
+    StringEscapeUtils.escapeHtml4(vertex match {
       case call: Call                            => (call.name, limit(call.code)).toString
       case contrl: ControlStructure              => (contrl.label, contrl.controlStructureType, contrl.code).toString
       case expr: Expression                      => (expr.label, limit(expr.code), limit(toCfgNode(expr).code)).toString
@@ -111,16 +111,16 @@ object DotSerializer {
 
   private def edgeToDot(edge: Edge, withEdgeTypes: Boolean): String = {
     val edgeLabel = if (withEdgeTypes) {
-      edge.edgeType + ": " + StringEscapeUtils.escapeHtml(edge.label)
+      edge.edgeType + ": " + StringEscapeUtils.escapeHtml4(edge.label)
     } else {
-      StringEscapeUtils.escapeHtml(edge.label)
+      StringEscapeUtils.escapeHtml4(edge.label)
     }
     val labelStr = Some(s""" [ label = "$edgeLabel"] """).filter(_ => edgeLabel != "").getOrElse("")
     s"""  "${edge.src.id}" -> "${edge.dst.id}" """ + labelStr
   }
 
   def nodesToSubGraphs(subgraph: String, children: Seq[StoredNode], idx: Int): String = {
-    val escapedName = StringEscapeUtils.escapeHtml(subgraph)
+    val escapedName = StringEscapeUtils.escapeHtml4(subgraph)
     val childString = children.map { c => s"    \"${c.id()}\";" }.mkString("\n")
     s"""  subgraph cluster_$idx {
        |$childString

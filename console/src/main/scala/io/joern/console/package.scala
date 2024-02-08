@@ -1,11 +1,15 @@
 package io.joern
 
+import overflowdb.traversal.help.Table.AvailableWidthProvider
 import replpp.Operators.*
 import replpp.Colors
 
-// TODO remove any time after the end of 2023 - this is completely deprecated
 package object console {
 
+  implicit val defaultAvalailableWidthProvider: AvailableWidthProvider =
+    () => replpp.util.terminalWidth.getOrElse(100)
+
+  // TODO remove any time after the end of 2023 - this is completely deprecated
   implicit class UnixUtils[A](content: Iterable[A]) {
     given Colors = Colors.Default
 

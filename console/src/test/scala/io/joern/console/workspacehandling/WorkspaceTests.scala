@@ -2,6 +2,7 @@ package io.joern.console.workspacehandling
 
 import better.files.Dsl._
 import better.files.File
+import io.joern.console.testing.availableWidthProvider
 import io.shiftleft.semanticcpg.testing.MockCpg
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec

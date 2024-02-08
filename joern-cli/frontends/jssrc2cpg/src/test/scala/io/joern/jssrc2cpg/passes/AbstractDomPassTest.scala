@@ -4,7 +4,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.Expression
 import io.shiftleft.codepropertygraph.generated.nodes.TemplateDom
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.semanticcpg.language._
-import org.apache.commons.lang.StringUtils
+import org.apache.commons.lang3.StringUtils
 
 abstract class AbstractDomPassTest extends AbstractPassTest {
 

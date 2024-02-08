@@ -9,6 +9,7 @@ import org.json4s.*
 import org.json4s.native.JsonMethods.parse
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import overflowdb.traversal.help.Table.{AvailableWidthProvider, ConstantWidth}
 
 import scala.jdk.CollectionConverters.IteratorHasAsScala
 
@@ -190,6 +191,8 @@ class StepsTest extends AnyWordSpec with Matchers {
   }
 
   ".help step" should {
+    implicit val availableWidthProvider: AvailableWidthProvider = new ConstantWidth(100)
+    
     "show domain overview" in {
       val domainStartersHelp = Cpg.emptyCpg.help
       domainStartersHelp should include(".comment")

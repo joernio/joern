@@ -1,14 +1,15 @@
 package io.joern.console
 
-import org.apache.commons.lang.WordUtils
-import overflowdb.traversal.help.DocFinder._
-import overflowdb.traversal.help.{Table, DocFinder}
+import org.apache.commons.text.WordUtils
+import overflowdb.traversal.help.DocFinder.*
+import overflowdb.traversal.help.Table.AvailableWidthProvider
+import overflowdb.traversal.help.{DocFinder, Table}
 
 object Help {
 
   private val width = 80
 
-  def overview(clazz: Class[_]): String = {
+  def overview(clazz: Class[_])(implicit availableWidthProvider: AvailableWidthProvider = defaultAvalailableWidthProvider): String = {
     val columnNames = List("command", "description", "example")
     val rows = DocFinder
       .findDocumentedMethodsOf(clazz)

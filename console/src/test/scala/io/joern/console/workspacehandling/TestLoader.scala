@@ -1,5 +1,6 @@
 package io.joern.console.workspacehandling
 
+import io.joern.console.testing.availableWidthProvider
 import java.nio.file.Path
 
 object TestLoader {
