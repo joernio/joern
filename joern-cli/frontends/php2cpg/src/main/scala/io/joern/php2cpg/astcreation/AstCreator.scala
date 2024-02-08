@@ -670,7 +670,7 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
           val code         = s"static $$$name"
           val typeFullName = maybeDefaultValueAst.flatMap(_.rootType).getOrElse(TypeConstants.Any)
 
-          val local = localNode(stmt, name, code, maybeDefaultValueAst.flatMap(_.rootType).getOrElse(TypeConstants.Any))
+          val local = localNode(stmt, name, code, typeFullName)
           scope.addToScope(local.name, local)
 
           val assignmentAst = maybeDefaultValueAst.map { defaultValue =>
@@ -1646,7 +1646,6 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
   }
 
   private def astForMagicClassConstant(expr: PhpClassConstFetchExpr): Ast = {
-    val classAst = astForExpr(expr.className)
     val typeFullName = expr.className match {
       case nameExpr: PhpNameExpr =>
         scope
@@ -1655,10 +1654,11 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
           .getOrElse(nameExpr.name)
 
       case expr =>
-        classAst.rootType.orElse(classAst.rootName).getOrElse(UnresolvedNamespace)
+        logger.warn(s"Unexpected expression as class name in <class>::class expression: $filename")
+        NameConstants.Unknown
     }
 
-    Ast(typeRefNode(expr, classAst.rootCodeOrEmpty, typeFullName))
+    Ast(typeRefNode(expr, s"$typeFullName::class", typeFullName))
   }
 
   private def astForClassConstFetchExpr(expr: PhpClassConstFetchExpr): Ast = {
