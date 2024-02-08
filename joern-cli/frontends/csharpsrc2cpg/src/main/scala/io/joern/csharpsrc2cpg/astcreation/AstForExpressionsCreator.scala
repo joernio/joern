@@ -84,6 +84,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         logger.warn(s"Unhandled operator '$x' for ${code(binaryExpr)}")
         CSharpOperators.unknown
 
+    // TODO: Handle implicit member access e.g. b=1
     val args = astForNode(binaryExpr.json(ParserKeys.Left)) ++: astForNode(binaryExpr.json(ParserKeys.Right))
     val cNode =
       createCallNodeForOperator(binaryExpr, operatorName, typeFullName = Some(getTypeFullNameFromAstNode(args)))
@@ -134,12 +135,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForSimpleMemberAccessExpression(accessExpr: DotNetNodeInfo): Seq[Ast] = {
     val fieldIdentifierName = nameFromNode(accessExpr)
 
-    val fieldInScope = scope.getFieldsInScope.find(_.name == fieldIdentifierName)
+    val fieldInScope = scope.findFieldInScope(fieldIdentifierName)
     val targetName =
       if (fieldInScope.nonEmpty && fieldInScope.get.isStatic) scope.surroundingTypeDeclFullName.getOrElse(Defines.Any)
       else "this"
 
-    val typeFullName   = fieldIdentifierName
+    val typeFullName   = fieldInScope.map(_.typeFullName).getOrElse(Defines.Any)
     val identifierName = targetName
     val identifier     = newIdentifierNode(identifierName, typeFullName)
 
