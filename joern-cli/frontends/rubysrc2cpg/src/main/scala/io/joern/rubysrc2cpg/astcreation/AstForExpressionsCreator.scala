@@ -30,6 +30,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: IfExpression          => astForIfExpression(node)
     case node: RescueExpression      => astForRescueExpression(node)
     case node: MandatoryParameter    => astForMandatoryParameter(node)
+    case node: SplattingRubyNode     => astForSplattingRubyNode(node)
     case _                           => astForUnknown(node)
 
   protected def astForStaticLiteral(node: StaticLiteral): Ast = {
@@ -336,6 +337,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val code               = s"${node.target.text}${node.op}${node.methodName}"
     val fieldAccess = callNode(node, code, Operators.fieldAccess, Operators.fieldAccess, DispatchTypes.STATIC_DISPATCH)
     callAst(fieldAccess, Seq(targetAst, fieldIdentifierAst))
+  }
+
+  protected def astForSplattingRubyNode(node: SplattingRubyNode): Ast = {
+    val splattingCall =
+      callNode(node, code(node), RubyOperators.splat, RubyOperators.splat, DispatchTypes.STATIC_DISPATCH)
+    val argumentAst = astsForStatement(node.name)
+    callAst(splattingCall, argumentAst)
   }
 
   private def getBinaryOperatorName(op: String): Option[String]     = BinaryOperatorNames.get(op)

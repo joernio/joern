@@ -1,7 +1,8 @@
 package io.joern.rubysrc2cpg.querying
 
+import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Literal, Identifier}
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
@@ -69,7 +70,7 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
 
   }
 
-  "destructuring of an paired multi-assignment with a splat operator on ths LHS (slurping)" should {
+  "destructuring of an unpaired multi-assignment with a splat operator on the LHS (slurping)" should {
 
     "create an array for the LHS variable slurping on the right of the group" in {
       val cpg = code("""
@@ -173,46 +174,6 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
 
     }
 
-    "create two arrays for the LHS variable slurping on the left and right of the group" in {
-      val cpg = code("""
-                |*a, b, *c = 1, 2, 3, 4, 5
-                |""".stripMargin)
-
-      inside(cpg.assignment.l) {
-        case aAssignment :: bAssignment :: cAssignment :: Nil =>
-          aAssignment.code shouldBe "*a, b, *c = 1, 2, 3, 4, 5"
-          bAssignment.code shouldBe "*a, b, *c = 1, 2, 3, 4, 5"
-          cAssignment.code shouldBe "*a, b, *c = 1, 2, 3, 4, 5"
-
-          val List(a: Identifier, arrA: Call) = aAssignment.argumentOut.toList: @unchecked
-          a.name shouldBe "a"
-          arrA.name shouldBe Operators.arrayInitializer
-          inside(arrA.argumentOut.l) {
-            case (one: Literal) :: (two: Literal) :: Nil =>
-              one.code shouldBe "1"
-              two.code shouldBe "2"
-            case _ => fail("Unexpected number of array elements in `a`'s assignment")
-          }
-
-          val List(b: Identifier, three: Literal) = bAssignment.argumentOut.toList: @unchecked
-          b.name shouldBe "b"
-          three.code shouldBe "3"
-
-          val List(c: Identifier, arrC: Call) = cAssignment.argumentOut.toList: @unchecked
-          c.name shouldBe "c"
-          arrC.name shouldBe Operators.arrayInitializer
-          inside(arrC.argumentOut.l) {
-            case (four: Literal) :: (five: Literal) :: Nil =>
-              four.code shouldBe "4"
-              five.code shouldBe "5"
-            case _ => fail("Unexpected number of array elements in `c`'s assignment")
-          }
-
-        case _ => fail("Unexpected number of assignments found")
-      }
-
-    }
-
     "create an array for the LHS variable implicitly slurping the RHS" in {
       val cpg = code("""
                 |a = 1, 2, 3, 4
@@ -232,6 +193,85 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
               three.code shouldBe "3"
               four.code shouldBe "4"
             case _ => fail("Unexpected number of array elements in `a`'s assignment")
+          }
+
+        case _ => fail("Unexpected number of assignments found")
+      }
+
+    }
+
+  }
+
+  "destructuring of an unpaired multi-assignment with a splat operator on the RHS (splitting)" should {
+
+    "assign c to `list` via a splat operator call (as we cannot always unpack `list`)" in {
+      val cpg = code("""
+                |list = [3, 4]
+                |a, b, c = 1, 2, *list
+                |""".stripMargin)
+
+      inside(cpg.assignment.l) {
+        case listAssignment :: aAssignment :: bAssignment :: cAssignment :: Nil =>
+          listAssignment.code shouldBe "list = [3, 4]"
+          aAssignment.code shouldBe "a, b, c = 1, 2, *list"
+          bAssignment.code shouldBe "a, b, c = 1, 2, *list"
+          cAssignment.code shouldBe "a, b, c = 1, 2, *list"
+
+          val List(a: Identifier, one: Literal) = aAssignment.argumentOut.toList: @unchecked
+          a.name shouldBe "a"
+          one.code shouldBe "1"
+
+          val List(b: Identifier, two: Literal) = bAssignment.argumentOut.toList: @unchecked
+          b.name shouldBe "b"
+          two.code shouldBe "2"
+
+          val List(c: Identifier, splat: Call) = cAssignment.argumentOut.toList: @unchecked
+          c.name shouldBe "c"
+          splat.name shouldBe RubyOperators.splat
+          inside(splat.argumentOut.l) {
+            case (list: Identifier) :: Nil =>
+              list.name shouldBe "list"
+            case _ => fail("Unexpected number of array elements in `c`'s assignment")
+          }
+
+        case _ => fail("Unexpected number of assignments found")
+      }
+
+    }
+
+    "assign both b & c to `list` via a splat operator call (as we cannot always unpack `list`)" in {
+      val cpg = code("""
+          |list = [3, 4]
+          |a, b, c = 1, *list
+          |""".stripMargin)
+
+      inside(cpg.assignment.l) {
+        case listAssignment :: aAssignment :: bAssignment :: cAssignment :: Nil =>
+          listAssignment.code shouldBe "list = [3, 4]"
+          aAssignment.code shouldBe "a, b, c = 1, *list"
+          bAssignment.code shouldBe "a, b, c = 1, *list"
+          cAssignment.code shouldBe "a, b, c = 1, *list"
+
+          val List(a: Identifier, one: Literal) = aAssignment.argumentOut.toList: @unchecked
+          a.name shouldBe "a"
+          one.code shouldBe "1"
+
+          val List(b: Identifier, splatB: Call) = bAssignment.argumentOut.toList: @unchecked
+          b.name shouldBe "b"
+          splatB.name shouldBe RubyOperators.splat
+          inside(splatB.argumentOut.l) {
+            case (list: Identifier) :: Nil =>
+              list.name shouldBe "list"
+            case _ => fail("Unexpected number of array elements in `b`'s assignment")
+          }
+
+          val List(c: Identifier, splatC: Call) = cAssignment.argumentOut.toList: @unchecked
+          c.name shouldBe "c"
+          splatC.name shouldBe RubyOperators.splat
+          inside(splatC.argumentOut.l) {
+            case (list: Identifier) :: Nil =>
+              list.name shouldBe "list"
+            case _ => fail("Unexpected number of array elements in `c`'s assignment")
           }
 
         case _ => fail("Unexpected number of assignments found")

@@ -127,7 +127,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
             case u: Unknown => List(u)
             case e =>
               logger.warn("Splatting not implemented for `when` in ruby `case`")
-              List(Unknown()(e.span.spanStart(s"*${e.span.text}")))
+              List(Unknown()(e.span))
           })
           // There is always at least one match expression or a splat
           // a splat will become an unknown in condition at the end

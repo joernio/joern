@@ -24,5 +24,6 @@ object Defines {
   object RubyOperators {
     val hashInitializer = "<operator>.hashInitializer"
     val association     = "<operator>.association"
+    val splat           = "<operator>.splat"
   }
 }
