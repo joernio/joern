@@ -26,7 +26,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     EnumDeclSyntax | ActorDeclSyntax | TypeAliasDeclSyntax | AssociatedTypeDeclSyntax
 
   protected type FunctionDeclLike = FunctionDeclSyntax | AccessorDeclSyntax | InitializerDeclSyntax |
-    DeinitializerDeclSyntax | ClosureExprSyntax
+    DeinitializerDeclSyntax | ClosureExprSyntax | SubscriptDeclSyntax
 
   private def astForAccessorDeclSyntax(node: AccessorDeclSyntax): Ast = {
     astForNodeWithFunctionReference(node)
@@ -512,13 +512,14 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
   private def inheritsFrom(node: TypeDeclLike): Seq[String] = {
     val clause = node match {
-      case c: ClassDeclSyntax     => c.inheritanceClause
-      case e: ExtensionDeclSyntax => e.inheritanceClause
-      case p: ProtocolDeclSyntax  => p.inheritanceClause
-      case s: StructDeclSyntax    => s.inheritanceClause
-      case e: EnumDeclSyntax      => e.inheritanceClause
-      case a: ActorDeclSyntax     => a.inheritanceClause
-      case t: TypeAliasDeclSyntax => None
+      case c: ClassDeclSyntax          => c.inheritanceClause
+      case e: ExtensionDeclSyntax      => e.inheritanceClause
+      case p: ProtocolDeclSyntax       => p.inheritanceClause
+      case s: StructDeclSyntax         => s.inheritanceClause
+      case e: EnumDeclSyntax           => e.inheritanceClause
+      case a: ActorDeclSyntax          => a.inheritanceClause
+      case a: AssociatedTypeDeclSyntax => a.inheritanceClause
+      case _: TypeAliasDeclSyntax      => None
     }
     clause match {
       case Some(value) => value.inheritedTypes.children.map(c => code(c.`type`)).distinct.sorted
@@ -714,6 +715,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         i.modifiers.children.flatMap(c => astForNode(c).root.map(_.asInstanceOf[NewModifier]))
       case d: DeinitializerDeclSyntax =>
         d.modifiers.children.flatMap(c => astForNode(c).root.map(_.asInstanceOf[NewModifier]))
+      case s: SubscriptDeclSyntax =>
+        s.modifiers.children.flatMap(c => astForNode(c).root.map(_.asInstanceOf[NewModifier]))
       case _: ClosureExprSyntax => Seq.empty
     }
     (virtualModifier +: modifiers).zipWithIndex.map { case (m, index) =>
@@ -737,6 +740,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case a: AccessorDeclSyntax      => a.attributes.children.map(astForNode)
       case i: InitializerDeclSyntax   => i.attributes.children.map(astForNode)
       case d: DeinitializerDeclSyntax => d.attributes.children.map(astForNode)
+      case s: SubscriptDeclSyntax     => s.attributes.children.map(astForNode)
       case c: ClosureExprSyntax =>
         val x = c.signature.map(s => s.attributes.children.map(astForNode))
         x.getOrElse(Seq.empty)
@@ -786,6 +790,10 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case _: DeinitializerDeclSyntax =>
         val returnType = Defines.Any
         (s"$returnType $methodFullName ()", returnType)
+      case s: SubscriptDeclSyntax =>
+        val returnType = code(s.returnClause.`type`)
+        registerType(returnType)
+        (s"$returnType $methodFullName ${s.parameterClause.parameters.children.map(code)}", returnType)
       case c: ClosureExprSyntax =>
         val returnType = c.signature.flatMap(_.returnClause).fold(Defines.Any)(r => code(r.`type`))
         val paramClauseCode =
@@ -810,6 +818,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         i.signature.parameterClause.parameters.children.map(astForNode)
       case _: DeinitializerDeclSyntax =>
         Seq.empty
+      case s: SubscriptDeclSyntax =>
+        s.parameterClause.parameters.children.map(astForNode)
       case c: ClosureExprSyntax =>
         c.signature.flatMap(_.parameterClause) match
           case Some(p: ClosureShorthandParameterListSyntax) => p.children.map(astForNode)
@@ -817,15 +827,25 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           case None                                         => Seq.empty
     }
 
-    val body = node match {
+    val body: Option[CodeBlockSyntax | AccessorDeclListSyntax | CodeBlockItemListSyntax] = node match {
       case f: FunctionDeclSyntax      => f.body
       case a: AccessorDeclSyntax      => a.body
       case i: InitializerDeclSyntax   => i.body
       case d: DeinitializerDeclSyntax => d.body
-      case c: ClosureExprSyntax       => Option(c.statements)
+      case s: SubscriptDeclSyntax =>
+        s.accessorBlock.map(_.accessors match {
+          case l: AccessorDeclListSyntax  => l
+          case l: CodeBlockItemListSyntax => l
+        })
+      case c: ClosureExprSyntax => Option(c.statements)
     }
 
     val bodyStmtAsts = body match {
+      case Some(bodyNode: AccessorDeclListSyntax) =>
+        bodyNode.children.toList match {
+          case Nil      => List.empty[Ast]
+          case children => children.map(astForNodeWithFunctionReferenceAndCall)
+        }
       case Some(bodyNode: CodeBlockSyntax) =>
         bodyNode.statements.children.toList match {
           case Nil => List.empty[Ast]
@@ -955,10 +975,13 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     callAst(callNode, argAsts)
   }
 
-  private def astForOperatorDeclSyntax(node: OperatorDeclSyntax): Ast               = notHandledYet(node)
+  private def astForOperatorDeclSyntax(node: OperatorDeclSyntax): Ast = Ast()
+
   private def astForPoundSourceLocationSyntax(node: PoundSourceLocationSyntax): Ast = notHandledYet(node)
-  private def astForPrecedenceGroupDeclSyntax(node: PrecedenceGroupDeclSyntax): Ast = notHandledYet(node)
-  private def astForSubscriptDeclSyntax(node: SubscriptDeclSyntax): Ast             = notHandledYet(node)
+
+  private def astForPrecedenceGroupDeclSyntax(node: PrecedenceGroupDeclSyntax): Ast = Ast()
+
+  private def astForSubscriptDeclSyntax(node: SubscriptDeclSyntax): Ast = notHandledYet(node)
 
   private def astForTypeAliasDeclSyntax(node: TypeAliasDeclSyntax): Ast = {
     // TODO:

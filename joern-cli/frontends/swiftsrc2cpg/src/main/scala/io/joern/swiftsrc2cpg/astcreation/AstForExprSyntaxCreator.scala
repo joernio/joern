@@ -255,12 +255,16 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case "==="                 => Operators.equals
       case "&+"                  => Operators.plus
       case "+"                   => Operators.plus
+      case "&+="                 => Operators.assignmentPlus
       case "&-"                  => Operators.minus
       case "-"                   => Operators.minus
+      case "&-="                 => Operators.assignmentMinus
       case "&/"                  => Operators.division
       case "/"                   => Operators.division
+      case "&/="                 => Operators.assignmentDivision
       case "&*"                  => Operators.multiplication
       case "*"                   => Operators.multiplication
+      case "&*="                 => Operators.assignmentMultiplication
       case "..<" | ">.." | "..." => Operators.range
       case "%"                   => Operators.modulo
       case "!"                   => Operators.logicalNot
@@ -268,7 +272,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case "^"                   => Operators.xor
       case "??"                  => Operators.elvis
       case _ =>
-        notHandledYet(node)
+        notHandledYet(node.operator)
         "<operator>.unknown"
     }
 
@@ -338,7 +342,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
   }
 
-  private def astForMissingExprSyntax(node: MissingExprSyntax): Ast = notHandledYet(node)
+  private def astForMissingExprSyntax(node: MissingExprSyntax): Ast = Ast()
 
   private def astForNilLiteralExprSyntax(node: NilLiteralExprSyntax): Ast = {
     Ast(literalNode(node, code(node), Option(Defines.Nil)))
@@ -410,7 +414,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case "<"  => Operators.lessThan
       case ">"  => Operators.greaterThan
       case _ =>
-        notHandledYet(node)
+        notHandledYet(node.operator)
         "<operator>.unknown"
     }
     val unaryCall     = callNode(node, code(node), operatorMethod, operatorMethod, DispatchTypes.STATIC_DISPATCH)
@@ -429,7 +433,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case "==" => Operators.equals
       case "%"  => Operators.modulo
       case _ =>
-        notHandledYet(node)
+        notHandledYet(node.operator)
         "<operator>.unknown"
     }
     val unaryCall     = callNode(node, code(node), operatorMethod, operatorMethod, DispatchTypes.STATIC_DISPATCH)
