@@ -827,19 +827,16 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
           case None                                         => Seq.empty
     }
 
-    val body = node match {
+    val body: Option[CodeBlockSyntax | AccessorDeclListSyntax | CodeBlockItemListSyntax] = node match {
       case f: FunctionDeclSyntax      => f.body
       case a: AccessorDeclSyntax      => a.body
       case i: InitializerDeclSyntax   => i.body
       case d: DeinitializerDeclSyntax => d.body
       case s: SubscriptDeclSyntax =>
-        s.accessorBlock match
-          case Some(value: AccessorBlockSyntax) =>
-            value.accessors match {
-              case l: AccessorDeclListSyntax  => Option(l)
-              case l: CodeBlockItemListSyntax => Option(l)
-            }
-          case None => None
+        s.accessorBlock.map(_.accessors match {
+          case l: AccessorDeclListSyntax  => l
+          case l: CodeBlockItemListSyntax => l
+        })
       case c: ClosureExprSyntax => Option(c.statements)
     }
 
