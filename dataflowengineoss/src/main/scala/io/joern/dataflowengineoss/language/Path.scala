@@ -2,7 +2,6 @@ package io.joern.dataflowengineoss.language
 
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, Member, MethodParameterIn}
 import io.shiftleft.semanticcpg.language.*
-import org.apache.commons.lang3.StringUtils
 import overflowdb.traversal.help.Table
 import overflowdb.traversal.help.Table.AvailableWidthProvider
 
@@ -22,12 +21,8 @@ case class Path(elements: List[AstNode]) {
 
 object Path {
 
-  val DefaultMaxTrackedWidth = 30
-  // TODO replace with dynamic rendering based on the terminal's width, e.g. in scala-repl-pp
-  lazy val maxTrackedWidth = sys.env.get("JOERN_DATAFLOW_TRACKED_WIDTH").map(_.toInt).getOrElse(DefaultMaxTrackedWidth)
-
   implicit def show(implicit availableWidthProvider: AvailableWidthProvider): Show[Path] = { path =>
-    Table(
+    val table = Table(
       columnNames = Array("nodeType", "tracked", "lineNumber", "method", "file"),
       rows = path.elements.map { astNode =>
         val nodeType   = astNode.getClass.getSimpleName
@@ -48,11 +43,11 @@ object Path {
                 s"$methodName($paramsPretty)"
               case _ => cfgNode.statement.repr
             }
-            val tracked = StringUtils.normalizeSpace(StringUtils.abbreviate(statement, maxTrackedWidth))
-            Array(nodeType, tracked, lineNumber, methodName, fileName)
+            Array(nodeType, statement, lineNumber, methodName, fileName)
         }
       }
-    ).render
+    )
+    table.render
   }
 
 }
