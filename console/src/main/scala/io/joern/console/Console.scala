@@ -19,8 +19,9 @@ import scala.sys.process.Process
 import scala.util.control.NoStackTrace
 import scala.util.{Failure, Success, Try}
 
-class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.currentWorkingDirectory)(
-                           implicit availableWidthProvider: AvailableWidthProvider) extends Reporting {
+class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.currentWorkingDirectory)(implicit
+  availableWidthProvider: AvailableWidthProvider
+) extends Reporting {
 
   import Console._
 

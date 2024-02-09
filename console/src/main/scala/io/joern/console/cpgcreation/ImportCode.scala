@@ -11,7 +11,9 @@ import overflowdb.traversal.help.Table.AvailableWidthProvider
 import java.nio.file.Path
 import scala.util.{Failure, Success, Try}
 
-class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit availableWidthProvider: AvailableWidthProvider) extends Reporting {
+class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
+  availableWidthProvider: AvailableWidthProvider
+) extends Reporting {
   import io.joern.console.Console.*
 
   private val config             = console.config
@@ -87,7 +89,9 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit av
     )
 
   // this is only abstract to force people adding frontends to make a decision whether the frontend consumes binaries or source
-  abstract class Frontend(val name: String, val language: String, val description: String = "")(implicit availableWidthProvider: AvailableWidthProvider) {
+  abstract class Frontend(val name: String, val language: String, val description: String = "")(implicit
+    availableWidthProvider: AvailableWidthProvider
+  ) {
     def cpgGeneratorForLanguage(
       language: String,
       config: FrontendConfig,

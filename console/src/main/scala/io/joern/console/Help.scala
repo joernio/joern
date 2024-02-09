@@ -9,7 +9,9 @@ object Help {
 
   private val width = 80
 
-  def overview(clazz: Class[_])(implicit availableWidthProvider: AvailableWidthProvider = defaultAvalailableWidthProvider): String = {
+  def overview(
+    clazz: Class[_]
+  )(implicit availableWidthProvider: AvailableWidthProvider = defaultAvalailableWidthProvider): String = {
     val columnNames = List("command", "description", "example")
     val rows = DocFinder
       .findDocumentedMethodsOf(clazz)

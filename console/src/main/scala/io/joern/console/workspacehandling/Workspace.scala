@@ -10,7 +10,9 @@ import scala.collection.mutable.ListBuffer
   * @param projects
   *   list of projects present in this workspace
   */
-class Workspace[ProjectType <: Project](var projects: ListBuffer[ProjectType])(implicit availableWidthProvider: AvailableWidthProvider = defaultAvalailableWidthProvider) {
+class Workspace[ProjectType <: Project](var projects: ListBuffer[ProjectType])(implicit
+  availableWidthProvider: AvailableWidthProvider = defaultAvalailableWidthProvider
+) {
 
   /** Returns total number of projects in this workspace
     */
