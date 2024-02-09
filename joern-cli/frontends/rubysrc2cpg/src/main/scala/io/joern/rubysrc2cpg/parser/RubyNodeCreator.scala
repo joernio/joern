@@ -4,11 +4,9 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.parser.AntlrContextHelpers.*
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
-import org.antlr.v4.runtime.tree.{ErrorNode, ParseTree, TerminalNode}
+import org.antlr.v4.runtime.tree.{ParseTree, RuleNode}
 
 import scala.jdk.CollectionConverters.*
-import org.antlr.v4.runtime.tree.RuleNode
-import io.joern.rubysrc2cpg.parser.RubyParser
 
 /** Converts an ANTLR Ruby Parse Tree into the intermediate Ruby AST.
   */
@@ -324,6 +322,20 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitMultipleAssignmentStatement(ctx: RubyParser.MultipleAssignmentStatementContext): RubyNode = {
+
+    /** Recursively expand and duplicate splatting nodes so that they line up with what they consume.
+      *
+      * @param nodes
+      *   the splat nodes.
+      * @param expandSize
+      *   how many more duplicates to create.
+      */
+    def slurp(nodes: List[RubyNode], expandSize: Int): List[RubyNode] = nodes match {
+      case (head: SplattingRubyNode) :: tail if expandSize > 0 => head :: slurp(head :: tail, expandSize - 1)
+      case head :: tail                                        => head :: slurp(tail, expandSize)
+      case Nil                                                 => List.empty
+    }
+
     val lhsNodes = Option(ctx.multipleLeftHandSide())
       .map(visit)
       .orElse(
@@ -339,69 +351,90 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
       case x: StatementList => x.statements
       case x                => List(x)
     }
-    val op = ctx.EQ().toString()
+    val op = ctx.EQ().toString
 
-    /** Recursively expand and duplicate splatting nodes so that they line up with what they consume.
-      *
-      * @param nodes
-      *   the splat nodes.
-      * @param expandSize
-      *   how many more duplicates to create.
-      */
-    def slurp(nodes: List[RubyNode], expandSize: Int): List[RubyNode] = nodes match {
-      case (head: SplattingRubyNode) :: tail if expandSize > 0 && tail.exists(_.isInstanceOf[SplattingRubyNode]) =>
-        val newTail = slurp(tail, expandSize - 1)
-        head :: slurp(head :: newTail, expandSize - 2)
-      case (head: SplattingRubyNode) :: tail if expandSize > 0 =>
-        head :: slurp(head :: tail, expandSize - 1)
-      case head :: tail => head :: slurp(tail, expandSize)
-      case Nil          => List.empty
-    }
+    lazy val defaultAssignments = lhsNodes
+      .zipAll(rhsNodes, defaultResult(), Unknown()(defaultTextSpan(Defines.Undefined)))
+      .map { case (lhs, rhs) => SingleAssignment(lhs, op, rhs)(ctx.toTextSpan) }
 
-    val assignments = if (lhsNodes.size < rhsNodes.size && lhsNodes.exists(_.isInstanceOf[SplattingRubyNode])) {
-      // Handle slurping, i.e., an LHS variable is assigned to more than one node from the RHS
-      val difference = rhsNodes.size - lhsNodes.size
-      val slurpedLhs = slurp(lhsNodes, difference)
+    val assignments = if ((lhsNodes ++ rhsNodes).exists(_.isInstanceOf[SplattingRubyNode])) {
+      rhsNodes.size - lhsNodes.size match {
+        // Handle slurping the RHS values
+        case x if x > 0 => {
+          val slurpedLhs = slurp(lhsNodes, x)
 
-      slurpedLhs
-        .zip(rhsNodes)
-        .groupBy(_._1)
-        .toSeq
-        .map { case (lhsNode, xs) => lhsNode -> xs.map(_._2) }
-        .sortBy { x => slurpedLhs.indexOf(x._1) } // groupBy produces a map which discards insertion order
-        .map {
-          case (SplattingRubyNode(lhs), rhss) =>
-            SingleAssignment(lhs, op, ArrayLiteral(rhss)(ctx.toTextSpan))(ctx.toTextSpan)
-          case (lhs, rhs :: Nil) => SingleAssignment(lhs, op, rhs)(ctx.toTextSpan)
-          case (lhs, rhss)       => SingleAssignment(lhs, op, ArrayLiteral(rhss)(ctx.toTextSpan))(ctx.toTextSpan)
+          slurpedLhs
+            .zip(rhsNodes)
+            .groupBy(_._1)
+            .toSeq
+            .map { case (lhsNode, xs) => lhsNode -> xs.map(_._2) }
+            .sortBy { x => slurpedLhs.indexOf(x._1) } // groupBy produces a map which discards insertion order
+            .map {
+              case (SplattingRubyNode(lhs), rhss) =>
+                SingleAssignment(lhs, op, ArrayLiteral(rhss)(ctx.toTextSpan))(ctx.toTextSpan)
+              case (lhs, rhs :: Nil) => SingleAssignment(lhs, op, rhs)(ctx.toTextSpan)
+              case (lhs, rhss)       => SingleAssignment(lhs, op, ArrayLiteral(rhss)(ctx.toTextSpan))(ctx.toTextSpan)
+            }
+            .toList
         }
-        .toList
+        // Handle splitting the RHS values
+        case x if x < 0 => {
+          val slurpedRhs = slurp(rhsNodes, Math.abs(x))
+
+          lhsNodes
+            .zip(slurpedRhs)
+            .groupBy(_._2)
+            .toSeq
+            .map { case (rhsNode, xs) => rhsNode -> xs.map(_._1) }
+            .sortBy { x => slurpedRhs.indexOf(x._1) } // groupBy produces a map which discards insertion order
+            .flatMap {
+              case (SplattingRubyNode(rhs), lhss) =>
+                lhss.map(SingleAssignment(_, op, SplattingRubyNode(rhs)(rhs.span))(ctx.toTextSpan))
+              case (rhs, lhs :: Nil) => Seq(SingleAssignment(lhs, op, rhs)(ctx.toTextSpan))
+              case (rhs, lhss) => lhss.map(SingleAssignment(_, op, SplattingRubyNode(rhs)(rhs.span))(ctx.toTextSpan))
+            }
+            .toList
+        }
+        case _ => defaultAssignments
+      }
     } else {
-      // TODO: Handle Split (may need to be approximated)
-      lhsNodes
-        .zipAll(rhsNodes, defaultResult(), Unknown()(defaultTextSpan(Defines.Undefined)))
-        .map { case (lhs, rhs) => SingleAssignment(lhs, op, rhs)(ctx.toTextSpan) }
-        .toList
+      defaultAssignments
     }
     MultipleAssignment(assignments)(ctx.toTextSpan)
   }
 
   override def visitMultipleLeftHandSide(ctx: RubyParser.MultipleLeftHandSideContext): RubyNode = {
-    val statements = ctx.multipleLeftHandSideItem.asScala.map(visit).toList ++ Option(ctx.packingLeftHandSide)
+    val multiLhsItems = ctx.multipleLeftHandSideItem.asScala.map(visit).toList
+    val packingLHSNodes = Option(ctx.packingLeftHandSide)
       .map(visit)
-      .toList ++ Option(ctx.groupedLeftHandSide).map(visit).toList
+      .map {
+        case StatementList(statements) => statements
+        case x                         => List(x)
+      }
+      .getOrElse(List.empty)
+    val procParameter = Option(ctx.procParameter).map(visit).toList
+    val groupedLhs    = Option(ctx.groupedLeftHandSide).map(visit).toList
+    val statements    = multiLhsItems ++ packingLHSNodes ++ procParameter ++ groupedLhs
     StatementList(statements)(ctx.toTextSpan)
   }
 
   override def visitPackingLeftHandSide(ctx: RubyParser.PackingLeftHandSideContext): RubyNode = {
-    SplattingRubyNode(visit(ctx.leftHandSide))(ctx.toTextSpan)
+    val splatNode = SplattingRubyNode(visit(ctx.leftHandSide))(ctx.toTextSpan)
+    Option(ctx.multipleLeftHandSideItem()).map(_.asScala.map(visit).toList).getOrElse(List.empty) match {
+      case Nil => splatNode
+      case xs  => StatementList(splatNode +: xs)(ctx.toTextSpan)
+    }
   }
 
   override def visitMultipleRightHandSide(ctx: RubyParser.MultipleRightHandSideContext): RubyNode = {
-    Option(ctx.operatorExpressionList2())
-      .map(x => StatementList(x.operatorExpression().asScala.map(visit).toList)(ctx.toTextSpan))
-      .orElse(Option(ctx.splattingRightHandSide()).map(_.splattingArgument()).map(visit))
+    val rhsSplatting = Option(ctx.splattingRightHandSide()).map(_.splattingArgument()).map(visit).toList
+    Option(ctx.operatorExpressionList())
+      .map(x => StatementList(x.operatorExpression().asScala.map(visit).toList ++ rhsSplatting)(ctx.toTextSpan))
       .getOrElse(defaultResult())
+  }
+
+  override def visitSplattingArgument(ctx: RubyParser.SplattingArgumentContext): RubyNode = {
+    SplattingRubyNode(visit(ctx.operatorExpression()))(ctx.toTextSpan)
   }
 
   override def visitAttributeAssignmentExpression(ctx: RubyParser.AttributeAssignmentExpressionContext): RubyNode = {

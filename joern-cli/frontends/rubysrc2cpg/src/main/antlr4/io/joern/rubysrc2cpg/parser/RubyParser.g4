@@ -84,6 +84,7 @@ multipleLeftHandSideExceptPacking
 
 packingLeftHandSide
     :   STAR leftHandSide?
+    |   STAR leftHandSide (COMMA multipleLeftHandSideItem)*
     ;
 
 groupedLeftHandSide
@@ -92,12 +93,11 @@ groupedLeftHandSide
 
 multipleLeftHandSideItem
     :   leftHandSide
-    |   packingLeftHandSide
     |   groupedLeftHandSide
     ;
 
 multipleRightHandSide
-    :   operatorExpressionList2 (COMMA splattingRightHandSide)?
+    :   operatorExpressionList (COMMA splattingRightHandSide)?
     |   splattingRightHandSide
     ;
      
