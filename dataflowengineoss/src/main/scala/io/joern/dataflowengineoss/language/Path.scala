@@ -47,7 +47,8 @@ object Path {
         }
       }
     )
-    table.render
+    // add a line break for nicer repl rendering
+    "\n" + table.render
   }
 
 }
