@@ -282,9 +282,7 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
   ): Ast = {
     registerType(methodFullName)
 
-    val parentNode        = methodAstParentStack.head
-    val astParentType     = parentNode.label
-    val astParentFullName = parentNode.properties("FULL_NAME").toString
+    val (astParentType, astParentFullName) = astParentInfo()
     val functionTypeDeclNode =
       typeDeclNode(
         node,

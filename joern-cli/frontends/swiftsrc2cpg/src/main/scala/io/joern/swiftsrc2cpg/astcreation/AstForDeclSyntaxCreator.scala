@@ -50,9 +50,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val existingTypeDecl = global.seenTypeDecls.keys().asScala.find(_.name == typeName)
     if (existingTypeDecl.isEmpty) {
 
-      val astParentType     = methodAstParentStack.head.label
-      val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
-
+      val (astParentType, astParentFullName) = astParentInfo()
       val typeDeclNode_ = typeDeclNode(
         node,
         typeName,
@@ -332,9 +330,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     if (existingTypeDecl.isEmpty) {
       registerType(typeFullName)
 
-      val astParentType     = methodAstParentStack.head.label
-      val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
-
+      val (astParentType, astParentFullName) = astParentInfo()
       val typeDeclNode_ = typeDeclNode(
         node,
         typeName,
@@ -549,9 +545,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     if (existingTypeDecl.isEmpty) {
       registerType(typeFullName)
 
-      val astParentType     = methodAstParentStack.head.label
-      val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
-
+      val (astParentType, astParentFullName) = astParentInfo()
       val typeDeclNode_ = typeDeclNode(
         node,
         typeName,
@@ -787,7 +781,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         val returnType = Defines.Any
         (s"$returnType $methodFullName ${a.parameters.fold("()")(code)}", returnType)
       case i: InitializerDeclSyntax =>
-        val returnType = methodAstParentStack.head.properties("FULL_NAME").toString
+        val (_, returnType) = astParentInfo()
         (s"$returnType $methodFullName ${i.signature.parameterClause.parameters.children.map(code)}", returnType)
       case _: DeinitializerDeclSyntax =>
         val returnType = Defines.Any
@@ -980,10 +974,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     val existingTypeDecl = global.seenTypeDecls.keys().asScala.find(_.name == typeName)
     if (existingTypeDecl.isEmpty) {
-
-      val astParentType     = methodAstParentStack.head.label
-      val astParentFullName = methodAstParentStack.head.properties("FULL_NAME").toString
-
+      val (astParentType, astParentFullName) = astParentInfo()
       val typeDeclNode_ = typeDeclNode(
         node,
         typeName,
