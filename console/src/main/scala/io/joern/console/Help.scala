@@ -32,7 +32,6 @@ object Help {
       |
       |
       |""".stripMargin)
-    println(s"XXX0 ${availableWidthProvider()}")
     header + "\n" + Table(columnNames, rows.sortBy(_.head)).render
   }
 
