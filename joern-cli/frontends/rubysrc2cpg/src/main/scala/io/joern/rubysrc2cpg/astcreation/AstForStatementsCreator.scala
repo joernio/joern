@@ -126,8 +126,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           } ++ (whenClause.matchSplatExpression.iterator.flatMap {
             case u: Unknown => List(u)
             case e =>
-              logger.warn("Splatting not implemented for `when` in ruby `case`")
-              List(Unknown()(e.span))
+              logger.warn(s"Splatting not implemented for `when` in ruby `case`")
+              List(Unknown()(e.span.spanStart(s"*${e.span.text}")))
           })
           // There is always at least one match expression or a splat
           // a splat will become an unknown in condition at the end
