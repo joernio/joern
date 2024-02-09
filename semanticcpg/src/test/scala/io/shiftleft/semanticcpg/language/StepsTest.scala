@@ -191,7 +191,7 @@ class StepsTest extends AnyWordSpec with Matchers {
   }
 
   ".help step" should {
-    implicit val availableWidthProvider: AvailableWidthProvider = new ConstantWidth(100)
+    implicit val availableWidthProvider: AvailableWidthProvider = new ConstantWidth(120)
 
     "show domain overview" in {
       val domainStartersHelp = Cpg.emptyCpg.help
@@ -209,7 +209,7 @@ class StepsTest extends AnyWordSpec with Matchers {
 
       val methodStepsHelpVerbose = Cpg.emptyCpg.method.helpVerbose
       methodStepsHelpVerbose should include("traversal name")
-      methodStepsHelpVerbose should include("io.shiftleft.semanticcpg.language.types.structure.Method")
+      methodStepsHelpVerbose should include("structure.MethodTraversal")
 
       val assignmentStepsHelp = Cpg.emptyCpg.assignment.help
       assignmentStepsHelp should include("Left-hand sides of assignments") // from AssignmentTraversal
