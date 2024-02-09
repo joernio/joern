@@ -17,6 +17,7 @@ import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.nodes.NewNamespaceBlock
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
+import io.shiftleft.codepropertygraph.generated.PropertyNames
 
 import scala.collection.mutable
 
@@ -85,6 +86,12 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       setArgumentIndices(resultingAsts)
       resultingAsts
     }
+  }
+
+  protected def astParentInfo(): (String, String) = {
+    val astParentType     = methodAstParentStack.head.label
+    val astParentFullName = methodAstParentStack.head.properties(PropertyNames.FULL_NAME).toString
+    (astParentType, astParentFullName)
   }
 
   protected def registerType(typeFullName: String): Unit = {
