@@ -61,7 +61,15 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     Ast(literalNode(node, code(node).stripSuffix(","), Option(Defines.String)))
   }
 
-  private def astForAvailabilityConditionSyntax(node: AvailabilityConditionSyntax): Ast = notHandledYet(node)
+  private def astForAvailabilityConditionSyntax(node: AvailabilityConditionSyntax): Ast = {
+    val callName = code(node.availabilityKeyword)
+    val callNode = createStaticCallNode(code(node), callName, callName, line(node), column(node))
+    val argAsts = node.availabilityArguments.children.map { c =>
+      Ast(literalNode(c, code(c).stripSuffix(","), Option(Defines.String)))
+    }
+    callAst(callNode, argAsts)
+  }
+
   private def astForAvailabilityLabeledArgumentSyntax(node: AvailabilityLabeledArgumentSyntax): Ast = notHandledYet(
     node
   )
