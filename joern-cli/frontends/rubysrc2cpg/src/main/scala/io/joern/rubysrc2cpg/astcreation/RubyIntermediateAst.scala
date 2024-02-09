@@ -63,7 +63,7 @@ object RubyIntermediateAst {
   )(span: TextSpan)
       extends RubyNode(span)
 
-  final case class MandatoryParameter()(span: TextSpan) extends RubyNode(span)
+  final case class MandatoryParameter(name: String)(span: TextSpan) extends RubyNode(span)
 
   final case class OptionalParameter(name: RubyNode, defaultExpression: RubyNode)(span: TextSpan) extends RubyNode(span)
 
@@ -76,6 +76,8 @@ object RubyIntermediateAst {
   final case class SingleAssignment(lhs: RubyNode, op: String, rhs: RubyNode)(span: TextSpan) extends RubyNode(span)
 
   final case class MultipleAssignment(assignments: List[SingleAssignment])(span: TextSpan) extends RubyNode(span)
+
+  final case class SplattingRubyNode(name: RubyNode)(span: TextSpan) extends RubyNode(span)
 
   final case class AttributeAssignment(target: RubyNode, op: String, attributeName: String, rhs: RubyNode)(
     span: TextSpan

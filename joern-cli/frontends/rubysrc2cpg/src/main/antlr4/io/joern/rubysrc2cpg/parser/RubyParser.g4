@@ -92,6 +92,7 @@ groupedLeftHandSide
 
 multipleLeftHandSideItem
     :   leftHandSide
+    |   packingLeftHandSide
     |   groupedLeftHandSide
     ;
 

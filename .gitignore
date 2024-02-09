@@ -46,6 +46,7 @@ null
 **/dotnetastgen-macos
 **/dotnetastgen-macos-arm
 slices.json
+**/.antlr
 
 ##############
 # Nix flakes #
