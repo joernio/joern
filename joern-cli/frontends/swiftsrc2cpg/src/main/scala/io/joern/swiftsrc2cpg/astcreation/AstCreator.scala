@@ -132,7 +132,7 @@ class AstCreator(val config: Config, val global: SwiftGlobal, val parserResult: 
   protected def lineEnd(node: SwiftNode): Option[Integer]   = node.endLine.map(Integer.valueOf)
   protected def columnEnd(node: SwiftNode): Option[Integer] = node.endColumn.map(Integer.valueOf)
   protected def code(node: SwiftNode): String = {
-    val startIndex = node.startOffset.getOrElse(0)
+    val startIndex = Math.min(node.startOffset.getOrElse(0), parserResult.fileContent.length)
     val endIndex   = Math.min(node.endOffset.getOrElse(0), parserResult.fileContent.length)
     shortenCode(parserResult.fileContent.substring(startIndex, endIndex).trim)
   }

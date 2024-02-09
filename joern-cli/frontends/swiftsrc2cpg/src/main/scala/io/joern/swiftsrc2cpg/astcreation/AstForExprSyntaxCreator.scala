@@ -233,12 +233,16 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case "%="                  => Operators.assignmentModulo
       case "**="                 => Operators.assignmentExponentiation
       case "&&"                  => Operators.logicalAnd
+      case "&"                   => Operators.and
       case "&="                  => Operators.assignmentAnd
       case "&&="                 => Operators.assignmentAnd
       case "|="                  => Operators.assignmentOr
+      case "|"                   => Operators.or
       case "||="                 => Operators.assignmentOr
       case "||"                  => Operators.logicalOr
       case "^="                  => Operators.assignmentXor
+      case "<<"                  => Operators.shiftLeft
+      case ">>"                  => Operators.arithmeticShiftRight
       case "<<="                 => Operators.assignmentShiftLeft
       case ">>="                 => Operators.assignmentArithmeticShiftRight
       case ">>>="                => Operators.assignmentLogicalShiftRight
@@ -249,9 +253,13 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case ">"                   => Operators.greaterThan
       case "=="                  => Operators.equals
       case "==="                 => Operators.equals
+      case "&+"                  => Operators.plus
       case "+"                   => Operators.plus
+      case "&-"                  => Operators.minus
       case "-"                   => Operators.minus
+      case "&/"                  => Operators.division
       case "/"                   => Operators.division
+      case "&*"                  => Operators.multiplication
       case "*"                   => Operators.multiplication
       case "..<" | ">.." | "..." => Operators.range
       case "%"                   => Operators.modulo
@@ -398,6 +406,9 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val operatorMethod = code(node.operator) match {
       case "++" => Operators.postIncrement
       case "--" => Operators.postDecrement
+      case "^"  => Operators.xor
+      case "<"  => Operators.lessThan
+      case ">"  => Operators.greaterThan
       case _ =>
         notHandledYet(node)
         "<operator>.unknown"
@@ -409,12 +420,14 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
   private def astForPrefixOperatorExprSyntax(node: PrefixOperatorExprSyntax): Ast = {
     val operatorMethod = code(node.operator) match {
-      case "-" => Operators.preDecrement
-      case "+" => Operators.preIncrement
-      case "~" => Operators.not
-      case "!" => Operators.logicalNot
-      case "<" => Operators.lessThan
-      case ">" => Operators.greaterThan
+      case "-"  => Operators.preDecrement
+      case "+"  => Operators.preIncrement
+      case "~"  => Operators.not
+      case "!"  => Operators.logicalNot
+      case "<"  => Operators.lessThan
+      case ">"  => Operators.greaterThan
+      case "==" => Operators.equals
+      case "%"  => Operators.modulo
       case _ =>
         notHandledYet(node)
         "<operator>.unknown"
