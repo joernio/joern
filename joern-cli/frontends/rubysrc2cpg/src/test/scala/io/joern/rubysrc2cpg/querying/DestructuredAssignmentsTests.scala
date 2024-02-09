@@ -173,6 +173,46 @@ class DestructuredAssignmentsTests extends RubyCode2CpgFixture {
 
     }
 
+    "create two arrays for the LHS variable slurping on the left and right of the group" in {
+      val cpg = code("""
+                |*a, b, *c = 1, 2, 3, 4, 5
+                |""".stripMargin)
+
+      inside(cpg.assignment.l) {
+        case aAssignment :: bAssignment :: cAssignment :: Nil =>
+          aAssignment.code shouldBe "*a, b, *c = 1, 2, 3, 4, 5"
+          bAssignment.code shouldBe "*a, b, *c = 1, 2, 3, 4, 5"
+          cAssignment.code shouldBe "*a, b, *c = 1, 2, 3, 4, 5"
+
+          val List(a: Identifier, arrA: Call) = aAssignment.argumentOut.toList: @unchecked
+          a.name shouldBe "a"
+          arrA.name shouldBe Operators.arrayInitializer
+          inside(arrA.argumentOut.l) {
+            case (one: Literal) :: (two: Literal) :: Nil =>
+              one.code shouldBe "1"
+              two.code shouldBe "2"
+            case _ => fail("Unexpected number of array elements in `a`'s assignment")
+          }
+
+          val List(b: Identifier, three: Literal) = bAssignment.argumentOut.toList: @unchecked
+          b.name shouldBe "b"
+          three.code shouldBe "3"
+
+          val List(c: Identifier, arrC: Call) = cAssignment.argumentOut.toList: @unchecked
+          c.name shouldBe "c"
+          arrC.name shouldBe Operators.arrayInitializer
+          inside(arrC.argumentOut.l) {
+            case (four: Literal) :: (five: Literal) :: Nil =>
+              four.code shouldBe "4"
+              five.code shouldBe "5"
+            case _ => fail("Unexpected number of array elements in `c`'s assignment")
+          }
+
+        case _ => fail("Unexpected number of assignments found")
+      }
+
+    }
+
     "create an array for the LHS variable implicitly slurping the RHS" in {
       val cpg = code("""
                 |a = 1, 2, 3, 4
