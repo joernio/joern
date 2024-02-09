@@ -331,13 +331,9 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
       *   how many more duplicates to create.
       */
     def slurp(nodes: List[RubyNode], expandSize: Int): List[RubyNode] = nodes match {
-      case (head: SplattingRubyNode) :: tail if expandSize > 0 && tail.exists(_.isInstanceOf[SplattingRubyNode]) =>
-        val newTail = slurp(tail, expandSize - 1)
-        head :: slurp(head :: newTail, expandSize - 2)
-      case (head: SplattingRubyNode) :: tail if expandSize > 0 =>
-        head :: slurp(head :: tail, expandSize - 1)
-      case head :: tail => head :: slurp(tail, expandSize)
-      case Nil          => List.empty
+      case (head: SplattingRubyNode) :: tail if expandSize > 0 => head :: slurp(head :: tail, expandSize - 1)
+      case head :: tail                                        => head :: slurp(tail, expandSize)
+      case Nil                                                 => List.empty
     }
 
     val lhsNodes = Option(ctx.multipleLeftHandSide())
