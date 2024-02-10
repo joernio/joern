@@ -9,7 +9,7 @@ import scala.util.Try
 
 package object testing {
 
-  implicit val availableWidthProvider: AvailableWidthProvider = ConstantWidth(100)
+  implicit val availableWidthProvider: AvailableWidthProvider = ConstantWidth(120)
 
   object WithStandaloneCpg {
     def apply(console: Console[Project], codeDir: File)(fun: File => Unit): Unit = {
