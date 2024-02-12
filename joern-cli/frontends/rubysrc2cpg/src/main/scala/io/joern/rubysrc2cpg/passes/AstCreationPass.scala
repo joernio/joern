@@ -9,32 +9,19 @@ import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 
-class AstCreationPass(cpg: Cpg, parser: ResourceManagedParser, config: Config)
-    extends ConcurrentWriterCpgPass[String](cpg) {
+class AstCreationPass(cpg: Cpg, astCreators: List[AstCreator]) extends ConcurrentWriterCpgPass[AstCreator](cpg) {
 
-  private val logger                   = LoggerFactory.getLogger(getClass)
-  private val RubySourceFileExtensions = Set(".rb")
+  private val logger = LoggerFactory.getLogger(getClass)
 
-  override def generateParts(): Array[String] = {
-    SourceFiles
-      .determine(
-        config.inputPath,
-        RubySourceFileExtensions,
-        ignoredFilesRegex = Option(config.ignoredFilesRegex),
-        ignoredFilesPath = Option(config.ignoredFiles)
-      )
-      .toArray
-  }
+  override def generateParts(): Array[AstCreator] = astCreators.toArray
 
-  override def runOnPart(diffGraph: DiffGraphBuilder, fileName: String): Unit = {
+  override def runOnPart(diffGraph: DiffGraphBuilder, astCreator: AstCreator): Unit = {
     try {
-      // TODO: Should the parsing step be moved here?
-      val astCreator = new AstCreator(fileName, parser, cpg.metaData.root.headOption)(config.schemaValidation)
-      val ast        = astCreator.createAst()
+      val ast = astCreator.createAst()
       diffGraph.absorb(ast)
     } catch {
       case ex: Exception =>
-        logger.error(s"Error while processing AST for file - $fileName - ", ex)
+        logger.error(s"Error while processing AST for file - ${astCreator.fileName} - ", ex)
     }
   }
 }
