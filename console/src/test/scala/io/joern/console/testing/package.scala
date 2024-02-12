@@ -1,11 +1,15 @@
 package io.joern.console
-import better.files.Dsl._
-import better.files._
+
+import better.files.Dsl.*
+import better.files.*
 import io.joern.console.workspacehandling.Project
+import overflowdb.traversal.help.Table.{AvailableWidthProvider, ConstantWidth}
 
 import scala.util.Try
 
 package object testing {
+
+  implicit val availableWidthProvider: AvailableWidthProvider = ConstantWidth(120)
 
   object WithStandaloneCpg {
     def apply(console: Console[Project], codeDir: File)(fun: File => Unit): Unit = {

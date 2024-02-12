@@ -5,7 +5,7 @@ import io.joern.gosrc2cpg.parser.ParserNodeInfo
 import io.joern.x2cpg.astgen.AstGenNodeBuilder
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.NodeTypes
-import org.apache.commons.lang.StringUtils
+import org.apache.commons.lang3.StringUtils
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import ujson.Value
 

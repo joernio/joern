@@ -1,5 +1,7 @@
 package io.shiftleft
 
+import overflowdb.traversal.help.Table.AvailableWidthProvider
+
 /** Domain specific language for querying code property graphs
   *
   * This is the API reference for the CPG query language, a language to mine code for defects and vulnerabilities both
@@ -85,4 +87,10 @@ package io.shiftleft
   *   query.toList
   * }}}
   */
-package object semanticcpg {}
+
+package object semanticcpg {
+
+  implicit val defaultAvailableWidthProvider: AvailableWidthProvider =
+    () => replpp.util.terminalWidth.filter(_ > 0).getOrElse(120)
+
+}

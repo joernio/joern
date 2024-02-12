@@ -6,11 +6,14 @@ import io.joern.console.{ConsoleException, FrontendConfig, Reporting}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import overflowdb.traversal.help.Table
+import overflowdb.traversal.help.Table.AvailableWidthProvider
 
 import java.nio.file.Path
 import scala.util.{Failure, Success, Try}
 
-class ImportCode[T <: Project](console: io.joern.console.Console[T]) extends Reporting {
+class ImportCode[T <: Project](console: io.joern.console.Console[T])(implicit
+  availableWidthProvider: AvailableWidthProvider
+) extends Reporting {
   import io.joern.console.Console.*
 
   private val config             = console.config
@@ -86,7 +89,9 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) extends Rep
     )
 
   // this is only abstract to force people adding frontends to make a decision whether the frontend consumes binaries or source
-  abstract class Frontend(val name: String, val language: String, val description: String = "") {
+  abstract class Frontend(val name: String, val language: String, val description: String = "")(implicit
+    availableWidthProvider: AvailableWidthProvider
+  ) {
     def cpgGeneratorForLanguage(
       language: String,
       config: FrontendConfig,
@@ -101,7 +106,7 @@ class ImportCode[T <: Project](console: io.joern.console.Console[T]) extends Rep
     def apply(inputPath: String, projectName: String = "", args: List[String] = List()): Cpg = {
       val frontend = cpgGeneratorForLanguage(language, config.frontend, config.install.rootPath.path, args)
         .getOrElse(throw new ConsoleException(s"no cpg generator for language=$language available!"))
-      new ImportCode(console)(frontend, inputPath, projectName)
+      new ImportCode(console).apply(frontend, inputPath, projectName)
     }
   }
 

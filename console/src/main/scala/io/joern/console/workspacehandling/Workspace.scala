@@ -1,6 +1,8 @@
 package io.joern.console.workspacehandling
 
+import io.joern.console.defaultAvailableWidthProvider
 import overflowdb.traversal.help.Table
+import overflowdb.traversal.help.Table.AvailableWidthProvider
 
 import scala.collection.mutable.ListBuffer
 
@@ -8,7 +10,9 @@ import scala.collection.mutable.ListBuffer
   * @param projects
   *   list of projects present in this workspace
   */
-class Workspace[ProjectType <: Project](var projects: ListBuffer[ProjectType]) {
+class Workspace[ProjectType <: Project](var projects: ListBuffer[ProjectType])(implicit
+  availableWidthProvider: AvailableWidthProvider = defaultAvailableWidthProvider
+) {
 
   /** Returns total number of projects in this workspace
     */
@@ -35,7 +39,6 @@ class Workspace[ProjectType <: Project](var projects: ListBuffer[ProjectType]) {
         rows = projects.map(_.toTableRow).toList
       ).render
     }
-
   }
 
 }

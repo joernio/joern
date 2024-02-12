@@ -9,17 +9,19 @@ import io.joern.console.workspacehandling.{Project, WorkspaceLoader, WorkspaceMa
 import io.joern.x2cpg.X2Cpg.defaultOverlayCreators
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.cpgloading.CpgLoader
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.dotextension.ImageViewer
 import io.shiftleft.semanticcpg.layers.{LayerCreator, LayerCreatorContext}
 import overflowdb.traversal.help.Doc
+import overflowdb.traversal.help.Table.AvailableWidthProvider
 
 import scala.sys.process.Process
 import scala.util.control.NoStackTrace
 import scala.util.{Failure, Success, Try}
 
-class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.currentWorkingDirectory)
-    extends Reporting {
+class Console[T <: Project](loader: WorkspaceLoader[T], baseDir: File = File.currentWorkingDirectory)(implicit
+  availableWidthProvider: AvailableWidthProvider
+) extends Reporting {
 
   import Console._
 

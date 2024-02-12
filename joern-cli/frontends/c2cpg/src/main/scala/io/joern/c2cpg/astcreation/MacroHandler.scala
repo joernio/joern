@@ -11,7 +11,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
 }
 import io.joern.x2cpg.{Ast, AstEdge, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.NewLocal
-import org.apache.commons.lang.StringUtils
+import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.{IASTMacroExpansionLocation, IASTNode, IASTPreprocessorMacroDefinition}
 import org.eclipse.cdt.core.dom.ast.IASTBinaryExpression
 import org.eclipse.cdt.internal.core.model.ASTStringUtil
