@@ -1,6 +1,7 @@
 package io.joern.dataflowengineoss.language
 
 import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, CfgNode, Member, MethodParameterIn}
+import io.shiftleft.semanticcpg
 import io.shiftleft.semanticcpg.language.*
 import overflowdb.traversal.help.Table
 import overflowdb.traversal.help.Table.AvailableWidthProvider
@@ -21,7 +22,7 @@ case class Path(elements: List[AstNode]) {
 
 object Path {
 
-  implicit def show(implicit availableWidthProvider: AvailableWidthProvider): Show[Path] = { path =>
+  implicit def show(implicit availableWidthProvider: AvailableWidthProvider = semanticcpg.defaultAvailableWidthProvider): Show[Path] = { path =>
     val table = Table(
       columnNames = Array("nodeType", "tracked", "lineNumber", "method", "file"),
       rows = path.elements.map { astNode =>

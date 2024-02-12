@@ -7,7 +7,7 @@ import replpp.Colors
 package object console {
 
   implicit val defaultAvailableWidthProvider: AvailableWidthProvider =
-    () => replpp.util.terminalWidth.getOrElse(120)
+    io.shiftleft.semanticcpg.defaultAvailableWidthProvider
 
   // TODO remove any time after the end of 2023 - this is completely deprecated
   implicit class UnixUtils[A](content: Iterable[A]) {
