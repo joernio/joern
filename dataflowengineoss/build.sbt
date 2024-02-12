@@ -3,6 +3,7 @@ name := "dataflowengineoss"
 dependsOn(Projects.semanticcpg, Projects.x2cpg % "compile->compile;test->test")
 
 libraryDependencies ++= Seq(
+  "org.antlr"               % "antlr4"                     % Versions.antlr,
   "org.antlr"               % "antlr4-runtime"             % Versions.antlr,
   "io.circe"               %% "circe-core"                 % Versions.circe,
   "io.circe"               %% "circe-generic"              % Versions.circe,
