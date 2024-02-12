@@ -22,7 +22,9 @@ case class Path(elements: List[AstNode]) {
 
 object Path {
 
-  implicit def show(implicit availableWidthProvider: AvailableWidthProvider = semanticcpg.defaultAvailableWidthProvider): Show[Path] = { path =>
+  implicit def show(implicit
+    availableWidthProvider: AvailableWidthProvider = semanticcpg.defaultAvailableWidthProvider
+  ): Show[Path] = { path =>
     val table = Table(
       columnNames = Array("nodeType", "tracked", "lineNumber", "method", "file"),
       rows = path.elements.map { astNode =>
