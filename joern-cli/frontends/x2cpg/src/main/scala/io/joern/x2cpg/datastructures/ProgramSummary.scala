@@ -44,9 +44,8 @@ object ProgramSummary {
     */
   def combine[T <: TypeLike[_, _]](a: Map[String, Set[T]], b: Map[String, Set[T]]): Map[String, Set[T]] = {
     val accumulator = mutable.HashMap.from(a)
-    val allKeys     = accumulator.keySet ++ b.keySet
 
-    allKeys.foreach(k =>
+    b.keySet.foreach(k =>
       accumulator.updateWith(k) {
         case Some(existing) => Option(a.getOrElse(k, Set.empty) ++ b.getOrElse(k, Set.empty) ++ existing)
         case None           => Option(a.getOrElse(k, Set.empty) ++ b.getOrElse(k, Set.empty))
