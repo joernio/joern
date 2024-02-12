@@ -12,9 +12,13 @@ import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate
 
-class AstCreator(val fileName: String, programCtx: RubyParser.ProgramContext, projectRoot: Option[String] = None)(
-  implicit withSchemaValidation: ValidationMode
-) extends AstCreatorBase(fileName)
+class AstCreator(
+  val fileName: String,
+  protected val programCtx: RubyParser.ProgramContext,
+  protected val projectRoot: Option[String] = None,
+  protected val programSummary: RubyProgramSummary = RubyProgramSummary()
+)(implicit withSchemaValidation: ValidationMode)
+    extends AstCreatorBase(fileName)
     with AstCreatorHelper
     with AstForStatementsCreator
     with AstForExpressionsCreator
@@ -73,7 +77,7 @@ class AstCreator(val fileName: String, programCtx: RubyParser.ProgramContext, pr
     )
     val methodReturn = methodReturnNode(rootNode, Defines.Any)
 
-    scope.newModuleScope
+    scope.newProgramScope
       .map { moduleScope =>
         scope.pushNewScope(moduleScope)
         val statementAsts = rootNode.statements.flatMap(astsForStatement)

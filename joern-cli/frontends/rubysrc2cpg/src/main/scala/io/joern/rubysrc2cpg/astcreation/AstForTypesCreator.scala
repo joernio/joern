@@ -1,7 +1,14 @@
 package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
-import io.joern.rubysrc2cpg.datastructures.{BlockScope, ConstructorScope, MethodScope, TypeScope}
+import io.joern.rubysrc2cpg.datastructures.{
+  BlockScope,
+  ConstructorScope,
+  MethodScope,
+  ModuleScope,
+  ProgramScope,
+  TypeScope
+}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.{Ast, ValidationMode}
@@ -12,14 +19,8 @@ import io.joern.x2cpg.Defines as XDefines
 
 trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  protected def astForModuleDeclaration(node: ModuleDeclaration): Ast = {
-    // TODO: Might be wrong here (hence this placeholder), but I'm assuming modules ~= abstract classes.
-    val classDecl = ClassDeclaration(node.moduleName, None, node.body)(node.span)
-    astForClassDeclaration(classDecl)
-  }
-
-  protected def astForClassDeclaration(node: ClassDeclaration): Ast = {
-    node.className match
+  protected def astForClassDeclaration(node: RubyNode with TypeDeclaration): Ast = {
+    node.name match
       case name: SimpleIdentifier => astForSimpleNamedClassDeclaration(node, name)
       case name =>
         logger.warn(s"Qualified class names are not supported yet: ${name.text} ($relativeFileName), skipping")
@@ -34,7 +35,10 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         None
   }
 
-  private def astForSimpleNamedClassDeclaration(node: ClassDeclaration, nameIdentifier: SimpleIdentifier): Ast = {
+  private def astForSimpleNamedClassDeclaration(
+    node: RubyNode with TypeDeclaration,
+    nameIdentifier: SimpleIdentifier
+  ): Ast = {
     val className     = nameIdentifier.text
     val inheritsFrom  = node.baseClass.flatMap(getBaseClassName).toList
     val classFullName = computeClassFullName(className)
@@ -50,7 +54,11 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       alias = None
     )
 
-    scope.pushNewScope(TypeScope(classFullName))
+    node match {
+      case _: ClassDeclaration  => scope.pushNewScope(TypeScope(classFullName))
+      case _: ModuleDeclaration => scope.pushNewScope(ModuleScope(classFullName))
+    }
+
     val classBody =
       node.body.asInstanceOf[StatementList] // for now (bodyStatement is a superset of stmtList)
     val classBodyAsts = classBody.statements.flatMap(astsForStatement) match {
@@ -92,8 +100,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val fullName = computeMethodFullName(name)
     val method = methodNode(
       node = node,
-      name = fullName,
-      fullName = computeMethodFullName(name),
+      name = name,
+      fullName = fullName,
       code = s"def $name (...)",
       signature = None,
       fileName = relativeFileName,

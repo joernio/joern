@@ -14,11 +14,20 @@ class RubyScope(summary: RubyProgramSummary)
   /** @return
     *   using the stack, will initialize a new module scope object.
     */
-  def newModuleScope: Option[ModuleScope] = surroundingScopeFullName.map(ModuleScope.apply)
+  def newProgramScope: Option[ProgramScope] = surroundingScopeFullName.map(ProgramScope.apply)
 
   override def pushNewScope(scopeNode: TypedScopeElement): Unit = {
-    // TODO: Use the summary to determine if there is a constructor present
-    super.pushNewScope(scopeNode)
+    // Use the summary to determine if there is a constructor present
+    val mappedScopeNode = scopeNode match {
+      case TypeScope(fullName, _)
+          if !surroundingScopeFullName
+            .flatMap(summary.typesUnderNamespace)
+            .flatMap(_.methods)
+            .exists(_.name == "initialize") =>
+        TypeScope(fullName, true)
+      case _ => scopeNode
+    }
+    super.pushNewScope(mappedScopeNode)
   }
 
   /** @return
@@ -35,7 +44,7 @@ class RubyScope(summary: RubyProgramSummary)
     */
   def surroundingAstLabel: Option[String] = stack.collectFirst {
     case ScopeElement(_: NamespaceLikeScope, _) => NodeTypes.NAMESPACE_BLOCK
-    case ScopeElement(_: ModuleScope, _)        => NodeTypes.METHOD
+    case ScopeElement(_: ProgramScope, _)       => NodeTypes.METHOD
     case ScopeElement(_: TypeLikeScope, _)      => NodeTypes.TYPE_DECL
     case ScopeElement(_: MethodLikeScope, _)    => NodeTypes.METHOD
     case ScopeElement(BlockScope, _)            => NodeTypes.BLOCK

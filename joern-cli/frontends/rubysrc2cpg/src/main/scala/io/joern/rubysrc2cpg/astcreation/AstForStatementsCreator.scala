@@ -21,8 +21,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     case node: SimpleCallWithBlock        => astForSimpleCallWithBlock(node) :: Nil
     case node: MemberCallWithBlock        => astForMemberCallWithBlock(node) :: Nil
     case node: ReturnExpression           => astForReturnStatement(node) :: Nil
-    case node: ModuleDeclaration          => astForModuleDeclaration(node) :: Nil
-    case node: ClassDeclaration           => astForClassDeclaration(node) :: Nil
+    case node: TypeDeclaration            => astForClassDeclaration(node) :: Nil
     case node: FieldsDeclaration          => astsForFieldDeclarations(node)
     case node: MethodDeclaration          => astForMethodDeclaration(node) :: Nil
     case node: SingletonMethodDeclaration => astForSingletonMethodDeclaration(node) :: Nil

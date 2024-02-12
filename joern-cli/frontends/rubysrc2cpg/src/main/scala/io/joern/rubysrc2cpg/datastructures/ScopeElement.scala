@@ -24,14 +24,22 @@ trait TypeLikeScope extends TypedScopeElement {
   def needsDefaultConstructor: Boolean
 }
 
-/** A module.
+/** A file-level module.
   *
   * @param fileName
   *   the relative file name.
   */
-case class ModuleScope(fileName: String) extends TypeLikeScope {
+case class ProgramScope(fileName: String) extends TypeLikeScope {
   override def fullName: String = s"$fileName:${Defines.Program}"
 
+  override def needsDefaultConstructor: Boolean = false
+}
+
+/** A Ruby module/abstract class.
+  * @param fullName
+  *   the type full name.
+  */
+case class ModuleScope(fullName: String) extends TypeLikeScope {
   override def needsDefaultConstructor: Boolean = false
 }
 
