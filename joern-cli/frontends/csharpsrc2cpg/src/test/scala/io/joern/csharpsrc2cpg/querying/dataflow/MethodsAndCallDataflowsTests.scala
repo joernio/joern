@@ -89,4 +89,45 @@ class MethodsAndCallDataflowsTests extends CSharpCode2CpgFixture(withDataFlow = 
     }
   }
 
+  "dataflow for methods and calls across files with a file scoped namespace" should {
+    val cpg = code(
+      """
+        |using HelloBaz.Bazz.Baz;
+        |
+        |namespace HelloWorld {
+        |public class Foo {
+        | public int bar(int pBar) {
+        |   var b = new Baz();
+        |   int res = b.qux(1, "hello");
+        |   return res;
+        | }
+        |}
+        |}
+        |""".stripMargin,
+      "Foo.cs"
+    ).moreCode(
+      """
+        |namespace HelloBaz.Bazz;
+        |public class Baz {
+        | public int qux(int pQux, string ppQux) {
+        |   return pQux;
+        | }
+        |}
+        |""".stripMargin,
+      fileName = "Baz.cs"
+    )
+
+    "find a path from 1 to res (case 2)" in {
+      val src  = cpg.literal.codeExact("1").l
+      val sink = cpg.identifier.nameExact("res").lineNumber(8).l
+      sink.reachableBy(src).size shouldBe 1
+    }
+
+    "not find a path from \"hello\" to res (case 2)" in {
+      val src  = cpg.literal.codeExact("\"hello\"").l
+      val sink = cpg.identifier.nameExact("res").lineNumber(8).l
+      sink.reachableBy(src).size shouldBe 0
+    }
+  }
+
 }

@@ -9,6 +9,7 @@ import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.{
   InterfaceDeclaration,
   MethodDeclaration,
   NamespaceDeclaration,
+  FileScopedNamespaceDeclaration,
   RecordDeclaration,
   StructDeclaration
 }
@@ -97,8 +98,8 @@ class TypeMap(astGenResult: AstGenRunnerResult, initialMappings: List[NamespaceT
       .map(AstCreatorHelper.createDotNetNodeInfo(_))
       .filter { x =>
         x.node match
-          case NamespaceDeclaration => true
-          case _                    => false
+          case NamespaceDeclaration | FileScopedNamespaceDeclaration => true
+          case _                                                     => false
       }
       .map(parseNamespace)
       .toMap
