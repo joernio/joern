@@ -12,7 +12,16 @@ case class NamespaceScope(fullName: String) extends NamespaceLikeScope
 /** A type-like scope with a full name.
   */
 trait TypeLikeScope extends TypedScopeElement {
+
+  /** @return
+    *   the full name of the type-like.
+    */
   def fullName: String
+
+  /** @return
+    *   true if a default constructor is required.
+    */
+  def needsDefaultConstructor: Boolean
 }
 
 /** A module.
@@ -22,6 +31,8 @@ trait TypeLikeScope extends TypedScopeElement {
   */
 case class ModuleScope(fileName: String) extends TypeLikeScope {
   override def fullName: String = s"$fileName:${Defines.Program}"
+
+  override def needsDefaultConstructor: Boolean = false
 }
 
 /** A class or interface.
@@ -29,14 +40,17 @@ case class ModuleScope(fileName: String) extends TypeLikeScope {
   * @param fullName
   *   the type full name.
   */
-case class TypeScope(fullName: String) extends TypeLikeScope
+case class TypeScope(fullName: String, needsDefaultConstructor: Boolean = false) extends TypeLikeScope
 
 /** Represents scope objects that map to a method node.
-  *
-  * @param fullName
-  *   the method full name.
   */
-case class MethodScope(fullName: String) extends TypedScopeElement
+trait MethodLikeScope extends TypedScopeElement {
+  def fullName: String
+}
+
+case class MethodScope(fullName: String) extends MethodLikeScope
+
+case class ConstructorScope(fullName: String) extends MethodLikeScope
 
 /** Represents scope objects that map to a block node.
   */

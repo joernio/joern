@@ -20,7 +20,7 @@ object Defines {
   val Encoding: String   = "Encoding"
   val Regexp: String     = "Regexp"
 
-  val Program: String = "program"
+  val Program: String = ":program"
 
   def getBuiltInType(typeInString: String) = s"${GlobalTypes.builtinPrefix}.$typeInString"
 

@@ -8,13 +8,26 @@ class RubyScope(summary: RubyProgramSummary)
     extends Scope[String, NewNode, TypedScopeElement]
     with TypedScope[RubyMethod, RubyField, RubyType](summary) {
 
+  // Ruby does not have overloading, so this can be set to true
+  override protected def isOverloadedBy(method: RubyMethod, argTypes: List[String]): Boolean = true
+
+  /** @return
+    *   using the stack, will initialize a new module scope object.
+    */
+  def newModuleScope: Option[ModuleScope] = surroundingScopeFullName.map(ModuleScope.apply)
+
+  override def pushNewScope(scopeNode: TypedScopeElement): Unit = {
+    // TODO: Use the summary to determine if there is a constructor present
+    super.pushNewScope(scopeNode)
+  }
+
   /** @return
     *   the full name of the surrounding scope.
     */
   def surroundingScopeFullName: Option[String] = stack.collectFirst {
     case ScopeElement(x: NamespaceLikeScope, _) => x.fullName
     case ScopeElement(x: TypeLikeScope, _)      => x.fullName
-    case ScopeElement(MethodScope(fullName), _) => fullName
+    case ScopeElement(x: MethodLikeScope, _)    => x.fullName
   }
 
   /** @return
@@ -22,9 +35,20 @@ class RubyScope(summary: RubyProgramSummary)
     */
   def surroundingAstLabel: Option[String] = stack.collectFirst {
     case ScopeElement(_: NamespaceLikeScope, _) => NodeTypes.NAMESPACE_BLOCK
+    case ScopeElement(_: ModuleScope, _)        => NodeTypes.METHOD
     case ScopeElement(_: TypeLikeScope, _)      => NodeTypes.TYPE_DECL
-    case ScopeElement(MethodScope(_), _)        => NodeTypes.METHOD
+    case ScopeElement(_: MethodLikeScope, _)    => NodeTypes.METHOD
     case ScopeElement(BlockScope, _)            => NodeTypes.BLOCK
   }
+
+  /** @return
+    *   true if one should still generate a default constructor for the enclosing type decl.
+    */
+  def shouldGenerateDefaultConstructor: Boolean = stack
+    .collectFirst {
+      case ScopeElement(x: TypeLikeScope, _) => x.needsDefaultConstructor
+      case _                                 => false
+    }
+    .getOrElse(false)
 
 }

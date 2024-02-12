@@ -1,8 +1,11 @@
 package io.joern.rubysrc2cpg
 
 import better.files.File
+import io.joern.rubysrc2cpg.astcreation.AstCreator
+import io.joern.rubysrc2cpg.datastructures.RubyProgramSummary
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.*
+import io.joern.rubysrc2cpg.parser.RubyParser
 import io.joern.rubysrc2cpg.passes.{AstCreationPass, ConfigFileCreationPass}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.passes.base.AstLinkerPass
@@ -17,7 +20,6 @@ import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 
 import java.nio.file.{Files, Paths}
-import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try, Using}
 
 class RubySrc2Cpg extends X2CpgFrontend[Config] {
@@ -40,9 +42,57 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
   private def newCreateCpgAction(cpg: Cpg, config: Config): Unit = {
     Using.resource(new parser.ResourceManagedParser(config.antlrCacheMemLimit)) { parser =>
       // TODO: enableDependencyDownload
-      val astCreationPass = new AstCreationPass(cpg, parser, config)
+      val astCreators = ConcurrentTaskUtil
+        .runUsingThreadPool(generateParserTasks(parser, config, cpg.metaData.root.headOption))
+        .flatMap {
+          case Failure(exception)  => logger.warn(s"Could not parse file, skipping - ", exception); None
+          case Success(astCreator) => Option(astCreator)
+        }
+      // Pre-parse the AST creators for high level structures
+      val programSummary = ConcurrentTaskUtil
+        .runUsingThreadPool(astCreators.map(x => () => x.summarize()).iterator)
+        .flatMap {
+          case Failure(exception) => logger.warn(s"Unable to pre-parse Ruby file, skipping - ", exception); None
+          case Success(summary)   => Option(summary)
+        }
+        .reduceOption((a, b) => a ++ b)
+        .getOrElse(RubyProgramSummary())
+      val astCreationPass = new AstCreationPass(cpg, astCreators.map(_.withSummary(programSummary)))
       astCreationPass.createAndApply()
       TypeNodePass.withTypesFromCpg(cpg).createAndApply()
+    }
+  }
+
+  private def generateParserTasks(
+    resourceManagedParser: parser.ResourceManagedParser,
+    config: Config,
+    projectRoot: Option[String]
+  ): Iterator[() => AstCreator] = {
+    SourceFiles
+      .determine(
+        config.inputPath,
+        RubySourceFileExtensions,
+        ignoredFilesRegex = Option(config.ignoredFilesRegex),
+        ignoredFilesPath = Option(config.ignoredFiles)
+      )
+      .map { fileName => () =>
+        resourceManagedParser.parse(fileName) match {
+          case Failure(exception) => throw exception
+          case Success(ctx)       => new AstCreator(fileName, ctx, projectRoot)(config.schemaValidation)
+        }
+      }
+      .iterator
+  }
+
+  private def parseFile(
+    fileName: String,
+    resourceManagedParser: parser.ResourceManagedParser
+  ): Option[RubyParser.ProgramContext] = {
+    resourceManagedParser.parse(fileName) match {
+      case Success(programCtx) => Option(programCtx)
+      case Failure(exception) =>
+        logger.warn(s"Could not parse file: $fileName, skipping - ", exception)
+        None
     }
   }
 

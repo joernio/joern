@@ -2,27 +2,12 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.astcreation.GlobalTypes.{builtinFunctions, builtinPrefix}
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.RubyNode
 import io.joern.rubysrc2cpg.datastructures.{RubyProgramSummary, RubyScope}
-import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.joern.x2cpg.datastructures.Scope
 import io.joern.x2cpg.datastructures.Stack.*
+import io.joern.x2cpg.{Ast, Defines, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
 
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
-
-  /* Used to track variable names and their LOCAL nodes.
-   * TODO: Pre-populate program summary
-   */
-  protected val scope: RubyScope = new RubyScope(RubyProgramSummary(Map.empty))
-
-  /* Used if any constructors of classes are present to know if a default constructor should be generated
-   * TODO: this seems too specific to add another stack, perhaps there is a better way in checking the class body. There are some possible
-   * nesting edge cases which this handles better unless you recursively traverse the result of astsFor* on the class body. How common it would be in actual Ruby code is uncertain */
-  protected val shouldGenerateDefaultConstructorStack: Stack[Boolean] = new Stack()
-  protected def setNoDefaultConstructorForEnclosingTypeDecl: Unit = {
-    shouldGenerateDefaultConstructorStack.pop()
-    shouldGenerateDefaultConstructorStack.push(false)
-  }
 
   protected def computeClassFullName(name: String): String  = s"${scope.surroundingScopeFullName.head}.$name"
   protected def computeMethodFullName(name: String): String = s"${scope.surroundingScopeFullName.head}:$name"

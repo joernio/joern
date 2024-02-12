@@ -1,10 +1,9 @@
 package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
-import io.joern.rubysrc2cpg.datastructures.MethodScope
+import io.joern.rubysrc2cpg.datastructures.{ConstructorScope, MethodScope}
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.{Ast, ValidationMode}
+import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -14,10 +13,8 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     // Special case constructor methods
     val isInTypeDecl = scope.surroundingAstLabel.contains(NodeTypes.TYPE_DECL)
     val methodName = node.methodName match {
-      case "initialize" if isInTypeDecl =>
-        setNoDefaultConstructorForEnclosingTypeDecl
-        "<init>"
-      case name => name
+      case "initialize" if isInTypeDecl => XDefines.ConstructorMethodName
+      case name                         => name
     }
     // TODO: body could be a try
     val fullName = computeMethodFullName(methodName)
@@ -29,7 +26,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       signature = None,
       fileName = relativeFileName
     )
-    scope.pushNewScope(MethodScope(fullName))
+
+    if (methodName == XDefines.ConstructorMethodName) scope.pushNewScope(ConstructorScope(fullName))
+    else scope.pushNewScope(MethodScope(fullName))
 
     val parameterAsts = node.parameters.zipWithIndex.map { case (parameterNode, index) =>
       astForParameter(parameterNode, index)

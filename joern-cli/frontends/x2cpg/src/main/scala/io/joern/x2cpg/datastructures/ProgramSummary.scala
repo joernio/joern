@@ -1,7 +1,9 @@
 package io.joern.x2cpg.datastructures
 
-import scala.collection.mutable
 import io.shiftleft.codepropertygraph.generated.nodes.DeclarationNew
+
+import scala.collection.immutable.Map
+import scala.collection.mutable
 
 /** A hierarchical data-structure that stores the result of types and their respective members. These types can be
   * sourced from pre-parsing the application, or pre-computed stubs of common libraries.
@@ -32,6 +34,25 @@ trait ProgramSummary[T <: TypeLike[_, _]] {
     */
   def matchingTypes(typeName: String): List[T] = {
     namespaceToType.values.flatten.filter(_.name.endsWith(typeName)).toList
+  }
+
+}
+
+object ProgramSummary {
+
+  /** Combines two namespace-to-type maps.
+    */
+  def combine[T <: TypeLike[_, _]](a: Map[String, Set[T]], b: Map[String, Set[T]]): Map[String, Set[T]] = {
+    val accumulator = mutable.HashMap.from(a)
+    val allKeys     = accumulator.keySet ++ b.keySet
+
+    allKeys.foreach(k =>
+      accumulator.updateWith(k) {
+        case Some(existing) => Option(a.getOrElse(k, Set.empty) ++ b.getOrElse(k, Set.empty) ++ existing)
+        case None           => Option(a.getOrElse(k, Set.empty) ++ b.getOrElse(k, Set.empty))
+      }
+    )
+    accumulator.toMap
   }
 
 }
