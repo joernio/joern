@@ -91,6 +91,6 @@ import overflowdb.traversal.help.Table.AvailableWidthProvider
 package object semanticcpg {
 
   implicit val defaultAvailableWidthProvider: AvailableWidthProvider =
-    () => replpp.util.terminalWidth.getOrElse(120)
+    () => replpp.util.terminalWidth.filter(_ > 0).getOrElse(120)
 
 }
