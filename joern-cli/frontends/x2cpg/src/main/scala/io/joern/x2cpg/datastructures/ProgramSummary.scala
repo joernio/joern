@@ -8,10 +8,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.DeclarationNew
   *
   * The utility of this object is in assisting resolving shorthand types during AST creation.
   *
-  * @tparam M
-  *   the method/function meta data class.
-  * @tparam F
-  *   the field/object property meta data class.
   * @tparam T
   *   the type/class meta data class.
   */
@@ -48,12 +44,9 @@ trait ProgramSummary[T <: TypeLike[_, _]] {
   *   the field/object property meta data class.
   * @tparam T
   *   the type/class meta data class.
-  * @tparam S
-  *   the scope type.
   */
-trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F], S <: TypedScopeElement](
-  summary: ProgramSummary[T]
-) { this: Scope[_, _, S] =>
+trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: ProgramSummary[T]) {
+  this: Scope[_, _, TypedScopeElement] =>
 
   /** Tracks the types that are visible to this scope.
     */
@@ -81,7 +74,6 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F], S <: Type
         case typ if typ.name.endsWith(typeName)                                           => typ
         case typ if aliasedTypes.contains(typeName) && typ.name == aliasedTypes(typeName) => typ
       }
-      .flatMap(typ => summary.namespaceFor(typ).map(namespace => typ))
   }
 
   /** Given the type full name and call name, will attempt to find the matching entry.
@@ -194,7 +186,7 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F], S <: Type
   */
 class DefaultTypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: ProgramSummary[T])
     extends Scope[String, DeclarationNew, TypedScopeElement]
-    with TypedScope[M, F, T, TypedScopeElement](summary) {
+    with TypedScope[M, F, T](summary) {
 
   /** Pops the scope, adding types from the scope if necessary.
     */
