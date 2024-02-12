@@ -9,13 +9,19 @@ import io.joern.x2cpg.datastructures.{NamespaceLikeScope, TypedScopeElement}
   */
 case class NamespaceScope(fullName: String) extends NamespaceLikeScope
 
+/** A type-like scope with a full name.
+  */
+trait TypeLikeScope extends TypedScopeElement {
+  def fullName: String
+}
+
 /** A module.
   *
   * @param fileName
   *   the relative file name.
   */
-case class ModuleScope(fileName: String) extends TypedScopeElement {
-  override def toString: String = s"$fileName:${Defines.Program}"
+case class ModuleScope(fileName: String) extends TypeLikeScope {
+  override def fullName: String = s"$fileName:${Defines.Program}"
 }
 
 /** A class or interface.
@@ -23,7 +29,7 @@ case class ModuleScope(fileName: String) extends TypedScopeElement {
   * @param fullName
   *   the type full name.
   */
-case class TypeScope(fullName: String) extends TypedScopeElement
+case class TypeScope(fullName: String) extends TypeLikeScope
 
 /** Represents scope objects that map to a method node.
   *

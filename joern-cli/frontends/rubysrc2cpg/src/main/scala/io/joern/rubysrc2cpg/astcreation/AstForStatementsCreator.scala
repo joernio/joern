@@ -1,6 +1,7 @@
 package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
+import io.joern.rubysrc2cpg.datastructures.BlockScope
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import io.joern.x2cpg.datastructures.Stack.*
@@ -158,7 +159,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   protected def astForStatementList(node: StatementList): Ast = {
     val block = blockNode(node)
-    scope.pushNewScope(block)
+    scope.pushNewScope(BlockScope)
     val statementAsts = node.statements.flatMap(astsForStatement)
     scope.popScope()
     blockAst(block, statementAsts)
@@ -184,15 +185,15 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     } else {
       val outerBlock = blockNode(node)
       val callAst    = astForSimpleCall(node.withoutBlock)
-      methodAstParentStack.push(outerBlock)
-      scope.pushNewScope(outerBlock)
+
+      scope.pushNewScope(BlockScope)
       val stmtAsts = rubyBlock.body match
         case stmtList: StatementList => stmtList.statements.flatMap(astsForStatement)
         case body =>
           logger.warn(s"Non-linear method bodies are not supported yet: ${body.text} ($relativeFileName), skippipg")
           astForUnknown(body) :: Nil
       scope.popScope()
-      methodAstParentStack.pop()
+
       blockAst(outerBlock, callAst :: stmtAsts)
     }
   }
@@ -206,15 +207,15 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     } else {
       val outerBlock = blockNode(node)
       val callAst    = astForMemberCall(node.withoutBlock)
-      methodAstParentStack.push(outerBlock)
-      scope.pushNewScope(outerBlock)
+
+      scope.pushNewScope(BlockScope)
       val stmtAsts = rubyBlock.body match
         case stmtList: StatementList => stmtList.statements.flatMap(astsForStatement)
         case body =>
           logger.warn(s"Non-linear method bodies are not supported yet: ${body.text}, skipping")
           astForUnknown(body) :: Nil
       scope.popScope()
-      methodAstParentStack.pop()
+
       blockAst(outerBlock, callAst :: stmtAsts)
     }
   }
@@ -227,7 +228,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   protected def astForStatementListReturningLastExpression(node: StatementList): Ast = {
     val block = blockNode(node)
-    scope.pushNewScope(block)
+    scope.pushNewScope(BlockScope)
 
     val stmtAsts = node.statements.size match
       case 0 => List()

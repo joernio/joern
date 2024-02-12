@@ -1,6 +1,7 @@
 package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
+import io.joern.rubysrc2cpg.datastructures.TypeScope
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.{Ast, ValidationMode}
@@ -37,21 +38,22 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     nameIdentifier: SimpleIdentifier,
     defaultCtor: Boolean
   ): Ast = {
-    val className    = nameIdentifier.text
-    val inheritsFrom = node.baseClass.flatMap(getBaseClassName).toList
+    val className     = nameIdentifier.text
+    val inheritsFrom  = node.baseClass.flatMap(getBaseClassName).toList
+    val classFullName = computeClassFullName(className)
     val typeDecl = typeDeclNode(
       node = node,
       name = className,
-      fullName = computeClassFullName(className),
+      fullName = classFullName,
       filename = relativeFileName,
       code = code(node),
-      astParentType = getEnclosingAstType,
-      astParentFullName = getEnclosingAstFullName,
+      astParentType = scope.surroundingAstLabel.getOrElse(""),
+      astParentFullName = scope.surroundingScopeFullName.getOrElse(""),
       inherits = inheritsFrom,
       alias = None
     )
-    methodAstParentStack.push(typeDecl)
-    scope.pushNewScope(typeDecl)
+
+    scope.pushNewScope(TypeScope(classFullName))
     shouldGenerateDefaultConstructorStack.push(defaultCtor)
     val classBody =
       node.body.asInstanceOf[StatementList] // for now (bodyStatement is a superset of stmtList)
@@ -65,7 +67,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     }
     shouldGenerateDefaultConstructorStack.pop()
     scope.popScope()
-    methodAstParentStack.pop()
+
     Ast(typeDecl).withChildren(classBodyAsts)
   }
 
@@ -97,8 +99,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       code = s"def $name (...)",
       signature = None,
       fileName = relativeFileName,
-      astParentType = Some(getEnclosingAstType),
-      astParentFullName = Some(getEnclosingAstFullName)
+      astParentType = scope.surroundingAstLabel,
+      astParentFullName = scope.surroundingScopeFullName
     )
 
     // TODO: Should it be `return this.@abc`?
@@ -124,8 +126,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       code = s"def $name (...)",
       signature = None,
       fileName = relativeFileName,
-      astParentType = Some(getEnclosingAstType),
-      astParentFullName = Some(getEnclosingAstFullName)
+      astParentType = scope.surroundingAstLabel,
+      astParentFullName = scope.surroundingScopeFullName
     )
 
     val parameter = parameterInNode(node, "x", "x", 1, false, EvaluationStrategies.BY_REFERENCE)

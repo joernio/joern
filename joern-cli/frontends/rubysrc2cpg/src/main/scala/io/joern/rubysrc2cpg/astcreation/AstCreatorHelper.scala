@@ -1,6 +1,7 @@
 package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.astcreation.GlobalTypes.{builtinFunctions, builtinPrefix}
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.RubyNode
+import io.joern.rubysrc2cpg.datastructures.{RubyProgramSummary, RubyScope}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.joern.x2cpg.datastructures.Scope
 import io.joern.x2cpg.datastructures.Stack.*
@@ -10,14 +11,9 @@ import io.shiftleft.codepropertygraph.generated.{Operators, PropertyNames}
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   /* Used to track variable names and their LOCAL nodes.
-   * TODO: Perhaps move this feature into a new Pass?
+   * TODO: Pre-populate program summary
    */
-  protected val scope: Scope[String, NewNode, NewNode] = new Scope()
-
-  /* Used to compute a method's full name and parent.
-   * TODO: port RubyScope from the deprecated frontend here?
-   * */
-  protected val methodAstParentStack: Stack[NewNode] = new Stack()
+  protected val scope: RubyScope = new RubyScope(RubyProgramSummary(Map.empty))
 
   /* Used if any constructors of classes are present to know if a default constructor should be generated
    * TODO: this seems too specific to add another stack, perhaps there is a better way in checking the class body. There are some possible
@@ -28,10 +24,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     shouldGenerateDefaultConstructorStack.push(false)
   }
 
-  protected def getEnclosingAstType: String     = methodAstParentStack.head.label()
-  protected def getEnclosingAstFullName: String = methodAstParentStack.head.properties(PropertyNames.FULL_NAME).toString
-  protected def computeClassFullName(name: String): String  = s"$getEnclosingAstFullName.$name"
-  protected def computeMethodFullName(name: String): String = s"$getEnclosingAstFullName:$name"
+  protected def computeClassFullName(name: String): String  = s"${scope.surroundingScopeFullName.head}.$name"
+  protected def computeMethodFullName(name: String): String = s"${scope.surroundingScopeFullName.head}:$name"
 
   override def column(node: RubyNode): Option[Integer]    = node.column
   override def columnEnd(node: RubyNode): Option[Integer] = node.columnEnd
