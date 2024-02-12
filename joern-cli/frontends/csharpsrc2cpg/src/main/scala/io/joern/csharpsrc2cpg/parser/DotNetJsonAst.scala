@@ -202,6 +202,8 @@ object DotNetJsonAst {
 
   object ReturnStatement extends JumpStatement
 
+  object AwaitExpression extends BaseExpr
+
   object Unknown extends DotNetParserNode
 
 }

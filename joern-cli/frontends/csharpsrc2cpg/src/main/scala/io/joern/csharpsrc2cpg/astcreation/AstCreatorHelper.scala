@@ -109,6 +109,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         scope
           .tryResolveTypeReference(typeName)
           .getOrElse(typeName)
+      case ThisExpression =>
+        scope.surroundingTypeDeclFullName.getOrElse(Defines.Any)
       case PredefinedType | SimpleBaseType =>
         BuiltinTypes.DotNetTypeMap.getOrElse(node.code, Defines.Any)
       case _ =>

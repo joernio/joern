@@ -10,7 +10,7 @@ import scala.collection.mutable
 
 class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeType] {
 
-  private val typesInScope = mutable.Set.empty[CSharpType]
+  private val typesInScope = mutable.Set.empty[CSharpType].addAll(typeMap.findGlobalTypes)
 
   /** @return
     *   the surrounding type declaration if one exists.
@@ -108,6 +108,7 @@ class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeT
   override def pushNewScope(scopeNode: ScopeType): Unit = {
     scopeNode match
       case NamespaceScope(fullName) => typesInScope.addAll(typeMap.classesIn(fullName))
+      case TypeScope(name, _)       => typesInScope.addAll(typeMap.findType(name))
       case _                        =>
     super.pushNewScope(scopeNode)
   }

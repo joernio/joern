@@ -130,4 +130,29 @@ class MethodsAndCallDataflowsTests extends CSharpCode2CpgFixture(withDataFlow = 
     }
   }
 
+  "dataflow for methods and calls with await expression" should {
+    val cpg = code("""
+        |namespace Foo;
+        |
+        |public class Bar {
+        | public int mBar(int pBar) {
+        |   var getP = await new Baz().mBaz("hello");
+        |   return 0;
+        | }
+        |}
+        |
+        |public class Baz {
+        | public string mBaz(string pBaz) {
+        |   return pBaz;
+        | }
+        |}
+        |""".stripMargin)
+
+    "find a path from hello to getP" in {
+      val src  = cpg.literal.codeExact("\"hello\"").l
+      val sink = cpg.identifier.nameExact("getP").l
+      sink.reachableBy(src).size shouldBe 1
+    }
+  }
+
 }
