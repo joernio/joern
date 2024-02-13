@@ -270,6 +270,33 @@ class MemberTests extends CSharpCode2CpgFixture {
     }
   }
 
+  "a basic class declaration with a local variable shadowing a field" should {
+    val cpg = code("""
+        |public class Foo {
+        |  int a;
+        |
+        |  public Foo() {
+        |    var a = 2;
+        |    this.a = a;
+        |  }
+        |}
+        |""".stripMargin)
+
+    "create a non field access node" in {
+      inside(cpg.typeDecl.nameExact("Foo").method.nameExact(Defines.ConstructorMethodName).l) {
+        case fooConstructor :: Nil =>
+          inside(fooConstructor.body.astChildren.isCall.assignment.l) {
+            case localCall :: thisCall :: Nil =>
+              localCall.target.fieldAccess.size shouldBe 0
+              thisCall.target.fieldAccess.size shouldBe 1
+
+            case res => fail("Only two calls expected for assignments")
+          }
+        case res => fail("Only one constructor expected")
+      }
+    }
+  }
+
   "a basic class declaration with a PropertyDeclaration member" should {
     val cpg = code("""
         |public class Foo {

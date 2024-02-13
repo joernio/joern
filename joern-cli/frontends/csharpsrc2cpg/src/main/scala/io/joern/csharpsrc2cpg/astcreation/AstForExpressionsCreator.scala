@@ -39,17 +39,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     Seq(Ast(literalNode(_literalNode, code(_literalNode), nodeTypeFullName(_literalNode))))
   }
 
-  protected def astForExpressionNode(expressionNodeInfo: DotNetNodeInfo): Seq[Ast] = {
-    expressionNodeInfo.node match {
+  protected def astForOperand(operandNode: DotNetNodeInfo): Seq[Ast] = {
+    operandNode.node match {
       case IdentifierName =>
-        List(
-          scope.findFieldInScope(nameFromNode(expressionNodeInfo)),
-          scope.lookupVariable(nameFromNode(expressionNodeInfo))
-        ) match {
-          case List(Some(_), None) => astForSimpleMemberAccessExpression(expressionNodeInfo)
-          case _                   => astForNode(expressionNodeInfo)
+        List(scope.findFieldInScope(nameFromNode(operandNode)), scope.lookupVariable(nameFromNode(operandNode))) match {
+          case List(Some(_), None) => astForSimpleMemberAccessExpression(operandNode)
+          case _                   => astForNode(operandNode)
         }
-      case _ => astForNode(expressionNodeInfo)
+      case _ => astForNode(operandNode)
     }
   }
 
@@ -69,7 +66,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case "&" => Operators.addressOf
 
     val args    = createDotNetNodeInfo(unaryExpr.json(ParserKeys.Operand))
-    val argsAst = astForExpressionNode(args)
+    val argsAst = astForOperand(args)
 
     Seq(
       callAst(createCallNodeForOperator(unaryExpr, operatorName, typeFullName = Some(nodeTypeFullName(args))), argsAst)
@@ -110,7 +107,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         logger.warn(s"Unhandled operator '$x' for ${code(binaryExpr)}")
         CSharpOperators.unknown
 
-    val args = astForExpressionNode(createDotNetNodeInfo(binaryExpr.json(ParserKeys.Left))) ++: astForExpressionNode(
+    val args = astForOperand(createDotNetNodeInfo(binaryExpr.json(ParserKeys.Left))) ++: astForOperand(
       createDotNetNodeInfo(binaryExpr.json(ParserKeys.Right))
     )
 
