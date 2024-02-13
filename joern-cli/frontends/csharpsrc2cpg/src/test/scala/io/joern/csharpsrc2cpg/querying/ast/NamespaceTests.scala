@@ -93,4 +93,30 @@ class NamespaceTests extends CSharpCode2CpgFixture {
     }
   }
 
+  "a basic file with a file scoped namespace" should {
+    val cpg = code("""
+        |namespace Foo;
+        |
+        |class Bar {}
+        |
+        |class Baz {}
+        |""".stripMargin)
+
+    "create a single namespace" in {
+      val List(fooNamespace) = cpg.namespaceBlock.nameExact("Foo").l
+      fooNamespace.name shouldBe "Foo"
+      fooNamespace.fullName shouldBe "Foo"
+    }
+
+    "assign appropriate AST parent for both classes" in {
+      val List(fooNamespace) = cpg.namespaceBlock.nameExact("Foo").l
+      val List(bar, baz)     = cpg.typeDecl.l
+      bar.astParent shouldBe fooNamespace
+      baz.astParent shouldBe fooNamespace
+
+      bar.fullName shouldBe "Foo.Bar"
+      baz.fullName shouldBe "Foo.Baz"
+    }
+  }
+
 }

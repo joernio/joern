@@ -6,6 +6,7 @@ import io.joern.csharpsrc2cpg.astcreation.AstCreatorHelper
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.{
   ClassDeclaration,
   FieldDeclaration,
+  FileScopedNamespaceDeclaration,
   InterfaceDeclaration,
   MethodDeclaration,
   NamespaceDeclaration,
@@ -82,6 +83,7 @@ class TypeMap(astGenResult: AstGenRunnerResult, initialMappings: List[NamespaceT
   def classesIn(namespace: String): Set[CSharpType] = namespaceToType.getOrElse(namespace, Set.empty)
 
   def findType(typeFullName: String): Option[CSharpType] = namespaceToType.values.flatten.find(_.name == typeFullName)
+  def findGlobalTypes: Set[CSharpType]                   = namespaceToType.getOrElse("global", Set.empty)
 
   /** For a class, will search for the associated namespace.
     */
@@ -92,16 +94,36 @@ class TypeMap(astGenResult: AstGenRunnerResult, initialMappings: List[NamespaceT
     * types.
     */
   private def parseCompilationUnit(cu: DotNetNodeInfo): Map[String, Set[CSharpType]] = {
+    val namespaceTypeMap = mutable.Map.empty[String, Set[CSharpType]]
     cu.json(ParserKeys.Members)
       .arr
       .map(AstCreatorHelper.createDotNetNodeInfo(_))
       .filter { x =>
         x.node match
-          case NamespaceDeclaration => true
-          case _                    => false
+          case NamespaceDeclaration | FileScopedNamespaceDeclaration | ClassDeclaration => true
+          case _                                                                        => false
       }
-      .map(parseNamespace)
-      .toMap
+      .foreach { parserNode =>
+        parserNode.node match
+          case NamespaceDeclaration | FileScopedNamespaceDeclaration => {
+            val (namespace, typesInNamespace) = parseNamespace(parserNode)
+            namespaceTypeMap.updateWith(namespace) {
+              case Some(types) =>
+                Option(types ++ typesInNamespace)
+              case None => Option(typesInNamespace)
+            }
+          }
+          case ClassDeclaration => {
+            val globalClass = Set(parseClassDeclaration(parserNode, "global"))
+            namespaceTypeMap.updateWith("global") {
+              case Some(types) =>
+                Option(types ++ globalClass)
+              case None => Option(globalClass)
+            }
+          }
+      }
+
+    namespaceTypeMap.toMap
   }
 
   private def parseNamespace(namespace: DotNetNodeInfo): (String, Set[CSharpType]) = {

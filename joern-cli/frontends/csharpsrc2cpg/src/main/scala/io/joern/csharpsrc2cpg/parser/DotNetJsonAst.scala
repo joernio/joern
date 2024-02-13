@@ -44,6 +44,8 @@ object DotNetJsonAst {
 
   object NamespaceDeclaration extends BaseExpr
 
+  object FileScopedNamespaceDeclaration extends BaseExpr
+
   sealed trait DeclarationExpr extends BaseExpr
 
   object ClassDeclaration extends DeclarationExpr
@@ -199,6 +201,10 @@ object DotNetJsonAst {
   object GotoStatement extends JumpStatement
 
   object ReturnStatement extends JumpStatement
+
+  object AwaitExpression extends BaseExpr
+
+  object PropertyDeclaration extends DeclarationExpr
 
   object Unknown extends DotNetParserNode
 
