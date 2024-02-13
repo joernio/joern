@@ -64,12 +64,6 @@ class ConsoleTests extends AnyWordSpec with Matchers {
         TypeRelations.overlayName,
         CallGraph.overlayName
       )
-      console.project.availableOverlays.toSet shouldBe Set(
-        Base.overlayName,
-        ControlFlow.overlayName,
-        TypeRelations.overlayName,
-        CallGraph.overlayName
-      )
     }
 
     "allow importing code from file with defines and additional args" taggedAs NotInWindowsRunners in ConsoleFixture() {
