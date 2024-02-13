@@ -15,14 +15,16 @@ libraryDependencies ++= Seq(
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 trapExit                      := false
+Test / fork                   := false
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
 lazy val packTestCode = taskKey[Unit]("Packs test code for JarTypeReader into jars.")
 packTestCode := {
-  import better.files._
+  import better.files.*
   import net.lingala.zip4j.ZipFile
   import net.lingala.zip4j.model.ZipParameters
   import net.lingala.zip4j.model.enums.{CompressionLevel, CompressionMethod}
+
   import java.nio.file.Paths
 
   val pkgRoot              = "io"
