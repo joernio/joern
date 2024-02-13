@@ -7,4 +7,5 @@ object Constants {
 object CSharpOperators {
   val throws: String  = "<operators>.throw"
   val unknown: String = "<operators>.unknown"
+  val await: String   = "<operator>.await"
 }
