@@ -1,33 +1,34 @@
 package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
+import io.joern.rubysrc2cpg.datastructures.{ConstructorScope, MethodScope}
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.{Ast, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
+import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
+import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def astForMethodDeclaration(node: MethodDeclaration): Ast = {
 
     // Special case constructor methods
-    val isInTypeDecl = getEnclosingAstType == "TYPE_DECL"
+    val isInTypeDecl = scope.surroundingAstLabel.contains(NodeTypes.TYPE_DECL)
     val methodName = node.methodName match {
-      case "initialize" if isInTypeDecl =>
-        setNoDefaultConstructorForEnclosingTypeDecl
-        "<init>"
-      case name => name
+      case "initialize" if isInTypeDecl => XDefines.ConstructorMethodName
+      case name                         => name
     }
     // TODO: body could be a try
+    val fullName = computeMethodFullName(methodName)
     val method = methodNode(
       node = node,
       name = methodName,
-      fullName = computeMethodFullName(methodName),
+      fullName = fullName,
       code = code(node),
       signature = None,
       fileName = relativeFileName
     )
-    methodAstParentStack.push(method)
+
+    if (methodName == XDefines.ConstructorMethodName) scope.pushNewScope(ConstructorScope(fullName))
+    else scope.pushNewScope(MethodScope(fullName))
 
     val parameterAsts = node.parameters.zipWithIndex.map { case (parameterNode, index) =>
       astForParameter(parameterNode, index)
@@ -44,7 +45,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         )
         astForUnknown(body)
 
-    methodAstParentStack.pop()
+    scope.popScope()
     methodAst(method, parameterAsts, stmtBlockAst, methodReturnNode(node, Defines.Any))
   }
 
@@ -75,18 +76,19 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   protected def astForSingletonMethodDeclaration(node: SingletonMethodDeclaration): Ast = {
     node.target match
       case _: SelfIdentifier =>
+        val fullName = computeMethodFullName(node.methodName)
         val method = methodNode(
           node = node,
           name = node.methodName,
-          fullName = computeMethodFullName(node.methodName),
+          fullName = fullName,
           code = code(node),
           signature = None,
           fileName = relativeFileName,
-          astParentType = Some(getEnclosingAstType),
-          astParentFullName = Some(getEnclosingAstFullName)
+          astParentType = scope.surroundingAstLabel,
+          astParentFullName = scope.surroundingScopeFullName
         )
-        methodAstParentStack.push(method)
-        scope.pushNewScope(method)
+
+        scope.pushNewScope(MethodScope(fullName))
 
         val parameterAsts = node.parameters.zipWithIndex.map { case (parameterNode, index) =>
           astForParameter(parameterNode, index)
@@ -99,7 +101,6 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
             astForUnknown(body)
 
         scope.popScope()
-        methodAstParentStack.pop()
         methodAst(method, parameterAsts, stmtBlockAst, methodReturnNode(node, Defines.Any))
 
       case targetNode =>

@@ -46,7 +46,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
     }
 
     "provide overview of available language modules" in ConsoleFixture() { (console, _) =>
-      console.importCode.toString.contains("| C") shouldBe true
+      console.importCode.toString should include("testCFrontend")
     }
 
     "allow importing code with specific module (c2cpg)" in ConsoleFixture() { (console, codeDir) =>
@@ -393,6 +393,7 @@ class ConsoleTests extends AnyWordSpec with Matchers {
     "provide .help command" in ConsoleFixture() { (console, codeDir) =>
       // part of Predefined.shared, which makes the below work in the repl without separate import
       import io.shiftleft.codepropertygraph.Cpg.docSearchPackages
+      import io.joern.console.testing.availableWidthProvider
 
       console.importCode(codeDir.toString)
       val nodeStartersHelp = console.cpg.help

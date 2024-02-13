@@ -2,6 +2,7 @@ package io.joern.console.workspacehandling
 
 import better.files.Dsl._
 import better.files.File
+import io.joern.console.testing.availableWidthProvider
 import io.shiftleft.semanticcpg.testing.MockCpg
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
@@ -26,11 +27,12 @@ class WorkspaceTests extends AnyWordSpec with Matchers {
         val projects    = ListBuffer(Project(projectFile, project.path, Some(cpg)))
         val workspace   = new Workspace(projects)
         val output      = workspace.toString
-        val lines       = output.split("\n")
-        lines.length shouldBe 5
-        lines(4).contains(project.name) shouldBe true
-        lines(4).contains(inputPath)
-        lines(4).contains("foo,bar")
+
+        output should include(project.name)
+        output should include(inputPath)
+        // TODO reenable test - this has been broken for ages, the overlays handling via directories works in staged joern but not in our test setup
+        // what does work in both though is `cpg.metaData.overlays` - I'm asking around which way forward we want
+//        output should include("foo,bar")
       }
 
     }

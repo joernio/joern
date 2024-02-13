@@ -41,10 +41,21 @@ object RubyIntermediateAst {
     def size: Int = statements.size
   }
 
-  final case class ModuleDeclaration(moduleName: RubyNode, body: RubyNode)(span: TextSpan) extends RubyNode(span)
+  sealed trait TypeDeclaration {
+    def name: RubyNode
+    def baseClass: Option[RubyNode]
+    def body: RubyNode
+  }
 
-  final case class ClassDeclaration(className: RubyNode, baseClass: Option[RubyNode], body: RubyNode)(span: TextSpan)
+  final case class ModuleDeclaration(name: RubyNode, body: RubyNode)(span: TextSpan)
       extends RubyNode(span)
+      with TypeDeclaration {
+    def baseClass: Option[RubyNode] = None
+  }
+
+  final case class ClassDeclaration(name: RubyNode, baseClass: Option[RubyNode], body: RubyNode)(span: TextSpan)
+      extends RubyNode(span)
+      with TypeDeclaration
 
   final case class FieldsDeclaration(fieldNames: List[RubyNode])(span: TextSpan) extends RubyNode(span) {
     def hasGetter: Boolean = text.startsWith("attr_reader") || text.startsWith("attr_accessor")

@@ -6,7 +6,7 @@ import io.joern.x2cpg.{Ast, SourceFiles, ValidationMode}
 import io.joern.x2cpg.utils.NodeBuilders.newDependencyNode
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.utils.IOUtils
-import org.apache.commons.lang.StringUtils
+import org.apache.commons.lang3.StringUtils
 import org.eclipse.cdt.core.dom.ast.*
 import org.eclipse.cdt.core.dom.ast.c.{ICASTArrayDesignator, ICASTDesignatedInitializer, ICASTFieldDesignator}
 import org.eclipse.cdt.core.dom.ast.cpp.*

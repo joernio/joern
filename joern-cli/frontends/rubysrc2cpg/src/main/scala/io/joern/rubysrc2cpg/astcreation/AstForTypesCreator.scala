@@ -1,24 +1,27 @@
 package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
+import io.joern.rubysrc2cpg.datastructures.{
+  BlockScope,
+  ConstructorScope,
+  MethodScope,
+  ModuleScope,
+  ProgramScope,
+  TypeScope
+}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, Operators}
 
 import scala.collection.immutable.List
+import io.joern.x2cpg.Defines as XDefines
 
 trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  protected def astForModuleDeclaration(node: ModuleDeclaration): Ast = {
-    // TODO: Might be wrong here (hence this placeholder), but I'm assuming modules ~= abstract classes.
-    val classDecl = ClassDeclaration(node.moduleName, None, node.body)(node.span)
-    astForClassDeclaration(classDecl, defaultCtor = false)
-  }
-
-  protected def astForClassDeclaration(node: ClassDeclaration, defaultCtor: Boolean = true): Ast = {
-    node.className match
-      case name: SimpleIdentifier => astForSimpleNamedClassDeclaration(node, name, defaultCtor)
+  protected def astForClassDeclaration(node: RubyNode with TypeDeclaration): Ast = {
+    node.name match
+      case name: SimpleIdentifier => astForSimpleNamedClassDeclaration(node, name)
       case name =>
         logger.warn(s"Qualified class names are not supported yet: ${name.text} ($relativeFileName), skipping")
         astForUnknown(node)
@@ -33,39 +36,43 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
   }
 
   private def astForSimpleNamedClassDeclaration(
-    node: ClassDeclaration,
-    nameIdentifier: SimpleIdentifier,
-    defaultCtor: Boolean
+    node: RubyNode with TypeDeclaration,
+    nameIdentifier: SimpleIdentifier
   ): Ast = {
-    val className    = nameIdentifier.text
-    val inheritsFrom = node.baseClass.flatMap(getBaseClassName).toList
+    val className     = nameIdentifier.text
+    val inheritsFrom  = node.baseClass.flatMap(getBaseClassName).toList
+    val classFullName = computeClassFullName(className)
     val typeDecl = typeDeclNode(
       node = node,
       name = className,
-      fullName = computeClassFullName(className),
+      fullName = classFullName,
       filename = relativeFileName,
       code = code(node),
-      astParentType = getEnclosingAstType,
-      astParentFullName = getEnclosingAstFullName,
+      astParentType = scope.surroundingAstLabel.getOrElse(""),
+      astParentFullName = scope.surroundingScopeFullName.getOrElse(""),
       inherits = inheritsFrom,
       alias = None
     )
-    methodAstParentStack.push(typeDecl)
-    scope.pushNewScope(typeDecl)
-    shouldGenerateDefaultConstructorStack.push(defaultCtor)
+
+    node match {
+      case _: ClassDeclaration  => scope.pushNewScope(TypeScope(classFullName))
+      case _: ModuleDeclaration => scope.pushNewScope(ModuleScope(classFullName))
+    }
+
     val classBody =
       node.body.asInstanceOf[StatementList] // for now (bodyStatement is a superset of stmtList)
     val classBodyAsts = classBody.statements.flatMap(astsForStatement) match {
-      case bodyAsts if shouldGenerateDefaultConstructorStack.head =>
-        val bodyStart  = classBody.span.spanStart()
-        val initBody   = StatementList(List())(bodyStart)
-        val methodDecl = astForMethodDeclaration(MethodDeclaration("<init>", List(), initBody)(bodyStart))
+      case bodyAsts if scope.shouldGenerateDefaultConstructor =>
+        val bodyStart = classBody.span.spanStart()
+        val initBody  = StatementList(List())(bodyStart)
+        val methodDecl = astForMethodDeclaration(
+          MethodDeclaration(XDefines.ConstructorMethodName, List(), initBody)(bodyStart)
+        )
         methodDecl :: bodyAsts
       case bodyAsts => bodyAsts
     }
-    shouldGenerateDefaultConstructorStack.pop()
     scope.popScope()
-    methodAstParentStack.pop()
+
     Ast(typeDecl).withChildren(classBodyAsts)
   }
 
@@ -89,18 +96,20 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
   // creates a `def <name>() { return <fieldName> }` METHOD, for <fieldName> = @<name>.
   private def astForGetterMethod(node: FieldsDeclaration, fieldName: String): Ast = {
-    val name = fieldName.drop(1)
+    val name     = fieldName.drop(1)
+    val fullName = computeMethodFullName(name)
     val method = methodNode(
       node = node,
       name = name,
-      fullName = computeMethodFullName(name),
+      fullName = fullName,
       code = s"def $name (...)",
       signature = None,
       fileName = relativeFileName,
-      astParentType = Some(getEnclosingAstType),
-      astParentFullName = Some(getEnclosingAstFullName)
+      astParentType = scope.surroundingAstLabel,
+      astParentFullName = scope.surroundingScopeFullName
     )
-
+    scope.pushNewScope(MethodScope(fullName))
+    scope.pushNewScope(BlockScope)
     // TODO: Should it be `return this.@abc`?
     val returnAst_ = {
       val returnNode_         = returnNode(node, s"return $fieldName")
@@ -110,26 +119,29 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     val block_     = blockNode(node)
     val methodBody = blockAst(block_, List(returnAst_))
-
+    scope.popScope()
+    scope.popScope()
     methodAst(method, Seq(), methodBody, methodReturnNode(node, Defines.Any))
   }
 
   // creates a `def <name>=(x) { <fieldName> = x }` METHOD, for <fieldName> = @<name>
   private def astForSetterMethod(node: FieldsDeclaration, fieldName: String): Ast = {
-    val name = fieldName.drop(1) + "="
+    val name     = fieldName.drop(1) + "="
+    val fullName = computeMethodFullName(name)
     val method = methodNode(
       node = node,
       name = name,
-      fullName = computeMethodFullName(name),
+      fullName = fullName,
       code = s"def $name (...)",
       signature = None,
       fileName = relativeFileName,
-      astParentType = Some(getEnclosingAstType),
-      astParentFullName = Some(getEnclosingAstFullName)
+      astParentType = scope.surroundingAstLabel,
+      astParentFullName = scope.surroundingScopeFullName
     )
-
+    scope.pushNewScope(MethodScope(fullName))
     val parameter = parameterInNode(node, "x", "x", 1, false, EvaluationStrategies.BY_REFERENCE)
     val methodBody = {
+      scope.pushNewScope(BlockScope)
       val lhs = identifierNode(node, fieldName, fieldName, Defines.Any)
       val rhs = identifierNode(node, parameter.name, parameter.name, Defines.Any)
       val assignmentCall = callNode(
@@ -140,9 +152,10 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         DispatchTypes.STATIC_DISPATCH
       )
       val assignmentAst = callAst(assignmentCall, Seq(Ast(lhs), Ast(rhs)))
+      scope.popScope()
       blockAst(blockNode(node), List(assignmentAst))
     }
-
+    scope.popScope()
     methodAst(method, Seq(Ast(parameter)), methodBody, methodReturnNode(node, Defines.Any))
   }
 

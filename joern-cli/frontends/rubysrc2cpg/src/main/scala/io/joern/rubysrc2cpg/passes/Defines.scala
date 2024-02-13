@@ -3,6 +3,7 @@ package io.joern.rubysrc2cpg.passes
 import io.joern.rubysrc2cpg.astcreation.GlobalTypes
 
 object Defines {
+
   val Any: String        = "ANY"
   val Undefined: String  = "Undefined"
   val Object: String     = "Object"
@@ -18,6 +19,8 @@ object Defines {
   val Hash: String       = "Hash"
   val Encoding: String   = "Encoding"
   val Regexp: String     = "Regexp"
+
+  val Program: String = ":program"
 
   def getBuiltInType(typeInString: String) = s"${GlobalTypes.builtinPrefix}.$typeInString"
 

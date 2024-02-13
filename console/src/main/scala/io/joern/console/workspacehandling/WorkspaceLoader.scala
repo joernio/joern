@@ -2,6 +2,7 @@ package io.joern.console.workspacehandling
 
 import better.files.Dsl.mkdirs
 import better.files.File
+import overflowdb.traversal.help.Table.AvailableWidthProvider
 
 import java.nio.file.Path
 import scala.collection.mutable.ListBuffer
@@ -9,7 +10,7 @@ import scala.util.{Failure, Success, Try}
 
 /** This component loads a workspace from disk and creates a corresponding `Workspace` object.
   */
-abstract class WorkspaceLoader[ProjectType <: Project] {
+abstract class WorkspaceLoader[ProjectType <: Project](implicit availableWidthProvider: AvailableWidthProvider) {
 
   /** Initialize workspace from a directory
     * @param path

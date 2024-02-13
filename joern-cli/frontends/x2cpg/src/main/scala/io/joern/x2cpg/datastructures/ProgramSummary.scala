@@ -1,17 +1,15 @@
 package io.joern.x2cpg.datastructures
 
-import scala.collection.mutable
 import io.shiftleft.codepropertygraph.generated.nodes.DeclarationNew
+
+import scala.collection.immutable.Map
+import scala.collection.mutable
 
 /** A hierarchical data-structure that stores the result of types and their respective members. These types can be
   * sourced from pre-parsing the application, or pre-computed stubs of common libraries.
   *
   * The utility of this object is in assisting resolving shorthand types during AST creation.
   *
-  * @tparam M
-  *   the method/function meta data class.
-  * @tparam F
-  *   the field/object property meta data class.
   * @tparam T
   *   the type/class meta data class.
   */
@@ -40,6 +38,24 @@ trait ProgramSummary[T <: TypeLike[_, _]] {
 
 }
 
+object ProgramSummary {
+
+  /** Combines two namespace-to-type maps.
+    */
+  def combine[T <: TypeLike[_, _]](a: Map[String, Set[T]], b: Map[String, Set[T]]): Map[String, Set[T]] = {
+    val accumulator = mutable.HashMap.from(a)
+
+    b.keySet.foreach(k =>
+      accumulator.updateWith(k) {
+        case Some(existing) => Option(a.getOrElse(k, Set.empty) ++ b.getOrElse(k, Set.empty) ++ existing)
+        case None           => Option(a.getOrElse(k, Set.empty) ++ b.getOrElse(k, Set.empty))
+      }
+    )
+    accumulator.toMap
+  }
+
+}
+
 /** Extends the capability of the scope object to track types in scope as provide type resolution.
   *
   * @tparam M
@@ -48,12 +64,9 @@ trait ProgramSummary[T <: TypeLike[_, _]] {
   *   the field/object property meta data class.
   * @tparam T
   *   the type/class meta data class.
-  * @tparam S
-  *   the scope type.
   */
-trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F], S <: TypedScopeElement](
-  summary: ProgramSummary[T]
-) { this: Scope[_, _, S] =>
+trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: ProgramSummary[T]) {
+  this: Scope[_, _, TypedScopeElement] =>
 
   /** Tracks the types that are visible to this scope.
     */
@@ -81,7 +94,6 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F], S <: Type
         case typ if typ.name.endsWith(typeName)                                           => typ
         case typ if aliasedTypes.contains(typeName) && typ.name == aliasedTypes(typeName) => typ
       }
-      .flatMap(typ => summary.namespaceFor(typ).map(namespace => typ))
   }
 
   /** Given the type full name and call name, will attempt to find the matching entry.
@@ -194,7 +206,7 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F], S <: Type
   */
 class DefaultTypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: ProgramSummary[T])
     extends Scope[String, DeclarationNew, TypedScopeElement]
-    with TypedScope[M, F, T, TypedScopeElement](summary) {
+    with TypedScope[M, F, T](summary) {
 
   /** Pops the scope, adding types from the scope if necessary.
     */

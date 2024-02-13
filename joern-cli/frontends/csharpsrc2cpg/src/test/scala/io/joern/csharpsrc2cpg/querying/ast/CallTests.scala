@@ -22,7 +22,7 @@ class CallTests extends CSharpCode2CpgFixture {
 
       inside(writeLine.argument.l) {
         case (base: Identifier) :: (strArg: Literal) :: Nil =>
-//          base.typeFullName shouldBe "System.Console"
+          base.typeFullName shouldBe "System.Console"
           base.name shouldBe "Console"
           base.code shouldBe "Console"
           base.argumentIndex shouldBe 0
@@ -35,7 +35,62 @@ class CallTests extends CSharpCode2CpgFixture {
     }
 
     "be resolve a method full name without the definition clearly defined" in {}
-
   }
 
+  "method invocations with await expression" should {
+    val cpg = code("""
+        |namespace Foo;
+        |
+        |public class Bar {
+        | public int mBar(int pBar) {
+        |   var getP = await new Baz().mBaz("hello");
+        | }
+        |}
+        |
+        |public class Baz {
+        | public string mBaz(string pBaz) {
+        |   return pBaz;
+        | }
+        |}
+        |""".stripMargin)
+
+    "create a call node for mBaz" in {
+      inside(cpg.call.nameExact("mBaz").l) {
+        case mBazCall :: Nil =>
+          mBazCall.code shouldBe "new Baz().mBaz(\"hello\")"
+          mBazCall.methodFullName shouldBe "Foo.Baz.mBaz:string(System.String)"
+          mBazCall.typeFullName shouldBe "string"
+
+        case _ => fail("No call node for `mBaz` found")
+      }
+    }
+  }
+
+  "method invocations with this expression" should {
+    val cpg = code("""
+        |namespace Foo;
+        |
+        |public class Bar {
+        | public int mBar(int pBar) {
+        |   var getBaz = this.mBaz("hello");
+        | }
+        | public string mBaz(string pBaz) {
+        |   return pBaz;
+        | }
+        |}
+        |
+        |
+        |""".stripMargin)
+
+    "create a call node for mBaz" in {
+      inside(cpg.call.nameExact("mBaz").l) {
+        case mBazCall :: Nil =>
+          mBazCall.code shouldBe "this.mBaz(\"hello\")"
+          mBazCall.methodFullName shouldBe "Foo.Bar.mBaz:string(System.String)"
+          mBazCall.typeFullName shouldBe "string"
+        case _ => fail("No call node for `mBaz` found")
+      }
+    }
+
+  }
 }

@@ -23,7 +23,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{
   NewTypeRef,
   NewUnknown
 }
-import org.apache.commons.lang.StringUtils
+import org.apache.commons.lang3.StringUtils
 
 import scala.util.Try
 trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>

@@ -7,7 +7,7 @@ import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.joern.x2cpg.{Ast, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewModifier, NewNode}
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, ModifierTypes, PropertyNames}
-import org.apache.commons.lang.StringUtils
+import org.apache.commons.lang3.StringUtils
 import ujson.Value
 
 import scala.collection.mutable

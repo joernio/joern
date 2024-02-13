@@ -1,7 +1,7 @@
 package io.joern.csharpsrc2cpg.astcreation
 
 import io.joern.csharpsrc2cpg.CSharpOperators
-import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.{IdentifierNode, *}
+import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newOperatorCallNode}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
@@ -16,12 +16,23 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   def astForExpression(expr: DotNetNodeInfo): Seq[Ast] = {
     expr.node match
-      case _: UnaryExpr         => astForUnaryExpression(expr)
-      case _: BinaryExpr        => astForBinaryExpression(expr)
-      case _: LiteralExpr       => astForLiteralExpression(expr)
-      case InvocationExpression => astForInvocationExpression(expr)
-      case _: IdentifierNode    => astForIdentifier(expr) :: Nil
-      case _                    => notHandledYet(expr)
+      case _: UnaryExpr                 => astForUnaryExpression(expr)
+      case _: BinaryExpr                => astForBinaryExpression(expr)
+      case _: LiteralExpr               => astForLiteralExpression(expr)
+      case InvocationExpression         => astForInvocationExpression(expr)
+      case AwaitExpression              => astForAwaitExpression(expr)
+      case ObjectCreationExpression     => astForObjectCreationExpression(expr)
+      case SimpleMemberAccessExpression => astForSimpleMemberAccessExpression(expr)
+      case _: IdentifierNode            => astForIdentifier(expr) :: Nil
+      case _                            => notHandledYet(expr)
+  }
+
+  private def astForAwaitExpression(awaitExpr: DotNetNodeInfo): Seq[Ast] = {
+    /* fullName is the name in case of STATIC_DISPATCH */
+    val node =
+      callNode(awaitExpr, awaitExpr.code, CSharpOperators.await, CSharpOperators.await, DispatchTypes.STATIC_DISPATCH)
+    val argAsts = astForNode(awaitExpr.json(ParserKeys.Expression))
+    Seq(callAst(node, argAsts))
   }
 
   protected def astForLiteralExpression(_literalNode: DotNetNodeInfo): Seq[Ast] = {
