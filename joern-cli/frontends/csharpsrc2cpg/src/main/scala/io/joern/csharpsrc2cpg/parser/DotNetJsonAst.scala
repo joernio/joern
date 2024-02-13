@@ -204,6 +204,8 @@ object DotNetJsonAst {
 
   object AwaitExpression extends BaseExpr
 
+  object PropertyDeclaration extends DeclarationExpr
+
   object Unknown extends DotNetParserNode
 
 }

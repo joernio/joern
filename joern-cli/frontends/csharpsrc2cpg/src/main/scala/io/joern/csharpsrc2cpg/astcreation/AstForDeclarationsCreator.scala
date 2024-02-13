@@ -396,4 +396,14 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       astForVariableDeclarator(node, nodeTypeFullName(node))
     }
   }
+
+  protected def astForPropertyDeclaration(propertyDecl: DotNetNodeInfo): Seq[Ast] = {
+    val propertyName = nameFromNode(propertyDecl)
+    val modifierAst  = astForModifiers(propertyDecl)
+    val typeFullName = nodeTypeFullName(propertyDecl)
+
+    val _memberNode = memberNode(propertyDecl, propertyName, propertyDecl.code, typeFullName)
+
+    Seq(Ast(_memberNode).withChildren(modifierAst))
+  }
 }

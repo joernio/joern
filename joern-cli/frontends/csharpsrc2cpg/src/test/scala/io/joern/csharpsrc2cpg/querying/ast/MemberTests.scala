@@ -240,4 +240,26 @@ class MemberTests extends CSharpCode2CpgFixture {
       }
     }
   }
+
+  "a basic class declaration with a PropertyDeclaration member" should {
+    val cpg = code("""
+        |public class Foo {
+        | public int Bar {get; set;}
+        |}
+        |""".stripMargin)
+
+    "create a member for Bar with appropriate properties" in {
+      inside(cpg.typeDecl.nameExact("Foo").l) {
+        case fooClass :: Nil =>
+          inside(fooClass.astChildren.isMember.nameExact("Bar").l) {
+            case bar :: Nil =>
+              bar.code shouldBe "public int Bar"
+              bar.typeFullName shouldBe "System.Int32"
+              bar.astParent shouldBe fooClass
+            case _ => fail("No member named Bar found inside Foo")
+          }
+        case _ => fail("No class named Foo found.")
+      }
+    }
+  }
 }
