@@ -32,7 +32,7 @@ class CodeDumperTests extends JavaSrcCode2CpgFixture {
             "var c = a + b;",
             "}"
           )
-        case _ => fail("Expected exactly 1 content dump")
+        case content => fail(s"Expected exactly 1 content dump, but got: $content")
       }
     }
 
