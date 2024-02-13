@@ -22,7 +22,7 @@ class CallTests extends CSharpCode2CpgFixture {
 
       inside(writeLine.argument.l) {
         case (base: Identifier) :: (strArg: Literal) :: Nil =>
-          //          base.typeFullName shouldBe "System.Console"
+          base.typeFullName shouldBe "System.Console"
           base.name shouldBe "Console"
           base.code shouldBe "Console"
           base.argumentIndex shouldBe 0

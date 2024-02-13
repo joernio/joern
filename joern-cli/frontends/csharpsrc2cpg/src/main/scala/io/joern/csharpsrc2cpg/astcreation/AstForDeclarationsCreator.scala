@@ -336,8 +336,11 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val block = blockNode(body)
     code.foreach(block.code(_))
     scope.pushNewScope(BlockScope)
-    val statements = body.json(ParserKeys.Statements).arr.flatMap(astForNode).toList
-    val _blockAst  = blockAst(block, prefixAsts ++ statements)
+    val statements = Try(body.json(ParserKeys.Statements)).toOption match {
+      case Some(value: ujson.Arr) => value.arr.flatMap(astForNode).toList
+      case _                      => List.empty
+    }
+    val _blockAst = blockAst(block, prefixAsts ++ statements)
     scope.popScope()
     _blockAst
   }

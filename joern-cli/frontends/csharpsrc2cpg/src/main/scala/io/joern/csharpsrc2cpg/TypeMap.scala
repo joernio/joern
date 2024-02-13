@@ -107,22 +107,18 @@ class TypeMap(astGenResult: AstGenRunnerResult, initialMappings: List[NamespaceT
         parserNode.node match
           case NamespaceDeclaration | FileScopedNamespaceDeclaration => {
             val (namespace, typesInNamespace) = parseNamespace(parserNode)
-            if (namespaceTypeMap.contains(namespace)) {
-              val existingTypes =
-                namespaceTypeMap.get(namespace) ++ typesInNamespace
-              namespaceTypeMap.put(namespace, existingTypes.asInstanceOf[Set[CSharpType]])
-            } else {
-              namespaceTypeMap.put(namespace, typesInNamespace)
+            namespaceTypeMap.updateWith(namespace) {
+              case Some(types) =>
+                Option(types ++ typesInNamespace)
+              case None => Option(typesInNamespace)
             }
           }
           case ClassDeclaration => {
             val globalClass = Set(parseClassDeclaration(parserNode, "global"))
-            if (namespaceTypeMap.contains("global")) {
-              val existingClasses =
-                namespaceTypeMap.get("global") ++ globalClass
-              namespaceTypeMap.put("global", existingClasses.asInstanceOf[Set[CSharpType]])
-            } else {
-              namespaceTypeMap.put("global", globalClass)
+            namespaceTypeMap.updateWith("global") {
+              case Some(types) =>
+                Option(types ++ globalClass)
+              case None => Option(globalClass)
             }
           }
       }
