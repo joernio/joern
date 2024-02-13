@@ -1,7 +1,6 @@
 package io.shiftleft.semanticcpg.codedumper
 
 import io.shiftleft.codepropertygraph.generated.Languages
-import io.shiftleft.codepropertygraph.generated.nodes.File.PropertyDefaults
 import io.shiftleft.codepropertygraph.generated.nodes.{Expression, Local, Method, NewLocation}
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.utils.IOUtils
