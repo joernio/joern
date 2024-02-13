@@ -76,17 +76,15 @@ object CodeDumper {
                       line
                   }
                   .mkString("\n")
-              } else if (m.file.exists(_.content != PropertyDefaults.Content)) {
-                sliceCode(
-                  m.file.content.head.linesIterator.toSeq,
-                  m.lineNumber.get,
-                  m.lineNumberEnd.get,
-                  location.lineNumber,
-                  Option(m.fullName)
-                )
               } else {
-                val filename = rootPath.map(toAbsolutePath(location.filename, _)).getOrElse(location.filename)
-                code(filename, m.lineNumber.get, m.lineNumberEnd.get, location.lineNumber, Option(m.fullName))
+                m.content match {
+                  case Some(content) =>
+                    val lines = content.linesIterator.toSeq
+                    sliceCode(lines, 0, lines.size, Option(0), Option(m.fullName))
+                  case None =>
+                    val filename = rootPath.map(toAbsolutePath(location.filename, _)).getOrElse(location.filename)
+                    code(filename, m.lineNumber.get, m.lineNumberEnd.get, location.lineNumber, Option(m.fullName))
+                }
               }
               if (highlight) {
                 SourceHighlighter.highlight(Source(rawCode, lang))
