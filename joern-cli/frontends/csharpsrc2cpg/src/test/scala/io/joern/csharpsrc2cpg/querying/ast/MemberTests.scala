@@ -178,6 +178,7 @@ class MemberTests extends CSharpCode2CpgFixture {
         |  string color;                // field
         |  static int maxSpeed = 200;   // field
         |  static int nonInitMaxSpeed;  // field
+        |  int b;
         |
         |  static Car() { // static constructor
         |     this.nonInitMaxSpeed = 2000;
@@ -185,6 +186,8 @@ class MemberTests extends CSharpCode2CpgFixture {
         |
         |  public Car() {
         |     this.color = "red";
+        |     b = 1000;
+        |     b++;
         |  }
         |}
         |""".stripMargin,
@@ -222,9 +225,15 @@ class MemberTests extends CSharpCode2CpgFixture {
       inside(cpg.typeDecl.nameExact("Car").method.nameExact(Defines.ConstructorMethodName).l) {
         case m :: Nil =>
           inside(m.body.astChildren.isCall.l) {
-            case explicitFieldAccess :: Nil =>
+            case explicitFieldAccess :: implicitFieldAccessAssignment :: implicitFieldAccessUnary :: Nil =>
               explicitFieldAccess.methodFullName shouldBe Operators.assignment
               explicitFieldAccess.code shouldBe "this.color = \"red\""
+
+              implicitFieldAccessAssignment.methodFullName shouldBe Operators.assignment
+              implicitFieldAccessAssignment.code shouldBe "b = 1000"
+
+              implicitFieldAccessUnary.methodFullName shouldBe Operators.postIncrement
+              implicitFieldAccessUnary.code shouldBe "b++"
 
               inside(explicitFieldAccess.argument.fieldAccess.l) {
                 case fieldAccessNode :: Nil =>
@@ -234,9 +243,56 @@ class MemberTests extends CSharpCode2CpgFixture {
                   fieldAccessNode.typeFullName shouldBe "System.String"
                 case res => fail("Only expected one field access")
               }
-            case res => fail("Only expected one field access in constructor")
+
+              inside(implicitFieldAccessAssignment.argument.fieldAccess.l) {
+                case fieldAccessNode :: Nil =>
+                  fieldAccessNode.methodFullName shouldBe Operators.fieldAccess
+                  fieldAccessNode.code shouldBe "this.b"
+                  fieldAccessNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+                  fieldAccessNode.typeFullName shouldBe "System.Int32"
+                case res => fail("Only expected one field access")
+              }
+
+              inside(implicitFieldAccessUnary.argument.fieldAccess.l) {
+                case fieldAccessNode :: Nil =>
+                  fieldAccessNode.methodFullName shouldBe Operators.fieldAccess
+                  fieldAccessNode.code shouldBe "this.b"
+                  fieldAccessNode.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+                  fieldAccessNode.typeFullName shouldBe "System.Int32"
+                case res => fail("Only expected one field access")
+              }
+            case res => {
+              fail("Only expected three field access in constructor")
+            }
           }
         case _ => fail("`Car` has no constructor")
+      }
+    }
+  }
+
+  "a basic class declaration with a local variable shadowing a field" should {
+    val cpg = code("""
+        |public class Foo {
+        |  int a;
+        |
+        |  public Foo() {
+        |    var a = 2;
+        |    this.a = a;
+        |  }
+        |}
+        |""".stripMargin)
+
+    "create a non field access node" in {
+      inside(cpg.typeDecl.nameExact("Foo").method.nameExact(Defines.ConstructorMethodName).l) {
+        case fooConstructor :: Nil =>
+          inside(fooConstructor.body.astChildren.isCall.assignment.l) {
+            case localCall :: thisCall :: Nil =>
+              localCall.target.fieldAccess.size shouldBe 0
+              thisCall.target.fieldAccess.size shouldBe 1
+
+            case res => fail("Only two calls expected for assignments")
+          }
+        case res => fail("Only one constructor expected")
       }
     }
   }

@@ -47,6 +47,7 @@ null
 **/dotnetastgen-macos-arm
 slices.json
 **/.antlr
+/joern-cli/frontends/csharpsrc2cpg/bin
 
 ##############
 # Nix flakes #

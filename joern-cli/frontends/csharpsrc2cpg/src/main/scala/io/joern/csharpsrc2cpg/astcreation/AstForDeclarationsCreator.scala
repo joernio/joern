@@ -155,7 +155,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         val name    = nameFromNode(x)
         val hasInit = !x.json(ParserKeys.Initializer).isNull
         scope.pushField(FieldDecl(name, typeFullName, isStatic, hasInit, x))
-        astForVariableDeclarator(x, typeFullName)
+        astForVariableDeclarator(x, typeFullName, shouldPushVariable = false)
       })
       .toSeq
   }
@@ -170,7 +170,11 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       .toSeq
   }
 
-  protected def astForVariableDeclarator(varDecl: DotNetNodeInfo, typeFullName: String): Seq[Ast] = {
+  protected def astForVariableDeclarator(
+    varDecl: DotNetNodeInfo,
+    typeFullName: String,
+    shouldPushVariable: Boolean = true
+  ): Seq[Ast] = {
     // Create RHS AST first to propagate types
     val initializerJson = varDecl.json(ParserKeys.Initializer)
     val rhs             = if (!initializerJson.isNull) astForNode(createDotNetNodeInfo(initializerJson)) else Seq.empty
@@ -181,7 +185,11 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val identifierAst = astForIdentifier(varDecl, rhsTypeFullName)
     val _localNode    = localNode(varDecl, name, name, rhsTypeFullName)
     val localNodeAst  = Ast(_localNode)
-    scope.addToScope(name, _localNode)
+
+    if (shouldPushVariable) {
+      scope.addToScope(name, _localNode)
+    }
+
     if (initializerJson.isNull) {
       val assignmentNode = callNode(
         varDecl,
@@ -396,7 +404,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
   protected def astVariableDeclarationForInitializedFields(fieldDecls: Seq[FieldDecl]): Seq[Ast] = {
     fieldDecls.filter(_.isInitialized).flatMap { case FieldDecl(name, typeFullName, _, isInitialized, node) =>
-      astForVariableDeclarator(node, nodeTypeFullName(node))
+      astForVariableDeclarator(node, nodeTypeFullName(node), shouldPushVariable = false)
     }
   }
 
