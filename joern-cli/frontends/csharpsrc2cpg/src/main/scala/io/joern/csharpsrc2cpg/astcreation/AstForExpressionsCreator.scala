@@ -5,7 +5,7 @@ import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.{IdentifierNode, *}
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newOperatorCallNode}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewFieldIdentifier, NewMethodParameterIn}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewFieldIdentifier, NewIdentifier, NewMethodParameterIn}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -28,6 +28,20 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     Seq(Ast(literalNode(_literalNode, code(_literalNode), nodeTypeFullName(_literalNode))))
   }
 
+  protected def astForExpressionNode(expressionNodeInfo: DotNetNodeInfo): Seq[Ast] = {
+    expressionNodeInfo.node match {
+      case IdentifierName =>
+        List(
+          scope.findFieldInScope(nameFromNode(expressionNodeInfo)),
+          scope.lookupVariable(nameFromNode(expressionNodeInfo))
+        ) match {
+          case List(Some(_), None) => astForSimpleMemberAccessExpression(expressionNodeInfo)
+          case _                   => astForNode(expressionNodeInfo)
+        }
+      case _ => astForNode(expressionNodeInfo)
+    }
+  }
+
   protected def astForUnaryExpression(unaryExpr: DotNetNodeInfo): Seq[Ast] = {
     val operatorToken = unaryExpr.json(ParserKeys.OperatorToken)(ParserKeys.Value).str
     val operatorName = operatorToken match
@@ -44,7 +58,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case "&" => Operators.addressOf
 
     val args    = createDotNetNodeInfo(unaryExpr.json(ParserKeys.Operand))
-    val argsAst = astForNode(args)
+    val argsAst = astForExpressionNode(args)
+
     Seq(
       callAst(createCallNodeForOperator(unaryExpr, operatorName, typeFullName = Some(nodeTypeFullName(args))), argsAst)
     )
@@ -84,8 +99,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         logger.warn(s"Unhandled operator '$x' for ${code(binaryExpr)}")
         CSharpOperators.unknown
 
-    // TODO: Handle implicit member access e.g. b=1
-    val args = astForNode(binaryExpr.json(ParserKeys.Left)) ++: astForNode(binaryExpr.json(ParserKeys.Right))
+    val args = astForExpressionNode(createDotNetNodeInfo(binaryExpr.json(ParserKeys.Left))) ++: astForExpressionNode(
+      createDotNetNodeInfo(binaryExpr.json(ParserKeys.Right))
+    )
+
     val cNode =
       createCallNodeForOperator(binaryExpr, operatorName, typeFullName = Some(getTypeFullNameFromAstNode(args)))
     Seq(callAst(cNode, args))
