@@ -7,6 +7,7 @@ import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newOperatorCallNode
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFieldIdentifier, NewMethodParameterIn}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.joern.csharpsrc2cpg.astcreation.Defines as CSharpDefines
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   def astForExpressionStatement(expr: DotNetNodeInfo): Seq[Ast] = {
@@ -30,7 +31,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   private def astForAwaitExpression(awaitExpr: DotNetNodeInfo): Seq[Ast] = {
     /* fullName is the name in case of STATIC_DISPATCH */
     val node =
-      callNode(awaitExpr, awaitExpr.code, "<operator>.await", "<operator>.await", DispatchTypes.STATIC_DISPATCH)
+      callNode(
+        awaitExpr,
+        awaitExpr.code,
+        CSharpDefines.AwaitOperator,
+        CSharpDefines.AwaitOperator,
+        DispatchTypes.STATIC_DISPATCH
+      )
     val argAsts = astForNode(awaitExpr.json(ParserKeys.Expression))
     Seq(callAst(node, argAsts))
   }
