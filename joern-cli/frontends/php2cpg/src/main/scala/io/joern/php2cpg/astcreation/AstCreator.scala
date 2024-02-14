@@ -1387,8 +1387,9 @@ class AstCreator(filename: String, phpAst: PhpFile)(implicit withSchemaValidatio
         case PhpVariable(PhpNameExpr(name, _), _) =>
           val typeFullName = scope
             .lookupVariable(name)
-            .flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME).map(_.toString))
+            .map(node => Option(node.propertiesMap.get(PropertyNames.TYPE_FULL_NAME)))
             .getOrElse(TypeConstants.Any)
+            .toString
           val byRefPrefix = if (closureUse.byRef) "&" else ""
 
           Some(localNode(closureExpr, name, s"$byRefPrefix$$$name", typeFullName))
