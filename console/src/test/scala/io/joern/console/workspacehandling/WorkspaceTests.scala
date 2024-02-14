@@ -32,7 +32,7 @@ class WorkspaceTests extends AnyWordSpec with Matchers {
         output should include(inputPath)
 
         // This relies on the file system and only works in a staged joern environment, not our workspace
-        // with a mock cpg. Will leave here just for illustratory porpuses.
+        // with a mock cpg. Will leave here just for illustratory purposes.
 //        output should include("foo,bar")
       }
     }
