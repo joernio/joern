@@ -387,8 +387,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       ModifierTypes.PUBLIC,
       ModifierTypes.PRIVATE,
       ModifierTypes.INTERNAL,
-      ModifierTypes.PROTECTED,
-      CSharpModifiers.CONST
+      ModifierTypes.PROTECTED
     )
     val implicitAccessModifier = accessModifiers match
       // Internal is default for top-level definitions
@@ -409,7 +408,6 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         case "static"   => newModifierNode(ModifierTypes.STATIC)
         case "readonly" => newModifierNode(ModifierTypes.READONLY)
         case "virtual"  => newModifierNode(ModifierTypes.VIRTUAL)
-        case "const"    => newModifierNode(CSharpModifiers.CONST)
         case x =>
           logger.warn(s"Unhandled modifier name '$x'")
           null
