@@ -187,7 +187,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val initializerJson = varDecl.json(ParserKeys.Initializer)
     val rhs             = if (!initializerJson.isNull) astForNode(createDotNetNodeInfo(initializerJson)) else Seq.empty
     val rhsTypeFullName =
-      if (typeFullName == Defines.Any || typeFullName == "var") getTypeFullNameFromAstNode(rhs) else typeFullName
+      if (typeFullName == Defines.Any || typeFullName == "var") getTypeFullNameFromAstNode(rhs)
+      else scope.tryResolveTypeReference(typeFullName).getOrElse(typeFullName)
 
     val name          = nameFromNode(varDecl)
     val identifierAst = astForIdentifier(varDecl, rhsTypeFullName)

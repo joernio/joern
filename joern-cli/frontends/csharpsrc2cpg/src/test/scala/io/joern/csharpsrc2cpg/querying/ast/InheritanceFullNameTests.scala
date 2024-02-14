@@ -14,7 +14,7 @@ class InheritanceFullNameTests extends CSharpCode2CpgFixture {
         |
         |public class Baz {
         | public void main() {
-        |   var b = new Bar();
+        |   Bar b = new Bar();
         | }
         |}
         |""".stripMargin)
@@ -23,7 +23,7 @@ class InheritanceFullNameTests extends CSharpCode2CpgFixture {
       inside(cpg.typeDecl.nameExact("Bar").l) {
         case bar :: Nil =>
           bar.fullName shouldBe "Bar"
-          bar.inheritsFromTypeFullName shouldBe Seq("global.Foo")
+          bar.inheritsFromTypeFullName shouldBe Seq("Foo")
         case _ => fail("No class named `Bar` found")
       }
     }
@@ -31,7 +31,7 @@ class InheritanceFullNameTests extends CSharpCode2CpgFixture {
     "resolve identifier full names instantiated from the class" in {
       inside(cpg.identifier.nameExact("b").l) {
         case b :: Nil =>
-          b.typeFullName shouldBe "global.Bar"
+          b.typeFullName shouldBe "Bar"
         case _ => fail("No identifier named `b` found")
       }
     }
@@ -55,7 +55,7 @@ class InheritanceFullNameTests extends CSharpCode2CpgFixture {
       inside(cpg.typeDecl.nameExact("Qux").l) {
         case qux :: Nil =>
           qux.fullName shouldBe "Qux"
-          qux.inheritsFromTypeFullName shouldBe Seq("global.Foo")
+          qux.inheritsFromTypeFullName shouldBe Seq("Foo")
 
           inside(qux.astChildren.isMethod.l) {
             case bazz :: Nil =>
@@ -70,7 +70,7 @@ class InheritanceFullNameTests extends CSharpCode2CpgFixture {
       inside(cpg.typeDecl.nameExact("Fred").l) {
         case fred :: Nil =>
           fred.fullName shouldBe "Fred"
-          fred.inheritsFromTypeFullName shouldBe Seq("global.Qux")
+          fred.inheritsFromTypeFullName shouldBe Seq("Qux")
         case _ => fail("No class named `Fred`")
       }
     }
@@ -95,7 +95,7 @@ class InheritanceFullNameTests extends CSharpCode2CpgFixture {
       inside(cpg.typeDecl.nameExact("Rectangle").l) {
         case rectangle :: Nil =>
           rectangle.fullName shouldBe "Rectangle"
-          rectangle.inheritsFromTypeFullName shouldBe Seq("global.IShape", "global.IColor")
+          rectangle.inheritsFromTypeFullName shouldBe Seq("IShape", "IColor")
         case _ => fail("No class named `Fred`")
       }
     }
