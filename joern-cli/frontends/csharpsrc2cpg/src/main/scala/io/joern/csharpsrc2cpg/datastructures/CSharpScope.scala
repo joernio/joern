@@ -52,11 +52,12 @@ class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeT
       .find(_.name.endsWith(typeName))
       .flatMap(typeMap.namespaceFor)
       .map(n => {
-        boundary:
-          if (n.equals("global")) {
-            break(typeName)
-          }
-          s"$n.$typeName"
+        // To avoid recursive type prefixing on assignment calls.
+        if (typeName.startsWith(n)) {
+          return Some(typeName)
+        } else {
+          return Some(s"$n.$typeName")
+        }
       })
   }
 
