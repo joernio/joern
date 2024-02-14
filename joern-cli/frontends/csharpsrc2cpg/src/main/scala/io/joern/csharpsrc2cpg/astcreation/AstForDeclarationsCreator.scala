@@ -14,7 +14,7 @@ import io.joern.csharpsrc2cpg.datastructures.FieldDecl
 import io.joern.csharpsrc2cpg.utils.Utils.{composeMethodFullName, composeMethodLikeSignature}
 
 import scala.collection.mutable.ArrayBuffer
-import io.joern.csharpsrc2cpg.{CSharpModifiers, CSharpOperators}
+import io.joern.csharpsrc2cpg.CSharpOperators
 import io.joern.x2cpg.Defines
 import io.joern.csharpsrc2cpg.astcreation.BuiltinTypes.DotNetTypeMap
 import io.joern.csharpsrc2cpg.datastructures.EnumScope
