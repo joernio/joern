@@ -7,6 +7,7 @@ import io.joern.x2cpg.datastructures.{Scope, ScopeElement}
 import io.shiftleft.codepropertygraph.generated.nodes.DeclarationNew
 
 import scala.collection.mutable
+import scala.util.boundary, boundary.break
 
 class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeType] {
 
@@ -47,7 +48,17 @@ class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeT
     .exists(x => x.scopeNode.isInstanceOf[MethodScope] || x.scopeNode.isInstanceOf[TypeLikeScope])
 
   def tryResolveTypeReference(typeName: String): Option[String] = {
-    typesInScope.find(_.name.endsWith(typeName)).flatMap(typeMap.namespaceFor).map(n => s"$n.$typeName")
+    typesInScope
+      .find(_.name.endsWith(typeName))
+      .flatMap(typeMap.namespaceFor)
+      .map(n => {
+        // To avoid recursive type prefixing on assignment calls.
+        if (typeName.startsWith(n)) {
+          return Some(typeName)
+        } else {
+          return Some(s"$n.$typeName")
+        }
+      })
   }
 
   def tryResolveMethodInvocation(typeFullName: String, callName: String): Option[String] = {
