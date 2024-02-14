@@ -219,8 +219,7 @@ class CallCpgTests extends RubyCode2CpgFixture(withPostProcessing = true, useDep
         "foo.rb"
       )
 
-    // TODO: Flaky test
-    "have its call node correctly identified and created" ignore {
+    "have its call node correctly identified and created" in {
       val List(deviceParams) = cpg.call.nameExact("device_params").l: @unchecked
       deviceParams.name shouldBe "device_params"
       deviceParams.code shouldBe "device_params"

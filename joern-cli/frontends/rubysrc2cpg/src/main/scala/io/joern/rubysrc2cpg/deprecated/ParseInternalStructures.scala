@@ -19,21 +19,12 @@ class ParseInternalStructures(
   projectRoot: Option[String] = None
 ) {
 
-  private val logger = LoggerFactory.getLogger(getClass)
-
   def populatePackageTable(): Unit = {
-    val tasks = parsedFiles.map { case (fileName, programCtx) =>
-      () => {
-        val relativeFilename: String =
-          projectRoot.map(fileName.stripPrefix).map(_.stripPrefix(JFile.separator)).getOrElse(fileName)
-        implicit val classStack: mutable.Stack[String] = mutable.Stack[String]()
-        parseForStructures(relativeFilename, programCtx)
-      }
-    }.iterator
-    ConcurrentTaskUtil.runUsingThreadPool(tasks).foreach {
-      case Failure(exception) =>
-        logger.warn("Exception encountered while scanning for internal structures", exception)
-      case _ => // do nothing
+    parsedFiles.foreach { case (fileName, programCtx) =>
+      val relativeFilename: String =
+        projectRoot.map(fileName.stripPrefix).map(_.stripPrefix(JFile.separator)).getOrElse(fileName)
+      implicit val classStack: mutable.Stack[String] = mutable.Stack[String]()
+      parseForStructures(relativeFilename, programCtx)
     }
   }
 
