@@ -355,7 +355,7 @@ class ControlStructureTests extends RubyCode2CpgFixture {
 
           inside(forEachNode.astChildren.isBlock.l) {
             case blockNode :: Nil =>
-              val List(puts) = blockNode._callViaAstOut.nameExact("puts").l
+              val List(puts) = blockNode.callViaAstOut.nameExact("puts").l
               puts.astParent shouldBe blockNode
             case _ => fail("Correct blockNode as child not found for `for-in` statement")
           }

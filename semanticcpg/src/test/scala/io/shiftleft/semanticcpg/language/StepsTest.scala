@@ -49,7 +49,7 @@ class StepsTest extends AnyWordSpec with Matchers {
         val method: Method        = cpg.method.head
         val results: List[Method] = cpg.method.id(method.id).toList
         results.size shouldBe 1
-        results.head.underlying.id
+        results.head.id
       }
 
       "providing multiple" in {
@@ -280,7 +280,6 @@ class StepsTest extends AnyWordSpec with Matchers {
     def methodParameterOut =
       cpg.graph
         .nodes(NodeTypes.METHOD_PARAMETER_OUT)
-        .asScala
         .cast[MethodParameterOut]
         .name("param1")
     methodParameterOut.typ.name.head shouldBe "paramtype"
@@ -302,7 +301,7 @@ class StepsTest extends AnyWordSpec with Matchers {
     file.typeDecl.name.head shouldBe "AClass"
     file.head.typeDecl.name.head shouldBe "AClass"
 
-    def block = cpg.graph.nodes(NodeTypes.BLOCK).asScala.cast[Block].typeFullName("int")
+    def block = cpg.graph.nodes(NodeTypes.BLOCK).cast[Block].typeFullName("int")
     block.local.name.size shouldBe 1
     block.flatMap(_.local.name).size shouldBe 1
 
@@ -318,8 +317,8 @@ class StepsTest extends AnyWordSpec with Matchers {
 //    def cfg: Iterator[CfgNode] = cpg.method.name("add")
 
     def ast: Iterator[AstNode] = cpg.method.name("foo").cast[AstNode]
-    ast.astParent.property(Properties.NAME).head shouldBe "AClass"
-    ast.head.astParent.property(Properties.NAME) shouldBe "AClass"
+    ast.astParent.property(PropertyKeys.Name).head shouldBe "AClass"
+    ast.head.astParent.property(PropertyKeys.Name) shouldBe "AClass"
 
     // methodForCallGraph
     method.call.size shouldBe 1
