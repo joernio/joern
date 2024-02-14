@@ -2,10 +2,16 @@ package io.joern.rubysrc2cpg.datastructures
 
 import io.joern.x2cpg.datastructures.*
 import io.shiftleft.codepropertygraph.generated.NodeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.NewNode
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  DeclarationNew,
+  MethodParameterIn,
+  NewLocal,
+  NewMethodParameterIn,
+  NewNode
+}
 
 class RubyScope(summary: RubyProgramSummary)
-    extends Scope[String, NewNode, TypedScopeElement]
+    extends Scope[String, DeclarationNew, TypedScopeElement]
     with TypedScope[RubyMethod, RubyField, RubyType](summary) {
 
   // Ruby does not have overloading, so this can be set to true
@@ -59,5 +65,24 @@ class RubyScope(summary: RubyProgramSummary)
       case _                                 => false
     }
     .getOrElse(false)
+
+  /** When a singleton class is introduced into the scope, variables that conform to the base type now have the
+    * singleton's functionality mixed in. This method finds variables that have the base type as a possible type and
+    * appends the singleton type.
+    *
+    * @param singletonClassName
+    *   the singleton type full name.
+    * @param baseClassName
+    *   the base class full name.
+    */
+  def pushSingletonClassDeclaration(singletonClassName: String, baseClassName: String): Unit = {
+    stack.flatMap(_.variables).map {
+      case (_, local: NewLocal) if local.possibleTypes.contains(baseClassName) =>
+        local.possibleTypes(local.possibleTypes :+ singletonClassName)
+      case (_, param: NewMethodParameterIn) if param.possibleTypes.contains(baseClassName) =>
+        param.possibleTypes(param.possibleTypes :+ singletonClassName)
+      case _ =>
+    }
+  }
 
 }

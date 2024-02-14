@@ -74,13 +74,19 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         astForUnknown(node)
   }
 
-  protected def astForAnonymousClassDeclaration(node: AnonymousClassDeclaration): Ast = {
+  protected def astForAnonymousClassDeclaration(node: AnonymousTypeDeclaration): Ast = {
     // This will link the type decl to the surrounding context via base overlays
     val typeDeclAst = astForClassDeclaration(node)
     Ast.storeInDiffGraph(typeDeclAst, diffGraph)
 
     typeDeclAst.nodes
       .collectFirst { case typeDecl: NewTypeDecl =>
+        (node, typeDecl.inheritsFromTypeFullName.headOption) match {
+          case (_: SingletonClassDeclaration, Some(baseClassName)) =>
+            scope.pushSingletonClassDeclaration(typeDecl.fullName, baseClassName)
+          case _ =>
+        }
+
         val typeIdentifier = SimpleIdentifier()(node.span.spanStart(typeDecl.name))
         // Takes the `Class.new` before the block starts or any other keyword
         val newSpanText = typeDecl.code.takeWhile(_ != ' ')

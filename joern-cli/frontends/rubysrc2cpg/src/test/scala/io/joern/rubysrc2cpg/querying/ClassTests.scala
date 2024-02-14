@@ -222,7 +222,7 @@ class ClassTests extends RubyCode2CpgFixture {
     cpg.method.name("<init>").literal.code.l should be(empty)
   }
 
-  "an anonymous class" should {
+  "a basic anonymous class" should {
     val cpg = code("""
         |a = Class.new do
         |  def hello
@@ -257,6 +257,47 @@ class ClassTests extends RubyCode2CpgFixture {
           aAssignment.source.code shouldBe "Class.new"
         case xs => fail(s"Expected a single assignment, but got [${xs.map(x => x.label -> x.code).mkString(",")}]")
       }
+    }
+
+  }
+
+  "a basic singleton class" should {
+    val cpg = code("""class Animal; end
+        |animal = Animal.new
+        |
+        |class << animal
+        |  def bark
+        |    'Woof'
+        |  end
+        |end
+        |
+        |animal.bark # => 'Woof'
+        |""".stripMargin)
+
+    "generate a type decl with the associated members" in {
+      inside(cpg.typeDecl.nameExact("<anon-class-0>").l) {
+        case anonClass :: Nil =>
+          anonClass.name shouldBe "<anon-class-0>"
+          anonClass.fullName shouldBe "Test0.rb:<global>::program.<anon-class-0>"
+          // TODO: Attempt to resolve the below with the `scope` class once we're handling constructors
+          anonClass.inheritsFromTypeFullName shouldBe Seq("animal")
+          inside(anonClass.method.l) {
+            case defaultConstructor :: bark :: Nil =>
+              defaultConstructor.name shouldBe Defines.ConstructorMethodName
+              defaultConstructor.fullName shouldBe s"Test0.rb:<global>::program.<anon-class-0>:${Defines.ConstructorMethodName}"
+
+              bark.name shouldBe "bark"
+              bark.fullName shouldBe "Test0.rb:<global>::program.<anon-class-0>:bark"
+            case xs => fail(s"Expected a single method, but got [${xs.map(x => x.label -> x.code).mkString(",")}]")
+          }
+        case xs => fail(s"Expected a single anonymous class, but got [${xs.map(x => x.label -> x.code).mkString(",")}]")
+      }
+    }
+
+    // TODO: While it may not be reasonable to make the following claim without type propagation, the single file
+    //  context coupled with the RubyScope should enable this once constructors are handled.
+    "register that `animal` may possibly be an instantiation of the singleton type" ignore {
+      cpg.local("animal").possibleTypes.l should contain("Test0.rb:<global>::program.<anon-class-0>")
     }
 
   }

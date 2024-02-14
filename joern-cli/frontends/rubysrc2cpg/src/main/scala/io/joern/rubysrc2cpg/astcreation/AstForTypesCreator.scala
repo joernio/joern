@@ -4,6 +4,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.{BlockScope, MethodScope, ModuleScope, TypeScope}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewLocal, NewMethodParameterIn}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, Operators}
 
 import scala.collection.immutable.List
@@ -20,7 +21,15 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
   private def getBaseClassName(node: RubyNode): Option[String] = {
     node match
-      case simpleIdentifier: SimpleIdentifier => Some(simpleIdentifier.text)
+      case simpleIdentifier: SimpleIdentifier =>
+        val name = simpleIdentifier.text
+        scope
+          .lookupVariable(name)
+          .collect {
+            case x: NewLocal if x.typeFullName != XDefines.Any             => x.typeFullName
+            case x: NewMethodParameterIn if x.typeFullName != XDefines.Any => x.typeFullName
+          }
+          .orElse(Option(name))
       case _ =>
         logger.warn(s"Qualified base class names are not supported yet: ${code(node)} ($relativeFileName), skipping")
         None
@@ -45,7 +54,11 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       alias = None
     )
 
-    scope.pushNewScope(TypeScope(classFullName))
+    node match {
+      case _: ModuleDeclaration => scope.pushNewScope(ModuleScope(classFullName))
+      case _: TypeDeclaration   => scope.pushNewScope(TypeScope(classFullName))
+    }
+
     val classBody =
       node.body.asInstanceOf[StatementList] // for now (bodyStatement is a superset of stmtList)
     val classBodyAsts = classBody.statements.flatMap(astsForStatement) match {

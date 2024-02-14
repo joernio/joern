@@ -622,7 +622,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitSingletonClassDefinition(ctx: RubyParser.SingletonClassDefinitionContext): RubyNode = {
-    AnonymousClassDeclaration(
+    SingletonClassDeclaration(
       freshClassName(ctx.toTextSpan),
       Option(ctx.commandOrPrimaryValue()).map(visit),
       visit(ctx.bodyStatement())
