@@ -74,7 +74,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         astForUnknown(node)
   }
 
-  protected def astForAnonymousClassDeclaration(node: AnonymousTypeDeclaration): Ast = {
+  protected def astForAnonymousTypeDeclaration(node: AnonymousTypeDeclaration): Ast = {
     // This will link the type decl to the surrounding context via base overlays
     val typeDeclAst = astForClassDeclaration(node)
     Ast.storeInDiffGraph(typeDeclAst, diffGraph)

@@ -30,7 +30,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: RescueExpression          => astForRescueExpression(node)
     case node: MandatoryParameter        => astForMandatoryParameter(node)
     case node: SplattingRubyNode         => astForSplattingRubyNode(node)
-    case node: AnonymousClassDeclaration => astForAnonymousClassDeclaration(node)
+    case node: AnonymousClassDeclaration => astForAnonymousTypeDeclaration(node)
     case _                               => astForUnknown(node)
 
   protected def astForStaticLiteral(node: StaticLiteral): Ast = {
