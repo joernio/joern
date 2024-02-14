@@ -81,8 +81,6 @@ class InheritanceFullNameTests extends CSharpCode2CpgFixture {
         case fred :: Nil =>
           fred.fullName shouldBe "HelloWorld.Fred"
           fred.inheritsFromTypeFullName shouldBe Seq("HelloWorld.Qux")
-          fred.fullName shouldBe "HelloWorld.Fred"
-          fred.inheritsFromTypeFullName shouldBe Seq("HelloWorld.Qux")
         case _ => fail("No class named `Fred`")
       }
     }
