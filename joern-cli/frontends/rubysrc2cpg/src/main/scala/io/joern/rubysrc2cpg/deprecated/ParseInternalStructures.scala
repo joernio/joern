@@ -3,9 +3,7 @@ package io.joern.rubysrc2cpg.deprecated
 import io.joern.rubysrc2cpg.RubySrc2Cpg
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.*
-import io.joern.rubysrc2cpg.deprecated.passes.Defines
 import io.joern.rubysrc2cpg.deprecated.utils.PackageTable
-import io.joern.x2cpg.utils.ConcurrentTaskUtil
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.misc.Interval
 import org.slf4j.LoggerFactory
@@ -20,12 +18,20 @@ class ParseInternalStructures(
   projectRoot: Option[String] = None
 ) {
 
+  private val logger = LoggerFactory.getLogger(getClass)
+
   def populatePackageTable(): Unit = {
     parsedFiles.foreach { case (fileName, programCtx) =>
-      val relativeFilename: String =
-        projectRoot.map(fileName.stripPrefix).map(_.stripPrefix(JFile.separator)).getOrElse(fileName)
-      implicit val classStack: mutable.Stack[String] = mutable.Stack[String]()
-      parseForStructures(relativeFilename, programCtx)
+      Try {
+        val relativeFilename: String =
+          projectRoot.map(fileName.stripPrefix).map(_.stripPrefix(JFile.separator)).getOrElse(fileName)
+        implicit val classStack: mutable.Stack[String] = mutable.Stack[String]()
+        parseForStructures(relativeFilename, programCtx)
+      } match {
+        case Failure(exception) =>
+          logger.warn(s"Exception encountered while scanning for internal structures in file '$fileName'", exception)
+        case _ => // do nothing
+      }
     }
   }
 
