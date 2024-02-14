@@ -15,7 +15,6 @@ libraryDependencies ++= Seq(
 
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 trapExit                      := false
-
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
 lazy val packTestCode = taskKey[Unit]("Packs test code for JarTypeReader into jars.")
