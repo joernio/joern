@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language._
 
 import java.util.regex.Pattern
 
-class CodeDumperTest extends SwiftSrc2CpgSuite {
+class CodeDumperFromFileTest extends SwiftSrc2CpgSuite {
 
   implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder
 
@@ -34,7 +34,7 @@ class CodeDumperTest extends SwiftSrc2CpgSuite {
     path.delete(swallowIOExceptions = true)
   }
 
-  "dumping code" should {
+  "dumping code from file" should {
 
     "return empty string for empty traversal" in {
       cpg.method.name("notinthere").dump shouldBe empty
@@ -68,6 +68,7 @@ class CodeDumperTest extends SwiftSrc2CpgSuite {
       val code                             = cpg.method.name("foo").callIn.dumpRaw.mkString("\n")
       code should startWith("func my_func")
     }
+
   }
 
 }

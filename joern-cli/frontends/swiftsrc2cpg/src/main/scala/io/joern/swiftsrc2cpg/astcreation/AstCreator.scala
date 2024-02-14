@@ -18,6 +18,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeRef
 import io.shiftleft.codepropertygraph.generated.ModifierTypes
+import io.shiftleft.codepropertygraph.generated.nodes.File.PropertyDefaults
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
@@ -62,7 +63,9 @@ class AstCreator(val config: Config, val global: SwiftGlobal, val parserResult: 
   }
 
   override def createAst(): DiffGraphBuilder = {
-    val fileNode       = NewFile().name(parserResult.filename).order(1)
+    val fileContent = if (!config.disableFileContent) Option(parserResult.fileContent) else None
+    val fileNode    = NewFile().name(parserResult.filename).order(1)
+    fileContent.foreach(fileNode.content(_))
     val namespaceBlock = globalNamespaceBlock()
     methodAstParentStack.push(namespaceBlock)
     val astForFakeMethod =
@@ -127,13 +130,28 @@ class AstCreator(val config: Config, val global: SwiftGlobal, val parserResult: 
     case null                               => notHandledYet(node)
   }
 
-  protected def line(node: SwiftNode): Option[Integer]      = node.startLine.map(Integer.valueOf)
-  protected def column(node: SwiftNode): Option[Integer]    = node.startColumn.map(Integer.valueOf)
-  protected def lineEnd(node: SwiftNode): Option[Integer]   = node.endLine.map(Integer.valueOf)
-  protected def columnEnd(node: SwiftNode): Option[Integer] = node.endColumn.map(Integer.valueOf)
-  protected def code(node: SwiftNode): String = {
-    val startIndex = Math.min(node.startOffset.getOrElse(0), parserResult.fileContent.length)
-    val endIndex   = Math.min(node.endOffset.getOrElse(0), parserResult.fileContent.length)
-    shortenCode(parserResult.fileContent.substring(startIndex, endIndex).trim)
+  override protected def line(node: SwiftNode): Option[Integer]      = node.startLine.map(Integer.valueOf)
+  override protected def column(node: SwiftNode): Option[Integer]    = node.startColumn.map(Integer.valueOf)
+  override protected def lineEnd(node: SwiftNode): Option[Integer]   = node.endLine.map(Integer.valueOf)
+  override protected def columnEnd(node: SwiftNode): Option[Integer] = node.endColumn.map(Integer.valueOf)
+
+  private def nodeOffsets(node: SwiftNode): Option[(Int, Int)] = {
+    for {
+      startOffset <- node.startOffset
+      endOffset   <- node.endOffset
+    } yield (startOffset, endOffset)
+  }
+
+  override protected def offset(node: SwiftNode): Option[(Int, Int)] = {
+    Option.when(!config.disableFileContent) { nodeOffsets(node) }.flatten
+  }
+
+  override protected def code(node: SwiftNode): String = {
+    nodeOffsets(node) match {
+      case Some((startOffset, endOffset))
+          if startOffset < endOffset && startOffset >= 0 && endOffset <= parserResult.fileContent.length =>
+        shortenCode(parserResult.fileContent.substring(startOffset, endOffset).trim)
+      case _ => PropertyDefaults.Code
+    }
   }
 }
