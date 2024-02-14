@@ -1,5 +1,6 @@
 package io.joern.csharpsrc2cpg.astcreation
 
+import dotty.tools.dotc.ast.untpd.Modifiers
 import io.joern.csharpsrc2cpg.datastructures.{BlockScope, MethodScope, NamespaceScope, TypeScope}
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.utils.NodeBuilders.{newMethodReturnNode, newModifierNode}
@@ -11,11 +12,13 @@ import io.shiftleft.proto.cpg.Cpg.EvaluationStrategies
 import scala.util.Try
 import io.joern.csharpsrc2cpg.datastructures.FieldDecl
 import io.joern.csharpsrc2cpg.utils.Utils.{composeMethodFullName, composeMethodLikeSignature}
+
 import scala.collection.mutable.ArrayBuffer
-import io.joern.csharpsrc2cpg.CSharpOperators as CSharpOperators
+import io.joern.csharpsrc2cpg.{CSharpModifiers, CSharpOperators}
 import io.joern.x2cpg.Defines
 import io.joern.csharpsrc2cpg.astcreation.BuiltinTypes.DotNetTypeMap
 import io.joern.csharpsrc2cpg.datastructures.EnumScope
+import io.shiftleft.codepropertygraph.generated
 
 trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -183,6 +186,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     typeFullName: String,
     shouldPushVariable: Boolean = true
   ): Seq[Ast] = {
+    println(typeFullName)
     // Create RHS AST first to propagate types
     val initializerJson = varDecl.json(ParserKeys.Initializer)
     val rhs             = if (!initializerJson.isNull) astForNode(createDotNetNodeInfo(initializerJson)) else Seq.empty
@@ -384,7 +388,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       ModifierTypes.PUBLIC,
       ModifierTypes.PRIVATE,
       ModifierTypes.INTERNAL,
-      ModifierTypes.PROTECTED
+      ModifierTypes.PROTECTED,
+      CSharpModifiers.CONST
     )
     val implicitAccessModifier = accessModifiers match
       // Internal is default for top-level definitions
@@ -405,6 +410,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
         case "static"   => newModifierNode(ModifierTypes.STATIC)
         case "readonly" => newModifierNode(ModifierTypes.READONLY)
         case "virtual"  => newModifierNode(ModifierTypes.VIRTUAL)
+        case "const"    => newModifierNode(CSharpModifiers.CONST)
         case x =>
           logger.warn(s"Unhandled modifier name '$x'")
           null
