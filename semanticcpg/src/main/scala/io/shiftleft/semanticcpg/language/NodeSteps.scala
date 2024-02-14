@@ -29,7 +29,7 @@ class NodeSteps[NodeType <: StoredNode](val traversal: Iterator[NodeType]) exten
       case comment: Comment =>
         comment._astIn.iterator.collectAll[File]
       case node =>
-       node.repeat(_.coalesce(_._sourceFileOut, _._astIn))(_.until(_.hasLabel(File.Label))).cast[File]
+       Iterator(node).repeat(_.coalesce(_._sourceFileOut, _._astIn))(_.until(_.hasLabel(File.Label))).cast[File]
     }
   }
 

@@ -177,6 +177,8 @@ class StepsTest extends AnyWordSpec with Matchers {
        methodStepsHelp should include("Available steps for `Method`")
        methodStepsHelp should include(".namespace") // from MethodTraversal
        methodStepsHelp should include(".depth") // from AstNodeTraversal
+       methodStepsHelp should include("inArithmetic")
+       methodStepsHelp should include("cfgLast")
 
        val methodStepsHelpVerbose = Cpg.emptyCpg.method.helpVerbose
        methodStepsHelpVerbose should include("implemented in")
