@@ -3,15 +3,17 @@ package io.joern.javasrc2cpg.util
 import better.files.File
 import io.joern.javasrc2cpg.{Config, JavaSrc2Cpg}
 import io.joern.javasrc2cpg.util.Delombok.DelombokMode
-import io.joern.javasrc2cpg.util.Delombok.DelombokMode._
+import io.joern.javasrc2cpg.util.Delombok.DelombokMode.*
 import com.github.javaparser.{JavaParser, ParserConfiguration}
 import com.github.javaparser.ParserConfiguration.LanguageLevel
 import com.github.javaparser.ast.CompilationUnit
 import com.github.javaparser.ast.Node.Parsedness
+import io.joern.x2cpg.SourceFiles
+import io.shiftleft.utils.IOUtils
 import org.slf4j.LoggerFactory
 
 import scala.collection.mutable
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -41,7 +43,8 @@ class SourceParser private (originalInputPath: Path, analysisRoot: Path, typesRo
       val compilationUnit = parse(file, storeTokens = true)
       val fileContent = Option
         .when(saveFileContent) {
-          Try(file.contentAsString(Charset.defaultCharset()))
+          Try(IOUtils.readEntireFile(file.path))
+            .orElse(Try(file.contentAsString(Charset.defaultCharset())))
             .orElse(Try(file.contentAsString(StandardCharsets.ISO_8859_1)))
             .toOption
         }

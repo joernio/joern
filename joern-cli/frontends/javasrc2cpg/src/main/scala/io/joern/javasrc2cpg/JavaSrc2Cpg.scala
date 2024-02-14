@@ -28,6 +28,7 @@ class JavaSrc2Cpg extends X2CpgFrontend[Config] {
   override def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
       new MetaDataPass(cpg, language, config.inputPath).createAndApply()
+      println(s"File content disabled! ${config.disableFileContent}")
       val astCreationPass = new AstCreationPass(config, cpg)
       astCreationPass.createAndApply()
       new ConfigFileCreationPass(cpg).createAndApply()
