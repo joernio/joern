@@ -100,8 +100,8 @@ class TypeMap(astGenResult: AstGenRunnerResult, initialMappings: List[NamespaceT
       .map(AstCreatorHelper.createDotNetNodeInfo(_))
       .filter { x =>
         x.node match
-          case NamespaceDeclaration | FileScopedNamespaceDeclaration | ClassDeclaration => true
-          case _                                                                        => false
+          case NamespaceDeclaration | FileScopedNamespaceDeclaration | ClassDeclaration | InterfaceDeclaration => true
+          case _                                                                                               => false
       }
       .foreach { parserNode =>
         parserNode.node match
@@ -113,7 +113,7 @@ class TypeMap(astGenResult: AstGenRunnerResult, initialMappings: List[NamespaceT
               case None => Option(typesInNamespace)
             }
           }
-          case ClassDeclaration => {
+          case ClassDeclaration | InterfaceDeclaration => {
             val globalClass = Set(parseClassDeclaration(parserNode, "global"))
             namespaceTypeMap.updateWith("global") {
               case Some(types) =>
