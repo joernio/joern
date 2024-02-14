@@ -1,21 +1,12 @@
 package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
-import io.joern.rubysrc2cpg.datastructures.{
-  BlockScope,
-  ConstructorScope,
-  MethodScope,
-  ModuleScope,
-  ProgramScope,
-  TypeScope
-}
+import io.joern.rubysrc2cpg.datastructures.{BlockScope, MethodScope, ModuleScope, TypeScope}
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.x2cpg.datastructures.Stack.*
-import io.joern.x2cpg.{Ast, ValidationMode}
+import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EvaluationStrategies, Operators}
 
 import scala.collection.immutable.List
-import io.joern.x2cpg.Defines as XDefines
 
 trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -54,11 +45,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       alias = None
     )
 
-    node match {
-      case _: ClassDeclaration  => scope.pushNewScope(TypeScope(classFullName))
-      case _: ModuleDeclaration => scope.pushNewScope(ModuleScope(classFullName))
-    }
-
+    scope.pushNewScope(TypeScope(classFullName))
     val classBody =
       node.body.asInstanceOf[StatementList] // for now (bodyStatement is a superset of stmtList)
     val classBodyAsts = classBody.statements.flatMap(astsForStatement) match {

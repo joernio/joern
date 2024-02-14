@@ -4,6 +4,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.{ConstructorScope, MethodScope}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
+import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -71,6 +72,21 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           s"Non-mandatory parameters are not supported yet: ${code(node)} (${node.getClass.getSimpleName} ($relativeFileName), skipping"
         )
         astForUnknown(node)
+  }
+
+  protected def astForAnonymousClassDeclaration(node: AnonymousClassDeclaration): Ast = {
+    // This will link the type decl to the surrounding context via base overlays
+    val typeDeclAst = astForClassDeclaration(node)
+    Ast.storeInDiffGraph(typeDeclAst, diffGraph)
+
+    typeDeclAst.nodes
+      .collectFirst { case typeDecl: NewTypeDecl =>
+        val typeIdentifier = SimpleIdentifier()(node.span.spanStart(typeDecl.name))
+        // Takes the `Class.new` before the block starts or any other keyword
+        val newSpanText = typeDecl.code.takeWhile(_ != ' ')
+        astForMemberCall(MemberCall(typeIdentifier, ".", "new", List.empty)(node.span.spanStart(newSpanText)))
+      }
+      .getOrElse(Ast())
   }
 
   protected def astForSingletonMethodDeclaration(node: SingletonMethodDeclaration): Ast = {
