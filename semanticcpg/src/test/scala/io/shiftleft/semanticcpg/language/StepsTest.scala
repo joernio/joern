@@ -194,19 +194,19 @@ class StepsTest extends AnyWordSpec with Matchers {
     "show domain overview" in {
       val domainStartersHelp = Cpg.emptyCpg.help
       domainStartersHelp should include(".comment")
-      domainStartersHelp should include("All comments in source-based CPGs")
+      domainStartersHelp should include("A source code comment")
       domainStartersHelp should include(".arithmetic")
       domainStartersHelp should include("All arithmetic operations")
     }
 
     "provide node-specific overview" in {
       val methodStepsHelp = Cpg.emptyCpg.method.help
-      methodStepsHelp should include("Available steps for Method")
+      methodStepsHelp should include("Available steps for `Method`")
       methodStepsHelp should include(".namespace")
       methodStepsHelp should include(".depth") // from AstNode
 
       val methodStepsHelpVerbose = Cpg.emptyCpg.method.helpVerbose
-      methodStepsHelpVerbose should include("traversal name")
+      methodStepsHelpVerbose should include("implemented in")
       methodStepsHelpVerbose should include("structure.MethodTraversal")
 
       val assignmentStepsHelp = Cpg.emptyCpg.assignment.help
@@ -343,13 +343,6 @@ class StepsTest extends AnyWordSpec with Matchers {
     // modifierAccessors
     method.modifier.modifierType.toSetMutable shouldBe Set("modifiertype")
     method.head.modifier.modifierType.toSetMutable shouldBe Set("modifiertype")
-  }
-
-  "id starter step" in {
-    // only verifying what compiles and what doesn't...
-    // if it compiles, :shipit:
-    assertCompiles("cpg.id(1).out")
-    assertDoesNotCompile("cpg.id(1).outV") // `.outV` is only available on Traversal[Edge]
   }
 
 }
