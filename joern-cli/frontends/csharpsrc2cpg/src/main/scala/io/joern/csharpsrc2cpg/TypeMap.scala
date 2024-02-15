@@ -3,22 +3,14 @@ package io.joern.csharpsrc2cpg
 import com.typesafe.config.impl.*
 import com.typesafe.config.{Config, ConfigFactory}
 import io.joern.csharpsrc2cpg.astcreation.AstCreatorHelper
-import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.{
-  ClassDeclaration,
-  FieldDeclaration,
-  FileScopedNamespaceDeclaration,
-  InterfaceDeclaration,
-  MethodDeclaration,
-  NamespaceDeclaration,
-  RecordDeclaration,
-  StructDeclaration,
-  DeclarationExpr
-}
+import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetJsonAst, DotNetJsonParser, DotNetNodeInfo, ParserKeys}
+import io.joern.x2cpg.Ast
 import io.joern.x2cpg.astgen.AstGenRunner.AstGenRunnerResult
 import io.joern.x2cpg.datastructures.Stack.Stack
 import io.joern.x2cpg.utils.ConcurrentTaskUtil
-import io.shiftleft.codepropertygraph.generated.nodes.NewNode
+import io.shiftleft.codepropertygraph.generated.ModifierTypes
+import io.shiftleft.codepropertygraph.generated.nodes.{NewModifier, NewNode}
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 import upickle.default.*
@@ -64,7 +56,10 @@ class TypeMap(astGenResult: AstGenRunnerResult, initialMappings: List[NamespaceT
       val compilationUnit = AstCreatorHelper.createDotNetNodeInfo(parserResult.json(ParserKeys.AstRoot))
       () => parseCompilationUnit(compilationUnit)
     }.iterator
-    val typeMaps = ConcurrentTaskUtil.runUsingSpliterator(typeMapTasks).flatMap(_.toOption)
+    val typeMaps = ConcurrentTaskUtil.runUsingSpliterator(typeMapTasks).flatMap {
+      case Failure(exception) => logger.warn("Exception encountered during pre-parsing", exception); None
+      case Success(typeMap)   => Option(typeMap)
+    }
     (builtinTypes +: typeMaps ++: initialMappings).foldLeft(Map.empty[String, Set[CSharpType]])((a, b) => {
       val accumulator = mutable.HashMap.from(a)
       val allKeys     = accumulator.keySet ++ b.keySet
@@ -114,7 +109,7 @@ class TypeMap(astGenResult: AstGenRunnerResult, initialMappings: List[NamespaceT
               case None => Option(typesInNamespace)
             }
           }
-          case ClassDeclaration | InterfaceDeclaration => {
+          case _: TypeDeclaration => {
             val globalClass = Set(parseClassDeclaration(parserNode, "global"))
             namespaceTypeMap.updateWith("global") {
               case Some(types) =>
@@ -122,6 +117,7 @@ class TypeMap(astGenResult: AstGenRunnerResult, initialMappings: List[NamespaceT
               case None => Option(globalClass)
             }
           }
+          case _ =>
       }
 
     namespaceTypeMap.toMap
@@ -166,17 +162,17 @@ class TypeMap(astGenResult: AstGenRunnerResult, initialMappings: List[NamespaceT
       .json(ParserKeys.ParameterList)
       .obj(ParserKeys.Parameters)
       .arr
-
+    val isStatic     = methodDecl.json(ParserKeys.Modifiers).arr.exists(_(ParserKeys.Value).str == "static")
     val methodReturn = AstCreatorHelper.createDotNetNodeInfo(methodDecl.json(ParserKeys.ReturnType)).code
     val paramTypes = params
       .map(param => AstCreatorHelper.createDotNetNodeInfo(param))
       .map { param =>
-        val typ  = param.json(ParserKeys.Type)(ParserKeys.Keyword)(ParserKeys.Value).str
+        val typ  = AstCreatorHelper.createDotNetNodeInfo(param.json(ParserKeys.Type)).code
         val name = param.json(ParserKeys.Identifier)(ParserKeys.Value).str
         (name, typ)
       }
 
-    List(CSharpMethod(AstCreatorHelper.nameFromNode(methodDecl), methodReturn, paramTypes.toList))
+    List(CSharpMethod(AstCreatorHelper.nameFromNode(methodDecl), methodReturn, paramTypes.toList, isStatic))
   }
 
   private def parseFieldDeclaration(fieldDecl: DotNetNodeInfo): List[CSharpField] = {
@@ -194,6 +190,7 @@ class TypeMap(astGenResult: AstGenRunnerResult, initialMappings: List[NamespaceT
 
 case class CSharpField(name: String) derives ReadWriter
 
-case class CSharpMethod(name: String, returnType: String, parameterTypes: List[(String, String)]) derives ReadWriter
+case class CSharpMethod(name: String, returnType: String, parameterTypes: List[(String, String)], isStatic: Boolean)
+    derives ReadWriter
 
 case class CSharpType(name: String, methods: List[CSharpMethod], fields: List[CSharpField]) derives ReadWriter

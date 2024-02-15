@@ -1,6 +1,5 @@
 package io.joern.csharpsrc2cpg.astcreation
 
-import io.joern.csharpsrc2cpg.astcreation.AstCreatorHelper.nameFromIdentifier
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetJsonAst, DotNetNodeInfo, ParserKeys}
 import io.joern.csharpsrc2cpg.{Constants, astcreation}
@@ -155,6 +154,8 @@ object AstCreatorHelper {
       case IdentifierName | Parameter | _: DeclarationExpr                        => nameFromIdentifier(node)
       case QualifiedName                                                          => nameFromQualifiedName(node)
       case SimpleMemberAccessExpression => nameFromIdentifier(createDotNetNodeInfo(node.json(ParserKeys.Name)))
+      case ObjectCreationExpression     => nameFromNode(createDotNetNodeInfo(node.json(ParserKeys.Type)))
+      case ThisExpression               => "this"
       case _                            => "<empty>"
   }
 

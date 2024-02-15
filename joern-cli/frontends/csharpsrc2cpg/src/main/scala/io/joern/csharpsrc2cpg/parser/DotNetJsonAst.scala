@@ -48,17 +48,19 @@ object DotNetJsonAst {
 
   sealed trait DeclarationExpr extends BaseExpr
 
-  object ClassDeclaration extends DeclarationExpr
+  sealed trait TypeDeclaration extends DeclarationExpr
 
-  object StructDeclaration extends DeclarationExpr
+  object ClassDeclaration extends TypeDeclaration
 
-  object RecordDeclaration extends DeclarationExpr
+  object StructDeclaration extends TypeDeclaration
 
-  object EnumDeclaration extends DeclarationExpr
+  object RecordDeclaration extends TypeDeclaration
+
+  object EnumDeclaration extends TypeDeclaration
 
   object EnumMemberDeclaration extends DeclarationExpr
 
-  object InterfaceDeclaration extends DeclarationExpr
+  object InterfaceDeclaration extends TypeDeclaration
 
   object MethodDeclaration extends DeclarationExpr
 

@@ -8,14 +8,16 @@
           "returnType": "void",
           "parameterTypes": [
             ["format", "object"]
-          ]
+          ],
+          "isStatic": true
         },
         {
           "name": "WriteLine",
           "returnType": "void",
           "parameterTypes": [
             ["format", "object"]
-          ]
+          ],
+          "isStatic": true
         }
       ],
       "fields": []
@@ -30,12 +32,14 @@
           "returnType": "void",
           "parameterTypes": [
             ["count", "int"]
-          ]
+          ],
+          "isStatic": true
         },
         {
           "name": "Clear",
           "returnType": "void",
-          "parameterTypes": []
+          "parameterTypes": [],
+          "isStatic": true
         }
       ],
       "fields": []
