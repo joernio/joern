@@ -1,7 +1,7 @@
 package io.shiftleft.semanticcpg.dotgenerator
 
 import flatgraph.Accessors
-import io.shiftleft.codepropertygraph.generated.PropertyKeys
+import io.shiftleft.codepropertygraph.generated.PropertyNames
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.utils.MemberAccess
@@ -71,7 +71,10 @@ object DotSerializer {
   }
 
   private def stringRepr(vertex: StoredNode): String = {
-    val lineNoMaybe = vertex.property(PropertyKeys.LineNumber)
+    // TODO MP after the initial flatgraph migration (where we want to maintain semantics as far as
+    // possible) this might become `vertex.property(PropertyKeys.LineNumber)` which derives to `Option[Int]`
+    val lineNoMaybe = vertex.propertyOption[Int](PropertyNames.LINE_NUMBER)
+
     StringEscapeUtils.escapeHtml4(vertex match {
       case call: Call                            => (call.name, limit(call.code)).toString
       case contrl: ControlStructure              => (contrl.label, contrl.controlStructureType, contrl.code).toString
