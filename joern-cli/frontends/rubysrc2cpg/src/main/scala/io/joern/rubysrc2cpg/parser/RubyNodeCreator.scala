@@ -544,6 +544,9 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   override def visitMemberAccessExpression(ctx: RubyParser.MemberAccessExpressionContext): RubyNode = {
     val hasArguments = Option(ctx.argumentWithParentheses()).isDefined
     val hasBlock     = Option(ctx.block()).isDefined
+    val isClassDecl = Option(ctx.primaryValue()).map(_.getText).contains("Class") && Option(ctx.methodName())
+      .map(_.getText)
+      .contains("new")
 
     if (!hasArguments && !hasBlock) {
       return MemberAccess(visit(ctx.primaryValue()), ctx.op.getText, ctx.methodName().getText)(ctx.toTextSpan)
@@ -558,10 +561,10 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
       )(ctx.toTextSpan)
     }
 
-    if (hasBlock && ctx.methodName().getText == "new") {
+    if (hasBlock && isClassDecl) {
       val block = visit(ctx.block()).asInstanceOf[Block]
       return AnonymousClassDeclaration(freshClassName(ctx.primaryValue().toTextSpan), None, block.body)(ctx.toTextSpan)
-    } else {
+    } else if (hasBlock) {
       return MemberCallWithBlock(
         visit(ctx.primaryValue()),
         ctx.op.getText,
