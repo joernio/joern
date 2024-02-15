@@ -4,6 +4,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.{ConstructorScope, MethodScope}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewLocal, NewMethodParameterIn, NewTypeDecl}
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -71,6 +72,44 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           s"Non-mandatory parameters are not supported yet: ${code(node)} (${node.getClass.getSimpleName} ($relativeFileName), skipping"
         )
         astForUnknown(node)
+  }
+
+  protected def astForAnonymousTypeDeclaration(node: AnonymousTypeDeclaration): Ast = {
+
+    /** Handles the logic around singleton class behaviour, by registering that the anonymous type extends the base
+      * variable's type, and nothing that the base variable now may be of the singleton's type.
+      * @param typeDecl
+      *   the resulting type decl of the anonymous type.
+      */
+    def handleSingletonClassBehaviour(typeDecl: NewTypeDecl): Unit = {
+      typeDecl.inheritsFromTypeFullName.toList match {
+        case baseVariableName :: _ =>
+          // Attempt to resolve the 'true' inheritance type
+          scope.lookupVariable(baseVariableName).foreach {
+            case x: NewLocal if x.possibleTypes.nonEmpty => typeDecl.inheritsFromTypeFullName(x.possibleTypes)
+            case x: NewMethodParameterIn if x.possibleTypes.nonEmpty =>
+              typeDecl.inheritsFromTypeFullName(x.possibleTypes)
+            case _ =>
+          }
+          scope.pushSingletonClassDeclaration(typeDecl.fullName, baseVariableName)
+        case _ =>
+      }
+    }
+
+    // This will link the type decl to the surrounding context via base overlays
+    val typeDeclAst = astForClassDeclaration(node)
+    Ast.storeInDiffGraph(typeDeclAst, diffGraph)
+
+    typeDeclAst.nodes
+      .collectFirst { case typeDecl: NewTypeDecl =>
+        if (node.isInstanceOf[SingletonClassDeclaration]) handleSingletonClassBehaviour(typeDecl)
+
+        val typeIdentifier = SimpleIdentifier()(node.span.spanStart(typeDecl.name))
+        // Takes the `Class.new` before the block starts or any other keyword
+        val newSpanText = typeDecl.code.takeWhile(_ != ' ')
+        astForMemberCall(MemberCall(typeIdentifier, ".", "new", List.empty)(node.span.spanStart(newSpanText)))
+      }
+      .getOrElse(Ast())
   }
 
   protected def astForSingletonMethodDeclaration(node: SingletonMethodDeclaration): Ast = {

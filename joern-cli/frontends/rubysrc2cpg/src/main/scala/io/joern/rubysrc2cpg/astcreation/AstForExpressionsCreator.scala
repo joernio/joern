@@ -1,37 +1,37 @@
 package io.joern.rubysrc2cpg.astcreation
 
-import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{Unknown, *}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.{RubyOperators, getBuiltInType}
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
-import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.Unknown
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def astForExpression(node: RubyNode): Ast = node match
-    case node: StaticLiteral         => astForStaticLiteral(node)
-    case node: DynamicLiteral        => astForDynamicLiteral(node)
-    case node: UnaryExpression       => astForUnary(node)
-    case node: BinaryExpression      => astForBinary(node)
-    case node: ConditionalExpression => astForConditional(node)
-    case node: MemberAccess          => astForMemberAccess(node)
-    case node: MemberCall            => astForMemberCall(node)
-    case node: IndexAccess           => astForIndexAccess(node)
-    case node: SingleAssignment      => astForSingleAssignment(node)
-    case node: AttributeAssignment   => astForAttributeAssignment(node)
-    case node: SimpleIdentifier      => astForSimpleIdentifier(node)
-    case node: SimpleCall            => astForSimpleCall(node)
-    case node: RangeExpression       => astForRange(node)
-    case node: ArrayLiteral          => astForArrayLiteral(node)
-    case node: HashLiteral           => astForHashLiteral(node)
-    case node: Association           => astForAssociation(node)
-    case node: IfExpression          => astForIfExpression(node)
-    case node: RescueExpression      => astForRescueExpression(node)
-    case node: MandatoryParameter    => astForMandatoryParameter(node)
-    case node: SplattingRubyNode     => astForSplattingRubyNode(node)
-    case _                           => astForUnknown(node)
+    case node: StaticLiteral            => astForStaticLiteral(node)
+    case node: DynamicLiteral           => astForDynamicLiteral(node)
+    case node: UnaryExpression          => astForUnary(node)
+    case node: BinaryExpression         => astForBinary(node)
+    case node: ConditionalExpression    => astForConditional(node)
+    case node: MemberAccess             => astForMemberAccess(node)
+    case node: MemberCall               => astForMemberCall(node)
+    case node: IndexAccess              => astForIndexAccess(node)
+    case node: SingleAssignment         => astForSingleAssignment(node)
+    case node: AttributeAssignment      => astForAttributeAssignment(node)
+    case node: SimpleIdentifier         => astForSimpleIdentifier(node)
+    case node: SimpleCall               => astForSimpleCall(node)
+    case node: RangeExpression          => astForRange(node)
+    case node: ArrayLiteral             => astForArrayLiteral(node)
+    case node: HashLiteral              => astForHashLiteral(node)
+    case node: Association              => astForAssociation(node)
+    case node: IfExpression             => astForIfExpression(node)
+    case node: RescueExpression         => astForRescueExpression(node)
+    case node: MandatoryParameter       => astForMandatoryParameter(node)
+    case node: SplattingRubyNode        => astForSplattingRubyNode(node)
+    case node: AnonymousTypeDeclaration => astForAnonymousTypeDeclaration(node)
+    case _                              => astForUnknown(node)
 
   protected def astForStaticLiteral(node: StaticLiteral): Ast = {
     Ast(literalNode(node, code(node), node.typeFullName))

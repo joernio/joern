@@ -1,6 +1,7 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Return}
 import io.shiftleft.semanticcpg.language.*
 
@@ -219,6 +220,84 @@ class ClassTests extends RubyCode2CpgFixture {
                      |""".stripMargin)
 
     cpg.method.name("<init>").literal.code.l should be(empty)
+  }
+
+  "a basic anonymous class" should {
+    val cpg = code("""
+        |a = Class.new do
+        |  def hello
+        |    puts "Hello world!"
+        |  end
+        |end
+        |""".stripMargin)
+
+    "generate a type decl with the associated members" in {
+      inside(cpg.typeDecl.nameExact("<anon-class-0>").l) {
+        case anonClass :: Nil =>
+          anonClass.name shouldBe "<anon-class-0>"
+          anonClass.fullName shouldBe "Test0.rb:<global>::program.<anon-class-0>"
+          inside(anonClass.method.l) {
+            case defaultConstructor :: hello :: Nil =>
+              defaultConstructor.name shouldBe Defines.ConstructorMethodName
+              defaultConstructor.fullName shouldBe s"Test0.rb:<global>::program.<anon-class-0>:${Defines.ConstructorMethodName}"
+
+              hello.name shouldBe "hello"
+              hello.fullName shouldBe "Test0.rb:<global>::program.<anon-class-0>:hello"
+            case xs => fail(s"Expected a single method, but got [${xs.map(x => x.label -> x.code).mkString(",")}]")
+          }
+        case xs => fail(s"Expected a single anonymous class, but got [${xs.map(x => x.label -> x.code).mkString(",")}]")
+      }
+    }
+
+    "generate an assignment to the variable `a` with the source being a constructor invocation of the class" in {
+      inside(cpg.method(":program").assignment.l) {
+        case aAssignment :: Nil =>
+          aAssignment.target.code shouldBe "a"
+          // TODO: Constructors are not supported, we simply check the `code` property
+          aAssignment.source.code shouldBe "Class.new"
+        case xs => fail(s"Expected a single assignment, but got [${xs.map(x => x.label -> x.code).mkString(",")}]")
+      }
+    }
+
+  }
+
+  "a basic singleton class" should {
+    val cpg = code("""class Animal; end
+        |animal = Animal.new
+        |
+        |class << animal
+        |  def bark
+        |    'Woof'
+        |  end
+        |end
+        |
+        |animal.bark # => 'Woof'
+        |""".stripMargin)
+
+    "generate a type decl with the associated members" in {
+      inside(cpg.typeDecl.nameExact("<anon-class-0>").l) {
+        case anonClass :: Nil =>
+          anonClass.name shouldBe "<anon-class-0>"
+          anonClass.fullName shouldBe "Test0.rb:<global>::program.<anon-class-0>"
+          // TODO: Attempt to resolve the below with the `scope` class once we're handling constructors
+          anonClass.inheritsFromTypeFullName shouldBe Seq("animal")
+          inside(anonClass.method.l) {
+            case defaultConstructor :: bark :: Nil =>
+              defaultConstructor.name shouldBe Defines.ConstructorMethodName
+              defaultConstructor.fullName shouldBe s"Test0.rb:<global>::program.<anon-class-0>:${Defines.ConstructorMethodName}"
+
+              bark.name shouldBe "bark"
+              bark.fullName shouldBe "Test0.rb:<global>::program.<anon-class-0>:bark"
+            case xs => fail(s"Expected a single method, but got [${xs.map(x => x.label -> x.code).mkString(",")}]")
+          }
+        case xs => fail(s"Expected a single anonymous class, but got [${xs.map(x => x.label -> x.code).mkString(",")}]")
+      }
+    }
+
+    "register that `animal` may possibly be an instantiation of the singleton type" in {
+      cpg.local("animal").possibleTypes.l should contain("Test0.rb:<global>::program.<anon-class-0>")
+    }
+
   }
 
 }
