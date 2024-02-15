@@ -6,7 +6,8 @@ import io.joern.csharpsrc2cpg.parser.{DotNetJsonAst, DotNetNodeInfo, ParserKeys}
 import io.joern.csharpsrc2cpg.{Constants, astcreation}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, ModifierTypes, PropertyNames}
+import org.slf4j.LoggerFactory
 import ujson.Value
 
 import scala.util.{Failure, Success, Try}
