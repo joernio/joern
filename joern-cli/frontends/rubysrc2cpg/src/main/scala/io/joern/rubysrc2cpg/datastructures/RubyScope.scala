@@ -66,22 +66,20 @@ class RubyScope(summary: RubyProgramSummary)
     }
     .getOrElse(false)
 
-  /** When a singleton class is introduced into the scope, variables that conform to the base type now have the
-    * singleton's functionality mixed in. This method finds variables that have the base type as a possible type and
-    * appends the singleton type.
+  /** When a singleton class is introduced into the scope, the base variable will now have the singleton's functionality
+    * mixed in. This method finds base variable and appends the singleton type.
     *
     * @param singletonClassName
     *   the singleton type full name.
-    * @param baseClassName
-    *   the base class full name.
+    * @param variableName
+    *   the base variable
     */
-  def pushSingletonClassDeclaration(singletonClassName: String, baseClassName: String): Unit = {
-    stack.flatMap(_.variables).map {
-      case (_, local: NewLocal) if local.possibleTypes.contains(baseClassName) =>
+  def pushSingletonClassDeclaration(singletonClassName: String, variableName: String): Unit = {
+    lookupVariable(variableName).foreach {
+      case local: NewLocal =>
         local.possibleTypes(local.possibleTypes :+ singletonClassName)
-      case (_, param: NewMethodParameterIn) if param.possibleTypes.contains(baseClassName) =>
-        param.possibleTypes(param.possibleTypes :+ singletonClassName)
-      case _ =>
+      case param: NewMethodParameterIn => param.possibleTypes(param.possibleTypes :+ singletonClassName)
+      case _                           =>
     }
   }
 

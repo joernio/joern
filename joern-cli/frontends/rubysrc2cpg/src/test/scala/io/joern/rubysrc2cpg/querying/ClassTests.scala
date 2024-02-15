@@ -294,9 +294,7 @@ class ClassTests extends RubyCode2CpgFixture {
       }
     }
 
-    // TODO: While it may not be reasonable to make the following claim without type propagation, the single file
-    //  context coupled with the RubyScope should enable this once constructors are handled.
-    "register that `animal` may possibly be an instantiation of the singleton type" ignore {
+    "register that `animal` may possibly be an instantiation of the singleton type" in {
       cpg.local("animal").possibleTypes.l should contain("Test0.rb:<global>::program.<anon-class-0>")
     }
 
