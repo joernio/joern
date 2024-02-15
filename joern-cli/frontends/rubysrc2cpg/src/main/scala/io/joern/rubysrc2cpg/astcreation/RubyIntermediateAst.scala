@@ -86,9 +86,15 @@ object RubyIntermediateAst {
   )(span: TextSpan)
       extends RubyNode(span)
 
-  final case class MandatoryParameter(name: String)(span: TextSpan) extends RubyNode(span)
+  sealed trait MethodParameter {
+    def name: String
+  }
 
-  final case class OptionalParameter(name: RubyNode, defaultExpression: RubyNode)(span: TextSpan) extends RubyNode(span)
+  final case class MandatoryParameter(name: String)(span: TextSpan) extends RubyNode(span) with MethodParameter
+
+  final case class OptionalParameter(name: String, defaultExpression: RubyNode)(span: TextSpan)
+      extends RubyNode(span)
+      with MethodParameter
 
   final case class ArrayParameter(name: Option[String])(span: TextSpan) extends RubyNode(span)
 

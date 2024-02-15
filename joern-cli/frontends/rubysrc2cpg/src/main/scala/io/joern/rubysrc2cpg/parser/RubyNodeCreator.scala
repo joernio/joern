@@ -675,7 +675,10 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitOptionalParameter(ctx: RubyParser.OptionalParameterContext): RubyNode = {
-    OptionalParameter(visit(ctx.optionalParameterName()), visit(ctx.operatorExpression()))(ctx.toTextSpan)
+    OptionalParameter(
+      ctx.optionalParameterName().LOCAL_VARIABLE_IDENTIFIER().toString,
+      visit(ctx.operatorExpression())
+    )(ctx.toTextSpan)
   }
 
   override def visitMandatoryParameter(ctx: RubyParser.MandatoryParameterContext): RubyNode = {

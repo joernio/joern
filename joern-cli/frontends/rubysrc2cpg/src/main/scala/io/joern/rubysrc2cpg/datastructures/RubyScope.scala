@@ -82,5 +82,4 @@ class RubyScope(summary: RubyProgramSummary)
       case _                           =>
     }
   }
-
 }
