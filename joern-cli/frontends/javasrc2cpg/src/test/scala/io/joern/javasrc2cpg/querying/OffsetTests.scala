@@ -5,7 +5,7 @@ import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 
 class OffsetTests extends JavaSrcCode2CpgFixture {
-  val contentEnabled = Config().withDisableFileContent(false)
+  private val contentEnabled = Config().withDisableFileContent(false)
 
   "a class with a single method without file content enabled" should {
     val source = """
@@ -16,7 +16,7 @@ class OffsetTests extends JavaSrcCode2CpgFixture {
         |}
         |""".stripMargin
 
-    val cpg = code(source, fileName = "Foo.java")
+    val cpg = code(source, fileName = "Foo.java").withConfig(Config())
 
     "have an empty content field" in {
       cpg.file.name(".*Foo.java").content.l shouldBe List("<empty>")

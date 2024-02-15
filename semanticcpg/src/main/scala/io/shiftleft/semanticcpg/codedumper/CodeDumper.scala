@@ -2,7 +2,7 @@ package io.shiftleft.semanticcpg.codedumper
 
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.codepropertygraph.generated.nodes.{Expression, Local, Method, NewLocation}
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.utils.IOUtils
 import org.slf4j.{Logger, LoggerFactory}
 
@@ -18,6 +18,7 @@ object CodeDumper {
   private val supportedLanguages =
     Set(
       Languages.C,
+      Languages.CSHARPSRC,
       Languages.NEWC,
       Languages.GHIDRA,
       Languages.JAVA,
@@ -75,8 +76,14 @@ object CodeDumper {
                   }
                   .mkString("\n")
               } else {
-                val filename = rootPath.map(toAbsolutePath(location.filename, _)).getOrElse(location.filename)
-                code(filename, m.lineNumber.get, m.lineNumberEnd.get, location.lineNumber, Option(m.fullName))
+                m.content match {
+                  case Some(content) =>
+                    val lines = content.linesIterator.toSeq
+                    sliceCode(lines, 0, lines.size, Option(0), Option(m.fullName))
+                  case None =>
+                    val filename = rootPath.map(toAbsolutePath(location.filename, _)).getOrElse(location.filename)
+                    code(filename, m.lineNumber.get, m.lineNumberEnd.get, location.lineNumber, Option(m.fullName))
+                }
               }
               if (highlight) {
                 SourceHighlighter.highlight(Source(rawCode, lang))
@@ -104,20 +111,28 @@ object CodeDumper {
       case Failure(exception) =>
         logger.warn(s"error reading from: '$filename'", exception)
         ""
-      case Success(lines) =>
-        lines
-          .slice(startLine - 1, endLine)
-          .zipWithIndex
-          .map { case (line, lineNo) =>
-            if (lineToHighlight.isDefined && lineNo == lineToHighlight.get - startLine) {
-              s"$line ${arrow(locationFullName)}"
-            } else {
-              line
-            }
-          }
-          .mkString("\n")
+      case Success(lines) => sliceCode(lines, startLine, endLine, lineToHighlight, locationFullName)
     }
+  }
 
+  private def sliceCode(
+    lines: Seq[String],
+    startLine: Integer,
+    endLine: Integer,
+    lineToHighlight: Option[Integer] = None,
+    locationFullName: Option[String] = None
+  ): String = {
+    lines
+      .slice(startLine - 1, endLine)
+      .zipWithIndex
+      .map { case (line, lineNo) =>
+        if (lineToHighlight.isDefined && lineNo == lineToHighlight.get - startLine) {
+          s"$line ${arrow(locationFullName)}"
+        } else {
+          line
+        }
+      }
+      .mkString("\n")
   }
 
 }

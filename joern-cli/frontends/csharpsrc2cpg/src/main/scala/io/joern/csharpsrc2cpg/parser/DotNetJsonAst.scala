@@ -42,9 +42,9 @@ object DotNetJsonAst {
 
   object CompilationUnit extends BaseExpr
 
-  object NamespaceDeclaration extends BaseExpr
+  object NamespaceDeclaration extends DeclarationExpr
 
-  object FileScopedNamespaceDeclaration extends BaseExpr
+  object FileScopedNamespaceDeclaration extends DeclarationExpr
 
   sealed trait DeclarationExpr extends BaseExpr
 

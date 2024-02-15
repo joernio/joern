@@ -198,13 +198,19 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         val tpe = getNodeSignature(a).replace("[]", "").strip()
         val arr = ASTTypeUtil.getNodeType(a).replace("? ", "")
         s"$tpe$arr"
-      case a: IASTArrayDeclarator if ASTTypeUtil.getNodeType(a).contains("} ") =>
-        val tpe      = getNodeSignature(a).replace("[]", "").strip()
-        val nodeType = ASTTypeUtil.getNodeType(node)
-        val arr      = nodeType.substring(nodeType.indexOf("["), nodeType.indexOf("]") + 1)
+      case a: IASTArrayDeclarator
+          if ASTTypeUtil.getNodeType(a).contains("} ") || ASTTypeUtil.getNodeType(a).contains(" [") =>
+        val tpe = getNodeSignature(a).replace("[]", "").strip()
+        val arr = a.getArrayModifiers.map {
+          case m if m.getConstantExpression != null => s"[${nodeSignature(m.getConstantExpression)}]"
+          case _ if a.getInitializer != null =>
+            a.getInitializer match {
+              case l: IASTInitializerList => s"[${l.getSize}]"
+              case _                      => "[]"
+            }
+          case _ => "[]"
+        }.mkString
         s"$tpe$arr"
-      case a: IASTArrayDeclarator if ASTTypeUtil.getNodeType(a).contains(" [") =>
-        cleanType(ASTTypeUtil.getNodeType(node))
       case s: CPPASTIdExpression =>
         s.getEvaluation match {
           case evaluation: EvalMemberAccess =>

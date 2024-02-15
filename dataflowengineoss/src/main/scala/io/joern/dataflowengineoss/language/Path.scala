@@ -26,7 +26,7 @@ object Path {
     availableWidthProvider: AvailableWidthProvider = semanticcpg.defaultAvailableWidthProvider
   ): Show[Path] = { path =>
     val table = Table(
-      columnNames = Array("nodeType", "tracked", "lineNumber", "method", "file"),
+      columnNames = Array("nodeType", "tracked", "line", "method", "file"),
       rows = path.elements.map { astNode =>
         val nodeType   = astNode.getClass.getSimpleName
         val lineNumber = astNode.lineNumber.getOrElse("N/A").toString

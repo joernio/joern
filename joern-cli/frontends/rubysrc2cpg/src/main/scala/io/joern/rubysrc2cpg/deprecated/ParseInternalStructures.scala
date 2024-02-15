@@ -4,7 +4,6 @@ import io.joern.rubysrc2cpg.RubySrc2Cpg
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.*
 import io.joern.rubysrc2cpg.deprecated.utils.PackageTable
-import io.joern.x2cpg.utils.ConcurrentTaskUtil
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.misc.Interval
 import org.slf4j.LoggerFactory
@@ -22,18 +21,17 @@ class ParseInternalStructures(
   private val logger = LoggerFactory.getLogger(getClass)
 
   def populatePackageTable(): Unit = {
-    val tasks = parsedFiles.map { case (fileName, programCtx) =>
-      () => {
+    parsedFiles.foreach { case (fileName, programCtx) =>
+      Try {
         val relativeFilename: String =
           projectRoot.map(fileName.stripPrefix).map(_.stripPrefix(JFile.separator)).getOrElse(fileName)
         implicit val classStack: mutable.Stack[String] = mutable.Stack[String]()
         parseForStructures(relativeFilename, programCtx)
+      } match {
+        case Failure(exception) =>
+          logger.warn(s"Exception encountered while scanning for internal structures in file '$fileName'", exception)
+        case _ => // do nothing
       }
-    }.iterator
-    ConcurrentTaskUtil.runUsingThreadPool(tasks).foreach {
-      case Failure(exception) =>
-        logger.warn("Exception encountered while scanning for internal structures", exception)
-      case _ => // do nothing
     }
   }
 
@@ -72,7 +70,32 @@ class ParseInternalStructures(
 
   private def parsePrimaryContext(ctx: PrimaryContext)(implicit classStack: mutable.Stack[String]): Unit = ctx match {
     case ctx: MethodDefinitionPrimaryContext => parseMethodDefinitionContext(ctx.methodDefinition())
+    case ctx: ModuleDefinitionPrimaryContext => parseModuleDefinitionContext(ctx.moduleDefinition())
+    case ctx: ClassDefinitionPrimaryContext  => parseClassDefinition(ctx.classDefinition())
     case _                                   =>
+  }
+
+  private def parseModuleDefinitionContext(
+    moduleDefinitionContext: ModuleDefinitionContext
+  )(implicit classStack: mutable.Stack[String]): Unit = {
+    val className = moduleDefinitionContext.classOrModuleReference().CONSTANT_IDENTIFIER().getText
+    classStack.push(className)
+    parseClassBody(moduleDefinitionContext.bodyStatement())
+  }
+
+  private def parseClassDefinition(
+    classDef: ClassDefinitionContext
+  )(implicit classStack: mutable.Stack[String]): Unit = {
+    Option(classDef).foreach { ctx =>
+      Option(ctx.classOrModuleReference()).map(_.CONSTANT_IDENTIFIER().getText).foreach { className =>
+        classStack.push(className)
+        parseClassBody(ctx.bodyStatement())
+      }
+    }
+  }
+
+  private def parseClassBody(ctx: BodyStatementContext)(implicit classStack: mutable.Stack[String]): Unit = {
+    Option(ctx).map(_.compoundStatement()).map(_.statements()).foreach(_.statement().asScala.foreach(parseStatement))
   }
 
   private def parseMethodDefinitionContext(

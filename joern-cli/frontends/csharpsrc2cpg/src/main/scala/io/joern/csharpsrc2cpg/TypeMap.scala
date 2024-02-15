@@ -11,7 +11,8 @@ import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.{
   MethodDeclaration,
   NamespaceDeclaration,
   RecordDeclaration,
-  StructDeclaration
+  StructDeclaration,
+  DeclarationExpr
 }
 import io.joern.csharpsrc2cpg.parser.{DotNetJsonAst, DotNetJsonParser, DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.astgen.AstGenRunner.AstGenRunnerResult
@@ -100,8 +101,8 @@ class TypeMap(astGenResult: AstGenRunnerResult, initialMappings: List[NamespaceT
       .map(AstCreatorHelper.createDotNetNodeInfo(_))
       .filter { x =>
         x.node match
-          case NamespaceDeclaration | FileScopedNamespaceDeclaration | ClassDeclaration => true
-          case _                                                                        => false
+          case _: DeclarationExpr => true
+          case _                  => false
       }
       .foreach { parserNode =>
         parserNode.node match
@@ -113,7 +114,7 @@ class TypeMap(astGenResult: AstGenRunnerResult, initialMappings: List[NamespaceT
               case None => Option(typesInNamespace)
             }
           }
-          case ClassDeclaration => {
+          case ClassDeclaration | InterfaceDeclaration => {
             val globalClass = Set(parseClassDeclaration(parserNode, "global"))
             namespaceTypeMap.updateWith("global") {
               case Some(types) =>
@@ -134,11 +135,8 @@ class TypeMap(astGenResult: AstGenRunnerResult, initialMappings: List[NamespaceT
       .map(AstCreatorHelper.createDotNetNodeInfo(_))
       .filter { x =>
         x.node match
-          case ClassDeclaration     => true
-          case StructDeclaration    => true
-          case RecordDeclaration    => true
-          case InterfaceDeclaration => true
-          case _                    => false
+          case _: DeclarationExpr => true
+          case _                  => false
       }
       .map(classDecl => parseClassDeclaration(classDecl, namespaceName))
       .toSet

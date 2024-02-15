@@ -1,5 +1,6 @@
 package io.joern.csharpsrc2cpg.astcreation
 
+import dotty.tools.dotc.ast.untpd.Modifiers
 import io.joern.csharpsrc2cpg.datastructures.{BlockScope, MethodScope, NamespaceScope, TypeScope}
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.utils.NodeBuilders.{newMethodReturnNode, newModifierNode}
@@ -11,11 +12,13 @@ import io.shiftleft.proto.cpg.Cpg.EvaluationStrategies
 import scala.util.Try
 import io.joern.csharpsrc2cpg.datastructures.FieldDecl
 import io.joern.csharpsrc2cpg.utils.Utils.{composeMethodFullName, composeMethodLikeSignature}
+
 import scala.collection.mutable.ArrayBuffer
-import io.joern.csharpsrc2cpg.CSharpOperators as CSharpOperators
+import io.joern.csharpsrc2cpg.CSharpOperators
 import io.joern.x2cpg.Defines
 import io.joern.csharpsrc2cpg.astcreation.BuiltinTypes.DotNetTypeMap
 import io.joern.csharpsrc2cpg.datastructures.EnumScope
+import io.shiftleft.codepropertygraph.generated
 
 trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -38,7 +41,15 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   protected def astForClassDeclaration(classDecl: DotNetNodeInfo): Seq[Ast] = {
     val name     = nameFromNode(classDecl)
     val fullName = astFullName(classDecl)
-    val typeDecl = typeDeclNode(classDecl, name, fullName, relativeFileName, code(classDecl))
+    val inheritsFromTypeFullName = Try(classDecl.json(ParserKeys.BaseList)).toOption match
+      case Some(baseList: ujson.Obj) =>
+        baseList(ParserKeys.Types).arr.map { t =>
+          nodeTypeFullName(createDotNetNodeInfo(t(ParserKeys.Type)))
+        }.toSeq
+      case _ => Seq.empty
+
+    val typeDecl =
+      typeDeclNode(classDecl, name, fullName, relativeFileName, code(classDecl), inherits = inheritsFromTypeFullName)
     scope.pushNewScope(TypeScope(fullName))
     val modifiers = astForModifiers(classDecl)
     val members   = astForMembers(classDecl.json(ParserKeys.Members).arr.map(createDotNetNodeInfo).toSeq)
@@ -179,7 +190,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val initializerJson = varDecl.json(ParserKeys.Initializer)
     val rhs             = if (!initializerJson.isNull) astForNode(createDotNetNodeInfo(initializerJson)) else Seq.empty
     val rhsTypeFullName =
-      if (typeFullName == Defines.Any || typeFullName == "var") getTypeFullNameFromAstNode(rhs) else typeFullName
+      if (typeFullName == Defines.Any || typeFullName == "var") getTypeFullNameFromAstNode(rhs)
+      else scope.tryResolveTypeReference(typeFullName).getOrElse(typeFullName)
 
     val name          = nameFromNode(varDecl)
     val identifierAst = astForIdentifier(varDecl, rhsTypeFullName)
