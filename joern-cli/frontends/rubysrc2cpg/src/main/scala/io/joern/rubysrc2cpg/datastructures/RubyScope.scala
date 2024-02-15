@@ -59,5 +59,4 @@ class RubyScope(summary: RubyProgramSummary)
       case _                                 => false
     }
     .getOrElse(false)
-
 }
