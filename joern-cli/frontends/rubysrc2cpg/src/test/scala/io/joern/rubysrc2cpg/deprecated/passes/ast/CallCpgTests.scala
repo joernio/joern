@@ -29,7 +29,7 @@ class CallCpgTests extends RubyCode2CpgFixture(withPostProcessing = true, useDep
 
     "test astChildren" taggedAs SameInNewFrontend in {
       val callNode = cpg.call.name("foo").head
-      val children = callNode.astChildren
+      val children = callNode.astChildren.l
       children.size shouldBe 2
 
       val firstChild  = children.head
@@ -62,7 +62,7 @@ class CallCpgTests extends RubyCode2CpgFixture(withPostProcessing = true, useDep
 
     "test astChildren" in {
       val callNode = cpg.call.name("foo").head
-      val children = callNode.astChildren
+      val children = callNode.astChildren.l
       children.size shouldBe 3
 
       val firstChild = children.head
