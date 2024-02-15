@@ -119,7 +119,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       )
     )
   }
-  
+
   protected def astForAnonymousTypeDeclaration(node: AnonymousTypeDeclaration): Ast = {
 
     /** Handles the logic around singleton class behaviour, by registering that the anonymous type extends the base
