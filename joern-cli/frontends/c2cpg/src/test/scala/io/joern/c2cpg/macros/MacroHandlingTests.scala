@@ -30,6 +30,9 @@ class MacroHandlingTests extends CCodeToCpgSuite {
       val List(macroCall) = cpg.method("foo").call.nameExact("A_MACRO").l
       macroCall.code shouldBe "A_MACRO(*y, 2)"
 
+      val List(macroExpansion) = macroCall.macroExpansion.isCall.l
+      macroExpansion shouldBe x
+
       val List(arg1) = macroCall.argument.isCall.l
       arg1.name shouldBe Operators.indirection
       arg1.code shouldBe "*y"
@@ -183,6 +186,8 @@ class MacroHandlingTests extends CCodeToCpgSuite {
       call.name shouldBe "A_MACRO"
       call.code shouldBe "A_MACRO"
       call.argument.size shouldBe 0
+      val List(macroExpansion) = call.macroExpansion.isLiteral.l
+      macroExpansion.code shouldBe "1"
     }
   }
 
@@ -199,6 +204,8 @@ class MacroHandlingTests extends CCodeToCpgSuite {
       call.name shouldBe "A_MACRO"
       call.code shouldBe "A_MACRO"
       call.argument.size shouldBe 0
+      val List(macroExpansion) = call.macroExpansion.isLiteral.l
+      macroExpansion.code shouldBe "0x0"
     }
 
   }
