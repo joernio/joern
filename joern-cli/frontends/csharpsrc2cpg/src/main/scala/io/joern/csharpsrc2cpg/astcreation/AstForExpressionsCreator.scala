@@ -182,14 +182,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         s"$baseTypeFullName.${methodMetaData.name}:$methodSignature" -> (if methodMetaData.isStatic then
                                                                            DispatchTypes.STATIC_DISPATCH
                                                                          else DispatchTypes.DYNAMIC_DISPATCH)
-//      case None if scope.tryResolveTypeReference(baseIdentifier).isDefined && scope
-//        .tryResolveMethodInvocation(scope.tryResolveTypeReference(baseIdentifier).get, name)
-//        .isDefined =>
-//        val baseTypeFullName = scope.tryResolveTypeReference(baseIdentifier).get
-//        val methodMetaData   = scope.tryResolveMethodInvocation(baseTypeFullName, name).get
-//        s"$baseTypeFullName.${methodMetaData.name}:$methodSignature" -> (if methodMetaData.isStatic then
-//          DispatchTypes.STATIC_DISPATCH
-//        else DispatchTypes.DYNAMIC_DISPATCH)
       case _ => defaultFullName -> DispatchTypes.STATIC_DISPATCH
     }
 
