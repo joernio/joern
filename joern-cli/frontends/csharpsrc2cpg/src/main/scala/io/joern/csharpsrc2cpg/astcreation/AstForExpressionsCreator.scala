@@ -135,10 +135,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         val baseNode = createDotNetNodeInfo(
           createDotNetNodeInfo(invocationExpr.json(ParserKeys.Expression)).json(ParserKeys.Expression)
         )
-        val baseNodeName       = nameFromNode(baseNode)
-        lazy val staticTypeRef = scope.tryResolveTypeReference(baseNodeName)
-        val baseIdentifier     = astForIdentifier(baseNode)
-        val _typeFullName      = getTypeFullNameFromAstNode(Seq(baseIdentifier))
+        val baseNodeName   = nameFromNode(baseNode)
+        val staticTypeRef  = scope.tryResolveTypeReference(baseNodeName)
+        val baseIdentifier = astForIdentifier(baseNode, staticTypeRef.getOrElse(Defines.Any))
+        val _typeFullName  = getTypeFullNameFromAstNode(Seq(baseIdentifier))
 
         if (_typeFullName != Defines.Any) {
           val _identifierNode =

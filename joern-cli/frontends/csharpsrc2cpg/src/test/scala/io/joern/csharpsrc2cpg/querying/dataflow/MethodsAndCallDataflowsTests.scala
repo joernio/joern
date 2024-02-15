@@ -42,7 +42,7 @@ class MethodsAndCallDataflowsTests extends CSharpCode2CpgFixture(withDataFlow = 
       sink.reachableBy(literalSrc).size shouldBe 1
       sink.reachableBy(argSrc).size shouldBe 1
 
-      argSrc.reachableBy(literalSrc).size shouldBe 1
+      argSrc.reachableBy(literalSrc).size shouldBe 0 // There is no cross tainting between pQux and ppQux
     }
 
   }

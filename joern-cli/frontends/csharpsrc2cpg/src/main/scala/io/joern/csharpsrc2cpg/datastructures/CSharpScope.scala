@@ -1,6 +1,6 @@
 package io.joern.csharpsrc2cpg.datastructures
 
-import io.joern.csharpsrc2cpg.astcreation.{AstCreatorHelper, BuiltinTypes}
+import io.joern.csharpsrc2cpg.astcreation.BuiltinTypes
 import io.joern.csharpsrc2cpg.{CSharpMethod, CSharpType, TypeMap}
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.datastructures.{Scope, ScopeElement}
@@ -8,7 +8,6 @@ import io.shiftleft.codepropertygraph.generated.nodes.DeclarationNew
 
 import scala.collection.mutable
 import scala.util.boundary
-import boundary.break
 
 class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeType] {
 
@@ -49,14 +48,18 @@ class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeT
     .exists(x => x.scopeNode.isInstanceOf[MethodScope] || x.scopeNode.isInstanceOf[TypeLikeScope])
 
   def tryResolveTypeReference(typeName: String): Option[String] = {
-    typesInScope
-      .find(_.name.endsWith(typeName))
-      .flatMap(typeMap.namespaceFor)
-      .map {
-        // To avoid recursive type prefixing on assignment calls.
-        case n if typeName.startsWith(n) => typeName
-        case n                           => s"$n.$typeName"
-      }
+    if (typeName == "this") {
+      surroundingTypeDeclFullName
+    } else {
+      typesInScope
+        .find(_.name.endsWith(typeName))
+        .flatMap(typeMap.namespaceFor)
+        .map {
+          // To avoid recursive type prefixing on assignment calls.
+          case n if typeName.startsWith(n) => typeName
+          case n                           => s"$n.$typeName"
+        }
+    }
   }
 
   def tryResolveMethodInvocation(typeFullName: String, callName: String): Option[CSharpMethod] = {

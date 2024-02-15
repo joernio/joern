@@ -16,8 +16,8 @@ class CallTests extends CSharpCode2CpgFixture {
         case None           => fail("Node not found!")
 
       writeLine.name shouldBe "WriteLine"
-      // writeLine.methodFullName shouldBe "System.Console.WriteLine" TODO: Handle when call graph is being done
-      // writeLine.typeFullName shouldBe "void"
+      writeLine.methodFullName shouldBe "System.Console.WriteLine:void(System.Object)"
+      writeLine.typeFullName shouldBe "void"
       writeLine.code shouldBe "Console.WriteLine(\"Hello, world!\")"
 
       inside(writeLine.argument.l) {

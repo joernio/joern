@@ -109,7 +109,7 @@ class TypeMap(astGenResult: AstGenRunnerResult, initialMappings: List[NamespaceT
               case None => Option(typesInNamespace)
             }
           }
-          case ClassDeclaration | InterfaceDeclaration => {
+          case _: TypeDeclaration => {
             val globalClass = Set(parseClassDeclaration(parserNode, "global"))
             namespaceTypeMap.updateWith("global") {
               case Some(types) =>
@@ -117,6 +117,7 @@ class TypeMap(astGenResult: AstGenRunnerResult, initialMappings: List[NamespaceT
               case None => Option(globalClass)
             }
           }
+          case _ =>
       }
 
     namespaceTypeMap.toMap
