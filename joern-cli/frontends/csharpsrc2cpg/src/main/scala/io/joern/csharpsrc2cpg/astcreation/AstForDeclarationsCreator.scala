@@ -186,7 +186,6 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     typeFullName: String,
     shouldPushVariable: Boolean = true
   ): Seq[Ast] = {
-    println(typeFullName)
     // Create RHS AST first to propagate types
     val initializerJson = varDecl.json(ParserKeys.Initializer)
     val rhs             = if (!initializerJson.isNull) astForNode(createDotNetNodeInfo(initializerJson)) else Seq.empty

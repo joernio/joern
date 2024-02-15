@@ -13,6 +13,7 @@ import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.{
   ExpressionStatement,
   ForEachStatement,
   ForStatement,
+  GenericName,
   GlobalStatement,
   GotoStatement,
   IfStatement,
