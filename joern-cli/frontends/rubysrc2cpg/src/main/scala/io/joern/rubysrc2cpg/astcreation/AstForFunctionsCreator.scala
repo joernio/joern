@@ -40,7 +40,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         .collect { case x: OptionalParameter =>
           x
         }
-        .flatMap(statementForOptionalParam)
+        .map(statementForOptionalParam)
     )(TextSpan(None, None, None, None, ""))
 
     val stmtBlockAst = node.body match
@@ -51,7 +51,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       case _: (StaticLiteral | BinaryExpression | SingleAssignment | SimpleIdentifier | ArrayLiteral | HashLiteral |
             SimpleCall | MemberAccess | MemberCall) =>
         astForStatementListReturningLastExpression(
-          StatementList(optionalStatementList ++ List(node.body))(node.body.span)
+          StatementList(optionalStatementList.statements ++ List(node.body))(node.body.span)
         )
       case body =>
         logger.warn(
