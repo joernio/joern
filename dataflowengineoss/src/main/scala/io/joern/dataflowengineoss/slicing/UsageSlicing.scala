@@ -181,8 +181,8 @@ object UsageSlicing {
                         .getOrElse(Iterator.empty)
                     else baseCall.argument)
         .collect { case n: Expression if n.argumentIndex > 0 => n }
-        .flatMap {
-          case _: MethodRef => Option("LAMBDA")
+        .map {
+          case _: MethodRef => "LAMBDA"
           case x =>
             x.propertyOption(PropertyKeys.TypeFullName)
               .orElse(x.property(PropertyKeys.DynamicTypeHintFullName).headOption)
