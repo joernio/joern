@@ -158,6 +158,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
   protected def astForVariableDeclaration(varDecl: DotNetNodeInfo, isStatic: Boolean): Seq[Ast] = {
     val typeFullName = nodeTypeFullName(varDecl)
+
     varDecl
       .json(ParserKeys.Variables)
       .arr
@@ -191,7 +192,6 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val rhs             = if (!initializerJson.isNull) astForNode(createDotNetNodeInfo(initializerJson)) else Seq.empty
     val rhsTypeFullName =
       if (typeFullName == Defines.Any || typeFullName == "var") getTypeFullNameFromAstNode(rhs)
-      else if (typeFullName.contains("<")) typeFromGenericName(typeFullName)
       else scope.tryResolveTypeReference(typeFullName).getOrElse(typeFullName)
 
     val name          = nameFromNode(varDecl)
