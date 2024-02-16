@@ -108,7 +108,7 @@ class CallTests extends CSharpCode2CpgFixture {
         |namespace HelloWorld.Foo {
         | public class A {
         |   static void main() {
-        |   Bar c = new Bar();
+        |     Bar c = new Bar();
         | }
         | }
         |}

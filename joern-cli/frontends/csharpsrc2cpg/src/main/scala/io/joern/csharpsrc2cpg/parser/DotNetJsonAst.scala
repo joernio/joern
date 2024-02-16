@@ -212,6 +212,8 @@ object DotNetJsonAst {
 
   object GenericName extends BaseStmt
 
+  object NullableType extends BaseExpr
+
   object Unknown extends DotNetParserNode
 
 }
