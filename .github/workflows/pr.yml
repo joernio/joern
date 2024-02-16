@@ -1,8 +1,5 @@
 name: pr
-on:
-  pull_request:
-    paths-ignore: ['**.md']
-
+on: pull_request
 jobs:
   test:
     runs-on: ${{ matrix.os }}
