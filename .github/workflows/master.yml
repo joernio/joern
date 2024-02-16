@@ -4,8 +4,6 @@ on:
   push:
     branches: [master, main]
     tags: ["*"]
-    paths-ignore: ['**.md']
-
 jobs:
   test:
     concurrency: master
