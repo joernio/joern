@@ -1,11 +1,11 @@
 package io.joern.csharpsrc2cpg.astcreation
 
 import io.joern.csharpsrc2cpg.CSharpOperators
-import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.{IdentifierNode, *}
+import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newOperatorCallNode}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewFieldIdentifier, NewMethodParameterIn}
+import io.shiftleft.codepropertygraph.generated.nodes.NewFieldIdentifier
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -16,16 +16,38 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   def astForExpression(expr: DotNetNodeInfo): Seq[Ast] = {
     expr.node match
-      case _: UnaryExpr         => astForUnaryExpression(expr)
-      case _: BinaryExpr        => astForBinaryExpression(expr)
-      case _: LiteralExpr       => astForLiteralExpression(expr)
-      case InvocationExpression => astForInvocationExpression(expr)
-      case _: IdentifierNode    => astForIdentifier(expr) :: Nil
-      case _                    => notHandledYet(expr)
+      case _: UnaryExpr                 => astForUnaryExpression(expr)
+      case _: BinaryExpr                => astForBinaryExpression(expr)
+      case _: LiteralExpr               => astForLiteralExpression(expr)
+      case InvocationExpression         => astForInvocationExpression(expr)
+      case AwaitExpression              => astForAwaitExpression(expr)
+      case ObjectCreationExpression     => astForObjectCreationExpression(expr)
+      case SimpleMemberAccessExpression => astForSimpleMemberAccessExpression(expr)
+      case _: IdentifierNode            => astForIdentifier(expr) :: Nil
+      case _                            => notHandledYet(expr)
+  }
+
+  private def astForAwaitExpression(awaitExpr: DotNetNodeInfo): Seq[Ast] = {
+    /* fullName is the name in case of STATIC_DISPATCH */
+    val node =
+      callNode(awaitExpr, awaitExpr.code, CSharpOperators.await, CSharpOperators.await, DispatchTypes.STATIC_DISPATCH)
+    val argAsts = astForNode(awaitExpr.json(ParserKeys.Expression))
+    Seq(callAst(node, argAsts))
   }
 
   protected def astForLiteralExpression(_literalNode: DotNetNodeInfo): Seq[Ast] = {
     Seq(Ast(literalNode(_literalNode, code(_literalNode), nodeTypeFullName(_literalNode))))
+  }
+
+  protected def astForOperand(operandNode: DotNetNodeInfo): Seq[Ast] = {
+    operandNode.node match {
+      case IdentifierName =>
+        List(scope.findFieldInScope(nameFromNode(operandNode)), scope.lookupVariable(nameFromNode(operandNode))) match {
+          case List(Some(_), None) => astForSimpleMemberAccessExpression(operandNode)
+          case _                   => astForNode(operandNode)
+        }
+      case _ => astForNode(operandNode)
+    }
   }
 
   protected def astForUnaryExpression(unaryExpr: DotNetNodeInfo): Seq[Ast] = {
@@ -44,7 +66,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case "&" => Operators.addressOf
 
     val args    = createDotNetNodeInfo(unaryExpr.json(ParserKeys.Operand))
-    val argsAst = astForNode(args)
+    val argsAst = astForOperand(args)
+
     Seq(
       callAst(createCallNodeForOperator(unaryExpr, operatorName, typeFullName = Some(nodeTypeFullName(args))), argsAst)
     )
@@ -84,8 +107,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         logger.warn(s"Unhandled operator '$x' for ${code(binaryExpr)}")
         CSharpOperators.unknown
 
-    // TODO: Handle implicit member access e.g. b=1
-    val args = astForNode(binaryExpr.json(ParserKeys.Left)) ++: astForNode(binaryExpr.json(ParserKeys.Right))
+    val args = astForOperand(createDotNetNodeInfo(binaryExpr.json(ParserKeys.Left))) ++: astForOperand(
+      createDotNetNodeInfo(binaryExpr.json(ParserKeys.Right))
+    )
+
     val cNode =
       createCallNodeForOperator(binaryExpr, operatorName, typeFullName = Some(getTypeFullNameFromAstNode(args)))
     Seq(callAst(cNode, args))
@@ -98,11 +123,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     astForNode(rhsNode)
   }
 
+  // TODO: This method is becoming a mess...
   private def astForInvocationExpression(invocationExpr: DotNetNodeInfo): Seq[Ast] = {
-    val dispatchType = DispatchTypes.STATIC_DISPATCH // TODO
-    val arguments    = astForArgumentList(createDotNetNodeInfo(invocationExpr.json(ParserKeys.ArgumentList)))
-    val argString =
-      s"${arguments.flatMap(_.root).collect { case x: NewMethodParameterIn => x.typeFullName }.mkString(",")}"
+    val arguments = astForArgumentList(createDotNetNodeInfo(invocationExpr.json(ParserKeys.ArgumentList)))
 
     val expression = createDotNetNodeInfo(invocationExpr.json(ParserKeys.Expression))
     val name       = nameFromNode(expression)
@@ -112,35 +135,55 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         val baseNode = createDotNetNodeInfo(
           createDotNetNodeInfo(invocationExpr.json(ParserKeys.Expression)).json(ParserKeys.Expression)
         )
+        val baseNodeName   = nameFromNode(baseNode)
+        val staticTypeRef  = scope.tryResolveTypeReference(baseNodeName)
+        val baseIdentifier = astForIdentifier(baseNode, staticTypeRef.getOrElse(Defines.Any))
+        val _typeFullName  = getTypeFullNameFromAstNode(Seq(baseIdentifier))
 
-        val baseIdentifier =
-          astForIdentifier(baseNode)
-        val _typeFullName = getTypeFullNameFromAstNode(Seq(baseIdentifier))
-
-        if (_typeFullName.isEmpty) {
+        if (_typeFullName != Defines.Any) {
           val _identifierNode =
-            identifierNode(baseNode, nameFromNode(baseNode), code(baseNode), nodeTypeFullName(baseNode))
+            identifierNode(baseNode, nameFromNode(baseNode), code(baseNode), _typeFullName)
           (Option(Ast(_identifierNode)), Option(_identifierNode.typeFullName))
+        } else if (staticTypeRef.isDefined) {
+          (Option(baseIdentifier), Option(staticTypeRef.get))
         } else {
           (Option(baseIdentifier), Option(_typeFullName))
         }
       case _ => (None, None)
 
-    val partialFullName = baseTypeFullName match
-      case Some(typeFullName) => s"$typeFullName.$name"
+    lazy val partialFullName = baseTypeFullName match
+      case Some(typeFullName) =>
+        s"$typeFullName.$name"
       case _ =>
         s"${Defines.UnresolvedNamespace}.$name"
 
     val returnType =
       scope.tryResolveMethodReturn(baseTypeFullName.getOrElse(scope.surroundingTypeDeclFullName.getOrElse("")), name);
 
-    val signature = scope
+    val parameterSignature = scope
       .tryResolveMethodSignature(baseTypeFullName.getOrElse(scope.surroundingTypeDeclFullName.getOrElse("")), name)
       .getOrElse(Defines.UnresolvedSignature)
-    val typeFullName = returnType.getOrElse(Defines.Any);
+    val typeFullName = returnType.getOrElse(Defines.Any)
 
-    val methodFullName =
-      s"$partialFullName:${returnType.getOrElse(Defines.Unknown)}(${signature})"
+    val methodSignature = s"${returnType.getOrElse(Defines.Unknown)}($parameterSignature)"
+    val defaultFullName = s"$partialFullName:$methodSignature"
+    val (methodFullName, dispatchType) = baseTypeFullName match {
+      case Some(baseFullName) if scope.tryResolveMethodInvocation(baseFullName, name).isDefined =>
+        val methodMetaData = scope.tryResolveMethodInvocation(baseFullName, name).get
+        s"$baseFullName.${methodMetaData.name}:$methodSignature" -> (if methodMetaData.isStatic then
+                                                                       DispatchTypes.STATIC_DISPATCH
+                                                                     else DispatchTypes.DYNAMIC_DISPATCH)
+      case None
+          if scope.surroundingTypeDeclFullName.isDefined && scope
+            .tryResolveMethodInvocation(scope.surroundingTypeDeclFullName.get, name)
+            .isDefined =>
+        val baseTypeFullName = scope.surroundingTypeDeclFullName.get
+        val methodMetaData   = scope.tryResolveMethodInvocation(baseTypeFullName, name).get
+        s"$baseTypeFullName.${methodMetaData.name}:$methodSignature" -> (if methodMetaData.isStatic then
+                                                                           DispatchTypes.STATIC_DISPATCH
+                                                                         else DispatchTypes.DYNAMIC_DISPATCH)
+      case _ => defaultFullName -> DispatchTypes.STATIC_DISPATCH
+    }
 
     val _callAst = callAst(
       callNode(
@@ -149,7 +192,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         name,
         methodFullName,
         dispatchType,
-        Option(signature),
+        Option(methodSignature),
         Option(typeFullName)
       ),
       arguments,

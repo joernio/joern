@@ -12,6 +12,16 @@ import scala.jdk.CollectionConverters.*
   */
 class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
 
+  private var classCounter: Int = 0
+
+  private def tmpClassTemplate(id: Int): String = s"<anon-class-$id>"
+
+  protected def freshClassName(span: TextSpan): SimpleIdentifier = {
+    val name = tmpClassTemplate(classCounter)
+    classCounter += 1
+    SimpleIdentifier(None)(span.spanStart(name))
+  }
+
   private def defaultTextSpan(code: String = ""): TextSpan = TextSpan(None, None, None, None, code)
 
   override def defaultResult(): RubyNode = Unknown()(defaultTextSpan())
@@ -548,7 +558,10 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
       )(ctx.toTextSpan)
     }
 
-    if (hasBlock) {
+    if (hasBlock && ctx.methodName().getText == "new") {
+      val block = visit(ctx.block()).asInstanceOf[Block]
+      return AnonymousClassDeclaration(freshClassName(ctx.primaryValue().toTextSpan), None, block.body)(ctx.toTextSpan)
+    } else {
       return MemberCallWithBlock(
         visit(ctx.primaryValue()),
         ctx.op.getText,
@@ -608,6 +621,14 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     ModuleDeclaration(visit(ctx.classPath()), visit(ctx.bodyStatement()))(ctx.toTextSpan)
   }
 
+  override def visitSingletonClassDefinition(ctx: RubyParser.SingletonClassDefinitionContext): RubyNode = {
+    SingletonClassDeclaration(
+      freshClassName(ctx.toTextSpan),
+      Option(ctx.commandOrPrimaryValue()).map(visit),
+      visit(ctx.bodyStatement())
+    )(ctx.toTextSpan)
+  }
+
   override def visitClassDefinition(ctx: RubyParser.ClassDefinitionContext): RubyNode = {
     ClassDeclaration(
       visit(ctx.classPath()),
@@ -654,7 +675,10 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitOptionalParameter(ctx: RubyParser.OptionalParameterContext): RubyNode = {
-    OptionalParameter(visit(ctx.optionalParameterName()), visit(ctx.operatorExpression()))(ctx.toTextSpan)
+    OptionalParameter(
+      ctx.optionalParameterName().LOCAL_VARIABLE_IDENTIFIER().toString,
+      visit(ctx.operatorExpression())
+    )(ctx.toTextSpan)
   }
 
   override def visitMandatoryParameter(ctx: RubyParser.MandatoryParameterContext): RubyNode = {

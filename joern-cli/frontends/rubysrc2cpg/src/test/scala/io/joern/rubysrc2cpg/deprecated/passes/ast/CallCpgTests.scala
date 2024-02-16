@@ -2,7 +2,7 @@ package io.joern.rubysrc2cpg.deprecated.passes.ast
 
 import io.joern.rubysrc2cpg.deprecated.passes.Defines
 import io.joern.rubysrc2cpg.testfixtures.{RubyCode2CpgFixture, SameInNewFrontend}
-import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, MethodRef}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, MethodRef}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, nodes}
 import io.shiftleft.semanticcpg.language.*
 
@@ -219,8 +219,7 @@ class CallCpgTests extends RubyCode2CpgFixture(withPostProcessing = true, useDep
         "foo.rb"
       )
 
-    // TODO: Flaky test
-    "have its call node correctly identified and created" ignore {
+    "have its call node correctly identified and created" in {
       val List(deviceParams) = cpg.call.nameExact("device_params").l: @unchecked
       deviceParams.name shouldBe "device_params"
       deviceParams.code shouldBe "device_params"
@@ -229,6 +228,53 @@ class CallCpgTests extends RubyCode2CpgFixture(withPostProcessing = true, useDep
       deviceParams.lineNumber shouldBe Option(5)
       deviceParams.columnNumber shouldBe Option(22)
       deviceParams.argumentIndex shouldBe 0
+    }
+  }
+
+  "a parenthesis-less call (defined later in the module) in a call's argument" should {
+    val cpg = code("""
+        |module Pay
+        |  module Webhooks
+        |    class BraintreeController < Pay::ApplicationController
+        |      if Rails.application.config.action_controller.default_protect_from_forgery
+        |        skip_before_action :verify_authenticity_token
+        |      end
+        |
+        |      def create
+        |        queue_event(verified_event) # <------ verified event is a call here
+        |        head :ok
+        |      rescue ::Braintree::InvalidSignature
+        |        head :bad_request
+        |      end
+        |
+        |      private
+        |
+        |      def queue_event(event)
+        |        return unless Pay::Webhooks.delegator.listening?("braintree.#{event.kind}")
+        |
+        |        record = Pay::Webhook.create!(
+        |          processor: :braintree,
+        |          event_type: event.kind,
+        |          event: {bt_signature: params[:bt_signature], bt_payload: params[:bt_payload]}
+        |        )
+        |        Pay::Webhooks::ProcessJob.perform_later(record)
+        |      end
+        |
+        |      def verified_event
+        |        Pay.braintree_gateway.webhook_notification.parse(params[:bt_signature], params[:bt_payload])
+        |      end
+        |    end
+        |  end
+        |end
+        |""".stripMargin)
+
+    "be a call node instead of an identifier" in {
+      inside(cpg.call("queue_event").argument.l) {
+        case (verifiedEvent: Call) :: Nil =>
+          verifiedEvent.name shouldBe "verified_event"
+        case xs =>
+          fail(s"Expected a single call argument, received [${xs.map(x => x.label -> x.code).mkString(", ")}] instead!")
+      }
     }
   }
 }

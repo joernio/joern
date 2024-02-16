@@ -30,11 +30,11 @@ class WorkspaceTests extends AnyWordSpec with Matchers {
 
         output should include(project.name)
         output should include(inputPath)
-        // TODO reenable test - this has been broken for ages, the overlays handling via directories works in staged joern but not in our test setup
-        // what does work in both though is `cpg.metaData.overlays` - I'm asking around which way forward we want
+
+        // This relies on the file system and only works in a staged joern environment, not our workspace
+        // with a mock cpg. Will leave here just for illustratory purposes.
 //        output should include("foo,bar")
       }
-
     }
 
   }

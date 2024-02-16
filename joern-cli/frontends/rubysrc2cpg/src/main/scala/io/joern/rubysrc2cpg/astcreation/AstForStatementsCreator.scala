@@ -4,7 +4,6 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.BlockScope
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
-import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
 
@@ -21,6 +20,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     case node: SimpleCallWithBlock        => astForSimpleCallWithBlock(node) :: Nil
     case node: MemberCallWithBlock        => astForMemberCallWithBlock(node) :: Nil
     case node: ReturnExpression           => astForReturnStatement(node) :: Nil
+    case node: AnonymousTypeDeclaration   => astForAnonymousTypeDeclaration(node) :: Nil
     case node: TypeDeclaration            => astForClassDeclaration(node) :: Nil
     case node: FieldsDeclaration          => astsForFieldDeclarations(node)
     case node: MethodDeclaration          => astForMethodDeclaration(node) :: Nil
@@ -146,7 +146,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     }
     def generatedNode: StatementList = node.expression
       .map { e =>
-        val tmp = SimpleIdentifier(None)(e.span.spanStart(freshName))
+        val tmp = SimpleIdentifier(None)(e.span.spanStart(freshVariableName))
         StatementList(
           List(SingleAssignment(tmp, "=", e)(e.span)) ++
             goCase(Some(tmp))

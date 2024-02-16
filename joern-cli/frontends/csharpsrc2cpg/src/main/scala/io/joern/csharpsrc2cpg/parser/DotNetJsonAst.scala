@@ -42,21 +42,25 @@ object DotNetJsonAst {
 
   object CompilationUnit extends BaseExpr
 
-  object NamespaceDeclaration extends BaseExpr
+  object NamespaceDeclaration extends DeclarationExpr
+
+  object FileScopedNamespaceDeclaration extends DeclarationExpr
 
   sealed trait DeclarationExpr extends BaseExpr
 
-  object ClassDeclaration extends DeclarationExpr
+  sealed trait TypeDeclaration extends DeclarationExpr
 
-  object StructDeclaration extends DeclarationExpr
+  object ClassDeclaration extends TypeDeclaration
 
-  object RecordDeclaration extends DeclarationExpr
+  object StructDeclaration extends TypeDeclaration
 
-  object EnumDeclaration extends DeclarationExpr
+  object RecordDeclaration extends TypeDeclaration
+
+  object EnumDeclaration extends TypeDeclaration
 
   object EnumMemberDeclaration extends DeclarationExpr
 
-  object InterfaceDeclaration extends DeclarationExpr
+  object InterfaceDeclaration extends TypeDeclaration
 
   object MethodDeclaration extends DeclarationExpr
 
@@ -199,6 +203,10 @@ object DotNetJsonAst {
   object GotoStatement extends JumpStatement
 
   object ReturnStatement extends JumpStatement
+
+  object AwaitExpression extends BaseExpr
+
+  object PropertyDeclaration extends DeclarationExpr
 
   object Unknown extends DotNetParserNode
 

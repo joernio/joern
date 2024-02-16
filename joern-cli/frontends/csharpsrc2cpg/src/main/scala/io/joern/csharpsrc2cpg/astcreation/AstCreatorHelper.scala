@@ -1,6 +1,5 @@
 package io.joern.csharpsrc2cpg.astcreation
 
-import io.joern.csharpsrc2cpg.astcreation.AstCreatorHelper.nameFromIdentifier
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetJsonAst, DotNetNodeInfo, ParserKeys}
 import io.joern.csharpsrc2cpg.{Constants, astcreation}
@@ -109,6 +108,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         scope
           .tryResolveTypeReference(typeName)
           .getOrElse(typeName)
+      case ThisExpression =>
+        scope.surroundingTypeDeclFullName.getOrElse(Defines.Any)
       case PredefinedType | SimpleBaseType =>
         BuiltinTypes.DotNetTypeMap.getOrElse(node.code, Defines.Any)
       case _ =>
@@ -149,10 +150,12 @@ object AstCreatorHelper {
 
   def nameFromNode(node: DotNetNodeInfo): String = {
     node.node match
-      case NamespaceDeclaration | UsingDirective           => nameFromNamespaceDeclaration(node)
-      case IdentifierName | Parameter | _: DeclarationExpr => nameFromIdentifier(node)
-      case QualifiedName                                   => nameFromQualifiedName(node)
+      case NamespaceDeclaration | UsingDirective | FileScopedNamespaceDeclaration => nameFromNamespaceDeclaration(node)
+      case IdentifierName | Parameter | _: DeclarationExpr                        => nameFromIdentifier(node)
+      case QualifiedName                                                          => nameFromQualifiedName(node)
       case SimpleMemberAccessExpression => nameFromIdentifier(createDotNetNodeInfo(node.json(ParserKeys.Name)))
+      case ObjectCreationExpression     => nameFromNode(createDotNetNodeInfo(node.json(ParserKeys.Type)))
+      case ThisExpression               => "this"
       case _                            => "<empty>"
   }
 

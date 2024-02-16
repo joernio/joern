@@ -57,6 +57,18 @@ object RubyIntermediateAst {
       extends RubyNode(span)
       with TypeDeclaration
 
+  sealed trait AnonymousTypeDeclaration extends RubyNode with TypeDeclaration
+
+  final case class AnonymousClassDeclaration(name: RubyNode, baseClass: Option[RubyNode], body: RubyNode)(
+    span: TextSpan
+  ) extends RubyNode(span)
+      with AnonymousTypeDeclaration
+
+  final case class SingletonClassDeclaration(name: RubyNode, baseClass: Option[RubyNode], body: RubyNode)(
+    span: TextSpan
+  ) extends RubyNode(span)
+      with AnonymousTypeDeclaration
+
   final case class FieldsDeclaration(fieldNames: List[RubyNode])(span: TextSpan) extends RubyNode(span) {
     def hasGetter: Boolean = text.startsWith("attr_reader") || text.startsWith("attr_accessor")
 
@@ -74,9 +86,15 @@ object RubyIntermediateAst {
   )(span: TextSpan)
       extends RubyNode(span)
 
-  final case class MandatoryParameter(name: String)(span: TextSpan) extends RubyNode(span)
+  sealed trait MethodParameter {
+    def name: String
+  }
 
-  final case class OptionalParameter(name: RubyNode, defaultExpression: RubyNode)(span: TextSpan) extends RubyNode(span)
+  final case class MandatoryParameter(name: String)(span: TextSpan) extends RubyNode(span) with MethodParameter
+
+  final case class OptionalParameter(name: String, defaultExpression: RubyNode)(span: TextSpan)
+      extends RubyNode(span)
+      with MethodParameter
 
   final case class ArrayParameter(name: Option[String])(span: TextSpan) extends RubyNode(span)
 

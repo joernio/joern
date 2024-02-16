@@ -1995,7 +1995,7 @@ class AstCreationPassTests extends AbstractPassTest {
         |char *a(char *y) {
         |  char *x;
         |}
-      """.stripMargin) { cpg =>
+        |""".stripMargin) { cpg =>
       cpg.member.name("z").typeFullName.head shouldBe "char*"
       cpg.parameter.name("y").typeFullName.head shouldBe "char*"
       cpg.local.name("x").typeFullName.head shouldBe "char*"
@@ -2007,10 +2007,23 @@ class AstCreationPassTests extends AbstractPassTest {
         |void a(char y[1]) {
         |  char x[1];
         |}
-      """.stripMargin) { cpg =>
+        |""".stripMargin) { cpg =>
       cpg.member.name("z").typeFullName.head shouldBe "char[1]"
       cpg.parameter.name("y").typeFullName.head shouldBe "char[1]"
       cpg.local.name("x").typeFullName.head shouldBe "char[1]"
+    }
+
+    "be consistent with long number types" in AstFixture("""
+        |#define BUFSIZE 0x111111111111111
+        |void copy(char *string) {
+        |	char buf[BUFSIZE];
+        |	stpncpy(buf, string, BUFSIZE);
+        |}
+        |""".stripMargin) { cpg =>
+      val List(bufLocal) = cpg.local.nameExact("buf").l
+      bufLocal.typeFullName shouldBe "char[0x111111111111111]"
+      bufLocal.code shouldBe "char[0x111111111111111] buf"
+      cpg.literal.code.l shouldBe List("0x111111111111111")
     }
   }
 }
