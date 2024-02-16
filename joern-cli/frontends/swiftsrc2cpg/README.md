@@ -32,8 +32,8 @@ swift build
 ## Running
 
 Required runtime dependencies:
- - Java Runtime >= 11
- - `glibc` >= 2.34 (for swiftastgen); or `swift` directly which brings in all required dependencies anyway.
+ - Java runtime >= 11
+ - `glibc` >= 2.34 (for swiftastgen); or `swift` 5.9 directly which brings in all required dependencies anyway.
 
 To produce a code property graph issue the command:
 ```shell script
