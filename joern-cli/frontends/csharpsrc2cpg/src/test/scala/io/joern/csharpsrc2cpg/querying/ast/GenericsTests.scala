@@ -23,12 +23,9 @@ class GenericsTests extends CSharpCode2CpgFixture {
       inside(cpg.identifier.nameExact("a").headOption) {
         case Some(id) =>
           id.name shouldBe "a"
-          id.typeFullName shouldBe "Bar<IBar>"
+          id.typeFullName shouldBe "Foo.Bar"
         case None => fail("Unable to find `a` identifier node with type declaration")
       }
-      println(cpg.call.map(x => (x.name, x.typeFullName)).l)
-      println(cpg.identifier.map(x => (x.name, x.typeFullName)).l)
-
     }
   }
 }
