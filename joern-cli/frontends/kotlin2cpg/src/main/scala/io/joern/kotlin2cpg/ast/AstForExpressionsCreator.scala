@@ -79,7 +79,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
         }
       case _ =>
         logger.warn(
-          s"Unhandled operator token type `${opRef.getOperationSignTokenType}` for expression `${expr.getText}`."
+          s"Unhandled operator token type `${opRef.getOperationSignTokenType}` for expression `${expr.getText}` in this file `${relativizedPath}`."
         )
         Some(Constants.unknownOperator)
     }

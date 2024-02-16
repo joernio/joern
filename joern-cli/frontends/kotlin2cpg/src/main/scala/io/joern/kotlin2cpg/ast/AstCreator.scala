@@ -344,7 +344,7 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           case p: KtProperty             => astsForProperty(p)
           case unhandled =>
             logger.error(
-              s"Unknown declaration type encountered with text `${unhandled.getText}` and class `${unhandled.getClass}`!"
+              s"Unknown declaration type encountered in this file `${relativizedPath}` with text `${unhandled.getText}` and class `${unhandled.getClass}`!"
             )
             Seq()
         }
@@ -354,7 +354,9 @@ class AstCreator(fileWithMeta: KtFileWithMeta, xTypeInfoProvider: TypeInfoProvid
           val stringWriter = new StringWriter()
           val printWriter  = new PrintWriter(stringWriter)
           exception.printStackTrace(printWriter)
-          logger.warn(s"Caught exception while processing decl:\n$declText\n${stringWriter.toString}")
+          logger.warn(
+            s"Caught exception while processing decl in this file `${relativizedPath}`:\n$declText\n${stringWriter.toString}"
+          )
           Seq()
       }
     debugScope.pop()

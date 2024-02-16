@@ -228,7 +228,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     }
     if (typedInit.isEmpty) {
       logger.warn(
-        s"Unhandled case for destructuring declaration: `${expr.getText}`; type: `${expr.getInitializer.getClass}`."
+        s"Unhandled case for destructuring declaration: `${expr.getText}`; type: `${expr.getInitializer.getClass}` in this file `${relativizedPath}`."
       )
       return Seq()
     }
@@ -328,7 +328,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   )(implicit typeInfoProvider: TypeInfoProvider): Seq[Ast] = {
     val typedInit = Option(expr.getInitializer).collect { case e: KtNameReferenceExpression => e }
     if (typedInit.isEmpty) {
-      logger.warn(s"Unhandled case for destructuring declaration: `${expr.getText}`.")
+      logger.warn(s"Unhandled case for destructuring declaration: `${expr.getText}` in this file `${relativizedPath}`.")
       return Seq()
     }
     val destructuringRHS = typedInit.get
