@@ -56,7 +56,6 @@ class AstCreator(val relativeFileName: String, val parserResult: ParserResult, v
   }
 
   protected def astForNode(nodeInfo: DotNetNodeInfo): Seq[Ast] = {
-    println(nodeInfo.node)
     nodeInfo.node match {
       case _: BaseStmt                                           => astForStatement(nodeInfo)
       case NamespaceDeclaration | FileScopedNamespaceDeclaration => astForNamespaceDeclaration(nodeInfo)

@@ -10,15 +10,25 @@ class GenericsTests extends CSharpCode2CpgFixture {
         | public interface IBar {}
         | public class Bar<T> {}
         | public class Baz {
-        |   Bar<IBar> b = new Bar<IBar>();
-        |   var b = new Bar<IBar>().someMethod();
+        |   static void Test() {
+        |     Bar<IBar> a = new Bar<IBar>();
+        |     var b = new Bar<IBar>().someMethod();
+        |   }
         | }
         |}
+        |
         |""".stripMargin)
 
     "propagate types from RHS to LHS" in {
-      println(cpg.call.typeFullName.l)
+      inside(cpg.identifier.nameExact("a").headOption) {
+        case Some(id) =>
+          id.name shouldBe "a"
+          id.typeFullName shouldBe "Bar<IBar>"
+        case None => fail("Unable to find `a` identifier node with type declaration")
+      }
+      println(cpg.call.map(x => (x.name, x.typeFullName)).l)
+      println(cpg.identifier.map(x => (x.name, x.typeFullName)).l)
+
     }
   }
-
 }
