@@ -78,6 +78,10 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         identifierNode(dotNetNode.orNull, x.name, x.name, Defines.Any)
   }
 
+  def typeFromGenericName(genericNode: String): String = {
+    scope.tryResolveTypeReference(genericNode.split("<").head).getOrElse(Defines.Any)
+  }
+
   // TODO: Use type map to try resolve full name
   protected def nodeTypeFullName(node: DotNetNodeInfo): String = {
     def typeFromTypeString(typeString: String): String = {
@@ -115,6 +119,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         BuiltinTypes.DotNetTypeMap.getOrElse(node.code, Defines.Any)
       case DotNetJsonAst.TypeParameter =>
         scope.tryResolveTypeReference(nameFromNode(node)).getOrElse(BuiltinTypes.Object)
+      case GenericName => typeFromGenericName(node.code)
       case _ =>
         Try(createDotNetNodeInfo(node.json(ParserKeys.Type))) match
           case Success(typeNode) =>

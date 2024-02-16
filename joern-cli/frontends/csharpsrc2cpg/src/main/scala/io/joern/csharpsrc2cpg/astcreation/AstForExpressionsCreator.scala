@@ -224,7 +224,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val dispatchType = DispatchTypes.STATIC_DISPATCH
     val typeFullName = Try(createDotNetNodeInfo(objectCreation.json(ParserKeys.Type))).toOption match {
       case Some(typeNode) if typeNode.node == GenericName =>
-        scope.tryResolveTypeReference(typeNode.code.split("<").head).getOrElse(Defines.Any)
+        nodeTypeFullName(typeNode)
       case Some(typeNode) => nodeTypeFullName(typeNode)
       case None           => Defines.Any
     }
