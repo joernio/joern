@@ -90,7 +90,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         .orElse(BuiltinTypes.DotNetTypeMap.get(rawType))
         .getOrElse(rawType)
 
-      s"$resolvedType$suffix"
+      if (typeString.endsWith(suffix)) s"$resolvedType$suffix" else resolvedType
     }
 
     node.node match
