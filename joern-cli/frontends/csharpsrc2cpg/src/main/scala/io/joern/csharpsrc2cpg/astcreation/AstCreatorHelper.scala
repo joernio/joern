@@ -83,7 +83,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   // TODO: Use type map to try resolve full name
   protected def nodeTypeFullName(node: DotNetNodeInfo): String = {
-    def typeFromTypeString(typeString: String, suffix: String = ""): String = {
+    def typeFromTypeString(typeString: String, suffix: String = "[]"): String = {
       val rawType = typeString.stripSuffix(suffix)
       val resolvedType = scope
         .tryResolveTypeReference(rawType)

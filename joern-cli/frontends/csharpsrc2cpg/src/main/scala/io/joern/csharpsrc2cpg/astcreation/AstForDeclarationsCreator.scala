@@ -148,7 +148,11 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val memberNodes = declAsts
       .flatMap(_.nodes.collectFirst { case x: NewIdentifier => x })
-      .map(x => memberNode(declarationNode, x.name, code(declarationNode), x.typeFullName))
+      .map(x => {
+        val _member = memberNode(declarationNode, x.name, code(declarationNode), x.typeFullName)
+        scope.addToScope(x.name, _member)
+        _member
+      })
     memberNodes.map(Ast(_).withChildren(astForModifiers(fieldDecl)))
   }
 
