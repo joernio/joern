@@ -9,7 +9,7 @@ import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def astForIdentifier(ident: DotNetNodeInfo, typeFullName: String = Defines.Any): Ast = {
-    val identifierName = nameFromNode(ident)
+    val identifierName       = nameFromNode(ident)
     if identifierName != "_" then {
       val variableOption = scope.lookupVariable(identifierName)
       variableOption match

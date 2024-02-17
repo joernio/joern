@@ -339,6 +339,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val evaluationStrategy = EvaluationStrategies.BY_SHARING.name // TODO
     val param =
       parameterInNode(paramNode, name, code(paramNode), idx + 1, isVariadic, evaluationStrategy, Option(typeFullName))
+    scope.addToScope(name, param)
     Ast(param)
   }
 

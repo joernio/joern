@@ -114,8 +114,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         scope.surroundingTypeDeclFullName.getOrElse(Defines.Any)
       case PredefinedType | SimpleBaseType =>
         BuiltinTypes.DotNetTypeMap.getOrElse(node.code, Defines.Any)
-      case DotNetJsonAst.TypeParameter =>
-        scope.tryResolveTypeReference(nameFromNode(node)).getOrElse(BuiltinTypes.Object)
       case GenericName =>
         typeFromGenericName(node.code)
       case VariableDeclaration =>
