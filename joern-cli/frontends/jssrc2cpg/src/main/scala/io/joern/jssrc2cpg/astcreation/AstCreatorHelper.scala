@@ -8,9 +8,10 @@ import io.joern.x2cpg.utils.NodeBuilders.{newClosureBindingNode, newLocalNode}
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies}
+import io.shiftleft.codepropertygraph.generated.nodes.File.PropertyDefaults
 import ujson.Value
 
-import scala.collection.{SortedMap, mutable}
+import scala.collection.{mutable, SortedMap}
 import scala.util.{Success, Try}
 
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -70,9 +71,12 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   protected def code(node: Value): String = {
-    val startIndex = start(node).getOrElse(0)
-    val endIndex   = Math.min(end(node).getOrElse(0), parserResult.fileContent.length)
-    shortenCode(parserResult.fileContent.substring(startIndex, endIndex).trim)
+    nodeOffsets(node) match {
+      case Some((startOffset, endOffset))
+          if startOffset < endOffset && startOffset >= 0 && endOffset <= parserResult.fileContent.length =>
+        shortenCode(parserResult.fileContent.substring(startOffset, endOffset).trim)
+      case _ => PropertyDefaults.Code
+    }
   }
 
   protected def hasKey(node: Value, key: String): Boolean = Try(node(key)).isSuccess
@@ -90,9 +94,9 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     case _                                => None
   }
 
-  private def start(node: Value): Option[Int] = Try(node("start").num.toInt).toOption
+  protected def start(node: Value): Option[Int] = Try(node("start").num.toInt).toOption
 
-  private def end(node: Value): Option[Int] = Try(node("end").num.toInt).toOption
+  protected def end(node: Value): Option[Int] = Try(node("end").num.toInt).toOption
 
   protected def pos(node: Value): Option[Int] = Try(node("start").num.toInt).toOption
 

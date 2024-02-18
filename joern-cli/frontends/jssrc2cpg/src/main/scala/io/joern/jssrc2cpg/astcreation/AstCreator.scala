@@ -62,7 +62,9 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
     positionLookupTables(parserResult.fileContent)
 
   override def createAst(): DiffGraphBuilder = {
-    val fileNode       = NewFile().name(parserResult.filename).order(1)
+    val fileContent = if (!config.disableFileContent) Option(parserResult.fileContent) else None
+    val fileNode    = NewFile().name(parserResult.filename).order(1)
+    fileContent.foreach(fileNode.content(_))
     val namespaceBlock = globalNamespaceBlock()
     methodAstParentStack.push(namespaceBlock)
     val ast = Ast(fileNode).withChild(Ast(namespaceBlock).withChild(createProgramMethod()))
@@ -257,4 +259,19 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
   protected def lineEnd(node: BabelNodeInfo): Option[Integer]   = node.lineNumberEnd
   protected def columnEnd(node: BabelNodeInfo): Option[Integer] = node.columnNumberEnd
   protected def code(node: BabelNodeInfo): String               = node.code
+
+  protected def nodeOffsets(node: Value): Option[(Int, Int)] = {
+    for {
+      startOffset <- start(node)
+      endOffset   <- end(node)
+    } yield (startOffset, endOffset)
+  }
+
+  override protected def offset(node: BabelNodeInfo): Option[(Int, Int)] = {
+    Option
+      .when(!config.disableFileContent) {
+        nodeOffsets(node.json)
+      }
+      .flatten
+  }
 }
