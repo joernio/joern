@@ -135,12 +135,7 @@ class Kotlin2Cpg extends X2CpgFrontend[Config] with UsesService {
         logger.warn("The list of directories to analyze is empty.")
       }
       val environment =
-        CompilerAPI.makeEnvironment(
-          dirsForSourcesToCompile,
-          filesWithJavaExtension,
-          defaultContentRootJars,
-          messageCollector
-        )
+        CompilerAPI.makeEnvironment(Seq(sourceDir), filesWithJavaExtension, defaultContentRootJars, messageCollector)
 
       val sourceEntries = entriesForSources(environment.getSourceFiles.asScala, sourceDir)
       val sources = sourceEntries.filter(entry =>

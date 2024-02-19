@@ -82,7 +82,7 @@ class DefaultTypeInfoProvider(environment: KotlinCoreEnvironment) extends TypeIn
     } match {
       case Success(analysisResult) => analysisResult.getBindingContext
       case Failure(exc) =>
-        logger.error(s"Kotlin compiler analysis failed with exception `${exc.toString}`:`${exc.getMessage}`.")
+        logger.error(s"Kotlin compiler analysis failed with exception `${exc.toString}`:`${exc.getMessage}`.", exc)
         BindingContext.EMPTY
     }
   }
