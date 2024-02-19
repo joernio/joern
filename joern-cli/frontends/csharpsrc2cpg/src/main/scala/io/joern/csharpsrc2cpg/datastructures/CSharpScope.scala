@@ -127,20 +127,9 @@ class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeT
     */
   override def pushNewScope(scopeNode: ScopeType): Unit = {
     scopeNode match
-      case NamespaceScope(fullName) => {
-        val fullNameSplit = fullName
-          .split("[.]")
-          .toList
-          .foldLeft("") { (accumulatedNamespace, current) =>
-            {
-              val prefix = if (accumulatedNamespace.isEmpty) "" else accumulatedNamespace + "."
-              typesInScope.addAll(typeMap.classesIn(s"$prefix$current"))
-              s"$prefix$current"
-            }
-          }
-      }
-      case TypeScope(name, _) => typesInScope.addAll(typeMap.findType(name))
-      case _                  =>
+      case NamespaceScope(fullName) => typesInScope.addAll(typeMap.classesIn(fullName))
+      case TypeScope(name, _)       => typesInScope.addAll(typeMap.findType(name))
+      case _                        =>
     super.pushNewScope(scopeNode)
   }
 

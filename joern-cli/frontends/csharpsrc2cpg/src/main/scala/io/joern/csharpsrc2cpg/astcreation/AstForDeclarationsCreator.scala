@@ -20,11 +20,27 @@ import io.joern.csharpsrc2cpg.astcreation.BuiltinTypes.DotNetTypeMap
 import io.joern.csharpsrc2cpg.datastructures.EnumScope
 import io.shiftleft.codepropertygraph.generated
 
+import scala.annotation.tailrec
+
 trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def astForNamespaceDeclaration(namespace: DotNetNodeInfo): Seq[Ast] = {
+    def recurseNamespace(parts: List[String], prefix: List[String] = List.empty): Unit = {
+      parts match {
+        case head :: tail =>
+          val currentFullName = prefix :+ head
+          scope.pushNewScope(NamespaceScope(currentFullName.mkString(".")))
+          recurseNamespace(tail, currentFullName)
+        case Nil => // nothing
+      }
+    }
+
     val fullName = astFullName(namespace)
-    val name     = fullName.split('.').filterNot(_.isBlank).lastOption.getOrElse(fullName)
+
+    val namespaceParts = fullName.split("[.]").toList
+    recurseNamespace(namespaceParts)
+
+    val name = fullName.split('.').filterNot(_.isBlank).lastOption.getOrElse(fullName)
     val namespaceBlock = NewNamespaceBlock()
       .name(name)
       .code(code(namespace))
@@ -32,9 +48,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       .columnNumber(columnEnd(namespace))
       .filename(relativeFileName)
       .fullName(fullName)
-    scope.pushNewScope(NamespaceScope(fullName))
     val memberAsts = namespace.json(ParserKeys.Members).arr.flatMap(astForNode).toSeq
-    scope.popScope()
+    namespaceParts.foreach(_ => scope.popScope())
     Seq(Ast(namespaceBlock).withChildren(memberAsts))
   }
 

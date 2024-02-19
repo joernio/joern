@@ -246,12 +246,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   def astForObjectCreationExpression(objectCreation: DotNetNodeInfo): Seq[Ast] = {
     val dispatchType = DispatchTypes.STATIC_DISPATCH
-    val typeFullName = Try(createDotNetNodeInfo(objectCreation.json(ParserKeys.Type))).toOption match {
-      case Some(typeNode) if typeNode.node == GenericName =>
-        nodeTypeFullName(typeNode)
-      case Some(typeNode) => nodeTypeFullName(typeNode)
-      case None           => Defines.Any
-    }
+    val typeFullName = Try(createDotNetNodeInfo(objectCreation.json(ParserKeys.Type))).toOption
+      .map(nodeTypeFullName)
+      .getOrElse(Defines.Any)
 
     val arguments = astForArgumentList(createDotNetNodeInfo(objectCreation.json(ParserKeys.ArgumentList)))
     // TODO: Handle signature
