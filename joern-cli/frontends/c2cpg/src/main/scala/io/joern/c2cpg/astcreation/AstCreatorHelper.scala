@@ -72,28 +72,15 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     offsets.toArray
   }
 
-  private def nullSafeFileLocation(node: IASTNode): Option[IASTFileLocation] =
+  protected def nullSafeFileLocation(node: IASTNode): Option[IASTFileLocation] =
     Option(cdtAst.flattenLocationsToFile(node.getNodeLocations)).map(_.asFileLocation())
-
-  private def nullSafeFileLocationLast(node: IASTNode): Option[IASTFileLocation] =
-    Option(cdtAst.flattenLocationsToFile(node.getNodeLocations.lastOption.toArray)).map(_.asFileLocation())
 
   protected def fileName(node: IASTNode): String = {
     val path = nullSafeFileLocation(node).map(_.getFileName).getOrElse(filename)
     SourceFiles.toRelativePath(path, config.inputPath)
   }
 
-  protected def code(node: IASTNode): String = shortenCode(nodeSignature(node))
-
-  protected def line(node: IASTNode): Option[Integer] = {
-    nullSafeFileLocation(node).map(_.getStartingLineNumber)
-  }
-
-  protected def lineEnd(node: IASTNode): Option[Integer] = {
-    nullSafeFileLocationLast(node).map(_.getEndingLineNumber)
-  }
-
-  private def offsetToColumn(node: IASTNode, offset: Int): Int = {
+  protected def offsetToColumn(node: IASTNode, offset: Int): Int = {
     val table      = fileOffsetTable(node)
     val index      = java.util.Arrays.binarySearch(table, offset)
     val tableIndex = if (index < 0) -(index + 1) else index + 1
@@ -104,20 +91,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     }
     val column = offset - lineStartOffset + 1
     column
-  }
-
-  protected def column(node: IASTNode): Option[Integer] = {
-    val loc = nullSafeFileLocation(node)
-    loc.map { x =>
-      offsetToColumn(node, x.getNodeOffset)
-    }
-  }
-
-  protected def columnEnd(node: IASTNode): Option[Integer] = {
-    val loc = nullSafeFileLocation(node)
-    loc.map { x =>
-      offsetToColumn(node, x.getNodeOffset + x.getNodeLength - 1)
-    }
   }
 
   protected def registerType(typeName: String): String = {

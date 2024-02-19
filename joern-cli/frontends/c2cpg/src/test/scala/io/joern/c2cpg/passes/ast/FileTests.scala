@@ -13,10 +13,12 @@ class FileTests extends CCodeToCpgSuite {
       | struct my_struct { int x; };
       |""".stripMargin)
 
-  "should contain two file nodes in total, both with order=0" in {
-    cpg.file.nameNot("<includes>").order.l shouldBe List(0, 0)
-    cpg.file.name(FileTraversal.UNKNOWN).size shouldBe 1
-    cpg.file.nameNot(FileTraversal.UNKNOWN, "<includes>").size shouldBe 1
+  "should contain the correct file nodes" in {
+    val List(fileTest, fileUnknown) = cpg.file.nameNot("<includes>").l
+    fileTest.name shouldBe "Test0.c"
+    fileTest.order shouldBe 1
+    fileUnknown.name shouldBe FileTraversal.UNKNOWN
+    fileUnknown.order shouldBe 0
   }
 
   "should contain exactly one placeholder file node with `name=\"<unknown>\"/order=0`" in {
@@ -50,12 +52,12 @@ class FileTests extends CCodeToCpgSuite {
 
   "should allow traversing to namespaces" in {
     val List(ns1, ns2, ns3) = cpg.file.namespaceBlock.l
-    ns1.filename shouldBe "<includes>"
-    ns1.fullName shouldBe "<includes>:<global>"
-    ns2.filename shouldBe "<unknown>"
-    ns2.fullName shouldBe "<global>"
-    ns3.filename shouldBe "Test0.c"
-    ns3.fullName shouldBe "Test0.c:<global>"
+    ns1.filename shouldBe "Test0.c"
+    ns1.fullName shouldBe "Test0.c:<global>"
+    ns2.filename shouldBe "<includes>"
+    ns2.fullName shouldBe "<includes>:<global>"
+    ns3.filename shouldBe "<unknown>"
+    ns3.fullName shouldBe "<global>"
     cpg.file.namespace.name(NamespaceTraversal.globalNamespaceName).l.size shouldBe 3
   }
 
