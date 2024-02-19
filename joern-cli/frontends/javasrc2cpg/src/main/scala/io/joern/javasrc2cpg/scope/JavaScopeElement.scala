@@ -161,7 +161,7 @@ object JavaScopeElement {
     callAst: Ast,
     receiverAst: Ast,
     argsAsts: List[Ast],
-    capturedThis: Option[NewMethodParameterIn]
+    outerClassAst: Option[Ast]
   )
 
   extension (typeDeclScope: Option[TypeDeclScope]) {

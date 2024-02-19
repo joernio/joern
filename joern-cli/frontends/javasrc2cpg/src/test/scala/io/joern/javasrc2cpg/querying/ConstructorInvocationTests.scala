@@ -7,16 +7,115 @@ import io.shiftleft.proto.cpg.Cpg.DispatchTypes
 import io.shiftleft.semanticcpg.language._
 
 class NewConstructorInvocationTests extends JavaSrcCode2CpgFixture {
-  "constructor init method call" should {
-    lazy val cpg = code("""
+  "inner class constructor invocations" when {
+    "the receiver is an object creation expression" should {
+      val cpg = code("""
         |class Foo {
-        |  Foo(long aaa) {
-        |  }
-        |  static void method() {
-        |    Foo foo = new Foo(1);
+        |  class Bar {}
+        |
+        |  public static void test() {
+        |    Bar b = new Foo().new Bar();
         |  }
         |}
         |""".stripMargin)
+
+      "have the correct block lowering" in {
+        inside(cpg.call.methodFullName(".*Bar.*init.*").l) { case List(barInit) =>
+          barInit.methodFullName shouldBe "Foo$Bar.<init>:void()"
+
+          inside(barInit.argument.l) { case List(barReceiver: Identifier, outerClass: Block) =>
+            barReceiver.name shouldBe "b"
+            barReceiver.typeFullName shouldBe "Foo$Bar"
+
+            inside(outerClass.astChildren.l) {
+              case List(tmpLocal: Local, tmpAssign: Call, tmpInit: Call, tmpRet: Identifier) =>
+                tmpLocal.name shouldBe "$obj0"
+                tmpLocal.typeFullName shouldBe "Foo"
+
+                tmpAssign.code shouldBe "$obj0 = new Foo()"
+                tmpAssign.typeFullName shouldBe "Foo"
+                tmpAssign.methodFullName shouldBe Operators.assignment
+
+                tmpInit.code shouldBe "new Foo()"
+                inside(tmpInit.argument.l) { case List(tmpReceiver: Identifier) =>
+                  tmpReceiver.name shouldBe "$obj0"
+                  tmpReceiver.typeFullName shouldBe "Foo"
+                }
+            }
+          }
+        }
+      }
+    }
+
+    "the receiver is a variable" should {
+      val cpg = code("""
+        |class Foo {
+        |  class Bar {}
+        |
+        |  public static void test(Foo f) {
+        |    Bar b = f.new Bar();
+        |  }
+        |}
+        |""".stripMargin)
+
+      "have the correct structure" in {
+        inside(cpg.call.methodFullName(".*Bar.*init.*").l) { case List(barInit) =>
+          barInit.methodFullName shouldBe "Foo$Bar.<init>:void()"
+
+          inside(barInit.argument.l) { case List(barReceiver: Identifier, outerClass: Identifier) =>
+            barReceiver.name shouldBe "b"
+            barReceiver.typeFullName shouldBe "Foo$Bar"
+
+            outerClass.name shouldBe "f"
+            outerClass.typeFullName shouldBe "Foo"
+            outerClass.refsTo.l shouldBe cpg.method.name("test").parameter.name("f").l
+          }
+        }
+      }
+    }
+
+    "the receiver is a call" should {
+      val cpg = code("""
+        |class Foo {
+        |  class Bar {}
+        |
+        |  public static Foo foo() {
+        |    return new Foo();
+        |  }
+        |
+        |  public static void test() {
+        |    Bar b = foo().new Bar();
+        |  }
+        |}
+        |""".stripMargin)
+
+      "have the correct structure" in {
+        inside(cpg.call.methodFullName(".*Bar.*init.*").l) { case List(barInit) =>
+          barInit.methodFullName shouldBe "Foo$Bar.<init>:void()"
+
+          inside(barInit.argument.l) { case List(barReceiver: Identifier, outerClass: Call) =>
+            barReceiver.name shouldBe "b"
+            barReceiver.typeFullName shouldBe "Foo$Bar"
+
+            outerClass.name shouldBe "foo"
+            outerClass.typeFullName shouldBe "Foo"
+            outerClass.methodFullName shouldBe "Foo.foo:Foo()"
+          }
+        }
+      }
+    }
+  }
+
+  "constructor init method call" should {
+    val cpg = code("""
+      |class Foo {
+      |  Foo(long aaa) {
+      |  }
+      |  static void method() {
+      |    Foo foo = new Foo(1);
+      |  }
+      |}
+      |""".stripMargin)
 
     "have correct methodFullName and signature" in {
       val initCall = cpg.call.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).head
@@ -26,15 +125,15 @@ class NewConstructorInvocationTests extends JavaSrcCode2CpgFixture {
   }
 
   "a simple single argument constructor" should {
-    lazy val fooCpg = code("""
-        |class Foo {
-        |  int x;
-        |
-        |  public Foo(int x) {
-        |    this.x = x;
-        |  }
-        |}
-        |""".stripMargin)
+    val fooCpg = code("""
+      |class Foo {
+      |  int x;
+      |
+      |  public Foo(int x) {
+      |    this.x = x;
+      |  }
+      |}
+      |""".stripMargin)
     "create the correct Ast for the constructor" in {
       fooCpg.typeDecl.name("Foo").method.nameExact(io.joern.x2cpg.Defines.ConstructorMethodName).l match {
         case List(cons: Method) =>
