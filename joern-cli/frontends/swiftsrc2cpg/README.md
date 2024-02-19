@@ -8,7 +8,7 @@ The build process has been verified on Linux, and it should be possible
 to build on OS X and BSD systems as well. The build process requires
 the following prerequisites:
 
-* Java runtime 11
+* JDK 11
   - Link: http://openjdk.java.net/install/
 * Scala build tool (sbt)
   - Link: https://www.scala-sbt.org/
@@ -30,6 +30,10 @@ swift build
 (requires `swift`).
 
 ## Running
+
+Required runtime dependencies:
+ - Java runtime >= 11
+ - `glibc` >= 2.34 (for swiftastgen); or `swift` 5.9 directly which brings in all required dependencies anyway.
 
 To produce a code property graph issue the command:
 ```shell script
