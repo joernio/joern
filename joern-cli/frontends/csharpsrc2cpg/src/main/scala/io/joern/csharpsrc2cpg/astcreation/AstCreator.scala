@@ -1,11 +1,13 @@
 package io.joern.csharpsrc2cpg.astcreation
 
-import io.joern.csharpsrc2cpg.datastructures.{CSharpScope, CSharpProgramSummary}
+import io.joern.csharpsrc2cpg.Constants
+import io.joern.csharpsrc2cpg.datastructures.{CSharpProgramSummary, CSharpScope}
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.astgen.{AstGenNodeBuilder, ParserResult}
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.NewFile
+import io.shiftleft.codepropertygraph.generated.NodeTypes
+import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewTypeDecl}
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import ujson.Value
@@ -52,7 +54,21 @@ class AstCreator(
     imports ++ memberAsts
   }
 
-  protected def astForMembers(members: Seq[DotNetNodeInfo]): Seq[Ast] = members.flatMap(astForNode)
+  protected def astForMembers(members: Seq[DotNetNodeInfo]): Seq[Ast] = {
+    val memberAsts = members.flatMap(astForNode)
+    // If empty, then there is no parent namespace and this is a "global" type
+    if (scope.peekScope().isEmpty) {
+      val (typeDecls, other) = memberAsts.partition(x => x.root.exists(_.isInstanceOf[NewTypeDecl]))
+      typeDecls
+        .flatMap(_.root)
+        .collect { case x: NewTypeDecl => x }
+        .foreach(typ => typ.astParentFullName(Constants.Global).astParentType(NodeTypes.NAMESPACE_BLOCK))
+      typeDecls.foreach(Ast.storeInDiffGraph(_, diffGraph))
+      other
+    } else {
+      memberAsts
+    }
+  }
 
   protected def astForNode(json: Value): Seq[Ast] = {
     val nodeInfo = createDotNetNodeInfo(json)

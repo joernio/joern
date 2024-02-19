@@ -52,9 +52,13 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   protected def getTypeFullNameFromAstNode(ast: Seq[Ast]): String = {
-    ast.headOption
-      .flatMap(_.root)
-      .map(_.properties.getOrElse(PropertyNames.TYPE_FULL_NAME, Defines.Any).toString)
+    ast.headOption.map(getTypeFullNameFromAstNode).getOrElse(Defines.Any)
+  }
+
+  protected def getTypeFullNameFromAstNode(ast: Ast): String = {
+    ast.root
+      .flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME))
+      .map(_.toString)
       .getOrElse(Defines.Any)
   }
 
@@ -103,6 +107,20 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       case ArrayType =>
         val elementTypeNode = createDotNetNodeInfo(node.json(ParserKeys.ElementType))
         s"${nodeTypeFullName(elementTypeNode)}[]"
+      case GenericName =>
+        val typeArgListNode = createDotNetNodeInfo(node.json(ParserKeys.TypeArgumentList))
+        val typeArguments = typeArgListNode
+          .json(ParserKeys.Arguments)
+          .arr
+          .map(createDotNetNodeInfo)
+          .map(nodeTypeFullName)
+          .toList
+        val typeName = nameFromNode(node)
+        val typ = scope
+          .tryResolveTypeReference(typeName)
+          .map(_.name)
+          .getOrElse(typeName)
+        s"$typ<${typeArguments.mkString(",")}>"
       case IdentifierName =>
         val typeString = nameFromNode(node)
         scope
@@ -151,7 +169,7 @@ object AstCreatorHelper {
   def nameFromNode(node: DotNetNodeInfo): String = {
     node.node match
       case NamespaceDeclaration | UsingDirective | FileScopedNamespaceDeclaration => nameFromNamespaceDeclaration(node)
-      case IdentifierName | Parameter | _: DeclarationExpr                        => nameFromIdentifier(node)
+      case IdentifierName | Parameter | _: DeclarationExpr | GenericName          => nameFromIdentifier(node)
       case QualifiedName                                                          => nameFromQualifiedName(node)
       case SimpleMemberAccessExpression => nameFromIdentifier(createDotNetNodeInfo(node.json(ParserKeys.Name)))
       case ObjectCreationExpression     => nameFromNode(createDotNetNodeInfo(node.json(ParserKeys.Type)))

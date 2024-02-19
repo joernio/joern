@@ -1,7 +1,6 @@
 package io.joern.csharpsrc2cpg.parser
 
 import org.slf4j.LoggerFactory
-import io.joern.csharpsrc2cpg.parser.ParserKeys.Type
 
 object DotNetJsonAst {
 
@@ -208,6 +207,10 @@ object DotNetJsonAst {
 
   object PropertyDeclaration extends DeclarationExpr
 
+  object TypeArgumentList extends BaseStmt
+
+  object GenericName extends BaseStmt
+
   object Unknown extends DotNetParserNode
 
 }
@@ -216,49 +219,50 @@ object DotNetJsonAst {
   */
 object ParserKeys {
 
-  val AstRoot       = "AstRoot"
-  val Arguments     = "Arguments"
-  val ArgumentList  = "ArgumentList"
-  val BaseList      = "BaseList"
-  val Body          = "Body"
-  val Block         = "Block"
-  val Catches       = "Catches"
-  val Code          = "Code"
-  val ColumnStart   = "ColumnStart"
-  val ColumnEnd     = "ColumnEnd"
-  val Condition     = "Condition"
-  val Declaration   = "Declaration"
-  val ElementType   = "ElementType"
-  val Else          = "Else"
-  val Expression    = "Expression"
-  val Finally       = "Finally"
-  val FileName      = "FileName"
-  val Identifier    = "Identifier"
-  val Incrementors  = "Incrementors"
-  val Initializer   = "Initializer"
-  val Keyword       = "Keyword"
-  val Kind          = "Kind"
-  val Labels        = "Labels"
-  val Left          = "Left"
-  val LineStart     = "LineStart"
-  val LineEnd       = "LineEnd"
-  val MetaData      = "MetaData"
-  val Members       = "Members"
-  val Modifiers     = "Modifiers"
-  val Name          = "Name"
-  val Operand       = "Operand"
-  val OperatorToken = "OperatorToken"
-  val Parameters    = "Parameters"
-  val ParameterList = "ParameterList"
-  val Pattern       = "Pattern"
-  val Sections      = "Sections"
-  val Statement     = "Statement"
-  val Statements    = "Statements"
-  val ReturnType    = "ReturnType"
-  val Right         = "Right"
-  val Type          = "Type"
-  val Types         = "Types"
-  val Usings        = "Usings"
-  val Value         = "Value"
-  val Variables     = "Variables"
+  val AstRoot          = "AstRoot"
+  val Arguments        = "Arguments"
+  val ArgumentList     = "ArgumentList"
+  val BaseList         = "BaseList"
+  val Body             = "Body"
+  val Block            = "Block"
+  val Catches          = "Catches"
+  val Code             = "Code"
+  val ColumnStart      = "ColumnStart"
+  val ColumnEnd        = "ColumnEnd"
+  val Condition        = "Condition"
+  val Declaration      = "Declaration"
+  val ElementType      = "ElementType"
+  val Else             = "Else"
+  val Expression       = "Expression"
+  val Finally          = "Finally"
+  val FileName         = "FileName"
+  val Identifier       = "Identifier"
+  val Incrementors     = "Incrementors"
+  val Initializer      = "Initializer"
+  val Keyword          = "Keyword"
+  val Kind             = "Kind"
+  val Labels           = "Labels"
+  val Left             = "Left"
+  val LineStart        = "LineStart"
+  val LineEnd          = "LineEnd"
+  val MetaData         = "MetaData"
+  val Members          = "Members"
+  val Modifiers        = "Modifiers"
+  val Name             = "Name"
+  val Operand          = "Operand"
+  val OperatorToken    = "OperatorToken"
+  val Parameters       = "Parameters"
+  val ParameterList    = "ParameterList"
+  val Pattern          = "Pattern"
+  val Sections         = "Sections"
+  val Statement        = "Statement"
+  val Statements       = "Statements"
+  val ReturnType       = "ReturnType"
+  val Right            = "Right"
+  val Type             = "Type"
+  val TypeArgumentList = "TypeArgumentList"
+  val Types            = "Types"
+  val Usings           = "Usings"
+  val Value            = "Value"
+  val Variables        = "Variables"
 }

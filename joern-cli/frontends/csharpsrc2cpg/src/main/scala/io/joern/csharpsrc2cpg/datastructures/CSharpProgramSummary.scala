@@ -1,5 +1,6 @@
 package io.joern.csharpsrc2cpg.datastructures
 
+import io.joern.csharpsrc2cpg.Constants
 import io.joern.x2cpg.datastructures.{FieldLike, MethodLike, ProgramSummary, TypeLike}
 import org.slf4j.LoggerFactory
 import upickle.default.*
@@ -20,7 +21,7 @@ type NamespaceToTypeMap = Map[String, Set[CSharpType]]
 class CSharpProgramSummary(initialMappings: List[NamespaceToTypeMap] = List.empty) extends ProgramSummary[CSharpType] {
 
   override val namespaceToType: NamespaceToTypeMap = initialMappings.reduceOption(_ ++ _).getOrElse(Map.empty)
-  def findGlobalTypes: Set[CSharpType]             = namespaceToType.getOrElse("global", Set.empty)
+  def findGlobalTypes: Set[CSharpType]             = namespaceToType.getOrElse(Constants.Global, Set.empty)
 
   @targetName("add")
   def ++(other: CSharpProgramSummary): CSharpProgramSummary = {

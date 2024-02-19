@@ -11,13 +11,19 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
   protected def astForIdentifier(ident: DotNetNodeInfo, typeFullName: String = Defines.Any): Ast = {
     val identifierName = nameFromNode(ident)
     if identifierName != "_" then {
-      val variableOption = scope.lookupVariable(identifierName)
-      variableOption match
+      scope.lookupVariable(identifierName) match {
         case Some(variable) =>
           val node = identifierFromDecl(variable, Option(ident))
           Ast(node).withRefEdge(node, variable)
-        case _ =>
-          Ast(identifierNode(ident, identifierName, ident.code, typeFullName))
+        case None =>
+          // If not a variable, could perhaps be a static type reference
+          scope.tryResolveTypeReference(identifierName) match {
+            case Some(typeReference) =>
+              Ast(identifierNode(ident, identifierName, ident.code, typeReference.name))
+            case None =>
+              Ast(identifierNode(ident, identifierName, ident.code, typeFullName))
+          }
+      }
     } else {
       Ast()
     }
