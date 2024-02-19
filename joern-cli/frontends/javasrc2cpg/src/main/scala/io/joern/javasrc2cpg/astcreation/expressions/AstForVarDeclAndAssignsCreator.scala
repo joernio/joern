@@ -3,27 +3,16 @@ package io.joern.javasrc2cpg.astcreation.expressions
 import com.github.javaparser.ast.Node
 import com.github.javaparser.ast.body.VariableDeclarator
 import com.github.javaparser.ast.expr.AssignExpr.Operator
-import com.github.javaparser.ast.expr.{AssignExpr, Expression, VariableDeclarationExpr}
+import com.github.javaparser.ast.expr.{AssignExpr, Expression, ObjectCreationExpr, VariableDeclarationExpr}
 import com.github.javaparser.resolution.types.ResolvedType
-import io.joern.javasrc2cpg.astcreation.expressions.AstForCallExpressionsCreator.PartialConstructor
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
-import io.joern.javasrc2cpg.scope.Scope.{
-  NewVariableNode,
-  ScopeLocal,
-  ScopeMember,
-  ScopeParameter,
-  ScopeVariable,
-  SimpleVariable,
-  newVariableNodeType
-}
+import io.joern.javasrc2cpg.scope.Scope.{NewVariableNode, typeFullName}
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.NameConstants
-import io.joern.x2cpg.passes.frontend.TypeNodePass
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
-import io.joern.x2cpg.utils.NodeBuilders.newOperatorCallNode
-import io.joern.x2cpg.{Ast, Defines}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewFieldIdentifier, NewIdentifier, NewLocal, NewMember}
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
+import io.joern.x2cpg.Ast
+import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewFieldIdentifier, NewIdentifier, NewMember}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.*
@@ -69,34 +58,6 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
       expectedInitializerType,
       varDeclType = None
     )
-  }
-
-  private[expressions] def completeInitForConstructor(partialConstructor: PartialConstructor, targetAst: Ast): Ast = {
-    val initNode = partialConstructor.initNode
-    val args     = partialConstructor.initArgs
-
-    targetAst.root match {
-      case Some(identifier: NewIdentifier) =>
-        scope.lookupVariable(identifier.name).variableNode.foreach { variableNode =>
-          diffGraph.addEdge(identifier, variableNode, EdgeTypes.REF)
-        }
-
-      case _ => // Nothing to do in this case
-    }
-
-    val initAst = Ast(initNode)
-
-    val capturedThis = scope.lookupVariable(NameConstants.This) match {
-      case SimpleVariable(param: ScopeParameter) => Some(param.node)
-      case _                                     => None
-    }
-
-    for {
-      enclosingDecl <- scope.enclosingTypeDecl;
-      typeFullName  <- partialConstructor.typeFullName
-    } enclosingDecl.registerInitToComplete(PartialInit(typeFullName, initAst, targetAst, args.toList, capturedThis))
-
-    initAst
   }
 
   private def copyAstForVarDeclInit(targetAst: Ast): Ast = {
@@ -168,13 +129,13 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
           name,
           scope.enclosingTypeDecl.fullName,
           correspondingNode.name,
-          Some(newVariableNodeType(correspondingNode)),
+          Option(correspondingNode.typeFullName),
           line(originNode),
           column(originNode)
         )
 
       case variable =>
-        val node = identifierNode(variableDeclarator, variable.name, variable.name, newVariableNodeType(variable))
+        val node = identifierNode(variableDeclarator, variable.name, variable.name, variable.typeFullName)
         Ast(node).withRefEdge(node, correspondingNode)
     }
 
@@ -199,7 +160,7 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
     localAst.toList ++ assignmentAsts
   }
 
-  private def astsForAssignment(
+  def astsForAssignment(
     node: Node,
     target: Ast,
     initializer: Expression,
@@ -214,13 +175,24 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
 
     target.rootType.foreach(assignmentNode.typeFullName(_))
 
-    val initializerAsts = astsForExpression(initializer, expectedType)
+    val isSimpleAssign = (operatorName == Operators.assignment)
+    val isVarOrFieldAssign = target.root.exists {
+      case _: NewIdentifier => true
+      case call: NewCall    => call.methodFullName == Operators.fieldAccess
+      case _                => false
+    }
 
-    val constructorAsts = partialConstructorQueue.map(completeInitForConstructor(_, copyAstForVarDeclInit(target)))
-    partialConstructorQueue.clear()
+    val initializerAsts = initializer match {
+      case objectCreationExpr: ObjectCreationExpr if isSimpleAssign && isVarOrFieldAssign =>
+        val inlinedAsts =
+          inlinedAstsForObjectCreationExpr(objectCreationExpr, target, expectedType, resetAssignmentTargetType = false)
+        inlinedAsts.allocAst :: inlinedAsts.initAst :: Nil
 
-    val assignmentAst = callAst(assignmentNode, target :: initializerAsts.toList)
+      case _ => astsForExpression(initializer, expectedType).toList
+    }
 
-    assignmentAst :: constructorAsts.toList
+    val assignmentAst = callAst(assignmentNode, target :: initializerAsts.headOption.toList)
+
+    assignmentAst :: initializerAsts.drop(1)
   }
 }

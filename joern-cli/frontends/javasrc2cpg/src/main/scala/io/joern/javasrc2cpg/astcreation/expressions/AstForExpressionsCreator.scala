@@ -57,7 +57,7 @@ trait AstForExpressionsCreator
       case x: LiteralExpr             => Seq(astForLiteralExpr(x))
       case x: MethodCallExpr          => Seq(astForMethodCall(x, expectedType))
       case x: NameExpr                => Seq(astForNameExpr(x, expectedType))
-      case x: ObjectCreationExpr      => Seq(astForObjectCreationExpr(x, expectedType))
+      case x: ObjectCreationExpr      => Seq(blockAstForObjectCreationExpr(x, expectedType))
       case x: SuperExpr               => Seq(astForSuperExpr(x, expectedType))
       case x: ThisExpr                => Seq(astForThisExpr(x, expectedType))
       case x: UnaryExpr               => Seq(astForUnaryExpr(x, expectedType))
