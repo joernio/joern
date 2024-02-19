@@ -233,9 +233,13 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
   "it should create `alloc` and `init` calls in a block for constructor invocations not in assignments" in {
     cpg.typeDecl.name("Bar").method.name("bar").l match {
       case List(method) =>
-        val idCall                                          = method.call.name("id").head
-        val consBlock                                       = idCall.argument(1).asInstanceOf[Block]
-        val List(assign: Call, init: Call, ret: Identifier) = consBlock.astChildren.l: @unchecked
+        val idCall                                                        = method.call.name("id").head
+        val consBlock                                                     = idCall.argument(1).asInstanceOf[Block]
+        val List(local: Local, assign: Call, init: Call, ret: Identifier) = consBlock.astChildren.l: @unchecked
+
+        local.name shouldBe "$obj0"
+        local.typeFullName shouldBe "Bar"
+        local.code shouldBe "$obj0"
 
         val List(temp: Identifier, alloc: Call) = assign.argument.l: @unchecked
         temp.name shouldBe "$obj0"
@@ -278,16 +282,20 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
   "it should create `alloc` and `init` calls in a block for complex assignments" in {
     cpg.typeDecl.name("Bar").method.name("test3").l match {
       case List(method) =>
-        val assignCall                                      = method.call.nameExact("<operator>.assignment").head
-        val consBlock                                       = assignCall.argument(2).asInstanceOf[Block]
-        val List(assign: Call, init: Call, ret: Identifier) = consBlock.astChildren.l: @unchecked
+        val assignCall = method.call.nameExact("<operator>.assignment").head
+        val consBlock  = assignCall.argument(2).asInstanceOf[Block]
+        val List(local: Local, assign: Call, init: Call, ret: Identifier) = consBlock.astChildren.l: @unchecked
+
+        local.name shouldBe "$obj1"
+        local.typeFullName shouldBe "Bar"
+        local.code shouldBe "$obj1"
 
         val List(temp: Identifier, alloc: Call) = assign.argument.l: @unchecked
-        temp.name shouldBe "$obj3"
+        temp.name shouldBe "$obj1"
         temp.typeFullName shouldBe "Bar"
         temp.order shouldBe 1
         temp.argumentIndex shouldBe 1
-        temp.code shouldBe "$obj3"
+        temp.code shouldBe "$obj1"
 
         alloc.name shouldBe "<operator>.alloc"
         alloc.methodFullName shouldBe "<operator>.alloc"
@@ -309,7 +317,7 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
         val List(obj: Identifier, initArg1: Literal) = init.argument.l: @unchecked
         obj.order shouldBe 1
         obj.argumentIndex shouldBe 0
-        obj.name shouldBe "$obj3"
+        obj.name shouldBe "$obj1"
         obj.typeFullName shouldBe "Bar"
 
         initArg1.code shouldBe "42"
