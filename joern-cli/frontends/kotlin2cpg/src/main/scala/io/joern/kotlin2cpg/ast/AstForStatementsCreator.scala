@@ -341,7 +341,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
   def astForWhenAsStatement(expr: KtWhenExpression, argIdx: Option[Int])(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
-    val (astForSubject, finalAstForSubject) = Some(expr.getSubjectExpression) match {
+    val (astForSubject, finalAstForSubject) = Option(expr.getSubjectExpression) match {
       case Some(subjectExpression) =>
         val astForSubject = astsForExpression(subjectExpression, Some(1)).headOption.getOrElse(Ast())
         val finalAstForSubject = expr.getSubjectExpression match {
@@ -385,7 +385,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
       withArgumentIndex(operatorCallNode("<operator>.when", "<operator>.when", None), argIdx)
         .argumentName(argNameMaybe)
 
-    val subjectExpressionAsts = Some(expr.getSubjectExpression) match {
+    val subjectExpressionAsts = Option(expr.getSubjectExpression) match {
       case Some(subjectExpression) => astsForExpression(subjectExpression, None)
       case _ =>
         logger.warn(s"Subject Expression empty in this file `${relativizedPath}`.")
