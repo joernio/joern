@@ -287,6 +287,7 @@ implicit class JvmStringOpts(s: String) {
     * <code>I</code> to <code>int</code>.
     * @return
     */
-  def parseAsJavaType: String = Type.getType(s).getClassName.replaceAll("/", ".")
+  def parseAsJavaType: String = 
+    Try{ Type.getType(s).getClassName.replaceAll("/", ".") }.getOrElse("unknownType")
 
 }
