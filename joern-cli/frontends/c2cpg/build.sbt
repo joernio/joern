@@ -11,8 +11,8 @@ libraryDependencies ++= Seq(
   "org.eclipse.platform"    % "org.eclipse.core.resources" % "3.20.0",
   "org.eclipse.platform"    % "org.eclipse.text"           % "3.13.100",
   // see note in readme re self-publishing cdt-core
-  "io.joern"                % "eclipse-cdt-core"           % "8.4.0.202401242025",
-  "org.scalatest"          %% "scalatest"                  % Versions.scalatest % Test
+  "io.joern"       % "eclipse-cdt-core" % "8.4.0.202401242025_1",
+  "org.scalatest" %% "scalatest"        % Versions.scalatest % Test
 )
 
 dependencyOverrides ++= Seq(
