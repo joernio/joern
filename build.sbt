@@ -6,12 +6,12 @@ val cpgVersion = "1.6.5+11-ebc4741c"
 
 // TODO uncomment
 lazy val joerncli          = Projects.joerncli
-// lazy val querydb           = Projects.querydb
+lazy val querydb           = Projects.querydb
 lazy val console           = Projects.console
 lazy val dataflowengineoss = Projects.dataflowengineoss
 lazy val macros            = Projects.macros
 lazy val semanticcpg       = Projects.semanticcpg
-// lazy val benchmarks        = Projects.benchmarks
+lazy val benchmarks        = Projects.benchmarks
 lazy val c2cpg             = Projects.c2cpg
 lazy val ghidra2cpg        = Projects.ghidra2cpg
 lazy val x2cpg             = Projects.x2cpg
