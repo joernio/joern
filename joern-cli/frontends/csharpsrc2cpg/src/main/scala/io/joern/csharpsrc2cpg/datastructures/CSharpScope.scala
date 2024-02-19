@@ -92,6 +92,14 @@ class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeT
       }
   }
 
+  def pushTypeToScope(typeFullName: String): Unit = {
+    typesInScope.addAll(typeMap.findType(typeFullName))
+  }
+
+  def findTypeFromMethodName(methodName: String): Option[CSharpType] = {
+    typesInScope.find(typ => typ.methods.map(_.name).contains(methodName))
+  }
+
   def pushField(field: FieldDecl): Unit = {
     popScope().foreach {
       case TypeScope(fullName, fields) =>

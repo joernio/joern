@@ -41,12 +41,15 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
   protected def astForClassDeclaration(classDecl: DotNetNodeInfo): Seq[Ast] = {
     val name     = nameFromNode(classDecl)
     val fullName = astFullName(classDecl)
-    val inheritsFromTypeFullName = Try(classDecl.json(ParserKeys.BaseList)).toOption match
+    val inheritsFromTypeFullName = Try(classDecl.json(ParserKeys.BaseList)).toOption match {
       case Some(baseList: ujson.Obj) =>
         baseList(ParserKeys.Types).arr.map { t =>
           nodeTypeFullName(createDotNetNodeInfo(t(ParserKeys.Type)))
         }.toSeq
       case _ => Seq.empty
+    }
+
+    inheritsFromTypeFullName.foreach(scope.pushTypeToScope)
 
     val typeDecl =
       typeDeclNode(classDecl, name, fullName, relativeFileName, code(classDecl), inherits = inheritsFromTypeFullName)

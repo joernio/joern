@@ -151,6 +151,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         } else {
           (Option(baseIdentifier), Option(_typeFullName))
         }
+      case IdentifierName =>
+        val typeFullName = scope.findTypeFromMethodName(nameFromNode(expression)) match {
+          case Some(typNode) => typNode.name
+          case None          => Defines.Any
+        }
+        (None, Option(typeFullName))
       case _ => (None, None)
 
     lazy val partialFullName = baseTypeFullName match

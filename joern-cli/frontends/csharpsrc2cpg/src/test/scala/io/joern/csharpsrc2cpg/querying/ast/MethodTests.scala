@@ -77,4 +77,33 @@ class MethodTests extends CSharpCode2CpgFixture {
     }
   }
 
+  "resolve type for calls with no receiver" in {
+    val cpg = code("""
+        |namespace Foo.Bar.Bar {
+        |  public class Baz {
+        |     public async int SomeMethod() {
+        |       var a = await SomeOtherMethod();
+        |     }
+        |  }
+        |}
+        |""".stripMargin).moreCode("""
+        |namespace Foo.Bar.Bar {
+        | public class SomeClass: Baz {
+        |   protected int SomeOtherMethod() {
+        |     return 1;
+        |   }
+        | }
+        |}
+        |""".stripMargin)
+
+    inside(cpg.call.nameExact("SomeOtherMethod").l) {
+      case callNode :: Nil =>
+        callNode.code shouldBe "SomeOtherMethod()"
+        callNode.typeFullName shouldBe "int"
+        callNode.methodFullName shouldBe "Foo.Bar.Bar.SomeClass.SomeOtherMethod:int()"
+      case _ => fail("No call for `SomeOtherMethod` found")
+    }
+
+  }
+
 }
