@@ -27,7 +27,8 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
     val namespace  = nameFromNode(usingNode)
     val alias      = namespace.split('.').last
     val importNode = newImportNode(code(usingNode), namespace, alias, usingNode)
-    scope.addImport(namespace)
+    scope.addImportedNamespace(namespace)
+    scope.addImportedTypeOrModule(namespace) // We cannot determine if the namespace refers to a type so we do both
     Ast(importNode)
   }
 

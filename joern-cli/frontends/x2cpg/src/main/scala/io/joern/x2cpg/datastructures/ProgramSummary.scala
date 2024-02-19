@@ -190,6 +190,16 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: 
     }
   }
 
+  /** Given a method, will attempt to find the associated type with preference to the types in scope.
+    * @param m
+    *   the method meta data.
+    * @return
+    *   the type meta data, if found.
+    */
+  def typeForMethod(m: M): Option[T] = {
+    typesInScope.find(t => t.methods.contains(m))
+  }
+
 }
 
 /** An implementation of combining the typed scoping structures to manage the available type information at namespace

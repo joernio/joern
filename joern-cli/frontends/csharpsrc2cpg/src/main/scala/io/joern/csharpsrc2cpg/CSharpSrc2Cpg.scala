@@ -2,6 +2,7 @@ package io.joern.csharpsrc2cpg
 
 import better.files.File
 import io.joern.csharpsrc2cpg.astcreation.AstCreator
+import io.joern.csharpsrc2cpg.datastructures.CSharpProgramSummary
 import io.joern.csharpsrc2cpg.parser.DotNetJsonParser
 import io.joern.csharpsrc2cpg.passes.AstCreationPass
 import io.joern.csharpsrc2cpg.utils.DotNetAstGenRunner
@@ -9,31 +10,41 @@ import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.astgen.AstGenRunner.AstGenRunnerResult
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.joern.x2cpg.passes.frontend.MetaDataPass
-import io.joern.x2cpg.utils.{Environment, HashUtil, Report}
+import io.joern.x2cpg.utils.{ConcurrentTaskUtil, Environment, HashUtil, Report}
 import io.joern.x2cpg.{SourceFiles, X2CpgFrontend}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.Languages
 import io.shiftleft.passes.CpgPassBase
+import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 class CSharpSrc2Cpg extends X2CpgFrontend[Config] {
+
+  private val logger         = LoggerFactory.getLogger(getClass)
   private val report: Report = new Report()
 
   override def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       File.usingTemporaryDirectory("csharpsrc2cpgOut") { tmpDir =>
         val astGenResult = new DotNetAstGenRunner(config).execute(tmpDir)
-        val typeMap      = new TypeMap(astGenResult)
-        val astCreators  = CSharpSrc2Cpg.processAstGenRunnerResults(astGenResult.parsedFiles, config, typeMap)
+        val astCreators  = CSharpSrc2Cpg.processAstGenRunnerResults(astGenResult.parsedFiles, config)
+        // Pre-parse the AST creators for high level structures
+        val programSummary = ConcurrentTaskUtil
+          .runUsingThreadPool(astCreators.map(x => () => x.summarize()).iterator)
+          .flatMap {
+            case Failure(exception) => logger.warn(s"Unable to pre-parse C# file, skipping - ", exception); None
+            case Success(summary)   => Option(summary)
+          }
+          .foldLeft(CSharpProgramSummary(CSharpProgramSummary.BuiltinTypes :: Nil))(_ ++ _)
 
         val hash = HashUtil.sha256(astCreators.map(_.parserResult).map(x => Paths.get(x.fullPath)))
         new MetaDataPass(cpg, Languages.CSHARPSRC, config.inputPath, Option(hash)).createAndApply()
-        new AstCreationPass(cpg, astCreators, report).createAndApply()
+        new AstCreationPass(cpg, astCreators.map(_.withSummary(programSummary)), report).createAndApply()
         report.print()
       }
     }
@@ -47,7 +58,7 @@ object CSharpSrc2Cpg {
 
   /** Parses the generated AST Gen files in parallel and produces AstCreators from each.
     */
-  def processAstGenRunnerResults(astFiles: List[String], config: Config, typeMap: TypeMap): Seq[AstCreator] = {
+  def processAstGenRunnerResults(astFiles: List[String], config: Config): Seq[AstCreator] = {
     Await.result(
       Future.sequence(
         astFiles
@@ -67,7 +78,7 @@ object CSharpSrc2Cpg {
               } else {
                 SourceFiles.toRelativePath(parserResult.fullPath, config.inputPath)
               }
-              new AstCreator(relativeFileName, parserResult, typeMap)(config.schemaValidation)
+              new AstCreator(relativeFileName, parserResult)(config.schemaValidation)
             }
           )
       ),

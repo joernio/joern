@@ -7,7 +7,7 @@
           "name": "Write",
           "returnType": "void",
           "parameterTypes": [
-            ["format", "object"]
+            ["format", "System.Object"]
           ],
           "isStatic": true
         },
@@ -15,7 +15,7 @@
           "name": "WriteLine",
           "returnType": "void",
           "parameterTypes": [
-            ["format", "object"]
+            ["format", "System.Object"]
           ],
           "isStatic": true
         }
@@ -31,7 +31,7 @@
           "name": "Advance",
           "returnType": "void",
           "parameterTypes": [
-            ["count", "int"]
+            ["count", "System.Int32"]
           ],
           "isStatic": true
         },
