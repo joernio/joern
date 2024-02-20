@@ -122,7 +122,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
           .getOrElse(typeName)
         s"$typ<${typeArguments.mkString(",")}>"
       case NullableType =>
-        typeFromTypeString(node.code, suffix = "?")
+        val elementTypeNode = createDotNetNodeInfo(node.json(ParserKeys.ElementType))
+        nodeTypeFullName(elementTypeNode)
       case IdentifierName =>
         val typeString = nameFromNode(node)
         scope

@@ -21,23 +21,7 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
           scope.findFieldInScope(identifierName) match {
             // Check for implicit field reference
             case Some(field) if field.node.node != DotNetJsonAst.VariableDeclarator =>
-              val fieldAccess =
-                newOperatorCallNode(
-                  Operators.fieldAccess,
-                  field.node.code,
-                  Some(field.typeFullName).orElse(Option(typeFullName)),
-                  field.node.lineNumber,
-                  field.node.columnNumber
-                )
-              val identifierAst = Ast(newIdentifierNode(identifierName, typeFullName))
-              val fieldIdentifier = Ast(
-                NewFieldIdentifier()
-                  .code(field.name)
-                  .canonicalName(field.name)
-                  .lineNumber(field.node.lineNumber)
-                  .columnNumber(field.node.columnNumber)
-              )
-              callAst(fieldAccess, Seq(identifierAst, fieldIdentifier))
+              astForFieldIdentifier(typeFullName, identifierName, field)
             case _ =>
               // Check for static type reference
               scope.tryResolveTypeReference(identifierName) match {
@@ -46,12 +30,31 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
                 case None =>
                   Ast(identifierNode(ident, identifierName, ident.code, typeFullName))
               }
-              Ast(identifierNode(ident, identifierName, ident.code, typeFullName))
           }
       }
     } else {
       Ast()
     }
+  }
+
+  private def astForFieldIdentifier(baseTypeFullName: String, baseIdentifierName: String, field: FieldDecl) = {
+    val fieldAccess =
+      newOperatorCallNode(
+        Operators.fieldAccess,
+        field.node.code,
+        Some(field.typeFullName),
+        field.node.lineNumber,
+        field.node.columnNumber
+      )
+    val identifierAst = Ast(newIdentifierNode(baseIdentifierName, baseTypeFullName))
+    val fieldIdentifier = Ast(
+      NewFieldIdentifier()
+        .code(field.name)
+        .canonicalName(field.name)
+        .lineNumber(field.node.lineNumber)
+        .columnNumber(field.node.columnNumber)
+    )
+    callAst(fieldAccess, Seq(identifierAst, fieldIdentifier))
   }
 
   protected def astForUsing(usingNode: DotNetNodeInfo): Ast = {

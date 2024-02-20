@@ -57,8 +57,9 @@ class CSharpScope(summary: CSharpProgramSummary)
     }
   }
 
+  // TODO: Add inherits field in CSharpType and handle this in `pushNewScope`
   def pushTypeToScope(typeFullName: String): Unit = {
-    typesInScope.addAll(typeMap.findType(typeFullName))
+    typesInScope.addAll(summary.matchingTypes(typeFullName))
   }
 
   def pushField(field: FieldDecl): Unit = {
