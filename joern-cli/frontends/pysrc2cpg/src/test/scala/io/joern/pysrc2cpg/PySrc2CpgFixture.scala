@@ -17,7 +17,9 @@ trait PythonFrontend extends LanguageFrontend {
   override val fileSuffix: String = ".py"
 
   override def execute(sourceCodePath: java.io.File): Cpg = {
-    new Py2CpgOnFileSystem().createCpg(sourceCodePath.getAbsolutePath)(Py2CpgOnFileSystemConfig()).get
+    new Py2CpgOnFileSystem()
+      .createCpg(sourceCodePath.getAbsolutePath)(Py2CpgOnFileSystemConfig().withDisableFileContent(false))
+      .get
   }
 }
 

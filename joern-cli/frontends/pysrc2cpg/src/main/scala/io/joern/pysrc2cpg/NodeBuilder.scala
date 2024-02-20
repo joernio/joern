@@ -52,6 +52,9 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
       .inheritsFromTypeFullName(inheritsFromFullNames)
       .lineNumber(lineAndColumn.line)
       .columnNumber(lineAndColumn.column)
+      .offset(lineAndColumn.offset)
+      .offsetEnd(lineAndColumn.endOffset)
+
     addNodeToDiff(typeDeclNode)
   }
 
@@ -105,6 +108,8 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
       .lineNumberEnd(lineAndColumn.endLine)
       .columnNumber(lineAndColumn.column)
       .columnNumberEnd(lineAndColumn.endColumn)
+      .offset(lineAndColumn.offset)
+      .offsetEnd(lineAndColumn.endOffset)
     addNodeToDiff(methodNode)
   }
 
@@ -284,10 +289,12 @@ class NodeBuilder(diffGraph: DiffGraphBuilder) {
     addNodeToDiff(localNode)
   }
 
-  def fileNode(fileName: String): nodes.NewFile = {
+  def fileNode(fileName: String, content: Option[String]): nodes.NewFile = {
     val fileNode = nodes
       .NewFile()
       .name(fileName)
+
+    content.foreach(fileNode.content(_))
     addNodeToDiff(fileNode)
   }
 

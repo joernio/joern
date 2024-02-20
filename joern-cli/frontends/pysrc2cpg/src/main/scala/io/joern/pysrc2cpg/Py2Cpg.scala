@@ -29,7 +29,8 @@ class Py2Cpg(
   outputCpg: Cpg,
   inputPath: String,
   requirementsTxt: String = "requirements.txt",
-  schemaValidationMode: ValidationMode
+  schemaValidationMode: ValidationMode,
+  enableFileContent: Boolean
 ) {
   private val diffGraph   = new DiffGraphBuilder()
   private val nodeBuilder = new NodeBuilder(diffGraph)
@@ -40,10 +41,11 @@ class Py2Cpg(
     val globalNamespaceBlock =
       nodeBuilder.namespaceBlockNode(Constants.GLOBAL_NAMESPACE, Constants.GLOBAL_NAMESPACE, "N/A")
     nodeBuilder.typeNode(Constants.ANY, Constants.ANY)
-    val anyTypeDecl = nodeBuilder.typeDeclNode(Constants.ANY, Constants.ANY, "N/A", Nil, LineAndColumn(1, 1, 1, 1))
+    val anyTypeDecl =
+      nodeBuilder.typeDeclNode(Constants.ANY, Constants.ANY, "N/A", Nil, LineAndColumn(1, 1, 1, 1, 1, 1))
     edgeBuilder.astEdge(anyTypeDecl, globalNamespaceBlock, 0)
     BatchedUpdate.applyDiff(outputCpg.graph, diffGraph)
-    new CodeToCpg(outputCpg, inputProviders, schemaValidationMode).createAndApply()
+    new CodeToCpg(outputCpg, inputProviders, schemaValidationMode, enableFileContent).createAndApply()
     new ConfigFileCreationPass(outputCpg, requirementsTxt).createAndApply()
     new DependenciesFromRequirementsTxtPass(outputCpg).createAndApply()
   }
