@@ -12,35 +12,33 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
 
   protected def astForIdentifier(ident: DotNetNodeInfo, typeFullName: String = Defines.Any): Ast = {
     val identifierName = nameFromNode(ident)
-    println(List(scope.lookupVariable(identifierName), scope.findFieldInScope(identifierName)))
     if identifierName != "_" then {
-      List(scope.lookupVariable(identifierName), scope.findFieldInScope(identifierName)) match {
-        case List(Some(_localNode: NewLocal), Some(fieldDecl: FieldDecl)) =>
-          val node = identifierFromDecl(_localNode, Option(ident))
-          Ast(node).withRefEdge(node, _localNode)
-        case List(Some(variable: DeclarationNew), None) =>
+      scope.lookupVariable(identifierName) match {
+        case Some(variable: DeclarationNew) =>
           val node = identifierFromDecl(variable, Option(ident))
           Ast(node).withRefEdge(node, variable)
-        case List(None, Some(field: FieldDecl)) if field.node.node != DotNetJsonAst.VariableDeclarator =>
-          val fieldAccess =
-            newOperatorCallNode(
-              Operators.fieldAccess,
-              field.node.code,
-              Some(field.typeFullName).orElse(Option(typeFullName)),
-              field.node.lineNumber,
-              field.node.columnNumber
-            )
-          val identifierAst = Ast(newIdentifierNode(identifierName, typeFullName))
-          val fieldIdentifier = Ast(
-            NewFieldIdentifier()
-              .code(field.name)
-              .canonicalName(field.name)
-              .lineNumber(field.node.lineNumber)
-              .columnNumber(field.node.columnNumber)
-          )
-          callAst(fieldAccess, Seq(identifierAst, fieldIdentifier))
-        case _ =>
-          Ast(identifierNode(ident, identifierName, ident.code, typeFullName))
+        case None =>
+          scope.findFieldInScope(identifierName) match {
+            case Some(field) if field.node.node != DotNetJsonAst.VariableDeclarator =>
+              val fieldAccess =
+                newOperatorCallNode(
+                  Operators.fieldAccess,
+                  field.node.code,
+                  Some(field.typeFullName).orElse(Option(typeFullName)),
+                  field.node.lineNumber,
+                  field.node.columnNumber
+                )
+              val identifierAst = Ast(newIdentifierNode(identifierName, typeFullName))
+              val fieldIdentifier = Ast(
+                NewFieldIdentifier()
+                  .code(field.name)
+                  .canonicalName(field.name)
+                  .lineNumber(field.node.lineNumber)
+                  .columnNumber(field.node.columnNumber)
+              )
+              callAst(fieldAccess, Seq(identifierAst, fieldIdentifier))
+            case _ => Ast(identifierNode(ident, identifierName, ident.code, typeFullName))
+          }
       }
     } else {
       Ast()
