@@ -2,6 +2,7 @@ package io.joern.jimple2cpg.passes
 
 import io.joern.jimple2cpg.Config
 import io.joern.jimple2cpg.astcreation.AstCreator
+import io.joern.jimple2cpg.util.Decompiler
 import io.joern.jimple2cpg.util.ProgramHandlingUtil.ClassFile
 import io.joern.x2cpg.datastructures.Global
 import io.shiftleft.codepropertygraph.Cpg
@@ -27,7 +28,15 @@ class AstCreationPass(classFiles: List[ClassFile], cpg: Cpg, config: Config)
     try {
       val sootClass = Scene.v().loadClassAndSupport(classFile.fullyQualifiedClassName.get)
       sootClass.setApplicationClass()
-      val localDiff = AstCreator(classFile.file.canonicalPath, sootClass, global)(config.schemaValidation).createAst()
+
+      val decompiledJava = Option.when(!config.disableFileContent) {
+        val decompiler = new Decompiler(classFile.file)
+        decompiler.decompile()
+      }
+
+      val localDiff = AstCreator(classFile.file.canonicalPath, sootClass, global, fileContent = decompiledJava)(
+        config.schemaValidation
+      ).createAst()
       builder.absorb(localDiff)
     } catch {
       case e: Exception =>

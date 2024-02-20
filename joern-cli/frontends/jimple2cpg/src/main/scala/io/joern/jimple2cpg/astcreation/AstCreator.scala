@@ -3,6 +3,7 @@ package io.joern.jimple2cpg.astcreation
 import io.joern.jimple2cpg.astcreation.declarations.AstForDeclarationsCreator
 import io.joern.jimple2cpg.astcreation.expressions.AstForExpressionsCreator
 import io.joern.jimple2cpg.astcreation.statements.AstForStatementsCreator
+import io.joern.jimple2cpg.util.Decompiler
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.utils.NodeBuilders
@@ -22,9 +23,13 @@ import scala.collection.mutable.ArrayBuffer
 import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.Try
 
-class AstCreator(protected val filename: String, protected val cls: SootClass, global: Global)(implicit
-  withSchemaValidation: ValidationMode
-) extends AstCreatorBase(filename)
+class AstCreator(
+  protected val filename: String,
+  protected val cls: SootClass,
+  global: Global,
+  fileContent: Option[String] = None
+)(implicit withSchemaValidation: ValidationMode)
+    extends AstCreatorBase(filename)
     with AstForDeclarationsCreator
     with AstForStatementsCreator
     with AstForExpressionsCreator
@@ -44,8 +49,12 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
     * corresponding CPG AST.
     */
   def createAst(): DiffGraphBuilder = {
+    val fileNode = NewFile().name(filename).order(0)
+    fileContent.foreach(fileNode.content(_))
+
     val astRoot = astForCompilationUnit(cls)
     storeInDiffGraph(astRoot, diffGraph)
+    diffGraph.addNode(fileNode)
     diffGraph
   }
 
