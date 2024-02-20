@@ -139,7 +139,7 @@ class AstCreator(val config: Config, val global: SwiftGlobal, val parserResult: 
     for {
       startOffset <- node.startOffset
       endOffset   <- node.endOffset
-    } yield (startOffset, endOffset)
+    } yield (math.max(startOffset, 0), math.min(endOffset, parserResult.fileContent.length))
   }
 
   override protected def offset(node: SwiftNode): Option[(Int, Int)] = {
@@ -148,10 +148,10 @@ class AstCreator(val config: Config, val global: SwiftGlobal, val parserResult: 
 
   override protected def code(node: SwiftNode): String = {
     nodeOffsets(node) match {
-      case Some((startOffset, endOffset))
-          if startOffset < endOffset && startOffset >= 0 && endOffset <= parserResult.fileContent.length =>
+      case Some((startOffset, endOffset)) =>
         shortenCode(parserResult.fileContent.substring(startOffset, endOffset).trim)
-      case _ => PropertyDefaults.Code
+      case _ =>
+        PropertyDefaults.Code
     }
   }
 }
