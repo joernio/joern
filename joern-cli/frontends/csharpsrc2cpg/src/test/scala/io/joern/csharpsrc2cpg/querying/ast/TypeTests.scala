@@ -14,8 +14,14 @@ class TypeTests extends CSharpCode2CpgFixture {
 
       inside(cpg.identifier.nameExact("a").l) {
         case a :: Nil =>
-          a.typeFullName shouldBe "System.Int32?"
+          a.typeFullName shouldBe "System.Int32"
         case _ => fail("Identifier named `a` not found")
+      }
+
+      inside(cpg.identifier.nameExact("b").l) {
+        case a :: Nil =>
+          a.typeFullName shouldBe "System.String"
+        case _ => fail("Identifier named `b` not found")
       }
     }
 
@@ -33,7 +39,7 @@ class TypeTests extends CSharpCode2CpgFixture {
 
       inside(cpg.identifier.nameExact("iBar").l) {
         case iBar :: Nil =>
-          iBar.typeFullName shouldBe "Foo.Bar?"
+          iBar.typeFullName shouldBe "Foo.Bar"
         case _ => fail("Identifier named `iBar` not found")
       }
     }

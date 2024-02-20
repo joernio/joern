@@ -26,6 +26,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case ObjectCreationExpression     => astForObjectCreationExpression(expr)
       case SimpleMemberAccessExpression => astForSimpleMemberAccessExpression(expr)
       case _: IdentifierNode            => astForIdentifier(expr) :: Nil
+      case ThisExpression               => astForThisReceiver(expr) :: Nil
       case _                            => notHandledYet(expr)
   }
 
@@ -125,83 +126,78 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     astForNode(rhsNode)
   }
 
-  // TODO: This method is becoming a mess...
   private def astForInvocationExpression(invocationExpr: DotNetNodeInfo): Seq[Ast] = {
     val arguments = astForArgumentList(createDotNetNodeInfo(invocationExpr.json(ParserKeys.ArgumentList)))
+    val argTypes  = arguments.map(getTypeFullNameFromAstNode).toList
 
     val expression = createDotNetNodeInfo(invocationExpr.json(ParserKeys.Expression))
-    val name       = nameFromNode(expression)
+    val callName   = nameFromNode(expression)
 
-    val (receiver, baseTypeFullName) = expression.node match
+    val (receiver, baseTypeFullName, methodMetaData) = expression.node match
       case SimpleMemberAccessExpression =>
         val baseNode = createDotNetNodeInfo(
           createDotNetNodeInfo(invocationExpr.json(ParserKeys.Expression)).json(ParserKeys.Expression)
         )
-        val baseNodeName   = nameFromNode(baseNode)
-        val staticTypeRef  = scope.tryResolveTypeReference(baseNodeName)
-        val baseIdentifier = astForIdentifier(baseNode, staticTypeRef.getOrElse(Defines.Any))
-        val _typeFullName  = getTypeFullNameFromAstNode(Seq(baseIdentifier))
-
-        if (_typeFullName != Defines.Any) {
-          val _identifierNode =
-            identifierNode(baseNode, nameFromNode(baseNode), code(baseNode), _typeFullName)
-          (Option(Ast(_identifierNode)), Option(_identifierNode.typeFullName))
-        } else if (staticTypeRef.isDefined) {
-          (Option(baseIdentifier), Option(staticTypeRef.get))
-        } else {
-          (Option(baseIdentifier), Option(_typeFullName))
+        val receiverAst = astForNode(baseNode).toList
+        val baseTypeFullName = receiverAst match {
+          case head :: _ => Option(getTypeFullNameFromAstNode(head)).filterNot(_ == Defines.Any)
+          case _         => None
         }
+        val methodMetaData = scope.tryResolveMethodInvocation(callName, argTypes, baseTypeFullName)
+        (receiverAst.headOption, baseTypeFullName, methodMetaData)
       case IdentifierName =>
-        val typeFullName = scope.findTypeFromMethodName(nameFromNode(expression)) match {
-          case Some(typNode) => typNode.name
-          case None          => Defines.Any
+        // This is when a call is made directly, which could also be made from a static import
+        scope
+          .tryResolveMethodInvocation(callName, argTypes)
+          .orElse(scope.tryResolveMethodInvocation(callName, argTypes, scope.surroundingTypeDeclFullName)) match {
+          case Some(methodMetaData) if methodMetaData.isStatic =>
+            // If static, create implicit type identifier explicitly
+            val typeMetaData = scope.typeForMethod(methodMetaData)
+            val typeName     = typeMetaData.flatMap(_.name.split("[.]").lastOption).getOrElse(Defines.Any)
+            val typeFullName = typeMetaData.map(_.name)
+            val receiverNode = Ast(
+              identifierNode(invocationExpr, typeName, typeName, typeFullName.getOrElse(Defines.Any))
+            )
+            (Option(receiverNode), typeFullName, Option(methodMetaData))
+          case Some(methodMetaData) =>
+            // If dynamic, create implicit `this` identifier explicitly
+            val typeMetaData = scope.typeForMethod(methodMetaData)
+            val thisAst      = astForThisReceiver(invocationExpr, typeMetaData.map(_.name))
+            (Option(thisAst), typeMetaData.map(_.name), Option(methodMetaData))
+          case None =>
+            (None, None, None)
         }
-        (None, Option(typeFullName))
-      case _ => (None, None)
+      case x =>
+        logger.warn(s"Unhandled LHS $x for InvocationExpression")
+        (None, None, None)
 
-    lazy val partialFullName = baseTypeFullName match
-      case Some(typeFullName) =>
-        s"$typeFullName.$name"
-      case _ =>
-        s"${Defines.UnresolvedNamespace}.$name"
-
-    val returnType =
-      scope.tryResolveMethodReturn(baseTypeFullName.getOrElse(scope.surroundingTypeDeclFullName.getOrElse("")), name);
-
-    val parameterSignature = scope
-      .tryResolveMethodSignature(baseTypeFullName.getOrElse(scope.surroundingTypeDeclFullName.getOrElse("")), name)
-      .getOrElse(Defines.UnresolvedSignature)
-    val typeFullName = returnType.getOrElse(Defines.Any)
-
-    val methodSignature = s"${returnType.getOrElse(Defines.Unknown)}($parameterSignature)"
-    val defaultFullName = s"$partialFullName:$methodSignature"
-    val (methodFullName, dispatchType) = baseTypeFullName match {
-      case Some(baseFullName) if scope.tryResolveMethodInvocation(baseFullName, name).isDefined =>
-        val methodMetaData = scope.tryResolveMethodInvocation(baseFullName, name).get
-        s"$baseFullName.${methodMetaData.name}:$methodSignature" -> (if methodMetaData.isStatic then
-                                                                       DispatchTypes.STATIC_DISPATCH
-                                                                     else DispatchTypes.DYNAMIC_DISPATCH)
-      case None
-          if scope.surroundingTypeDeclFullName.isDefined && scope
-            .tryResolveMethodInvocation(scope.surroundingTypeDeclFullName.get, name)
-            .isDefined =>
-        val baseTypeFullName = scope.surroundingTypeDeclFullName.get
-        val methodMetaData   = scope.tryResolveMethodInvocation(baseTypeFullName, name).get
-        s"$baseTypeFullName.${methodMetaData.name}:$methodSignature" -> (if methodMetaData.isStatic then
-                                                                           DispatchTypes.STATIC_DISPATCH
-                                                                         else DispatchTypes.DYNAMIC_DISPATCH)
-      case _ => defaultFullName -> DispatchTypes.STATIC_DISPATCH
+    val methodSignature = methodMetaData match {
+      case Some(m) => s"${m.returnType}(${m.parameterTypes.filterNot(_._1 == "this").map(_._2).mkString(",")})"
+      case None    => Defines.UnresolvedSignature
     }
+    val methodFullName = baseTypeFullName match {
+      case Some(typeFullName) =>
+        s"$typeFullName.$callName:$methodSignature"
+      case _ =>
+        s"${Defines.UnresolvedNamespace}.$callName:$methodSignature"
+    }
+    val dispatchType = methodMetaData
+      .map(_.isStatic)
+      .map {
+        case true  => DispatchTypes.STATIC_DISPATCH
+        case false => DispatchTypes.DYNAMIC_DISPATCH
+      }
+      .getOrElse(DispatchTypes.STATIC_DISPATCH)
 
     val _callAst = callAst(
       callNode(
         invocationExpr,
         code(invocationExpr),
-        name,
+        callName,
         methodFullName,
         dispatchType,
         Option(methodSignature),
-        Option(typeFullName)
+        methodMetaData.map(_.returnType)
       ),
       arguments,
       receiver
@@ -250,7 +246,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .map(nodeTypeFullName)
       .getOrElse(Defines.Any)
 
-    val arguments = astForArgumentList(createDotNetNodeInfo(objectCreation.json(ParserKeys.ArgumentList)))
+    val arguments = Try(astForArgumentList(createDotNetNodeInfo(objectCreation.json(ParserKeys.ArgumentList))))
+      .getOrElse(Seq.empty)
     // TODO: Handle signature
     val signature      = None
     val name           = Defines.ConstructorMethodName

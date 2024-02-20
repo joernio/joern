@@ -1,10 +1,11 @@
 package io.joern.csharpsrc2cpg.io
 
 import better.files.File
+import io.joern.csharpsrc2cpg.datastructures.CSharpProgramSummary
 import io.joern.csharpsrc2cpg.passes.AstCreationPass
 import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
 import io.joern.csharpsrc2cpg.utils.DotNetAstGenRunner
-import io.joern.csharpsrc2cpg.{CSharpSrc2Cpg, Config, TypeMap}
+import io.joern.csharpsrc2cpg.{CSharpSrc2Cpg, Config}
 import io.joern.x2cpg.X2Cpg.newEmptyCpg
 import io.joern.x2cpg.utils.Report
 import io.shiftleft.codepropertygraph.Cpg
@@ -56,8 +57,7 @@ class ProjectParseTests extends CSharpCode2CpgFixture with BeforeAndAfterAll {
         val cpg          = newEmptyCpg()
         val config       = Config().withInputPath(projectDir.toString).withOutputPath(tmpDir.toString)
         val astGenResult = new DotNetAstGenRunner(config).execute(tmpDir)
-        val typeMap      = new TypeMap(astGenResult)
-        val astCreators  = CSharpSrc2Cpg.processAstGenRunnerResults(astGenResult.parsedFiles, config, typeMap)
+        val astCreators  = CSharpSrc2Cpg.processAstGenRunnerResults(astGenResult.parsedFiles, config)
         new AstCreationPass(cpg, astCreators, new Report()).createAndApply()
         f(cpg)
       }

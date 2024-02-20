@@ -1,7 +1,8 @@
 package io.joern.csharpsrc2cpg
 
 object Constants {
-  val This: String = "this"
+  val This: String   = "this"
+  val Global: String = "global"
 }
 
 object CSharpOperators {

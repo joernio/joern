@@ -1,30 +1,23 @@
 package io.joern.csharpsrc2cpg.astcreation
 
-import dotty.tools.dotc.ast.untpd.Modifiers
-import io.joern.csharpsrc2cpg.datastructures.{BlockScope, MethodScope, NamespaceScope, TypeScope}
+import io.joern.csharpsrc2cpg.CSharpModifiers
+import io.joern.csharpsrc2cpg.astcreation.BuiltinTypes.DotNetTypeMap
+import io.joern.csharpsrc2cpg.datastructures.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
+import io.joern.csharpsrc2cpg.utils.Utils.{composeMethodFullName, composeMethodLikeSignature}
 import io.joern.x2cpg.utils.NodeBuilders.{newMethodReturnNode, newModifierNode}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.proto.cpg.Cpg.EvaluationStrategies
 
-import scala.util.Try
-import io.joern.csharpsrc2cpg.datastructures.FieldDecl
-import io.joern.csharpsrc2cpg.utils.Utils.{composeMethodFullName, composeMethodLikeSignature}
-
-import scala.collection.mutable.ArrayBuffer
-import io.joern.csharpsrc2cpg.{CSharpModifiers, CSharpOperators}
-import io.joern.x2cpg.Defines
-import io.joern.csharpsrc2cpg.astcreation.BuiltinTypes.DotNetTypeMap
-import io.joern.csharpsrc2cpg.datastructures.EnumScope
-import io.shiftleft.codepropertygraph.generated
-
 import scala.annotation.tailrec
+import scala.util.Try
 
 trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def astForNamespaceDeclaration(namespace: DotNetNodeInfo): Seq[Ast] = {
+    @tailrec
     def recurseNamespace(parts: List[String], prefix: List[String] = List.empty): Unit = {
       parts match {
         case head :: tail =>
@@ -143,7 +136,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val name = nameFromNode(enumMemberDecl)
     val typeFullName = scope
       .peekScope()
-      .collectFirst { case EnumScope(fullName, aliasFor) => aliasFor }
+      .collectFirst { case EnumScope(_, aliasFor) => aliasFor }
       .getOrElse(DotNetTypeMap(BuiltinTypes.Int))
     val member    = memberNode(enumMemberDecl, name, code(enumMemberDecl), typeFullName)
     val modifiers = astForModifiers(enumMemberDecl)
@@ -210,7 +203,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val rhs             = if (!initializerJson.isNull) astForNode(createDotNetNodeInfo(initializerJson)) else Seq.empty
     val rhsTypeFullName =
       if (typeFullName == Defines.Any || typeFullName == "var") getTypeFullNameFromAstNode(rhs)
-      else scope.tryResolveTypeReference(typeFullName).getOrElse(typeFullName)
+      else scope.tryResolveTypeReference(typeFullName).map(_.name).getOrElse(typeFullName)
 
     val name          = nameFromNode(varDecl)
     val identifierAst = astForIdentifier(varDecl, rhsTypeFullName)
@@ -308,7 +301,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       methodNode(constructorDecl, name, code(constructorDecl), fullName, Option(signature), relativeFileName)
 
     val thisNode =
-      if (!isStaticConstructor) astForThisNode(constructorDecl)
+      if (!isStaticConstructor) astForThisParameter(constructorDecl)
       else Ast()
     Seq(methodAst(methodNode_, thisNode +: params, body, methodReturn, modifiers))
   }
@@ -324,9 +317,8 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       .map(astForParameter)
       .toSeq
 
-    val methodReturnNode = createDotNetNodeInfo(methodDecl.json(ParserKeys.ReturnType))
-    val methodReturnStr  = nodeTypeFullName(methodReturnNode)
-    val methodReturn     = nodeToMethodReturn(methodReturnNode)
+    val methodReturnAstNode = createDotNetNodeInfo(methodDecl.json(ParserKeys.ReturnType))
+    val methodReturn        = methodReturnNode(methodReturnAstNode, nodeTypeFullName(methodReturnAstNode))
     val signature =
       methodSignature(methodReturn, params.flatMap(_.nodes.collectFirst { case x: NewMethodParameterIn => x }))
     val fullName    = s"${astFullName(methodDecl)}:$signature"
@@ -336,12 +328,12 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     // In the case of interfaces, the method body may not be present
     val jsonBody = methodDecl.json(ParserKeys.Body)
     val body =
-      if (!jsonBody.isNull) astForBlock(createDotNetNodeInfo(jsonBody))
+      if (!jsonBody.isNull && parseLevel == AstParseLevel.FULL_AST) astForBlock(createDotNetNodeInfo(jsonBody))
       else Ast(blockNode(methodDecl)) // Creates an empty block
     scope.popScope()
     val modifiers = astForModifiers(methodDecl).flatMap(_.nodes).collect { case x: NewModifier => x }
     val thisNode =
-      if (!modifiers.exists(_.modifierType == ModifierTypes.STATIC)) astForThisNode(methodDecl)
+      if (!modifiers.exists(_.modifierType == ModifierTypes.STATIC)) astForThisParameter(methodDecl)
       else Ast()
     Seq(methodAst(methodNode_, thisNode +: params, body, methodReturn, modifiers))
   }
@@ -361,10 +353,21 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     Ast(param)
   }
 
-  private def astForThisNode(methodDecl: DotNetNodeInfo): Ast = {
+  private def astForThisParameter(methodDecl: DotNetNodeInfo): Ast = {
     val name         = "this"
     val typeFullName = scope.surroundingTypeDeclFullName.getOrElse(Defines.Any)
     val param = parameterInNode(methodDecl, name, name, 0, false, EvaluationStrategies.BY_SHARING.name, typeFullName)
+    Ast(param)
+  }
+
+  protected def astForThisReceiver(invocationExpr: DotNetNodeInfo, typeFullName: Option[String] = None): Ast = {
+    val name = "this"
+    val param = identifierNode(
+      invocationExpr,
+      name,
+      name,
+      typeFullName.orElse(scope.surroundingTypeDeclFullName).getOrElse(Defines.Any)
+    )
     Ast(param)
   }
 
@@ -383,16 +386,6 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val _blockAst = blockAst(block, prefixAsts ++ statements)
     scope.popScope()
     _blockAst
-  }
-
-  private def nodeToMethodReturn(methodReturn: DotNetNodeInfo): NewMethodReturn = {
-    methodReturnNode(
-      methodReturn,
-      Try(methodReturn.json(ParserKeys.Value).str)
-        .orElse(Try(methodReturn.json(ParserKeys.Keyword).obj(ParserKeys.Value).str))
-        .orElse(Try(methodReturn.code))
-        .getOrElse(Defines.Any)
-    )
   }
 
   /** Parses the modifier array and handles implicit defaults.

@@ -1,17 +1,15 @@
 package io.joern.csharpsrc2cpg.datastructures
 
-import io.joern.csharpsrc2cpg.astcreation.BuiltinTypes
-import io.joern.csharpsrc2cpg.{CSharpMethod, CSharpType, TypeMap}
-import io.joern.x2cpg.Defines
-import io.joern.x2cpg.datastructures.{Scope, ScopeElement}
+import io.joern.x2cpg.datastructures.{Scope, ScopeElement, TypedScope, TypedScopeElement}
 import io.shiftleft.codepropertygraph.generated.nodes.DeclarationNew
 
 import scala.collection.mutable
-import scala.util.boundary
 
-class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeType] {
+class CSharpScope(summary: CSharpProgramSummary)
+    extends Scope[String, DeclarationNew, TypedScopeElement]
+    with TypedScope[CSharpMethod, CSharpField, CSharpType](summary) {
 
-  private val typesInScope = mutable.Set.empty[CSharpType].addAll(typeMap.findGlobalTypes)
+  override val typesInScope: mutable.Set[CSharpType] = mutable.Set.empty[CSharpType].addAll(summary.findGlobalTypes)
 
   /** @return
     *   the surrounding type declaration if one exists.
@@ -22,12 +20,16 @@ class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeT
   }
 
   def getFieldsInScope: List[FieldDecl] =
-    stack.collect { case ScopeElement(TypeScope(_, fields), _) => fields }.flatten.toList
+    stack.collect { case ScopeElement(TypeScope(_, fields), _) => fields }.flatten
 
   /** Works for `this`.field accesses or <currentType>.field accesses.
     */
   def findFieldInScope(fieldName: String): Option[FieldDecl] = {
     getFieldsInScope.find(_.name == fieldName)
+  }
+
+  override def isOverloadedBy(method: CSharpMethod, argTypes: List[String]): Boolean = {
+    method.parameterTypes.filterNot(_._1 == "this").size == argTypes.size
   }
 
   /** @return
@@ -47,57 +49,17 @@ class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeT
     .filterNot(x => x.scopeNode.isInstanceOf[NamespaceScope])
     .exists(x => x.scopeNode.isInstanceOf[MethodScope] || x.scopeNode.isInstanceOf[TypeLikeScope])
 
-  def tryResolveTypeReference(typeName: String): Option[String] = {
+  override def tryResolveTypeReference(typeName: String): Option[CSharpType] = {
     if (typeName == "this") {
-      surroundingTypeDeclFullName
+      surroundingTypeDeclFullName.flatMap(summary.matchingTypes).headOption
     } else {
-      typesInScope
-        .find(_.name.endsWith(typeName))
-        .flatMap(typeMap.namespaceFor)
-        .map {
-          // To avoid recursive type prefixing on assignment calls.
-          case n if typeName.startsWith(n) => typeName
-          case n                           => s"$n.$typeName"
-        }
+      super.tryResolveTypeReference(typeName)
     }
   }
 
-  def tryResolveMethodInvocation(typeFullName: String, callName: String): Option[CSharpMethod] = {
-    typesInScope.find(_.name.endsWith(typeFullName)).flatMap { t =>
-      t.methods.find(_.name == callName)
-    }
-  }
-
-  def tryResolveMethodReturn(typeFullName: String, callName: String): Option[String] = {
-    typesInScope.find(_.name.endsWith(typeFullName)).flatMap { case t: CSharpType =>
-      t.methods.find(_.name.endsWith(callName)).map { m =>
-        m.returnType
-      }
-    }
-  }
-
-  def tryResolveMethodSignature(typeFullName: String, callName: String): Option[String] = {
-    typesInScope
-      .find(_.name.endsWith(typeFullName))
-      .flatMap { t =>
-        t.methods.find(_.name.endsWith(callName)).flatMap { m =>
-          Some(
-            m.parameterTypes
-              .map { (_, typ) =>
-                BuiltinTypes.DotNetTypeMap.getOrElse(typ, tryResolveTypeReference(typ).getOrElse(Defines.Any))
-              }
-              .mkString(",")
-          )
-        }
-      }
-  }
-
+  // TODO: Add inherits field in CSharpType and handle this in `pushNewScope`
   def pushTypeToScope(typeFullName: String): Unit = {
-    typesInScope.addAll(typeMap.findType(typeFullName))
-  }
-
-  def findTypeFromMethodName(methodName: String): Option[CSharpType] = {
-    typesInScope.find(typ => typ.methods.map(_.name).contains(methodName))
+    typesInScope.addAll(summary.matchingTypes(typeFullName))
   }
 
   def pushField(field: FieldDecl): Unit = {
@@ -110,42 +72,29 @@ class CSharpScope(typeMap: TypeMap) extends Scope[String, DeclarationNew, ScopeT
     }
   }
 
-  /** Appends known types imported from a `using` statement into the scope.
-    * @param namespace
-    *   the fully qualified imported namespace.
-    */
-  def addImport(namespace: String): Unit = {
-    /* If the alias is a type, the fullyQualifiedName won't be added to the TypeMap. Assuming no nested classes, this should extract the types from the namespace.
-      E.g HelloBaz.Foo.Baz, where Baz is a type and HelloBaz.Foo is a namespace.
-     */
-    val knownTypesFromNamespace =
-      typeMap.classesIn(namespace) ++ typeMap.findType(namespace).toList
-    typesInScope.addAll(knownTypesFromNamespace)
-  }
-
   /** Pops the scope, adding types from the scope if necessary.
     */
-  override def pushNewScope(scopeNode: ScopeType): Unit = {
+  override def pushNewScope(scopeNode: TypedScopeElement): Unit = {
     scopeNode match
-      case NamespaceScope(fullName) => typesInScope.addAll(typeMap.classesIn(fullName))
-      case TypeScope(name, _)       => typesInScope.addAll(typeMap.findType(name))
+      case NamespaceScope(fullName) => typesInScope.addAll(summary.typesUnderNamespace(fullName))
+      case TypeScope(name, _)       => typesInScope.addAll(summary.matchingTypes(name))
       case _                        =>
     super.pushNewScope(scopeNode)
   }
 
   /** Pops the scope, removing types from the scope if necessary.
     */
-  override def popScope(): Option[ScopeType] = {
+  override def popScope(): Option[TypedScopeElement] = {
     super.popScope() match
       case Some(NamespaceScope(fullName)) =>
-        typeMap.classesIn(fullName).foreach(typesInScope.remove)
+        summary.typesUnderNamespace(fullName).foreach(typesInScope.remove)
         Some(NamespaceScope(fullName))
       case x => x
   }
 
   /** Returns the top of the scope, without removing it from the stack.
     */
-  def peekScope(): Option[ScopeType] = {
+  def peekScope(): Option[TypedScopeElement] = {
     super.popScope() match
       case None => None
       case Some(top) =>

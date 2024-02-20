@@ -1,7 +1,6 @@
 package io.joern.csharpsrc2cpg.parser
 
 import org.slf4j.LoggerFactory
-import io.joern.csharpsrc2cpg.parser.ParserKeys.Type
 
 object DotNetJsonAst {
 
@@ -207,6 +206,8 @@ object DotNetJsonAst {
   object AwaitExpression extends BaseExpr
 
   object PropertyDeclaration extends DeclarationExpr
+
+  object TypeArgumentList extends BaseStmt
 
   object TypeParameter extends BaseStmt
 

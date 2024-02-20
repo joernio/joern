@@ -1,19 +1,16 @@
 package io.joern.csharpsrc2cpg.datastructures
 
 import io.joern.csharpsrc2cpg.parser.DotNetNodeInfo
-
 import io.joern.csharpsrc2cpg.astcreation.BuiltinTypes
 import io.joern.csharpsrc2cpg.astcreation.BuiltinTypes.DotNetTypeMap
-
-/** The unifying scope type trait.
-  */
-sealed trait ScopeType
+import io.joern.x2cpg.datastructures.{NamespaceLikeScope, TypedScopeElement}
 
 /** Represents scope objects mapping to namespace nodes. Likened to `namespace` or `package` declarations.
   *
   * @param fullName
+  *   the fully qualified name.
   */
-case class NamespaceScope(fullName: String) extends ScopeType
+case class NamespaceScope(fullName: String) extends NamespaceLikeScope
 
 case class FieldDecl(
   name: String,
@@ -21,11 +18,11 @@ case class FieldDecl(
   isStatic: Boolean,
   isInitialized: Boolean,
   node: DotNetNodeInfo
-)
+) extends TypedScopeElement
 
 /** Represents scope objects that map to a type declaration node.
   */
-sealed trait TypeLikeScope {
+sealed trait TypeLikeScope extends TypedScopeElement {
   def fullName: String
 }
 
@@ -34,7 +31,7 @@ sealed trait TypeLikeScope {
   * @param fullName
   *   the type full name.
   */
-case class TypeScope(fullName: String, fields: List[FieldDecl] = List.empty) extends ScopeType with TypeLikeScope
+case class TypeScope(fullName: String, fields: List[FieldDecl] = List.empty) extends TypeLikeScope
 
 /** An enumeration type.
   *
@@ -43,17 +40,15 @@ case class TypeScope(fullName: String, fields: List[FieldDecl] = List.empty) ext
   * @param aliasFor
   *   the integer equivalent type that this represents
   */
-case class EnumScope(fullName: String, aliasFor: String = DotNetTypeMap(BuiltinTypes.Int))
-    extends ScopeType
-    with TypeLikeScope
+case class EnumScope(fullName: String, aliasFor: String = DotNetTypeMap(BuiltinTypes.Int)) extends TypeLikeScope
 
 /** Represents scope objects that map to a method node.
   *
   * @param fullName
   *   the method full name.
   */
-case class MethodScope(fullName: String) extends ScopeType
+case class MethodScope(fullName: String) extends TypedScopeElement
 
 /** Represents scope objects that map to a block node.
   */
-object BlockScope extends ScopeType
+object BlockScope extends TypedScopeElement

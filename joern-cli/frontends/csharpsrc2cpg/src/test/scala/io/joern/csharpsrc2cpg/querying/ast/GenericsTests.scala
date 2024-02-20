@@ -21,9 +21,9 @@ class GenericsTests extends CSharpCode2CpgFixture {
 
     "propagate types from RHS to LHS" in {
       inside(cpg.identifier.nameExact("a").headOption) {
-        case Some(id) =>
-          id.name shouldBe "a"
-          id.typeFullName shouldBe "Foo.Bar"
+        case Some(a) =>
+          a.name shouldBe "a"
+          a.typeFullName shouldBe "Foo.Bar"
         case None => fail("Unable to find `a` identifier node with type declaration")
       }
     }

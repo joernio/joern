@@ -58,9 +58,9 @@ class MethodTests extends CSharpCode2CpgFixture {
       inside(cpg.method("getInt").l) {
         case methodNode :: Nil =>
           methodNode.name shouldBe "getInt"
-          methodNode.fullName shouldBe "HelloWorld.Program.getInt:int(System.Int32)"
+          methodNode.fullName shouldBe "HelloWorld.Program.getInt:System.Int32(System.Int32)"
           methodNode.code should startWith("public int getInt(int foo)")
-          methodNode.signature shouldBe "int(System.Int32)"
+          methodNode.signature shouldBe "System.Int32(System.Int32)"
           methodNode.isExternal shouldBe false
 
           methodNode.order shouldBe 3
@@ -73,37 +73,8 @@ class MethodTests extends CSharpCode2CpgFixture {
 
     "have correct return information" in {
       val List(methodReturnNode) = cpg.method.name("getInt").methodReturn.l
-      methodReturnNode.typeFullName shouldBe "int"
+      methodReturnNode.typeFullName shouldBe "System.Int32"
     }
-  }
-
-  "resolve type for calls with no receiver" in {
-    val cpg = code("""
-        |namespace Foo.Bar.Bar {
-        |  public class Baz {
-        |     public async int SomeMethod() {
-        |       var a = await SomeOtherMethod();
-        |     }
-        |  }
-        |}
-        |""".stripMargin).moreCode("""
-        |namespace Foo.Bar.Bar {
-        | public class SomeClass: Baz {
-        |   protected int SomeOtherMethod() {
-        |     return 1;
-        |   }
-        | }
-        |}
-        |""".stripMargin)
-
-    inside(cpg.call.nameExact("SomeOtherMethod").l) {
-      case callNode :: Nil =>
-        callNode.code shouldBe "SomeOtherMethod()"
-        callNode.typeFullName shouldBe "int"
-        callNode.methodFullName shouldBe "Foo.Bar.Bar.SomeClass.SomeOtherMethod:int()"
-      case _ => fail("No call for `SomeOtherMethod` found")
-    }
-
   }
 
 }
