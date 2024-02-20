@@ -264,7 +264,7 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
     for {
       startOffset <- start(node)
       endOffset   <- end(node)
-    } yield (startOffset, endOffset)
+    } yield (math.max(startOffset, 0), math.min(endOffset, parserResult.fileContent.length))
   }
 
   override protected def offset(node: BabelNodeInfo): Option[(Int, Int)] = {

@@ -65,7 +65,7 @@ class CodeDumperFromContentTest extends CCodeToCpgSuite {
       "Foo.cpp"
     ).withConfig(Config().withDisableFileContent(false))
 
-    "allow one to dump a method node's source code from `TypeDecl.content`" in {
+    "allow one to dump a typedecl node's source code from `TypeDecl.content`" in {
       val List(content) = cpg.typeDecl.nameExact("Foo").content.l
       content shouldBe myClassContent
     }
