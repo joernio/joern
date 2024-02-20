@@ -186,6 +186,14 @@ TOKEN_MGR_DECLS:
   void CommonTokenAction(Token token) {
     CharStreamImpl inputStreamImpl = (CharStreamImpl)input_stream;
     token.startPos = inputStreamImpl.getBeginPos();
+    // EOF token still have the image of the previous token.
+    // Likely the JavaCC authors deemed the image of an EOF token to be irrelevant and
+    // that would be true if we would not use it to calculate the endPos field.
+    // We rather correct the image instead of doing a separate endPos calculation in order
+    // to also have a more meaningful image field.
+    if (token.kind == EOF) {
+        token.image = "";
+    }
     token.endPos = token.startPos + token.image.length();
   }
 }
@@ -799,6 +807,7 @@ SKIP: {
     }
   }
 | <LINE_JOIN: "\\" ("\n" | "\r" | "\r\n")>
+| <END_OF_MEDIUM: "\u0019">
 }
 
 SPECIAL_TOKEN: {
@@ -814,6 +823,7 @@ SPECIAL_TOKEN: {
   <INDENT_CHECK_SPACE: " "> { currentIndent += 1; }
 | <INDENT_CHECK_TAB: "\t">  { currentIndent = currentIndent / 8 + 8; }
 | <INDENT_CHECK_NEWLINE: "\n" | "\r"> { currentIndent = 0; }
+| <INDENT_CHECK_END_OF_MEDIUM: "\u0019">
 | <INDENT_CHECK_END: ~[]> {
     // Rewind input stream by the one consumed character because we dont
     // really wont to skip it. We just used it as the end marker for the
@@ -881,10 +891,10 @@ SPECIAL_TOKEN: {
 }
 
 <NEWLINE_EMIT> TOKEN: {
-  // Defining this as ""|"" causes javaCC to produce better readable debug output
-  // in the form a proper tokenImage string <NEWLINE> instead of "". This has no
-  // impact on the generated matching code in the state.
-  <NEWLINE: "" | ""> {
+  // Please search for '\u0019' in CharStreamImpl.scala for an
+  // explanation on why we cant just use the zero length string
+  // like for the other emit lexer states.
+  <NEWLINE: "" | "\u0019"> {
     SwitchTo(INDENT_CHECK);
   }
 }

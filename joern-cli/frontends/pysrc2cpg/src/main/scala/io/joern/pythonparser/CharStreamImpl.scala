@@ -20,6 +20,7 @@ class CharStreamImpl(inputStream: InputStream, inputBufferSize: Int, minimumRead
   private var tokenBeginPos     = 1
   private var inputBufferOffset = 0 // From start of inputStream
   private var tabSize           = 1
+  private var firstIOException  = true
 
   // The first slot of inputBuffer, posToLine, posToColumn represents the last value
   // from the previous chunk red from inputStream. For the very first chunk we
@@ -179,7 +180,25 @@ class CharStreamImpl(inputStream: InputStream, inputBufferSize: Int, minimumRead
     */
   override def BeginToken(): Char = {
     tokenBeginPos = readPos
-    readChar()
+    try {
+      readChar()
+    } catch {
+      case exception: IOException =>
+        // For the first IOException which occurs if there is no more data, we emit
+        // '\u0019' which is the ASCII code for 'End of medium'.
+        // We need to do this to work around the EOF handling of JavaCC which does
+        // not work well with our zero length consuming <NEWLINE_EMIT> lexer state.
+        // This dedicated emit step which consumes zero characters, would not be
+        // triggered in case we reach the end of data. Thus we emit an otherwise
+        // unused character '\u0019' to keep things going for one more character to
+        // do the newline emit.
+        if (firstIOException) {
+          firstIOException = false
+          '\u0019'
+        } else {
+          throw exception
+        }
+    }
   }
 
   /** Returns a string made up of characters from the marked token beginning to the current buffer position.

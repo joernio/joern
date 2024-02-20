@@ -24,9 +24,13 @@ object PythonV2      extends PythonVersion
 object PythonV3      extends PythonVersion
 object PythonV2AndV3 extends PythonVersion
 
-class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode, version: PythonVersion)(implicit
-  withSchemaValidation: ValidationMode
-) extends AstCreatorBase(relFileName)
+class PythonAstVisitor(
+  relFileName: String,
+  protected val nodeToCode: NodeToCode,
+  version: PythonVersion,
+  enableFileContent: Boolean
+)(implicit withSchemaValidation: ValidationMode)
+    extends AstCreatorBase(relFileName)
     with PythonAstVisitorHelpers {
 
   private val diffGraph     = new DiffGraphBuilder()
@@ -73,7 +77,12 @@ class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode
     module.accept(memOpCalculator)
     memOpMap = memOpCalculator.astNodeToMemOp
 
-    val fileNode = nodeBuilder.fileNode(relFileName)
+    val contentOption = if (enableFileContent) {
+      Some(nodeToCode.content)
+    } else {
+      None
+    }
+    val fileNode = nodeBuilder.fileNode(relFileName, contentOption)
     val namespaceBlockNode =
       nodeBuilder.namespaceBlockNode(
         Constants.GLOBAL_NAMESPACE,
@@ -89,8 +98,10 @@ class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode
     val lastLineAndCol  = module.stmts.lastOption.map(lineAndColOf)
     val line            = firstLineAndCol.map(_.line).getOrElse(1)
     val column          = firstLineAndCol.map(_.column).getOrElse(1)
+    val offset          = firstLineAndCol.map(_.offset).getOrElse(1)
     val endLine         = lastLineAndCol.map(_.endLine).getOrElse(1)
     val endColumn       = lastLineAndCol.map(_.endColumn).getOrElse(1)
+    val endOffset       = lastLineAndCol.map(_.endOffset).getOrElse(1)
 
     val moduleMethodNode =
       createMethod(
@@ -104,7 +115,7 @@ class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode
         isAsync = false,
         methodRefNode = None,
         returnTypeHint = None,
-        LineAndColumn(line, column, endLine, endColumn)
+        LineAndColumn(line, column, endLine, endColumn, offset, endOffset)
       )
 
     createIdentifierLinks()
@@ -123,7 +134,7 @@ class PythonAstVisitor(relFileName: String, protected val nodeToCode: NodeToCode
   // artificially created during lowering are not in that collection which is fine for now.
   private def createBuiltinIdentifiers(namesUsedInModule: collection.Set[String]): Iterable[nodes.NewNode] = {
     val result        = mutable.ArrayBuffer.empty[nodes.NewNode]
-    val lineAndColumn = LineAndColumn(1, 1, 1, 1)
+    val lineAndColumn = LineAndColumn(1, 1, 1, 1, 1, 1)
 
     val builtinFunctions = mutable.ArrayBuffer.empty[String]
     val builtinClasses   = mutable.ArrayBuffer.empty[String]
