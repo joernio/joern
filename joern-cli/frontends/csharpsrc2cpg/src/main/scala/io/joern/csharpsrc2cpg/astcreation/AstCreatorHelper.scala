@@ -77,18 +77,20 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         identifierNode(dotNetNode.orNull, x.name, x.name, Defines.Any)
   }
 
+  def typeFromGenericName(genericNode: String): String = {
+    scope.tryResolveTypeReference(genericNode.split("<").head).getOrElse(genericNode)
+  }
+
   // TODO: Use type map to try resolve full name
   protected def nodeTypeFullName(node: DotNetNodeInfo): String = {
-    def typeFromTypeString(typeString: String): String = {
-      val isArrayType = typeString.endsWith("[]")
-      val rawType     = typeString.stripSuffix("[]")
+    def typeFromTypeString(typeString: String, suffix: String = "[]"): String = {
+      val rawType = typeString.stripSuffix(suffix)
       val resolvedType = scope
         .tryResolveTypeReference(rawType)
         .orElse(BuiltinTypes.DotNetTypeMap.get(rawType))
         .getOrElse(rawType)
 
-      if (isArrayType) s"$resolvedType[]"
-      else resolvedType
+      if (typeString.endsWith(suffix)) s"$resolvedType$suffix" else resolvedType
     }
 
     node.node match
@@ -112,6 +114,12 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         scope.surroundingTypeDeclFullName.getOrElse(Defines.Any)
       case PredefinedType | SimpleBaseType =>
         BuiltinTypes.DotNetTypeMap.getOrElse(node.code, Defines.Any)
+      case GenericName =>
+        typeFromGenericName(node.code)
+      case VariableDeclaration =>
+        nodeTypeFullName(createDotNetNodeInfo(node.json(ParserKeys.Type)))
+      case NullableType =>
+        typeFromTypeString(node.code, suffix = "?")
       case _ =>
         Try(createDotNetNodeInfo(node.json(ParserKeys.Type))) match
           case Success(typeNode) =>
@@ -120,7 +128,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
             logger.debug(e.getMessage)
             Defines.Any
   }
-
 }
 
 object AstCreatorHelper {

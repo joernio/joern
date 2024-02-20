@@ -93,4 +93,34 @@ class CallTests extends CSharpCode2CpgFixture {
     }
 
   }
+
+  "hierarchical namespace calls" should {
+    val cpg = code("""
+        |namespace HelloWorld {
+        |public class Foo {
+        |}
+        |
+        |public class Bar: Foo {}
+        |
+        |public class Baz {}
+        |}
+        |""".stripMargin).moreCode("""
+        |namespace HelloWorld.Foo {
+        | public class A {
+        |   static void main() {
+        |     Bar c = new Bar();
+        | }
+        | }
+        |}
+        |""".stripMargin)
+
+    "resolve type for Bar in a hierarchical namespace" in {
+      inside(cpg.identifier.nameExact("c").l) {
+        case c :: Nil =>
+          c.typeFullName shouldBe "HelloWorld.Bar"
+        case _ => fail("No identifier named `c` found")
+      }
+    }
+
+  }
 }

@@ -7,6 +7,8 @@ import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newOperatorCallNode
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.NewFieldIdentifier
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+
+import scala.util.Try
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   def astForExpressionStatement(expr: DotNetNodeInfo): Seq[Ast] = {
@@ -149,6 +151,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         } else {
           (Option(baseIdentifier), Option(_typeFullName))
         }
+      case IdentifierName =>
+        val typeFullName = scope.findTypeFromMethodName(nameFromNode(expression)) match {
+          case Some(typNode) => typNode.name
+          case None          => Defines.Any
+        }
+        (None, Option(typeFullName))
       case _ => (None, None)
 
     lazy val partialFullName = baseTypeFullName match
@@ -238,8 +246,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   def astForObjectCreationExpression(objectCreation: DotNetNodeInfo): Seq[Ast] = {
     val dispatchType = DispatchTypes.STATIC_DISPATCH
-    val typeFullName = nodeTypeFullName(objectCreation)
-    val arguments    = astForArgumentList(createDotNetNodeInfo(objectCreation.json(ParserKeys.ArgumentList)))
+    val typeFullName = Try(createDotNetNodeInfo(objectCreation.json(ParserKeys.Type))).toOption
+      .map(nodeTypeFullName)
+      .getOrElse(Defines.Any)
+
+    val arguments = astForArgumentList(createDotNetNodeInfo(objectCreation.json(ParserKeys.ArgumentList)))
     // TODO: Handle signature
     val signature      = None
     val name           = Defines.ConstructorMethodName
@@ -265,5 +276,4 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .flatMap(astForExpressionStatement)
       .toSeq
   }
-
 }
