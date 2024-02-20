@@ -108,19 +108,11 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         val elementTypeNode = createDotNetNodeInfo(node.json(ParserKeys.ElementType))
         s"${nodeTypeFullName(elementTypeNode)}[]"
       case GenericName =>
-        val typeArgListNode = createDotNetNodeInfo(node.json(ParserKeys.TypeArgumentList))
-        val typeArguments = typeArgListNode
-          .json(ParserKeys.Arguments)
-          .arr
-          .map(createDotNetNodeInfo)
-          .map(nodeTypeFullName)
-          .toList
         val typeName = nameFromNode(node)
-        val typ = scope
+        scope
           .tryResolveTypeReference(typeName)
           .map(_.name)
           .getOrElse(typeName)
-        s"$typ<${typeArguments.mkString(",")}>"
       case NullableType =>
         val elementTypeNode = createDotNetNodeInfo(node.json(ParserKeys.ElementType))
         nodeTypeFullName(elementTypeNode)

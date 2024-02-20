@@ -113,7 +113,9 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: 
     typeFullName: Option[String] = None
   ): Option[M] = typeFullName match {
     case None =>
-      membersInScope.collectFirst { case m: MethodLike if m.name == callName => m.asInstanceOf[M] }
+      // TODO: The typesInScope part is to imprecisely solve the unimplemented polymorphism limitation
+      (membersInScope ++ typesInScope.flatMap(_.methods))
+        .collectFirst { case m: MethodLike if m.name == callName => m.asInstanceOf[M] }
     case Some(tfn) =>
       tryResolveTypeReference(tfn).flatMap { t =>
         t.methods.find { m => m.name == callName && isOverloadedBy(m, argTypes) }

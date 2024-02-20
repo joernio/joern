@@ -1,32 +1,23 @@
 package io.joern.csharpsrc2cpg.astcreation
 
+import io.joern.csharpsrc2cpg.CSharpModifiers
 import io.joern.csharpsrc2cpg.astcreation.BuiltinTypes.DotNetTypeMap
 import io.joern.csharpsrc2cpg.datastructures.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.csharpsrc2cpg.utils.Utils.{composeMethodFullName, composeMethodLikeSignature}
 import io.joern.x2cpg.utils.NodeBuilders.{newMethodReturnNode, newModifierNode}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.proto.cpg.Cpg.EvaluationStrategies
 
-import scala.util.Try
-import io.joern.csharpsrc2cpg.datastructures.FieldDecl
-import io.joern.csharpsrc2cpg.utils.Utils.{composeMethodFullName, composeMethodLikeSignature}
-
-import scala.collection.mutable.ArrayBuffer
-import io.joern.csharpsrc2cpg.{CSharpModifiers, CSharpOperators}
-import io.joern.x2cpg.Defines
-import io.joern.csharpsrc2cpg.astcreation.BuiltinTypes.DotNetTypeMap
-import io.joern.csharpsrc2cpg.datastructures.EnumScope
-import io.shiftleft.codepropertygraph.generated
-
 import scala.annotation.tailrec
+import scala.util.Try
 
 trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def astForNamespaceDeclaration(namespace: DotNetNodeInfo): Seq[Ast] = {
+    @tailrec
     def recurseNamespace(parts: List[String], prefix: List[String] = List.empty): Unit = {
       parts match {
         case head :: tail =>

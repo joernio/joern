@@ -62,7 +62,7 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
     }
 
     val mapping = cpg.namespaceBlock.map { namespace =>
-      namespace.name -> namespace.typeDecl.map { typ =>
+      namespace.fullName -> namespace.typeDecl.map { typ =>
         CSharpType(typ.fullName, typ.method.map(toMethod).l, typ.member.map(toField).l)
       }.toSet
     }.toMap

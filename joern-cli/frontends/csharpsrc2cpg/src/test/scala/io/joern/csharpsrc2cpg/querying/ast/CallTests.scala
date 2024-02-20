@@ -122,4 +122,33 @@ class CallTests extends CSharpCode2CpgFixture {
     }
 
   }
+
+  "resolve a call with no receiver on a type sharing a base method inherited from a type in a common namespace" in {
+    val cpg = code("""
+        |namespace Foo.Bar.Bar {
+        |  public class Baz: SomeClass {
+        |     public async int SomeMethod() {
+        |       var a = await SomeOtherMethod();
+        |     }
+        |  }
+        |}
+        |""".stripMargin).moreCode("""
+        |namespace Foo.Bar.Bar {
+        | public class SomeClass {
+        |   protected int SomeOtherMethod() {
+        |     return 1;
+        |   }
+        | }
+        |}
+        |""".stripMargin)
+
+    inside(cpg.call.nameExact("SomeOtherMethod").l) {
+      case callNode :: Nil =>
+        callNode.code shouldBe "SomeOtherMethod()"
+        callNode.typeFullName shouldBe "System.Int32"
+        callNode.methodFullName shouldBe "Foo.Bar.Bar.SomeClass.SomeOtherMethod:System.Int32()"
+      case _ => fail("No call for `SomeOtherMethod` found")
+    }
+
+  }
 }
