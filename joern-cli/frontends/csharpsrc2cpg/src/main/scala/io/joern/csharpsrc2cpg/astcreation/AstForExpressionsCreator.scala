@@ -246,7 +246,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .map(nodeTypeFullName)
       .getOrElse(Defines.Any)
 
-    val arguments = astForArgumentList(createDotNetNodeInfo(objectCreation.json(ParserKeys.ArgumentList)))
+    val arguments = Try(astForArgumentList(createDotNetNodeInfo(objectCreation.json(ParserKeys.ArgumentList))))
+      .getOrElse(Seq.empty)
     // TODO: Handle signature
     val signature      = None
     val name           = Defines.ConstructorMethodName
