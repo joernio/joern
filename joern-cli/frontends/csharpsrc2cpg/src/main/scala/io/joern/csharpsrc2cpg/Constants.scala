@@ -10,3 +10,7 @@ object CSharpOperators {
   val unknown: String = "<operators>.unknown"
   val await: String   = "<operator>.await"
 }
+
+object CSharpModifiers {
+  final val CONST: String = "const"
+}

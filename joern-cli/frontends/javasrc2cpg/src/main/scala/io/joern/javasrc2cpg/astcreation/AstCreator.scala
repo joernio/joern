@@ -25,7 +25,6 @@ import com.github.javaparser.resolution.types.ResolvedType
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
 import com.github.javaparser.symbolsolver.JavaSymbolSolver
 import io.joern.javasrc2cpg.astcreation.declarations.AstForDeclarationsCreator
-import io.joern.javasrc2cpg.astcreation.expressions.AstForCallExpressionsCreator.PartialConstructor
 import io.joern.javasrc2cpg.astcreation.expressions.AstForExpressionsCreator
 import io.joern.javasrc2cpg.astcreation.statements.AstForStatementsCreator
 import io.joern.javasrc2cpg.scope.Scope
@@ -98,9 +97,7 @@ class AstCreator(
   private[astcreation] val scope = Scope()
 
   private[astcreation] val typeInfoCalc: TypeInfoCalculator = TypeInfoCalculator(global, symbolSolver)
-  // TODO Move to scope or get rid of it.
-  private[astcreation] val partialConstructorQueue: mutable.ArrayBuffer[PartialConstructor] = mutable.ArrayBuffer.empty
-  private[astcreation] val bindingTableCache = mutable.HashMap.empty[String, BindingTable]
+  private[astcreation] val bindingTableCache                = mutable.HashMap.empty[String, BindingTable]
 
   /** Entry point of AST creation. Translates a compilation unit created by JavaParser into a DiffGraph containing the
     * corresponding CPG AST.

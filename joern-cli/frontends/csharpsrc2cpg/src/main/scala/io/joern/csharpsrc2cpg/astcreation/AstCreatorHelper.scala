@@ -121,6 +121,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
           .map(_.name)
           .getOrElse(typeName)
         s"$typ<${typeArguments.mkString(",")}>"
+      case NullableType =>
+        typeFromTypeString(node.code, suffix = "?")
       case IdentifierName =>
         val typeString = nameFromNode(node)
         scope
@@ -137,7 +139,6 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
             Defines.Any
     }
   }
-
 }
 
 object AstCreatorHelper {

@@ -387,7 +387,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
 
   private def addArgsToPartialInits(allInitCallNodes: Set[NewCall]): Unit = {
     scope.enclosingTypeDecl.getInitsToComplete.foreach {
-      case PartialInit(typeFullName, callAst, receiverAst, args, capturedThis) =>
+      case PartialInit(typeFullName, callAst, receiverAst, args, outerClassAst) =>
         callAst.root match {
           case Some(initRoot: NewCall) if allInitCallNodes.contains(initRoot) =>
             val usedCaptures = if (scope.enclosingTypeDecl.map(_.typeDecl.fullName).contains(typeFullName)) {
@@ -399,7 +399,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
             receiverAst.root.foreach(receiver => diffGraph.addEdge(initRoot, receiver, EdgeTypes.RECEIVER))
 
             val capturesAsts =
-              usedCaptures.filterNot(capturedThis.isDefined && _.name == NameConstants.OuterClass).zipWithIndex.map {
+              usedCaptures.filterNot(outerClassAst.isDefined && _.name == NameConstants.OuterClass).zipWithIndex.map {
                 (usedCapture, index) =>
                   val identifier = NewIdentifier()
                     .name(usedCapture.name)
@@ -413,23 +413,7 @@ private[declarations] trait AstForTypeDeclsCreator { this: AstCreator =>
                   Ast(identifier)
               }
 
-            val capturedThisIdentifier =
-              Option
-                .when(usedCaptures.exists(_.name == NameConstants.OuterClass))(capturedThis.map { thisNode =>
-                  val identifier = NewIdentifier()
-                    .name(thisNode.name)
-                    .code(thisNode.code)
-                    .typeFullName(thisNode.typeFullName)
-                    .lineNumber(initRoot.lineNumber)
-                    .columnNumber(initRoot.columnNumber)
-
-                  diffGraph.addEdge(identifier, thisNode, EdgeTypes.REF)
-
-                  Ast(identifier)
-                })
-                .flatten
-
-            (receiverAst :: args ++ capturedThisIdentifier.toList ++ capturesAsts)
+            (receiverAst :: args ++ outerClassAst.toList ++ capturesAsts)
               .map { argAst =>
                 storeInDiffGraph(argAst)
                 argAst.root

@@ -1,6 +1,7 @@
 package io.joern.javasrc2cpg.astcreation.expressions
 
 import com.github.javaparser.ast.body.VariableDeclarator
+import com.github.javaparser.ast.expr.AssignExpr.Operator
 import com.github.javaparser.ast.expr.{
   AssignExpr,
   Expression,
@@ -15,8 +16,9 @@ import com.github.javaparser.ast.expr.{
 import com.github.javaparser.ast.{Node, NodeList}
 import com.github.javaparser.resolution.declarations.{ResolvedMethodDeclaration, ResolvedMethodLikeDeclaration}
 import com.github.javaparser.resolution.types.parametrization.ResolvedTypeParametersMap
-import io.joern.javasrc2cpg.astcreation.expressions.AstForCallExpressionsCreator.PartialConstructor
+import io.joern.javasrc2cpg.astcreation.expressions.AstForCallExpressionsCreator.AllocAndInitCallAsts
 import io.joern.javasrc2cpg.astcreation.{AstCreator, ExpectedType}
+import io.joern.javasrc2cpg.scope.Scope.typeFullName
 import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.NameConstants
 import io.joern.javasrc2cpg.util.Util.{composeMethodFullName, composeMethodLikeSignature, composeUnresolvedSignature}
@@ -24,23 +26,31 @@ import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newOperatorCallNode}
 import io.joern.x2cpg.{Ast, Defines}
 import io.shiftleft.codepropertygraph.generated.nodes.Call.PropertyDefaults
-import io.shiftleft.codepropertygraph.generated.nodes.{ExpressionNew, NewBlock, NewCall, NewIdentifier}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  AstNodeNew,
+  ExpressionNew,
+  NewBlock,
+  NewCall,
+  NewIdentifier,
+  NewMember
+}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes, Operators}
 
 import scala.jdk.CollectionConverters.*
 import scala.jdk.OptionConverters.RichOptional
 import scala.util.{Success, Try}
 import javassist.compiler.ast.CallExpr
-import io.joern.javasrc2cpg.scope.Scope.ScopeInnerType
-import io.joern.javasrc2cpg.scope.Scope.SimpleVariable
-import io.joern.javasrc2cpg.scope.Scope.ScopeParameter
+import io.joern.javasrc2cpg.scope.Scope.{NewVariableNode, ScopeInnerType, ScopeParameter, SimpleVariable}
 import io.joern.javasrc2cpg.scope.JavaScopeElement.PartialInit
+import org.slf4j.LoggerFactory
 
 object AstForCallExpressionsCreator {
-  case class PartialConstructor(typeFullName: Option[String], initNode: NewCall, initArgs: Seq[Ast], blockAst: Ast)
+  private[expressions] final case class AllocAndInitCallAsts(allocAst: Ast, initAst: Ast)
 }
 
 trait AstForCallExpressionsCreator { this: AstCreator =>
+
+  private val logger = LoggerFactory.getLogger(this.getClass)
 
   private var tempConstCount = 0
 
@@ -132,32 +142,51 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
     }
   }
 
-  /** The below representation for constructor invocations and object creations was chosen for the sake of consistency
-    * with the Java frontend. It follows the bytecode approach of splitting a constructor call into separate `alloc` and
-    * `init` calls.
-    *
-    * There are two cases to consider. The first is a constructor invocation in an assignment, for example:
-    *
-    * Foo f = new Foo(42);
-    *
-    * is represented as
-    *
-    * Foo f = <operator>.alloc() f.init(42);
-    *
-    * The second case is a constructor invocation not in an assignment, for example as an argument to a method call. In
-    * this case, the representation does not stay as close to Java as in case
-    *   1. In particular, a new BLOCK is introduced to contain the constructor invocation. For example:
-    *
-    * foo(new Foo(42));
-    *
-    * is represented as
-    *
-    * foo({ Foo temp = alloc(); temp.init(42); temp })
-    *
-    * This is not valid Java code, but this representation is a decent compromise between staying faithful to Java and
-    * being consistent with the Java bytecode frontend.
-    */
-  private[expressions] def astForObjectCreationExpr(expr: ObjectCreationExpr, expectedType: ExpectedType): Ast = {
+  private[expressions] def blockAstForObjectCreationExpr(expr: ObjectCreationExpr, expectedType: ExpectedType): Ast = {
+    val tmpName = "$obj" ++ tempConstCount.toString
+    tempConstCount += 1
+
+    // Use an untyped identifier for receiver here, create the alloc and init ASTs,
+    // then use the types of those to fix the local type.
+    val tmpIdentifier = identifierNode(expr, tmpName, tmpName, TypeConstants.Any)
+    val allocAndInitAst =
+      inlinedAstsForObjectCreationExpr(expr, Ast(tmpIdentifier), expectedType, resetAssignmentTargetType = true)
+
+    tmpIdentifier.typeFullName(allocAndInitAst.allocAst.rootType.getOrElse(TypeConstants.Any))
+    val tmpLocal = localNode(expr, tmpName, tmpName, tmpIdentifier.typeFullName)
+
+    val allocAssignCode = s"$tmpName = ${allocAndInitAst.allocAst.rootCodeOrEmpty}"
+    val allocAssignCall =
+      callNode(
+        expr,
+        allocAssignCode,
+        Operators.assignment,
+        Operators.assignment,
+        DispatchTypes.STATIC_DISPATCH,
+        signature = None,
+        typeFullName = Option(tmpLocal.typeFullName)
+      )
+
+    val allocAssignTargetNode = tmpIdentifier.copy
+    val allocAssignTargetAst  = Ast(allocAssignTargetNode).withRefEdge(allocAssignTargetNode, tmpLocal)
+    val allocAssignAst        = callAst(allocAssignCall, allocAssignTargetAst :: allocAndInitAst.allocAst :: Nil)
+
+    val returnedIdentifier    = tmpIdentifier.copy
+    val returnedIdentifierAst = Ast(returnedIdentifier).withRefEdge(returnedIdentifier, tmpLocal)
+
+    Ast(blockNode(expr).typeFullName(returnedIdentifier.typeFullName))
+      .withChild(Ast(tmpLocal).withRefEdge(tmpIdentifier, tmpLocal))
+      .withChild(allocAssignAst)
+      .withChild(allocAndInitAst.initAst)
+      .withChild(returnedIdentifierAst)
+  }
+
+  private[expressions] def inlinedAstsForObjectCreationExpr(
+    expr: ObjectCreationExpr,
+    assignmentTarget: Ast,
+    expectedType: ExpectedType,
+    resetAssignmentTargetType: Boolean
+  ): AllocAndInitCallAsts = {
     val maybeResolvedExpr = tryWithSafeStackOverflow(expr.resolve())
     val argumentAsts      = argAstsForCall(expr, maybeResolvedExpr, expr.getArguments)
 
@@ -179,6 +208,18 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
       else {
         scope.scopeFullName().map(enclosingScopeName => s"$enclosingScopeName.$typeName")
       }
+
+    if (resetAssignmentTargetType) {
+      typeFullName.foreach { typeFullName =>
+        assignmentTarget.root.collect { case identifier: NewIdentifier => identifier.typeFullName(typeFullName) }
+      }
+    }
+    val initReceiverType = assignmentTarget.rootType match {
+      case Some(TypeConstants.Any)             => typeFullName
+      case Some(PropertyDefaults.TypeFullName) => typeFullName
+      case Some(typ)                           => Option(typ)
+      case None                                => TypeConstants.Any
+    }
 
     anonymousClassBody.foreach { bodyStmts =>
       val anonymousClassDecl = astForAnonymousClassDecl(expr, bodyStmts, typeName, typeFullName, baseTypeFullName)
@@ -203,28 +244,39 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
       line(expr)
     )
 
-    val isInnerType = anonymousClassBody.isDefined || baseTypeFromScope.exists(_.isInstanceOf[ScopeInnerType])
+    val isInnerType = anonymousClassBody.isDefined || baseTypeFromScope.exists(
+      _.isInstanceOf[ScopeInnerType]
+    ) || expr.getScope.isPresent
 
-    // Assume that a block ast is required, since there isn't enough information to decide otherwise.
-    // This simplifies logic elsewhere, and unnecessary blocks will be garbage collected soon.
-    val blockAst =
-      blockAstForConstructorInvocation(line(expr), column(expr), allocNode, initCall, argumentAsts, isInnerType)
-
-    val parentIsSimpleAssign = expr.getParentNode.toScala
-      .collect { case assignExpr: AssignExpr =>
-        assignExpr.getTarget.isInstanceOf[NameExpr]
+    val initReceiverAst =
+      assignmentTarget.root.collect { case root: AstNodeNew => assignmentTarget.subTreeCopy(root) }.getOrElse {
+        logger.warn(s"Assignment target ast with no root at $filename:${line(expr)}:${column(expr)}")
+        unknownAst(expr)
       }
-      .getOrElse(false)
 
-    expr.getParentNode.toScala match {
-      case Some(parent) if parent.isInstanceOf[VariableDeclarator] || parentIsSimpleAssign =>
-        val partialConstructor = PartialConstructor(typeFullName, initCall, argumentAsts, blockAst)
-        partialConstructorQueue.append(partialConstructor)
-        Ast(allocNode)
+    val capturedOuterClassAst =
+      expr.getScope.toScala.flatMap(astsForExpression(_, ExpectedType.empty).headOption).orElse {
+        scope.lookupVariable(NameConstants.This) match {
+          case SimpleVariable(param: ScopeParameter) if !scope.isEnclosingScopeStatic =>
+            val outerClassIdentifier = identifierNode(expr, param.name, param.name, param.typeFullName)
+            Some(Ast(outerClassIdentifier).withRefEdge(outerClassIdentifier, param.node))
+          case _ => None
+        }
+      }
 
-      case _ =>
-        blockAst
+    val initAst = if (isInnerType) {
+      val initCallAst = Ast(initCall)
+      scope.enclosingTypeDecl.foreach(
+        _.registerInitToComplete(
+          PartialInit(allocNode.typeFullName, initCallAst, initReceiverAst, argumentAsts.toList, capturedOuterClassAst)
+        )
+      )
+      initCallAst
+    } else {
+      callAst(initCall, argumentAsts, Option(initReceiverAst))
     }
+
+    AllocAndInitCallAsts(callAst(allocNode, Nil), initAst)
   }
 
   def argAstsForCall(
@@ -303,59 +355,6 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .lineNumber(lineNumber)
       .columnNumber(columnNumber)
-  }
-
-  private def blockAstForConstructorInvocation(
-    lineNumber: Option[Integer],
-    columnNumber: Option[Integer],
-    allocNode: NewCall,
-    initNode: NewCall,
-    args: Seq[Ast],
-    isInnerType: Boolean
-  ): Ast = {
-    val blockNode = NewBlock()
-      .lineNumber(lineNumber)
-      .columnNumber(columnNumber)
-      .typeFullName(allocNode.typeFullName)
-
-    val tempName = "$obj" ++ tempConstCount.toString
-    tempConstCount += 1
-    val identifier    = newIdentifierNode(tempName, allocNode.typeFullName)
-    val identifierAst = Ast(identifier)
-
-    val allocAst = Ast(allocNode)
-
-    val assignmentNode = newOperatorCallNode(Operators.assignment, PropertyDefaults.Code, Some(allocNode.typeFullName))
-
-    val assignmentAst = callAst(assignmentNode, List(identifierAst, allocAst))
-
-    val identifierWithDefaultOrder = identifier.copy.order(PropertyDefaults.Order)
-    val identifierForInit          = identifierWithDefaultOrder.copy
-    val initCopyWithDefaultOrder   = initNode.copy.order(PropertyDefaults.Order)
-
-    val returnAst = Ast(identifierWithDefaultOrder.copy)
-
-    val capturedThis = scope.lookupVariable(NameConstants.This) match {
-      case SimpleVariable(param: ScopeParameter) => Some(param.node)
-      case _                                     => None
-    }
-
-    val initAst = if (isInnerType) {
-      val initCallAst = Ast(initCopyWithDefaultOrder)
-      scope.enclosingTypeDecl.foreach(
-        _.registerInitToComplete(
-          PartialInit(allocNode.typeFullName, initCallAst, Ast(identifierForInit), args.toList, capturedThis)
-        )
-      )
-      initCallAst
-    } else {
-      callAst(initCopyWithDefaultOrder, args, Some(Ast(identifierForInit)))
-    }
-
-    Ast(blockNode)
-      .withChild(assignmentAst)
-      .withChild(initAst)
-      .withChild(returnAst)
   }
 
   private def getArgumentCodeString(args: NodeList[Expression]): String = {

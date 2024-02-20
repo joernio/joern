@@ -209,7 +209,11 @@ object DotNetJsonAst {
 
   object TypeArgumentList extends BaseStmt
 
+  object TypeParameter extends BaseStmt
+
   object GenericName extends BaseStmt
+
+  object NullableType extends BaseExpr
 
   object Unknown extends DotNetParserNode
 

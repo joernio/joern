@@ -7,7 +7,7 @@ import io.shiftleft.semanticcpg.language._
 
 import java.util.regex.Pattern
 
-class CodeDumperTest extends JsSrc2CpgSuite {
+class CodeDumperFromFileTest extends JsSrc2CpgSuite {
 
   implicit val finder: NodeExtensionFinder = DefaultNodeExtensionFinder
 

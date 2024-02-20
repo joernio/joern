@@ -57,6 +57,10 @@ class CSharpScope(summary: CSharpProgramSummary)
     }
   }
 
+  def pushTypeToScope(typeFullName: String): Unit = {
+    typesInScope.addAll(typeMap.findType(typeFullName))
+  }
+
   def pushField(field: FieldDecl): Unit = {
     popScope().foreach {
       case TypeScope(fullName, fields) =>

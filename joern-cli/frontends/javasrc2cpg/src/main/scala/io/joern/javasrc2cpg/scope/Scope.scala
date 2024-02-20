@@ -285,8 +285,8 @@ object Scope {
   type NewScopeNode    = NewBlock | NewMethod | NewTypeDecl | NewNamespaceBlock
   type NewVariableNode = NewLocal | NewMethodParameterIn | NewMember
 
-  def newVariableNodeType(variableNode: NewVariableNode): String = {
-    variableNode match {
+  extension (variableNode: NewVariableNode) {
+    def typeFullName: String = variableNode match {
       case node: NewLocal             => node.typeFullName
       case node: NewMethodParameterIn => node.typeFullName
       case node: NewMember            => node.typeFullName

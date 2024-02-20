@@ -47,7 +47,10 @@ class AstCreator(
   protected val methodAstParentStack: Stack[NewNode] = new Stack()
 
   def createAst(): DiffGraphBuilder = {
-    val ast = astForTranslationUnit(cdtAst)
+    val fileContent = if (!config.disableFileContent) Option(cdtAst.getRawSignature) else None
+    val fileNode    = NewFile().name(fileName(cdtAst)).order(1)
+    fileContent.foreach(fileNode.content(_))
+    val ast = Ast(fileNode).withChild(astForTranslationUnit(cdtAst))
     Ast.storeInDiffGraph(ast, diffGraph)
     diffGraph
   }
@@ -89,4 +92,42 @@ class AstCreator(
       methodAst(fakeGlobalMethod, Seq.empty, blockAst(blockNode_, declsAsts), methodReturn)
     )
   }
+
+  override protected def code(node: IASTNode): String = shortenCode(nodeSignature(node))
+
+  override protected def line(node: IASTNode): Option[Integer] = {
+    nullSafeFileLocation(node).map(_.getStartingLineNumber)
+  }
+
+  override protected def lineEnd(node: IASTNode): Option[Integer] = {
+    nullSafeFileLocation(node).map(_.getEndingLineNumber)
+  }
+
+  protected def column(node: IASTNode): Option[Integer] = {
+    nodeOffsets(node).map { case (startOffset, _) =>
+      offsetToColumn(node, startOffset)
+    }
+  }
+
+  protected def columnEnd(node: IASTNode): Option[Integer] = {
+    nodeOffsets(node).map { case (_, endOffset) =>
+      offsetToColumn(node, endOffset - 1)
+    }
+  }
+
+  private def nodeOffsets(node: IASTNode): Option[(Int, Int)] = {
+    for {
+      startOffset <- nullSafeFileLocation(node).map(l => l.getNodeOffset)
+      endOffset   <- nullSafeFileLocation(node).map(l => l.getNodeOffset + l.getNodeLength)
+    } yield (startOffset, endOffset)
+  }
+
+  override protected def offset(node: IASTNode): Option[(Int, Int)] = {
+    Option
+      .when(!config.disableFileContent) {
+        nodeOffsets(node)
+      }
+      .flatten
+  }
+
 }

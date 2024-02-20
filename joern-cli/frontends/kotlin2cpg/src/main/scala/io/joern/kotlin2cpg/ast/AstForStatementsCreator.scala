@@ -341,15 +341,21 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
   def astForWhenAsStatement(expr: KtWhenExpression, argIdx: Option[Int])(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
-    assert(expr.getSubjectExpression != null)
-
-    val astForSubject = astsForExpression(expr.getSubjectExpression, Some(1)).headOption.getOrElse(Ast())
-    val finalAstForSubject = expr.getSubjectExpression match {
-      case p: KtProperty =>
-        val block = blockNode(p, "", "").argumentIndex(1)
-        blockAst(block, List(astForSubject))
-      case _ => astForSubject
+    val (astForSubject, finalAstForSubject) = Option(expr.getSubjectExpression) match {
+      case Some(subjectExpression) =>
+        val astForSubject = astsForExpression(subjectExpression, Some(1)).headOption.getOrElse(Ast())
+        val finalAstForSubject = expr.getSubjectExpression match {
+          case p: KtProperty =>
+            val block = blockNode(p, "", "").argumentIndex(1)
+            blockAst(block, List(astForSubject))
+          case _ => astForSubject
+        }
+        (astForSubject, finalAstForSubject)
+      case _ =>
+        logger.warn(s"Subject Expression empty in this file `${relativizedPath}`.")
+        (Ast(), Ast())
     }
+
     val astsForEntries =
       withIndex(expr.getEntries.asScala.toList) { (e, idx) =>
         astsForWhenEntry(e, idx)
@@ -374,15 +380,19 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) {
   def astForWhenAsExpression(expr: KtWhenExpression, argIdx: Option[Int], argNameMaybe: Option[String])(implicit
     typeInfoProvider: TypeInfoProvider
   ): Ast = {
-    assert(expr.getSubjectExpression != null)
 
     val callNode =
       withArgumentIndex(operatorCallNode("<operator>.when", "<operator>.when", None), argIdx)
         .argumentName(argNameMaybe)
 
-    val subjectExpressionAsts = astsForExpression(expr.getSubjectExpression, None)
-    val subjectBlock          = blockNode(expr.getSubjectExpression, "", "")
-    val subjectBlockAst       = blockAst(subjectBlock, subjectExpressionAsts.toList)
+    val subjectExpressionAsts = Option(expr.getSubjectExpression) match {
+      case Some(subjectExpression) => astsForExpression(subjectExpression, None)
+      case _ =>
+        logger.warn(s"Subject Expression empty in this file `${relativizedPath}`.")
+        Seq.empty
+    }
+    val subjectBlock    = blockNode(expr.getSubjectExpression, "", "")
+    val subjectBlockAst = blockAst(subjectBlock, subjectExpressionAsts.toList)
 
     val argAsts = expr.getEntries.asScala.toList.map { e =>
       val block = blockNode(e, "", "")
