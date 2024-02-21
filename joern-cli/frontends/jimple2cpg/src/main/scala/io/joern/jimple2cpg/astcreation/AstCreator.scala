@@ -50,7 +50,7 @@ class AstCreator(
     storeInDiffGraph(astRoot, diffGraph)
 
     if (fileContent.isDefined) {
-      val fileNode = NewFile().name(filename.replace(".class", ".java")).order(0)
+      val fileNode = NewFile().name(filename).order(0)
       fileContent.foreach(fileNode.content(_))
       diffGraph.addNode(fileNode)
     }

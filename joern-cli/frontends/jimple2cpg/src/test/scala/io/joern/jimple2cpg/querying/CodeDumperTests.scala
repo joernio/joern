@@ -28,7 +28,7 @@ class CodeDumperTests extends JimpleCode2CpgFixture {
       .cpg
 
     "allow one to get decompiled java code in one file" in {
-      inside(cpg.file.name(".*Foo.java").l) {
+      inside(cpg.file.name(".*Foo.class").l) {
         case decompiledJava :: Nil =>
           decompiledJava.content.linesIterator.map(_.strip).l shouldBe List(
             "/*",
@@ -76,7 +76,7 @@ class CodeDumperTests extends JimpleCode2CpgFixture {
       .cpg
 
     "allow one to get java decompiled code for all classes" in {
-      inside(cpg.file.name(".*Foo.java").l) {
+      inside(cpg.file.name(".*Foo.class").l) {
         case decompiledJavaFoo :: Nil =>
           decompiledJavaFoo.content.linesIterator.map(_.strip).filter(_.nonEmpty).l shouldBe List(
             "/*",
@@ -95,7 +95,7 @@ class CodeDumperTests extends JimpleCode2CpgFixture {
         case _ => fail("Expected exactly 1 file")
       }
 
-      inside(cpg.file.name(".*Baz.java").l) {
+      inside(cpg.file.name(".*Baz.class").l) {
         case decompiledJavaBaz :: Nil =>
           decompiledJavaBaz.content.linesIterator.map(_.strip).filter(_.nonEmpty).l shouldBe List(
             "/*",
