@@ -2,8 +2,8 @@ package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal}
 import io.shiftleft.semanticcpg.language.*
 
 class CallTests extends RubyCode2CpgFixture {
@@ -96,28 +96,41 @@ class CallTests extends RubyCode2CpgFixture {
         |a = A.new
         |""".stripMargin)
 
-    "create an assignment from `a` to an <init> invocation" in {
-      inside(cpg.method(":program").assignment.l) {
+    "create an assignment from `a` to an <init> invocation block" in {
+      inside(cpg.method(":program").assignment.where(_.target.isIdentifier.name("a")).l) {
         case assignment :: Nil =>
+          assignment.code shouldBe "a = A.new"
           inside(assignment.argument.l) {
-            case (a: Identifier) :: (constructor: Call) :: Nil =>
+            case (a: Identifier) :: (_: Block) :: Nil =>
               a.name shouldBe "a"
-
-              constructor.name shouldBe Defines.ConstructorMethodName
-              constructor.methodFullName shouldBe s"Test0.rb:<global>::program.A:${Defines.ConstructorMethodName}"
-              constructor.code shouldBe "A.new"
             case xs => fail(s"Expected one identifier and one call argument, got [${xs.code.mkString(",")}]")
           }
         case xs => fail(s"Expected a single assignment, got [${xs.code.mkString(",")}]")
       }
     }
 
-    "create a call to the object's constructor, with `A` as the sole argument at index 0" in {
+    "create an assignment from a temp variable to the <init> call" in {
+      inside(cpg.method(":program").assignment.where(_.target.isIdentifier.name("<tmp-0>")).l) {
+        case assignment :: Nil =>
+          inside(assignment.argument.l) {
+            case (a: Identifier) :: (alloc: Call) :: Nil =>
+              a.name shouldBe "<tmp-0>"
+
+              alloc.name shouldBe Operators.alloc
+              alloc.methodFullName shouldBe Operators.alloc
+              alloc.code shouldBe "A.new"
+            case xs => fail(s"Expected one identifier and one call argument, got [${xs.code.mkString(",")}]")
+          }
+        case xs => fail(s"Expected a single assignment, got [${xs.code.mkString(",")}]")
+      }
+    }
+
+    "create a call to the object's constructor, with the temp variable receiver" in {
       inside(cpg.call.nameExact(Defines.ConstructorMethodName).l) {
         case constructor :: Nil =>
           inside(constructor.argument.l) {
             case (a: Identifier) :: Nil =>
-              a.name shouldBe "A"
+              a.name shouldBe "<tmp-0>"
               a.typeFullName shouldBe "Test0.rb:<global>::program.A"
               a.argumentIndex shouldBe 0
             case xs => fail(s"Expected one identifier and one call argument, got [${xs.code.mkString(",")}]")

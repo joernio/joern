@@ -1,12 +1,12 @@
 package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{Unknown, *}
+import io.joern.rubysrc2cpg.datastructures.BlockScope
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.{RubyOperators, getBuiltInType}
-import io.joern.x2cpg.{Ast, ValidationMode}
+import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
-import io.joern.x2cpg.Defines as XDefines
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -139,15 +139,42 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case None =>
         s"${XDefines.UnresolvedNamespace}.$className" -> s"${XDefines.UnresolvedNamespace}.$className:$methodName"
     }
-    val argumentAsts    = node.arguments.map(astForMethodCallArgument)
-    val constructorCall = callNode(node, code(node), methodName, fullName, DispatchTypes.STATIC_DISPATCH)
-    val receiverAst     = Ast(identifierNode(node, className, className, receiverTypeFullName))
-    // TODO: We may want to lower this with an `alloc` wrapped in a block, e.g.
     /*
+      Similarly to some other frontends, we lower the constructor into two operations, e.g.,
       `return Bar.new`, lowered to
       `return {Bar tmp = Bar.<alloc>(); tmp.<init>(); tmp}`
      */
-    callAst(constructorCall, argumentAsts, Option(receiverAst))
+    val block = blockNode(node)
+    scope.pushNewScope(BlockScope(block))
+
+    val tmp = SimpleIdentifier(Option(className))(node.span.spanStart(freshVariableName))
+    def tmpIdentifier = {
+      val tmpAst = astForSimpleIdentifier(tmp)
+      tmpAst.root.collect { case x: NewIdentifier => x.typeFullName(receiverTypeFullName) }
+      tmpAst
+    }
+
+    // Assign tmp to <alloc>
+    val receiverAst = Ast(identifierNode(node, className, className, receiverTypeFullName))
+    val allocCall   = callNode(node, code(node), Operators.alloc, Operators.alloc, DispatchTypes.STATIC_DISPATCH)
+    val allocAst    = callAst(allocCall, Seq.empty, Option(receiverAst))
+    val assignmentCall = callNode(
+      node,
+      s"${tmp.text} = ${code(node)}",
+      Operators.assignment,
+      Operators.assignment,
+      DispatchTypes.STATIC_DISPATCH
+    )
+    val tmpAssignment = callAst(assignmentCall, Seq(tmpIdentifier, allocAst))
+
+    // Call constructor
+    val argumentAsts       = node.arguments.map(astForMethodCallArgument)
+    val constructorCall    = callNode(node, code(node), methodName, fullName, DispatchTypes.STATIC_DISPATCH)
+    val constructorCallAst = callAst(constructorCall, argumentAsts, Option(tmpIdentifier))
+    scope.popScope()
+
+    // Assemble statements
+    blockAst(block, tmpAssignment :: constructorCallAst :: tmpIdentifier :: Nil)
   }
 
   protected def astForSingleAssignment(node: SingleAssignment): Ast = {
