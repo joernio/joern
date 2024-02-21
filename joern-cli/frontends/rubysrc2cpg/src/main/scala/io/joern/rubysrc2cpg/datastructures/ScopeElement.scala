@@ -2,6 +2,7 @@ package io.joern.rubysrc2cpg.datastructures
 
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.datastructures.{NamespaceLikeScope, TypedScopeElement}
+import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 
 /** The namespace.
   * @param fullName
@@ -62,4 +63,4 @@ case class ConstructorScope(fullName: String) extends MethodLikeScope
 
 /** Represents scope objects that map to a block node.
   */
-object BlockScope extends TypedScopeElement
+case class BlockScope(block: NewBlock) extends TypedScopeElement

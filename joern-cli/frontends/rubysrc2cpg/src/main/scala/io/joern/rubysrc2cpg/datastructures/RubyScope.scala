@@ -31,8 +31,15 @@ class RubyScope(summary: RubyProgramSummary)
             .flatMap(_.methods)
             .exists(_.name == "initialize") =>
         TypeScope(fullName, true)
+      case n: NamespaceLikeScope =>
+        typesInScope.addAll(summary.typesUnderNamespace(n.fullName))
+        n
+      case n: ProgramScope =>
+        typesInScope.addAll(summary.typesUnderNamespace(n.fullName))
+        n
       case _ => scopeNode
     }
+
     super.pushNewScope(mappedScopeNode)
   }
 
@@ -53,7 +60,6 @@ class RubyScope(summary: RubyProgramSummary)
     case ScopeElement(_: ProgramScope, _)       => NodeTypes.METHOD
     case ScopeElement(_: TypeLikeScope, _)      => NodeTypes.TYPE_DECL
     case ScopeElement(_: MethodLikeScope, _)    => NodeTypes.METHOD
-    case ScopeElement(BlockScope, _)            => NodeTypes.BLOCK
   }
 
   /** @return

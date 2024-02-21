@@ -548,17 +548,24 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
       .map(_.getText)
       .contains("new")
 
-    if (!hasArguments && !hasBlock) {
-      return MemberAccess(visit(ctx.primaryValue()), ctx.op.getText, ctx.methodName().getText)(ctx.toTextSpan)
-    }
-
-    if (hasArguments && !hasBlock) {
-      return MemberCall(
-        visit(ctx.primaryValue()),
-        ctx.op.getText,
-        ctx.methodName().getText,
-        ctx.argumentWithParentheses().arguments.map(visit)
-      )(ctx.toTextSpan)
+    if (!hasBlock) {
+      val target     = visit(ctx.primaryValue())
+      val methodName = ctx.methodName().getText
+      if (methodName == "new") {
+        if (!hasArguments) {
+          return ObjectInstantiation(target, List.empty)(ctx.toTextSpan)
+        } else {
+          return ObjectInstantiation(target, ctx.argumentWithParentheses().arguments.map(visit))(ctx.toTextSpan)
+        }
+      } else {
+        if (!hasArguments) {
+          return MemberAccess(target, ctx.op.getText, methodName)(ctx.toTextSpan)
+        } else {
+          return MemberCall(target, ctx.op.getText, methodName, ctx.argumentWithParentheses().arguments.map(visit))(
+            ctx.toTextSpan
+          )
+        }
+      }
     }
 
     if (hasBlock && isClassDecl) {

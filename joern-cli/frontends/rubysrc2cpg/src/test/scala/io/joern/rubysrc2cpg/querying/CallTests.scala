@@ -1,8 +1,9 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.joern.x2cpg.Defines
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Literal}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal}
 import io.shiftleft.semanticcpg.language.*
 
 class CallTests extends RubyCode2CpgFixture {
@@ -82,8 +83,48 @@ class CallTests extends RubyCode2CpgFixture {
           baz.code shouldBe "\"baz\""
           baz.argumentIndex shouldBe 2
           baz.argumentName shouldBe Option("bar")
-        case _ => fail("Invalid call arguments!")
+        case xs => fail(s"Invalid call arguments! Got [${xs.code.mkString(", ")}]")
       }
     }
   }
+
+  "a simple object instantiation" should {
+
+    val cpg = code("""class A
+        |end
+        |
+        |a = A.new
+        |""".stripMargin)
+
+    "create an assignment from `a` to an <init> invocation" in {
+      inside(cpg.method(":program").assignment.l) {
+        case assignment :: Nil =>
+          inside(assignment.argument.l) {
+            case (a: Identifier) :: (constructor: Call) :: Nil =>
+              a.name shouldBe "a"
+
+              constructor.name shouldBe Defines.ConstructorMethodName
+              constructor.methodFullName shouldBe s"Test0.rb:<global>::program.A:${Defines.ConstructorMethodName}"
+              constructor.code shouldBe "A.new"
+            case xs => fail(s"Expected one identifier and one call argument, got [${xs.code.mkString(",")}]")
+          }
+        case xs => fail(s"Expected a single assignment, got [${xs.code.mkString(",")}]")
+      }
+    }
+
+    "create a call to the object's constructor, with `A` as the sole argument at index 0" in {
+      inside(cpg.call.nameExact(Defines.ConstructorMethodName).l) {
+        case constructor :: Nil =>
+          inside(constructor.argument.l) {
+            case (a: Identifier) :: Nil =>
+              a.name shouldBe "A"
+              a.typeFullName shouldBe "Test0.rb:<global>::program.A"
+              a.argumentIndex shouldBe 0
+            case xs => fail(s"Expected one identifier and one call argument, got [${xs.code.mkString(",")}]")
+          }
+        case xs => fail(s"Expected a single alloc, got [${xs.code.mkString(",")}]")
+      }
+    }
+  }
+
 }

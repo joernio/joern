@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
-import io.joern.rubysrc2cpg.datastructures.{NamespaceScope, RubyProgramSummary, RubyScope}
+import io.joern.rubysrc2cpg.datastructures.{BlockScope, NamespaceScope, RubyProgramSummary, RubyScope}
 import io.joern.rubysrc2cpg.parser.{RubyNodeCreator, RubyParser}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
@@ -11,6 +11,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 class AstCreator(
   val fileName: String,
@@ -80,8 +81,11 @@ class AstCreator(
     scope.newProgramScope
       .map { moduleScope =>
         scope.pushNewScope(moduleScope)
+        val block = blockNode(rootNode)
+        scope.pushNewScope(BlockScope(block))
         val statementAsts = rootNode.statements.flatMap(astsForStatement)
-        val bodyAst       = blockAst(blockNode(rootNode), statementAsts)
+        scope.popScope()
+        val bodyAst = blockAst(block, statementAsts)
         scope.popScope()
         methodAst(methodNode_, Seq.empty, bodyAst, methodReturn, newModifierNode(ModifierTypes.MODULE) :: Nil)
       }
