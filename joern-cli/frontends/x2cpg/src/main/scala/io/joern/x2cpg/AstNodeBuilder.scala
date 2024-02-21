@@ -142,7 +142,7 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
     inherits: Seq[String] = Seq.empty,
     alias: Option[String] = None
   ): NewTypeDecl = {
-    NewTypeDecl()
+    val node_ = NewTypeDecl()
       .name(name)
       .fullName(fullName)
       .code(code)
@@ -154,6 +154,10 @@ trait AstNodeBuilder[Node, NodeProcessor] { this: NodeProcessor =>
       .aliasTypeFullName(alias)
       .lineNumber(line(node))
       .columnNumber(column(node))
+    offset(node).foreach { case (offset, offsetEnd) =>
+      node_.offset(offset).offsetEnd(offsetEnd)
+    }
+    node_
   }
 
   protected def parameterInNode(

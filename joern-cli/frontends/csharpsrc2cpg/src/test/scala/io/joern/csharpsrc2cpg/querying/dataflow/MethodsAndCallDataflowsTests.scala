@@ -8,6 +8,7 @@ class MethodsAndCallDataflowsTests extends CSharpCode2CpgFixture(withDataFlow = 
   "method and call dataflows" should {
     val cpg = code(
       """
+        |namespace Fred {
         |public class Foo {
         | public int bar(int pBar) {
         |   return pBar + 1;
@@ -23,6 +24,7 @@ class MethodsAndCallDataflowsTests extends CSharpCode2CpgFixture(withDataFlow = 
         | public int qux(int pQux, int ppQux) {
         |   return pQux / ppQux;
         | }
+        |}
         |}
         |""".stripMargin,
       "Foo.cs"

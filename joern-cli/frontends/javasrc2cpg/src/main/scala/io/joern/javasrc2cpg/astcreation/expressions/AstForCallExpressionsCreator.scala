@@ -244,27 +244,31 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
       line(expr)
     )
 
-    val isInnerType = anonymousClassBody.isDefined || baseTypeFromScope.exists(_.isInstanceOf[ScopeInnerType])
+    val isInnerType = anonymousClassBody.isDefined || baseTypeFromScope.exists(
+      _.isInstanceOf[ScopeInnerType]
+    ) || expr.getScope.isPresent
 
-    lazy val thisParameter = scope.lookupVariable(NameConstants.This).variableNode
     val initReceiverAst =
       assignmentTarget.root.collect { case root: AstNodeNew => assignmentTarget.subTreeCopy(root) }.getOrElse {
         logger.warn(s"Assignment target ast with no root at $filename:${line(expr)}:${column(expr)}")
         unknownAst(expr)
       }
 
-    // TODO: This is wrong for chained constructors where the `captured this` is the object created by the previous
-    //  constructor in the chain
-    val capturedThis = scope.lookupVariable(NameConstants.This) match {
-      case SimpleVariable(param: ScopeParameter) => Some(param.node)
-      case _                                     => None
-    }
+    val capturedOuterClassAst =
+      expr.getScope.toScala.flatMap(astsForExpression(_, ExpectedType.empty).headOption).orElse {
+        scope.lookupVariable(NameConstants.This) match {
+          case SimpleVariable(param: ScopeParameter) if !scope.isEnclosingScopeStatic =>
+            val outerClassIdentifier = identifierNode(expr, param.name, param.name, param.typeFullName)
+            Some(Ast(outerClassIdentifier).withRefEdge(outerClassIdentifier, param.node))
+          case _ => None
+        }
+      }
 
     val initAst = if (isInnerType) {
       val initCallAst = Ast(initCall)
       scope.enclosingTypeDecl.foreach(
         _.registerInitToComplete(
-          PartialInit(allocNode.typeFullName, initCallAst, initReceiverAst, argumentAsts.toList, capturedThis)
+          PartialInit(allocNode.typeFullName, initCallAst, initReceiverAst, argumentAsts.toList, capturedOuterClassAst)
         )
       )
       initCallAst
@@ -351,59 +355,6 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
       .dispatchType(DispatchTypes.STATIC_DISPATCH)
       .lineNumber(lineNumber)
       .columnNumber(columnNumber)
-  }
-
-  private def blockAstForConstructorInvocation(
-    lineNumber: Option[Integer],
-    columnNumber: Option[Integer],
-    allocNode: NewCall,
-    initNode: NewCall,
-    args: Seq[Ast],
-    isInnerType: Boolean
-  ): Ast = {
-    val blockNode = NewBlock()
-      .lineNumber(lineNumber)
-      .columnNumber(columnNumber)
-      .typeFullName(allocNode.typeFullName)
-
-    val tempName = "$obj" ++ tempConstCount.toString
-    tempConstCount += 1
-    val identifier    = newIdentifierNode(tempName, allocNode.typeFullName)
-    val identifierAst = Ast(identifier)
-
-    val allocAst = Ast(allocNode)
-
-    val assignmentNode = newOperatorCallNode(Operators.assignment, PropertyDefaults.Code, Some(allocNode.typeFullName))
-
-    val assignmentAst = callAst(assignmentNode, List(identifierAst, allocAst))
-
-    val identifierWithDefaultOrder = identifier.copy.order(PropertyDefaults.Order)
-    val identifierForInit          = identifierWithDefaultOrder.copy
-    val initCopyWithDefaultOrder   = initNode.copy.order(PropertyDefaults.Order)
-
-    val returnAst = Ast(identifierWithDefaultOrder.copy)
-
-    val capturedThis = scope.lookupVariable(NameConstants.This) match {
-      case SimpleVariable(param: ScopeParameter) => Some(param.node)
-      case _                                     => None
-    }
-
-    val initAst = if (isInnerType) {
-      val initCallAst = Ast(initCopyWithDefaultOrder)
-      scope.enclosingTypeDecl.foreach(
-        _.registerInitToComplete(
-          PartialInit(allocNode.typeFullName, initCallAst, Ast(identifierForInit), args.toList, capturedThis)
-        )
-      )
-      initCallAst
-    } else {
-      callAst(initCopyWithDefaultOrder, args, Some(Ast(identifierForInit)))
-    }
-
-    Ast(blockNode)
-      .withChild(assignmentAst)
-      .withChild(initAst)
-      .withChild(returnAst)
   }
 
   private def getArgumentCodeString(args: NodeList[Expression]): String = {

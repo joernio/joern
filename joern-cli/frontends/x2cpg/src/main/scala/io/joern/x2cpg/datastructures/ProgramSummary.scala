@@ -113,7 +113,9 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: 
     typeFullName: Option[String] = None
   ): Option[M] = typeFullName match {
     case None =>
-      membersInScope.collectFirst { case m: MethodLike if m.name == callName => m.asInstanceOf[M] }
+      // TODO: The typesInScope part is to imprecisely solve the unimplemented polymorphism limitation
+      (membersInScope ++ typesInScope.flatMap(_.methods))
+        .collectFirst { case m: MethodLike if m.name == callName => m.asInstanceOf[M] }
     case Some(tfn) =>
       tryResolveTypeReference(tfn).flatMap { t =>
         t.methods.find { m => m.name == callName && isOverloadedBy(m, argTypes) }
@@ -188,6 +190,16 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: 
         val filteredMembers = matchingMembers.filter(member => nameSet.contains(member.name))
         membersInScope.addAll(filteredMembers)
     }
+  }
+
+  /** Given a method, will attempt to find the associated type with preference to the types in scope.
+    * @param m
+    *   the method meta data.
+    * @return
+    *   the type meta data, if found.
+    */
+  def typeForMethod(m: M): Option[T] = {
+    typesInScope.find(t => t.methods.contains(m))
   }
 
 }

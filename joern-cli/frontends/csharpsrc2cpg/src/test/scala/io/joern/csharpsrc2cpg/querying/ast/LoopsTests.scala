@@ -25,7 +25,8 @@ class LoopsTests extends CSharpCode2CpgFixture {
               iteratorNode.typeFullName shouldBe "System.Int32"
 
               iterableNode.code shouldBe "fibNumbers"
-              iterableNode.typeFullName shouldBe "List<int>"
+              // TODO: List will be fully qualified once the System types are known
+              iterableNode.typeFullName shouldBe "List"
             case _ => fail("No node for iterable found in `foreach` statement")
           }
 
