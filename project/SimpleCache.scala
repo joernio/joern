@@ -32,12 +32,15 @@ object SimpleCache {
    * (In theory one could change the api to allow for that, but that'd make the SimpleCache api less 'simple')
    * */
   private def wipeOldCachedFiles(): Unit = {
-    Files.walk(Paths.get(LocalCacheDir)).filter(Files.isRegularFile(_)).forEach { path =>
-      val creationTime = Files.readAttributes(path, classOf[BasicFileAttributes]).creationTime().toInstant
-      val cutoffDate = Instant.now().minus(30, ChronoUnit.DAYS)
-      if (creationTime.compareTo(cutoffDate) == -1) {
-        println(s"[DEBUG] deleting old file from $LocalCacheDir (simply based on creation time...)")
-        Files.delete(path)
+    val root = Paths.get(LocalCacheDir)
+    if (Files.exists(root)) {
+      Files.walk(root).filter(Files.isRegularFile(_)).forEach { path =>
+        val creationTime = Files.readAttributes(path, classOf[BasicFileAttributes]).creationTime().toInstant
+        val cutoffDate = Instant.now().minus(30, ChronoUnit.DAYS)
+        if (creationTime.compareTo(cutoffDate) == -1) {
+          println(s"[DEBUG] deleting old file from $LocalCacheDir (simply based on creation time...)")
+          Files.delete(path)
+        }
       }
     }
   }
