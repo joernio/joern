@@ -84,12 +84,7 @@ astGenDlTask := {
   astGenDir.mkdirs()
 
   astGenBinaryNames.value.foreach { fileName =>
-    val dest = astGenDir / fileName
-    if (!dest.exists) {
-      val url            = s"${astGenDlUrl.value}$fileName"
-      val downloadedFile = SimpleCache.downloadMaybe(url)
-      IO.copyFile(downloadedFile, dest)
-    }
+    DownloadHelper.ensureIsAvailable(s"${astGenDlUrl.value}$fileName", astGenDir / fileName)
   }
 
   val distDir = (Universal / stagingDirectory).value / "bin" / "astgen"
@@ -110,14 +105,6 @@ stage := Def
   .sequential(astGenSetAllPlatforms, Universal / stage)
   .andFinally(System.setProperty("ALL_PLATFORMS", "FALSE"))
   .value
-
-// Also remove astgen binaries with clean, e.g., to allow for updating them.
-// Sadly, we can't define the bin/ folders globally,
-// as .value can only be used within a task or setting macro
-cleanFiles ++= Seq(
-  baseDirectory.value / "bin" / "astgen",
-  (Universal / stagingDirectory).value / "bin" / "astgen"
-) ++ astGenBinaryNames.value.map(fileName => SimpleCache.encodeFile(s"${astGenDlUrl.value}$fileName"))
 
 Universal / packageName       := name.value
 Universal / topLevelDirectory := None
