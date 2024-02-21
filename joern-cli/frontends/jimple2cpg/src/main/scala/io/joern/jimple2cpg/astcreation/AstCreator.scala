@@ -3,7 +3,6 @@ package io.joern.jimple2cpg.astcreation
 import io.joern.jimple2cpg.astcreation.declarations.AstForDeclarationsCreator
 import io.joern.jimple2cpg.astcreation.expressions.AstForExpressionsCreator
 import io.joern.jimple2cpg.astcreation.statements.AstForStatementsCreator
-import io.joern.jimple2cpg.util.Decompiler
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.utils.NodeBuilders
@@ -19,8 +18,6 @@ import soot.{Unit as SUnit, Local as _, *}
 
 import scala.collection.immutable.Seq
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.Try
 
 class AstCreator(

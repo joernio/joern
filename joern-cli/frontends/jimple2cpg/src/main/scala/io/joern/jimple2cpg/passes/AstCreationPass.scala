@@ -2,7 +2,6 @@ package io.joern.jimple2cpg.passes
 
 import io.joern.jimple2cpg.Config
 import io.joern.jimple2cpg.astcreation.AstCreator
-import io.joern.jimple2cpg.util.Decompiler
 import io.joern.jimple2cpg.util.ProgramHandlingUtil.ClassFile
 import io.joern.x2cpg.datastructures.Global
 import io.shiftleft.codepropertygraph.Cpg
