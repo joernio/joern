@@ -142,6 +142,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val argumentAsts    = node.arguments.map(astForMethodCallArgument)
     val constructorCall = callNode(node, code(node), methodName, fullName, DispatchTypes.STATIC_DISPATCH)
     val receiverAst     = Ast(identifierNode(node, className, className, receiverTypeFullName))
+    // TODO: We may want to lower this with an `alloc` wrapped in a block, e.g.
+    /*
+      `return Bar.new`, lowered to
+      `return {Bar tmp = Bar.<alloc>(); tmp.<init>(); tmp}`
+     */
     callAst(constructorCall, argumentAsts, Option(receiverAst))
   }
 
