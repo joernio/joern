@@ -1,10 +1,11 @@
 package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.astcreation.GlobalTypes.{builtinFunctions, builtinPrefix}
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.RubyNode
-import io.joern.rubysrc2cpg.datastructures.{RubyProgramSummary, RubyScope}
+import io.joern.rubysrc2cpg.datastructures.{BlockScope, MethodLikeScope, RubyProgramSummary, RubyScope, TypeLikeScope}
+import io.joern.x2cpg.datastructures.NamespaceLikeScope
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -22,16 +23,20 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def prefixAsBuiltin(x: String): String = s"$builtinPrefix$pathSep$x"
   protected def pathSep                            = "."
 
-  protected def handleNewVariableOccurrence(node: RubyNode): Ast = {
+  protected def handleVariableOccurrence(node: RubyNode): Ast = {
     val name       = code(node)
     val identifier = identifierNode(node, name, name, Defines.Any)
-    scope.lookupVariable(name) match
+    scope.lookupVariable(name) match {
       case None =>
         val local = localNode(node, name, name, Defines.Any)
-        scope.addToScope(name, local)
+        scope.addToScope(name, local) match {
+          case BlockScope(block) => diffGraph.addEdge(block, local, EdgeTypes.AST)
+          case _                 =>
+        }
         Ast(identifier).withRefEdge(identifier, local)
       case Some(local) =>
         Ast(identifier).withRefEdge(identifier, local)
+    }
   }
 
   protected val UnaryOperatorNames: Map[String, String] = Map(

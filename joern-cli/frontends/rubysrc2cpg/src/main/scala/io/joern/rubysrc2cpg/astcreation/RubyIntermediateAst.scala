@@ -239,6 +239,9 @@ object RubyIntermediateAst {
   // TODO: Might be replaced by MemberCall simply?
   final case class MemberAccess(target: RubyNode, op: String, methodName: String)(span: TextSpan) extends RubyNode(span)
 
+  final case class ObjectInstantiation(clazz: RubyNode, arguments: List[RubyNode])(span: TextSpan)
+      extends RubyNode(span)
+
   /** Represents a `do` or `{ .. }` (braces) block. */
   final case class Block(parameters: List[RubyNode], body: RubyNode)(span: TextSpan) extends RubyNode(span)
 
