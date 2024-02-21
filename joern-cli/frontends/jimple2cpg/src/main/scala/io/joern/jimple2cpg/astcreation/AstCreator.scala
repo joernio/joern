@@ -49,12 +49,13 @@ class AstCreator(
     * corresponding CPG AST.
     */
   def createAst(): DiffGraphBuilder = {
-    val fileNode = NewFile().name(filename).order(0)
-    fileContent.foreach(fileNode.content(_))
-
     val astRoot = astForCompilationUnit(cls)
     storeInDiffGraph(astRoot, diffGraph)
+
+    val fileNode = NewFile().name(filename.replace(".class", ".java")).order(0)
+    fileContent.foreach(fileNode.content(_))
     diffGraph.addNode(fileNode)
+
     diffGraph
   }
 

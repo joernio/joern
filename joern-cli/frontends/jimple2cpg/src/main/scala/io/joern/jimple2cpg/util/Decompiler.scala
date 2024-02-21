@@ -8,19 +8,20 @@ import org.slf4j.LoggerFactory
 
 import java.util
 import java.util.{Collection, Collections}
+import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 
-class Decompiler(classFile: File) {
+class Decompiler(classFile: List[File]) {
 
-  private val logger         = LoggerFactory.getLogger(getClass)
-  private var decompiledJava = ""
+  private val logger                                                   = LoggerFactory.getLogger(getClass)
+  private val classToDecompiledSource: mutable.HashMap[String, String] = mutable.HashMap.empty;
 
   /** Decompiles the class files and returns a map of the method name to its source code contents.
     */
-  def decompile(): String = {
+  def decompile(): mutable.HashMap[String, String] = {
     val driver = new CfrDriver.Builder().withOutputSink(outputSink).build()
-    driver.analyse(SeqHasAsJava(Seq(classFile.pathAsString)).asJava)
-    decompiledJava
+    driver.analyse(SeqHasAsJava(classFile.map(_.pathAsString)).asJava)
+    classToDecompiledSource
   }
 
   private val outputSink: OutputSinkFactory = new OutputSinkFactory() {
@@ -43,7 +44,7 @@ class Decompiler(classFile: File) {
                 val classFullName = Seq(packageName, className).filterNot(_.isBlank).mkString(".")
                 logger.debug(s"Decompiled '$classFullName', parsing...")
 
-                decompiledJava = x.getJava
+                classToDecompiledSource.put(classFullName, x.getJava)
               case _ =>
                 logger.error(s"Unhandled decompilation type ${s.getClass}")
           case OutputSinkFactory.SinkType.PROGRESS =>

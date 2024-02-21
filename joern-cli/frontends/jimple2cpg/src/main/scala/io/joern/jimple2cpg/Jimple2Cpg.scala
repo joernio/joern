@@ -2,6 +2,7 @@ package io.joern.jimple2cpg
 
 import better.files.File
 import io.joern.jimple2cpg.passes.{AstCreationPass, DeclarationRefPass, SootAstCreationPass}
+import io.joern.jimple2cpg.util.Decompiler
 import io.joern.jimple2cpg.util.ProgramHandlingUtil.{ClassFile, extractClassesInPackageLayout}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.X2CpgFrontend
@@ -107,6 +108,8 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
         }
       case _ =>
         val classFiles = sootLoad(input, tmpDir, config.recurse, config.depth)
+        decompileClassFiles(classFiles, !config.disableFileContent)
+
         { () =>
           val astCreator = AstCreationPass(classFiles, cpg, config)
           astCreator.createAndApply()
@@ -123,6 +126,23 @@ class Jimple2Cpg extends X2CpgFrontend[Config] {
       .withRegisteredTypes(global.usedTypes.keys().asScala.toList, cpg)
       .createAndApply()
     DeclarationRefPass(cpg).createAndApply()
+  }
+
+  private def decompileClassFiles(classFiles: List[ClassFile], decompileJava: Boolean): Unit = {
+    Option.when(decompileJava) {
+      val decompiler     = new Decompiler(classFiles.map(_.file))
+      val decompiledJava = decompiler.decompile()
+
+      classFiles.foreach(x => {
+        val decompiledJavaSrc = decompiledJava.get(x.fullyQualifiedClassName.get)
+        decompiledJavaSrc match {
+          case Some(src) =>
+            val outputFile = File(s"${x.file.pathAsString.replace(".class", ".java")}")
+            outputFile.write(src)
+          case None => // Do Nothing
+        }
+      })
+    }
   }
 
   override def createCpg(config: Config): Try[Cpg] =
