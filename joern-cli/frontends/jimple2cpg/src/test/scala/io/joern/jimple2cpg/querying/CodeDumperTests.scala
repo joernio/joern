@@ -76,8 +76,8 @@ class CodeDumperTests extends JimpleCode2CpgFixture {
       .cpg
 
     "allow one to get java decompiled code for all classes" in {
-      inside(cpg.file.name(".*.java").l) {
-        case decompiledJavaFoo :: decompiledJavaBaz :: Nil =>
+      inside(cpg.file.name(".*Foo.java").l) {
+        case decompiledJavaFoo :: Nil =>
           decompiledJavaFoo.content.linesIterator.map(_.strip).filter(_.nonEmpty).l shouldBe List(
             "/*",
             "* Decompiled with CFR 0.152.",
@@ -92,6 +92,11 @@ class CodeDumperTests extends JimpleCode2CpgFixture {
             "}"
           )
 
+        case _ => fail("Expected exactly 1 file")
+      }
+
+      inside(cpg.file.name(".*Baz.java").l) {
+        case decompiledJavaBaz :: Nil =>
           decompiledJavaBaz.content.linesIterator.map(_.strip).filter(_.nonEmpty).l shouldBe List(
             "/*",
             "* Decompiled with CFR 0.152.",
@@ -105,7 +110,7 @@ class CodeDumperTests extends JimpleCode2CpgFixture {
             "}",
             "}"
           )
-        case content => fail(s"Expected exactly 2 files")
+        case _ => fail("Expected exactly 1 file")
       }
     }
   }
