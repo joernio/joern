@@ -8,6 +8,18 @@ import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier}
 import io.shiftleft.semanticcpg.language._
 
 class CallTests extends PhpCode2CpgFixture {
+  "variable call arguments with names matching methods should not have a methodref" in {
+    val cpg = code("""<?php
+      |$a = file("ABC");
+      |$file = $a.contents();
+      |foo($file);
+      |""".stripMargin)
+
+    inside(cpg.call.name("foo").argument.l) { case List(fileArg: Identifier) =>
+      fileArg.name shouldBe "file"
+    }
+  }
+
   "halt_compiler calls should be created correctly" in {
     val cpg = code("""<?php
         |__halt_compiler();
