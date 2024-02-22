@@ -33,14 +33,25 @@ class HashTests extends RubyCode2CpgFixture {
     one.code shouldBe "1"
   }
 
-  "Range of primitive ordinal type should expand in hash key" in {
+  "Inclusive Range of primitive ordinal type should expand in hash key" in {
     val cpg = code("""
-        |{1...5:"abc"}
+        |{1..3:"abc"}
         |""".stripMargin)
 
     val List(hashCall) = cpg.call.name(RubyOperators.hashInitializer).l
 
-    hashCall.argument.l.size shouldBe 5
+    inside(cpg.call.name(RubyOperators.hashInitializer).l) {
+      case hashInitializer :: Nil =>
+        inside(hashInitializer.argument.l) {
+          case firstCall :: secondCall :: thirdCall :: Nil =>
+            firstCall.code shouldBe "1: \"abc\""
+            secondCall.code shouldBe "2: \"abc\""
+            thirdCall.code shouldBe "3: \"abc\""
+          case _ => fail("Expected 3 calls (one per item in range)")
+        }
+      case _ => fail("Expected one hash initializer function")
+    }
+
   }
 
 }
