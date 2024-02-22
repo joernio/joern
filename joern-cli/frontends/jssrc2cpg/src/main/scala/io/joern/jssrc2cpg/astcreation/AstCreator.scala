@@ -63,7 +63,7 @@ class AstCreator(val config: Config, val global: Global, val parserResult: Parse
 
   override def createAst(): DiffGraphBuilder = {
     val fileContent = if (!config.disableFileContent) Option(parserResult.fileContent) else None
-    val fileNode    = NewFile().name(parserResult.filename).order(1)
+    val fileNode    = NewFile().name(parserResult.filename).order(0)
     fileContent.foreach(fileNode.content(_))
     val namespaceBlock = globalNamespaceBlock()
     methodAstParentStack.push(namespaceBlock)
