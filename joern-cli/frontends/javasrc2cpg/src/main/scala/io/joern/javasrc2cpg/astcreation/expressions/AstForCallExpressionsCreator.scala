@@ -148,12 +148,12 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
 
     // Use an untyped identifier for receiver here, create the alloc and init ASTs,
     // then use the types of those to fix the local type.
-    val tmpIdentifier = identifierNode(expr, tmpName, tmpName, TypeConstants.Any)
+    val assignTarget = identifierNode(expr, tmpName, tmpName, TypeConstants.Any)
     val allocAndInitAst =
-      inlinedAstsForObjectCreationExpr(expr, Ast(tmpIdentifier), expectedType, resetAssignmentTargetType = true)
+      inlinedAstsForObjectCreationExpr(expr, Ast(assignTarget.copy), expectedType, resetAssignmentTargetType = true)
 
-    tmpIdentifier.typeFullName(allocAndInitAst.allocAst.rootType.getOrElse(TypeConstants.Any))
-    val tmpLocal = localNode(expr, tmpName, tmpName, tmpIdentifier.typeFullName)
+    assignTarget.typeFullName(allocAndInitAst.allocAst.rootType.getOrElse(TypeConstants.Any))
+    val tmpLocal = localNode(expr, tmpName, tmpName, assignTarget.typeFullName)
 
     val allocAssignCode = s"$tmpName = ${allocAndInitAst.allocAst.rootCodeOrEmpty}"
     val allocAssignCall =
@@ -167,15 +167,15 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
         typeFullName = Option(tmpLocal.typeFullName)
       )
 
-    val allocAssignTargetNode = tmpIdentifier.copy
+    val allocAssignTargetNode = assignTarget
     val allocAssignTargetAst  = Ast(allocAssignTargetNode).withRefEdge(allocAssignTargetNode, tmpLocal)
     val allocAssignAst        = callAst(allocAssignCall, allocAssignTargetAst :: allocAndInitAst.allocAst :: Nil)
 
-    val returnedIdentifier    = tmpIdentifier.copy
+    val returnedIdentifier    = assignTarget.copy
     val returnedIdentifierAst = Ast(returnedIdentifier).withRefEdge(returnedIdentifier, tmpLocal)
 
     Ast(blockNode(expr).typeFullName(returnedIdentifier.typeFullName))
-      .withChild(Ast(tmpLocal).withRefEdge(tmpIdentifier, tmpLocal))
+      .withChild(Ast(tmpLocal).withRefEdge(assignTarget, tmpLocal))
       .withChild(allocAssignAst)
       .withChild(allocAndInitAst.initAst)
       .withChild(returnedIdentifierAst)
@@ -183,7 +183,7 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
 
   private[expressions] def inlinedAstsForObjectCreationExpr(
     expr: ObjectCreationExpr,
-    assignmentTarget: Ast,
+    initReceiverAst: Ast,
     expectedType: ExpectedType,
     resetAssignmentTargetType: Boolean
   ): AllocAndInitCallAsts = {
@@ -211,10 +211,11 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
 
     if (resetAssignmentTargetType) {
       typeFullName.foreach { typeFullName =>
-        assignmentTarget.root.collect { case identifier: NewIdentifier => identifier.typeFullName(typeFullName) }
+        initReceiverAst.root.collect { case identifier: NewIdentifier => identifier.typeFullName(typeFullName) }
       }
     }
-    val initReceiverType = assignmentTarget.rootType match {
+
+    val initReceiverType = initReceiverAst.rootType match {
       case Some(TypeConstants.Any)             => typeFullName
       case Some(PropertyDefaults.TypeFullName) => typeFullName
       case Some(typ)                           => Option(typ)
@@ -247,12 +248,6 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
     val isInnerType = anonymousClassBody.isDefined || baseTypeFromScope.exists(
       _.isInstanceOf[ScopeInnerType]
     ) || expr.getScope.isPresent
-
-    val initReceiverAst =
-      assignmentTarget.root.collect { case root: AstNodeNew => assignmentTarget.subTreeCopy(root) }.getOrElse {
-        logger.warn(s"Assignment target ast with no root at $filename:${line(expr)}:${column(expr)}")
-        unknownAst(expr)
-      }
 
     val capturedOuterClassAst =
       expr.getScope.toScala.flatMap(astsForExpression(_, ExpectedType.empty).headOption).orElse {
