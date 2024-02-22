@@ -193,7 +193,10 @@ object RubyIntermediateAst {
   final case class DynamicLiteral(typeFullName: String, expressions: List[RubyNode])(span: TextSpan)
       extends RubyNode(span)
 
-  final case class RangeExpression(lowerBound: RubyNode, upperBound: RubyNode)(span: TextSpan) extends RubyNode(span)
+  final case class RangeExpression(lowerBound: RubyNode, upperBound: RubyNode, rangeOperator: RubyNode)(span: TextSpan)
+      extends RubyNode(span)
+
+  final case class RangeOperator(exlcusive: Boolean)(span: TextSpan) extends RubyNode(span)
 
   final case class ArrayLiteral(elements: List[RubyNode])(span: TextSpan) extends RubyNode(span) {
     def isSymbolArray: Boolean = text.take(2).toLowerCase.startsWith("%i")
