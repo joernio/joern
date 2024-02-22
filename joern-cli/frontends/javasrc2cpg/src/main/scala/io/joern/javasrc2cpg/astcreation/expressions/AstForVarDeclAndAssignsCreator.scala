@@ -11,7 +11,14 @@ import io.joern.javasrc2cpg.typesolvers.TypeInfoCalculator.TypeConstants
 import io.joern.javasrc2cpg.util.NameConstants
 import io.joern.x2cpg.utils.AstPropertiesUtil.*
 import io.joern.x2cpg.Ast
-import io.shiftleft.codepropertygraph.generated.nodes.{NewCall, NewFieldIdentifier, NewIdentifier, NewMember}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  AstNodeNew,
+  NewCall,
+  NewFieldIdentifier,
+  NewIdentifier,
+  NewMember,
+  NewUnknown
+}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import org.slf4j.LoggerFactory
 
@@ -184,8 +191,15 @@ trait AstForVarDeclAndAssignsCreator { this: AstCreator =>
 
     val initializerAsts = initializer match {
       case objectCreationExpr: ObjectCreationExpr if isSimpleAssign && isVarOrFieldAssign =>
+        val initReceiver =
+          target.subTreeCopy(target.root.collect { case astNode: AstNodeNew => astNode }.getOrElse(NewUnknown()))
         val inlinedAsts =
-          inlinedAstsForObjectCreationExpr(objectCreationExpr, target, expectedType, resetAssignmentTargetType = false)
+          inlinedAstsForObjectCreationExpr(
+            objectCreationExpr,
+            initReceiver,
+            expectedType,
+            resetAssignmentTargetType = false
+          )
         inlinedAsts.allocAst :: inlinedAsts.initAst :: Nil
 
       case _ => astsForExpression(initializer, expectedType).toList
