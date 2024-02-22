@@ -16,7 +16,7 @@ class FileTests extends CCodeToCpgSuite {
   "should contain the correct file nodes" in {
     val List(fileTest, fileUnknown) = cpg.file.nameNot("<includes>").l
     fileTest.name shouldBe "Test0.c"
-    fileTest.order shouldBe 1
+    fileTest.order shouldBe 0
     fileUnknown.name shouldBe FileTraversal.UNKNOWN
     fileUnknown.order shouldBe 0
   }

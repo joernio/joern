@@ -9,6 +9,12 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
 
   "AST generation for simple fragments" should {
 
+    "contain the correct file nodes" in AstFixture("") { cpg =>
+      val List(fileTest) = cpg.file.l
+      fileTest.name shouldBe "code.js"
+      fileTest.order shouldBe 0
+    }
+
     "have correct structure for with statement with block" in AstFixture("""
         |with(foo()) {
         |  bar();
