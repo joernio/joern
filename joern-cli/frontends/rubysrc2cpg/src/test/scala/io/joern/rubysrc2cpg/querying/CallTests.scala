@@ -153,7 +153,7 @@ class CallTests extends RubyCode2CpgFixture {
       inside(cpg.call("src").l) {
         case src :: Nil =>
           src.name shouldBe "src"
-          src.methodFullName shouldBe "src"
+          src.methodFullName shouldBe "Test0.rb:<global>::program:src"
         case xs => fail(s"Expected exactly one `src` call, instead got [${xs.code.mkString(",")}]")
       }
     }
