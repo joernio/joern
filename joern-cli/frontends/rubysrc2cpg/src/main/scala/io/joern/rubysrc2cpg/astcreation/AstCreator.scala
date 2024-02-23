@@ -35,6 +35,8 @@ class AstCreator(
 
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
 
+  protected var parseLevel: AstParseLevel = AstParseLevel.FULL_AST
+
   protected val relativeFileName: String =
     projectRoot.map(fileName.stripPrefix).map(_.stripPrefix(java.io.File.separator)).getOrElse(fileName)
 
@@ -49,7 +51,7 @@ class AstCreator(
    * The (parsed) contents of the file are put under that fictitious METHOD node, thus
    * allowing for a straightforward representation of out-of-method statements.
    */
-  private def astForRubyFile(rootStatements: StatementList): Ast = {
+  protected def astForRubyFile(rootStatements: StatementList): Ast = {
     val fileNode = NewFile().name(relativeFileName)
     val fullName = s"$relativeFileName:${NamespaceTraversal.globalNamespaceName}"
     val namespaceBlock = NewNamespaceBlock()
@@ -91,4 +93,17 @@ class AstCreator(
       }
       .getOrElse(Ast())
   }
+}
+
+/** Determines till what depth the AST creator will parse until.
+  */
+enum AstParseLevel {
+
+  /** This level will parse all types and methods signatures, but exclude method bodies.
+    */
+  case SIGNATURES
+
+  /** This level will parse the full AST.
+    */
+  case FULL_AST
 }

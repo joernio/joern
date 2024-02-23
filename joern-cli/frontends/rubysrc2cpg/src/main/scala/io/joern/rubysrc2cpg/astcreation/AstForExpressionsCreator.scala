@@ -342,10 +342,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForMethodCallWithoutBlock(node: SimpleCall, methodIdentifier: SimpleIdentifier): Ast = {
-    val methodName     = methodIdentifier.text
-    val methodFullName = methodName // TODO
-    val argumentAst    = node.arguments.map(astForMethodCallArgument)
-    val call           = callNode(node, code(node), methodName, methodFullName, DispatchTypes.STATIC_DISPATCH)
+    val methodName           = methodIdentifier.text
+    lazy val defaultFullName = s"${XDefines.UnresolvedNamespace}:$methodName"
+    val methodFullName = scope.tryResolveMethodInvocation(methodName, List.empty) match {
+      case Some(m) => scope.typeForMethod(m).map(t => s"${t.name}:${m.name}").getOrElse(defaultFullName)
+      case None    => defaultFullName
+    }
+    val argumentAst = node.arguments.map(astForMethodCallArgument)
+    val call        = callNode(node, code(node), methodName, methodFullName, DispatchTypes.STATIC_DISPATCH)
     callAst(call, argumentAst, None, None)
   }
 
