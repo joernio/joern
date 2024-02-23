@@ -22,17 +22,16 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
             // Check for implicit field reference
             case Some(field) if field.node.node != DotNetJsonAst.VariableDeclarator =>
               astForFieldIdentifier(typeFullName, identifierName, field)
-            case Some(field) if field.node.node == DotNetJsonAst.VariableDeclarator =>
-              /* This is so that if the type reference is not resolved, atleast the shorthand type will be populated instead of ANY */
-              Ast(identifierNode(ident, identifierName, ident.code, field.typeFullName))
-            case _ =>
+            case Some(field) =>
               // Check for static type reference
               scope.tryResolveTypeReference(identifierName) match {
                 case Some(typeReference) =>
                   Ast(identifierNode(ident, identifierName, ident.code, typeReference.name))
                 case None =>
-                  Ast(identifierNode(ident, identifierName, ident.code, typeFullName))
+                  Ast(identifierNode(ident, identifierName, ident.code, field.typeFullName))
               }
+            case None =>
+              Ast()
           }
       }
     } else {
