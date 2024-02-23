@@ -318,4 +318,27 @@ class MemberTests extends CSharpCode2CpgFixture {
       }
     }
   }
+
+  "a member with a external type" should {
+    val cpg = code("""
+        |using Microsoft.Extensions.Logging;
+        |
+        |namespace Foo {
+        | public class Bar {
+        |   private readonly ILogger<AcceptBookingRequestHandler> _logger;
+        |
+        |   public static void Main() {
+        |     _logger.LogInformation("Some info");
+        |   }
+        | }
+        |
+        |}
+        |""".stripMargin)
+
+    "link to it's reference, and propagate type" in {
+      inside(cpg.identifier.nameExact("_logger").l) { case logger :: Nil =>
+        logger.typeFullName shouldBe "ILogger" // TODO: Get the fullyQualifiedName.
+      }
+    }
+  }
 }
