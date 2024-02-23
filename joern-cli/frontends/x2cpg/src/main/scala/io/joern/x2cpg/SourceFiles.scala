@@ -18,7 +18,7 @@ object SourceFiles {
       case ignorePath                                 => filePath == ignorePath
     }
     if (isInIgnoredFiles) {
-      logger.info(s"'$filePath' ignored (--exclude)")
+      logger.debug(s"'$filePath' ignored (--exclude)")
       true
     } else {
       false
@@ -28,7 +28,7 @@ object SourceFiles {
   private def isIgnoredByDefaultRegex(filePath: String, inputPath: String, ignoredDefaultRegex: Seq[Regex]): Boolean = {
     val relPath = toRelativePath(filePath, inputPath)
     if (ignoredDefaultRegex.exists(_.matches(relPath))) {
-      logger.info(s"'$relPath' ignored by default")
+      logger.debug(s"'$relPath' ignored by default")
       true
     } else {
       false
@@ -39,7 +39,7 @@ object SourceFiles {
     val relPath               = toRelativePath(filePath, inputPath)
     val isInIgnoredFilesRegex = ignoredFilesRegex.matches(relPath)
     if (isInIgnoredFilesRegex) {
-      logger.info(s"'$relPath' ignored (--exclude-regex)")
+      logger.debug(s"'$relPath' ignored (--exclude-regex)")
       true
     } else {
       false

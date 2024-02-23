@@ -144,11 +144,14 @@ class AstGenRunner(config: Config) {
 
   private def checkParsedFiles(files: List[String], in: File): List[String] = {
     val numOfParsedFiles = files.size
+    logger.info(s"Parsed $numOfParsedFiles files.")
     if (numOfParsedFiles == 0) {
-      logger.info("Parsed 0 files. Please check if your project contains files that are ignored by default.")
-      SourceFiles.determine(in.pathAsString, Set(".swift"), ignoredDefaultRegex = Option(AstGenDefaultIgnoreRegex))
-    } else {
-      logger.debug(s"Parsed $numOfParsedFiles files.")
+      logger.info("You may want to check the DEBUG logs for a list of files that are ignored by default.")
+      SourceFiles.determine(
+        in.pathAsString,
+        Set(".js", ".ts", ".vue", ".ejs", ".jsx", ".mjs", ".tsx"),
+        ignoredDefaultRegex = Option(AstGenDefaultIgnoreRegex)
+      )
     }
     files
   }
