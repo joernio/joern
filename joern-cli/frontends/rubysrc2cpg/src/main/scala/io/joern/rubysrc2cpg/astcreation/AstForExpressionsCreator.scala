@@ -1,9 +1,10 @@
 package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{Unknown, *}
+import io.joern.rubysrc2cpg.datastructures.BlockScope
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.{RubyOperators, getBuiltInType}
-import io.joern.x2cpg.{Ast, ValidationMode}
+import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
 
@@ -17,6 +18,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: ConditionalExpression    => astForConditional(node)
     case node: MemberAccess             => astForMemberAccess(node)
     case node: MemberCall               => astForMemberCall(node)
+    case node: ObjectInstantiation      => astForObjectInstantiation(node)
     case node: IndexAccess              => astForIndexAccess(node)
     case node: SingleAssignment         => astForSingleAssignment(node)
     case node: AttributeAssignment      => astForAttributeAssignment(node)
@@ -129,33 +131,68 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     callAst(call, indexAsts, Some(targetAst))
   }
 
+  protected def astForObjectInstantiation(node: ObjectInstantiation): Ast = {
+    val className  = node.clazz.text
+    val methodName = XDefines.ConstructorMethodName
+    val (receiverTypeFullName, fullName) = scope.tryResolveTypeReference(className) match {
+      case Some(typeMetaData) => typeMetaData.name -> s"${typeMetaData.name}:$methodName"
+      case None =>
+        s"${XDefines.UnresolvedNamespace}.$className" -> s"${XDefines.UnresolvedNamespace}.$className:$methodName"
+    }
+    /*
+      Similarly to some other frontends, we lower the constructor into two operations, e.g.,
+      `return Bar.new`, lowered to
+      `return {Bar tmp = Bar.<alloc>(); tmp.<init>(); tmp}`
+     */
+    val block = blockNode(node)
+    scope.pushNewScope(BlockScope(block))
+
+    val tmp = SimpleIdentifier(Option(className))(node.span.spanStart(freshVariableName))
+    def tmpIdentifier = {
+      val tmpAst = astForSimpleIdentifier(tmp)
+      tmpAst.root.collect { case x: NewIdentifier => x.typeFullName(receiverTypeFullName) }
+      tmpAst
+    }
+
+    // Assign tmp to <alloc>
+    val receiverAst = Ast(identifierNode(node, className, className, receiverTypeFullName))
+    val allocCall   = callNode(node, code(node), Operators.alloc, Operators.alloc, DispatchTypes.STATIC_DISPATCH)
+    val allocAst    = callAst(allocCall, Seq.empty, Option(receiverAst))
+    val assignmentCall = callNode(
+      node,
+      s"${tmp.text} = ${code(node)}",
+      Operators.assignment,
+      Operators.assignment,
+      DispatchTypes.STATIC_DISPATCH
+    )
+    val tmpAssignment = callAst(assignmentCall, Seq(tmpIdentifier, allocAst))
+
+    // Call constructor
+    val argumentAsts       = node.arguments.map(astForMethodCallArgument)
+    val constructorCall    = callNode(node, code(node), methodName, fullName, DispatchTypes.STATIC_DISPATCH)
+    val constructorCallAst = callAst(constructorCall, argumentAsts, Option(tmpIdentifier))
+    scope.popScope()
+
+    // Assemble statements
+    blockAst(block, tmpAssignment :: constructorCallAst :: tmpIdentifier :: Nil)
+  }
+
   protected def astForSingleAssignment(node: SingleAssignment): Ast = {
     node.rhs match {
       case x: Unknown if x.span.text == Defines.Undefined =>
         // If the RHS is undefined, then this variable is not defined/placed in the variable table/registry
         Ast()
-      case _ => {
-        getAssignmentOperatorName(node.op) match
+      case _ =>
+        getAssignmentOperatorName(node.op) match {
           case None =>
             logger.warn(s"Unrecognized assignment operator: ${code(node)} ($relativeFileName), skipping")
             astForUnknown(node)
           case Some(op) =>
-            val lhsAst        = astForExpression(node.lhs)
-            val rhsAst        = astForExpression(node.rhs)
-            val call          = callNode(node, code(node), op, op, DispatchTypes.STATIC_DISPATCH)
-            val assignmentAst = callAst(call, Seq(lhsAst, rhsAst))
-            scope.lookupVariable(node.lhs.text) match
-              case None =>
-                // We are introducing a new variable. Thus, also create a LOCAL.
-                // TODO: Add the newly created LOCAL to the current METHOD.
-                val lhsNode = node.lhs
-                val local   = localNode(lhsNode, lhsNode.text, lhsNode.text, Defines.Any)
-                scope.addToScope(lhsNode.text, local)
-                assignmentAst
-              case Some(_) =>
-                // This variable is already in scope, so just emit the assignment.
-                assignmentAst
-      }
+            val lhsAst = astForExpression(node.lhs)
+            val rhsAst = astForExpression(node.rhs)
+            val call   = callNode(node, code(node), op, op, DispatchTypes.STATIC_DISPATCH)
+            callAst(call, Seq(lhsAst, rhsAst))
+        }
     }
 
   }
@@ -169,14 +206,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   protected def astForSimpleIdentifier(node: SimpleIdentifier): Ast = {
     val name = code(node)
-    // TODO: This treats identifiers as parenthesis-less calls by default, we would benefit from a pre-pass to validate
-    //  all defined method name in the application to check against
-    scope.lookupVariable(name) match
-      case None    => astForSimpleCall(SimpleCall(node, List())(node.span))
-      case Some(_) => handleNewVariableOccurrence(node)
+    scope.lookupVariable(name) match {
+      case None if scope.tryResolveMethodInvocation(node.text, List.empty).isDefined =>
+        astForSimpleCall(SimpleCall(node, List())(node.span))
+      case _ => handleVariableOccurrence(node)
+    }
   }
 
-  protected def astForMandatoryParameter(node: RubyNode): Ast = handleNewVariableOccurrence(node)
+  protected def astForMandatoryParameter(node: RubyNode): Ast = handleVariableOccurrence(node)
 
   protected def astForSimpleCall(node: SimpleCall): Ast = {
     node.target match
@@ -322,7 +359,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   private def astForKeywordArgument(assoc: Association): Ast = {
     val value = astForExpression(assoc.value)
     astForExpression(assoc.key).root match
-      case Some(keyNode: NewCall) =>
+      case Some(keyNode: NewIdentifier) =>
         value.root.collectFirst { case x: ExpressionNew =>
           x.argumentName_=(Option(keyNode.name))
           x.argumentIndex_=(-1)

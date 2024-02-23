@@ -53,7 +53,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withPostProcessing = true, w
     val sink   = cpg.method.name("f").methodReturn
     val flows  = sink.reachableByFlows(source)
     flows.map(flowToResultPairs).toSet shouldBe
-      Set(List(("f(x)", 2), ("y = x", 3), ("y", 3), ("y = x", 3), ("RET", 2)))
+      Set(List(("f(x)", 2), ("y = x", 3), ("RET", 2)))
   }
 
 }

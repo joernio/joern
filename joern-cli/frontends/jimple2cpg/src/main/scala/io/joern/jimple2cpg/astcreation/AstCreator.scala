@@ -18,13 +18,15 @@ import soot.{Unit as SUnit, Local as _, *}
 
 import scala.collection.immutable.Seq
 import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-import scala.jdk.CollectionConverters.CollectionHasAsScala
 import scala.util.Try
 
-class AstCreator(protected val filename: String, protected val cls: SootClass, global: Global)(implicit
-  withSchemaValidation: ValidationMode
-) extends AstCreatorBase(filename)
+class AstCreator(
+  protected val filename: String,
+  protected val cls: SootClass,
+  global: Global,
+  fileContent: Option[String] = None
+)(implicit withSchemaValidation: ValidationMode)
+    extends AstCreatorBase(filename)
     with AstForDeclarationsCreator
     with AstForStatementsCreator
     with AstForExpressionsCreator
@@ -46,6 +48,13 @@ class AstCreator(protected val filename: String, protected val cls: SootClass, g
   def createAst(): DiffGraphBuilder = {
     val astRoot = astForCompilationUnit(cls)
     storeInDiffGraph(astRoot, diffGraph)
+
+    if (fileContent.isDefined) {
+      val fileNode = NewFile().name(filename).order(0)
+      fileContent.foreach(fileNode.content(_))
+      diffGraph.addNode(fileNode)
+    }
+
     diffGraph
   }
 

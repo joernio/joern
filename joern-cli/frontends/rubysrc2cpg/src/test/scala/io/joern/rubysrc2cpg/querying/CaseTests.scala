@@ -24,7 +24,7 @@ class CaseTests extends RubyCode2CpgFixture {
     val List(assign)   = block.astChildren.assignment.l;
     val List(lhs, rhs) = assign.argument.l
 
-    List(lhs).isCall.name.l shouldBe List("<tmp-0>")
+    List(lhs).isIdentifier.name.l shouldBe List("<tmp-0>")
     List(rhs).isLiteral.code.l shouldBe List("0")
 
     val headIf @ List(_)           = block.astChildren.isControlStructure.l

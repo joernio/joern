@@ -106,7 +106,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       astParentFullName = scope.surroundingScopeFullName
     )
     scope.pushNewScope(MethodScope(fullName))
-    scope.pushNewScope(BlockScope)
+    val block_ = blockNode(node)
+    scope.pushNewScope(BlockScope(block_))
     // TODO: Should it be `return this.@abc`?
     val returnAst_ = {
       val returnNode_         = returnNode(node, s"return $fieldName")
@@ -114,7 +115,6 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       returnAst(returnNode_, Seq(Ast(fieldNameIdentifier)))
     }
 
-    val block_     = blockNode(node)
     val methodBody = blockAst(block_, List(returnAst_))
     scope.popScope()
     scope.popScope()
@@ -138,7 +138,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     scope.pushNewScope(MethodScope(fullName))
     val parameter = parameterInNode(node, "x", "x", 1, false, EvaluationStrategies.BY_REFERENCE)
     val methodBody = {
-      scope.pushNewScope(BlockScope)
+      val block_ = blockNode(node)
+      scope.pushNewScope(BlockScope(block_))
       val lhs = identifierNode(node, fieldName, fieldName, Defines.Any)
       val rhs = identifierNode(node, parameter.name, parameter.name, Defines.Any)
       val assignmentCall = callNode(

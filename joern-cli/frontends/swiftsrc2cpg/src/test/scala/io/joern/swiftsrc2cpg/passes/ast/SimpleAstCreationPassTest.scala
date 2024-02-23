@@ -17,6 +17,12 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       modModule.order shouldBe 1
     }
 
+    "contain the correct file nodes" in AstFixture("") { cpg =>
+      val List(fileTest) = cpg.file.l
+      fileTest.name shouldBe "code.swift"
+      fileTest.order shouldBe 0
+    }
+
     "have correct modifier for a function" in AstFixture("private static func foo() -> {}") { cpg =>
       val List(method)                            = cpg.method.nameExact("foo").l
       val List(modVirtual, modPrivate, modStatic) = method.modifier.l

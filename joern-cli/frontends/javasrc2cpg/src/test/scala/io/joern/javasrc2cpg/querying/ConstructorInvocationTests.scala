@@ -2,9 +2,11 @@ package io.joern.javasrc2cpg.querying
 
 import io.joern.javasrc2cpg.testfixtures.JavaSrcCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal, Local, Method}
+import io.shiftleft.codepropertygraph.generated.nodes.{AstNode, Block, Call, Identifier, Literal, Local, Method}
 import io.shiftleft.proto.cpg.Cpg.DispatchTypes
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
+
+import scala.util.Try
 
 class NewConstructorInvocationTests extends JavaSrcCode2CpgFixture {
   "inner class constructor invocations" when {
@@ -245,6 +247,14 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
       case res =>
         fail(s"Expected 2 Bar constructors, but got $res")
     }
+  }
+
+  "it should not leave any orphan identifiers" in {
+    cpg.identifier.filter(node => Try(node.astParent).isFailure).l shouldBe Nil
+  }
+
+  "it should not have any nodes with multiple parents" in {
+    cpg.all.collectAll[AstNode].filter(node => Try(node._astIn.size).toOption.exists(_ >= 2)).l shouldBe Nil
   }
 
   "it should create joint `alloc` and `init` calls for a constructor invocation in a vardecl" in {
