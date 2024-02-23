@@ -1,18 +1,23 @@
 package io.joern.rubysrc2cpg.datastructures
 
+import io.joern.rubysrc2cpg.astcreation.GlobalTypes
+import io.joern.x2cpg.Defines
 import io.joern.x2cpg.datastructures.*
 import io.shiftleft.codepropertygraph.generated.NodeTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  DeclarationNew,
-  MethodParameterIn,
-  NewLocal,
-  NewMethodParameterIn,
-  NewNode
-}
+import io.shiftleft.codepropertygraph.generated.nodes.{DeclarationNew, NewLocal, NewMethodParameterIn}
+
+import scala.collection.mutable
 
 class RubyScope(summary: RubyProgramSummary)
     extends Scope[String, DeclarationNew, TypedScopeElement]
     with TypedScope[RubyMethod, RubyField, RubyType](summary) {
+
+  private val builtinMethods = GlobalTypes.builtinFunctions.map(m => RubyMethod(m, List.empty, Defines.Any)).toList
+
+  override val typesInScope: mutable.Set[RubyType] =
+    mutable.Set(RubyType(GlobalTypes.builtinPrefix, builtinMethods, List.empty))
+
+  override val membersInScope: mutable.Set[MemberLike] = mutable.Set(builtinMethods*)
 
   // Ruby does not have overloading, so this can be set to true
   override protected def isOverloadedBy(method: RubyMethod, argTypes: List[String]): Boolean = true
@@ -25,12 +30,6 @@ class RubyScope(summary: RubyProgramSummary)
   override def pushNewScope(scopeNode: TypedScopeElement): Unit = {
     // Use the summary to determine if there is a constructor present
     val mappedScopeNode = scopeNode match {
-      case TypeScope(fullName, _)
-          if !surroundingScopeFullName
-            .flatMap(summary.typesUnderNamespace)
-            .flatMap(_.methods)
-            .exists(_.name == "initialize") =>
-        TypeScope(fullName, true)
       case n: NamespaceLikeScope =>
         typesInScope.addAll(summary.typesUnderNamespace(n.fullName))
         n
@@ -67,7 +66,8 @@ class RubyScope(summary: RubyProgramSummary)
     */
   def shouldGenerateDefaultConstructor: Boolean = stack
     .collectFirst {
-      case ScopeElement(x: TypeLikeScope, _) => x.needsDefaultConstructor
+      case ScopeElement(_: ModuleScope, _)   => false
+      case ScopeElement(x: TypeLikeScope, _) => !typesInScope.find(_.name == x.fullName).exists(_.hasConstructor)
       case _                                 => false
     }
     .getOrElse(false)
