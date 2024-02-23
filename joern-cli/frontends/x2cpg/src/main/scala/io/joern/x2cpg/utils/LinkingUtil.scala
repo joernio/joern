@@ -1,24 +1,18 @@
 package io.joern.x2cpg.utils
 
 import io.joern.x2cpg.passes.frontend.Dereference
-import io.shiftleft.codepropertygraph.generated.PropertyNames
-import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
-import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
-import io.shiftleft.codepropertygraph.generated.Properties
-import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.NamespaceBlock
-import io.shiftleft.codepropertygraph.generated.nodes.Type
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-import overflowdb.NodeDb
-import overflowdb.PropertyKey
-import overflowdb.NodeRef
-import overflowdb.traversal._
-import overflowdb.traversal.ChainedImplicitsTemp._
+import io.shiftleft.codepropertygraph.generated.{Properties, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import org.slf4j.{Logger, LoggerFactory}
+import overflowdb.{Node, NodeDb, NodeRef, PropertyKey}
+import overflowdb.traversal.*
+import overflowdb.traversal.ChainedImplicitsTemp.*
 
+import java.util.concurrent.Callable
 import scala.collection.mutable
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
+import scala.util.{Failure, Success}
 
 trait LinkingUtil {
 
@@ -56,50 +50,98 @@ trait LinkingUtil {
   ): Unit = {
     var loggedDeprecationWarning = false
     val dereference              = Dereference(cpg)
-    cpg.graph.nodes(srcLabels: _*).foreach { srcNode =>
-      // If the source node does not have any outgoing edges of this type
-      // This check is just required for backward compatibility
-      if (srcNode.outE(edgeType).isEmpty) {
-        val key = new PropertyKey[String](dstFullNameKey)
-        srcNode
-          .propertyOption(key)
-          .filter { dstFullName =>
-            val dereferenceDstFullName = dereference.dereferenceTypeFullName(dstFullName)
-            srcNode.propertyDefaultValue(dstFullNameKey) != dereferenceDstFullName
-          }
-          .ifPresent { dstFullName =>
-            // for `UNKNOWN` this is not always set, so we're using an Option here
-            val srcStoredNode          = srcNode.asInstanceOf[StoredNode]
-            val dereferenceDstFullName = dereference.dereferenceTypeFullName(dstFullName)
-            dstNodeMap(dereferenceDstFullName) match {
-              case Some(dstNode) =>
-                dstGraph.addEdge(srcStoredNode, dstNode, edgeType)
-              case None if dstNodeMap(dstFullName).isDefined =>
-                dstGraph.addEdge(srcStoredNode, dstNodeMap(dstFullName).get, edgeType)
-              case None if dstNotExistsHandler.isDefined =>
-                dstNotExistsHandler.get(srcStoredNode, dereferenceDstFullName)
-              case _ =>
-                logFailedDstLookup(edgeType, srcNode.label, srcNode.id.toString, dstNodeLabel, dereferenceDstFullName)
-            }
-          }
-      } else {
-        srcNode.out(edgeType).property(Properties.FULL_NAME).nextOption() match {
-          case Some(dstFullName) =>
-            dstGraph.setNodeProperty(
-              srcNode.asInstanceOf[StoredNode],
-              dstFullNameKey,
-              dereference.dereferenceTypeFullName(dstFullName)
-            )
-          case None => logger.info(s"Missing outgoing edge of type $edgeType from node $srcNode")
-        }
-        if (!loggedDeprecationWarning) {
-          logger.info(
-            s"Using deprecated CPG format with already existing $edgeType edge between" +
-              s" a source node of type $srcLabels and a $dstNodeLabel node."
+    val sourceNodes              = cpg.graph.nodes(srcLabels: _*).toList
+    val batchSize =
+      if (sourceNodes.size > ConcurrentTaskUtil.MAX_POOL_SIZE)
+        sourceNodes.size / ConcurrentTaskUtil.MAX_POOL_SIZE
+      else ConcurrentTaskUtil.MAX_POOL_SIZE
+    ConcurrentTaskUtil
+      .runUsingThreadPool(
+        sourceNodes
+          .grouped(batchSize)
+          .map(sourceNodeBatch =>
+            () =>
+              new LinkToSingleTask(
+                sourceNodeBatch,
+                srcLabels,
+                dereference,
+                dstNodeLabel,
+                edgeType,
+                dstNodeMap,
+                dstFullNameKey,
+                dstNotExistsHandler
+              ).call()
           )
-          loggedDeprecationWarning = true
+      )
+      .map {
+        case Success(diffGraph) => diffGraph
+        case Failure(e) =>
+          logger.warn("Exception encountered during linkToSingle task", e)
+          new DiffGraphBuilder()
+      }
+      .foreach(resultDiffGraph => dstGraph.absorb(resultDiffGraph))
+  }
+
+  private class LinkToSingleTask(
+    srcNodes: List[Node],
+    srcLabels: List[String],
+    dereference: Dereference,
+    dstNodeLabel: String,
+    edgeType: String,
+    dstNodeMap: String => Option[StoredNode],
+    dstFullNameKey: String,
+    dstNotExistsHandler: Option[(StoredNode, String) => Unit]
+  ) extends Callable[DiffGraphBuilder] {
+
+    override def call(): DiffGraphBuilder = {
+      val dstGraph                 = new DiffGraphBuilder()
+      var loggedDeprecationWarning = false
+      srcNodes.foreach { srcNode =>
+        // If the source node does not have any outgoing edges of this type
+        // This check is just required for backward compatibility
+        if (srcNode.outE(edgeType).isEmpty) {
+          val key = new PropertyKey[String](dstFullNameKey)
+          srcNode
+            .propertyOption(key)
+            .filter { dstFullName =>
+              val dereferenceDstFullName = dereference.dereferenceTypeFullName(dstFullName)
+              srcNode.propertyDefaultValue(dstFullNameKey) != dereferenceDstFullName
+            }
+            .ifPresent { dstFullName =>
+              // for `UNKNOWN` this is not always set, so we're using an Option here
+              val srcStoredNode          = srcNode.asInstanceOf[StoredNode]
+              val dereferenceDstFullName = dereference.dereferenceTypeFullName(dstFullName)
+              dstNodeMap(dereferenceDstFullName) match {
+                case Some(dstNode) =>
+                  dstGraph.addEdge(srcStoredNode, dstNode, edgeType)
+                case None if dstNodeMap(dstFullName).isDefined =>
+                  dstGraph.addEdge(srcStoredNode, dstNodeMap(dstFullName).get, edgeType)
+                case None if dstNotExistsHandler.isDefined =>
+                  dstNotExistsHandler.get(srcStoredNode, dereferenceDstFullName)
+                case _ =>
+                  logFailedDstLookup(edgeType, srcNode.label, srcNode.id.toString, dstNodeLabel, dereferenceDstFullName)
+              }
+            }
+        } else {
+          srcNode.out(edgeType).property(Properties.FULL_NAME).nextOption() match {
+            case Some(dstFullName) =>
+              dstGraph.setNodeProperty(
+                srcNode.asInstanceOf[StoredNode],
+                dstFullNameKey,
+                dereference.dereferenceTypeFullName(dstFullName)
+              )
+            case None => logger.info(s"Missing outgoing edge of type $edgeType from node $srcNode")
+          }
+          if (!loggedDeprecationWarning) {
+            logger.info(
+              s"Using deprecated CPG format with already existing $edgeType edge between" +
+                s" a source node of type $srcLabels and a $dstNodeLabel node."
+            )
+            loggedDeprecationWarning = true
+          }
         }
       }
+      dstGraph
     }
   }
 
