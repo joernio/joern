@@ -1,22 +1,20 @@
 package io.joern.console
 
 import better.files.*
+import io.shiftleft.codepropertygraph.generated.Languages
+import org.apache.commons.text.StringEscapeUtils
 import replpp.scripting.ScriptRunner
 
+import java.nio.file.{Files, Path}
 import scala.jdk.CollectionConverters.*
-import io.shiftleft.codepropertygraph.generated.Languages
-import java.io.{InputStream, PrintStream, File as JFile}
-import java.net.URLClassLoader
-import java.nio.file.{Files, Path, Paths}
-import java.util.stream.Collectors
-import org.apache.commons.lang3.StringEscapeUtils
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 case class Config(
   scriptFile: Option[Path] = None,
   command: Option[String] = None,
   params: Map[String, String] = Map.empty,
   additionalImports: Seq[Path] = Nil,
+  additionalClasspathEntries: Seq[String] = Seq.empty,
   addPlugin: Option[String] = None,
   rmPlugin: Option[String] = None,
   pluginToRun: Option[String] = None,
@@ -74,6 +72,13 @@ trait BridgeBase extends InteractiveShell with ScriptExecution with PluginHandli
         .optional()
         .action((x, c) => c.copy(additionalImports = c.additionalImports :+ x))
         .text("import (and run) additional script(s) on startup - may be passed multiple times")
+
+      opt[String]("classpathEntry")
+        .valueName("path/to/classpath")
+        .unbounded()
+        .optional()
+        .action((x, c) => c.copy(additionalClasspathEntries = c.additionalClasspathEntries :+ x))
+        .text("additional classpath entries - may be passed multiple times")
 
       opt[String]('d', "dep")
         .valueName("com.michaelpollmeier:versionsort:1.0.7")
@@ -240,7 +245,12 @@ trait InteractiveShell { this: BridgeBase =>
         nocolors = config.nocolors,
         verbose = config.verbose,
         classpathConfig = replpp.Config
-          .ForClasspath(inheritClasspath = true, dependencies = config.dependencies, resolvers = config.resolvers),
+          .ForClasspath(
+            additionalClasspathEntries = config.additionalClasspathEntries,
+            inheritClasspath = true,
+            dependencies = config.dependencies,
+            resolvers = config.resolvers
+          ),
         greeting = Option(greeting),
         prompt = Option(promptStr),
         onExitCode = Option(onExitCode),
