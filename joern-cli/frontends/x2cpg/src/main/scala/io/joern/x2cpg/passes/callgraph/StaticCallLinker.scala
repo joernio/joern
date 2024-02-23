@@ -1,31 +1,32 @@
 package io.joern.x2cpg.passes.callgraph
 
+import io.joern.x2cpg.utils.ConcurrentTaskUtil
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, *}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes}
-import io.shiftleft.passes.CpgPass
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.passes.{ConcurrentWriterCpgPass, CpgPass}
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.{Logger, LoggerFactory}
 
 import scala.collection.mutable
 
-class StaticCallLinker(cpg: Cpg) extends CpgPass(cpg) {
+class StaticCallLinker(cpg: Cpg) extends ConcurrentWriterCpgPass[Seq[Call]](cpg) {
 
   import StaticCallLinker._
-  private val methodFullNameToNode = mutable.Map.empty[String, List[Method]]
 
-  override def run(dstGraph: DiffGraphBuilder): Unit = {
+  override def generateParts(): Array[Seq[Call]] = {
+    val size = cpg.call.size
+    val batchSize =
+      if (size > ConcurrentTaskUtil.MAX_POOL_SIZE)
+        size / ConcurrentTaskUtil.MAX_POOL_SIZE
+      else ConcurrentTaskUtil.MAX_POOL_SIZE
+    cpg.call.grouped(batchSize).toArray
+  }
 
-    cpg.method.foreach { method =>
-      methodFullNameToNode.updateWith(method.fullName) {
-        case Some(l) => Some(method :: l)
-        case None    => Some(List(method))
-      }
-    }
-
-    cpg.call.foreach { call =>
+  override def runOnPart(builder: DiffGraphBuilder, calls: Seq[Call]): Unit = {
+    calls.foreach { call =>
       try {
-        linkCall(call, dstGraph)
+        linkCall(call, builder)
       } catch {
         case exception: Exception =>
           throw new RuntimeException(exception)
@@ -44,17 +45,8 @@ class StaticCallLinker(cpg: Cpg) extends CpgPass(cpg) {
   }
 
   private def linkStaticCall(call: Call, dstGraph: DiffGraphBuilder): Unit = {
-    val resolvedMethodOption = methodFullNameToNode.get(call.methodFullName)
-    if (resolvedMethodOption.isDefined) {
-      resolvedMethodOption.get.foreach { dst =>
-        dstGraph.addEdge(call, dst, EdgeTypes.CALL)
-      }
-    } else {
-      logger.info(
-        s"Unable to link static CALL with METHOD_FULL_NAME ${call.methodFullName}, NAME ${call.name}, " +
-          s"SIGNATURE ${call.signature}, CODE ${call.code}"
-      )
-    }
+    val resolvedMethodOption = cpg.method.fullNameExact(call.methodFullName)
+    resolvedMethodOption.foreach(dst => dstGraph.addEdge(call, dst, EdgeTypes.CALL))
   }
 
 }
