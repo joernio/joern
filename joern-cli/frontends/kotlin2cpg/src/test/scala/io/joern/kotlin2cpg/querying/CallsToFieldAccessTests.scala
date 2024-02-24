@@ -40,5 +40,57 @@ class CallsToFieldAccessTests extends KotlinCode2CpgFixture(withOssDataflow = fa
       secondArg.code shouldBe "x"
       secondArg.canonicalName shouldBe "x"
     }
+
+    "Create only one fieldAccess AST Node" ignore {
+      cpg.call(Operators.fieldAccess).size shouldBe 1
+    }
+  }
+
+  "Variable access outside class" ignore {
+    val cpg = code("""
+        |package mypkg
+        |class BClass(var y: String){
+        |}
+        |
+        |fun main() {
+        |    val a = BClass("A_MESSAGE")
+        |    val m = a.y
+        |}
+        |""".stripMargin)
+
+    "Create only one fieldAccess AST Node" in {
+      cpg.call(Operators.fieldAccess).size shouldBe 1
+    }
+
+    "Create require field access nodes for members accessed outside the class properly" in {
+      val List(x) = cpg.call.methodFullName(Operators.fieldAccess).l
+      x.code shouldBe "a.y"
+      x.name shouldBe Operators.fieldAccess
+    }
+  }
+
+  "Chained field access " ignore {
+    val cpg = code("""
+        |package mypkg
+        |class AClass(var x: String){
+        |}
+        |class BClass(var acls: AClass){
+        |}
+        |
+        |fun main() {
+        |    val a = AClass("A_MESSAGE")
+        |    val b = BClass(a)
+        |    val m = b.acls.x
+        |}
+        |""".stripMargin)
+    "Create only two fieldAccess nodes" in {
+      cpg.call(Operators.fieldAccess).size shouldBe 2
+    }
+
+    "2nd level Chained field access CALL node should have name <operator>.fieldAccess" in {
+      val List(x, y) = cpg.call.methodFullName(Operators.fieldAccess).l
+      x.name shouldBe Operators.fieldAccess
+      y.name shouldBe Operators.fieldAccess
+    }
   }
 }
