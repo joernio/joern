@@ -72,10 +72,10 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   protected def code(node: Value): String = {
     nodeOffsets(node) match {
-      case Some((startOffset, endOffset))
-          if startOffset < endOffset && startOffset >= 0 && endOffset <= parserResult.fileContent.length =>
+      case Some((startOffset, endOffset)) =>
         shortenCode(parserResult.fileContent.substring(startOffset, endOffset).trim)
-      case _ => PropertyDefaults.Code
+      case _ =>
+        PropertyDefaults.Code
     }
   }
 

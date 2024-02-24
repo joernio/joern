@@ -56,17 +56,23 @@ class InheritanceFullNameTests extends CSharpCode2CpgFixture {
         |""".stripMargin)
 
     "resolve fullName and inheritanceTypeFullName for Qux" in {
-      inside(cpg.typeDecl.nameExact("Qux").l) {
-        case qux :: Nil =>
-          qux.fullName shouldBe "HelloWorld.Qux"
-          qux.inheritsFromTypeFullName shouldBe Seq("HelloWorld.Foo")
+      inside(cpg.typeDecl.nameExact("Qux").l) { case qux :: Nil =>
+        qux.fullName shouldBe "HelloWorld.Qux"
+        qux.inheritsFromTypeFullName shouldBe Seq("HelloWorld.Foo")
 
-          inside(qux.astChildren.isMethod.l) {
-            case bazz :: Nil =>
-              bazz.fullName shouldBe "HelloWorld.Qux.bazz:void()"
-            case _ => fail("There is no method named `baz` under `Qux` interface,")
-          }
-        case _ => fail("There is no interface named `Qux`")
+        inside(qux.astChildren.isMethod.l) {
+          case bazz :: Nil =>
+            bazz.fullName shouldBe "HelloWorld.Qux.bazz:void()"
+            qux.fullName shouldBe "HelloWorld.Qux"
+            qux.inheritsFromTypeFullName shouldBe Seq("HelloWorld.Foo")
+
+            inside(qux.astChildren.isMethod.l) {
+              case bazz :: Nil =>
+                bazz.fullName shouldBe "HelloWorld.Qux.bazz:void()"
+              case _ => fail("There is no method named `baz` under `Qux` interface,")
+            }
+          case _ => fail("There is no interface named `Qux`")
+        }
       }
     }
 
@@ -78,32 +84,33 @@ class InheritanceFullNameTests extends CSharpCode2CpgFixture {
         case _ => fail("No class named `Fred`")
       }
     }
-  }
 
-  "class inheriting from multiple interfaces" should {
-    val cpg = code("""
-        |namespace HelloWorld {
-        |interface IShape
-        |{
-        |    double GetArea();
-        |}
-        |
-        |interface IColor
-        |{
-        |    string GetColor();
-        |}
-        |
-        |class Rectangle: IShape, IColor {}
-        |}
-        |""".stripMargin)
+    "class inheriting from multiple interfaces" should {
+      val cpg = code("""
+          |namespace HelloWorld {
+          |interface IShape
+          |{
+          |    double GetArea();
+          |}
+          |
+          |interface IColor
+          |{
+          |    string GetColor();
+          |}
+          |
+          |class Rectangle: IShape, IColor {}
+          |}
+          |""".stripMargin)
 
-    "resolve fullName and inheritanceFromTypeFullName values" in {
-      inside(cpg.typeDecl.nameExact("Rectangle").l) {
-        case rectangle :: Nil =>
-          rectangle.fullName shouldBe "HelloWorld.Rectangle"
-          rectangle.inheritsFromTypeFullName shouldBe Seq("HelloWorld.IShape", "HelloWorld.IColor")
-        case _ => fail("No class named `Fred`")
+      "resolve fullName and inheritanceFromTypeFullName values" in {
+        inside(cpg.typeDecl.nameExact("Rectangle").l) {
+          case rectangle :: Nil =>
+            rectangle.fullName shouldBe "HelloWorld.Rectangle"
+            rectangle.inheritsFromTypeFullName shouldBe Seq("HelloWorld.IShape", "HelloWorld.IColor")
+          case _ => fail("No class named `Fred`")
+        }
       }
     }
+
   }
 }

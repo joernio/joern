@@ -544,24 +544,34 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   override def visitMemberAccessExpression(ctx: RubyParser.MemberAccessExpressionContext): RubyNode = {
     val hasArguments = Option(ctx.argumentWithParentheses()).isDefined
     val hasBlock     = Option(ctx.block()).isDefined
+    val isClassDecl = Option(ctx.primaryValue()).map(_.getText).contains("Class") && Option(ctx.methodName())
+      .map(_.getText)
+      .contains("new")
 
-    if (!hasArguments && !hasBlock) {
-      return MemberAccess(visit(ctx.primaryValue()), ctx.op.getText, ctx.methodName().getText)(ctx.toTextSpan)
+    if (!hasBlock) {
+      val target     = visit(ctx.primaryValue())
+      val methodName = ctx.methodName().getText
+      if (methodName == "new") {
+        if (!hasArguments) {
+          return ObjectInstantiation(target, List.empty)(ctx.toTextSpan)
+        } else {
+          return ObjectInstantiation(target, ctx.argumentWithParentheses().arguments.map(visit))(ctx.toTextSpan)
+        }
+      } else {
+        if (!hasArguments) {
+          return MemberAccess(target, ctx.op.getText, methodName)(ctx.toTextSpan)
+        } else {
+          return MemberCall(target, ctx.op.getText, methodName, ctx.argumentWithParentheses().arguments.map(visit))(
+            ctx.toTextSpan
+          )
+        }
+      }
     }
 
-    if (hasArguments && !hasBlock) {
-      return MemberCall(
-        visit(ctx.primaryValue()),
-        ctx.op.getText,
-        ctx.methodName().getText,
-        ctx.argumentWithParentheses().arguments.map(visit)
-      )(ctx.toTextSpan)
-    }
-
-    if (hasBlock && ctx.methodName().getText == "new") {
+    if (hasBlock && isClassDecl) {
       val block = visit(ctx.block()).asInstanceOf[Block]
       return AnonymousClassDeclaration(freshClassName(ctx.primaryValue().toTextSpan), None, block.body)(ctx.toTextSpan)
-    } else {
+    } else if (hasBlock) {
       return MemberCallWithBlock(
         visit(ctx.primaryValue()),
         ctx.op.getText,

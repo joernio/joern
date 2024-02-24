@@ -7,8 +7,12 @@ import io.joern.pythonparser.PyParser
 import io.joern.x2cpg.ValidationMode
 import org.slf4j.LoggerFactory
 
-class CodeToCpg(cpg: Cpg, inputProvider: Iterable[InputProvider], schemaValidationMode: ValidationMode)
-    extends ConcurrentWriterCpgPass[InputProvider](cpg) {
+class CodeToCpg(
+  cpg: Cpg,
+  inputProvider: Iterable[InputProvider],
+  schemaValidationMode: ValidationMode,
+  enableFileContent: Boolean
+) extends ConcurrentWriterCpgPass[InputProvider](cpg) {
   import CodeToCpg.logger
 
   override def generateParts(): Array[InputProvider] = inputProvider.toArray
@@ -20,7 +24,9 @@ class CodeToCpg(cpg: Cpg, inputProvider: Iterable[InputProvider], schemaValidati
       val lineBreakCorrectedCode = inputPair.content.replace("\r\n", "\n").replace("\r", "\n")
       val astRoot                = parser.parse(lineBreakCorrectedCode)
       val nodeToCode             = new NodeToCode(lineBreakCorrectedCode)
-      val astVisitor = new PythonAstVisitor(inputPair.relFileName, nodeToCode, PythonV2AndV3)(schemaValidationMode)
+      val astVisitor = new PythonAstVisitor(inputPair.relFileName, nodeToCode, PythonV2AndV3, enableFileContent)(
+        schemaValidationMode
+      )
       astVisitor.convert(astRoot)
 
       diffGraph.absorb(astVisitor.createAst())

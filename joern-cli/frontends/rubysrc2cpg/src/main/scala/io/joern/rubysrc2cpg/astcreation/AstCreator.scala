@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.astcreation
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
-import io.joern.rubysrc2cpg.datastructures.{NamespaceScope, RubyProgramSummary, RubyScope}
+import io.joern.rubysrc2cpg.datastructures.{BlockScope, NamespaceScope, RubyProgramSummary, RubyScope}
 import io.joern.rubysrc2cpg.parser.{RubyNodeCreator, RubyParser}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
@@ -11,6 +11,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate
+import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 class AstCreator(
   val fileName: String,
@@ -34,6 +35,8 @@ class AstCreator(
 
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
 
+  protected var parseLevel: AstParseLevel = AstParseLevel.FULL_AST
+
   protected val relativeFileName: String =
     projectRoot.map(fileName.stripPrefix).map(_.stripPrefix(java.io.File.separator)).getOrElse(fileName)
 
@@ -48,7 +51,7 @@ class AstCreator(
    * The (parsed) contents of the file are put under that fictitious METHOD node, thus
    * allowing for a straightforward representation of out-of-method statements.
    */
-  private def astForRubyFile(rootStatements: StatementList): Ast = {
+  protected def astForRubyFile(rootStatements: StatementList): Ast = {
     val fileNode = NewFile().name(relativeFileName)
     val fullName = s"$relativeFileName:${NamespaceTraversal.globalNamespaceName}"
     val namespaceBlock = NewNamespaceBlock()
@@ -80,11 +83,27 @@ class AstCreator(
     scope.newProgramScope
       .map { moduleScope =>
         scope.pushNewScope(moduleScope)
+        val block = blockNode(rootNode)
+        scope.pushNewScope(BlockScope(block))
         val statementAsts = rootNode.statements.flatMap(astsForStatement)
-        val bodyAst       = blockAst(blockNode(rootNode), statementAsts)
+        scope.popScope()
+        val bodyAst = blockAst(block, statementAsts)
         scope.popScope()
         methodAst(methodNode_, Seq.empty, bodyAst, methodReturn, newModifierNode(ModifierTypes.MODULE) :: Nil)
       }
       .getOrElse(Ast())
   }
+}
+
+/** Determines till what depth the AST creator will parse until.
+  */
+enum AstParseLevel {
+
+  /** This level will parse all types and methods signatures, but exclude method bodies.
+    */
+  case SIGNATURES
+
+  /** This level will parse the full AST.
+    */
+  case FULL_AST
 }

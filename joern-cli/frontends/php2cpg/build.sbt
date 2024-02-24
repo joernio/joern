@@ -23,29 +23,15 @@ libraryDependencies ++= Seq(
 lazy val phpParseInstallTask = taskKey[Unit]("Install PHP-Parse using PHP Composer")
 phpParseInstallTask := {
   val phpBinDir = baseDirectory.value / "bin" / "php-parser"
-  if (!(phpBinDir / versionedParserBinName).exists) {
-    IO.createDirectory(phpBinDir)
-    val downloadedFile = SimpleCache.downloadMaybe(phpParserDlUrl)
-    IO.copyFile(downloadedFile, phpBinDir / versionedParserBinName)
-    File((phpBinDir / "php-parser.php").getPath)
-      .createFileIfNotExists()
-      .overwrite(s"<?php\nrequire('$versionedParserBinName');?>")
-  }
+  DownloadHelper.ensureIsAvailable(phpParserDlUrl, phpBinDir / versionedParserBinName)
+  File((phpBinDir / "php-parser.php").getPath)
+    .createFileIfNotExists()
+    .overwrite(s"<?php\nrequire('$versionedParserBinName');?>")
 
   val distDir = (Universal / stagingDirectory).value / "bin" / "php-parser"
   distDir.mkdirs()
   IO.copyDirectory(phpBinDir, distDir)
 }
-
-cleanFiles ++= Seq(
-  // left to clean legacy representation
-  baseDirectory.value / "bin" / "PHP-Parser",
-  baseDirectory.value / "bin" / upstreamParserBinName,
-  baseDirectory.value / "bin" / "php-parser",
-  (Universal / stagingDirectory).value / "bin" / "PHP-Parser",
-  (Universal / stagingDirectory).value / "bin" / upstreamParserBinName,
-  (Universal / stagingDirectory).value / "bin" / "php-parser"
-)
 
 Compile / compile := ((Compile / compile) dependsOn phpParseInstallTask).value
 

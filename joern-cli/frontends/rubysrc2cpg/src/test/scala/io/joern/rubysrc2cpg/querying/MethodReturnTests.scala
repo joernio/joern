@@ -71,7 +71,7 @@ class MethodReturnTests extends RubyCode2CpgFixture {
     r.lineNumber shouldBe Some(3)
 
     val List(c: Call) = r.astChildren.isCall.l
-    c.methodFullName shouldBe "puts"
+    c.methodFullName shouldBe "__builtin:puts"
     c.lineNumber shouldBe Some(3)
     c.code shouldBe "puts x"
   }

@@ -31,14 +31,14 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   private def astForWhileStatement(node: WhileExpression): Ast = {
     val conditionAst = astForExpression(node.condition)
     val bodyAsts     = astsForStatement(node.body)
-    whileAst(Some(conditionAst), bodyAsts)
+    whileAst(Some(conditionAst), bodyAsts, Option(code(node)), line(node), column(node))
   }
 
   // `until T do B` is lowered as `while !T do B`
   private def astForUntilStatement(node: UntilExpression): Ast = {
     val notCondition = astForExpression(UnaryExpression("!", node.condition)(node.condition.span))
     val bodyAsts     = astsForStatement(node.body)
-    whileAst(Some(notCondition), bodyAsts)
+    whileAst(Some(notCondition), bodyAsts, Option(code(node)), line(node), column(node))
   }
 
   private def astForIfStatement(node: IfExpression): Ast = {
@@ -158,7 +158,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   protected def astForStatementList(node: StatementList): Ast = {
     val block = blockNode(node)
-    scope.pushNewScope(BlockScope)
+    scope.pushNewScope(BlockScope(block))
     val statementAsts = node.statements.flatMap(astsForStatement)
     scope.popScope()
     blockAst(block, statementAsts)
@@ -185,7 +185,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       val outerBlock = blockNode(node)
       val callAst    = astForSimpleCall(node.withoutBlock)
 
-      scope.pushNewScope(BlockScope)
+      scope.pushNewScope(BlockScope(outerBlock))
       val stmtAsts = rubyBlock.body match
         case stmtList: StatementList => stmtList.statements.flatMap(astsForStatement)
         case body =>
@@ -207,7 +207,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       val outerBlock = blockNode(node)
       val callAst    = astForMemberCall(node.withoutBlock)
 
-      scope.pushNewScope(BlockScope)
+      scope.pushNewScope(BlockScope(outerBlock))
       val stmtAsts = rubyBlock.body match
         case stmtList: StatementList => stmtList.statements.flatMap(astsForStatement)
         case body =>
@@ -227,7 +227,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   protected def astForStatementListReturningLastExpression(node: StatementList): Ast = {
     val block = blockNode(node)
-    scope.pushNewScope(BlockScope)
+    scope.pushNewScope(BlockScope(block))
 
     val stmtAsts = node.statements.size match
       case 0 => List()

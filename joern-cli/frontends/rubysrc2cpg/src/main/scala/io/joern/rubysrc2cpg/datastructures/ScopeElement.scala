@@ -2,6 +2,7 @@ package io.joern.rubysrc2cpg.datastructures
 
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.datastructures.{NamespaceLikeScope, TypedScopeElement}
+import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
 
 /** The namespace.
   * @param fullName
@@ -17,11 +18,6 @@ trait TypeLikeScope extends TypedScopeElement {
     *   the full name of the type-like.
     */
   def fullName: String
-
-  /** @return
-    *   true if a default constructor is required.
-    */
-  def needsDefaultConstructor: Boolean
 }
 
 /** A file-level module.
@@ -31,24 +27,20 @@ trait TypeLikeScope extends TypedScopeElement {
   */
 case class ProgramScope(fileName: String) extends TypeLikeScope {
   override def fullName: String = s"$fileName:${Defines.Program}"
-
-  override def needsDefaultConstructor: Boolean = false
 }
 
 /** A Ruby module/abstract class.
   * @param fullName
   *   the type full name.
   */
-case class ModuleScope(fullName: String) extends TypeLikeScope {
-  override def needsDefaultConstructor: Boolean = false
-}
+case class ModuleScope(fullName: String) extends TypeLikeScope
 
 /** A class or interface.
   *
   * @param fullName
   *   the type full name.
   */
-case class TypeScope(fullName: String, needsDefaultConstructor: Boolean = false) extends TypeLikeScope
+case class TypeScope(fullName: String) extends TypeLikeScope
 
 /** Represents scope objects that map to a method node.
   */
@@ -62,4 +54,4 @@ case class ConstructorScope(fullName: String) extends MethodLikeScope
 
 /** Represents scope objects that map to a block node.
   */
-object BlockScope extends TypedScopeElement
+case class BlockScope(block: NewBlock) extends TypedScopeElement

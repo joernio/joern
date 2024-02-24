@@ -69,7 +69,25 @@ class CodeDumperFromContentTest extends JsSrc2CpgSuite {
       "index.js"
     ).withConfig(Config().withDisableFileContent(false))
 
-    "allow one to dump a method node's source code from `TypeDecl.content`" in {
+    "allow one to dump a typedecl node's source code from `TypeDecl.content`" in {
+      val List(content) = cpg.typeDecl.nameExact("Foo").content.l
+      content shouldBe myClassContent
+    }
+  }
+
+  "content with UTF8 characters" should {
+    val myClassContent =
+      """class Foo {
+        |  // ✅ This is a comment with UTF8.
+        |  x = 'foo';
+        |}""".stripMargin
+
+    val cpg = code(s"""
+         |// A comment
+         |$myClassContent
+         |""".stripMargin).withConfig(Config().withDisableFileContent(false))
+
+    "allow one to dump source code" in {
       val List(content) = cpg.typeDecl.nameExact("Foo").content.l
       content shouldBe myClassContent
     }

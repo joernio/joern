@@ -40,7 +40,8 @@ class Py2CpgTestContext {
           codeAndFile.map(inputPair => () => inputPair),
           cpg,
           absTestFilePath,
-          schemaValidationMode = ValidationMode.Enabled
+          schemaValidationMode = ValidationMode.Enabled,
+          enableFileContent = true
         )
       py2Cpg.buildCpg()
 

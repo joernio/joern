@@ -1,12 +1,13 @@
 package io.joern.csharpsrc2cpg.astcreation
 
-import io.joern.csharpsrc2cpg.TypeMap
-import io.joern.csharpsrc2cpg.datastructures.CSharpScope
+import io.joern.csharpsrc2cpg.Constants
+import io.joern.csharpsrc2cpg.datastructures.{CSharpProgramSummary, CSharpScope}
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.astgen.{AstGenNodeBuilder, ParserResult}
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.NewFile
+import io.shiftleft.codepropertygraph.generated.NodeTypes
+import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewTypeDecl}
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import ujson.Value
@@ -14,20 +15,26 @@ import ujson.Value
 import java.math.BigInteger
 import java.security.MessageDigest
 
-class AstCreator(val relativeFileName: String, val parserResult: ParserResult, val typeMap: TypeMap)(implicit
-  withSchemaValidation: ValidationMode
-) extends AstCreatorBase(relativeFileName)
+class AstCreator(
+  val relativeFileName: String,
+  val parserResult: ParserResult,
+  val programSummary: CSharpProgramSummary = CSharpProgramSummary()
+)(implicit withSchemaValidation: ValidationMode)
+    extends AstCreatorBase(relativeFileName)
     with AstCreatorHelper
     with AstForDeclarationsCreator
     with AstForPrimitivesCreator
     with AstForExpressionsCreator
     with AstForStatementsCreator
     with AstForControlStructuresCreator
+    with AstSummaryVisitor
     with AstGenNodeBuilder[AstCreator] {
 
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
 
-  protected val scope: CSharpScope = new CSharpScope(typeMap)
+  protected val scope: CSharpScope = new CSharpScope(programSummary)
+
+  protected var parseLevel: AstParseLevel = AstParseLevel.FULL_AST
 
   override def createAst(): DiffGraphBuilder = {
     val hash = String.format(
@@ -41,14 +48,27 @@ class AstCreator(val relativeFileName: String, val parserResult: ParserResult, v
     diffGraph
   }
 
-  private def astForCompilationUnit(cu: DotNetNodeInfo): Seq[Ast] = {
+  protected def astForCompilationUnit(cu: DotNetNodeInfo): Seq[Ast] = {
     val imports    = cu.json(ParserKeys.Usings).arr.flatMap(astForNode).toSeq
-    val name       = s"${parserResult.filename}" // TODO: Find fullyQualifiedPackage
     val memberAsts = astForMembers(cu.json(ParserKeys.Members).arr.map(createDotNetNodeInfo).toSeq)
     imports ++ memberAsts
   }
 
-  protected def astForMembers(members: Seq[DotNetNodeInfo]): Seq[Ast] = members.flatMap(astForNode)
+  protected def astForMembers(members: Seq[DotNetNodeInfo]): Seq[Ast] = {
+    val memberAsts = members.flatMap(astForNode)
+    // If empty, then there is no parent namespace and this is a "global" type
+    if (scope.peekScope().isEmpty) {
+      val (typeDecls, other) = memberAsts.partition(x => x.root.exists(_.isInstanceOf[NewTypeDecl]))
+      typeDecls
+        .flatMap(_.root)
+        .collect { case x: NewTypeDecl => x }
+        .foreach(typ => typ.astParentFullName(Constants.Global).astParentType(NodeTypes.NAMESPACE_BLOCK))
+      typeDecls.foreach(Ast.storeInDiffGraph(_, diffGraph))
+      other
+    } else {
+      memberAsts
+    }
+  }
 
   protected def astForNode(json: Value): Seq[Ast] = {
     val nodeInfo = createDotNetNodeInfo(json)
@@ -84,4 +104,17 @@ class AstCreator(val relativeFileName: String, val parserResult: ParserResult, v
     }
   }
 
+}
+
+/** Determines till what depth the AST creator will parse until.
+  */
+enum AstParseLevel {
+
+  /** This level will parse all types and methods signatures, but exclude method bodies.
+    */
+  case SIGNATURES
+
+  /** This level will parse the full AST.
+    */
+  case FULL_AST
 }

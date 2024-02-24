@@ -13,6 +13,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewAnnotationParameter
 import io.shiftleft.codepropertygraph.generated.nodes.NewAnnotationParameterAssign
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
+import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.Operators
 
 trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -258,10 +260,18 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
 
   private def astForLabeledSpecializeArgumentSyntax(node: LabeledSpecializeArgumentSyntax): Ast = notHandledYet(node)
   private def astForLayoutRequirementSyntax(node: LayoutRequirementSyntax): Ast                 = notHandledYet(node)
-  private def astForMatchingPatternConditionSyntax(node: MatchingPatternConditionSyntax): Ast   = notHandledYet(node)
-  private def astForMemberBlockItemSyntax(node: MemberBlockItemSyntax): Ast                     = notHandledYet(node)
-  private def astForMemberBlockSyntax(node: MemberBlockSyntax): Ast                             = notHandledYet(node)
-  private def astForMissingSyntax(node: MissingSyntax): Ast                                     = notHandledYet(node)
+
+  private def astForMatchingPatternConditionSyntax(node: MatchingPatternConditionSyntax): Ast = {
+    val lhsAst    = astForNode(node.pattern)
+    val rhsAst    = astForNode(node.initializer.value)
+    val callNode_ = callNode(node, code(node), Operators.assignment, DispatchTypes.STATIC_DISPATCH)
+    val argAsts   = List(lhsAst, rhsAst)
+    callAst(callNode_, argAsts)
+  }
+
+  private def astForMemberBlockItemSyntax(node: MemberBlockItemSyntax): Ast = notHandledYet(node)
+  private def astForMemberBlockSyntax(node: MemberBlockSyntax): Ast         = notHandledYet(node)
+  private def astForMissingSyntax(node: MissingSyntax): Ast                 = notHandledYet(node)
   private def astForMultipleTrailingClosureElementSyntax(node: MultipleTrailingClosureElementSyntax): Ast =
     notHandledYet(node)
   private def astForObjCSelectorPieceSyntax(node: ObjCSelectorPieceSyntax): Ast = notHandledYet(node)

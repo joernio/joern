@@ -7,7 +7,12 @@ import io.joern.x2cpg.datastructures.Global
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
 import org.slf4j.LoggerFactory
+import better.files.{DefaultCharset, File}
+import io.shiftleft.utils.IOUtils
 import soot.Scene
+
+import java.nio.charset.StandardCharsets
+import scala.util.Try
 
 /** Creates the AST layer from the given class file and stores all types in the given global parameter.
   * @param classFiles
@@ -27,7 +32,21 @@ class AstCreationPass(classFiles: List[ClassFile], cpg: Cpg, config: Config)
     try {
       val sootClass = Scene.v().loadClassAndSupport(classFile.fullyQualifiedClassName.get)
       sootClass.setApplicationClass()
-      val localDiff = AstCreator(classFile.file.canonicalPath, sootClass, global)(config.schemaValidation).createAst()
+
+      val file = File(classFile.file.pathAsString.replace(".class", ".java"))
+
+      val fileContent = Option
+        .when(!config.disableFileContent && file.exists) {
+          Try(IOUtils.readEntireFile(file.path))
+            .orElse(Try(file.contentAsString(DefaultCharset)))
+            .orElse(Try(file.contentAsString(StandardCharsets.ISO_8859_1)))
+            .toOption
+        }
+        .flatten
+
+      val localDiff =
+        AstCreator(classFile.file.canonicalPath, sootClass, global, fileContent = fileContent)(config.schemaValidation)
+          .createAst()
       builder.absorb(localDiff)
     } catch {
       case e: Exception =>
