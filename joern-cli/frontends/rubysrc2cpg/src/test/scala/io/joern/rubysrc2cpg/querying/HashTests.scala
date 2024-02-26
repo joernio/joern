@@ -27,9 +27,9 @@ class HashTests extends RubyCode2CpgFixture {
     hashCall.code shouldBe "{x:1}"
     hashCall.lineNumber shouldBe Some(2)
 
-    val List(assocCall) = hashCall.argument.isCall.name(RubyOperators.association).l
+    val List(assocCall) = hashCall.argument.isCall.l
     val List(x, one)    = assocCall.argument.l
-    x.code shouldBe "x"
+    x.code shouldBe "<tmp-0>[x]"
     one.code shouldBe "1"
   }
 
