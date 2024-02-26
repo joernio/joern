@@ -182,8 +182,10 @@ object AntlrContextHelpers {
         val splatting           = Option(ctx.splattingArgument()).toList
         val block               = Option(ctx.blockArgument()).toList
         operatorExpressions ++ associations ++ splatting ++ block
+      case ctx: AssociationsArgumentListContext =>
+        Option(ctx.associationList()).map(_.associations).getOrElse(List.empty)
       case ctx =>
-        logger.warn(s"Unsupported element type ${ctx.getClass}")
+        logger.warn(s"Unsupported element type ${ctx.getClass.getSimpleName}")
         List()
   }
 }
