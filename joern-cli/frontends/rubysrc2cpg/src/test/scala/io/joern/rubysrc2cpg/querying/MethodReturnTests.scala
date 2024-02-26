@@ -122,6 +122,9 @@ class MethodReturnTests extends RubyCode2CpgFixture {
 
     val List(c: Call) = r.astChildren.isCall.l
     c.methodFullName shouldBe Operators.indexAccess
+    val List(arg1, arg2) = c.argument.l
+    arg1.argumentIndex shouldBe 1
+    arg2.argumentIndex shouldBe 2
   }
 
   "implicit RETURN node for `{x:0}` exists" in {
