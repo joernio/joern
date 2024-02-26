@@ -2,6 +2,7 @@ package io.joern.rubysrc2cpg.parser
 
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.parser.AntlrContextHelpers.*
+import io.joern.rubysrc2cpg.parser.RubyParser.RangeOperatorContext
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import org.antlr.v4.runtime.tree.{ParseTree, RuleNode}
@@ -616,7 +617,15 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitRangeExpression(ctx: RubyParser.RangeExpressionContext): RubyNode = {
-    RangeExpression(visit(ctx.primaryValue(0)), visit(ctx.primaryValue(1)))(ctx.toTextSpan)
+    RangeExpression(
+      visit(ctx.primaryValue(0)),
+      visit(ctx.primaryValue(1)),
+      visit(ctx.rangeOperator()).asInstanceOf[RangeOperator]
+    )(ctx.toTextSpan)
+  }
+
+  override def visitRangeOperator(ctx: RubyParser.RangeOperatorContext): RubyNode = {
+    RangeOperator(Option(ctx.DOT2()).isEmpty)(ctx.toTextSpan)
   }
 
   override def visitHashLiteral(ctx: RubyParser.HashLiteralContext): RubyNode = {
