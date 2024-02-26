@@ -621,10 +621,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitRangeOperator(ctx: RubyParser.RangeOperatorContext): RubyNode = {
-    ctx.DOT2() match {
-      case null => RangeOperator(true)(ctx.toTextSpan)
-      case _    => RangeOperator(false)(ctx.toTextSpan)
-    }
+    RangeOperator(Option(ctx.DOT2()).isEmpty)(ctx.toTextSpan)
   }
 
   override def visitHashLiteral(ctx: RubyParser.HashLiteralContext): RubyNode = {

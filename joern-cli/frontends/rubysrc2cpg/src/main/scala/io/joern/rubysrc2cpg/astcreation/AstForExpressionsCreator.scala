@@ -283,17 +283,19 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForAssociationHash(node: Association, tmp: String): List[Ast] = {
     node.key match {
       case rangeExpr: RangeExpression =>
-        val expandedList = generateStaticLiteralsForRange(rangeExpr).map(x => {
-          astForSingleKeyValue(x, node.value, tmp)
-        })
+        val expandedList = generateStaticLiteralsForRange(rangeExpr).map { x =>
+          {
+            astForSingleKeyValue(x, node.value, tmp)
+          }
+        }
 
         if (expandedList.nonEmpty) {
           expandedList
         } else {
-          List(astForSingleKeyValue(node.key, node.value, tmp))
+          astForSingleKeyValue(node.key, node.value, tmp) :: Nil
         }
 
-      case _ => List(astForSingleKeyValue(node.key, node.value, tmp))
+      case _ => astForSingleKeyValue(node.key, node.value, tmp) :: Nil
     }
   }
 
@@ -305,7 +307,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
             generateRange(
               lb.span.text.toInt,
               ub.span.text.toInt,
-              node.rangeOperator.asInstanceOf[RangeOperator].exlcusive
+              node.rangeOperator.asInstanceOf[RangeOperator].exclusive
             )
               .map(x =>
                 StaticLiteral(lb.typeFullName)(TextSpan(lb.line, lb.column, lb.lineEnd, lb.columnEnd, x.toString))
@@ -322,7 +324,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
               return List.empty
             }
 
-            generateRange(lbVal(0).toInt, ubVal(0).toInt, node.rangeOperator.asInstanceOf[RangeOperator].exlcusive)
+            generateRange(lbVal(0).toInt, ubVal(0).toInt, node.rangeOperator.asInstanceOf[RangeOperator].exclusive)
               .map(x =>
                 StaticLiteral(lb.typeFullName)(
                   TextSpan(lb.line, lb.column, lb.lineEnd, lb.columnEnd, s"\'${x.toChar.toString}\'")

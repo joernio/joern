@@ -196,7 +196,7 @@ object RubyIntermediateAst {
   final case class RangeExpression(lowerBound: RubyNode, upperBound: RubyNode, rangeOperator: RubyNode)(span: TextSpan)
       extends RubyNode(span)
 
-  final case class RangeOperator(exlcusive: Boolean)(span: TextSpan) extends RubyNode(span)
+  final case class RangeOperator(exclusive: Boolean)(span: TextSpan) extends RubyNode(span)
 
   final case class ArrayLiteral(elements: List[RubyNode])(span: TextSpan) extends RubyNode(span) {
     def isSymbolArray: Boolean = text.take(2).toLowerCase.startsWith("%i")
