@@ -136,7 +136,10 @@ class AstCreator(val config: Config, val global: SwiftGlobal, val parserResult: 
   override protected def lineEnd(node: SwiftNode): Option[Integer]   = node.endLine.map(Integer.valueOf)
   override protected def columnEnd(node: SwiftNode): Option[Integer] = node.endColumn.map(Integer.valueOf)
 
-  private val lineOffsetTable = OffsetUtils.getLineOffsetTable(Option(parserResult.fileContent)) :+ 0
+  private val lineOffsetTable =
+    OffsetUtils.getLineOffsetTable(Option(parserResult.fileContent))
+    // we add one last offset as the swift-syntax parser always expects one EOF newline
+      :+ 0
 
   private def nodeOffsets(node: SwiftNode): Option[(Int, Int)] = {
     val offsets = for {
