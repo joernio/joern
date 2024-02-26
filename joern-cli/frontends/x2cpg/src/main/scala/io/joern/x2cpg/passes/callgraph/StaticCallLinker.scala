@@ -26,7 +26,7 @@ class StaticCallLinker(cpg: Cpg) extends ConcurrentWriterCpgPass[Seq[Call]](cpg)
             resolvedMethodOption.foreach(dst => builder.addEdge(call, dst, EdgeTypes.CALL))
             val size = cpg.method.fullNameExact(call.methodFullName).size
             // Add the debug logs with number of METHOD nodes found for given method full name
-            if size > 5 then logger.debug(s"Total ${size} METHOD nodes found for -> ${call.methodFullName}")
+            if size > 1 then logger.debug(s"Total ${size} METHOD nodes found for -> ${call.methodFullName}")
           case DispatchTypes.DYNAMIC_DISPATCH =>
           // Do nothing
           case _ => logger.warn(s"Unknown dispatch type on dynamic CALL ${call.code}")
