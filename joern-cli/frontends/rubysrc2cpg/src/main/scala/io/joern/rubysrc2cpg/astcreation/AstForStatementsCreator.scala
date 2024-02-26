@@ -18,8 +18,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     case node: ForExpression              => astForForExpression(node) :: Nil
     case node: CaseExpression             => astsForCaseExpression(node)
     case node: StatementList              => astForStatementList(node) :: Nil
-    case node: SimpleCallWithBlock        => astForSimpleCallWithBlock(node)
-    case node: MemberCallWithBlock        => astForMemberCallWithBlock(node)
+    case node: SimpleCallWithBlock        => astsForCallWithBlock(node)
+    case node: MemberCallWithBlock        => astsForCallWithBlock(node)
     case node: ReturnExpression           => astForReturnStatement(node) :: Nil
     case node: AnonymousTypeDeclaration   => astForAnonymousTypeDeclaration(node) :: Nil
     case node: TypeDeclaration            => astForClassDeclaration(node) :: Nil
@@ -165,59 +165,14 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     blockAst(block, statementAsts)
   }
 
-  /* `foo(<args>) do <params> <stmts> end` is lowered as a BLOCK node shaped like so:
+  /* `foo(<args>) do <params> <stmts> end` is lowered as a METHOD node shaped like so:
    * ```
-   * {
-   *   <params> = foo(<args>)
+   * <method_ref> = def <lambda>0(<params>)
    *   <stmts>
-   * }
+   * end
+   * foo(<args>, <method_ref>)
    * ```
-   * If <params> is empty, we simply exclude the initial assignment (but keep the invocation)
-   * TODO: this representation is not final. A better one is to more closely resemble Ruby's semantics
-   *  and pass in the block (a closure) as an argument to `foo`, i.e. `foo(<args>, <block>)`.
    */
-  private def astForSimpleCallWithBlock(node: SimpleCallWithBlock): Seq[Ast] = {
-    val rubyBlock   = node.block
-    val blockParams = rubyBlock.parameters
-    if (blockParams.nonEmpty) {
-      astsForCallWithBlock(node)
-    } else {
-      val outerBlock = blockNode(node)
-      val callAst    = astForSimpleCall(node.withoutBlock)
-
-      scope.pushNewScope(BlockScope(outerBlock))
-      val stmtAsts = rubyBlock.body match
-        case stmtList: StatementList => stmtList.statements.flatMap(astsForStatement)
-        case body =>
-          logger.warn(s"Non-linear method bodies are not supported yet: ${body.text} ($relativeFileName), skippipg")
-          astForUnknown(body) :: Nil
-      scope.popScope()
-
-      blockAst(outerBlock, callAst :: stmtAsts) :: Nil
-    }
-  }
-
-  private def astForMemberCallWithBlock(node: MemberCallWithBlock): Seq[Ast] = {
-    val rubyBlock   = node.block
-    val blockParams = rubyBlock.parameters
-    if (blockParams.nonEmpty) {
-      astsForCallWithBlock(node)
-    } else {
-      val outerBlock = blockNode(node)
-      val callAst    = astForMemberCall(node.withoutBlock)
-
-      scope.pushNewScope(BlockScope(outerBlock))
-      val stmtAsts = rubyBlock.body match
-        case stmtList: StatementList => stmtList.statements.flatMap(astsForStatement)
-        case body =>
-          logger.warn(s"Non-linear method bodies are not supported yet: ${body.text}, skipping")
-          astForUnknown(body) :: Nil
-      scope.popScope()
-
-      blockAst(outerBlock, callAst :: stmtAsts) :: Nil
-    }
-  }
-
   private def astsForCallWithBlock[C <: RubyCall](node: RubyNode with RubyCallWithBlock[C]): Seq[Ast] = {
     // Create closure structures: [MethodDecl, TypeRef, MethodRef]
     val block              = node.block
