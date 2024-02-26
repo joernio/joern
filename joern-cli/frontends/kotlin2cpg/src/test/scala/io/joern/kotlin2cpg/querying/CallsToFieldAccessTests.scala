@@ -100,7 +100,7 @@ class CallsToFieldAccessTests extends KotlinCode2CpgFixture(withOssDataflow = fa
     }
 
     "2nd level Chained field access CALL node should have name <operator>.fieldAccess" in {
-      val List(ctora, ctorb, insidemainacls, insidemainx) = cpg.call.methodFullName(Operators.fieldAccess).l
+      val List(ctora, ctorb, insidemainx, insidemainacls) = cpg.call.methodFullName(Operators.fieldAccess).l
       ctora.name shouldBe Operators.fieldAccess
       ctorb.name shouldBe Operators.fieldAccess
       insidemainacls.name shouldBe Operators.fieldAccess

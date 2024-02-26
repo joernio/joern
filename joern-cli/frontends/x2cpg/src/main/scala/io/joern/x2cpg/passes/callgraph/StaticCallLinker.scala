@@ -10,7 +10,7 @@ import org.slf4j.{Logger, LoggerFactory}
 class StaticCallLinker(cpg: Cpg) extends ConcurrentWriterCpgPass[Seq[Call]](cpg) {
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[StaticCallLinker])
-  val BATCH_SIZE             = 100
+  private val BATCH_SIZE     = 100
 
   override def generateParts(): Array[Seq[Call]] = {
     val size = cpg.call.size
