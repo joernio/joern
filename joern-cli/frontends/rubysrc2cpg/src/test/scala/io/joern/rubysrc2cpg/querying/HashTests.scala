@@ -3,7 +3,7 @@ package io.joern.rubysrc2cpg.querying
 import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Literal}
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Identifier, Literal}
 import io.shiftleft.semanticcpg.language.*
 
 class HashTests extends RubyCode2CpgFixture {
@@ -98,14 +98,13 @@ class HashTests extends RubyCode2CpgFixture {
                      |{1...3:"abc"}
                      |""".stripMargin)
 
-    val List(hashCall) = cpg.call.name(RubyOperators.hashInitializer).l
-
     inside(cpg.call.name(RubyOperators.hashInitializer).l) {
       case hashInitializer :: Nil =>
         inside(hashInitializer.argument.l) {
-          case firstCall :: secondCall :: Nil =>
+          case (firstCall: Call) :: (secondCall: Call) :: (tmp: Identifier) :: Nil =>
             firstCall.code shouldBe "<tmp-0>[1] = \"abc\""
             secondCall.code shouldBe "<tmp-0>[2] = \"abc\""
+            tmp.name shouldBe "<tmp-0>"
           case _ => fail("Expected 2 calls (one per item in range)")
         }
       case _ => fail("Expected one hash initializer function")
