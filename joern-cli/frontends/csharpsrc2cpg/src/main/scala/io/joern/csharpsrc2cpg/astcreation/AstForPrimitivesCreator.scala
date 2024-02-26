@@ -22,7 +22,9 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
             // Check for implicit field reference
             case Some(field) if field.node.node != DotNetJsonAst.VariableDeclarator =>
               astForFieldIdentifier(typeFullName, identifierName, field)
-            case _ =>
+            case Some(field) =>
+              Ast(identifierNode(ident, identifierName, ident.code, field.typeFullName))
+            case None =>
               // Check for static type reference
               scope.tryResolveTypeReference(identifierName) match {
                 case Some(typeReference) =>
