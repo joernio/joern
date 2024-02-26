@@ -1,12 +1,13 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method, MethodRef, TypeDecl}
+import io.shiftleft.semanticcpg.language.*
 
 class DoBlockTests extends RubyCode2CpgFixture {
 
   "a basic parameterized do-block with braces" should {
-    val cpg = code(
-      """
+    val cpg = code("""
         |my_array = [1, 2, 3]
         |my_array.each { |item|
         |    puts item
@@ -14,51 +15,102 @@ class DoBlockTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "create an anonymous method with associated type declaration" in {
+      inside(cpg.method.nameExact(":program").l) {
+        case program :: Nil =>
+          inside(program.block.astChildren.collectAll[Method].l) { case closureMethod :: Nil =>
+            closureMethod.name shouldBe "<lambda>0"
+            closureMethod.fullName shouldBe "Test0.rb:<global>::program:<lambda>0"
+          }
 
+          inside(program.block.astChildren.collectAll[TypeDecl].l) { case closureType :: Nil =>
+            closureType.name shouldBe "<lambda>0"
+            closureType.fullName shouldBe "Test0.rb:<global>::program:<lambda>0"
+          }
+        case xs => fail(s"Expected a single program module, instead got [${xs.code.mkString(", ")}]")
+      }
     }
 
-    "have specify the `item` parameter in the method" in {
-
-    }
-  }
-
-  "a basic parameterized do-block with pipes" should {
-
-    val cpg = code(
-      """
-        |my_array = [:uno, :dos, :tres]
-        |my_array.each do |item|
-        |    puts item
-        |end
-        |""".stripMargin)
-
-    "create an anonymous method with associated type declaration" in {
-
+    "have the `item` parameter in the closure declaration" in {
+      inside(cpg.method("<lambda>0").parameter.l) {
+        case itemParam :: Nil =>
+          itemParam.name shouldBe "item"
+        case xs => fail(s"Expected the closure to have a single parameter, instead got [${xs.code.mkString(", ")}]")
+      }
     }
 
-    "have specify the `item` parameter in the method" in {
-
+    "specify the closure reference as an argument to the member call with block" in {
+      inside(cpg.call("each").argument.l) {
+        case (_: Call) :: (lambdaRef: MethodRef) :: Nil =>
+          lambdaRef.methodFullName shouldBe "Test0.rb:<global>::program:<lambda>0"
+        case xs =>
+          fail(s"Expected `each` call to have call and method ref arguments, instead got [${xs.code.mkString(", ")}]")
+      }
     }
 
+    "have the call under the closure" in {
+      inside(cpg.method("<lambda>0").call.l) {
+        case puts :: Nil =>
+          puts.name shouldBe "puts"
+          puts.code shouldBe "puts item"
+        case xs => fail(s"Expected the closure to have a single parameter, instead got [${xs.code.mkString(", ")}]")
+      }
+    }
   }
 
   "a do block iterating over a hash" should {
 
-    val cpg = code(
-      """
+    val cpg = code("""
         |hash = { "a" => 1, "b" => 2 }
         |hash.each do |key, value|
-        |  puts "#{key}-----"
+        |  puts key
         |  puts value
         |end
         |""".stripMargin)
 
     "create an anonymous method with associated type declaration" in {
+      inside(cpg.method.nameExact(":program").l) {
+        case program :: Nil =>
+          inside(program.block.astChildren.collectAll[Method].l) { case closureMethod :: Nil =>
+            closureMethod.name shouldBe "<lambda>0"
+            closureMethod.fullName shouldBe "Test0.rb:<global>::program:<lambda>0"
+          }
 
+          inside(program.block.astChildren.collectAll[TypeDecl].l) { case closureType :: Nil =>
+            closureType.name shouldBe "<lambda>0"
+            closureType.fullName shouldBe "Test0.rb:<global>::program:<lambda>0"
+          }
+        case xs => fail(s"Expected a single program module, instead got [${xs.code.mkString(", ")}]")
+      }
     }
 
-    "have specify the `key` and `value` parameters in the method" in {
+    "have the `key` and `value` parameter in the closure declaration" in {
+      inside(cpg.method("<lambda>0").parameter.l) {
+        case keyParam :: valParam :: Nil =>
+          keyParam.name shouldBe "key"
+          valParam.name shouldBe "value"
+        case xs => fail(s"Expected the closure to have a single parameter, instead got [${xs.code.mkString(", ")}]")
+      }
+    }
 
+    "specify the closure reference as an argument to the member call with block" in {
+      inside(cpg.call("each").argument.l) {
+        case (_: Call) :: (lambdaRef: MethodRef) :: Nil =>
+          lambdaRef.methodFullName shouldBe "Test0.rb:<global>::program:<lambda>0"
+        case xs =>
+          fail(s"Expected `each` call to have call and method ref arguments, instead got [${xs.code.mkString(", ")}]")
+      }
+    }
+
+    "have the calls under the closure" in {
+      inside(cpg.method("<lambda>0").call.l) {
+        case puts1 :: puts2 :: Nil =>
+          puts1.name shouldBe "puts"
+          puts1.code shouldBe "puts key"
+
+          puts2.name shouldBe "puts"
+          puts2.code shouldBe "puts value"
+        case xs => fail(s"Expected the closure to have a single parameter, instead got [${xs.code.mkString(", ")}]")
+      }
     }
 
   }

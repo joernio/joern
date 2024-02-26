@@ -4,12 +4,20 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.{ConstructorScope, MethodScope}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
-import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewLocal, NewMethodParameterIn, NewTypeDecl}
+import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
-  protected def astForMethodDeclaration(node: MethodDeclaration): Ast = {
+  /** Creates method declaration related structures.
+    * @param node
+    *   the node to create the AST structure from.
+    * @param withRefsAndTypes
+    *   if true, will generate a type decl, type ref, and method ref. This is useful for lambda methods.
+    * @return
+    *   a method declaration with additional refs and types if specified.
+    */
+  protected def astForMethodDeclaration(node: MethodDeclaration, withRefsAndTypes: Boolean = false): Seq[Ast] = {
 
     // Special case constructor methods
     val isInTypeDecl = scope.surroundingAstLabel.contains(NodeTypes.TYPE_DECL)
@@ -63,7 +71,19 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
           astForUnknown(body)
     }
     scope.popScope()
-    methodAst(method, parameterAsts, stmtBlockAst, methodReturnNode(node, Defines.Any))
+
+    val methodReturn = methodReturnNode(node, Defines.Any)
+    val refs = if (withRefsAndTypes) {
+      List(
+        typeDeclNode(node, methodName, fullName, relativeFileName, code(node)),
+        typeRefNode(node, methodName, fullName),
+        methodRefNode(node, methodName, fullName, methodReturn.typeFullName)
+      ).map(Ast.apply)
+    } else {
+      Nil
+    }
+
+    methodAst(method, parameterAsts, stmtBlockAst, methodReturn) :: refs
   }
 
   // TODO: remaining cases

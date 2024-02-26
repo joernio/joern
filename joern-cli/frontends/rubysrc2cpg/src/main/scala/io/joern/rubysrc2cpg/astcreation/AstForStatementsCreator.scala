@@ -6,6 +6,7 @@ import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.getBuiltInType
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
+import io.shiftleft.codepropertygraph.generated.nodes.{NewMethod, NewMethodRef, NewTypeDecl}
 
 trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -17,13 +18,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     case node: ForExpression              => astForForExpression(node) :: Nil
     case node: CaseExpression             => astsForCaseExpression(node)
     case node: StatementList              => astForStatementList(node) :: Nil
-    case node: SimpleCallWithBlock        => astForSimpleCallWithBlock(node) :: Nil
-    case node: MemberCallWithBlock        => astForMemberCallWithBlock(node) :: Nil
+    case node: SimpleCallWithBlock        => astForSimpleCallWithBlock(node)
+    case node: MemberCallWithBlock        => astForMemberCallWithBlock(node)
     case node: ReturnExpression           => astForReturnStatement(node) :: Nil
     case node: AnonymousTypeDeclaration   => astForAnonymousTypeDeclaration(node) :: Nil
     case node: TypeDeclaration            => astForClassDeclaration(node) :: Nil
     case node: FieldsDeclaration          => astsForFieldDeclarations(node)
-    case node: MethodDeclaration          => astForMethodDeclaration(node) :: Nil
+    case node: MethodDeclaration          => astForMethodDeclaration(node)
     case node: SingletonMethodDeclaration => astForSingletonMethodDeclaration(node) :: Nil
     case node: MultipleAssignment         => node.assignments.map(astForExpression)
     case _                                => astForExpression(node) :: Nil
@@ -175,12 +176,11 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
    * TODO: this representation is not final. A better one is to more closely resemble Ruby's semantics
    *  and pass in the block (a closure) as an argument to `foo`, i.e. `foo(<args>, <block>)`.
    */
-  private def astForSimpleCallWithBlock(node: SimpleCallWithBlock): Ast = {
-    val rubyBlock   = node.block.asInstanceOf[Block]
+  private def astForSimpleCallWithBlock(node: SimpleCallWithBlock): Seq[Ast] = {
+    val rubyBlock   = node.block
     val blockParams = rubyBlock.parameters
     if (blockParams.nonEmpty) {
-      logger.warn(s"Blocks with parameters are not supported yet: ${code(node)} ($relativeFileName), skipping")
-      astForUnknown(node)
+      astsForCallWithBlock(node)
     } else {
       val outerBlock = blockNode(node)
       val callAst    = astForSimpleCall(node.withoutBlock)
@@ -193,16 +193,15 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           astForUnknown(body) :: Nil
       scope.popScope()
 
-      blockAst(outerBlock, callAst :: stmtAsts)
+      blockAst(outerBlock, callAst :: stmtAsts) :: Nil
     }
   }
 
-  private def astForMemberCallWithBlock(node: MemberCallWithBlock): Ast = {
-    val rubyBlock   = node.block.asInstanceOf[Block]
+  private def astForMemberCallWithBlock(node: MemberCallWithBlock): Seq[Ast] = {
+    val rubyBlock   = node.block
     val blockParams = rubyBlock.parameters
     if (blockParams.nonEmpty) {
-      logger.warn(s"Blocks with parameters are not supported yet: ${code(node)}, skipping")
-      astForUnknown(node)
+      astsForCallWithBlock(node)
     } else {
       val outerBlock = blockNode(node)
       val callAst    = astForMemberCall(node.withoutBlock)
@@ -215,8 +214,32 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           astForUnknown(body) :: Nil
       scope.popScope()
 
-      blockAst(outerBlock, callAst :: stmtAsts)
+      blockAst(outerBlock, callAst :: stmtAsts) :: Nil
     }
+  }
+
+  private def astsForCallWithBlock[C <: RubyCall](node: RubyNode with RubyCallWithBlock[C]): Seq[Ast] = {
+    // Create closure structures: [MethodDecl, TypeRef, MethodRef]
+    val block              = node.block
+    val methodName         = nextClosureName()
+    val methodAstsWithRefs = astForMethodDeclaration(block.toMethodDeclaration(methodName), withRefsAndTypes = true)
+    val methodRefArgs =
+      methodAstsWithRefs.flatMap(_.nodes).collect { case m: NewMethodRef =>
+        DummyNode(m.copy)(node.span.spanStart(m.code))
+      }
+    // Isolate method and type declaration AST (all we need here)
+    val declarationAsts = methodAstsWithRefs.filter(_.root.exists(_.isInstanceOf[NewMethod | NewTypeDecl]))
+
+    // Create call with argument referencing the MethodRef
+    val callWithLambdaArg = node.withoutBlock match {
+      case x: SimpleCall => astForSimpleCall(x.copy(arguments = x.arguments ++ methodRefArgs)(x.span))
+      case x: MemberCall => astForMemberCall(x.copy(arguments = x.arguments ++ methodRefArgs)(x.span))
+      case x =>
+        logger.warn(s"Unhandled call-with-block type ${code(x)}, creating anonymous method structures only")
+        Ast()
+    }
+
+    declarationAsts :+ callWithLambdaArg
   }
 
   protected def astForReturnStatement(node: ReturnExpression): Ast = {
@@ -254,7 +277,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       case node: MemberAccess    => astForReturnMemberCall(node) :: Nil
       case ret: ReturnExpression => astForReturnStatement(ret) :: Nil
       case node: MethodDeclaration =>
-        List(astForMethodDeclaration(node), astForReturnMethodDeclarationSymbolName(node))
+        (astForMethodDeclaration(node) :+ astForReturnMethodDeclarationSymbolName(node)).toList
       case node =>
         logger.warn(
           s"Implicit return here not supported yet: ${node.text} (${node.getClass.getSimpleName}), only generating statement"
