@@ -23,15 +23,15 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
             case Some(field) if field.node.node != DotNetJsonAst.VariableDeclarator =>
               astForFieldIdentifier(typeFullName, identifierName, field)
             case Some(field) =>
+              Ast(identifierNode(ident, identifierName, ident.code, field.typeFullName))
+            case None =>
               // Check for static type reference
               scope.tryResolveTypeReference(identifierName) match {
                 case Some(typeReference) =>
                   Ast(identifierNode(ident, identifierName, ident.code, typeReference.name))
                 case None =>
-                  Ast(identifierNode(ident, identifierName, ident.code, field.typeFullName))
+                  Ast(identifierNode(ident, identifierName, ident.code, typeFullName))
               }
-            case None =>
-              Ast()
           }
       }
     } else {
