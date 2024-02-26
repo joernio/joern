@@ -10,6 +10,7 @@ import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, AstNodeBuilder as X2CpgAstNodeBuilder}
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
+import io.joern.x2cpg.utils.OffsetUtils
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewBlock
@@ -135,11 +136,19 @@ class AstCreator(val config: Config, val global: SwiftGlobal, val parserResult: 
   override protected def lineEnd(node: SwiftNode): Option[Integer]   = node.endLine.map(Integer.valueOf)
   override protected def columnEnd(node: SwiftNode): Option[Integer] = node.endColumn.map(Integer.valueOf)
 
+  private val lineOffsetTable =
+    OffsetUtils.getLineOffsetTable(Option(parserResult.fileContent))
+    // we add one last offset as the swift-syntax parser always expects one EOF newline
+      :+ 0
+
   private def nodeOffsets(node: SwiftNode): Option[(Int, Int)] = {
-    for {
-      startOffset <- node.startOffset
-      endOffset   <- node.endOffset
-    } yield (math.max(startOffset, 0), math.min(endOffset, parserResult.fileContent.length))
+    val offsets = for {
+      lineNr      <- line(node)
+      columnNr    <- column(node)
+      lineEndNr   <- lineEnd(node)
+      columnEndNr <- columnEnd(node)
+    } yield OffsetUtils.coordinatesToOffset(lineOffsetTable, lineNr - 1, columnNr - 1, lineEndNr - 1, columnEndNr - 1)
+    offsets.map { case (offset, offsetEnd) => (offset, offsetEnd - 1) }
   }
 
   override protected def offset(node: SwiftNode): Option[(Int, Int)] = {
