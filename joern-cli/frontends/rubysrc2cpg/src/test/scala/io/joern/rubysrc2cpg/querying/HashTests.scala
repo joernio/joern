@@ -35,23 +35,75 @@ class HashTests extends RubyCode2CpgFixture {
 
   "Inclusive Range of primitive ordinal type should expand in hash key" in {
     val cpg = code("""
-        |{1..3:"abc"}
+        |{1..3:"abc", 4..5:"ade"}
+        |{'a'..'c': "abc"}
         |""".stripMargin)
+
+    inside(cpg.call.name(RubyOperators.hashInitializer).l) {
+      case hashInitializerInt :: hashInitializerString :: Nil =>
+        inside(hashInitializerInt.argument.l) {
+          case firstCall :: secondCall :: thirdCall :: fourthCall :: fifthCall :: Nil =>
+            firstCall.code shouldBe "<tmp-0>[1] = \"abc\""
+            secondCall.code shouldBe "<tmp-0>[2] = \"abc\""
+            thirdCall.code shouldBe "<tmp-0>[3] = \"abc\""
+            fourthCall.code shouldBe "<tmp-0>[4] = \"ade\""
+            fifthCall.code shouldBe "<tmp-0>[5] = \"ade\""
+          case _ => fail("Expected 5 calls (one per item in range)")
+        }
+
+        inside(hashInitializerString.argument.l) {
+          case firstCall :: secondCall :: thirdCall :: Nil =>
+            println(firstCall.code)
+            firstCall.code shouldBe "<tmp-1>['a'] = \"abc\""
+            secondCall.code shouldBe "<tmp-1>['b'] = \"abc\""
+            thirdCall.code shouldBe "<tmp-1>['c'] = \"abc\""
+          case _ => fail("Expected 3 calls (one per item in range)")
+        }
+      case _ => fail("Expected one hash initializer function")
+    }
+
+  }
+
+  "Exclusive Range of primitive ordinal type should expand in hash key" in {
+    val cpg = code("""
+                     |{1...3:"abc"}
+                     |""".stripMargin)
 
     val List(hashCall) = cpg.call.name(RubyOperators.hashInitializer).l
 
     inside(cpg.call.name(RubyOperators.hashInitializer).l) {
       case hashInitializer :: Nil =>
         inside(hashInitializer.argument.l) {
-          case firstCall :: secondCall :: thirdCall :: Nil =>
-            firstCall.code shouldBe "1: \"abc\""
-            secondCall.code shouldBe "2: \"abc\""
-            thirdCall.code shouldBe "3: \"abc\""
-          case _ => fail("Expected 3 calls (one per item in range)")
+          case firstCall :: secondCall :: Nil =>
+            println(firstCall.code)
+            firstCall.code shouldBe "<tmp-0>[1] = \"abc\""
+            secondCall.code shouldBe "<tmp-0>[2] = \"abc\""
+          case _ => fail("Expected 2 calls (one per item in range)")
         }
       case _ => fail("Expected one hash initializer function")
     }
+  }
 
+  "Non-Primitive ordinal type should not expand in hash key" in {
+    val cpg = code("""
+        |{:a...:b:"a"}
+        |""".stripMargin)
+
+    inside(cpg.call.name(RubyOperators.hashInitializer).l) {
+      case hashInitializer :: Nil =>
+        inside(hashInitializer.argument.isCall.l) {
+          case rangeExprArg :: Nil =>
+            inside(rangeExprArg.argument.l) {
+              case lhs :: rhs :: Nil =>
+                lhs.code shouldBe "<tmp-0>[:a...:b]"
+                rhs.code shouldBe "\"a\""
+              case _ => fail("Expected LHS and RHS for association")
+            }
+
+          case _ => fail("Expected one argument for range expression")
+        }
+      case _ => fail("Expected one hash initializer function")
+    }
   }
 
 }

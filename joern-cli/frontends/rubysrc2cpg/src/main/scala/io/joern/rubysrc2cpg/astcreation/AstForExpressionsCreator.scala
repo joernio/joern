@@ -243,6 +243,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       }
       val argumentLiterals = node.elements.map(element => StaticLiteral(argumentsType)(element.span))
       val argumentAsts     = argumentLiterals.map(astForExpression)
+
       val call =
         callNode(
           node,
@@ -256,9 +257,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   protected def astForHashLiteral(node: HashLiteral): Ast = {
+    val block = blockNode(node)
+    scope.pushNewScope(BlockScope(block))
+
+    val tmp = freshVariableName
+
     val argumentAsts = node.elements.flatMap(elem =>
       elem match
-        case associationNode: Association => astForAssociationHash(associationNode)
+        case associationNode: Association => astForAssociationHash(associationNode, tmp)
         case node =>
           logger.warn(s"Could not represent element: ${code(node)} ($relativeFileName), skipping")
           astForUnknown(node) :: Nil
@@ -270,58 +276,61 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       RubyOperators.hashInitializer,
       DispatchTypes.STATIC_DISPATCH
     )
-    callAst(call, argumentAsts)
+    scope.popScope()
+    blockAst(block, List(callAst(call, argumentAsts)))
   }
 
-  protected def astForAssociationHash(node: Association): List[Ast] = {
+  protected def astForAssociationHash(node: Association, tmp: String): List[Ast] = {
     node.key match {
       case rangeExpr: RangeExpression =>
-        expandRangeExprAssociation(rangeExpr).map(x => {
-          astForAssociation(
-            Association(x, node.value)(
-              TextSpan(node.line, node.column, node.lineEnd, node.columnEnd, s"${x.span.text}: ${node.value.span.text}")
-            )
-          )
+        val expandedList = generateStaticLiteralsForRange(rangeExpr).map(x => {
+          astForSingleKeyValue(x, node.value, tmp)
         })
-      case _ => List(astForAssociation(node))
+
+        if (expandedList.nonEmpty) {
+          expandedList
+        } else {
+          List(astForSingleKeyValue(node.key, node.value, tmp))
+        }
+
+      case _ => List(astForSingleKeyValue(node.key, node.value, tmp))
     }
   }
 
-  protected def expandRangeExprAssociation(node: RangeExpression): List[StaticLiteral] = {
+  protected def generateStaticLiteralsForRange(node: RangeExpression): List[StaticLiteral] = {
     (node.lowerBound, node.upperBound) match {
       case (lb: StaticLiteral, ub: StaticLiteral) =>
         (lb.typeFullName, ub.typeFullName) match {
           case ("__builtin.Integer", "__builtin.Integer") =>
-            val lbVal = lb.span.text.toInt
-            val ubVal = ub.span.text.toInt
-
-            generateRange(lbVal, ubVal, node.rangeOperator.asInstanceOf[RangeOperator].exlcusive)
+            generateRange(
+              lb.span.text.toInt,
+              ub.span.text.toInt,
+              node.rangeOperator.asInstanceOf[RangeOperator].exlcusive
+            )
               .map(x =>
                 StaticLiteral(lb.typeFullName)(TextSpan(lb.line, lb.column, lb.lineEnd, lb.columnEnd, x.toString))
               )
               .toList
           case ("__builtin.String", "__builtin.String") =>
-            val lbVal = lb.span.text.replaceAll("'", "")
-            val ubVal = ub.span.text.replaceAll("'", "")
+            val lbVal = lb.span.text.replaceAll("['\"]", "")
+            val ubVal = ub.span.text.replaceAll("['\"]", "")
 
             if (lbVal.length > 1 || ubVal.length > 1) {
+              // Not simulating the case where we have something like "ab"..."ad"
               return List.empty
             }
 
             generateRange(lbVal(0).toInt, ubVal(0).toInt, node.rangeOperator.asInstanceOf[RangeOperator].exlcusive)
               .map(x =>
                 StaticLiteral(lb.typeFullName)(
-                  TextSpan(lb.line, lb.column, lb.lineEnd, lb.columnEnd, x.toChar.toString)
+                  TextSpan(lb.line, lb.column, lb.lineEnd, lb.columnEnd, s"\'${x.toChar.toString}\'")
                 )
               )
               .toList
-
           case _ =>
-            logger.warn(s"Type not supported for static literals: Lower: ${lb.typeFullName} Upper: ${ub.typeFullName}")
             List.empty
         }
       case _ =>
-        println("We not cooking here")
         List.empty
     }
   }
@@ -337,6 +346,27 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val call =
       callNode(node, code(node), RubyOperators.association, RubyOperators.association, DispatchTypes.STATIC_DISPATCH)
     callAst(call, Seq(key, value))
+  }
+
+  protected def astForSingleKeyValue(keyNode: RubyNode, valueNode: RubyNode, tmp: String): Ast = {
+    astForExpression(
+      SingleAssignment(
+        IndexAccess(
+          SimpleIdentifier()(TextSpan(keyNode.line, keyNode.column, keyNode.lineEnd, keyNode.columnEnd, tmp)),
+          List(keyNode)
+        )(TextSpan(keyNode.line, keyNode.column, keyNode.lineEnd, keyNode.columnEnd, s"$tmp[${keyNode.span.text}]")),
+        "=",
+        valueNode
+      )(
+        TextSpan(
+          keyNode.line,
+          keyNode.column,
+          keyNode.lineEnd,
+          keyNode.columnEnd,
+          s"$tmp[${keyNode.span.text}] = ${valueNode.span.text}"
+        )
+      )
+    )
   }
 
   // Recursively lowers into a ternary conditional call
