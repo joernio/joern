@@ -2,6 +2,7 @@ package io.joern.rubysrc2cpg
 
 import better.files.File
 import io.joern.rubysrc2cpg.astcreation.AstCreator
+import io.joern.rubysrc2cpg.astcreation.GlobalTypes
 import io.joern.rubysrc2cpg.datastructures.RubyProgramSummary
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.*

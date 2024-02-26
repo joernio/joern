@@ -43,22 +43,25 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         .map(statementForOptionalParam)
     )(TextSpan(None, None, None, None, ""))
 
-    val stmtBlockAst = node.body match
-      case stmtList: StatementList =>
-        astForStatementListReturningLastExpression(
-          StatementList(optionalStatementList.statements ++ stmtList.statements)(stmtList.span)
-        )
-      case _: (StaticLiteral | BinaryExpression | SingleAssignment | SimpleIdentifier | ArrayLiteral | HashLiteral |
-            SimpleCall | MemberAccess | MemberCall) =>
-        astForStatementListReturningLastExpression(
-          StatementList(optionalStatementList.statements ++ List(node.body))(node.body.span)
-        )
-      case body =>
-        logger.warn(
-          s"Non-linear method bodies are not supported yet: ${body.text} (${body.getClass.getSimpleName}) ($relativeFileName), skipping"
-        )
-        astForUnknown(body)
-
+    val stmtBlockAst = if (this.parseLevel == AstParseLevel.SIGNATURES) {
+      Ast()
+    } else {
+      node.body match
+        case stmtList: StatementList =>
+          astForStatementListReturningLastExpression(
+            StatementList(optionalStatementList.statements ++ stmtList.statements)(stmtList.span)
+          )
+        case _: (StaticLiteral | BinaryExpression | SingleAssignment | SimpleIdentifier | ArrayLiteral | HashLiteral |
+              SimpleCall | MemberAccess | MemberCall) =>
+          astForStatementListReturningLastExpression(
+            StatementList(optionalStatementList.statements ++ List(node.body))(node.body.span)
+          )
+        case body =>
+          logger.warn(
+            s"Non-linear method bodies are not supported yet: ${body.text} (${body.getClass.getSimpleName}) ($relativeFileName), skipping"
+          )
+          astForUnknown(body)
+    }
     scope.popScope()
     methodAst(method, parameterAsts, stmtBlockAst, methodReturnNode(node, Defines.Any))
   }

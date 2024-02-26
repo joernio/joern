@@ -48,7 +48,7 @@ class AstCreator(
 
   def createAst(): DiffGraphBuilder = {
     val fileContent = if (!config.disableFileContent) Option(cdtAst.getRawSignature) else None
-    val fileNode    = NewFile().name(fileName(cdtAst)).order(1)
+    val fileNode    = NewFile().name(fileName(cdtAst)).order(0)
     fileContent.foreach(fileNode.content(_))
     val ast = Ast(fileNode).withChild(astForTranslationUnit(cdtAst))
     Ast.storeInDiffGraph(ast, diffGraph)

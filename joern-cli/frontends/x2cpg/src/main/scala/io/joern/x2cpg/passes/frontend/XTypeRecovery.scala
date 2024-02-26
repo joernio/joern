@@ -1129,8 +1129,10 @@ abstract class RecoverForXCompilationUnit[CompilationUnitType <: AstNode](
       storeNodeTypeInfo(x, filteredTypes.toSeq)
       x match {
         case i: Identifier if symbolTable.contains(i) =>
-          if (isField(i)) persistMemberType(i, filteredTypes)
-          handlePotentialFunctionPointer(i, filteredTypes, i.name)
+          if (isField(i)) {
+            persistMemberType(i, filteredTypes)
+            handlePotentialFunctionPointer(i, filteredTypes, i.name)
+          }
         case _ =>
       }
     }

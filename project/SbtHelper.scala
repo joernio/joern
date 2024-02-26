@@ -1,4 +1,4 @@
-import java.io.{File => JFile}
+import java.io.File
 import sbt.librarymanagement.UpdateReport
 
 object SbtHelper {
@@ -8,7 +8,7 @@ object SbtHelper {
     val Classes, Sources, Javadoc = Value
   }
 
-  def findJar(artifactName: String, report: UpdateReport, jarClassifier: JarClassifier.Value): JFile = {
+  def findJar(artifactName: String, report: UpdateReport, jarClassifier: JarClassifier.Value): File = {
     val jarOption =
       report.configurations
         .filter(_.configuration.name == "compile")

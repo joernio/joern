@@ -140,4 +140,23 @@ class CallTests extends RubyCode2CpgFixture {
     }
   }
 
+  "a parenthesis-less call" should {
+    val cpg = code("""
+        |def src = 1
+        |def f(p)
+        | p += src
+        | p
+        |end
+        |""".stripMargin)
+
+    "correctly create a `src` call instead of identifier" in {
+      inside(cpg.call("src").l) {
+        case src :: Nil =>
+          src.name shouldBe "src"
+          src.methodFullName shouldBe "Test0.rb:<global>::program:src"
+        case xs => fail(s"Expected exactly one `src` call, instead got [${xs.code.mkString(",")}]")
+      }
+    }
+  }
+
 }
