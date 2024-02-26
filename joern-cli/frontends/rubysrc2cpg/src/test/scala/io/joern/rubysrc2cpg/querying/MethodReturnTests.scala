@@ -117,7 +117,7 @@ class MethodReturnTests extends RubyCode2CpgFixture {
     r.code shouldBe "{x:0}"
     r.lineNumber shouldBe Some(2)
 
-    val List(c: Call) = r.astChildren.isCall.l
+    val List(c: Call) = r.astChildren.isBlock.astChildren.isCall.l
     c.methodFullName shouldBe RubyOperators.hashInitializer
   }
 
