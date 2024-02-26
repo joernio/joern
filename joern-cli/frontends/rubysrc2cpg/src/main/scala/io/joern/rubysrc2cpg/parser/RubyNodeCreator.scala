@@ -617,7 +617,11 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitRangeExpression(ctx: RubyParser.RangeExpressionContext): RubyNode = {
-    RangeExpression(visit(ctx.primaryValue(0)), visit(ctx.primaryValue(1)), visit(ctx.rangeOperator()))(ctx.toTextSpan)
+    RangeExpression(
+      visit(ctx.primaryValue(0)),
+      visit(ctx.primaryValue(1)),
+      visit(ctx.rangeOperator()).asInstanceOf[RangeOperator]
+    )(ctx.toTextSpan)
   }
 
   override def visitRangeOperator(ctx: RubyParser.RangeOperatorContext): RubyNode = {

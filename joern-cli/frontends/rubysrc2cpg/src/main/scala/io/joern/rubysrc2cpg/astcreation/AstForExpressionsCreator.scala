@@ -284,9 +284,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     node.key match {
       case rangeExpr: RangeExpression =>
         val expandedList = generateStaticLiteralsForRange(rangeExpr).map { x =>
-          {
-            astForSingleKeyValue(x, node.value, tmp)
-          }
+          astForSingleKeyValue(x, node.value, tmp)
         }
 
         if (expandedList.nonEmpty) {
@@ -304,11 +302,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case (lb: StaticLiteral, ub: StaticLiteral) =>
         (lb.typeFullName, ub.typeFullName) match {
           case ("__builtin.Integer", "__builtin.Integer") =>
-            generateRange(
-              lb.span.text.toInt,
-              ub.span.text.toInt,
-              node.rangeOperator.asInstanceOf[RangeOperator].exclusive
-            )
+            generateRange(lb.span.text.toInt, ub.span.text.toInt, node.rangeOperator.exclusive)
               .map(x =>
                 StaticLiteral(lb.typeFullName)(TextSpan(lb.line, lb.column, lb.lineEnd, lb.columnEnd, x.toString))
               )
@@ -324,7 +318,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
               return List.empty
             }
 
-            generateRange(lbVal(0).toInt, ubVal(0).toInt, node.rangeOperator.asInstanceOf[RangeOperator].exclusive)
+            generateRange(lbVal(0).toInt, ubVal(0).toInt, node.rangeOperator.exclusive)
               .map(x =>
                 StaticLiteral(lb.typeFullName)(
                   TextSpan(lb.line, lb.column, lb.lineEnd, lb.columnEnd, s"\'${x.toChar.toString}\'")

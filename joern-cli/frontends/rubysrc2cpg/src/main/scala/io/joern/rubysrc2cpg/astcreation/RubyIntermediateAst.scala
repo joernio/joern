@@ -193,8 +193,9 @@ object RubyIntermediateAst {
   final case class DynamicLiteral(typeFullName: String, expressions: List[RubyNode])(span: TextSpan)
       extends RubyNode(span)
 
-  final case class RangeExpression(lowerBound: RubyNode, upperBound: RubyNode, rangeOperator: RubyNode)(span: TextSpan)
-      extends RubyNode(span)
+  final case class RangeExpression(lowerBound: RubyNode, upperBound: RubyNode, rangeOperator: RangeOperator)(
+    span: TextSpan
+  ) extends RubyNode(span)
 
   final case class RangeOperator(exclusive: Boolean)(span: TextSpan) extends RubyNode(span)
 
