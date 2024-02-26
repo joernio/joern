@@ -21,6 +21,7 @@ import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 
 import java.nio.file.{Files, Paths}
+import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try, Using}
 
 class RubySrc2Cpg extends X2CpgFrontend[Config] {
@@ -73,6 +74,7 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
       .determine(
         config.inputPath,
         RubySourceFileExtensions,
+        ignoredDefaultRegex = Option(config.defaultIgnoredFilesRegex),
         ignoredFilesRegex = Option(config.ignoredFilesRegex),
         ignoredFilesPath = Option(config.ignoredFiles)
       )
@@ -83,18 +85,6 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
         }
       }
       .iterator
-  }
-
-  private def parseFile(
-    fileName: String,
-    resourceManagedParser: parser.ResourceManagedParser
-  ): Option[RubyParser.ProgramContext] = {
-    resourceManagedParser.parse(fileName) match {
-      case Success(programCtx) => Option(programCtx)
-      case Failure(exception) =>
-        logger.warn(s"Could not parse file: $fileName, skipping - ", exception)
-        None
-    }
   }
 
   private def deprecatedCreateCpgAction(cpg: Cpg, config: Config): Unit = try {
