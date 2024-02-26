@@ -242,7 +242,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   private def astsForImplicitReturnStatement(node: RubyNode): List[Ast] = {
     node match
       case _: (ArrayLiteral | HashLiteral | StaticLiteral | BinaryExpression | UnaryExpression | SimpleIdentifier |
-            IfExpression | RescueExpression | SimpleCall) =>
+            IfExpression | RescueExpression | SimpleCall | IndexAccess) =>
         astForReturnStatement(ReturnExpression(List(node))(node.span)) :: Nil
       case node: SingleAssignment =>
         astForSingleAssignment(node) :: List(astForReturnStatement(ReturnExpression(List(node.lhs))(node.span)))

@@ -128,7 +128,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val indexAsts = node.indices.map(astForExpression)
     val targetAst = astForExpression(node.target)
     val call = callNode(node, code(node), Operators.indexAccess, Operators.indexAccess, DispatchTypes.STATIC_DISPATCH)
-    callAst(call, indexAsts, Some(targetAst))
+
+    callAst(call, targetAst +: indexAsts)
   }
 
   protected def astForObjectInstantiation(node: ObjectInstantiation): Ast = {
