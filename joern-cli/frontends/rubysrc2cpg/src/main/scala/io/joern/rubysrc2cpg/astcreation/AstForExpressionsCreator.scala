@@ -315,6 +315,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
             val lbVal = lb.span.text.replaceAll("['\"]", "")
             val ubVal = ub.span.text.replaceAll("['\"]", "")
 
+            // TODO: Also might need to check if one is upper case and other is lower, since in Ruby this would not
+            //  create any range but it might with this impl of using ASCII values.
             if (lbVal.length > 1 || ubVal.length > 1) {
               // Not simulating the case where we have something like "ab"..."ad"
               return List.empty
