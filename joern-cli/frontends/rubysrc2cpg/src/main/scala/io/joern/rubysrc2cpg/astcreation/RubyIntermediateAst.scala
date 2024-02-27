@@ -1,5 +1,7 @@
 package io.joern.rubysrc2cpg.astcreation
 
+import io.shiftleft.codepropertygraph.generated.nodes.NewNode
+
 object RubyIntermediateAst {
 
   case class TextSpan(
@@ -213,11 +215,30 @@ object RubyIntermediateAst {
 
   final case class Association(key: RubyNode, value: RubyNode)(span: TextSpan) extends RubyNode(span)
 
-  /** Represents traditional calls, e.g. `foo`, `foo x, y`, `foo(x,y)` */
-  final case class SimpleCall(target: RubyNode, arguments: List[RubyNode])(span: TextSpan) extends RubyNode(span)
+  /** Represents a call.
+    */
+  sealed trait RubyCall {
+    def target: RubyNode
+    def arguments: List[RubyNode]
+  }
 
-  final case class SimpleCallWithBlock(target: RubyNode, arguments: List[RubyNode], block: RubyNode)(span: TextSpan)
-      extends RubyNode(span) {
+  /** Represents traditional calls, e.g. `foo`, `foo x, y`, `foo(x,y)` */
+  final case class SimpleCall(target: RubyNode, arguments: List[RubyNode])(span: TextSpan)
+      extends RubyNode(span)
+      with RubyCall
+
+  /** Represents a call with a block argument.
+    */
+  sealed trait RubyCallWithBlock[C <: RubyCall] extends RubyCall {
+
+    def block: Block
+
+    def withoutBlock: RubyNode with C
+  }
+
+  final case class SimpleCallWithBlock(target: RubyNode, arguments: List[RubyNode], block: Block)(span: TextSpan)
+      extends RubyNode(span)
+      with RubyCallWithBlock[SimpleCall] {
     def withoutBlock: SimpleCall = SimpleCall(target, arguments)(span)
   }
 
@@ -225,15 +246,17 @@ object RubyIntermediateAst {
   final case class MemberCall(target: RubyNode, op: String, methodName: String, arguments: List[RubyNode])(
     span: TextSpan
   ) extends RubyNode(span)
+      with RubyCall
 
   final case class MemberCallWithBlock(
     target: RubyNode,
     op: String,
     methodName: String,
     arguments: List[RubyNode],
-    block: RubyNode
+    block: Block
   )(span: TextSpan)
-      extends RubyNode(span) {
+      extends RubyNode(span)
+      with RubyCallWithBlock[MemberCall] {
     def withoutBlock: MemberCall = MemberCall(target, op, methodName, arguments)(span)
   }
 
@@ -247,7 +270,15 @@ object RubyIntermediateAst {
       extends RubyNode(span)
 
   /** Represents a `do` or `{ .. }` (braces) block. */
-  final case class Block(parameters: List[RubyNode], body: RubyNode)(span: TextSpan) extends RubyNode(span)
+  final case class Block(parameters: List[RubyNode], body: RubyNode)(span: TextSpan) extends RubyNode(span) {
+
+    def toMethodDeclaration(name: String): MethodDeclaration = MethodDeclaration(name, parameters, body)(span)
+
+  }
+
+  /** A dummy class for wrapping around `NewNode` and allowing it to integrate with RubyNode classes.
+    */
+  final case class DummyNode(node: NewNode)(span: TextSpan) extends RubyNode(span)
 
   final case class UnaryExpression(op: String, expression: RubyNode)(span: TextSpan) extends RubyNode(span)
 

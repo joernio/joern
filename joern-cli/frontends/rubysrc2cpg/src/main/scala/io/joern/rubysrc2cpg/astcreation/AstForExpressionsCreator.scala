@@ -33,6 +33,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: MandatoryParameter       => astForMandatoryParameter(node)
     case node: SplattingRubyNode        => astForSplattingRubyNode(node)
     case node: AnonymousTypeDeclaration => astForAnonymousTypeDeclaration(node)
+    case node: DummyNode                => Ast(node.node)
     case _                              => astForUnknown(node)
 
   protected def astForStaticLiteral(node: StaticLiteral): Ast = {
@@ -282,6 +283,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   protected def astForAssociationHash(node: Association, tmp: String): List[Ast] = {
+    val tmpAst = astForSimpleIdentifier(SimpleIdentifier()(node.span.spanStart(tmp)))
     node.key match {
       case rangeExpr: RangeExpression =>
         val expandedList = generateStaticLiteralsForRange(rangeExpr).map { x =>
@@ -289,12 +291,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         }
 
         if (expandedList.nonEmpty) {
-          expandedList
+          expandedList :+ tmpAst
         } else {
-          astForSingleKeyValue(node.key, node.value, tmp) :: Nil
+          astForSingleKeyValue(node.key, node.value, tmp) :: tmpAst :: Nil
         }
 
-      case _ => astForSingleKeyValue(node.key, node.value, tmp) :: Nil
+      case _ => astForSingleKeyValue(node.key, node.value, tmp) :: tmpAst :: Nil
     }
   }
 

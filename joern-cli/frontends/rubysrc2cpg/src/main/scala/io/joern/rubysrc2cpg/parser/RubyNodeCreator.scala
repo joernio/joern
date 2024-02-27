@@ -322,7 +322,6 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     val body       = visit(ctx.bodyStatement())
     Block(parameters, body)(ctx.toTextSpan)
   }
-
   override def visitLocalVariableAssignmentExpression(
     ctx: RubyParser.LocalVariableAssignmentExpressionContext
   ): RubyNode = {
@@ -477,7 +476,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitMethodCallWithBlockExpression(ctx: RubyParser.MethodCallWithBlockExpressionContext): RubyNode = {
-    SimpleCallWithBlock(visit(ctx.methodIdentifier()), List(), visit(ctx.block()))(ctx.toTextSpan)
+    SimpleCallWithBlock(visit(ctx.methodIdentifier()), List(), visit(ctx.block()).asInstanceOf[Block])(ctx.toTextSpan)
   }
 
   override def visitMethodCallWithParenthesesExpression(
@@ -487,7 +486,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
       SimpleCallWithBlock(
         visit(ctx.methodIdentifier()),
         ctx.argumentWithParentheses().arguments.map(visit),
-        visit(ctx.block())
+        visit(ctx.block()).asInstanceOf[Block]
       )(ctx.toTextSpan)
     } else {
       SimpleCall(visit(ctx.methodIdentifier()), ctx.argumentWithParentheses().arguments.map(visit))(ctx.toTextSpan)
@@ -578,7 +577,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
         ctx.op.getText,
         ctx.methodName().getText,
         Option(ctx.argumentWithParentheses()).map(_.arguments).getOrElse(List()).map(visit),
-        visit(ctx.block())
+        visit(ctx.block()).asInstanceOf[Block]
       )(ctx.toTextSpan)
     }
 

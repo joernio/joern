@@ -12,6 +12,10 @@ final case class Config(
 ) extends X2CpgConfig[Config]
     with TypeRecoveryParserConfig[Config] {
 
+  this.defaultIgnoredFilesRegex = List("spec", "test").flatMap { directory =>
+    List(s"(^|\\\\)$directory($$|\\\\)".r.unanchored, s"(^|/)$directory($$|/)".r.unanchored)
+  }
+
   def withEnableDependencyDownload(value: Boolean): Config = {
     copy(enableDependencyDownload = value).withInheritedFields(this)
   }
