@@ -179,29 +179,30 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
         | end
         |end""".stripMargin)
 
-    // Lowered as `def f; return true ? 20 : nil; end`
-    val List(f)         = cpg.method.name("f").l
-    val List(r: Return) = f.methodReturn.cfgIn.l: @unchecked
-    val List(c: Call)   = r.astChildren.isCall.l
+    // Lowered as `def f; if true then return 20 else return nil end`
 
-    c.methodFullName shouldBe Operators.conditional
-    val test      = c.argument(1)
-    val blockThen = c.argument(2)
-    val blockElse = c.argument(3)
+    inside(cpg.method.name("f").l) {
+      case f :: Nil =>
+        // Check the two return statements
+        inside(f.methodReturn.toReturn.l) {
+          case return20 :: returnNil :: Nil =>
+            return20.code shouldBe "20"
+            return20.lineNumber shouldBe Some(4)
+            val List(twenty: Literal) = return20.astChildren.l: @unchecked
+            twenty.code shouldBe "20"
+            twenty.lineNumber shouldBe Some(4)
+            twenty.typeFullName shouldBe "__builtin.Integer"
 
-    test.code shouldBe "true"
-    test.lineNumber shouldBe Some(3)
-    blockThen.isBlock shouldBe true
-    blockElse.isBlock shouldBe true
-
-    val List(twenty: Literal) = blockThen.astChildren.l: @unchecked
-    twenty.code shouldBe "20"
-    twenty.lineNumber shouldBe Some(4)
-    twenty.typeFullName shouldBe "__builtin.Integer"
-
-    val List(nil: Literal) = blockElse.astChildren.l: @unchecked
-    nil.code shouldBe "nil"
-    nil.typeFullName shouldBe "__builtin.NilClass"
+            returnNil.code shouldBe "return nil"
+            returnNil.lineNumber shouldBe Some(3)
+            val List(nil: Literal) = returnNil.astChildren.l: @unchecked
+            nil.code shouldBe "nil"
+            nil.lineNumber shouldBe Some(3)
+            nil.typeFullName shouldBe "__builtin.NilClass"
+          case xs => fail(s"Expected exactly two return nodes, instead got [${xs.code.mkString(",")}]")
+        }
+      case xs => fail(s"Expected exactly one method with the name `f`, instead got [${xs.code.mkString(",")}]")
+    }
   }
 
   "implicit RETURN node for `if-else-end` expression" in {
@@ -232,6 +233,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
             val List(forty: Literal) = return40.astChildren.l: @unchecked
             forty.code shouldBe "40"
             forty.lineNumber shouldBe Some(6)
+            forty.typeFullName shouldBe "__builtin.Integer"
           case xs => fail(s"Expected exactly two return nodes, instead got [${xs.code.mkString(",")}]")
         }
       case xs => fail(s"Expected exactly one method with the name `f`, instead got [${xs.code.mkString(",")}]")
@@ -260,6 +262,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
             val List(forty: Literal) = return40.astChildren.l: @unchecked
             forty.code shouldBe "40"
             forty.lineNumber shouldBe Some(2)
+            forty.typeFullName shouldBe "__builtin.Integer"
           case xs => fail(s"Expected exactly two return nodes, instead got [${xs.code.mkString(",")}]")
         }
       case xs => fail(s"Expected exactly one method with the name `f`, instead got [${xs.code.mkString(",")}]")

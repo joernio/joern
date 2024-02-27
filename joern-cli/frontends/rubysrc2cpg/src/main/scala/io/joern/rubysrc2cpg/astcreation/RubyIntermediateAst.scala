@@ -173,11 +173,6 @@ object RubyIntermediateAst {
       extends RubyNode(span)
       with ControlFlowExpression
 
-  final case class ConditionalExpression(condition: RubyNode, trueBranch: RubyNode, falseBranch: RubyNode)(
-    span: TextSpan
-  ) extends RubyNode(span)
-      with ControlFlowExpression
-
   final case class CaseExpression(
     expression: Option[RubyNode],
     whenClauses: List[RubyNode],
