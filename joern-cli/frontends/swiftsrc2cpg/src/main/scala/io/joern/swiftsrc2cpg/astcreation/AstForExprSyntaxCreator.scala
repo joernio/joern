@@ -252,7 +252,9 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case "<"                   => Operators.lessThan
       case ">"                   => Operators.greaterThan
       case "=="                  => Operators.equals
+      case "!="                  => Operators.notEquals
       case "==="                 => Operators.equals
+      case "!=="                 => Operators.notEquals
       case "&+"                  => Operators.plus
       case "+"                   => Operators.plus
       case "&+="                 => Operators.assignmentPlus
@@ -268,7 +270,6 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case "..<" | ">.." | "..." => Operators.range
       case "%"                   => Operators.modulo
       case "!"                   => Operators.logicalNot
-      case "!="                  => Operators.notEquals
       case "^"                   => Operators.xor
       case "??"                  => Operators.elvis
       case _ =>
@@ -408,11 +409,12 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
   private def astForPostfixOperatorExprSyntax(node: PostfixOperatorExprSyntax): Ast = {
     val operatorMethod = code(node.operator) match {
-      case "++" => Operators.postIncrement
-      case "--" => Operators.postDecrement
-      case "^"  => Operators.xor
-      case "<"  => Operators.lessThan
-      case ">"  => Operators.greaterThan
+      case "++"  => Operators.postIncrement
+      case "--"  => Operators.postDecrement
+      case "^"   => Operators.xor
+      case "<"   => Operators.lessThan
+      case ">"   => Operators.greaterThan
+      case "..." => "<operator>.splat"
       case _ =>
         notHandledYet(node.operator)
         "<operator>.unknown"
