@@ -128,7 +128,12 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     val condition = visit(ctx.operatorExpression(0))
     val thenBody  = visit(ctx.operatorExpression(1))
     val elseBody  = visit(ctx.operatorExpression(2))
-    ConditionalExpression(condition, thenBody, elseBody)(ctx.toTextSpan)
+    IfExpression(
+      condition,
+      thenBody,
+      List.empty,
+      Option(ElseClause(StatementList(elseBody :: Nil)(elseBody.span))(elseBody.span))
+    )(ctx.toTextSpan)
   }
 
   override def visitReturnMethodInvocationWithoutParentheses(
@@ -664,10 +669,14 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitEndlessMethodDefinition(ctx: RubyParser.EndlessMethodDefinitionContext): RubyNode = {
+    val body = visit(ctx.statement()) match {
+      case x: StatementList => x
+      case x                => StatementList(x :: Nil)(x.span)
+    }
     MethodDeclaration(
       ctx.definedMethodName().getText,
       Option(ctx.parameterList()).fold(List())(_.parameters).map(visit),
-      visit(ctx.commandOrPrimaryValue())
+      body
     )(ctx.toTextSpan)
   }
 
