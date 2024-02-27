@@ -3,14 +3,16 @@ package io.joern.csharpsrc2cpg.datastructures
 import io.joern.csharpsrc2cpg.Constants
 import io.joern.x2cpg.datastructures.{FieldLike, MethodLike, ProgramSummary, TypeLike}
 import org.slf4j.LoggerFactory
+import upickle.core.LinkedHashMap
 import upickle.default.*
 
-import java.io.{ByteArrayInputStream, File, InputStream}
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, InputStream, ObjectOutputStream}
 import scala.io.Source
 import scala.collection.mutable.ListBuffer
 import scala.annotation.targetName
 import scala.collection.JavaConverters.enumerationAsScalaIteratorConverter
 import scala.util.{Failure, Success, Try}
+import better.files.File
 
 type NamespaceToTypeMap = Map[String, Set[CSharpType]]
 
@@ -57,25 +59,37 @@ object CSharpProgramSummary {
 
   def mergeBuiltInTypesJson: InputStream = {
     val classLoader      = getClass.getClassLoader
-    val builtinDirectory = "builtin"
-    val resourcePaths = Option(classLoader.getResources(s"$builtinDirectory/"))
-      .map(_.asScala.map(_.getPath.stripPrefix("/")).toList)
-      .getOrElse(List.empty[String])
-      .filter(_.endsWith("builtin_types.json"))
+    val builtinDirectory = "builtin_types"
+
+    val url  = classLoader.getResource(builtinDirectory)
+    val path = url.getPath
+    val resourcePaths =
+      File(path).listRecursively
+        .filter(_.name.endsWith("builtin_types.json"))
+        .map(_.pathAsString)
+        .toList
 
     if (resourcePaths.isEmpty) {
       logger.warn("No builtin_types.json found.")
       InputStream.nullInputStream()
     } else {
-      val mergedJsonObjects = ListBuffer[ujson.Obj]()
+      val mergedJsonObjects = ListBuffer[LinkedHashMap[String, ujson.Value]]()
       for (resourcePath <- resourcePaths) {
-        val inputStream = classLoader.getResourceAsStream(resourcePath)
+        val inputStream = File(resourcePath).newInputStream
         val jsonString  = Source.fromInputStream(inputStream).mkString
         val jsonObject  = ujson.read(jsonString).obj
-        mergedJsonObjects += jsonObject
+        mergedJsonObjects.addOne(jsonObject)
       }
-      val mergedJson = write(mergedJsonObjects.map(_.value).reduce(_ ++ _))
-      new ByteArrayInputStream(mergedJson.getBytes())
+
+      val mergedJson: LinkedHashMap[String, ujson.Value] =
+        mergedJsonObjects
+          .reduceOption((prev, curr) => {
+            prev.addAll(curr)
+            prev
+          })
+          .getOrElse(LinkedHashMap[String, ujson.Value]())
+
+      new ByteArrayInputStream(writeToByteArray(ujson.read(mergedJson)))
     }
   }
 
