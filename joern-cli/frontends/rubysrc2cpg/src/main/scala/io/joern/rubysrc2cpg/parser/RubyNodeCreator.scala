@@ -649,11 +649,30 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitClassDefinition(ctx: RubyParser.ClassDefinitionContext): RubyNode = {
-    ClassDeclaration(
-      visit(ctx.classPath()),
-      Option(ctx.commandOrPrimaryValue()).map(visit),
-      visit(ctx.bodyStatement())
-    )(ctx.toTextSpan)
+    val body = visit(ctx.bodyStatement())
+
+    val parsedBody = body match {
+      case stmtList: StatementList =>
+        stmtList.statements.map {
+          case singletonClassDeclaration: SingletonClassDeclaration =>
+            singletonClassDeclaration.baseClass match {
+              case Some(selfIdentifier: SelfIdentifier) =>
+                val a = singletonClassDeclaration.body match {
+                  case stmtList2: StatementList =>
+                    StatementList(stmtList2.statements.map {
+                    case method: MethodDeclaration => SingletonMethodDeclaration(selfIdentifier, method.methodName, method.parameters, method.body)(method.span)
+                    case other => other
+                  })
+                  case _ => singletonClassDeclaration.body
+                }
+              case _ => singletonClassDeclaration.body
+            }
+          case _ => body
+        }.asInstanceOf[RubyNode]
+      case _ => body
+    }
+
+    ClassDeclaration(visit(ctx.classPath()), Option(ctx.commandOrPrimaryValue()).map(visit), visit(ctx.bodyStatement()))(ctx.toTextSpan)
   }
 
   override def visitMethodDefinition(ctx: RubyParser.MethodDefinitionContext): RubyNode = {

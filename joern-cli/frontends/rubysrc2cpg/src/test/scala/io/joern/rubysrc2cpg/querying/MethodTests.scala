@@ -184,4 +184,37 @@ class MethodTests extends RubyCode2CpgFixture {
       case _ => fail("Expected one class definition")
     }
   }
+
+  "`def class << self << f(x) ... end` is represented by a METHOD inside the TYPE_DECL node" in {
+    val cpg = code("""
+                     |class C
+                     | class << self
+                     |  def f(x)
+                     |   x + 1
+                     |   puts "ass"
+                     |  end
+                     | end
+                     |end
+                     |""".stripMargin)
+
+    cpg.typeDecl.name("C").dotAst.l.foreach(println)
+
+    inside(cpg.typeDecl.name("C").l) {
+      case classC :: Nil =>
+        inside(classC.method.name("f").l) {
+          case funcF :: Nil =>
+            inside(funcF.parameter.l) {
+              case thisParam :: xParam :: Nil =>
+                println(thisParam.code)
+                println(thisParam.typeFullName)
+
+                println(xParam.code)
+              case _ => fail("Expected two parameters")
+            }
+          case _ => fail("Expected one method")
+        }
+      case _ => fail("Expected one class definition")
+    }
+  }
+
 }
