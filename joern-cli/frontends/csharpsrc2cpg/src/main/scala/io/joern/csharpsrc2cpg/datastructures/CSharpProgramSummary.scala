@@ -8,7 +8,7 @@ import upickle.default.*
 
 import java.io.{ByteArrayInputStream, ByteArrayOutputStream, InputStream, ObjectOutputStream}
 import scala.io.Source
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scala.annotation.targetName
 import scala.collection.JavaConverters.enumerationAsScalaIteratorConverter
 import scala.util.{Failure, Success, Try}
@@ -89,7 +89,14 @@ object CSharpProgramSummary {
       val mergedJson: LinkedHashMap[String, ujson.Value] =
         mergedJsonObjects
           .reduceOption((prev, curr) => {
-            prev.addAll(curr)
+            curr.keys.foreach(key => {
+              prev.updateWith(key) {
+                case Some(x) =>
+                  Option(x.arr.addAll(curr.get(key).get.arr))
+                case None =>
+                  Option(curr.get(key).get.arr)
+              }
+            })
             prev
           })
           .getOrElse(LinkedHashMap[String, ujson.Value]())
