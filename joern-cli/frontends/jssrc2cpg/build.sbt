@@ -19,7 +19,7 @@ astGenVersion := appProperties.value.getString("jssrc2cpg.astgen_version")
 
 libraryDependencies ++= Seq(
   "io.shiftleft"              %% "codepropertygraph" % Versions.cpg,
-  "com.fasterxml.jackson.core" % "jackson-databind"  % "2.15.2",
+  "com.fasterxml.jackson.core" % "jackson-databind"  % "2.15.4",
   "org.scalatest"             %% "scalatest"         % Versions.scalatest % Test
 )
 
