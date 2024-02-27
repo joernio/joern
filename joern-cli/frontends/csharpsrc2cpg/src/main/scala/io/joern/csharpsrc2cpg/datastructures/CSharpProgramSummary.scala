@@ -13,6 +13,7 @@ import scala.annotation.targetName
 import scala.collection.JavaConverters.enumerationAsScalaIteratorConverter
 import scala.util.{Failure, Success, Try}
 import better.files.File
+import io.joern.x2cpg.utils.Environment
 
 type NamespaceToTypeMap = Map[String, Set[CSharpType]]
 
@@ -66,7 +67,12 @@ object CSharpProgramSummary {
     val resourcePaths =
       File(path).listRecursively
         .filter(_.name.endsWith("builtin_types.json"))
-        .map(_.pathAsString)
+        .map(file =>
+          Environment.operatingSystem match {
+            case Environment.OperatingSystemType.Windows => file.pathAsString.stripPrefix("/")
+            case _                                       => file.pathAsString
+          }
+        )
         .toList
 
     if (resourcePaths.isEmpty) {
