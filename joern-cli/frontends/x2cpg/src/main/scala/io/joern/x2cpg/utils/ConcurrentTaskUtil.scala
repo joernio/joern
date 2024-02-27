@@ -3,7 +3,7 @@ package io.joern.x2cpg.utils
 import java.util
 import java.util.concurrent.{Callable, Executors}
 import java.util.stream.{Collectors, StreamSupport}
-import java.util.{Collections, Spliterator, Spliterators}
+import java.util.{Collections, Spliterator, Spliterators, stream}
 import scala.jdk.CollectionConverters.*
 import scala.util.Try
 
@@ -50,13 +50,13 @@ object ConcurrentTaskUtil {
     * @return
     *   an array of the executed tasks as either a success or failure.
     */
-  def runUsingSpliterator[V](tasks: Iterator[() => V]): List[Try[V]] = {
-    StreamSupport
-      .stream(Spliterators.spliteratorUnknownSize(tasks.asJava, Spliterator.NONNULL), /* parallel */ true)
+  def runUsingSpliterator[V](tasks: Iterator[() => V]): Seq[Try[V]] = {
+    scala.collection.immutable.ArraySeq.ofRef(
+    java.util.Arrays
+      .stream(tasks.toArray)
+      .parallel()
       .map(task => Try(task.apply()))
-      .collect(Collectors.toList())
-      .asScala
-      .toList
+      .toArray).asInstanceOf[scala.collection.immutable.ArraySeq[Try[V]]]
   }
 
 }

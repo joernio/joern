@@ -19,7 +19,7 @@ type NamespaceToTypeMap = Map[String, Set[CSharpType]]
   *   [[CSharpProgramSummary.jsonToInitialMapping]] for generating initial mappings.
   */
 class CSharpProgramSummary(initialMappings: List[NamespaceToTypeMap] = List.empty) extends ProgramSummary[CSharpType] {
-
+//fixme: Use mutable datatypes, otherwise folds are quadratic
   override val namespaceToType: NamespaceToTypeMap = initialMappings.reduceOption(_ ++ _).getOrElse(Map.empty)
   def findGlobalTypes: Set[CSharpType]             = namespaceToType.getOrElse(Constants.Global, Set.empty)
 
