@@ -73,7 +73,7 @@ class CallsToFieldAccessTests extends KotlinCode2CpgFixture(withOssDataflow = fa
     }
 
     "Create require field access nodes for members accessed outside the class properly" in {
-      val List(ctory, insidemainy) = cpg.call.methodFullName(Operators.fieldAccess).l
+      val List(ctory, insidemainy) = cpg.call.methodFullNameExact(Operators.fieldAccess).l
       ctory.code shouldBe "this.y"
       ctory.name shouldBe Operators.fieldAccess
       insidemainy.code shouldBe "a.y"
@@ -100,7 +100,7 @@ class CallsToFieldAccessTests extends KotlinCode2CpgFixture(withOssDataflow = fa
     }
 
     "2nd level Chained field access CALL node should have name <operator>.fieldAccess" in {
-      val List(ctora, ctorb, insidemainx, insidemainacls) = cpg.call.methodFullName(Operators.fieldAccess).l
+      val List(ctora, ctorb, insidemainx, insidemainacls) = cpg.call.methodFullNameExact(Operators.fieldAccess).l
       ctora.name shouldBe Operators.fieldAccess
       ctorb.name shouldBe Operators.fieldAccess
       insidemainacls.name shouldBe Operators.fieldAccess
