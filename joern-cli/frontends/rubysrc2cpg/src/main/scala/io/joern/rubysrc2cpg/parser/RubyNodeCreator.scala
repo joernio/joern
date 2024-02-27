@@ -539,7 +539,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitSelfPseudoVariable(ctx: RubyParser.SelfPseudoVariableContext): RubyNode = {
-    SimpleIdentifier()(ctx.toTextSpan)
+    SelfIdentifier()(ctx.toTextSpan)
   }
 
   override def visitMemberAccessExpression(ctx: RubyParser.MemberAccessExpressionContext): RubyNode = {
