@@ -106,6 +106,27 @@ class MethodReturnTests extends RubyCode2CpgFixture {
     c.methodFullName shouldBe Operators.arrayInitializer
   }
 
+  "implicit RETURN node for index access exists" in {
+    val cpg = code("""
+                     |def f
+                     | l = [1, 2, 3]
+                     | l[1]
+                     |end
+                     |""".stripMargin)
+
+    val List(f)         = cpg.method.name("f").l
+    val List(r: Return) = f.methodReturn.cfgIn.l: @unchecked
+
+    r.code shouldBe "l[1]"
+    r.lineNumber shouldBe Some(4)
+
+    val List(c: Call) = r.astChildren.isCall.l
+    c.methodFullName shouldBe Operators.indexAccess
+    val List(arg1, arg2) = c.argument.l
+    arg1.argumentIndex shouldBe 1
+    arg2.argumentIndex shouldBe 2
+  }
+
   "implicit RETURN node for `{x:0}` exists" in {
     val cpg = code("""
         |def f = {x:0}
@@ -117,7 +138,7 @@ class MethodReturnTests extends RubyCode2CpgFixture {
     r.code shouldBe "{x:0}"
     r.lineNumber shouldBe Some(2)
 
-    val List(c: Call) = r.astChildren.isCall.l
+    val List(c: Call) = r.astChildren.isBlock.astChildren.isCall.l
     c.methodFullName shouldBe RubyOperators.hashInitializer
   }
 

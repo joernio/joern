@@ -16,11 +16,13 @@ class ClassExtensionTests extends AbstractPassTest {
         |
         |class Foo: Bar { // implicitly internal (private)
         |  public var a = A()
+        |  // some comment ✅
         |  private var b = false
         |  var c = 0.0
         |  var d: String?
         |
         |  static var e = 1
+        |  // some comment ©
         |  static var f = true
         |
         |  var g: Double { return self * 1_000.0 }
