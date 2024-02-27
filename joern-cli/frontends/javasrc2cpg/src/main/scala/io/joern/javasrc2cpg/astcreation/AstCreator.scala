@@ -285,7 +285,7 @@ class AstCreator(
               case callExpr: MethodCallExpr =>
                 callExpr.getScope.toScala match {
                   case Some(_: Expression) => None
-                  case _                   => scope.lookupType(symbolException.getName)
+                  case _                   => scope.lookupType(symbolException.getName, includeWildcards = false)
                 }
               case _ => None
             }
