@@ -292,7 +292,7 @@ primaryValue
         # methodDefinition
     |   DEF singletonObject op=(DOT | COLON2) definedMethodName methodParameterPart bodyStatement END
         # singletonMethodDefinition
-    |   DEF definedMethodName (LPAREN parameterList? RPAREN)? EQ NL* commandOrPrimaryValue
+    |   DEF definedMethodName (LPAREN parameterList? RPAREN)? EQ NL* statement
         # endlessMethodDefinition
     |   MINUSGT (LPAREN parameterList? RPAREN)? block
         # lambdaExpression

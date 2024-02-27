@@ -114,6 +114,14 @@ object RubyIntermediateAst {
     span: TextSpan
   ) extends RubyNode(span)
 
+  /** Any structure that conditionally modifies the control flow of the program.
+    */
+  sealed trait ControlFlowExpression
+
+  /** A control structure's clause, which may contain an additional control structures.
+    */
+  sealed trait ControlFlowClause
+
   final case class RescueExpression(
     body: RubyNode,
     rescueClauses: List[RubyNode],
@@ -121,6 +129,7 @@ object RubyIntermediateAst {
     ensureClause: Option[RubyNode]
   )(span: TextSpan)
       extends RubyNode(span)
+      with ControlFlowExpression
 
   final case class RescueClause(
     exceptionClassList: Option[RubyNode],
@@ -128,12 +137,17 @@ object RubyIntermediateAst {
     thenClause: RubyNode
   )(span: TextSpan)
       extends RubyNode(span)
+      with ControlFlowClause
 
-  final case class EnsureClause(thenClause: RubyNode)(span: TextSpan) extends RubyNode(span)
+  final case class EnsureClause(thenClause: RubyNode)(span: TextSpan) extends RubyNode(span) with ControlFlowClause
 
-  final case class WhileExpression(condition: RubyNode, body: RubyNode)(span: TextSpan) extends RubyNode(span)
+  final case class WhileExpression(condition: RubyNode, body: RubyNode)(span: TextSpan)
+      extends RubyNode(span)
+      with ControlFlowExpression
 
-  final case class UntilExpression(condition: RubyNode, body: RubyNode)(span: TextSpan) extends RubyNode(span)
+  final case class UntilExpression(condition: RubyNode, body: RubyNode)(span: TextSpan)
+      extends RubyNode(span)
+      with ControlFlowExpression
 
   final case class IfExpression(
     condition: RubyNode,
@@ -142,21 +156,22 @@ object RubyIntermediateAst {
     elseClause: Option[RubyNode]
   )(span: TextSpan)
       extends RubyNode(span)
+      with ControlFlowExpression
 
-  final case class ElsIfClause(condition: RubyNode, thenClause: RubyNode)(span: TextSpan) extends RubyNode(span)
+  final case class ElsIfClause(condition: RubyNode, thenClause: RubyNode)(span: TextSpan)
+      extends RubyNode(span)
+      with ControlFlowClause
 
-  final case class ElseClause(thenClause: RubyNode)(span: TextSpan) extends RubyNode(span)
+  final case class ElseClause(thenClause: RubyNode)(span: TextSpan) extends RubyNode(span) with ControlFlowClause
 
   final case class UnlessExpression(condition: RubyNode, trueBranch: RubyNode, falseBranch: Option[RubyNode])(
     span: TextSpan
   ) extends RubyNode(span)
+      with ControlFlowExpression
 
   final case class ForExpression(forVariable: RubyNode, iterableVariable: RubyNode, doBlock: RubyNode)(span: TextSpan)
       extends RubyNode(span)
-
-  final case class ConditionalExpression(condition: RubyNode, trueBranch: RubyNode, falseBranch: RubyNode)(
-    span: TextSpan
-  ) extends RubyNode(span)
+      with ControlFlowExpression
 
   final case class CaseExpression(
     expression: Option[RubyNode],
@@ -164,6 +179,7 @@ object RubyIntermediateAst {
     elseClause: Option[RubyNode]
   )(span: TextSpan)
       extends RubyNode(span)
+      with ControlFlowExpression
 
   final case class WhenClause(
     matchExpressions: List[RubyNode],
@@ -171,6 +187,7 @@ object RubyIntermediateAst {
     thenClause: RubyNode
   )(span: TextSpan)
       extends RubyNode(span)
+      with ControlFlowClause
 
   final case class ReturnExpression(expressions: List[RubyNode])(span: TextSpan) extends RubyNode(span)
 

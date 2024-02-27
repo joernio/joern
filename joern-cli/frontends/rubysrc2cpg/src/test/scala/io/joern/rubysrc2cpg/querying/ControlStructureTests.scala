@@ -314,10 +314,13 @@ class ControlStructureTests extends RubyCode2CpgFixture {
         |""".stripMargin)
     val List(rescueNode) = cpg.method("test2").tryBlock.l
     rescueNode.controlStructureType shouldBe ControlStructureTypes.TRY
-    val List(body, ensureBody) = rescueNode.astChildren.l
+    val List(body, defaultElseBody, ensureBody) = rescueNode.astChildren.l
 
     body.ast.isLiteral.code.l shouldBe List("1")
     body.order shouldBe 1
+
+    defaultElseBody.ast.isLiteral.code.l shouldBe List("nil")
+    ensureBody.order shouldBe 3
 
     ensureBody.ast.isLiteral.code.l shouldBe List("2")
     ensureBody.order shouldBe 3
@@ -349,14 +352,15 @@ class ControlStructureTests extends RubyCode2CpgFixture {
             case (iteratorNode: Identifier) :: (iterableNode: Identifier) :: (doBody: Block) :: Nil =>
               iteratorNode.code shouldBe "i"
               iterableNode.code shouldBe "x"
-              doBody.astChildren.isCall.code.headOption shouldBe Option("puts x - i")
+              // We use .ast as there will be an implicit return node here
+              doBody.ast.isCall.code.headOption shouldBe Option("puts x - i")
             case _ => fail("No node for iterable found in `for-in` statement")
           }
 
           inside(forEachNode.astChildren.isBlock.l) {
             case blockNode :: Nil =>
-              val List(puts) = blockNode._callViaAstOut.nameExact("puts").l
-              puts.astParent shouldBe blockNode
+              val List(puts) = blockNode.ast.isCall.nameExact("puts").l
+              puts.parentBlock.head shouldBe blockNode
             case _ => fail("Correct blockNode as child not found for `for-in` statement")
           }
 
@@ -374,7 +378,8 @@ class ControlStructureTests extends RubyCode2CpgFixture {
               iteratorNode.code shouldBe "i"
               iterableNode.code shouldBe "1..x"
               iterableNode.name shouldBe Operators.range
-              doBody.astChildren.isCall.code.headOption shouldBe Option("puts x + i")
+              // We use .ast as there will be an implicit return node here
+              doBody.ast.isCall.code.headOption shouldBe Option("puts x + i")
             case _ => fail("Invalid `for-in` children nodes")
           }
 

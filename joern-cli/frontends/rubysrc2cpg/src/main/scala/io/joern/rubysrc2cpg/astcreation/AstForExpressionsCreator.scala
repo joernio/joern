@@ -15,7 +15,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: DynamicLiteral           => astForDynamicLiteral(node)
     case node: UnaryExpression          => astForUnary(node)
     case node: BinaryExpression         => astForBinary(node)
-    case node: ConditionalExpression    => astForConditional(node)
     case node: MemberAccess             => astForMemberAccess(node)
     case node: MemberCall               => astForMemberCall(node)
     case node: ObjectInstantiation      => astForObjectInstantiation(node)
@@ -102,14 +101,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         val rhsAst = astForExpression(node.rhs)
         val call   = callNode(node, code(node), op, op, DispatchTypes.STATIC_DISPATCH)
         callAst(call, Seq(lhsAst, rhsAst))
-  }
-
-  protected def astForConditional(node: ConditionalExpression): Ast = {
-    val conditionAst = astForExpression(node.condition)
-    val thenAst      = astForExpression(node.trueBranch)
-    val elseAst      = astForExpression(node.falseBranch)
-    val call = callNode(node, code(node), Operators.conditional, Operators.conditional, DispatchTypes.STATIC_DISPATCH)
-    callAst(call, Seq(conditionAst, thenAst, elseAst))
   }
 
   // Member accesses are lowered as calls, i.e. `x.y` is the call of `y` of `x` without any arguments.
