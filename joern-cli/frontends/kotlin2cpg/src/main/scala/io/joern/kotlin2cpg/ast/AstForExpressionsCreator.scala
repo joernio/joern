@@ -3,27 +3,11 @@ package io.joern.kotlin2cpg.ast
 import io.joern.kotlin2cpg.Constants
 import io.joern.kotlin2cpg.ast.Nodes.operatorCallNode
 import io.joern.kotlin2cpg.types.{CallKinds, TypeConstants, TypeInfoProvider}
-import io.joern.x2cpg.{Ast, AstNodeBuilder, Defines, ValidationMode}
+import io.joern.x2cpg.{Ast, Defines, ValidationMode}
+import io.shiftleft.codepropertygraph.generated.nodes.NewMethodRef
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import org.jetbrains.kotlin.lexer.{KtToken, KtTokens}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewMethodRef}
-import org.jetbrains.kotlin.psi.{
-  KtAnnotationEntry,
-  KtArrayAccessExpression,
-  KtBinaryExpression,
-  KtBinaryExpressionWithTypeRHS,
-  KtCallExpression,
-  KtClass,
-  KtIsExpression,
-  KtNameReferenceExpression,
-  KtPostfixExpression,
-  KtPrefixExpression,
-  KtPsiUtil,
-  KtQualifiedExpression,
-  KtSuperExpression,
-  KtThisExpression
-}
-import io.shiftleft.semanticcpg.language.*
+import org.jetbrains.kotlin.psi.*
 
 import scala.jdk.CollectionConverters.*
 
@@ -320,10 +304,15 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) {
     val retType    = registerType(typeInfoProvider.expressionType(expr, TypeConstants.any))
     val methodName = expr.getSelectorExpression.getFirstChild.getText
 
-    val node = withArgumentIndex(
-      callNode(expr, expr.getText, methodName, fullName, dispatchType, Some(signature), Some(retType)),
-      argIdx
-    ).argumentName(argNameMaybe)
+    val node =
+      withArgumentIndex(
+        if (fullName.startsWith("<operator>.")) {
+          operatorCallNode(fullName, expr.getText, Option(retType), line(expr), column(expr))
+        } else {
+          callNode(expr, expr.getText, methodName, fullName, dispatchType, Some(signature), Some(retType))
+        },
+        argIdx
+      ).argumentName(argNameMaybe)
     val receiverNode =
       if (argAsts.sizeIs == 1 && argAsts.head.root.get.isInstanceOf[NewMethodRef]) argAsts.head.root.get
       else receiverAst.root.get
