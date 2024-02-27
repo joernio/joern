@@ -1,0 +1,2632 @@
+{
+  "FxResources.Microsoft.Extensions.Http": [
+    {
+      "name": "FxResources.Microsoft.Extensions.Http.SR",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System": [
+    {
+      "name": "System.ThrowHelper",
+      "methods": [
+        {
+          "name": "IfNullOrWhitespace",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "argument",
+              "System.String"
+            ],
+            [
+              "paramName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.SR",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System.Net.Http": [
+    {
+      "name": "System.Net.Http.HttpClientFactoryExtensions",
+      "methods": [
+        {
+          "name": "CreateClient",
+          "returnType": "System.Net.Http.HttpClient",
+          "parameterTypes": [
+            [
+              "factory",
+              "System.Net.Http.IHttpClientFactory"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Net.Http.HttpMessageHandlerFactoryExtensions",
+      "methods": [
+        {
+          "name": "CreateHandler",
+          "returnType": "System.Net.Http.HttpMessageHandler",
+          "parameterTypes": [
+            [
+              "factory",
+              "System.Net.Http.IHttpMessageHandlerFactory"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Net.Http.IHttpClientFactory",
+      "methods": [
+        {
+          "name": "CreateClient",
+          "returnType": "System.Net.Http.HttpClient",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Net.Http.IHttpMessageHandlerFactory",
+      "methods": [
+        {
+          "name": "CreateHandler",
+          "returnType": "System.Net.Http.HttpMessageHandler",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.Internal": [
+    {
+      "name": "Microsoft.Extensions.Internal.ValueStopwatch",
+      "methods": [
+        {
+          "name": "get_IsActive",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "StartNew",
+          "returnType": "Microsoft.Extensions.Internal.ValueStopwatch",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "GetElapsedTime",
+          "returnType": "System.TimeSpan",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Internal.NonCapturingTimer",
+      "methods": [
+        {
+          "name": "Create",
+          "returnType": "System.Threading.Timer",
+          "parameterTypes": [
+            [
+              "callback",
+              "System.Threading.TimerCallback"
+            ],
+            [
+              "state",
+              "System.Object"
+            ],
+            [
+              "dueTime",
+              "System.TimeSpan"
+            ],
+            [
+              "period",
+              "System.TimeSpan"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Internal.TypeNameHelper",
+      "methods": [
+        {
+          "name": "GetTypeDisplayName",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "item",
+              "System.Object"
+            ],
+            [
+              "fullName",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetTypeDisplayName",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ],
+            [
+              "fullName",
+              "System.Boolean"
+            ],
+            [
+              "includeGenericParameterNames",
+              "System.Boolean"
+            ],
+            [
+              "includeGenericParameters",
+              "System.Boolean"
+            ],
+            [
+              "nestedTypeDelimiter",
+              "System.Char"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Internal.TypeNameHelper/DisplayNameOptions",
+      "methods": [
+        {
+          "name": "get_FullName",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_IncludeGenericParameters",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_IncludeGenericParameterNames",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_NestedTypeDelimiter",
+          "returnType": "System.Char",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.DependencyInjection": [
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.DefaultHttpClientBuilder",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Services",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.DefaultHttpClientBuilder/<>c",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.DefaultHttpClientBuilderServiceCollection",
+      "methods": [
+        {
+          "name": "Add",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "item",
+              "Microsoft.Extensions.DependencyInjection.ServiceDescriptor"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Item",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "index",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "set_Item",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "index",
+              "System.Int32"
+            ],
+            [
+              "value",
+              "Microsoft.Extensions.DependencyInjection.ServiceDescriptor"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Count",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_IsReadOnly",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Clear",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Contains",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "item",
+              "Microsoft.Extensions.DependencyInjection.ServiceDescriptor"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CopyTo",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "array",
+              "Microsoft.Extensions.DependencyInjection.ServiceDescriptor[]"
+            ],
+            [
+              "arrayIndex",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetEnumerator",
+          "returnType": "System.Collections.Generic.IEnumerator`1<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "IndexOf",
+          "returnType": "System.Int32",
+          "parameterTypes": [
+            [
+              "item",
+              "Microsoft.Extensions.DependencyInjection.ServiceDescriptor"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Insert",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "index",
+              "System.Int32"
+            ],
+            [
+              "item",
+              "Microsoft.Extensions.DependencyInjection.ServiceDescriptor"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Remove",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "item",
+              "Microsoft.Extensions.DependencyInjection.ServiceDescriptor"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "RemoveAt",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "index",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.DefaultHttpClientConfigurationTracker",
+      "methods": [
+        {
+          "name": "get_InsertDefaultsAfterDescriptor",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_InsertDefaultsAfterDescriptor",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.Extensions.DependencyInjection.ServiceDescriptor"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.DefaultSocketsHttpHandlerBuilder",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Services",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions",
+      "methods": [
+        {
+          "name": "ConfigureHttpClient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"
+            ],
+            [
+              "configureClient",
+              "System.Action`1<System.Net.Http.HttpClient>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ConfigureHttpClient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"
+            ],
+            [
+              "configureClient",
+              "System.Action`2<System.IServiceProvider,System.Net.Http.HttpClient>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddHttpMessageHandler",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"
+            ],
+            [
+              "configureHandler",
+              "System.Func`1<System.Net.Http.DelegatingHandler>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddHttpMessageHandler",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"
+            ],
+            [
+              "configureHandler",
+              "System.Func`2<System.IServiceProvider,System.Net.Http.DelegatingHandler>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddHttpMessageHandler",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ConfigurePrimaryHttpMessageHandler",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"
+            ],
+            [
+              "configureHandler",
+              "System.Func`1<System.Net.Http.HttpMessageHandler>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ConfigurePrimaryHttpMessageHandler",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"
+            ],
+            [
+              "configureHandler",
+              "System.Func`2<System.IServiceProvider,System.Net.Http.HttpMessageHandler>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ConfigurePrimaryHttpMessageHandler",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ConfigurePrimaryHttpMessageHandler",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"
+            ],
+            [
+              "configureHandler",
+              "System.Action`2<System.Net.Http.HttpMessageHandler,System.IServiceProvider>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ConfigureHttpMessageHandlerBuilder",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"
+            ],
+            [
+              "configureBuilder",
+              "System.Action`1<Microsoft.Extensions.Http.HttpMessageHandlerBuilder>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "UseSocketsHttpHandler",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"
+            ],
+            [
+              "configureHandler",
+              "System.Action`2<System.Net.Http.SocketsHttpHandler,System.IServiceProvider>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "UseSocketsHttpHandler",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"
+            ],
+            [
+              "configureBuilder",
+              "System.Action`1<Microsoft.Extensions.DependencyInjection.ISocketsHttpHandlerBuilder>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddTypedClient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddTypedClient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddTypedClient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"
+            ],
+            [
+              "factory",
+              "System.Func`2<System.Net.Http.HttpClient,TClient>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddTypedClient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"
+            ],
+            [
+              "factory",
+              "System.Func`3<System.Net.Http.HttpClient,System.IServiceProvider,TClient>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "RedactLoggedHeaders",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"
+            ],
+            [
+              "shouldRedactHeaderValue",
+              "System.Func`2<System.String,System.Boolean>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "RedactLoggedHeaders",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"
+            ],
+            [
+              "redactedLoggedHeaderNames",
+              "System.Collections.Generic.IEnumerable`1<System.String>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "SetHandlerLifetime",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"
+            ],
+            [
+              "handlerLifetime",
+              "System.TimeSpan"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ConfigureAdditionalHttpMessageHandlers",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"
+            ],
+            [
+              "configureAdditionalHandlers",
+              "System.Action`2<System.Collections.Generic.IList`1<System.Net.Http.DelegatingHandler>,System.IServiceProvider>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddLogger",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"
+            ],
+            [
+              "httpClientLoggerFactory",
+              "System.Func`2<System.IServiceProvider,Microsoft.Extensions.Http.Logging.IHttpClientLogger>"
+            ],
+            [
+              "wrapHandlersPipeline",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddLogger",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"
+            ],
+            [
+              "wrapHandlersPipeline",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "RemoveAllLoggers",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddDefaultLogger",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions/<>c",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions/<>c__28`1",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions/<>c__4`1",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions/<>c__7`1",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions/<>c__DisplayClass0_0",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions/<>c__DisplayClass10_0",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions/<>c__DisplayClass13_0`1",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions/<>c__DisplayClass16_0`2",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions/<>c__DisplayClass19_0`1",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions/<>c__DisplayClass1_0",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions/<>c__DisplayClass1_1",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions/<>c__DisplayClass21_0`1",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions/<>c__DisplayClass22_0",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions/<>c__DisplayClass23_0",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions/<>c__DisplayClass23_1",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions/<>c__DisplayClass24_0",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions/<>c__DisplayClass25_0",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions/<>c__DisplayClass27_0",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions/<>c__DisplayClass2_0",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions/<>c__DisplayClass3_0",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions/<>c__DisplayClass5_0",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions/<>c__DisplayClass6_0",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions/<>c__DisplayClass8_0",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.HttpClientBuilderExtensions/<>c__DisplayClass9_0",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensions",
+      "methods": [
+        {
+          "name": "AddHttpClient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ConfigureHttpClientDefaults",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "configure",
+              "System.Action`1<Microsoft.Extensions.DependencyInjection.IHttpClientBuilder>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddHttpClient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "name",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddHttpClient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "configureClient",
+              "System.Action`1<System.Net.Http.HttpClient>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddHttpClient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "configureClient",
+              "System.Action`2<System.IServiceProvider,System.Net.Http.HttpClient>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddHttpClient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddHttpClient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddHttpClient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "name",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddHttpClient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "name",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddHttpClient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "configureClient",
+              "System.Action`1<System.Net.Http.HttpClient>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddHttpClient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "configureClient",
+              "System.Action`2<System.IServiceProvider,System.Net.Http.HttpClient>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddHttpClient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "configureClient",
+              "System.Action`1<System.Net.Http.HttpClient>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddHttpClient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "configureClient",
+              "System.Action`2<System.IServiceProvider,System.Net.Http.HttpClient>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddHttpClient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "configureClient",
+              "System.Action`1<System.Net.Http.HttpClient>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddHttpClient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "configureClient",
+              "System.Action`2<System.IServiceProvider,System.Net.Http.HttpClient>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddHttpClient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "configureClient",
+              "System.Action`1<System.Net.Http.HttpClient>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddHttpClient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "configureClient",
+              "System.Action`2<System.IServiceProvider,System.Net.Http.HttpClient>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddHttpClient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "factory",
+              "System.Func`2<System.Net.Http.HttpClient,TImplementation>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddHttpClient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "factory",
+              "System.Func`2<System.Net.Http.HttpClient,TImplementation>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddHttpClient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "factory",
+              "System.Func`3<System.Net.Http.HttpClient,System.IServiceProvider,TImplementation>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddHttpClient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "factory",
+              "System.Func`3<System.Net.Http.HttpClient,System.IServiceProvider,TImplementation>"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.HttpClientFactoryServiceCollectionExtensions/<>c",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.HttpClientMappingRegistry",
+      "methods": [
+        {
+          "name": "get_NamedClientRegistrations",
+          "returnType": "System.Collections.Generic.Dictionary`2<System.String,System.Type>",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Services",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ISocketsHttpHandlerBuilder",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Services",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.SocketsHttpHandlerBuilderExtensions",
+      "methods": [
+        {
+          "name": "Configure",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ISocketsHttpHandlerBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.ISocketsHttpHandlerBuilder"
+            ],
+            [
+              "configure",
+              "System.Action`2<System.Net.Http.SocketsHttpHandler,System.IServiceProvider>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Configure",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ISocketsHttpHandlerBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.ISocketsHttpHandlerBuilder"
+            ],
+            [
+              "configuration",
+              "Microsoft.Extensions.Configuration.IConfiguration"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.SocketsHttpHandlerBuilderExtensions/SocketsHttpHandlerConfiguration",
+      "methods": [
+        {
+          "name": "get_PooledConnectionIdleTimeout",
+          "returnType": "System.Nullable`1<System.TimeSpan>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_PooledConnectionIdleTimeout",
+          "returnType": "System.Void modreq(System.Runtime.CompilerServices.IsExternalInit)",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.TimeSpan>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_PooledConnectionLifetime",
+          "returnType": "System.Nullable`1<System.TimeSpan>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_PooledConnectionLifetime",
+          "returnType": "System.Void modreq(System.Runtime.CompilerServices.IsExternalInit)",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.TimeSpan>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_PreAuthenticate",
+          "returnType": "System.Nullable`1<System.Boolean>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_PreAuthenticate",
+          "returnType": "System.Void modreq(System.Runtime.CompilerServices.IsExternalInit)",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.Boolean>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ResponseDrainTimeout",
+          "returnType": "System.Nullable`1<System.TimeSpan>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ResponseDrainTimeout",
+          "returnType": "System.Void modreq(System.Runtime.CompilerServices.IsExternalInit)",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.TimeSpan>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_UseCookies",
+          "returnType": "System.Nullable`1<System.Boolean>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_UseCookies",
+          "returnType": "System.Void modreq(System.Runtime.CompilerServices.IsExternalInit)",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.Boolean>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_UseProxy",
+          "returnType": "System.Nullable`1<System.Boolean>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_UseProxy",
+          "returnType": "System.Void modreq(System.Runtime.CompilerServices.IsExternalInit)",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.Boolean>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_EnableMultipleHttp2Connections",
+          "returnType": "System.Nullable`1<System.Boolean>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_EnableMultipleHttp2Connections",
+          "returnType": "System.Void modreq(System.Runtime.CompilerServices.IsExternalInit)",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.Boolean>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_MaxResponseHeadersLength",
+          "returnType": "System.Nullable`1<System.Int32>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_MaxResponseHeadersLength",
+          "returnType": "System.Void modreq(System.Runtime.CompilerServices.IsExternalInit)",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.Int32>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_MaxResponseDrainSize",
+          "returnType": "System.Nullable`1<System.Int32>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_MaxResponseDrainSize",
+          "returnType": "System.Void modreq(System.Runtime.CompilerServices.IsExternalInit)",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.Int32>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_MaxConnectionsPerServer",
+          "returnType": "System.Nullable`1<System.Int32>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_MaxConnectionsPerServer",
+          "returnType": "System.Void modreq(System.Runtime.CompilerServices.IsExternalInit)",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.Int32>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_MaxAutomaticRedirections",
+          "returnType": "System.Nullable`1<System.Int32>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_MaxAutomaticRedirections",
+          "returnType": "System.Void modreq(System.Runtime.CompilerServices.IsExternalInit)",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.Int32>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_InitialHttp2StreamWindowSize",
+          "returnType": "System.Nullable`1<System.Int32>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_InitialHttp2StreamWindowSize",
+          "returnType": "System.Void modreq(System.Runtime.CompilerServices.IsExternalInit)",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.Int32>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_AllowAutoRedirect",
+          "returnType": "System.Nullable`1<System.Boolean>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_AllowAutoRedirect",
+          "returnType": "System.Void modreq(System.Runtime.CompilerServices.IsExternalInit)",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.Boolean>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_AutomaticDecompression",
+          "returnType": "System.Nullable`1<System.Net.DecompressionMethods>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_AutomaticDecompression",
+          "returnType": "System.Void modreq(System.Runtime.CompilerServices.IsExternalInit)",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.Net.DecompressionMethods>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ConnectTimeout",
+          "returnType": "System.Nullable`1<System.TimeSpan>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ConnectTimeout",
+          "returnType": "System.Void modreq(System.Runtime.CompilerServices.IsExternalInit)",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.TimeSpan>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Expect100ContinueTimeout",
+          "returnType": "System.Nullable`1<System.TimeSpan>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Expect100ContinueTimeout",
+          "returnType": "System.Void modreq(System.Runtime.CompilerServices.IsExternalInit)",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.TimeSpan>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_KeepAlivePingDelay",
+          "returnType": "System.Nullable`1<System.TimeSpan>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_KeepAlivePingDelay",
+          "returnType": "System.Void modreq(System.Runtime.CompilerServices.IsExternalInit)",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.TimeSpan>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_KeepAlivePingTimeout",
+          "returnType": "System.Nullable`1<System.TimeSpan>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_KeepAlivePingTimeout",
+          "returnType": "System.Void modreq(System.Runtime.CompilerServices.IsExternalInit)",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.TimeSpan>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_KeepAlivePingPolicy",
+          "returnType": "System.Nullable`1<System.Net.Http.HttpKeepAlivePingPolicy>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_KeepAlivePingPolicy",
+          "returnType": "System.Void modreq(System.Runtime.CompilerServices.IsExternalInit)",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.Net.Http.HttpKeepAlivePingPolicy>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ToString",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "op_Inequality",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "left",
+              "Microsoft.Extensions.DependencyInjection.SocketsHttpHandlerBuilderExtensions/SocketsHttpHandlerConfiguration"
+            ],
+            [
+              "right",
+              "Microsoft.Extensions.DependencyInjection.SocketsHttpHandlerBuilderExtensions/SocketsHttpHandlerConfiguration"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "op_Equality",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "left",
+              "Microsoft.Extensions.DependencyInjection.SocketsHttpHandlerBuilderExtensions/SocketsHttpHandlerConfiguration"
+            ],
+            [
+              "right",
+              "Microsoft.Extensions.DependencyInjection.SocketsHttpHandlerBuilderExtensions/SocketsHttpHandlerConfiguration"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetHashCode",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Equals",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "obj",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Equals",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "other",
+              "Microsoft.Extensions.DependencyInjection.SocketsHttpHandlerBuilderExtensions/SocketsHttpHandlerConfiguration"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.SocketsHttpHandlerBuilderExtensions/<>c__DisplayClass0_0",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.SocketsHttpHandlerBuilderExtensions/<>c__DisplayClass1_0",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.Http": [
+    {
+      "name": "Microsoft.Extensions.Http.ActiveHandlerTrackingEntry",
+      "methods": [
+        {
+          "name": "get_Handler",
+          "returnType": "Microsoft.Extensions.Http.LifetimeTrackingHttpMessageHandler",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Lifetime",
+          "returnType": "System.TimeSpan",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Scope",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceScope",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "StartExpiryTimer",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "callback",
+              "System.Threading.TimerCallback"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.ActiveHandlerTrackingEntry/<>c",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.DefaultHttpClientFactory",
+      "methods": [
+        {
+          "name": "CreateClient",
+          "returnType": "System.Net.Http.HttpClient",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateHandler",
+          "returnType": "System.Net.Http.HttpMessageHandler",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.DefaultHttpClientFactory/Log",
+      "methods": [
+        {
+          "name": "CleanupCycleStart",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "loggerLazy",
+              "System.Lazy`1<Microsoft.Extensions.Logging.ILogger>"
+            ],
+            [
+              "initialCount",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "CleanupCycleEnd",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "loggerLazy",
+              "System.Lazy`1<Microsoft.Extensions.Logging.ILogger>"
+            ],
+            [
+              "duration",
+              "System.TimeSpan"
+            ],
+            [
+              "disposedCount",
+              "System.Int32"
+            ],
+            [
+              "finalCount",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "CleanupItemFailed",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "loggerLazy",
+              "System.Lazy`1<Microsoft.Extensions.Logging.ILogger>"
+            ],
+            [
+              "clientName",
+              "System.String"
+            ],
+            [
+              "exception",
+              "System.Exception"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "HandlerExpired",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "loggerLazy",
+              "System.Lazy`1<Microsoft.Extensions.Logging.ILogger>"
+            ],
+            [
+              "clientName",
+              "System.String"
+            ],
+            [
+              "lifetime",
+              "System.TimeSpan"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.DefaultHttpClientFactory/Log/EventIds",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.DefaultHttpClientFactory/<>c",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.DefaultHttpClientFactory/<>c__DisplayClass14_0",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.DefaultHttpClientFactory/<>c__DisplayClass17_0",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.DefaultHttpMessageHandlerBuilder",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Name",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_PrimaryHandler",
+          "returnType": "System.Net.Http.HttpMessageHandler",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_PrimaryHandler",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Net.Http.HttpMessageHandler"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_AdditionalHandlers",
+          "returnType": "System.Collections.Generic.IList`1<System.Net.Http.DelegatingHandler>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Services",
+          "returnType": "System.IServiceProvider",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Build",
+          "returnType": "System.Net.Http.HttpMessageHandler",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.DefaultTypedHttpClientFactory`1",
+      "methods": [
+        {
+          "name": "CreateClient",
+          "returnType": "TClient",
+          "parameterTypes": [
+            [
+              "httpClient",
+              "System.Net.Http.HttpClient"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.DefaultTypedHttpClientFactory`1/Cache",
+      "methods": [
+        {
+          "name": "get_Activator",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ObjectFactory",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.DefaultTypedHttpClientFactory`1/Cache/<>c",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.ExpiredHandlerTrackingEntry",
+      "methods": [
+        {
+          "name": "get_CanDispose",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_InnerHandler",
+          "returnType": "System.Net.Http.HttpMessageHandler",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Scope",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceScope",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.HttpClientFactoryOptions",
+      "methods": [
+        {
+          "name": "get_HttpMessageHandlerBuilderActions",
+          "returnType": "System.Collections.Generic.IList`1<System.Action`1<Microsoft.Extensions.Http.HttpMessageHandlerBuilder>>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_HttpClientActions",
+          "returnType": "System.Collections.Generic.IList`1<System.Action`1<System.Net.Http.HttpClient>>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_HandlerLifetime",
+          "returnType": "System.TimeSpan",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_HandlerLifetime",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.TimeSpan"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ShouldRedactHeaderValue",
+          "returnType": "System.Func`2<System.String,System.Boolean>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ShouldRedactHeaderValue",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Func`2<System.String,System.Boolean>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_SuppressHandlerScope",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_SuppressHandlerScope",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.HttpClientFactoryOptions/<>c",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.HttpMessageHandlerBuilder",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Name",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_PrimaryHandler",
+          "returnType": "System.Net.Http.HttpMessageHandler",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_PrimaryHandler",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Net.Http.HttpMessageHandler"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_AdditionalHandlers",
+          "returnType": "System.Collections.Generic.IList`1<System.Net.Http.DelegatingHandler>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Services",
+          "returnType": "System.IServiceProvider",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Build",
+          "returnType": "System.Net.Http.HttpMessageHandler",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.IHttpMessageHandlerBuilderFilter",
+      "methods": [
+        {
+          "name": "Configure",
+          "returnType": "System.Action`1<Microsoft.Extensions.Http.HttpMessageHandlerBuilder>",
+          "parameterTypes": [
+            [
+              "next",
+              "System.Action`1<Microsoft.Extensions.Http.HttpMessageHandlerBuilder>"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.ITypedHttpClientFactory`1",
+      "methods": [
+        {
+          "name": "CreateClient",
+          "returnType": "TClient",
+          "parameterTypes": [
+            [
+              "httpClient",
+              "System.Net.Http.HttpClient"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.LifetimeTrackingHttpMessageHandler",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.LoggingHttpMessageHandlerBuilderFilter",
+      "methods": [
+        {
+          "name": "Configure",
+          "returnType": "System.Action`1<Microsoft.Extensions.Http.HttpMessageHandlerBuilder>",
+          "parameterTypes": [
+            [
+              "next",
+              "System.Action`1<Microsoft.Extensions.Http.HttpMessageHandlerBuilder>"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.LoggingHttpMessageHandlerBuilderFilter/<>c__DisplayClass6_0",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.MetricsFactoryHttpMessageHandlerFilter",
+      "methods": [
+        {
+          "name": "Configure",
+          "returnType": "System.Action`1<Microsoft.Extensions.Http.HttpMessageHandlerBuilder>",
+          "parameterTypes": [
+            [
+              "next",
+              "System.Action`1<Microsoft.Extensions.Http.HttpMessageHandlerBuilder>"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.MetricsFactoryHttpMessageHandlerFilter/<>c__DisplayClass2_0",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.Http.Logging": [
+    {
+      "name": "Microsoft.Extensions.Http.Logging.HttpClientLoggerHandler",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.Logging.HttpClientLoggerHandler/<SendAsync>d__3",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.Logging.HttpHeadersLogValue",
+      "methods": [
+        {
+          "name": "get_Headers",
+          "returnType": "System.Net.Http.Headers.HttpHeaders",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ContentHeaders",
+          "returnType": "System.Net.Http.Headers.HttpHeaders",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Item",
+          "returnType": "System.Collections.Generic.KeyValuePair`2<System.String,System.Object>",
+          "parameterTypes": [
+            [
+              "index",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Count",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "GetEnumerator",
+          "returnType": "System.Collections.Generic.IEnumerator`1<System.Collections.Generic.KeyValuePair`2<System.String,System.Object>>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "ToString",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.Logging.HttpHeadersLogValue/Kind",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.Logging.IHttpClientAsyncLogger",
+      "methods": [
+        {
+          "name": "LogRequestStartAsync",
+          "returnType": "System.Threading.Tasks.ValueTask`1<System.Object>",
+          "parameterTypes": [
+            [
+              "request",
+              "System.Net.Http.HttpRequestMessage"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "LogRequestStopAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "context",
+              "System.Object"
+            ],
+            [
+              "request",
+              "System.Net.Http.HttpRequestMessage"
+            ],
+            [
+              "response",
+              "System.Net.Http.HttpResponseMessage"
+            ],
+            [
+              "elapsed",
+              "System.TimeSpan"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "LogRequestFailedAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "context",
+              "System.Object"
+            ],
+            [
+              "request",
+              "System.Net.Http.HttpRequestMessage"
+            ],
+            [
+              "response",
+              "System.Net.Http.HttpResponseMessage"
+            ],
+            [
+              "exception",
+              "System.Exception"
+            ],
+            [
+              "elapsed",
+              "System.TimeSpan"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.Logging.IHttpClientLogger",
+      "methods": [
+        {
+          "name": "LogRequestStart",
+          "returnType": "System.Object",
+          "parameterTypes": [
+            [
+              "request",
+              "System.Net.Http.HttpRequestMessage"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "LogRequestStop",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "System.Object"
+            ],
+            [
+              "request",
+              "System.Net.Http.HttpRequestMessage"
+            ],
+            [
+              "response",
+              "System.Net.Http.HttpResponseMessage"
+            ],
+            [
+              "elapsed",
+              "System.TimeSpan"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "LogRequestFailed",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "System.Object"
+            ],
+            [
+              "request",
+              "System.Net.Http.HttpRequestMessage"
+            ],
+            [
+              "response",
+              "System.Net.Http.HttpResponseMessage"
+            ],
+            [
+              "exception",
+              "System.Exception"
+            ],
+            [
+              "elapsed",
+              "System.TimeSpan"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.Logging.LoggingHttpMessageHandler",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.Logging.LoggingHttpMessageHandler/Log",
+      "methods": [
+        {
+          "name": "RequestStart",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "request",
+              "System.Net.Http.HttpRequestMessage"
+            ],
+            [
+              "shouldRedactHeaderValue",
+              "System.Func`2<System.String,System.Boolean>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "RequestEnd",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "response",
+              "System.Net.Http.HttpResponseMessage"
+            ],
+            [
+              "duration",
+              "System.TimeSpan"
+            ],
+            [
+              "shouldRedactHeaderValue",
+              "System.Func`2<System.String,System.Boolean>"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.Logging.LoggingHttpMessageHandler/Log/EventIds",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.Logging.LoggingHttpMessageHandler/Log/<>c",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.Logging.LoggingHttpMessageHandler/<<SendCoreAsync>g__Core|5_0>d",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.Logging.LoggingHttpMessageHandler/<>c",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.Logging.LoggingScopeHttpMessageHandler",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.Logging.LoggingScopeHttpMessageHandler/Log",
+      "methods": [
+        {
+          "name": "BeginRequestPipelineScope",
+          "returnType": "System.IDisposable",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "request",
+              "System.Net.Http.HttpRequestMessage"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "RequestPipelineStart",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "request",
+              "System.Net.Http.HttpRequestMessage"
+            ],
+            [
+              "shouldRedactHeaderValue",
+              "System.Func`2<System.String,System.Boolean>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "RequestPipelineEnd",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "logger",
+              "Microsoft.Extensions.Logging.ILogger"
+            ],
+            [
+              "response",
+              "System.Net.Http.HttpResponseMessage"
+            ],
+            [
+              "duration",
+              "System.TimeSpan"
+            ],
+            [
+              "shouldRedactHeaderValue",
+              "System.Func`2<System.String,System.Boolean>"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.Logging.LoggingScopeHttpMessageHandler/Log/EventIds",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.Logging.LoggingScopeHttpMessageHandler/Log/<>c",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.Logging.LoggingScopeHttpMessageHandler/<<SendCoreAsync>g__Core|5_0>d",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.Logging.LoggingScopeHttpMessageHandler/<>c",
+      "methods": [],
+      "fields": []
+    }
+  ]
+}
