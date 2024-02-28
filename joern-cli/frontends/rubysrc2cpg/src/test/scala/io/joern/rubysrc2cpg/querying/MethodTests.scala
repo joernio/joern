@@ -174,6 +174,12 @@ class MethodTests extends RubyCode2CpgFixture {
               case thisParam :: xParam :: Nil =>
                 thisParam.code shouldBe "this"
                 thisParam.typeFullName shouldBe "Test0.rb:<global>::program.C:f"
+                thisParam.index shouldBe 0
+                thisParam.isVariadic shouldBe false
+
+                xParam.code shouldBe "x"
+                xParam.index shouldBe 1
+                xParam.isVariadic shouldBe false
 
               case _ => fail("Expected two parameters")
             }
@@ -202,8 +208,12 @@ class MethodTests extends RubyCode2CpgFixture {
               case thisParam :: xParam :: Nil =>
                 thisParam.code shouldBe "this"
                 thisParam.typeFullName shouldBe "Test0.rb:<global>::program.C:f"
+                thisParam.index shouldBe 0
+                thisParam.isVariadic shouldBe false
 
                 xParam.code shouldBe "x"
+                xParam.index shouldBe 1
+                xParam.isVariadic shouldBe false
               case _ => fail("Expected two parameters")
             }
           case _ => fail("Expected one method")
