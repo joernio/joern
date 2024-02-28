@@ -174,7 +174,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         scope.pushNewScope(MethodScope(fullName))
 
         val thisParameterAst = Ast(
-          newThisParameterNode(typeFullName = scope.surroundingTypeFullName.getOrElse(Defines.Any), line = method.lineNumber, column = method.columnNumber)
+          newThisParameterNode(
+            typeFullName = scope.surroundingTypeFullName.getOrElse(Defines.Any),
+            line = method.lineNumber,
+            column = method.columnNumber
+          )
         )
 
         val parameterAsts = astForParameters(node.parameters, true)

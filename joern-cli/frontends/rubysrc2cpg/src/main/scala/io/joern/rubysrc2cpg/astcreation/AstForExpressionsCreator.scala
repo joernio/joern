@@ -201,7 +201,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val name = code(node)
 
     if (name.startsWith("@")) {
-      logger.warn(s"Class (@@) and instance (@) variables are not handled as members yet, but are instead handled as simple identifier declarations. Found: $name")
+      logger.warn(
+        s"Class (@@) and instance (@) variables are not handled as members yet, but are instead handled as simple identifier declarations. Found: $name"
+      )
     }
 
     scope.lookupVariable(name) match {
