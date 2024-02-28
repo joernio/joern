@@ -89,10 +89,10 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: 
     *   the type meta-data if found.
     */
   def tryResolveTypeReference(typeName: String): Option[T] = {
+    // TODO: Handle partially quaified names
     typesInScope
       .collectFirst {
-        case typ if typ.name.split("[.]").lastOption.getOrElse("").equals(typeName)       => typ
-        case typ if typ.name.endsWith(typeName)                                           => typ
+        case typ if typ.name.split("[.]").lastOption == typeName.split("[.]").lastOption  => typ
         case typ if aliasedTypes.contains(typeName) && typ.name == aliasedTypes(typeName) => typ
       }
   }

@@ -25,7 +25,7 @@ class ControlStructureTests extends CSharpCode2CpgFixture {
             case Some(exp: Call) =>
               exp.code shouldBe "new Exception(\"Error!\")"
               exp.name shouldBe Defines.ConstructorMethodName
-              exp.typeFullName shouldBe "System.InsufficientMemoryException"
+              exp.typeFullName shouldBe "System.Exception"
             case _ => fail("No exception constructor node found!")
           }
 
