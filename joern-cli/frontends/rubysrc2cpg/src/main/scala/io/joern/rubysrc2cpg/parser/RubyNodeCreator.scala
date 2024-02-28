@@ -653,26 +653,26 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
 
     val parsedBody = body match {
       case stmtList: StatementList =>
-        stmtList.statements.map {
+        StatementList(stmtList.statements.flatMap {
           case singletonClassDeclaration: SingletonClassDeclaration =>
             singletonClassDeclaration.baseClass match {
               case Some(selfIdentifier: SelfIdentifier) =>
-                val a = singletonClassDeclaration.body match {
-                  case stmtList2: StatementList =>
-                    StatementList(stmtList2.statements.map {
-                    case method: MethodDeclaration => SingletonMethodDeclaration(selfIdentifier, method.methodName, method.parameters, method.body)(method.span)
-                    case other => other
-                  })
-                  case _ => singletonClassDeclaration.body
+                singletonClassDeclaration.body match {
+                  case singletonClassStmtList: StatementList =>
+                    singletonClassStmtList.statements.map {
+                      case method: MethodDeclaration => SingletonMethodDeclaration(selfIdentifier, method.methodName, method.parameters, method.body)(method.span)
+                      case nonMethodStatement => nonMethodStatement
+                    }
+                  case singletonBody => singletonBody :: Nil
                 }
-              case _ => singletonClassDeclaration.body
+              case _ => singletonClassDeclaration.body :: Nil
             }
-          case _ => body
-        }.asInstanceOf[RubyNode]
+          case nonStmtListBody => nonStmtListBody :: Nil
+        })(stmtList.span)
       case _ => body
     }
 
-    ClassDeclaration(visit(ctx.classPath()), Option(ctx.commandOrPrimaryValue()).map(visit), visit(ctx.bodyStatement()))(ctx.toTextSpan)
+    ClassDeclaration(visit(ctx.classPath()), Option(ctx.commandOrPrimaryValue()).map(visit), parsedBody)(ctx.toTextSpan)
   }
 
   override def visitMethodDefinition(ctx: RubyParser.MethodDefinitionContext): RubyNode = {

@@ -162,7 +162,6 @@ class MethodTests extends RubyCode2CpgFixture {
                      |class C
                      | def self.f(x)
                      |  x + 1
-                     |  puts "ass"
                      | end
                      |end
                      |""".stripMargin)
@@ -173,10 +172,9 @@ class MethodTests extends RubyCode2CpgFixture {
           case funcF :: Nil =>
             inside(funcF.parameter.l) {
               case thisParam :: xParam :: Nil =>
-                println(thisParam.code)
-                println(thisParam.typeFullName)
+                thisParam.code shouldBe "this"
+                thisParam.typeFullName shouldBe "Test0.rb:<global>::program.C:f"
 
-                println(xParam.code)
               case _ => fail("Expected two parameters")
             }
           case _ => fail("Expected one method")
@@ -191,13 +189,10 @@ class MethodTests extends RubyCode2CpgFixture {
                      | class << self
                      |  def f(x)
                      |   x + 1
-                     |   puts "ass"
                      |  end
                      | end
                      |end
                      |""".stripMargin)
-
-    cpg.typeDecl.name("C").dotAst.l.foreach(println)
 
     inside(cpg.typeDecl.name("C").l) {
       case classC :: Nil =>
@@ -205,10 +200,10 @@ class MethodTests extends RubyCode2CpgFixture {
           case funcF :: Nil =>
             inside(funcF.parameter.l) {
               case thisParam :: xParam :: Nil =>
-                println(thisParam.code)
-                println(thisParam.typeFullName)
+                thisParam.code shouldBe "this"
+                thisParam.typeFullName shouldBe "Test0.rb:<global>::program.C:f"
 
-                println(xParam.code)
+                xParam.code shouldBe "x"
               case _ => fail("Expected two parameters")
             }
           case _ => fail("Expected one method")
