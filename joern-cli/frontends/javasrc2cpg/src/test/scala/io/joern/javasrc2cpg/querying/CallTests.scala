@@ -12,6 +12,22 @@ import overflowdb.traversal.toNodeTraversal
 
 class NewCallTests extends JavaSrcCode2CpgFixture {
 
+  "calls with unresolved receivers should have the correct fullnames" in {
+    val cpg = code("""
+        |import a.*;
+        |
+        |class Test {
+        |
+        |  void test() {
+        |    foo().bar();
+        |  }
+        |}
+        |""".stripMargin)
+
+    cpg.call.name("foo").typeFullName.l shouldBe List("ANY")
+    cpg.call.name("foo").methodFullName.l shouldBe List("Test.foo:<unresolvedSignature>(0)")
+    cpg.call.name("bar").methodFullName.l shouldBe List("<unresolvedNamespace>.bar:<unresolvedSignature>(0)")
+  }
   "calls to imported nested classes should be resolved" in {
     lazy val cpg = code("""
       |import foo.Foo.Bar;

@@ -4,10 +4,13 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.TextSpan
 import io.joern.rubysrc2cpg.parser.RubyParser.*
 import org.antlr.v4.runtime.ParserRuleContext
 import org.antlr.v4.runtime.misc.Interval
+import org.slf4j.LoggerFactory
 
 import scala.jdk.CollectionConverters.*
 
 object AntlrContextHelpers {
+
+  private val logger = LoggerFactory.getLogger(getClass)
 
   sealed implicit class ParserRuleContextHelper(ctx: ParserRuleContext) {
     def toTextSpan: TextSpan = {
@@ -93,14 +96,20 @@ object AntlrContextHelpers {
   sealed implicit class BlockParameterListContextHelper(ctx: BlockParameterListContext) {
     def parameters: List[ParserRuleContext] = ctx match
       case ctx: SingleElementBlockParameterListContext => ctx.leftHandSide() :: Nil
-      case ctx                                         => List() // TODO: N-ary parameter blocks are not supported yet
+      case ctx: MultipleElementBlockParameterListContext =>
+        Option(ctx.multipleLeftHandSide()).map(_.multipleLeftHandSideItem()).map(_.asScala.toList).getOrElse(List.empty)
+      case ctx =>
+        logger.warn(s"Unsupported parameter type ${ctx.getClass}")
+        List()
   }
 
   sealed implicit class CommandArgumentContextHelper(ctx: CommandArgumentContext) {
     def arguments: List[ParserRuleContext] = ctx match
       case ctx: CommandCommandArgumentListContext         => ctx.command() :: Nil
       case ctx: CommandArgumentCommandArgumentListContext => ctx.commandArgumentList().elements
-      case ctx                                            => List() // TODO
+      case ctx =>
+        logger.warn(s"Unsupported argument type ${ctx.getClass}")
+        List()
   }
 
   sealed implicit class CommandArgumentListContextHelper(ctx: CommandArgumentListContext) {
@@ -151,14 +160,18 @@ object AntlrContextHelpers {
       case ctx: CommandIndexingArgumentListContext => List(ctx.command())
       case ctx: OperatorExpressionListIndexingArgumentListContext =>
         ctx.operatorExpressionList().operatorExpression().asScala.toList
-      case ctx => List() // TODO
+      case ctx =>
+        logger.warn(s"Unsupported argument type ${ctx.getClass}")
+        List()
   }
 
   sealed implicit class ArgumentWithParenthesesContextHelper(ctx: ArgumentWithParenthesesContext) {
     def arguments: List[ParserRuleContext] = ctx match
       case _: EmptyArgumentWithParenthesesContext          => List()
       case ctx: ArgumentListArgumentWithParenthesesContext => ctx.argumentList().elements
-      case ctx                                             => List() // TODO
+      case ctx =>
+        logger.warn(s"Unsupported argument type ${ctx.getClass}")
+        List()
   }
 
   sealed implicit class ArgumentListContextHelper(ctx: ArgumentListContext) {
@@ -169,6 +182,10 @@ object AntlrContextHelpers {
         val splatting           = Option(ctx.splattingArgument()).toList
         val block               = Option(ctx.blockArgument()).toList
         operatorExpressions ++ associations ++ splatting ++ block
-      case ctx => List() // TODO
+      case ctx: AssociationsArgumentListContext =>
+        Option(ctx.associationList()).map(_.associations).getOrElse(List.empty)
+      case ctx =>
+        logger.warn(s"Unsupported element type ${ctx.getClass.getSimpleName}")
+        List()
   }
 }

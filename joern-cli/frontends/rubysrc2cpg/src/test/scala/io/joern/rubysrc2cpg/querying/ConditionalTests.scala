@@ -2,31 +2,41 @@ package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Local}
 import io.shiftleft.semanticcpg.language.*
 
 class ConditionalTests extends RubyCode2CpgFixture {
 
-  "`x ? y : z` is represented by a `conditional` operator call" in {
+  "`x ? y : z` is lowered into an if-else expression" in {
     val cpg = code("""
                      |x ? y : z
                      |""".stripMargin)
 
-    val List(conditional) = cpg.call.name(Operators.conditional).l
+    inside(cpg.controlStructure.l) {
+      case ifStmt :: Nil =>
+        ifStmt.code shouldBe "x ? y : z"
+        ifStmt.lineNumber shouldBe Some(2)
 
-    conditional.methodFullName shouldBe Operators.conditional
-    conditional.code shouldBe "x ? y : z"
-    conditional.lineNumber shouldBe Some(2)
+        inside(ifStmt.condition.l) {
+          case (x: Identifier) :: Nil =>
+            x.name shouldBe "x"
+            x.lineNumber shouldBe Some(2)
+          case xs => fail(s"Expected exactly one identifier conditional, got [${xs.code.mkString(",")}]")
+        }
 
-    val List(test, trueExpr, falseExpr) = conditional.argument.l
+        inside(ifStmt.astChildren.isBlock.l) {
+          case ifBlock :: elseBlock :: Nil =>
+            val (_: Local) :: (y: Identifier) :: Nil = ifBlock.astChildren.l: @unchecked
+            y.name shouldBe "y"
+            y.lineNumber shouldBe Some(2)
 
-    test.code shouldBe "x"
-    test.lineNumber shouldBe Some(2)
-
-    trueExpr.code shouldBe "y"
-    trueExpr.lineNumber shouldBe Some(2)
-
-    falseExpr.code shouldBe "z"
-    falseExpr.lineNumber shouldBe Some(2)
+            val (_: Local) :: (z: Identifier) :: Nil = elseBlock.astChildren.l: @unchecked
+            z.name shouldBe "z"
+            z.lineNumber shouldBe Some(2)
+          case xs => fail(s"Expected exactly two blocks under the if-structure, got [${xs.code.mkString(",")}]")
+        }
+      case xs => fail(s"Expected exactly one control structure, got [${xs.code.mkString(",")}]")
+    }
   }
 
 }

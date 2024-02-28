@@ -67,7 +67,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         val methodDecl = astForMethodDeclaration(
           MethodDeclaration(XDefines.ConstructorMethodName, List(), initBody)(bodyStart)
         )
-        methodDecl :: bodyAsts
+        methodDecl ++ bodyAsts
       case bodyAsts => bodyAsts
     }
     scope.popScope()

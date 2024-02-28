@@ -15,7 +15,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: DynamicLiteral           => astForDynamicLiteral(node)
     case node: UnaryExpression          => astForUnary(node)
     case node: BinaryExpression         => astForBinary(node)
-    case node: ConditionalExpression    => astForConditional(node)
     case node: MemberAccess             => astForMemberAccess(node)
     case node: MemberCall               => astForMemberCall(node)
     case node: ObjectInstantiation      => astForObjectInstantiation(node)
@@ -33,6 +32,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: MandatoryParameter       => astForMandatoryParameter(node)
     case node: SplattingRubyNode        => astForSplattingRubyNode(node)
     case node: AnonymousTypeDeclaration => astForAnonymousTypeDeclaration(node)
+    case node: DummyNode                => Ast(node.node)
     case _                              => astForUnknown(node)
 
   protected def astForStaticLiteral(node: StaticLiteral): Ast = {
@@ -101,14 +101,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         val rhsAst = astForExpression(node.rhs)
         val call   = callNode(node, code(node), op, op, DispatchTypes.STATIC_DISPATCH)
         callAst(call, Seq(lhsAst, rhsAst))
-  }
-
-  protected def astForConditional(node: ConditionalExpression): Ast = {
-    val conditionAst = astForExpression(node.condition)
-    val thenAst      = astForExpression(node.trueBranch)
-    val elseAst      = astForExpression(node.falseBranch)
-    val call = callNode(node, code(node), Operators.conditional, Operators.conditional, DispatchTypes.STATIC_DISPATCH)
-    callAst(call, Seq(conditionAst, thenAst, elseAst))
   }
 
   // Member accesses are lowered as calls, i.e. `x.y` is the call of `y` of `x` without any arguments.
@@ -282,6 +274,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   protected def astForAssociationHash(node: Association, tmp: String): List[Ast] = {
+    val tmpAst = astForSimpleIdentifier(SimpleIdentifier()(node.span.spanStart(tmp)))
     node.key match {
       case rangeExpr: RangeExpression =>
         val expandedList = generateStaticLiteralsForRange(rangeExpr).map { x =>
@@ -289,12 +282,12 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         }
 
         if (expandedList.nonEmpty) {
-          expandedList
+          expandedList :+ tmpAst
         } else {
-          astForSingleKeyValue(node.key, node.value, tmp) :: Nil
+          astForSingleKeyValue(node.key, node.value, tmp) :: tmpAst :: Nil
         }
 
-      case _ => astForSingleKeyValue(node.key, node.value, tmp) :: Nil
+      case _ => astForSingleKeyValue(node.key, node.value, tmp) :: tmpAst :: Nil
     }
   }
 

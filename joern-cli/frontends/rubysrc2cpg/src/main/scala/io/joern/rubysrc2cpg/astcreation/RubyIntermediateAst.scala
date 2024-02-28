@@ -1,5 +1,7 @@
 package io.joern.rubysrc2cpg.astcreation
 
+import io.shiftleft.codepropertygraph.generated.nodes.NewNode
+
 object RubyIntermediateAst {
 
   case class TextSpan(
@@ -112,6 +114,14 @@ object RubyIntermediateAst {
     span: TextSpan
   ) extends RubyNode(span)
 
+  /** Any structure that conditionally modifies the control flow of the program.
+    */
+  sealed trait ControlFlowExpression
+
+  /** A control structure's clause, which may contain an additional control structures.
+    */
+  sealed trait ControlFlowClause
+
   final case class RescueExpression(
     body: RubyNode,
     rescueClauses: List[RubyNode],
@@ -119,6 +129,7 @@ object RubyIntermediateAst {
     ensureClause: Option[RubyNode]
   )(span: TextSpan)
       extends RubyNode(span)
+      with ControlFlowExpression
 
   final case class RescueClause(
     exceptionClassList: Option[RubyNode],
@@ -126,12 +137,17 @@ object RubyIntermediateAst {
     thenClause: RubyNode
   )(span: TextSpan)
       extends RubyNode(span)
+      with ControlFlowClause
 
-  final case class EnsureClause(thenClause: RubyNode)(span: TextSpan) extends RubyNode(span)
+  final case class EnsureClause(thenClause: RubyNode)(span: TextSpan) extends RubyNode(span) with ControlFlowClause
 
-  final case class WhileExpression(condition: RubyNode, body: RubyNode)(span: TextSpan) extends RubyNode(span)
+  final case class WhileExpression(condition: RubyNode, body: RubyNode)(span: TextSpan)
+      extends RubyNode(span)
+      with ControlFlowExpression
 
-  final case class UntilExpression(condition: RubyNode, body: RubyNode)(span: TextSpan) extends RubyNode(span)
+  final case class UntilExpression(condition: RubyNode, body: RubyNode)(span: TextSpan)
+      extends RubyNode(span)
+      with ControlFlowExpression
 
   final case class IfExpression(
     condition: RubyNode,
@@ -140,21 +156,22 @@ object RubyIntermediateAst {
     elseClause: Option[RubyNode]
   )(span: TextSpan)
       extends RubyNode(span)
+      with ControlFlowExpression
 
-  final case class ElsIfClause(condition: RubyNode, thenClause: RubyNode)(span: TextSpan) extends RubyNode(span)
+  final case class ElsIfClause(condition: RubyNode, thenClause: RubyNode)(span: TextSpan)
+      extends RubyNode(span)
+      with ControlFlowClause
 
-  final case class ElseClause(thenClause: RubyNode)(span: TextSpan) extends RubyNode(span)
+  final case class ElseClause(thenClause: RubyNode)(span: TextSpan) extends RubyNode(span) with ControlFlowClause
 
   final case class UnlessExpression(condition: RubyNode, trueBranch: RubyNode, falseBranch: Option[RubyNode])(
     span: TextSpan
   ) extends RubyNode(span)
+      with ControlFlowExpression
 
   final case class ForExpression(forVariable: RubyNode, iterableVariable: RubyNode, doBlock: RubyNode)(span: TextSpan)
       extends RubyNode(span)
-
-  final case class ConditionalExpression(condition: RubyNode, trueBranch: RubyNode, falseBranch: RubyNode)(
-    span: TextSpan
-  ) extends RubyNode(span)
+      with ControlFlowExpression
 
   final case class CaseExpression(
     expression: Option[RubyNode],
@@ -162,6 +179,7 @@ object RubyIntermediateAst {
     elseClause: Option[RubyNode]
   )(span: TextSpan)
       extends RubyNode(span)
+      with ControlFlowExpression
 
   final case class WhenClause(
     matchExpressions: List[RubyNode],
@@ -169,6 +187,7 @@ object RubyIntermediateAst {
     thenClause: RubyNode
   )(span: TextSpan)
       extends RubyNode(span)
+      with ControlFlowClause
 
   final case class ReturnExpression(expressions: List[RubyNode])(span: TextSpan) extends RubyNode(span)
 
@@ -213,11 +232,30 @@ object RubyIntermediateAst {
 
   final case class Association(key: RubyNode, value: RubyNode)(span: TextSpan) extends RubyNode(span)
 
-  /** Represents traditional calls, e.g. `foo`, `foo x, y`, `foo(x,y)` */
-  final case class SimpleCall(target: RubyNode, arguments: List[RubyNode])(span: TextSpan) extends RubyNode(span)
+  /** Represents a call.
+    */
+  sealed trait RubyCall {
+    def target: RubyNode
+    def arguments: List[RubyNode]
+  }
 
-  final case class SimpleCallWithBlock(target: RubyNode, arguments: List[RubyNode], block: RubyNode)(span: TextSpan)
-      extends RubyNode(span) {
+  /** Represents traditional calls, e.g. `foo`, `foo x, y`, `foo(x,y)` */
+  final case class SimpleCall(target: RubyNode, arguments: List[RubyNode])(span: TextSpan)
+      extends RubyNode(span)
+      with RubyCall
+
+  /** Represents a call with a block argument.
+    */
+  sealed trait RubyCallWithBlock[C <: RubyCall] extends RubyCall {
+
+    def block: Block
+
+    def withoutBlock: RubyNode with C
+  }
+
+  final case class SimpleCallWithBlock(target: RubyNode, arguments: List[RubyNode], block: Block)(span: TextSpan)
+      extends RubyNode(span)
+      with RubyCallWithBlock[SimpleCall] {
     def withoutBlock: SimpleCall = SimpleCall(target, arguments)(span)
   }
 
@@ -225,15 +263,17 @@ object RubyIntermediateAst {
   final case class MemberCall(target: RubyNode, op: String, methodName: String, arguments: List[RubyNode])(
     span: TextSpan
   ) extends RubyNode(span)
+      with RubyCall
 
   final case class MemberCallWithBlock(
     target: RubyNode,
     op: String,
     methodName: String,
     arguments: List[RubyNode],
-    block: RubyNode
+    block: Block
   )(span: TextSpan)
-      extends RubyNode(span) {
+      extends RubyNode(span)
+      with RubyCallWithBlock[MemberCall] {
     def withoutBlock: MemberCall = MemberCall(target, op, methodName, arguments)(span)
   }
 
@@ -247,7 +287,15 @@ object RubyIntermediateAst {
       extends RubyNode(span)
 
   /** Represents a `do` or `{ .. }` (braces) block. */
-  final case class Block(parameters: List[RubyNode], body: RubyNode)(span: TextSpan) extends RubyNode(span)
+  final case class Block(parameters: List[RubyNode], body: RubyNode)(span: TextSpan) extends RubyNode(span) {
+
+    def toMethodDeclaration(name: String): MethodDeclaration = MethodDeclaration(name, parameters, body)(span)
+
+  }
+
+  /** A dummy class for wrapping around `NewNode` and allowing it to integrate with RubyNode classes.
+    */
+  final case class DummyNode(node: NewNode)(span: TextSpan) extends RubyNode(span)
 
   final case class UnaryExpression(op: String, expression: RubyNode)(span: TextSpan) extends RubyNode(span)
 

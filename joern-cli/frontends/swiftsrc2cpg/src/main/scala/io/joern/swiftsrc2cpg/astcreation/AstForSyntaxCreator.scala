@@ -288,6 +288,8 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
     }
 
     val name = node.pattern match {
+      case expr: ExpressionPatternSyntax if expr.expression.isInstanceOf[DiscardAssignmentExprSyntax] =>
+        generateUnusedVariableName(usedVariableNames, "discard")
       case expr: ExpressionPatternSyntax =>
         notHandledYet(expr)
         code(expr)
