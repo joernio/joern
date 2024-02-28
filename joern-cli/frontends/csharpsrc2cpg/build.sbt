@@ -33,12 +33,11 @@ Test / fork := false
 enablePlugins(JavaAppPackaging, LauncherJarPlugin)
 
 lazy val AstgenWin      = "dotnetastgen-win.exe"
-lazy val AstgenWinArm   = "dotnetastgen-win-arm.exe"
 lazy val AstgenLinux    = "dotnetastgen-linux"
 lazy val AstgenLinuxArm = "dotnetastgen-linux-arm"
 lazy val AstgenMac      = "dotnetastgen-macos"
 
-lazy val AllPlatforms = Seq(AstgenWin, AstgenWinArm, AstgenLinux, AstgenLinuxArm, AstgenMac)
+lazy val AllPlatforms = Seq(AstgenWin, AstgenLinux, AstgenLinuxArm, AstgenMac)
 
 lazy val astGenDlUrl = settingKey[String]("astgen download url")
 astGenDlUrl := s"https://github.com/joernio/DotNetAstGen/releases/download/v${astGenVersion.value}/"
@@ -59,18 +58,12 @@ astGenBinaryNames := {
     AllPlatforms
   } else {
     Environment.operatingSystem match {
-      case Environment.OperatingSystemType.Windows =>
-        Environment.architecture match {
-          case Environment.ArchitectureType.X86 => Seq(AstgenWin)
-          case Environment.ArchitectureType.ARM => Seq(AstgenWinArm)
-        }
-        Seq(AstgenWin)
+      case Environment.OperatingSystemType.Windows => Seq(AstgenWin)
       case Environment.OperatingSystemType.Linux =>
         Environment.architecture match {
           case Environment.ArchitectureType.X86 => Seq(AstgenLinux)
           case Environment.ArchitectureType.ARM => Seq(AstgenLinuxArm)
         }
-        Seq(AstgenLinux)
       case Environment.OperatingSystemType.Mac => Seq(AstgenMac)
       case Environment.OperatingSystemType.Unknown =>
         AllPlatforms
