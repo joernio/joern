@@ -62,17 +62,25 @@ object CSharpProgramSummary {
     val classLoader      = getClass.getClassLoader
     val builtinDirectory = "builtin_types"
 
-    val url = classLoader.getResource(builtinDirectory)
-    val path = Environment.operatingSystem match {
-      case Environment.OperatingSystemType.Windows => url.getPath.stripPrefix("/")
-      case _                                       => url.getPath
-    }
-
+    /*
+      Doing this because java actually cannot read directories from the classPath.
+      We're assuming there's no further nesting in the builtin_types directory structure.
+     */
     val resourcePaths =
-      File(path).listRecursively
-        .filter(_.name.endsWith(".json"))
-        .map(_.pathAsString)
+      Source
+        .fromResource(builtinDirectory)
+        .getLines()
         .toList
+        .flatMap(u => {
+          val basePath = s"$builtinDirectory/$u"
+          Source
+            .fromResource(basePath)
+            .getLines()
+            .toList
+            .map(p => {
+              s"$basePath/$p"
+            })
+        })
 
     if (resourcePaths.isEmpty) {
       logger.warn("No JSON files found.")
@@ -80,7 +88,7 @@ object CSharpProgramSummary {
     } else {
       val mergedJsonObjects = ListBuffer[LinkedHashMap[String, ujson.Value]]()
       for (resourcePath <- resourcePaths) {
-        val inputStream = File(resourcePath).newInputStream
+        val inputStream = classLoader.getResourceAsStream(resourcePath)
         val jsonString  = Source.fromInputStream(inputStream).mkString
         val jsonObject  = ujson.read(jsonString).obj
         mergedJsonObjects.addOne(jsonObject)
