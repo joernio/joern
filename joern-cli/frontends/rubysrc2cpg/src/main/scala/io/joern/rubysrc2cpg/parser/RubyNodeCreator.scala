@@ -662,7 +662,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
 
   /** Lowers all MethodDeclaration found in SingletonClassDeclaration to SingletonMethodDeclaration.
     * @param ctx
-    *   \- RubyParser.BodyStatementContext
+    *   body context from class definitions
     * @return
     *   RubyNode with lowered MethodDeclarations where required
     */
