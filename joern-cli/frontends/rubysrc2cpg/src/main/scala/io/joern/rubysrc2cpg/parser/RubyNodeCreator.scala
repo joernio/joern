@@ -664,7 +664,10 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
                 singletonClassDeclaration.body match {
                   case singletonClassStmtList: StatementList =>
                     singletonClassStmtList.statements.map {
-                      case method: MethodDeclaration => SingletonMethodDeclaration(selfIdentifier, method.methodName, method.parameters, method.body)(method.span)
+                      case method: MethodDeclaration =>
+                        SingletonMethodDeclaration(selfIdentifier, method.methodName, method.parameters, method.body)(
+                          method.span
+                        )
                       case nonMethodStatement => nonMethodStatement
                     }
                   case singletonBody => singletonBody :: Nil
