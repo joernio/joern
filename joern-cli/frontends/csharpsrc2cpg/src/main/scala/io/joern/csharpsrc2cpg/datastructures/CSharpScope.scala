@@ -30,7 +30,7 @@ class CSharpScope(summary: CSharpProgramSummary)
   }
 
   override def isOverloadedBy(method: CSharpMethod, argTypes: List[String]): Boolean = {
-    method.parameterTypes.filterNot(_._1 == "this").size == argTypes.size && method.parameterTypes
+    method.parameterTypes
       .filterNot(_._1 == "this")
       .map(_._2)
       .zip(argTypes)
