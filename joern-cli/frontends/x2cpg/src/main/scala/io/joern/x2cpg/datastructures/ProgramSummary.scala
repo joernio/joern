@@ -119,7 +119,9 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: 
         .collectFirst { case m: MethodLike if m.name == callName => m.asInstanceOf[M] }
     case Some(tfn) =>
       val methodsWithEqualArgs = tryResolveTypeReference(tfn).flatMap { t =>
-        Option(t.methods.filter(m => m.name == callName && m.parameterTypes.size == argTypes.size))
+        Option(
+          t.methods.filter(m => m.name == callName && m.parameterTypes.filterNot(_._1 == "this").size == argTypes.size)
+        )
       }
 
       methodsWithEqualArgs
