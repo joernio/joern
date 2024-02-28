@@ -1,6 +1,7 @@
 package io.joern.csharpsrc2cpg.astcreation
 
 import io.joern.csharpsrc2cpg.CSharpOperators
+import io.joern.csharpsrc2cpg.datastructures.CSharpMethod
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newOperatorCallNode}
@@ -27,6 +28,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case SimpleMemberAccessExpression => astForSimpleMemberAccessExpression(expr)
       case _: IdentifierNode            => astForIdentifier(expr) :: Nil
       case ThisExpression               => astForThisReceiver(expr) :: Nil
+      case SimpleLambdaExpression       => astForSimpleLambdaExpression(expr)
       case _                            => notHandledYet(expr)
   }
 
@@ -127,13 +129,16 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForInvocationExpression(invocationExpr: DotNetNodeInfo): Seq[Ast] = {
-    val arguments = astForArgumentList(createDotNetNodeInfo(invocationExpr.json(ParserKeys.ArgumentList)))
-    val argTypes  = arguments.map(getTypeFullNameFromAstNode).toList
+    val expression   = createDotNetNodeInfo(invocationExpr.json(ParserKeys.Expression))
+    val callName     = nameFromNode(expression)
+    val argumentList = createDotNetNodeInfo(invocationExpr.json(ParserKeys.ArgumentList))
 
-    val expression = createDotNetNodeInfo(invocationExpr.json(ParserKeys.Expression))
-    val callName   = nameFromNode(expression)
-
-    val (receiver, baseTypeFullName, methodMetaData) = expression.node match
+    val (
+      receiver: Option[Ast],
+      baseTypeFullName: Option[String],
+      methodMetaData: Option[CSharpMethod],
+      arguments: Seq[Ast]
+    ) = expression.node match {
       case SimpleMemberAccessExpression =>
         val baseNode = createDotNetNodeInfo(
           createDotNetNodeInfo(invocationExpr.json(ParserKeys.Expression)).json(ParserKeys.Expression)
@@ -143,10 +148,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
           case head :: _ => Option(getTypeFullNameFromAstNode(head)).filterNot(_ == Defines.Any)
           case _         => None
         }
+        val arguments      = astForArgumentList(argumentList, baseTypeFullName)
+        val argTypes       = arguments.map(getTypeFullNameFromAstNode).toList
         val methodMetaData = scope.tryResolveMethodInvocation(callName, argTypes, baseTypeFullName)
-        (receiverAst.headOption, baseTypeFullName, methodMetaData)
+        (receiverAst.headOption, baseTypeFullName, methodMetaData, arguments)
       case IdentifierName =>
         // This is when a call is made directly, which could also be made from a static import
+        val argTypes = astForArgumentList(argumentList).map(getTypeFullNameFromAstNode).toList
         scope
           .tryResolveMethodInvocation(callName, argTypes)
           .orElse(scope.tryResolveMethodInvocation(callName, argTypes, scope.surroundingTypeDeclFullName)) match {
@@ -158,19 +166,22 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
             val receiverNode = Ast(
               identifierNode(invocationExpr, typeName, typeName, typeFullName.getOrElse(Defines.Any))
             )
-            (Option(receiverNode), typeFullName, Option(methodMetaData))
+            val arguments = astForArgumentList(argumentList, typeFullName)
+            (Option(receiverNode), typeFullName, Option(methodMetaData), arguments)
           case Some(methodMetaData) =>
             // If dynamic, create implicit `this` identifier explicitly
             val typeMetaData = scope.typeForMethod(methodMetaData)
-            val thisAst      = astForThisReceiver(invocationExpr, typeMetaData.map(_.name))
-            (Option(thisAst), typeMetaData.map(_.name), Option(methodMetaData))
+            val typeFullName = typeMetaData.map(_.name)
+            val thisAst      = astForThisReceiver(invocationExpr, typeFullName)
+            val arguments    = astForArgumentList(argumentList, typeFullName)
+            (Option(thisAst), typeMetaData.map(_.name), Option(methodMetaData), arguments)
           case None =>
-            (None, None, None)
+            (None, None, None, Seq.empty[Ast])
         }
       case x =>
         logger.warn(s"Unhandled LHS $x for InvocationExpression")
-        (None, None, None)
-
+        (None, None, None, Seq.empty[Ast])
+    }
     val methodSignature = methodMetaData match {
       case Some(m) => s"${m.returnType}(${m.parameterTypes.filterNot(_._1 == "this").map(_._2).mkString(",")})"
       case None    => Defines.UnresolvedSignature
@@ -265,12 +276,18 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     Seq(callAst(_callNode, arguments, Option(Ast(thisNode))))
   }
 
-  private def astForArgumentList(argumentList: DotNetNodeInfo): Seq[Ast] = {
+  private def astForArgumentList(argumentList: DotNetNodeInfo, baseTypeHint: Option[String] = None): Seq[Ast] = {
     argumentList
       .json(ParserKeys.Arguments)
       .arr
       .map(createDotNetNodeInfo)
-      .flatMap(astForExpressionStatement)
+      .flatMap(x =>
+        val argExpression = createDotNetNodeInfo(x.json(ParserKeys.Expression))
+        argExpression.node match {
+          case SimpleLambdaExpression => astForSimpleLambdaExpression(argExpression, baseTypeHint)
+          case _                      => astForExpressionStatement(x)
+        }
+      )
       .toSeq
   }
 }

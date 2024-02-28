@@ -185,6 +185,15 @@ object AstCreatorHelper {
     val lhs = nameFromNode(createDotNetNodeInfo(qualifiedName.json(ParserKeys.Left)))
     s"$lhs.$rhs"
   }
+
+  def elementTypesFromCollectionType(collType: String): Seq[String] = {
+    val genericRegex = "^\\w+<([\\w, ]+)>$".r
+    collType match {
+      case genericRegex(elementTypes) => elementTypes.split("[,]").map(_.trim).toSeq
+      case t if t.endsWith("[]")      => t.stripSuffix("[]") :: Nil
+      case t                          => t :: Nil
+    }
+  }
 }
 
 /** Contains all the C# builtin types, as well as `null` and `void`.
