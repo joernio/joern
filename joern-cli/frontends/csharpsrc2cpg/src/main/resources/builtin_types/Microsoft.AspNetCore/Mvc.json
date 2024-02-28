@@ -1,0 +1,59 @@
+{
+  "Microsoft.Extensions.DependencyInjection": [
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.MvcServiceCollectionExtensions",
+      "methods": [
+        {
+          "name": "AddMvc",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IMvcBuilder",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddMvc",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IMvcBuilder",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "setupAction",
+              "System.Action`1<Microsoft.AspNetCore.Mvc.MvcOptions>"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.AspNetCore.Mvc": [
+    {
+      "name": "Microsoft.AspNetCore.Mvc.DesignTimeMvcServiceCollectionProvider",
+      "methods": [
+        {
+          "name": "PopulateServiceCollection",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "assemblyName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

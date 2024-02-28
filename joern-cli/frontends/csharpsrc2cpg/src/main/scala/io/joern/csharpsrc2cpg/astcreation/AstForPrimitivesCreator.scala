@@ -27,9 +27,9 @@ trait AstForPrimitivesCreator(implicit withSchemaValidation: ValidationMode) { t
             case None =>
               // Check for static type reference
               scope.tryResolveTypeReference(identifierName) match {
-                case Some(typeReference) =>
+                case Some(typeReference) if typeFullName == Defines.Any =>
                   Ast(identifierNode(ident, identifierName, ident.code, typeReference.name))
-                case None =>
+                case _ =>
                   Ast(identifierNode(ident, identifierName, ident.code, typeFullName))
               }
           }

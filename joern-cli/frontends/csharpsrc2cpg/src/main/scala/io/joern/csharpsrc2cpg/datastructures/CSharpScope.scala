@@ -1,5 +1,6 @@
 package io.joern.csharpsrc2cpg.datastructures
 
+import io.joern.x2cpg.Defines
 import io.joern.x2cpg.datastructures.{Scope, ScopeElement, TypedScope, TypedScopeElement}
 import io.shiftleft.codepropertygraph.generated.nodes.DeclarationNew
 
@@ -29,7 +30,11 @@ class CSharpScope(summary: CSharpProgramSummary)
   }
 
   override def isOverloadedBy(method: CSharpMethod, argTypes: List[String]): Boolean = {
-    method.parameterTypes.filterNot(_._1 == "this").size == argTypes.size
+    method.parameterTypes
+      .filterNot(_._1 == "this")
+      .map(_._2)
+      .zip(argTypes)
+      .count({ case (x, y) => x != y }) == 0
   }
 
   /** @return
