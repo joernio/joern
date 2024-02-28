@@ -653,9 +653,21 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitClassDefinition(ctx: RubyParser.ClassDefinitionContext): RubyNode = {
-    val body = visit(ctx.bodyStatement())
+    ClassDeclaration(
+      visit(ctx.classPath()),
+      Option(ctx.commandOrPrimaryValue()).map(visit),
+      lowerSingletonClassDeclarations(ctx.bodyStatement())
+    )(ctx.toTextSpan)
+  }
 
-    val parsedBody = body match {
+  /** Lowers all MethodDeclaration found in SingletonClassDeclaration to SingletonMethodDeclaration.
+    * @param ctx
+    *   \- RubyParser.BodyStatementContext
+    * @return
+    *   RubyNode with lowered MethodDeclarations where required
+    */
+  private def lowerSingletonClassDeclarations(ctx: RubyParser.BodyStatementContext): RubyNode = {
+    visit(ctx) match {
       case stmtList: StatementList =>
         StatementList(stmtList.statements.flatMap {
           case singletonClassDeclaration: SingletonClassDeclaration =>
@@ -676,10 +688,8 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
             }
           case nonStmtListBody => nonStmtListBody :: Nil
         })(stmtList.span)
-      case _ => body
+      case nonStmtList => nonStmtList
     }
-
-    ClassDeclaration(visit(ctx.classPath()), Option(ctx.commandOrPrimaryValue()).map(visit), parsedBody)(ctx.toTextSpan)
   }
 
   override def visitMethodDefinition(ctx: RubyParser.MethodDefinitionContext): RubyNode = {
