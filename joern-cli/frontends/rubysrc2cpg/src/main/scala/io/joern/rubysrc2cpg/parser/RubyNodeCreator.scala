@@ -543,7 +543,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitSelfPseudoVariable(ctx: RubyParser.SelfPseudoVariableContext): RubyNode = {
-    SimpleIdentifier()(ctx.toTextSpan)
+    SelfIdentifier()(ctx.toTextSpan)
   }
 
   override def visitMemberAccessExpression(ctx: RubyParser.MemberAccessExpressionContext): RubyNode = {
@@ -656,8 +656,40 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     ClassDeclaration(
       visit(ctx.classPath()),
       Option(ctx.commandOrPrimaryValue()).map(visit),
-      visit(ctx.bodyStatement())
+      lowerSingletonClassDeclarations(ctx.bodyStatement())
     )(ctx.toTextSpan)
+  }
+
+  /** Lowers all MethodDeclaration found in SingletonClassDeclaration to SingletonMethodDeclaration.
+    * @param ctx
+    *   body context from class definitions
+    * @return
+    *   RubyNode with lowered MethodDeclarations where required
+    */
+  private def lowerSingletonClassDeclarations(ctx: RubyParser.BodyStatementContext): RubyNode = {
+    visit(ctx) match {
+      case stmtList: StatementList =>
+        StatementList(stmtList.statements.flatMap {
+          case singletonClassDeclaration: SingletonClassDeclaration =>
+            singletonClassDeclaration.baseClass match {
+              case Some(selfIdentifier: SelfIdentifier) =>
+                singletonClassDeclaration.body match {
+                  case singletonClassStmtList: StatementList =>
+                    singletonClassStmtList.statements.map {
+                      case method: MethodDeclaration =>
+                        SingletonMethodDeclaration(selfIdentifier, method.methodName, method.parameters, method.body)(
+                          method.span
+                        )
+                      case nonMethodStatement => nonMethodStatement
+                    }
+                  case singletonBody => singletonBody :: Nil
+                }
+              case _ => singletonClassDeclaration.body :: Nil
+            }
+          case nonStmtListBody => nonStmtListBody :: Nil
+        })(stmtList.span)
+      case nonStmtList => nonStmtList
+    }
   }
 
   override def visitMethodDefinition(ctx: RubyParser.MethodDefinitionContext): RubyNode = {

@@ -105,7 +105,7 @@ class MethodTests extends RubyCode2CpgFixture {
 
             case _ => fail("Expected single if statement for default parameter")
           }
-        case _ => println("failed boss")
+        case _ => fail("Expected one method")
       }
     }
   }
@@ -152,8 +152,74 @@ class MethodTests extends RubyCode2CpgFixture {
 
             case _ => fail("Expected two if statements for two default parameters")
           }
-        case _ => println("failed boss")
+        case _ => fail("Expected one method")
       }
     }
   }
+
+  "`def self.f(x) ... end` is represented by a METHOD inside the TYPE_DECL node" in {
+    val cpg = code("""
+                     |class C
+                     | def self.f(x)
+                     |  x + 1
+                     | end
+                     |end
+                     |""".stripMargin)
+
+    inside(cpg.typeDecl.name("C").l) {
+      case classC :: Nil =>
+        inside(classC.method.name("f").l) {
+          case funcF :: Nil =>
+            inside(funcF.parameter.l) {
+              case thisParam :: xParam :: Nil =>
+                thisParam.code shouldBe "this"
+                thisParam.typeFullName shouldBe "Test0.rb:<global>::program.C"
+                thisParam.index shouldBe 0
+                thisParam.isVariadic shouldBe false
+
+                xParam.code shouldBe "x"
+                xParam.index shouldBe 1
+                xParam.isVariadic shouldBe false
+
+              case _ => fail("Expected two parameters")
+            }
+          case _ => fail("Expected one method")
+        }
+      case _ => fail("Expected one class definition")
+    }
+  }
+
+  "`def class << self << f(x) ... end` is represented by a METHOD inside the TYPE_DECL node" in {
+    val cpg = code("""
+                     |class C
+                     | class << self
+                     |  def f(x)
+                     |   x + 1
+                     |  end
+                     | end
+                     |end
+                     |""".stripMargin)
+
+    inside(cpg.typeDecl.name("C").l) {
+      case classC :: Nil =>
+        inside(classC.method.name("f").l) {
+          case funcF :: Nil =>
+            inside(funcF.parameter.l) {
+              case thisParam :: xParam :: Nil =>
+                thisParam.code shouldBe "this"
+                thisParam.typeFullName shouldBe "Test0.rb:<global>::program.C"
+                thisParam.index shouldBe 0
+                thisParam.isVariadic shouldBe false
+
+                xParam.code shouldBe "x"
+                xParam.index shouldBe 1
+                xParam.isVariadic shouldBe false
+              case _ => fail("Expected two parameters")
+            }
+          case _ => fail("Expected one method")
+        }
+      case _ => fail("Expected one class definition")
+    }
+  }
+
 }

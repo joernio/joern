@@ -3,9 +3,10 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.{ConstructorScope, MethodScope}
 import io.joern.rubysrc2cpg.passes.Defines
+import io.joern.x2cpg.utils.NodeBuilders.newThisParameterNode
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewLocal, NewMethodParameterIn, NewTypeDecl}
 import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewLocal, NewMethodParameterIn, NewTypeDecl}
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -39,37 +40,11 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     if (methodName == XDefines.ConstructorMethodName) scope.pushNewScope(ConstructorScope(fullName))
     else scope.pushNewScope(MethodScope(fullName))
 
-    val parameterAsts = node.parameters.zipWithIndex.map { case (parameterNode, index) =>
-      astForParameter(parameterNode, index)
-    }
+    val parameterAsts = astForParameters(node.parameters)
 
-    val optionalStatementList = StatementList(
-      node.parameters
-        .collect { case x: OptionalParameter =>
-          x
-        }
-        .map(statementForOptionalParam)
-    )(TextSpan(None, None, None, None, ""))
+    val optionalStatementList = statementListForOptionalParams(node.parameters)
 
-    val stmtBlockAst = if (this.parseLevel == AstParseLevel.SIGNATURES) {
-      Ast()
-    } else {
-      node.body match
-        case stmtList: StatementList =>
-          astForStatementListReturningLastExpression(
-            StatementList(optionalStatementList.statements ++ stmtList.statements)(stmtList.span)
-          )
-        case _: (StaticLiteral | BinaryExpression | SingleAssignment | SimpleIdentifier | ArrayLiteral | HashLiteral |
-              SimpleCall | MemberAccess | MemberCall) =>
-          astForStatementListReturningLastExpression(
-            StatementList(optionalStatementList.statements ++ List(node.body))(node.body.span)
-          )
-        case body =>
-          logger.warn(
-            s"Non-linear method bodies are not supported yet: ${body.text} (${body.getClass.getSimpleName}) ($relativeFileName), skipping"
-          )
-          astForUnknown(body)
-    }
+    val stmtBlockAst = astForMethodBody(node.body, optionalStatementList)
     scope.popScope()
 
     val methodReturn = methodReturnNode(node, Defines.Any)
@@ -198,25 +173,66 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
         scope.pushNewScope(MethodScope(fullName))
 
-        val parameterAsts = node.parameters.zipWithIndex.map { case (parameterNode, index) =>
-          astForParameter(parameterNode, index)
-        }
+        val thisParameterAst = Ast(
+          newThisParameterNode(
+            typeFullName = scope.surroundingTypeFullName.getOrElse(Defines.Any),
+            line = method.lineNumber,
+            column = method.columnNumber
+          )
+        )
 
-        val stmtBlockAst = node.body match
-          case stmtList: StatementList =>
-            astForStatementList(StatementList(stmtList.statements)(stmtList.span))
-          case body =>
-            logger.warn(s"Non-linear method bodies are not supported yet: ${body.text}, skipping")
-            astForUnknown(body)
+        val parameterAsts = astForParameters(node.parameters, true)
+
+        val optionalStatementList = statementListForOptionalParams(node.parameters)
+
+        val stmtBlockAst = astForMethodBody(node.body, optionalStatementList)
 
         scope.popScope()
-        methodAst(method, parameterAsts, stmtBlockAst, methodReturnNode(node, Defines.Any))
+        methodAst(method, thisParameterAst +: parameterAsts, stmtBlockAst, methodReturnNode(node, Defines.Any))
 
       case targetNode =>
         logger.warn(
           s"Non-self singleton method declarations are not supported yet: ${targetNode.text} (${targetNode.getClass.getSimpleName}), skipping"
         )
         astForUnknown(node)
+  }
+
+  private def astForParameters(parameters: List[RubyNode], plusOne: Boolean = false): List[Ast] = {
+    parameters.zipWithIndex.map { case (parameterNode, index) =>
+      astForParameter(parameterNode, if (plusOne) index + 1 else index)
+    }
+  }
+
+  private def statementListForOptionalParams(params: List[RubyNode]): StatementList = {
+    StatementList(
+      params
+        .collect { case x: OptionalParameter =>
+          x
+        }
+        .map(statementForOptionalParam)
+    )(TextSpan(None, None, None, None, ""))
+  }
+
+  private def astForMethodBody(body: RubyNode, optionalStatementList: StatementList): Ast = {
+    if (this.parseLevel == AstParseLevel.SIGNATURES) {
+      Ast()
+    } else {
+      body match
+        case stmtList: StatementList =>
+          astForStatementListReturningLastExpression(
+            StatementList(optionalStatementList.statements ++ stmtList.statements)(stmtList.span)
+          )
+        case _: (StaticLiteral | BinaryExpression | SingleAssignment | SimpleIdentifier | ArrayLiteral | HashLiteral |
+              SimpleCall | MemberAccess | MemberCall) =>
+          astForStatementListReturningLastExpression(
+            StatementList(optionalStatementList.statements ++ List(body))(body.span)
+          )
+        case body =>
+          logger.warn(
+            s"Non-linear method bodies are not supported yet: ${body.text} (${body.getClass.getSimpleName}) ($relativeFileName), skipping"
+          )
+          astForUnknown(body)
+    }
   }
 
 }

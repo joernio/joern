@@ -27,6 +27,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
           case Some(_) => Option(name) // in the case of singleton classes, we want to keep the variable name
           case None    => scope.tryResolveTypeReference(name).map(_.name).orElse(Option(name))
         }
+      case selfIdentifier: SelfIdentifier =>
+        scope.surroundingTypeFullName
       case _ =>
         logger.warn(s"Qualified base class names are not supported yet: ${code(node)} ($relativeFileName), skipping")
         None

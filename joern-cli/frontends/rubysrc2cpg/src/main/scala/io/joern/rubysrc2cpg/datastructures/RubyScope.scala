@@ -51,6 +51,10 @@ class RubyScope(summary: RubyProgramSummary)
     case ScopeElement(x: MethodLikeScope, _)    => x.fullName
   }
 
+  def surroundingTypeFullName: Option[String] = stack.collectFirst { case ScopeElement(x: TypeLikeScope, _) =>
+    x.fullName
+  }
+
   /** @return
     *   the corresponding node label according to the scope element.
     */
