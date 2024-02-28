@@ -70,12 +70,12 @@ object CSharpProgramSummary {
 
     val resourcePaths =
       File(path).listRecursively
-        .filter(_.name.endsWith("builtin_types.json"))
+        .filter(_.name.endsWith(".json"))
         .map(_.pathAsString)
         .toList
 
     if (resourcePaths.isEmpty) {
-      logger.warn("No builtin_types.json found.")
+      logger.warn("No JSON files found.")
       InputStream.nullInputStream()
     } else {
       val mergedJsonObjects = ListBuffer[LinkedHashMap[String, ujson.Value]]()

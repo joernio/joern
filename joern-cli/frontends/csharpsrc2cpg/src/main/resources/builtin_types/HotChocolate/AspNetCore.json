@@ -1,0 +1,4727 @@
+{
+  "Microsoft.Extensions.DependencyInjection": [
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.HotChocolateAspNetCoreServiceCollectionExtensions",
+      "methods": [
+        {
+          "name": "AddGraphQLServerCore",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "maxAllowedRequestSize",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddGraphQLServer",
+          "returnType": "HotChocolate.Execution.Configuration.IRequestExecutorBuilder",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "schemaName",
+              "System.String"
+            ],
+            [
+              "maxAllowedRequestSize",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddGraphQLServer",
+          "returnType": "HotChocolate.Execution.Configuration.IRequestExecutorBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "HotChocolate.Execution.Configuration.IRequestExecutorBuilder"
+            ],
+            [
+              "schemaName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddUploadType",
+          "returnType": "HotChocolate.Execution.Configuration.IRequestExecutorBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "HotChocolate.Execution.Configuration.IRequestExecutorBuilder"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddHttpRequestInterceptor",
+          "returnType": "HotChocolate.Execution.Configuration.IRequestExecutorBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "HotChocolate.Execution.Configuration.IRequestExecutorBuilder"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddHttpRequestInterceptor",
+          "returnType": "HotChocolate.Execution.Configuration.IRequestExecutorBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "HotChocolate.Execution.Configuration.IRequestExecutorBuilder"
+            ],
+            [
+              "factory",
+              "System.Func`2<System.IServiceProvider,T>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddHttpRequestInterceptor",
+          "returnType": "HotChocolate.Execution.Configuration.IRequestExecutorBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "HotChocolate.Execution.Configuration.IRequestExecutorBuilder"
+            ],
+            [
+              "interceptor",
+              "HotChocolate.AspNetCore.HttpRequestInterceptorDelegate"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddHttpResponseFormatter",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "indented",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddHttpResponseFormatter",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "options",
+              "HotChocolate.AspNetCore.Serialization.HttpResponseFormatterOptions"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddHttpResponseFormatter",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddHttpResponseFormatter",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "factory",
+              "System.Func`2<System.IServiceProvider,T>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddSocketSessionInterceptor",
+          "returnType": "HotChocolate.Execution.Configuration.IRequestExecutorBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "HotChocolate.Execution.Configuration.IRequestExecutorBuilder"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddSocketSessionInterceptor",
+          "returnType": "HotChocolate.Execution.Configuration.IRequestExecutorBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "HotChocolate.Execution.Configuration.IRequestExecutorBuilder"
+            ],
+            [
+              "factory",
+              "System.Func`2<System.IServiceProvider,T>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "InitializeOnStartup",
+          "returnType": "HotChocolate.Execution.Configuration.IRequestExecutorBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "HotChocolate.Execution.Configuration.IRequestExecutorBuilder"
+            ],
+            [
+              "warmup",
+              "System.Func`3<HotChocolate.Execution.IRequestExecutor,System.Threading.CancellationToken,System.Threading.Tasks.Task>"
+            ],
+            [
+              "keepWarm",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.AspNetCore.Builder": [
+    {
+      "name": "Microsoft.AspNetCore.Builder.EndpointRouteBuilderExtensions",
+      "methods": [
+        {
+          "name": "MapGraphQL",
+          "returnType": "HotChocolate.AspNetCore.Extensions.GraphQLEndpointConventionBuilder",
+          "parameterTypes": [
+            [
+              "endpointRouteBuilder",
+              "Microsoft.AspNetCore.Routing.IEndpointRouteBuilder"
+            ],
+            [
+              "path",
+              "System.String"
+            ],
+            [
+              "schemaName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "MapGraphQL",
+          "returnType": "HotChocolate.AspNetCore.Extensions.GraphQLEndpointConventionBuilder",
+          "parameterTypes": [
+            [
+              "endpointRouteBuilder",
+              "Microsoft.AspNetCore.Routing.IEndpointRouteBuilder"
+            ],
+            [
+              "path",
+              "Microsoft.AspNetCore.Http.PathString"
+            ],
+            [
+              "schemaName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "MapGraphQL",
+          "returnType": "Microsoft.AspNetCore.Builder.IApplicationBuilder",
+          "parameterTypes": [
+            [
+              "applicationBuilder",
+              "Microsoft.AspNetCore.Builder.IApplicationBuilder"
+            ],
+            [
+              "path",
+              "Microsoft.AspNetCore.Http.PathString"
+            ],
+            [
+              "schemaName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "MapGraphQLHttp",
+          "returnType": "HotChocolate.AspNetCore.Extensions.GraphQLHttpEndpointConventionBuilder",
+          "parameterTypes": [
+            [
+              "endpointRouteBuilder",
+              "Microsoft.AspNetCore.Routing.IEndpointRouteBuilder"
+            ],
+            [
+              "pattern",
+              "System.String"
+            ],
+            [
+              "schemaName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "MapGraphQLHttp",
+          "returnType": "HotChocolate.AspNetCore.Extensions.GraphQLHttpEndpointConventionBuilder",
+          "parameterTypes": [
+            [
+              "endpointRouteBuilder",
+              "Microsoft.AspNetCore.Routing.IEndpointRouteBuilder"
+            ],
+            [
+              "pattern",
+              "Microsoft.AspNetCore.Routing.Patterns.RoutePattern"
+            ],
+            [
+              "schemaName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "MapGraphQLWebSocket",
+          "returnType": "HotChocolate.AspNetCore.Extensions.WebSocketEndpointConventionBuilder",
+          "parameterTypes": [
+            [
+              "endpointRouteBuilder",
+              "Microsoft.AspNetCore.Routing.IEndpointRouteBuilder"
+            ],
+            [
+              "pattern",
+              "System.String"
+            ],
+            [
+              "schemaName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "MapGraphQLWebSocket",
+          "returnType": "HotChocolate.AspNetCore.Extensions.WebSocketEndpointConventionBuilder",
+          "parameterTypes": [
+            [
+              "endpointRouteBuilder",
+              "Microsoft.AspNetCore.Routing.IEndpointRouteBuilder"
+            ],
+            [
+              "pattern",
+              "Microsoft.AspNetCore.Routing.Patterns.RoutePattern"
+            ],
+            [
+              "schemaName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "MapGraphQLSchema",
+          "returnType": "Microsoft.AspNetCore.Builder.IEndpointConventionBuilder",
+          "parameterTypes": [
+            [
+              "endpointRouteBuilder",
+              "Microsoft.AspNetCore.Routing.IEndpointRouteBuilder"
+            ],
+            [
+              "pattern",
+              "System.String"
+            ],
+            [
+              "schemaName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "MapGraphQLSchema",
+          "returnType": "Microsoft.AspNetCore.Builder.IEndpointConventionBuilder",
+          "parameterTypes": [
+            [
+              "endpointRouteBuilder",
+              "Microsoft.AspNetCore.Routing.IEndpointRouteBuilder"
+            ],
+            [
+              "pattern",
+              "Microsoft.AspNetCore.Routing.Patterns.RoutePattern"
+            ],
+            [
+              "schemaName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "MapBananaCakePop",
+          "returnType": "HotChocolate.AspNetCore.Extensions.BananaCakePopEndpointConventionBuilder",
+          "parameterTypes": [
+            [
+              "endpointRouteBuilder",
+              "Microsoft.AspNetCore.Routing.IEndpointRouteBuilder"
+            ],
+            [
+              "toolPath",
+              "System.String"
+            ],
+            [
+              "relativeRequestPath",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "MapBananaCakePop",
+          "returnType": "HotChocolate.AspNetCore.Extensions.BananaCakePopEndpointConventionBuilder",
+          "parameterTypes": [
+            [
+              "endpointRouteBuilder",
+              "Microsoft.AspNetCore.Routing.IEndpointRouteBuilder"
+            ],
+            [
+              "toolPath",
+              "Microsoft.AspNetCore.Http.PathString"
+            ],
+            [
+              "relativeRequestPath",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "WithOptions",
+          "returnType": "HotChocolate.AspNetCore.Extensions.GraphQLEndpointConventionBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "HotChocolate.AspNetCore.Extensions.GraphQLEndpointConventionBuilder"
+            ],
+            [
+              "serverOptions",
+              "HotChocolate.AspNetCore.GraphQLServerOptions"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "WithOptions",
+          "returnType": "HotChocolate.AspNetCore.Extensions.GraphQLHttpEndpointConventionBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "HotChocolate.AspNetCore.Extensions.GraphQLHttpEndpointConventionBuilder"
+            ],
+            [
+              "httpOptions",
+              "HotChocolate.AspNetCore.GraphQLHttpOptions"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "WithOptions",
+          "returnType": "HotChocolate.AspNetCore.Extensions.BananaCakePopEndpointConventionBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "HotChocolate.AspNetCore.Extensions.BananaCakePopEndpointConventionBuilder"
+            ],
+            [
+              "toolOptions",
+              "HotChocolate.AspNetCore.GraphQLToolOptions"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "WithOptions",
+          "returnType": "HotChocolate.AspNetCore.Extensions.WebSocketEndpointConventionBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "HotChocolate.AspNetCore.Extensions.WebSocketEndpointConventionBuilder"
+            ],
+            [
+              "socketOptions",
+              "HotChocolate.AspNetCore.GraphQLSocketOptions"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "HotChocolate.AspNetCore": [
+    {
+      "name": "HotChocolate.AspNetCore.AcceptMediaType",
+      "methods": [
+        {
+          "name": "get_Kind",
+          "returnType": "HotChocolate.AspNetCore.AcceptMediaTypeKind",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Type",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_SubType",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Quality",
+          "returnType": "System.Nullable`1<System.Double>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Charset",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_IsUtf8",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.AcceptMediaTypeKind",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.AllowedGetOperations",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.ContentType",
+      "methods": [
+        {
+          "name": "JsonSpan",
+          "returnType": "System.ReadOnlySpan`1<System.Char>",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "MultiPartFormSpan",
+          "returnType": "System.ReadOnlySpan`1<System.Char>",
+          "parameterTypes": [],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.DefaultHttpMethod",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.DefaultHttpRequestInterceptor",
+      "methods": [
+        {
+          "name": "OnCreateAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "requestExecutor",
+              "HotChocolate.Execution.IRequestExecutor"
+            ],
+            [
+              "requestBuilder",
+              "HotChocolate.Execution.IQueryRequestBuilder"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.DefaultSocketSessionInterceptor",
+      "methods": [
+        {
+          "name": "OnConnectAsync",
+          "returnType": "System.Threading.Tasks.ValueTask`1<HotChocolate.AspNetCore.Subscriptions.Protocols.ConnectionStatus>",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "connectionInitMessage",
+              "HotChocolate.AspNetCore.Subscriptions.Protocols.IOperationMessagePayload"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "OnRequestAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "operationSessionId",
+              "System.String"
+            ],
+            [
+              "requestBuilder",
+              "HotChocolate.Execution.IQueryRequestBuilder"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "OnResultAsync",
+          "returnType": "System.Threading.Tasks.ValueTask`1<HotChocolate.Execution.IQueryResult>",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "operationSessionId",
+              "System.String"
+            ],
+            [
+              "result",
+              "HotChocolate.Execution.IQueryResult"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "OnCompleteAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "operationSessionId",
+              "System.String"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "OnPingAsync",
+          "returnType": "System.Threading.Tasks.ValueTask`1<System.Collections.Generic.IReadOnlyDictionary`2<System.String,System.Object>>",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "pingMessage",
+              "HotChocolate.AspNetCore.Subscriptions.Protocols.IOperationMessagePayload"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "OnPongAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "pongMessage",
+              "HotChocolate.AspNetCore.Subscriptions.Protocols.IOperationMessagePayload"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "OnCloseAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.DelegateHttpRequestInterceptor",
+      "methods": [
+        {
+          "name": "OnCreateAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "requestExecutor",
+              "HotChocolate.Execution.IRequestExecutor"
+            ],
+            [
+              "requestBuilder",
+              "HotChocolate.Execution.IQueryRequestBuilder"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.ErrorHelper",
+      "methods": [
+        {
+          "name": "InvalidRequest",
+          "returnType": "HotChocolate.IError",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "RequestHasNoElements",
+          "returnType": "HotChocolate.IError",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "NoSupportedAcceptMediaType",
+          "returnType": "HotChocolate.IError",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "TypeNameIsEmpty",
+          "returnType": "HotChocolate.Execution.IQueryResult",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "InvalidTypeName",
+          "returnType": "HotChocolate.Execution.IQueryResult",
+          "parameterTypes": [
+            [
+              "typeName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TypeNotFound",
+          "returnType": "HotChocolate.Execution.IQueryResult",
+          "parameterTypes": [
+            [
+              "typeName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "InvalidAcceptMediaType",
+          "returnType": "HotChocolate.Execution.IQueryResult",
+          "parameterTypes": [
+            [
+              "headerValue",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "MultiPartRequestPreflightRequired",
+          "returnType": "HotChocolate.Execution.IQueryResult",
+          "parameterTypes": [],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.HttpContextExtensions",
+      "methods": [
+        {
+          "name": "GetGraphQLServerOptions",
+          "returnType": "HotChocolate.AspNetCore.GraphQLServerOptions",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetGraphQLSocketOptions",
+          "returnType": "HotChocolate.AspNetCore.GraphQLSocketOptions",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "IsTracingEnabled",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "IncludeQueryPlan",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.HttpRequestExtensions",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.HttpResponseExtensions",
+      "methods": [
+        {
+          "name": "SetContentDisposition",
+          "returnType": "Microsoft.AspNetCore.Http.IHeaderDictionary",
+          "parameterTypes": [
+            [
+              "headers",
+              "Microsoft.AspNetCore.Http.IHeaderDictionary"
+            ],
+            [
+              "fileName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.RequestExecutorExtensions",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.GlobalStateHelpers",
+      "methods": [
+        {
+          "name": "GetHttpContext",
+          "returnType": "Microsoft.AspNetCore.Http.HttpContext",
+          "parameterTypes": [
+            [
+              "context",
+              "HotChocolate.Resolvers.IPureResolverContext"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetHttpRequest",
+          "returnType": "Microsoft.AspNetCore.Http.HttpRequest",
+          "parameterTypes": [
+            [
+              "context",
+              "HotChocolate.Resolvers.IPureResolverContext"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetHttpResponse",
+          "returnType": "Microsoft.AspNetCore.Http.HttpResponse",
+          "parameterTypes": [
+            [
+              "context",
+              "HotChocolate.Resolvers.IPureResolverContext"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.GraphQLHttpOptions",
+      "methods": [
+        {
+          "name": "get_AllowedGetOperations",
+          "returnType": "HotChocolate.AspNetCore.AllowedGetOperations",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_AllowedGetOperations",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "HotChocolate.AspNetCore.AllowedGetOperations"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_EnableGetRequests",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_EnableGetRequests",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_EnableMultipartRequests",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_EnableMultipartRequests",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.GraphQLRequestException",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.GraphQLServerOptions",
+      "methods": [
+        {
+          "name": "get_Tool",
+          "returnType": "HotChocolate.AspNetCore.GraphQLToolOptions",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Sockets",
+          "returnType": "HotChocolate.AspNetCore.GraphQLSocketOptions",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_AllowedGetOperations",
+          "returnType": "HotChocolate.AspNetCore.AllowedGetOperations",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_AllowedGetOperations",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "HotChocolate.AspNetCore.AllowedGetOperations"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_EnableGetRequests",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_EnableGetRequests",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_EnforceGetRequestsPreflightHeader",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_EnforceGetRequestsPreflightHeader",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_EnableMultipartRequests",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_EnableMultipartRequests",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_EnforceMultipartRequestsPreflightHeader",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_EnforceMultipartRequestsPreflightHeader",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_EnableSchemaRequests",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_EnableSchemaRequests",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_EnableBatching",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_EnableBatching",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.GraphQLSocketOptions",
+      "methods": [
+        {
+          "name": "get_ConnectionInitializationTimeout",
+          "returnType": "System.TimeSpan",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ConnectionInitializationTimeout",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.TimeSpan"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_KeepAliveInterval",
+          "returnType": "System.Nullable`1<System.TimeSpan>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_KeepAliveInterval",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.TimeSpan>"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.GraphQLToolOptions",
+      "methods": [
+        {
+          "name": "get_ServeMode",
+          "returnType": "HotChocolate.AspNetCore.GraphQLToolServeMode",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ServeMode",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "HotChocolate.AspNetCore.GraphQLToolServeMode"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Title",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Title",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Document",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Document",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_UseBrowserUrlAsGraphQLEndpoint",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_UseBrowserUrlAsGraphQLEndpoint",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_GraphQLEndpoint",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_GraphQLEndpoint",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_IncludeCookies",
+          "returnType": "System.Nullable`1<System.Boolean>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_IncludeCookies",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.Boolean>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_HttpHeaders",
+          "returnType": "Microsoft.AspNetCore.Http.IHeaderDictionary",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_HttpHeaders",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.AspNetCore.Http.IHeaderDictionary"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_HttpMethod",
+          "returnType": "System.Nullable`1<HotChocolate.AspNetCore.DefaultHttpMethod>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_HttpMethod",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<HotChocolate.AspNetCore.DefaultHttpMethod>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Enable",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Enable",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_GaTrackingId",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_GaTrackingId",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_DisableTelemetry",
+          "returnType": "System.Nullable`1<System.Boolean>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_DisableTelemetry",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Nullable`1<System.Boolean>"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.GraphQLToolServeMode",
+      "methods": [
+        {
+          "name": "Version",
+          "returnType": "HotChocolate.AspNetCore.GraphQLToolServeMode",
+          "parameterTypes": [
+            [
+              "version",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.HeaderUtilities",
+      "methods": [
+        {
+          "name": "GetAcceptHeader",
+          "returnType": "HotChocolate.AspNetCore.HeaderUtilities/AcceptHeaderResult",
+          "parameterTypes": [
+            [
+              "request",
+              "Microsoft.AspNetCore.Http.HttpRequest"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.HttpGetMiddleware",
+      "methods": [
+        {
+          "name": "InvokeAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.HttpGetSchemaMiddleware",
+      "methods": [
+        {
+          "name": "InvokeAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.HttpHeaderKeys",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.HttpHeaderValues",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.HttpMultipartMiddleware",
+      "methods": [
+        {
+          "name": "InvokeAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.HttpMultipartRequest",
+      "methods": [
+        {
+          "name": "get_Operations",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Operations",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_FileMap",
+          "returnType": "System.Collections.Generic.IDictionary`2<System.String,HotChocolate.Types.IFile>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_FileMap",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Collections.Generic.IDictionary`2<System.String,HotChocolate.Types.IFile>"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.HttpPostMiddleware",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.HttpPostMiddlewareBase",
+      "methods": [
+        {
+          "name": "InvokeAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.HttpRequestInterceptorDelegate",
+      "methods": [
+        {
+          "name": "Invoke",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "requestExecutor",
+              "HotChocolate.Execution.IRequestExecutor"
+            ],
+            [
+              "requestBuilder",
+              "HotChocolate.Execution.IQueryRequestBuilder"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "BeginInvoke",
+          "returnType": "System.IAsyncResult",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "requestExecutor",
+              "HotChocolate.Execution.IRequestExecutor"
+            ],
+            [
+              "requestBuilder",
+              "HotChocolate.Execution.IQueryRequestBuilder"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ],
+            [
+              "callback",
+              "System.AsyncCallback"
+            ],
+            [
+              "object",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "EndInvoke",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "result",
+              "System.IAsyncResult"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.HttpTransportVersion",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.IHttpRequestInterceptor",
+      "methods": [
+        {
+          "name": "OnCreateAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "requestExecutor",
+              "HotChocolate.Execution.IRequestExecutor"
+            ],
+            [
+              "requestBuilder",
+              "HotChocolate.Execution.IQueryRequestBuilder"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.ISocketSessionInterceptor",
+      "methods": [
+        {
+          "name": "OnConnectAsync",
+          "returnType": "System.Threading.Tasks.ValueTask`1<HotChocolate.AspNetCore.Subscriptions.Protocols.ConnectionStatus>",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "connectionInitMessage",
+              "HotChocolate.AspNetCore.Subscriptions.Protocols.IOperationMessagePayload"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "OnRequestAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "operationSessionId",
+              "System.String"
+            ],
+            [
+              "requestBuilder",
+              "HotChocolate.Execution.IQueryRequestBuilder"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "OnResultAsync",
+          "returnType": "System.Threading.Tasks.ValueTask`1<HotChocolate.Execution.IQueryResult>",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "operationSessionId",
+              "System.String"
+            ],
+            [
+              "result",
+              "HotChocolate.Execution.IQueryResult"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "OnCompleteAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "operationSessionId",
+              "System.String"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "OnPingAsync",
+          "returnType": "System.Threading.Tasks.ValueTask`1<System.Collections.Generic.IReadOnlyDictionary`2<System.String,System.Object>>",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "pingMessage",
+              "HotChocolate.AspNetCore.Subscriptions.Protocols.IOperationMessagePayload"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "OnPongAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "pongMessage",
+              "HotChocolate.AspNetCore.Subscriptions.Protocols.IOperationMessagePayload"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "OnCloseAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.MiddlewareBase",
+      "methods": [
+        {
+          "name": "Dispose",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.MiddlewareRoutingType",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.RequestContentType",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.ResponseContentType",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.ServerDefaults",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.ThrowHelper",
+      "methods": [
+        {
+          "name": "DefaultHttpRequestParser_QueryAndIdMissing",
+          "returnType": "HotChocolate.AspNetCore.GraphQLRequestException",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "DefaultHttpRequestParser_SyntaxError",
+          "returnType": "HotChocolate.AspNetCore.GraphQLRequestException",
+          "parameterTypes": [
+            [
+              "ex",
+              "HotChocolate.Language.SyntaxException"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "DefaultHttpRequestParser_UnexpectedError",
+          "returnType": "HotChocolate.AspNetCore.GraphQLRequestException",
+          "parameterTypes": [
+            [
+              "ex",
+              "System.Exception"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "DefaultHttpRequestParser_RequestIsEmpty",
+          "returnType": "HotChocolate.AspNetCore.GraphQLRequestException",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "DefaultHttpRequestParser_MaxRequestSizeExceeded",
+          "returnType": "HotChocolate.AspNetCore.GraphQLRequestException",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "HttpMultipartMiddleware_Invalid_Form",
+          "returnType": "HotChocolate.GraphQLException",
+          "parameterTypes": [
+            [
+              "ex",
+              "System.Exception"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "HttpMultipartMiddleware_No_Operations_Specified",
+          "returnType": "HotChocolate.GraphQLException",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "HttpMultipartMiddleware_Fields_Misordered",
+          "returnType": "HotChocolate.GraphQLException",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "HttpMultipartMiddleware_NoObjectPath",
+          "returnType": "HotChocolate.GraphQLException",
+          "parameterTypes": [
+            [
+              "filename",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "HttpMultipartMiddleware_FileMissing",
+          "returnType": "HotChocolate.GraphQLException",
+          "parameterTypes": [
+            [
+              "filename",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "HttpMultipartMiddleware_VariableNotFound",
+          "returnType": "HotChocolate.GraphQLException",
+          "parameterTypes": [
+            [
+              "path",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "HttpMultipartMiddleware_VariableStructureInvalid",
+          "returnType": "HotChocolate.GraphQLException",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "HttpMultipartMiddleware_InvalidPath",
+          "returnType": "HotChocolate.GraphQLException",
+          "parameterTypes": [
+            [
+              "path",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "HttpMultipartMiddleware_PathMustStartWithVariable",
+          "returnType": "HotChocolate.GraphQLException",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "HttpMultipartMiddleware_InvalidMapJson",
+          "returnType": "HotChocolate.GraphQLException",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "HttpMultipartMiddleware_MapNotSpecified",
+          "returnType": "HotChocolate.GraphQLException",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "Formatter_ResultKindNotSupported",
+          "returnType": "System.NotSupportedException",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "Formatter_ResponseContentTypeNotSupported",
+          "returnType": "System.NotSupportedException",
+          "parameterTypes": [
+            [
+              "contentType",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Formatter_InvalidAcceptMediaType",
+          "returnType": "System.InvalidOperationException",
+          "parameterTypes": [],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.UploadedFile",
+      "methods": [
+        {
+          "name": "CopyToAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "target",
+              "System.IO.Stream"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.WebSocketSubscriptionMiddleware",
+      "methods": [
+        {
+          "name": "InvokeAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "HotChocolate.AspNetCore.Warmup": [
+    {
+      "name": "HotChocolate.AspNetCore.Warmup.ExecutorWarmupService",
+      "methods": [
+        {
+          "name": "Dispose",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Warmup.WarmupSchemaTask",
+      "methods": [
+        {
+          "name": "get_SchemaName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_KeepWarm",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "ExecuteAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "executor",
+              "HotChocolate.Execution.IRequestExecutor"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "HotChocolate.AspNetCore.Subscriptions": [
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.ConnectionCloseReason",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.ConnectionContextKeys",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.IOperationManager",
+      "methods": [
+        {
+          "name": "Enqueue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "sessionId",
+              "System.String"
+            ],
+            [
+              "request",
+              "HotChocolate.Language.GraphQLRequest"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Complete",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "sessionId",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.IOperationSession",
+      "methods": [
+        {
+          "name": "add_Completed",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.EventHandler"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "remove_Completed",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.EventHandler"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Id",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_IsCompleted",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "BeginExecute",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "request",
+              "HotChocolate.Language.GraphQLRequest"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.ISocketConnection",
+      "methods": [
+        {
+          "name": "get_HttpContext",
+          "returnType": "Microsoft.AspNetCore.Http.HttpContext",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_RequestServices",
+          "returnType": "System.IServiceProvider",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_RequestAborted",
+          "returnType": "System.Threading.CancellationToken",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "TryAcceptConnection",
+          "returnType": "System.Threading.Tasks.Task`1<HotChocolate.AspNetCore.Subscriptions.Protocols.IProtocolHandler>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "SendAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "message",
+              "System.ReadOnlyMemory`1<System.Byte>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CloseAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "reason",
+              "HotChocolate.AspNetCore.Subscriptions.ConnectionCloseReason"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CloseAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "reason",
+              "System.Int32"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.ISocketSession",
+      "methods": [
+        {
+          "name": "get_Connection",
+          "returnType": "HotChocolate.AspNetCore.Subscriptions.ISocketConnection",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Protocol",
+          "returnType": "HotChocolate.AspNetCore.Subscriptions.Protocols.IProtocolHandler",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Operations",
+          "returnType": "HotChocolate.AspNetCore.Subscriptions.IOperationManager",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.OperationManager",
+      "methods": [
+        {
+          "name": "Enqueue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "sessionId",
+              "System.String"
+            ],
+            [
+              "request",
+              "HotChocolate.Language.GraphQLRequest"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Complete",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "sessionId",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Dispose",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "GetEnumerator",
+          "returnType": "System.Collections.Generic.IEnumerator`1<HotChocolate.AspNetCore.Subscriptions.IOperationSession>",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.OperationSession",
+      "methods": [
+        {
+          "name": "add_Completed",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.EventHandler"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "remove_Completed",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.EventHandler"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Id",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_IsCompleted",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "BeginExecute",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "request",
+              "HotChocolate.Language.GraphQLRequest"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Dispose",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.PingPongJob",
+      "methods": [
+        {
+          "name": "RunAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.WebSocketConnection",
+      "methods": [
+        {
+          "name": "get_IsClosed",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_HttpContext",
+          "returnType": "Microsoft.AspNetCore.Http.HttpContext",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_RequestServices",
+          "returnType": "System.IServiceProvider",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ApplicationStopping",
+          "returnType": "System.Threading.CancellationToken",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_RequestAborted",
+          "returnType": "System.Threading.CancellationToken",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ContextData",
+          "returnType": "System.Collections.Generic.IDictionary`2<System.String,System.Object>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "TryAcceptConnection",
+          "returnType": "System.Threading.Tasks.Task`1<HotChocolate.AspNetCore.Subscriptions.Protocols.IProtocolHandler>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "SendAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "message",
+              "System.ReadOnlyMemory`1<System.Byte>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ReadMessageAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Boolean>",
+          "parameterTypes": [
+            [
+              "writer",
+              "System.Buffers.IBufferWriter`1<System.Byte>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CloseAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "reason",
+              "HotChocolate.AspNetCore.Subscriptions.ConnectionCloseReason"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CloseAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "reason",
+              "System.Int32"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Dispose",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.WebSocketSession",
+      "methods": [
+        {
+          "name": "get_Connection",
+          "returnType": "HotChocolate.AspNetCore.Subscriptions.ISocketConnection",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Protocol",
+          "returnType": "HotChocolate.AspNetCore.Subscriptions.Protocols.IProtocolHandler",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Operations",
+          "returnType": "HotChocolate.AspNetCore.Subscriptions.IOperationManager",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Dispose",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "AcceptAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "executor",
+              "HotChocolate.Execution.IRequestExecutor"
+            ],
+            [
+              "interceptor",
+              "HotChocolate.AspNetCore.ISocketSessionInterceptor"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "HotChocolate.AspNetCore.Subscriptions.Protocols": [
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.Protocols.ConnectionStatus",
+      "methods": [
+        {
+          "name": "get_Accepted",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Message",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Extensions",
+          "returnType": "System.Collections.Generic.IReadOnlyDictionary`2<System.String,System.Object>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Accept",
+          "returnType": "HotChocolate.AspNetCore.Subscriptions.Protocols.ConnectionStatus",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "Reject",
+          "returnType": "HotChocolate.AspNetCore.Subscriptions.Protocols.ConnectionStatus",
+          "parameterTypes": [
+            [
+              "message",
+              "System.String"
+            ],
+            [
+              "extensions",
+              "System.Collections.Generic.IReadOnlyDictionary`2<System.String,System.Object>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Reject",
+          "returnType": "HotChocolate.AspNetCore.Subscriptions.Protocols.ConnectionStatus",
+          "parameterTypes": [
+            [
+              "message",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Reject",
+          "returnType": "HotChocolate.AspNetCore.Subscriptions.Protocols.ConnectionStatus",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "Reject",
+          "returnType": "HotChocolate.AspNetCore.Subscriptions.Protocols.ConnectionStatus",
+          "parameterTypes": [
+            [
+              "extensions",
+              "System.Collections.Generic.IReadOnlyDictionary`2<System.String,System.Object>"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.Protocols.IOperationMessagePayload",
+      "methods": [
+        {
+          "name": "As",
+          "returnType": "T",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.Protocols.IProtocolHandler",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "OnReceiveAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "message",
+              "System.Buffers.ReadOnlySequence`1<System.Byte>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "OnConnectionInitTimeoutAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "SendKeepAliveMessageAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "SendResultMessageAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "operationSessionId",
+              "System.String"
+            ],
+            [
+              "result",
+              "HotChocolate.Execution.IQueryResult"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "SendErrorMessageAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "operationSessionId",
+              "System.String"
+            ],
+            [
+              "errors",
+              "System.Collections.Generic.IReadOnlyList`1<HotChocolate.IError>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "SendCompleteMessageAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "operationSessionId",
+              "System.String"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.Protocols.JsonOperationMessage",
+      "methods": [
+        {
+          "name": "As",
+          "returnType": "T",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.Protocols.MessageUtilities",
+      "methods": [
+        {
+          "name": "get_WriterOptions",
+          "returnType": "System.Text.Json.JsonWriterOptions",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_SerializerOptions",
+          "returnType": "System.Text.Json.JsonSerializerOptions",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "SerializeMessage",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "arrayWriter",
+              "HotChocolate.Utilities.ArrayWriter"
+            ],
+            [
+              "type",
+              "System.ReadOnlySpan`1<System.Byte>"
+            ],
+            [
+              "payload",
+              "System.Collections.Generic.IReadOnlyDictionary`2<System.String,System.Object>"
+            ],
+            [
+              "id",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryGetPayload",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "root",
+              "System.Text.Json.JsonElement"
+            ],
+            [
+              "payload",
+              "System.Text.Json.JsonElement&"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.Protocols.OperationMessage",
+      "methods": [
+        {
+          "name": "get_Type",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.Protocols.OperationMessage`1",
+      "methods": [
+        {
+          "name": "get_Payload",
+          "returnType": "T",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "HotChocolate.AspNetCore.Subscriptions.Protocols.GraphQLOverWebSocket": [
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.Protocols.GraphQLOverWebSocket.CloseReasons",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.Protocols.GraphQLOverWebSocket.ConnectionExtensions",
+      "methods": [
+        {
+          "name": "CloseInvalidSubscribeMessageAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "connection",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketConnection"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "CloseSubscriptionIdNotUniqueAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "connection",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketConnection"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "CloseConnectionInitTimeoutAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "connection",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketConnection"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "CloseInvalidMessageTypeAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "connection",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketConnection"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "CloseMessageMustBeJsonObjectAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "connection",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketConnection"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "CloseMessageTypeIsMandatoryAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "connection",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketConnection"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "CloseUnauthorizedAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "connection",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketConnection"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "CloseConnectionRefusedAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "connection",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketConnection"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "CloseToManyInitializationsAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "connection",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketConnection"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "CloseUnexpectedErrorAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "connection",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketConnection"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.Protocols.GraphQLOverWebSocket.ConnectionInitMessage",
+      "methods": [
+        {
+          "name": "get_Default",
+          "returnType": "HotChocolate.AspNetCore.Subscriptions.Protocols.GraphQLOverWebSocket.ConnectionInitMessage",
+          "parameterTypes": [],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.Protocols.GraphQLOverWebSocket.GraphQLOverWebSocketProtocolHandler",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "OnReceiveAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "message",
+              "System.Buffers.ReadOnlySequence`1<System.Byte>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "SendKeepAliveMessageAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "SendResultMessageAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "operationSessionId",
+              "System.String"
+            ],
+            [
+              "result",
+              "HotChocolate.Execution.IQueryResult"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "SendErrorMessageAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "operationSessionId",
+              "System.String"
+            ],
+            [
+              "errors",
+              "System.Collections.Generic.IReadOnlyList`1<HotChocolate.IError>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "SendCompleteMessageAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "operationSessionId",
+              "System.String"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "SendPingMessageAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "payload",
+              "System.Collections.Generic.IReadOnlyDictionary`2<System.String,System.Object>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "OnConnectionInitTimeoutAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.Protocols.GraphQLOverWebSocket.IGraphQLOverWebSocketProtocolHandler",
+      "methods": [
+        {
+          "name": "SendPingMessageAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "payload",
+              "System.Collections.Generic.IReadOnlyDictionary`2<System.String,System.Object>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.Protocols.GraphQLOverWebSocket.MessageProperties",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.Protocols.GraphQLOverWebSocket.Messages",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.Protocols.GraphQLOverWebSocket.PingMessage",
+      "methods": [
+        {
+          "name": "get_Default",
+          "returnType": "HotChocolate.AspNetCore.Subscriptions.Protocols.GraphQLOverWebSocket.PingMessage",
+          "parameterTypes": [],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.Protocols.GraphQLOverWebSocket.PongMessage",
+      "methods": [
+        {
+          "name": "get_Default",
+          "returnType": "HotChocolate.AspNetCore.Subscriptions.Protocols.GraphQLOverWebSocket.PongMessage",
+          "parameterTypes": [],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.Protocols.GraphQLOverWebSocket.SubscribeMessage",
+      "methods": [
+        {
+          "name": "get_Id",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.Protocols.GraphQLOverWebSocket.Utf8MessageBodies",
+      "methods": [
+        {
+          "name": "get_DefaultPing",
+          "returnType": "System.ReadOnlyMemory`1<System.Byte>",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_DefaultPong",
+          "returnType": "System.ReadOnlyMemory`1<System.Byte>",
+          "parameterTypes": [],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.Protocols.GraphQLOverWebSocket.Utf8MessageProperties",
+      "methods": [
+        {
+          "name": "get_Type",
+          "returnType": "System.ReadOnlySpan`1<System.Byte>",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_Payload",
+          "returnType": "System.ReadOnlySpan`1<System.Byte>",
+          "parameterTypes": [],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.Protocols.GraphQLOverWebSocket.Utf8Messages",
+      "methods": [
+        {
+          "name": "get_ConnectionInitialize",
+          "returnType": "System.ReadOnlySpan`1<System.Byte>",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_ConnectionAccept",
+          "returnType": "System.ReadOnlySpan`1<System.Byte>",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_Subscribe",
+          "returnType": "System.ReadOnlySpan`1<System.Byte>",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_Next",
+          "returnType": "System.ReadOnlySpan`1<System.Byte>",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_Error",
+          "returnType": "System.ReadOnlySpan`1<System.Byte>",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_Complete",
+          "returnType": "System.ReadOnlySpan`1<System.Byte>",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_Ping",
+          "returnType": "System.ReadOnlySpan`1<System.Byte>",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_Pong",
+          "returnType": "System.ReadOnlySpan`1<System.Byte>",
+          "parameterTypes": [],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "HotChocolate.AspNetCore.Subscriptions.Protocols.Apollo": [
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.Protocols.Apollo.ApolloSubscriptionProtocolHandler",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "OnReceiveAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "message",
+              "System.Buffers.ReadOnlySequence`1<System.Byte>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "SendKeepAliveMessageAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "SendResultMessageAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "operationSessionId",
+              "System.String"
+            ],
+            [
+              "result",
+              "HotChocolate.Execution.IQueryResult"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "SendErrorMessageAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "operationSessionId",
+              "System.String"
+            ],
+            [
+              "errors",
+              "System.Collections.Generic.IReadOnlyList`1<HotChocolate.IError>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "SendCompleteMessageAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "operationSessionId",
+              "System.String"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "OnConnectionInitTimeoutAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "session",
+              "HotChocolate.AspNetCore.Subscriptions.ISocketSession"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.Protocols.Apollo.CloseReasons",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.Protocols.Apollo.DataStartMessage",
+      "methods": [
+        {
+          "name": "get_Id",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.Protocols.Apollo.InitializeConnectionMessage",
+      "methods": [
+        {
+          "name": "get_Default",
+          "returnType": "HotChocolate.AspNetCore.Subscriptions.Protocols.Apollo.InitializeConnectionMessage",
+          "parameterTypes": [],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.Protocols.Apollo.MessageProperties",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.Protocols.Apollo.Messages",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.Protocols.Apollo.Utf8MessageBodies",
+      "methods": [
+        {
+          "name": "get_KeepAlive",
+          "returnType": "System.ReadOnlyMemory`1<System.Byte>",
+          "parameterTypes": [],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.Protocols.Apollo.Utf8MessageProperties",
+      "methods": [
+        {
+          "name": "get_Id",
+          "returnType": "System.ReadOnlySpan`1<System.Byte>",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_Type",
+          "returnType": "System.ReadOnlySpan`1<System.Byte>",
+          "parameterTypes": [],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Subscriptions.Protocols.Apollo.Utf8Messages",
+      "methods": [
+        {
+          "name": "get_ConnectionInitialize",
+          "returnType": "System.ReadOnlySpan`1<System.Byte>",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_ConnectionAccept",
+          "returnType": "System.ReadOnlySpan`1<System.Byte>",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_ConnectionError",
+          "returnType": "System.ReadOnlySpan`1<System.Byte>",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_ConnectionTerminate",
+          "returnType": "System.ReadOnlySpan`1<System.Byte>",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_Start",
+          "returnType": "System.ReadOnlySpan`1<System.Byte>",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_Stop",
+          "returnType": "System.ReadOnlySpan`1<System.Byte>",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_Data",
+          "returnType": "System.ReadOnlySpan`1<System.Byte>",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_Error",
+          "returnType": "System.ReadOnlySpan`1<System.Byte>",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_Complete",
+          "returnType": "System.ReadOnlySpan`1<System.Byte>",
+          "parameterTypes": [],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "HotChocolate.AspNetCore.Serialization": [
+    {
+      "name": "HotChocolate.AspNetCore.Serialization.DefaultHttpRequestParser",
+      "methods": [
+        {
+          "name": "ReadJsonRequestAsync",
+          "returnType": "System.Threading.Tasks.ValueTask`1<System.Collections.Generic.IReadOnlyList`1<HotChocolate.Language.GraphQLRequest>>",
+          "parameterTypes": [
+            [
+              "stream",
+              "System.IO.Stream"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ReadParamsRequest",
+          "returnType": "HotChocolate.Language.GraphQLRequest",
+          "parameterTypes": [
+            [
+              "parameters",
+              "Microsoft.AspNetCore.Http.IQueryCollection"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ReadOperationsRequest",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<HotChocolate.Language.GraphQLRequest>",
+          "parameterTypes": [
+            [
+              "operations",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Serialization.DefaultHttpResponseFormatter",
+      "methods": [
+        {
+          "name": "CreateRequestFlags",
+          "returnType": "HotChocolate.Execution.GraphQLRequestFlags",
+          "parameterTypes": [
+            [
+              "acceptMediaTypes",
+              "HotChocolate.AspNetCore.AcceptMediaType[]"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "FormatAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "response",
+              "Microsoft.AspNetCore.Http.HttpResponse"
+            ],
+            [
+              "result",
+              "HotChocolate.Execution.IExecutionResult"
+            ],
+            [
+              "acceptMediaTypes",
+              "HotChocolate.AspNetCore.AcceptMediaType[]"
+            ],
+            [
+              "proposedStatusCode",
+              "System.Nullable`1<System.Net.HttpStatusCode>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Serialization.HttpResponseFormatterOptions",
+      "methods": [
+        {
+          "name": "get_HttpTransportVersion",
+          "returnType": "HotChocolate.AspNetCore.HttpTransportVersion",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_HttpTransportVersion",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "HotChocolate.AspNetCore.HttpTransportVersion"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Json",
+          "returnType": "HotChocolate.Execution.Serialization.JsonResultFormatterOptions",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Json",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "HotChocolate.Execution.Serialization.JsonResultFormatterOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Serialization.IHttpRequestParser",
+      "methods": [
+        {
+          "name": "ReadJsonRequestAsync",
+          "returnType": "System.Threading.Tasks.ValueTask`1<System.Collections.Generic.IReadOnlyList`1<HotChocolate.Language.GraphQLRequest>>",
+          "parameterTypes": [
+            [
+              "requestBody",
+              "System.IO.Stream"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ReadParamsRequest",
+          "returnType": "HotChocolate.Language.GraphQLRequest",
+          "parameterTypes": [
+            [
+              "parameters",
+              "Microsoft.AspNetCore.Http.IQueryCollection"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ReadOperationsRequest",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<HotChocolate.Language.GraphQLRequest>",
+          "parameterTypes": [
+            [
+              "operations",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Serialization.IHttpResponseFormatter",
+      "methods": [
+        {
+          "name": "CreateRequestFlags",
+          "returnType": "HotChocolate.Execution.GraphQLRequestFlags",
+          "parameterTypes": [
+            [
+              "acceptMediaTypes",
+              "HotChocolate.AspNetCore.AcceptMediaType[]"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "FormatAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [
+            [
+              "response",
+              "Microsoft.AspNetCore.Http.HttpResponse"
+            ],
+            [
+              "result",
+              "HotChocolate.Execution.IExecutionResult"
+            ],
+            [
+              "acceptMediaTypes",
+              "HotChocolate.AspNetCore.AcceptMediaType[]"
+            ],
+            [
+              "proposedStatusCode",
+              "System.Nullable`1<System.Net.HttpStatusCode>"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Serialization.IndexPathSegment",
+      "methods": [
+        {
+          "name": "get_Value",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Next",
+          "returnType": "HotChocolate.AspNetCore.Serialization.IVariablePathSegment",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Serialization.IVariablePathSegment",
+      "methods": [
+        {
+          "name": "get_Next",
+          "returnType": "HotChocolate.AspNetCore.Serialization.IVariablePathSegment",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Serialization.KeyPathSegment",
+      "methods": [
+        {
+          "name": "get_Value",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Next",
+          "returnType": "HotChocolate.AspNetCore.Serialization.IVariablePathSegment",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Serialization.VariablePath",
+      "methods": [
+        {
+          "name": "get_Key",
+          "returnType": "HotChocolate.AspNetCore.Serialization.KeyPathSegment",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Parse",
+          "returnType": "HotChocolate.AspNetCore.Serialization.VariablePath",
+          "parameterTypes": [
+            [
+              "s",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "HotChocolate.AspNetCore.Properties": [
+    {
+      "name": "HotChocolate.AspNetCore.Properties.AspNetCoreResources",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "HotChocolate.AspNetCore.ParameterExpressionBuilders": [
+    {
+      "name": "HotChocolate.AspNetCore.ParameterExpressionBuilders.HttpContextParameterExpressionBuilder",
+      "methods": [
+        {
+          "name": "get_Kind",
+          "returnType": "HotChocolate.Internal.ArgumentKind",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "CanHandle",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "parameter",
+              "System.Reflection.ParameterInfo"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.ParameterExpressionBuilders.HttpRequestParameterExpressionBuilder",
+      "methods": [
+        {
+          "name": "get_Kind",
+          "returnType": "HotChocolate.Internal.ArgumentKind",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "CanHandle",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "parameter",
+              "System.Reflection.ParameterInfo"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.ParameterExpressionBuilders.HttpResponseParameterExpressionBuilder",
+      "methods": [
+        {
+          "name": "get_Kind",
+          "returnType": "HotChocolate.Internal.ArgumentKind",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "CanHandle",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "parameter",
+              "System.Reflection.ParameterInfo"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "HotChocolate.AspNetCore.Instrumentation": [
+    {
+      "name": "HotChocolate.AspNetCore.Instrumentation.AggregateServerDiagnosticEventListener",
+      "methods": [
+        {
+          "name": "ExecuteHttpRequest",
+          "returnType": "System.IDisposable",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "kind",
+              "HotChocolate.AspNetCore.Instrumentation.HttpRequestKind"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "StartSingleRequest",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "request",
+              "HotChocolate.Language.GraphQLRequest"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "StartBatchRequest",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "batch",
+              "System.Collections.Generic.IReadOnlyList`1<HotChocolate.Language.GraphQLRequest>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "StartOperationBatchRequest",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "request",
+              "HotChocolate.Language.GraphQLRequest"
+            ],
+            [
+              "operations",
+              "System.Collections.Generic.IReadOnlyList`1<System.String>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "HttpRequestError",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "error",
+              "HotChocolate.IError"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "HttpRequestError",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "exception",
+              "System.Exception"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ParseHttpRequest",
+          "returnType": "System.IDisposable",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ParserErrors",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "errors",
+              "System.Collections.Generic.IReadOnlyList`1<HotChocolate.IError>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "FormatHttpResponse",
+          "returnType": "System.IDisposable",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "result",
+              "HotChocolate.Execution.IQueryResult"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "WebSocketSession",
+          "returnType": "System.IDisposable",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "WebSocketSessionError",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "exception",
+              "System.Exception"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Instrumentation.HttpRequestKind",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Instrumentation.IServerDiagnosticEventListener",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Instrumentation.IServerDiagnosticEvents",
+      "methods": [
+        {
+          "name": "ExecuteHttpRequest",
+          "returnType": "System.IDisposable",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "kind",
+              "HotChocolate.AspNetCore.Instrumentation.HttpRequestKind"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "StartSingleRequest",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "request",
+              "HotChocolate.Language.GraphQLRequest"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "StartBatchRequest",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "batch",
+              "System.Collections.Generic.IReadOnlyList`1<HotChocolate.Language.GraphQLRequest>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "StartOperationBatchRequest",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "request",
+              "HotChocolate.Language.GraphQLRequest"
+            ],
+            [
+              "operations",
+              "System.Collections.Generic.IReadOnlyList`1<System.String>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "HttpRequestError",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "error",
+              "HotChocolate.IError"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "HttpRequestError",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "exception",
+              "System.Exception"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ParseHttpRequest",
+          "returnType": "System.IDisposable",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ParserErrors",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "errors",
+              "System.Collections.Generic.IReadOnlyList`1<HotChocolate.IError>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "FormatHttpResponse",
+          "returnType": "System.IDisposable",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "result",
+              "HotChocolate.Execution.IQueryResult"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "WebSocketSession",
+          "returnType": "System.IDisposable",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "WebSocketSessionError",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "exception",
+              "System.Exception"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Instrumentation.NoopServerDiagnosticEventListener",
+      "methods": [
+        {
+          "name": "ExecuteHttpRequest",
+          "returnType": "System.IDisposable",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "kind",
+              "HotChocolate.AspNetCore.Instrumentation.HttpRequestKind"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "StartSingleRequest",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "request",
+              "HotChocolate.Language.GraphQLRequest"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "StartBatchRequest",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "batch",
+              "System.Collections.Generic.IReadOnlyList`1<HotChocolate.Language.GraphQLRequest>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "StartOperationBatchRequest",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "request",
+              "HotChocolate.Language.GraphQLRequest"
+            ],
+            [
+              "operations",
+              "System.Collections.Generic.IReadOnlyList`1<System.String>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "HttpRequestError",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "error",
+              "HotChocolate.IError"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "HttpRequestError",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "exception",
+              "System.Exception"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ParseHttpRequest",
+          "returnType": "System.IDisposable",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ParserErrors",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "errors",
+              "System.Collections.Generic.IReadOnlyList`1<HotChocolate.IError>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "FormatHttpResponse",
+          "returnType": "System.IDisposable",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "result",
+              "HotChocolate.Execution.IQueryResult"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "WebSocketSession",
+          "returnType": "System.IDisposable",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "WebSocketSessionError",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "exception",
+              "System.Exception"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Instrumentation.ServerDiagnosticEventListener",
+      "methods": [
+        {
+          "name": "ExecuteHttpRequest",
+          "returnType": "System.IDisposable",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "kind",
+              "HotChocolate.AspNetCore.Instrumentation.HttpRequestKind"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "StartSingleRequest",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "request",
+              "HotChocolate.Language.GraphQLRequest"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "StartBatchRequest",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "batch",
+              "System.Collections.Generic.IReadOnlyList`1<HotChocolate.Language.GraphQLRequest>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "StartOperationBatchRequest",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "request",
+              "HotChocolate.Language.GraphQLRequest"
+            ],
+            [
+              "operations",
+              "System.Collections.Generic.IReadOnlyList`1<System.String>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "HttpRequestError",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "error",
+              "HotChocolate.IError"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "HttpRequestError",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "exception",
+              "System.Exception"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ParseHttpRequest",
+          "returnType": "System.IDisposable",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ParserErrors",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "errors",
+              "System.Collections.Generic.IReadOnlyList`1<HotChocolate.IError>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "FormatHttpResponse",
+          "returnType": "System.IDisposable",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "result",
+              "HotChocolate.Execution.IQueryResult"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "WebSocketSession",
+          "returnType": "System.IDisposable",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "WebSocketSessionError",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "exception",
+              "System.Exception"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "HotChocolate.AspNetCore.Extensions": [
+    {
+      "name": "HotChocolate.AspNetCore.Extensions.BananaCakePopEndpointConventionBuilder",
+      "methods": [
+        {
+          "name": "Add",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "convention",
+              "System.Action`1<Microsoft.AspNetCore.Builder.EndpointBuilder>"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Extensions.GraphQLEndpointConventionBuilder",
+      "methods": [
+        {
+          "name": "Add",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "convention",
+              "System.Action`1<Microsoft.AspNetCore.Builder.EndpointBuilder>"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Extensions.GraphQLHttpEndpointConventionBuilder",
+      "methods": [
+        {
+          "name": "Add",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "convention",
+              "System.Action`1<Microsoft.AspNetCore.Builder.EndpointBuilder>"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "HotChocolate.AspNetCore.Extensions.WebSocketEndpointConventionBuilder",
+      "methods": [
+        {
+          "name": "Add",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "convention",
+              "System.Action`1<Microsoft.AspNetCore.Builder.EndpointBuilder>"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ]
+}
