@@ -7,8 +7,6 @@ import io.shiftleft.passes.ConcurrentWriterCpgPass
 import io.joern.x2cpg.Imports.createImportNodeAndLink
 import io.joern.x2cpg.X2Cpg.stripQuotes
 
-/** Derived from XImportsPass TODO: maybe make XImportsPass more generic
-  */
 class ImportsPass(cpg: Cpg) extends ConcurrentWriterCpgPass[Call](cpg) {
   protected val importCallName: String = "require"
   override def generateParts(): Array[Call] = cpg
@@ -20,7 +18,6 @@ class ImportsPass(cpg: Cpg) extends ConcurrentWriterCpgPass[Call](cpg) {
       case s :: _ => s
       case _      => ""
     })
-    val importedAs = ""
-    createImportNodeAndLink(importedEntity, importedAs, Some(call), diffGraph)
+    createImportNodeAndLink(importedEntity, importedEntity, Some(call), diffGraph)
   }
 }
