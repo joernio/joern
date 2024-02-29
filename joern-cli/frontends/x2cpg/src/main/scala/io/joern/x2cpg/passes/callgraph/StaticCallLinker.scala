@@ -3,11 +3,11 @@ package io.joern.x2cpg.passes.callgraph
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes}
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.{ConcurrentWriterCpgPass, ForkJoinParallelCpgPass}
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.{Logger, LoggerFactory}
 
-class StaticCallLinker(cpg: Cpg) extends ConcurrentWriterCpgPass[Seq[Call]](cpg) {
+class StaticCallLinker(cpg: Cpg) extends ForkJoinParallelCpgPass[Seq[Call]](cpg) {
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[StaticCallLinker])
   private val BATCH_SIZE     = 100
