@@ -8,8 +8,10 @@ import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newOperatorCallNode
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFieldIdentifier, NewLiteral}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import ujson.Value
 
-import scala.util.Try
+import scala.collection.mutable.ArrayBuffer
+import scala.util.{Failure, Success, Try}
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   def astForExpressionStatement(expr: DotNetNodeInfo): Seq[Ast] = {
@@ -131,13 +133,21 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForArrayInitializerExpression(arrayInitializerExpression: DotNetNodeInfo): Seq[Ast] = {
     val MAX_INITIALIZERS = 1000
 
-    // TODO: Handle n-dimensional arrays
-    //  - 2D Ex: { {1, 2, 3}, {4, 5, 6} }:
-    //    - Expr1 = {1, 2, 3}
-    //    - Expr2 = {4, 5, 6}
     val arrayElements = arrayInitializerExpression.json(ParserKeys.Expressions).arr
-    val args = arrayElements.slice(0, MAX_INITIALIZERS).map(createDotNetNodeInfo).flatMap(astForNode).toSeq
-    val typeFullName = s"${getTypeFullNameFromAstNode(args)}[]"
+
+    // Check if we have nested expressions for n-dimensional arrays
+    val nestedExpressions = {
+      try arrayElements.map(createDotNetNodeInfo).map(_.json(ParserKeys.Expressions))
+      catch case nse: NoSuchElementException => ArrayBuffer.empty
+    }.nonEmpty
+
+    // We have more expressions in our expressions, which means we have a 2+D array, parse these
+    val (args: Seq[Ast], typeFullName) = if (nestedExpressions) {
+      (arrayElements.map(createDotNetNodeInfo).flatMap(astForArrayInitializerExpression).toSeq, "")
+    } else {
+      val arrayArgs = arrayElements.slice(0, MAX_INITIALIZERS).map(createDotNetNodeInfo).flatMap(astForNode).toSeq
+      (arrayArgs, s"${getTypeFullNameFromAstNode(arrayArgs)}[]")
+    }
 
     val callNode = newOperatorCallNode(
       Operators.arrayInitializer,
