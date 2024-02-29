@@ -40,9 +40,31 @@ class CollectionTests extends CSharpCode2CpgFixture {
       inside(cpg.call.name(Operators.assignment).l) { case assignment :: Nil =>
         inside(assignment.argument.l) {
           case (lhs: Identifier) :: (rhs: Call) :: Nil =>
-            inside(rhs.argument.l) {
+            lhs.typeFullName shouldBe "System.Int32[][]"
+
+            rhs.typeFullName shouldBe "System.Int32[][]"
+            rhs.name shouldBe Operators.arrayInitializer
+
+            inside(rhs.argument.isCall.l) {
               case arr1 :: arr2 :: Nil =>
-                println(arr1.code)
+                arr1.code shouldBe "{1, 2, 3}"
+                arr1.typeFullName shouldBe "System.Int32[]"
+
+                inside(arr1.argument.isLiteral.l) {
+                  case elem1 :: elem2 :: elem3 :: Nil =>
+                    elem1.typeFullName shouldBe "System.Int32"
+                    elem1.code shouldBe "1"
+
+                    elem2.typeFullName shouldBe "System.Int32"
+                    elem2.code shouldBe "2"
+
+                    elem3.typeFullName shouldBe "System.Int32"
+                    elem3.code shouldBe "3"
+                  case _ => fail("Only 3 elements in array expected")
+                }
+
+                arr2.code shouldBe "{4, 5, 6}"
+                arr2.typeFullName shouldBe "System.Int32[]"
               case _ => fail("Expected 2 1D arrays")
             }
           case _ => fail("Only expected LHS and RHS")

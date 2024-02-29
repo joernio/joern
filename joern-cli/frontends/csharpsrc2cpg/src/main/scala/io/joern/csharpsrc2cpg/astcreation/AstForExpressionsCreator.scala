@@ -142,12 +142,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     }.nonEmpty
 
     // We have more expressions in our expressions, which means we have a 2+D array, parse these
-    val (args: Seq[Ast], typeFullName) = if (nestedExpressions) {
-      (arrayElements.map(createDotNetNodeInfo).flatMap(astForArrayInitializerExpression).toSeq, "")
+    val args: Seq[Ast] = if (nestedExpressions) {
+      arrayElements.map(createDotNetNodeInfo).flatMap(astForArrayInitializerExpression).toSeq
     } else {
-      val arrayArgs = arrayElements.slice(0, MAX_INITIALIZERS).map(createDotNetNodeInfo).flatMap(astForNode).toSeq
-      (arrayArgs, s"${getTypeFullNameFromAstNode(arrayArgs)}[]")
+      arrayElements.slice(0, MAX_INITIALIZERS).map(createDotNetNodeInfo).flatMap(astForNode).toSeq
     }
+
+    val typeFullName = s"${getTypeFullNameFromAstNode(args)}[]"
 
     val callNode = newOperatorCallNode(
       Operators.arrayInitializer,
@@ -159,6 +160,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     val ast = callAst(callNode, args)
 
+    // TODO: This will work as expected for 1D arrays, but is going to require some thinking for 2+D arrays since we
+    //  will have to keep track of the number of elements in each sub-array
     if (arrayElements.size > MAX_INITIALIZERS) {
       val placeholder = NewLiteral()
         .typeFullName(Defines.Any)
