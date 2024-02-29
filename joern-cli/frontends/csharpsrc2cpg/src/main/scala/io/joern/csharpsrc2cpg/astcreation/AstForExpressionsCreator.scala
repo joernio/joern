@@ -150,14 +150,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     val elements = arrayInitializerExpression.json(elementParserKey).arr
 
-    // Check if we have nested expressions for n-dimensional arrays
-    val nestedExpressions = {
-      try elements.map(createDotNetNodeInfo).map(_.json(elementParserKey))
-      catch case nse: NoSuchElementException => ArrayBuffer.empty
-    }.nonEmpty
+    val nestedExpressionsExists =
+      Try(elements.map(createDotNetNodeInfo).map(_.json(elementParserKey))).getOrElse(ArrayBuffer.empty).nonEmpty
 
     // We have more expressions in our expressions, which means we have a 2+D array, parse these
-    val args: Seq[Ast] = if (nestedExpressions) {
+    val args: Seq[Ast] = if (nestedExpressionsExists) {
       elements.map(createDotNetNodeInfo).flatMap(astForCollectionStaticInitializer(_, elementParserKey)).toSeq
     } else {
       elements.slice(0, MAX_INITIALIZERS).map(createDotNetNodeInfo).flatMap(astForNode).toSeq
