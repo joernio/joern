@@ -109,63 +109,17 @@ trait LinkingUtil {
     dstGraph: DiffGraphBuilder,
     dstNotExistsHandler: Option[(StoredNode, String) => Unit]
   ): Unit = {
-    val sourceNodes = cpg.graph.nodes(srcLabels: _*).toList
-    logger.debug(
-      s"Link to Single for source lables $srcLabels requires processing of total '${sourceNodes.size / BATCH_SIZE}' batches for size $BATCH_SIZE"
+    newLinkToSingle(
+      cpg = cpg,
+      srcNodes = cpg.graph.nodes(srcLabels: _*).toList,
+      srcLabels = srcLabels,
+      dstNodeLabel = dstNodeLabel,
+      edgeType = edgeType,
+      dstNodeMap = dstNodeMap,
+      dstFullNameKey = dstFullNameKey,
+      dstGraph = dstGraph,
+      dstNotExistsHandler = dstNotExistsHandler
     )
-    ConcurrentTaskUtil
-      .runUsingThreadPool(
-        sourceNodes
-          .grouped(BATCH_SIZE)
-          .map(sourceNodeBatch =>
-            () =>
-              new LinkToSingleTask(
-                cpg,
-                sourceNodeBatch,
-                srcLabels,
-                dstNodeLabel,
-                edgeType,
-                dstNodeMap,
-                dstFullNameKey,
-                dstNotExistsHandler
-              ).call()
-          )
-      )
-      .map {
-        case Success(diffGraph) => diffGraph
-        case Failure(e) =>
-          logger.warn("Exception encountered during linkToSingle task", e)
-          new DiffGraphBuilder()
-      }
-      .foreach(resultDiffGraph => dstGraph.absorb(resultDiffGraph))
-  }
-
-  private class LinkToSingleTask(
-    cpg: Cpg,
-    srcNodes: List[Node],
-    srcLabels: List[String],
-    dstNodeLabel: String,
-    edgeType: String,
-    dstNodeMap: String => Option[StoredNode],
-    dstFullNameKey: String,
-    dstNotExistsHandler: Option[(StoredNode, String) => Unit]
-  ) extends Callable[DiffGraphBuilder] {
-
-    override def call(): DiffGraphBuilder = {
-      val dstGraph = new DiffGraphBuilder()
-      newLinkToSingle(
-        cpg,
-        srcNodes,
-        srcLabels,
-        dstNodeLabel,
-        edgeType,
-        dstNodeMap,
-        dstFullNameKey,
-        dstGraph,
-        dstNotExistsHandler
-      )
-      dstGraph
-    }
   }
 
   def linkToMultiple[SRC_NODE_TYPE <: StoredNode](
@@ -178,78 +132,32 @@ trait LinkingUtil {
     dstFullNameKey: String,
     dstGraph: DiffGraphBuilder
   ): Unit = {
-    val dereference = Dereference(cpg)
-    val sourceNodes = cpg.graph.nodes(srcLabels: _*).toList
-    logger.debug(
-      s"Link to Multiple for source lables $srcLabels requires processing of total '${sourceNodes.size / BATCH_SIZE}' batches for size $BATCH_SIZE"
-    )
-    ConcurrentTaskUtil
-      .runUsingThreadPool(
-        sourceNodes
-          .grouped(BATCH_SIZE)
-          .map(sourceNodeBatch =>
-            () =>
-              new LinkToMultiple(
-                sourceNodeBatch,
-                srcLabels,
-                dereference,
-                dstNodeLabel,
-                edgeType,
-                dstNodeMap,
-                getDstFullNames,
-                dstFullNameKey
-              ).call()
-          )
-      )
-      .map {
-        case Success(diffGraph) => diffGraph
-        case Failure(e) =>
-          logger.warn("Exception encountered during linkToSingle task", e)
-          new DiffGraphBuilder()
-      }
-      .foreach(resultDiffGraph => dstGraph.absorb(resultDiffGraph))
-  }
-
-  private class LinkToMultiple[SRC_NODE_TYPE <: StoredNode](
-    srcNodes: List[Node],
-    srcLabels: List[String],
-    dereference: Dereference,
-    dstNodeLabel: String,
-    edgeType: String,
-    dstNodeMap: String => Option[StoredNode],
-    getDstFullNames: SRC_NODE_TYPE => Iterable[String],
-    dstFullNameKey: String
-  ) extends Callable[DiffGraphBuilder] {
-
-    override def call(): DiffGraphBuilder = {
-      val dstGraph                 = new DiffGraphBuilder()
-      var loggedDeprecationWarning = false
-      srcNodes.cast[SRC_NODE_TYPE].foreach { srcNode =>
-        if (!srcNode.outE(edgeType).hasNext) {
-          getDstFullNames(srcNode).foreach { dstFullName =>
-            val dereferenceDstFullName = dereference.dereferenceTypeFullName(dstFullName)
-            dstNodeMap(dereferenceDstFullName) match {
-              case Some(dstNode) =>
-                dstGraph.addEdge(srcNode, dstNode, edgeType)
-              case None if dstNodeMap(dstFullName).isDefined =>
-                dstGraph.addEdge(srcNode, dstNodeMap(dstFullName).get, edgeType)
-              case None =>
-                logFailedDstLookup(edgeType, srcNode.label, srcNode.id.toString, dstNodeLabel, dereferenceDstFullName)
-            }
-          }
-        } else {
-          val dstFullNames = srcNode.out(edgeType).property(Properties.FULL_NAME).l
-          dstGraph.setNodeProperty(srcNode, dstFullNameKey, dstFullNames.map(dereference.dereferenceTypeFullName))
-          if (!loggedDeprecationWarning) {
-            logger.info(
-              s"Using deprecated CPG format with already existing $edgeType edge between" +
-                s" a source node of type $srcLabels and a $dstNodeLabel node."
-            )
-            loggedDeprecationWarning = true
+    var loggedDeprecationWarning = false
+    val dereference              = Dereference(cpg)
+    cpg.graph.nodes(srcLabels: _*).asScala.cast[SRC_NODE_TYPE].foreach { srcNode =>
+      if (!srcNode.outE(edgeType).hasNext) {
+        getDstFullNames(srcNode).foreach { dstFullName =>
+          val dereferenceDstFullName = dereference.dereferenceTypeFullName(dstFullName)
+          dstNodeMap(dereferenceDstFullName) match {
+            case Some(dstNode) =>
+              dstGraph.addEdge(srcNode, dstNode, edgeType)
+            case None if dstNodeMap(dstFullName).isDefined =>
+              dstGraph.addEdge(srcNode, dstNodeMap(dstFullName).get, edgeType)
+            case None =>
+              logFailedDstLookup(edgeType, srcNode.label, srcNode.id.toString, dstNodeLabel, dereferenceDstFullName)
           }
         }
+      } else {
+        val dstFullNames = srcNode.out(edgeType).property(Properties.FULL_NAME).l
+        dstGraph.setNodeProperty(srcNode, dstFullNameKey, dstFullNames.map(dereference.dereferenceTypeFullName))
+        if (!loggedDeprecationWarning) {
+          logger.info(
+            s"Using deprecated CPG format with already existing $edgeType edge between" +
+              s" a source node of type $srcLabels and a $dstNodeLabel node."
+          )
+          loggedDeprecationWarning = true
+        }
       }
-      dstGraph
     }
   }
 
