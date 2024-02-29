@@ -42,6 +42,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     Seq(callAst(node, argAsts))
   }
 
+  protected def astForExpressionElement(expressionElement: DotNetNodeInfo): Seq[Ast] = {
+    astForNode(expressionElement.json(ParserKeys.Expression))
+  }
+
   protected def astForLiteralExpression(_literalNode: DotNetNodeInfo): Seq[Ast] = {
     Seq(Ast(literalNode(_literalNode, code(_literalNode), nodeTypeFullName(_literalNode))))
   }
@@ -131,24 +135,38 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   protected def astForArrayInitializerExpression(arrayInitializerExpression: DotNetNodeInfo): Seq[Ast] = {
+    astForCollectionStaticInitializer(arrayInitializerExpression, ParserKeys.Expressions)
+  }
+
+  protected def astForCollectionExpression(collectionExpression: DotNetNodeInfo): Seq[Ast] = {
+    astForCollectionStaticInitializer(collectionExpression, ParserKeys.Elements)
+  }
+
+  private def astForCollectionStaticInitializer(
+    arrayInitializerExpression: DotNetNodeInfo,
+    elementParserKey: String
+  ): Seq[Ast] = {
     val MAX_INITIALIZERS = 1000
 
-    val arrayElements = arrayInitializerExpression.json(ParserKeys.Expressions).arr
+    val elements = arrayInitializerExpression.json(elementParserKey).arr
 
     // Check if we have nested expressions for n-dimensional arrays
     val nestedExpressions = {
-      try arrayElements.map(createDotNetNodeInfo).map(_.json(ParserKeys.Expressions))
+      try elements.map(createDotNetNodeInfo).map(_.json(elementParserKey))
       catch case nse: NoSuchElementException => ArrayBuffer.empty
     }.nonEmpty
 
     // We have more expressions in our expressions, which means we have a 2+D array, parse these
     val args: Seq[Ast] = if (nestedExpressions) {
-      arrayElements.map(createDotNetNodeInfo).flatMap(astForArrayInitializerExpression).toSeq
+      elements.map(createDotNetNodeInfo).flatMap(astForCollectionStaticInitializer(_, elementParserKey)).toSeq
     } else {
-      arrayElements.slice(0, MAX_INITIALIZERS).map(createDotNetNodeInfo).flatMap(astForNode).toSeq
+      elements.slice(0, MAX_INITIALIZERS).map(createDotNetNodeInfo).flatMap(astForNode).toSeq
     }
 
-    val typeFullName = s"${getTypeFullNameFromAstNode(args)}[]"
+    val typeFullName = elementParserKey match {
+      case ParserKeys.Expressions => s"${getTypeFullNameFromAstNode(args)}[]"
+      case ParserKeys.Elements    => "System.List"
+    }
 
     val callNode = newOperatorCallNode(
       Operators.arrayInitializer,
@@ -160,9 +178,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
     val ast = callAst(callNode, args)
 
-    // TODO: This will work as expected for 1D arrays, but is going to require some thinking for 2+D arrays since we
+    // TODO: This will work as expected for 1D collections, but is going to require some thinking for 2+D arrays since we
     //  will have to keep track of the number of elements in each sub-array
-    if (arrayElements.size > MAX_INITIALIZERS) {
+    if (elements.size > MAX_INITIALIZERS) {
       val placeholder = NewLiteral()
         .typeFullName(Defines.Any)
         .code("<too-many-initializers>")
@@ -173,10 +191,6 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     } else {
       Seq(ast)
     }
-  }
-
-  protected def astForCollectionExpression(collectionExpression: DotNetNodeInfo): Seq[Ast] = {
-    Seq.empty
   }
 
   private def astForInvocationExpression(invocationExpr: DotNetNodeInfo): Seq[Ast] = {
