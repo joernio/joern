@@ -63,7 +63,9 @@ class NewCallTests extends JavaSrcCode2CpgFixture {
                        |}
                        |""".stripMargin)
 
-      cpg.call.name("getDecoder").methodFullName.l shouldBe List("java.util.Base64.getDecoder:java.util.Base64$Decoder()")
+      cpg.call.name("getDecoder").methodFullName.l shouldBe List(
+        "java.util.Base64.getDecoder:java.util.Base64$Decoder()"
+      )
     }
   }
 

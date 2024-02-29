@@ -44,15 +44,13 @@ class JdkJarTypeSolver(classPool: NonCachingClassPool, knownPackagePrefixes: Set
   }
 
   private def lookupType(javaParserName: String): SymbolReference[ResolvedReferenceTypeDeclaration] = {
-    val name = convertJavaParserNameToStandard(javaParserName)
-    Try(classPool.get(name)) match {
-      case Success(ctClass) =>
+    possibleStandardNamesForJavaParser(javaParserName).iterator
+      .map(name => Try(classPool.get(name)))
+      .collectFirst { case Success(ctClass) =>
         val refType = ctClassToRefType(ctClass)
         refTypeToSymbolReference(refType)
-
-      case Failure(e) =>
-        SymbolReference.unsolved()
-    }
+      }
+      .getOrElse(SymbolReference.unsolved())
   }
 
   override def solveType(name: String): ResolvedReferenceTypeDeclaration = {
@@ -184,37 +182,23 @@ object JdkJarTypeSolver {
     packagePrefixForJarEntry(entryName.stripPrefix(JmodClassPrefix))
   }
 
-  /** A name is assumed to contain at least one subclass (e.g. ...Foo$Bar) if the last name part starts with a digit, or
-    * if the last 2 name parts start with capital letters. This heuristic is based on the class name format in the JDK
-    * jars, where names with subclasses have one of the forms:
-    *   - java.lang.ClassLoader$2
-    *   - java.lang.ClassLoader$NativeLibrary
-    *   - java.lang.ClassLoader$NativeLibrary$Unloader
+  /** JavaParser replaces the `$` in nested class names with a `.`. This means that we cannot know what the standard
+    * type full name is for JavaParser names with multiple parts, so this method returns all possibilities, for example
+    * for a.b.Foo.Bar, it will return:
+    *   - a.b.Foo.Bar
+    *   - a.b.Foo$Bar
+    *   - a.b$Foo$Bar
+    *   - a$b$Foo$Bar
     */
-  private def namePartsContainSubclass(nameParts: Array[String]): Boolean = {
-    nameParts.takeRight(2) match {
-      case Array() => false
+  def possibleStandardNamesForJavaParser(javaParserName: String): List[String] = {
+    val nameParts = javaParserName.split('.')
+    nameParts.indices.reverse.map { packageLength =>
+      val packageName = nameParts.take(packageLength).mkString(".")
+      val className   = nameParts.drop(packageLength).mkString("$")
 
-      case Array(singlePart) => false
+      val packagePrefix = if (packageLength > 0) s"$packageName." else ""
 
-      case Array(secondLast, last) =>
-        last.head.isDigit || (secondLast.head.isUpper && last.head.isUpper)
-    }
-  }
-
-  /** JavaParser replaces the `$` in nested class names with a `.`. This method converts the JavaParser names to the
-    * standard format by replacing the `.` between name parts that start with a capital letter or a digit with a `$`
-    * since the jdk classes follow the standard practice of capitalising the first letter in class names but not package
-    * names.
-    */
-  def convertJavaParserNameToStandard(className: String): String = {
-    className.split(".") match {
-      case nameParts if namePartsContainSubclass(nameParts) =>
-        val (packagePrefix, classNames) = nameParts.partition(_.head.isLower)
-        s"${packagePrefix.mkString(".")}.${classNames.mkString("$")}"
-
-      case _ => className
-    }
-
+      s"$packagePrefix$className"
+    }.toList
   }
 }
