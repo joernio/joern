@@ -90,6 +90,8 @@ class AstCreator(
       case FieldDeclaration                                      => astForFieldDeclaration(nodeInfo)
       case VariableDeclaration                                   => astForVariableDeclaration(nodeInfo)
       case EqualsValueClause                                     => astForEqualsValueClause(nodeInfo)
+      case ArrayInitializerExpression                            => astForArrayInitializerExpression(nodeInfo)
+      case CollectionExpression                                  => astForCollectionExpression(nodeInfo)
       case UsingDirective                                        => astForUsing(nodeInfo) :: Nil
       case Block                                                 => Seq(astForBlock(nodeInfo))
       case IdentifierName                                        => Seq(astForIdentifier(nodeInfo))
@@ -98,6 +100,7 @@ class AstCreator(
       case CatchClause                                           => astForCatchClause(nodeInfo)
       case CatchDeclaration                                      => astForCatchDeclaration(nodeInfo)
       case PropertyDeclaration                                   => astForPropertyDeclaration(nodeInfo)
+      case ExpressionElement                                     => astForExpressionElement(nodeInfo)
       case _: LiteralExpr                                        => astForLiteralExpression(nodeInfo)
       case _: BaseExpr                                           => astForExpression(nodeInfo)
       case _                                                     => notHandledYet(nodeInfo)

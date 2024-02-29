@@ -6,10 +6,12 @@ import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newOperatorCallNode}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.NewFieldIdentifier
+import io.shiftleft.codepropertygraph.generated.nodes.{NewFieldIdentifier, NewLiteral}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
+import ujson.Value
 
-import scala.util.Try
+import scala.collection.mutable.ArrayBuffer
+import scala.util.{Failure, Success, Try}
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   def astForExpressionStatement(expr: DotNetNodeInfo): Seq[Ast] = {
@@ -38,6 +40,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       callNode(awaitExpr, awaitExpr.code, CSharpOperators.await, CSharpOperators.await, DispatchTypes.STATIC_DISPATCH)
     val argAsts = astForNode(awaitExpr.json(ParserKeys.Expression))
     Seq(callAst(node, argAsts))
+  }
+
+  protected def astForExpressionElement(expressionElement: DotNetNodeInfo): Seq[Ast] = {
+    astForNode(expressionElement.json(ParserKeys.Expression))
   }
 
   protected def astForLiteralExpression(_literalNode: DotNetNodeInfo): Seq[Ast] = {
@@ -126,6 +132,62 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForEqualsValueClause(clause: DotNetNodeInfo): Seq[Ast] = {
     val rhsNode = createDotNetNodeInfo(clause.json(ParserKeys.Value))
     astForNode(rhsNode)
+  }
+
+  protected def astForArrayInitializerExpression(arrayInitializerExpression: DotNetNodeInfo): Seq[Ast] = {
+    astForCollectionStaticInitializer(arrayInitializerExpression, ParserKeys.Expressions)
+  }
+
+  protected def astForCollectionExpression(collectionExpression: DotNetNodeInfo): Seq[Ast] = {
+    astForCollectionStaticInitializer(collectionExpression, ParserKeys.Elements)
+  }
+
+  private def astForCollectionStaticInitializer(
+    arrayInitializerExpression: DotNetNodeInfo,
+    elementParserKey: String
+  ): Seq[Ast] = {
+    val MAX_INITIALIZERS = 1000
+
+    val elements = arrayInitializerExpression.json(elementParserKey).arr
+
+    val nestedExpressionsExists =
+      Try(elements.map(createDotNetNodeInfo).map(_.json(elementParserKey))).getOrElse(ArrayBuffer.empty).nonEmpty
+
+    // We have more expressions in our expressions, which means we have a 2+D array, parse these
+    val args: Seq[Ast] = if (nestedExpressionsExists) {
+      elements.map(createDotNetNodeInfo).flatMap(astForCollectionStaticInitializer(_, elementParserKey)).toSeq
+    } else {
+      elements.slice(0, MAX_INITIALIZERS).map(createDotNetNodeInfo).flatMap(astForNode).toSeq
+    }
+
+    val typeFullName = elementParserKey match {
+      case ParserKeys.Expressions => s"${getTypeFullNameFromAstNode(args)}[]"
+      case ParserKeys.Elements    => "System.List"
+    }
+
+    val callNode = newOperatorCallNode(
+      Operators.arrayInitializer,
+      code = arrayInitializerExpression.json(ParserKeys.MetaData)(ParserKeys.Code).str,
+      typeFullName = Some(typeFullName),
+      line = arrayInitializerExpression.lineNumber,
+      column = arrayInitializerExpression.columnNumber
+    )
+
+    val ast = callAst(callNode, args)
+
+    // TODO: This will work as expected for 1D collections, but is going to require some thinking for 2+D arrays since we
+    //  will have to keep track of the number of elements in each sub-array
+    if (elements.size > MAX_INITIALIZERS) {
+      val placeholder = NewLiteral()
+        .typeFullName(Defines.Any)
+        .code("<too-many-initializers>")
+        .lineNumber(arrayInitializerExpression.lineNumber)
+        .columnNumber(arrayInitializerExpression.columnNumber)
+
+      Seq(ast.withChild(Ast(placeholder)).withArgEdge(callNode, placeholder))
+    } else {
+      Seq(ast)
+    }
   }
 
   private def astForInvocationExpression(invocationExpr: DotNetNodeInfo): Seq[Ast] = {
