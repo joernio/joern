@@ -13,7 +13,6 @@ class StaticCallLinker(cpg: Cpg) extends ConcurrentWriterCpgPass[Seq[Call]](cpg)
   private val BATCH_SIZE     = 100
 
   override def generateParts(): Array[Seq[Call]] = {
-    val size = cpg.call.size
     cpg.call.grouped(BATCH_SIZE).toArray
   }
 
