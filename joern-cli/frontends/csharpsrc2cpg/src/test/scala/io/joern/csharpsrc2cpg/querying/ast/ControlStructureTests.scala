@@ -25,7 +25,7 @@ class ControlStructureTests extends CSharpCode2CpgFixture {
             case Some(exp: Call) =>
               exp.code shouldBe "new Exception(\"Error!\")"
               exp.name shouldBe Defines.ConstructorMethodName
-              exp.typeFullName shouldBe "Exception" // TODO: Should really be System.Exception
+              exp.typeFullName shouldBe "System.Exception"
             case _ => fail("No exception constructor node found!")
           }
 

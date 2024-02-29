@@ -73,6 +73,8 @@ object DotNetJsonAst {
 
   object VariableDeclarator extends DeclarationExpr
 
+  object SimpleLambdaExpression extends BaseExpr
+
   sealed trait ClauseExpr extends BaseExpr
 
   object EqualsValueClause extends ClauseExpr
@@ -238,6 +240,7 @@ object ParserKeys {
   val ElementType      = "ElementType"
   val Else             = "Else"
   val Expression       = "Expression"
+  val ExpressionBody   = "ExpressionBody"
   val Finally          = "Finally"
   val FileName         = "FileName"
   val Identifier       = "Identifier"
@@ -255,6 +258,7 @@ object ParserKeys {
   val Name             = "Name"
   val Operand          = "Operand"
   val OperatorToken    = "OperatorToken"
+  val Parameter        = "Parameter"
   val Parameters       = "Parameters"
   val ParameterList    = "ParameterList"
   val Pattern          = "Pattern"

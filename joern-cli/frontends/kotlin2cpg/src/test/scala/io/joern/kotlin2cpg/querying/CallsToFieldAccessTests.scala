@@ -8,19 +8,19 @@ import io.shiftleft.semanticcpg.language.*
 class CallsToFieldAccessTests extends KotlinCode2CpgFixture(withOssDataflow = false) {
   "CPG for code with class method referencing member in a call" should {
     val cpg = code("""
-        |package mypkg
-        |
-        |class AClass(private val x: String) {
-        |    fun printX() {
-        |        println(x)
-        |    }
-        |}
-        |
-        |fun main() {
-        |    val a = AClass("A_MESSAGE")
-        |    a.printX()
-        |}
-        |""".stripMargin)
+                     |package mypkg
+                     |
+                     |class AClass(private val x: String) {
+                     |    fun printX() {
+                     |        println(x)
+                     |    }
+                     |}
+                     |
+                     |fun main() {
+                     |    val a = AClass("A_MESSAGE")
+                     |    a.printX()
+                     |}
+                     |""".stripMargin)
 
     "should contain a CALL node for the referenced member with the correct props set" in {
       val List(c) = cpg.call.codeExact("println(x)").argument.isCall.l
@@ -53,15 +53,15 @@ class CallsToFieldAccessTests extends KotlinCode2CpgFixture(withOssDataflow = fa
 
   "Variable access outside class" should {
     val cpg = code("""
-        |package mypkg
-        |class BClass(var y: String){
-        |}
-        |
-        |fun main() {
-        |    val a = BClass("A_MESSAGE")
-        |    val m = a.y
-        |}
-        |""".stripMargin)
+                     |package mypkg
+                     |class BClass(var y: String){
+                     |}
+                     |
+                     |fun main() {
+                     |    val a = BClass("A_MESSAGE")
+                     |    val m = a.y
+                     |}
+                     |""".stripMargin)
 
     "Create two fieldAccess AST Node" in {
       cpg.call(Operators.fieldAccess).size shouldBe 2
@@ -73,7 +73,7 @@ class CallsToFieldAccessTests extends KotlinCode2CpgFixture(withOssDataflow = fa
     }
 
     "Create require field access nodes for members accessed outside the class properly" in {
-      val List(ctory, insidemainy) = cpg.call.methodFullName(Operators.fieldAccess).l
+      val List(ctory, insidemainy) = cpg.call.methodFullNameExact(Operators.fieldAccess).l
       ctory.code shouldBe "this.y"
       ctory.name shouldBe Operators.fieldAccess
       insidemainy.code shouldBe "a.y"
@@ -83,24 +83,24 @@ class CallsToFieldAccessTests extends KotlinCode2CpgFixture(withOssDataflow = fa
 
   "Chained field access " should {
     val cpg = code("""
-        |package mypkg
-        |class AClass(var x: String){
-        |}
-        |class BClass(var acls: AClass){
-        |}
-        |
-        |fun main() {
-        |    val a = AClass("A_MESSAGE")
-        |    val b = BClass(a)
-        |    val m = b.acls.x
-        |}
-        |""".stripMargin)
+                     |package mypkg
+                     |class AClass(var x: String){
+                     |}
+                     |class BClass(var acls: AClass){
+                     |}
+                     |
+                     |fun main() {
+                     |    val a = AClass("A_MESSAGE")
+                     |    val b = BClass(a)
+                     |    val m = b.acls.x
+                     |}
+                     |""".stripMargin)
     "Create four fieldAccess nodes" in {
       cpg.call(Operators.fieldAccess).size shouldBe 4
     }
 
     "2nd level Chained field access CALL node should have name <operator>.fieldAccess" in {
-      val List(ctora, ctorb, insidemainx, insidemainacls) = cpg.call.methodFullName(Operators.fieldAccess).l
+      val List(ctora, ctorb, insidemainx, insidemainacls) = cpg.call.methodFullNameExact(Operators.fieldAccess).l
       ctora.name shouldBe Operators.fieldAccess
       ctorb.name shouldBe Operators.fieldAccess
       insidemainacls.name shouldBe Operators.fieldAccess
@@ -110,21 +110,21 @@ class CallsToFieldAccessTests extends KotlinCode2CpgFixture(withOssDataflow = fa
 
   "Chained method call" should {
     val cpg = code("""
-        |package mypkg
-        |class AClass(var x: String){
-        |    fun printX() {
-        |        println(x)
-        |    }
-        |}
-        |class BClass(var acls: AClass){
-        |}
-        |
-        |fun main() {
-        |    val a = AClass("A_MESSAGE")
-        |    val b = BClass(a)
-        |    val m = b.acls.printX()
-        |}
-        |""".stripMargin)
+                     |package mypkg
+                     |class AClass(var x: String){
+                     |    fun printX() {
+                     |        println(x)
+                     |    }
+                     |}
+                     |class BClass(var acls: AClass){
+                     |}
+                     |
+                     |fun main() {
+                     |    val a = AClass("A_MESSAGE")
+                     |    val b = BClass(a)
+                     |    val m = b.acls.printX()
+                     |}
+                     |""".stripMargin)
     "Create four fieldAccess nodes" in {
       cpg.call(Operators.fieldAccess).size shouldBe 4
       val List(one, two, three, four) = cpg.call(Operators.fieldAccess).l

@@ -251,7 +251,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       .arr
       .map(createDotNetNodeInfo)
       .zipWithIndex
-      .map(astForParameter)
+      .map(astForParameter(_, _, None))
       .toSeq
     // TODO: Decide on proper return type for constructors. No `ReturnType` key in C# JSON for constructors so just
     //  defaulted to void (same as java) for now
@@ -314,7 +314,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       .arr
       .map(createDotNetNodeInfo)
       .zipWithIndex
-      .map(astForParameter)
+      .map(astForParameter(_, _, None))
       .toSeq
 
     val methodReturnAstNode = createDotNetNodeInfo(methodDecl.json(ParserKeys.ReturnType))
@@ -342,10 +342,10 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     s"${methodReturn.typeFullName}(${params.map(_.typeFullName).mkString(",")})"
   }
 
-  private def astForParameter(paramNode: DotNetNodeInfo, idx: Int): Ast = {
+  private def astForParameter(paramNode: DotNetNodeInfo, idx: Int, paramTypeHint: Option[String] = None): Ast = {
     val name               = nameFromNode(paramNode)
     val isVariadic         = false                                // TODO
-    val typeFullName       = nodeTypeFullName(paramNode)
+    val typeFullName       = paramTypeHint.getOrElse(nodeTypeFullName(paramNode))
     val evaluationStrategy = EvaluationStrategies.BY_SHARING.name // TODO
     val param =
       parameterInNode(paramNode, name, code(paramNode), idx + 1, isVariadic, evaluationStrategy, Option(typeFullName))
@@ -443,5 +443,68 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val _memberNode = memberNode(propertyDecl, propertyName, propertyDecl.code, typeFullName)
 
     Seq(Ast(_memberNode).withChildren(modifierAst))
+  }
+
+  /** Creates an AST for a simple `x => { ... }` style lambda expression
+    *
+    * @param lambdaExpression
+    *   the expression.
+    * @param paramTypeHint
+    *   a type that could hint at what the parameter type may be.
+    */
+  protected def astForSimpleLambdaExpression(
+    lambdaExpression: DotNetNodeInfo,
+    paramTypeHint: Option[String] = None
+  ): Seq[Ast] = {
+    // Create method declaration
+    val name     = nextClosureName()
+    val fullName = s"${scope.surroundingScopeFullName.getOrElse(Defines.UnresolvedNamespace)}.$name"
+    // Set parameter type if necessary, which may require the type hint
+    val paramJson = lambdaExpression.json(ParserKeys.Parameter)
+    val paramType = paramTypeHint.flatMap(AstCreatorHelper.elementTypesFromCollectionType).headOption
+    val params    = astForParameter(createDotNetNodeInfo(paramJson), 0, paramType) :: Nil
+    scope.pushNewScope(MethodScope(fullName))
+    // Handle lambda body
+    val bodyJson = createDotNetNodeInfo(lambdaExpression.json(ParserKeys.Body))
+    val block    = blockNode(bodyJson)
+    scope.pushNewScope(BlockScope)
+    val body =
+      if (this.parseLevel == AstParseLevel.SIGNATURES) Seq.empty else astForNode(bodyJson)
+    val blockAst_ = blockAst(block, body.toList)
+    scope.popScope()
+    scope.popScope()
+    val method = methodNode(
+      lambdaExpression,
+      name,
+      code(lambdaExpression),
+      fullName,
+      None,
+      relativeFileName,
+      Option(NodeTypes.METHOD),
+      scope.surroundingScopeFullName
+    )
+    val modifiers = astForModifiers(lambdaExpression).flatMap(_.nodes).collect { case x: NewModifier => x }
+    val lambdaReturnType = body.lastOption
+      .getOrElse(Ast())
+      .nodes
+      .filter {
+        case x: NewCall => !x.name.startsWith("<operator")
+        case _          => true
+      }
+      .map(Ast.apply)
+      .map(getTypeFullNameFromAstNode)
+      .headOption
+      .getOrElse(Defines.Any)
+    val methodReturn = methodReturnNode(lambdaExpression, lambdaReturnType)
+    Ast.storeInDiffGraph(methodAst(method, params, blockAst_, methodReturn, modifiers), diffGraph)
+    // Create type decl
+    val lambdaTypeDecl = typeDeclNode(lambdaExpression, name, fullName, relativeFileName, code(lambdaExpression))
+    scope.surroundingScopeFullName.foreach { fn =>
+      lambdaTypeDecl.astParentFullName(fn).astParentType(NodeTypes.METHOD)
+    }
+    Ast.storeInDiffGraph(Ast(lambdaTypeDecl), diffGraph)
+    // Create method ref
+    val methodRef = methodRefNode(lambdaExpression, code(lambdaExpression), fullName, lambdaReturnType)
+    Ast(methodRef) :: Nil
   }
 }

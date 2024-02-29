@@ -89,9 +89,10 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: 
     *   the type meta-data if found.
     */
   def tryResolveTypeReference(typeName: String): Option[T] = {
+    // TODO: Handle partially quaified names
     typesInScope
       .collectFirst {
-        case typ if typ.name.endsWith(typeName)                                           => typ
+        case typ if typ.name.split("[.]").lastOption == typeName.split("[.]").lastOption  => typ
         case typ if aliasedTypes.contains(typeName) && typ.name == aliasedTypes(typeName) => typ
       }
   }
@@ -117,8 +118,17 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: 
       (membersInScope ++ typesInScope.flatMap(_.methods))
         .collectFirst { case m: MethodLike if m.name == callName => m.asInstanceOf[M] }
     case Some(tfn) =>
-      tryResolveTypeReference(tfn).flatMap { t =>
-        t.methods.find { m => m.name == callName && isOverloadedBy(m, argTypes) }
+      val methodsWithEqualArgs = tryResolveTypeReference(tfn).flatMap { t =>
+        Option(
+          t.methods.filter(m => m.name == callName && m.parameterTypes.filterNot(_._1 == "this").size == argTypes.size)
+        )
+      }
+
+      methodsWithEqualArgs
+        .getOrElse(List.empty[M])
+        .find(isOverloadedBy(_, argTypes)) match {
+        case Some(m) => Option(m)
+        case None    => methodsWithEqualArgs.getOrElse(List.empty[M]).headOption
       }
   }
 

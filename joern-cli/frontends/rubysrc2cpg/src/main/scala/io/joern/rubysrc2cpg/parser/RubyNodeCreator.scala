@@ -128,7 +128,12 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     val condition = visit(ctx.operatorExpression(0))
     val thenBody  = visit(ctx.operatorExpression(1))
     val elseBody  = visit(ctx.operatorExpression(2))
-    ConditionalExpression(condition, thenBody, elseBody)(ctx.toTextSpan)
+    IfExpression(
+      condition,
+      thenBody,
+      List.empty,
+      Option(ElseClause(StatementList(elseBody :: Nil)(elseBody.span))(elseBody.span))
+    )(ctx.toTextSpan)
   }
 
   override def visitReturnMethodInvocationWithoutParentheses(
@@ -322,7 +327,6 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     val body       = visit(ctx.bodyStatement())
     Block(parameters, body)(ctx.toTextSpan)
   }
-
   override def visitLocalVariableAssignmentExpression(
     ctx: RubyParser.LocalVariableAssignmentExpressionContext
   ): RubyNode = {
@@ -477,7 +481,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitMethodCallWithBlockExpression(ctx: RubyParser.MethodCallWithBlockExpressionContext): RubyNode = {
-    SimpleCallWithBlock(visit(ctx.methodIdentifier()), List(), visit(ctx.block()))(ctx.toTextSpan)
+    SimpleCallWithBlock(visit(ctx.methodIdentifier()), List(), visit(ctx.block()).asInstanceOf[Block])(ctx.toTextSpan)
   }
 
   override def visitMethodCallWithParenthesesExpression(
@@ -487,7 +491,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
       SimpleCallWithBlock(
         visit(ctx.methodIdentifier()),
         ctx.argumentWithParentheses().arguments.map(visit),
-        visit(ctx.block())
+        visit(ctx.block()).asInstanceOf[Block]
       )(ctx.toTextSpan)
     } else {
       SimpleCall(visit(ctx.methodIdentifier()), ctx.argumentWithParentheses().arguments.map(visit))(ctx.toTextSpan)
@@ -539,7 +543,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitSelfPseudoVariable(ctx: RubyParser.SelfPseudoVariableContext): RubyNode = {
-    SimpleIdentifier()(ctx.toTextSpan)
+    SelfIdentifier()(ctx.toTextSpan)
   }
 
   override def visitMemberAccessExpression(ctx: RubyParser.MemberAccessExpressionContext): RubyNode = {
@@ -578,7 +582,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
         ctx.op.getText,
         ctx.methodName().getText,
         Option(ctx.argumentWithParentheses()).map(_.arguments).getOrElse(List()).map(visit),
-        visit(ctx.block())
+        visit(ctx.block()).asInstanceOf[Block]
       )(ctx.toTextSpan)
     }
 
@@ -652,8 +656,40 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     ClassDeclaration(
       visit(ctx.classPath()),
       Option(ctx.commandOrPrimaryValue()).map(visit),
-      visit(ctx.bodyStatement())
+      lowerSingletonClassDeclarations(ctx.bodyStatement())
     )(ctx.toTextSpan)
+  }
+
+  /** Lowers all MethodDeclaration found in SingletonClassDeclaration to SingletonMethodDeclaration.
+    * @param ctx
+    *   body context from class definitions
+    * @return
+    *   RubyNode with lowered MethodDeclarations where required
+    */
+  private def lowerSingletonClassDeclarations(ctx: RubyParser.BodyStatementContext): RubyNode = {
+    visit(ctx) match {
+      case stmtList: StatementList =>
+        StatementList(stmtList.statements.flatMap {
+          case singletonClassDeclaration: SingletonClassDeclaration =>
+            singletonClassDeclaration.baseClass match {
+              case Some(selfIdentifier: SelfIdentifier) =>
+                singletonClassDeclaration.body match {
+                  case singletonClassStmtList: StatementList =>
+                    singletonClassStmtList.statements.map {
+                      case method: MethodDeclaration =>
+                        SingletonMethodDeclaration(selfIdentifier, method.methodName, method.parameters, method.body)(
+                          method.span
+                        )
+                      case nonMethodStatement => nonMethodStatement
+                    }
+                  case singletonBody => singletonBody :: Nil
+                }
+              case _ => singletonClassDeclaration.body :: Nil
+            }
+          case nonStmtListBody => nonStmtListBody :: Nil
+        })(stmtList.span)
+      case nonStmtList => nonStmtList
+    }
   }
 
   override def visitMethodDefinition(ctx: RubyParser.MethodDefinitionContext): RubyNode = {
@@ -665,10 +701,14 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitEndlessMethodDefinition(ctx: RubyParser.EndlessMethodDefinitionContext): RubyNode = {
+    val body = visit(ctx.statement()) match {
+      case x: StatementList => x
+      case x                => StatementList(x :: Nil)(x.span)
+    }
     MethodDeclaration(
       ctx.definedMethodName().getText,
       Option(ctx.parameterList()).fold(List())(_.parameters).map(visit),
-      visit(ctx.commandOrPrimaryValue())
+      body
     )(ctx.toTextSpan)
   }
 
