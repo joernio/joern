@@ -11,6 +11,88 @@ import overflowdb.traversal.jIteratortoTraversal
 import overflowdb.traversal.toNodeTraversal
 
 class NewCallTests extends JavaSrcCode2CpgFixture {
+  "calls to imported methods" when {
+    "they are static methods imported from java.lang.* should be resolved" in {
+      val cpg = code("""
+                       |class Test {
+                       |  public void test() {
+                       |    String.valueOf(true);
+                       |  }
+                       |}
+                       |
+                       |""".stripMargin)
+
+      cpg.call.name("valueOf").methodFullName.l shouldBe List("java.lang.String.valueOf:java.lang.String(boolean)")
+    }
+
+    "they are instance methods imported from java.lang.* should be resolved" in {
+      val cpg = code("""
+                       |class Test {
+                       |  public void test(String s) {
+                         |  s.length();
+                       |  }
+                       |}
+                       |
+                       |""".stripMargin)
+
+      cpg.call.name("length").methodFullName.l shouldBe List("java.lang.String.length:int()")
+    }
+
+    "they are calls to instance methods from java imports should be resolved" in {
+      val cpg = code("""
+                       |import java.util.Base64;
+                       |
+                       |class Test {
+                       |  public void test(Base64.Decoder decoder, String src) {
+                       |    decoder.decode(src);
+                       |  }
+                       |}
+                       |
+                       |""".stripMargin)
+      cpg.call.name("decode").methodFullName.l shouldBe List("java.util.Base64$Decoder.decode:byte[](java.lang.String)")
+    }
+
+    "they are calls to static methods from java imports should be resolved" in {
+      val cpg = code("""
+                       |import java.util.Base64;
+                       |
+                       |class Foo {
+                       |  void test() {
+                       |    Base64.getDecoder();
+                       |  }
+                       |}
+                       |""".stripMargin)
+
+      cpg.call.name("getDecoder").methodFullName.l shouldBe List(
+        "java.util.Base64.getDecoder:java.util.Base64$Decoder()"
+      )
+    }
+  }
+
+  "calls to static methods in other files should be resolved" in {
+    val cpg = code("""
+        |package foo;
+        |
+        |class Foo {
+        |  public static String foo() {
+        |    return "FOO";
+        |  }
+        |}
+        |""".stripMargin)
+      .moreCode("""
+        |package bar;
+        |
+        |import foo.Foo;
+        |
+        |class Bar {
+        |  void test() {
+        |    Foo.foo();
+        |  }
+        |}
+        |""".stripMargin)
+
+    cpg.call.name("foo").methodFullName.l shouldBe List("foo.Foo.foo:java.lang.String()")
+  }
 
   "calls with unresolved receivers should have the correct fullnames" in {
     val cpg = code("""
