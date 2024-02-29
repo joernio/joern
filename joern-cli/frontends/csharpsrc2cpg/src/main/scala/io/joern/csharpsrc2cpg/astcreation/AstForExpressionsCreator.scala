@@ -6,7 +6,7 @@ import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newOperatorCallNode}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.NewFieldIdentifier
+import io.shiftleft.codepropertygraph.generated.nodes.{NewFieldIdentifier, NewLiteral}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 
 import scala.util.Try
@@ -126,6 +126,44 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForEqualsValueClause(clause: DotNetNodeInfo): Seq[Ast] = {
     val rhsNode = createDotNetNodeInfo(clause.json(ParserKeys.Value))
     astForNode(rhsNode)
+  }
+
+  protected def astForArrayInitializerExpression(arrayInitializerExpression: DotNetNodeInfo): Seq[Ast] = {
+    val MAX_INITIALIZERS = 1000
+
+    // TODO: Handle n-dimensional arrays
+    //  - 2D Ex: { {1, 2, 3}, {4, 5, 6} }:
+    //    - Expr1 = {1, 2, 3}
+    //    - Expr2 = {4, 5, 6}
+    val arrayElements = arrayInitializerExpression.json(ParserKeys.Expressions).arr
+    val args = arrayElements.slice(0, MAX_INITIALIZERS).map(createDotNetNodeInfo).flatMap(astForNode).toSeq
+    val typeFullName = s"${getTypeFullNameFromAstNode(args)}[]"
+
+    val callNode = newOperatorCallNode(
+      Operators.arrayInitializer,
+      code = arrayInitializerExpression.json(ParserKeys.MetaData)(ParserKeys.Code).str,
+      typeFullName = Some(typeFullName),
+      line = arrayInitializerExpression.lineNumber,
+      column = arrayInitializerExpression.columnNumber
+    )
+
+    val ast = callAst(callNode, args)
+
+    if (arrayElements.size > MAX_INITIALIZERS) {
+      val placeholder = NewLiteral()
+        .typeFullName(Defines.Any)
+        .code("<too-many-initializers>")
+        .lineNumber(arrayInitializerExpression.lineNumber)
+        .columnNumber(arrayInitializerExpression.columnNumber)
+
+      Seq(ast.withChild(Ast(placeholder)).withArgEdge(callNode, placeholder))
+    } else {
+      Seq(ast)
+    }
+  }
+
+  protected def astForCollectionExpression(collectionExpression: DotNetNodeInfo): Seq[Ast] = {
+    Seq.empty
   }
 
   private def astForInvocationExpression(invocationExpr: DotNetNodeInfo): Seq[Ast] = {

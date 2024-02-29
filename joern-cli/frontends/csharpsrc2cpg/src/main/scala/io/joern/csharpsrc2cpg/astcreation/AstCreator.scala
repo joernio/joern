@@ -90,6 +90,8 @@ class AstCreator(
       case FieldDeclaration                                      => astForFieldDeclaration(nodeInfo)
       case VariableDeclaration                                   => astForVariableDeclaration(nodeInfo)
       case EqualsValueClause                                     => astForEqualsValueClause(nodeInfo)
+      case ArrayInitializerExpression                            => astForArrayInitializerExpression(nodeInfo)
+      case CollectionExpression                                  => astForCollectionExpression(nodeInfo)
       case UsingDirective                                        => astForUsing(nodeInfo) :: Nil
       case Block                                                 => Seq(astForBlock(nodeInfo))
       case IdentifierName                                        => Seq(astForIdentifier(nodeInfo))

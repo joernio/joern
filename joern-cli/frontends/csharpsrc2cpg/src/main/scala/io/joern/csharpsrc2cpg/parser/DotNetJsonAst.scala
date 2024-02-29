@@ -217,6 +217,10 @@ object DotNetJsonAst {
 
   object NullableType extends BaseExpr
 
+  object ArrayInitializerExpression extends BaseExpr
+
+  object CollectionExpression extends BaseExpr
+
   object Unknown extends DotNetParserNode
 
 }
@@ -237,9 +241,11 @@ object ParserKeys {
   val ColumnEnd        = "ColumnEnd"
   val Condition        = "Condition"
   val Declaration      = "Declaration"
+  val Elements         = "Elements"
   val ElementType      = "ElementType"
   val Else             = "Else"
   val Expression       = "Expression"
+  val Expressions      = "Expressions"
   val ExpressionBody   = "ExpressionBody"
   val Finally          = "Finally"
   val FileName         = "FileName"
