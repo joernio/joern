@@ -138,12 +138,12 @@ class CollectionTests extends CSharpCode2CpgFixture {
 
                     elem3.typeFullName shouldBe "System.Int32"
                     elem3.code shouldBe "3"
-                  case _ => fail("Only 3 elements in array expected")
+                  case _ => fail("Only 3 elements in list expected")
                 }
 
                 arr2.code shouldBe "[4, 5, 6]"
                 arr2.typeFullName shouldBe "System.List"
-              case _ => fail("Expected 2 1D arrays")
+              case _ => fail("Expected 2 1D Lists ")
             }
           case _ => fail("Only expected LHS and RHS")
         }
