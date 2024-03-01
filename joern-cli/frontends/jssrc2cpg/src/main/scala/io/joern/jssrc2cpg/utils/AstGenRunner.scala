@@ -345,7 +345,7 @@ class AstGenRunner(config: Config) {
       logger.info("You may want to check the DEBUG logs for a list of files that are ignored by default.")
       SourceFiles.determine(
         in.pathAsString,
-        Set(".js", ".ts", ".vue", ".ejs", ".jsx", ".mjs", ".tsx"),
+        Set(".js", ".ts", ".vue", ".ejs", ".jsx", ".cjs", ".mjs", ".tsx"),
         ignoredDefaultRegex = Option(AstGenDefaultIgnoreRegex)
       )
     }
