@@ -11,6 +11,7 @@ import org.slf4j.LoggerFactory
 import versionsort.VersionHelper
 
 import java.nio.file.Paths
+import java.util.regex.Pattern
 import scala.util.Failure
 import scala.util.Success
 import scala.util.matching.Regex
@@ -27,6 +28,29 @@ object AstGenRunner {
   private val TypeDefinitionFileExtensions = List(".t.ts", ".d.ts")
 
   private val MinifiedPathRegex: Regex = ".*([.-]min\\..*js|bundle\\.js)".r
+
+  private val AstGenDefaultIgnoreRegex: Seq[Regex] =
+    List(
+      "(conf|test|spec|[.-]min|\\.d)\\.(js|ts|jsx|tsx)$".r,
+      s"node_modules${Pattern.quote(java.io.File.separator)}.*".r,
+      s"venv${Pattern.quote(java.io.File.separator)}.*".r,
+      s"docs${Pattern.quote(java.io.File.separator)}.*".r,
+      s"test${Pattern.quote(java.io.File.separator)}.*".r,
+      s"tests${Pattern.quote(java.io.File.separator)}.*".r,
+      s"e2e${Pattern.quote(java.io.File.separator)}.*".r,
+      s"e2e-beta${Pattern.quote(java.io.File.separator)}.*".r,
+      s"examples${Pattern.quote(java.io.File.separator)}.*".r,
+      s"cypress${Pattern.quote(java.io.File.separator)}.*".r,
+      s"jest-cache${Pattern.quote(java.io.File.separator)}.*".r,
+      s"eslint-rules${Pattern.quote(java.io.File.separator)}.*".r,
+      s"codemods${Pattern.quote(java.io.File.separator)}.*".r,
+      s"flow-typed${Pattern.quote(java.io.File.separator)}.*".r,
+      s"i18n${Pattern.quote(java.io.File.separator)}.*".r,
+      s"vendor${Pattern.quote(java.io.File.separator)}.*".r,
+      s"www${Pattern.quote(java.io.File.separator)}.*".r,
+      s"dist${Pattern.quote(java.io.File.separator)}.*".r,
+      s"build${Pattern.quote(java.io.File.separator)}.*".r
+    )
 
   private val IgnoredTestsRegex: Seq[Regex] =
     List(
@@ -314,12 +338,26 @@ class AstGenRunner(config: Config) {
     jsResult  <- jsFiles(in, out)
   } yield jsResult ++ vueResult ++ ejsResult
 
+  private def checkParsedFiles(files: List[String], in: File): List[String] = {
+    val numOfParsedFiles = files.size
+    logger.info(s"Parsed $numOfParsedFiles files.")
+    if (numOfParsedFiles == 0) {
+      logger.warn("You may want to check the DEBUG logs for a list of files that are ignored by default.")
+      SourceFiles.determine(
+        in.pathAsString,
+        Set(".js", ".ts", ".vue", ".ejs", ".jsx", ".cjs", ".mjs", ".tsx"),
+        ignoredDefaultRegex = Option(AstGenDefaultIgnoreRegex)
+      )
+    }
+    files
+  }
+
   def execute(out: File): AstGenRunnerResult = {
     val in = File(config.inputPath)
     logger.info(s"Running astgen in '$in' ...")
     runAstGenNative(in, out) match {
       case Success(result) =>
-        val parsed  = filterFiles(SourceFiles.determine(out.toString(), Set(".json")), out)
+        val parsed  = checkParsedFiles(filterFiles(SourceFiles.determine(out.toString(), Set(".json")), out), in)
         val skipped = skippedFiles(result.toList)
         AstGenRunnerResult(parsed.map((in.toString(), _)), skipped.map((in.toString(), _)))
       case Failure(f) =>

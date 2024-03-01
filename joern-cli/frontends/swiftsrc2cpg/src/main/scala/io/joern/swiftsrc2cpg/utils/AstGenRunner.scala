@@ -7,13 +7,25 @@ import io.joern.x2cpg.utils.Environment
 import org.slf4j.LoggerFactory
 
 import java.nio.file.Paths
+import java.util.regex.Pattern
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
+import scala.util.matching.Regex
 
 object AstGenRunner {
 
   private val logger = LoggerFactory.getLogger(getClass)
+
+  private val AstGenDefaultIgnoreRegex: Seq[Regex] =
+    List(
+      s"\\..*${Pattern.quote(java.io.File.separator)}.*".r,
+      s"__.*${Pattern.quote(java.io.File.separator)}.*".r,
+      s"tests${Pattern.quote(java.io.File.separator)}.*".r,
+      s"specs${Pattern.quote(java.io.File.separator)}.*".r,
+      s"test${Pattern.quote(java.io.File.separator)}.*".r,
+      s"spec${Pattern.quote(java.io.File.separator)}.*".r
+    )
 
   case class AstGenRunnerResult(parsedFiles: List[String] = List.empty, skippedFiles: List[String] = List.empty)
 
@@ -130,12 +142,22 @@ class AstGenRunner(config: Config) {
   private def runAstGenNative(in: File, out: File): Try[Seq[String]] =
     ExternalCommand.run(s"$astGenCommand -o $out", in.toString())
 
+  private def checkParsedFiles(files: List[String], in: File): List[String] = {
+    val numOfParsedFiles = files.size
+    logger.info(s"Parsed $numOfParsedFiles files.")
+    if (numOfParsedFiles == 0) {
+      logger.warn("You may want to check the DEBUG logs for a list of files that are ignored by default.")
+      SourceFiles.determine(in.pathAsString, Set(".swift"), ignoredDefaultRegex = Option(AstGenDefaultIgnoreRegex))
+    }
+    files
+  }
+
   def execute(out: File): AstGenRunnerResult = {
     val in = File(config.inputPath)
     logger.info(s"Running SwiftAstGen in '$in' ...")
     runAstGenNative(in, out) match {
       case Success(result) =>
-        val parsed  = filterFiles(SourceFiles.determine(out.toString(), Set(".json")), out)
+        val parsed  = checkParsedFiles(filterFiles(SourceFiles.determine(out.toString(), Set(".json")), out), in)
         val skipped = skippedFiles(result.toList)
         AstGenRunnerResult(parsed, skipped)
       case Failure(f) =>

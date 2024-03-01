@@ -19,7 +19,16 @@ class ExcludeTest extends AnyWordSpec with Matchers with TableDrivenPropertyChec
   private implicit val schemaValidationMode: ValidationMode = ValidationMode.Enabled
 
   private val testFiles: List[String] =
-    List(".sub/e.swift", "folder/b.swift", "folder/c.swift", "foo.bar/d.swift", "a.swift", "index.swift")
+    List(
+      "__sub/x.swift",
+      "tests/x.swift",
+      ".sub/e.swift",
+      "folder/b.swift",
+      "folder/c.swift",
+      "foo.bar/d.swift",
+      "a.swift",
+      "index.swift"
+    )
 
   private val projectUnderTest: File = {
     val dir = File.newTemporaryDirectory("swiftsrc2cpgTestsExcludeTest")
