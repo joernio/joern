@@ -29,7 +29,7 @@ lazy val csharpsrc2cpg     = Projects.csharpsrc2cpg
 // TODO uncomment
 lazy val aggregatedProjects: Seq[ProjectReference] = Seq(
   joerncli,
-//   querydb,
+  querydb,
   console,
   dataflowengineoss,
   macros,
