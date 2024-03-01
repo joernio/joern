@@ -1,6 +1,6 @@
 package io.joern.php2cpg.passes
 
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{
@@ -26,7 +26,7 @@ object LocalCreationPass {
 }
 
 abstract class LocalCreationPass[ScopeType <: AstNode](cpg: Cpg)
-    extends ConcurrentWriterCpgPass[ScopeType](cpg)
+    extends ForkJoinParallelCpgPass[ScopeType](cpg)
     with AstNodeBuilder[AstNode, LocalCreationPass[ScopeType]] {
   override protected def line(node: AstNode)                       = node.lineNumber
   override protected def column(node: AstNode)                     = node.columnNumber

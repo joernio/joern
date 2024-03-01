@@ -7,7 +7,7 @@ import io.joern.c2cpg.astcreation.Defines
 import io.joern.c2cpg.parser.{CdtParser, FileDefaults}
 import io.joern.c2cpg.utils.{Report, TimeUtils}
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.passes.ConcurrentWriterCpgPass
+import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.joern.x2cpg.SourceFiles
 import io.joern.x2cpg.datastructures.Global
 
@@ -17,7 +17,7 @@ import scala.util.matching.Regex
 import scala.jdk.CollectionConverters.*
 
 class AstCreationPass(cpg: Cpg, config: Config, report: Report = new Report())
-    extends ConcurrentWriterCpgPass[String](cpg) {
+    extends ForkJoinParallelCpgPass[String](cpg) {
 
   private val file2OffsetTable: ConcurrentHashMap[String, Array[Int]] = new ConcurrentHashMap()
   private val parser: CdtParser                                       = new CdtParser(config)
