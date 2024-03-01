@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory
 import java.nio.file.{Files, Paths}
 import scala.util.matching.Regex
 import scala.util.{Failure, Success, Try, Using}
+import io.joern.rubysrc2cpg.passes.ImportsPass
 
 class RubySrc2Cpg extends X2CpgFrontend[Config] {
 
@@ -61,6 +62,8 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
         .getOrElse(RubyProgramSummary())
       val astCreationPass = new AstCreationPass(cpg, astCreators.map(_.withSummary(programSummary)))
       astCreationPass.createAndApply()
+      val importsPass = new ImportsPass(cpg)
+      importsPass.createAndApply()
       TypeNodePass.withTypesFromCpg(cpg).createAndApply()
     }
   }
