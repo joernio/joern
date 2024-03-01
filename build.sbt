@@ -2,7 +2,7 @@ name                     := "joern"
 ThisBuild / organization := "io.joern"
 ThisBuild / scalaVersion := "3.3.1"
 
-val cpgVersion = "1.6.5+13-f02cf1e9"
+val cpgVersion = "1.6.6+14-7fa2daf7"
 
 // TODO uncomment
 lazy val joerncli          = Projects.joerncli
