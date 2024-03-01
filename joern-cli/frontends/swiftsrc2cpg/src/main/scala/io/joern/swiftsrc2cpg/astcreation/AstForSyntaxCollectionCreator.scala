@@ -71,14 +71,21 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
   private def astForDifferentiabilityArgumentListSyntax(node: DifferentiabilityArgumentListSyntax): Ast = notHandledYet(
     node
   )
-  private def astForDocumentationAttributeArgumentListSyntax(node: DocumentationAttributeArgumentListSyntax): Ast =
-    notHandledYet(node)
-  private def astForEffectsAttributeArgumentListSyntax(node: EffectsAttributeArgumentListSyntax): Ast = notHandledYet(
-    node
-  )
-  private def astForEnumCaseElementListSyntax(node: EnumCaseElementListSyntax): Ast         = notHandledYet(node)
-  private def astForEnumCaseParameterListSyntax(node: EnumCaseParameterListSyntax): Ast     = notHandledYet(node)
-  private def astForExprListSyntax(node: ExprListSyntax): Ast                               = notHandledYet(node)
+  private def astForDocumentationAttributeArgumentListSyntax(node: DocumentationAttributeArgumentListSyntax): Ast = {
+    Ast(literalNode(node, code(node), Option(Defines.String)))
+  }
+
+  private def astForEffectsAttributeArgumentListSyntax(node: EffectsAttributeArgumentListSyntax): Ast = {
+    Ast(literalNode(node, code(node), Option(Defines.String)))
+  }
+
+  private def astForEnumCaseElementListSyntax(node: EnumCaseElementListSyntax): Ast     = notHandledYet(node)
+  private def astForEnumCaseParameterListSyntax(node: EnumCaseParameterListSyntax): Ast = notHandledYet(node)
+
+  private def astForExprListSyntax(node: ExprListSyntax): Ast = {
+    astForListSyntaxChildren(node, node.children)
+  }
+
   private def astForFunctionParameterListSyntax(node: FunctionParameterListSyntax): Ast     = notHandledYet(node)
   private def astForGenericArgumentListSyntax(node: GenericArgumentListSyntax): Ast         = notHandledYet(node)
   private def astForGenericParameterListSyntax(node: GenericParameterListSyntax): Ast       = notHandledYet(node)
@@ -106,10 +113,14 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
   )
   private def astForPrecedenceGroupNameListSyntax(node: PrecedenceGroupNameListSyntax): Ast     = notHandledYet(node)
   private def astForPrimaryAssociatedTypeListSyntax(node: PrimaryAssociatedTypeListSyntax): Ast = notHandledYet(node)
-  private def astForSimpleStringLiteralSegmentListSyntax(node: SimpleStringLiteralSegmentListSyntax): Ast =
-    notHandledYet(node)
-  private def astForSpecializeAttributeArgumentListSyntax(node: SpecializeAttributeArgumentListSyntax): Ast =
-    notHandledYet(node)
+
+  private def astForSimpleStringLiteralSegmentListSyntax(node: SimpleStringLiteralSegmentListSyntax): Ast = {
+    astForListSyntaxChildren(node, node.children)
+  }
+
+  private def astForSpecializeAttributeArgumentListSyntax(node: SpecializeAttributeArgumentListSyntax): Ast = {
+    Ast(literalNode(node, code(node), Option(Defines.String)))
+  }
 
   private def astForStringLiteralSegmentListSyntax(node: StringLiteralSegmentListSyntax): Ast = {
     astForListSyntaxChildren(node, node.children)

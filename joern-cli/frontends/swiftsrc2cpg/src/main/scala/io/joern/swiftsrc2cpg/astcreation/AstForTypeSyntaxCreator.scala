@@ -36,8 +36,11 @@ trait AstForTypeSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForMemberTypeSyntax(node: MemberTypeSyntax): Ast =
     notHandledYet(node)
 
-  private def astForMetatypeTypeSyntax(node: MetatypeTypeSyntax): Ast =
-    notHandledYet(node)
+  private def astForMetatypeTypeSyntax(node: MetatypeTypeSyntax): Ast = {
+    val nodeCode = code(node)
+    registerType(nodeCode)
+    Ast(identifierNode(node, nodeCode, dynamicTypeHints = Seq(nodeCode)))
+  }
 
   private def astForMissingTypeSyntax(node: MissingTypeSyntax): Ast =
     notHandledYet(node)
