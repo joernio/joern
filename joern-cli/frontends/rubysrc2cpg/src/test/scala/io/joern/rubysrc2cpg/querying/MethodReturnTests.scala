@@ -269,4 +269,50 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
     }
   }
 
+  "implicit RETURN node for MEMBER CALL" in {
+    val cpg = code("""
+                     |def f(x)
+                     | puts(x)
+                     |end
+                     |def j()
+                     | f.x(1)
+                     |end
+                     |""".stripMargin)
+
+    inside(cpg.method.name("j").l) {
+      case jMethod :: Nil =>
+        inside(jMethod.methodReturn.toReturn.l) {
+          case retMemAccess :: Nil =>
+            retMemAccess.code shouldBe "f.x(1)"
+
+            val List(call: Call) = retMemAccess.astChildren.l: @unchecked
+            call.methodFullName shouldBe "x"
+          case xs => fail(s"Expected exactly one return nodes, instead got [${xs.code.mkString(",")}]")
+        }
+      case _ => fail("Only one method expected")
+    }
+  }
+
+  "implicit RETURN node for ASSOCIATION" in {
+    val cpg = code("""
+                     |def j
+                     |  super(only: ["a"])
+                     |end
+                     |""".stripMargin)
+
+    inside(cpg.method.name("j").l) {
+      case jMethod :: Nil =>
+        inside(jMethod.methodReturn.toReturn.l) {
+          case retAssoc :: Nil =>
+            retAssoc.code shouldBe "only: [\"a\"]"
+
+            val List(call: Call) = retAssoc.astChildren.l: @unchecked
+            call.name shouldBe RubyOperators.association
+            call.code shouldBe "only: [\"a\"]"
+          case xs => fail(s"Expected exactly one return nodes, instead got [${xs.code.mkString(",")}]")
+        }
+      case _ => fail("Only one method expected")
+    }
+  }
+
 }

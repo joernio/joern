@@ -221,7 +221,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     node match
       case expr: ControlFlowExpression => astsForStatement(rubyNodeForExplicitReturnControlFlowExpression(expr))
       case _: (ArrayLiteral | HashLiteral | StaticLiteral | BinaryExpression | UnaryExpression | SimpleIdentifier |
-            SimpleCall | IndexAccess) =>
+            SimpleCall | IndexAccess | Association) =>
         astForReturnStatement(ReturnExpression(List(node))(node.span)) :: Nil
       case node: SingleAssignment =>
         astForSingleAssignment(node) :: List(astForReturnStatement(ReturnExpression(List(node.lhs))(node.span)))
@@ -231,6 +231,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           astForReturnFieldAccess(MemberAccess(node.target, node.op, node.attributeName)(node.span))
         )
       case node: MemberAccess    => astForReturnMemberCall(node) :: Nil
+      case node: MemberCall      => astForReturnMemberCall(node) :: Nil
       case ret: ReturnExpression => astForReturnStatement(ret) :: Nil
       case node: MethodDeclaration =>
         (astForMethodDeclaration(node) :+ astForReturnMethodDeclarationSymbolName(node)).toList
@@ -255,6 +256,10 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private def astForReturnMemberCall(node: MemberAccess): Ast = {
     returnAst(returnNode(node, code(node)), List(astForMemberAccess(node)))
+  }
+
+  private def astForReturnMemberCall(node: MemberCall): Ast = {
+    returnAst(returnNode(node, code(node)), List(astForMemberCall(node)))
   }
 
   /** Wraps the last RubyNode with a ReturnExpression.
