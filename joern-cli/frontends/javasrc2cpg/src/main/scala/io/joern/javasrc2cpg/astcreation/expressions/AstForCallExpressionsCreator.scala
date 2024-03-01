@@ -150,7 +150,7 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
     // then use the types of those to fix the local type.
     val assignTarget = identifierNode(expr, tmpName, tmpName, TypeConstants.Any)
     val allocAndInitAst =
-      inlinedAstsForObjectCreationExpr(expr, Ast(assignTarget.copy), expectedType, resetAssignmentTargetType = true)
+      inlinedAstsForObjectCreationExpr(expr, Ast(assignTarget.copy()), expectedType, resetAssignmentTargetType = true)
 
     assignTarget.typeFullName(allocAndInitAst.allocAst.rootType.getOrElse(TypeConstants.Any))
     val tmpLocal = localNode(expr, tmpName, tmpName, assignTarget.typeFullName)
@@ -171,7 +171,7 @@ trait AstForCallExpressionsCreator { this: AstCreator =>
     val allocAssignTargetAst  = Ast(allocAssignTargetNode).withRefEdge(allocAssignTargetNode, tmpLocal)
     val allocAssignAst        = callAst(allocAssignCall, allocAssignTargetAst :: allocAndInitAst.allocAst :: Nil)
 
-    val returnedIdentifier    = assignTarget.copy
+    val returnedIdentifier    = assignTarget.copy()
     val returnedIdentifierAst = Ast(returnedIdentifier).withRefEdge(returnedIdentifier, tmpLocal)
 
     Ast(blockNode(expr).typeFullName(returnedIdentifier.typeFullName))

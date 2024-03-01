@@ -10,6 +10,7 @@ import ujson.Value
 
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
+
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def createDotNetNodeInfo(json: Value): DotNetNodeInfo =
@@ -57,7 +58,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
 
   protected def getTypeFullNameFromAstNode(ast: Ast): String = {
     ast.root
-      .flatMap(_.propertiesMap.getOrDefault(PropertyNames.TYPE_FULL_NAME, Defines.Any).toString)
+      .map(_.propertiesMap.getOrDefault(PropertyNames.TYPE_FULL_NAME, Defines.Any).toString)
       .getOrElse(Defines.Any)
   }
 

@@ -1,5 +1,6 @@
 package io.joern.rubysrc2cpg.astcreation
 
+import flatgraph.DiffGraphApplier
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.StatementList
 import io.joern.rubysrc2cpg.datastructures.{RubyField, RubyMethod, RubyProgramSummary, RubyType}
 import io.joern.rubysrc2cpg.parser.RubyNodeCreator
@@ -9,7 +10,6 @@ import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Local, Member, Method, TypeDecl}
 import io.shiftleft.semanticcpg.language.*
-import overflowdb.{BatchedUpdate, Config}
 
 import scala.util.Using
 
@@ -17,12 +17,12 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
 
   def summarize(): RubyProgramSummary = {
     this.parseLevel = AstParseLevel.SIGNATURES
-    Using.resource(Cpg.withConfig(Config.withoutOverflow())) { cpg =>
+    Using.resource(Cpg.empty) { cpg =>
       // Build and store compilation unit AST
       val rootNode = new RubyNodeCreator().visit(programCtx).asInstanceOf[StatementList]
       val ast      = astForRubyFile(rootNode)
       Ast.storeInDiffGraph(ast, diffGraph)
-      BatchedUpdate.applyDiff(cpg.graph, diffGraph)
+      DiffGraphApplier.applyDiff(cpg.graph, diffGraph)
 
       // Link basic AST elements
       AstLinkerPass(cpg).createAndApply()

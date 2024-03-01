@@ -262,12 +262,12 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
       case List(method) =>
         val List(_: Local, assign: Call, init: Call) = method.astChildren.isBlock.astChildren.l: @unchecked
 
-        assign.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        assign.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
         assign.name shouldBe Operators.assignment
         val alloc = assign.argument(2).asInstanceOf[Call]
         alloc.name shouldBe "<operator>.alloc"
         alloc.code shouldBe "new Bar(4, 2)"
-        alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
         alloc.methodFullName shouldBe "<operator>.alloc"
         alloc.typeFullName shouldBe "Bar"
         alloc.argument.size shouldBe 0
@@ -275,7 +275,7 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
         init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
         init.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)"
         init.methodViaCallOut.head.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)"
-        init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
         init.typeFullName shouldBe "void"
         init.signature shouldBe "void(int,int)"
         init.code shouldBe "new Bar(4, 2)"
@@ -303,12 +303,12 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
       case List(method) =>
         val List(assign: Call, init: Call) = method.astChildren.isBlock.astChildren.l: @unchecked
 
-        assign.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        assign.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
         assign.name shouldBe Operators.assignment
         val alloc = assign.argument(2).asInstanceOf[Call]
         alloc.name shouldBe "<operator>.alloc"
         alloc.code shouldBe "new Bar(4, 2)"
-        alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
         alloc.methodFullName shouldBe "<operator>.alloc"
         alloc.typeFullName shouldBe "Bar"
         alloc.argument.size shouldBe 0
@@ -316,7 +316,7 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
         init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
         init.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)"
         init.methodViaCallOut.head.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int,int)"
-        init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
         init.typeFullName shouldBe "void"
         init.signature shouldBe "void(int,int)"
         init.code shouldBe "new Bar(4, 2)"
@@ -362,7 +362,7 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
         alloc.order shouldBe 2
         alloc.argumentIndex shouldBe 2
         alloc.code shouldBe "new Bar(42)"
-        alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
         alloc.typeFullName shouldBe "Bar"
         alloc.argument.size shouldBe 0
 
@@ -371,7 +371,7 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
         init.methodViaCallOut.head.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
         init.signature shouldBe "void(int)"
         init.code shouldBe "new Bar(42)"
-        init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
 
         init.argument.size shouldBe 2
         val List(obj: Identifier, initArg1: Literal) = init.argument.l: @unchecked
@@ -411,7 +411,7 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
         alloc.order shouldBe 2
         alloc.argumentIndex shouldBe 2
         alloc.code shouldBe "new Bar(42)"
-        alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        alloc.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
         alloc.typeFullName shouldBe "Bar"
         alloc.argument.size shouldBe 0
 
@@ -420,7 +420,7 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
         init.methodViaCallOut.head.fullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
         init.signature shouldBe "void(int)"
         init.code shouldBe "new Bar(42)"
-        init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
 
         init.argument.size shouldBe 2
         val List(obj: Identifier, initArg1: Literal) = init.argument.l: @unchecked
@@ -447,7 +447,7 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
         val List(init: Call) = method.astChildren.isBlock.astChildren.l: @unchecked
         init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
         init.methodFullName shouldBe s"Bar.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
-        init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
         init.typeFullName shouldBe "void"
         init.signature shouldBe "void(int)"
 
@@ -475,7 +475,7 @@ class ConstructorInvocationTests extends JavaSrcCode2CpgFixture {
         val List(init: Call) = method.astChildren.isBlock.astChildren.l: @unchecked
         init.name shouldBe io.joern.x2cpg.Defines.ConstructorMethodName
         init.methodFullName shouldBe s"Foo.${io.joern.x2cpg.Defines.ConstructorMethodName}:void(int)"
-        init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH
+        init.dispatchType shouldBe DispatchTypes.STATIC_DISPATCH.name()
         init.typeFullName shouldBe "void"
         init.signature shouldBe "void(int)"
 

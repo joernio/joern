@@ -3,11 +3,11 @@ package io.joern.joerncli
 import better.files.Dsl.*
 import better.files.File
 import flatgraph.{Accessors, Edge, GNode}
-import flatgraph.formats.ExportResult
-import flatgraph.formats.dot.DotExporter
-import flatgraph.formats.graphml.GraphMLExporter
-import flatgraph.formats.graphson.GraphSONExporter
-import flatgraph.formats.neo4jcsv.Neo4jCsvExporter
+//import flatgraph.formats.ExportResult
+//import flatgraph.formats.dot.DotExporter
+//import flatgraph.formats.graphml.GraphMLExporter
+//import flatgraph.formats.graphson.GraphSONExporter
+//import flatgraph.formats.neo4jcsv.Neo4jCsvExporter
 import io.joern.dataflowengineoss.DefaultSemantics
 import io.joern.dataflowengineoss.layers.dataflows.*
 import io.joern.dataflowengineoss.semanticsloader.Semantics
@@ -103,17 +103,18 @@ object JoernExport {
     CpgBasedTool.addDataFlowOverlayIfNonExistent(cpg)
     val context = new LayerCreatorContext(cpg)
 
+    ???
     format match {
-      case Format.Dot if representation == Representation.All || representation == Representation.Cpg =>
-        exportWithOdbFormat(cpg, representation, outDir, DotExporter)
-      case Format.Dot =>
-        exportDot(representation, outDir, context)
-      case Format.Neo4jCsv =>
-        exportWithOdbFormat(cpg, representation, outDir, Neo4jCsvExporter)
-      case Format.Graphml =>
-        exportWithOdbFormat(cpg, representation, outDir, GraphMLExporter)
-      case Format.Graphson =>
-        exportWithOdbFormat(cpg, representation, outDir, GraphSONExporter)
+//      case Format.Dot if representation == Representation.All || representation == Representation.Cpg =>
+//        exportWithOdbFormat(cpg, representation, outDir, DotExporter)
+//      case Format.Dot =>
+//        exportDot(representation, outDir, context)
+//      case Format.Neo4jCsv =>
+//        exportWithOdbFormat(cpg, representation, outDir, Neo4jCsvExporter)
+//      case Format.Graphml =>
+//        exportWithOdbFormat(cpg, representation, outDir, GraphMLExporter)
+//      case Format.Graphson =>
+//        exportWithOdbFormat(cpg, representation, outDir, GraphSONExporter)
       case other =>
         throw new NotImplementedError(s"repr=$representation not yet supported for format=$format")
     }
@@ -133,100 +134,100 @@ object JoernExport {
     }
   }
 
-  private def exportWithOdbFormat(
-    cpg: Cpg,
-    repr: Representation.Value,
-    outDir: Path,
-    exporter: flatgraph.formats.Exporter
-  ): Unit = {
-    val ExportResult(nodeCount, edgeCount, _, additionalInfo) = repr match {
-      case Representation.All =>
-        exporter.runExport(cpg.graph, outDir)
-      case Representation.Cpg =>
-        if (cpg.graph.nodeCount(NodeTypes.METHOD) > 0) {
-          val windowsFilenameDeduplicationHelper = mutable.Set.empty[String]
-          splitByMethod(cpg).iterator
-            .map { case subGraph @ MethodSubGraph(methodName, methodFilename, nodes) =>
-              val relativeFilename = sanitizedFileName(
-                methodName,
-                methodFilename,
-                exporter.defaultFileExtension,
-                windowsFilenameDeduplicationHelper
-              )
-              val outFileName = outDir.resolve(relativeFilename)
-              exporter.runExport(cpg.graph.schema, nodes, subGraph.edges, outFileName)
-            }
-            .reduce(plus)
-        } else {
-          emptyExportResult
-        }
-      case other =>
-        throw new NotImplementedError(s"repr=$repr not yet supported for this format")
-    }
-
-    println(s"exported $nodeCount nodes, $edgeCount edges into $outDir")
-    additionalInfo.foreach(println)
-  }
-
-  /** for each method in the cpg: recursively traverse all AST edges to get the subgraph of nodes within this method add
-    * the method and this subgraph to the export add all edges between all of these nodes to the export
-    */
-  private def splitByMethod(cpg: Cpg): IterableOnce[MethodSubGraph] = {
-    cpg.method.map { method =>
-      MethodSubGraph(methodName = method.name, methodFilename = method.filename, nodes = method.ast.toSet)
-    }
-  }
-
-  /** @param windowsFilenameDeduplicationHelper
-    *   utility map to ensure we don't override output files for identical method names
-    */
-  private def sanitizedFileName(
-    methodName: String,
-    methodFilename: String,
-    fileExtension: String,
-    windowsFilenameDeduplicationHelper: mutable.Set[String]
-  ): String = {
-    val sanitizedMethodName = methodName.replaceAll("[^a-zA-Z0-9-_\\.]", "_")
-    val sanitizedFilename =
-      if (scala.util.Properties.isWin) {
-        // windows has some quirks in it's file system, e.g. we need to ensure paths aren't too long - so we're using a
-        // different strategy to sanitize windows file names: first occurrence of a given method uses the method name
-        // any methods with the same name afterwards get a `_` suffix
-        if (windowsFilenameDeduplicationHelper.contains(sanitizedMethodName)) {
-          sanitizedFileName(s"${methodName}_", methodFilename, fileExtension, windowsFilenameDeduplicationHelper)
-        } else {
-          windowsFilenameDeduplicationHelper.add(sanitizedMethodName)
-          sanitizedMethodName
-        }
-      } else { // non-windows
-        // handle leading `/` to ensure we're not writing outside of the output directory
-        val sanitizedPath =
-          if (methodFilename.startsWith("/")) s"_root_/$methodFilename"
-          else methodFilename
-        s"$sanitizedPath/$sanitizedMethodName"
-      }
-
-    s"$sanitizedFilename.$fileExtension"
-  }
-
-  private def plus(resultA: ExportResult, resultB: ExportResult): ExportResult = {
-    ExportResult(
-      nodeCount = resultA.nodeCount + resultB.nodeCount,
-      edgeCount = resultA.edgeCount + resultB.edgeCount,
-      files = resultA.files ++ resultB.files,
-      additionalInfo = resultA.additionalInfo
-    )
-  }
-
-  private def emptyExportResult = ExportResult(0, 0, Seq.empty, Option("Empty CPG"))
-
-  case class MethodSubGraph(methodName: String, methodFilename: String, nodes: Set[GNode]) {
-    def edges: Set[Edge] = {
-      for {
-        node <- nodes
-        edge <- Accessors.getEdgesOut(node)
-        if nodes.contains(edge.dst)
-      } yield edge
-    }
-  }
+//  private def exportWithOdbFormat(
+//    cpg: Cpg,
+//    repr: Representation.Value,
+//    outDir: Path,
+//    exporter: flatgraph.formats.Exporter
+//  ): Unit = {
+//    val ExportResult(nodeCount, edgeCount, _, additionalInfo) = repr match {
+//      case Representation.All =>
+//        exporter.runExport(cpg.graph, outDir)
+//      case Representation.Cpg =>
+//        if (cpg.graph.nodeCount(NodeTypes.METHOD) > 0) {
+//          val windowsFilenameDeduplicationHelper = mutable.Set.empty[String]
+//          splitByMethod(cpg).iterator
+//            .map { case subGraph @ MethodSubGraph(methodName, methodFilename, nodes) =>
+//              val relativeFilename = sanitizedFileName(
+//                methodName,
+//                methodFilename,
+//                exporter.defaultFileExtension,
+//                windowsFilenameDeduplicationHelper
+//              )
+//              val outFileName = outDir.resolve(relativeFilename)
+//              exporter.runExport(cpg.graph.schema, nodes, subGraph.edges, outFileName)
+//            }
+//            .reduce(plus)
+//        } else {
+//          emptyExportResult
+//        }
+//      case other =>
+//        throw new NotImplementedError(s"repr=$repr not yet supported for this format")
+//    }
+//
+//    println(s"exported $nodeCount nodes, $edgeCount edges into $outDir")
+//    additionalInfo.foreach(println)
+//  }
+//
+//  /** for each method in the cpg: recursively traverse all AST edges to get the subgraph of nodes within this method add
+//    * the method and this subgraph to the export add all edges between all of these nodes to the export
+//    */
+//  private def splitByMethod(cpg: Cpg): IterableOnce[MethodSubGraph] = {
+//    cpg.method.map { method =>
+//      MethodSubGraph(methodName = method.name, methodFilename = method.filename, nodes = method.ast.toSet)
+//    }
+//  }
+//
+//  /** @param windowsFilenameDeduplicationHelper
+//    *   utility map to ensure we don't override output files for identical method names
+//    */
+//  private def sanitizedFileName(
+//    methodName: String,
+//    methodFilename: String,
+//    fileExtension: String,
+//    windowsFilenameDeduplicationHelper: mutable.Set[String]
+//  ): String = {
+//    val sanitizedMethodName = methodName.replaceAll("[^a-zA-Z0-9-_\\.]", "_")
+//    val sanitizedFilename =
+//      if (scala.util.Properties.isWin) {
+//        // windows has some quirks in it's file system, e.g. we need to ensure paths aren't too long - so we're using a
+//        // different strategy to sanitize windows file names: first occurrence of a given method uses the method name
+//        // any methods with the same name afterwards get a `_` suffix
+//        if (windowsFilenameDeduplicationHelper.contains(sanitizedMethodName)) {
+//          sanitizedFileName(s"${methodName}_", methodFilename, fileExtension, windowsFilenameDeduplicationHelper)
+//        } else {
+//          windowsFilenameDeduplicationHelper.add(sanitizedMethodName)
+//          sanitizedMethodName
+//        }
+//      } else { // non-windows
+//        // handle leading `/` to ensure we're not writing outside of the output directory
+//        val sanitizedPath =
+//          if (methodFilename.startsWith("/")) s"_root_/$methodFilename"
+//          else methodFilename
+//        s"$sanitizedPath/$sanitizedMethodName"
+//      }
+//
+//    s"$sanitizedFilename.$fileExtension"
+//  }
+//
+//  private def plus(resultA: ExportResult, resultB: ExportResult): ExportResult = {
+//    ExportResult(
+//      nodeCount = resultA.nodeCount + resultB.nodeCount,
+//      edgeCount = resultA.edgeCount + resultB.edgeCount,
+//      files = resultA.files ++ resultB.files,
+//      additionalInfo = resultA.additionalInfo
+//    )
+//  }
+//
+//  private def emptyExportResult = ExportResult(0, 0, Seq.empty, Option("Empty CPG"))
+//
+//  case class MethodSubGraph(methodName: String, methodFilename: String, nodes: Set[GNode]) {
+//    def edges: Set[Edge] = {
+//      for {
+//        node <- nodes
+//        edge <- Accessors.getEdgesOut(node)
+//        if nodes.contains(edge.dst)
+//      } yield edge
+//    }
+//  }
 }

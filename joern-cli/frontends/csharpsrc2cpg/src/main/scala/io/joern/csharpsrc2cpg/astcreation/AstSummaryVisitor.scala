@@ -1,11 +1,12 @@
 package io.joern.csharpsrc2cpg.astcreation
 
+import flatgraph.DiffGraphApplier
 import io.joern.csharpsrc2cpg.Constants
 import io.joern.csharpsrc2cpg.datastructures.{CSharpField, CSharpMethod, CSharpProgramSummary, CSharpType}
 import io.joern.csharpsrc2cpg.parser.ParserKeys
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{Cpg, DiffGraphBuilder, EdgeTypes}
+import io.shiftleft.codepropertygraph.generated.{Cpg, EdgeTypes}
 import io.shiftleft.semanticcpg.language.*
 import overflowdb.{BatchedUpdate, Config}
 
@@ -21,19 +22,19 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
     this.parseLevel = AstParseLevel.SIGNATURES
     val fileNode        = NewFile().name(relativeFileName)
     val compilationUnit = createDotNetNodeInfo(parserResult.json(ParserKeys.AstRoot))
-    Using.resource(Cpg.withConfig(Config.withoutOverflow())) { cpg =>
+    Using.resource(Cpg.empty) { cpg =>
       // Build and store compilation unit AST
       val ast = Ast(fileNode).withChildren(astForCompilationUnit(compilationUnit))
       Ast.storeInDiffGraph(ast, diffGraph)
-      BatchedUpdate.applyDiff(cpg.graph, diffGraph)
+      DiffGraphApplier.applyDiff(cpg.graph, diffGraph)
 
       // Simulate AST Linker for global namespace
       val globalNode      = NewNamespaceBlock().fullName(Constants.Global).name(Constants.Global)
-      val globalDiffGraph = new DiffGraphBuilder
+      val globalDiffGraph = Cpg.newDiffGraphBuilder
       cpg.typeDecl
         .where(_.astParentFullNameExact(Constants.Global))
         .foreach(globalDiffGraph.addEdge(globalNode, _, EdgeTypes.AST))
-      BatchedUpdate.applyDiff(cpg.graph, globalDiffGraph)
+      DiffGraphApplier.applyDiff(cpg.graph, globalDiffGraph)
 
       // Summarize findings
       summarize(cpg)

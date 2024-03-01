@@ -173,9 +173,17 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
    * foo(<args>, <method_ref>)
    * ```
    */
-  protected def astsForCallWithBlock[C <: RubyCall](node: RubyNode with RubyCallWithBlock[C]): Seq[Ast] = {
-    val Seq(methodDecl, typeDecl, _, methodRef) = astForDoBlock(node.block): @unchecked
-    val methodRefDummyNode                      = methodRef.root.map(DummyNode(_)(node.span)).toList
+  private def astsForCallWithBlock[C <: RubyCall](node: RubyNode with RubyCallWithBlock[C]): Seq[Ast] = {
+    // Create closure structures: [MethodDecl, TypeRef, MethodRef]
+    val block              = node.block
+    val methodName         = nextClosureName()
+    val methodAstsWithRefs = astForMethodDeclaration(block.toMethodDeclaration(methodName), withRefsAndTypes = true)
+    val methodRefArgs =
+      methodAstsWithRefs.flatMap(_.nodes).collect { case m: NewMethodRef =>
+        DummyNode(m.copy())(node.span.spanStart(m.code))
+      }
+    // Isolate method and type declaration AST (all we need here)
+    val declarationAsts = methodAstsWithRefs.filter(_.root.exists(_.isInstanceOf[NewMethod | NewTypeDecl]))
 
     // Create call with argument referencing the MethodRef
     val callWithLambdaArg = node.withoutBlock match {

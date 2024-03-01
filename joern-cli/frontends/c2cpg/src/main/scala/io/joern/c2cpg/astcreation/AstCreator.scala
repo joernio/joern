@@ -95,21 +95,21 @@ class AstCreator(
 
   override protected def code(node: IASTNode): String = shortenCode(nodeSignature(node))
 
-  override protected def line(node: IASTNode): Option[Integer] = {
+  override protected def line(node: IASTNode): Option[Int] = {
     nullSafeFileLocation(node).map(_.getStartingLineNumber)
   }
 
-  override protected def lineEnd(node: IASTNode): Option[Integer] = {
+  override protected def lineEnd(node: IASTNode): Option[Int] = {
     nullSafeFileLocation(node).map(_.getEndingLineNumber)
   }
 
-  protected def column(node: IASTNode): Option[Integer] = {
+  protected def column(node: IASTNode): Option[Int] = {
     nodeOffsets(node).map { case (startOffset, _) =>
       offsetToColumn(node, startOffset)
     }
   }
 
-  protected def columnEnd(node: IASTNode): Option[Integer] = {
+  protected def columnEnd(node: IASTNode): Option[Int] = {
     nodeOffsets(node).map { case (_, endOffset) =>
       offsetToColumn(node, endOffset - 1)
     }

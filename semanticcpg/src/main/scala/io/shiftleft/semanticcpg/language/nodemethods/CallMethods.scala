@@ -44,6 +44,6 @@ class CallMethods(val node: Call) extends AnyVal with NodeExtension with HasLoca
       .astChildren
       .isExpression
 
-  override def location: NewLocation = {
+  override def location: NewLocation =
     LocationCreator(node, node.code, node.label, node.lineNumber, node.method)
 }
