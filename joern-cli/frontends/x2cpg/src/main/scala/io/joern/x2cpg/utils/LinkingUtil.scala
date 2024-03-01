@@ -34,8 +34,12 @@ trait LinkingUtil {
   def nodesWithFullName(cpg: Cpg, x: String): mutable.Seq[NodeRef[_ <: NodeDb]] =
     cpg.graph.indexManager.lookup(PropertyNames.FULL_NAME, x).asScala
 
-  protected def getBatchSize(totalItems: Int): Int =
-    Math.max(totalItems / ConcurrentTaskUtil.MAX_POOL_SIZE, MAX_BATCH_SIZE)
+  protected def getBatchSize(totalItems: Int): Int = {
+    val batchSize =
+      if totalItems > MAX_BATCH_SIZE then totalItems / ConcurrentTaskUtil.MAX_POOL_SIZE
+      else MAX_BATCH_SIZE
+    Math.min(batchSize, MAX_BATCH_SIZE)
+  }
 
   /** For all nodes `n` with a label in `srcLabels`, determine the value of `n.\$dstFullNameKey`, use that to lookup the
     * destination node in `dstNodeMap`, and create an edge of type `edgeType` between `n` and the destination node.
