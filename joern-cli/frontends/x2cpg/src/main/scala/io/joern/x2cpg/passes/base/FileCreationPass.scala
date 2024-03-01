@@ -1,12 +1,12 @@
 package io.joern.x2cpg.passes.base
 
+import io.joern.x2cpg.utils.LinkingUtil
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, StoredNode}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, PropertyNames}
 import io.shiftleft.passes.CpgPass
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.semanticcpg.language.*
 import io.shiftleft.semanticcpg.language.types.structure.FileTraversal
-import io.joern.x2cpg.utils.LinkingUtil
 
 import scala.collection.mutable
 
@@ -14,6 +14,7 @@ import scala.collection.mutable
   * SOURCE_FILE edges.
   */
 class FileCreationPass(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {
+  private val srcLabels = List(NodeTypes.NAMESPACE_BLOCK, NodeTypes.TYPE_DECL, NodeTypes.METHOD, NodeTypes.COMMENT)
 
   override def run(dstGraph: DiffGraphBuilder): Unit = {
     val originalFileNameToNode = mutable.Map.empty[String, StoredNode]
@@ -41,7 +42,8 @@ class FileCreationPass(cpg: Cpg) extends CpgPass(cpg) with LinkingUtil {
     // Create SOURCE_FILE edges from nodes of various types to FILE
     linkToSingle(
       cpg,
-      srcLabels = List(NodeTypes.NAMESPACE_BLOCK, NodeTypes.TYPE_DECL, NodeTypes.METHOD, NodeTypes.COMMENT),
+      srcNodes = cpg.graph.nodes(srcLabels: _*).toList,
+      srcLabels = srcLabels,
       dstNodeLabel = NodeTypes.FILE,
       edgeType = EdgeTypes.SOURCE_FILE,
       dstNodeMap = { x =>

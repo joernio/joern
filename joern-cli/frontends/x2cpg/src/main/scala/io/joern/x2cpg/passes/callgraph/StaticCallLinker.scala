@@ -1,64 +1,40 @@
 package io.joern.x2cpg.passes.callgraph
 
+import io.joern.x2cpg.utils.LinkingUtil
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes._
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, EdgeTypes}
-import io.shiftleft.passes.CpgPass
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.passes.ForkJoinParallelCpgPass
+import io.shiftleft.semanticcpg.language.*
 import org.slf4j.{Logger, LoggerFactory}
 
-import scala.collection.mutable
+class StaticCallLinker(cpg: Cpg) extends ForkJoinParallelCpgPass[Seq[Call]](cpg) with LinkingUtil {
 
-class StaticCallLinker(cpg: Cpg) extends CpgPass(cpg) {
+  private val logger: Logger = LoggerFactory.getLogger(classOf[StaticCallLinker])
 
-  import StaticCallLinker._
-  private val methodFullNameToNode = mutable.Map.empty[String, List[Method]]
+  override def generateParts(): Array[Seq[Call]] = {
+    val calls = cpg.call.l
+    calls.grouped(getBatchSize(calls.size)).toArray
+  }
 
-  override def run(dstGraph: DiffGraphBuilder): Unit = {
-
-    cpg.method.foreach { method =>
-      methodFullNameToNode.updateWith(method.fullName) {
-        case Some(l) => Some(method :: l)
-        case None    => Some(List(method))
-      }
-    }
-
-    cpg.call.foreach { call =>
+  override def runOnPart(builder: DiffGraphBuilder, calls: Seq[Call]): Unit = {
+    calls.foreach { call =>
       try {
-        linkCall(call, dstGraph)
+        call.dispatchType match {
+          case DispatchTypes.STATIC_DISPATCH | DispatchTypes.INLINED =>
+            val resolvedMethods = cpg.method.fullNameExact(call.methodFullName).l
+            resolvedMethods.foreach(dst => builder.addEdge(call, dst, EdgeTypes.CALL))
+            val size = resolvedMethods.size
+            // Add the debug logs with number of METHOD nodes found for given method full name
+            if size > 1 then logger.debug(s"Total $size METHOD nodes found for -> ${call.methodFullName}")
+          case DispatchTypes.DYNAMIC_DISPATCH =>
+          // Do nothing
+          case _ => logger.warn(s"Unknown dispatch type on dynamic CALL ${call.code}")
+        }
       } catch {
         case exception: Exception =>
-          throw new RuntimeException(exception)
+          logger.error(s"Exception in StaticCallLinker: ", exception)
       }
     }
   }
-
-  private def linkCall(call: Call, dstGraph: DiffGraphBuilder): Unit = {
-    call.dispatchType match {
-      case DispatchTypes.STATIC_DISPATCH | DispatchTypes.INLINED =>
-        linkStaticCall(call, dstGraph)
-      case DispatchTypes.DYNAMIC_DISPATCH =>
-      // Do nothing
-      case _ => logger.warn(s"Unknown dispatch type on dynamic CALL ${call.code}")
-    }
-  }
-
-  private def linkStaticCall(call: Call, dstGraph: DiffGraphBuilder): Unit = {
-    val resolvedMethodOption = methodFullNameToNode.get(call.methodFullName)
-    if (resolvedMethodOption.isDefined) {
-      resolvedMethodOption.get.foreach { dst =>
-        dstGraph.addEdge(call, dst, EdgeTypes.CALL)
-      }
-    } else {
-      logger.info(
-        s"Unable to link static CALL with METHOD_FULL_NAME ${call.methodFullName}, NAME ${call.name}, " +
-          s"SIGNATURE ${call.signature}, CODE ${call.code}"
-      )
-    }
-  }
-
-}
-
-object StaticCallLinker {
-  private val logger: Logger = LoggerFactory.getLogger(classOf[StaticCallLinker])
 }

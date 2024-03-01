@@ -1,28 +1,21 @@
 package io.joern.x2cpg.utils
 
 import io.joern.x2cpg.passes.frontend.Dereference
-import io.shiftleft.codepropertygraph.generated.PropertyNames
-import io.shiftleft.codepropertygraph.generated.nodes.StoredNode
-import io.shiftleft.codepropertygraph.generated.nodes.TypeDecl
-import io.shiftleft.codepropertygraph.generated.Properties
-import io.shiftleft.codepropertygraph.generated.nodes.Method
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.nodes.NamespaceBlock
-import io.shiftleft.codepropertygraph.generated.nodes.Type
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-import overflowdb.NodeDb
-import overflowdb.PropertyKey
-import overflowdb.NodeRef
-import overflowdb.traversal._
-import overflowdb.traversal.ChainedImplicitsTemp._
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.codepropertygraph.generated.{Properties, PropertyNames}
+import org.slf4j.{Logger, LoggerFactory}
+import overflowdb.traversal.*
+import overflowdb.traversal.ChainedImplicitsTemp.*
+import overflowdb.{Node, NodeDb, NodeRef, PropertyKey}
 
 import scala.collection.mutable
-import scala.jdk.CollectionConverters._
+import scala.jdk.CollectionConverters.*
 
 trait LinkingUtil {
 
   import overflowdb.BatchedUpdate.DiffGraphBuilder
+  private val MAX_BATCH_SIZE = 100
 
   val logger: Logger = LoggerFactory.getLogger(classOf[LinkingUtil])
 
@@ -41,11 +34,20 @@ trait LinkingUtil {
   def nodesWithFullName(cpg: Cpg, x: String): mutable.Seq[NodeRef[_ <: NodeDb]] =
     cpg.graph.indexManager.lookup(PropertyNames.FULL_NAME, x).asScala
 
+  protected def getBatchSize(totalItems: Int): Int = {
+    val batchSize =
+      if totalItems > MAX_BATCH_SIZE then totalItems / ConcurrentTaskUtil.MAX_POOL_SIZE
+      else MAX_BATCH_SIZE
+    Math.min(batchSize, MAX_BATCH_SIZE)
+  }
+
   /** For all nodes `n` with a label in `srcLabels`, determine the value of `n.\$dstFullNameKey`, use that to lookup the
     * destination node in `dstNodeMap`, and create an edge of type `edgeType` between `n` and the destination node.
     */
-  def linkToSingle(
+
+  protected def linkToSingle(
     cpg: Cpg,
+    srcNodes: List[Node],
     srcLabels: List[String],
     dstNodeLabel: String,
     edgeType: String,
@@ -54,9 +56,9 @@ trait LinkingUtil {
     dstGraph: DiffGraphBuilder,
     dstNotExistsHandler: Option[(StoredNode, String) => Unit]
   ): Unit = {
-    var loggedDeprecationWarning = false
     val dereference              = Dereference(cpg)
-    cpg.graph.nodes(srcLabels: _*).foreach { srcNode =>
+    var loggedDeprecationWarning = false
+    srcNodes.foreach { srcNode =>
       // If the source node does not have any outgoing edges of this type
       // This check is just required for backward compatibility
       if (srcNode.outE(edgeType).isEmpty) {
@@ -171,5 +173,4 @@ trait LinkingUtil {
         s"dstNodeType=$dstNodeType, dstNodeId=$dstNodeId"
     )
   }
-
 }
