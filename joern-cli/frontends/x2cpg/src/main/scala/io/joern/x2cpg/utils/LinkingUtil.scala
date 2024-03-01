@@ -9,15 +9,13 @@ import overflowdb.traversal.*
 import overflowdb.traversal.ChainedImplicitsTemp.*
 import overflowdb.{Node, NodeDb, NodeRef, PropertyKey}
 
-import java.util.concurrent.Callable
 import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
-import scala.util.{Failure, Success}
 
 trait LinkingUtil {
 
   import overflowdb.BatchedUpdate.DiffGraphBuilder
-  protected val BATCH_SIZE = 100
+  private val MAX_BATCH_SIZE = 100
 
   val logger: Logger = LoggerFactory.getLogger(classOf[LinkingUtil])
 
@@ -36,11 +34,14 @@ trait LinkingUtil {
   def nodesWithFullName(cpg: Cpg, x: String): mutable.Seq[NodeRef[_ <: NodeDb]] =
     cpg.graph.indexManager.lookup(PropertyNames.FULL_NAME, x).asScala
 
+  protected def getBatchSize(totalItems: Int): Int =
+    Math.max(totalItems / ConcurrentTaskUtil.MAX_POOL_SIZE, MAX_BATCH_SIZE)
+
   /** For all nodes `n` with a label in `srcLabels`, determine the value of `n.\$dstFullNameKey`, use that to lookup the
     * destination node in `dstNodeMap`, and create an edge of type `edgeType` between `n` and the destination node.
     */
 
-  def linkToSingle(
+  protected def linkToSingle(
     cpg: Cpg,
     srcNodes: List[Node],
     srcLabels: List[String],

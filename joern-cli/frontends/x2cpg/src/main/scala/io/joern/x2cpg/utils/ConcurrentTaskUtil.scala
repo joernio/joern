@@ -11,7 +11,7 @@ import scala.util.Try
   */
 object ConcurrentTaskUtil {
 
-  private val MAX_POOL_SIZE = Runtime.getRuntime.availableProcessors()
+  val MAX_POOL_SIZE = Runtime.getRuntime.availableProcessors()
 
   /** Uses a thread pool with a limited number of active threads executing a task at any given point. This is effective
     * when tasks may require large amounts of memory, or single tasks are too short lived.
