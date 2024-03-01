@@ -1,6 +1,6 @@
 package io.joern.pysrc2cpg
 
-import io.joern.pysrc2cpg.PythonAstVisitor.{builtinPrefix, metaClassSuffix}
+import PythonAstVisitor.{builtinPrefix, logger, metaClassSuffix, noLineAndColumn}
 import io.joern.pysrc2cpg.memop.*
 import io.joern.pythonparser.ast
 import io.joern.x2cpg.{AstCreatorBase, ValidationMode}
@@ -10,7 +10,6 @@ import org.slf4j.LoggerFactory
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.mutable
-import PythonAstVisitor.logger
 
 object MethodParameters {
   def empty(): MethodParameters = {
@@ -1321,8 +1320,12 @@ class PythonAstVisitor(
       case node: ast.Name           => convert(node)
       case node: ast.List           => convert(node)
       case node: ast.Tuple          => convert(node)
-      case node: ast.Slice          => unhandled(node)
-      case node: ast.StringExpList  => convert(node)
+      case node: ast.Slice          =>
+        // Our expectation is that ast.Slice only appears as part of ast.Subscript
+        // and thus we should never get here becauase convert(ast.Subscript)
+        // directly handles the case of a nested ast.Slice.
+        unhandled(node)
+      case node: ast.StringExpList => convert(node)
     }
   }
 
@@ -1887,7 +1890,24 @@ class PythonAstVisitor(
   }
 
   def convert(subscript: ast.Subscript): NewNode = {
-    createIndexAccess(convert(subscript.value), convert(subscript.slice), lineAndColOf(subscript))
+    subscript.slice match {
+      case slice: ast.Slice =>
+        val value = convert(subscript.value)
+        val lower = slice.lower.map(convert).getOrElse(nodeBuilder.literalNode("None", None, noLineAndColumn))
+        val upper = slice.upper.map(convert).getOrElse(nodeBuilder.literalNode("None", None, noLineAndColumn))
+        val step  = slice.step.map(convert).getOrElse(nodeBuilder.literalNode("None", None, noLineAndColumn))
+
+        val code = nodeToCode.getCode(subscript)
+        val callNode =
+          nodeBuilder.callNode(code, "<operator>.slice", DispatchTypes.STATIC_DISPATCH, lineAndColOf(slice))
+
+        val args = value :: lower :: upper :: step :: Nil
+        addAstChildrenAsArguments(callNode, 1, args)
+
+        callNode
+      case _ =>
+        createIndexAccess(convert(subscript.value), convert(subscript.slice), lineAndColOf(subscript))
+    }
   }
 
   def convert(starred: ast.Starred): NewNode = {
@@ -1952,7 +1972,19 @@ class PythonAstVisitor(
     callNode
   }
 
-  def convert(slice: ast.Slice): NewNode = ???
+  def convert(slice: ast.Slice): NewNode = {
+    val args = mutable.ArrayBuffer.empty[NewNode]
+    slice.lower.foreach(expr => args.append(convert(expr)))
+    slice.upper.foreach(expr => args.append(convert(expr)))
+    slice.step.foreach(expr => args.append(convert(expr)))
+
+    val code     = nodeToCode.getCode(slice)
+    val callNode = nodeBuilder.callNode(code, "<operator>.slice", DispatchTypes.STATIC_DISPATCH, lineAndColOf(slice))
+
+    addAstChildrenAsArguments(callNode, 1, args)
+
+    callNode
+  }
 
   def convert(stringExpList: ast.StringExpList): NewNode = {
     val stringNodes = stringExpList.elts.map(convert)
@@ -2058,6 +2090,8 @@ object PythonAstVisitor {
   val builtinPrefix   = "__builtin."
   val typingPrefix    = "typing."
   val metaClassSuffix = "<meta>"
+
+  val noLineAndColumn = LineAndColumn(-1, -1, -1, -1, -1, -1)
 
   // This list contains all functions from https://docs.python.org/3/library/functions.html#built-in-funcs
   // for python version 3.9.5.
