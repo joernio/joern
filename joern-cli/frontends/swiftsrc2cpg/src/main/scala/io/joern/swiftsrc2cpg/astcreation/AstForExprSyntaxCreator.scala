@@ -65,7 +65,10 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     astForNode(node.literal)
   }
 
-  private def astForBorrowExprSyntax(node: BorrowExprSyntax): Ast                     = notHandledYet(node)
+  private def astForBorrowExprSyntax(node: BorrowExprSyntax): Ast = {
+    astForNodeWithFunctionReference(node.expression)
+  }
+
   private def astForCanImportExprSyntax(node: CanImportExprSyntax): Ast               = notHandledYet(node)
   private def astForCanImportVersionInfoSyntax(node: CanImportVersionInfoSyntax): Ast = notHandledYet(node)
 
@@ -73,8 +76,13 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     astForNodeWithFunctionReference(node)
   }
 
-  private def astForConsumeExprSyntax(node: ConsumeExprSyntax): Ast = notHandledYet(node)
-  private def astForCopyExprSyntax(node: CopyExprSyntax): Ast       = notHandledYet(node)
+  private def astForConsumeExprSyntax(node: ConsumeExprSyntax): Ast = {
+    astForNodeWithFunctionReference(node.expression)
+  }
+
+  private def astForCopyExprSyntax(node: CopyExprSyntax): Ast = {
+    astForNodeWithFunctionReference(node.expression)
+  }
 
   private def astForDeclReferenceExprSyntax(node: DeclReferenceExprSyntax): Ast = {
     val name      = code(node)
@@ -108,7 +116,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForForceUnwrapExprSyntax(node: ForceUnwrapExprSyntax): Ast = {
-    astForNode(node.expression)
+    astForNodeWithFunctionReference(node.expression)
   }
 
   private def createBuiltinStaticCall(callExpr: FunctionCallExprSyntax, callee: ExprSyntax, fullName: String): Ast = {
@@ -220,7 +228,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   }
 
   private def astForInOutExprSyntax(node: InOutExprSyntax): Ast = {
-    astForNode(node.expression)
+    astForNodeWithFunctionReference(node.expression)
   }
 
   private def astForInfixOperatorExprSyntax(node: InfixOperatorExprSyntax): Ast = {
@@ -241,8 +249,12 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case "||="                 => Operators.assignmentOr
       case "||"                  => Operators.logicalOr
       case "^="                  => Operators.assignmentXor
+      case "&<<"                 => Operators.shiftLeft
       case "<<"                  => Operators.shiftLeft
+      case "&>>="                => Operators.assignmentArithmeticShiftRight
+      case "&>>"                 => Operators.arithmeticShiftRight
       case ">>"                  => Operators.arithmeticShiftRight
+      case "&<<="                => Operators.assignmentShiftLeft
       case "<<="                 => Operators.assignmentShiftLeft
       case ">>="                 => Operators.assignmentArithmeticShiftRight
       case ">>>="                => Operators.assignmentLogicalShiftRight
@@ -272,6 +284,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case "!"                   => Operators.logicalNot
       case "^"                   => Operators.xor
       case "??"                  => Operators.elvis
+      case "~="                  => Operators.in
       case _ =>
         notHandledYet(node.operator)
         "<operator>.unknown"
@@ -426,14 +439,17 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
   private def astForPrefixOperatorExprSyntax(node: PrefixOperatorExprSyntax): Ast = {
     val operatorMethod = code(node.operator) match {
-      case "-"  => Operators.preDecrement
-      case "+"  => Operators.preIncrement
-      case "~"  => Operators.not
-      case "!"  => Operators.logicalNot
-      case "<"  => Operators.lessThan
-      case ">"  => Operators.greaterThan
-      case "==" => Operators.equals
-      case "%"  => Operators.modulo
+      case "-"   => Operators.preDecrement
+      case "+"   => Operators.preIncrement
+      case "~"   => Operators.not
+      case "!"   => Operators.logicalNot
+      case "..<" => Operators.lessThan
+      case "<"   => Operators.lessThan
+      case "..>" => Operators.greaterThan
+      case ">"   => Operators.greaterThan
+      case "=="  => Operators.equals
+      case "%"   => Operators.modulo
+      case "..." => "<operator>.splat"
       case _ =>
         notHandledYet(node.operator)
         "<operator>.unknown"
@@ -443,9 +459,15 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     callAst(unaryCall, List(expressionAst))
   }
 
-  private def astForRegexLiteralExprSyntax(node: RegexLiteralExprSyntax): Ast               = notHandledYet(node)
-  private def astForSequenceExprSyntax(node: SequenceExprSyntax): Ast                       = notHandledYet(node)
-  private def astForSimpleStringLiteralExprSyntax(node: SimpleStringLiteralExprSyntax): Ast = notHandledYet(node)
+  private def astForRegexLiteralExprSyntax(node: RegexLiteralExprSyntax): Ast = notHandledYet(node)
+
+  private def astForSequenceExprSyntax(node: SequenceExprSyntax): Ast = {
+    astForNode(node.elements)
+  }
+
+  private def astForSimpleStringLiteralExprSyntax(node: SimpleStringLiteralExprSyntax): Ast = {
+    astForNode(node.segments)
+  }
 
   private def astForStringLiteralExprSyntax(node: StringLiteralExprSyntax): Ast = {
     astForNode(node.segments)
@@ -566,7 +588,12 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     }
   }
 
-  private def astForTypeExprSyntax(node: TypeExprSyntax): Ast                           = notHandledYet(node)
+  private def astForTypeExprSyntax(node: TypeExprSyntax): Ast = {
+    val nodeCode = code(node)
+    registerType(nodeCode)
+    Ast(identifierNode(node, nodeCode, dynamicTypeHints = Seq(nodeCode)))
+  }
+
   private def astForUnresolvedAsExprSyntax(node: UnresolvedAsExprSyntax): Ast           = notHandledYet(node)
   private def astForUnresolvedIsExprSyntax(node: UnresolvedIsExprSyntax): Ast           = notHandledYet(node)
   private def astForUnresolvedTernaryExprSyntax(node: UnresolvedTernaryExprSyntax): Ast = notHandledYet(node)

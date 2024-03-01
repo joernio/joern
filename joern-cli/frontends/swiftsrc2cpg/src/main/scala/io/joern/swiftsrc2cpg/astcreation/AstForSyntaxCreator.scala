@@ -75,8 +75,9 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForAvailabilityLabeledArgumentSyntax(node: AvailabilityLabeledArgumentSyntax): Ast = notHandledYet(
     node
   )
-  private def astForBackDeployedAttributeArgumentsSyntax(node: BackDeployedAttributeArgumentsSyntax): Ast =
-    notHandledYet(node)
+  private def astForBackDeployedAttributeArgumentsSyntax(node: BackDeployedAttributeArgumentsSyntax): Ast = {
+    Ast(literalNode(node, code(node), Option(Defines.String)))
+  }
 
   private def astForCatchClauseSyntax(node: CatchClauseSyntax): Ast = {
     astForListSyntaxChildren(node, List(node.catchItems, node.body))
@@ -166,9 +167,11 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForDeinitializerEffectSpecifiersSyntax(node: DeinitializerEffectSpecifiersSyntax): Ast = notHandledYet(
     node
   )
-  private def astForDerivativeAttributeArgumentsSyntax(node: DerivativeAttributeArgumentsSyntax): Ast = notHandledYet(
-    node
-  )
+
+  private def astForDerivativeAttributeArgumentsSyntax(node: DerivativeAttributeArgumentsSyntax): Ast = {
+    Ast(literalNode(node, code(node), Option(Defines.String)))
+  }
+
   private def astForDesignatedTypeSyntax(node: DesignatedTypeSyntax): Ast = notHandledYet(node)
 
   private def astForDictionaryElementSyntax(node: DictionaryElementSyntax): Ast = {
@@ -183,8 +186,11 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForDifferentiabilityWithRespectToArgumentSyntax(
     node: DifferentiabilityWithRespectToArgumentSyntax
   ): Ast = notHandledYet(node)
-  private def astForDifferentiableAttributeArgumentsSyntax(node: DifferentiableAttributeArgumentsSyntax): Ast =
-    notHandledYet(node)
+
+  private def astForDifferentiableAttributeArgumentsSyntax(node: DifferentiableAttributeArgumentsSyntax): Ast = {
+    Ast(literalNode(node, code(node), Option(Defines.String)))
+  }
+
   private def astForDocumentationAttributeArgumentSyntax(node: DocumentationAttributeArgumentSyntax): Ast =
     notHandledYet(node)
   private def astForDynamicReplacementAttributeArgumentsSyntax(node: DynamicReplacementAttributeArgumentsSyntax): Ast =
@@ -231,9 +237,11 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForGenericRequirementSyntax(node: GenericRequirementSyntax): Ast         = notHandledYet(node)
   private def astForGenericWhereClauseSyntax(node: GenericWhereClauseSyntax): Ast         = notHandledYet(node)
   private def astForIfConfigClauseSyntax(node: IfConfigClauseSyntax): Ast                 = notHandledYet(node)
-  private def astForImplementsAttributeArgumentsSyntax(node: ImplementsAttributeArgumentsSyntax): Ast = notHandledYet(
-    node
-  )
+
+  private def astForImplementsAttributeArgumentsSyntax(node: ImplementsAttributeArgumentsSyntax): Ast = {
+    Ast(literalNode(node, code(node), Option(Defines.String)))
+  }
+
   private def astForImportPathComponentSyntax(node: ImportPathComponentSyntax): Ast = notHandledYet(node)
   private def astForInheritanceClauseSyntax(node: InheritanceClauseSyntax): Ast     = notHandledYet(node)
   private def astForInheritedTypeSyntax(node: InheritedTypeSyntax): Ast             = notHandledYet(node)
@@ -370,9 +378,13 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForTypeAnnotationSyntax(node: TypeAnnotationSyntax): Ast               = notHandledYet(node)
   private def astForTypeEffectSpecifiersSyntax(node: TypeEffectSpecifiersSyntax): Ast   = notHandledYet(node)
   private def astForTypeInitializerClauseSyntax(node: TypeInitializerClauseSyntax): Ast = notHandledYet(node)
+
   private def astForUnavailableFromAsyncAttributeArgumentsSyntax(
     node: UnavailableFromAsyncAttributeArgumentsSyntax
-  ): Ast = notHandledYet(node)
+  ): Ast = {
+    Ast(literalNode(node, code(node.message), Option(Defines.String)))
+  }
+
   private def astForUnderscorePrivateAttributeArgumentsSyntax(node: UnderscorePrivateAttributeArgumentsSyntax): Ast =
     notHandledYet(node)
   private def astForVersionComponentSyntax(node: VersionComponentSyntax): Ast = notHandledYet(node)
