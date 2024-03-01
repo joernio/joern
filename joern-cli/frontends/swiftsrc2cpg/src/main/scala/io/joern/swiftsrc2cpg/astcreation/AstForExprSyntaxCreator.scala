@@ -254,7 +254,7 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case "&>>="                => Operators.assignmentArithmeticShiftRight
       case "&>>"                 => Operators.arithmeticShiftRight
       case ">>"                  => Operators.arithmeticShiftRight
-      case "&<<="                => "<operators>.assignmentArithmeticShiftLeft"
+      case "&<<="                => Operators.assignmentShiftLeft
       case "<<="                 => Operators.assignmentShiftLeft
       case ">>="                 => Operators.assignmentArithmeticShiftRight
       case ">>>="                => Operators.assignmentLogicalShiftRight
