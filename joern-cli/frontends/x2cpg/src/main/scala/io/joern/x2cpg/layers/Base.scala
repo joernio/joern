@@ -20,8 +20,8 @@ object Base {
     new MethodDecoratorPass(cpg),
     new AstLinkerPass(cpg),
     new ContainsEdgePass(cpg),
-    new TypeUsagePassOne(cpg),
-    new TypeUsagePassTwo(cpg)
+    new TypeRefPass(cpg),
+    new TypeEvalPass(cpg)
   )
 
 }

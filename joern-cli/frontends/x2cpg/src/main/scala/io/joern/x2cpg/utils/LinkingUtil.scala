@@ -17,7 +17,7 @@ import scala.util.{Failure, Success}
 trait LinkingUtil {
 
   import overflowdb.BatchedUpdate.DiffGraphBuilder
-  val BATCH_SIZE = 100
+  protected val BATCH_SIZE = 100
 
   val logger: Logger = LoggerFactory.getLogger(classOf[LinkingUtil])
 
@@ -36,7 +36,11 @@ trait LinkingUtil {
   def nodesWithFullName(cpg: Cpg, x: String): mutable.Seq[NodeRef[_ <: NodeDb]] =
     cpg.graph.indexManager.lookup(PropertyNames.FULL_NAME, x).asScala
 
-  def newLinkToSingle(
+  /** For all nodes `n` with a label in `srcLabels`, determine the value of `n.\$dstFullNameKey`, use that to lookup the
+    * destination node in `dstNodeMap`, and create an edge of type `edgeType` between `n` and the destination node.
+    */
+
+  def linkToSingle(
     cpg: Cpg,
     srcNodes: List[Node],
     srcLabels: List[String],
@@ -94,32 +98,6 @@ trait LinkingUtil {
         }
       }
     }
-  }
-
-  /** For all nodes `n` with a label in `srcLabels`, determine the value of `n.\$dstFullNameKey`, use that to lookup the
-    * destination node in `dstNodeMap`, and create an edge of type `edgeType` between `n` and the destination node.
-    */
-  def linkToSingle(
-    cpg: Cpg,
-    srcLabels: List[String],
-    dstNodeLabel: String,
-    edgeType: String,
-    dstNodeMap: String => Option[StoredNode],
-    dstFullNameKey: String,
-    dstGraph: DiffGraphBuilder,
-    dstNotExistsHandler: Option[(StoredNode, String) => Unit]
-  ): Unit = {
-    newLinkToSingle(
-      cpg = cpg,
-      srcNodes = cpg.graph.nodes(srcLabels: _*).toList,
-      srcLabels = srcLabels,
-      dstNodeLabel = dstNodeLabel,
-      edgeType = edgeType,
-      dstNodeMap = dstNodeMap,
-      dstFullNameKey = dstFullNameKey,
-      dstGraph = dstGraph,
-      dstNotExistsHandler = dstNotExistsHandler
-    )
   }
 
   def linkToMultiple[SRC_NODE_TYPE <: StoredNode](

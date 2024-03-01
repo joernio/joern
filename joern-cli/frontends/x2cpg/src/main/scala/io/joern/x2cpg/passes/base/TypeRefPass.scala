@@ -7,12 +7,12 @@ import io.shiftleft.passes.ForkJoinParallelCpgPass
 import overflowdb.Node
 import overflowdb.traversal.*
 
-class TypeUsagePassOne(cpg: Cpg) extends ForkJoinParallelCpgPass[List[Node]](cpg) with LinkingUtil {
+class TypeRefPass(cpg: Cpg) extends ForkJoinParallelCpgPass[List[Node]](cpg) with LinkingUtil {
   val srcLabels = List(NodeTypes.TYPE)
 
   def generateParts(): Array[List[Node]] = cpg.graph.nodes(srcLabels: _*).toList.grouped(BATCH_SIZE).toArray
   def runOnPart(builder: DiffGraphBuilder, part: List[overflowdb.Node]): Unit = {
-    newLinkToSingle(
+    linkToSingle(
       cpg = cpg,
       srcNodes = part,
       srcLabels = srcLabels,

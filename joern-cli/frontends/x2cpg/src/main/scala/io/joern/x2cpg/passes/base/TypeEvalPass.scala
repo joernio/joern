@@ -2,12 +2,12 @@ package io.joern.x2cpg.passes.base
 
 import io.joern.x2cpg.utils.LinkingUtil
 import io.shiftleft.codepropertygraph.Cpg
-import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, NodeTypes, PropertyNames}
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import overflowdb.Node
 import overflowdb.traversal.*
 
-class TypeUsagePassTwo(cpg: Cpg) extends ForkJoinParallelCpgPass[List[Node]](cpg) with LinkingUtil {
+class TypeEvalPass(cpg: Cpg) extends ForkJoinParallelCpgPass[List[Node]](cpg) with LinkingUtil {
   val srcLabels = List(
     NodeTypes.METHOD_PARAMETER_IN,
     NodeTypes.METHOD_PARAMETER_OUT,
@@ -25,14 +25,14 @@ class TypeUsagePassTwo(cpg: Cpg) extends ForkJoinParallelCpgPass[List[Node]](cpg
 
   def generateParts(): Array[List[Node]] = cpg.graph.nodes(srcLabels: _*).toList.grouped(BATCH_SIZE).toArray
   def runOnPart(builder: DiffGraphBuilder, part: List[overflowdb.Node]): Unit = {
-    newLinkToSingle(
+    linkToSingle(
       cpg = cpg,
       srcNodes = part,
       srcLabels = srcLabels,
       dstNodeLabel = NodeTypes.TYPE,
       edgeType = EdgeTypes.EVAL_TYPE,
       dstNodeMap = typeFullNameToNode(cpg, _),
-      dstFullNameKey = "TYPE_FULL_NAME",
+      dstFullNameKey = PropertyNames.TYPE_FULL_NAME,
       dstGraph = builder,
       None
     )
