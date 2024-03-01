@@ -147,11 +147,7 @@ class AstGenRunner(config: Config) {
     logger.info(s"Parsed $numOfParsedFiles files.")
     if (numOfParsedFiles == 0) {
       logger.warn("You may want to check the DEBUG logs for a list of files that are ignored by default.")
-      SourceFiles.determine(
-        in.pathAsString,
-        Set(".swift"),
-        ignoredDefaultRegex = Option(AstGenDefaultIgnoreRegex)
-      )
+      SourceFiles.determine(in.pathAsString, Set(".swift"), ignoredDefaultRegex = Option(AstGenDefaultIgnoreRegex))
     }
     files
   }
