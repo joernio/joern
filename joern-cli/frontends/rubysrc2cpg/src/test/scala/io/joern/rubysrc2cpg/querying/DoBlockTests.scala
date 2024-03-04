@@ -175,4 +175,30 @@ class DoBlockTests extends RubyCode2CpgFixture {
 
   }
 
+  "a do block referencing variables from the surrounding scope" should {
+
+    val cpg = code("""var = "Jack"
+        |
+        |x = proc { "Hello #{var}" }
+        |""".stripMargin)
+
+    // Basic assertions for expected behaviour
+    "create the declarations for the closure" in {
+      inside(cpg.method("<lambda>.*").l) {
+        case m :: Nil =>
+          m.name should startWith("<lambda>")
+        case xs => fail(s"Expected exactly one closure method decl, instead got [${xs.code.mkString(",")}]")
+      }
+      
+      inside(cpg.typeDecl("<lambda>.*").l) {
+        case m :: Nil =>
+          m.name should startWith("<lambda>")
+        case xs => fail(s"Expected exactly one closure type decl, instead got [${xs.code.mkString(",")}]")
+      }
+    }
+
+    "annotate the nodes via CAPTURE bindings" in {}
+
+  }
+
 }

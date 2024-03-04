@@ -244,6 +244,10 @@ object RubyIntermediateAst {
       extends RubyNode(span)
       with RubyCall
 
+  /** Represents standalone `proc { ... }` or `lambda { ... }` expressions
+    */
+  final case class ProcOrLambdaExpr(block: Block)(span: TextSpan) extends RubyNode(span)
+
   /** Represents a call with a block argument.
     */
   sealed trait RubyCallWithBlock[C <: RubyCall] extends RubyCall {

@@ -4,6 +4,7 @@ import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.StatementList
 import io.joern.rubysrc2cpg.datastructures.{RubyField, RubyMethod, RubyProgramSummary, RubyType}
 import io.joern.rubysrc2cpg.parser.RubyNodeCreator
 import io.joern.rubysrc2cpg.passes.Defines
+import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.{Local, Member, Method, TypeDecl}
@@ -22,6 +23,9 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
       val ast      = astForRubyFile(rootNode)
       Ast.storeInDiffGraph(ast, diffGraph)
       BatchedUpdate.applyDiff(cpg.graph, diffGraph)
+
+      // Link basic AST elements
+      AstLinkerPass(cpg).createAndApply()
 
       // Summarize findings
       summarize(cpg)

@@ -19,6 +19,8 @@ object Defines {
   val Hash: String       = "Hash"
   val Encoding: String   = "Encoding"
   val Regexp: String     = "Regexp"
+  val Lambda: String     = "lambda"
+  val Proc: String       = "proc"
 
   val Program: String = ":program"
 

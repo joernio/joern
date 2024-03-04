@@ -34,7 +34,9 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       fullName = fullName,
       code = code(node),
       signature = None,
-      fileName = relativeFileName
+      fileName = relativeFileName,
+      astParentType = scope.surroundingAstLabel,
+      astParentFullName = scope.surroundingScopeFullName
     )
 
     if (methodName == XDefines.ConstructorMethodName) scope.pushNewScope(ConstructorScope(fullName))
@@ -50,7 +52,15 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     val methodReturn = methodReturnNode(node, Defines.Any)
     val refs = if (withRefsAndTypes) {
       List(
-        typeDeclNode(node, methodName, fullName, relativeFileName, code(node)),
+        typeDeclNode(
+          node,
+          methodName,
+          fullName,
+          relativeFileName,
+          code(node),
+          astParentType = scope.surroundingAstLabel.getOrElse("<empty>"),
+          astParentFullName = scope.surroundingScopeFullName.getOrElse("<empty>")
+        ),
         typeRefNode(node, methodName, fullName),
         methodRefNode(node, methodName, fullName, methodReturn.typeFullName)
       ).map(Ast.apply)
