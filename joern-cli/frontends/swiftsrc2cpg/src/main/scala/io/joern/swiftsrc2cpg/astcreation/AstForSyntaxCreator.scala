@@ -319,7 +319,8 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
         generateUnusedVariableName(usedVariableNames, "wildcard")
     }
     val typeFullName = node.typeAnnotation.fold(Defines.Any)(t => code(t.`type`))
-    val nLocalNode   = localNode(node, name, name, typeFullName).order(0)
+    registerType(typeFullName)
+    val nLocalNode = localNode(node, name, name, typeFullName).order(0)
     scope.addVariable(name, nLocalNode, scopeType)
     diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
 

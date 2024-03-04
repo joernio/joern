@@ -25,9 +25,10 @@ trait AstForPatternSyntaxCreator(implicit withSchemaValidation: ValidationMode) 
   }
 
   private def astForIsTypePatternSyntax(node: IsTypePatternSyntax): Ast = {
-    val op        = Operators.instanceOf
-    val typ       = code(node.`type`)
-    val lhsNode   = node.`type`
+    val op      = Operators.instanceOf
+    val lhsNode = node.`type`
+    val typ     = code(lhsNode)
+    registerType(typ)
     val lhsAst    = Ast(literalNode(lhsNode, code(lhsNode), None).dynamicTypeHintFullName(Seq(typ)))
     val callNode_ = callNode(node, code(node), op, DispatchTypes.STATIC_DISPATCH).dynamicTypeHintFullName(Seq(typ))
     callAst(callNode_, Seq(lhsAst))
@@ -69,6 +70,7 @@ trait AstForPatternSyntaxCreator(implicit withSchemaValidation: ValidationMode) 
         (generateUnusedVariableName(usedVariableNames, "wildcard"), Defines.Any)
     }
     val nLocalNode = localNode(node, name, name, typeFullName).order(0)
+    registerType(typeFullName)
     scope.addVariable(name, nLocalNode, scopeType)
     diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
     Ast()

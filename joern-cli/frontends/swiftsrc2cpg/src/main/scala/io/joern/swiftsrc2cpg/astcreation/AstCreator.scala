@@ -156,8 +156,10 @@ class AstCreator(val config: Config, val global: SwiftGlobal, val parserResult: 
   }
 
   override protected def code(node: SwiftNode): String = {
-    nodeOffsets(node) match {
-      case Some((startOffset, endOffset)) =>
+    (nodeOffsets(node), node) match {
+      case (Some((startOffset, endOffset)), _: TypeSyntax) =>
+        parserResult.fileContent.substring(startOffset, endOffset).trim.stripSuffix("?").stripSuffix("!")
+      case (Some((startOffset, endOffset)), _) =>
         shortenCode(parserResult.fileContent.substring(startOffset, endOffset).trim)
       case _ =>
         PropertyDefaults.Code
