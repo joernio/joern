@@ -43,7 +43,7 @@ object ProgramSummary {
   /** Combines two namespace-to-type maps.
     */
   def combine[T <: TypeLike[_, _]](a: Map[String, Set[T]], b: Map[String, Set[T]]): Map[String, Set[T]] = {
-    //fixme: Use mutable datatypes, otherwise folds are quadratc
+    // fixme: Use mutable datatypes, otherwise folds are quadratc
     val accumulator = mutable.HashMap.from(a)
 
     b.keySet.foreach(k =>

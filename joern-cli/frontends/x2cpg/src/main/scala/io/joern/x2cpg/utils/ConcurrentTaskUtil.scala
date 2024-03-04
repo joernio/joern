@@ -51,12 +51,15 @@ object ConcurrentTaskUtil {
     *   an array of the executed tasks as either a success or failure.
     */
   def runUsingSpliterator[V](tasks: Iterator[() => V]): Seq[Try[V]] = {
-    scala.collection.immutable.ArraySeq.ofRef(
-    java.util.Arrays
-      .stream(tasks.toArray)
-      .parallel()
-      .map(task => Try(task.apply()))
-      .toArray).asInstanceOf[scala.collection.immutable.ArraySeq[Try[V]]]
+    scala.collection.immutable.ArraySeq
+      .ofRef(
+        java.util.Arrays
+          .stream(tasks.toArray)
+          .parallel()
+          .map(task => Try(task.apply()))
+          .toArray
+      )
+      .asInstanceOf[scala.collection.immutable.ArraySeq[Try[V]]]
   }
 
 }

@@ -5,7 +5,7 @@ import io.joern.x2cpg.Defines as XDefines
 import scala.annotation.targetName
 
 class RubyProgramSummary(initialMap: Map[String, Set[RubyType]] = Map.empty) extends ProgramSummary[RubyType] {
-  //fixme: Use mutable datatypes, otherwise folds are quadratic
+  // fixme: Use mutable datatypes, otherwise folds are quadratic
 
   override val namespaceToType: Map[String, Set[RubyType]] = initialMap
 
