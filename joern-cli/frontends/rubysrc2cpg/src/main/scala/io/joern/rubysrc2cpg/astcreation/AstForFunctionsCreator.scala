@@ -3,10 +3,17 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.{ConstructorScope, MethodScope}
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.x2cpg.utils.NodeBuilders.{newModifierNode, newThisParameterNode}
-import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
-import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, ModifierTypes, NodeTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewLocal, NewMethodParameterIn, NewTypeDecl}
+import io.joern.x2cpg.utils.NodeBuilders.{newClosureBindingNode, newLocalNode, newModifierNode, newThisParameterNode}
+import io.joern.x2cpg.{Ast, AstEdge, ValidationMode, Defines as XDefines}
+import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.nodes.{
+  DeclarationNew,
+  NewIdentifier,
+  NewLocal,
+  NewMethodParameterIn,
+  NewMethodRef,
+  NewTypeDecl
+}
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -46,9 +53,6 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
     val optionalStatementList = statementListForOptionalParams(node.parameters)
 
-    val stmtBlockAst = astForMethodBody(node.body, optionalStatementList)
-    scope.popScope()
-
     val methodReturn = methodReturnNode(node, Defines.Any)
     val refs = if (isClosure) {
       List(
@@ -71,10 +75,62 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
       Nil
     }
 
+    // Consider which variables are captured from the outer scope
+    val stmtBlockAst = if (isClosure) {
+      val baseStmtBlockAst = astForMethodBody(node.body, optionalStatementList)
+      transformAsClosureBody(refs, baseStmtBlockAst)
+    } else {
+      astForMethodBody(node.body, optionalStatementList)
+    }
+
+    scope.popScope()
+
     val modifiers =
       ModifierTypes.VIRTUAL :: (if isClosure then ModifierTypes.LAMBDA :: Nil else Nil) map newModifierNode
 
     methodAst(method, parameterAsts, stmtBlockAst, methodReturn, modifiers) :: refs
+  }
+
+  private def transformAsClosureBody(refs: List[Ast], baseStmtBlockAst: Ast) = {
+    // Determine which locals are captured
+    val capturedLocalNodes = baseStmtBlockAst.nodes
+      .collect { case x: NewIdentifier => x }
+      .distinctBy(_.name)
+      .flatMap(i => scope.lookupVariable(i.name))
+      .toSet
+    val capturedIdentifiers = baseStmtBlockAst.nodes.collect {
+      case i: NewIdentifier if capturedLocalNodes.map(_.name).contains(i.name) => i
+    }
+    // Copy AST block detaching the REF nodes between parent locals/params and identifiers, with the closures' one
+    val capturedBlockAst = baseStmtBlockAst.copy(refEdges = baseStmtBlockAst.refEdges.filterNot {
+      case AstEdge(_: NewIdentifier, dst: DeclarationNew) => capturedLocalNodes.contains(dst)
+      case _                                              => false
+    })
+
+    val methodRefOption = refs.flatMap(_.nodes).collectFirst { case x: NewMethodRef => x }
+
+    capturedLocalNodes
+      .collect {
+        case local: NewLocal =>
+          val closureBindingId = scope.surroundingScopeFullName.map(x => s"$x:${local.name}")
+          (local, local.name, local.code, closureBindingId)
+        case param: NewMethodParameterIn =>
+          val closureBindingId = scope.surroundingScopeFullName.map(x => s"$x:${param.name}")
+          (param, param.name, param.code, closureBindingId)
+      }
+      .collect { case (decl, name, code, Some(closureBindingId)) =>
+        val local          = newLocalNode(name, code, Option(closureBindingId))
+        val closureBinding = newClosureBindingNode(closureBindingId, name, EvaluationStrategies.BY_REFERENCE)
+
+        // Create new local node for lambda, with corresponding REF edges to identifiers and closure binding
+        capturedBlockAst.withChild(Ast(local))
+        capturedIdentifiers.filter(_.name == name).foreach(i => capturedBlockAst.withRefEdge(i, local))
+        diffGraph.addEdge(closureBinding, decl, EdgeTypes.REF)
+
+        methodRefOption.foreach(methodRef => diffGraph.addEdge(methodRef, closureBinding, EdgeTypes.CAPTURE))
+      }
+
+    capturedBlockAst
   }
 
   // TODO: remaining cases

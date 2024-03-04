@@ -197,9 +197,8 @@ object RubyIntermediateAst {
 
   final case class SelfIdentifier()(span: TextSpan) extends RubyNode(span)
 
-  /**
-   * Represents some kind of literal expression.
-   */
+  /** Represents some kind of literal expression.
+    */
   sealed trait LiteralExpr {
     def typeFullName: String
   }
@@ -218,7 +217,8 @@ object RubyIntermediateAst {
   }
 
   final case class DynamicLiteral(typeFullName: String, expressions: List[RubyNode])(span: TextSpan)
-      extends RubyNode(span) with LiteralExpr
+      extends RubyNode(span)
+      with LiteralExpr
 
   final case class RangeExpression(lowerBound: RubyNode, upperBound: RubyNode, rangeOperator: RangeOperator)(
     span: TextSpan
@@ -234,7 +234,7 @@ object RubyIntermediateAst {
     def isDynamic: Boolean = text.take(2).startsWith("%I") || text.take(2).startsWith("%W")
 
     def isStatic: Boolean = !isDynamic
-    
+
     def typeFullName: String = Defines.getBuiltInType(Defines.Array)
   }
 
