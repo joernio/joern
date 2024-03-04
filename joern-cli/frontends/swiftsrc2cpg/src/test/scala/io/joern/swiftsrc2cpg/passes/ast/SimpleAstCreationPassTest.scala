@@ -1,8 +1,9 @@
 package io.joern.swiftsrc2cpg.passes.ast
 
-import io.shiftleft.codepropertygraph.generated._
-import io.shiftleft.codepropertygraph.generated.nodes._
-import io.shiftleft.semanticcpg.language._
+import io.joern.swiftsrc2cpg.passes.Defines
+import io.shiftleft.codepropertygraph.generated.*
+import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.shiftleft.semanticcpg.language.*
 
 class SimpleAstCreationPassTest extends AbstractPassTest {
 
@@ -42,6 +43,20 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
       val List(assignX, assignY) = method.assignment.l
       assignX.code shouldBe "let x = 1"
       assignY.code shouldBe """var y: String = "2""""
+    }
+
+    "have correct types for simple variable declarations" in AstFixture("""
+        |let a = 1
+        |let b: Int = 1
+        |var c: String! = ""
+        |var d: String? = ""
+        |""".stripMargin) { cpg =>
+      val List(method)     = cpg.method.nameExact("<global>").l
+      val List(a, b, c, d) = method.ast.isIdentifier.l
+      a.typeFullName shouldBe Defines.Any
+      b.typeFullName shouldBe Defines.Int
+      c.typeFullName shouldBe Defines.String
+      d.typeFullName shouldBe Defines.String
     }
 
     "have correct structure for tuple variable declarations" in AstFixture("""

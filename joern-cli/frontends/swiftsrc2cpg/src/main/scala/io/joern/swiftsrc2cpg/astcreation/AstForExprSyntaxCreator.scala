@@ -41,9 +41,10 @@ trait AstForExprSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   private def astForArrowExprSyntax(node: ArrowExprSyntax): Ast = notHandledYet(node)
 
   private def astForAsExprSyntax(node: AsExprSyntax): Ast = {
-    val op        = Operators.cast
-    val typ       = code(node.`type`)
-    val lhsNode   = node.`type`
+    val op      = Operators.cast
+    val lhsNode = node.`type`
+    val typ     = code(lhsNode)
+    registerType(typ)
     val lhsAst    = Ast(literalNode(lhsNode, code(lhsNode), None).dynamicTypeHintFullName(Seq(typ)))
     val rhsAst    = astForNodeWithFunctionReference(node.expression)
     val callNode_ = callNode(node, code(node), op, DispatchTypes.STATIC_DISPATCH).dynamicTypeHintFullName(Seq(typ))

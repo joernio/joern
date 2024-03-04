@@ -33,6 +33,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
     if (!Defines.JsTypes.contains(name) && !seenAliasTypes.exists(_.name == name)) {
       val (typeName, typeFullName) = calcTypeNameAndFullName(alias, Option(name))
+      registerType(typeFullName)
+
       val typeDeclNode_ = typeDeclNode(
         alias,
         typeName,
@@ -43,7 +45,6 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
         astParentFullName,
         alias = Option(aliasFullName)
       )
-      registerType(typeFullName)
       diffGraph.addEdge(methodAstParentStack.head, typeDeclNode_, EdgeTypes.AST)
     } else {
       seenAliasTypes.find(t => t.name == name).foreach(_.aliasTypeFullName(aliasFullName))
@@ -420,6 +421,8 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
 
   protected def astForModule(tsModuleDecl: BabelNodeInfo): Ast = {
     val (name, fullName) = calcTypeNameAndFullName(tsModuleDecl)
+    registerType(fullName)
+
     val namespaceNode = NewNamespaceBlock()
       .code(tsModuleDecl.code)
       .lineNumber(tsModuleDecl.lineNumber)

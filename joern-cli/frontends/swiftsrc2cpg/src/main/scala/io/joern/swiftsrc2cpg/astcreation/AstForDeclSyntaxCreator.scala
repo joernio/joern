@@ -1066,7 +1066,8 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
       names.map { name =>
         val typeFullName = binding.typeAnnotation.fold(Defines.Any)(t => code(t.`type`))
-        val nLocalNode   = localNode(binding, name, name, typeFullName).order(0)
+        registerType(typeFullName)
+        val nLocalNode = localNode(binding, name, name, typeFullName).order(0)
         scope.addVariable(name, nLocalNode, scopeType)
         diffGraph.addEdge(localAstParentStack.head, nLocalNode, EdgeTypes.AST)
 
