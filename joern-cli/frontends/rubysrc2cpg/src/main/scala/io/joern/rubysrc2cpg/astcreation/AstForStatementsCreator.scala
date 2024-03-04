@@ -174,27 +174,32 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
    * ```
    */
   private def astsForCallWithBlock[C <: RubyCall](node: RubyNode with RubyCallWithBlock[C]): Seq[Ast] = {
-    // Create closure structures: [MethodDecl, TypeRef, MethodRef]
-    val block              = node.block
-    val methodName         = nextClosureName()
-    val methodAstsWithRefs = astForMethodDeclaration(block.toMethodDeclaration(methodName), withRefsAndTypes = true)
-    val methodRefArgs =
-      methodAstsWithRefs.flatMap(_.nodes).collect { case m: NewMethodRef =>
-        DummyNode(m.copy)(node.span.spanStart(m.code))
-      }
-    // Isolate method and type declaration AST (all we need here)
-    val declarationAsts = methodAstsWithRefs.filter(_.root.exists(_.isInstanceOf[NewMethod | NewTypeDecl]))
+    val Seq(methodDecl, typeDecl, _, methodRef) = astForDoBlock(node.block): @unchecked
+    val methodRefDummyNode                      = methodRef.root.map(DummyNode(_)(node.span)).toList
 
     // Create call with argument referencing the MethodRef
     val callWithLambdaArg = node.withoutBlock match {
-      case x: SimpleCall => astForSimpleCall(x.copy(arguments = x.arguments ++ methodRefArgs)(x.span))
-      case x: MemberCall => astForMemberCall(x.copy(arguments = x.arguments ++ methodRefArgs)(x.span))
+      case x: SimpleCall => astForSimpleCall(x.copy(arguments = x.arguments ++ methodRefDummyNode)(x.span))
+      case x: MemberCall => astForMemberCall(x.copy(arguments = x.arguments ++ methodRefDummyNode)(x.span))
       case x =>
         logger.warn(s"Unhandled call-with-block type ${code(x)}, creating anonymous method structures only")
         Ast()
     }
 
-    declarationAsts :+ callWithLambdaArg
+    methodDecl :: typeDecl :: methodRef :: callWithLambdaArg :: Nil
+  }
+
+  protected def astForDoBlock(block: Block with RubyNode): Seq[Ast] = {
+    // Create closure structures: [MethodDecl, TypeRef, MethodRef]
+    val methodName         = nextClosureName()
+    val methodAstsWithRefs = astForMethodDeclaration(block.toMethodDeclaration(methodName), isClosure = true)
+    // Set span contents
+    methodAstsWithRefs.flatMap(_.nodes).foreach {
+      case m: NewMethodRef => DummyNode(m.copy)(block.span.spanStart(m.code))
+      case _               =>
+    }
+
+    methodAstsWithRefs
   }
 
   protected def astForReturnStatement(node: ReturnExpression): Ast = {
@@ -220,8 +225,8 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   private def astsForImplicitReturnStatement(node: RubyNode): Seq[Ast] = {
     node match
       case expr: ControlFlowExpression => astsForStatement(rubyNodeForExplicitReturnControlFlowExpression(expr))
-      case _: (ArrayLiteral | HashLiteral | StaticLiteral | BinaryExpression | UnaryExpression | SimpleIdentifier |
-            SimpleCall | IndexAccess | Association) =>
+      case _: (LiteralExpr | BinaryExpression | UnaryExpression | SimpleIdentifier | SimpleCall | IndexAccess |
+            Association) =>
         astForReturnStatement(ReturnExpression(List(node))(node.span)) :: Nil
       case node: SingleAssignment =>
         astForSingleAssignment(node) :: List(astForReturnStatement(ReturnExpression(List(node.lhs))(node.span)))

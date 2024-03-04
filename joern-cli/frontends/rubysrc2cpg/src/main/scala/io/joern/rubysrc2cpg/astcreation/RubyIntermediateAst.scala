@@ -1,5 +1,6 @@
 package io.joern.rubysrc2cpg.astcreation
 
+import io.joern.rubysrc2cpg.passes.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 
 object RubyIntermediateAst {
@@ -196,8 +197,14 @@ object RubyIntermediateAst {
 
   final case class SelfIdentifier()(span: TextSpan) extends RubyNode(span)
 
+  /** Represents some kind of literal expression.
+    */
+  sealed trait LiteralExpr {
+    def typeFullName: String
+  }
+
   /** Represents a non-interpolated literal. */
-  final case class StaticLiteral(typeFullName: String)(span: TextSpan) extends RubyNode(span) {
+  final case class StaticLiteral(typeFullName: String)(span: TextSpan) extends RubyNode(span) with LiteralExpr {
     def isSymbol: Boolean = text.startsWith(":")
 
     def isString: Boolean = text.startsWith("\"")
@@ -211,6 +218,7 @@ object RubyIntermediateAst {
 
   final case class DynamicLiteral(typeFullName: String, expressions: List[RubyNode])(span: TextSpan)
       extends RubyNode(span)
+      with LiteralExpr
 
   final case class RangeExpression(lowerBound: RubyNode, upperBound: RubyNode, rangeOperator: RangeOperator)(
     span: TextSpan
@@ -218,7 +226,7 @@ object RubyIntermediateAst {
 
   final case class RangeOperator(exclusive: Boolean)(span: TextSpan) extends RubyNode(span)
 
-  final case class ArrayLiteral(elements: List[RubyNode])(span: TextSpan) extends RubyNode(span) {
+  final case class ArrayLiteral(elements: List[RubyNode])(span: TextSpan) extends RubyNode(span) with LiteralExpr {
     def isSymbolArray: Boolean = text.take(2).toLowerCase.startsWith("%i")
 
     def isStringArray: Boolean = text.take(2).toLowerCase.startsWith("%w")
@@ -226,9 +234,13 @@ object RubyIntermediateAst {
     def isDynamic: Boolean = text.take(2).startsWith("%I") || text.take(2).startsWith("%W")
 
     def isStatic: Boolean = !isDynamic
+
+    def typeFullName: String = Defines.getBuiltInType(Defines.Array)
   }
 
-  final case class HashLiteral(elements: List[RubyNode])(span: TextSpan) extends RubyNode(span)
+  final case class HashLiteral(elements: List[RubyNode])(span: TextSpan) extends RubyNode(span) with LiteralExpr {
+    def typeFullName: String = Defines.getBuiltInType(Defines.Hash)
+  }
 
   final case class Association(key: RubyNode, value: RubyNode)(span: TextSpan) extends RubyNode(span)
 
@@ -243,6 +255,10 @@ object RubyIntermediateAst {
   final case class SimpleCall(target: RubyNode, arguments: List[RubyNode])(span: TextSpan)
       extends RubyNode(span)
       with RubyCall
+
+  /** Represents standalone `proc { ... }` or `lambda { ... }` expressions
+    */
+  final case class ProcOrLambdaExpr(block: Block)(span: TextSpan) extends RubyNode(span)
 
   /** Represents a call with a block argument.
     */

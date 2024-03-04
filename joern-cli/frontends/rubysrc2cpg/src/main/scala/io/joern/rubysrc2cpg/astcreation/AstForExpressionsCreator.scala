@@ -32,6 +32,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: MandatoryParameter       => astForMandatoryParameter(node)
     case node: SplattingRubyNode        => astForSplattingRubyNode(node)
     case node: AnonymousTypeDeclaration => astForAnonymousTypeDeclaration(node)
+    case node: ProcOrLambdaExpr         => astForProcOrLambdaExpr(node)
     case node: DummyNode                => Ast(node.node)
     case _                              => astForUnknown(node)
 
@@ -438,6 +439,15 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val argumentAst = node.arguments.map(astForMethodCallArgument)
     val call        = callNode(node, code(node), methodName, methodFullName, DispatchTypes.STATIC_DISPATCH)
     callAst(call, argumentAst, None, None)
+  }
+
+  private def astForProcOrLambdaExpr(node: ProcOrLambdaExpr): Ast = {
+    val Seq(methodDecl, typeDecl, _, methodRef) = astForDoBlock(node.block): @unchecked
+
+    Ast.storeInDiffGraph(methodDecl, diffGraph)
+    Ast.storeInDiffGraph(typeDecl, diffGraph)
+
+    methodRef
   }
 
   private def astForMethodCallArgument(node: RubyNode): Ast = {

@@ -1,7 +1,8 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method, MethodRef, TypeDecl}
+import io.shiftleft.codepropertygraph.generated.ModifierTypes
+import io.shiftleft.codepropertygraph.generated.nodes.{Call, ClosureBinding, Method, MethodRef, TypeDecl}
 import io.shiftleft.semanticcpg.language.*
 
 class DoBlockTests extends RubyCode2CpgFixture {
@@ -130,6 +131,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
             case closureMethod :: Nil =>
               closureMethod.name shouldBe "<lambda>0"
               closureMethod.fullName shouldBe "Test0.rb:<global>::program:<lambda>0"
+              closureMethod.isLambda.nonEmpty shouldBe true
             case xs => fail(s"Expected a one method nodes, instead got [${xs.code.mkString(", ")}]")
           }
 
@@ -137,6 +139,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
             case closureType :: Nil =>
               closureType.name shouldBe "<lambda>0"
               closureType.fullName shouldBe "Test0.rb:<global>::program:<lambda>0"
+              closureType.isLambda.nonEmpty shouldBe true
             case xs => fail(s"Expected a one closure type node, instead got [${xs.code.mkString(", ")}]")
           }
         case xs => fail(s"Expected a single program module, instead got [${xs.code.mkString(", ")}]")
@@ -170,6 +173,51 @@ class DoBlockTests extends RubyCode2CpgFixture {
           puts2.name shouldBe "puts"
           puts2.code shouldBe "puts value"
         case xs => fail(s"Expected the closure to have a single parameter, instead got [${xs.code.mkString(", ")}]")
+      }
+    }
+
+  }
+
+  "a do block referencing variables from the surrounding scope" should {
+
+    val cpg = code("""myValue = "Jack"
+        |
+        |x = proc { "Hello #{myValue}" }
+        |""".stripMargin)
+
+    // Basic assertions for expected behaviour
+    "create the declarations for the closure" in {
+      inside(cpg.method("<lambda>.*").l) {
+        case m :: Nil =>
+          m.name should startWith("<lambda>")
+        case xs => fail(s"Expected exactly one closure method decl, instead got [${xs.code.mkString(",")}]")
+      }
+
+      inside(cpg.typeDecl("<lambda>.*").l) {
+        case m :: Nil =>
+          m.name should startWith("<lambda>")
+        case xs => fail(s"Expected exactly one closure type decl, instead got [${xs.code.mkString(",")}]")
+      }
+    }
+
+    "annotate the nodes via CAPTURE bindings" in {
+      cpg.all.collectAll[ClosureBinding].l match {
+        case myValue :: Nil =>
+          myValue.closureOriginalName.head shouldBe "myValue"
+          inside(myValue._localViaRefOut) {
+            case Some(local) =>
+              local.name shouldBe "myValue"
+              local.method.fullName.headOption shouldBe Option("Test0.rb:<global>::program")
+            case None => fail("Expected closure binding refer to the captured local")
+          }
+
+          inside(myValue._captureIn.l) {
+            case (x: MethodRef) :: Nil => x.methodFullName shouldBe "Test0.rb:<global>::program:<lambda>0"
+            case xs                    => fail(s"Expected single method ref binding but got [${xs.mkString(",")}]")
+          }
+
+        case xs =>
+          fail(s"Expected single closure binding but got [${xs.mkString(",")}]")
       }
     }
 
