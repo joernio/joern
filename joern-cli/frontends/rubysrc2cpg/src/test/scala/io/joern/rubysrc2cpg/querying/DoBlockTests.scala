@@ -1,6 +1,7 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.ModifierTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Method, MethodRef, TypeDecl}
 import io.shiftleft.semanticcpg.language.*
 
@@ -130,6 +131,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
             case closureMethod :: Nil =>
               closureMethod.name shouldBe "<lambda>0"
               closureMethod.fullName shouldBe "Test0.rb:<global>::program:<lambda>0"
+              closureMethod.isLambda.nonEmpty shouldBe true
             case xs => fail(s"Expected a one method nodes, instead got [${xs.code.mkString(", ")}]")
           }
 
@@ -137,6 +139,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
             case closureType :: Nil =>
               closureType.name shouldBe "<lambda>0"
               closureType.fullName shouldBe "Test0.rb:<global>::program:<lambda>0"
+              closureType.isLambda.nonEmpty shouldBe true
             case xs => fail(s"Expected a one closure type node, instead got [${xs.code.mkString(", ")}]")
           }
         case xs => fail(s"Expected a single program module, instead got [${xs.code.mkString(", ")}]")
@@ -189,7 +192,7 @@ class DoBlockTests extends RubyCode2CpgFixture {
           m.name should startWith("<lambda>")
         case xs => fail(s"Expected exactly one closure method decl, instead got [${xs.code.mkString(",")}]")
       }
-      
+
       inside(cpg.typeDecl("<lambda>.*").l) {
         case m :: Nil =>
           m.name should startWith("<lambda>")

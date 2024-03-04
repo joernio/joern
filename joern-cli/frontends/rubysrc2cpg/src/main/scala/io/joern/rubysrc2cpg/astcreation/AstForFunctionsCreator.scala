@@ -3,9 +3,9 @@ package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.*
 import io.joern.rubysrc2cpg.datastructures.{ConstructorScope, MethodScope}
 import io.joern.rubysrc2cpg.passes.Defines
-import io.joern.x2cpg.utils.NodeBuilders.newThisParameterNode
+import io.joern.x2cpg.utils.NodeBuilders.{newModifierNode, newThisParameterNode}
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
-import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, NodeTypes}
+import io.shiftleft.codepropertygraph.generated.{EvaluationStrategies, ModifierTypes, NodeTypes}
 import io.shiftleft.codepropertygraph.generated.nodes.{NewLocal, NewMethodParameterIn, NewTypeDecl}
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
@@ -13,12 +13,12 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
   /** Creates method declaration related structures.
     * @param node
     *   the node to create the AST structure from.
-    * @param withRefsAndTypes
-    *   if true, will generate a type decl, type ref, and method ref. This is useful for lambda methods.
+    * @param isClosure
+    *   if true, will generate a type decl, type ref, and method ref, as well as add the `c` modifier.
     * @return
     *   a method declaration with additional refs and types if specified.
     */
-  protected def astForMethodDeclaration(node: MethodDeclaration, withRefsAndTypes: Boolean = false): Seq[Ast] = {
+  protected def astForMethodDeclaration(node: MethodDeclaration, isClosure: Boolean = false): Seq[Ast] = {
 
     // Special case constructor methods
     val isInTypeDecl = scope.surroundingAstLabel.contains(NodeTypes.TYPE_DECL)
@@ -50,7 +50,7 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
     scope.popScope()
 
     val methodReturn = methodReturnNode(node, Defines.Any)
-    val refs = if (withRefsAndTypes) {
+    val refs = if (isClosure) {
       List(
         typeDeclNode(
           node,
@@ -63,12 +63,18 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
         ),
         typeRefNode(node, methodName, fullName),
         methodRefNode(node, methodName, fullName, methodReturn.typeFullName)
-      ).map(Ast.apply)
+      ).map {
+        case x: NewTypeDecl => Ast(x).withChild(Ast(newModifierNode(ModifierTypes.LAMBDA)))
+        case x              => Ast(x)
+      }
     } else {
       Nil
     }
 
-    methodAst(method, parameterAsts, stmtBlockAst, methodReturn) :: refs
+    val modifiers =
+      ModifierTypes.VIRTUAL :: (if isClosure then ModifierTypes.LAMBDA :: Nil else Nil) map newModifierNode
+
+    methodAst(method, parameterAsts, stmtBlockAst, methodReturn, modifiers) :: refs
   }
 
   // TODO: remaining cases
