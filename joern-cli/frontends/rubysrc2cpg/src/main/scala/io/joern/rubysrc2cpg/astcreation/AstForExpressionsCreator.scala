@@ -121,6 +121,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   protected def astForMemberCall(node: MemberCall): Ast = {
     // Use the scope type recovery to attempt to obtain a receiver type for the call
+    // TODO: Type recovery should potentially resolve this
     val fullName = typeFromCallTarget(node.target)
       .map(x => s"$x:${node.methodName}")
       .getOrElse(node.methodName)
@@ -441,6 +442,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   private def astForMemberCallWithoutBlock(node: SimpleCall, memberAccess: MemberAccess): Ast = {
     val receiverAst = astForFieldAccess(memberAccess)
     val methodName  = memberAccess.methodName
+    // TODO: Type recovery should potentially resolve this
     val methodFullName = typeFromCallTarget(memberAccess.target)
       .map(x => s"$x:$methodName")
       .getOrElse(methodName)
