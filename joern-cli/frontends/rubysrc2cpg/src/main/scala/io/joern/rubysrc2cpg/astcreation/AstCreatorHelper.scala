@@ -26,7 +26,10 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def handleVariableOccurrence(node: RubyNode): Ast = {
     val name       = code(node)
     val identifier = identifierNode(node, name, name, Defines.Any)
+    val typeRef    = scope.tryResolveTypeReference(name)
     scope.lookupVariable(name) match {
+      case None if typeRef.isDefined =>
+        Ast(identifier.typeFullName(typeRef.get.name))
       case None =>
         val local = localNode(node, name, name, Defines.Any)
         scope.addToScope(name, local) match {

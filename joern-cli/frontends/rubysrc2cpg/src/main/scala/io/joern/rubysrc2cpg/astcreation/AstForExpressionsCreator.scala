@@ -6,7 +6,7 @@ import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.{RubyOperators, getBuiltInType}
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, PropertyNames}
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -33,6 +33,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: SplattingRubyNode        => astForSplattingRubyNode(node)
     case node: AnonymousTypeDeclaration => astForAnonymousTypeDeclaration(node)
     case node: ProcOrLambdaExpr         => astForProcOrLambdaExpr(node)
+    case node: SelfIdentifier           => astForSelfIdentifier(node)
     case node: DummyNode                => Ast(node.node)
     case _                              => astForUnknown(node)
 
@@ -110,7 +111,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   protected def astForMemberCall(node: MemberCall): Ast = {
-    val fullName        = node.methodName // TODO
+    // Use the scope type recovery to attempt to obtain a receiver type for the call
+    val fullName = astForExpression(node.target).nodes
+      .flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME))
+      .filterNot(_ == XDefines.Any)
+      .headOption
+      .map(x => s"$x:${node.methodName}")
+      .getOrElse(node.methodName)
     val fieldAccessAst  = astForFieldAccess(MemberAccess(node.target, node.op, node.methodName)(node.span))
     val argumentAsts    = node.arguments.map(astForMethodCallArgument)
     val fieldAccessCall = callNode(node, code(node), node.methodName, fullName, DispatchTypes.STATIC_DISPATCH)
@@ -411,6 +418,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       rescueAsts ++ elseAst.toSeq,
       ensureAst
     )
+  }
+
+  private def astForSelfIdentifier(node: SelfIdentifier): Ast = {
+    val thisIdentifier = identifierNode(node, "this", code(node), scope.surroundingTypeFullName.getOrElse(Defines.Any))
+    Ast(thisIdentifier)
   }
 
   protected def astForUnknown(node: RubyNode): Ast = {

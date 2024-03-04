@@ -92,4 +92,18 @@ class RubyScope(summary: RubyProgramSummary)
       case _                           =>
     }
   }
+
+  override def tryResolveTypeReference(typeName: String): Option[RubyType] = {
+    // TODO: While we find better ways to understand how the implicit class loading works,
+    //  we can approximate that all types are in scope in the mean time.
+    super.tryResolveTypeReference(typeName) match {
+      case None =>
+        summary.namespaceToType.flatMap(_._2).collectFirst {
+          case x if x.name.split("[.]").lastOption.contains(typeName) =>
+            typesInScope.addOne(x)
+            x
+        }
+      case x => x
+    }
+  }
 }
