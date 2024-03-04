@@ -110,17 +110,23 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     astForMemberCall(MemberCall(node.target, node.op, node.methodName, List.empty)(node.span))
   }
 
-  protected def astForMemberCall(node: MemberCall): Ast = {
-    // Use the scope type recovery to attempt to obtain a receiver type for the call
-    val fullName = astForExpression(node.target).nodes
-      .flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME))
+  /** Attempts to extract a type from the base of a member call.
+    */
+  protected def typeFromCallTarget(baseNode: RubyNode): Option[String] = {
+    astForExpression(baseNode).nodes
+      .flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME).map(_.toString))
       .filterNot(_ == XDefines.Any)
       .headOption
+  }
+
+  protected def astForMemberCall(node: MemberCall): Ast = {
+    // Use the scope type recovery to attempt to obtain a receiver type for the call
+    val fullName = typeFromCallTarget(node.target)
       .map(x => s"$x:${node.methodName}")
       .getOrElse(node.methodName)
     val fieldAccessAst  = astForFieldAccess(MemberAccess(node.target, node.op, node.methodName)(node.span))
     val argumentAsts    = node.arguments.map(astForMethodCallArgument)
-    val fieldAccessCall = callNode(node, code(node), node.methodName, fullName, DispatchTypes.STATIC_DISPATCH)
+    val fieldAccessCall = callNode(node, code(node), node.methodName, fullName, DispatchTypes.DYNAMIC_DISPATCH)
     callAst(fieldAccessCall, argumentAsts, Some(fieldAccessAst))
   }
 
@@ -433,11 +439,13 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForMemberCallWithoutBlock(node: SimpleCall, memberAccess: MemberAccess): Ast = {
-    val receiverAst    = astForFieldAccess(memberAccess)
-    val methodName     = memberAccess.methodName
-    val methodFullName = methodName // TODO
-    val argumentAsts   = node.arguments.map(astForMethodCallArgument)
-    val call           = callNode(node, code(node), methodName, methodFullName, DispatchTypes.STATIC_DISPATCH)
+    val receiverAst = astForFieldAccess(memberAccess)
+    val methodName  = memberAccess.methodName
+    val methodFullName = typeFromCallTarget(memberAccess.target)
+      .map(x => s"$x:$methodName")
+      .getOrElse(methodName)
+    val argumentAsts = node.arguments.map(astForMethodCallArgument)
+    val call         = callNode(node, code(node), methodName, methodFullName, DispatchTypes.DYNAMIC_DISPATCH)
     callAst(call, argumentAsts, None, Some(receiverAst))
   }
 

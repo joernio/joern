@@ -39,7 +39,7 @@ class CaseTests extends RubyCode2CpgFixture {
         case u: Unknown => "unknown"
         case mExpr =>
           val call @ List(_) = List(mExpr).isCall.l
-          call.methodFullName.l shouldBe List("===")
+          call.methodFullName.l shouldBe List("__builtin.Integer:===")
           val List(lhs, rhs) = call.argument.l
           rhs.code shouldBe "<tmp-0>"
           val List(code) = List(lhs).isCall.argument(1).code.l
