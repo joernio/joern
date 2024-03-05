@@ -1,8 +1,9 @@
 package io.joern.rubysrc2cpg.querying
 
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.SimpleIdentifier
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
-import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier}
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal}
 import io.shiftleft.semanticcpg.language.*
 
 class ControlStructureTests extends RubyCode2CpgFixture {
@@ -416,6 +417,50 @@ class ControlStructureTests extends RubyCode2CpgFixture {
           ifAssignment.code shouldBe "a = 123"
           defaultElseAssignment.code shouldBe "a = nil"
         case xs => fail(s"Expected two assignments, instead found ${xs.code.mkString(", ")}")
+      }
+    }
+
+  }
+
+  "if-elsif-else in function with explicit return statements" should {
+    val cpg = code("""
+        | def foo(x, y)
+        |   if x < 0 then
+        |     return 0
+        |   elsif x == 0 then
+        |     return x
+        |   else
+        |     return y
+        |   end
+        |end
+        |""".stripMargin)
+
+    "Generate return nodes without unknown nodes" in {
+      inside(cpg.method.name("foo").methodReturn.toReturn.l) {
+        case returnZero :: returnX :: returnY :: Nil =>
+          returnZero.code shouldBe "return 0"
+          // Confirms that returnZero child is `Literal` and not `UNKNOWN`
+          inside(returnZero.astChildren.l) {
+            case (zeroLiteral: Literal) :: Nil =>
+              zeroLiteral.code shouldBe "0"
+            case _ => fail("Expected literal for return astChild")
+          }
+
+          returnX.code shouldBe "return x"
+          inside(returnX.astChildren.l) {
+            case (x: Identifier) :: Nil =>
+              x.code shouldBe "x"
+            case _ => fail("Expected Identifier for return child")
+          }
+
+          returnY.code shouldBe "return y"
+          inside(returnY.astChildren.l) {
+            case (y: Identifier) :: Nil =>
+              y.code shouldBe "y"
+            case _ => fail("Expected identifier for return child")
+          }
+
+        case xs => fail(s"Expected three return expressions, instead found ${xs.code.mkString(", ")}")
       }
     }
   }

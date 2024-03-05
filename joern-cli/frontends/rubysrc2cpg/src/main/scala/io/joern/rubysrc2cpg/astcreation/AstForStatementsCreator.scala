@@ -288,6 +288,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   private def returnLastNode(x: RubyNode): RubyNode = {
     def statementListReturningLastExpression(stmts: List[RubyNode]): List[RubyNode] = stmts match {
       case (head: ControlFlowClause) :: Nil => clauseReturningLastExpression(head) :: Nil
+      case (head: ReturnExpression) :: Nil  => head :: Nil
       case head :: Nil                      => ReturnExpression(head :: Nil)(head.span) :: Nil
       case Nil                              => List.empty
       case head :: tail                     => head :: statementListReturningLastExpression(tail)
