@@ -356,9 +356,12 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForPrimaryAssociatedTypeSyntax(node: PrimaryAssociatedTypeSyntax): Ast = notHandledYet(node)
   private def astForReturnClauseSyntax(node: ReturnClauseSyntax): Ast                   = notHandledYet(node)
   private def astForSameTypeRequirementSyntax(node: SameTypeRequirementSyntax): Ast     = notHandledYet(node)
+
   private def astForSourceFileSyntax(node: SourceFileSyntax): Ast = {
     node.statements.children.toList match {
-      case Nil => Ast()
+      case Nil =>
+        val blockNode_ = blockNode(node, "<empty>", Defines.Any)
+        blockAst(blockNode_, List.empty)
       case head :: Nil =>
         val blockNode_ = blockNode(node, "<empty>", Defines.Any)
         scope.pushNewBlockScope(blockNode_)
@@ -370,6 +373,7 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
       case _ => astForNode(node.statements)
     }
   }
+
   private def astForSpecializeAvailabilityArgumentSyntax(node: SpecializeAvailabilityArgumentSyntax): Ast =
     notHandledYet(node)
   private def astForSpecializeTargetFunctionArgumentSyntax(node: SpecializeTargetFunctionArgumentSyntax): Ast =
