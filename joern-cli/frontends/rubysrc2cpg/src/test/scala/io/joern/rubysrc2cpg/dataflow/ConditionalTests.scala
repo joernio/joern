@@ -17,9 +17,6 @@ class ConditionalTests extends RubyCode2CpgFixture(withPostProcessing = true, wi
     val sink   = cpg.method.name("puts").callIn.argument
     val flows  = sink.reachableByFlows(source)
     flows.map(flowToResultPairs).sortBy(_.headOption.map(_._1)).toSet shouldBe
-      Set(
-        List(("x = 1", 2), ("foo ? x : y", 4), ("z = foo ? x : y", 4), ("puts z", 5)),
-        List(("y = 2", 3), ("foo ? x : y", 4), ("z = foo ? x : y", 4), ("puts z", 5))
-      )
+      Set(List(("x = 1", 2), ("z = x", 4), ("puts z", 5)), List(("y = 2", 3), ("z = y", 4), ("puts z", 5)))
   }
 }
