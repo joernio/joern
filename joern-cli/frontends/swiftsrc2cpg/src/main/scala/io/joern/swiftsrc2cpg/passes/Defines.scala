@@ -14,5 +14,5 @@ object Defines {
   val GlobalNamespace: String = NamespaceTraversal.globalNamespaceName
 
   val SwiftTypes: List[String] =
-    List(Any, Character, String, Int, Float, Double, Bool)
+    List(Any, Nil, Character, String, Int, Float, Double, Bool)
 }

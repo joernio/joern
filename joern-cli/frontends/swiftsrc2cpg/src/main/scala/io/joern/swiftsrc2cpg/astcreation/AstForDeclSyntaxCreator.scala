@@ -44,20 +44,20 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val modifiers  = modifiersForDecl(node)
     val aliasName  = node.initializer.map(i => code(i.value))
 
-    val name                     = typeNameForDeclSyntax(node)
-    val (typeName, typeFullName) = calcTypeNameAndFullName(name)
-    registerType(typeFullName)
+    val name             = typeNameForDeclSyntax(node)
+    val existingTypeDecl = global.seenTypeDecls.keys().asScala.find(_.name == name)
 
-    val existingTypeDecl = global.seenTypeDecls.keys().asScala.find(_.name == typeName)
     if (existingTypeDecl.isEmpty) {
-
       val (astParentType, astParentFullName) = astParentInfo()
+      val (typeName, typeFullName)           = calcTypeNameAndFullName(name)
+      registerType(typeFullName)
+
       val typeDeclNode_ = typeDeclNode(
         node,
         typeName,
         typeFullName,
         parserResult.filename,
-        s"class $typeName",
+        code(node),
         astParentType,
         astParentFullName,
         alias = aliasName
@@ -75,7 +75,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
       diffGraph.addEdge(methodAstParentStack.head, typeDeclNode_, EdgeTypes.AST)
 
-      val constructor = createDeclConstructor(node, List.empty)
+      val constructor = createDeclConstructor(node, typeDeclNode_, List.empty)
       if (constructor.isDefined) {
         global.seenTypeDecls.put(typeDeclNode_, global.ConstructorBlocks(constructor.get.methodBlock, Ast()))
       }
@@ -162,19 +162,25 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     case d: VariableDeclSyntax          => d.modifiers.children.map(c => code(c.name)).contains("static")
   }
 
-  private def createFakeConstructor(node: TypeDeclLike, methodBlockContent: List[Ast] = List.empty): AstAndMethod = {
+  private def createFakeConstructor(
+    node: TypeDeclLike,
+    typeDeclNode: NewTypeDecl,
+    methodBlockContent: List[Ast] = List.empty
+  ): AstAndMethod = {
     val constructorName              = io.joern.x2cpg.Defines.ConstructorMethodName
     val (methodName, methodFullName) = calcTypeNameAndFullName(constructorName)
-    val methodNode_ = methodNode(node, methodName, constructorName, methodFullName, None, parserResult.filename)
 
-    val modifiers = Seq(NewModifier().modifierType(ModifierTypes.CONSTRUCTOR))
+    val methodNode_ = methodNode(node, methodName, constructorName, methodFullName, None, parserResult.filename)
+    val modifiers   = Seq(NewModifier().modifierType(ModifierTypes.CONSTRUCTOR))
 
     methodAstParentStack.push(methodNode_)
-
-    val name       = typeNameForDeclSyntax(node)
-    val returnType = calcTypeNameAndFullName(name)._2
     val methodReturnNode =
-      newMethodReturnNode(returnType, dynamicTypeHintFullName = None, line = line(node), column = column(node))
+      newMethodReturnNode(
+        typeDeclNode.fullName,
+        dynamicTypeHintFullName = None,
+        line = line(node),
+        column = column(node)
+      )
 
     methodAstParentStack.pop()
 
@@ -275,6 +281,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
   private def createDeclConstructor(
     node: TypeDeclLike,
+    typeDeclNode: NewTypeDecl,
     constructorContent: List[Ast],
     constructorBlock: Ast = Ast()
   ): Option[AstAndMethod] =
@@ -292,7 +299,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         }
         None
       case _ =>
-        Option(createFakeConstructor(node, methodBlockContent = constructorContent))
+        Option(createFakeConstructor(node, typeDeclNode, methodBlockContent = constructorContent))
     }
 
   private def isClassMethodOrUninitializedMember(node: DeclSyntax): Boolean =
@@ -324,11 +331,11 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val modifiers  = modifiersForDecl(node)
     val inherits   = inheritsFrom(node)
 
-    val name                     = typeNameForDeclSyntax(node)
-    val (typeName, typeFullName) = calcTypeNameAndFullName(name)
-    val existingTypeDecl         = global.seenTypeDecls.keys().asScala.find(_.name == typeName)
+    val name             = typeNameForDeclSyntax(node)
+    val existingTypeDecl = global.seenTypeDecls.keys().asScala.find(_.name == name)
 
     if (existingTypeDecl.isEmpty) {
+      val (typeName, typeFullName) = calcTypeNameAndFullName(name)
       registerType(typeFullName)
 
       val (astParentType, astParentFullName) = astParentInfo()
@@ -337,7 +344,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         typeName,
         typeFullName,
         parserResult.filename,
-        s"class $typeName",
+        code(node),
         astParentType,
         astParentFullName,
         inherits = inherits
@@ -370,7 +377,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         .filter(m => !isStaticMember(m) && isInitializedMember(m))
         .map(m => astForDeclMember(m, typeDeclNode_))
 
-      val constructor = createDeclConstructor(node, memberInitCalls)
+      val constructor = createDeclConstructor(node, typeDeclNode_, memberInitCalls)
 
       // adding all class methods / functions and uninitialized, non-static members
       allClassMembers
@@ -412,6 +419,9 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       val constructorBlock       = global.seenTypeDecls.get(typeDeclNode_).constructorBlock
       val staticConstructorBlock = global.seenTypeDecls.get(typeDeclNode_).staticConstructorBlock
 
+      val typeName     = typeDeclNode_.name
+      val typeFullName = typeDeclNode_.fullName
+
       addInheritsFrom(typeDeclNode_, inherits)
       methodAstParentStack.push(typeDeclNode_)
       dynamicInstanceTypeStack.push(typeFullName)
@@ -425,7 +435,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         .filter(m => !isStaticMember(m) && isInitializedMember(m))
         .map(m => astForDeclMember(m, typeDeclNode_))
 
-      createDeclConstructor(node, memberInitCalls, constructorBlock)
+      createDeclConstructor(node, typeDeclNode_, memberInitCalls, constructorBlock)
 
       // adding all class methods / functions and uninitialized, non-static members
       allClassMembers
@@ -522,10 +532,12 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       case a: AssociatedTypeDeclSyntax => a.inheritanceClause
       case _: TypeAliasDeclSyntax      => None
     }
-    clause match {
+    val inherits = clause match {
       case Some(value) => value.inheritedTypes.children.map(c => code(c.`type`)).distinct.sorted
       case None        => Seq.empty
     }
+    inherits.foreach(registerType)
+    inherits
   }
 
   private def addInheritsFrom(typeDecl: NewTypeDecl, inherits: Seq[String]): Unit = {
@@ -540,11 +552,11 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val modifiers  = modifiersForDecl(node)
     val inherits   = inheritsFrom(node)
 
-    val name                     = typeNameForDeclSyntax(node)
-    val (typeName, typeFullName) = calcTypeNameAndFullName(name)
-    val existingTypeDecl         = global.seenTypeDecls.keys().asScala.find(_.name == typeName)
+    val name             = typeNameForDeclSyntax(node)
+    val existingTypeDecl = global.seenTypeDecls.keys().asScala.find(_.name == name)
 
     if (existingTypeDecl.isEmpty) {
+      val (typeName, typeFullName) = calcTypeNameAndFullName(name)
       registerType(typeFullName)
 
       val (astParentType, astParentFullName) = astParentInfo()
@@ -553,7 +565,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         typeName,
         typeFullName,
         parserResult.filename,
-        s"class $typeName",
+        code(node),
         astParentType,
         astParentFullName,
         inherits = inherits
@@ -586,7 +598,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         .filter(m => !isStaticMember(m) && isInitializedMember(m))
         .map(m => astForDeclMember(m, typeDeclNode_))
 
-      val constructor = createDeclConstructor(node, memberInitCalls)
+      val constructor = createDeclConstructor(node, typeDeclNode_, memberInitCalls)
 
       // adding all class methods / functions and uninitialized, non-static members
       allClassMembers
@@ -632,6 +644,9 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
       val constructorBlock       = global.seenTypeDecls.get(typeDeclNode_).constructorBlock
       val staticConstructorBlock = global.seenTypeDecls.get(typeDeclNode_).staticConstructorBlock
 
+      val typeName     = typeDeclNode_.name
+      val typeFullName = typeDeclNode_.fullName
+
       addInheritsFrom(typeDeclNode_, inherits)
       methodAstParentStack.push(typeDeclNode_)
       dynamicInstanceTypeStack.push(typeFullName)
@@ -645,7 +660,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         .filter(m => !isStaticMember(m) && isInitializedMember(m))
         .map(m => astForDeclMember(m, typeDeclNode_))
 
-      createDeclConstructor(node, memberInitCalls, constructorBlock)
+      createDeclConstructor(node, typeDeclNode_, memberInitCalls, constructorBlock)
 
       // adding all class methods / functions and uninitialized, non-static members
       allClassMembers
@@ -780,7 +795,6 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val (signature, returnType) = node match {
       case f: FunctionDeclSyntax =>
         val returnType = f.signature.returnClause.fold(Defines.Any)(c => code(c.`type`))
-        registerType(returnType)
         (s"$returnType $methodFullName ${code(f.signature.parameterClause)}", returnType)
       case a: AccessorDeclSyntax =>
         val returnType = Defines.Any
@@ -793,15 +807,14 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
         (s"$returnType $methodFullName ()", returnType)
       case s: SubscriptDeclSyntax =>
         val returnType = code(s.returnClause.`type`)
-        registerType(returnType)
         (s"$returnType $methodFullName ${s.parameterClause.parameters.children.map(code)}", returnType)
       case c: ClosureExprSyntax =>
         val returnType = c.signature.flatMap(_.returnClause).fold(Defines.Any)(r => code(r.`type`))
         val paramClauseCode =
           c.signature.flatMap(_.parameterClause).fold("")(code).stripPrefix("(").stripSuffix(")")
-        registerType(returnType)
         (s"$returnType $methodFullName ($paramClauseCode)", returnType)
     }
+    registerType(returnType)
 
     val codeString  = code(node)
     val methodNode_ = methodNode(node, methodName, codeString, methodFullName, Option(signature), filename)
@@ -992,19 +1005,20 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     val modifiers  = modifiersForDecl(node)
     val aliasName  = code(node.initializer.value)
 
-    val name                     = typeNameForDeclSyntax(node)
-    val (typeName, typeFullName) = calcTypeNameAndFullName(name)
-    registerType(typeFullName)
+    val name             = typeNameForDeclSyntax(node)
+    val existingTypeDecl = global.seenTypeDecls.keys().asScala.find(_.name == name)
 
-    val existingTypeDecl = global.seenTypeDecls.keys().asScala.find(_.name == typeName)
     if (existingTypeDecl.isEmpty) {
+      val (typeName, typeFullName) = calcTypeNameAndFullName(name)
+      registerType(typeFullName)
+
       val (astParentType, astParentFullName) = astParentInfo()
       val typeDeclNode_ = typeDeclNode(
         node,
         typeName,
         typeFullName,
         parserResult.filename,
-        s"class $typeName",
+        code(node),
         astParentType,
         astParentFullName,
         alias = Option(aliasName)
@@ -1022,7 +1036,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
       diffGraph.addEdge(methodAstParentStack.head, typeDeclNode_, EdgeTypes.AST)
 
-      val constructor = createDeclConstructor(node, List.empty)
+      val constructor = createDeclConstructor(node, typeDeclNode_, List.empty)
       if (constructor.isDefined) {
         global.seenTypeDecls.put(typeDeclNode_, global.ConstructorBlocks(constructor.get.methodBlock, Ast()))
       }
