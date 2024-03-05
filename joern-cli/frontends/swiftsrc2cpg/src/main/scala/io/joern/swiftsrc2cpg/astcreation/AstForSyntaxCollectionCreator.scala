@@ -5,6 +5,7 @@ import io.joern.swiftsrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.datastructures.Stack.*
+import io.shiftleft.codepropertygraph.generated.nodes.File.PropertyDefaults
 
 trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
@@ -14,14 +15,13 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
       case Nil         => Ast()
       case head :: Nil => astForNodeWithFunctionReference(head)
       case elements =>
-        val blockNode_ = blockNode(node, "<empty>", Defines.Any)
+        val blockNode_ = blockNode(node, PropertyDefaults.Code, Defines.Any)
         scope.pushNewBlockScope(blockNode_)
         localAstParentStack.push(blockNode_)
         val childrenAsts = astsForBlockElements(elements)
         localAstParentStack.pop()
         scope.popScope()
         blockAst(blockNode_, childrenAsts)
-
     }
   }
 

@@ -52,11 +52,16 @@ class SimpleAstCreationPassTest extends AbstractPassTest {
         |var d: String? = ""
         |""".stripMargin) { cpg =>
       val List(method)     = cpg.method.nameExact("<global>").l
-      val List(a, b, c, d) = method.ast.isIdentifier.l
+      val List(a, b, c, d) = method.block.ast.isIdentifier.l
       a.typeFullName shouldBe Defines.Any
       b.typeFullName shouldBe Defines.Int
       c.typeFullName shouldBe Defines.String
       d.typeFullName shouldBe Defines.String
+      val List(localA, localB, localC, localD) = method.block.local.l
+      localA.typeFullName shouldBe Defines.Any
+      localB.typeFullName shouldBe Defines.Int
+      localC.typeFullName shouldBe Defines.String
+      localD.typeFullName shouldBe Defines.String
     }
 
     "have correct structure for tuple variable declarations" in AstFixture("""
