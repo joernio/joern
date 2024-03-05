@@ -21,7 +21,6 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
         localAstParentStack.pop()
         scope.popScope()
         blockAst(blockNode_, childrenAsts)
-
     }
   }
 

@@ -5,6 +5,7 @@ import io.joern.swiftsrc2cpg.datastructures.MethodScope
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.swiftsrc2cpg.passes.Defines
 import io.joern.x2cpg.Ast
+import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.ValidationMode
 import io.shiftleft.codepropertygraph.generated.EvaluationStrategies
 import io.shiftleft.codepropertygraph.generated.nodes.NewModifier
@@ -356,7 +357,18 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForReturnClauseSyntax(node: ReturnClauseSyntax): Ast                   = notHandledYet(node)
   private def astForSameTypeRequirementSyntax(node: SameTypeRequirementSyntax): Ast     = notHandledYet(node)
   private def astForSourceFileSyntax(node: SourceFileSyntax): Ast = {
-    astForNode(node.statements)
+    node.statements.children.toList match {
+      case Nil => Ast()
+      case head :: Nil =>
+        val blockNode_ = blockNode(node, "<empty>", Defines.Any)
+        scope.pushNewBlockScope(blockNode_)
+        localAstParentStack.push(blockNode_)
+        val childrenAst = astForNodeWithFunctionReference(head)
+        localAstParentStack.pop()
+        scope.popScope()
+        blockAst(blockNode_, List(childrenAst))
+      case _ => astForNode(node.statements)
+    }
   }
   private def astForSpecializeAvailabilityArgumentSyntax(node: SpecializeAvailabilityArgumentSyntax): Ast =
     notHandledYet(node)
