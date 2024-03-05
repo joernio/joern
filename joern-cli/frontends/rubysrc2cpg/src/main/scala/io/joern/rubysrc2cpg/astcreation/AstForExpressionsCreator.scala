@@ -6,7 +6,7 @@ import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.{RubyOperators, getBuiltInType}
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, PropertyNames}
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -33,6 +33,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: SplattingRubyNode        => astForSplattingRubyNode(node)
     case node: AnonymousTypeDeclaration => astForAnonymousTypeDeclaration(node)
     case node: ProcOrLambdaExpr         => astForProcOrLambdaExpr(node)
+    case node: SelfIdentifier           => astForSelfIdentifier(node)
     case node: DummyNode                => Ast(node.node)
     case _                              => astForUnknown(node)
 
@@ -109,11 +110,24 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     astForMemberCall(MemberCall(node.target, node.op, node.methodName, List.empty)(node.span))
   }
 
+  /** Attempts to extract a type from the base of a member call.
+    */
+  protected def typeFromCallTarget(baseNode: RubyNode): Option[String] = {
+    astForExpression(baseNode).nodes
+      .flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME).map(_.toString))
+      .filterNot(_ == XDefines.Any)
+      .headOption
+  }
+
   protected def astForMemberCall(node: MemberCall): Ast = {
-    val fullName        = node.methodName // TODO
+    // Use the scope type recovery to attempt to obtain a receiver type for the call
+    // TODO: Type recovery should potentially resolve this
+    val fullName = typeFromCallTarget(node.target)
+      .map(x => s"$x:${node.methodName}")
+      .getOrElse(node.methodName)
     val fieldAccessAst  = astForFieldAccess(MemberAccess(node.target, node.op, node.methodName)(node.span))
     val argumentAsts    = node.arguments.map(astForMethodCallArgument)
-    val fieldAccessCall = callNode(node, code(node), node.methodName, fullName, DispatchTypes.STATIC_DISPATCH)
+    val fieldAccessCall = callNode(node, code(node), node.methodName, fullName, DispatchTypes.DYNAMIC_DISPATCH)
     callAst(fieldAccessCall, argumentAsts, Some(fieldAccessAst))
   }
 
@@ -413,6 +427,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     )
   }
 
+  private def astForSelfIdentifier(node: SelfIdentifier): Ast = {
+    val thisIdentifier = identifierNode(node, "this", code(node), scope.surroundingTypeFullName.getOrElse(Defines.Any))
+    Ast(thisIdentifier)
+  }
+
   protected def astForUnknown(node: RubyNode): Ast = {
     val className = node.getClass.getSimpleName
     val text      = code(node)
@@ -421,11 +440,14 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForMemberCallWithoutBlock(node: SimpleCall, memberAccess: MemberAccess): Ast = {
-    val receiverAst    = astForFieldAccess(memberAccess)
-    val methodName     = memberAccess.methodName
-    val methodFullName = methodName // TODO
-    val argumentAsts   = node.arguments.map(astForMethodCallArgument)
-    val call           = callNode(node, code(node), methodName, methodFullName, DispatchTypes.STATIC_DISPATCH)
+    val receiverAst = astForFieldAccess(memberAccess)
+    val methodName  = memberAccess.methodName
+    // TODO: Type recovery should potentially resolve this
+    val methodFullName = typeFromCallTarget(memberAccess.target)
+      .map(x => s"$x:$methodName")
+      .getOrElse(methodName)
+    val argumentAsts = node.arguments.map(astForMethodCallArgument)
+    val call         = callNode(node, code(node), methodName, methodFullName, DispatchTypes.DYNAMIC_DISPATCH)
     callAst(call, argumentAsts, None, Some(receiverAst))
   }
 
