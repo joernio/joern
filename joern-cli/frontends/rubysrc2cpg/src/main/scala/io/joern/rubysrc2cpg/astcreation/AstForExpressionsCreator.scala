@@ -196,13 +196,63 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
             logger.warn(s"Unrecognized assignment operator: ${code(node)} ($relativeFileName), skipping")
             astForUnknown(node)
           case Some(op) =>
-            val lhsAst = astForExpression(node.lhs)
-            val rhsAst = astForExpression(node.rhs)
-            val call   = callNode(node, code(node), op, op, DispatchTypes.STATIC_DISPATCH)
-            callAst(call, Seq(lhsAst, rhsAst))
+            node.rhs match {
+              case cfNode: ControlFlowExpression =>
+                def elseAssignNil = Option {
+                  ElseClause(
+                    StatementList(
+                      SingleAssignment(
+                        node.lhs,
+                        node.op,
+                        StaticLiteral(getBuiltInType(Defines.NilClass))(node.span.spanStart("nil"))
+                      )(node.span.spanStart(s"${node.lhs.span.text} ${node.op} nil")) :: Nil
+                    )(node.span.spanStart(s"${node.lhs.span.text} ${node.op} nil"))
+                  )(node.span.spanStart(s"else\n\t${node.lhs.span.text} ${node.op} nil\nend"))
+                }
+
+                astForExpression(
+                  transformLastRubyNodeInControlFlowExpressionBody(
+                    cfNode,
+                    x => reassign(node.lhs, node.op, x),
+                    elseAssignNil
+                  )
+                )
+              case _ =>
+                val lhsAst = astForExpression(node.lhs)
+                val rhsAst = astForExpression(node.rhs)
+
+                val call = callNode(node, code(node), op, op, DispatchTypes.STATIC_DISPATCH)
+                callAst(call, Seq(lhsAst, rhsAst))
+            }
         }
     }
+  }
 
+  private def reassign(lhs: RubyNode, op: String, rhs: RubyNode): RubyNode = {
+    def stmtListAssigningLastExpression(stmts: List[RubyNode]): List[RubyNode] = stmts match {
+      case (head: ControlFlowClause) :: Nil => clauseAssigningLastExpression(head) :: Nil
+      case head :: Nil =>
+        SingleAssignment(lhs, op, head)(lhs.span.spanStart(s"${lhs.span.text} $op ${head.span.text}")) :: Nil
+      case Nil          => List.empty
+      case head :: tail => head :: stmtListAssigningLastExpression(tail)
+    }
+
+    def clauseAssigningLastExpression(x: RubyNode with ControlFlowClause): RubyNode = x match {
+      case RescueClause(exceptionClassList, assignment, thenClause) =>
+        RescueClause(exceptionClassList, assignment, reassign(lhs, op, thenClause))(x.span)
+      case EnsureClause(thenClause)           => EnsureClause(reassign(lhs, op, thenClause))(x.span)
+      case ElsIfClause(condition, thenClause) => ElsIfClause(condition, reassign(lhs, op, thenClause))(x.span)
+      case ElseClause(thenClause)             => ElseClause(reassign(lhs, op, thenClause))(x.span)
+      case WhenClause(matchExpressions, matchSplatExpression, thenClause) =>
+        WhenClause(matchExpressions, matchSplatExpression, reassign(lhs, op, thenClause))(x.span)
+    }
+
+    rhs match {
+      case StatementList(statements) => StatementList(stmtListAssigningLastExpression(statements))(rhs.span)
+      case clause: ControlFlowClause => clauseAssigningLastExpression(clause)
+      case _ =>
+        SingleAssignment(lhs, op, rhs)(lhs.span.spanStart(s"${lhs.span.text} $op ${rhs.span.text}"))
+    }
   }
 
   // `x.y = 1` is lowered as `x.y=(1)`, i.e. as calling `y=` on `x` with argument `1`

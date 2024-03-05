@@ -1,7 +1,7 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Literal}
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import io.shiftleft.semanticcpg.language.*
 
@@ -125,27 +125,21 @@ class SingleAssignmentTests extends RubyCode2CpgFixture {
         |x = if true then 20 else 40 end
         |""".stripMargin)
 
-    val List(assignment) = cpg.assignment.l
-    val rhs              = assignment.argument(2).asInstanceOf[Call]
+    val List(assignmentIfBranch, assignmentElseBranch) = cpg.assignment.l
 
-    rhs.code shouldBe "if true then 20 else 40 end"
-    rhs.methodFullName shouldBe Operators.conditional
+    val rhsIfBranchIdentifier = assignmentIfBranch.argument(1).asInstanceOf[Identifier]
+    val rhsIfBranchValue      = assignmentIfBranch.argument(2).asInstanceOf[Literal]
 
-    val test      = rhs.argument(1)
-    val thenBlock = rhs.argument(2).asInstanceOf[Block]
-    val elseBlock = rhs.argument(3).asInstanceOf[Block]
+    val rhsElseBranchIdentifier = assignmentElseBranch.argument(1).asInstanceOf[Identifier]
+    val rhsElseBranchValue      = assignmentElseBranch.argument(2).asInstanceOf[Literal]
 
-    test.code shouldBe "true"
-    test.lineNumber shouldBe Some(2)
+    assignmentIfBranch.methodFullName shouldBe Operators.assignment
+    rhsIfBranchIdentifier.code shouldBe "x"
+    rhsIfBranchValue.code shouldBe "20"
 
-    val List(twenty: Literal) = thenBlock.astChildren.l: @unchecked
-    val List(forty: Literal)  = elseBlock.astChildren.l: @unchecked
-
-    twenty.code shouldBe "20"
-    twenty.lineNumber shouldBe Some(2)
-
-    forty.code shouldBe "40"
-    forty.lineNumber shouldBe Some(2)
+    assignmentElseBranch.methodFullName shouldBe Operators.assignment
+    rhsElseBranchIdentifier.code shouldBe "x"
+    rhsElseBranchValue.code shouldBe "40"
   }
 
 }

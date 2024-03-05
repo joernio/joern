@@ -223,8 +223,19 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def astsForImplicitReturnStatement(node: RubyNode): Seq[Ast] = {
+    def elseReturnNil = Option {
+      ElseClause(
+        StatementList(
+          ReturnExpression(StaticLiteral(getBuiltInType(Defines.NilClass))(node.span.spanStart("nil")) :: Nil)(
+            node.span.spanStart("return nil")
+          ) :: Nil
+        )(node.span.spanStart("return nil"))
+      )(node.span.spanStart("else\n\treturn nil\nend"))
+    }
+
     node match
-      case expr: ControlFlowExpression => astsForStatement(rubyNodeForExplicitReturnControlFlowExpression(expr))
+      case expr: ControlFlowExpression =>
+        astsForStatement(transformLastRubyNodeInControlFlowExpressionBody(expr, returnLastNode, elseReturnNil))
       case _: (LiteralExpr | BinaryExpression | UnaryExpression | SimpleIdentifier | SimpleCall | IndexAccess |
             Association) =>
         astForReturnStatement(ReturnExpression(List(node))(node.span)) :: Nil
@@ -272,10 +283,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     *   the node to wrap a return around. If a StatementList is given, then the ReturnExpression will wrap around the
     *   final element.
     * @return
-    *   the RubyNode with an explicit ReturnExpression.
+    *   the RubyNode with an explicit expression
     */
   private def returnLastNode(x: RubyNode): RubyNode = {
-
     def statementListReturningLastExpression(stmts: List[RubyNode]): List[RubyNode] = stmts match {
       case (head: ControlFlowClause) :: Nil => clauseReturningLastExpression(head) :: Nil
       case head :: Nil                      => ReturnExpression(head :: Nil)(head.span) :: Nil
@@ -300,50 +310,46 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     }
   }
 
-  private def rubyNodeForExplicitReturnControlFlowExpression(node: RubyNode with ControlFlowExpression): RubyNode = {
-
-    /** For missing else-branches, we want to make sure there is an implicit nil return
-      */
-    def elseReturnNil = Option {
-      ElseClause(
-        StatementList(
-          ReturnExpression(StaticLiteral(getBuiltInType(Defines.NilClass))(node.span.spanStart("nil")) :: Nil)(
-            node.span.spanStart("return nil")
-          ) :: Nil
-        )(node.span.spanStart("return nil"))
-      )(node.span.spanStart("else\n\treturn nil\nend"))
-    }
-
+  /** @param node
+    *   \- Control Flow Expression RubyNode
+    * @param transform
+    *   \- RubyNode => RubyNode function for transformation on last ruby node
+    * @return
+    *   RubyNode with transform function applied
+    */
+  protected def transformLastRubyNodeInControlFlowExpressionBody(
+    node: RubyNode with ControlFlowExpression,
+    transform: RubyNode => RubyNode,
+    defaultElseBranch: Option[ElseClause]
+  ): RubyNode = {
     node match {
       case RescueExpression(body, rescueClauses, elseClause, ensureClause) =>
         // Ensure never returns a value, only the main body, rescue & else clauses
         RescueExpression(
-          returnLastNode(body),
-          rescueClauses.map(returnLastNode),
-          elseClause.map(returnLastNode).orElse(elseReturnNil),
+          transform(body),
+          rescueClauses.map(transform),
+          elseClause.map(transform).orElse(defaultElseBranch),
           ensureClause
         )(node.span)
-      case WhileExpression(condition, body) => WhileExpression(condition, returnLastNode(body))(node.span)
-      case UntilExpression(condition, body) => UntilExpression(condition, returnLastNode(body))(node.span)
+      case WhileExpression(condition, body) => WhileExpression(condition, transform(body))(node.span)
+      case UntilExpression(condition, body) => UntilExpression(condition, transform(body))(node.span)
       case IfExpression(condition, thenClause, elsifClauses, elseClause) =>
         IfExpression(
           condition,
-          returnLastNode(thenClause),
-          elsifClauses.map(returnLastNode),
-          elseClause.map(returnLastNode).orElse(elseReturnNil)
+          transform(thenClause),
+          elsifClauses.map(transform),
+          elseClause.map(transform).orElse(defaultElseBranch)
         )(node.span)
       case UnlessExpression(condition, trueBranch, falseBranch) =>
-        UnlessExpression(condition, returnLastNode(trueBranch), falseBranch.map(returnLastNode).orElse(elseReturnNil))(
+        UnlessExpression(condition, transform(trueBranch), falseBranch.map(transform).orElse(defaultElseBranch))(
           node.span
         )
       case ForExpression(forVariable, iterableVariable, doBlock) =>
-        ForExpression(forVariable, iterableVariable, returnLastNode(doBlock))(node.span)
+        ForExpression(forVariable, iterableVariable, transform(doBlock))(node.span)
       case CaseExpression(expression, whenClauses, elseClause) =>
-        CaseExpression(
-          expression,
-          whenClauses.map(returnLastNode),
-          elseClause.map(returnLastNode).orElse(elseReturnNil)
-        )(node.span)
+        CaseExpression(expression, whenClauses.map(transform), elseClause.map(transform).orElse(defaultElseBranch))(
+          node.span
+        )
     }
   }
 }
