@@ -1,7 +1,8 @@
 package io.joern.swiftsrc2cpg.passes.dependency
 
 import io.joern.swiftsrc2cpg.testfixtures.SwiftSrc2CpgSuite
-import io.shiftleft.semanticcpg.language._
+import io.shiftleft.codepropertygraph.generated.nodes.File.PropertyDefaults
+import io.shiftleft.semanticcpg.language.*
 
 class DependenciesPassTests extends SwiftSrc2CpgSuite {
 
@@ -39,7 +40,7 @@ class DependenciesPassTests extends SwiftSrc2CpgSuite {
         debPackageDesc.dependencyGroupId shouldBe Some("PackageDescription")
 
         depA.name shouldBe "DepA"
-        depA.version shouldBe "<empty>"
+        depA.version shouldBe PropertyDefaults.Name
         depA.dependencyGroupId shouldBe Some("PathA")
 
         depB.name shouldBe "https://github.com/DepB"
@@ -67,7 +68,7 @@ class DependenciesPassTests extends SwiftSrc2CpgSuite {
         depG.dependencyGroupId shouldBe None
 
         depH.name shouldBe "../some/path/DepH"
-        depH.version shouldBe "<empty>"
+        depH.version shouldBe PropertyDefaults.Name
         depH.dependencyGroupId shouldBe None
       }
     }

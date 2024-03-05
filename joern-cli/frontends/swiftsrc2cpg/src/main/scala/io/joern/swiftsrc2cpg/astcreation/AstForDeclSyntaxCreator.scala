@@ -16,6 +16,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewCall
 import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
+import io.shiftleft.codepropertygraph.generated.nodes.File.PropertyDefaults
 
 import scala.jdk.CollectionConverters.*
 
@@ -804,7 +805,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
     val codeString  = code(node)
     val methodNode_ = methodNode(node, methodName, codeString, methodFullName, Option(signature), filename)
-    val block       = blockNode(node, "<empty>", Defines.Any)
+    val block       = blockNode(node, PropertyDefaults.Code, Defines.Any)
     methodAstParentStack.push(methodNode_)
     scope.pushNewMethodScope(methodFullName, methodName, block, capturingRefNode)
     localAstParentStack.push(block)

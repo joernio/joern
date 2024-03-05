@@ -16,6 +16,7 @@ import io.shiftleft.codepropertygraph.generated.EdgeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.Operators
+import io.shiftleft.codepropertygraph.generated.nodes.File.PropertyDefaults
 
 trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -360,10 +361,10 @@ trait AstForSyntaxCreator(implicit withSchemaValidation: ValidationMode) { this:
   private def astForSourceFileSyntax(node: SourceFileSyntax): Ast = {
     node.statements.children.toList match {
       case Nil =>
-        val blockNode_ = blockNode(node, "<empty>", Defines.Any)
+        val blockNode_ = blockNode(node, PropertyDefaults.Code, Defines.Any)
         blockAst(blockNode_, List.empty)
       case head :: Nil =>
-        val blockNode_ = blockNode(node, "<empty>", Defines.Any)
+        val blockNode_ = blockNode(node, PropertyDefaults.Code, Defines.Any)
         scope.pushNewBlockScope(blockNode_)
         localAstParentStack.push(blockNode_)
         val childrenAst = astForNodeWithFunctionReference(head)
