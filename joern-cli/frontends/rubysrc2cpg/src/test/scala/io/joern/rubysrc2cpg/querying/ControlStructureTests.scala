@@ -387,4 +387,36 @@ class ControlStructureTests extends RubyCode2CpgFixture {
       }
     }
   }
+
+  "implicit if-elsif-else assignment" should {
+    val cpg = code("""
+        |   a = if (y > 3) then 123 elsif(y < 6) then 2003 elsif(y < 10) then 982 else 456 end
+        |""".stripMargin)
+
+    "Create assignment operators for each branch" in {
+      inside(cpg.call.name(Operators.assignment).l) {
+        case ifAssignment :: elsifOneAssignment :: elsifTwoAssignment :: elseAssignment :: Nil =>
+          ifAssignment.code shouldBe "a = 123"
+          elsifOneAssignment.code shouldBe "a = 2003"
+          elsifTwoAssignment.code shouldBe "a = 982"
+          elseAssignment.code shouldBe "a = 456"
+        case xs => fail(s"Expected four assignments, instead found ${xs.code.mkString(", ")}")
+      }
+    }
+  }
+
+  "implicit if assignment" should {
+    val cpg = code("""
+        | a = if(x > 4) then 123 end
+        |""".stripMargin)
+
+    "create assignment operators for if and default else branch" in {
+      inside(cpg.call.name(Operators.assignment).l) {
+        case ifAssignment :: defaultElseAssignment :: Nil =>
+          ifAssignment.code shouldBe "a = 123"
+          defaultElseAssignment.code shouldBe "a = nil"
+        case xs => fail(s"Expected two assignments, instead found ${xs.code.mkString(", ")}")
+      }
+    }
+  }
 }
