@@ -11,7 +11,8 @@ import scala.util.Try
 import scala.jdk.CollectionConverters._
 
 case class Py2CpgOnFileSystemConfig(
-  venvDir: Path = Paths.get(".venv"),
+  venvDir: Option[Path] = None,
+  venvDirs: Seq[Path] = Nil,
   ignoreVenvDir: Boolean = true,
   ignorePaths: Seq[Path] = Nil,
   ignoreDirNames: Seq[String] = Nil,
@@ -19,7 +20,11 @@ case class Py2CpgOnFileSystemConfig(
 ) extends X2CpgConfig[Py2CpgOnFileSystemConfig]
     with TypeRecoveryParserConfig[Py2CpgOnFileSystemConfig] {
   def withVenvDir(venvDir: Path): Py2CpgOnFileSystemConfig = {
-    copy(venvDir = venvDir).withInheritedFields(this)
+    copy(venvDir = Option(venvDir)).withInheritedFields(this)
+  }
+
+  def withVenvDirs(venvDirs: Seq[Path]): Py2CpgOnFileSystemConfig = {
+    copy(venvDirs = venvDirs).withInheritedFields(this)
   }
 
   def withIgnoreVenvDir(value: Boolean): Py2CpgOnFileSystemConfig = {
@@ -52,7 +57,7 @@ class Py2CpgOnFileSystem extends X2CpgFrontend[Py2CpgOnFileSystemConfig] {
     X2Cpg.withNewEmptyCpg(config.outputPath, config) { (cpg, _) =>
       val venvIgnorePath =
         if (config.ignoreVenvDir) {
-          config.venvDir :: Nil
+          config.venvDir.toList ++ config.venvDirs
         } else {
           Nil
         }
@@ -70,10 +75,9 @@ class Py2CpgOnFileSystem extends X2CpgFrontend[Py2CpgOnFileSystemConfig] {
           ignoredFilesPath = Option(config.ignoredFiles)
         )
         .map(x => Path.of(x))
+        .filter { file => filterEnvDir(config, file) }
         .filter { file => filterIgnoreDirNames(file, inputPath, ignoreDirNamesSet) }
-        .filter { file =>
-          !absoluteIgnorePaths.exists(ignorePath => file.startsWith(ignorePath))
-        }
+        .filter { file => !absoluteIgnorePaths.exists(ignorePath => file.startsWith(ignorePath)) }
 
       val inputProviders = inputFiles.map { inputFile => () =>
         {
@@ -93,6 +97,20 @@ class Py2CpgOnFileSystem extends X2CpgFrontend[Py2CpgOnFileSystemConfig] {
     }
   }
 
+  private def filterEnvDir(config: Py2CpgOnFileSystemConfig, file: Path): Boolean = {
+    if (!config.ignoreVenvDir || config.venvDirs.nonEmpty || config.venvDir.isDefined) {
+      true
+    } else {
+      val dir = if (!Files.isDirectory(file)) {
+        file.getParent
+      } else {
+        file
+      }
+      val dirHasEnvConfig = dir.resolve("pyvenv.cfg").toFile.exists()
+      !dirHasEnvConfig
+    }
+  }
+
   private def filterIgnoreDirNames(file: Path, inputPath: Path, ignoreDirNamesSet: Set[String]): Boolean = {
     var parts = inputPath.relativize(file).iterator().asScala.toList
 
@@ -108,7 +126,7 @@ class Py2CpgOnFileSystem extends X2CpgFrontend[Py2CpgOnFileSystemConfig] {
   private def logConfiguration(config: Py2CpgOnFileSystemConfig): Unit = {
     logger.info(s"Output file: ${config.outputPath}")
     logger.info(s"Input directory: ${config.inputPath}")
-    logger.info(s"Venv directory: ${config.venvDir}")
+    logger.info(s"Venv directories: ${(config.venvDir.toList ++ config.venvDirs).mkString(", ")}")
     logger.info(s"IgnoreVenvDir: ${config.ignoreVenvDir}")
     logger.info(s"IgnorePaths: ${config.ignorePaths.mkString(", ")}")
     logger.info(s"IgnoreDirNames: ${config.ignoreDirNames.mkString(", ")}")
