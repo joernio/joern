@@ -8,6 +8,7 @@ import io.joern.csharpsrc2cpg.passes.{AstCreationPass, DependencyPass}
 import io.joern.csharpsrc2cpg.utils.DotNetAstGenRunner
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.astgen.AstGenRunner.AstGenRunnerResult
+import io.joern.x2cpg.astgen.ParserResult
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
 import io.joern.x2cpg.passes.frontend.MetaDataPass
 import io.joern.x2cpg.utils.{ConcurrentTaskUtil, Environment, HashUtil, Report}
@@ -78,15 +79,7 @@ object CSharpSrc2Cpg {
             Future {
               val parserResult = DotNetJsonParser.readFile(Paths.get(file))
               val relativeFileName = if (Environment.operatingSystem == Environment.OperatingSystemType.Windows) {
-                /*
-                Addresses behaviour in Windows where a user-specific temp folder is used:
-                  parserResult.fullPath = C:\Users\runneradmin\AppData\Local\Temp\...
-                  config.inputPath = C:\Users\RUNNER~1\AppData\Local\Temp\...
-                 */
-                SourceFiles.toRelativePath(
-                  parserResult.fullPath.substring(parserResult.fullPath.indexOf("Temp")),
-                  config.inputPath.substring(config.inputPath.indexOf("Temp"))
-                )
+                handleWinUserTemp(parserResult.fullPath, config.inputPath)
               } else {
                 SourceFiles.toRelativePath(parserResult.fullPath, config.inputPath)
               }
@@ -96,6 +89,27 @@ object CSharpSrc2Cpg {
       ),
       Duration.Inf
     )
+  }
+
+  /** Addresses behaviour in Windows where a user-specific temp folder is used: parserResult.fullPath =
+    * C:\Users\runneradmin\AppData\Local\Temp\... config.inputPath = C:\Users\RUNNER~1\AppData\Local\Temp\...
+    *
+    * @param inputPath
+    *   the user-specified input path.
+    * @param parserResultFullPath
+    *   the full path according to the parser result.
+    * @return
+    *   the relative file, robust to user-specific temporary folders are used, as is the case with GitHub runners.
+    */
+  private def handleWinUserTemp(parserResultFullPath: String, inputPath: String): String = {
+    if (parserResultFullPath.contains("Temp") && inputPath.contains("Temp")) {
+      SourceFiles.toRelativePath(
+        parserResultFullPath.substring(parserResultFullPath.indexOf("Temp")),
+        inputPath.substring(inputPath.indexOf("Temp"))
+      )
+    } else {
+      SourceFiles.toRelativePath(parserResultFullPath, inputPath)
+    }
   }
 
 }
