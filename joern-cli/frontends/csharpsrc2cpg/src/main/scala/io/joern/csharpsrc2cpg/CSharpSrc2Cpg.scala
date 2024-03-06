@@ -79,7 +79,7 @@ object CSharpSrc2Cpg {
             Future {
               val parserResult = DotNetJsonParser.readFile(Paths.get(file))
               val relativeFileName = if (Environment.operatingSystem == Environment.OperatingSystemType.Windows) {
-                handleWinUserTemp(config.inputPath, parserResult)
+                handleWinUserTemp(parserResult.fullPath, config.inputPath)
               } else {
                 SourceFiles.toRelativePath(parserResult.fullPath, config.inputPath)
               }
@@ -96,19 +96,19 @@ object CSharpSrc2Cpg {
     *
     * @param inputPath
     *   the user-specified input path.
-    * @param parserResult
-    *   the parser result.
+    * @param parserResultFullPath
+    *   the full path according to the parser result.
     * @return
     *   the relative file, robust to user-specific temporary folders are used, as is the case with GitHub runners.
     */
-  private def handleWinUserTemp(inputPath: String, parserResult: ParserResult): String = {
-    if (parserResult.fullPath.contains("Temp") && inputPath.contains("Temp")) {
+  private def handleWinUserTemp(parserResultFullPath: String, inputPath: String): String = {
+    if (parserResultFullPath.contains("Temp") && inputPath.contains("Temp")) {
       SourceFiles.toRelativePath(
-        parserResult.fullPath.substring(parserResult.fullPath.indexOf("Temp")),
+        parserResultFullPath.substring(parserResultFullPath.indexOf("Temp")),
         inputPath.substring(inputPath.indexOf("Temp"))
       )
     } else {
-      SourceFiles.toRelativePath(parserResult.fullPath, config.inputPath)
+      SourceFiles.toRelativePath(parserResultFullPath, inputPath)
     }
   }
 
