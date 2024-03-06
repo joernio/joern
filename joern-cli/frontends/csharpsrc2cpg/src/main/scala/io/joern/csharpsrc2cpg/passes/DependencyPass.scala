@@ -1,14 +1,13 @@
 package io.joern.csharpsrc2cpg.passes
 
 import better.files.File
-import io.joern.csharpsrc2cpg.datastructures.CSharpProgramSummary
 import io.joern.semanticcpg.utils.SecureXmlParsing
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.NewDependency
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import org.slf4j.LoggerFactory
 
-import scala.util.Try
+import scala.util.{Failure, Try}
 
 class DependencyPass(cpg: Cpg, buildFiles: List[String]) extends ForkJoinParallelCpgPass[File](cpg) {
 
@@ -20,27 +19,26 @@ class DependencyPass(cpg: Cpg, buildFiles: List[String]) extends ForkJoinParalle
     SecureXmlParsing.parseXml(part.contentAsString) match {
       case Some(xml) if xml.label == "Project" =>
         xml.child
-          .filter(_.label == "ItemGroup")
-          .flatMap(_.child)
-          .filter(_.label == "PackageReference")
-          .flatMap { packageReference =>
-            Try {
-              val packageName    = packageReference.attribute("Include").map(_.toString()).get
-              val packageVersion = packageReference.attribute("Version").map(_.toString()).get
-              NewDependency()
-                .name(packageName)
-                .version(packageVersion)
-            }.toOption
+          .collect { case x if x.label == "ItemGroup" => x.child }
+          .flatten
+          .collect {
+            case packageReference if packageReference.label == "PackageReference" =>
+              Try {
+                val packageName    = packageReference.attribute("Include").map(_.toString()).get
+                val packageVersion = packageReference.attribute("Version").map(_.toString()).get
+                val dependencyNode = NewDependency()
+                  .name(packageName)
+                  .version(packageVersion)
+                builder.addNode(dependencyNode)
+              } match {
+                case Failure(exception) =>
+                  logger.error(s"Unable to parse $packageReference for package name and version information", exception)
+                case _ =>
+              }
           }
-          .foreach(builder.addNode)
       case Some(_) =>
       case None    => logger.error(s"Failed to parse build file ${part.pathAsString}")
     }
-
-//    } match {
-//      case Failure(exception: Throwable) => logger.error(s"Failed to parse build file ${part.pathAsString}", exception)
-//      case _                             =>
-//    }
   }
 
 }
