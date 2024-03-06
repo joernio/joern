@@ -97,6 +97,9 @@ class RubyScope(summary: RubyProgramSummary)
     // TODO: While we find better ways to understand how the implicit class loading works,
     //  we can approximate that all types are in scope in the mean time.
     super.tryResolveTypeReference(typeName) match {
+      case None if GlobalTypes.builtinFunctions.contains(typeName) =>
+        // TODO: Create a builtin.json for the program summary to load
+        Option(RubyType(s"${GlobalTypes.builtinPrefix}.$typeName", List.empty, List.empty))
       case None =>
         summary.namespaceToType.flatMap(_._2).collectFirst {
           case x if x.name.split("[.]").lastOption.contains(typeName) =>

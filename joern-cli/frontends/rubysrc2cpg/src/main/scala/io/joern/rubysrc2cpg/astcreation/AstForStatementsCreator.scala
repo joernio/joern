@@ -173,7 +173,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
    * foo(<args>, <method_ref>)
    * ```
    */
-  private def astsForCallWithBlock[C <: RubyCall](node: RubyNode with RubyCallWithBlock[C]): Seq[Ast] = {
+  protected def astsForCallWithBlock[C <: RubyCall](node: RubyNode with RubyCallWithBlock[C]): Seq[Ast] = {
     val Seq(methodDecl, typeDecl, _, methodRef) = astForDoBlock(node.block): @unchecked
     val methodRefDummyNode                      = methodRef.root.map(DummyNode(_)(node.span)).toList
 

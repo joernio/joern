@@ -558,15 +558,15 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     val isClassDecl = Option(ctx.primaryValue()).map(_.getText).contains("Class") && Option(ctx.methodName())
       .map(_.getText)
       .contains("new")
+    val methodName = ctx.methodName().getText
 
     if (!hasBlock) {
-      val target     = visit(ctx.primaryValue())
-      val methodName = ctx.methodName().getText
+      val target = visit(ctx.primaryValue())
       if (methodName == "new") {
         if (!hasArguments) {
-          return ObjectInstantiation(target, List.empty)(ctx.toTextSpan)
+          return SimpleObjectInstantiation(target, List.empty)(ctx.toTextSpan)
         } else {
-          return ObjectInstantiation(target, ctx.argumentWithParentheses().arguments.map(visit))(ctx.toTextSpan)
+          return SimpleObjectInstantiation(target, ctx.argumentWithParentheses().arguments.map(visit))(ctx.toTextSpan)
         }
       } else {
         if (!hasArguments) {
@@ -583,13 +583,25 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
       val block = visit(ctx.block()).asInstanceOf[Block]
       return AnonymousClassDeclaration(freshClassName(ctx.primaryValue().toTextSpan), None, block.body)(ctx.toTextSpan)
     } else if (hasBlock) {
-      return MemberCallWithBlock(
-        visit(ctx.primaryValue()),
-        ctx.op.getText,
-        ctx.methodName().getText,
-        Option(ctx.argumentWithParentheses()).map(_.arguments).getOrElse(List()).map(visit),
-        visit(ctx.block()).asInstanceOf[Block]
-      )(ctx.toTextSpan)
+      val block  = visit(ctx.block()).asInstanceOf[Block]
+      val target = visit(ctx.primaryValue())
+      if (methodName == "new") {
+        if (!hasArguments) {
+          return ObjectInstantiationWithBlock(target, List.empty, block)(ctx.toTextSpan)
+        } else {
+          return ObjectInstantiationWithBlock(target, ctx.argumentWithParentheses().arguments.map(visit), block)(
+            ctx.toTextSpan
+          )
+        }
+      } else {
+        return MemberCallWithBlock(
+          target,
+          ctx.op.getText,
+          methodName,
+          Option(ctx.argumentWithParentheses()).map(_.arguments).getOrElse(List()).map(visit),
+          visit(ctx.block()).asInstanceOf[Block]
+        )(ctx.toTextSpan)
+      }
     }
 
     Unknown()(ctx.toTextSpan)
