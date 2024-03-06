@@ -4,7 +4,7 @@ import better.files.File
 import io.joern.csharpsrc2cpg.astcreation.AstCreator
 import io.joern.csharpsrc2cpg.datastructures.CSharpProgramSummary
 import io.joern.csharpsrc2cpg.parser.DotNetJsonParser
-import io.joern.csharpsrc2cpg.passes.AstCreationPass
+import io.joern.csharpsrc2cpg.passes.{AstCreationPass, DependencyPass}
 import io.joern.csharpsrc2cpg.utils.DotNetAstGenRunner
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.astgen.AstGenRunner.AstGenRunnerResult
@@ -44,10 +44,22 @@ class CSharpSrc2Cpg extends X2CpgFrontend[Config] {
 
         val hash = HashUtil.sha256(astCreators.map(_.parserResult).map(x => Paths.get(x.fullPath)))
         new MetaDataPass(cpg, Languages.CSHARPSRC, config.inputPath, Option(hash)).createAndApply()
+        new DependencyPass(cpg, buildFiles(config)).createAndApply()
+        // TODO: Enable download dependencies option
         new AstCreationPass(cpg, astCreators.map(_.withSummary(programSummary)), report).createAndApply()
         report.print()
       }
     }
+  }
+
+  private def buildFiles(config: Config): List[String] = {
+    SourceFiles.determine(
+      config.inputPath,
+      Set(".csproj"),
+      Option(config.defaultIgnoredFilesRegex),
+      Option(config.ignoredFilesRegex),
+      Option(config.ignoredFiles)
+    )
   }
 
 }
