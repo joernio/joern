@@ -19,8 +19,10 @@ class VenvExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropert
 
   private val testFiles: List[String] = List(
     ".venv/a1.py",
+    ".venv/sub/s1.py",
     ".venv/pyvenv.cfg",
     ".venv2/a2.py",
+    ".venv2/sub/s2.py",
     ".venv2/pyvenv.cfg",
     "folder/b.py",
     "folder/c.py",
@@ -61,7 +63,15 @@ class VenvExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropert
         "exclude nothing if ignoreVenvDir is false",
         false,
         Seq.empty,
-        Set(".venv/a1.py", ".venv2/a2.py", "folder/b.py", "folder/c.py", "main.py")
+        Set(
+          ".venv/a1.py",
+          ".venv/sub/s1.py",
+          ".venv2/a2.py",
+          ".venv2/sub/s2.py",
+          "folder/b.py",
+          "folder/c.py",
+          "main.py"
+        )
       ),
       // --
       // Test for --ignoreVenvDir == false with explicit venvdir:
@@ -69,7 +79,15 @@ class VenvExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropert
         "exclude nothing if ignoreVenvDir is false with explicit venvdir",
         false,
         Seq(".venv"),
-        Set(".venv/a1.py", ".venv2/a2.py", "folder/b.py", "folder/c.py", "main.py")
+        Set(
+          ".venv/a1.py",
+          ".venv/sub/s1.py",
+          ".venv2/a2.py",
+          ".venv2/sub/s2.py",
+          "folder/b.py",
+          "folder/c.py",
+          "main.py"
+        )
       ),
       // --
       // Test for --ignoreVenvDir == true and auto-discovery:
@@ -85,7 +103,7 @@ class VenvExcludeTests extends AnyWordSpec with Matchers with TableDrivenPropert
         "exclude if ignoreVenvDir is true with explicit venvdir",
         true,
         Seq(".venv2"),
-        Set(".venv/a1.py", "folder/b.py", "folder/c.py", "main.py")
+        Set(".venv/a1.py", ".venv/sub/s1.py", "folder/b.py", "folder/c.py", "main.py")
       ),
       // --
       // Test for --ignoreVenvDir == true and no auto-discovery with multiple venv dirs:
