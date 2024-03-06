@@ -1,5 +1,6 @@
 package io.joern.rubysrc2cpg.astcreation
 
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.ObjectInstantiation
 import io.joern.rubysrc2cpg.passes.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 
@@ -299,8 +300,21 @@ object RubyIntermediateAst {
   // TODO: Might be replaced by MemberCall simply?
   final case class MemberAccess(target: RubyNode, op: String, methodName: String)(span: TextSpan) extends RubyNode(span)
 
-  final case class ObjectInstantiation(clazz: RubyNode, arguments: List[RubyNode])(span: TextSpan)
+  /** A Ruby node that instantiates objects.
+    */
+  sealed trait ObjectInstantiation extends RubyCall
+
+  final case class SimpleObjectInstantiation(target: RubyNode, arguments: List[RubyNode])(span: TextSpan)
       extends RubyNode(span)
+      with ObjectInstantiation
+
+  final case class ObjectInstantiationWithBlock(target: RubyNode, arguments: List[RubyNode], block: Block)(
+    span: TextSpan
+  ) extends RubyNode(span)
+      with ObjectInstantiation
+      with RubyCallWithBlock[SimpleObjectInstantiation] {
+    def withoutBlock: SimpleObjectInstantiation = SimpleObjectInstantiation(target, arguments)(span)
+  }
 
   /** Represents a `do` or `{ .. }` (braces) block. */
   final case class Block(parameters: List[RubyNode], body: RubyNode)(span: TextSpan) extends RubyNode(span) {

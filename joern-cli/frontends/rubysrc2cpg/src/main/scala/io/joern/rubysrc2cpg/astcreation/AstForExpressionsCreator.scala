@@ -6,7 +6,13 @@ import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.{RubyOperators, getBuiltInType}
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{
+  ControlStructureTypes,
+  DiffGraphBuilder,
+  DispatchTypes,
+  Operators,
+  PropertyNames
+}
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -33,6 +39,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: SplattingRubyNode        => astForSplattingRubyNode(node)
     case node: AnonymousTypeDeclaration => astForAnonymousTypeDeclaration(node)
     case node: ProcOrLambdaExpr         => astForProcOrLambdaExpr(node)
+    case node: RubyCallWithBlock[_]     => astsForCallWithBlockInExpr(node)
     case node: SelfIdentifier           => astForSelfIdentifier(node)
     case node: DummyNode                => Ast(node.node)
     case _                              => astForUnknown(node)
@@ -139,8 +146,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     callAst(call, targetAst +: indexAsts)
   }
 
-  protected def astForObjectInstantiation(node: ObjectInstantiation): Ast = {
-    val className  = node.clazz.text
+  protected def astForObjectInstantiation(node: RubyNode with ObjectInstantiation): Ast = {
+    val className  = node.target.text
     val methodName = XDefines.ConstructorMethodName
     val (receiverTypeFullName, fullName) = scope.tryResolveTypeReference(className) match {
       case Some(typeMetaData) => typeMetaData.name -> s"${typeMetaData.name}:$methodName"
@@ -176,7 +183,15 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val tmpAssignment = callAst(assignmentCall, Seq(tmpIdentifier, allocAst))
 
     // Call constructor
-    val argumentAsts       = node.arguments.map(astForMethodCallArgument)
+    val argumentAsts = node match {
+      case x: SimpleObjectInstantiation => x.arguments.map(astForMethodCallArgument)
+      case x: ObjectInstantiationWithBlock =>
+        val Seq(methodDecl, typeDecl, _, methodRef) = astForDoBlock(x.block): @unchecked
+        Ast.storeInDiffGraph(methodDecl, diffGraph)
+        Ast.storeInDiffGraph(typeDecl, diffGraph)
+        x.arguments.map(astForMethodCallArgument) :+ methodRef
+    }
+
     val constructorCall    = callNode(node, code(node), methodName, fullName, DispatchTypes.STATIC_DISPATCH)
     val constructorCallAst = callAst(constructorCall, argumentAsts, Option(tmpIdentifier))
     scope.popScope()
@@ -520,6 +535,15 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     Ast.storeInDiffGraph(typeDecl, diffGraph)
 
     methodRef
+  }
+
+  private def astsForCallWithBlockInExpr[C <: RubyCall](node: RubyNode with RubyCallWithBlock[C]): Ast = {
+    val Seq(methodDecl, typeDecl, _, callWithLambdaArg) = astsForCallWithBlock(node): @unchecked
+
+    Ast.storeInDiffGraph(methodDecl, diffGraph)
+    Ast.storeInDiffGraph(typeDecl, diffGraph)
+
+    callWithLambdaArg
   }
 
   private def astForMethodCallArgument(node: RubyNode): Ast = {
