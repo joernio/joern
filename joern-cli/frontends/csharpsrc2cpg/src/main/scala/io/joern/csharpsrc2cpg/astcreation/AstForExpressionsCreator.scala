@@ -30,7 +30,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case SimpleMemberAccessExpression => astForSimpleMemberAccessExpression(expr)
       case _: IdentifierNode            => astForIdentifier(expr) :: Nil
       case ThisExpression               => astForThisReceiver(expr) :: Nil
-      case SimpleLambdaExpression       => astForSimpleLambdaExpression(expr)
+      case _: BaseLambdaExpression      => astForSimpleLambdaExpression(expr)
       case _                            => notHandledYet(expr)
   }
 
@@ -346,8 +346,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       .flatMap(x =>
         val argExpression = createDotNetNodeInfo(x.json(ParserKeys.Expression))
         argExpression.node match {
-          case SimpleLambdaExpression => astForSimpleLambdaExpression(argExpression, baseTypeHint)
-          case _                      => astForExpressionStatement(x)
+          case _: BaseLambdaExpression =>
+            astForSimpleLambdaExpression(argExpression, baseTypeHint)
+          case _ => astForExpressionStatement(x)
         }
       )
       .toSeq

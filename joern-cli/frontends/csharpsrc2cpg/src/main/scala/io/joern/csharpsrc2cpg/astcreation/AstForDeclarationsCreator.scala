@@ -460,9 +460,21 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     val name     = nextClosureName()
     val fullName = s"${scope.surroundingScopeFullName.getOrElse(Defines.UnresolvedNamespace)}.$name"
     // Set parameter type if necessary, which may require the type hint
-    val paramJson = lambdaExpression.json(ParserKeys.Parameter)
     val paramType = paramTypeHint.flatMap(AstCreatorHelper.elementTypesFromCollectionType).headOption
-    val params    = astForParameter(createDotNetNodeInfo(paramJson), 0, paramType) :: Nil
+    val paramAsts = Try(lambdaExpression.json(ParserKeys.Parameter)).toOption match {
+      case Some(parameterObj: ujson.Obj) =>
+        Seq(astForParameter(createDotNetNodeInfo(parameterObj), 0, paramType))
+      case _ =>
+        lambdaExpression
+          .json(ParserKeys.ParameterList)
+          .obj(ParserKeys.Parameters)
+          .arr
+          .map(createDotNetNodeInfo)
+          .zipWithIndex
+          .map(astForParameter(_, _, paramType))
+          .toSeq
+    }
+
     scope.pushNewScope(MethodScope(fullName))
     // Handle lambda body
     val bodyJson = createDotNetNodeInfo(lambdaExpression.json(ParserKeys.Body))
@@ -496,7 +508,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       .headOption
       .getOrElse(Defines.Any)
     val methodReturn = methodReturnNode(lambdaExpression, lambdaReturnType)
-    Ast.storeInDiffGraph(methodAst(method, params, blockAst_, methodReturn, modifiers), diffGraph)
+    Ast.storeInDiffGraph(methodAst(method, paramAsts, blockAst_, methodReturn, modifiers), diffGraph)
     // Create type decl
     val lambdaTypeDecl = typeDeclNode(lambdaExpression, name, fullName, relativeFileName, code(lambdaExpression))
     scope.surroundingScopeFullName.foreach { fn =>
