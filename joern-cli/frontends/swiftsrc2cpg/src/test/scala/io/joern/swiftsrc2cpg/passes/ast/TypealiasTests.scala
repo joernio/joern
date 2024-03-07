@@ -18,7 +18,9 @@ class TypealiasTests extends AbstractPassTest {
         |""".stripMargin) { cpg =>
       val List(intPair) = cpg.typeDecl.nameExact("IntPair").l
       intPair.aliasTypeFullName shouldBe Option("(Int, Int)")
-      intPair.member.code.l shouldBe List("foo")
+
+      val List(intPairExt) = cpg.typeDecl.nameExact("IntPair<extension>").l
+      intPairExt.member.code.l shouldBe List("foo")
     }
 
     "testTypealias2a2" in AstFixture("""
@@ -29,7 +31,9 @@ class TypealiasTests extends AbstractPassTest {
         |""".stripMargin) { cpg =>
       val List(intPair) = cpg.typeDecl.nameExact("IntPair").l
       intPair.aliasTypeFullName shouldBe Option("(Int, Int)")
-      intPair.member.code.l shouldBe List("foo")
+
+      val List(intPairExt) = cpg.typeDecl.nameExact("IntPair<extension>").l
+      intPairExt.member.code.l shouldBe List("foo")
     }
 
     "testTypealias2b" in AstFixture("typealias IntTriple = (Int, Int, Int)") { cpg =>
