@@ -7,7 +7,7 @@ import io.joern.rubysrc2cpg.datastructures.RubyProgramSummary
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.*
 import io.joern.rubysrc2cpg.parser.RubyParser
-import io.joern.rubysrc2cpg.passes.{AstCreationPass, ConfigFileCreationPass}
+import io.joern.rubysrc2cpg.passes.{RubyImportResolverPass, AstCreationPass, ConfigFileCreationPass}
 import io.joern.x2cpg.X2Cpg.withNewEmptyCpg
 import io.joern.x2cpg.passes.base.AstLinkerPass
 import io.joern.x2cpg.passes.callgraph.NaiveCallLinker
@@ -64,6 +64,8 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
       astCreationPass.createAndApply()
       val importsPass = new ImportsPass(cpg)
       importsPass.createAndApply()
+      val importResolverPass = new RubyImportResolverPass(cpg)
+      importResolverPass.createAndApply()
       TypeNodePass.withTypesFromCpg(cpg).createAndApply()
     }
   }
