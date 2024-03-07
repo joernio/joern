@@ -10,7 +10,7 @@ import java.io.{ByteArrayInputStream, ByteArrayOutputStream, InputStream, Object
 import scala.io.Source
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import scala.annotation.targetName
-import scala.collection.JavaConverters.enumerationAsScalaIteratorConverter
+import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
 import better.files.File
 import io.joern.x2cpg.utils.Environment
