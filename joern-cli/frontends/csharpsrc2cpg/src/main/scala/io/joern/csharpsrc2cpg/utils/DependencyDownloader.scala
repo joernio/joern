@@ -1,29 +1,31 @@
 package io.joern.csharpsrc2cpg.utils
 
 import better.files.File
+import io.joern.csharpsrc2cpg.Config
 import io.joern.csharpsrc2cpg.datastructures.CSharpProgramSummary
-import io.joern.semanticcpg.utils.SecureXmlParsing
+import io.joern.x2cpg.astgen.AstGenRunner.DefaultAstGenRunnerResult
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Dependency
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.LoggerFactory
 
-import java.io.{BufferedReader, FileOutputStream, InputStreamReader}
-import java.net.{HttpURLConnection, URI, URL, URLConnection}
+import java.io.FileOutputStream
+import java.net.{HttpURLConnection, URI, URLConnection}
 import java.util.zip.{GZIPInputStream, InflaterInputStream, ZipEntry}
 import scala.util.{Failure, Success, Try, Using}
-import scala.xml.Elem
 
-/** Queries NuGet for the artifacts of a programs' dependencies.
+/** Queries NuGet for the artifacts of a programs' dependencies, according to the V2 API.
+  *
+  * TODO: Note that NuGet has API throttling, so beware of that if this is to be processed concurrently.
   *
   * @see
   *   <a href="https://learn.microsoft.com/en-us/nuget/api/overview">NuGet API</a>
   */
 class DependencyDownloader(
   cpg: Cpg,
+  config: Config,
   internalProgramSummary: CSharpProgramSummary,
-  nugetRepositoryBaseUrl: String = "www.nuget.org",
-  nugetApiVersion: String = "v2"
+  nugetRepositoryApi: String = "www.nuget.org/api/v2"
 ) {
 
   private val logger = LoggerFactory.getLogger(getClass)
@@ -65,9 +67,7 @@ class DependencyDownloader(
   private def downloadDependency(targetDir: File, dependency: Dependency): Unit = {
     Seq("package", "symbolpackage")
       .map(packageType =>
-        URI(
-          s"https://$nugetRepositoryBaseUrl/api/$nugetApiVersion/$packageType/${dependency.name}/${dependency.version}"
-        ).toURL
+        URI(s"https://$nugetRepositoryApi/$packageType/${dependency.name}/${dependency.version}").toURL
       )
       .foreach { url =>
         var connection: Option[HttpURLConnection] = None
@@ -151,8 +151,36 @@ class DependencyDownloader(
     *   a summary of all the dependencies.
     */
   private def summarizeDependencies(targetDir: File): CSharpProgramSummary = {
-    // TODO: Implement
-    CSharpProgramSummary()
+    val astGenRunner = new DotNetAstGenRunner(config)
+    val astGenRunnerResult = targetDir.list
+      // Dependencies may result in files with multiple dots, so we remove the last one (the extension)
+      .groupBy(_.name.split("[.]").dropRight(1).mkString("."))
+      .collect {
+        // We need both PDB and DLL files present
+        case (name, files)
+            if files.exists(_.`extension`.contains(".pdb")) && files.exists(_.`extension`.contains(".dll")) =>
+          name -> files.filter(_.`extension`.contains(".dll")).head
+      }
+      .map { case (name, ddlFile) => astGenRunner.executeForDependencies(ddlFile, targetDir / s"$name.json") }
+      .reduceOption((a, b) =>
+        DefaultAstGenRunnerResult(
+          (a.parsedFiles ++ b.parsedFiles).distinct,
+          (a.skippedFiles ++ b.skippedFiles).distinct
+        )
+      )
+      .getOrElse(DefaultAstGenRunnerResult())
+    val mappings = astGenRunnerResult.parsedFiles.map(x => File(x)).flatMap { f =>
+      Using.resource(f.newFileInputStream) { fis =>
+        CSharpProgramSummary.jsonToInitialMapping(fis) match {
+          case Failure(exception) =>
+            logger.error(s"Unable to parse JSON program summary at $f", exception)
+            None
+          case Success(parsedJson) =>
+            Option(parsedJson)
+        }
+      }
+    }
+    CSharpProgramSummary(mappings)
   }
 
 }

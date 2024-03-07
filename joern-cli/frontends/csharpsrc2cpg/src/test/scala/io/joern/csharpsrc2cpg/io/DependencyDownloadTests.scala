@@ -28,9 +28,22 @@ class DependencyDownloadTests extends CSharpCode2CpgFixture {
       "DotNetAstGen.csproj"
     )
 
-    "result in downloading and summarizing the dependencies" in {
-      val dd      = new DependencyDownloader(cpg, CSharpProgramSummary())
-      val summary = dd.download()
+    val dd      = new DependencyDownloader(cpg, Config(), CSharpProgramSummary())
+    val summary = dd.download()
+
+    "summarize CommandLineParser (as it publishes with PDB files)" in {
+      summary.typesUnderNamespace("CommandLine.Core") should not be empty
+      summary.typesUnderNamespace("CommandLine.Infrastructure") should not be empty
+      summary.typesUnderNamespace("CommandLine.Text") should not be empty
+    }
+
+    "summarize CommandLineParser's transient dependencies" in {
+      summary.typesUnderNamespace("RailwaySharp.ErrorHandling") should not be empty
+      summary.typesUnderNamespace("CSharpx") should not be empty
+    }
+
+    "not summarize NewtonsoftJson (as it publishes without PDB files)" in {
+      summary.typesUnderNamespace("Microsoft.AspNetCore.Mvc.NewtonsoftJson") shouldBe empty
     }
 
   }

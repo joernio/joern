@@ -48,7 +48,7 @@ class CSharpSrc2Cpg extends X2CpgFrontend[Config] {
         new DependencyPass(cpg, buildFiles(config)).createAndApply()
         // If "download dependencies" is enabled, then fetch dependencies and resolve their symbols for additional types
         val programSummary = if (config.downloadDependencies) {
-          DependencyDownloader(cpg, internalProgramSummary).download()
+          DependencyDownloader(cpg, config, internalProgramSummary).download()
         } else {
           internalProgramSummary
         }

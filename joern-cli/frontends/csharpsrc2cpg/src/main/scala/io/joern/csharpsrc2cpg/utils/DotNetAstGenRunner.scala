@@ -1,16 +1,13 @@
 package io.joern.csharpsrc2cpg.utils
 
 import better.files.File
-import com.typesafe.config.ConfigFactory
 import io.joern.csharpsrc2cpg.Config
 import io.joern.x2cpg.SourceFiles
-import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, getClass}
+import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, DefaultAstGenRunnerResult, getClass}
 import io.joern.x2cpg.astgen.AstGenRunnerBase
-import io.joern.x2cpg.utils.{Environment, ExternalCommand}
+import io.joern.x2cpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
-import versionsort.VersionHelper
 
-import java.nio.file.Paths
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
@@ -66,6 +63,40 @@ class DotNetAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
   ): Try[Seq[String]] = {
     val excludeCommand = if (exclude.isEmpty) "" else s"-e \"$exclude\""
     ExternalCommand.run(s"$astGenCommand -o ${out.toString()} -i $in $excludeCommand", ".")
+  }
+
+  /** A version of `execute` that uses DotNetAstGen's DLL/PDB parser functionality.
+    * @param ddlFile
+    *   the DLL file (requires a PDB file next to it)
+    * @param out
+    *   the output JSON file name.
+    * @return
+    *   the parsing results.
+    */
+  def executeForDependencies(ddlFile: File, out: File): DefaultAstGenRunnerResult = {
+    implicit val metaData: AstGenProgramMetaData = config.astGenMetaData
+
+    def runAstGenForDependencies(in: String, out: File, exclude: String): Try[Seq[String]] = {
+      val excludeCommand = if (exclude.isEmpty) "" else s"-e \"$exclude\""
+      ExternalCommand.run(s"$astGenCommand -b ${out.toString()} -l $in $excludeCommand", ".")
+    }
+
+    logger.info(s"Running ${metaData.name} on '$ddlFile'")
+    runAstGenForDependencies(ddlFile.pathAsString, out, config.ignoredFilesRegex.toString()) match {
+      case Success(result) =>
+        val srcFiles = SourceFiles.determine(
+          out.toString(),
+          Set(".json"),
+          ignoredFilesRegex = Option(config.ignoredFilesRegex),
+          ignoredFilesPath = Option(config.ignoredFiles)
+        )
+        val parsed  = filterFiles(srcFiles, out)
+        val skipped = skippedFiles(ddlFile, result.toList)
+        DefaultAstGenRunnerResult(parsed, skipped)
+      case Failure(f) =>
+        logger.error(s"\t- running ${metaData.name} failed!", f)
+        DefaultAstGenRunnerResult()
+    }
   }
 
 }
