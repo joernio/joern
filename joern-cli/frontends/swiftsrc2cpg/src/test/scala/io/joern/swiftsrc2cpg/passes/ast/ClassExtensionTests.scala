@@ -1,5 +1,6 @@
 package io.joern.swiftsrc2cpg.passes.ast
 
+import io.joern.swiftsrc2cpg.passes.ExtensionInheritancePass
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
@@ -90,7 +91,7 @@ class ClassExtensionTests extends AbstractPassTest {
       "someMethod",
       "square"
     )
-    typeDeclFoo.inheritsFromTypeFullName.l shouldBe List("Bar")
+    typeDeclFoo.inheritsFromTypeFullName.sorted.l shouldBe List("Bar", "code.swift:<global>:Foo<extension>")
     typeDeclFoo.modifier.modifierType.l shouldBe List(ModifierTypes.PRIVATE)
 
     val List(fooConstructor) = typeDeclFoo.method.isConstructor.l
@@ -130,6 +131,7 @@ class ClassExtensionTests extends AbstractPassTest {
         |$classFooCode
         |$classFooExtensionCode
         |""".stripMargin) { cpg =>
+      new ExtensionInheritancePass(cpg).createAndApply()
       testClassExtension(cpg)
     }
 
@@ -139,6 +141,7 @@ class ClassExtensionTests extends AbstractPassTest {
         |$classFooExtensionCode
         |$classFooCode
         |""".stripMargin) { cpg =>
+      new ExtensionInheritancePass(cpg).createAndApply()
       testClassExtension(cpg)
     }
 
