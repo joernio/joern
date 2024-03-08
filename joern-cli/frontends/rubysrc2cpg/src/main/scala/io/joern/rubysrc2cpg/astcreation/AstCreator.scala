@@ -31,7 +31,7 @@ class AstCreator(
 
   /* Used to track variable names and their LOCAL nodes.
    */
-  protected val scope: RubyScope = new RubyScope(programSummary)
+  protected val scope: RubyScope = new RubyScope(programSummary, projectRoot)
 
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
 
