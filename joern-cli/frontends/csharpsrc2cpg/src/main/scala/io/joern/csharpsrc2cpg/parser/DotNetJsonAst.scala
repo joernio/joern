@@ -89,6 +89,7 @@ object DotNetJsonAst {
   object StringLiteralExpression  extends LiteralExpr
   object TrueLiteralExpression    extends LiteralExpr
   object FalseLiteralExpression   extends LiteralExpr
+  object NullLiteralExpression    extends LiteralExpr
 
   object UsingDirective extends BaseExpr
 
