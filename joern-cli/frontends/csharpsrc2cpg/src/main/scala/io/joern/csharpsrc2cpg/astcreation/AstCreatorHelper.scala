@@ -123,7 +123,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
           .map(_.name)
           .orElse(BuiltinTypes.DotNetTypeMap.get(typeString))
           .getOrElse(typeString)
-      case  _ =>
+      case _ =>
         Try(node.json(ParserKeys.Type)).map(createDotNetNodeInfo) match
           case Success(typeNode) =>
             nodeTypeFullName(typeNode)
