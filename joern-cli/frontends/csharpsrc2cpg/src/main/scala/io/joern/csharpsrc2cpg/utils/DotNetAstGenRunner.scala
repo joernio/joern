@@ -29,22 +29,24 @@ class DotNetAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
 
   override def skippedFiles(in: File, astGenOut: List[String]): List[String] = {
     val diagnosticMap = mutable.LinkedHashMap.empty[String, Seq[String]]
+
+    def addReason(reason: String, lastFile: Option[String] = None) = {
+      val key = lastFile.getOrElse(diagnosticMap.last._1)
+      diagnosticMap.updateWith(key) {
+        case Some(x) => Option(x :+ reason)
+        case None    => Option(reason :: Nil)
+      }
+    }
+
     astGenOut.map(_.strip()).foreach {
       case s"info: DotNetAstGen.Program[0] Parsing file: $fileName" =>
         diagnosticMap.put(SourceFiles.toRelativePath(fileName, in.pathAsString), Nil)
       case s"fail: DotNetAstGen.Program[0] Error(s) encountered while parsing: $_" => // ignore
-      case s"fail: DotNetAstGen.Program[0] $reason" =>
-        val (lastFile, _) = diagnosticMap.last
-        diagnosticMap.updateWith(lastFile) {
-          case Some(x) => Option(x :+ reason)
-          case None    => Option(reason :: Nil)
-        }
+      case s"fail: DotNetAstGen.Program[0] $reason"                                => addReason(reason)
+      case s"warn: DotNetAstGen.Program[0] $filename does $reason, skipping..." =>
+        addReason(s"does $reason", Option(filename))
       case s"info: DotNetAstGen.Program[0] Skipping file: $fileName" =>
-        val reason = "Skipped"
-        diagnosticMap.updateWith(SourceFiles.toRelativePath(fileName, in.pathAsString)) {
-          case Some(x) => Option(x :+ reason)
-          case None    => Option(reason :: Nil)
-        }
+        addReason("Skipped", Option(SourceFiles.toRelativePath(fileName, in.pathAsString)))
       case _ => // ignore
     }
 
@@ -63,40 +65,6 @@ class DotNetAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
   ): Try[Seq[String]] = {
     val excludeCommand = if (exclude.isEmpty) "" else s"-e \"$exclude\""
     ExternalCommand.run(s"$astGenCommand -o ${out.toString()} -i $in $excludeCommand", ".")
-  }
-
-  /** A version of `execute` that uses DotNetAstGen's DLL/PDB parser functionality.
-    * @param ddlFile
-    *   the DLL file (requires a PDB file next to it)
-    * @param out
-    *   the output JSON file name.
-    * @return
-    *   the parsing results.
-    */
-  def executeForDependencies(ddlFile: File, out: File): DefaultAstGenRunnerResult = {
-    implicit val metaData: AstGenProgramMetaData = config.astGenMetaData
-
-    def runAstGenForDependencies(in: String, out: File, exclude: String): Try[Seq[String]] = {
-      val excludeCommand = if (exclude.isEmpty) "" else s"-e \"$exclude\""
-      ExternalCommand.run(s"$astGenCommand -b ${out.toString()} -l $in $excludeCommand", ".")
-    }
-
-    logger.info(s"Running ${metaData.name} on '$ddlFile'")
-    runAstGenForDependencies(ddlFile.pathAsString, out, config.ignoredFilesRegex.toString()) match {
-      case Success(result) =>
-        val srcFiles = SourceFiles.determine(
-          out.toString(),
-          Set(".json"),
-          ignoredFilesRegex = Option(config.ignoredFilesRegex),
-          ignoredFilesPath = Option(config.ignoredFiles)
-        )
-        val parsed  = filterFiles(srcFiles, out)
-        val skipped = skippedFiles(ddlFile, result.toList)
-        DefaultAstGenRunnerResult(parsed, skipped)
-      case Failure(f) =>
-        logger.error(s"\t- running ${metaData.name} failed!", f)
-        DefaultAstGenRunnerResult()
-    }
   }
 
 }

@@ -14,7 +14,7 @@ class DependencyDownloadTests extends CSharpCode2CpgFixture {
         |<Project Sdk="Microsoft.NET.Sdk">
         |
         |    <ItemGroup>
-        |      <PackageReference Include="CommandLineParser" Version="2.9.1" />
+        |      <PackageReference Include="CommandLineParser" />
         |      <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="3.0.0" />
         |    </ItemGroup>
         |
@@ -25,13 +25,13 @@ class DependencyDownloadTests extends CSharpCode2CpgFixture {
         |</Project>
         |
         |""".stripMargin,
-      "DotNetAstGen.csproj"
+      "dotnetastgen-macos.csproj"
     )
 
     val dd      = new DependencyDownloader(cpg, Config(), CSharpProgramSummary())
     val summary = dd.download()
 
-    "summarize CommandLineParser (as it publishes with PDB files)" in {
+    "summarize the latest version of CommandLineParser (as it publishes with PDB files)" in {
       summary.typesUnderNamespace("CommandLine.Core") should not be empty
       summary.typesUnderNamespace("CommandLine.Infrastructure") should not be empty
       summary.typesUnderNamespace("CommandLine.Text") should not be empty

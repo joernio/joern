@@ -25,7 +25,7 @@ class DependencyPass(cpg: Cpg, buildFiles: List[String]) extends ForkJoinParalle
             case packageReference if packageReference.label == "PackageReference" =>
               Try {
                 val packageName    = packageReference.attribute("Include").map(_.toString()).get
-                val packageVersion = packageReference.attribute("Version").map(_.toString()).get
+                val packageVersion = packageReference.attribute("Version").map(_.toString()).getOrElse("")
                 val dependencyNode = NewDependency()
                   .name(packageName)
                   .version(packageVersion)
