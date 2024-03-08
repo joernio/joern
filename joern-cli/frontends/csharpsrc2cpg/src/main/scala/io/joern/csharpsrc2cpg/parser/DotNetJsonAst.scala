@@ -33,6 +33,8 @@ object DotNetJsonAst {
 
   sealed trait JumpStatement extends BaseStmt
 
+  sealed trait BaseLambdaExpression extends BaseExpr
+
   object GlobalStatement extends BaseStmt
 
   object ExpressionStatement extends BaseStmt
@@ -73,7 +75,9 @@ object DotNetJsonAst {
 
   object VariableDeclarator extends DeclarationExpr
 
-  object SimpleLambdaExpression extends BaseExpr
+  object SimpleLambdaExpression extends BaseLambdaExpression
+
+  object ParenthesizedLambdaExpression extends BaseLambdaExpression
 
   sealed trait ClauseExpr extends BaseExpr
 
