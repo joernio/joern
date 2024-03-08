@@ -6,7 +6,7 @@ import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
 import io.joern.x2cpg.utils.NodeBuilders.{newIdentifierNode, newOperatorCallNode}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
-import io.shiftleft.codepropertygraph.generated.nodes.{NewFieldIdentifier, NewLiteral}
+import io.shiftleft.codepropertygraph.generated.nodes.{NewFieldIdentifier, NewLiteral, NewTypeRef}
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators}
 import ujson.Value
 
@@ -30,6 +30,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case SimpleMemberAccessExpression => astForSimpleMemberAccessExpression(expr)
       case _: IdentifierNode            => astForIdentifier(expr) :: Nil
       case ThisExpression               => astForThisReceiver(expr) :: Nil
+      case CastExpression               => astForCastExpression(expr)
       case _: BaseLambdaExpression      => astForSimpleLambdaExpression(expr)
       case _                            => notHandledYet(expr)
   }
@@ -353,4 +354,28 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       )
       .toSeq
   }
+
+  private def astForCastExpression(castExpr: DotNetNodeInfo): Seq[Ast] = {
+    val typeFullName = nodeTypeFullName(createDotNetNodeInfo(castExpr.json(ParserKeys.Type)))
+
+    val callNode = newOperatorCallNode(
+      Operators.cast,
+      code = castExpr.code,
+      typeFullName = Some(typeFullName),
+      line = line(castExpr),
+      column = column(castExpr)
+    )
+
+    val typeNode = NewTypeRef()
+      .code(nameFromNode(castExpr))
+      .lineNumber(line(castExpr))
+      .columnNumber(column(castExpr))
+      .typeFullName(typeFullName)
+    val typeAst = Ast(typeNode)
+
+    // We can guarantee that there is an expression on the RHS
+    val exprAst = astForExpression(createDotNetNodeInfo(castExpr.json(ParserKeys.Expression)))
+    Seq(callAst(callNode, Seq(typeAst) ++ exprAst))
+  }
+
 }

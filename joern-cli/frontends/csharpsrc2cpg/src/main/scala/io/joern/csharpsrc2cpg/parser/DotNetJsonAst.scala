@@ -227,6 +227,8 @@ object DotNetJsonAst {
 
   object ExpressionElement extends BaseExpr
 
+  object CastExpression extends BaseExpr
+
   object Unknown extends DotNetParserNode
 
 }
