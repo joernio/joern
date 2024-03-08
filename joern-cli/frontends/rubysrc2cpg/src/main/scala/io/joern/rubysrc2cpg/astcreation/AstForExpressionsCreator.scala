@@ -8,7 +8,6 @@ import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{
   ControlStructureTypes,
-  DiffGraphBuilder,
   DispatchTypes,
   Operators,
   PropertyNames
@@ -120,10 +119,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   /** Attempts to extract a type from the base of a member call.
     */
   protected def typeFromCallTarget(baseNode: RubyNode): Option[String] = {
-    astForExpression(baseNode).nodes
-      .flatMap(_.properties.get(PropertyNames.TYPE_FULL_NAME).map(_.toString))
-      .filterNot(_ == XDefines.Any)
-      .headOption
+    astForExpression(baseNode).nodes.flatMap { node =>
+      Option(node.propertiesMap.get(PropertyNames.TYPE_FULL_NAME)).map(_.toString)
+    }.filterNot(_ == XDefines.Any)
+     .headOption
   }
 
   protected def astForMemberCall(node: MemberCall): Ast = {

@@ -173,17 +173,9 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
    * foo(<args>, <method_ref>)
    * ```
    */
-  private def astsForCallWithBlock[C <: RubyCall](node: RubyNode with RubyCallWithBlock[C]): Seq[Ast] = {
-    // Create closure structures: [MethodDecl, TypeRef, MethodRef]
-    val block              = node.block
-    val methodName         = nextClosureName()
-    val methodAstsWithRefs = astForMethodDeclaration(block.toMethodDeclaration(methodName), withRefsAndTypes = true)
-    val methodRefArgs =
-      methodAstsWithRefs.flatMap(_.nodes).collect { case m: NewMethodRef =>
-        DummyNode(m.copy())(node.span.spanStart(m.code))
-      }
-    // Isolate method and type declaration AST (all we need here)
-    val declarationAsts = methodAstsWithRefs.filter(_.root.exists(_.isInstanceOf[NewMethod | NewTypeDecl]))
+  protected def astsForCallWithBlock[C <: RubyCall](node: RubyNode with RubyCallWithBlock[C]): Seq[Ast] = {
+    val Seq(methodDecl, typeDecl, _, methodRef) = astForDoBlock(node.block): @unchecked
+    val methodRefDummyNode                      = methodRef.root.map(DummyNode(_)(node.span)).toList
 
     // Create call with argument referencing the MethodRef
     val callWithLambdaArg = node.withoutBlock match {
@@ -203,7 +195,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     val methodAstsWithRefs = astForMethodDeclaration(block.toMethodDeclaration(methodName), isClosure = true)
     // Set span contents
     methodAstsWithRefs.flatMap(_.nodes).foreach {
-      case m: NewMethodRef => DummyNode(m.copy)(block.span.spanStart(m.code))
+      case m: NewMethodRef => DummyNode(m.copy())(block.span.spanStart(m.code))
       case _               =>
     }
 

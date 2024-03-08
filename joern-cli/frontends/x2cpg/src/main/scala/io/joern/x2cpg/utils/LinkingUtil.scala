@@ -2,13 +2,12 @@ package io.joern.x2cpg.utils
 
 import io.joern.x2cpg.passes.frontend.Dereference
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{Cpg, Properties, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{Cpg, PropertyNames}
 import io.shiftleft.codepropertygraph.generated.nodes.NamespaceBlock
 import io.shiftleft.codepropertygraph.generated.nodes.Type
 import io.shiftleft.semanticcpg.language.*
 import org.slf4j.{Logger, LoggerFactory}
 
-import scala.collection.mutable
 import scala.jdk.CollectionConverters.*
 
 trait LinkingUtil {
@@ -43,10 +42,9 @@ trait LinkingUtil {
   /** For all nodes `n` with a label in `srcLabels`, determine the value of `n.\$dstFullNameKey`, use that to lookup the
     * destination node in `dstNodeMap`, and create an edge of type `edgeType` between `n` and the destination node.
     */
-
   protected def linkToSingle(
     cpg: Cpg,
-    srcNodes: List[Node],
+    srcNodes: List[StoredNode],
     srcLabels: List[String],
     dstNodeLabel: String,
     edgeType: String,
