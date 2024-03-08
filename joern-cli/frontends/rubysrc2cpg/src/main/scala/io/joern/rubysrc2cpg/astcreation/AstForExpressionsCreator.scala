@@ -316,6 +316,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   protected def astForIncludeCall(node: IncludeCall): Ast = {
+    scope.addInclude(node.argument.text) // Maybe generate ast and get name in a more structured approach instead
     astForSimpleCall(node.asSimpleCall)
   }
 

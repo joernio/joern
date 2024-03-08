@@ -22,8 +22,7 @@ class RubyProgramSummary(
 
 }
 
-case class RubyMethod(name: String, parameterTypes: List[(String, String)], returnType: String) extends MethodLike {
-}
+case class RubyMethod(name: String, parameterTypes: List[(String, String)], returnType: String) extends MethodLike
 
 case class RubyField(name: String, typeName: String) extends FieldLike
 

@@ -2,8 +2,12 @@ package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
+import io.joern.rubysrc2cpg.RubySrc2Cpg
+import io.joern.rubysrc2cpg.Config
+import scala.util.{Success,Failure}
+import org.scalatest.Inspectors
 
-class ImportTests extends RubyCode2CpgFixture {
+class ImportTests extends RubyCode2CpgFixture with Inspectors {
 
   "`require 'test'` is a CALL node with an IMPORT node pointing to it" in {
     val cpg = code("""
@@ -32,4 +36,51 @@ class ImportTests extends RubyCode2CpgFixture {
     call.argument.code.l shouldBe List("'test'")
   }
 
+  "Ambiguous class resolves to required method" in {
+    forAll(List("t2", "t3")) { path =>
+     val cpg = code(
+      s"""
+      | require '${path}'
+      | Test.new
+      |""".stripMargin, "t1.rb").moreCode(
+      """
+      | class Test
+      | end
+      |""".stripMargin, "t2.rb").moreCode(
+      """
+      | class Test
+      | end
+      |""".stripMargin, "t3.rb")
+
+      forAll(cpg.method.name(":program").filename("t1.rb").ast.isCall.methodFullName(".*:<init>").methodFullName.l) (_ should startWith(s"${path}.rb:"))
+      println("LOL")
+    }
+  }
+
+
+  "Ambiguous methods resolves to included method" in {
+    forAll(List("A", "B")) { moduleName =>
+     val cpg = code(
+      s"""
+      | module A
+      |   def foo
+      |   end
+      | end
+      |
+      | module B
+      |   def foo
+      |   end
+      | end
+      |
+      | module C
+      |   include ${moduleName}
+      |   def bar
+      |     foo()
+      |   end
+      | end
+      |""".stripMargin)
+
+      cpg.method.name("bar").ast.isCall.methodFullName(s".*::program.${moduleName}:foo") shouldNot be(empty)
+    }
+  }
 }

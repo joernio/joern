@@ -57,7 +57,7 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
       cpg.namespaceBlock.flatMap { namespace =>
         val path = namespace.filename.stripSuffix(".rb")
         // Map module functions/variables
-        val moduleEntry = (path, namespace.name) -> namespace.method.map { module =>
+        val moduleEntry = (path, namespace.fullName) -> namespace.method.map { module =>
           val moduleTypeMap =
             RubyType(
               module.fullName,
@@ -69,7 +69,7 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
         // Map module types
         val typeEntries = namespace.method.collectFirst {
           case m: Method if m.name == Defines.Program =>
-            (path, s"${namespace.name}:${m.name}") -> m.block.astChildren.collectAll[TypeDecl].map(toType).toSet
+            (path, s"${namespace.fullName}:${m.name}") -> m.block.astChildren.collectAll[TypeDecl].map(toType).toSet
         }.toSeq
 
         moduleEntry +: typeEntries
