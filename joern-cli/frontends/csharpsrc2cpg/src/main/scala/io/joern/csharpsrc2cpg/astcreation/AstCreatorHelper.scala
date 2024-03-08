@@ -123,7 +123,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
           .map(_.name)
           .orElse(BuiltinTypes.DotNetTypeMap.get(typeString))
           .getOrElse(typeString)
-      case _ =>
+      case  _ =>
         Try(node.json(ParserKeys.Type)).map(createDotNetNodeInfo) match
           case Success(typeNode) =>
             nodeTypeFullName(typeNode)
@@ -166,9 +166,9 @@ object AstCreatorHelper {
       case IdentifierName | Parameter | _: DeclarationExpr | GenericName          => nameFromIdentifier(node)
       case QualifiedName                                                          => nameFromQualifiedName(node)
       case SimpleMemberAccessExpression => nameFromIdentifier(createDotNetNodeInfo(node.json(ParserKeys.Name)))
-      case ObjectCreationExpression     => nameFromNode(createDotNetNodeInfo(node.json(ParserKeys.Type)))
-      case ThisExpression               => "this"
-      case _                            => "<empty>"
+      case ObjectCreationExpression | CastExpression => nameFromNode(createDotNetNodeInfo(node.json(ParserKeys.Type)))
+      case ThisExpression                            => "this"
+      case _                                         => "<empty>"
   }
 
   private def nameFromNamespaceDeclaration(namespace: DotNetNodeInfo): String = {
