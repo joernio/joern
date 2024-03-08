@@ -10,6 +10,7 @@ class TypeTests extends CSharpCode2CpgFixture {
       val cpg = code(basicBoilerplate("""
           |int? a = 10;
           |string? b = "Foo";
+          |var c = null;
           |""".stripMargin))
 
       inside(cpg.identifier.nameExact("a").l) {
@@ -22,6 +23,12 @@ class TypeTests extends CSharpCode2CpgFixture {
         case a :: Nil =>
           a.typeFullName shouldBe "System.String"
         case _ => fail("Identifier named `b` not found")
+      }
+
+      inside(cpg.identifier.nameExact("c").l) {
+        case a :: Nil =>
+          a.typeFullName shouldBe "null"
+        case _ => fail("Identifier named `c` not found")
       }
     }
 
