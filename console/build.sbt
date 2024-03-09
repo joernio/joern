@@ -3,7 +3,7 @@ name := "console"
 enablePlugins(JavaAppPackaging)
 
 val ScoptVersion          = "4.1.0"
-val CaskVersion           = "0.9.1"
+val CaskVersion           = "0.9.2"
 val CirceVersion          = "0.14.6"
 val ZeroturnaroundVersion = "1.15"
 val OsLibVersion          = "0.9.1"
