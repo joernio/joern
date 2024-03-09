@@ -96,6 +96,7 @@ Thank you for taking time to contribute to Joern! Here are a few guidelines to e
 * Remember to:
     - Remember to format your code, i.e. run `sbt scalafmt Test/scalafmt`
     - Add a unit test to verify your change.
+* We have started to collect some general [best practices](./changelog/generalBestPractices.md) for common pitfalls, especially with respect to performance and concurrency.
 
 ### IDE setup
 
