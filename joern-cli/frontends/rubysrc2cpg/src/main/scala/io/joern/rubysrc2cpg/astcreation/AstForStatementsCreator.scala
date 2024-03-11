@@ -186,7 +186,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         Ast()
     }
 
-    methodDecl :: typeDecl :: methodRef :: callWithLambdaArg :: Nil
+    methodDecl :: typeDecl :: callWithLambdaArg :: Nil
   }
 
   protected def astForDoBlock(block: Block with RubyNode): Seq[Ast] = {
@@ -260,7 +260,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   }
 
   private def returnAstForRubyCall[C <: RubyCall](node: RubyNode with RubyCallWithBlock[C]): Seq[Ast] = {
-    val Seq(methodDecl, typeDecl, methodRef, callAst) = astsForCallWithBlock(node)
+    val Seq(methodDecl, typeDecl, callAst) = astsForCallWithBlock(node): @unchecked
 
     Ast.storeInDiffGraph(methodDecl, diffGraph)
     Ast.storeInDiffGraph(typeDecl, diffGraph)

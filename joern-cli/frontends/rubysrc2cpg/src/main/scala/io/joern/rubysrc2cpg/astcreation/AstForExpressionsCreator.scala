@@ -29,6 +29,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: AttributeAssignment      => astForAttributeAssignment(node)
     case node: SimpleIdentifier         => astForSimpleIdentifier(node)
     case node: SimpleCall               => astForSimpleCall(node)
+    case node: RequireCall              => astForRequireCall(node)
+    case node: IncludeCall              => astForIncludeCall(node)
     case node: RangeExpression          => astForRange(node)
     case node: ArrayLiteral             => astForArrayLiteral(node)
     case node: HashLiteral              => astForHashLiteral(node)
@@ -304,6 +306,22 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         astForUnknown(targetNode)
   }
 
+  protected def astForRequireCall(node: RequireCall): Ast = {
+    val pathOpt = node.argument match {
+      case arg: StaticLiteral if arg.isString => Option(arg.innerText)
+      case _                                  => None
+    }
+    pathOpt.foreach(path => scope.addRequire(path, node.isRelative))
+    astForSimpleCall(node.asSimpleCall)
+  }
+
+  protected def astForIncludeCall(node: IncludeCall): Ast = {
+    scope.addInclude(
+      node.argument.text.replaceAll("::", ".")
+    ) // Maybe generate ast and get name in a more structured approach instead
+    astForSimpleCall(node.asSimpleCall)
+  }
+
   protected def astForRange(node: RangeExpression): Ast = {
     val lbAst = astForExpression(node.lowerBound)
     val ubAst = astForExpression(node.upperBound)
@@ -538,7 +556,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astsForCallWithBlockInExpr[C <: RubyCall](node: RubyNode with RubyCallWithBlock[C]): Ast = {
-    val Seq(methodDecl, typeDecl, _, callWithLambdaArg) = astsForCallWithBlock(node): @unchecked
+    val Seq(methodDecl, typeDecl, callWithLambdaArg) = astsForCallWithBlock(node): @unchecked
 
     Ast.storeInDiffGraph(methodDecl, diffGraph)
     Ast.storeInDiffGraph(typeDecl, diffGraph)
