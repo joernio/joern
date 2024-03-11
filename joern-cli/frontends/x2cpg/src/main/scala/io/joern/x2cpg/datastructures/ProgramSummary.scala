@@ -113,6 +113,7 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: 
     tag: ClassTag[M]
   ): Option[M] = typeFullName match {
     case None =>
+      // This function uses the `implicit tag` (IntelliJ incorrectly marks it as unused)
       def matchingM: PartialFunction[MemberLike, M] = { case m: M if m.name == callName => m }
       // TODO: The typesInScope part is to imprecisely solve the unimplemented polymorphism limitation
       membersInScope.collectFirst(matchingM).orElse { typesInScope.flatMap(_.methods).collectFirst(matchingM) }
