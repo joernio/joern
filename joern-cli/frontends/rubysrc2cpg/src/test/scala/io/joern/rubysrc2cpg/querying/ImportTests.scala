@@ -52,8 +52,8 @@ class ImportTests extends RubyCode2CpgFixture with Inspectors {
       | end
       |""".stripMargin, "t3.rb")
 
-      forAll(cpg.method.name(":program").filename("t1.rb").ast.isCall.methodFullName(".*:<init>").methodFullName.l) (_ should startWith(s"${path}.rb:"))
-      println("LOL")
+      val List(newCall) = cpg.method.name(":program").filename("t1.rb").ast.isCall.methodFullName(".*:<init>").methodFullName.l
+      newCall should startWith (s"${path}.rb:")
     }
   }
 
@@ -80,7 +80,8 @@ class ImportTests extends RubyCode2CpgFixture with Inspectors {
       | end
       |""".stripMargin)
 
-      cpg.method.name("bar").ast.isCall.methodFullName(s".*::program.${moduleName}:foo") shouldNot be(empty)
+      val List(methodName) = cpg.method.name("bar").ast.isCall.methodFullName(".*::program\\.(A|B):foo").methodFullName.l
+      methodName should endWith(s"${moduleName}:foo")
     }
   }
 }

@@ -17,7 +17,7 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     extends Scope[String, DeclarationNew, TypedScopeElement]
     with TypedScope[RubyMethod, RubyField, RubyType](summary) {
 
-  private val builtinMethods = GlobalTypes.builtinFunctions.map(m => RubyMethod(m, List.empty, Defines.Any)).toList
+  private val builtinMethods = GlobalTypes.builtinFunctions.map(m => RubyMethod(m, List.empty, Defines.Any, Some(GlobalTypes.builtinPrefix))).toList
 
 
   override val typesInScope: mutable.Set[RubyType] =
@@ -62,7 +62,7 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
       }
 
     relativizedPath.iterator.flatMap(summary.pathToType.getOrElse(_, Set())).foreach { ty => 
-      addImportedMember(ty.name) 
+      addImportedTypeOrModule(ty.name) 
     }
   }
 
@@ -123,6 +123,10 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
       case param: NewMethodParameterIn => param.possibleTypes(param.possibleTypes :+ singletonClassName)
       case _                           =>
     }
+  }
+
+  override def typeForMethod(m: RubyMethod): Option[RubyType] = {
+    typesInScope.find(t => Option(t.name) == m.baseTypeFullName).orElse { super.typeForMethod(m) }
   }
 
   override def tryResolveTypeReference(typeName: String): Option[RubyType] = {

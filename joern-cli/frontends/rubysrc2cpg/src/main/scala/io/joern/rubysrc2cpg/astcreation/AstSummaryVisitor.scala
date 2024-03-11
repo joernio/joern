@@ -38,7 +38,7 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
 
   private def summarize(cpg: Cpg): RubyProgramSummary = {
     def toMethod(m: Method): RubyMethod = {
-      RubyMethod(m.name, m.parameter.map(x => x.name -> x.typeFullName).l, m.methodReturn.typeFullName)
+      RubyMethod(m.name, m.parameter.map(x => x.name -> x.typeFullName).l, m.methodReturn.typeFullName, m.definingTypeDecl.fullName.headOption)
     }
 
     def toField(f: Member): RubyField = {
