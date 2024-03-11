@@ -1,16 +1,13 @@
 package io.joern.csharpsrc2cpg.utils
 
 import better.files.File
-import com.typesafe.config.ConfigFactory
 import io.joern.csharpsrc2cpg.Config
 import io.joern.x2cpg.SourceFiles
-import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, getClass}
+import io.joern.x2cpg.astgen.AstGenRunner.{AstGenProgramMetaData, DefaultAstGenRunnerResult, getClass}
 import io.joern.x2cpg.astgen.AstGenRunnerBase
-import io.joern.x2cpg.utils.{Environment, ExternalCommand}
+import io.joern.x2cpg.utils.ExternalCommand
 import org.slf4j.LoggerFactory
-import versionsort.VersionHelper
 
-import java.nio.file.Paths
 import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
@@ -32,22 +29,24 @@ class DotNetAstGenRunner(config: Config) extends AstGenRunnerBase(config) {
 
   override def skippedFiles(in: File, astGenOut: List[String]): List[String] = {
     val diagnosticMap = mutable.LinkedHashMap.empty[String, Seq[String]]
+
+    def addReason(reason: String, lastFile: Option[String] = None) = {
+      val key = lastFile.getOrElse(diagnosticMap.last._1)
+      diagnosticMap.updateWith(key) {
+        case Some(x) => Option(x :+ reason)
+        case None    => Option(reason :: Nil)
+      }
+    }
+
     astGenOut.map(_.strip()).foreach {
       case s"info: DotNetAstGen.Program[0] Parsing file: $fileName" =>
         diagnosticMap.put(SourceFiles.toRelativePath(fileName, in.pathAsString), Nil)
       case s"fail: DotNetAstGen.Program[0] Error(s) encountered while parsing: $_" => // ignore
-      case s"fail: DotNetAstGen.Program[0] $reason" =>
-        val (lastFile, _) = diagnosticMap.last
-        diagnosticMap.updateWith(lastFile) {
-          case Some(x) => Option(x :+ reason)
-          case None    => Option(reason :: Nil)
-        }
+      case s"fail: DotNetAstGen.Program[0] $reason"                                => addReason(reason)
+      case s"warn: DotNetAstGen.Program[0] $filename does $reason, skipping..." =>
+        addReason(s"does $reason", Option(filename))
       case s"info: DotNetAstGen.Program[0] Skipping file: $fileName" =>
-        val reason = "Skipped"
-        diagnosticMap.updateWith(SourceFiles.toRelativePath(fileName, in.pathAsString)) {
-          case Some(x) => Option(x :+ reason)
-          case None    => Option(reason :: Nil)
-        }
+        addReason("Skipped", Option(SourceFiles.toRelativePath(fileName, in.pathAsString)))
       case _ => // ignore
     }
 
