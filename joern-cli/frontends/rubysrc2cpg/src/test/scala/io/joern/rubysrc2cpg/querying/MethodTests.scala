@@ -222,4 +222,38 @@ class MethodTests extends RubyCode2CpgFixture {
     }
   }
 
+  "array/hash (variadic) parameters" should {
+
+    val cpg = code("""
+        |def foo(*xs)
+        |end
+        |
+        |def bar(**ys)
+        |end
+        |""".stripMargin)
+
+    "be interpreted as an array type parameter if a single star given" in {
+      inside(cpg.method("foo").parameter.l) {
+        case xs :: Nil =>
+          xs.name shouldBe "xs"
+          xs.code shouldBe "*xs"
+          xs.isVariadic shouldBe true
+          xs.typeFullName shouldBe "__builtin.Array"
+        case xs => fail(s"Expected `foo` to have one parameter, got [${xs.code.mkString(", ")}]")
+      }
+    }
+
+    "be interpreted as a hash type parameter if two stars given" in {
+      inside(cpg.method("bar").parameter.l) {
+        case ys :: Nil =>
+          ys.name shouldBe "ys"
+          ys.code shouldBe "**ys"
+          ys.isVariadic shouldBe true
+          ys.typeFullName shouldBe "__builtin.Hash"
+        case xs => fail(s"Expected `foo` to have one parameter, got [${xs.code.mkString(", ")}]")
+      }
+    }
+
+  }
+
 }

@@ -5,15 +5,8 @@ import io.joern.rubysrc2cpg.datastructures.{ConstructorScope, MethodScope}
 import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.x2cpg.utils.NodeBuilders.{newClosureBindingNode, newLocalNode, newModifierNode, newThisParameterNode}
 import io.joern.x2cpg.{Ast, AstEdge, ValidationMode, Defines as XDefines}
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, EvaluationStrategies, ModifierTypes, NodeTypes}
-import io.shiftleft.codepropertygraph.generated.nodes.{
-  DeclarationNew,
-  NewIdentifier,
-  NewLocal,
-  NewMethodParameterIn,
-  NewMethodRef,
-  NewTypeDecl
-}
 
 trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -135,25 +128,41 @@ trait AstForFunctionsCreator(implicit withSchemaValidation: ValidationMode) { th
 
   // TODO: remaining cases
   protected def astForParameter(node: RubyNode, index: Int): Ast = {
-    node match
+    node match {
       case node: (MandatoryParameter | OptionalParameter) =>
-        val _code = code(node)
         val parameterIn = parameterInNode(
           node = node,
           name = node.name,
-          code = _code,
+          code = code(node),
           index = index,
           isVariadic = false,
           evaluationStrategy = EvaluationStrategies.BY_REFERENCE,
           typeFullName = None
         )
-        scope.addToScope(code(node), parameterIn)
+        scope.addToScope(node.name, parameterIn)
+        Ast(parameterIn)
+      case node: CollectionParameter =>
+        val typeFullName = node match {
+          case ArrayParameter(_) => prefixAsBuiltin("Array")
+          case HashParameter(_)  => prefixAsBuiltin("Hash")
+        }
+        val parameterIn = parameterInNode(
+          node = node,
+          name = node.name,
+          code = code(node),
+          index = index,
+          isVariadic = true,
+          evaluationStrategy = EvaluationStrategies.BY_REFERENCE,
+          typeFullName = Option(typeFullName)
+        )
+        scope.addToScope(node.name, parameterIn)
         Ast(parameterIn)
       case node =>
         logger.warn(
-          s"Non-mandatory parameters are not supported yet: ${code(node)} (${node.getClass.getSimpleName} ($relativeFileName), skipping"
+          s"${node.getClass.getSimpleName} parameters are not supported yet: ${code(node)} ($relativeFileName), skipping"
         )
         astForUnknown(node)
+    }
   }
 
   private def generateTextSpan(node: RubyNode, text: String): TextSpan = {
