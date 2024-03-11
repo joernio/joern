@@ -2,13 +2,13 @@ package io.joern.swiftsrc2cpg.astcreation
 
 import io.joern.swiftsrc2cpg.Config
 import io.joern.swiftsrc2cpg.datastructures.Scope
-import io.joern.swiftsrc2cpg.datastructures.SwiftGlobal
 import io.joern.swiftsrc2cpg.parser.SwiftJsonParser.ParseResult
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.swiftsrc2cpg.passes.Defines
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.utils.NodeBuilders.newMethodReturnNode
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode, AstNodeBuilder as X2CpgAstNodeBuilder}
+import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.utils.NodeBuilders.newModifierNode
 import io.joern.x2cpg.utils.OffsetUtils
 import io.shiftleft.semanticcpg.language.types.structure.NamespaceTraversal
@@ -25,7 +25,7 @@ import overflowdb.BatchedUpdate.DiffGraphBuilder
 
 import scala.collection.mutable
 
-class AstCreator(val config: Config, val global: SwiftGlobal, val parserResult: ParseResult)(implicit
+class AstCreator(val config: Config, val global: Global, val parserResult: ParseResult)(implicit
   withSchemaValidation: ValidationMode
 ) extends AstCreatorBase(parserResult.filename)
     with AstForSwiftTokenCreator
@@ -48,11 +48,9 @@ class AstCreator(val config: Config, val global: SwiftGlobal, val parserResult: 
   protected val typeRefIdStack                = new Stack[NewTypeRef]
   protected val dynamicInstanceTypeStack      = new Stack[String]
   protected val localAstParentStack           = new Stack[NewBlock]()
-  protected val typeFullNameToPostfix         = mutable.HashMap.empty[String, Int]
   protected val functionNodeToNameAndFullName = mutable.HashMap.empty[SwiftNode, (String, String)]
   protected val usedVariableNames             = mutable.HashMap.empty[String, Int]
   protected val seenAliasTypes                = mutable.HashSet.empty[NewTypeDecl]
-  protected val functionFullNames             = mutable.HashSet.empty[String]
 
   protected lazy val definedSymbols: Map[String, String] = {
     config.defines.map {

@@ -30,7 +30,7 @@ class ConfigTests extends AnyWordSpec with Matchers with Inside {
     )
 
     def getSuffix(s: String, n: Int): String = {
-      s.reverse.take(n).reverse
+      s.takeRight(n)
     }
 
     inside(X2Cpg.parseCommandLine(args, parser, Py2CpgOnFileSystemConfig())) { case Some(config) =>
@@ -38,7 +38,7 @@ class ConfigTests extends AnyWordSpec with Matchers with Inside {
       config.outputPath shouldBe "OUTPUT"
       config.ignoredFiles.map(getSuffix(_, 13)).toSet shouldBe Set("1EXCLUDE_FILE", "2EXCLUDE_FILE")
       config.ignoredFilesRegex.toString shouldBe "EXCLUDE_REGEX"
-      config.venvDir.endsWith("VENV_DIR") shouldBe true
+      config.venvDir.exists(_.endsWith("VENV_DIR")) shouldBe true
       config.ignoreVenvDir shouldBe false
       config.disableDummyTypes shouldBe true
     }

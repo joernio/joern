@@ -173,10 +173,9 @@ trait AstNodeBuilder(implicit withSchemaValidation: ValidationMode) { this: AstC
     line: Option[Integer],
     column: Option[Integer]
   ): NewFieldIdentifier = {
-    val cleanedName = stripQuotes(name)
     NewFieldIdentifier()
-      .code(cleanedName)
-      .canonicalName(cleanedName)
+      .code(name)
+      .canonicalName(name)
       .lineNumber(line)
       .columnNumber(column)
   }

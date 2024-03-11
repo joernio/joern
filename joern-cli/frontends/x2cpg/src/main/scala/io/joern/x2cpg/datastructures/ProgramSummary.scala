@@ -89,7 +89,7 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: 
     *   the type meta-data if found.
     */
   def tryResolveTypeReference(typeName: String): Option[T] = {
-    // TODO: Handle partially quaified names
+    // TODO: Handle partially qualified names
     typesInScope
       .collectFirst {
         case typ if typ.name.split("[.]").lastOption == typeName.split("[.]").lastOption  => typ

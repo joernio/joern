@@ -1,8 +1,8 @@
 package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.ModifierTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{Call, ClosureBinding, Method, MethodRef, TypeDecl}
+import io.joern.x2cpg.Defines
+import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.semanticcpg.language.*
 
 class DoBlockTests extends RubyCode2CpgFixture {
@@ -218,6 +218,44 @@ class DoBlockTests extends RubyCode2CpgFixture {
 
         case xs =>
           fail(s"Expected single closure binding but got [${xs.mkString(",")}]")
+      }
+    }
+
+  }
+
+  "a block constructor" should {
+
+    val cpg = code("""
+        |def bar(x)
+        | foo = Array.new(x) { |i| i += 1 }
+        |end
+        |""".stripMargin)
+
+    "create the usual lowered assignment block, except with a method ref argument for the closure" in {
+      inside(cpg.assignment.code("foo = Array.new.*").argument.l) {
+        case (foo: Identifier) :: (constrBlock: Block) :: Nil =>
+          foo.name shouldBe "foo"
+
+          inside(constrBlock.astChildren.l) {
+            case (tmpLocal: Local) :: (tmpAssign: Call) :: (newCall: Call) :: (_: Identifier) :: Nil =>
+              tmpLocal.name shouldBe "<tmp-0>"
+              tmpAssign.code shouldBe "<tmp-0> = Array.new(x) { |i| i += 1 }"
+
+              newCall.name shouldBe Defines.ConstructorMethodName
+              newCall.methodFullName shouldBe "__builtin.Array:<init>"
+
+              inside(newCall.argument.l) {
+                case (_: Identifier) :: (x: Identifier) :: (closure: MethodRef) :: Nil =>
+                  x.name shouldBe "x"
+                  closure.methodFullName should endWith("<lambda>0")
+                case xs => fail(s"Expected a base, `x`, and closure ref, instead got [${xs.code.mkString(",")}]")
+              }
+            case xs =>
+              fail(
+                s"Expected four nodes under the lowering block of a constructor, instead got [${xs.code.mkString(",")}]"
+              )
+          }
+        case xs => fail(s"Unexpected `foo` assignment children [${xs.code.mkString(",")}]")
       }
     }
 

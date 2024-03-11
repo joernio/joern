@@ -94,6 +94,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         BuiltinTypes.DotNetTypeMap(BuiltinTypes.Decimal)
       case StringLiteralExpression                        => BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)
       case TrueLiteralExpression | FalseLiteralExpression => BuiltinTypes.DotNetTypeMap(BuiltinTypes.Bool)
+      case NullLiteralExpression                          => BuiltinTypes.DotNetTypeMap(BuiltinTypes.Null)
       case ObjectCreationExpression =>
         val typeName = nameFromNode(createDotNetNodeInfo(node.json(ParserKeys.Type)))
         scope
@@ -166,9 +167,9 @@ object AstCreatorHelper {
       case IdentifierName | Parameter | _: DeclarationExpr | GenericName          => nameFromIdentifier(node)
       case QualifiedName                                                          => nameFromQualifiedName(node)
       case SimpleMemberAccessExpression => nameFromIdentifier(createDotNetNodeInfo(node.json(ParserKeys.Name)))
-      case ObjectCreationExpression     => nameFromNode(createDotNetNodeInfo(node.json(ParserKeys.Type)))
-      case ThisExpression               => "this"
-      case _                            => "<empty>"
+      case ObjectCreationExpression | CastExpression => nameFromNode(createDotNetNodeInfo(node.json(ParserKeys.Type)))
+      case ThisExpression                            => "this"
+      case _                                         => "<empty>"
   }
 
   private def nameFromNamespaceDeclaration(namespace: DotNetNodeInfo): String = {

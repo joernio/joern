@@ -2,10 +2,10 @@ package io.joern.swiftsrc2cpg.passes
 
 import io.joern.swiftsrc2cpg.Config
 import io.joern.swiftsrc2cpg.astcreation.AstCreator
-import io.joern.swiftsrc2cpg.datastructures.SwiftGlobal
 import io.joern.swiftsrc2cpg.parser.SwiftJsonParser
 import io.joern.swiftsrc2cpg.utils.AstGenRunner.AstGenRunnerResult
 import io.joern.x2cpg.ValidationMode
+import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.utils.{Report, TimeUtils}
 import io.shiftleft.codepropertygraph.Cpg
 import io.shiftleft.passes.ConcurrentWriterCpgPass
@@ -22,7 +22,7 @@ class AstCreationPass(cpg: Cpg, astGenRunnerResult: AstGenRunnerResult, config: 
 
   private val logger: Logger = LoggerFactory.getLogger(classOf[AstCreationPass])
 
-  private val global = new SwiftGlobal()
+  private val global = new Global()
 
   def typesSeen(): List[String] = global.usedTypes.keys().asScala.filterNot(_ == Defines.Any).toList
 

@@ -101,7 +101,6 @@ class AstCreator(
       case CatchDeclaration                                      => astForCatchDeclaration(nodeInfo)
       case PropertyDeclaration                                   => astForPropertyDeclaration(nodeInfo)
       case ExpressionElement                                     => astForExpressionElement(nodeInfo)
-      case _: LiteralExpr                                        => astForLiteralExpression(nodeInfo)
       case _: BaseExpr                                           => astForExpression(nodeInfo)
       case _                                                     => notHandledYet(nodeInfo)
     }
