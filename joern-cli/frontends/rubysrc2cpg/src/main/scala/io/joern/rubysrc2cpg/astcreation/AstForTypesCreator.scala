@@ -30,12 +30,14 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
       case _: SelfIdentifier =>
         scope.surroundingTypeFullName
       case qualifiedBaseClass: MemberAccess =>
-        // TODO: May need massaging on the type resolution
-        scope.tryResolveTypeReference(qualifiedBaseClass.toString)
+        scope
+          .tryResolveTypeReference(qualifiedBaseClass.toString)
           .map(_.name)
           .orElse(Option(qualifiedBaseClass.toString))
       case x =>
-        logger.warn(s"Base class names of type ${x.getClass} are not supported yet: ${code(node)} ($relativeFileName), skipping")
+        logger.warn(
+          s"Base class names of type ${x.getClass} are not supported yet: ${code(node)} ($relativeFileName), skipping"
+        )
         None
   }
 

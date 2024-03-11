@@ -53,6 +53,13 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
       RubyType(m.fullName, m.method.map(toMethod).l, m.member.map(toField).l)
     }
 
+    def handleNestedTypes(t: TypeDecl, parentScope: String): Seq[(String, Set[RubyType])] = {
+      val typeFullName     = s"$parentScope.${t.name}"
+      val childrenTypes    = t.astChildren.collectAll[TypeDecl].l
+      val typesOnThisLevel = childrenTypes.flatMap(handleNestedTypes(_, typeFullName))
+      Seq(typeFullName -> childrenTypes.map(toType).toSet) ++ typesOnThisLevel
+    }
+
     val mapping = cpg.namespaceBlock.flatMap { namespace =>
       // Map module functions/variables
       val moduleEntry = namespace.fullName -> namespace.method.map { module =>
@@ -65,9 +72,16 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
         moduleTypeMap
       }.toSet
       // Map module types
-      val typeEntries = namespace.method.collectFirst {
+      val typeEntries = namespace.method.flatMap {
         case m: Method if m.name == Defines.Program =>
-          s"${namespace.fullName}:${m.name}" -> m.block.astChildren.collectAll[TypeDecl].map(toType).toSet
+          val moduleFullName = s"${namespace.fullName}:${m.name}"
+          val nestedTypes    = m.block.astChildren.collectAll[TypeDecl].flatMap(handleNestedTypes(_, moduleFullName))
+          Seq(
+            moduleFullName -> (m.block.astChildren.collectAll[TypeDecl].map(toType).toSet ++
+              nestedTypes.flatMap(_._2)) // Approximate that nested types are imported into this namespace
+          )
+            ++ nestedTypes
+        case _ => Seq.empty
       }.toSeq
 
       moduleEntry +: typeEntries
