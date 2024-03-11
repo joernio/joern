@@ -261,14 +261,14 @@ object RubyIntermediateAst {
       extends RubyNode(span)
       with RubyCall {
     def arguments: List[RubyNode] = List(argument)
-    def asSimpleCall: SimpleCall = SimpleCall(target, arguments)(span)
+    def asSimpleCall: SimpleCall  = SimpleCall(target, arguments)(span)
   }
 
   final case class IncludeCall(target: RubyNode, argument: RubyNode)(span: TextSpan)
       extends RubyNode(span)
       with RubyCall {
     def arguments: List[RubyNode] = List(argument)
-    def asSimpleCall: SimpleCall = SimpleCall(target, arguments)(span)
+    def asSimpleCall: SimpleCall  = SimpleCall(target, arguments)(span)
   }
 
   /** Represents standalone `proc { ... }` or `lambda { ... }` expressions

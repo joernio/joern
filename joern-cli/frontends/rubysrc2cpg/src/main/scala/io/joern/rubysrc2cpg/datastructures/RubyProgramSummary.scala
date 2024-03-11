@@ -10,7 +10,7 @@ class RubyProgramSummary(
 ) extends ProgramSummary[RubyType] {
 
   override val namespaceToType: Map[String, Set[RubyType]] = initialNamespaceMap
-  val pathToType: Map[String, Set[RubyType]] = initialPathMap
+  val pathToType: Map[String, Set[RubyType]]               = initialPathMap
 
   @targetName("add")
   def ++(other: RubyProgramSummary): RubyProgramSummary = {
@@ -22,7 +22,12 @@ class RubyProgramSummary(
 
 }
 
-case class RubyMethod(name: String, parameterTypes: List[(String, String)], returnType: String, baseTypeFullName: Option[String]) extends MethodLike
+case class RubyMethod(
+  name: String,
+  parameterTypes: List[(String, String)],
+  returnType: String,
+  baseTypeFullName: Option[String]
+) extends MethodLike
 
 case class RubyField(name: String, typeName: String) extends FieldLike
 

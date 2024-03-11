@@ -309,14 +309,16 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   protected def astForRequireCall(node: RequireCall): Ast = {
     val pathOpt = node.argument match {
       case arg: StaticLiteral if arg.isString => Option(arg.innerText)
-      case _ => None
+      case _                                  => None
     }
     pathOpt.foreach(path => scope.addRequire(path, node.isRelative))
     astForSimpleCall(node.asSimpleCall)
   }
 
   protected def astForIncludeCall(node: IncludeCall): Ast = {
-    scope.addInclude(node.argument.text.replaceAll("::", ".")) // Maybe generate ast and get name in a more structured approach instead
+    scope.addInclude(
+      node.argument.text.replaceAll("::", ".")
+    ) // Maybe generate ast and get name in a more structured approach instead
     astForSimpleCall(node.asSimpleCall)
   }
 

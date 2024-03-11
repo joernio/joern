@@ -17,8 +17,9 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     extends Scope[String, DeclarationNew, TypedScopeElement]
     with TypedScope[RubyMethod, RubyField, RubyType](summary) {
 
-  private val builtinMethods = GlobalTypes.builtinFunctions.map(m => RubyMethod(m, List.empty, Defines.Any, Some(GlobalTypes.builtinPrefix))).toList
-
+  private val builtinMethods = GlobalTypes.builtinFunctions
+    .map(m => RubyMethod(m, List.empty, Defines.Any, Some(GlobalTypes.builtinPrefix)))
+    .toList
 
   override val typesInScope: mutable.Set[RubyType] =
     mutable.Set(RubyType(GlobalTypes.builtinPrefix, builtinMethods, List.empty))
@@ -53,16 +54,16 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
   def addRequire(path: String, isRelative: Boolean): Unit = {
     // We assume the project root is the sole LOAD_PATH of the project sources for now
     val relativizedPath =
-      if(isRelative) {
+      if (isRelative) {
         val parentDir = File(surrounding[ProgramScope].get.fileName).parentOption.get
-        val absPath = (parentDir / path).path.toAbsolutePath
+        val absPath   = (parentDir / path).path.toAbsolutePath
         projectRoot.map(File(_).path.toAbsolutePath.relativize(absPath).toString)
       } else {
         Some(path)
       }
 
-    relativizedPath.iterator.flatMap(summary.pathToType.getOrElse(_, Set())).foreach { ty => 
-      addImportedTypeOrModule(ty.name) 
+    relativizedPath.iterator.flatMap(summary.pathToType.getOrElse(_, Set())).foreach { ty =>
+      addImportedTypeOrModule(ty.name)
     }
   }
 

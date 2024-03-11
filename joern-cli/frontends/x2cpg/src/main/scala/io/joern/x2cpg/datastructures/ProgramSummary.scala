@@ -93,8 +93,10 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: 
     // TODO: Handle partially qualified names
     typesInScope
       .collectFirst {
-        case typ if typ.name.split("[.]").lastOption == typeName.split("[.]").lastOption  => typ
-        case typ if aliasedTypes.contains(typeName) && typ.name == aliasedTypes(typeName) => typ
+        case typ if typ.name.split("[.]").lastOption == typeName.split("[.]").lastOption =>
+          typ
+        case typ if aliasedTypes.contains(typeName) && typ.name == aliasedTypes(typeName) =>
+          typ
       }
   }
 
@@ -109,11 +111,9 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: 
     * @return
     *   the method meta data if found.
     */
-  def tryResolveMethodInvocation(
-    callName: String,
-    argTypes: List[String],
-    typeFullName: Option[String] = None
-  )(implicit tag: ClassTag[M]): Option[M] = typeFullName match {
+  def tryResolveMethodInvocation(callName: String, argTypes: List[String], typeFullName: Option[String] = None)(implicit
+    tag: ClassTag[M]
+  ): Option[M] = typeFullName match {
     case None =>
       def matchingM: PartialFunction[MemberLike, M] = { case m: M if m.name == callName => m }
       // TODO: The typesInScope part is to imprecisely solve the unimplemented polymorphism limitation

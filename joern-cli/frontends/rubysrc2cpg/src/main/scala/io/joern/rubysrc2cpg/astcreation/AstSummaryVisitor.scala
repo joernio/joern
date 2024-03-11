@@ -38,7 +38,12 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
 
   private def summarize(cpg: Cpg): RubyProgramSummary = {
     def toMethod(m: Method): RubyMethod = {
-      RubyMethod(m.name, m.parameter.map(x => x.name -> x.typeFullName).l, m.methodReturn.typeFullName, m.definingTypeDecl.fullName.headOption)
+      RubyMethod(
+        m.name,
+        m.parameter.map(x => x.name -> x.typeFullName).l,
+        m.methodReturn.typeFullName,
+        m.definingTypeDecl.fullName.headOption
+      )
     }
 
     def toField(f: Member): RubyField = {
@@ -53,7 +58,7 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
       RubyType(m.fullName, m.method.map(toMethod).l, m.member.map(toField).l)
     }
 
-    val mappings = 
+    val mappings =
       cpg.namespaceBlock.flatMap { namespace =>
         val path = namespace.filename.stripSuffix(".rb")
         // Map module functions/variables
@@ -76,7 +81,7 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
       }.toList
 
     val namespaceMappings = mappings.map { case (_, ns) -> entry => ns -> entry }.toMap
-    val pathMappings = mappings.map { case (path, _) -> entry => path -> entry }.toMap
+    val pathMappings      = mappings.map { case (path, _) -> entry => path -> entry }.toMap
 
     RubyProgramSummary(namespaceMappings, pathMappings)
   }
