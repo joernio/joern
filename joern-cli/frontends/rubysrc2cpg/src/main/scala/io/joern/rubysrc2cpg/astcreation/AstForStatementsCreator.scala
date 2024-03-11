@@ -261,7 +261,11 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
 
   private def returnAstForRubyCall[C <: RubyCall](node: RubyNode with RubyCallWithBlock[C]): Seq[Ast] = {
     val Seq(methodDecl, typeDecl, methodRef, callAst) = astsForCallWithBlock(node)
-    methodDecl :: typeDecl :: methodRef :: returnAst(returnNode(node, code(node)), List(callAst)) :: Nil
+
+    Ast.storeInDiffGraph(methodDecl, diffGraph)
+    Ast.storeInDiffGraph(typeDecl, diffGraph)
+
+    returnAst(returnNode(node, code(node)), List(callAst)) :: Nil
   }
 
   private def astForReturnFieldAccess(node: MemberAccess): Ast = {
