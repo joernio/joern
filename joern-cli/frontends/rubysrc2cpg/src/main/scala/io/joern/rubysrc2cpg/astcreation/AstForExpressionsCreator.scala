@@ -556,7 +556,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astsForCallWithBlockInExpr[C <: RubyCall](node: RubyNode with RubyCallWithBlock[C]): Ast = {
-    val Seq(methodDecl, typeDecl, _, callWithLambdaArg) = astsForCallWithBlock(node): @unchecked
+    val Seq(methodDecl, typeDecl, callWithLambdaArg) = astsForCallWithBlock(node): @unchecked
 
     Ast.storeInDiffGraph(methodDecl, diffGraph)
     Ast.storeInDiffGraph(typeDecl, diffGraph)
