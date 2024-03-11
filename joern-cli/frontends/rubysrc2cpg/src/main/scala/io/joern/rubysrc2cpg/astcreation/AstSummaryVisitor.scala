@@ -38,7 +38,12 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
 
   private def summarize(cpg: Cpg): RubyProgramSummary = {
     def toMethod(m: Method): RubyMethod = {
-      RubyMethod(m.name, m.parameter.map(x => x.name -> x.typeFullName).l, m.methodReturn.typeFullName)
+      RubyMethod(
+        m.name,
+        m.parameter.map(x => x.name -> x.typeFullName).l,
+        m.methodReturn.typeFullName,
+        m.definingTypeDecl.fullName.headOption
+      )
     }
 
     def toField(f: Member): RubyField = {
@@ -53,26 +58,32 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
       RubyType(m.fullName, m.method.map(toMethod).l, m.member.map(toField).l)
     }
 
-    val mapping = cpg.namespaceBlock.flatMap { namespace =>
-      // Map module functions/variables
-      val moduleEntry = namespace.fullName -> namespace.method.map { module =>
-        val moduleTypeMap =
-          RubyType(
-            module.fullName,
-            module.block.astChildren.collectAll[Method].map(toMethod).l,
-            module.local.map(toModuleVariable).l
-          )
-        moduleTypeMap
-      }.toSet
-      // Map module types
-      val typeEntries = namespace.method.collectFirst {
-        case m: Method if m.name == Defines.Program =>
-          s"${namespace.fullName}:${m.name}" -> m.block.astChildren.collectAll[TypeDecl].map(toType).toSet
-      }.toSeq
+    val mappings =
+      cpg.namespaceBlock.flatMap { namespace =>
+        val path = namespace.filename.stripSuffix(".rb")
+        // Map module functions/variables
+        val moduleEntry = (path, namespace.fullName) -> namespace.method.map { module =>
+          val moduleTypeMap =
+            RubyType(
+              module.fullName,
+              module.block.astChildren.collectAll[Method].map(toMethod).l,
+              module.local.map(toModuleVariable).l
+            )
+          moduleTypeMap
+        }.toSet
+        // Map module types
+        val typeEntries = namespace.method.collectFirst {
+          case m: Method if m.name == Defines.Program =>
+            (path, s"${namespace.fullName}:${m.name}") -> m.block.astChildren.collectAll[TypeDecl].map(toType).toSet
+        }.toSeq
 
-      moduleEntry +: typeEntries
-    }.toMap
-    RubyProgramSummary(mapping)
+        moduleEntry +: typeEntries
+      }.toList
+
+    val namespaceMappings = mappings.map { case (_, ns) -> entry => ns -> entry }.toMap
+    val pathMappings      = mappings.map { case (path, _) -> entry => path -> entry }.toMap
+
+    RubyProgramSummary(namespaceMappings, pathMappings)
   }
 
 }

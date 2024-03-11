@@ -462,7 +462,18 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
 
   override def visitSimpleCommand(ctx: RubyParser.SimpleCommandContext): RubyNode = {
     if (!ctx.methodIdentifier().isAttrDeclaration) {
-      SimpleCall(visit(ctx.methodIdentifier()), ctx.commandArgument().arguments.map(visit))(ctx.toTextSpan)
+      val identifierCtx = ctx.methodIdentifier()
+      val arguments     = ctx.commandArgument().arguments.map(visit)
+      (identifierCtx.getText, arguments) match {
+        case ("require", List(argument)) =>
+          RequireCall(visit(identifierCtx), argument, false)(ctx.toTextSpan)
+        case ("require_relative", List(argument)) =>
+          RequireCall(visit(identifierCtx), argument, true)(ctx.toTextSpan)
+        case ("include", List(argument)) =>
+          IncludeCall(visit(identifierCtx), argument)(ctx.toTextSpan)
+        case _ =>
+          SimpleCall(visit(identifierCtx), arguments)(ctx.toTextSpan)
+      }
     } else {
       FieldsDeclaration(ctx.commandArgument().arguments.map(visit))(ctx.toTextSpan)
     }

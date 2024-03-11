@@ -208,7 +208,7 @@ object RubyIntermediateAst {
   final case class StaticLiteral(typeFullName: String)(span: TextSpan) extends RubyNode(span) with LiteralExpr {
     def isSymbol: Boolean = text.startsWith(":")
 
-    def isString: Boolean = text.startsWith("\"")
+    def isString: Boolean = text.startsWith("\"") || text.startsWith("'")
 
     def innerText: String = text match
       case s":'$content'" => content
@@ -256,6 +256,20 @@ object RubyIntermediateAst {
   final case class SimpleCall(target: RubyNode, arguments: List[RubyNode])(span: TextSpan)
       extends RubyNode(span)
       with RubyCall
+
+  final case class RequireCall(target: RubyNode, argument: RubyNode, isRelative: Boolean)(span: TextSpan)
+      extends RubyNode(span)
+      with RubyCall {
+    def arguments: List[RubyNode] = List(argument)
+    def asSimpleCall: SimpleCall  = SimpleCall(target, arguments)(span)
+  }
+
+  final case class IncludeCall(target: RubyNode, argument: RubyNode)(span: TextSpan)
+      extends RubyNode(span)
+      with RubyCall {
+    def arguments: List[RubyNode] = List(argument)
+    def asSimpleCall: SimpleCall  = SimpleCall(target, arguments)(span)
+  }
 
   /** Represents standalone `proc { ... }` or `lambda { ... }` expressions
     */

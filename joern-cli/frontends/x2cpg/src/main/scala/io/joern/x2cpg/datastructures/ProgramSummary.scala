@@ -4,6 +4,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.DeclarationNew
 
 import scala.collection.immutable.Map
 import scala.collection.mutable
+import scala.reflect.ClassTag
 
 /** A hierarchical data-structure that stores the result of types and their respective members. These types can be
   * sourced from pre-parsing the application, or pre-computed stubs of common libraries.
@@ -92,8 +93,10 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: 
     // TODO: Handle partially qualified names
     typesInScope
       .collectFirst {
-        case typ if typ.name.split("[.]").lastOption == typeName.split("[.]").lastOption  => typ
-        case typ if aliasedTypes.contains(typeName) && typ.name == aliasedTypes(typeName) => typ
+        case typ if typ.name.split("[.]").lastOption == typeName.split("[.]").lastOption =>
+          typ
+        case typ if aliasedTypes.contains(typeName) && typ.name == aliasedTypes(typeName) =>
+          typ
       }
   }
 
@@ -108,15 +111,13 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: 
     * @return
     *   the method meta data if found.
     */
-  def tryResolveMethodInvocation(
-    callName: String,
-    argTypes: List[String],
-    typeFullName: Option[String] = None
+  def tryResolveMethodInvocation(callName: String, argTypes: List[String], typeFullName: Option[String] = None)(implicit
+    tag: ClassTag[M]
   ): Option[M] = typeFullName match {
     case None =>
+      def matchingM: PartialFunction[MemberLike, M] = { case m: M if m.name == callName => m }
       // TODO: The typesInScope part is to imprecisely solve the unimplemented polymorphism limitation
-      (membersInScope ++ typesInScope.flatMap(_.methods))
-        .collectFirst { case m: MethodLike if m.name == callName => m.asInstanceOf[M] }
+      membersInScope.collectFirst(matchingM).orElse { typesInScope.flatMap(_.methods).collectFirst(matchingM) }
     case Some(tfn) =>
       val methodsWithEqualArgs = tryResolveTypeReference(tfn).flatMap { t =>
         Option(

@@ -29,6 +29,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: AttributeAssignment      => astForAttributeAssignment(node)
     case node: SimpleIdentifier         => astForSimpleIdentifier(node)
     case node: SimpleCall               => astForSimpleCall(node)
+    case node: RequireCall              => astForRequireCall(node)
+    case node: IncludeCall              => astForIncludeCall(node)
     case node: RangeExpression          => astForRange(node)
     case node: ArrayLiteral             => astForArrayLiteral(node)
     case node: HashLiteral              => astForHashLiteral(node)
@@ -302,6 +304,22 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case targetNode =>
         logger.warn(s"Unrecognized target of call: ${targetNode.text} ($relativeFileName), skipping")
         astForUnknown(targetNode)
+  }
+
+  protected def astForRequireCall(node: RequireCall): Ast = {
+    val pathOpt = node.argument match {
+      case arg: StaticLiteral if arg.isString => Option(arg.innerText)
+      case _                                  => None
+    }
+    pathOpt.foreach(path => scope.addRequire(path, node.isRelative))
+    astForSimpleCall(node.asSimpleCall)
+  }
+
+  protected def astForIncludeCall(node: IncludeCall): Ast = {
+    scope.addInclude(
+      node.argument.text.replaceAll("::", ".")
+    ) // Maybe generate ast and get name in a more structured approach instead
+    astForSimpleCall(node.asSimpleCall)
   }
 
   protected def astForRange(node: RangeExpression): Ast = {
