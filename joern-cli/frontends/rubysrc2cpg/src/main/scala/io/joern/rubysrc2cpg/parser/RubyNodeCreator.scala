@@ -461,7 +461,10 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitSimpleCommand(ctx: RubyParser.SimpleCommandContext): RubyNode = {
-    if (!ctx.methodIdentifier().isAttrDeclaration) {
+    if (Option(ctx.commandArgument()).map(_.getText).exists(_.startsWith("::"))) {
+      val memberName = ctx.commandArgument().getText.stripPrefix("::")
+      MemberAccess(visit(ctx.methodIdentifier()), "::", memberName)(ctx.toTextSpan)
+    } else if (!ctx.methodIdentifier().isAttrDeclaration) {
       SimpleCall(visit(ctx.methodIdentifier()), ctx.commandArgument().arguments.map(visit))(ctx.toTextSpan)
     } else {
       FieldsDeclaration(ctx.commandArgument().arguments.map(visit))(ctx.toTextSpan)

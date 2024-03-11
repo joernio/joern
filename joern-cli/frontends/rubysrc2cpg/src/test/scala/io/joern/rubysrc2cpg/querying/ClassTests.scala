@@ -300,4 +300,40 @@ class ClassTests extends RubyCode2CpgFixture {
 
   }
 
+  "fully qualified references" should {
+
+    val cpg = code(
+      """require "rails/all"
+        |
+        |module Bar
+        | class Baz
+        | end
+        |end
+        |
+        |module Railsgoat
+        |  class Application < Rails::Application
+        |  end
+        |
+        |  class Foo < Bar::Baz
+        |  end
+        |end
+        |""".stripMargin)
+
+    "be interpreted as static member accesses" in {
+      inside(cpg.typeDecl("Application").headOption) {
+        case Some(app) =>
+          app.inheritsFromTypeFullName.head shouldBe "Rails.Application"
+        case None => fail("Expected a type decl for 'Application', instead got nothing")
+      }
+    }
+
+    "be interpreted as static member accesses (internal)" in {
+      inside(cpg.typeDecl("Foo").headOption) {
+        case Some(app) =>
+          app.inheritsFromTypeFullName.head shouldBe "Bar.Baz"
+        case None => fail("Expected a type decl for 'Foo', instead got nothing")
+      }
+    }
+  }
+
 }

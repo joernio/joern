@@ -27,10 +27,15 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
           case Some(_) => Option(name) // in the case of singleton classes, we want to keep the variable name
           case None    => scope.tryResolveTypeReference(name).map(_.name).orElse(Option(name))
         }
-      case selfIdentifier: SelfIdentifier =>
+      case _: SelfIdentifier =>
         scope.surroundingTypeFullName
-      case _ =>
-        logger.warn(s"Qualified base class names are not supported yet: ${code(node)} ($relativeFileName), skipping")
+      case qualifiedBaseClass: MemberAccess =>
+        // TODO: May need massaging on the type resolution
+        scope.tryResolveTypeReference(qualifiedBaseClass.toString)
+          .map(_.name)
+          .orElse(Option(qualifiedBaseClass.toString))
+      case x =>
+        logger.warn(s"Base class names of type ${x.getClass} are not supported yet: ${code(node)} ($relativeFileName), skipping")
         None
   }
 
@@ -61,7 +66,7 @@ trait AstForTypesCreator(implicit withSchemaValidation: ValidationMode) { this: 
     val classBody =
       node.body.asInstanceOf[StatementList] // for now (bodyStatement is a superset of stmtList)
     val classBodyAsts = classBody.statements.flatMap(astsForStatement) match {
-      case bodyAsts if scope.shouldGenerateDefaultConstructor && parseLevel == AstParseLevel.FULL_AST =>
+      case bodyAsts if scope.shouldGenerateDefaultConstructor =>
         val bodyStart = classBody.span.spanStart()
         val initBody  = StatementList(List())(bodyStart)
         val methodDecl = astForMethodDeclaration(
