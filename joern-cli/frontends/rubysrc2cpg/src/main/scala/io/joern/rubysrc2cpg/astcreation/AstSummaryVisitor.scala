@@ -58,6 +58,13 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
       RubyType(m.fullName, m.method.map(toMethod).l, m.member.map(toField).l)
     }
 
+    def handleNestedTypes(t: TypeDecl, parentScope: String): Seq[(String, Set[RubyType])] = {
+      val typeFullName     = s"$parentScope.${t.name}"
+      val childrenTypes    = t.astChildren.collectAll[TypeDecl].l
+      val typesOnThisLevel = childrenTypes.flatMap(handleNestedTypes(_, typeFullName))
+      Seq(typeFullName -> childrenTypes.map(toType).toSet) ++ typesOnThisLevel
+    }
+
     val mappings =
       cpg.namespaceBlock.flatMap { namespace =>
         val path = namespace.filename.stripSuffix(".rb")
@@ -74,7 +81,10 @@ trait AstSummaryVisitor(implicit withSchemaValidation: ValidationMode) { this: A
         // Map module types
         val typeEntries = namespace.method.collectFirst {
           case m: Method if m.name == Defines.Program =>
-            (path, s"${namespace.fullName}:${m.name}") -> m.block.astChildren.collectAll[TypeDecl].map(toType).toSet
+            val childrenTypes = m.block.astChildren.collectAll[TypeDecl].l
+            val fullName      = s"${namespace.fullName}:${m.name}"
+            val nestedTypes   = childrenTypes.flatMap(handleNestedTypes(_, fullName))
+            (path, fullName) -> (childrenTypes.map(toType).toSet ++ nestedTypes.flatMap(_._2))
         }.toSeq
 
         moduleEntry +: typeEntries

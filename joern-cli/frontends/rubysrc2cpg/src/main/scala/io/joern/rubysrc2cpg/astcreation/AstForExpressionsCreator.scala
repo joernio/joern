@@ -116,7 +116,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   // Member accesses are lowered as calls, i.e. `x.y` is the call of `y` of `x` without any arguments.
   protected def astForMemberAccess(node: MemberAccess): Ast = {
-    astForMemberCall(MemberCall(node.target, node.op, node.methodName, List.empty)(node.span))
+    astForMemberCall(MemberCall(node.target, node.op, node.memberName, List.empty)(node.span))
   }
 
   /** Attempts to extract a type from the base of a member call.
@@ -524,7 +524,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   private def astForMemberCallWithoutBlock(node: SimpleCall, memberAccess: MemberAccess): Ast = {
     val receiverAst = astForFieldAccess(memberAccess)
-    val methodName  = memberAccess.methodName
+    val methodName  = memberAccess.memberName
     // TODO: Type recovery should potentially resolve this
     val methodFullName = typeFromCallTarget(memberAccess.target)
       .map(x => s"$x:$methodName")
@@ -584,9 +584,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   protected def astForFieldAccess(node: MemberAccess): Ast = {
-    val fieldIdentifierAst = Ast(fieldIdentifierNode(node, node.methodName, node.methodName))
+    val fieldIdentifierAst = Ast(fieldIdentifierNode(node, node.memberName, node.memberName))
     val targetAst          = astForExpression(node.target)
-    val code               = s"${node.target.text}${node.op}${node.methodName}"
+    val code               = s"${node.target.text}${node.op}${node.memberName}"
     val fieldAccess = callNode(node, code, Operators.fieldAccess, Operators.fieldAccess, DispatchTypes.STATIC_DISPATCH)
     callAst(fieldAccess, Seq(targetAst, fieldIdentifierAst))
   }

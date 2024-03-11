@@ -90,13 +90,11 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: 
     *   the type meta-data if found.
     */
   def tryResolveTypeReference(typeName: String): Option[T] = {
-    // TODO: Handle partially qualified names
     typesInScope
       .collectFirst {
-        case typ if typ.name.split("[.]").lastOption == typeName.split("[.]").lastOption =>
-          typ
-        case typ if aliasedTypes.contains(typeName) && typ.name == aliasedTypes(typeName) =>
-          typ
+        // Handle partially qualified names
+        case typ if typ.name.split("[.]").endsWith(typeName.split("[.]"))                 => typ
+        case typ if aliasedTypes.contains(typeName) && typ.name == aliasedTypes(typeName) => typ
       }
   }
 
@@ -115,6 +113,7 @@ trait TypedScope[M <: MethodLike, F <: FieldLike, T <: TypeLike[M, F]](summary: 
     tag: ClassTag[M]
   ): Option[M] = typeFullName match {
     case None =>
+      // This function uses the `implicit tag` (IntelliJ incorrectly marks it as unused)
       def matchingM: PartialFunction[MemberLike, M] = { case m: M if m.name == callName => m }
       // TODO: The typesInScope part is to imprecisely solve the unimplemented polymorphism limitation
       membersInScope.collectFirst(matchingM).orElse { typesInScope.flatMap(_.methods).collectFirst(matchingM) }
