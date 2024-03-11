@@ -236,8 +236,10 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     node match
       case expr: ControlFlowExpression =>
         astsForStatement(transformLastRubyNodeInControlFlowExpressionBody(expr, returnLastNode, elseReturnNil))
-      case _: (LiteralExpr | BinaryExpression | UnaryExpression | SimpleIdentifier | SimpleCall | IndexAccess |
-            Association) =>
+      case node: MemberCallWithBlock => returnAstForRubyCall(node)
+      case node: SimpleCallWithBlock => returnAstForRubyCall(node)
+      case _: (LiteralExpr | BinaryExpression | UnaryExpression | SimpleIdentifier | IndexAccess | Association |
+            RubyCall) =>
         astForReturnStatement(ReturnExpression(List(node))(node.span)) :: Nil
       case node: SingleAssignment =>
         astForSingleAssignment(node) :: List(astForReturnStatement(ReturnExpression(List(node.lhs))(node.span)))
@@ -247,7 +249,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           astForReturnFieldAccess(MemberAccess(node.target, node.op, node.attributeName)(node.span))
         )
       case node: MemberAccess    => astForReturnMemberCall(node) :: Nil
-      case node: MemberCall      => astForReturnMemberCall(node) :: Nil
       case ret: ReturnExpression => astForReturnStatement(ret) :: Nil
       case node: MethodDeclaration =>
         (astForMethodDeclaration(node) :+ astForReturnMethodDeclarationSymbolName(node)).toList
@@ -256,6 +257,15 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           s"Implicit return here not supported yet: ${node.text} (${node.getClass.getSimpleName}), only generating statement"
         )
         astsForStatement(node).toList
+  }
+
+  private def returnAstForRubyCall[C <: RubyCall](node: RubyNode with RubyCallWithBlock[C]): Seq[Ast] = {
+    val Seq(methodDecl, typeDecl, methodRef, callAst) = astsForCallWithBlock(node)
+
+    Ast.storeInDiffGraph(methodDecl, diffGraph)
+    Ast.storeInDiffGraph(typeDecl, diffGraph)
+
+    returnAst(returnNode(node, code(node)), List(callAst)) :: Nil
   }
 
   private def astForReturnFieldAccess(node: MemberAccess): Ast = {
