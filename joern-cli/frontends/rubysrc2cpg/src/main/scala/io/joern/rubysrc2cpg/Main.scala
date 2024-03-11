@@ -1,10 +1,8 @@
 package io.joern.rubysrc2cpg
 
-import io.joern.dataflowengineoss.layers.dataflows.{OssDataFlow, OssDataFlowOptions}
 import io.joern.rubysrc2cpg.Frontend.*
 import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery}
 import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
-import io.shiftleft.semanticcpg.layers.LayerCreatorContext
 import scopt.OParser
 
 final case class Config(
