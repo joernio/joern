@@ -25,10 +25,41 @@ class HereDocTests extends RubyCode2CpgFixture(withDataFlow = true) {
               localAst.code shouldBe "a"
               callAst.code shouldBe "a = 10"
 
+              literalAst.typeFullName shouldBe "__builtin.heredoc"
+
               returnAst.code shouldBe "a"
             case _ =>
           }
         case _ => fail("Expected one method for f")
+      }
+    }
+  }
+
+  "HereDoc as function argument" should {
+    val cpg = code("""
+        |def foo()
+        | a = <<-SQL
+        |   SELECT * FROM TABLE;
+        | SQL
+        |
+        | a
+        |end
+        |""".stripMargin)
+
+    "parse Heredocs" in {
+      inside(cpg.method.name("foo").l) {
+        case fooFunc :: Nil =>
+          inside(fooFunc.block.astChildren.isCall.l) {
+            case assignmentCall :: Nil =>
+              inside(assignmentCall.argument.l) {
+                case lhsArg :: (rhsArg: Literal) :: Nil =>
+                  lhsArg.code shouldBe "a"
+                  rhsArg.typeFullName shouldBe "__builtin.heredoc"
+                case _ => fail("Expected LHS and RHS for assignment")
+              }
+            case _ => fail("Expected call for assignment")
+          }
+        case _ => fail("Expected one method for foo")
       }
     }
   }

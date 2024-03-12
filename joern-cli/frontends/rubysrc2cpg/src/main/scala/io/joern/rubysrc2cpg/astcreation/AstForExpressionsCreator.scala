@@ -52,7 +52,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   protected def astForHereDoc(node: HereDocNode): Ast = {
-    Ast(literalNode(node, code(node), getBuiltInType("string")))
+    Ast(literalNode(node, code(node), getBuiltInType("heredoc")))
   }
 
   // Helper for nil literals to put in empty clauses
