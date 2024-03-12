@@ -7,6 +7,7 @@ import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -74,7 +75,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       "^"   -> Operators.xor,
       "<<"  -> Operators.shiftLeft,
       ">>"  -> Operators.logicalShiftRight,
-      "=~"  -> "=~"
+      "=~"  -> RubyOperators.regexpMatch
     )
 
   protected val AssignmentOperatorNames: Map[String, String] = Map(
