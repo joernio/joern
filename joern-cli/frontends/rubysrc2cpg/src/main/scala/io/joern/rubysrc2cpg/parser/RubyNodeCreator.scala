@@ -669,7 +669,12 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitAssociation(ctx: RubyParser.AssociationContext): RubyNode = {
-    Association(visit(ctx.associationKey()), visit(ctx.operatorExpression()))(ctx.toTextSpan)
+    ctx.associationKey().getText match {
+      case "if" =>
+        Association(SimpleIdentifier()(ctx.toTextSpan.spanStart("if")), visit(ctx.operatorExpression()))(ctx.toTextSpan)
+      case _ =>
+        Association(visit(ctx.associationKey()), visit(ctx.operatorExpression()))(ctx.toTextSpan)
+    }
   }
 
   override def visitModuleDefinition(ctx: RubyParser.ModuleDefinitionContext): RubyNode = {

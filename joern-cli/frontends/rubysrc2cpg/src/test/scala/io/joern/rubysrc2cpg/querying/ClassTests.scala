@@ -2,7 +2,7 @@ package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
-import io.shiftleft.codepropertygraph.generated.nodes.{Identifier, Return}
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal, Return}
 import io.shiftleft.semanticcpg.language.*
 
 class ClassTests extends RubyCode2CpgFixture {
@@ -300,6 +300,61 @@ class ClassTests extends RubyCode2CpgFixture {
 
   }
 
+  "if: <val> as function param" should {
+    "Be treated as an SimpleIdentifier" in {
+      val cpg = code("""
+          | class User < ApplicationRecord
+          |   validates :password, presence: true,
+          |                        confirmation: true,
+          |                        length: {within: 6..40},
+          |                        on: :create,
+          |                        if: :password
+          |  end
+          |""".stripMargin)
+      inside(cpg.typeDecl.name("User").l) {
+        case userType :: Nil =>
+          val List(validateCall: Call) = userType.astChildren.isCall.l: @unchecked
+
+          inside(validateCall.argument.l) {
+            case (passwordArg: Literal) :: (presenceArg: Literal) :: (confirmationArg: Literal) :: (lengthArg: Block) :: (onArg: Literal) :: (ifArg: Literal) :: Nil =>
+              passwordArg.code shouldBe ":password"
+              presenceArg.code shouldBe "true"
+              confirmationArg.code shouldBe "true"
+              onArg.code shouldBe ":create"
+              ifArg.code shouldBe ":password"
+            case xs => fail(s"Expected 6 arguments, got ${xs.code.mkString(", ")} instead")
+          }
+        case _ => fail("Expected typeDecl for user, none found instead")
+      }
+    }
+
+    "Be treated as a SimpleIdentifier 2" in {
+      val cpg = code("""
+          | class AdminController < ApplicationController
+          |   before_action :administrative, if: :admin_param, except: [:get_user]
+          |    skip_before_action :has_info
+          |    layout false, only: [:get_all_users, :get_user]
+          | end
+          |""".stripMargin)
+
+      inside(cpg.typeDecl.name("AdminController").l) {
+        case adminTypeDecl :: Nil =>
+          inside(adminTypeDecl.astChildren.isCall.l) {
+            case beforeActionCall :: skipBeforeActionCall :: layoutCall :: Nil =>
+              inside(beforeActionCall.argument.l) {
+                case adminArg :: ifArg :: exceptArg :: Nil =>
+                  adminArg.code shouldBe ":administrative"
+                  ifArg.code shouldBe ":admin_param"
+                  exceptArg.code shouldBe "[:get_user]"
+                case xs => fail(s"Expected 3 args, instead found ${xs.code.mkString(", ")}")
+              }
+            case xs => fail(s"Expected 3 calls, instead found ${xs.code.mkString(", ")}")
+          }
+        case _ => fail("Expected one typeDecl for AdminController")
+      }
+    }
+  }
+
   "fully qualified base types" should {
 
     val cpg = code("""require "rails/all"
@@ -334,5 +389,4 @@ class ClassTests extends RubyCode2CpgFixture {
       }
     }
   }
-
 }
