@@ -1,0 +1,372 @@
+{
+  "Microsoft.CodeAnalysis": [
+    {
+      "name": "Microsoft.CodeAnalysis.EmbeddedAttribute",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System.Runtime.CompilerServices": [
+    {
+      "name": "System.Runtime.CompilerServices.NullableAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.NullableContextAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.NullablePublicOnlyAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.RefSafetyRulesAttribute",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System.Diagnostics.CodeAnalysis": [
+    {
+      "name": "System.Diagnostics.CodeAnalysis.AllowNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DisallowNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MaybeNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute",
+      "methods": [
+        {
+          "name": "get_ParameterName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute",
+      "methods": [
+        {
+          "name": "get_ParameterValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MemberNotNullAttribute",
+      "methods": [
+        {
+          "name": "get_Members",
+          "returnType": "System.String[]",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Members",
+          "returnType": "System.String[]",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Polly": [
+    {
+      "name": "Polly.HttpRequestMessageExtensions",
+      "methods": [
+        {
+          "name": "GetPolicyExecutionContext",
+          "returnType": "Polly.Context",
+          "parameterTypes": [
+            [
+              "request",
+              "System.Net.Http.HttpRequestMessage"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "SetPolicyExecutionContext",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "request",
+              "System.Net.Http.HttpRequestMessage"
+            ],
+            [
+              "context",
+              "Polly.Context"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.Internal": [
+    {
+      "name": "Microsoft.Extensions.Internal.ValueStopwatch",
+      "methods": [
+        {
+          "name": "get_IsActive",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "StartNew",
+          "returnType": "Microsoft.Extensions.Internal.ValueStopwatch",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "GetElapsedTime",
+          "returnType": "System.TimeSpan",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.Http": [
+    {
+      "name": "Microsoft.Extensions.Http.PolicyHttpMessageHandler",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Http.Resources",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.DependencyInjection": [
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.PollyHttpClientBuilderExtensions",
+      "methods": [
+        {
+          "name": "AddPolicyHandler",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"
+            ],
+            [
+              "policy",
+              "Polly.IAsyncPolicy`1<System.Net.Http.HttpResponseMessage>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddPolicyHandler",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"
+            ],
+            [
+              "policySelector",
+              "System.Func`2<System.Net.Http.HttpRequestMessage,Polly.IAsyncPolicy`1<System.Net.Http.HttpResponseMessage>>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddPolicyHandler",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"
+            ],
+            [
+              "policySelector",
+              "System.Func`3<System.IServiceProvider,System.Net.Http.HttpRequestMessage,Polly.IAsyncPolicy`1<System.Net.Http.HttpResponseMessage>>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddPolicyHandlerFromRegistry",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"
+            ],
+            [
+              "policyKey",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddPolicyHandlerFromRegistry",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"
+            ],
+            [
+              "policySelector",
+              "System.Func`3<Polly.Registry.IReadOnlyPolicyRegistry`1<System.String>,System.Net.Http.HttpRequestMessage,Polly.IAsyncPolicy`1<System.Net.Http.HttpResponseMessage>>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddTransientHttpErrorPolicy",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"
+            ],
+            [
+              "configurePolicy",
+              "System.Func`2<Polly.PolicyBuilder`1<System.Net.Http.HttpResponseMessage>,Polly.IAsyncPolicy`1<System.Net.Http.HttpResponseMessage>>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddPolicyHandler",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.DependencyInjection.IHttpClientBuilder"
+            ],
+            [
+              "policyFactory",
+              "System.Func`4<System.IServiceProvider,System.Net.Http.HttpRequestMessage,System.String,Polly.IAsyncPolicy`1<System.Net.Http.HttpResponseMessage>>"
+            ],
+            [
+              "keySelector",
+              "System.Func`2<System.Net.Http.HttpRequestMessage,System.String>"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.PollyServiceCollectionExtensions",
+      "methods": [
+        {
+          "name": "AddPolicyRegistry",
+          "returnType": "Polly.Registry.IPolicyRegistry`1<System.String>",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddPolicyRegistry",
+          "returnType": "Polly.Registry.IPolicyRegistry`1<System.String>",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "registry",
+              "Polly.Registry.IPolicyRegistry`1<System.String>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddPolicyRegistry",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "configureRegistry",
+              "System.Action`2<System.IServiceProvider,Polly.Registry.IPolicyRegistry`1<System.String>>"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

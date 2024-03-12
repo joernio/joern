@@ -1,0 +1,466 @@
+{
+  "Microsoft.CodeAnalysis": [
+    {
+      "name": "Microsoft.CodeAnalysis.EmbeddedAttribute",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System.Runtime.CompilerServices": [
+    {
+      "name": "System.Runtime.CompilerServices.RefSafetyRulesAttribute",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "Microsoft.CodeAnalysis.CSharp.Scripting": [
+    {
+      "name": "Microsoft.CodeAnalysis.CSharp.Scripting.CSharpScript",
+      "methods": [
+        {
+          "name": "Create",
+          "returnType": "Microsoft.CodeAnalysis.Scripting.Script`1<T>",
+          "parameterTypes": [
+            [
+              "code",
+              "System.String"
+            ],
+            [
+              "options",
+              "Microsoft.CodeAnalysis.Scripting.ScriptOptions"
+            ],
+            [
+              "globalsType",
+              "System.Type"
+            ],
+            [
+              "assemblyLoader",
+              "Microsoft.CodeAnalysis.Scripting.Hosting.InteractiveAssemblyLoader"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Create",
+          "returnType": "Microsoft.CodeAnalysis.Scripting.Script`1<T>",
+          "parameterTypes": [
+            [
+              "code",
+              "System.IO.Stream"
+            ],
+            [
+              "options",
+              "Microsoft.CodeAnalysis.Scripting.ScriptOptions"
+            ],
+            [
+              "globalsType",
+              "System.Type"
+            ],
+            [
+              "assemblyLoader",
+              "Microsoft.CodeAnalysis.Scripting.Hosting.InteractiveAssemblyLoader"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Create",
+          "returnType": "Microsoft.CodeAnalysis.Scripting.Script`1<System.Object>",
+          "parameterTypes": [
+            [
+              "code",
+              "System.String"
+            ],
+            [
+              "options",
+              "Microsoft.CodeAnalysis.Scripting.ScriptOptions"
+            ],
+            [
+              "globalsType",
+              "System.Type"
+            ],
+            [
+              "assemblyLoader",
+              "Microsoft.CodeAnalysis.Scripting.Hosting.InteractiveAssemblyLoader"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Create",
+          "returnType": "Microsoft.CodeAnalysis.Scripting.Script`1<System.Object>",
+          "parameterTypes": [
+            [
+              "code",
+              "System.IO.Stream"
+            ],
+            [
+              "options",
+              "Microsoft.CodeAnalysis.Scripting.ScriptOptions"
+            ],
+            [
+              "globalsType",
+              "System.Type"
+            ],
+            [
+              "assemblyLoader",
+              "Microsoft.CodeAnalysis.Scripting.Hosting.InteractiveAssemblyLoader"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "RunAsync",
+          "returnType": "System.Threading.Tasks.Task`1<Microsoft.CodeAnalysis.Scripting.ScriptState`1<T>>",
+          "parameterTypes": [
+            [
+              "code",
+              "System.String"
+            ],
+            [
+              "options",
+              "Microsoft.CodeAnalysis.Scripting.ScriptOptions"
+            ],
+            [
+              "globals",
+              "System.Object"
+            ],
+            [
+              "globalsType",
+              "System.Type"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "RunAsync",
+          "returnType": "System.Threading.Tasks.Task`1<Microsoft.CodeAnalysis.Scripting.ScriptState`1<System.Object>>",
+          "parameterTypes": [
+            [
+              "code",
+              "System.String"
+            ],
+            [
+              "options",
+              "Microsoft.CodeAnalysis.Scripting.ScriptOptions"
+            ],
+            [
+              "globals",
+              "System.Object"
+            ],
+            [
+              "globalsType",
+              "System.Type"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "EvaluateAsync",
+          "returnType": "System.Threading.Tasks.Task`1<T>",
+          "parameterTypes": [
+            [
+              "code",
+              "System.String"
+            ],
+            [
+              "options",
+              "Microsoft.CodeAnalysis.Scripting.ScriptOptions"
+            ],
+            [
+              "globals",
+              "System.Object"
+            ],
+            [
+              "globalsType",
+              "System.Type"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "EvaluateAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Object>",
+          "parameterTypes": [
+            [
+              "code",
+              "System.String"
+            ],
+            [
+              "options",
+              "Microsoft.CodeAnalysis.Scripting.ScriptOptions"
+            ],
+            [
+              "globals",
+              "System.Object"
+            ],
+            [
+              "globalsType",
+              "System.Type"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.CodeAnalysis.CSharp.Scripting.CSharpScriptCompiler",
+      "methods": [
+        {
+          "name": "get_DiagnosticFormatter",
+          "returnType": "Microsoft.CodeAnalysis.DiagnosticFormatter",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_IdentifierComparer",
+          "returnType": "System.StringComparer",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "IsCompleteSubmission",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "tree",
+              "Microsoft.CodeAnalysis.SyntaxTree"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ParseSubmission",
+          "returnType": "Microsoft.CodeAnalysis.SyntaxTree",
+          "parameterTypes": [
+            [
+              "text",
+              "Microsoft.CodeAnalysis.Text.SourceText"
+            ],
+            [
+              "parseOptions",
+              "Microsoft.CodeAnalysis.ParseOptions"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateSubmission",
+          "returnType": "Microsoft.CodeAnalysis.Compilation",
+          "parameterTypes": [
+            [
+              "script",
+              "Microsoft.CodeAnalysis.Scripting.Script"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.CodeAnalysis.CSharp.Scripting.ScriptOptionsExtensions",
+      "methods": [
+        {
+          "name": "WithLanguageVersion",
+          "returnType": "Microsoft.CodeAnalysis.Scripting.ScriptOptions",
+          "parameterTypes": [
+            [
+              "options",
+              "Microsoft.CodeAnalysis.Scripting.ScriptOptions"
+            ],
+            [
+              "languageVersion",
+              "Microsoft.CodeAnalysis.CSharp.LanguageVersion"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.CodeAnalysis.CSharp.Scripting.CSharpScriptingResources",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "Microsoft.CodeAnalysis.CSharp.Scripting.Hosting": [
+    {
+      "name": "Microsoft.CodeAnalysis.CSharp.Scripting.Hosting.CSharpMemberFilter",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.CodeAnalysis.CSharp.Scripting.Hosting.CSharpInteractiveCompiler",
+      "methods": [
+        {
+          "name": "PrintLogo",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "consoleOutput",
+              "System.IO.TextWriter"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "PrintHelp",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "consoleOutput",
+              "System.IO.TextWriter"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.CodeAnalysis.CSharp.Scripting.Hosting.CSharpReplServiceProvider",
+      "methods": [
+        {
+          "name": "get_ObjectFormatter",
+          "returnType": "Microsoft.CodeAnalysis.Scripting.Hosting.ObjectFormatter",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_CommandLineParser",
+          "returnType": "Microsoft.CodeAnalysis.CommandLineParser",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_DiagnosticFormatter",
+          "returnType": "Microsoft.CodeAnalysis.DiagnosticFormatter",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Logo",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "CreateScript",
+          "returnType": "Microsoft.CodeAnalysis.Scripting.Script`1<T>",
+          "parameterTypes": [
+            [
+              "code",
+              "System.String"
+            ],
+            [
+              "options",
+              "Microsoft.CodeAnalysis.Scripting.ScriptOptions"
+            ],
+            [
+              "globalsTypeOpt",
+              "System.Type"
+            ],
+            [
+              "assemblyLoader",
+              "Microsoft.CodeAnalysis.Scripting.Hosting.InteractiveAssemblyLoader"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.CodeAnalysis.CSharp.Scripting.Hosting.CSharpObjectFormatter",
+      "methods": [
+        {
+          "name": "get_Instance",
+          "returnType": "Microsoft.CodeAnalysis.CSharp.Scripting.Hosting.CSharpObjectFormatter",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "FormatObject",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "obj",
+              "System.Object"
+            ],
+            [
+              "options",
+              "Microsoft.CodeAnalysis.Scripting.Hosting.PrintOptions"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "FormatException",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "e",
+              "System.Exception"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.CodeAnalysis.CSharp.Scripting.Hosting.CSharpObjectFormatterImpl",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.CodeAnalysis.CSharp.Scripting.Hosting.CSharpPrimitiveFormatter",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.CodeAnalysis.CSharp.Scripting.Hosting.CSharpTypeNameFormatter",
+      "methods": [
+        {
+          "name": "FormatTypeName",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "type",
+              "System.Type"
+            ],
+            [
+              "options",
+              "Microsoft.CodeAnalysis.Scripting.Hosting.CommonTypeNameFormatterOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

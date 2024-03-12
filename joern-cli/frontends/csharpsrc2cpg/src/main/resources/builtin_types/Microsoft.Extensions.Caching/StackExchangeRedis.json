@@ -1,0 +1,460 @@
+{
+  "Microsoft.CodeAnalysis": [
+    {
+      "name": "Microsoft.CodeAnalysis.EmbeddedAttribute",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System.Runtime.CompilerServices": [
+    {
+      "name": "System.Runtime.CompilerServices.NullableAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.NullableContextAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.NullablePublicOnlyAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.RefSafetyRulesAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.CallerArgumentExpressionAttribute",
+      "methods": [
+        {
+          "name": "get_ParameterName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "System.Diagnostics.CodeAnalysis": [
+    {
+      "name": "System.Diagnostics.CodeAnalysis.AllowNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DisallowNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MaybeNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute",
+      "methods": [
+        {
+          "name": "get_ParameterName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute",
+      "methods": [
+        {
+          "name": "get_ParameterValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MemberNotNullAttribute",
+      "methods": [
+        {
+          "name": "get_Members",
+          "returnType": "System.String[]",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Members",
+          "returnType": "System.String[]",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.AspNetCore.Shared": [
+    {
+      "name": "Microsoft.AspNetCore.Shared.ArgumentNullThrowHelper",
+      "methods": [
+        {
+          "name": "ThrowIfNull",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "argument",
+              "System.Object"
+            ],
+            [
+              "paramName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Shared.ObjectDisposedThrowHelper",
+      "methods": [
+        {
+          "name": "ThrowIf",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "condition",
+              "System.Boolean"
+            ],
+            [
+              "instance",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ThrowIf",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "condition",
+              "System.Boolean"
+            ],
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.DependencyInjection": [
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.StackExchangeRedisCacheServiceCollectionExtensions",
+      "methods": [
+        {
+          "name": "AddStackExchangeRedisCache",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "setupAction",
+              "System.Action`1<Microsoft.Extensions.Caching.StackExchangeRedis.RedisCacheOptions>"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.Caching.StackExchangeRedis": [
+    {
+      "name": "Microsoft.Extensions.Caching.StackExchangeRedis.RedisCache",
+      "methods": [
+        {
+          "name": "Get",
+          "returnType": "System.Byte[]",
+          "parameterTypes": [
+            [
+              "key",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.Byte[]>",
+          "parameterTypes": [
+            [
+              "key",
+              "System.String"
+            ],
+            [
+              "token",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Set",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "key",
+              "System.String"
+            ],
+            [
+              "value",
+              "System.Byte[]"
+            ],
+            [
+              "options",
+              "Microsoft.Extensions.Caching.Distributed.DistributedCacheEntryOptions"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "SetAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "key",
+              "System.String"
+            ],
+            [
+              "value",
+              "System.Byte[]"
+            ],
+            [
+              "options",
+              "Microsoft.Extensions.Caching.Distributed.DistributedCacheEntryOptions"
+            ],
+            [
+              "token",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Refresh",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "key",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "RefreshAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "key",
+              "System.String"
+            ],
+            [
+              "token",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Remove",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "key",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "RemoveAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "key",
+              "System.String"
+            ],
+            [
+              "token",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Dispose",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Caching.StackExchangeRedis.RedisCacheImpl",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Caching.StackExchangeRedis.RedisCacheOptions",
+      "methods": [
+        {
+          "name": "get_Configuration",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Configuration",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ConfigurationOptions",
+          "returnType": "StackExchange.Redis.ConfigurationOptions",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ConfigurationOptions",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "StackExchange.Redis.ConfigurationOptions"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ConnectionMultiplexerFactory",
+          "returnType": "System.Func`1<System.Threading.Tasks.Task`1<StackExchange.Redis.IConnectionMultiplexer>>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ConnectionMultiplexerFactory",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Func`1<System.Threading.Tasks.Task`1<StackExchange.Redis.IConnectionMultiplexer>>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_InstanceName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_InstanceName",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ProfilingSession",
+          "returnType": "System.Func`1<StackExchange.Redis.Profiling.ProfilingSession>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ProfilingSession",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Func`1<StackExchange.Redis.Profiling.ProfilingSession>"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

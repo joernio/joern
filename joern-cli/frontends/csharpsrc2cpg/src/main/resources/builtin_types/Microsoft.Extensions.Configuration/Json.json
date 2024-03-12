@@ -1,0 +1,479 @@
+{
+  "Microsoft.CodeAnalysis": [
+    {
+      "name": "Microsoft.CodeAnalysis.EmbeddedAttribute",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System.Runtime.CompilerServices": [
+    {
+      "name": "System.Runtime.CompilerServices.NullableAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.NullableContextAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.NullablePublicOnlyAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.RefSafetyRulesAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.CallerArgumentExpressionAttribute",
+      "methods": [
+        {
+          "name": "get_ParameterName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "FxResources.Microsoft.Extensions.Configuration.Json": [
+    {
+      "name": "FxResources.Microsoft.Extensions.Configuration.Json.SR",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System": [
+    {
+      "name": "System.ThrowHelper",
+      "methods": [
+        {
+          "name": "IfNullOrWhitespace",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "argument",
+              "System.String"
+            ],
+            [
+              "paramName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.SR",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System.Diagnostics.CodeAnalysis": [
+    {
+      "name": "System.Diagnostics.CodeAnalysis.AllowNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DisallowNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MaybeNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute",
+      "methods": [
+        {
+          "name": "get_ParameterName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute",
+      "methods": [
+        {
+          "name": "get_ParameterValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MemberNotNullAttribute",
+      "methods": [
+        {
+          "name": "get_Members",
+          "returnType": "System.String[]",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Members",
+          "returnType": "System.String[]",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "System.Runtime.InteropServices": [
+    {
+      "name": "System.Runtime.InteropServices.LibraryImportAttribute",
+      "methods": [
+        {
+          "name": "get_LibraryName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_EntryPoint",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_EntryPoint",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_StringMarshalling",
+          "returnType": "System.Runtime.InteropServices.StringMarshalling",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_StringMarshalling",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Runtime.InteropServices.StringMarshalling"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_StringMarshallingCustomType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_StringMarshallingCustomType",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Type"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_SetLastError",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_SetLastError",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.InteropServices.StringMarshalling",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.Configuration": [
+    {
+      "name": "Microsoft.Extensions.Configuration.JsonConfigurationExtensions",
+      "methods": [
+        {
+          "name": "AddJsonFile",
+          "returnType": "Microsoft.Extensions.Configuration.IConfigurationBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.Configuration.IConfigurationBuilder"
+            ],
+            [
+              "path",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddJsonFile",
+          "returnType": "Microsoft.Extensions.Configuration.IConfigurationBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.Configuration.IConfigurationBuilder"
+            ],
+            [
+              "path",
+              "System.String"
+            ],
+            [
+              "optional",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddJsonFile",
+          "returnType": "Microsoft.Extensions.Configuration.IConfigurationBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.Configuration.IConfigurationBuilder"
+            ],
+            [
+              "path",
+              "System.String"
+            ],
+            [
+              "optional",
+              "System.Boolean"
+            ],
+            [
+              "reloadOnChange",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddJsonFile",
+          "returnType": "Microsoft.Extensions.Configuration.IConfigurationBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.Configuration.IConfigurationBuilder"
+            ],
+            [
+              "provider",
+              "Microsoft.Extensions.FileProviders.IFileProvider"
+            ],
+            [
+              "path",
+              "System.String"
+            ],
+            [
+              "optional",
+              "System.Boolean"
+            ],
+            [
+              "reloadOnChange",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddJsonFile",
+          "returnType": "Microsoft.Extensions.Configuration.IConfigurationBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.Configuration.IConfigurationBuilder"
+            ],
+            [
+              "configureSource",
+              "System.Action`1<Microsoft.Extensions.Configuration.Json.JsonConfigurationSource>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddJsonStream",
+          "returnType": "Microsoft.Extensions.Configuration.IConfigurationBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.Configuration.IConfigurationBuilder"
+            ],
+            [
+              "stream",
+              "System.IO.Stream"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.Configuration.Json": [
+    {
+      "name": "Microsoft.Extensions.Configuration.Json.JsonConfigurationFileParser",
+      "methods": [
+        {
+          "name": "Parse",
+          "returnType": "System.Collections.Generic.IDictionary`2<System.String,System.String>",
+          "parameterTypes": [
+            [
+              "input",
+              "System.IO.Stream"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Configuration.Json.JsonConfigurationProvider",
+      "methods": [
+        {
+          "name": "Load",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "stream",
+              "System.IO.Stream"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Configuration.Json.JsonConfigurationSource",
+      "methods": [
+        {
+          "name": "Build",
+          "returnType": "Microsoft.Extensions.Configuration.IConfigurationProvider",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.Configuration.IConfigurationBuilder"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Configuration.Json.JsonStreamConfigurationProvider",
+      "methods": [
+        {
+          "name": "Load",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "stream",
+              "System.IO.Stream"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Configuration.Json.JsonStreamConfigurationSource",
+      "methods": [
+        {
+          "name": "Build",
+          "returnType": "Microsoft.Extensions.Configuration.IConfigurationProvider",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.Extensions.Configuration.IConfigurationBuilder"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ]
+}
