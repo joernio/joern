@@ -4,7 +4,7 @@ import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.codepropertygraph.generated.nodes.{Call, Literal, Local, Method, Return}
 import io.shiftleft.semanticcpg.language.*
 
-class HereDocTests extends RubyCode2CpgFixture(withDataFlow = true) {
+class HereDocTests extends RubyCode2CpgFixture {
 
   "HereDoc simple" should {
     val cpg = code("""
@@ -25,7 +25,7 @@ class HereDocTests extends RubyCode2CpgFixture(withDataFlow = true) {
               localAst.code shouldBe "a"
               callAst.code shouldBe "a = 10"
 
-              literalAst.typeFullName shouldBe "__builtin.heredoc"
+              literalAst.typeFullName shouldBe "__builtin.String"
 
               returnAst.code shouldBe "a"
             case _ =>
@@ -54,7 +54,7 @@ class HereDocTests extends RubyCode2CpgFixture(withDataFlow = true) {
               inside(assignmentCall.argument.l) {
                 case lhsArg :: (rhsArg: Literal) :: Nil =>
                   lhsArg.code shouldBe "a"
-                  rhsArg.typeFullName shouldBe "__builtin.heredoc"
+                  rhsArg.typeFullName shouldBe "__builtin.String"
                 case _ => fail("Expected LHS and RHS for assignment")
               }
             case _ => fail("Expected call for assignment")
