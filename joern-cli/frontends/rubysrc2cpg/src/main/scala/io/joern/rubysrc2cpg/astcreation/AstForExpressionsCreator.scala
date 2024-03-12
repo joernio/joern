@@ -133,11 +133,22 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     // TODO: Type recovery should potentially resolve this
     val fullName = typeFromCallTarget(node.target)
       .map(x => s"$x:${node.methodName}")
-      .getOrElse(node.methodName)
+      .getOrElse(XDefines.DynamicCallUnknownFullName)
+
+    val fieldAccessBase = astForExpression(node.target)
     val fieldAccessAst  = astForFieldAccess(MemberAccess(node.target, node.op, node.methodName)(node.span))
     val argumentAsts    = node.arguments.map(astForMethodCallArgument)
+
+    // This is consistent with `pysrc` calls
+    fieldAccessAst.root.collect { case x: AstNodeNew => x.order = 0 }
+    fieldAccessBase.root.collect { case x: AstNodeNew => x.order = 1 }
+    argumentAsts.zipWithIndex.foreach { case (arg, idx) =>
+      arg.root.collect { case x: AstNodeNew => x.order = idx + 2 }
+    }
+
     val fieldAccessCall = callNode(node, code(node), node.methodName, fullName, DispatchTypes.DYNAMIC_DISPATCH)
-    callAst(fieldAccessCall, argumentAsts, Some(fieldAccessAst))
+
+    callAst(fieldAccessCall, argumentAsts, Option(fieldAccessBase), Option(fieldAccessAst))
   }
 
   protected def astForIndexAccess(node: IndexAccess): Ast = {
@@ -535,15 +546,23 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   private def astForMethodCallWithoutBlock(node: SimpleCall, methodIdentifier: SimpleIdentifier): Ast = {
-    val methodName           = methodIdentifier.text
-    lazy val defaultFullName = s"${XDefines.UnresolvedNamespace}:$methodName"
-    val methodFullName = scope.tryResolveMethodInvocation(methodName, List.empty) match {
-      case Some(m) => scope.typeForMethod(m).map(t => s"${t.name}:${m.name}").getOrElse(defaultFullName)
-      case None    => defaultFullName
+    val methodName = methodIdentifier.text
+
+    lazy val defaultResult = Defines.Any -> XDefines.DynamicCallUnknownFullName
+    val (receiverType, methodFullName) = scope.tryResolveMethodInvocation(methodName, List.empty) match {
+      case Some(m) =>
+        scope.typeForMethod(m).map(t => t.name -> s"${t.name}:${m.name}").getOrElse(defaultResult)
+      case None => defaultResult
     }
-    val argumentAst = node.arguments.map(astForMethodCallArgument)
-    val call        = callNode(node, code(node), methodName, methodFullName, DispatchTypes.STATIC_DISPATCH)
-    callAst(call, argumentAst, None, None)
+    val argumentAst      = node.arguments.map(astForMethodCallArgument)
+    val call             = callNode(node, code(node), methodName, methodFullName, DispatchTypes.STATIC_DISPATCH)
+    val receiverCallName = identifierNode(node, call.name, call.name, receiverType)
+
+    // Consistent with `pysrc`
+    receiverCallName.order(0)
+    argumentAst.zipWithIndex.foreach { case (arg, idx) => arg.root.collect { case x: AstNodeNew => x.order = idx + 1 } }
+
+    callAst(call, argumentAst, None, Option(Ast(receiverCallName)))
   }
 
   private def astForProcOrLambdaExpr(node: ProcOrLambdaExpr): Ast = {
