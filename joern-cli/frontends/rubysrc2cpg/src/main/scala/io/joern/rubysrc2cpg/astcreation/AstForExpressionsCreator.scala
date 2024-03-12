@@ -18,6 +18,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   protected def astForExpression(node: RubyNode): Ast = node match
     case node: StaticLiteral            => astForStaticLiteral(node)
+    case node: HereDocNode              => astForHereDoc(node)
     case node: DynamicLiteral           => astForDynamicLiteral(node)
     case node: UnaryExpression          => astForUnary(node)
     case node: BinaryExpression         => astForBinary(node)
@@ -46,6 +47,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   protected def astForStaticLiteral(node: StaticLiteral): Ast = {
     Ast(literalNode(node, code(node), node.typeFullName))
+  }
+
+  protected def astForHereDoc(node: HereDocNode): Ast = {
+    Ast(literalNode(node, code(node), getBuiltInType("string")))
   }
 
   // Helper for nil literals to put in empty clauses
