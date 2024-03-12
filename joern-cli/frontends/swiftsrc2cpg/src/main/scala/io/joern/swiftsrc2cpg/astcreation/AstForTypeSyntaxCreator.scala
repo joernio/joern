@@ -4,67 +4,99 @@ import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.*
 import io.joern.swiftsrc2cpg.parser.SwiftNodeSyntax.TypeSyntax
 import io.joern.x2cpg.Ast
 import io.joern.x2cpg.ValidationMode
+import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
+import io.shiftleft.codepropertygraph.generated.EdgeTypes
 
 trait AstForTypeSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
 
-  private def astForArrayTypeSyntax(node: ArrayTypeSyntax): Ast =
-    notHandledYet(node)
+  private val AnonTypeDeclNamePrefix = "_anon_cdecl"
 
-  private def astForAttributedTypeSyntax(node: AttributedTypeSyntax): Ast =
-    notHandledYet(node)
+  private def typeDeclForTypeSyntax(node: TypeSyntax): NewTypeDecl = {
+    val name                     = generateUnusedVariableName(usedVariableNames, AnonTypeDeclNamePrefix)
+    val (typeName, typeFullName) = calcTypeNameAndFullName(name)
+    registerType(typeFullName)
 
-  private def astForClassRestrictionTypeSyntax(node: ClassRestrictionTypeSyntax): Ast =
-    notHandledYet(node)
+    val (astParentType, astParentFullName) = astParentInfo()
+    val typeDeclNode_ =
+      typeDeclNode(node, typeName, typeFullName, parserResult.filename, code(node), astParentType, astParentFullName)
 
-  private def astForCompositionTypeSyntax(node: CompositionTypeSyntax): Ast =
-    notHandledYet(node)
-
-  private def astForDictionaryTypeSyntax(node: DictionaryTypeSyntax): Ast =
-    notHandledYet(node)
-
-  private def astForFunctionTypeSyntax(node: FunctionTypeSyntax): Ast =
-    notHandledYet(node)
-
-  private def astForIdentifierTypeSyntax(node: IdentifierTypeSyntax): Ast = {
-    Ast(identifierNode(node, code(node.name)))
+    seenAliasTypes.add(typeDeclNode_)
+    diffGraph.addEdge(methodAstParentStack.head, typeDeclNode_, EdgeTypes.AST)
+    typeDeclNode_
   }
 
-  private def astForImplicitlyUnwrappedOptionalTypeSyntax(node: ImplicitlyUnwrappedOptionalTypeSyntax): Ast =
-    notHandledYet(node)
+  private def astForArrayTypeSyntax(node: ArrayTypeSyntax): Ast = {
+    Ast(typeDeclForTypeSyntax(node))
+  }
 
-  private def astForMemberTypeSyntax(node: MemberTypeSyntax): Ast =
-    notHandledYet(node)
+  private def astForAttributedTypeSyntax(node: AttributedTypeSyntax): Ast = {
+    astForTypeSyntax(node.baseType)
+  }
 
-  private def astForMetatypeTypeSyntax(node: MetatypeTypeSyntax): Ast = {
+  private def astForClassRestrictionTypeSyntax(node: ClassRestrictionTypeSyntax): Ast = {
+    Ast(identifierNode(node, code(node)))
+  }
+
+  private def astForCompositionTypeSyntax(node: CompositionTypeSyntax): Ast = {
+    Ast(typeDeclForTypeSyntax(node))
+  }
+
+  private def astForDictionaryTypeSyntax(node: DictionaryTypeSyntax): Ast = {
+    Ast(typeDeclForTypeSyntax(node))
+  }
+
+  private def astForFunctionTypeSyntax(node: FunctionTypeSyntax): Ast = {
+    Ast(typeDeclForTypeSyntax(node))
+  }
+
+  private def astForIdentifierTypeSyntax(node: IdentifierTypeSyntax): Ast = {
     val nodeCode = code(node)
     registerType(nodeCode)
     Ast(identifierNode(node, nodeCode, dynamicTypeHints = Seq(nodeCode)))
   }
 
-  private def astForMissingTypeSyntax(node: MissingTypeSyntax): Ast =
-    notHandledYet(node)
+  private def astForImplicitlyUnwrappedOptionalTypeSyntax(node: ImplicitlyUnwrappedOptionalTypeSyntax): Ast = {
+    astForTypeSyntax(node.wrappedType)
+  }
 
-  private def astForNamedOpaqueReturnTypeSyntax(node: NamedOpaqueReturnTypeSyntax): Ast =
-    notHandledYet(node)
+  private def astForMemberTypeSyntax(node: MemberTypeSyntax): Ast = {
+    Ast(typeDeclForTypeSyntax(node))
+  }
 
-  private def astForOptionalTypeSyntax(node: OptionalTypeSyntax): Ast =
-    notHandledYet(node)
+  private def astForMetatypeTypeSyntax(node: MetatypeTypeSyntax): Ast = {
+    astForTypeSyntax(node.baseType)
+  }
 
-  private def astForPackElementTypeSyntax(node: PackElementTypeSyntax): Ast =
-    notHandledYet(node)
+  private def astForMissingTypeSyntax(node: MissingTypeSyntax): Ast = Ast()
 
-  private def astForPackExpansionTypeSyntax(node: PackExpansionTypeSyntax): Ast =
-    notHandledYet(node)
+  private def astForNamedOpaqueReturnTypeSyntax(node: NamedOpaqueReturnTypeSyntax): Ast = {
+    astForTypeSyntax(node.`type`)
+  }
 
-  private def astForSomeOrAnyTypeSyntax(node: SomeOrAnyTypeSyntax): Ast =
-    notHandledYet(node)
+  private def astForOptionalTypeSyntax(node: OptionalTypeSyntax): Ast = {
+    astForTypeSyntax(node.wrappedType)
+  }
 
-  private def astForSuppressedTypeSyntax(node: SuppressedTypeSyntax): Ast =
-    notHandledYet(node)
+  private def astForPackElementTypeSyntax(node: PackElementTypeSyntax): Ast = {
+    Ast(typeDeclForTypeSyntax(node))
+  }
 
-  private def astForTupleTypeSyntax(node: TupleTypeSyntax): Ast =
-    notHandledYet(node)
+  private def astForPackExpansionTypeSyntax(node: PackExpansionTypeSyntax): Ast = {
+    Ast(typeDeclForTypeSyntax(node))
+  }
+
+  private def astForSomeOrAnyTypeSyntax(node: SomeOrAnyTypeSyntax): Ast = {
+    Ast(typeDeclForTypeSyntax(node))
+  }
+
+  private def astForSuppressedTypeSyntax(node: SuppressedTypeSyntax): Ast = {
+    astForTypeSyntax(node.`type`)
+  }
+
+  private def astForTupleTypeSyntax(node: TupleTypeSyntax): Ast = {
+    Ast(typeDeclForTypeSyntax(node))
+  }
 
   protected def astForTypeSyntax(typeSyntax: TypeSyntax): Ast = typeSyntax match {
     case node: ArrayTypeSyntax                       => astForArrayTypeSyntax(node)
