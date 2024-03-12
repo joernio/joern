@@ -103,9 +103,6 @@ package object language extends generated.Language
   implicit def iterOnceToMethodParameterInTrav[A <: MethodParameterIn](a: IterableOnce[A]): MethodParameterTraversal =
     new MethodParameterTraversal(a.iterator)
 
-  // note: this causes problems because MethodParameterOut has an `index` property and the `MethodParameterOutTraversal` defines an `index` step...
-//  implicit def singleToMethodParameterOutTrav[A <: MethodParameterOut](a: A): MethodParameterOutTraversal =
-//    new MethodParameterOutTraversal(Iterator.single(a))
   implicit def iterOnceToMethodParameterOutTrav[A <: MethodParameterOut](a: IterableOnce[A]): MethodParameterOutTraversal =
     new MethodParameterOutTraversal(a.iterator)
 
@@ -256,7 +253,17 @@ package object language extends generated.Language
 
   implicit def toExpression[A <: Expression](a: IterableOnce[A]): ExpressionTraversal[A] =
     new ExpressionTraversal[A](a.iterator)
+
+  object NonStandardImplicits {
+
+    // note: this causes problems because MethodParameterOut has an `index` property and the `MethodParameterOutTraversal` defines an `index` step...
+  implicit def singleToMethodParameterOutTrav[A <: MethodParameterOut](a: A): MethodParameterOutTraversal =
+    new MethodParameterOutTraversal(Iterator.single(a))
+
+  }
 }
+
+
 
 trait LowPrioImplicits {
   implicit val docSearchPackages: DocSearchPackages =
