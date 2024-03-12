@@ -12,6 +12,9 @@ import org.slf4j.LoggerFactory
 
 import java.io.File as JFile
 import java.nio.file.Paths
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.Duration
+import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success, Try}
 
 class DownloadDependenciesPass(parentGoMod: GoModHelper, goGlobal: GoGlobal, config: Config) {
@@ -25,21 +28,25 @@ class DownloadDependenciesPass(parentGoMod: GoModHelper, goGlobal: GoGlobal, con
   private def setupDummyProjectAndDownload(prjDir: String): Unit = {
     parentGoMod
       .getModMetaData()
-      .map(mod => {
+      .foreach(mod => {
         ExternalCommand.run("go mod init joern.io/temp", prjDir) match
           case Success(_) =>
-            mod.dependencies
+            val futures = mod.dependencies
               .filter(dep => config.includeIndirectDependencies || !dep.indirect)
-              .foreach(dependency => {
-                val dependencyStr = s"${dependency.module}@${dependency.version}"
-                val cmd           = s"go get $dependencyStr"
-                ExternalCommand.run(cmd, prjDir) match
-                  case Success(_) =>
-                    print(". ")
-                    processDependency(dependencyStr)
-                  case Failure(f) =>
-                    logger.error(s"\t- command '${cmd}' failed", f)
+              .map(dependency => {
+                Future {
+                  val dependencyStr = s"${dependency.module}@${dependency.version}"
+                  val cmd           = s"go get $dependencyStr"
+                  synchronized(ExternalCommand.run(cmd, prjDir)) match
+                    case Success(_) =>
+                      print(". ")
+                      processDependency(dependencyStr)
+                    case Failure(f) =>
+                      logger.error(s"\t- command '${cmd}' failed", f)
+                }
               })
+            val allResults: Future[List[Unit]] = Future.sequence(futures)
+            Await.result(allResults, Duration.Inf)
           case Failure(f) =>
             logger.error("\t- command 'go mod init joern.io/temp' failed", f)
       })

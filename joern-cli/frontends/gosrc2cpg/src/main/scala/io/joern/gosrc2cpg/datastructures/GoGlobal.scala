@@ -61,14 +61,12 @@ class GoGlobal {
     methodFullNameReturnTypeMap.putIfAbsent(methodFullName, (returnType, signature))
   }
 
-  def recordPkgLevelVarAndConstantAst(pkg: String, ast: Ast, filePath: String): Unit = {
-    synchronized {
-      Option(pkgLevelVarAndConstantAstMap.get(pkg)) match {
-        case Some(existingList) =>
-          val t = (ast, filePath)
-          pkgLevelVarAndConstantAstMap.put(pkg, existingList + t)
-        case None => pkgLevelVarAndConstantAstMap.put(pkg, Set((ast, filePath)))
-      }
+  def recordPkgLevelVarAndConstantAst(pkg: String, ast: Ast, filePath: String): Unit = synchronized {
+    Option(pkgLevelVarAndConstantAstMap.get(pkg)) match {
+      case Some(existingList) =>
+        val t = (ast, filePath)
+        pkgLevelVarAndConstantAstMap.put(pkg, existingList + t)
+      case None => pkgLevelVarAndConstantAstMap.put(pkg, Set((ast, filePath)))
     }
   }
 
@@ -76,14 +74,12 @@ class GoGlobal {
     signature: String,
     lambdaStructTypeFullName: String,
     returnTypeFullname: String
-  ): Unit = {
-    synchronized {
-      Option(lambdaSignatureToLambdaTypeMap.get(signature)) match {
-        case Some(existingList) =>
-          val t = (lambdaStructTypeFullName, returnTypeFullname)
-          lambdaSignatureToLambdaTypeMap.put(signature, existingList + t)
-        case None => lambdaSignatureToLambdaTypeMap.put(signature, Set((lambdaStructTypeFullName, returnTypeFullname)))
-      }
+  ): Unit = synchronized {
+    Option(lambdaSignatureToLambdaTypeMap.get(signature)) match {
+      case Some(existingList) =>
+        val t = (lambdaStructTypeFullName, returnTypeFullname)
+        lambdaSignatureToLambdaTypeMap.put(signature, existingList + t)
+      case None => lambdaSignatureToLambdaTypeMap.put(signature, Set((lambdaStructTypeFullName, returnTypeFullname)))
     }
   }
 
