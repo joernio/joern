@@ -2,8 +2,6 @@ package io.joern.rubysrc2cpg.parser
 
 import better.files.EOF
 
-import scala.collection.mutable.ArrayBuffer
-
 trait HereDocHandling { this: RubyLexerBase =>
 
   /** @see
