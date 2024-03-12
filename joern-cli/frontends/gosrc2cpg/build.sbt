@@ -10,7 +10,7 @@ dependsOn(Projects.dataflowengineoss % "compile->compile;test->test", Projects.x
 libraryDependencies ++= Seq(
   "io.shiftleft"              %% "codepropertygraph" % Versions.cpg,
   "org.scalatest"             %% "scalatest"         % Versions.scalatest % Test,
-  "com.lihaoyi"               %% "os-lib"            % "0.9.1",
+  "com.lihaoyi"               %% "os-lib"            % "0.9.3",
   "com.fasterxml.jackson.core" % "jackson-databind"  % "2.15.2",
   "io.circe"                  %% "circe-core"        % Versions.circe,
   "io.circe"                  %% "circe-generic"     % Versions.circe,
