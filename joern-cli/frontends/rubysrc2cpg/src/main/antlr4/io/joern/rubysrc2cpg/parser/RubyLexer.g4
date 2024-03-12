@@ -380,7 +380,7 @@ HERE_DOC_IDENTIFIER
  ;
 
 HERE_DOC
- : '<<' [-~]? [\t]* IDENTIFIER [a-zA-Z_0-9]* NL ( {!heredocEndAhead(getText())}? . )* [a-zA-Z_] [a-zA-Z_0-9]*
+ : '<<' [-~]? [\t]* IDENTIFIER [a-zA-Z_0-9]* NL WS* ( {!heredocEndAhead(getText())}? . )* NL? WS* [a-zA-Z_] [a-zA-Z_0-9]*
  ;
 
 // --------------------------------------------------------

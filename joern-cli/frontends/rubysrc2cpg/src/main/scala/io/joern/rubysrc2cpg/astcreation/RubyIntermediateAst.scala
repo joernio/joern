@@ -350,4 +350,6 @@ object RubyIntermediateAst {
   final case class UnaryExpression(op: String, expression: RubyNode)(span: TextSpan) extends RubyNode(span)
 
   final case class BinaryExpression(lhs: RubyNode, op: String, rhs: RubyNode)(span: TextSpan) extends RubyNode(span)
+
+  final case class HereDocNode(content: String)(span: TextSpan) extends RubyNode(span)
 }
