@@ -1,5 +1,6 @@
 package io.joern.rubysrc2cpg.astcreation
 
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.ObjectInstantiation
 import io.joern.rubysrc2cpg.passes.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 
@@ -207,7 +208,7 @@ object RubyIntermediateAst {
   final case class StaticLiteral(typeFullName: String)(span: TextSpan) extends RubyNode(span) with LiteralExpr {
     def isSymbol: Boolean = text.startsWith(":")
 
-    def isString: Boolean = text.startsWith("\"")
+    def isString: Boolean = text.startsWith("\"") || text.startsWith("'")
 
     def innerText: String = text match
       case s":'$content'" => content
@@ -256,6 +257,20 @@ object RubyIntermediateAst {
       extends RubyNode(span)
       with RubyCall
 
+  final case class RequireCall(target: RubyNode, argument: RubyNode, isRelative: Boolean)(span: TextSpan)
+      extends RubyNode(span)
+      with RubyCall {
+    def arguments: List[RubyNode] = List(argument)
+    def asSimpleCall: SimpleCall  = SimpleCall(target, arguments)(span)
+  }
+
+  final case class IncludeCall(target: RubyNode, argument: RubyNode)(span: TextSpan)
+      extends RubyNode(span)
+      with RubyCall {
+    def arguments: List[RubyNode] = List(argument)
+    def asSimpleCall: SimpleCall  = SimpleCall(target, arguments)(span)
+  }
+
   /** Represents standalone `proc { ... }` or `lambda { ... }` expressions
     */
   final case class ProcOrLambdaExpr(block: Block)(span: TextSpan) extends RubyNode(span)
@@ -297,10 +312,26 @@ object RubyIntermediateAst {
   final case class IndexAccess(target: RubyNode, indices: List[RubyNode])(span: TextSpan) extends RubyNode(span)
 
   // TODO: Might be replaced by MemberCall simply?
-  final case class MemberAccess(target: RubyNode, op: String, methodName: String)(span: TextSpan) extends RubyNode(span)
+  final case class MemberAccess(target: RubyNode, op: String, memberName: String)(span: TextSpan)
+      extends RubyNode(span) {
+    override def toString: String = s"${target.text}.$memberName"
+  }
 
-  final case class ObjectInstantiation(clazz: RubyNode, arguments: List[RubyNode])(span: TextSpan)
+  /** A Ruby node that instantiates objects.
+    */
+  sealed trait ObjectInstantiation extends RubyCall
+
+  final case class SimpleObjectInstantiation(target: RubyNode, arguments: List[RubyNode])(span: TextSpan)
       extends RubyNode(span)
+      with ObjectInstantiation
+
+  final case class ObjectInstantiationWithBlock(target: RubyNode, arguments: List[RubyNode], block: Block)(
+    span: TextSpan
+  ) extends RubyNode(span)
+      with ObjectInstantiation
+      with RubyCallWithBlock[SimpleObjectInstantiation] {
+    def withoutBlock: SimpleObjectInstantiation = SimpleObjectInstantiation(target, arguments)(span)
+  }
 
   /** Represents a `do` or `{ .. }` (braces) block. */
   final case class Block(parameters: List[RubyNode], body: RubyNode)(span: TextSpan) extends RubyNode(span) {

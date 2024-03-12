@@ -173,7 +173,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
    * foo(<args>, <method_ref>)
    * ```
    */
-  private def astsForCallWithBlock[C <: RubyCall](node: RubyNode with RubyCallWithBlock[C]): Seq[Ast] = {
+  protected def astsForCallWithBlock[C <: RubyCall](node: RubyNode with RubyCallWithBlock[C]): Seq[Ast] = {
     val Seq(methodDecl, typeDecl, _, methodRef) = astForDoBlock(node.block): @unchecked
     val methodRefDummyNode                      = methodRef.root.map(DummyNode(_)(node.span)).toList
 
@@ -186,7 +186,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
         Ast()
     }
 
-    methodDecl :: typeDecl :: methodRef :: callWithLambdaArg :: Nil
+    methodDecl :: typeDecl :: callWithLambdaArg :: Nil
   }
 
   protected def astForDoBlock(block: Block with RubyNode): Seq[Ast] = {
@@ -236,8 +236,10 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
     node match
       case expr: ControlFlowExpression =>
         astsForStatement(transformLastRubyNodeInControlFlowExpressionBody(expr, returnLastNode, elseReturnNil))
-      case _: (LiteralExpr | BinaryExpression | UnaryExpression | SimpleIdentifier | SimpleCall | IndexAccess |
-            Association) =>
+      case node: MemberCallWithBlock => returnAstForRubyCall(node)
+      case node: SimpleCallWithBlock => returnAstForRubyCall(node)
+      case _: (LiteralExpr | BinaryExpression | UnaryExpression | SimpleIdentifier | IndexAccess | Association |
+            RubyCall) =>
         astForReturnStatement(ReturnExpression(List(node))(node.span)) :: Nil
       case node: SingleAssignment =>
         astForSingleAssignment(node) :: List(astForReturnStatement(ReturnExpression(List(node.lhs))(node.span)))
@@ -247,7 +249,6 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           astForReturnFieldAccess(MemberAccess(node.target, node.op, node.attributeName)(node.span))
         )
       case node: MemberAccess    => astForReturnMemberCall(node) :: Nil
-      case node: MemberCall      => astForReturnMemberCall(node) :: Nil
       case ret: ReturnExpression => astForReturnStatement(ret) :: Nil
       case node: MethodDeclaration =>
         (astForMethodDeclaration(node) :+ astForReturnMethodDeclarationSymbolName(node)).toList
@@ -256,6 +257,15 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           s"Implicit return here not supported yet: ${node.text} (${node.getClass.getSimpleName}), only generating statement"
         )
         astsForStatement(node).toList
+  }
+
+  private def returnAstForRubyCall[C <: RubyCall](node: RubyNode with RubyCallWithBlock[C]): Seq[Ast] = {
+    val Seq(methodDecl, typeDecl, callAst) = astsForCallWithBlock(node): @unchecked
+
+    Ast.storeInDiffGraph(methodDecl, diffGraph)
+    Ast.storeInDiffGraph(typeDecl, diffGraph)
+
+    returnAst(returnNode(node, code(node)), List(callAst)) :: Nil
   }
 
   private def astForReturnFieldAccess(node: MemberAccess): Ast = {
@@ -288,6 +298,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
   private def returnLastNode(x: RubyNode): RubyNode = {
     def statementListReturningLastExpression(stmts: List[RubyNode]): List[RubyNode] = stmts match {
       case (head: ControlFlowClause) :: Nil => clauseReturningLastExpression(head) :: Nil
+      case (head: ReturnExpression) :: Nil  => head :: Nil
       case head :: Nil                      => ReturnExpression(head :: Nil)(head.span) :: Nil
       case Nil                              => List.empty
       case head :: tail                     => head :: statementListReturningLastExpression(tail)

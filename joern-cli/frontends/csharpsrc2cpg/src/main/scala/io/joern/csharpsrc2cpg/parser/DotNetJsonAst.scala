@@ -33,6 +33,8 @@ object DotNetJsonAst {
 
   sealed trait JumpStatement extends BaseStmt
 
+  sealed trait BaseLambdaExpression extends BaseExpr
+
   object GlobalStatement extends BaseStmt
 
   object ExpressionStatement extends BaseStmt
@@ -73,7 +75,9 @@ object DotNetJsonAst {
 
   object VariableDeclarator extends DeclarationExpr
 
-  object SimpleLambdaExpression extends BaseExpr
+  object SimpleLambdaExpression extends BaseLambdaExpression
+
+  object ParenthesizedLambdaExpression extends BaseLambdaExpression
 
   sealed trait ClauseExpr extends BaseExpr
 
@@ -85,6 +89,7 @@ object DotNetJsonAst {
   object StringLiteralExpression  extends LiteralExpr
   object TrueLiteralExpression    extends LiteralExpr
   object FalseLiteralExpression   extends LiteralExpr
+  object NullLiteralExpression    extends LiteralExpr
 
   object UsingDirective extends BaseExpr
 
@@ -222,6 +227,8 @@ object DotNetJsonAst {
   object CollectionExpression extends BaseExpr
 
   object ExpressionElement extends BaseExpr
+
+  object CastExpression extends BaseExpr
 
   object Unknown extends DotNetParserNode
 

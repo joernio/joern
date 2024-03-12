@@ -124,51 +124,22 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   }
 
   protected def calcTypeNameAndFullName(name: String): (String, String) = {
-    val fullNamePrefix   = s"${parserResult.filename}:${computeScopePath(scope.getScopeHead)}:"
-    val intendedFullName = s"$fullNamePrefix$name"
-    val postfix          = typeFullNameToPostfix.getOrElse(intendedFullName, 0)
-    val resultingFullName =
-      if (postfix == 0) intendedFullName
-      else s"$intendedFullName$postfix"
-    typeFullNameToPostfix.put(intendedFullName, postfix + 1)
-    (name, resultingFullName)
+    val fullNamePrefix = s"${parserResult.filename}:${computeScopePath(scope.getScopeHead)}:"
+    val fullName       = s"$fullNamePrefix$name"
+    (name, fullName)
   }
 
   protected def calcMethodNameAndFullName(func: SwiftNode): (String, String) = {
-    // functionNode.getName is not necessarily unique and thus the full name calculated based on the scope
-    // is not necessarily unique. Specifically we have this problem with lambda functions which are defined
-    // in the same scope.
     functionNodeToNameAndFullName.get(func) match {
       case Some(nameAndFullName) => nameAndFullName
       case None =>
-        val intendedName   = calcMethodName(func)
+        val name           = calcMethodName(func)
         val fullNamePrefix = s"${parserResult.filename}:${computeScopePath(scope.getScopeHead)}:"
-        var name           = intendedName
-        var fullName       = ""
-        var isUnique       = false
-        var i              = 1
-        while (!isUnique) {
-          fullName = s"$fullNamePrefix$name"
-          if (functionFullNames.contains(fullName)) {
-            name = s"$intendedName$i"
-            i += 1
-          } else {
-            isUnique = true
-          }
-        }
-        functionFullNames.add(fullName)
+        val fullName       = s"$fullNamePrefix$name"
         functionNodeToNameAndFullName(func) = (name, fullName)
         (name, fullName)
     }
   }
-
-  protected def stripQuotes(str: String): String = str
-    .stripPrefix("\"")
-    .stripSuffix("\"")
-    .stripPrefix("'")
-    .stripSuffix("'")
-    .stripPrefix("`")
-    .stripSuffix("`")
 
   protected def createVariableReferenceLinks(): Unit = {
     val resolvedReferenceIt = scope.resolve(createMethodLocalForUnresolvedReference)

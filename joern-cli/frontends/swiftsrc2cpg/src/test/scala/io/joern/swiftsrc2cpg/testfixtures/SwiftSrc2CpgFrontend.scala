@@ -44,4 +44,3 @@ class SwiftSrc2CpgSuite(
         .withExtraFlows(extraFlows)
         .withPostProcessingPasses(withPostProcessing)
     )
-    with Inside

@@ -10,10 +10,17 @@ import scopt.OParser
 
 import java.nio.file.Paths
 
-final case class Config() extends X2CpgConfig[Config] with TypeRecoveryParserConfig[Config] with AstGenConfig[Config] {
+final case class Config(downloadDependencies: Boolean = false)
+    extends X2CpgConfig[Config]
+    with TypeRecoveryParserConfig[Config]
+    with AstGenConfig[Config] {
 
   override val astGenProgramName: String  = "dotnetastgen"
   override val astGenConfigPrefix: String = "csharpsrc2cpg"
+
+  def withDownloadDependencies(value: Boolean): Config = {
+    this.copy(downloadDependencies = value).withInheritedFields(this)
+  }
 
 }
 
@@ -23,7 +30,13 @@ object Frontend {
   val cmdLineParser: OParser[Unit, Config] = {
     val builder = OParser.builder[Config]
     import builder.*
-    OParser.sequence(programName("csharpsrc2cpg"), XTypeRecovery.parserOptions)
+    OParser.sequence(
+      programName("csharpsrc2cpg"),
+      opt[Unit]("download-dependencies")
+        .text("Download the dependencies of the target project and use their symbols to resolve types.")
+        .action((_, c) => c.withDownloadDependencies(true)),
+      XTypeRecovery.parserOptions
+    )
   }
 
 }

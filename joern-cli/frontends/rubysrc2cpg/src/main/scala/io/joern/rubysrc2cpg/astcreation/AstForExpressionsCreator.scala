@@ -6,7 +6,13 @@ import io.joern.rubysrc2cpg.passes.Defines
 import io.joern.rubysrc2cpg.passes.Defines.{RubyOperators, getBuiltInType}
 import io.joern.x2cpg.{Ast, ValidationMode, Defines as XDefines}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, DispatchTypes, Operators, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{
+  ControlStructureTypes,
+  DiffGraphBuilder,
+  DispatchTypes,
+  Operators,
+  PropertyNames
+}
 
 trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -23,6 +29,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: AttributeAssignment      => astForAttributeAssignment(node)
     case node: SimpleIdentifier         => astForSimpleIdentifier(node)
     case node: SimpleCall               => astForSimpleCall(node)
+    case node: RequireCall              => astForRequireCall(node)
+    case node: IncludeCall              => astForIncludeCall(node)
     case node: RangeExpression          => astForRange(node)
     case node: ArrayLiteral             => astForArrayLiteral(node)
     case node: HashLiteral              => astForHashLiteral(node)
@@ -33,6 +41,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     case node: SplattingRubyNode        => astForSplattingRubyNode(node)
     case node: AnonymousTypeDeclaration => astForAnonymousTypeDeclaration(node)
     case node: ProcOrLambdaExpr         => astForProcOrLambdaExpr(node)
+    case node: RubyCallWithBlock[_]     => astsForCallWithBlockInExpr(node)
     case node: SelfIdentifier           => astForSelfIdentifier(node)
     case node: DummyNode                => Ast(node.node)
     case _                              => astForUnknown(node)
@@ -107,7 +116,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   // Member accesses are lowered as calls, i.e. `x.y` is the call of `y` of `x` without any arguments.
   protected def astForMemberAccess(node: MemberAccess): Ast = {
-    astForMemberCall(MemberCall(node.target, node.op, node.methodName, List.empty)(node.span))
+    astForMemberCall(MemberCall(node.target, node.op, node.memberName, List.empty)(node.span))
   }
 
   /** Attempts to extract a type from the base of a member call.
@@ -139,8 +148,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     callAst(call, targetAst +: indexAsts)
   }
 
-  protected def astForObjectInstantiation(node: ObjectInstantiation): Ast = {
-    val className  = node.clazz.text
+  protected def astForObjectInstantiation(node: RubyNode with ObjectInstantiation): Ast = {
+    val className  = node.target.text
     val methodName = XDefines.ConstructorMethodName
     val (receiverTypeFullName, fullName) = scope.tryResolveTypeReference(className) match {
       case Some(typeMetaData) => typeMetaData.name -> s"${typeMetaData.name}:$methodName"
@@ -176,7 +185,15 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val tmpAssignment = callAst(assignmentCall, Seq(tmpIdentifier, allocAst))
 
     // Call constructor
-    val argumentAsts       = node.arguments.map(astForMethodCallArgument)
+    val argumentAsts = node match {
+      case x: SimpleObjectInstantiation => x.arguments.map(astForMethodCallArgument)
+      case x: ObjectInstantiationWithBlock =>
+        val Seq(methodDecl, typeDecl, _, methodRef) = astForDoBlock(x.block): @unchecked
+        Ast.storeInDiffGraph(methodDecl, diffGraph)
+        Ast.storeInDiffGraph(typeDecl, diffGraph)
+        x.arguments.map(astForMethodCallArgument) :+ methodRef
+    }
+
     val constructorCall    = callNode(node, code(node), methodName, fullName, DispatchTypes.STATIC_DISPATCH)
     val constructorCallAst = callAst(constructorCall, argumentAsts, Option(tmpIdentifier))
     scope.popScope()
@@ -287,6 +304,22 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case targetNode =>
         logger.warn(s"Unrecognized target of call: ${targetNode.text} ($relativeFileName), skipping")
         astForUnknown(targetNode)
+  }
+
+  protected def astForRequireCall(node: RequireCall): Ast = {
+    val pathOpt = node.argument match {
+      case arg: StaticLiteral if arg.isString => Option(arg.innerText)
+      case _                                  => None
+    }
+    pathOpt.foreach(path => scope.addRequire(path, node.isRelative))
+    astForSimpleCall(node.asSimpleCall)
+  }
+
+  protected def astForIncludeCall(node: IncludeCall): Ast = {
+    scope.addInclude(
+      node.argument.text.replaceAll("::", ".")
+    ) // Maybe generate ast and get name in a more structured approach instead
+    astForSimpleCall(node.asSimpleCall)
   }
 
   protected def astForRange(node: RangeExpression): Ast = {
@@ -491,7 +524,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   private def astForMemberCallWithoutBlock(node: SimpleCall, memberAccess: MemberAccess): Ast = {
     val receiverAst = astForFieldAccess(memberAccess)
-    val methodName  = memberAccess.methodName
+    val methodName  = memberAccess.memberName
     // TODO: Type recovery should potentially resolve this
     val methodFullName = typeFromCallTarget(memberAccess.target)
       .map(x => s"$x:$methodName")
@@ -522,6 +555,15 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     methodRef
   }
 
+  private def astsForCallWithBlockInExpr[C <: RubyCall](node: RubyNode with RubyCallWithBlock[C]): Ast = {
+    val Seq(methodDecl, typeDecl, callWithLambdaArg) = astsForCallWithBlock(node): @unchecked
+
+    Ast.storeInDiffGraph(methodDecl, diffGraph)
+    Ast.storeInDiffGraph(typeDecl, diffGraph)
+
+    callWithLambdaArg
+  }
+
   private def astForMethodCallArgument(node: RubyNode): Ast = {
     node match
       // Associations in method calls are keyword arguments
@@ -542,9 +584,9 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
   }
 
   protected def astForFieldAccess(node: MemberAccess): Ast = {
-    val fieldIdentifierAst = Ast(fieldIdentifierNode(node, node.methodName, node.methodName))
+    val fieldIdentifierAst = Ast(fieldIdentifierNode(node, node.memberName, node.memberName))
     val targetAst          = astForExpression(node.target)
-    val code               = s"${node.target.text}${node.op}${node.methodName}"
+    val code               = s"${node.target.text}${node.op}${node.memberName}"
     val fieldAccess = callNode(node, code, Operators.fieldAccess, Operators.fieldAccess, DispatchTypes.STATIC_DISPATCH)
     callAst(fieldAccess, Seq(targetAst, fieldIdentifierAst))
   }

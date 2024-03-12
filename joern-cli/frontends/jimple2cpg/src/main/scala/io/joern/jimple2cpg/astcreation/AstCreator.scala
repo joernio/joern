@@ -6,7 +6,7 @@ import io.joern.jimple2cpg.astcreation.statements.AstForStatementsCreator
 import io.joern.x2cpg.Ast.storeInDiffGraph
 import io.joern.x2cpg.datastructures.Global
 import io.joern.x2cpg.utils.NodeBuilders
-import io.joern.x2cpg.{Ast, AstCreatorBase, AstNodeBuilder, ValidationMode}
+import io.joern.x2cpg.*
 import io.shiftleft.codepropertygraph.generated.*
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import org.objectweb.asm.Type
@@ -296,6 +296,7 @@ implicit class JvmStringOpts(s: String) {
     * <code>I</code> to <code>int</code>.
     * @return
     */
-  def parseAsJavaType: String = Type.getType(s).getClassName.replaceAll("/", ".")
+  def parseAsJavaType: String =
+    Try { Type.getType(s).getClassName.replaceAll("/", ".") }.getOrElse(Defines.Any)
 
 }

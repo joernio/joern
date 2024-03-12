@@ -16,21 +16,23 @@ private object Frontend {
     OParser.sequence(
       programName("pysrc2cpg"),
       opt[String]("venvDir")
-        .text(
-          "Virtual environment directory. If not absolute it is interpreted relative to input-dir. Defaults to .venv."
-        )
+        .hidden() // deprecated; use venvDirs instead. Left this here to not break existing scripts.
+        .text("Virtual environment directory. If not absolute it is interpreted relative to input-dir.")
         .action((dir, config) => config.withVenvDir(Paths.get(dir))),
+      opt[Seq[String]]("venvDirs")
+        .text("Virtual environment directories. If not absolute they are interpreted relative to input-dir.")
+        .action((value, config) => config.withVenvDirs(value.map(Paths.get(_)))),
       opt[Boolean]("ignoreVenvDir")
         .text("Specifies whether venv-dir is ignored. Default to true.")
-        .action(((value, config) => config.withIgnoreVenvDir(value))),
+        .action((value, config) => config.withIgnoreVenvDir(value)),
       opt[Seq[String]]("ignore-paths")
         .text("Ignores the specified path from analysis. If not absolute it is interpreted relative to input-dir.")
-        .action(((value, config) => config.withIgnorePaths(value.map(Paths.get(_))))),
+        .action((value, config) => config.withIgnorePaths(value.map(Paths.get(_)))),
       opt[Seq[String]]("ignore-dir-names")
         .text(
           "Excludes all files where the relative path from input-dir contains at least one of names specified here."
         )
-        .action(((value, config) => config.withIgnoreDirNames(value))),
+        .action((value, config) => config.withIgnoreDirNames(value)),
       XTypeRecovery.parserOptions
     )
   }
