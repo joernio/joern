@@ -5,19 +5,31 @@ import io.shiftleft.codepropertygraph.generated.nodes.{ConfigFile, NewDependency
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language.*
 
-/** Parses the dependencies from the `Gemfile.lock` file. TODO: Approximate dependencies from Gemfile alone.
+/** Parses the dependencies from the `Gemfile.lock` and `Gemfile` files.
   * @param cpg
   *   the graph.
   */
 class DependencyPass(cpg: Cpg) extends ForkJoinParallelCpgPass[ConfigFile](cpg) {
 
-  override def generateParts(): Array[ConfigFile] = cpg.configFile.name(".*Gemfile\\.lock").toArray
+  /** @return
+    *   the Gemfiles, while preferring `Gemfile.lock` files if present.
+    */
+  override def generateParts(): Array[ConfigFile] = {
+    val allGemfiles = cpg.configFile.name(".*Gemfile(\\.lock)?").toArray
+    if (allGemfiles.count(_.name.endsWith("Gemfile.lock")) > 0) allGemfiles.filter(_.name.endsWith("Gemfile.lock"))
+    else allGemfiles
+  }
 
   override def runOnPart(builder: DiffGraphBuilder, configFile: ConfigFile): Unit = {
+    if (configFile.name.endsWith("Gemfile.lock")) parseLockFile(builder, configFile)
+    else parseGemfile(builder, configFile)
+  }
+
+  private def parseLockFile(builder: DiffGraphBuilder, configFile: ConfigFile): Unit = {
     var inGem       = false
     var inSpecs     = false
     var specTabSize = 0
-    val specRegex   = " *([\\w_]+) \\(([\\d.]+)\\)".r
+    val specRegex   = " *([\\w_-]+) \\(([\\d.]+)\\)".r
     configFile.content.linesIterator.foreach {
       // Check if we're under the GEM header
       case "GEM" => inGem = true
@@ -40,6 +52,25 @@ class DependencyPass(cpg: Cpg) extends ForkJoinParallelCpgPass[ConfigFile](cpg) 
             builder.addNode(depNode)
           case _ => // do nothing
         }
+      case _ => // do nothing
+    }
+  }
+
+  private def parseGemfile(builder: DiffGraphBuilder, configFile: ConfigFile): Unit = {
+    val gemRegex = "gem [\"']([\\w_-]+)[\"'][, ]*(?:[\"']([\\w.]+)[\"'])?".r
+    configFile.content.linesIterator.foreach {
+      case gemRegex(dep, null) =>
+        builder.addNode(
+          NewDependency()
+            .name(dep)
+            .version("")
+        )
+      case gemRegex(dep, version) =>
+        builder.addNode(
+          NewDependency()
+            .name(dep)
+            .version(version)
+        )
       case _ => // do nothing
     }
   }
