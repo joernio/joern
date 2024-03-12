@@ -271,11 +271,15 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
 
   "implicit RETURN node for MEMBER CALL" in {
     val cpg = code("""
-                     |def f(x)
-                     | puts(x)
+                     |class F
+                     |  def self.x(y)
+                     |   puts(y)
+                     |  end
                      |end
+                     |
                      |def j()
-                     | f.x(1)
+                     |  f = F.new
+                     |  f.x(1)
                      |end
                      |""".stripMargin)
 
@@ -286,7 +290,7 @@ class MethodReturnTests extends RubyCode2CpgFixture(withDataFlow = true) {
             retMemAccess.code shouldBe "f.x(1)"
 
             val List(call: Call) = retMemAccess.astChildren.l: @unchecked
-            call.methodFullName shouldBe "x"
+            call.name shouldBe "x"
           case xs => fail(s"Expected exactly one return nodes, instead got [${xs.code.mkString(",")}]")
         }
       case _ => fail("Only one method expected")
