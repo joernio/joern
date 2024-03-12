@@ -5,19 +5,28 @@ import io.joern.x2cpg.Defines
 import io.joern.x2cpg.datastructures.*
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{DeclarationNew, NewLocal, NewMethodParameterIn}
+import better.files.File
 
 import scala.collection.mutable
+import scala.reflect.ClassTag
+import io.joern.x2cpg.datastructures.TypedScopeElement
 
-class RubyScope(summary: RubyProgramSummary)
+final case class RubyRequire(path: String, isRelative: Boolean)
+
+class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     extends Scope[String, DeclarationNew, TypedScopeElement]
     with TypedScope[RubyMethod, RubyField, RubyType](summary) {
 
-  private val builtinMethods = GlobalTypes.builtinFunctions.map(m => RubyMethod(m, List.empty, Defines.Any)).toList
+  private val builtinMethods = GlobalTypes.builtinFunctions
+    .map(m => RubyMethod(m, List.empty, Defines.Any, Some(GlobalTypes.builtinPrefix)))
+    .toList
 
   override val typesInScope: mutable.Set[RubyType] =
     mutable.Set(RubyType(GlobalTypes.builtinPrefix, builtinMethods, List.empty))
 
   override val membersInScope: mutable.Set[MemberLike] = mutable.Set(builtinMethods*)
+
+  val requiredPaths: mutable.Set[RubyRequire] = mutable.Set()
 
   // Ruby does not have overloading, so this can be set to true
   override protected def isOverloadedBy(method: RubyMethod, argTypes: List[String]): Boolean = true
@@ -42,6 +51,26 @@ class RubyScope(summary: RubyProgramSummary)
     super.pushNewScope(mappedScopeNode)
   }
 
+  def addRequire(path: String, isRelative: Boolean): Unit = {
+    // We assume the project root is the sole LOAD_PATH of the project sources for now
+    val relativizedPath =
+      if (isRelative) {
+        val parentDir = File(surrounding[ProgramScope].get.fileName).parentOption.get
+        val absPath   = (parentDir / path).path.toAbsolutePath
+        projectRoot.map(File(_).path.toAbsolutePath.relativize(absPath).toString)
+      } else {
+        Some(path)
+      }
+
+    relativizedPath.iterator.flatMap(summary.pathToType.getOrElse(_, Set())).foreach { ty =>
+      addImportedTypeOrModule(ty.name)
+    }
+  }
+
+  def addInclude(typeOrModule: String): Unit = {
+    addImportedMember(typeOrModule)
+  }
+
   /** @return
     *   the full name of the surrounding scope.
     */
@@ -63,6 +92,10 @@ class RubyScope(summary: RubyProgramSummary)
     case ScopeElement(_: ProgramScope, _)       => NodeTypes.METHOD
     case ScopeElement(_: TypeLikeScope, _)      => NodeTypes.TYPE_DECL
     case ScopeElement(_: MethodLikeScope, _)    => NodeTypes.METHOD
+  }
+
+  def surrounding[T <: TypedScopeElement](implicit tag: ClassTag[T]): Option[T] = stack.collectFirst {
+    case ScopeElement(elem: T, _) => elem
   }
 
   /** @return
@@ -91,6 +124,10 @@ class RubyScope(summary: RubyProgramSummary)
       case param: NewMethodParameterIn => param.possibleTypes(param.possibleTypes :+ singletonClassName)
       case _                           =>
     }
+  }
+
+  override def typeForMethod(m: RubyMethod): Option[RubyType] = {
+    typesInScope.find(t => Option(t.name) == m.baseTypeFullName).orElse { super.typeForMethod(m) }
   }
 
   override def tryResolveTypeReference(typeName: String): Option[RubyType] = {

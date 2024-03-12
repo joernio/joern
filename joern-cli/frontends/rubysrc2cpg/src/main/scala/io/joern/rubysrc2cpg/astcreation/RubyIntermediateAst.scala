@@ -1,6 +1,5 @@
 package io.joern.rubysrc2cpg.astcreation
 
-import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.ObjectInstantiation
 import io.joern.rubysrc2cpg.passes.Defines
 import io.shiftleft.codepropertygraph.generated.nodes.NewNode
 
@@ -100,11 +99,15 @@ object RubyIntermediateAst {
       extends RubyNode(span)
       with MethodParameter
 
-  final case class ArrayParameter(name: Option[String])(span: TextSpan) extends RubyNode(span)
+  sealed trait CollectionParameter extends MethodParameter
 
-  final case class HashParameter(name: Option[String])(span: TextSpan) extends RubyNode(span)
+  final case class ArrayParameter(name: String)(span: TextSpan) extends RubyNode(span) with CollectionParameter
 
-  final case class ProcParameter(name: RubyNode)(span: TextSpan) extends RubyNode(span)
+  final case class HashParameter(name: String)(span: TextSpan) extends RubyNode(span) with CollectionParameter
+
+  final case class ProcParameter(target: RubyNode)(span: TextSpan) extends RubyNode(span) with MethodParameter {
+    def name: String = target.text
+  }
 
   final case class SingleAssignment(lhs: RubyNode, op: String, rhs: RubyNode)(span: TextSpan) extends RubyNode(span)
 
@@ -208,7 +211,7 @@ object RubyIntermediateAst {
   final case class StaticLiteral(typeFullName: String)(span: TextSpan) extends RubyNode(span) with LiteralExpr {
     def isSymbol: Boolean = text.startsWith(":")
 
-    def isString: Boolean = text.startsWith("\"")
+    def isString: Boolean = text.startsWith("\"") || text.startsWith("'")
 
     def innerText: String = text match
       case s":'$content'" => content
@@ -257,6 +260,20 @@ object RubyIntermediateAst {
       extends RubyNode(span)
       with RubyCall
 
+  final case class RequireCall(target: RubyNode, argument: RubyNode, isRelative: Boolean)(span: TextSpan)
+      extends RubyNode(span)
+      with RubyCall {
+    def arguments: List[RubyNode] = List(argument)
+    def asSimpleCall: SimpleCall  = SimpleCall(target, arguments)(span)
+  }
+
+  final case class IncludeCall(target: RubyNode, argument: RubyNode)(span: TextSpan)
+      extends RubyNode(span)
+      with RubyCall {
+    def arguments: List[RubyNode] = List(argument)
+    def asSimpleCall: SimpleCall  = SimpleCall(target, arguments)(span)
+  }
+
   /** Represents standalone `proc { ... }` or `lambda { ... }` expressions
     */
   final case class ProcOrLambdaExpr(block: Block)(span: TextSpan) extends RubyNode(span)
@@ -298,7 +315,10 @@ object RubyIntermediateAst {
   final case class IndexAccess(target: RubyNode, indices: List[RubyNode])(span: TextSpan) extends RubyNode(span)
 
   // TODO: Might be replaced by MemberCall simply?
-  final case class MemberAccess(target: RubyNode, op: String, methodName: String)(span: TextSpan) extends RubyNode(span)
+  final case class MemberAccess(target: RubyNode, op: String, memberName: String)(span: TextSpan)
+      extends RubyNode(span) {
+    override def toString: String = s"${target.text}.$memberName"
+  }
 
   /** A Ruby node that instantiates objects.
     */

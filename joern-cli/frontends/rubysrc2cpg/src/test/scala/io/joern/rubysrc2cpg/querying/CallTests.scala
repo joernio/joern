@@ -103,6 +103,7 @@ class CallTests extends RubyCode2CpgFixture {
           inside(assignment.argument.l) {
             case (a: Identifier) :: (_: Block) :: Nil =>
               a.name shouldBe "a"
+              a.dynamicTypeHintFullName should contain("Test0.rb:<global>::program.A")
             case xs => fail(s"Expected one identifier and one call argument, got [${xs.code.mkString(",")}]")
           }
         case xs => fail(s"Expected a single assignment, got [${xs.code.mkString(",")}]")

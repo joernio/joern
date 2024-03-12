@@ -30,5 +30,6 @@ object Defines {
     val hashInitializer = "<operator>.hashInitializer"
     val association     = "<operator>.association"
     val splat           = "<operator>.splat"
+    val regexpMatch     = "=~"
   }
 }

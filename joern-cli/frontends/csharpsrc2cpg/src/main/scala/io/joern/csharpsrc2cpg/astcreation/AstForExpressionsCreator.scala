@@ -124,7 +124,11 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     )
 
     val cNode =
-      createCallNodeForOperator(binaryExpr, operatorName, typeFullName = Some(getTypeFullNameFromAstNode(args)))
+      createCallNodeForOperator(
+        binaryExpr,
+        operatorName,
+        typeFullName = Some(fixedTypeOperators.getOrElse(operatorName, getTypeFullNameFromAstNode(args)))
+      )
     Seq(callAst(cNode, args))
   }
 

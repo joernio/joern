@@ -6,14 +6,12 @@ import org.slf4j.LoggerFactory
 import upickle.core.LinkedHashMap
 import upickle.default.*
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream, InputStream, ObjectOutputStream}
-import scala.io.Source
-import scala.collection.mutable.{ArrayBuffer, ListBuffer}
+import java.io.{ByteArrayInputStream, InputStream}
 import scala.annotation.targetName
-import scala.collection.JavaConverters.enumerationAsScalaIteratorConverter
+import scala.collection.mutable.ListBuffer
+import scala.io.Source
+import scala.jdk.CollectionConverters.*
 import scala.util.{Failure, Success, Try}
-import better.files.File
-import io.joern.x2cpg.utils.Environment
 
 type NamespaceToTypeMap = Map[String, Set[CSharpType]]
 

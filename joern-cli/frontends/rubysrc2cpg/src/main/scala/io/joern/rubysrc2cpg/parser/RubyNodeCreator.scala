@@ -465,8 +465,22 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitSimpleCommand(ctx: RubyParser.SimpleCommandContext): RubyNode = {
-    if (!ctx.methodIdentifier().isAttrDeclaration) {
-      SimpleCall(visit(ctx.methodIdentifier()), ctx.commandArgument().arguments.map(visit))(ctx.toTextSpan)
+    if (Option(ctx.commandArgument()).map(_.getText).exists(_.startsWith("::"))) {
+      val memberName = ctx.commandArgument().getText.stripPrefix("::")
+      MemberAccess(visit(ctx.methodIdentifier()), "::", memberName)(ctx.toTextSpan)
+    } else if (!ctx.methodIdentifier().isAttrDeclaration) {
+      val identifierCtx = ctx.methodIdentifier()
+      val arguments     = ctx.commandArgument().arguments.map(visit)
+      (identifierCtx.getText, arguments) match {
+        case ("require", List(argument)) =>
+          RequireCall(visit(identifierCtx), argument, false)(ctx.toTextSpan)
+        case ("require_relative", List(argument)) =>
+          RequireCall(visit(identifierCtx), argument, true)(ctx.toTextSpan)
+        case ("include", List(argument)) =>
+          IncludeCall(visit(identifierCtx), argument)(ctx.toTextSpan)
+        case _ =>
+          SimpleCall(visit(identifierCtx), arguments)(ctx.toTextSpan)
+      }
     } else {
       FieldsDeclaration(ctx.commandArgument().arguments.map(visit))(ctx.toTextSpan)
     }
@@ -659,7 +673,12 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitAssociation(ctx: RubyParser.AssociationContext): RubyNode = {
-    Association(visit(ctx.associationKey()), visit(ctx.operatorExpression()))(ctx.toTextSpan)
+    ctx.associationKey().getText match {
+      case "if" =>
+        Association(SimpleIdentifier()(ctx.toTextSpan.spanStart("if")), visit(ctx.operatorExpression()))(ctx.toTextSpan)
+      case _ =>
+        Association(visit(ctx.associationKey()), visit(ctx.operatorExpression()))(ctx.toTextSpan)
+    }
   }
 
   override def visitModuleDefinition(ctx: RubyParser.ModuleDefinitionContext): RubyNode = {
@@ -748,11 +767,11 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitHashParameter(ctx: RubyParser.HashParameterContext): RubyNode = {
-    HashParameter(Option(ctx.LOCAL_VARIABLE_IDENTIFIER()).map(_.getText))(ctx.toTextSpan)
+    HashParameter(Option(ctx.LOCAL_VARIABLE_IDENTIFIER()).map(_.getText).getOrElse(ctx.getText))(ctx.toTextSpan)
   }
 
   override def visitArrayParameter(ctx: RubyParser.ArrayParameterContext): RubyNode = {
-    ArrayParameter(Option(ctx.LOCAL_VARIABLE_IDENTIFIER()).map(_.getText))(ctx.toTextSpan)
+    ArrayParameter(Option(ctx.LOCAL_VARIABLE_IDENTIFIER()).map(_.getText).getOrElse(ctx.getText))(ctx.toTextSpan)
   }
 
   override def visitOptionalParameter(ctx: RubyParser.OptionalParameterContext): RubyNode = {

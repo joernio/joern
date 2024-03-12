@@ -7,6 +7,7 @@ import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
 import io.shiftleft.codepropertygraph.generated.nodes.*
+import io.joern.rubysrc2cpg.passes.Defines.RubyOperators
 
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
@@ -38,6 +39,10 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         }
         Ast(identifier).withRefEdge(identifier, local)
       case Some(local) =>
+        local match {
+          case x: NewLocal             => identifier.dynamicTypeHintFullName(x.dynamicTypeHintFullName)
+          case x: NewMethodParameterIn => identifier.dynamicTypeHintFullName(x.dynamicTypeHintFullName)
+        }
         Ast(identifier).withRefEdge(identifier, local)
     }
   }
@@ -73,7 +78,8 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       "|"   -> Operators.or,
       "^"   -> Operators.xor,
       "<<"  -> Operators.shiftLeft,
-      ">>"  -> Operators.logicalShiftRight
+      ">>"  -> Operators.logicalShiftRight,
+      "=~"  -> RubyOperators.regexpMatch
     )
 
   protected val AssignmentOperatorNames: Map[String, String] = Map(

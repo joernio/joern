@@ -1,6 +1,8 @@
 package io.joern.csharpsrc2cpg.querying.ast
 
+import io.joern.csharpsrc2cpg.astcreation.BuiltinTypes
 import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
 
 class TypeTests extends CSharpCode2CpgFixture {
@@ -50,6 +52,20 @@ class TypeTests extends CSharpCode2CpgFixture {
         case _ => fail("Identifier named `iBar` not found")
       }
     }
+  }
 
+  "resolve types for operators and propagate to others" in {
+    val cpg = code(basicBoilerplate("""
+        |int a = 10;
+        |var b = a > 1;
+        |""".stripMargin))
+
+    inside(cpg.local.nameExact("b").l) { case b :: Nil =>
+      b.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Bool)
+    }
+
+    inside(cpg.call.nameExact(Operators.greaterThan).l) { case opCall :: Nil =>
+      opCall.typeFullName shouldBe BuiltinTypes.DotNetTypeMap(BuiltinTypes.Bool)
+    }
   }
 }

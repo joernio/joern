@@ -5,7 +5,7 @@ import io.joern.csharpsrc2cpg.parser.{DotNetJsonAst, DotNetNodeInfo, ParserKeys}
 import io.joern.csharpsrc2cpg.{Constants, astcreation}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
-import io.shiftleft.codepropertygraph.generated.{DispatchTypes, PropertyNames}
+import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, PropertyNames}
 import ujson.Value
 
 import scala.annotation.tailrec
@@ -81,6 +81,17 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         logger.warn(s"Unhandled declaration type '${x.label()}' for ${x.name}")
         identifierNode(dotNetNode.orNull, x.name, x.name, Defines.Any)
   }
+
+  protected val fixedTypeOperators: Map[String, String] = Map(
+    Operators.equals            -> BuiltinTypes.DotNetTypeMap(BuiltinTypes.Bool),
+    Operators.notEquals         -> BuiltinTypes.DotNetTypeMap(BuiltinTypes.Bool),
+    Operators.logicalAnd        -> BuiltinTypes.DotNetTypeMap(BuiltinTypes.Bool),
+    Operators.logicalOr         -> BuiltinTypes.DotNetTypeMap(BuiltinTypes.Bool),
+    Operators.greaterThan       -> BuiltinTypes.DotNetTypeMap(BuiltinTypes.Bool),
+    Operators.greaterEqualsThan -> BuiltinTypes.DotNetTypeMap(BuiltinTypes.Bool),
+    Operators.lessThan          -> BuiltinTypes.DotNetTypeMap(BuiltinTypes.Bool),
+    Operators.lessEqualsThan    -> BuiltinTypes.DotNetTypeMap(BuiltinTypes.Bool)
+  )
 
   protected def nodeTypeFullName(node: DotNetNodeInfo): String = {
     node.node match {

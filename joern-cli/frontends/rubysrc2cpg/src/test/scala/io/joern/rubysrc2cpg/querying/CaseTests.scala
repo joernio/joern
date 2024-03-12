@@ -6,6 +6,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.Operators
 
 class CaseTests extends RubyCode2CpgFixture {
+
   "`case x ... end` should be represented with if-else chain and multiple match expressions should be or-ed together" in {
     val caseCode = """
       |case 0
@@ -36,14 +37,13 @@ class CaseTests extends RubyCode2CpgFixture {
         )
         .l
       orConds.map {
-        case u: Unknown => "unknown"
+        case _: Unknown => "unknown"
         case mExpr =>
           val call @ List(_) = List(mExpr).isCall.l
           call.methodFullName.l shouldBe List("__builtin.Integer:===")
           val List(lhs, rhs) = call.argument.l
           rhs.code shouldBe "<tmp-0>"
-          val List(code) = List(lhs).isCall.argument(1).code.l
-          code
+          lhs.code
       }.l
     }.l
 
