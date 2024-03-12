@@ -107,6 +107,8 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case None =>
         logger.warn(s"Unrecognized binary operator: ${code(node)} ($relativeFileName), skipping")
         astForUnknown(node)
+      case Some("=~") =>
+        astForMemberCall(MemberCall(node.lhs, ".", "=~", List(node.rhs))(node.span))
       case Some(op) =>
         val lhsAst = astForExpression(node.lhs)
         val rhsAst = astForExpression(node.rhs)
