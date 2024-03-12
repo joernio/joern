@@ -1,5 +1,6 @@
 package io.joern.rubysrc2cpg.querying
 
+import io.joern.rubysrc2cpg.Config
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.shiftleft.semanticcpg.language.*
 
@@ -58,6 +59,43 @@ class DependencyTests extends RubyCode2CpgFixture {
       cpg.dependency.forall(d => !d.version.isBlank) shouldBe true
     }
 
+  }
+}
+
+class DownloadDependencyTest extends RubyCode2CpgFixture(downloadDependencies = true) {
+
+  "Code for method full name when method present in module" should {
+    val cpg = code(
+      """
+        |require "dummy_logger"
+        |
+        |v = Main_module::Main_outer_class.new
+        |v.first_fun("value")
+        |
+        |g = Help.new
+        |g.help_print()
+        |
+        |""".stripMargin,
+      "main.rb"
+    )
+      .moreCode(
+        """
+          |source 'https://rubygems.org'
+          |gem 'dummy_logger'
+          |
+          |""".stripMargin,
+        "Gemfile"
+      )
+
+    "recognise methodFullName for `first_fun`" in {
+      cpg.call.name("first_fun").head.methodFullName should equal(
+        "dummy_logger::program:Main_module:Main_outer_class:first_fun"
+      )
+      cpg.call
+        .name("help_print")
+        .head
+        .methodFullName shouldBe "dummy_logger::program:Help:help_print"
+    }
   }
 
 }

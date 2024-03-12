@@ -1,63 +1,52 @@
 package io.joern.rubysrc2cpg.utils
 
 import better.files.File
-import io.joern.rubysrc2cpg.Config
 import io.joern.rubysrc2cpg.datastructures.RubyProgramSummary
-import io.joern.x2cpg.astgen.AstGenRunner.DefaultAstGenRunnerResult
+import io.joern.rubysrc2cpg.passes.Defines
+import io.joern.rubysrc2cpg.{Config, RubySrc2Cpg, parser}
+import io.joern.x2cpg.utils.ConcurrentTaskUtil
 import io.shiftleft.codepropertygraph.generated.Cpg
 import io.shiftleft.codepropertygraph.generated.nodes.Dependency
 import io.shiftleft.semanticcpg.language.*
+import org.apache.commons.compress.archivers.tar.{TarArchiveEntry, TarArchiveInputStream}
 import org.slf4j.LoggerFactory
 import upickle.default.*
 
 import java.io.FileOutputStream
 import java.net.{HttpURLConnection, URI, URL, URLConnection}
-import java.util.zip.{GZIPInputStream, InflaterInputStream, ZipEntry}
+import java.util.zip.{GZIPInputStream, InflaterInputStream}
 import scala.util.{Failure, Success, Try, Using}
 
-/** Queries NuGet for the artifacts of a programs' dependencies, according to the V2 API.
-  *
-  * TODO: Note that NuGet has API throttling, so beware of that if this is to be processed concurrently.
+/** Queries Ruby Gems for the artifacts of a programs' dependencies, according to the V1 API.
   *
   * @see
-  *   <a href="https://learn.microsoft.com/en-us/nuget/api/overview">NuGet API</a>
+  *   <a href="https://guides.rubygems.org/rubygems-org-api/">Ruby Gems API</a>
   */
-class DependencyDownloader(cpg: Cpg, config: Config, internalProgramSummary: RubyProgramSummary) {
+class DependencyDownloader(cpg: Cpg, internalProgramSummary: RubyProgramSummary) {
 
   private val logger = LoggerFactory.getLogger(getClass)
-
-  private val NUGET_BASE_API_V2 = "www.nuget.org/api/v2"
-  private val NUGET_BASE_API_V3 = "api.nuget.org/v3-flatcontainer"
+  private val RESOLVER_BASE_URL =
+    cpg.dependency.name(Defines.Resolver).version.headOption.getOrElse("https://rubygems.org")
 
   /** Downloads dependencies and summarises their symbol information.
     * @return
     *   the dependencies' summary combined with the given internal program summary.
     */
   def download(): RubyProgramSummary = {
-//    File.temporaryDirectory("joern-rubysrc2cpg").apply { dir =>
-//      cpg.dependency.filterNot(isAlreadySummarized).foreach(downloadDependency(dir, _))
-//      unzipDependencies(dir)
-//      summarizeDependencies(dir) ++ internalProgramSummary
-//    }
+    File.temporaryDirectory("joern-rubysrc2cpg").apply { dir =>
+      cpg.dependency.filterNot(_.name == Defines.Resolver).foreach { dependency =>
+        Try(Thread.sleep(100)) // Rate limit
+        downloadDependency(dir, dependency)
+      }
+      untarDependencies(dir)
+      summarizeDependencies(dir / "lib") ++ internalProgramSummary
+    }
     internalProgramSummary
   }
 
-  /** Using the internal program summary (which may contain pre-defined type stubs), determines if the dependency is
-    * already summarized and does not need to be downloaded.
-    * @param dependency
-    *   the dependency to download.
-    * @return
-    *   true if the dependency is already in the given summary, false if otherwise.
-    */
-  private def isAlreadySummarized(dependency: Dependency): Boolean = {
-    // TODO: Implement
-    false
-  }
+  private case class RubyGemLatestVersion(version: String) derives ReadWriter
 
-  private case class NuGetPackageVersions(versions: List[String]) derives ReadWriter
-
-  /** Downloads the dependency to a temporary directory. This will be a `nupkg` and `snupkg` file for each dependency
-    * respectively, which are compressed using the ZIP format.
+  /** Downloads the dependency to a temporary directory.
     *
     * @param targetDir
     *   the directory to download to.
@@ -67,17 +56,15 @@ class DependencyDownloader(cpg: Cpg, config: Config, internalProgramSummary: Rub
     *   a disposable version of the directory where the dependencies live.
     */
   private def downloadDependency(targetDir: File, dependency: Dependency): Unit = {
-
     def getVersion(packageName: String): Option[String] = {
-      Using.resource(URI(s"https://$NUGET_BASE_API_V3/${packageName.toLowerCase}/index.json").toURL.openStream()) {
-        is =>
-          Try(read[NuGetPackageVersions](ujson.Readable.fromByteArray(is.readAllBytes()))).toOption
-            .flatMap(_.versions.lastOption)
+      Using.resource(URI(s"$RESOLVER_BASE_URL/api/v1/versions/$packageName/latest.json").toURL.openStream()) { is =>
+        Try(read[RubyGemLatestVersion](ujson.Readable.fromByteArray(is.readAllBytes()))).toOption
+          .map(_.version)
       }
     }
 
-    def createUrl(packageType: String, version: String): URL = {
-      URI(s"https://$NUGET_BASE_API_V2/$packageType/${dependency.name}/$version").toURL
+    def createUrl(version: String): URL = {
+      URI(s"$RESOLVER_BASE_URL/gems/${dependency.name}-$version.gem").toURL
     }
 
     // If dependency version is not specified, latest is returned
@@ -85,8 +72,7 @@ class DependencyDownloader(cpg: Cpg, config: Config, internalProgramSummary: Rub
 
     versionOpt match {
       case Some(version) =>
-        downloadPackage(targetDir, dependency, createUrl("package", version))
-        downloadPackage(targetDir, dependency, createUrl("symbolpackage", version))
+        downloadPackage(targetDir, dependency, createUrl(version))
       case None =>
         logger.error(s"Unable to determine package version for ${dependency.name}, skipping")
     }
@@ -110,7 +96,7 @@ class DependencyDownloader(cpg: Cpg, config: Config, internalProgramSummary: Rub
       connection.foreach(_.setRequestProperty("Accept-Encoding", "gzip, deflate"))
       connection match {
         case Some(conn: HttpURLConnection) if conn.getResponseCode == HttpURLConnection.HTTP_OK =>
-          val ext      = if url.toString.contains("/package/") then "nupkg" else "snupkg"
+          val ext      = "gem"
           val fileName = targetDir / s"${dependency.name}.$ext"
 
           val inputStream = Option(conn.getContentEncoding) match {
@@ -133,7 +119,6 @@ class DependencyDownloader(cpg: Cpg, config: Config, internalProgramSummary: Rub
                 s"Exception occurred while downloading $fileName (${dependency.name}:${dependency.version})",
                 exception
               )
-              None
             case Success(_) =>
               logger.info(s"Successfully downloaded dependency ${dependency.name}:${dependency.version}")
           }
@@ -150,6 +135,54 @@ class DependencyDownloader(cpg: Cpg, config: Config, internalProgramSummary: Rub
     }
   }
 
+  /** Unzips all the `gem` files and extracts the Ruby source files.
+    *
+    * @param targetDir
+    *   the temporary directory containing all of the successfully downloaded dependencies.
+    */
+  private def untarDependencies(targetDir: File): Unit = {
+    targetDir.list.foreach { pkg =>
+      Using.resource(pkg.newInputStream) { pkgIs =>
+        // Will unzip to `targetDir/lib` and clean-up
+        val tarGemStream = new TarArchiveInputStream(pkgIs)
+        Iterator
+          .continually(tarGemStream.getNextEntry)
+          .takeWhile(_ != null)
+          .filter(_.getName == "data.tar.gz")
+          .foreach { _ =>
+            val gzStream      = new GZIPInputStream(tarGemStream)
+            val dataTarStream = new TarArchiveInputStream(gzStream)
+            Iterator
+              .continually(dataTarStream.getNextEntry())
+              .takeWhile(_ != null)
+              .filter(sourceEntry =>
+                !sourceEntry.getName().contains("..") && sourceEntry.getName().startsWith("lib/") && sourceEntry
+                  .getName()
+                  .endsWith(".rb")
+              )
+              .foreach { case rubyFile: TarArchiveEntry =>
+                try {
+                  val target = targetDir / rubyFile.getName
+                  target.createIfNotExists(createParents = true)
+                  Using.resource(new FileOutputStream(target.pathAsString)) { fos =>
+                    val buffer = new Array[Byte](4096)
+                    Iterator
+                      .continually(dataTarStream.read(buffer))
+                      .takeWhile(_ != -1)
+                      .foreach(bytesRead => fos.write(buffer, 0, bytesRead))
+                  }
+                } catch {
+                  case exception: Throwable =>
+                    logger.error(s"Exception occurred while unpacking ${rubyFile.getName}", exception)
+                }
+              }
+          }
+
+        pkg.delete(swallowIOExceptions = true)
+      }
+    }
+  }
+
   /** Given a directory of all the summaries, will produce a summary thereof.
     * @param targetDir
     *   the directory with all the dependencies.
@@ -157,20 +190,28 @@ class DependencyDownloader(cpg: Cpg, config: Config, internalProgramSummary: Rub
     *   a summary of all the dependencies.
     */
   private def summarizeDependencies(targetDir: File): RubyProgramSummary = {
-//    val astGenRunner       = new DotNetAstGenRunner(config.withInputPath(targetDir.pathAsString))
-//    val astGenRunnerResult = astGenRunner.execute(targetDir)
-//    val mappings = astGenRunnerResult.parsedFiles.map(x => File(x)).flatMap { f =>
-//      Using.resource(f.newFileInputStream) { fis =>
-//        CSharpProgramSummary.jsonToInitialMapping(fis) match {
-//          case Failure(exception) =>
-//            logger.error(s"Unable to parse JSON program summary at $f", exception)
-//            None
-//          case Success(parsedJson) =>
-//            Option(parsedJson)
-//        }
-//      }
-//    }
-    RubyProgramSummary()
+    Using.resource(new parser.ResourceManagedParser(0.8)) { parser =>
+      val astCreators = ConcurrentTaskUtil
+        .runUsingThreadPool(
+          RubySrc2Cpg
+            .generateParserTasks(parser, Config().withInputPath(targetDir.pathAsString), Option(targetDir.pathAsString))
+        )
+        .flatMap {
+          case Failure(exception)  => logger.warn(s"Could not parse file, skipping - ", exception); None
+          case Success(astCreator) => Option(astCreator)
+        }
+      // Pre-parse the AST creators for high level structures
+      val librarySummaries = ConcurrentTaskUtil
+        .runUsingThreadPool(astCreators.map(x => () => x.summarize().namespaceToType).iterator)
+        .flatMap {
+          case Failure(exception) => logger.warn(s"Unable to pre-parse Ruby file, skipping - ", exception); None
+          case Success(summary)   => Option(summary)
+        }
+        .reduceOption((a, b) => a ++ b)
+        .getOrElse(RubyProgramSummary())
+
+      librarySummaries ++ internalProgramSummary
+    }
   }
 
 }

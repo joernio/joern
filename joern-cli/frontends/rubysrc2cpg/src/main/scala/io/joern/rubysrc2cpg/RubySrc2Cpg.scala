@@ -2,7 +2,6 @@ package io.joern.rubysrc2cpg
 
 import better.files.File
 import io.joern.rubysrc2cpg.astcreation.AstCreator
-import io.joern.rubysrc2cpg.astcreation.GlobalTypes
 import io.joern.rubysrc2cpg.datastructures.RubyProgramSummary
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser
 import io.joern.rubysrc2cpg.deprecated.parser.DeprecatedRubyParser.*
@@ -27,8 +26,7 @@ import scala.util.{Failure, Success, Try, Using}
 
 class RubySrc2Cpg extends X2CpgFrontend[Config] {
 
-  private val logger                                = LoggerFactory.getLogger(this.getClass)
-  private val RubySourceFileExtensions: Set[String] = Set(".rb")
+  private val logger = LoggerFactory.getLogger(this.getClass)
 
   override def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config: Config) { (cpg, config) =>
@@ -46,7 +44,7 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
   private def newCreateCpgAction(cpg: Cpg, config: Config): Unit = {
     Using.resource(new parser.ResourceManagedParser(config.antlrCacheMemLimit)) { parser =>
       val astCreators = ConcurrentTaskUtil
-        .runUsingThreadPool(generateParserTasks(parser, config, cpg.metaData.root.headOption))
+        .runUsingThreadPool(RubySrc2Cpg.generateParserTasks(parser, config, cpg.metaData.root.headOption))
         .flatMap {
           case Failure(exception)  => logger.warn(s"Could not parse file, skipping - ", exception); None
           case Success(astCreator) => Option(astCreator)
@@ -62,7 +60,7 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
         .getOrElse(RubyProgramSummary())
 
       val programSummary = if (config.downloadDependencies) {
-        DependencyDownloader(cpg, config, internalProgramSummary).download()
+        DependencyDownloader(cpg, internalProgramSummary).download()
       } else {
         internalProgramSummary
       }
@@ -73,28 +71,6 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
       importsPass.createAndApply()
       TypeNodePass.withTypesFromCpg(cpg).createAndApply()
     }
-  }
-
-  private def generateParserTasks(
-    resourceManagedParser: parser.ResourceManagedParser,
-    config: Config,
-    projectRoot: Option[String]
-  ): Iterator[() => AstCreator] = {
-    SourceFiles
-      .determine(
-        config.inputPath,
-        RubySourceFileExtensions,
-        ignoredDefaultRegex = Option(config.defaultIgnoredFilesRegex),
-        ignoredFilesRegex = Option(config.ignoredFilesRegex),
-        ignoredFilesPath = Option(config.ignoredFiles)
-      )
-      .map { fileName => () =>
-        resourceManagedParser.parse(fileName) match {
-          case Failure(exception) => throw exception
-          case Success(ctx)       => new AstCreator(fileName, ctx, projectRoot)(config.schemaValidation)
-        }
-      }
-      .iterator
   }
 
   private def deprecatedCreateCpgAction(cpg: Cpg, config: Config): Unit = try {
@@ -118,7 +94,7 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
         val tasks = SourceFiles
           .determine(
             config.inputPath,
-            RubySourceFileExtensions,
+            RubySrc2Cpg.RubySourceFileExtensions,
             ignoredFilesRegex = Option(config.ignoredFilesRegex),
             ignoredFilesPath = Option(config.ignoredFiles)
           )
@@ -165,7 +141,8 @@ class RubySrc2Cpg extends X2CpgFrontend[Config] {
 object RubySrc2Cpg {
 
   // TODO: Global mutable state is bad and should be avoided in the next iteration of the Ruby frontend
-  val packageTableInfo = new deprecated.utils.PackageTable()
+  val packageTableInfo                              = new deprecated.utils.PackageTable()
+  private val RubySourceFileExtensions: Set[String] = Set(".rb")
 
   def postProcessingPasses(cpg: Cpg, config: Config): List[CpgPassBase] = {
     if (config.useDeprecatedFrontend) {
@@ -181,6 +158,28 @@ object RubySrc2Cpg {
     } else {
       List()
     }
+  }
+
+  def generateParserTasks(
+    resourceManagedParser: parser.ResourceManagedParser,
+    config: Config,
+    projectRoot: Option[String]
+  ): Iterator[() => AstCreator] = {
+    SourceFiles
+      .determine(
+        config.inputPath,
+        RubySourceFileExtensions,
+        ignoredDefaultRegex = Option(config.defaultIgnoredFilesRegex),
+        ignoredFilesRegex = Option(config.ignoredFilesRegex),
+        ignoredFilesPath = Option(config.ignoredFiles)
+      )
+      .map { fileName => () =>
+        resourceManagedParser.parse(fileName) match {
+          case Failure(exception) => throw exception
+          case Success(ctx)       => new AstCreator(fileName, ctx, projectRoot)(config.schemaValidation)
+        }
+      }
+      .iterator
   }
 
 }

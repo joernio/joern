@@ -10,7 +10,7 @@ import scopt.OParser
 
 import java.nio.file.Paths
 
-final case class Config(downloadDependencies: Boolean = false)
+final case class Config()
     extends X2CpgConfig[Config]
     with DependencyDownloadConfig[Config]
     with TypeRecoveryParserConfig[Config]

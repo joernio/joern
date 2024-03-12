@@ -5,7 +5,8 @@ import io.shiftleft.codepropertygraph.generated.nodes.{ConfigFile, NewDependency
 import io.shiftleft.passes.ForkJoinParallelCpgPass
 import io.shiftleft.semanticcpg.language.*
 
-/** Parses the dependencies from the `Gemfile.lock` and `Gemfile` files.
+/** Parses the dependencies from the `Gemfile.lock` and `Gemfile` files. This pass uses a dependency node to store the
+  * Ruby Gems resolver with the `name`` as `Defines.Resolver` and `version` as the URL.
   * @param cpg
   *   the graph.
   */
@@ -41,7 +42,11 @@ class DependencyPass(cpg: Cpg) extends ForkJoinParallelCpgPass[ConfigFile](cpg) 
       case gemLine if inGem =>
         val currentTabSize = gemLine.takeWhile(_.isWhitespace).length
         gemLine match {
-          case remote if remote.trim.startsWith("remote:") => // do nothing
+          case remote if remote.trim.startsWith("remote:") =>
+            val depNode = NewDependency()
+              .name(Defines.Resolver)
+              .version(remote.stripSuffix("remote:").trim)
+            builder.addNode(depNode)
           case specs if specs.trim.startsWith("specs:") =>
             inSpecs = true
           case specRegex(dep, version) if inSpecs && (specTabSize == currentTabSize || specTabSize == 0) =>
@@ -57,8 +62,9 @@ class DependencyPass(cpg: Cpg) extends ForkJoinParallelCpgPass[ConfigFile](cpg) 
   }
 
   private def parseGemfile(builder: DiffGraphBuilder, configFile: ConfigFile): Unit = {
-    val gemRegex = "gem [\"']([\\w_-]+)[\"'][, ]*(?:[\"']([\\w.]+)[\"'])?".r
-    configFile.content.linesIterator.foreach {
+    val gemRegex    = "gem [\"']([\\w_-]+)[\"'][, ]*(?:[\"']([\\w.]+)[\"'])?".r
+    val sourceRegex = "source [\"']([/:\\w\\d_.-]+)[\"']".r
+    configFile.content.linesIterator.filterNot(_.isBlank).foreach {
       case gemRegex(dep, null) =>
         builder.addNode(
           NewDependency()
@@ -70,6 +76,12 @@ class DependencyPass(cpg: Cpg) extends ForkJoinParallelCpgPass[ConfigFile](cpg) 
           NewDependency()
             .name(dep)
             .version(version)
+        )
+      case sourceRegex(url) =>
+        builder.addNode(
+          NewDependency()
+            .name(Defines.Resolver)
+            .version(url)
         )
       case _ => // do nothing
     }
