@@ -39,6 +39,10 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         }
         Ast(identifier).withRefEdge(identifier, local)
       case Some(local) =>
+        local match {
+          case x: NewLocal             => identifier.dynamicTypeHintFullName(x.dynamicTypeHintFullName)
+          case x: NewMethodParameterIn => identifier.dynamicTypeHintFullName(x.dynamicTypeHintFullName)
+        }
         Ast(identifier).withRefEdge(identifier, local)
     }
   }

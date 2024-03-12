@@ -166,8 +166,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     val methodName = XDefines.ConstructorMethodName
     val (receiverTypeFullName, fullName) = scope.tryResolveTypeReference(className) match {
       case Some(typeMetaData) => typeMetaData.name -> s"${typeMetaData.name}:$methodName"
-      case None =>
-        s"${XDefines.UnresolvedNamespace}.$className" -> s"${XDefines.UnresolvedNamespace}.$className:$methodName"
+      case None               => XDefines.Any      -> XDefines.DynamicCallUnknownFullName
     }
     /*
       Similarly to some other frontends, we lower the constructor into two operations, e.g.,
@@ -250,6 +249,22 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
               case _ =>
                 val lhsAst = astForExpression(node.lhs)
                 val rhsAst = astForExpression(node.rhs)
+
+                // If this is a simple object instantiation assignment, we can give the LHS variable a type hint
+                if (node.rhs.isInstanceOf[ObjectInstantiation] && lhsAst.root.exists(_.isInstanceOf[NewIdentifier])) {
+                  rhsAst.nodes.collectFirst {
+                    case tmp: NewIdentifier if tmp.name.startsWith("<tmp") =>
+                      lhsAst.root.collectFirst { case i: NewIdentifier =>
+                        scope.lookupVariable(i.name).foreach {
+                          case x: NewLocal =>
+                            x.dynamicTypeHintFullName(x.dynamicTypeHintFullName :+ tmp.typeFullName)
+                          case x: NewMethodParameterIn =>
+                            x.dynamicTypeHintFullName(x.dynamicTypeHintFullName :+ tmp.typeFullName)
+                        }
+                        i.dynamicTypeHintFullName(i.dynamicTypeHintFullName :+ tmp.typeFullName)
+                      }
+                  }
+                }
 
                 val call = callNode(node, code(node), op, op, DispatchTypes.STATIC_DISPATCH)
                 callAst(call, Seq(lhsAst, rhsAst))
