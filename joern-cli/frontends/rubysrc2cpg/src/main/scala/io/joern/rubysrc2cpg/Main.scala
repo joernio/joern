@@ -2,22 +2,16 @@ package io.joern.rubysrc2cpg
 
 import io.joern.rubysrc2cpg.Frontend.*
 import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery}
-import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
+import io.joern.x2cpg.{DependencyDownloadConfig, X2CpgConfig, X2CpgMain}
 import scopt.OParser
 
-final case class Config(
-  enableDependencyDownload: Boolean = false,
-  antlrCacheMemLimit: Double = 0.6d,
-  useDeprecatedFrontend: Boolean = false
-) extends X2CpgConfig[Config]
+final case class Config(antlrCacheMemLimit: Double = 0.6d, useDeprecatedFrontend: Boolean = false)
+    extends X2CpgConfig[Config]
+    with DependencyDownloadConfig[Config]
     with TypeRecoveryParserConfig[Config] {
 
   this.defaultIgnoredFilesRegex = List("spec", "test").flatMap { directory =>
     List(s"(^|\\\\)$directory($$|\\\\)".r.unanchored, s"(^|/)$directory($$|/)".r.unanchored)
-  }
-
-  def withEnableDependencyDownload(value: Boolean): Config = {
-    copy(enableDependencyDownload = value).withInheritedFields(this)
   }
 
   def withAntlrCacheMemoryLimit(value: Double): Config = {
@@ -38,10 +32,6 @@ private object Frontend {
     import builder.*
     OParser.sequence(
       programName("rubysrc2cpg"),
-      opt[Unit]("enableDependencyDownload")
-        .hidden()
-        .action((_, c) => c.withEnableDependencyDownload(true))
-        .text("enable dependency download for Unix System only"),
       opt[Double]("antlrCacheMemLimit")
         .hidden()
         .action((x, c) => c.withAntlrCacheMemoryLimit(x))
@@ -57,6 +47,7 @@ private object Frontend {
       opt[Unit]("useDeprecatedFrontend")
         .action((_, c) => c.withUseDeprecatedFrontend(true))
         .text("uses the original (but deprecated) Ruby frontend (default false)"),
+      DependencyDownloadConfig.parserOptions,
       XTypeRecovery.parserOptions
     )
   }
