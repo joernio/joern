@@ -74,7 +74,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
       "^"   -> Operators.xor,
       "<<"  -> Operators.shiftLeft,
       ">>"  -> Operators.logicalShiftRight,
-      "=~" -> "=~"
+      "=~"  -> "=~"
     )
 
   protected val AssignmentOperatorNames: Map[String, String] = Map(
