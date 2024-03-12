@@ -16,8 +16,13 @@ class TypealiasTests extends AbstractPassTest {
         |  var foo: String
         |}
         |""".stripMargin) { cpg =>
+      val expectedTypeAliasFullName = "code.swift:<global>:_anon_cdecl_0"
+      val List(tupleTypeDecl)       = cpg.typeDecl.fullNameExact(expectedTypeAliasFullName).l
+      tupleTypeDecl.name shouldBe "_anon_cdecl_0"
+      tupleTypeDecl.code shouldBe "(Int, Int)"
+
       val List(intPair) = cpg.typeDecl.nameExact("IntPair").l
-      intPair.aliasTypeFullName shouldBe Option("(Int, Int)")
+      intPair.aliasTypeFullName shouldBe Option(expectedTypeAliasFullName)
 
       val List(intPairExt) = cpg.typeDecl.nameExact("IntPair<extension>").l
       intPairExt.member.code.l shouldBe List("foo")
@@ -29,16 +34,26 @@ class TypealiasTests extends AbstractPassTest {
         |}
         |typealias IntPair = (Int, Int)
         |""".stripMargin) { cpg =>
+      val expectedTypeAliasFullName = "code.swift:<global>:_anon_cdecl_0"
+      val List(tupleTypeDecl)       = cpg.typeDecl.fullNameExact(expectedTypeAliasFullName).l
+      tupleTypeDecl.name shouldBe "_anon_cdecl_0"
+      tupleTypeDecl.code shouldBe "(Int, Int)"
+
       val List(intPair) = cpg.typeDecl.nameExact("IntPair").l
-      intPair.aliasTypeFullName shouldBe Option("(Int, Int)")
+      intPair.aliasTypeFullName shouldBe Option(expectedTypeAliasFullName)
 
       val List(intPairExt) = cpg.typeDecl.nameExact("IntPair<extension>").l
       intPairExt.member.code.l shouldBe List("foo")
     }
 
     "testTypealias2b" in AstFixture("typealias IntTriple = (Int, Int, Int)") { cpg =>
+      val expectedTypeAliasFullName = "code.swift:<global>:_anon_cdecl_0"
+      val List(tupleTypeDecl)       = cpg.typeDecl.fullNameExact(expectedTypeAliasFullName).l
+      tupleTypeDecl.name shouldBe "_anon_cdecl_0"
+      tupleTypeDecl.code shouldBe "(Int, Int, Int)"
+
       val List(intTriple) = cpg.typeDecl.nameExact("IntTriple").l
-      intTriple.aliasTypeFullName shouldBe Option("(Int, Int, Int)")
+      intTriple.aliasTypeFullName shouldBe Option(expectedTypeAliasFullName)
     }
 
     "testTypealias3a" in AstFixture("typealias Foo1 = Int") { cpg =>
