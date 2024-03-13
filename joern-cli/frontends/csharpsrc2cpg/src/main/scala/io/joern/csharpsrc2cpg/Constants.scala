@@ -14,3 +14,7 @@ object CSharpOperators {
 object CSharpModifiers {
   final val CONST: String = "const"
 }
+
+object CSharpDefines {
+  final val AnonymousTypePrefix = "<anon>"
+}
