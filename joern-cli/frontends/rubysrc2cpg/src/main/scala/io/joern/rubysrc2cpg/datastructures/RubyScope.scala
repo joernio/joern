@@ -9,6 +9,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.{DeclarationNew, NewLocal,
 
 import scala.collection.mutable
 import scala.reflect.ClassTag
+import scala.util.Try
 
 class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     extends Scope[String, DeclarationNew, TypedScopeElement]
@@ -46,15 +47,18 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     super.pushNewScope(mappedScopeNode)
   }
 
-  def addRequire(path: String, isRelative: Boolean): Unit = {
+  def addRequire(rawPath: String, isRelative: Boolean): Unit = {
+    val path = rawPath.stripSuffix(":<global>") // Sometimes the require call provides a processed path
     // We assume the project root is the sole LOAD_PATH of the project sources for now
     val relativizedPath =
       if (isRelative) {
-        val parentDir = File(surrounding[ProgramScope].get.fileName).parentOption.get
-        val absPath   = (parentDir / path).path.toAbsolutePath
-        projectRoot.map(File(_).path.toAbsolutePath.relativize(absPath).toString)
+        Try {
+          val parentDir = File(surrounding[ProgramScope].get.fileName).parentOption.get
+          val absPath   = (parentDir / path).path.toAbsolutePath
+          projectRoot.map(File(_).path.toAbsolutePath.relativize(absPath).toString)
+        }.getOrElse(Option(path))
       } else {
-        Some(path)
+        Option(path)
       }
 
     relativizedPath.iterator.flatMap(summary.pathToType.getOrElse(_, Set())).foreach { ty =>
