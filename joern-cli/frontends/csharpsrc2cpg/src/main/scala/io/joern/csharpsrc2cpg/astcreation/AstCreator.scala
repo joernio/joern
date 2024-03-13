@@ -1,6 +1,6 @@
 package io.joern.csharpsrc2cpg.astcreation
 
-import io.joern.csharpsrc2cpg.Constants
+import io.joern.csharpsrc2cpg.{CSharpDefines, Constants}
 import io.joern.csharpsrc2cpg.datastructures.{CSharpProgramSummary, CSharpScope}
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetNodeInfo, ParserKeys}
@@ -8,6 +8,7 @@ import io.joern.x2cpg.astgen.{AstGenNodeBuilder, ParserResult}
 import io.joern.x2cpg.{Ast, AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{NewFile, NewTypeDecl}
+import io.shiftleft.passes.IntervalKeyPool
 import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 import ujson.Value
@@ -35,6 +36,8 @@ class AstCreator(
   protected val scope: CSharpScope = new CSharpScope(programSummary)
 
   protected var parseLevel: AstParseLevel = AstParseLevel.FULL_AST
+
+  private val anonymousTypeKeyPool = new IntervalKeyPool(first = 0, last = Long.MaxValue)
 
   override def createAst(): DiffGraphBuilder = {
     val hash = String.format(
@@ -80,6 +83,7 @@ class AstCreator(
       case _: BaseStmt                                           => astForStatement(nodeInfo)
       case NamespaceDeclaration | FileScopedNamespaceDeclaration => astForNamespaceDeclaration(nodeInfo)
       case ClassDeclaration                                      => astForClassDeclaration(nodeInfo)
+      case AnonymousObjectCreationExpression                     => astForAnonymousObjectCreationExpression(nodeInfo)
       case InterfaceDeclaration                                  => astForClassDeclaration(nodeInfo)
       case StructDeclaration                                     => astForClassDeclaration(nodeInfo)
       case RecordDeclaration                                     => astForRecordDeclaration(nodeInfo)
@@ -100,12 +104,14 @@ class AstCreator(
       case CatchClause                                           => astForCatchClause(nodeInfo)
       case CatchDeclaration                                      => astForCatchDeclaration(nodeInfo)
       case PropertyDeclaration                                   => astForPropertyDeclaration(nodeInfo)
+      case AnonymousObjectMemberDeclarator                       => astForAnonymousObjectMemberDeclarator(nodeInfo)
       case ExpressionElement                                     => astForExpressionElement(nodeInfo)
       case _: BaseExpr                                           => astForExpression(nodeInfo)
       case _                                                     => notHandledYet(nodeInfo)
     }
   }
 
+  def nextAnonymousTypeName(): String = s"${CSharpDefines.AnonymousTypePrefix}${anonymousTypeKeyPool.next}"
 }
 
 /** Determines till what depth the AST creator will parse until.
