@@ -5,8 +5,11 @@ import io.joern.x2cpg.passes.frontend.{TypeRecoveryParserConfig, XTypeRecovery}
 import io.joern.x2cpg.{DependencyDownloadConfig, X2CpgConfig, X2CpgMain}
 import scopt.OParser
 
-final case class Config(antlrCacheMemLimit: Double = 0.6d, useDeprecatedFrontend: Boolean = false)
-    extends X2CpgConfig[Config]
+final case class Config(
+  antlrCacheMemLimit: Double = 0.6d,
+  useDeprecatedFrontend: Boolean = false,
+  downloadDependencies: Boolean = false
+) extends X2CpgConfig[Config]
     with DependencyDownloadConfig[Config]
     with TypeRecoveryParserConfig[Config] {
 
@@ -20,6 +23,10 @@ final case class Config(antlrCacheMemLimit: Double = 0.6d, useDeprecatedFrontend
 
   def withUseDeprecatedFrontend(value: Boolean): Config = {
     copy(useDeprecatedFrontend = value).withInheritedFields(this)
+  }
+
+  override def withDownloadDependencies(value: Boolean): Config = {
+    copy(downloadDependencies = value).withInheritedFields(this)
   }
 }
 

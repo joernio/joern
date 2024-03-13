@@ -86,12 +86,7 @@ trait X2CpgConfig[R <: X2CpgConfig[R]] {
   */
 trait DependencyDownloadConfig[R <: X2CpgConfig[R]] { this: R =>
 
-  var downloadDependencies: Boolean = false
-
-  def withDownloadDependencies(value: Boolean): R = {
-    this.downloadDependencies = value
-    this
-  }
+  def withDownloadDependencies(value: Boolean): R
 
 }
 

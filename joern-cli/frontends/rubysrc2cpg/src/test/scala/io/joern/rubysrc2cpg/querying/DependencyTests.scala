@@ -1,8 +1,8 @@
 package io.joern.rubysrc2cpg.querying
 
-import io.joern.rubysrc2cpg.Config
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
+import io.joern.rubysrc2cpg.passes.Defines as RubyDefines
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Identifier}
 import io.shiftleft.semanticcpg.language.*
 
@@ -13,7 +13,7 @@ class DependencyTests extends RubyCode2CpgFixture {
     val cpg = code(DependencyTests.GEMFILELOCK, "Gemfile.lock")
 
     "result in dependency nodes of the set packages" in {
-      inside(cpg.dependency.l) {
+      inside(cpg.dependency.nameNot(RubyDefines.Resolver).l) {
         case aruba :: bcrypt :: betterErrors :: Nil =>
           aruba.name shouldBe "aruba"
           aruba.version shouldBe "0.14.12"
@@ -35,7 +35,7 @@ class DependencyTests extends RubyCode2CpgFixture {
     val cpg = code(DependencyTests.GEMFILE, "Gemfile")
 
     "result in dependency nodes of the set packages" in {
-      inside(cpg.dependency.l) {
+      inside(cpg.dependency.nameNot(RubyDefines.Resolver).l) {
         case aruba :: bcrypt :: coffeeRails :: Nil =>
           aruba.name shouldBe "aruba"
           aruba.version shouldBe "2.5.1"
@@ -58,7 +58,7 @@ class DependencyTests extends RubyCode2CpgFixture {
 
     "be preferred over a normal Gemfile" in {
       // Our Gemfile.lock specifies exact versions whereas the Gemfile does not
-      cpg.dependency.forall(d => !d.version.isBlank) shouldBe true
+      cpg.dependency.nameNot(RubyDefines.Resolver).forall(d => !d.version.isBlank) shouldBe true
     }
 
   }

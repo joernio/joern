@@ -10,7 +10,7 @@ import scopt.OParser
 
 import java.nio.file.Paths
 
-final case class Config()
+final case class Config(downloadDependencies: Boolean = false)
     extends X2CpgConfig[Config]
     with DependencyDownloadConfig[Config]
     with TypeRecoveryParserConfig[Config]
@@ -18,6 +18,10 @@ final case class Config()
 
   override val astGenProgramName: String  = "dotnetastgen"
   override val astGenConfigPrefix: String = "csharpsrc2cpg"
+
+  override def withDownloadDependencies(value: Boolean): Config = {
+    copy(downloadDependencies = value).withInheritedFields(this)
+  }
 
 }
 

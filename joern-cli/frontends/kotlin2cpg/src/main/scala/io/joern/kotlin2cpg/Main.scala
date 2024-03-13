@@ -13,7 +13,8 @@ final case class Config(
   gradleConfigurationName: Option[String] = None,
   jar4importServiceUrl: Option[String] = None,
   includeJavaSourceFiles: Boolean = false,
-  generateNodesForDependencies: Boolean = false
+  generateNodesForDependencies: Boolean = false,
+  downloadDependencies: Boolean = false
 ) extends X2CpgConfig[Config]
     with DependencyDownloadConfig[Config] {
 
@@ -43,6 +44,10 @@ final case class Config(
 
   def withGenerateNodesForDependencies(value: Boolean): Config = {
     this.copy(generateNodesForDependencies = value).withInheritedFields(this)
+  }
+
+  override def withDownloadDependencies(value: Boolean): Config = {
+    this.copy(downloadDependencies = value).withInheritedFields(this)
   }
 }
 
