@@ -64,7 +64,7 @@ class CaseTests extends RubyCode2CpgFixture {
       |  when false, true then 0
       |  when true then 1
       |  when false, *[false,false] then 2
-      |  when *[false, true] then 3
+      |  when *[false,true] then 3
       |end
       |""".stripMargin)
 
@@ -89,8 +89,8 @@ class CaseTests extends RubyCode2CpgFixture {
     conds shouldBe List(
       List("expr:false", "expr:true"),
       List("expr:true"),
-      List("expr:false", "splat:[false, false]"),
-      List("splat:[false, true]")
+      List("expr:false", "splat:[false,false]"),
+      List("splat:[false,true]")
     )
 
     val matchResults = ifStmts.astChildren.order(2).astChildren.l

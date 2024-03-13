@@ -131,13 +131,13 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
           val conditions = whenClause.matchExpressions.map { mExpr =>
             expr.map(e => MemberCall(mExpr, ".", "===", List(e))(mExpr.span)).getOrElse(mExpr)
           } ++ (whenClause.matchSplatExpression.iterator.flatMap {
-            case SplattingRubyNode(exprList) =>
+            case splat @ SplattingRubyNode(exprList) =>
               expr
                 .map { e =>
-                  List(MemberCall(exprList, ".", "include?", List(e))(exprList.span))
+                  List(MemberCall(exprList, ".", "include?", List(e))(splat.span))
                 }
                 .getOrElse {
-                  List(MemberCall(exprList, ".", "any?", List())(exprList.span))
+                  List(MemberCall(exprList, ".", "any?", List())(splat.span))
                 }
             case e =>
               logger.warn("Unrecognised RubyNode in case match splat expression")
