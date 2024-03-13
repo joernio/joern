@@ -93,8 +93,7 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
             ParserKeys.NodeReferenceId
           )
         ) {
-          createParserNodeInfo(obj)
-          processTypeSepc(obj)
+          processTypeSepc(createParserNodeInfo(obj))
         } else if (
           json.obj
             .contains(ParserKeys.NodeType) && obj(ParserKeys.NodeType).str == "ast.FuncDecl" && !json.obj.contains(
@@ -118,14 +117,14 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
     }
   }
 
-  protected def processTypeSepc(typeSepc: Value): (String, String, Seq[Ast]) = {
-    val name = typeSepc(ParserKeys.Name)(ParserKeys.Name).str
+  protected def processTypeSepc(typeSepc: ParserNodeInfo): (String, String, Seq[Ast]) = {
+    val name = typeSepc.json(ParserKeys.Name)(ParserKeys.Name).str
     if (checkForDependencyFlags(name)) {
       // Ignoring recording the Type details when we are processing dependencies code with Type name starting with lower case letter
       // As the Types starting with lower case letters will only be accessible within that package. Which means
       // these Types are not going to get referred from main source code.
       val fullName = fullyQualifiedPackage + Defines.dot + name
-      val typeNode = createParserNodeInfo(typeSepc(ParserKeys.Type))
+      val typeNode = createParserNodeInfo(typeSepc.json(ParserKeys.Type))
       val ast = typeNode.node match {
         // As of don't see any use case where InterfaceType needs to be handled.
         case InterfaceType => Seq.empty
@@ -170,6 +169,7 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
       val params = funcDeclVal(ParserKeys.Type)(ParserKeys.Params)(ParserKeys.List)
       val signature =
         s"$methodFullname(${parameterSignature(params, genericTypeMethodMap)})$returnTypeStr"
+
       goGlobal.recordFullNameToReturnType(methodFullname, returnTypeStr, signature)
       MethodMetadata(name, methodFullname, signature, params, receiverInfo, genericTypeMethodMap)
     } else

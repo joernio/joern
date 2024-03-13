@@ -22,13 +22,13 @@ import io.shiftleft.codepropertygraph.generated.Languages
 import java.nio.file.Paths
 import scala.util.Try
 
-class GoSrc2Cpg extends X2CpgFrontend[Config] {
+class GoSrc2Cpg(goGlobalOption: Option[GoGlobal] = Some(GoGlobal())) extends X2CpgFrontend[Config] {
   private val report: Report = new Report()
 
   def createCpg(config: Config): Try[Cpg] = {
     withNewEmptyCpg(config.outputPath, config) { (cpg, config) =>
       File.usingTemporaryDirectory("gosrc2cpgOut") { tmpDir =>
-        val goGlobal = GoGlobal()
+        val goGlobal = goGlobalOption.getOrElse(GoGlobal())
         new MetaDataPass(cpg, Languages.GOLANG, config.inputPath).createAndApply()
         val astGenResult = new AstGenRunner(config).execute(tmpDir).asInstanceOf[GoAstGenRunnerResult]
         val goMod = new GoModHelper(

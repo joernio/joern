@@ -13,7 +13,7 @@ import scala.util.{Success, Try}
 trait AstForTypeDeclCreator(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
 
   protected def astForTypeSpec(typeSpecNode: ParserNodeInfo): Seq[Ast] = {
-    val (name, fullName, memberAsts) = processTypeSepc(typeSpecNode.json)
+    val (name, fullName, memberAsts) = processTypeSepc(createParserNodeInfo(typeSpecNode.json))
     val typeDeclNode_ =
       typeDeclNode(typeSpecNode, name, fullName, relPathFileName, typeSpecNode.code)
     val modifier = addModifier(typeDeclNode_, name)

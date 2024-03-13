@@ -42,7 +42,7 @@ class DownloadDependenciesPass(parentGoMod: GoModHelper, goGlobal: GoGlobal, con
                       print(". ")
                       processDependency(dependencyStr)
                     case Failure(f) =>
-                      logger.error(s"\t- command '${cmd}' failed", f)
+                      logger.error(s"\t- command '$cmd' failed", f)
                 }
               })
             val allResults: Future[List[Unit]] = Future.sequence(futures)

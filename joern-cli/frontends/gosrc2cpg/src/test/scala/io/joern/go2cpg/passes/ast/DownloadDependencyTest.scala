@@ -2,12 +2,13 @@ package io.joern.go2cpg.passes.ast
 
 import io.joern.go2cpg.testfixtures.GoCodeToCpgSuite
 import io.joern.gosrc2cpg.Config
+import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
 
+import java.util
+
 class DownloadDependencyTest extends GoCodeToCpgSuite {
-  // NOTE: With respect to conversation on this PR - https://github.com/joernio/joern/pull/3753
-  // ignoring the below uni tests, which tries to download the dependencies.
   "Simple use case of third-party dependency download" should {
     val config = Config().withFetchDependencies(true)
     val cpg = code(
@@ -165,6 +166,65 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
       val List(callNode) = cpg.call.name("Set").l
       callNode.typeFullName shouldBe "github.com/redis/go-redis/v9.redis.UnversalClient.Set.<ReturnType>.<unknown>"
       callNode.methodFullName shouldBe "github.com/redis/go-redis/v9.redis.UnversalClient.Set"
+    }
+  }
+
+  "If the dependency is not getting used then it " should {
+    val goGlobal = GoGlobal()
+    val config   = Config().withFetchDependencies(true)
+    val cpg = code(
+      """
+        |module joern.io/sample
+        |go 1.18
+        |
+        |require (
+        | github.com/rs/zerolog v1.31.0
+        |)
+        |""".stripMargin,
+      "go.mod"
+    ).moreCode("""
+          |package main
+          |func main()  {
+          |}
+          |""".stripMargin)
+      .withConfig(config)
+      .withGoGlobal(goGlobal)
+
+    // Dummy cpg query which will initiate CPG creation.
+    cpg.method.l
+
+    "not be downloaded " in {
+      goGlobal.skippedDependencies.size() shouldBe 1
+    }
+
+    "not create any entry in package to namespace mapping" in {
+
+      goGlobal.aliasToNameSpaceMapping
+        .values()
+        .forEach(value => {
+          value should not startWith "github.com/rs/zerolog"
+        })
+    }
+
+    "not create any entry in lambda signature to return type mapping" in {
+      goGlobal.lambdaSignatureToLambdaTypeMap.size() shouldBe 0
+    }
+
+    "not create any entry in package level ctor map" in {
+      goGlobal.pkgLevelVarAndConstantAstMap.size() shouldBe 0
+    }
+
+    "not create any entry in method full name to return type map" in {
+
+      goGlobal.methodFullNameReturnTypeMap.size() shouldBe 1
+      val List(mainfullname) = goGlobal.methodFullNameReturnTypeMap.keys().asIterator().toList
+      mainfullname shouldBe "main"
+      val Array(returnType) = goGlobal.methodFullNameReturnTypeMap.values().toArray
+      returnType shouldBe "unit"
+    }
+
+    "not create any entry in struct member to type map" in {
+      goGlobal.structTypeMemberTypeMapping.size() shouldBe 0
     }
   }
 }
