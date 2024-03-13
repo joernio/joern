@@ -1,11 +1,13 @@
 package io.joern.pysrc2cpg
 
 object Constants {
+  val builtinPrefix = "__builtin."
+
   val ANY                = "ANY"
   val GLOBAL_NAMESPACE   = "<global>"
-  val builtinStrType     = "builtin.str"
-  val builtinBytesType   = "builtin.bytes"
-  val builtinIntType     = "builtin.int"
-  val builtinFloatType   = "builtin.float"
-  val builtinComplexType = "builtin.complex"
+  val builtinStrType     = s"${builtinPrefix}str"
+  val builtinBytesType   = s"${builtinPrefix}bytes"
+  val builtinIntType     = s"${builtinPrefix}int"
+  val builtinFloatType   = s"${builtinPrefix}float"
+  val builtinComplexType = s"${builtinPrefix}complex"
 }
