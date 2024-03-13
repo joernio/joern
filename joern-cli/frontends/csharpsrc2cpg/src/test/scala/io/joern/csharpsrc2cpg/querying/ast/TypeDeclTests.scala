@@ -295,6 +295,12 @@ class TypeDeclTests extends CSharpCode2CpgFixture {
       }
     }
 
+    "propagate type to the LHS" in {
+      inside(cpg.method("Main").astChildren.isBlock.astChildren.isLocal.nameExact("Foo").l) { case loc :: Nil =>
+        loc.typeFullName shouldBe "HelloWorld.Program.Main:void(System.String[]).<anon>0"
+      }
+    }
+
     "have correct members" in {
       inside(cpg.method("Main").astChildren.isTypeDecl.l) {
         case anonType :: Nil =>
@@ -339,6 +345,12 @@ class TypeDeclTests extends CSharpCode2CpgFixture {
       }
     }
 
+    "propagate type to the LHS" in {
+      inside(cpg.method("Main").astChildren.isBlock.astChildren.isLocal.nameExact("Fred").l) { case loc :: Nil =>
+        loc.typeFullName shouldBe "Foo.Bar.Main:void().<anon>0"
+      }
+    }
+
     "have correct members" in {
       inside(cpg.method("Main").astChildren.isTypeDecl.l) {
         case anonType :: Nil =>
@@ -376,6 +388,15 @@ class TypeDeclTests extends CSharpCode2CpgFixture {
           anonType2.astParentType shouldBe "METHOD"
           anonType2.astParentFullName shouldBe "HelloWorld.Program.Main:void(System.String[])"
         case _ => fail("There should be exactly 2 anonymous types present")
+      }
+    }
+
+    "propagate type to the LHS" in {
+      inside(cpg.method("Main").astChildren.isBlock.astChildren.isLocal.l) {
+        case loc :: loc2 :: Nil =>
+          loc.typeFullName shouldBe "HelloWorld.Program.Main:void(System.String[]).<anon>0"
+          loc2.typeFullName shouldBe "HelloWorld.Program.Main:void(System.String[]).<anon>1"
+        case _ => fail("Exactly two locals should be present")
       }
     }
   }

@@ -540,7 +540,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
       .json(ParserKeys.Initializers)
       .arr
       .map(createDotNetNodeInfo)
-      .flatMap(astForAnonymousObjectMemberDeclarator)
+      .map(astForAnonymousObjectMemberDeclarator)
       .toSeq
 
     scope.popScope()
@@ -550,7 +550,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
     Ast(_typeRefNode) :: Nil
   }
 
-  def astForAnonymousObjectMemberDeclarator(memberDeclarator: DotNetNodeInfo): Seq[Ast] = {
+  private def astForAnonymousObjectMemberDeclarator(memberDeclarator: DotNetNodeInfo): Ast = {
     val rhsNode         = createDotNetNodeInfo(memberDeclarator.json(ParserKeys.Expression))
     val rhsAst          = astForNode(rhsNode)
     val rhsTypeFullName = getTypeFullNameFromAstNode(rhsAst)
@@ -579,7 +579,7 @@ trait AstForDeclarationsCreator(implicit withSchemaValidation: ValidationMode) {
 
     val _memberNode = memberNode(memberDeclarator, name, code(memberDeclarator), memberType)
 
-    Seq(Ast(_memberNode))
+    Ast(_memberNode)
   }
 
 }

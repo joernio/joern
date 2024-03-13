@@ -37,8 +37,6 @@ class AstCreator(
 
   protected var parseLevel: AstParseLevel = AstParseLevel.FULL_AST
 
-  private val anonymousTypeKeyPool = new IntervalKeyPool(first = 0, last = Long.MaxValue)
-
   override def createAst(): DiffGraphBuilder = {
     val hash = String.format(
       "%032x",
@@ -104,14 +102,12 @@ class AstCreator(
       case CatchClause                                           => astForCatchClause(nodeInfo)
       case CatchDeclaration                                      => astForCatchDeclaration(nodeInfo)
       case PropertyDeclaration                                   => astForPropertyDeclaration(nodeInfo)
-      case AnonymousObjectMemberDeclarator                       => astForAnonymousObjectMemberDeclarator(nodeInfo)
       case ExpressionElement                                     => astForExpressionElement(nodeInfo)
       case _: BaseExpr                                           => astForExpression(nodeInfo)
       case _                                                     => notHandledYet(nodeInfo)
     }
   }
 
-  def nextAnonymousTypeName(): String = s"${CSharpDefines.AnonymousTypePrefix}${anonymousTypeKeyPool.next}"
 }
 
 /** Determines till what depth the AST creator will parse until.
