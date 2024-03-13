@@ -6,6 +6,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.Operators
 
 class CaseTests extends RubyCode2CpgFixture {
+
   "`case x ... end` should be represented with if-else chain and multiple match expressions should be or-ed together" in {
     val caseCode = """
       |case 0
@@ -36,18 +37,18 @@ class CaseTests extends RubyCode2CpgFixture {
         )
         .l
       orConds.map {
-        case u: Unknown => "unknown"
-        case mExpr =>
-          val call @ List(_) = List(mExpr).isCall.l
-          call.methodFullName.l shouldBe List("__builtin.Integer:===")
-          val List(lhs, rhs) = call.argument.l
+        case mExpr: Call if mExpr.name == "include?" =>
+          val List(lhs, rhs) = mExpr.argument.l
           rhs.code shouldBe "<tmp-0>"
-          val List(code) = List(lhs).isCall.argument(1).code.l
-          code
+          s"splat:${lhs.code}"
+        case mExpr: Call if mExpr.name == "===" =>
+          val List(lhs, rhs) = mExpr.argument.l
+          rhs.code shouldBe "<tmp-0>"
+          s"expr:${lhs.code}"
       }.l
     }.l
 
-    conds shouldBe List(List("0"), List("1", "2"), List("3", "unknown"), List("unknown"))
+    conds shouldBe List(List("expr:0"), List("expr:1", "expr:2"), List("expr:3", "splat:[4,5]"), List("splat:[6]"))
     val matchResults = ifStmts.astChildren.order(2).astChildren ++ ifStmts.last.astChildren.order(3).astChildren
     matchResults.code.l shouldBe List("0", "1", "2", "3", "4")
 
@@ -63,7 +64,7 @@ class CaseTests extends RubyCode2CpgFixture {
       |  when false, true then 0
       |  when true then 1
       |  when false, *[false,false] then 2
-      |  when *[false, true] then 3
+      |  when *[false,true] then 3
       |end
       |""".stripMargin)
 
@@ -78,11 +79,19 @@ class CaseTests extends RubyCode2CpgFixture {
         )
         .l
       orConds.map {
-        case u: Unknown => "unknown"
-        case c          => c.code
+        case c: Call if c.name == "any?" =>
+          val List(lhs) = c.argument.l
+          s"splat:${lhs.code}"
+        case e: Expression =>
+          s"expr:${e.code}"
       }
     }.l
-    conds shouldBe List(List("false", "true"), List("true"), List("false", "unknown"), List("unknown"))
+    conds shouldBe List(
+      List("expr:false", "expr:true"),
+      List("expr:true"),
+      List("expr:false", "splat:[false,false]"),
+      List("splat:[false,true]")
+    )
 
     val matchResults = ifStmts.astChildren.order(2).astChildren.l
     matchResults.code.l shouldBe List("0", "1", "2", "3")

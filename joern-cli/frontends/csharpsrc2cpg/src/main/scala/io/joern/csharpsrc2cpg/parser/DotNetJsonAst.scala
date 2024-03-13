@@ -59,6 +59,8 @@ object DotNetJsonAst {
 
   object EnumDeclaration extends TypeDeclaration
 
+  object AnonymousObjectCreationExpression extends TypeDeclaration
+
   object EnumMemberDeclaration extends DeclarationExpr
 
   object InterfaceDeclaration extends TypeDeclaration
@@ -230,6 +232,8 @@ object DotNetJsonAst {
 
   object CastExpression extends BaseExpr
 
+  object AnonymousObjectMemberDeclarator extends DeclarationExpr
+
   object Unknown extends DotNetParserNode
 
 }
@@ -262,6 +266,7 @@ object ParserKeys {
   val Identifier        = "Identifier"
   val Incrementors      = "Incrementors"
   val Initializer       = "Initializer"
+  val Initializers      = "Initializers"
   val Keyword           = "Keyword"
   val Kind              = "Kind"
   val Labels            = "Labels"
@@ -272,6 +277,7 @@ object ParserKeys {
   val Members           = "Members"
   val Modifiers         = "Modifiers"
   val Name              = "Name"
+  val NameEquals        = "NameEquals"
   val Operand           = "Operand"
   val OperatorToken     = "OperatorToken"
   val Parameter         = "Parameter"

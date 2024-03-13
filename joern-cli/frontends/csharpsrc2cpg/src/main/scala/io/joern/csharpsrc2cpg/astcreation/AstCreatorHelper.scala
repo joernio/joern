@@ -2,15 +2,20 @@ package io.joern.csharpsrc2cpg.astcreation
 
 import io.joern.csharpsrc2cpg.parser.DotNetJsonAst.*
 import io.joern.csharpsrc2cpg.parser.{DotNetJsonAst, DotNetNodeInfo, ParserKeys}
-import io.joern.csharpsrc2cpg.{Constants, astcreation}
+import io.joern.csharpsrc2cpg.{CSharpDefines, Constants, astcreation}
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.nodes.*
 import io.shiftleft.codepropertygraph.generated.{DispatchTypes, Operators, PropertyNames}
+import io.shiftleft.passes.IntervalKeyPool
 import ujson.Value
 
 import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: AstCreator =>
+
+  private val anonymousTypeKeyPool = new IntervalKeyPool(first = 0, last = Long.MaxValue)
+
+  def nextAnonymousTypeName(): String = s"${CSharpDefines.AnonymousTypePrefix}${anonymousTypeKeyPool.next}"
 
   protected def createDotNetNodeInfo(json: Value): DotNetNodeInfo =
     AstCreatorHelper.createDotNetNodeInfo(json, Option(this.relativeFileName))

@@ -403,6 +403,8 @@ primaryValue
         # logicalOrExpression
     |   primaryValue rangeOperator          NL* primaryValue
         # rangeExpression
+    |   hereDoc
+        # hereDocs
     ;
 
 commandOrPrimaryValue
@@ -668,6 +670,9 @@ symbol
         # doubleQuotedSymbolLiteral
     ;
 
+hereDoc
+    : HERE_DOC
+    ;
 
 // --------------------------------------------------------
 // Commons

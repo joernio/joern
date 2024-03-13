@@ -119,15 +119,28 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
       val ifElseChain = whenClauses.foldRight[Option[RubyNode]](elseThenClause) {
         (whenClause: WhenClause, restClause: Option[RubyNode]) =>
           // We translate multiple match expressions into an or expression.
-          // There may be a splat as the last match expression, which is currently parsed as unknown
+          //
           // A single match expression is compared using `.===` to the case target expression if it is present
           // otherwise it is treated as a conditional.
+          //
+          // There may be a splat as the last match expression,
+          // `case y when *x then c end` or
+          // `case when *x then c end`
+          // which is translated to `x.include? y` and `x.any?` conditions respectively
+
           val conditions = whenClause.matchExpressions.map { mExpr =>
             expr.map(e => MemberCall(mExpr, ".", "===", List(e))(mExpr.span)).getOrElse(mExpr)
           } ++ (whenClause.matchSplatExpression.iterator.flatMap {
-            case u: Unknown => List(u)
+            case splat @ SplattingRubyNode(exprList) =>
+              expr
+                .map { e =>
+                  List(MemberCall(exprList, ".", "include?", List(e))(splat.span))
+                }
+                .getOrElse {
+                  List(MemberCall(exprList, ".", "any?", List())(splat.span))
+                }
             case e =>
-              logger.warn("Splatting not implemented for `when` in ruby `case`")
+              logger.warn(s"Unrecognised RubyNode (${e.getClass}) in case match splat expression")
               List(Unknown()(e.span))
           })
           // There is always at least one match expression or a splat

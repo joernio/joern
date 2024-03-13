@@ -172,6 +172,10 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     }
   }
 
+  override def visitHereDocs(ctx: RubyParser.HereDocsContext): RubyNode = {
+    HereDocNode(ctx.hereDoc().getText)(ctx.toTextSpan)
+  }
+
   override def visitPowerExpression(ctx: RubyParser.PowerExpressionContext): RubyNode = {
     BinaryExpression(visit(ctx.primaryValue(0)), ctx.powerOperator.getText, visit(ctx.primaryValue(1)))(ctx.toTextSpan)
   }

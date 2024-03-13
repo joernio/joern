@@ -17,6 +17,7 @@ import io.shiftleft.codepropertygraph.generated.nodes.NewMethod
 import io.shiftleft.codepropertygraph.generated.nodes.NewTypeDecl
 import io.shiftleft.codepropertygraph.generated.DispatchTypes
 import io.shiftleft.codepropertygraph.generated.nodes.File.PropertyDefaults
+import io.shiftleft.codepropertygraph.generated.nodes.NewIdentifier
 
 trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
   this: AstCreator =>
@@ -40,7 +41,7 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
     // - handle genericWhereClause
     val attributes = astForDeclAttributes(node)
     val modifiers  = modifiersForDecl(node)
-    val aliasName  = node.initializer.map(i => code(i.value))
+    val aliasName  = node.initializer.map(i => handleTypeAliasInitializer(i.value))
 
     val name                               = typeNameForDeclSyntax(node)
     val (astParentType, astParentFullName) = astParentInfo()
@@ -838,13 +839,20 @@ trait AstForDeclSyntaxCreator(implicit withSchemaValidation: ValidationMode) {
 
   private def astForSubscriptDeclSyntax(node: SubscriptDeclSyntax): Ast = notHandledYet(node)
 
+  private def handleTypeAliasInitializer(node: TypeSyntax): String = {
+    astForTypeSyntax(node).root match
+      case Some(id: NewIdentifier)     => id.name
+      case Some(typeDecl: NewTypeDecl) => typeDecl.fullName
+      case _                           => code(node)
+  }
+
   private def astForTypeAliasDeclSyntax(node: TypeAliasDeclSyntax): Ast = {
     // TODO:
     // - handle genericParameterClause
     // - handle genericWhereClause
     val attributes = astForDeclAttributes(node)
     val modifiers  = modifiersForDecl(node)
-    val aliasName  = code(node.initializer.value)
+    val aliasName  = handleTypeAliasInitializer(node.initializer.value)
 
     val name                     = typeNameForDeclSyntax(node)
     val (typeName, typeFullName) = calcTypeNameAndFullName(name)
