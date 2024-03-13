@@ -41,7 +41,6 @@ class DependencyDownloader(cpg: Cpg, internalProgramSummary: RubyProgramSummary)
       untarDependencies(dir)
       summarizeDependencies(dir / "lib") ++ internalProgramSummary
     }
-    internalProgramSummary
   }
 
   private case class RubyGemLatestVersion(version: String) derives ReadWriter
@@ -153,14 +152,13 @@ class DependencyDownloader(cpg: Cpg, internalProgramSummary: RubyProgramSummary)
             val gzStream      = new GZIPInputStream(tarGemStream)
             val dataTarStream = new TarArchiveInputStream(gzStream)
             Iterator
-              .continually(dataTarStream.getNextEntry())
+              .continually(dataTarStream.getNextEntry)
               .takeWhile(_ != null)
               .filter(sourceEntry =>
-                !sourceEntry.getName().contains("..") && sourceEntry.getName().startsWith("lib/") && sourceEntry
-                  .getName()
-                  .endsWith(".rb")
+                val entryName = sourceEntry.getName
+                !entryName.contains("..") && entryName.startsWith("lib/") && entryName.endsWith(".rb")
               )
-              .foreach { case rubyFile: TarArchiveEntry =>
+              .foreach { rubyFile =>
                 try {
                   val target = targetDir / rubyFile.getName
                   target.createIfNotExists(createParents = true)
@@ -190,6 +188,16 @@ class DependencyDownloader(cpg: Cpg, internalProgramSummary: RubyProgramSummary)
     *   a summary of all the dependencies.
     */
   private def summarizeDependencies(targetDir: File): RubyProgramSummary = {
+
+    /** Map the path to a non-relative form as would be accessed from the application.
+      * @param libSummary
+      *   the library summary to re-map.
+      */
+    def remapPaths(libSummary: RubyProgramSummary): RubyProgramSummary = {
+      val pathMappings = libSummary.pathToType.map { case (key, typs) => key.stripPrefix("./") -> typs }
+      RubyProgramSummary(libSummary.namespaceToType, pathMappings)
+    }
+
     Using.resource(new parser.ResourceManagedParser(0.8)) { parser =>
       val astCreators = ConcurrentTaskUtil
         .runUsingThreadPool(
@@ -202,7 +210,7 @@ class DependencyDownloader(cpg: Cpg, internalProgramSummary: RubyProgramSummary)
         }
       // Pre-parse the AST creators for high level structures
       val librarySummaries = ConcurrentTaskUtil
-        .runUsingThreadPool(astCreators.map(x => () => x.summarize().namespaceToType).iterator)
+        .runUsingThreadPool(astCreators.map(x => () => remapPaths(x.summarize())).iterator)
         .flatMap {
           case Failure(exception) => logger.warn(s"Unable to pre-parse Ruby file, skipping - ", exception); None
           case Success(summary)   => Option(summary)

@@ -213,11 +213,15 @@ object RubyIntermediateAst {
 
     def isString: Boolean = text.startsWith("\"") || text.startsWith("'")
 
-    def innerText: String = text match
-      case s":'$content'" => content
-      case s":$symbol"    => symbol
-      case s"'$content'"  => content
-      case s              => s
+    def innerText: String = {
+      val strRegex = ":?['\"]([\\w\\d_-]+)['\"]".r
+      text match {
+        case s":'$content'"                       => content
+        case s":$symbol"                          => symbol
+        case strRegex(content) if content != null => content
+        case s                                    => s
+      }
+    }
   }
 
   final case class DynamicLiteral(typeFullName: String, expressions: List[RubyNode])(span: TextSpan)

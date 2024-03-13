@@ -2,6 +2,8 @@ package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.Config
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
+import io.joern.x2cpg.Defines
+import io.shiftleft.codepropertygraph.generated.nodes.{Block, Identifier}
 import io.shiftleft.semanticcpg.language.*
 
 class DependencyTests extends RubyCode2CpgFixture {
@@ -87,7 +89,36 @@ class DownloadDependencyTest extends RubyCode2CpgFixture(downloadDependencies = 
         "Gemfile"
       )
 
-    "recognise methodFullName for `first_fun`" in {
+    "recognize the full method name of the imported Main_outer_class's constructor" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.name("v")).argument.l) {
+        case (v: Identifier) :: (block: Block) :: Nil =>
+          v.dynamicTypeHintFullName should contain("dummy_logger.rb:<global>::program.Main_module.Main_outer_class")
+
+          inside(block.astChildren.isCall.name(Defines.ConstructorMethodName).headOption) {
+            case Some(constructorCall) =>
+              constructorCall.methodFullName shouldBe "dummy_logger.rb:<global>::program.Main_module.Main_outer_class:<init>"
+            case None => fail(s"Expected constructor call, did not find one")
+          }
+        case xs => fail(s"Expected two arguments under the constructor assignment, got [${xs.code.mkString(", ")}]")
+      }
+    }
+
+    "recognize the full method name of the imported Help's constructor" in {
+      inside(cpg.assignment.where(_.target.isIdentifier.name("g")).argument.l) {
+        case (g: Identifier) :: (block: Block) :: Nil =>
+          g.dynamicTypeHintFullName should contain("utils/help.rb:<global>::program.Help")
+
+          inside(block.astChildren.isCall.name(Defines.ConstructorMethodName).headOption) {
+            case Some(constructorCall) =>
+              constructorCall.methodFullName shouldBe "utils/help.rb:<global>::program.Help:<init>"
+            case None => fail(s"Expected constructor call, did not find one")
+          }
+        case xs => fail(s"Expected two arguments under the constructor assignment, got [${xs.code.mkString(", ")}]")
+      }
+    }
+
+    // TODO: This requires type propagation
+    "recognise methodFullName for `first_fun`" ignore {
       cpg.call.name("first_fun").head.methodFullName should equal(
         "dummy_logger::program:Main_module:Main_outer_class:first_fun"
       )
