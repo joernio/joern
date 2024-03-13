@@ -1,7 +1,6 @@
 package io.joern.x2cpg
 
 import better.files.File
-import io.joern.x2cpg.ValidationMode
 import io.joern.x2cpg.X2Cpg.{applyDefaultOverlays, withErrorsToConsole}
 import io.joern.x2cpg.layers.{Base, CallGraph, ControlFlow, TypeRelations}
 import io.shiftleft.codepropertygraph.Cpg
@@ -80,6 +79,26 @@ trait X2CpgConfig[R <: X2CpgConfig[R]] {
     this.ignoredFiles = config.ignoredFiles
     this.disableFileContent = config.disableFileContent
     this.asInstanceOf[R]
+  }
+}
+
+/** Enables the configuration to specify if dependencies should be downloaded for additional symbol information.
+  */
+trait DependencyDownloadConfig[R <: X2CpgConfig[R]] { this: R =>
+
+  def withDownloadDependencies(value: Boolean): R
+
+}
+
+object DependencyDownloadConfig {
+  def parserOptions[R <: X2CpgConfig[R] with DependencyDownloadConfig[R]]: OParser[_, R] = {
+    val builder = OParser.builder[R]
+    import builder.*
+    OParser.sequence(
+      opt[Unit]("download-dependencies")
+        .text("Download the dependencies of the target project and use their symbols to resolve types.")
+        .action((_, c) => c.withDownloadDependencies(true))
+    )
   }
 }
 
