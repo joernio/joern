@@ -140,7 +140,7 @@ trait AstForStatementsCreator(implicit withSchemaValidation: ValidationMode) { t
                   List(MemberCall(exprList, ".", "any?", List())(splat.span))
                 }
             case e =>
-              logger.warn("Unrecognised RubyNode in case match splat expression")
+              logger.warn(s"Unrecognised RubyNode (${e.getClass}) in case match splat expression")
               List(Unknown()(e.span))
           })
           // There is always at least one match expression or a splat
