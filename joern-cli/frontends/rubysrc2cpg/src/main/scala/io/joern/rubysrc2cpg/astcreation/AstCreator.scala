@@ -38,7 +38,7 @@ class AstCreator(
   protected val logger: Logger = LoggerFactory.getLogger(getClass)
 
   protected var parseLevel: AstParseLevel = AstParseLevel.FULL_AST
-  
+
   protected val relativeFileName: String =
     projectRoot
       .map(fileName.stripPrefix)
@@ -46,7 +46,7 @@ class AstCreator(
       .getOrElse(fileName)
 
   /** The relative file name, in a unix path delimited format.
-   */
+    */
   private def relativeUnixStyleFileName =
     relativeFileName.replaceAll(Matcher.quoteReplacement(java.io.File.separator), "/")
 
