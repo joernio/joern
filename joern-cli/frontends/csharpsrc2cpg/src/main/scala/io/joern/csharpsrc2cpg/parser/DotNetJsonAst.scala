@@ -234,6 +234,8 @@ object DotNetJsonAst {
 
   object AnonymousObjectMemberDeclarator extends DeclarationExpr
 
+  object ImplicitArrayCreationExpression extends BaseExpr
+
   object Unknown extends DotNetParserNode
 
 }

@@ -21,18 +21,19 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   def astForExpression(expr: DotNetNodeInfo): Seq[Ast] = {
     expr.node match
-      case _: UnaryExpr                 => astForUnaryExpression(expr)
-      case _: BinaryExpr                => astForBinaryExpression(expr)
-      case _: LiteralExpr               => astForLiteralExpression(expr)
-      case InvocationExpression         => astForInvocationExpression(expr)
-      case AwaitExpression              => astForAwaitExpression(expr)
-      case ObjectCreationExpression     => astForObjectCreationExpression(expr)
-      case SimpleMemberAccessExpression => astForSimpleMemberAccessExpression(expr)
-      case _: IdentifierNode            => astForIdentifier(expr) :: Nil
-      case ThisExpression               => astForThisReceiver(expr) :: Nil
-      case CastExpression               => astForCastExpression(expr)
-      case _: BaseLambdaExpression      => astForSimpleLambdaExpression(expr)
-      case _                            => notHandledYet(expr)
+      case _: UnaryExpr                    => astForUnaryExpression(expr)
+      case _: BinaryExpr                   => astForBinaryExpression(expr)
+      case _: LiteralExpr                  => astForLiteralExpression(expr)
+      case InvocationExpression            => astForInvocationExpression(expr)
+      case AwaitExpression                 => astForAwaitExpression(expr)
+      case ObjectCreationExpression        => astForObjectCreationExpression(expr)
+      case SimpleMemberAccessExpression    => astForSimpleMemberAccessExpression(expr)
+      case ImplicitArrayCreationExpression => astForImplicitArrayCreationExpression(expr)
+      case _: IdentifierNode               => astForIdentifier(expr) :: Nil
+      case ThisExpression                  => astForThisReceiver(expr) :: Nil
+      case CastExpression                  => astForCastExpression(expr)
+      case _: BaseLambdaExpression         => astForSimpleLambdaExpression(expr)
+      case _                               => notHandledYet(expr)
   }
 
   private def astForAwaitExpression(awaitExpr: DotNetNodeInfo): Seq[Ast] = {
@@ -380,6 +381,10 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
     // We can guarantee that there is an expression on the RHS
     val exprAst = astForExpression(createDotNetNodeInfo(castExpr.json(ParserKeys.Expression)))
     Seq(callAst(callNode, Seq(typeAst) ++ exprAst))
+  }
+
+  private def astForImplicitArrayCreationExpression(implArrExpr: DotNetNodeInfo): Seq[Ast] = {
+    astForArrayInitializerExpression(createDotNetNodeInfo(implArrExpr.json(ParserKeys.Initializer)))
   }
 
 }
