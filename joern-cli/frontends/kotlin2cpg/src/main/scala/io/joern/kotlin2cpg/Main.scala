@@ -1,7 +1,7 @@
 package io.joern.kotlin2cpg
 
-import io.joern.kotlin2cpg.Frontend._
-import io.joern.x2cpg.{X2CpgConfig, X2CpgMain}
+import io.joern.kotlin2cpg.Frontend.*
+import io.joern.x2cpg.{DependencyDownloadConfig, X2CpgConfig, X2CpgMain}
 import scopt.OParser
 
 case class DefaultContentRootJarPath(path: String, isResource: Boolean)
@@ -9,13 +9,14 @@ case class DefaultContentRootJarPath(path: String, isResource: Boolean)
 final case class Config(
   classpath: Set[String] = Set.empty,
   withStdlibJarsInClassPath: Boolean = true,
-  downloadDependencies: Boolean = false,
   gradleProjectName: Option[String] = None,
   gradleConfigurationName: Option[String] = None,
   jar4importServiceUrl: Option[String] = None,
   includeJavaSourceFiles: Boolean = false,
-  generateNodesForDependencies: Boolean = false
-) extends X2CpgConfig[Config] {
+  generateNodesForDependencies: Boolean = false,
+  downloadDependencies: Boolean = false
+) extends X2CpgConfig[Config]
+    with DependencyDownloadConfig[Config] {
 
   def withClasspath(classpath: Set[String]): Config = {
     this.copy(classpath = classpath).withInheritedFields(this)
@@ -23,10 +24,6 @@ final case class Config(
 
   def withStdLibJars(value: Boolean): Config = {
     this.copy(withStdlibJarsInClassPath = value).withInheritedFields(this)
-  }
-
-  def withDownloadDependencies(value: Boolean): Config = {
-    this.copy(downloadDependencies = value).withInheritedFields(this)
   }
 
   def withGradleProjectName(name: String): Config = {
@@ -47,6 +44,10 @@ final case class Config(
 
   def withGenerateNodesForDependencies(value: Boolean): Config = {
     this.copy(generateNodesForDependencies = value).withInheritedFields(this)
+  }
+
+  override def withDownloadDependencies(value: Boolean): Config = {
+    this.copy(downloadDependencies = value).withInheritedFields(this)
   }
 }
 
@@ -69,9 +70,6 @@ private object Frontend {
       opt[String]("jar4import-url")
         .text("Set URL of service which fetches necessary dependency jars for import names found in the project")
         .action((value, c) => c.withJar4ImportServiceUrl(value)),
-      opt[Unit]("download-dependencies")
-        .text("Download the dependencies of the target project and add them to the classpath")
-        .action((_, c) => c.withDownloadDependencies(true)),
       opt[String]("gradle-project-name")
         .text("Name of the Gradle project used to download dependencies")
         .action((value, c) => c.withGradleProjectName(value)),
@@ -83,7 +81,8 @@ private object Frontend {
         .action((_, c) => c.withIncludeJavaSourceFiles(true)),
       opt[Unit]("generate-nodes-for-dependencies")
         .text("Generate nodes for the dependencies of the target project")
-        .action((_, c) => c.withGenerateNodesForDependencies(true))
+        .action((_, c) => c.withGenerateNodesForDependencies(true)),
+      DependencyDownloadConfig.parserOptions
     )
   }
 }

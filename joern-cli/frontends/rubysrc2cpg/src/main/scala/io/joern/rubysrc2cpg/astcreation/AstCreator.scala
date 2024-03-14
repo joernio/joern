@@ -13,6 +13,8 @@ import org.slf4j.{Logger, LoggerFactory}
 import overflowdb.BatchedUpdate
 import overflowdb.BatchedUpdate.DiffGraphBuilder
 
+import java.util.regex.Matcher
+
 class AstCreator(
   val fileName: String,
   protected val programCtx: RubyParser.ProgramContext,
@@ -38,7 +40,15 @@ class AstCreator(
   protected var parseLevel: AstParseLevel = AstParseLevel.FULL_AST
 
   protected val relativeFileName: String =
-    projectRoot.map(fileName.stripPrefix).map(_.stripPrefix(java.io.File.separator)).getOrElse(fileName)
+    projectRoot
+      .map(fileName.stripPrefix)
+      .map(_.stripPrefix(java.io.File.separator))
+      .getOrElse(fileName)
+
+  /** The relative file name, in a unix path delimited format.
+    */
+  private def relativeUnixStyleFileName =
+    relativeFileName.replaceAll(Matcher.quoteReplacement(java.io.File.separator), "/")
 
   override def createAst(): BatchedUpdate.DiffGraphBuilder = {
     val rootNode = new RubyNodeCreator().visit(programCtx).asInstanceOf[StatementList]
@@ -53,7 +63,7 @@ class AstCreator(
    */
   protected def astForRubyFile(rootStatements: StatementList): Ast = {
     val fileNode = NewFile().name(relativeFileName)
-    val fullName = s"$relativeFileName:${NamespaceTraversal.globalNamespaceName}"
+    val fullName = s"$relativeUnixStyleFileName:${NamespaceTraversal.globalNamespaceName}"
     val namespaceBlock = NewNamespaceBlock()
       .filename(relativeFileName)
       .name(NamespaceTraversal.globalNamespaceName)

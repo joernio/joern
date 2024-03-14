@@ -24,6 +24,8 @@ object Defines {
 
   val Program: String = ":program"
 
+  val Resolver: String = "<dependency-resolver>"
+
   def getBuiltInType(typeInString: String) = s"${GlobalTypes.builtinPrefix}.$typeInString"
 
   object RubyOperators {

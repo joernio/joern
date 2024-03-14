@@ -7,7 +7,7 @@ import org.scalatest.BeforeAndAfterAll
 
 class RubyMethodFullNameTests extends RubyCode2CpgFixture(useDeprecatedFrontend = true) with BeforeAndAfterAll {
 
-  private val config = Config().withEnableDependencyDownload(true)
+  private val config = Config().withDownloadDependencies(true)
 
   "Code for method full name when method present in module" should {
     val cpg = code(

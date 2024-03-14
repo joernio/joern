@@ -1,8 +1,8 @@
 package io.joern.csharpsrc2cpg.querying.ast
 
 import io.joern.csharpsrc2cpg.testfixtures.CSharpCode2CpgFixture
-import io.shiftleft.codepropertygraph.generated.ControlStructureTypes
-import io.shiftleft.codepropertygraph.generated.nodes.{ControlStructure, Identifier, Literal}
+import io.shiftleft.codepropertygraph.generated.{ControlStructureTypes, Operators}
+import io.shiftleft.codepropertygraph.generated.nodes.{ControlStructure, Identifier, Literal, Call}
 import io.shiftleft.semanticcpg.language.*
 
 class ConditionalTests extends CSharpCode2CpgFixture {
@@ -143,6 +143,39 @@ class ConditionalTests extends CSharpCode2CpgFixture {
 
         case _ => fail("Incorrect number of control structures in the method.")
       }
+    }
+
+    "be correct for ternary conditions" in {
+      val cpg = code(basicBoilerplate("""
+          |var foo = 1 > 2 ? 1 : 2;
+          |""".stripMargin))
+
+      inside(cpg.call.name(Operators.assignment).argument.l) {
+        case (foo: Identifier) :: (controlStructure: Call) :: Nil =>
+          foo.typeFullName shouldBe "System.Int32"
+        case _ => fail("Expected two arguments in assignment call.")
+      }
+
+      inside(cpg.method("Main").call(Operators.conditional).l) {
+        case ternaryIf :: Nil =>
+          ternaryIf.code shouldBe "1 > 2 ? 1 : 2"
+
+          inside(ternaryIf.argument.l) {
+            case (condition: Call) :: (whenTrue: Literal) :: (whenFalse: Literal) :: Nil =>
+              condition.code shouldBe "1 > 2"
+              condition.typeFullName shouldBe "System.Boolean"
+
+              whenTrue.code shouldBe "1"
+              whenTrue.typeFullName shouldBe "System.Int32"
+
+              whenFalse.code shouldBe "2"
+              whenFalse.typeFullName shouldBe "System.Int32"
+            case _ => fail("Expected 3 arguments in conditional call.")
+          }
+
+        case _ => fail("No ternary condition found")
+      }
+
     }
   }
 

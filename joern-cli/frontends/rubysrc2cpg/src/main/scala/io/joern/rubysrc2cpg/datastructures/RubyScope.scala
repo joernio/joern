@@ -1,17 +1,15 @@
 package io.joern.rubysrc2cpg.datastructures
 
+import better.files.File
 import io.joern.rubysrc2cpg.astcreation.GlobalTypes
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.datastructures.*
 import io.shiftleft.codepropertygraph.generated.NodeTypes
 import io.shiftleft.codepropertygraph.generated.nodes.{DeclarationNew, NewLocal, NewMethodParameterIn}
-import better.files.File
 
 import scala.collection.mutable
 import scala.reflect.ClassTag
-import io.joern.x2cpg.datastructures.TypedScopeElement
-
-final case class RubyRequire(path: String, isRelative: Boolean)
+import scala.util.Try
 
 class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     extends Scope[String, DeclarationNew, TypedScopeElement]
@@ -25,8 +23,6 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     mutable.Set(RubyType(GlobalTypes.builtinPrefix, builtinMethods, List.empty))
 
   override val membersInScope: mutable.Set[MemberLike] = mutable.Set(builtinMethods*)
-
-  val requiredPaths: mutable.Set[RubyRequire] = mutable.Set()
 
   // Ruby does not have overloading, so this can be set to true
   override protected def isOverloadedBy(method: RubyMethod, argTypes: List[String]): Boolean = true
@@ -51,15 +47,18 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
     super.pushNewScope(mappedScopeNode)
   }
 
-  def addRequire(path: String, isRelative: Boolean): Unit = {
+  def addRequire(rawPath: String, isRelative: Boolean): Unit = {
+    val path = rawPath.stripSuffix(":<global>") // Sometimes the require call provides a processed path
     // We assume the project root is the sole LOAD_PATH of the project sources for now
     val relativizedPath =
       if (isRelative) {
-        val parentDir = File(surrounding[ProgramScope].get.fileName).parentOption.get
-        val absPath   = (parentDir / path).path.toAbsolutePath
-        projectRoot.map(File(_).path.toAbsolutePath.relativize(absPath).toString)
+        Try {
+          val parentDir = File(surrounding[ProgramScope].get.fileName).parentOption.get
+          val absPath   = (parentDir / path).path.toAbsolutePath
+          projectRoot.map(File(_).path.toAbsolutePath.relativize(absPath).toString)
+        }.getOrElse(Option(path))
       } else {
-        Some(path)
+        Option(path)
       }
 
     relativizedPath.iterator.flatMap(summary.pathToType.getOrElse(_, Set())).foreach { ty =>
@@ -131,15 +130,16 @@ class RubyScope(summary: RubyProgramSummary, projectRoot: Option[String])
   }
 
   override def tryResolveTypeReference(typeName: String): Option[RubyType] = {
+    val normalizedTypeName = typeName.replaceAll("::", ".")
     // TODO: While we find better ways to understand how the implicit class loading works,
     //  we can approximate that all types are in scope in the mean time.
-    super.tryResolveTypeReference(typeName) match {
-      case None if GlobalTypes.builtinFunctions.contains(typeName) =>
+    super.tryResolveTypeReference(normalizedTypeName) match {
+      case None if GlobalTypes.builtinFunctions.contains(normalizedTypeName) =>
         // TODO: Create a builtin.json for the program summary to load
-        Option(RubyType(s"${GlobalTypes.builtinPrefix}.$typeName", List.empty, List.empty))
+        Option(RubyType(s"${GlobalTypes.builtinPrefix}.$normalizedTypeName", List.empty, List.empty))
       case None =>
         summary.namespaceToType.flatMap(_._2).collectFirst {
-          case x if x.name.split("[.]").lastOption.contains(typeName) =>
+          case x if x.name.split("[.]").lastOption.contains(normalizedTypeName) =>
             typesInScope.addOne(x)
             x
         }

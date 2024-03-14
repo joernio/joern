@@ -1,7 +1,8 @@
 package io.joern.pysrc2cpg
 
-import PythonAstVisitor.{builtinPrefix, logger, metaClassSuffix, noLineAndColumn}
+import PythonAstVisitor.{logger, metaClassSuffix, noLineAndColumn}
 import io.joern.pysrc2cpg.memop.*
+import io.joern.pysrc2cpg.Constants.builtinPrefix
 import io.joern.pythonparser.ast
 import io.joern.x2cpg.{AstCreatorBase, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.*
@@ -2087,7 +2088,6 @@ class PythonAstVisitor(
 object PythonAstVisitor {
   private val logger = LoggerFactory.getLogger(getClass)
 
-  val builtinPrefix   = "__builtin."
   val typingPrefix    = "typing."
   val metaClassSuffix = "<meta>"
 

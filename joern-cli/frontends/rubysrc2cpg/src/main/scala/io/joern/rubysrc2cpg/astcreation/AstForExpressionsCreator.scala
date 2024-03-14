@@ -258,7 +258,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
                 // If this is a simple object instantiation assignment, we can give the LHS variable a type hint
                 if (node.rhs.isInstanceOf[ObjectInstantiation] && lhsAst.root.exists(_.isInstanceOf[NewIdentifier])) {
                   rhsAst.nodes.collectFirst {
-                    case tmp: NewIdentifier if tmp.name.startsWith("<tmp") =>
+                    case tmp: NewIdentifier if tmp.name.startsWith("<tmp") && tmp.typeFullName != Defines.Any =>
                       lhsAst.root.collectFirst { case i: NewIdentifier =>
                         scope.lookupVariable(i.name).foreach {
                           case x: NewLocal =>

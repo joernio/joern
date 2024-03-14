@@ -1,6 +1,7 @@
 package io.joern.pysrc2cpg
 
-import io.joern.pysrc2cpg.PythonAstVisitor.{allBuiltinClasses, builtinPrefix, typingClassesV3, typingPrefix}
+import io.joern.pysrc2cpg.PythonAstVisitor.{allBuiltinClasses, typingClassesV3, typingPrefix}
+import io.joern.pysrc2cpg.Constants.builtinPrefix
 import io.joern.pythonparser.ast
 import io.joern.x2cpg.Defines
 import io.joern.x2cpg.utils.NodeBuilders
