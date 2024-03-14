@@ -238,6 +238,12 @@ object DotNetJsonAst {
 
   object ImplicitArrayCreationExpression extends BaseExpr
 
+  object InterpolatedStringExpression extends BaseExpr
+
+  object InterpolatedStringText extends BaseExpr
+
+  object Interpolation extends BaseExpr
+
   object Unknown extends DotNetParserNode
 
 }
@@ -257,6 +263,7 @@ object ParserKeys {
   val ColumnStart       = "ColumnStart"
   val ColumnEnd         = "ColumnEnd"
   val Condition         = "Condition"
+  val Contents          = "Contents"
   val Declaration       = "Declaration"
   val Elements          = "Elements"
   val ElementType       = "ElementType"
@@ -293,6 +300,7 @@ object ParserKeys {
   val Statements        = "Statements"
   val ReturnType        = "ReturnType"
   val Right             = "Right"
+  val TextToken         = "TextToken"
   val Type              = "Type"
   val TypeArgumentList  = "TypeArgumentList"
   val Types             = "Types"

@@ -33,6 +33,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case _: IdentifierNode               => astForIdentifier(expr) :: Nil
       case ThisExpression                  => astForThisReceiver(expr) :: Nil
       case CastExpression                  => astForCastExpression(expr)
+      case InterpolatedStringExpression    => astForInterpolatedStringExpression(expr)
       case _: BaseLambdaExpression         => astForSimpleLambdaExpression(expr)
       case _                               => notHandledYet(expr)
   }
@@ -401,6 +402,56 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
 
   private def astForImplicitArrayCreationExpression(implArrExpr: DotNetNodeInfo): Seq[Ast] = {
     astForArrayInitializerExpression(createDotNetNodeInfo(implArrExpr.json(ParserKeys.Initializer)))
+  }
+
+  private def astForInterpolatedStringExpression(strExpr: DotNetNodeInfo): Seq[Ast] = {
+    val contentAsts = strExpr
+      .json(ParserKeys.Contents)
+      .arr
+      .map(createDotNetNodeInfo)
+      .flatMap { expr =>
+        expr.node match
+          case InterpolatedStringText => astForInterpolatedStringText(expr)
+          case Interpolation          => astForInterpolation(expr)
+      }
+      .toSeq
+
+    // Collect all the parts of the interpolated string, and concatenate them to form the full code
+    val code = strExpr
+      .json(ParserKeys.Contents)
+      .arr
+      .map(createDotNetNodeInfo)
+      .map { node =>
+        node.node match
+          case InterpolatedStringText =>
+            node
+              .json(ParserKeys.TextToken)(ParserKeys.Value)
+              .str // Accessing node.json directly because DotNetNodeInfo contains stripped code, and does not contain braces
+          case Interpolation => node.json(ParserKeys.MetaData)(ParserKeys.Code).str
+      }
+      .mkString("")
+
+    val _callNode = newOperatorCallNode(
+      Operators.formatString,
+      s"$$\"$code\"",
+      Option(BuiltinTypes.DotNetTypeMap(BuiltinTypes.String)),
+      line(strExpr),
+      column(strExpr)
+    )
+
+    Seq(callAst(_callNode, contentAsts))
+  }
+
+  private def astForInterpolation(interpolationExpr: DotNetNodeInfo): Seq[Ast] = {
+    astForNode(interpolationExpr.json(ParserKeys.Expression))
+  }
+
+  private def astForInterpolatedStringText(interpolatedTextExpr: DotNetNodeInfo): Seq[Ast] = {
+    Seq(
+      Ast(
+        literalNode(interpolatedTextExpr, code(interpolatedTextExpr), BuiltinTypes.DotNetTypeMap(BuiltinTypes.String))
+      )
+    )
   }
 
 }
