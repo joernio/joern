@@ -236,6 +236,8 @@ object DotNetJsonAst {
 
   object ConditionalExpression extends BaseExpr
 
+  object ImplicitArrayCreationExpression extends BaseExpr
+
   object Unknown extends DotNetParserNode
 
 }
