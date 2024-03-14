@@ -535,7 +535,7 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
   }
 
   override def visitInstanceIdentifierVariable(ctx: RubyParser.InstanceIdentifierVariableContext): RubyNode = {
-    SimpleIdentifier()(ctx.toTextSpan)
+    InstanceFieldIdentifier()(ctx.toTextSpan)
   }
 
   override def visitLocalIdentifierVariable(ctx: RubyParser.LocalIdentifierVariableContext): RubyNode = {
@@ -693,11 +693,52 @@ class RubyNodeCreator extends RubyParserBaseVisitor[RubyNode] {
     )(ctx.toTextSpan)
   }
 
+  private def findInstanceFieldsInMethodDecls(classStmtList: List[RubyNode]): List[InstanceFieldIdentifier] = {
+    classStmtList
+      .collect { case x: MethodDeclaration =>
+        x
+      }
+      .flatMap {
+        _.body.asInstanceOf[StatementList].statements.collect { case x: SingleAssignment =>
+          x.lhs
+        }
+      }
+      .collect { case x: InstanceFieldIdentifier =>
+        x
+      }
+  }
+
   override def visitClassDefinition(ctx: RubyParser.ClassDefinitionContext): RubyNode = {
+    val loweredClassDecls = lowerSingletonClassDeclarations(ctx.bodyStatement())
+
+    val (stmts, fields) = loweredClassDecls match {
+      case stmtList: StatementList =>
+        val (instanceFields, rest) = stmtList.statements.partition {
+          case x: InstanceFieldIdentifier => true
+          case _                          => false
+        }
+
+        val fieldsInMethodDecls = findInstanceFieldsInMethodDecls(rest)
+
+        val clinitStmtListStatements = (instanceFields ++ fieldsInMethodDecls).map { x =>
+          SingleAssignment(x, "=", StaticLiteral(getBuiltInType(Defines.NilClass))(x.span.spanStart("nil")))(
+            x.span.spanStart(s"${x.span.text} = nil")
+          )
+        }
+
+        val clinitMethod =
+          MethodDeclaration("<clinit>", List.empty, StatementList(clinitStmtListStatements)(stmtList.span))(
+            stmtList.span
+          )
+        (StatementList(clinitMethod +: stmtList.statements)(stmtList.span), instanceFields ++ fieldsInMethodDecls)
+      case decls => (decls, List.empty)
+    }
+
     ClassDeclaration(
       visit(ctx.classPath()),
       Option(ctx.commandOrPrimaryValue()).map(visit),
-      lowerSingletonClassDeclarations(ctx.bodyStatement())
+      stmts,
+      fields.asInstanceOf[List[InstanceFieldIdentifier]]
     )(ctx.toTextSpan)
   }
 

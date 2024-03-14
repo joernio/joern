@@ -1,7 +1,20 @@
 package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.astcreation.GlobalTypes.{builtinFunctions, builtinPrefix}
-import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.RubyNode
-import io.joern.rubysrc2cpg.datastructures.{BlockScope, MethodLikeScope, RubyProgramSummary, RubyScope, TypeLikeScope}
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
+  DummyNode,
+  InstanceFieldIdentifier,
+  MemberAccess,
+  RubyNode,
+  SimpleIdentifier
+}
+import io.joern.rubysrc2cpg.datastructures.{
+  BlockScope,
+  FieldDecl,
+  MethodLikeScope,
+  RubyProgramSummary,
+  RubyScope,
+  TypeLikeScope
+}
 import io.joern.x2cpg.datastructures.NamespaceLikeScope
 import io.joern.x2cpg.datastructures.Stack.*
 import io.joern.x2cpg.{Ast, Defines, ValidationMode}
@@ -28,23 +41,51 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
     val name       = code(node)
     val identifier = identifierNode(node, name, name, Defines.Any)
     val typeRef    = scope.tryResolveTypeReference(name)
-    scope.lookupVariable(name) match {
-      case None if typeRef.isDefined =>
-        Ast(identifier.typeFullName(typeRef.get.name))
-      case None =>
-        val local = localNode(node, name, name, Defines.Any)
-        scope.addToScope(name, local) match {
-          case BlockScope(block) => diffGraph.addEdge(block, local, EdgeTypes.AST)
-          case _                 =>
+
+    node match {
+      case instanceField: InstanceFieldIdentifier =>
+        scope.findFieldInScope(name) match {
+          case None =>
+            val fullName = s"${scope.surroundingTypeFullName.getOrElse(Defines.UnresolvedNamespace)}.$name"
+
+            scope.pushField(FieldDecl(name, Defines.Any, false, false, node))
+            astForFieldAccess(
+              MemberAccess(
+                DummyNode(identifierNode(instanceField, "this", "this", Defines.Any))(instanceField.span),
+                ".",
+                name
+              )(instanceField.span)
+            )
+          case Some(field) =>
+            val fieldNode = field.node
+            astForFieldAccess(
+              MemberAccess(
+                DummyNode(identifierNode(fieldNode, "this", "this", Defines.Any))(instanceField.span),
+                ".",
+                name
+              )(fieldNode.span)
+            )
         }
-        Ast(identifier).withRefEdge(identifier, local)
-      case Some(local) =>
-        local match {
-          case x: NewLocal             => identifier.dynamicTypeHintFullName(x.dynamicTypeHintFullName)
-          case x: NewMethodParameterIn => identifier.dynamicTypeHintFullName(x.dynamicTypeHintFullName)
+      case _ =>
+        scope.lookupVariable(name) match {
+          case None if typeRef.isDefined =>
+            Ast(identifier.typeFullName(typeRef.get.name))
+          case None =>
+            val local = localNode(node, name, name, Defines.Any)
+            scope.addToScope(name, local) match {
+              case BlockScope(block) => diffGraph.addEdge(block, local, EdgeTypes.AST)
+              case _                 =>
+            }
+            Ast(identifier).withRefEdge(identifier, local)
+          case Some(local) =>
+            local match {
+              case x: NewLocal             => identifier.dynamicTypeHintFullName(x.dynamicTypeHintFullName)
+              case x: NewMethodParameterIn => identifier.dynamicTypeHintFullName(x.dynamicTypeHintFullName)
+            }
+            Ast(identifier).withRefEdge(identifier, local)
         }
-        Ast(identifier).withRefEdge(identifier, local)
     }
+
   }
 
   protected val UnaryOperatorNames: Map[String, String] = Map(
