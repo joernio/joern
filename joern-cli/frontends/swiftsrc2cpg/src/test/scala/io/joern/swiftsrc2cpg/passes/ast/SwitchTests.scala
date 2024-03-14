@@ -212,6 +212,45 @@ class SwitchTests extends AbstractPassTest {
         |}
         |""".stripMargin) { cpg => ??? }
 
+    "testSwitch35" in AstFixture("""
+        |switch x {
+        |  #if ios
+        |  default: foo()
+        |  #else
+        |  case (1, 2):
+        |    foo()
+        |  case (var a, var b):
+        |    t = (b, a)
+        |}
+        |""".stripMargin) { cpg =>
+      val List(switchStmt) = cpg.switchBlock.l
+      val List(switchExpr) = switchStmt.astChildren.isIdentifier.nameExact("x").l
+      switchExpr.order shouldBe 1
+      switchExpr.code shouldBe "x"
+
+      val List(switchBlock) = switchStmt.astChildren.isBlock.l
+      val List(elseBlock)   = switchBlock.astChildren.isBlock.l
+
+      val List(caseLabel1) = elseBlock._jumpTargetViaAstOut.codeExact("case (1, 2):").l
+      caseLabel1.order shouldBe 1
+
+      val List(child1CaseLabel1) = elseBlock.astChildren.isCall.codeExact("(1, 2)").l
+      child1CaseLabel1.order shouldBe 2
+      val List(child2CaseLabel1) = elseBlock.astChildren.isCall.codeExact("foo()").l
+      child2CaseLabel1.order shouldBe 3
+
+      val List(caseLabel2) = elseBlock._jumpTargetViaAstOut.codeExact("case (var a, var b):").l
+      caseLabel2.order shouldBe 5
+      val List(child1CaseLabel2) = elseBlock.astChildren.isCall.codeExact("(var a, var b)").l
+      child1CaseLabel2.order shouldBe 6
+      val List(child2CaseLabel2) = elseBlock.astChildren.isCall.codeExact("t = (b, a)").l
+      child2CaseLabel2.order shouldBe 7
+
+      val List(child3CaseLabel1, child3CaseLabel2) = elseBlock.astChildren.isControlStructure.codeExact("break").l
+      child3CaseLabel1.order shouldBe 4
+      child3CaseLabel2.order shouldBe 8
+    }
+
     "testSwitch36" ignore AstFixture("""
         |func patternVarDiffType(x: Int, y: Double) {
         |  switch (x, y) {

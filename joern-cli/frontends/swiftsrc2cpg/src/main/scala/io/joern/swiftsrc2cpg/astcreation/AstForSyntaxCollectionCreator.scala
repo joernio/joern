@@ -126,8 +126,21 @@ trait AstForSyntaxCollectionCreator(implicit withSchemaValidation: ValidationMod
     astForListSyntaxChildren(node, node.children)
   }
 
-  private def astForSwitchCaseItemListSyntax(node: SwitchCaseItemListSyntax): Ast           = notHandledYet(node)
-  private def astForSwitchCaseListSyntax(node: SwitchCaseListSyntax): Ast                   = notHandledYet(node)
+  private def astForSwitchCaseItemListSyntax(node: SwitchCaseItemListSyntax): Ast = {
+    astForListSyntaxChildren(node, node.children)
+  }
+
+  private def astForSwitchCaseListSyntax(node: SwitchCaseListSyntax): Ast = {
+    val blockNode_ = blockNode(node, PropertyDefaults.Code, Defines.Any)
+    scope.pushNewBlockScope(blockNode_)
+    localAstParentStack.push(blockNode_)
+    val asts = node.children.toList.flatMap(astsForSwitchCase)
+    setArgumentIndices(asts)
+    localAstParentStack.pop()
+    scope.popScope()
+    blockAst(blockNode_, asts)
+  }
+
   private def astForTuplePatternElementListSyntax(node: TuplePatternElementListSyntax): Ast = notHandledYet(node)
   private def astForTupleTypeElementListSyntax(node: TupleTypeElementListSyntax): Ast       = notHandledYet(node)
   private def astForUnexpectedNodesSyntax(node: UnexpectedNodesSyntax): Ast                 = notHandledYet(node)
