@@ -21,6 +21,8 @@ trait CacheBuilder(implicit withSchemaValidation: ValidationMode) { this: AstCre
       cpgOpt.map { _ =>
         // We don't want to process this part when third party dependencies are being processed.
         val result = goGlobal.recordAliasToNamespaceMapping(declaredPackageName, fullyQualifiedPackage)
+        // TODO: we need to add this mapping only when declared package name is not matching
+        // with ending path string of fullyQualifiedPackage
         if (result == null) {
           // if result is null that means item got added first time otherwise it has been already added to global map
           val rootNode = createParserNodeInfo(parserResult.json)

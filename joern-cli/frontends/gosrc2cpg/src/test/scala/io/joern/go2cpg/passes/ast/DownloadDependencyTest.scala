@@ -6,8 +6,6 @@ import io.joern.gosrc2cpg.datastructures.GoGlobal
 import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.semanticcpg.language.*
 
-import java.util
-
 class DownloadDependencyTest extends GoCodeToCpgSuite {
   "Simple use case of third-party dependency download" should {
     val config = Config().withFetchDependencies(true)
@@ -36,6 +34,8 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
   }
 
   // TODO: These tests were working, something has broken. Will fix it in next PR.
+  // NOTE: With respect to conversation on this PR - https://github.com/joernio/joern/pull/3753
+  // ignoring the below uni tests, which tries to download the dependencies.
   "Download dependency example with different package and namespace name" ignore {
     val config = Config().withFetchDependencies(true)
     val cpg = code(
@@ -127,7 +127,7 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
 
   // Note: methodFullName of call node is not resolving as per DownloadDependency so ignoring
   // the below unit tests, which tries to download the dependencies and resolve it.
-  "dependency resolution having type struct" ignore {
+  "dependency resolution having type struct" should {
     val config = Config().withFetchDependencies(true)
     val cpg = code(
       """
@@ -195,27 +195,27 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
 
     "not be downloaded " in {
       goGlobal.skippedDependencies.size() shouldBe 1
+      val Array(skippedone) = goGlobal.skippedDependencies.toArray
+      skippedone shouldBe "github.com/rs/zerolog"
     }
 
     "not create any entry in package to namespace mapping" in {
-
-      goGlobal.aliasToNameSpaceMapping
-        .values()
-        .forEach(value => {
-          value should not startWith "github.com/rs/zerolog"
-        })
+      // it should not add `main` in the mapping as well as it should not contain any dependency mapping
+      goGlobal.aliasToNameSpaceMapping.size() shouldBe 0
     }
 
     "not create any entry in lambda signature to return type mapping" in {
+      // "github.com/rs/zerolog" dependency has lambda Struct Types declared in the code. However they should not get cached as they are not getting used anywhere.
       goGlobal.lambdaSignatureToLambdaTypeMap.size() shouldBe 0
     }
 
     "not create any entry in package level ctor map" in {
+      // This anyway should only be populated for main source code.
       goGlobal.pkgLevelVarAndConstantAstMap.size() shouldBe 0
     }
 
     "not create any entry in method full name to return type map" in {
-
+      // This should only contain the `main` method return type mapping as main source code is not invoking any of the dependency method.
       goGlobal.methodFullNameReturnTypeMap.size() shouldBe 1
       val List(mainfullname) = goGlobal.methodFullNameReturnTypeMap.keys().asIterator().toList
       mainfullname shouldBe "main"
@@ -224,7 +224,150 @@ class DownloadDependencyTest extends GoCodeToCpgSuite {
     }
 
     "not create any entry in struct member to type map" in {
+      // This should be empty as neither main code has defined any struct type nor we are accessing the third party struct type.
       goGlobal.structTypeMemberTypeMapping.size() shouldBe 0
     }
+  }
+
+  "The dependency is getting imported somewhere but not getting used then it" should {
+    val goGlobal = GoGlobal()
+    val config   = Config().withFetchDependencies(true)
+    val cpg = code(
+      """
+        |module joern.io/sample
+        |go 1.18
+        |
+        |require (
+        | github.com/rs/zerolog v1.31.0
+        | github.com/google/uuid v1.3.1
+        |)
+        |""".stripMargin,
+      "go.mod"
+    ).moreCode("""
+          |package main
+          |import "github.com/rs/zerolog"
+          |func main()  {
+          |}
+          |""".stripMargin)
+      .withConfig(config)
+      .withGoGlobal(goGlobal)
+
+    // Dummy cpg query which will initiate CPG creation.
+    cpg.method.l
+
+    "download the dependency" in {
+      goGlobal.skippedDependencies.size() shouldBe 1
+      val Array(skippedone) = goGlobal.skippedDependencies.toArray
+      skippedone shouldBe "github.com/google/uuid"
+    }
+
+    "not create any entry in package to namespace mapping" in {
+      // it should not add `main` in the mapping as well as it should not contain any dependency mapping
+      goGlobal.aliasToNameSpaceMapping.size() shouldBe 0
+    }
+
+    "not create any entry in lambda signature to return type mapping" in {
+      // "github.com/rs/zerolog" dependency has lambda Struct Types declared in the code. However they should not get cached as they are not getting used anywhere.
+      goGlobal.lambdaSignatureToLambdaTypeMap.size() shouldBe 0
+    }
+
+    "not create any entry in package level ctor map" in {
+      // This anyway should only be populated for main source code.
+      goGlobal.pkgLevelVarAndConstantAstMap.size() shouldBe 0
+    }
+
+    "not create any entry in method full name to return type map" in {
+      // This should only contain the `main` method return type mapping as main source code is not invoking any of the dependency method.
+      goGlobal.methodFullNameReturnTypeMap.size() shouldBe 1
+      val List(mainfullname) = goGlobal.methodFullNameReturnTypeMap.keys().asIterator().toList
+      mainfullname shouldBe "main"
+      val Array(returnType) = goGlobal.methodFullNameReturnTypeMap.values().toArray
+      returnType shouldBe "unit"
+    }
+
+    "not create any entry in struct member to type map" in {
+      // This should be empty as neither main code has defined any struct type nor we are accessing the third party struct type.
+      goGlobal.structTypeMemberTypeMapping.size() shouldBe 0
+    }
+  }
+
+  "The dependency is getting imported and used in the code then it" should {
+    val goGlobal = GoGlobal()
+    val config   = Config().withFetchDependencies(true)
+    val cpg = code(
+      """
+        |module joern.io/sample
+        |go 1.18
+        |
+        |require (
+        | github.com/rs/zerolog v1.31.0
+        | github.com/google/uuid v1.3.1
+        |)
+        |""".stripMargin,
+      "go.mod"
+    ).moreCode("""
+          |package main
+          |import (
+          |    "github.com/rs/zerolog"
+          |    "github.com/rs/zerolog/log"
+          |)
+          |func main() {
+          |    zerolog.SetGlobalLevel(zerolog.InfoLevel)
+          |    log.Error().Msg("Error message")
+          |    log.Warn().Msg("Warning message")
+          |}
+          |""".stripMargin)
+      .withConfig(config)
+      .withGoGlobal(goGlobal)
+
+    "Be correct for CALL Node typeFullNames" in {
+      val List(a, b, c, d, e) = cpg.call.nameNot(Operators.fieldAccess).l
+      a.typeFullName shouldBe "github.com/rs/zerolog.SetGlobalLevel.<ReturnType>.<unknown>"
+      b.typeFullName shouldBe "github.com/rs/zerolog/log.Error.<ReturnType>.<unknown>.Msg.<ReturnType>.<unknown>"
+      c.typeFullName shouldBe "github.com/rs/zerolog/log.Error.<ReturnType>.<unknown>"
+      d.typeFullName shouldBe "github.com/rs/zerolog/log.Warn.<ReturnType>.<unknown>.Msg.<ReturnType>.<unknown>"
+      e.typeFullName shouldBe "github.com/rs/zerolog/log.Warn.<ReturnType>.<unknown>"
+    }
+
+    "download the dependency" in {
+      goGlobal.skippedDependencies.size() shouldBe 1
+      val Array(skippedone) = goGlobal.skippedDependencies.toArray
+      skippedone shouldBe "github.com/google/uuid"
+    }
+
+    "not create any entry in package to namespace mapping" in {
+      // it should not add `main` in the mapping as well as it should not contain any dependency mapping unless the folder name and package name is different.
+      goGlobal.aliasToNameSpaceMapping.size() shouldBe 0
+    }
+
+    "not create any entry in lambda signature to return type mapping" in {
+      // "github.com/rs/zerolog" dependency has lambda Struct Types declared in the code. However they should not get cached as they are not getting used anywhere.
+      goGlobal.lambdaSignatureToLambdaTypeMap.size() shouldBe 0
+    }
+
+    "not create any entry in package level ctor map" in {
+      // This anyway should only be populated for main source code.
+      goGlobal.pkgLevelVarAndConstantAstMap.size() shouldBe 0
+    }
+
+    "not create any entry in method full name to return type map" in {
+      // This should only contain the `main` method return type mapping as main source code is not invoking any of the dependency method.
+      // TODO: While doing the implementation we need update this test
+      // Lambda expression return types are also getting recorded under this map
+      goGlobal.methodFullNameReturnTypeMap.size() shouldBe 1
+      val List(mainfullname) = goGlobal.methodFullNameReturnTypeMap.keys().asIterator().toList
+      mainfullname shouldBe "main"
+      val Array(returnType) = goGlobal.methodFullNameReturnTypeMap.values().toArray
+      returnType shouldBe "unit"
+    }
+
+    "not create any entry in struct member to type map" in {
+      // TODO: This test might require to update when we implement
+      // 1. Struct Type is directly being used
+      // 2. Struct Type is being passed as parameter or returned as value of method that is being used.
+      // 3. A method of Struct Type being used.
+      goGlobal.structTypeMemberTypeMapping.size() shouldBe 0
+    }
+
   }
 }

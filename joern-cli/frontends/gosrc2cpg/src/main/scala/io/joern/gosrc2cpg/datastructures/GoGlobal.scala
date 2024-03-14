@@ -25,11 +25,16 @@ class GoGlobal {
     */
   val aliasToNameSpaceMapping: ConcurrentHashMap[String, String] = new ConcurrentHashMap()
 
+  /** This map will record the Type FullName of Struct Type defined for Lambda Expression along with return type
+    * fullname against the lambda signature.
+    *
+    * This will help map the Lambda TypeFullName with the respective Struct Type as supper Type
+    */
   val lambdaSignatureToLambdaTypeMap: ConcurrentHashMap[String, Set[(String, String)]] = new ConcurrentHashMap()
 
   val pkgLevelVarAndConstantAstMap: ConcurrentHashMap[String, Set[(Ast, String)]] = new ConcurrentHashMap()
 
-  // Mapping method fullname to its return type and signature
+  // Mapping method fullname to its return type and signature, lambda expression return type also getting recorded under this map
   val methodFullNameReturnTypeMap: ConcurrentHashMap[String, (String, String)] = new ConcurrentHashMap()
 
   /** Mapping fully qualified name of the member variable of a struct type to it's type It will also maintain the type
