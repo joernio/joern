@@ -234,6 +234,8 @@ object DotNetJsonAst {
 
   object AnonymousObjectMemberDeclarator extends DeclarationExpr
 
+  object ConditionalExpression extends BaseExpr
+
   object ImplicitArrayCreationExpression extends BaseExpr
 
   object Unknown extends DotNetParserNode
@@ -297,4 +299,6 @@ object ParserKeys {
   val Usings            = "Usings"
   val Value             = "Value"
   val Variables         = "Variables"
+  val WhenFalse         = "WhenFalse"
+  val WhenTrue          = "WhenTrue"
 }

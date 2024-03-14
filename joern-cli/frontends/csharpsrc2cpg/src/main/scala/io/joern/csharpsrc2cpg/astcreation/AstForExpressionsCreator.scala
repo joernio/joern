@@ -29,6 +29,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case ObjectCreationExpression        => astForObjectCreationExpression(expr)
       case SimpleMemberAccessExpression    => astForSimpleMemberAccessExpression(expr)
       case ImplicitArrayCreationExpression => astForImplicitArrayCreationExpression(expr)
+      case ConditionalExpression           => astForConditionalExpression(expr)
       case _: IdentifierNode               => astForIdentifier(expr) :: Nil
       case ThisExpression                  => astForThisReceiver(expr) :: Nil
       case CastExpression                  => astForCastExpression(expr)
@@ -358,6 +359,21 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
         }
       )
       .toSeq
+  }
+
+  private def astForConditionalExpression(condExpr: DotNetNodeInfo): Seq[Ast] = {
+    val conditionAst = astForNode(condExpr.json(ParserKeys.Condition))
+    val whenTrue     = astForNode(condExpr.json(ParserKeys.WhenTrue))
+    val whenFalse    = astForNode(condExpr.json(ParserKeys.WhenFalse))
+
+    val typeFullName =
+      Option(getTypeFullNameFromAstNode(whenTrue))
+        .orElse(Option(getTypeFullNameFromAstNode(whenFalse)))
+        .orElse(Option(Defines.Any))
+    val callNode =
+      newOperatorCallNode(Operators.conditional, code(condExpr), typeFullName, line(condExpr), column(condExpr))
+
+    Seq(callAst(callNode, conditionAst ++ whenTrue ++ whenFalse))
   }
 
   private def astForCastExpression(castExpr: DotNetNodeInfo): Seq[Ast] = {
