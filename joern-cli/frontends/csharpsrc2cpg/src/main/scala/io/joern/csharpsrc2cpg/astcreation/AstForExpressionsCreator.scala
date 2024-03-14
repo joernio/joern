@@ -29,7 +29,7 @@ trait AstForExpressionsCreator(implicit withSchemaValidation: ValidationMode) { 
       case ObjectCreationExpression        => astForObjectCreationExpression(expr)
       case SimpleMemberAccessExpression    => astForSimpleMemberAccessExpression(expr)
       case ImplicitArrayCreationExpression => astForImplicitArrayCreationExpression(expr)
-      case ConditionalExpression        => astForConditionalExpression(expr)
+      case ConditionalExpression           => astForConditionalExpression(expr)
       case _: IdentifierNode               => astForIdentifier(expr) :: Nil
       case ThisExpression                  => astForThisReceiver(expr) :: Nil
       case CastExpression                  => astForCastExpression(expr)
