@@ -1,0 +1,4491 @@
+{
+  "Microsoft.CodeAnalysis": [
+    {
+      "name": "Microsoft.CodeAnalysis.EmbeddedAttribute",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System.Runtime.CompilerServices": [
+    {
+      "name": "System.Runtime.CompilerServices.NullableAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.NullableContextAttribute",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "Microsoft": [
+    {
+      "name": "Microsoft.StringExtensions",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.TypeExtensions",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.DependencyInjection": [
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.AutoRegisterMiddleware",
+      "methods": [
+        {
+          "name": "Configure",
+          "returnType": "System.Action`1<Microsoft.AspNetCore.Builder.IApplicationBuilder>",
+          "parameterTypes": [
+            [
+              "next",
+              "System.Action`1<Microsoft.AspNetCore.Builder.IApplicationBuilder>"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.IServiceCollectionExtensions",
+      "methods": [
+        {
+          "name": "AddApiVersioning",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddApiVersioning",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "setupAction",
+              "System.Action`1<Microsoft.AspNetCore.Mvc.Versioning.ApiVersioningOptions>"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.AspNetCore.Builder": [
+    {
+      "name": "Microsoft.AspNetCore.Builder.IApplicationBuilderExtensions",
+      "methods": [
+        {
+          "name": "UseApiVersioning",
+          "returnType": "Microsoft.AspNetCore.Builder.IApplicationBuilder",
+          "parameterTypes": [
+            [
+              "app",
+              "Microsoft.AspNetCore.Builder.IApplicationBuilder"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.AspNetCore.Mvc": [
+    {
+      "name": "Microsoft.AspNetCore.Mvc.CollectionExtensions",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.ControllerNameAttribute",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.HttpContextExtensions",
+      "methods": [
+        {
+          "name": "ApiVersioningFeature",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.IApiVersioningFeature",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetRequestedApiVersion",
+          "returnType": "Microsoft.AspNetCore.Mvc.ApiVersion",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.IErrorResponseProviderExtensions",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.ReportApiVersionsAttribute",
+      "methods": [
+        {
+          "name": "OnActionExecuting",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.SR",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.TypeExtensions",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.AdvertiseApiVersionsAttribute",
+      "methods": [
+        {
+          "name": "get_Deprecated",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Deprecated",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetHashCode",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.ApiVersion",
+      "methods": [
+        {
+          "name": "get_Default",
+          "returnType": "Microsoft.AspNetCore.Mvc.ApiVersion",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_Neutral",
+          "returnType": "Microsoft.AspNetCore.Mvc.ApiVersion",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_GroupVersion",
+          "returnType": "System.Nullable`1<System.DateTime>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_MajorVersion",
+          "returnType": "System.Nullable`1<System.Int32>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_MinorVersion",
+          "returnType": "System.Nullable`1<System.Int32>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Status",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "IsValidStatus",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "status",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Parse",
+          "returnType": "Microsoft.AspNetCore.Mvc.ApiVersion",
+          "parameterTypes": [
+            [
+              "text",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryParse",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "text",
+              "System.String"
+            ],
+            [
+              "version",
+              "Microsoft.AspNetCore.Mvc.ApiVersion&"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ToString",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "format",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ToString",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Equals",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "obj",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetHashCode",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "op_Equality",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "version1",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ],
+            [
+              "version2",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "op_Inequality",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "version1",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ],
+            [
+              "version2",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "op_LessThan",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "version1",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ],
+            [
+              "version2",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "op_LessThanOrEqual",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "version1",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ],
+            [
+              "version2",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "op_GreaterThan",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "version1",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ],
+            [
+              "version2",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "op_GreaterThanOrEqual",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "version1",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ],
+            [
+              "version2",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Equals",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "other",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CompareTo",
+          "returnType": "System.Int32",
+          "parameterTypes": [
+            [
+              "other",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ToString",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "format",
+              "System.String"
+            ],
+            [
+              "formatProvider",
+              "System.IFormatProvider"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.ApiVersionAttribute",
+      "methods": [
+        {
+          "name": "get_Deprecated",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Deprecated",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetHashCode",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.ApiVersionNeutralAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.MapToApiVersionAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.UriExtensions",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "Microsoft.AspNetCore.Mvc.Versioning": [
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.ActionSelectionContext",
+      "methods": [
+        {
+          "name": "get_HttpContext",
+          "returnType": "Microsoft.AspNetCore.Http.HttpContext",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_MatchingActions",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptor>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_AllVersions",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionModel",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_RequestedVersion",
+          "returnType": "Microsoft.AspNetCore.Mvc.ApiVersion",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_RequestedVersion",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.ActionSelectionResult",
+      "methods": [
+        {
+          "name": "get_BestMatch",
+          "returnType": "Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptor",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_CandidateActions",
+          "returnType": "System.Collections.Generic.IReadOnlyCollection`1<Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptor>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_MatchingActions",
+          "returnType": "System.Collections.Generic.IReadOnlyCollection`1<Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptor>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "AddCandidates",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "actions",
+              "System.Collections.Generic.IEnumerable`1<Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptor>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AddMatches",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "matches",
+              "System.Collections.Generic.IEnumerable`1<Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptor>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Clear",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionActionSelector",
+      "methods": [
+        {
+          "name": "SelectCandidates",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptor>",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Routing.RouteContext"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "SelectBestCandidate",
+          "returnType": "Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptor",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Routing.RouteContext"
+            ],
+            [
+              "candidates",
+              "System.Collections.Generic.IReadOnlyList`1<Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptor>"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionCollator",
+      "methods": [
+        {
+          "name": "get_Order",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "OnProvidersExecuted",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptorProviderContext"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "OnProvidersExecuting",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptorProviderContext"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersioningApplicationModelProvider",
+      "methods": [
+        {
+          "name": "get_Order",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "OnProvidersExecuted",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Mvc.ApplicationModels.ApplicationModelProviderContext"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "OnProvidersExecuting",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Mvc.ApplicationModels.ApplicationModelProviderContext"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersioningFeature",
+      "methods": [
+        {
+          "name": "get_RouteParameter",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_RouteParameter",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_RawRequestedApiVersions",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<System.String>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_RawRequestedApiVersions",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Collections.Generic.IReadOnlyList`1<System.String>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_RawRequestedApiVersion",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_RawRequestedApiVersion",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_RequestedApiVersion",
+          "returnType": "Microsoft.AspNetCore.Mvc.ApiVersion",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_RequestedApiVersion",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_SelectionResult",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.ActionSelectionResult",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersioningMiddleware",
+      "methods": [
+        {
+          "name": "InvokeAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersioningMvcOptionsSetup",
+      "methods": [
+        {
+          "name": "PostConfigure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "options",
+              "Microsoft.AspNetCore.Mvc.MvcOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersioningOptions",
+      "methods": [
+        {
+          "name": "get_RegisterMiddleware",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_RegisterMiddleware",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_UseApiBehavior",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_UseApiBehavior",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_RouteConstraintName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_RouteConstraintName",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ReportApiVersions",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ReportApiVersions",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_AssumeDefaultVersionWhenUnspecified",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_AssumeDefaultVersionWhenUnspecified",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_DefaultApiVersion",
+          "returnType": "Microsoft.AspNetCore.Mvc.ApiVersion",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_DefaultApiVersion",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ApiVersionReader",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.IApiVersionReader",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ApiVersionReader",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.AspNetCore.Mvc.Versioning.IApiVersionReader"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ApiVersionSelector",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.IApiVersionSelector",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ApiVersionSelector",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.AspNetCore.Mvc.Versioning.IApiVersionSelector"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Conventions",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IApiVersionConventionBuilder",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Conventions",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IApiVersionConventionBuilder"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ErrorResponses",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.IErrorResponseProvider",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ErrorResponses",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.AspNetCore.Mvc.Versioning.IErrorResponseProvider"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ControllerNameConvention",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IControllerNameConvention",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ControllerNameConvention",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IControllerNameConvention"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersioningRouteOptionsSetup",
+      "methods": [
+        {
+          "name": "PostConfigure",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "options",
+              "Microsoft.AspNetCore.Routing.RouteOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionModelBinder",
+      "methods": [
+        {
+          "name": "BindModelAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "bindingContext",
+              "Microsoft.AspNetCore.Mvc.ModelBinding.ModelBindingContext"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionModelBinderProvider",
+      "methods": [
+        {
+          "name": "GetBinder",
+          "returnType": "Microsoft.AspNetCore.Mvc.ModelBinding.IModelBinder",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Mvc.ModelBinding.ModelBinderProviderContext"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.ApplyContentTypeVersionActionFilter",
+      "methods": [
+        {
+          "name": "OnActionExecuted",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Mvc.Filters.ActionExecutedContext"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "OnActionExecuting",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.BadRequestHandler",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.DefaultErrorResponseProvider",
+      "methods": [
+        {
+          "name": "CreateResponse",
+          "returnType": "Microsoft.AspNetCore.Mvc.IActionResult",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Mvc.Versioning.ErrorResponseContext"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.ErrorResponseContext",
+      "methods": [
+        {
+          "name": "get_Request",
+          "returnType": "Microsoft.AspNetCore.Http.HttpRequest",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_StatusCode",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ErrorCode",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Message",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_MessageDetail",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.HeaderApiVersionReader",
+      "methods": [
+        {
+          "name": "Read",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "request",
+              "Microsoft.AspNetCore.Http.HttpRequest"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_HeaderNames",
+          "returnType": "System.Collections.Generic.ICollection`1<System.String>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "AddParameters",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Mvc.Versioning.IApiVersionParameterDescriptionContext"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.IApiVersioningFeature",
+      "methods": [
+        {
+          "name": "get_RouteParameter",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_RouteParameter",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_RawRequestedApiVersions",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<System.String>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_RawRequestedApiVersions",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Collections.Generic.IReadOnlyList`1<System.String>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_RawRequestedApiVersion",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_RawRequestedApiVersion",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_RequestedApiVersion",
+          "returnType": "Microsoft.AspNetCore.Mvc.ApiVersion",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_RequestedApiVersion",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_SelectionResult",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.ActionSelectionResult",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.ILoggerExtensions",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.MediaTypeApiVersionReader",
+      "methods": [
+        {
+          "name": "Read",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "request",
+              "Microsoft.AspNetCore.Http.HttpRequest"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ParameterName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ParameterName",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AddParameters",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Mvc.Versioning.IApiVersionParameterDescriptionContext"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.MethodNotAllowedHandler",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.ProblemDetailsErrorResponseProvider",
+      "methods": [
+        {
+          "name": "CreateResponse",
+          "returnType": "Microsoft.AspNetCore.Mvc.IActionResult",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Mvc.Versioning.ErrorResponseContext"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.QueryStringApiVersionReader",
+      "methods": [
+        {
+          "name": "Read",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "request",
+              "Microsoft.AspNetCore.Http.HttpRequest"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ParameterNames",
+          "returnType": "System.Collections.Generic.ICollection`1<System.String>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "AddParameters",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Mvc.Versioning.IApiVersionParameterDescriptionContext"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.RequestHandler",
+      "methods": [
+        {
+          "name": "op_Implicit",
+          "returnType": "Microsoft.AspNetCore.Http.RequestDelegate",
+          "parameterTypes": [
+            [
+              "handler",
+              "Microsoft.AspNetCore.Mvc.Versioning.RequestHandler"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "op_Implicit",
+          "returnType": "Microsoft.AspNetCore.Http.Endpoint",
+          "parameterTypes": [
+            [
+              "handler",
+              "Microsoft.AspNetCore.Mvc.Versioning.RequestHandler"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.RequestHandlerContext",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.UrlSegmentApiVersionReader",
+      "methods": [
+        {
+          "name": "Read",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "request",
+              "Microsoft.AspNetCore.Http.HttpRequest"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AddParameters",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Mvc.Versioning.IApiVersionParameterDescriptionContext"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.AmbiguousApiVersionException",
+      "methods": [
+        {
+          "name": "get_ApiVersions",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<System.String>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "GetObjectData",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "info",
+              "System.Runtime.Serialization.SerializationInfo"
+            ],
+            [
+              "context",
+              "System.Runtime.Serialization.StreamingContext"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionFormatProvider",
+      "methods": [
+        {
+          "name": "get_CurrentCulture",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionFormatProvider",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_InvariantCulture",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionFormatProvider",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "GetInstance",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionFormatProvider",
+          "parameterTypes": [
+            [
+              "formatProvider",
+              "System.IFormatProvider"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetFormat",
+          "returnType": "System.Object",
+          "parameterTypes": [
+            [
+              "formatType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Format",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "format",
+              "System.String"
+            ],
+            [
+              "arg",
+              "System.Object"
+            ],
+            [
+              "formatProvider",
+              "System.IFormatProvider"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionMapping",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionModel",
+      "methods": [
+        {
+          "name": "get_Default",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionModel",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_Neutral",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionModel",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_Empty",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionModel",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_IsApiVersionNeutral",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_DeclaredApiVersions",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<Microsoft.AspNetCore.Mvc.ApiVersion>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ImplementedApiVersions",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<Microsoft.AspNetCore.Mvc.ApiVersion>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_SupportedApiVersions",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<Microsoft.AspNetCore.Mvc.ApiVersion>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_DeprecatedApiVersions",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<Microsoft.AspNetCore.Mvc.ApiVersion>",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionModelDebugView",
+      "methods": [
+        {
+          "name": "get_VersionNeutral",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Declared",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Implemented",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Supported",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Deprecated",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionModelExtensions",
+      "methods": [
+        {
+          "name": "Aggregate",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionModel",
+          "parameterTypes": [
+            [
+              "version",
+              "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionModel"
+            ],
+            [
+              "otherVersion",
+              "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionModel"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Aggregate",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionModel",
+          "parameterTypes": [
+            [
+              "version",
+              "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionModel"
+            ],
+            [
+              "otherVersions",
+              "System.Collections.Generic.IEnumerable`1<Microsoft.AspNetCore.Mvc.Versioning.ApiVersionModel>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Aggregate",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionModel",
+          "parameterTypes": [
+            [
+              "versions",
+              "System.Collections.Generic.IEnumerable`1<Microsoft.AspNetCore.Mvc.Versioning.ApiVersionModel>"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionParameterLocation",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionProviderOptions",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionReader",
+      "methods": [
+        {
+          "name": "Combine",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.IApiVersionReader",
+          "parameterTypes": [
+            [
+              "apiVersionReaders",
+              "Microsoft.AspNetCore.Mvc.Versioning.IApiVersionReader[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Combine",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.IApiVersionReader",
+          "parameterTypes": [
+            [
+              "apiVersionReaders",
+              "System.Collections.Generic.IEnumerable`1<Microsoft.AspNetCore.Mvc.Versioning.IApiVersionReader>"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionsBaseAttribute",
+      "methods": [
+        {
+          "name": "get_Versions",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<Microsoft.AspNetCore.Mvc.ApiVersion>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Equals",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "obj",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetHashCode",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.ConstantApiVersionSelector",
+      "methods": [
+        {
+          "name": "SelectVersion",
+          "returnType": "Microsoft.AspNetCore.Mvc.ApiVersion",
+          "parameterTypes": [
+            [
+              "request",
+              "Microsoft.AspNetCore.Http.HttpRequest"
+            ],
+            [
+              "model",
+              "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionModel"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.CurrentImplementationApiVersionSelector",
+      "methods": [
+        {
+          "name": "SelectVersion",
+          "returnType": "Microsoft.AspNetCore.Mvc.ApiVersion",
+          "parameterTypes": [
+            [
+              "request",
+              "Microsoft.AspNetCore.Http.HttpRequest"
+            ],
+            [
+              "model",
+              "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionModel"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.DefaultApiVersionReporter",
+      "methods": [
+        {
+          "name": "Report",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "headers",
+              "Microsoft.AspNetCore.Http.IHeaderDictionary"
+            ],
+            [
+              "apiVersionModel",
+              "System.Lazy`1<Microsoft.AspNetCore.Mvc.Versioning.ApiVersionModel>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Report",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "headers",
+              "Microsoft.AspNetCore.Http.IHeaderDictionary"
+            ],
+            [
+              "apiVersionModel",
+              "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionModel"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.DefaultApiVersionSelector",
+      "methods": [
+        {
+          "name": "SelectVersion",
+          "returnType": "Microsoft.AspNetCore.Mvc.ApiVersion",
+          "parameterTypes": [
+            [
+              "request",
+              "Microsoft.AspNetCore.Http.HttpRequest"
+            ],
+            [
+              "model",
+              "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionModel"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.DoNotReportApiVersions",
+      "methods": [
+        {
+          "name": "Report",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "headers",
+              "Microsoft.AspNetCore.Http.IHeaderDictionary"
+            ],
+            [
+              "apiVersionModel",
+              "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionModel"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Report",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "headers",
+              "Microsoft.AspNetCore.Http.IHeaderDictionary"
+            ],
+            [
+              "apiVersionModel",
+              "System.Lazy`1<Microsoft.AspNetCore.Mvc.Versioning.ApiVersionModel>"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.ErrorCodes",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.IApiVersionNeutral",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.IApiVersionParameterDescriptionContext",
+      "methods": [
+        {
+          "name": "AddParameter",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "location",
+              "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionParameterLocation"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.IApiVersionParameterSource",
+      "methods": [
+        {
+          "name": "AddParameters",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Mvc.Versioning.IApiVersionParameterDescriptionContext"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.IApiVersionParameterSourceExtensions",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.IApiVersionProvider",
+      "methods": [
+        {
+          "name": "get_Options",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionProviderOptions",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Versions",
+          "returnType": "System.Collections.Generic.IReadOnlyList`1<Microsoft.AspNetCore.Mvc.ApiVersion>",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.IApiVersionReader",
+      "methods": [
+        {
+          "name": "Read",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "request",
+              "Microsoft.AspNetCore.Http.HttpRequest"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.IApiVersionSelector",
+      "methods": [
+        {
+          "name": "SelectVersion",
+          "returnType": "Microsoft.AspNetCore.Mvc.ApiVersion",
+          "parameterTypes": [
+            [
+              "request",
+              "Microsoft.AspNetCore.Http.HttpRequest"
+            ],
+            [
+              "model",
+              "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionModel"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.IErrorResponseProvider",
+      "methods": [
+        {
+          "name": "CreateResponse",
+          "returnType": "Microsoft.AspNetCore.Mvc.IActionResult",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Mvc.Versioning.ErrorResponseContext"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.IReportApiVersions",
+      "methods": [
+        {
+          "name": "Report",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "headers",
+              "Microsoft.AspNetCore.Http.IHeaderDictionary"
+            ],
+            [
+              "apiVersionModel",
+              "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionModel"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Report",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "headers",
+              "Microsoft.AspNetCore.Http.IHeaderDictionary"
+            ],
+            [
+              "apiVersionModel",
+              "System.Lazy`1<Microsoft.AspNetCore.Mvc.Versioning.ApiVersionModel>"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.LowestImplementedApiVersionSelector",
+      "methods": [
+        {
+          "name": "SelectVersion",
+          "returnType": "Microsoft.AspNetCore.Mvc.ApiVersion",
+          "parameterTypes": [
+            [
+              "request",
+              "Microsoft.AspNetCore.Http.HttpRequest"
+            ],
+            [
+              "model",
+              "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionModel"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.AspNetCore.Mvc.Versioning.Conventions": [
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ActionApiVersionConventionBuilderBase",
+      "methods": [
+        {
+          "name": "ApplyTo",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "actionModel",
+              "Microsoft.AspNetCore.Mvc.ApplicationModels.ActionModel"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ActionApiVersionConventionBuilderCollection`1",
+      "methods": [
+        {
+          "name": "get_Count",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "TryGetValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "actionMethod",
+              "System.Reflection.MethodInfo"
+            ],
+            [
+              "actionBuilder",
+              "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ActionApiVersionConventionBuilder`1<T>&"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetEnumerator",
+          "returnType": "System.Collections.Generic.IEnumerator`1<Microsoft.AspNetCore.Mvc.Versioning.Conventions.ActionApiVersionConventionBuilder`1<T>>",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ActionApiVersionConventionBuilder`1",
+      "methods": [
+        {
+          "name": "Action",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ActionApiVersionConventionBuilder`1<T>",
+          "parameterTypes": [
+            [
+              "actionMethod",
+              "System.Reflection.MethodInfo"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "MapToApiVersion",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ActionApiVersionConventionBuilder`1<T>",
+          "parameterTypes": [
+            [
+              "apiVersion",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "IsApiVersionNeutral",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ActionApiVersionConventionBuilder`1<T>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "HasApiVersion",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ActionApiVersionConventionBuilder`1<T>",
+          "parameterTypes": [
+            [
+              "apiVersion",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "HasDeprecatedApiVersion",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ActionApiVersionConventionBuilder`1<T>",
+          "parameterTypes": [
+            [
+              "apiVersion",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AdvertisesApiVersion",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ActionApiVersionConventionBuilder`1<T>",
+          "parameterTypes": [
+            [
+              "apiVersion",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AdvertisesDeprecatedApiVersion",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ActionApiVersionConventionBuilder`1<T>",
+          "parameterTypes": [
+            [
+              "apiVersion",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ApiVersionConventionBuilder",
+      "methods": [
+        {
+          "name": "ApplyTo",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "controllerModel",
+              "Microsoft.AspNetCore.Mvc.ApplicationModels.ControllerModel"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Count",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Controller",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IControllerConventionBuilder`1<TController>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Controller",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IControllerConventionBuilder",
+          "parameterTypes": [
+            [
+              "controllerType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Add",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "convention",
+              "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IControllerConvention"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ControllerApiVersionConventionBuilder",
+      "methods": [
+        {
+          "name": "get_ControllerType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "IsApiVersionNeutral",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ControllerApiVersionConventionBuilder",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "HasApiVersion",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ControllerApiVersionConventionBuilder",
+          "parameterTypes": [
+            [
+              "apiVersion",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "HasDeprecatedApiVersion",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ControllerApiVersionConventionBuilder",
+          "parameterTypes": [
+            [
+              "apiVersion",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AdvertisesApiVersion",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ControllerApiVersionConventionBuilder",
+          "parameterTypes": [
+            [
+              "apiVersion",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AdvertisesDeprecatedApiVersion",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ControllerApiVersionConventionBuilder",
+          "parameterTypes": [
+            [
+              "apiVersion",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Action",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ActionApiVersionConventionBuilder",
+          "parameterTypes": [
+            [
+              "actionMethod",
+              "System.Reflection.MethodInfo"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ControllerApiVersionConventionBuilderBase",
+      "methods": [
+        {
+          "name": "ApplyTo",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "controllerModel",
+              "Microsoft.AspNetCore.Mvc.ApplicationModels.ControllerModel"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ControllerApiVersionConventionBuilder`1",
+      "methods": [
+        {
+          "name": "IsApiVersionNeutral",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ControllerApiVersionConventionBuilder`1<T>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "HasApiVersion",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ControllerApiVersionConventionBuilder`1<T>",
+          "parameterTypes": [
+            [
+              "apiVersion",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "HasDeprecatedApiVersion",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ControllerApiVersionConventionBuilder`1<T>",
+          "parameterTypes": [
+            [
+              "apiVersion",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AdvertisesApiVersion",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ControllerApiVersionConventionBuilder`1<T>",
+          "parameterTypes": [
+            [
+              "apiVersion",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AdvertisesDeprecatedApiVersion",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ControllerApiVersionConventionBuilder`1<T>",
+          "parameterTypes": [
+            [
+              "apiVersion",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Action",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ActionApiVersionConventionBuilder`1<T>",
+          "parameterTypes": [
+            [
+              "actionMethod",
+              "System.Reflection.MethodInfo"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.DefaultControllerNameConvention",
+      "methods": [
+        {
+          "name": "NormalizeName",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "controllerName",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IActionConventionBuilder",
+      "methods": [
+        {
+          "name": "get_ControllerType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Action",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IActionConventionBuilder",
+          "parameterTypes": [
+            [
+              "actionMethod",
+              "System.Reflection.MethodInfo"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IActionConventionBuilder`1",
+      "methods": [
+        {
+          "name": "Action",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IActionConventionBuilder`1<T>",
+          "parameterTypes": [
+            [
+              "actionMethod",
+              "System.Reflection.MethodInfo"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IApiVersionConventionBuilder",
+      "methods": [
+        {
+          "name": "Controller",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IControllerConventionBuilder`1<TController>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "ApplyTo",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "controllerModel",
+              "Microsoft.AspNetCore.Mvc.ApplicationModels.ControllerModel"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Count",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Controller",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IControllerConventionBuilder",
+          "parameterTypes": [
+            [
+              "controllerType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Add",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "convention",
+              "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IControllerConvention"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IControllerConvention",
+      "methods": [
+        {
+          "name": "Apply",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "controller",
+              "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IControllerConventionBuilder"
+            ],
+            [
+              "controllerModel",
+              "Microsoft.AspNetCore.Mvc.ApplicationModels.ControllerModel"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IControllerConventionBuilder",
+      "methods": [
+        {
+          "name": "get_ControllerType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Action",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IActionConventionBuilder",
+          "parameterTypes": [
+            [
+              "actionMethod",
+              "System.Reflection.MethodInfo"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IControllerConventionBuilder`1",
+      "methods": [
+        {
+          "name": "Action",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IActionConventionBuilder`1<T>",
+          "parameterTypes": [
+            [
+              "actionMethod",
+              "System.Reflection.MethodInfo"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.OriginalControllerNameConvention",
+      "methods": [
+        {
+          "name": "NormalizeName",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "controllerName",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GroupName",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "controllerName",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.VersionByNamespaceConvention",
+      "methods": [
+        {
+          "name": "Apply",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "controller",
+              "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IControllerConventionBuilder"
+            ],
+            [
+              "controllerModel",
+              "Microsoft.AspNetCore.Mvc.ApplicationModels.ControllerModel"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ActionApiVersionConventionBuilderCollection",
+      "methods": [
+        {
+          "name": "get_Count",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "TryGetValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "actionMethod",
+              "System.Reflection.MethodInfo"
+            ],
+            [
+              "actionBuilder",
+              "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ActionApiVersionConventionBuilder&"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetEnumerator",
+          "returnType": "System.Collections.Generic.IEnumerator`1<Microsoft.AspNetCore.Mvc.Versioning.Conventions.ActionApiVersionConventionBuilder>",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ActionApiVersionConventionBuilder",
+      "methods": [
+        {
+          "name": "get_ControllerType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Action",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ActionApiVersionConventionBuilder",
+          "parameterTypes": [
+            [
+              "actionMethod",
+              "System.Reflection.MethodInfo"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "MapToApiVersion",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ActionApiVersionConventionBuilder",
+          "parameterTypes": [
+            [
+              "apiVersion",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "IsApiVersionNeutral",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ActionApiVersionConventionBuilder",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "HasApiVersion",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ActionApiVersionConventionBuilder",
+          "parameterTypes": [
+            [
+              "apiVersion",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "HasDeprecatedApiVersion",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ActionApiVersionConventionBuilder",
+          "parameterTypes": [
+            [
+              "apiVersion",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AdvertisesApiVersion",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ActionApiVersionConventionBuilder",
+          "parameterTypes": [
+            [
+              "apiVersion",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AdvertisesDeprecatedApiVersion",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ActionApiVersionConventionBuilder",
+          "parameterTypes": [
+            [
+              "apiVersion",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ActionConventionBuilderExtensions",
+      "methods": [
+        {
+          "name": "Action",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IActionConventionBuilder`1<TController>",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IActionConventionBuilder`1<TController>"
+            ],
+            [
+              "actionExpression",
+              "System.Linq.Expressions.Expression`1<System.Action`1<TController>>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Action",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IActionConventionBuilder`1<TController>",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IActionConventionBuilder`1<TController>"
+            ],
+            [
+              "actionExpression",
+              "System.Linq.Expressions.Expression`1<System.Func`2<TController,TResult>>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Action",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IActionConventionBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IActionConventionBuilder"
+            ],
+            [
+              "methodName",
+              "System.String"
+            ],
+            [
+              "argumentTypes",
+              "System.Type[]"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ActionMethodResolver",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ApiVersionConventionBuilderBase",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ControllerConventionBuilderExtensions",
+      "methods": [
+        {
+          "name": "Action",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IActionConventionBuilder`1<TController>",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IControllerConventionBuilder`1<TController>"
+            ],
+            [
+              "actionExpression",
+              "System.Linq.Expressions.Expression`1<System.Action`1<TController>>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Action",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IActionConventionBuilder`1<TController>",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IControllerConventionBuilder`1<TController>"
+            ],
+            [
+              "actionExpression",
+              "System.Linq.Expressions.Expression`1<System.Func`2<TController,TResult>>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Action",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IActionConventionBuilder",
+          "parameterTypes": [
+            [
+              "builder",
+              "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IControllerConventionBuilder"
+            ],
+            [
+              "methodName",
+              "System.String"
+            ],
+            [
+              "argumentTypes",
+              "System.Type[]"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ControllerNameConvention",
+      "methods": [
+        {
+          "name": "NormalizeName",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "controllerName",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GroupName",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "controllerName",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Default",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IControllerNameConvention",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_Original",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IControllerNameConvention",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "get_Grouped",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IControllerNameConvention",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "TrimTrailingNumbers",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "name",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ExpressionExtensions",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.GroupedControllerNameConvention",
+      "methods": [
+        {
+          "name": "GroupName",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "controllerName",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.ApiVersionConventionBuilderExtensions",
+      "methods": [
+        {
+          "name": "HasApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "majorVersion",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "HasApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "majorVersion",
+              "System.Int32"
+            ],
+            [
+              "status",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "HasApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "majorVersion",
+              "System.Int32"
+            ],
+            [
+              "minorVersion",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "HasApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "majorVersion",
+              "System.Int32"
+            ],
+            [
+              "minorVersion",
+              "System.Int32"
+            ],
+            [
+              "status",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "HasApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "year",
+              "System.Int32"
+            ],
+            [
+              "month",
+              "System.Int32"
+            ],
+            [
+              "day",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "HasApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "year",
+              "System.Int32"
+            ],
+            [
+              "month",
+              "System.Int32"
+            ],
+            [
+              "day",
+              "System.Int32"
+            ],
+            [
+              "status",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "HasApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "groupVersion",
+              "System.DateTime"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "HasApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "groupVersion",
+              "System.DateTime"
+            ],
+            [
+              "status",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "HasApiVersions",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "apiVersions",
+              "System.Collections.Generic.IEnumerable`1<Microsoft.AspNetCore.Mvc.ApiVersion>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "HasDeprecatedApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "majorVersion",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "HasDeprecatedApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "majorVersion",
+              "System.Int32"
+            ],
+            [
+              "status",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "HasDeprecatedApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "majorVersion",
+              "System.Int32"
+            ],
+            [
+              "minorVersion",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "HasDeprecatedApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "majorVersion",
+              "System.Int32"
+            ],
+            [
+              "minorVersion",
+              "System.Int32"
+            ],
+            [
+              "status",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "HasDeprecatedApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "year",
+              "System.Int32"
+            ],
+            [
+              "month",
+              "System.Int32"
+            ],
+            [
+              "day",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "HasDeprecatedApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "year",
+              "System.Int32"
+            ],
+            [
+              "month",
+              "System.Int32"
+            ],
+            [
+              "day",
+              "System.Int32"
+            ],
+            [
+              "status",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "HasDeprecatedApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "groupVersion",
+              "System.DateTime"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "HasDeprecatedApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "groupVersion",
+              "System.DateTime"
+            ],
+            [
+              "status",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "HasDeprecatedApiVersions",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "apiVersions",
+              "System.Collections.Generic.IEnumerable`1<Microsoft.AspNetCore.Mvc.ApiVersion>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AdvertisesApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "majorVersion",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AdvertisesApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "majorVersion",
+              "System.Int32"
+            ],
+            [
+              "status",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AdvertisesApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "majorVersion",
+              "System.Int32"
+            ],
+            [
+              "minorVersion",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AdvertisesApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "majorVersion",
+              "System.Int32"
+            ],
+            [
+              "minorVersion",
+              "System.Int32"
+            ],
+            [
+              "status",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AdvertisesApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "year",
+              "System.Int32"
+            ],
+            [
+              "month",
+              "System.Int32"
+            ],
+            [
+              "day",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AdvertisesApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "year",
+              "System.Int32"
+            ],
+            [
+              "month",
+              "System.Int32"
+            ],
+            [
+              "day",
+              "System.Int32"
+            ],
+            [
+              "status",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AdvertisesApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "groupVersion",
+              "System.DateTime"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AdvertisesApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "groupVersion",
+              "System.DateTime"
+            ],
+            [
+              "status",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AdvertisesApiVersions",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "apiVersions",
+              "System.Collections.Generic.IEnumerable`1<Microsoft.AspNetCore.Mvc.ApiVersion>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AdvertisesDeprecatedApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "majorVersion",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AdvertisesDeprecatedApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "majorVersion",
+              "System.Int32"
+            ],
+            [
+              "status",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AdvertisesDeprecatedApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "majorVersion",
+              "System.Int32"
+            ],
+            [
+              "minorVersion",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AdvertisesDeprecatedApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "majorVersion",
+              "System.Int32"
+            ],
+            [
+              "minorVersion",
+              "System.Int32"
+            ],
+            [
+              "status",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AdvertisesDeprecatedApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "year",
+              "System.Int32"
+            ],
+            [
+              "month",
+              "System.Int32"
+            ],
+            [
+              "day",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AdvertisesDeprecatedApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "year",
+              "System.Int32"
+            ],
+            [
+              "month",
+              "System.Int32"
+            ],
+            [
+              "day",
+              "System.Int32"
+            ],
+            [
+              "status",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AdvertisesDeprecatedApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "groupVersion",
+              "System.DateTime"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AdvertisesDeprecatedApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "groupVersion",
+              "System.DateTime"
+            ],
+            [
+              "status",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AdvertisesDeprecatedApiVersions",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "apiVersions",
+              "System.Collections.Generic.IEnumerable`1<Microsoft.AspNetCore.Mvc.ApiVersion>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "MapToApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "majorVersion",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "MapToApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "majorVersion",
+              "System.Int32"
+            ],
+            [
+              "status",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "MapToApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "majorVersion",
+              "System.Int32"
+            ],
+            [
+              "minorVersion",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "MapToApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "majorVersion",
+              "System.Int32"
+            ],
+            [
+              "minorVersion",
+              "System.Int32"
+            ],
+            [
+              "status",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "MapToApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "year",
+              "System.Int32"
+            ],
+            [
+              "month",
+              "System.Int32"
+            ],
+            [
+              "day",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "MapToApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "year",
+              "System.Int32"
+            ],
+            [
+              "month",
+              "System.Int32"
+            ],
+            [
+              "day",
+              "System.Int32"
+            ],
+            [
+              "status",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "MapToApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "groupVersion",
+              "System.DateTime"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "MapToApiVersion",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "groupVersion",
+              "System.DateTime"
+            ],
+            [
+              "status",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "MapToApiVersions",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "builder",
+              "T"
+            ],
+            [
+              "apiVersions",
+              "System.Collections.Generic.IEnumerable`1<Microsoft.AspNetCore.Mvc.ApiVersion>"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IApiVersionConvention`1",
+      "methods": [
+        {
+          "name": "ApplyTo",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "item",
+              "T"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IControllerNameConvention",
+      "methods": [
+        {
+          "name": "NormalizeName",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "controllerName",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GroupName",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "controllerName",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IDeclareApiVersionConventionBuilder",
+      "methods": [
+        {
+          "name": "IsApiVersionNeutral",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "HasApiVersion",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "apiVersion",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "HasDeprecatedApiVersion",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "apiVersion",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AdvertisesApiVersion",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "apiVersion",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AdvertisesDeprecatedApiVersion",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "apiVersion",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Versioning.Conventions.IMapToApiVersionConventionBuilder",
+      "methods": [
+        {
+          "name": "MapToApiVersion",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "apiVersion",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.AspNetCore.Mvc.Routing": [
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Routing.ApiVersionLinkGenerator",
+      "methods": [
+        {
+          "name": "GetPathByAddress",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "httpContext",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "address",
+              "TAddress"
+            ],
+            [
+              "values",
+              "Microsoft.AspNetCore.Routing.RouteValueDictionary"
+            ],
+            [
+              "ambientValues",
+              "Microsoft.AspNetCore.Routing.RouteValueDictionary"
+            ],
+            [
+              "pathBase",
+              "System.Nullable`1<Microsoft.AspNetCore.Http.PathString>"
+            ],
+            [
+              "fragment",
+              "Microsoft.AspNetCore.Http.FragmentString"
+            ],
+            [
+              "options",
+              "Microsoft.AspNetCore.Routing.LinkOptions"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetPathByAddress",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "address",
+              "TAddress"
+            ],
+            [
+              "values",
+              "Microsoft.AspNetCore.Routing.RouteValueDictionary"
+            ],
+            [
+              "pathBase",
+              "Microsoft.AspNetCore.Http.PathString"
+            ],
+            [
+              "fragment",
+              "Microsoft.AspNetCore.Http.FragmentString"
+            ],
+            [
+              "options",
+              "Microsoft.AspNetCore.Routing.LinkOptions"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetUriByAddress",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "httpContext",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "address",
+              "TAddress"
+            ],
+            [
+              "values",
+              "Microsoft.AspNetCore.Routing.RouteValueDictionary"
+            ],
+            [
+              "ambientValues",
+              "Microsoft.AspNetCore.Routing.RouteValueDictionary"
+            ],
+            [
+              "scheme",
+              "System.String"
+            ],
+            [
+              "host",
+              "System.Nullable`1<Microsoft.AspNetCore.Http.HostString>"
+            ],
+            [
+              "pathBase",
+              "System.Nullable`1<Microsoft.AspNetCore.Http.PathString>"
+            ],
+            [
+              "fragment",
+              "Microsoft.AspNetCore.Http.FragmentString"
+            ],
+            [
+              "options",
+              "Microsoft.AspNetCore.Routing.LinkOptions"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetUriByAddress",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "address",
+              "TAddress"
+            ],
+            [
+              "values",
+              "Microsoft.AspNetCore.Routing.RouteValueDictionary"
+            ],
+            [
+              "scheme",
+              "System.String"
+            ],
+            [
+              "host",
+              "Microsoft.AspNetCore.Http.HostString"
+            ],
+            [
+              "pathBase",
+              "Microsoft.AspNetCore.Http.PathString"
+            ],
+            [
+              "fragment",
+              "Microsoft.AspNetCore.Http.FragmentString"
+            ],
+            [
+              "options",
+              "Microsoft.AspNetCore.Routing.LinkOptions"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Routing.ApiVersionLinkGenerator`1",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Routing.ApiVersionMatcherPolicy",
+      "methods": [
+        {
+          "name": "get_Order",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "AppliesToEndpoints",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "endpoints",
+              "System.Collections.Generic.IReadOnlyList`1<Microsoft.AspNetCore.Http.Endpoint>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ApplyAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "httpContext",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "candidates",
+              "Microsoft.AspNetCore.Routing.Matching.CandidateSet"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Routing.ApiVersionRouteConstraint",
+      "methods": [
+        {
+          "name": "Match",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "httpContext",
+              "Microsoft.AspNetCore.Http.HttpContext"
+            ],
+            [
+              "route",
+              "Microsoft.AspNetCore.Routing.IRouter"
+            ],
+            [
+              "routeKey",
+              "System.String"
+            ],
+            [
+              "values",
+              "Microsoft.AspNetCore.Routing.RouteValueDictionary"
+            ],
+            [
+              "routeDirection",
+              "Microsoft.AspNetCore.Routing.RouteDirection"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Routing.ApiVersionUrlHelper",
+      "methods": [
+        {
+          "name": "get_ActionContext",
+          "returnType": "Microsoft.AspNetCore.Mvc.ActionContext",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Action",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "actionContext",
+              "Microsoft.AspNetCore.Mvc.Routing.UrlActionContext"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Content",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "contentPath",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "IsLocalUrl",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "url",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Link",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "routeName",
+              "System.String"
+            ],
+            [
+              "values",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "RouteUrl",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "routeContext",
+              "Microsoft.AspNetCore.Mvc.Routing.UrlRouteContext"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Routing.ApiVersionUrlHelperFactory",
+      "methods": [
+        {
+          "name": "GetUrlHelper",
+          "returnType": "Microsoft.AspNetCore.Mvc.IUrlHelper",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Mvc.ActionContext"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Routing.CatchAllRouteHandler",
+      "methods": [
+        {
+          "name": "GetVirtualPath",
+          "returnType": "Microsoft.AspNetCore.Routing.VirtualPathData",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Routing.VirtualPathContext"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "RouteAsync",
+          "returnType": "System.Threading.Tasks.Task",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Routing.RouteContext"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Routing.ClientErrorBuilder",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Routing.DefaultApiVersionRoutePolicy",
+      "methods": [
+        {
+          "name": "Evaluate",
+          "returnType": "Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptor",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Routing.RouteContext"
+            ],
+            [
+              "selectionResult",
+              "Microsoft.AspNetCore.Mvc.Versioning.ActionSelectionResult"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Routing.IApiVersionRoutePolicy",
+      "methods": [
+        {
+          "name": "Evaluate",
+          "returnType": "Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptor",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.AspNetCore.Routing.RouteContext"
+            ],
+            [
+              "selectionResult",
+              "Microsoft.AspNetCore.Mvc.Versioning.ActionSelectionResult"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Routing.RouteContextExtensions",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "Microsoft.AspNetCore.Mvc.ApplicationModels": [
+    {
+      "name": "Microsoft.AspNetCore.Mvc.ApplicationModels.ApiBehaviorSpecification",
+      "methods": [
+        {
+          "name": "IsSatisfiedBy",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "controller",
+              "Microsoft.AspNetCore.Mvc.ApplicationModels.ControllerModel"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.ApplicationModels.DefaultApiControllerFilter",
+      "methods": [
+        {
+          "name": "Apply",
+          "returnType": "System.Collections.Generic.IList`1<Microsoft.AspNetCore.Mvc.ApplicationModels.ControllerModel>",
+          "parameterTypes": [
+            [
+              "controllers",
+              "System.Collections.Generic.IList`1<Microsoft.AspNetCore.Mvc.ApplicationModels.ControllerModel>"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.ApplicationModels.IApiControllerFilter",
+      "methods": [
+        {
+          "name": "Apply",
+          "returnType": "System.Collections.Generic.IList`1<Microsoft.AspNetCore.Mvc.ApplicationModels.ControllerModel>",
+          "parameterTypes": [
+            [
+              "controllers",
+              "System.Collections.Generic.IList`1<Microsoft.AspNetCore.Mvc.ApplicationModels.ControllerModel>"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.ApplicationModels.IApiControllerSpecification",
+      "methods": [
+        {
+          "name": "IsSatisfiedBy",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "controller",
+              "Microsoft.AspNetCore.Mvc.ApplicationModels.ControllerModel"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.AspNetCore.Mvc.ApplicationModels.ModelExtensions",
+      "methods": [
+        {
+          "name": "GetProperty",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "controller",
+              "Microsoft.AspNetCore.Mvc.ApplicationModels.ControllerModel"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "SetProperty",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "controller",
+              "Microsoft.AspNetCore.Mvc.ApplicationModels.ControllerModel"
+            ],
+            [
+              "value",
+              "T"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetProperty",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "action",
+              "Microsoft.AspNetCore.Mvc.ApplicationModels.ActionModel"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "SetProperty",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "action",
+              "Microsoft.AspNetCore.Mvc.ApplicationModels.ActionModel"
+            ],
+            [
+              "value",
+              "T"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.AspNetCore.Mvc.Abstractions": [
+    {
+      "name": "Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptorExtensions",
+      "methods": [
+        {
+          "name": "GetApiVersionModel",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionModel",
+          "parameterTypes": [
+            [
+              "action",
+              "Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptor"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetApiVersionModel",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionModel",
+          "parameterTypes": [
+            [
+              "action",
+              "Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptor"
+            ],
+            [
+              "mapping",
+              "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionMapping"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "MappingTo",
+          "returnType": "Microsoft.AspNetCore.Mvc.Versioning.ApiVersionMapping",
+          "parameterTypes": [
+            [
+              "action",
+              "Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptor"
+            ],
+            [
+              "apiVersion",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "IsMappedTo",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "action",
+              "Microsoft.AspNetCore.Mvc.Abstractions.ActionDescriptor"
+            ],
+            [
+              "apiVersion",
+              "Microsoft.AspNetCore.Mvc.ApiVersion"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

@@ -1,0 +1,3429 @@
+{
+  "Microsoft.CodeAnalysis": [
+    {
+      "name": "Microsoft.CodeAnalysis.EmbeddedAttribute",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System.Runtime.CompilerServices": [
+    {
+      "name": "System.Runtime.CompilerServices.IsReadOnlyAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.NullableAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.NullableContextAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.NullablePublicOnlyAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.RefSafetyRulesAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.CallerArgumentExpressionAttribute",
+      "methods": [
+        {
+          "name": "get_ParameterName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "FxResources.Microsoft.Extensions.DependencyInjection.Abstractions": [
+    {
+      "name": "FxResources.Microsoft.Extensions.DependencyInjection.Abstractions.SR",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System": [
+    {
+      "name": "System.ThrowHelper",
+      "methods": [
+        {
+          "name": "IfNullOrWhitespace",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "argument",
+              "System.String"
+            ],
+            [
+              "paramName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.SR",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System.Diagnostics.CodeAnalysis": [
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute",
+      "methods": [
+        {
+          "name": "get_MemberTypes",
+          "returnType": "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute",
+      "methods": [
+        {
+          "name": "get_Category",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_CheckId",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Scope",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Scope",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Target",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Target",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_MessageId",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_MessageId",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Justification",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Justification",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute",
+      "methods": [
+        {
+          "name": "get_Message",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Url",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Url",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.AllowNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DisallowNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MaybeNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute",
+      "methods": [
+        {
+          "name": "get_ParameterName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute",
+      "methods": [
+        {
+          "name": "get_ParameterValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MemberNotNullAttribute",
+      "methods": [
+        {
+          "name": "get_Members",
+          "returnType": "System.String[]",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Members",
+          "returnType": "System.String[]",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "System.Runtime.InteropServices": [
+    {
+      "name": "System.Runtime.InteropServices.LibraryImportAttribute",
+      "methods": [
+        {
+          "name": "get_LibraryName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_EntryPoint",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_EntryPoint",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_StringMarshalling",
+          "returnType": "System.Runtime.InteropServices.StringMarshalling",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_StringMarshalling",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Runtime.InteropServices.StringMarshalling"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_StringMarshallingCustomType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_StringMarshallingCustomType",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Type"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_SetLastError",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_SetLastError",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.InteropServices.StringMarshalling",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.Internal": [
+    {
+      "name": "Microsoft.Extensions.Internal.ParameterDefaultValue",
+      "methods": [
+        {
+          "name": "TryGetDefaultValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "parameter",
+              "System.Reflection.ParameterInfo"
+            ],
+            [
+              "defaultValue",
+              "System.Object&"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "CheckHasDefaultValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "parameter",
+              "System.Reflection.ParameterInfo"
+            ],
+            [
+              "tryToGetDefaultValue",
+              "System.Boolean&"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.DependencyInjection": [
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ActivatorUtilities",
+      "methods": [
+        {
+          "name": "CreateInstance",
+          "returnType": "System.Object",
+          "parameterTypes": [
+            [
+              "provider",
+              "System.IServiceProvider"
+            ],
+            [
+              "instanceType",
+              "System.Type"
+            ],
+            [
+              "parameters",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "CreateFactory",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ObjectFactory",
+          "parameterTypes": [
+            [
+              "instanceType",
+              "System.Type"
+            ],
+            [
+              "argumentTypes",
+              "System.Type[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "CreateFactory",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ObjectFactory`1<T>",
+          "parameterTypes": [
+            [
+              "argumentTypes",
+              "System.Type[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "CreateInstance",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "provider",
+              "System.IServiceProvider"
+            ],
+            [
+              "parameters",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetServiceOrCreateInstance",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "provider",
+              "System.IServiceProvider"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetServiceOrCreateInstance",
+          "returnType": "System.Object",
+          "parameterTypes": [
+            [
+              "provider",
+              "System.IServiceProvider"
+            ],
+            [
+              "type",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ActivatorUtilitiesConstructorAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.AsyncServiceScope",
+      "methods": [
+        {
+          "name": "get_ServiceProvider",
+          "returnType": "System.IServiceProvider",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Dispose",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "DisposeAsync",
+          "returnType": "System.Threading.Tasks.ValueTask",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.FromKeyedServicesAttribute",
+      "methods": [
+        {
+          "name": "get_Key",
+          "returnType": "System.Object",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.IKeyedServiceProvider",
+      "methods": [
+        {
+          "name": "GetKeyedService",
+          "returnType": "System.Object",
+          "parameterTypes": [
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetRequiredKeyedService",
+          "returnType": "System.Object",
+          "parameterTypes": [
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.KeyedService",
+      "methods": [
+        {
+          "name": "get_AnyKey",
+          "returnType": "System.Object",
+          "parameterTypes": [],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.IServiceProviderFactory`1",
+      "methods": [
+        {
+          "name": "CreateBuilder",
+          "returnType": "TContainerBuilder",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateServiceProvider",
+          "returnType": "System.IServiceProvider",
+          "parameterTypes": [
+            [
+              "containerBuilder",
+              "TContainerBuilder"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.IServiceProviderIsKeyedService",
+      "methods": [
+        {
+          "name": "IsKeyedService",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.IServiceProviderIsService",
+      "methods": [
+        {
+          "name": "IsService",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "serviceType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.IServiceScope",
+      "methods": [
+        {
+          "name": "get_ServiceProvider",
+          "returnType": "System.IServiceProvider",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.IServiceScopeFactory",
+      "methods": [
+        {
+          "name": "CreateScope",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceScope",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ISupportRequiredService",
+      "methods": [
+        {
+          "name": "GetRequiredService",
+          "returnType": "System.Object",
+          "parameterTypes": [
+            [
+              "serviceType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ObjectFactory",
+      "methods": [
+        {
+          "name": "Invoke",
+          "returnType": "System.Object",
+          "parameterTypes": [
+            [
+              "serviceProvider",
+              "System.IServiceProvider"
+            ],
+            [
+              "arguments",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "BeginInvoke",
+          "returnType": "System.IAsyncResult",
+          "parameterTypes": [
+            [
+              "serviceProvider",
+              "System.IServiceProvider"
+            ],
+            [
+              "arguments",
+              "System.Object[]"
+            ],
+            [
+              "callback",
+              "System.AsyncCallback"
+            ],
+            [
+              "object",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "EndInvoke",
+          "returnType": "System.Object",
+          "parameterTypes": [
+            [
+              "result",
+              "System.IAsyncResult"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ObjectFactory`1",
+      "methods": [
+        {
+          "name": "Invoke",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "serviceProvider",
+              "System.IServiceProvider"
+            ],
+            [
+              "arguments",
+              "System.Object[]"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "BeginInvoke",
+          "returnType": "System.IAsyncResult",
+          "parameterTypes": [
+            [
+              "serviceProvider",
+              "System.IServiceProvider"
+            ],
+            [
+              "arguments",
+              "System.Object[]"
+            ],
+            [
+              "callback",
+              "System.AsyncCallback"
+            ],
+            [
+              "object",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "EndInvoke",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "result",
+              "System.IAsyncResult"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceCollection",
+      "methods": [
+        {
+          "name": "get_Count",
+          "returnType": "System.Int32",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_IsReadOnly",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Item",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "index",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "set_Item",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "index",
+              "System.Int32"
+            ],
+            [
+              "value",
+              "Microsoft.Extensions.DependencyInjection.ServiceDescriptor"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Clear",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Contains",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "item",
+              "Microsoft.Extensions.DependencyInjection.ServiceDescriptor"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CopyTo",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "array",
+              "Microsoft.Extensions.DependencyInjection.ServiceDescriptor[]"
+            ],
+            [
+              "arrayIndex",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Remove",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "item",
+              "Microsoft.Extensions.DependencyInjection.ServiceDescriptor"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetEnumerator",
+          "returnType": "System.Collections.Generic.IEnumerator`1<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "IndexOf",
+          "returnType": "System.Int32",
+          "parameterTypes": [
+            [
+              "item",
+              "Microsoft.Extensions.DependencyInjection.ServiceDescriptor"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Insert",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "index",
+              "System.Int32"
+            ],
+            [
+              "item",
+              "Microsoft.Extensions.DependencyInjection.ServiceDescriptor"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "RemoveAt",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "index",
+              "System.Int32"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "MakeReadOnly",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceCollectionServiceExtensions",
+      "methods": [
+        {
+          "name": "AddTransient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "implementationType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddTransient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`2<System.IServiceProvider,System.Object>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddTransient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddTransient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddTransient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddTransient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`2<System.IServiceProvider,TService>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddTransient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`2<System.IServiceProvider,TImplementation>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddScoped",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "implementationType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddScoped",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`2<System.IServiceProvider,System.Object>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddScoped",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddScoped",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddScoped",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddScoped",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`2<System.IServiceProvider,TService>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddScoped",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`2<System.IServiceProvider,TImplementation>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddSingleton",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "implementationType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddSingleton",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`2<System.IServiceProvider,System.Object>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddSingleton",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddSingleton",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddSingleton",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddSingleton",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`2<System.IServiceProvider,TService>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddSingleton",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`2<System.IServiceProvider,TImplementation>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddSingleton",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "implementationInstance",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddSingleton",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "implementationInstance",
+              "TService"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddKeyedTransient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddKeyedTransient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`3<System.IServiceProvider,System.Object,System.Object>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddKeyedTransient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddKeyedTransient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddKeyedTransient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddKeyedTransient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`3<System.IServiceProvider,System.Object,TService>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddKeyedTransient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`3<System.IServiceProvider,System.Object,TImplementation>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddKeyedScoped",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddKeyedScoped",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`3<System.IServiceProvider,System.Object,System.Object>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddKeyedScoped",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddKeyedScoped",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddKeyedScoped",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddKeyedScoped",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`3<System.IServiceProvider,System.Object,TService>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddKeyedScoped",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`3<System.IServiceProvider,System.Object,TImplementation>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddKeyedSingleton",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddKeyedSingleton",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`3<System.IServiceProvider,System.Object,System.Object>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddKeyedSingleton",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddKeyedSingleton",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddKeyedSingleton",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddKeyedSingleton",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`3<System.IServiceProvider,System.Object,TService>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddKeyedSingleton",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`3<System.IServiceProvider,System.Object,TImplementation>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddKeyedSingleton",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationInstance",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "AddKeyedSingleton",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationInstance",
+              "TService"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+      "methods": [
+        {
+          "name": "get_Lifetime",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceLifetime",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ServiceKey",
+          "returnType": "System.Object",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ServiceType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ImplementationType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_KeyedImplementationType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ImplementationInstance",
+          "returnType": "System.Object",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_KeyedImplementationInstance",
+          "returnType": "System.Object",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_ImplementationFactory",
+          "returnType": "System.Func`2<System.IServiceProvider,System.Object>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_KeyedImplementationFactory",
+          "returnType": "System.Func`3<System.IServiceProvider,System.Object,System.Object>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_IsKeyedService",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "ToString",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Transient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "KeyedTransient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Transient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "service",
+              "System.Type"
+            ],
+            [
+              "implementationType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "KeyedTransient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "service",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Transient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "implementationFactory",
+              "System.Func`2<System.IServiceProvider,TImplementation>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "KeyedTransient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`3<System.IServiceProvider,System.Object,TImplementation>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Transient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "implementationFactory",
+              "System.Func`2<System.IServiceProvider,TService>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "KeyedTransient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`3<System.IServiceProvider,System.Object,TService>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Transient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "service",
+              "System.Type"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`2<System.IServiceProvider,System.Object>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "KeyedTransient",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "service",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`3<System.IServiceProvider,System.Object,System.Object>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Scoped",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "KeyedScoped",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Scoped",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "service",
+              "System.Type"
+            ],
+            [
+              "implementationType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "KeyedScoped",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "service",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Scoped",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "implementationFactory",
+              "System.Func`2<System.IServiceProvider,TImplementation>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "KeyedScoped",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`3<System.IServiceProvider,System.Object,TImplementation>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Scoped",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "implementationFactory",
+              "System.Func`2<System.IServiceProvider,TService>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "KeyedScoped",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`3<System.IServiceProvider,System.Object,TService>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Scoped",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "service",
+              "System.Type"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`2<System.IServiceProvider,System.Object>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "KeyedScoped",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "service",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`3<System.IServiceProvider,System.Object,System.Object>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Singleton",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [],
+          "isStatic": true
+        },
+        {
+          "name": "KeyedSingleton",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Singleton",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "service",
+              "System.Type"
+            ],
+            [
+              "implementationType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "KeyedSingleton",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "service",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Singleton",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "implementationFactory",
+              "System.Func`2<System.IServiceProvider,TImplementation>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "KeyedSingleton",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`3<System.IServiceProvider,System.Object,TImplementation>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Singleton",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "implementationFactory",
+              "System.Func`2<System.IServiceProvider,TService>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "KeyedSingleton",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`3<System.IServiceProvider,System.Object,TService>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Singleton",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`2<System.IServiceProvider,System.Object>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "KeyedSingleton",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`3<System.IServiceProvider,System.Object,System.Object>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Singleton",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "implementationInstance",
+              "TService"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "KeyedSingleton",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationInstance",
+              "TService"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Singleton",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "implementationInstance",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "KeyedSingleton",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationInstance",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Describe",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "implementationType",
+              "System.Type"
+            ],
+            [
+              "lifetime",
+              "Microsoft.Extensions.DependencyInjection.ServiceLifetime"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "DescribeKeyed",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationType",
+              "System.Type"
+            ],
+            [
+              "lifetime",
+              "Microsoft.Extensions.DependencyInjection.ServiceLifetime"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Describe",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`2<System.IServiceProvider,System.Object>"
+            ],
+            [
+              "lifetime",
+              "Microsoft.Extensions.DependencyInjection.ServiceLifetime"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "DescribeKeyed",
+          "returnType": "Microsoft.Extensions.DependencyInjection.ServiceDescriptor",
+          "parameterTypes": [
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`3<System.IServiceProvider,System.Object,System.Object>"
+            ],
+            [
+              "lifetime",
+              "Microsoft.Extensions.DependencyInjection.ServiceLifetime"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceKeyAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceLifetime",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceProviderKeyedServiceExtensions",
+      "methods": [
+        {
+          "name": "GetKeyedService",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "provider",
+              "System.IServiceProvider"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetRequiredKeyedService",
+          "returnType": "System.Object",
+          "parameterTypes": [
+            [
+              "provider",
+              "System.IServiceProvider"
+            ],
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetRequiredKeyedService",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "provider",
+              "System.IServiceProvider"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetKeyedServices",
+          "returnType": "System.Collections.Generic.IEnumerable`1<T>",
+          "parameterTypes": [
+            [
+              "provider",
+              "System.IServiceProvider"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetKeyedServices",
+          "returnType": "System.Collections.Generic.IEnumerable`1<System.Object>",
+          "parameterTypes": [
+            [
+              "provider",
+              "System.IServiceProvider"
+            ],
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions",
+      "methods": [
+        {
+          "name": "GetService",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "provider",
+              "System.IServiceProvider"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetRequiredService",
+          "returnType": "System.Object",
+          "parameterTypes": [
+            [
+              "provider",
+              "System.IServiceProvider"
+            ],
+            [
+              "serviceType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetRequiredService",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "provider",
+              "System.IServiceProvider"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetServices",
+          "returnType": "System.Collections.Generic.IEnumerable`1<T>",
+          "parameterTypes": [
+            [
+              "provider",
+              "System.IServiceProvider"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "GetServices",
+          "returnType": "System.Collections.Generic.IEnumerable`1<System.Object>",
+          "parameterTypes": [
+            [
+              "provider",
+              "System.IServiceProvider"
+            ],
+            [
+              "serviceType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "CreateScope",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceScope",
+          "parameterTypes": [
+            [
+              "provider",
+              "System.IServiceProvider"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "CreateAsyncScope",
+          "returnType": "Microsoft.Extensions.DependencyInjection.AsyncServiceScope",
+          "parameterTypes": [
+            [
+              "provider",
+              "System.IServiceProvider"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "CreateAsyncScope",
+          "returnType": "Microsoft.Extensions.DependencyInjection.AsyncServiceScope",
+          "parameterTypes": [
+            [
+              "serviceScopeFactory",
+              "Microsoft.Extensions.DependencyInjection.IServiceScopeFactory"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.DependencyInjection.Extensions": [
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.Extensions.ServiceCollectionDescriptorExtensions",
+      "methods": [
+        {
+          "name": "Add",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "descriptor",
+              "Microsoft.Extensions.DependencyInjection.ServiceDescriptor"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Add",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "descriptors",
+              "System.Collections.Generic.IEnumerable`1<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAdd",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "descriptor",
+              "Microsoft.Extensions.DependencyInjection.ServiceDescriptor"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAdd",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "descriptors",
+              "System.Collections.Generic.IEnumerable`1<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddTransient",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "service",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddTransient",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "service",
+              "System.Type"
+            ],
+            [
+              "implementationType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddTransient",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "service",
+              "System.Type"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`2<System.IServiceProvider,System.Object>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddTransient",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddTransient",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddTransient",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`2<System.IServiceProvider,TService>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddScoped",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "service",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddScoped",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "service",
+              "System.Type"
+            ],
+            [
+              "implementationType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddScoped",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "service",
+              "System.Type"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`2<System.IServiceProvider,System.Object>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddScoped",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddScoped",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddScoped",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`2<System.IServiceProvider,TService>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddSingleton",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "service",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddSingleton",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "service",
+              "System.Type"
+            ],
+            [
+              "implementationType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddSingleton",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "service",
+              "System.Type"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`2<System.IServiceProvider,System.Object>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddSingleton",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddSingleton",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddSingleton",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "instance",
+              "TService"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddSingleton",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`2<System.IServiceProvider,TService>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddEnumerable",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "descriptor",
+              "Microsoft.Extensions.DependencyInjection.ServiceDescriptor"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddEnumerable",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "descriptors",
+              "System.Collections.Generic.IEnumerable`1<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Replace",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "descriptor",
+              "Microsoft.Extensions.DependencyInjection.ServiceDescriptor"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "RemoveAll",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "RemoveAll",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddKeyedTransient",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "service",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddKeyedTransient",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "service",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddKeyedTransient",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "service",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`3<System.IServiceProvider,System.Object,System.Object>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddKeyedTransient",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddKeyedTransient",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddKeyedTransient",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`3<System.IServiceProvider,System.Object,TService>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddKeyedScoped",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "service",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddKeyedScoped",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "service",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddKeyedScoped",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "service",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`3<System.IServiceProvider,System.Object,System.Object>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddKeyedScoped",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddKeyedScoped",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddKeyedScoped",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`3<System.IServiceProvider,System.Object,TService>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddKeyedSingleton",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "service",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddKeyedSingleton",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "service",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationType",
+              "System.Type"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddKeyedSingleton",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "service",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`3<System.IServiceProvider,System.Object,System.Object>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddKeyedSingleton",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddKeyedSingleton",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddKeyedSingleton",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "instance",
+              "TService"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "TryAddKeyedSingleton",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ],
+            [
+              "implementationFactory",
+              "System.Func`3<System.IServiceProvider,System.Object,TService>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "RemoveAllKeyed",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "RemoveAllKeyed",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "collection",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "serviceType",
+              "System.Type"
+            ],
+            [
+              "serviceKey",
+              "System.Object"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ]
+}

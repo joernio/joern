@@ -1,0 +1,592 @@
+{
+  "Microsoft.CodeAnalysis": [
+    {
+      "name": "Microsoft.CodeAnalysis.EmbeddedAttribute",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System.Runtime.CompilerServices": [
+    {
+      "name": "System.Runtime.CompilerServices.NullableAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.NullableContextAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.NullablePublicOnlyAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.RefSafetyRulesAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.CompilerServices.CallerArgumentExpressionAttribute",
+      "methods": [
+        {
+          "name": "get_ParameterName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "System": [
+    {
+      "name": "System.ThrowHelper",
+      "methods": [
+        {
+          "name": "IfNullOrWhitespace",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "argument",
+              "System.String"
+            ],
+            [
+              "paramName",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "System.Diagnostics.CodeAnalysis": [
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMembersAttribute",
+      "methods": [
+        {
+          "name": "get_MemberTypes",
+          "returnType": "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DynamicallyAccessedMemberTypes",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute",
+      "methods": [
+        {
+          "name": "get_Message",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Url",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Url",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessageAttribute",
+      "methods": [
+        {
+          "name": "get_Category",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_CheckId",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Scope",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Scope",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Target",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Target",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_MessageId",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_MessageId",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Justification",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Justification",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.RequiresDynamicCodeAttribute",
+      "methods": [
+        {
+          "name": "get_Message",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Url",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Url",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.AllowNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DisallowNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MaybeNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MaybeNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute",
+      "methods": [
+        {
+          "name": "get_ParameterName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DoesNotReturnAttribute",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.DoesNotReturnIfAttribute",
+      "methods": [
+        {
+          "name": "get_ParameterValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MemberNotNullAttribute",
+      "methods": [
+        {
+          "name": "get_Members",
+          "returnType": "System.String[]",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Diagnostics.CodeAnalysis.MemberNotNullWhenAttribute",
+      "methods": [
+        {
+          "name": "get_ReturnValue",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_Members",
+          "returnType": "System.String[]",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "System.Runtime.InteropServices": [
+    {
+      "name": "System.Runtime.InteropServices.LibraryImportAttribute",
+      "methods": [
+        {
+          "name": "get_LibraryName",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_EntryPoint",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_EntryPoint",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_StringMarshalling",
+          "returnType": "System.Runtime.InteropServices.StringMarshalling",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_StringMarshalling",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Runtime.InteropServices.StringMarshalling"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_StringMarshallingCustomType",
+          "returnType": "System.Type",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_StringMarshallingCustomType",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Type"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_SetLastError",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_SetLastError",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "System.Runtime.InteropServices.StringMarshalling",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.DependencyInjection": [
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.OptionsBuilderConfigurationExtensions",
+      "methods": [
+        {
+          "name": "Bind",
+          "returnType": "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>",
+          "parameterTypes": [
+            [
+              "optionsBuilder",
+              "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>"
+            ],
+            [
+              "config",
+              "Microsoft.Extensions.Configuration.IConfiguration"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Bind",
+          "returnType": "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>",
+          "parameterTypes": [
+            [
+              "optionsBuilder",
+              "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>"
+            ],
+            [
+              "config",
+              "Microsoft.Extensions.Configuration.IConfiguration"
+            ],
+            [
+              "configureBinder",
+              "System.Action`1<Microsoft.Extensions.Configuration.BinderOptions>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "BindConfiguration",
+          "returnType": "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>",
+          "parameterTypes": [
+            [
+              "optionsBuilder",
+              "Microsoft.Extensions.Options.OptionsBuilder`1<TOptions>"
+            ],
+            [
+              "configSectionPath",
+              "System.String"
+            ],
+            [
+              "configureBinder",
+              "System.Action`1<Microsoft.Extensions.Configuration.BinderOptions>"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.DependencyInjection.OptionsConfigurationServiceCollectionExtensions",
+      "methods": [
+        {
+          "name": "Configure",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "config",
+              "Microsoft.Extensions.Configuration.IConfiguration"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Configure",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "config",
+              "Microsoft.Extensions.Configuration.IConfiguration"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Configure",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "config",
+              "Microsoft.Extensions.Configuration.IConfiguration"
+            ],
+            [
+              "configureBinder",
+              "System.Action`1<Microsoft.Extensions.Configuration.BinderOptions>"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "Configure",
+          "returnType": "Microsoft.Extensions.DependencyInjection.IServiceCollection",
+          "parameterTypes": [
+            [
+              "services",
+              "Microsoft.Extensions.DependencyInjection.IServiceCollection"
+            ],
+            [
+              "name",
+              "System.String"
+            ],
+            [
+              "config",
+              "Microsoft.Extensions.Configuration.IConfiguration"
+            ],
+            [
+              "configureBinder",
+              "System.Action`1<Microsoft.Extensions.Configuration.BinderOptions>"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.Extensions.Options": [
+    {
+      "name": "Microsoft.Extensions.Options.ConfigurationChangeTokenSource`1",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "GetChangeToken",
+          "returnType": "Microsoft.Extensions.Primitives.IChangeToken",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.ConfigureFromConfigurationOptions`1",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.Extensions.Options.NamedConfigureFromConfigurationOptions`1",
+      "methods": [],
+      "fields": []
+    }
+  ]
+}

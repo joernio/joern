@@ -1,0 +1,1992 @@
+{
+  "Microsoft.CodeAnalysis": [
+    {
+      "name": "Microsoft.CodeAnalysis.EmbeddedAttribute",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "System.Runtime.CompilerServices": [
+    {
+      "name": "System.Runtime.CompilerServices.RefSafetyRulesAttribute",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "": [
+    {
+      "name": "IDiagnosticExtensions",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "Microsoft.OpenApi.Readers": [
+    {
+      "name": "Microsoft.OpenApi.Readers.OpenApiDiagnostic",
+      "methods": [
+        {
+          "name": "get_Errors",
+          "returnType": "System.Collections.Generic.IList`1<Microsoft.OpenApi.Models.OpenApiError>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Errors",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Collections.Generic.IList`1<Microsoft.OpenApi.Models.OpenApiError>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Warnings",
+          "returnType": "System.Collections.Generic.IList`1<Microsoft.OpenApi.Models.OpenApiError>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Warnings",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Collections.Generic.IList`1<Microsoft.OpenApi.Models.OpenApiError>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_SpecificationVersion",
+          "returnType": "Microsoft.OpenApi.OpenApiSpecVersion",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_SpecificationVersion",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.OpenApi.OpenApiSpecVersion"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AppendDiagnostic",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "diagnosticToAdd",
+              "Microsoft.OpenApi.Readers.OpenApiDiagnostic"
+            ],
+            [
+              "fileNameToAdd",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.ReferenceResolutionSetting",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.OpenApiReaderSettings",
+      "methods": [
+        {
+          "name": "get_ReferenceResolution",
+          "returnType": "Microsoft.OpenApi.Readers.ReferenceResolutionSetting",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ReferenceResolution",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.OpenApi.Readers.ReferenceResolutionSetting"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_LoadExternalRefs",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_LoadExternalRefs",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_ExtensionParsers",
+          "returnType": "System.Collections.Generic.Dictionary`2<System.String,System.Func`3<Microsoft.OpenApi.Any.IOpenApiAny,Microsoft.OpenApi.OpenApiSpecVersion,Microsoft.OpenApi.Interfaces.IOpenApiExtension>>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_ExtensionParsers",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Collections.Generic.Dictionary`2<System.String,System.Func`3<Microsoft.OpenApi.Any.IOpenApiAny,Microsoft.OpenApi.OpenApiSpecVersion,Microsoft.OpenApi.Interfaces.IOpenApiExtension>>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_RuleSet",
+          "returnType": "Microsoft.OpenApi.Validations.ValidationRuleSet",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_RuleSet",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.OpenApi.Validations.ValidationRuleSet"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_BaseUrl",
+          "returnType": "System.Uri",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_BaseUrl",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Uri"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_DefaultContentType",
+          "returnType": "System.Collections.Generic.List`1<System.String>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_DefaultContentType",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Collections.Generic.List`1<System.String>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_CustomExternalLoader",
+          "returnType": "Microsoft.OpenApi.Readers.Interface.IStreamLoader",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_CustomExternalLoader",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.OpenApi.Readers.Interface.IStreamLoader"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_LeaveStreamOpen",
+          "returnType": "System.Boolean",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_LeaveStreamOpen",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "AddMicrosoftExtensionParsers",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.OpenApiStreamReader",
+      "methods": [
+        {
+          "name": "Read",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiDocument",
+          "parameterTypes": [
+            [
+              "input",
+              "System.IO.Stream"
+            ],
+            [
+              "diagnostic",
+              "Microsoft.OpenApi.Readers.OpenApiDiagnostic&"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ReadAsync",
+          "returnType": "System.Threading.Tasks.Task`1<Microsoft.OpenApi.Readers.ReadResult>",
+          "parameterTypes": [
+            [
+              "input",
+              "System.IO.Stream"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ReadFragment",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "input",
+              "System.IO.Stream"
+            ],
+            [
+              "version",
+              "Microsoft.OpenApi.OpenApiSpecVersion"
+            ],
+            [
+              "diagnostic",
+              "Microsoft.OpenApi.Readers.OpenApiDiagnostic&"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.OpenApiStringReader",
+      "methods": [
+        {
+          "name": "Read",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiDocument",
+          "parameterTypes": [
+            [
+              "input",
+              "System.String"
+            ],
+            [
+              "diagnostic",
+              "Microsoft.OpenApi.Readers.OpenApiDiagnostic&"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ReadFragment",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "input",
+              "System.String"
+            ],
+            [
+              "version",
+              "Microsoft.OpenApi.OpenApiSpecVersion"
+            ],
+            [
+              "diagnostic",
+              "Microsoft.OpenApi.Readers.OpenApiDiagnostic&"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.OpenApiTextReaderReader",
+      "methods": [
+        {
+          "name": "Read",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiDocument",
+          "parameterTypes": [
+            [
+              "input",
+              "System.IO.TextReader"
+            ],
+            [
+              "diagnostic",
+              "Microsoft.OpenApi.Readers.OpenApiDiagnostic&"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ReadAsync",
+          "returnType": "System.Threading.Tasks.Task`1<Microsoft.OpenApi.Readers.ReadResult>",
+          "parameterTypes": [
+            [
+              "input",
+              "System.IO.TextReader"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ReadFragment",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "input",
+              "System.IO.TextReader"
+            ],
+            [
+              "version",
+              "Microsoft.OpenApi.OpenApiSpecVersion"
+            ],
+            [
+              "diagnostic",
+              "Microsoft.OpenApi.Readers.OpenApiDiagnostic&"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.OpenApiYamlDocumentReader",
+      "methods": [
+        {
+          "name": "Read",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiDocument",
+          "parameterTypes": [
+            [
+              "input",
+              "SharpYaml.Serialization.YamlDocument"
+            ],
+            [
+              "diagnostic",
+              "Microsoft.OpenApi.Readers.OpenApiDiagnostic&"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ReadAsync",
+          "returnType": "System.Threading.Tasks.Task`1<Microsoft.OpenApi.Readers.ReadResult>",
+          "parameterTypes": [
+            [
+              "input",
+              "SharpYaml.Serialization.YamlDocument"
+            ],
+            [
+              "cancellationToken",
+              "System.Threading.CancellationToken"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ReadFragment",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "input",
+              "SharpYaml.Serialization.YamlDocument"
+            ],
+            [
+              "version",
+              "Microsoft.OpenApi.OpenApiSpecVersion"
+            ],
+            [
+              "diagnostic",
+              "Microsoft.OpenApi.Readers.OpenApiDiagnostic&"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.ParsingContext",
+      "methods": [
+        {
+          "name": "get_Diagnostic",
+          "returnType": "Microsoft.OpenApi.Readers.OpenApiDiagnostic",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "EndObject",
+          "returnType": "System.Void",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "GetLocation",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "GetFromTempStorage",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "key",
+              "System.String"
+            ],
+            [
+              "scope",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "SetTempStorage",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "key",
+              "System.String"
+            ],
+            [
+              "value",
+              "System.Object"
+            ],
+            [
+              "scope",
+              "System.Object"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "StartObject",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "objectName",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "PushLoop",
+          "returnType": "System.Boolean",
+          "parameterTypes": [
+            [
+              "loopId",
+              "System.String"
+            ],
+            [
+              "key",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "PopLoop",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "loopid",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.ReadResult",
+      "methods": [
+        {
+          "name": "set_OpenApiDocument",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.OpenApi.Models.OpenApiDocument"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_OpenApiDocument",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiDocument",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_OpenApiDiagnostic",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.OpenApi.Readers.OpenApiDiagnostic"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_OpenApiDiagnostic",
+          "returnType": "Microsoft.OpenApi.Readers.OpenApiDiagnostic",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.YamlHelper",
+      "methods": [
+        {
+          "name": "GetScalarValue",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "node",
+              "SharpYaml.Serialization.YamlNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "ParseYamlString",
+          "returnType": "SharpYaml.Serialization.YamlNode",
+          "parameterTypes": [
+            [
+              "yamlString",
+              "System.String"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.OpenApi.Readers.V3": [
+    {
+      "name": "Microsoft.OpenApi.Readers.V3.OpenApiV3Deserializer",
+      "methods": [
+        {
+          "name": "LoadCallback",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiCallback",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadComponents",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiComponents",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadContact",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiContact",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadDiscriminator",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiDiscriminator",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadOpenApi",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiDocument",
+          "parameterTypes": [
+            [
+              "rootNode",
+              "Microsoft.OpenApi.Readers.ParseNodes.RootNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadEncoding",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiEncoding",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadExample",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiExample",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadExternalDocs",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiExternalDocs",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadHeader",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiHeader",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadInfo",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiInfo",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadLink",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiLink",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadMediaType",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiMediaType",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadOAuthFlow",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiOAuthFlow",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadOAuthFlows",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiOAuthFlows",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadParameter",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiParameter",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadPathItem",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiPathItem",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadPaths",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiPaths",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadRequestBody",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiRequestBody",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadResponse",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiResponse",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadResponses",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiResponses",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadSchema",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiSchema",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadSecurityRequirement",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiSecurityRequirement",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadSecurityScheme",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiSecurityScheme",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadServer",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiServer",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadServerVariable",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiServerVariable",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadTag",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiTag",
+          "parameterTypes": [
+            [
+              "n",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadAny",
+          "returnType": "Microsoft.OpenApi.Any.IOpenApiAny",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadXml",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiXml",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.V3.OpenApiV3VersionService",
+      "methods": [
+        {
+          "name": "get_Diagnostic",
+          "returnType": "Microsoft.OpenApi.Readers.OpenApiDiagnostic",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "ConvertToOpenApiReference",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiReference",
+          "parameterTypes": [
+            [
+              "reference",
+              "System.String"
+            ],
+            [
+              "type",
+              "System.Nullable`1<Microsoft.OpenApi.Models.ReferenceType>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "LoadDocument",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiDocument",
+          "parameterTypes": [
+            [
+              "rootNode",
+              "Microsoft.OpenApi.Readers.ParseNodes.RootNode"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "LoadElement",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.OpenApi.Readers.V2": [
+    {
+      "name": "Microsoft.OpenApi.Readers.V2.OpenApiV2Deserializer",
+      "methods": [
+        {
+          "name": "LoadContact",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiContact",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadOpenApi",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiDocument",
+          "parameterTypes": [
+            [
+              "rootNode",
+              "Microsoft.OpenApi.Readers.ParseNodes.RootNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadExternalDocs",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiExternalDocs",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadHeader",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiHeader",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadInfo",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiInfo",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadLicense",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiLicense",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadResponses",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiResponses",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadParameter",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiParameter",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadParameter",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiParameter",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ],
+            [
+              "loadRequestBody",
+              "System.Boolean"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadPathItem",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiPathItem",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadPaths",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiPaths",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadResponse",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiResponse",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadSchema",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiSchema",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadSecurityRequirement",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiSecurityRequirement",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadSecurityScheme",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiSecurityScheme",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadTag",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiTag",
+          "parameterTypes": [
+            [
+              "n",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadAny",
+          "returnType": "Microsoft.OpenApi.Any.IOpenApiAny",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "LoadXml",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiXml",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.V2.RequestBodyReferenceFixer",
+      "methods": [
+        {
+          "name": "Visit",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "operation",
+              "Microsoft.OpenApi.Models.OpenApiOperation"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.V2.OpenApiV2VersionService",
+      "methods": [
+        {
+          "name": "get_Diagnostic",
+          "returnType": "Microsoft.OpenApi.Readers.OpenApiDiagnostic",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "ConvertToOpenApiReference",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiReference",
+          "parameterTypes": [
+            [
+              "reference",
+              "System.String"
+            ],
+            [
+              "type",
+              "System.Nullable`1<Microsoft.OpenApi.Models.ReferenceType>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "LoadDocument",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiDocument",
+          "parameterTypes": [
+            [
+              "rootNode",
+              "Microsoft.OpenApi.Readers.ParseNodes.RootNode"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "LoadElement",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.V2.TempStorageKeys",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "Microsoft.OpenApi.Readers.Services": [
+    {
+      "name": "Microsoft.OpenApi.Readers.Services.DefaultStreamLoader",
+      "methods": [
+        {
+          "name": "Load",
+          "returnType": "System.IO.Stream",
+          "parameterTypes": [
+            [
+              "uri",
+              "System.Uri"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "LoadAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.IO.Stream>",
+          "parameterTypes": [
+            [
+              "uri",
+              "System.Uri"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.Services.OpenApiRemoteReferenceCollector",
+      "methods": [
+        {
+          "name": "get_References",
+          "returnType": "System.Collections.Generic.IEnumerable`1<Microsoft.OpenApi.Models.OpenApiReference>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "Visit",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "referenceable",
+              "Microsoft.OpenApi.Interfaces.IOpenApiReferenceable"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.Services.OpenApiWorkspaceLoader",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "Microsoft.OpenApi.Readers.Properties": [
+    {
+      "name": "Microsoft.OpenApi.Readers.Properties.SRResource",
+      "methods": [],
+      "fields": []
+    }
+  ],
+  "Microsoft.OpenApi.Readers.ParseNodes": [
+    {
+      "name": "Microsoft.OpenApi.Readers.ParseNodes.AnyFieldMap`1",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.ParseNodes.AnyFieldMapParameter`1",
+      "methods": [
+        {
+          "name": "get_PropertyGetter",
+          "returnType": "System.Func`2<T,Microsoft.OpenApi.Any.IOpenApiAny>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_PropertySetter",
+          "returnType": "System.Action`2<T,Microsoft.OpenApi.Any.IOpenApiAny>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_SchemaGetter",
+          "returnType": "System.Func`2<T,Microsoft.OpenApi.Models.OpenApiSchema>",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.ParseNodes.AnyListFieldMap`1",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.ParseNodes.AnyListFieldMapParameter`1",
+      "methods": [
+        {
+          "name": "get_PropertyGetter",
+          "returnType": "System.Func`2<T,System.Collections.Generic.IList`1<Microsoft.OpenApi.Any.IOpenApiAny>>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_PropertySetter",
+          "returnType": "System.Action`2<T,System.Collections.Generic.IList`1<Microsoft.OpenApi.Any.IOpenApiAny>>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_SchemaGetter",
+          "returnType": "System.Func`2<T,Microsoft.OpenApi.Models.OpenApiSchema>",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.ParseNodes.AnyMapFieldMap`2",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.ParseNodes.AnyMapFieldMapParameter`2",
+      "methods": [
+        {
+          "name": "get_PropertyMapGetter",
+          "returnType": "System.Func`2<T,System.Collections.Generic.IDictionary`2<System.String,U>>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_PropertyGetter",
+          "returnType": "System.Func`2<U,Microsoft.OpenApi.Any.IOpenApiAny>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_PropertySetter",
+          "returnType": "System.Action`2<U,Microsoft.OpenApi.Any.IOpenApiAny>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "get_SchemaGetter",
+          "returnType": "System.Func`2<T,Microsoft.OpenApi.Models.OpenApiSchema>",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.ParseNodes.FixedFieldMap`1",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.ParseNodes.JsonPointerExtensions",
+      "methods": [
+        {
+          "name": "Find",
+          "returnType": "SharpYaml.Serialization.YamlNode",
+          "parameterTypes": [
+            [
+              "currentPointer",
+              "Microsoft.OpenApi.JsonPointer"
+            ],
+            [
+              "baseYamlNode",
+              "SharpYaml.Serialization.YamlNode"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.ParseNodes.ListNode",
+      "methods": [
+        {
+          "name": "CreateList",
+          "returnType": "System.Collections.Generic.List`1<T>",
+          "parameterTypes": [
+            [
+              "map",
+              "System.Func`2<Microsoft.OpenApi.Readers.ParseNodes.MapNode,T>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateListOfAny",
+          "returnType": "System.Collections.Generic.List`1<Microsoft.OpenApi.Any.IOpenApiAny>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "CreateSimpleList",
+          "returnType": "System.Collections.Generic.List`1<T>",
+          "parameterTypes": [
+            [
+              "map",
+              "System.Func`2<Microsoft.OpenApi.Readers.ParseNodes.ValueNode,T>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetEnumerator",
+          "returnType": "System.Collections.Generic.IEnumerator`1<Microsoft.OpenApi.Readers.ParseNodes.ParseNode>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAny",
+          "returnType": "Microsoft.OpenApi.Any.IOpenApiAny",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.ParseNodes.MapNode",
+      "methods": [
+        {
+          "name": "get_Item",
+          "returnType": "Microsoft.OpenApi.Readers.ParseNodes.PropertyNode",
+          "parameterTypes": [
+            [
+              "key",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateMap",
+          "returnType": "System.Collections.Generic.Dictionary`2<System.String,T>",
+          "parameterTypes": [
+            [
+              "map",
+              "System.Func`2<Microsoft.OpenApi.Readers.ParseNodes.MapNode,T>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateMapWithReference",
+          "returnType": "System.Collections.Generic.Dictionary`2<System.String,T>",
+          "parameterTypes": [
+            [
+              "referenceType",
+              "Microsoft.OpenApi.Models.ReferenceType"
+            ],
+            [
+              "map",
+              "System.Func`2<Microsoft.OpenApi.Readers.ParseNodes.MapNode,T>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateSimpleMap",
+          "returnType": "System.Collections.Generic.Dictionary`2<System.String,T>",
+          "parameterTypes": [
+            [
+              "map",
+              "System.Func`2<Microsoft.OpenApi.Readers.ParseNodes.ValueNode,T>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetEnumerator",
+          "returnType": "System.Collections.Generic.IEnumerator`1<Microsoft.OpenApi.Readers.ParseNodes.PropertyNode>",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "GetRaw",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "GetReferencedObject",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "referenceType",
+              "Microsoft.OpenApi.Models.ReferenceType"
+            ],
+            [
+              "referenceId",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetReferencePointer",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "GetScalarValue",
+          "returnType": "System.String",
+          "parameterTypes": [
+            [
+              "key",
+              "Microsoft.OpenApi.Readers.ParseNodes.ValueNode"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAny",
+          "returnType": "Microsoft.OpenApi.Any.IOpenApiAny",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.ParseNodes.OpenApiAnyConverter",
+      "methods": [
+        {
+          "name": "GetSpecificOpenApiAny",
+          "returnType": "Microsoft.OpenApi.Any.IOpenApiAny",
+          "parameterTypes": [
+            [
+              "openApiAny",
+              "Microsoft.OpenApi.Any.IOpenApiAny"
+            ],
+            [
+              "schema",
+              "Microsoft.OpenApi.Models.OpenApiSchema"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.ParseNodes.ParseNode",
+      "methods": [
+        {
+          "name": "get_Context",
+          "returnType": "Microsoft.OpenApi.Readers.ParsingContext",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "CheckMapNode",
+          "returnType": "Microsoft.OpenApi.Readers.ParseNodes.MapNode",
+          "parameterTypes": [
+            [
+              "nodeName",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Create",
+          "returnType": "Microsoft.OpenApi.Readers.ParseNodes.ParseNode",
+          "parameterTypes": [
+            [
+              "context",
+              "Microsoft.OpenApi.Readers.ParsingContext"
+            ],
+            [
+              "node",
+              "SharpYaml.Serialization.YamlNode"
+            ]
+          ],
+          "isStatic": true
+        },
+        {
+          "name": "CreateList",
+          "returnType": "System.Collections.Generic.List`1<T>",
+          "parameterTypes": [
+            [
+              "map",
+              "System.Func`2<Microsoft.OpenApi.Readers.ParseNodes.MapNode,T>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateMap",
+          "returnType": "System.Collections.Generic.Dictionary`2<System.String,T>",
+          "parameterTypes": [
+            [
+              "map",
+              "System.Func`2<Microsoft.OpenApi.Readers.ParseNodes.MapNode,T>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateMapWithReference",
+          "returnType": "System.Collections.Generic.Dictionary`2<System.String,T>",
+          "parameterTypes": [
+            [
+              "referenceType",
+              "Microsoft.OpenApi.Models.ReferenceType"
+            ],
+            [
+              "map",
+              "System.Func`2<Microsoft.OpenApi.Readers.ParseNodes.MapNode,T>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateSimpleList",
+          "returnType": "System.Collections.Generic.List`1<T>",
+          "parameterTypes": [
+            [
+              "map",
+              "System.Func`2<Microsoft.OpenApi.Readers.ParseNodes.ValueNode,T>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateSimpleMap",
+          "returnType": "System.Collections.Generic.Dictionary`2<System.String,T>",
+          "parameterTypes": [
+            [
+              "map",
+              "System.Func`2<Microsoft.OpenApi.Readers.ParseNodes.ValueNode,T>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAny",
+          "returnType": "Microsoft.OpenApi.Any.IOpenApiAny",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "GetRaw",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "GetScalarValue",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "CreateListOfAny",
+          "returnType": "System.Collections.Generic.List`1<Microsoft.OpenApi.Any.IOpenApiAny>",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.ParseNodes.ParserHelper",
+      "methods": [
+        {
+          "name": "ParseDecimalWithFallbackOnOverflow",
+          "returnType": "System.Decimal",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ],
+            [
+              "defaultValue",
+              "System.Decimal"
+            ]
+          ],
+          "isStatic": true
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.ParseNodes.PatternFieldMap`1",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.ParseNodes.PropertyNode",
+      "methods": [
+        {
+          "name": "get_Name",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Name",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "System.String"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "get_Value",
+          "returnType": "Microsoft.OpenApi.Readers.ParseNodes.ParseNode",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "set_Value",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "value",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "ParseField",
+          "returnType": "System.Void",
+          "parameterTypes": [
+            [
+              "parentInstance",
+              "T"
+            ],
+            [
+              "fixedFields",
+              "System.Collections.Generic.IDictionary`2<System.String,System.Action`2<T,Microsoft.OpenApi.Readers.ParseNodes.ParseNode>>"
+            ],
+            [
+              "patternFields",
+              "System.Collections.Generic.IDictionary`2<System.Func`2<System.String,System.Boolean>,System.Action`3<T,System.String,Microsoft.OpenApi.Readers.ParseNodes.ParseNode>>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAny",
+          "returnType": "Microsoft.OpenApi.Any.IOpenApiAny",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.ParseNodes.RootNode",
+      "methods": [
+        {
+          "name": "Find",
+          "returnType": "Microsoft.OpenApi.Readers.ParseNodes.ParseNode",
+          "parameterTypes": [
+            [
+              "referencePointer",
+              "Microsoft.OpenApi.JsonPointer"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "GetMap",
+          "returnType": "Microsoft.OpenApi.Readers.ParseNodes.MapNode",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.ParseNodes.ValueNode",
+      "methods": [
+        {
+          "name": "GetScalarValue",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        },
+        {
+          "name": "CreateAny",
+          "returnType": "Microsoft.OpenApi.Any.IOpenApiAny",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.OpenApi.Readers.Interface": [
+    {
+      "name": "Microsoft.OpenApi.Readers.Interface.IDiagnostic",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.Interface.IOpenApiReader`2",
+      "methods": [
+        {
+          "name": "Read",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiDocument",
+          "parameterTypes": [
+            [
+              "input",
+              "TInput"
+            ],
+            [
+              "diagnostic",
+              "TDiagnostic&"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.Interface.IOpenApiVersionService",
+      "methods": [
+        {
+          "name": "ConvertToOpenApiReference",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiReference",
+          "parameterTypes": [
+            [
+              "reference",
+              "System.String"
+            ],
+            [
+              "type",
+              "System.Nullable`1<Microsoft.OpenApi.Models.ReferenceType>"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "LoadElement",
+          "returnType": "T",
+          "parameterTypes": [
+            [
+              "node",
+              "Microsoft.OpenApi.Readers.ParseNodes.ParseNode"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "LoadDocument",
+          "returnType": "Microsoft.OpenApi.Models.OpenApiDocument",
+          "parameterTypes": [
+            [
+              "rootNode",
+              "Microsoft.OpenApi.Readers.ParseNodes.RootNode"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.Interface.IStreamLoader",
+      "methods": [
+        {
+          "name": "LoadAsync",
+          "returnType": "System.Threading.Tasks.Task`1<System.IO.Stream>",
+          "parameterTypes": [
+            [
+              "uri",
+              "System.Uri"
+            ]
+          ],
+          "isStatic": false
+        },
+        {
+          "name": "Load",
+          "returnType": "System.IO.Stream",
+          "parameterTypes": [
+            [
+              "uri",
+              "System.Uri"
+            ]
+          ],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ],
+  "Microsoft.OpenApi.Readers.Exceptions": [
+    {
+      "name": "Microsoft.OpenApi.Readers.Exceptions.OpenApiReaderException",
+      "methods": [],
+      "fields": []
+    },
+    {
+      "name": "Microsoft.OpenApi.Readers.Exceptions.OpenApiUnsupportedSpecVersionException",
+      "methods": [
+        {
+          "name": "get_SpecificationVersion",
+          "returnType": "System.String",
+          "parameterTypes": [],
+          "isStatic": false
+        }
+      ],
+      "fields": []
+    }
+  ]
+}
