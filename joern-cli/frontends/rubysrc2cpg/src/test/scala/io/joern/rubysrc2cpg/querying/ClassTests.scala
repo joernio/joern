@@ -21,7 +21,7 @@ class ClassTests extends RubyCode2CpgFixture {
     classC.lineNumber shouldBe Some(2)
     classC.baseType.l shouldBe List()
     classC.member.l shouldBe List()
-    classC.method.name.l shouldBe List("<init>")
+    classC.method.name.l shouldBe List("<init>", "<clinit>")
   }
 
   "`class C < D` is represented by a TYPE_DECL node inheriting from `D`" in {
@@ -37,7 +37,7 @@ class ClassTests extends RubyCode2CpgFixture {
     classC.fullName shouldBe "Test0.rb:<global>::program.C"
     classC.lineNumber shouldBe Some(2)
     classC.member.l shouldBe List()
-    classC.method.name.l shouldBe List("<init>")
+    classC.method.name.l shouldBe List("<init>", "<clinit>")
 
     val List(typeD) = classC.baseType.l
     typeD.name shouldBe "D"
@@ -415,6 +415,7 @@ class ClassTests extends RubyCode2CpgFixture {
         |""".stripMargin)
 
     "create respective member nodes" in {
+      cpg.typeDecl.nameExact("Foo").dotAst.l.foreach(println)
       inside(cpg.typeDecl.name("Foo").l) {
         case fooType :: Nil =>
           inside(fooType.member.l) {
@@ -435,8 +436,8 @@ class ClassTests extends RubyCode2CpgFixture {
       inside(cpg.typeDecl.name("Foo").l) {
         case fooType :: Nil =>
           inside(fooType.method.name(Defines.ConstructorMethodName).l) {
-            case clinitMethod :: Nil =>
-              inside(clinitMethod.block.astChildren.isCall.name(Operators.assignment).l) {
+            case initMethod :: Nil =>
+              inside(initMethod.block.astChildren.isCall.name(Operators.assignment).l) {
                 case aAssignment :: bAssignment :: cAssignment :: dAssignment :: oAssignment :: Nil =>
                   aAssignment.code shouldBe "@a = nil"
 
@@ -454,6 +455,83 @@ class ClassTests extends RubyCode2CpgFixture {
                         case (identifier: Identifier) :: (fieldIdentifier: FieldIdentifier) :: Nil =>
                           identifier.code shouldBe RubyDefines.This
                           fieldIdentifier.code shouldBe "@a"
+                        case _ => fail("Expected identifier and fieldIdentifier for fieldAccess")
+                      }
+
+                      rhs.code shouldBe "nil"
+                    case _ => fail("Expected only LHS and RHS for assignment call")
+                  }
+                case _ => fail("")
+              }
+            case xs => fail(s"Expected one method for init, instead got ${xs.name.mkString(", ")}")
+          }
+        case xs => fail(s"Expected TypeDecl for Foo, instead got ${xs.name.mkString(", ")}")
+      }
+    }
+  }
+
+  "Class Variables in Class and Methods" should {
+    val cpg = code("""
+        |class Foo
+        | @@a
+        |
+        | def foo
+        |   @@b = 10
+        | end
+        |
+        | def foobar
+        |   @@c = 20
+        |   @@d = 40
+        | end
+        |
+        | def barfoo
+        |   puts @@a
+        |   puts @@c
+        |   @@o = "a"
+        | end
+        |end
+        |""".stripMargin)
+
+    "create respective member nodes" in {
+      inside(cpg.typeDecl.name("Foo").l) {
+        case fooType :: Nil =>
+          inside(fooType.member.l) {
+            case aMember :: bMember :: cMember :: dMember :: oMember :: Nil =>
+              // Test that all members in class are present
+              aMember.code shouldBe "@@a"
+              bMember.code shouldBe "@@b"
+              cMember.code shouldBe "@@c"
+              dMember.code shouldBe "@@d"
+              oMember.code shouldBe "@@o"
+            case _ => fail("Expected 5 members")
+          }
+        case xs => fail(s"Expected TypeDecl for Foo, instead got ${xs.name.mkString(", ")}")
+      }
+    }
+
+    "create nil assignments under the class initializer" in {
+      inside(cpg.typeDecl.name("Foo").l) {
+        case fooType :: Nil =>
+          inside(fooType.method.name(Defines.StaticInitMethodName).l) {
+            case clinitMethod :: Nil =>
+              inside(clinitMethod.block.astChildren.isCall.name(Operators.assignment).l) {
+                case aAssignment :: bAssignment :: cAssignment :: dAssignment :: oAssignment :: Nil =>
+                  aAssignment.code shouldBe "@@a = nil"
+
+                  bAssignment.code shouldBe "@@b = nil"
+                  cAssignment.code shouldBe "@@c = nil"
+                  dAssignment.code shouldBe "@@d = nil"
+                  oAssignment.code shouldBe "@@o = nil"
+
+                  inside(aAssignment.argument.l) {
+                    case (lhs: Call) :: (rhs: Literal) :: Nil =>
+                      lhs.code shouldBe "Foo.@@a"
+                      lhs.methodFullName shouldBe Operators.fieldAccess
+
+                      inside(lhs.argument.l) {
+                        case (identifier: Identifier) :: (fieldIdentifier: FieldIdentifier) :: Nil =>
+                          identifier.code shouldBe "Foo"
+                          fieldIdentifier.code shouldBe "@@a"
                         case _ => fail("Expected identifier and fieldIdentifier for fieldAccess")
                       }
 

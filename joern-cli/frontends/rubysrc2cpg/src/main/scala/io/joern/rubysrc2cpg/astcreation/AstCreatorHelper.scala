@@ -1,6 +1,13 @@
 package io.joern.rubysrc2cpg.astcreation
 import io.joern.rubysrc2cpg.astcreation.GlobalTypes.{builtinFunctions, builtinPrefix}
-import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{DummyNode, InstanceFieldIdentifier, MemberAccess, RubyNode}
+import io.joern.rubysrc2cpg.astcreation.RubyIntermediateAst.{
+  ClassFieldIdentifier,
+  DummyNode,
+  InstanceFieldIdentifier,
+  MemberAccess,
+  RubyFieldIdentifier,
+  RubyNode
+}
 import io.joern.rubysrc2cpg.datastructures.{BlockScope, FieldDecl}
 import io.joern.x2cpg.{Ast, ValidationMode}
 import io.shiftleft.codepropertygraph.generated.{EdgeTypes, Operators}
@@ -23,36 +30,34 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
   protected def prefixAsBuiltin(x: String): String = s"$builtinPrefix$pathSep$x"
   protected def pathSep                            = "."
 
+  private def astForFieldInstance(name: String, node: RubyNode with RubyFieldIdentifier): Ast = {
+    val identName = node match {
+      case _: InstanceFieldIdentifier => Defines.This
+      case _: ClassFieldIdentifier    => scope.surroundingTypeFullName.map(_.split("[.]").last).getOrElse(Defines.Any)
+    }
+
+    astForFieldAccess(
+      MemberAccess(
+        DummyNode(identifierNode(node, identName, identName, Defines.Any))(node.span.spanStart(identName)),
+        ".",
+        name
+      )(node.span)
+    )
+  }
+
   protected def handleVariableOccurrence(node: RubyNode): Ast = {
     val name       = code(node)
     val identifier = identifierNode(node, name, name, Defines.Any)
     val typeRef    = scope.tryResolveTypeReference(name)
 
     node match {
-      case instanceField: InstanceFieldIdentifier =>
+      case fieldVariable: RubyFieldIdentifier =>
         scope.findFieldInScope(name) match {
           case None =>
-            scope.pushField(FieldDecl(name, Defines.Any, false, false, node))
-            astForFieldAccess(
-              MemberAccess(
-                DummyNode(identifierNode(instanceField, Defines.This, Defines.This, Defines.Any))(
-                  instanceField.span.spanStart(Defines.This)
-                ),
-                ".",
-                name
-              )(instanceField.span)
-            )
+            scope.pushField(FieldDecl(name, Defines.Any, false, false, fieldVariable))
+            astForFieldInstance(name, fieldVariable)
           case Some(field) =>
-            val fieldNode = field.node
-            astForFieldAccess(
-              MemberAccess(
-                DummyNode(identifierNode(fieldNode, Defines.This, Defines.This, Defines.Any))(
-                  instanceField.span.spanStart(Defines.This)
-                ),
-                ".",
-                name
-              )(fieldNode.span)
-            )
+            astForFieldInstance(name, field.node)
         }
       case _ =>
         scope.lookupVariable(name) match {
