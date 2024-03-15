@@ -47,11 +47,12 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
         scope.findFieldInScope(name) match {
           case None =>
             val fullName = s"${scope.surroundingTypeFullName.getOrElse(Defines.UnresolvedNamespace)}.$name"
-
             scope.pushField(FieldDecl(name, Defines.Any, false, false, node))
             astForFieldAccess(
               MemberAccess(
-                DummyNode(identifierNode(instanceField, "this", "this", Defines.Any))(instanceField.span),
+                DummyNode(identifierNode(instanceField, "this", "this", Defines.Any))(
+                  instanceField.span.spanStart("this")
+                ),
                 ".",
                 name
               )(instanceField.span)
@@ -60,7 +61,7 @@ trait AstCreatorHelper(implicit withSchemaValidation: ValidationMode) { this: As
             val fieldNode = field.node
             astForFieldAccess(
               MemberAccess(
-                DummyNode(identifierNode(fieldNode, "this", "this", Defines.Any))(instanceField.span),
+                DummyNode(identifierNode(fieldNode, "this", "this", Defines.Any))(instanceField.span.spanStart("this")),
                 ".",
                 name
               )(fieldNode.span)

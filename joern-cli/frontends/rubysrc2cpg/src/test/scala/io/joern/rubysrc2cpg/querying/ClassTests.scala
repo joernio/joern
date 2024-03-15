@@ -2,6 +2,7 @@ package io.joern.rubysrc2cpg.querying
 
 import io.joern.rubysrc2cpg.testfixtures.RubyCode2CpgFixture
 import io.joern.x2cpg.Defines
+import io.shiftleft.codepropertygraph.generated.Operators
 import io.shiftleft.codepropertygraph.generated.nodes.{Block, Call, Identifier, Literal, Return}
 import io.shiftleft.semanticcpg.language.*
 
@@ -386,6 +387,70 @@ class ClassTests extends RubyCode2CpgFixture {
         case Some(app) =>
           app.inheritsFromTypeFullName.head shouldBe "Test0.rb:<global>::program.Bar.Baz"
         case None => fail("Expected a type decl for 'Foo', instead got nothing")
+      }
+    }
+  }
+
+  "Instance variable in class" should {
+    val cpg = code("""
+        |class Foo
+        | @a
+        |
+        | def foo
+        |   @b = 10
+        | end
+        |
+        | def foobar
+        |   @c = 20
+        |   @d = 40
+        | end
+        |
+        | def barfoo
+        |   puts @a
+        |   puts @c
+        |   @o = "a"
+        | end
+        |end
+        |""".stripMargin)
+
+    "be correct" in {
+      inside(cpg.typeDecl.name("Foo").l) {
+        case fooType :: Nil =>
+          inside(fooType.member.l) {
+            case aMember :: bMember :: cMember :: dMember :: oMember :: Nil =>
+              // Test that all members in class are present
+              aMember.code shouldBe "@a"
+              bMember.code shouldBe "@b"
+              cMember.code shouldBe "@c"
+              dMember.code shouldBe "@d"
+              oMember.code shouldBe "@o"
+            case _ => fail("Expected 5 members")
+          }
+
+          inside(fooType.method.name(Defines.StaticInitMethodName).l) {
+            case clinitMethod :: Nil =>
+              inside(clinitMethod.block.astChildren.isCall.name(Operators.assignment).l) {
+                case aAssignment :: bAssignment :: cAssignment :: dAssignment :: oAssignment :: Nil =>
+                  aAssignment.code shouldBe "@a = nil"
+
+                  bAssignment.code shouldBe "@b = nil"
+                  cAssignment.code shouldBe "@c = nil"
+                  dAssignment.code shouldBe "@d = nil"
+                  oAssignment.code shouldBe "@o = nil"
+
+                  inside(aAssignment.argument.l) {
+                    case (lhs: Call) :: (rhs: Literal) :: Nil =>
+                      lhs.code shouldBe "this.@a"
+                      lhs.methodFullName shouldBe Operators.fieldAccess
+
+                      rhs.code shouldBe "nil"
+                    case _ => fail("Expected only LHS and RHS for assignment call")
+                  }
+                case _ => fail("")
+              }
+            case xs => fail(s"Expected one method for clinit, instead got ${xs.name.mkString(", ")}")
+          }
+        case xs => fail(s"Expected TypeDecl for Foo, instead got ${xs.name.mkString(", ")}")
       }
     }
   }
